@@ -41,45 +41,22 @@ import org.jquantlib.time.Date;
 // TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class HestonProcess extends StochasticProcess {
 
-    private final Handle<YieldTermStructure> riskFreeRate_, dividendYield_;
-    private final Handle<Quote> s0_;
-    private final RelinkableHandle<Quote> v0_, kappa_, theta_, sigma_, rho_;
-
-    public enum Discretization {
-        PartialTruncation, FullTruncation, Reflection,
-        NonCentralChiSquareVariance,
-        QuadraticExponential, QuadraticExponentialMartingale,
-        BroadieKayaExactSchemeLobatto,
-        BroadieKayaExactSchemeLaguerre,
-        BroadieKayaExactSchemeTrapezoidal
-    };
-
+    private final Handle< YieldTermStructure > riskFreeRate_, dividendYield_;
+    private final Handle< Quote > s0_;
+    private final RelinkableHandle< Quote > v0_, kappa_, theta_, sigma_, rho_;
     private final Discretization discretization_;
 
     private double s0v_, v0v_, kappav_, thetav_, sigmav_, rhov_, sqrhov_;
 
-    public HestonProcess(
-            final Handle<YieldTermStructure> riskFreeRate,
-            final Handle<YieldTermStructure> dividendYield,
-            final Handle<Quote> s0,
-            final double v0,
-            final double kappa,
-            final double theta,
-            final double sigma,
-            final double rho) {
+    public HestonProcess(final Handle< YieldTermStructure > riskFreeRate,
+            final Handle< YieldTermStructure > dividendYield, final Handle< Quote > s0, final double v0,
+            final double kappa, final double theta, final double sigma, final double rho) {
         this(riskFreeRate, dividendYield, s0, v0, kappa, theta, sigma, rho, Discretization.FullTruncation);
     }
 
-    public HestonProcess(
-            final Handle<YieldTermStructure> riskFreeRate,
-            final Handle<YieldTermStructure> dividendYield,
-            final Handle<Quote> s0,
-            final double v0,
-            final double kappa,
-            final double theta,
-            final double sigma,
-            final double rho,
-            final Discretization d) {
+    public HestonProcess(final Handle< YieldTermStructure > riskFreeRate,
+            final Handle< YieldTermStructure > dividendYield, final Handle< Quote > s0, final double v0,
+            final double kappa, final double theta, final double sigma, final double rho, final Discretization d) {
 
         // TODO: code review :: super(new EulerDiscretization());
         // Seems like constructor which takes a Discretization must belong to
@@ -88,13 +65,12 @@ public class HestonProcess extends StochasticProcess {
         this.riskFreeRate_ = (riskFreeRate);
         this.dividendYield_ = (dividendYield);
         this.s0_ = (s0); // TODO: code review
-        this.v0_ = new RelinkableHandle<Quote>(new SimpleQuote(v0));
-        this.kappa_ = new RelinkableHandle<Quote>(new SimpleQuote(kappa));
-        this.theta_ = new RelinkableHandle<Quote>(new SimpleQuote(theta));
-        this.sigma_ = new RelinkableHandle<Quote>(new SimpleQuote(sigma));
-        this.rho_ = new RelinkableHandle<Quote>(new SimpleQuote(rho));
+        this.v0_ = new RelinkableHandle< Quote >(new SimpleQuote(v0));
+        this.kappa_ = new RelinkableHandle< Quote >(new SimpleQuote(kappa));
+        this.theta_ = new RelinkableHandle< Quote >(new SimpleQuote(theta));
+        this.sigma_ = new RelinkableHandle< Quote >(new SimpleQuote(sigma));
+        this.rho_ = new RelinkableHandle< Quote >(new SimpleQuote(rho));
         this.discretization_ = (d);
-
 
         this.riskFreeRate_.addObserver(this);
         this.dividendYield_.addObserver(this);
@@ -114,47 +90,46 @@ public class HestonProcess extends StochasticProcess {
         // this->StochasticProcess::update();
     }
 
-    public final RelinkableHandle<Quote> v0() {
+    public final RelinkableHandle< Quote > v0() {
         return v0_;
     }
 
-    public final RelinkableHandle<Quote> rho() {
+    public final RelinkableHandle< Quote > rho() {
         return rho_;
     }
 
-    public final RelinkableHandle<Quote> kappa() {
+    public final RelinkableHandle< Quote > kappa() {
         return kappa_;
     }
 
-    public final RelinkableHandle<Quote> theta() {
+    public final RelinkableHandle< Quote > theta() {
         return theta_;
     }
 
-    public final RelinkableHandle<Quote> sigma() {
+    public final RelinkableHandle< Quote > sigma() {
         return sigma_;
     }
 
-    public final Handle<Quote> s0() {
+    public final Handle< Quote > s0() {
         return s0_;
     }
 
-    public final Handle<YieldTermStructure> dividendYield() {
+    public final Handle< YieldTermStructure > dividendYield() {
         return dividendYield_;
     }
 
-    public Handle<YieldTermStructure> riskFreeRate() {
+    public Handle< YieldTermStructure > riskFreeRate() {
         return riskFreeRate_;
     }
 
+    @Override
+    public Array initialValues() {
+        return new Array(new double[] { s0v_, v0v_ });
+    }
 
     //
     // Overrides StochasticProcess
     //
-
-    @Override
-    public Array initialValues() {
-        return new Array( new double[] { s0v_, v0v_ } );
-    }
 
     @Override
     public int size() {
@@ -162,20 +137,18 @@ public class HestonProcess extends StochasticProcess {
     }
 
     /**
-     * Number of Brownian factors driving the process. The three
-     * BroadieKaya exact schemes need an extra independent normal draw
-     * for the conditional integrated-variance Fourier inversion (see
-     * {@link HestonHelpers#cdfNuDs}); all other discretizations use
-     * 2 factors. Mirrors C++ HestonProcess::factors().
+     * Number of Brownian factors driving the process. The three BroadieKaya exact schemes need an extra independent
+     * normal draw for the conditional integrated-variance Fourier inversion (see {@link HestonHelpers#cdfNuDs}); all
+     * other discretizations use 2 factors. Mirrors C++ HestonProcess::factors().
      */
     public int factors() {
-        switch (discretization_) {
-            case BroadieKayaExactSchemeLobatto:
-            case BroadieKayaExactSchemeLaguerre:
-            case BroadieKayaExactSchemeTrapezoidal:
-                return 3;
-            default:
-                return 2;
+        switch ( discretization_ ) {
+        case BroadieKayaExactSchemeLobatto:
+        case BroadieKayaExactSchemeLaguerre:
+        case BroadieKayaExactSchemeTrapezoidal:
+            return 3;
+        default:
+            return 2;
         }
     }
 
@@ -188,17 +161,15 @@ public class HestonProcess extends StochasticProcess {
     public Array drift(/* Time */final double t, final Array x) {
         final double x1 = x.get(1);
         final double vol = (x1 > 0.0)
-        ? Math.sqrt(x1)
-                : (discretization_ == Discretization.PartialTruncation)
-                ? -Math.sqrt(-x1)
-                        : 0.0;
+                ? Math.sqrt(x1)
+                : (discretization_ == Discretization.PartialTruncation) ? -Math.sqrt(-x1) : 0.0;
 
-                final double[] result = new double[2];
-                result[0] = riskFreeRate_.currentLink().forwardRate(t, t, Compounding.Continuous).rate()
+        final double[] result = new double[2];
+        result[0] = riskFreeRate_.currentLink().forwardRate(t, t, Compounding.Continuous).rate()
                 - dividendYield_.currentLink().forwardRate(t, t, Compounding.Continuous).rate() - 0.5 * vol * vol;
 
-                result[1] = kappav_ * (thetav_ - ((discretization_ == Discretization.PartialTruncation) ? x1 : vol * vol));
-                return new Array(result);
+        result[1] = kappav_ * (thetav_ - ((discretization_ == Discretization.PartialTruncation) ? x1 : vol * vol));
+        return new Array(result);
     }
 
     @Override
@@ -208,18 +179,16 @@ public class HestonProcess extends StochasticProcess {
          */
         final double x1 = x.get(1);
         final double vol = (x1 > 0.0)
-        ? Math.sqrt(x1)
-                : (discretization_ == Discretization.Reflection)
-                ? -Math.sqrt(-x1)
-                        : 0.0;
-                final double sigma2 = sigmav_ * vol;
+                ? Math.sqrt(x1)
+                : (discretization_ == Discretization.Reflection) ? -Math.sqrt(-x1) : 0.0;
+        final double sigma2 = sigmav_ * vol;
 
-                final Matrix result = new Matrix(2, 2);
-                result.set(0, 0, vol);
-                result.set(0, 1, 0.0);
-                result.set(1, 0, rhov_ * sigma2);
-                result.set(1, 1, sqrhov_ * sigma2);
-                return result;
+        final Matrix result = new Matrix(2, 2);
+        result.set(0, 0, vol);
+        result.set(0, 1, 0.0);
+        result.set(1, 0, rhov_ * sigma2);
+        result.set(1, 1, sqrhov_ * sigma2);
+        return result;
     }
 
     @Override
@@ -231,19 +200,19 @@ public class HestonProcess extends StochasticProcess {
     }
 
     /**
-     * Exact non-central chi-squared sampling for the variance leg.
-     * Port of C++ v1.42.1 hestonprocess.cpp lines 569-582.
+     * Exact non-central chi-squared sampling for the variance leg. Port of C++ v1.42.1 hestonprocess.cpp lines
+     * 569-582.
      */
     private double varianceDistribution(final double v, final double dw, final double dt) {
-        final double df  = 4.0 * thetav_ * kappav_ / (sigmav_ * sigmav_);
-        final double ncp = 4.0 * kappav_ * Math.exp(-kappav_ * dt)
-                / (sigmav_ * sigmav_ * (1.0 - Math.exp(-kappav_ * dt))) * v;
+        final double df = 4.0 * thetav_ * kappav_ / (sigmav_ * sigmav_);
+        final double ncp =
+                4.0 * kappav_ * Math.exp(-kappav_ * dt) / (sigmav_ * sigmav_ * (1.0 - Math.exp(-kappav_ * dt))) * v;
 
         final double cn = new org.jquantlib.math.distributions.CumulativeNormalDistribution().op(dw);
         final double p = Math.min(1.0 - Constants.QL_EPSILON, Math.max(0.0, cn));
 
-        final double x = new org.jquantlib.math.distributions.InverseNonCentralCumulativeChiSquaredDistribution(
-                df, ncp, 100, 1.0e-8).op(p);
+        final double x = new org.jquantlib.math.distributions.InverseNonCentralCumulativeChiSquaredDistribution(df, ncp,
+                100, 1.0e-8).op(p);
         return sigmav_ * sigmav_ * (1.0 - Math.exp(-kappav_ * dt)) / (4.0 * kappav_) * x;
     }
 
@@ -259,163 +228,159 @@ public class HestonProcess extends StochasticProcess {
         final double dw0 = dw.get(0);
         final double dw1 = dw.get(1);
 
-        switch (discretization_) {
-            // For the definition of PartialTruncation, FullTruncation
-            // and Reflection see Lord, R., R. Koekkoek and D. van Dijk (2006),
-            // "A Comparison of biased simulation schemes for
-            // stochastic volatility models",
-            // Working Paper, Tinbergen Institute
-            case PartialTruncation:
-                vol = (x01 > 0.0) ? Math.sqrt(x01) : 0.0;
-                vol2 = sigmav_ * vol;
-                mu = riskFreeRate_.currentLink().forwardRate(t0, t0, Compounding.Continuous).rate()
-                - dividendYield_.currentLink().forwardRate(t0, t0, Compounding.Continuous).rate() - 0.5 * vol * vol;
-                nu = kappav_ * (thetav_ - x01);
+        switch ( discretization_ ) {
+        // For the definition of PartialTruncation, FullTruncation
+        // and Reflection see Lord, R., R. Koekkoek and D. van Dijk (2006),
+        // "A Comparison of biased simulation schemes for
+        // stochastic volatility models",
+        // Working Paper, Tinbergen Institute
+        case PartialTruncation:
+            vol = (x01 > 0.0) ? Math.sqrt(x01) : 0.0;
+            vol2 = sigmav_ * vol;
+            mu = riskFreeRate_.currentLink().forwardRate(t0, t0, Compounding.Continuous).rate()
+                    - dividendYield_.currentLink().forwardRate(t0, t0, Compounding.Continuous).rate() - 0.5 * vol * vol;
+            nu = kappav_ * (thetav_ - x01);
 
-                retVal[0] = x00 * Math.exp(mu * dt + vol * dw0 * sdt);
-                retVal[1] = x01 + nu * dt + vol2 * sdt * (rhov_ * dw0 + sqrhov_ * dw1);
-                break;
-            case FullTruncation:
-                vol = (x01 > 0.0) ? Math.sqrt(x01) : 0.0;
-                vol2 = sigmav_ * vol;
-                mu = riskFreeRate_.currentLink().forwardRate(t0, t0, Compounding.Continuous).rate()
-                - dividendYield_.currentLink().forwardRate(t0, t0, Compounding.Continuous).rate() - 0.5 * vol * vol;
-                nu = kappav_ * (thetav_ - vol * vol);
+            retVal[0] = x00 * Math.exp(mu * dt + vol * dw0 * sdt);
+            retVal[1] = x01 + nu * dt + vol2 * sdt * (rhov_ * dw0 + sqrhov_ * dw1);
+            break;
+        case FullTruncation:
+            vol = (x01 > 0.0) ? Math.sqrt(x01) : 0.0;
+            vol2 = sigmav_ * vol;
+            mu = riskFreeRate_.currentLink().forwardRate(t0, t0, Compounding.Continuous).rate()
+                    - dividendYield_.currentLink().forwardRate(t0, t0, Compounding.Continuous).rate() - 0.5 * vol * vol;
+            nu = kappav_ * (thetav_ - vol * vol);
 
-                retVal[0] = x00 * Math.exp(mu * dt + vol * dw0 * sdt);
-                retVal[1] = x01 + nu * dt + vol2 * sdt * (rhov_ * dw0 + sqrhov_ * dw1);
-                break;
-            case Reflection:
-                vol = Math.sqrt(Math.abs(x01));
-                vol2 = sigmav_ * vol;
-                mu = riskFreeRate_.currentLink().forwardRate(t0, t0, Compounding.Continuous).rate()
-                - dividendYield_.currentLink().forwardRate(t0, t0, Compounding.Continuous).rate() - 0.5 * vol * vol;
-                nu = kappav_ * (thetav_ - vol * vol);
+            retVal[0] = x00 * Math.exp(mu * dt + vol * dw0 * sdt);
+            retVal[1] = x01 + nu * dt + vol2 * sdt * (rhov_ * dw0 + sqrhov_ * dw1);
+            break;
+        case Reflection:
+            vol = Math.sqrt(Math.abs(x01));
+            vol2 = sigmav_ * vol;
+            mu = riskFreeRate_.currentLink().forwardRate(t0, t0, Compounding.Continuous).rate()
+                    - dividendYield_.currentLink().forwardRate(t0, t0, Compounding.Continuous).rate() - 0.5 * vol * vol;
+            nu = kappav_ * (thetav_ - vol * vol);
 
-                retVal[0] = x00 * Math.exp(mu * dt + vol * dw0 * sdt);
-                retVal[1] = vol * vol + nu * dt + vol2 * sdt * (rhov_ * dw0 + sqrhov_ * dw1);
-                break;
-            case NonCentralChiSquareVariance: {
-                // Alan Lewis decorrelation trick — exact sampling for the
-                // variance process, equity process driven by Ito-correction.
-                // Mirrors C++ v1.42.1 hestonprocess.cpp lines 444-460.
-                vol = (x01 > 0.0) ? Math.sqrt(x01) : 0.0;
-                mu = riskFreeRate_.currentLink().forwardRate(t0, t0 + dt, Compounding.Continuous).rate()
-                        - dividendYield_.currentLink().forwardRate(t0, t0 + dt, Compounding.Continuous).rate()
-                        - 0.5 * vol * vol;
+            retVal[0] = x00 * Math.exp(mu * dt + vol * dw0 * sdt);
+            retVal[1] = vol * vol + nu * dt + vol2 * sdt * (rhov_ * dw0 + sqrhov_ * dw1);
+            break;
+        case NonCentralChiSquareVariance: {
+            // Alan Lewis decorrelation trick — exact sampling for the
+            // variance process, equity process driven by Ito-correction.
+            // Mirrors C++ v1.42.1 hestonprocess.cpp lines 444-460.
+            vol = (x01 > 0.0) ? Math.sqrt(x01) : 0.0;
+            mu = riskFreeRate_.currentLink().forwardRate(t0, t0 + dt, Compounding.Continuous).rate()
+                    - dividendYield_.currentLink().forwardRate(t0, t0 + dt, Compounding.Continuous).rate()
+                    - 0.5 * vol * vol;
 
-                retVal[1] = varianceDistribution(x01, dw1, dt);
-                final double dy = (mu - rhov_ / sigmav_ * kappav_ * (thetav_ - vol * vol)) * dt
-                        + vol * sqrhov_ * dw0 * sdt;
-                retVal[0] = x00 * Math.exp(dy + rhov_ / sigmav_ * (retVal[1] - x01));
-                break;
-            }
-            case QuadraticExponential:
-            case QuadraticExponentialMartingale: {
-                // Port of QuantLib v1.42.1 QuadraticExponential /
-                // QuadraticExponentialMartingale branch,
-                // ql/processes/hestonprocess.cpp 461-516. See Leif
-                // Andersen, "Efficient Simulation of the Heston Stochastic
-                // Volatility Model" (2008) for the derivation.
-                final double ex = Math.exp(-kappav_ * dt);
-                final double m = thetav_ + (x01 - thetav_) * ex;
-                final double s2 = x01 * sigmav_ * sigmav_ * ex / kappav_ * (1 - ex)
-                        + thetav_ * sigmav_ * sigmav_ / (2 * kappav_) * (1 - ex) * (1 - ex);
-                final double psi = s2 / (m * m);
+            retVal[1] = varianceDistribution(x01, dw1, dt);
+            final double dy = (mu - rhov_ / sigmav_ * kappav_ * (thetav_ - vol * vol)) * dt + vol * sqrhov_ * dw0 * sdt;
+            retVal[0] = x00 * Math.exp(dy + rhov_ / sigmav_ * (retVal[1] - x01));
+            break;
+        }
+        case QuadraticExponential:
+        case QuadraticExponentialMartingale: {
+            // Port of QuantLib v1.42.1 QuadraticExponential /
+            // QuadraticExponentialMartingale branch,
+            // ql/processes/hestonprocess.cpp 461-516. See Leif
+            // Andersen, "Efficient Simulation of the Heston Stochastic
+            // Volatility Model" (2008) for the derivation.
+            final double ex = Math.exp(-kappav_ * dt);
+            final double m = thetav_ + (x01 - thetav_) * ex;
+            final double s2 =
+                    x01 * sigmav_ * sigmav_ * ex / kappav_ * (1 - ex) + thetav_ * sigmav_ * sigmav_ / (2 * kappav_) * (1
+                            - ex) * (1 - ex);
+            final double psi = s2 / (m * m);
 
-                final double g1 = 0.5;
-                final double g2 = 0.5;
-                double k0 = -rhov_ * kappav_ * thetav_ * dt / sigmav_;
-                final double k1 = g1 * dt * (kappav_ * rhov_ / sigmav_ - 0.5) - rhov_ / sigmav_;
-                final double k2 = g2 * dt * (kappav_ * rhov_ / sigmav_ - 0.5) + rhov_ / sigmav_;
-                final double k3 = g1 * dt * (1 - rhov_ * rhov_);
-                final double k4 = g2 * dt * (1 - rhov_ * rhov_);
-                final double A  = k2 + 0.5 * k4;
+            final double g1 = 0.5;
+            final double g2 = 0.5;
+            double k0 = -rhov_ * kappav_ * thetav_ * dt / sigmav_;
+            final double k1 = g1 * dt * (kappav_ * rhov_ / sigmav_ - 0.5) - rhov_ / sigmav_;
+            final double k2 = g2 * dt * (kappav_ * rhov_ / sigmav_ - 0.5) + rhov_ / sigmav_;
+            final double k3 = g1 * dt * (1 - rhov_ * rhov_);
+            final double k4 = g2 * dt * (1 - rhov_ * rhov_);
+            final double A = k2 + 0.5 * k4;
 
-                if (psi < 1.5) {
-                    final double b2 = 2 / psi - 1 + Math.sqrt(2 / psi * (2 / psi - 1));
-                    final double b = Math.sqrt(b2);
-                    final double a = m / (1 + b2);
+            if ( psi < 1.5 ) {
+                final double b2 = 2 / psi - 1 + Math.sqrt(2 / psi * (2 / psi - 1));
+                final double b = Math.sqrt(b2);
+                final double a = m / (1 + b2);
 
-                    if (discretization_ == Discretization.QuadraticExponentialMartingale) {
-                        // martingale correction; mirrors hestonprocess.cpp 488-493
-                        QL.require(A < 1 / (2 * a), "illegal value");
-                        k0 = -A * b2 * a / (1 - 2 * A * a)
-                                + 0.5 * Math.log(1 - 2 * A * a)
-                                - (k1 + 0.5 * k3) * x01;
-                    }
-                    retVal[1] = a * (b + dw1) * (b + dw1);
-                } else {
-                    final double pp = (psi - 1) / (psi + 1);
-                    final double beta = (1 - pp) / m;
-                    final double u = new CumulativeNormalDistribution().op(dw1);
-
-                    if (discretization_ == Discretization.QuadraticExponentialMartingale) {
-                        // martingale correction; mirrors hestonprocess.cpp 502-506
-                        QL.require(A < beta, "illegal value");
-                        k0 = -Math.log(pp + beta * (1 - pp) / (beta - A))
-                                - (k1 + 0.5 * k3) * x01;
-                    }
-                    retVal[1] = (u <= pp) ? 0.0 : Math.log((1 - pp) / (1 - u)) / beta;
+                if ( discretization_ == Discretization.QuadraticExponentialMartingale ) {
+                    // martingale correction; mirrors hestonprocess.cpp 488-493
+                    QL.require(A < 1 / (2 * a), "illegal value");
+                    k0 = -A * b2 * a / (1 - 2 * A * a) + 0.5 * Math.log(1 - 2 * A * a) - (k1 + 0.5 * k3) * x01;
                 }
+                retVal[1] = a * (b + dw1) * (b + dw1);
+            } else {
+                final double pp = (psi - 1) / (psi + 1);
+                final double beta = (1 - pp) / m;
+                final double u = new CumulativeNormalDistribution().op(dw1);
 
-                mu = riskFreeRate_.currentLink().forwardRate(t0, t0 + dt, Compounding.Continuous).rate()
-                        - dividendYield_.currentLink().forwardRate(t0, t0 + dt, Compounding.Continuous).rate();
-
-                retVal[0] = x00 * Math.exp(mu * dt + k0 + k1 * x01 + k2 * retVal[1]
-                        + Math.sqrt(k3 * x01 + k4 * retVal[1]) * dw0);
-                break;
+                if ( discretization_ == Discretization.QuadraticExponentialMartingale ) {
+                    // martingale correction; mirrors hestonprocess.cpp 502-506
+                    QL.require(A < beta, "illegal value");
+                    k0 = -Math.log(pp + beta * (1 - pp) / (beta - A)) - (k1 + 0.5 * k3) * x01;
+                }
+                retVal[1] = (u <= pp) ? 0.0 : Math.log((1 - pp) / (1 - u)) / beta;
             }
-            case BroadieKayaExactSchemeLobatto:
-            case BroadieKayaExactSchemeLaguerre:
-            case BroadieKayaExactSchemeTrapezoidal: {
-                // Exact simulation per Broadie-Kaya 2006. Phase 2f WI-3
-                // C.4-C.6 port of C++ hestonprocess.cpp lines 517-543.
-                // Variance leg via non-central chi-squared inversion;
-                // conditional integrated-variance via Fourier inversion
-                // dispatched on the three subschemes (HestonHelpers).
-                final double nu_0 = x01;
-                final double nu_t = varianceDistribution(nu_0, dw1, dt);
 
-                final double dw2 = dw.get(2);
-                final double cnX = new CumulativeNormalDistribution().op(dw2);
-                final double xVal = Math.min(1.0 - Constants.QL_EPSILON,
-                        Math.max(0.0, cnX));
+            mu = riskFreeRate_.currentLink().forwardRate(t0, t0 + dt, Compounding.Continuous).rate()
+                    - dividendYield_.currentLink().forwardRate(t0, t0 + dt, Compounding.Continuous).rate();
 
-                // Brent solve cdf_nu_ds_minus_x for vds. Mirrors
-                // C++:  Brent().solve(lambda, 1e-5, theta_*dt, 0.1*theta_*dt)
-                final HestonProcess self = this;
-                final Ops.DoubleOp resid = new Ops.DoubleOp() {
-                    public double op(final double xi) {
-                        return HestonHelpers.cdfNuDsMinusX(self, xi, nu_0, nu_t,
-                                dt, discretization_, xVal);
-                    }
-                };
-                final double vds = new Brent().solve(resid, 1.0e-5,
-                        thetav_ * dt, 0.1 * thetav_ * dt);
+            retVal[0] = x00 * Math.exp(
+                    mu * dt + k0 + k1 * x01 + k2 * retVal[1] + Math.sqrt(k3 * x01 + k4 * retVal[1]) * dw0);
+            break;
+        }
+        case BroadieKayaExactSchemeLobatto:
+        case BroadieKayaExactSchemeLaguerre:
+        case BroadieKayaExactSchemeTrapezoidal: {
+            // Exact simulation per Broadie-Kaya 2006. Phase 2f WI-3
+            // C.4-C.6 port of C++ hestonprocess.cpp lines 517-543.
+            // Variance leg via non-central chi-squared inversion;
+            // conditional integrated-variance via Fourier inversion
+            // dispatched on the three subschemes (HestonHelpers).
+            final double nu_0 = x01;
+            final double nu_t = varianceDistribution(nu_0, dw1, dt);
 
-                final double vdw = (nu_t - nu_0 - kappav_ * thetav_ * dt
-                        + kappav_ * vds) / sigmav_;
+            final double dw2 = dw.get(2);
+            final double cnX = new CumulativeNormalDistribution().op(dw2);
+            final double xVal = Math.min(1.0 - Constants.QL_EPSILON, Math.max(0.0, cnX));
 
-                final double muLocal = (riskFreeRate_.currentLink()
-                        .forwardRate(t0, t0 + dt, Compounding.Continuous).rate()
-                        - dividendYield_.currentLink()
-                            .forwardRate(t0, t0 + dt, Compounding.Continuous).rate())
-                        * dt
-                        - 0.5 * vds + rhov_ * vdw;
+            // Brent solve cdf_nu_ds_minus_x for vds. Mirrors
+            // C++:  Brent().solve(lambda, 1e-5, theta_*dt, 0.1*theta_*dt)
+            final HestonProcess self = this;
+            final Ops.DoubleOp resid = new Ops.DoubleOp() {
+                public double op(final double xi) {
+                    return HestonHelpers.cdfNuDsMinusX(self, xi, nu_0, nu_t, dt, discretization_, xVal);
+                }
+            };
+            final double vds = new Brent().solve(resid, 1.0e-5, thetav_ * dt, 0.1 * thetav_ * dt);
 
-                final double sig = Math.sqrt((1 - rhov_ * rhov_) * vds);
-                final double s = x00 * Math.exp(muLocal + sig * dw0);
+            final double vdw = (nu_t - nu_0 - kappav_ * thetav_ * dt + kappav_ * vds) / sigmav_;
 
-                retVal[0] = s;
-                retVal[1] = nu_t;
-                break;
-            }
-            default:
-                throw new LibraryException("unknown discretization schema"); // TODO: message
+            final double muLocal = (riskFreeRate_.currentLink().forwardRate(t0, t0 + dt, Compounding.Continuous).rate()
+                    - dividendYield_.currentLink().forwardRate(t0, t0 + dt, Compounding.Continuous).rate()) * dt
+                    - 0.5 * vds + rhov_ * vdw;
+
+            final double sig = Math.sqrt((1 - rhov_ * rhov_) * vds);
+            final double s = x00 * Math.exp(muLocal + sig * dw0);
+
+            retVal[0] = s;
+            retVal[1] = nu_t;
+            break;
+        }
+        default:
+            throw new LibraryException("unknown discretization schema"); // TODO: message
         }
 
-        return new Array( retVal );
+        return new Array(retVal);
+    }
+
+    public enum Discretization {
+        PartialTruncation, FullTruncation, Reflection, NonCentralChiSquareVariance, QuadraticExponential,
+        QuadraticExponentialMartingale, BroadieKayaExactSchemeLobatto, BroadieKayaExactSchemeLaguerre,
+        BroadieKayaExactSchemeTrapezoidal
     }
 
 }

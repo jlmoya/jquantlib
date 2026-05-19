@@ -34,8 +34,8 @@ import org.jquantlib.model.marketmodels.Utilities;
 import org.jquantlib.model.marketmodels.products.MultiProductMultiStep;
 
 /**
- * Multi-step Period Caplets and Swaptions — at each period boundary emits one
- * caplet and one swaption (period-aggregated structures).
+ * Multi-step Period Caplets and Swaptions — at each period boundary emits one caplet and one swaption
+ * (period-aggregated structures).
  * <p>
  * Mirrors C++ {@code class MultiStepPeriodCapletSwaptions}
  * (ql/models/marketmodels/products/multistep/multistepperiodcapletswaptions.{hpp,cpp} v1.42.1).
@@ -58,13 +58,9 @@ public class MultiStepPeriodCapletSwaptions extends MultiProductMultiStep {
     private int currentIndex_;
     private int productIndex_;
 
-    public MultiStepPeriodCapletSwaptions(final double[] rateTimes,
-                                          final double[] forwardOptionPaymentTimes,
-                                          final double[] swaptionPaymentTimes,
-                                          final StrikedTypePayoff[] forwardPayOffs,
-                                          final StrikedTypePayoff[] swapPayOffs,
-                                          final int period,
-                                          final int offset) {
+    public MultiStepPeriodCapletSwaptions(final double[] rateTimes, final double[] forwardOptionPaymentTimes,
+            final double[] swaptionPaymentTimes, final StrikedTypePayoff[] forwardPayOffs,
+            final StrikedTypePayoff[] swapPayOffs, final int period, final int offset) {
         super(rateTimes);
         QL.require(rateTimes.length >= 2, "we need at least two rate times in MultiStepPeriodCapletSwaptions");
         Utilities.checkIncreasingTimes(forwardOptionPaymentTimes);
@@ -73,8 +69,8 @@ public class MultiStepPeriodCapletSwaptions extends MultiProductMultiStep {
         // paymentTimes_ = forwardOptionPaymentTimes ++ swaptionPaymentTimes
         this.paymentTimes_ = new double[forwardOptionPaymentTimes.length + swaptionPaymentTimes.length];
         System.arraycopy(forwardOptionPaymentTimes, 0, paymentTimes_, 0, forwardOptionPaymentTimes.length);
-        System.arraycopy(swaptionPaymentTimes, 0, paymentTimes_,
-                forwardOptionPaymentTimes.length, swaptionPaymentTimes.length);
+        System.arraycopy(swaptionPaymentTimes, 0, paymentTimes_, forwardOptionPaymentTimes.length,
+                swaptionPaymentTimes.length);
 
         this.forwardOptionPaymentTimes_ = forwardOptionPaymentTimes.clone();
         this.swaptionPaymentTimes_ = swaptionPaymentTimes.clone();
@@ -86,28 +82,31 @@ public class MultiStepPeriodCapletSwaptions extends MultiProductMultiStep {
         this.numberFRAs_ = rateTimes.length - 1;
         this.numberBigFRAs_ = (numberFRAs_ - offset_) / period_;
 
-        QL.require(offset_ < period_,
-                "the offset must be less than the period in MultiStepPeriodCapletSwaptions");
-        QL.require(numberBigFRAs_ > 0,
-                "we must have at least one FRA after the periodizing");
+        QL.require(offset_ < period_, "the offset must be less than the period in MultiStepPeriodCapletSwaptions");
+        QL.require(numberBigFRAs_ > 0, "we must have at least one FRA after the periodizing");
         QL.require(forwardOptionPaymentTimes_.length == numberBigFRAs_,
                 "we must have precisely one payment time for each forward option");
         QL.require(forwardPayOffs_.length == numberBigFRAs_,
                 "we must have precisely one payoff for each forward option");
         QL.require(swaptionPaymentTimes_.length == numberBigFRAs_,
                 "we must have precisely one payment time for each swaption");
-        QL.require(swapPayOffs_.length == numberBigFRAs_,
-                "we must have precisely one payoff for each swaption");
+        QL.require(swapPayOffs_.length == numberBigFRAs_, "we must have precisely one payoff for each swaption");
     }
 
     @Override
-    public double[] possibleCashFlowTimes() { return paymentTimes_; }
+    public double[] possibleCashFlowTimes() {
+        return paymentTimes_;
+    }
 
     @Override
-    public int numberOfProducts() { return numberBigFRAs_ * 2; }
+    public int numberOfProducts() {
+        return numberBigFRAs_ * 2;
+    }
 
     @Override
-    public int maxNumberOfCashFlowsPerProductPerStep() { return 1; }
+    public int maxNumberOfCashFlowsPerProductPerStep() {
+        return 1;
+    }
 
     @Override
     public void reset() {
@@ -116,14 +115,13 @@ public class MultiStepPeriodCapletSwaptions extends MultiProductMultiStep {
     }
 
     @Override
-    public boolean nextTimeStep(final CurveState currentState,
-                                final int[] numberCashFlowsThisStep,
-                                final MarketModelMultiProduct.CashFlow[][] genCashFlows) {
-        for (int i = 0; i < numberCashFlowsThisStep.length; ++i) {
+    public boolean nextTimeStep(final CurveState currentState, final int[] numberCashFlowsThisStep,
+            final MarketModelMultiProduct.CashFlow[][] genCashFlows) {
+        for ( int i = 0; i < numberCashFlowsThisStep.length; ++i ) {
             numberCashFlowsThisStep[i] = 0;
         }
 
-        if (currentIndex_ >= offset_ && (currentIndex_ - offset_) % period_ == 0) {
+        if ( currentIndex_ >= offset_ && (currentIndex_ - offset_) % period_ == 0 ) {
             // caplet first
             final double df = currentState.discountRatio(currentIndex_ + period_, currentIndex_);
             final double tau = rateTimes_[currentIndex_ + period_] - rateTimes_[currentIndex_];
@@ -131,7 +129,7 @@ public class MultiStepPeriodCapletSwaptions extends MultiProductMultiStep {
             double value = forwardPayOffs_[productIndex_].get(forward);
             value *= tau * currentState.discountRatio(currentIndex_ + period_, currentIndex_);
 
-            if (value > 0) {
+            if ( value > 0 ) {
                 numberCashFlowsThisStep[productIndex_] = 1;
                 genCashFlows[productIndex_][0].amount = value;
                 genCashFlows[productIndex_][0].timeIndex = productIndex_;
@@ -142,9 +140,9 @@ public class MultiStepPeriodCapletSwaptions extends MultiProductMultiStep {
             double B = 0.0;
             final double P0 = 1.0; // i.e. discountRatio(currentIndex, currentIndex)
             final double Pn = currentState.discountRatio(currentIndex_ + numberPeriods * period_, currentIndex_);
-            for (int i = 0; i < numberPeriods; ++i) {
-                final double t = rateTimes_[currentIndex_ + (i + 1) * period_]
-                        - rateTimes_[currentIndex_ + i * period_];
+            for ( int i = 0; i < numberPeriods; ++i ) {
+                final double t =
+                        rateTimes_[currentIndex_ + (i + 1) * period_] - rateTimes_[currentIndex_ + i * period_];
                 B += t * currentState.discountRatio(currentIndex_ + (i + 1) * period_, currentIndex_);
             }
 
@@ -152,7 +150,7 @@ public class MultiStepPeriodCapletSwaptions extends MultiProductMultiStep {
             double swaptionValue = swapPayOffs_[productIndex_].get(swapRate);
             swaptionValue *= B;
 
-            if (swaptionValue > 0) {
+            if ( swaptionValue > 0 ) {
                 numberCashFlowsThisStep[productIndex_ + numberBigFRAs_] = 1;
                 genCashFlows[productIndex_ + numberBigFRAs_][0].amount = swaptionValue;
                 genCashFlows[productIndex_ + numberBigFRAs_][0].timeIndex = productIndex_ + numberBigFRAs_;
@@ -167,7 +165,7 @@ public class MultiStepPeriodCapletSwaptions extends MultiProductMultiStep {
 
     @Override
     public MarketModelMultiProduct clone() {
-        return new MultiStepPeriodCapletSwaptions(rateTimes_, forwardOptionPaymentTimes_,
-                swaptionPaymentTimes_, forwardPayOffs_, swapPayOffs_, period_, offset_);
+        return new MultiStepPeriodCapletSwaptions(rateTimes_, forwardOptionPaymentTimes_, swaptionPaymentTimes_,
+                forwardPayOffs_, swapPayOffs_, period_, offset_);
     }
 }

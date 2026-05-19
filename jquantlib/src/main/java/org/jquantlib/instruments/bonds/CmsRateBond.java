@@ -32,67 +32,44 @@ import org.jquantlib.time.Date;
 import org.jquantlib.time.Schedule;
 
 /**
-*
-* @author Zahid Hussain
-*/
+ *
+ * @author Zahid Hussain
+ */
 //TODO: Write test case
 
 public class CmsRateBond extends Bond {
 
-	public CmsRateBond(
-            final /*Natural */ int settlementDays,
-            final /*Real*/ double faceAmount,
-            final Schedule schedule,
-            final SwapIndex index,
-            final DayCounter paymentDayCounter,
-            final BusinessDayConvention paymentConvention,
-            final /*Natural*/ int fixingDays,
-            final Array gearings,
-            final Array spreads,
-            final Array caps,
-            final Array floors,
-            final boolean inArrears,
-            final /*Real*/ double  redemption,
-            final Date issueDate) {
-		
-		super(settlementDays, schedule.calendar(), issueDate);
-		maturityDate_ = schedule.endDate().clone();
-		cashflows_ = new CmsLeg(schedule, index)
-				.withNotionals(faceAmount)
-				.withPaymentDayCounter(paymentDayCounter)
-				.withPaymentAdjustment(paymentConvention)
-				.withFixingDays(fixingDays)
-				.withGearings(gearings)
-				.withSpreads(spreads)
-				.withCaps(caps)
-				.withFloors(floors)
-				.inArrears(inArrears).Leg();
+    public CmsRateBond(final /*Natural */ int settlementDays, final /*Real*/ double faceAmount, final Schedule schedule,
+            final SwapIndex index, final DayCounter paymentDayCounter, final BusinessDayConvention paymentConvention,
+            final /*Natural*/ int fixingDays, final Array gearings, final Array spreads, final Array caps,
+            final Array floors, final boolean inArrears, final /*Real*/ double redemption, final Date issueDate) {
 
-		addRedemptionsToCashflows(new double[] { redemption });
+        super(settlementDays, schedule.calendar(), issueDate);
+        maturityDate_ = schedule.endDate().clone();
+        cashflows_ = new CmsLeg(schedule, index).withNotionals(faceAmount).withPaymentDayCounter(paymentDayCounter)
+                .withPaymentAdjustment(paymentConvention).withFixingDays(fixingDays).withGearings(gearings)
+                .withSpreads(spreads).withCaps(caps).withFloors(floors).inArrears(inArrears).Leg();
 
-		QL.ensure(!cashflows().isEmpty(), "bond with no cashflows!");
-		QL.ensure(redemptions_.size() == 1, "multiple redemptions created");
-		index.addObserver(this);		
-	}
-	
-	public CmsRateBond(
-            final /*Natural */ int settlementDays,
-            final /*Real*/ double faceAmount,
-            final Schedule schedule,
-            final SwapIndex index,
-            final DayCounter paymentDayCounter) {
-		
-		this(settlementDays, faceAmount, schedule, index, paymentDayCounter,
-				BusinessDayConvention.Following, //default
-				0,								//default fixing days
-				new Array(1).fill(1.0),			//default gearings
-				new Array(1).fill(0.0), 		//default spread
-				new Array(0), 					//default caps
-				new Array(0), 					//default floor
-				false, 							//defaul in Arrears
-				100.0,							// default redemption
-				new Date() 						// default issue date
-				);
-	}
+        addRedemptionsToCashflows(new double[] { redemption });
+
+        QL.ensure(!cashflows().isEmpty(), "bond with no cashflows!");
+        QL.ensure(redemptions_.size() == 1, "multiple redemptions created");
+        index.addObserver(this);
+    }
+
+    public CmsRateBond(final /*Natural */ int settlementDays, final /*Real*/ double faceAmount, final Schedule schedule,
+            final SwapIndex index, final DayCounter paymentDayCounter) {
+
+        this(settlementDays, faceAmount, schedule, index, paymentDayCounter, BusinessDayConvention.Following, //default
+                0,                                //default fixing days
+                new Array(1).fill(1.0),            //default gearings
+                new Array(1).fill(0.0),        //default spread
+                new Array(0),                    //default caps
+                new Array(0),                    //default floor
+                false,                            //defaul in Arrears
+                100.0,                            // default redemption
+                new Date()                        // default issue date
+        );
+    }
 
 }

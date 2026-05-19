@@ -53,39 +53,36 @@ import org.jquantlib.time.calendars.UnitedStates;
  * <p>
  * LIBOR fixed by BBA.
  *
- * @see <a href="http://www.bba.org.uk/bba/jsp/polopoly.jsp?d=225&a=1414">http://www.bba.org.uk/bba/jsp/polopoly.jsp?d=225&a=1414</a>
+ * @see <a
+ * href="http://www.bba.org.uk/bba/jsp/polopoly.jsp?d=225&a=1414">http://www.bba.org.uk/bba/jsp/polopoly.jsp?d=225&a=1414</a>
  */
 public class USDLibor extends Libor {
 
-	public USDLibor(final Period tenor) {
-		this(tenor, new Handle<YieldTermStructure>(
-						new AbstractYieldTermStructure() {
-							@Override
-							protected double discountImpl(final double t) {
-								throw new UnsupportedOperationException();
-							}
-							@Override
-							public Date maxDate() {
-								throw new UnsupportedOperationException();
-							}
-						}
-				));
-	}
+    public USDLibor(final Period tenor) {
+        this(tenor, new Handle< YieldTermStructure >(new AbstractYieldTermStructure() {
+            @Override
+            protected double discountImpl(final double t) {
+                throw new UnsupportedOperationException();
+            }
 
-	public USDLibor(final Period tenor,
-			final Handle<YieldTermStructure> h) {
-		// align(indexes.ibor): match C++ v1.42.1 usdlibor.hpp
-		// fixingCalendar=UnitedStates(LiborImpact) (was SETTLEMENT). Per
-		// ICE LIBOR holiday calendars, since 2015 the July 4 observance
-		// impacts USD LIBOR only when Independence Day falls on a weekday
-		// — i.e. Saturday->Friday (Jul 3) and Sunday->Monday (Jul 5)
-		// moves are NOT observed for fixing. Using the wrong calendar
-		// would advance value/maturity dates by one extra business day on
-		// those years, mispricing every USD-LIBOR cap/floor/swap.
-		super("USDLibor", tenor, 2,
-				new USDCurrency(),
-				new UnitedStates(UnitedStates.Market.LiborImpact),
-				new Actual360(), h);
-	}
+            @Override
+            public Date maxDate() {
+                throw new UnsupportedOperationException();
+            }
+        }));
+    }
+
+    public USDLibor(final Period tenor, final Handle< YieldTermStructure > h) {
+        // align(indexes.ibor): match C++ v1.42.1 usdlibor.hpp
+        // fixingCalendar=UnitedStates(LiborImpact) (was SETTLEMENT). Per
+        // ICE LIBOR holiday calendars, since 2015 the July 4 observance
+        // impacts USD LIBOR only when Independence Day falls on a weekday
+        // — i.e. Saturday->Friday (Jul 3) and Sunday->Monday (Jul 5)
+        // moves are NOT observed for fixing. Using the wrong calendar
+        // would advance value/maturity dates by one extra business day on
+        // those years, mispricing every USD-LIBOR cap/floor/swap.
+        super("USDLibor", tenor, 2, new USDCurrency(), new UnitedStates(UnitedStates.Market.LiborImpact),
+                new Actual360(), h);
+    }
 
 }

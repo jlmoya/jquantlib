@@ -13,10 +13,6 @@
 */
 package org.jquantlib.methods.finitedifferences.operators;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.matrixutilities.Matrix;
@@ -25,31 +21,30 @@ import org.jquantlib.methods.finitedifferences.meshers.FdmMesher;
 import org.jquantlib.termstructures.Compounding;
 import org.jquantlib.termstructures.YieldTermStructure;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 /**
  * N-dimensional Wiener / Black-Scholes after-PCA operator:
  * <p>
  * {@code L = sum_i 0.5 * lambda_i * d^2 / dx_i^2 - r * I}
  * <p>
- * Used by {@code FdndimBlackScholesVanillaEngine} to roll back the PCA-
- * transformed log-price grid. The diagonal {@code -r*I} term is only
- * applied when a (non-null) risk-free curve is supplied; European
- * pricing zeroes the {@code rTS} and applies the discount once at the
- * end via {@code VectorBsmProcessExtractor.getInterestRateDf}.
+ * Used by {@code FdndimBlackScholesVanillaEngine} to roll back the PCA- transformed log-price grid. The diagonal
+ * {@code -r*I} term is only applied when a (non-null) risk-free curve is supplied; European pricing zeroes the
+ * {@code rTS} and applies the discount once at the end via {@code VectorBsmProcessExtractor.getInterestRateDf}.
  * <p>
- * Java port of v1.42.1
- * {@code ql/methods/finitedifferences/operators/fdmwienerop.{hpp,cpp}}.
+ * Java port of v1.42.1 {@code ql/methods/finitedifferences/operators/fdmwienerop.{hpp,cpp}}.
  *
  * @author Phase 5e.5b-CFC-d-280 port
  */
 public final class FdmWienerOp implements FdmLinearOpComposite {
 
     private final YieldTermStructure rTS;
-    private final List<TripleBandLinearOp> ops;
+    private final List< TripleBandLinearOp > ops;
     private double r;
 
-    public FdmWienerOp(final FdmMesher mesher,
-                       final YieldTermStructure rTS,
-                       final Array lambdas) {
+    public FdmWienerOp(final FdmMesher mesher, final YieldTermStructure rTS, final Array lambdas) {
         QL.require(mesher.layout().dim().length == lambdas.size(),
                 "mesher and lambdas need to be of the same dimension");
         this.rTS = rTS;
@@ -57,7 +52,7 @@ public final class FdmWienerOp implements FdmLinearOpComposite {
         this.ops = new ArrayList<>(lambdas.size());
 
         final int size = mesher.layout().size();
-        for (int i = 0; i < lambdas.size(); ++i) {
+        for ( int i = 0; i < lambdas.size(); ++i ) {
             final SecondDerivativeOp sec = new SecondDerivativeOp(i, mesher);
             final Array scale = new Array(size).fill(0.5 * lambdas.get(i));
             ops.add(sec.mult(scale));
@@ -71,7 +66,7 @@ public final class FdmWienerOp implements FdmLinearOpComposite {
 
     @Override
     public void setTime(final double t1, final double t2) {
-        if (rTS != null) {
+        if ( rTS != null ) {
             r = rTS.forwardRate(t1, t2, Compounding.Continuous).rate();
         }
     }
@@ -79,7 +74,7 @@ public final class FdmWienerOp implements FdmLinearOpComposite {
     @Override
     public Array apply(final Array x) {
         final Array y = x.mul(-r);
-        for (final TripleBandLinearOp op : ops) {
+        for ( final TripleBandLinearOp op : ops ) {
             y.addAssign(op.apply(x));
         }
         return y;
@@ -108,25 +103,25 @@ public final class FdmWienerOp implements FdmLinearOpComposite {
     @Override
     public Matrix toMatrix() {
         Matrix acc = ops.get(0).toMatrix();
-        for (int i = 1; i < ops.size(); ++i) {
+        for ( int i = 1; i < ops.size(); ++i ) {
             acc = acc.add(ops.get(i).toMatrix());
         }
         return acc;
     }
 
     @Override
-    public List<Matrix> toMatrixDecomp() {
-        final List<Matrix> out = new ArrayList<>(ops.size());
-        for (final TripleBandLinearOp op : ops) {
+    public List< Matrix > toMatrixDecomp() {
+        final List< Matrix > out = new ArrayList<>(ops.size());
+        for ( final TripleBandLinearOp op : ops ) {
             out.add(op.toMatrix());
         }
         return Collections.unmodifiableList(out);
     }
 
     @Override
-    public List<SparseMatrix> toSparseMatrixDecomp() {
-        final List<SparseMatrix> out = new ArrayList<>(ops.size());
-        for (final TripleBandLinearOp op : ops) {
+    public List< SparseMatrix > toSparseMatrixDecomp() {
+        final List< SparseMatrix > out = new ArrayList<>(ops.size());
+        for ( final TripleBandLinearOp op : ops ) {
             out.add(op.toSparseMatrix());
         }
         return Collections.unmodifiableList(out);

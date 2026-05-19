@@ -34,10 +34,8 @@ import org.jquantlib.time.Schedule;
 /**
  * convertible zero-coupon bond
  *
- * Warning Most methods inherited from Bond (such as yield or
- * the yield-based dirtyPrice and cleanPrice) refer to
- * the underlying plain-vanilla bond and do not take
- * convertibility and callability into account.
+ * Warning Most methods inherited from Bond (such as yield or the yield-based dirtyPrice and cleanPrice) refer to the
+ * underlying plain-vanilla bond and do not take convertibility and callability into account.
  *
  * @author Daniel Kong
  * @author Zahid Hussain
@@ -45,43 +43,27 @@ import org.jquantlib.time.Schedule;
 //TODO: Work in progress
 public class ConvertibleZeroCouponBond extends ConvertibleBond {
 
-	public ConvertibleZeroCouponBond(
-	          final Exercise exercise,
-	          final double conversionRatio,
-	          final DividendSchedule dividends,
-	          final CallabilitySchedule callability,
-	          final Handle<Quote> creditSpread,
-	          final Date issueDate,
-	          final int settlementDays,
-	          final DayCounter dayCounter,
-	          final Schedule schedule){
-		this(exercise, conversionRatio, dividends, callability, creditSpread,
-		        issueDate, settlementDays, dayCounter, schedule, 100);
-	}
+    public ConvertibleZeroCouponBond(final Exercise exercise, final double conversionRatio,
+            final DividendSchedule dividends, final CallabilitySchedule callability, final Handle< Quote > creditSpread,
+            final Date issueDate, final int settlementDays, final DayCounter dayCounter, final Schedule schedule) {
+        this(exercise, conversionRatio, dividends, callability, creditSpread, issueDate, settlementDays, dayCounter,
+                schedule, 100);
+    }
 
-	public ConvertibleZeroCouponBond(
-			final Exercise exercise,
-			final double conversionRatio,
-	        final DividendSchedule dividends,
-	        final CallabilitySchedule callability,
-			final Handle<Quote> creditSpread,
-			final Date issueDate,
-			final int settlementDays,
-			final DayCounter dayCounter,
-			final Schedule schedule,
-			final double redemption){
-		super(exercise, conversionRatio, dividends, callability, creditSpread,
-		        issueDate, settlementDays, dayCounter, schedule, redemption);
+    public ConvertibleZeroCouponBond(final Exercise exercise, final double conversionRatio,
+            final DividendSchedule dividends, final CallabilitySchedule callability, final Handle< Quote > creditSpread,
+            final Date issueDate, final int settlementDays, final DayCounter dayCounter, final Schedule schedule,
+            final double redemption) {
+        super(exercise, conversionRatio, dividends, callability, creditSpread, issueDate, settlementDays, dayCounter,
+                schedule, redemption);
 
-		cashflows_ = new Leg();
+        cashflows_ = new Leg();
 
         // notional forcibly set to 100
         setSingleRedemption(100.0, redemption, maturityDate_);
 
-        this.option = new ConvertibleBondOption(this, exercise, conversionRatio,
-                dividends, callability, creditSpread,
-                cashflows_, dayCounter, schedule,
-                issueDate, settlementDays, redemption);
-	}
+        this.option = new ConvertibleBondOption(this, exercise, conversionRatio, dividends, callability, creditSpread,
+                cashflows_, dayCounter, schedule, issueDate, settlementDays, redemption);
+    }
 
 }

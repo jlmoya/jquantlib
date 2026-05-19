@@ -21,8 +21,6 @@
  */
 package org.jquantlib.pricingengines;
 
-import java.lang.reflect.Constructor;
-
 import org.jquantlib.QL;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.instruments.PlainVanillaPayoff;
@@ -47,20 +45,21 @@ import org.jquantlib.time.Date;
 import org.jquantlib.time.Frequency;
 import org.jquantlib.time.TimeGrid;
 
+import java.lang.reflect.Constructor;
+
 /**
  * Binomial Tsiveriotis-Fernandes engine for convertible bonds
  *
- * @category hybridengines
- *
+ * @param <E>
  * @author Richard Gomes
  * @author Zahid HussainS
- * @param <E>
+ * @category hybridengines
  */
 //TODO: work in progress
 // Temp hack to pass class of T
 
-public class BinomialConvertibleEngine<T extends BinomialTree> extends ConvertibleBondOption.EngineImpl {
-    
+public class BinomialConvertibleEngine< T extends BinomialTree > extends ConvertibleBondOption.EngineImpl {
+
     //
     // private fields
     //
@@ -68,89 +67,86 @@ public class BinomialConvertibleEngine<T extends BinomialTree> extends Convertib
     private final int timeSteps_;
     private final GeneralizedBlackScholesProcess process_;
     private final ConvertibleBondOption.ArgumentsImpl a;
-    private final ConvertibleBondOption.ResultsImpl   r;
+    private final ConvertibleBondOption.ResultsImpl r;
 
-    private final Class<T> typeT;
+    private final Class< T > typeT;
 
     //
     // public constructors
     //
 
-    public BinomialConvertibleEngine(final Class<T> typeT, 
-    								 final GeneralizedBlackScholesProcess process, 
-    								 final int timeSteps) {
-    	this.typeT = typeT;
+    public BinomialConvertibleEngine(final Class< T > typeT, final GeneralizedBlackScholesProcess process,
+            final int timeSteps) {
+        this.typeT = typeT;
         this.a = this.arguments_;
         this.r = this.results_;
-    	this.process_ = process;
+        this.process_ = process;
         this.timeSteps_ = timeSteps;
-        QL.require(timeSteps>0, "timeSteps must be positive, " + timeSteps + " not allowed");
+        QL.require(timeSteps > 0, "timeSteps must be positive, " + timeSteps + " not allowed");
         this.process_.addObserver(this);
     }
 
     @Override
     public void calculate() {
 
-        final DayCounter rfdc  = process_.riskFreeRate().currentLink().dayCounter();
+        final DayCounter rfdc = process_.riskFreeRate().currentLink().dayCounter();
         final DayCounter divdc = process_.dividendYield().currentLink().dayCounter();
         final DayCounter voldc = process_.blackVolatility().currentLink().dayCounter();
         final Calendar volcal = process_.blackVolatility().currentLink().calendar();
 
         Double s0 = process_.x0();
         QL.require(s0 > 0.0, "negative or null underlying");
-        final double /*Volatility*/ v = process_.blackVolatility().currentLink().blackVol(
-                                         this.a.exercise.lastDate(), s0);
+        final double /*Volatility*/ v = process_.blackVolatility().currentLink()
+                .blackVol(this.a.exercise.lastDate(), s0);
         final Date maturityDate = this.a.exercise.lastDate();
-        final double /*Rate*/ riskFreeRate = process_.riskFreeRate().currentLink().zeroRate(
-                                 maturityDate, rfdc, Compounding.Continuous, Frequency.NoFrequency).rate();
-        final double q = process_.dividendYield().currentLink().zeroRate(
-                                maturityDate, divdc, Compounding.Continuous, Frequency.NoFrequency).rate();
+        final double /*Rate*/ riskFreeRate = process_.riskFreeRate().currentLink()
+                .zeroRate(maturityDate, rfdc, Compounding.Continuous, Frequency.NoFrequency).rate();
+        final double q = process_.dividendYield().currentLink()
+                .zeroRate(maturityDate, divdc, Compounding.Continuous, Frequency.NoFrequency).rate();
         final Date referenceDate = process_.riskFreeRate().currentLink().referenceDate();
 
         // subtract dividends
         int i;
-        for (i=0; i<this.a.dividends.size(); i++) {
-            if (this.a.dividends.get(i).date().gt(referenceDate))
-                s0 -= this.a.dividends.get(i).amount() *
-                      process_.riskFreeRate().currentLink().discount(
-                                             this.a.dividends.get(i).date());
+        for ( i = 0; i < this.a.dividends.size(); i++ ) {
+            if ( this.a.dividends.get(i).date().gt(referenceDate) )
+                s0 -= this.a.dividends.get(i).amount() * process_.riskFreeRate().currentLink()
+                        .discount(this.a.dividends.get(i).date());
         }
-        QL.require(s0 > 0.0,
-                   "negative value after subtracting dividends");
+        QL.require(s0 > 0.0, "negative value after subtracting dividends");
 
         // binomial trees with constant coefficient
-        final Handle<Quote> underlying = new Handle<Quote>(new SimpleQuote(s0));
-        final Handle<YieldTermStructure> flatRiskFree = 
-        			new Handle<YieldTermStructure>(new FlatForward(referenceDate, riskFreeRate, rfdc));
-        final Handle<YieldTermStructure> flatDividends =
-        			new Handle<YieldTermStructure>(new FlatForward(referenceDate, q, divdc));
-        final Handle<BlackVolTermStructure> flatVol = 
-        			new Handle<BlackVolTermStructure>(new BlackConstantVol(referenceDate, volcal, v, voldc));
+        final Handle< Quote > underlying = new Handle< Quote >(new SimpleQuote(s0));
+        final Handle< YieldTermStructure > flatRiskFree = new Handle< YieldTermStructure >(
+                new FlatForward(referenceDate, riskFreeRate, rfdc));
+        final Handle< YieldTermStructure > flatDividends = new Handle< YieldTermStructure >(
+                new FlatForward(referenceDate, q, divdc));
+        final Handle< BlackVolTermStructure > flatVol = new Handle< BlackVolTermStructure >(
+                new BlackConstantVol(referenceDate, volcal, v, voldc));
 
-        final PlainVanillaPayoff payoff = (PlainVanillaPayoff)(this.a.payoff);
+        final PlainVanillaPayoff payoff = (PlainVanillaPayoff) (this.a.payoff);
         QL.require(payoff != null, "non-plain payoff given");
 
         final double maturity = rfdc.yearFraction(this.a.settlementDate, maturityDate);
 
         final GeneralizedBlackScholesProcess bs = new GeneralizedBlackScholesProcess(underlying, flatDividends,
-                                                    flatRiskFree, flatVol);
+                flatRiskFree, flatVol);
         // final T tree = new T(bs, maturity, timeSteps_, payoff.strike());
         final T tree;
         try {
-            final Constructor<T> c = typeT.getConstructor(StochasticProcess1D.class, double.class, int.class, double.class);
-            tree = typeT.cast( c.newInstance(bs, maturity, timeSteps_, payoff.strike() ));
-        } catch (final Exception e) {
+            final Constructor< T > c = typeT.getConstructor(StochasticProcess1D.class, double.class, int.class,
+                    double.class);
+            tree = typeT.cast(c.newInstance(bs, maturity, timeSteps_, payoff.strike()));
+        } catch ( final Exception e ) {
             throw new LibraryException(e); // QA:[RG]::verified
         }
 
         final double creditSpread = this.a.creditSpread.currentLink().value();
 
-        final Lattice lattice = new TsiveriotisFernandesLattice<T>(tree,riskFreeRate,maturity,
-                                                 timeSteps_,creditSpread,v,q);
+        final Lattice lattice = new TsiveriotisFernandesLattice< T >(tree, riskFreeRate, maturity, timeSteps_,
+                creditSpread, v, q);
 
-        final DiscretizedConvertible convertible = 
-        				new DiscretizedConvertible(this.a, bs,
-                                           			new TimeGrid(maturity, timeSteps_));
+        final DiscretizedConvertible convertible = new DiscretizedConvertible(this.a, bs,
+                new TimeGrid(maturity, timeSteps_));
 
         convertible.initialize(lattice, maturity);
         convertible.rollback(0.0);

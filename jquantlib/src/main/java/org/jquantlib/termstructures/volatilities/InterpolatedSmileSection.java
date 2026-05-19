@@ -30,7 +30,6 @@
 package org.jquantlib.termstructures.volatilities;
 
 import org.jquantlib.QL;
-import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.math.interpolations.Interpolation;
 import org.jquantlib.math.interpolations.Interpolation.Interpolator;
@@ -39,12 +38,12 @@ import org.jquantlib.model.VolatilityType;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.SimpleQuote;
+import org.jquantlib.termstructures.volatilities.optionlet.StrippedOptionletAdapter;
 import org.jquantlib.time.Date;
 
 /**
- * Interpolated smile section over a user-supplied 1-D interpolator across
- * strikes. C++ uses a template parameter ({@code InterpolatedSmileSection<Cubic>})
- * — Java single-dispatch translates to a runtime
+ * Interpolated smile section over a user-supplied 1-D interpolator across strikes. C++ uses a template parameter
+ * ({@code InterpolatedSmileSection<Cubic>}) — Java single-dispatch translates to a runtime
  * {@link Interpolation.Interpolator} factory.
  *
  * <p>Port of C++ QuantLib v1.42.1
@@ -75,8 +74,8 @@ public class InterpolatedSmileSection extends SmileSection {
 
     private final double exerciseTimeSquareRoot_;
     private final double[] strikes_;
-    private final Handle<Quote>[] stdDevHandles_;
-    private final Handle<Quote> atmLevel_;
+    private final Handle< Quote >[] stdDevHandles_;
+    private final Handle< Quote > atmLevel_;
     private final double[] vols_;
     private final Interpolator interpolator_;
     private final boolean flatStrikeExtrapolation_;
@@ -93,16 +92,9 @@ public class InterpolatedSmileSection extends SmileSection {
     /**
      * Time-based ctor (handle-of-Quote stdDevs). Mirrors C++ lines 104-127.
      */
-    public InterpolatedSmileSection(
-            final double timeToExpiry,
-            final double[] strikes,
-            final Handle<Quote>[] stdDevHandles,
-            final Handle<Quote> atmLevel,
-            final Interpolator interpolator,
-            final DayCounter dc,
-            final VolatilityType type,
-            final double shift,
-            final boolean flatStrikeExtrapolation) {
+    public InterpolatedSmileSection(final double timeToExpiry, final double[] strikes,
+            final Handle< Quote >[] stdDevHandles, final Handle< Quote > atmLevel, final Interpolator interpolator,
+            final DayCounter dc, final VolatilityType type, final double shift, final boolean flatStrikeExtrapolation) {
         super(timeToExpiry, dc, type, shift);
         this.strikes_ = strikes.clone();
         this.stdDevHandles_ = stdDevHandles.clone();
@@ -111,7 +103,7 @@ public class InterpolatedSmileSection extends SmileSection {
         this.exerciseTimeSquareRoot_ = Math.sqrt(exerciseTime());
         this.interpolator_ = interpolator;
         this.flatStrikeExtrapolation_ = flatStrikeExtrapolation;
-        for (final Handle<Quote> h : stdDevHandles_) {
+        for ( final Handle< Quote > h : stdDevHandles_ ) {
             h.addObserver(this);
         }
         atmLevel_.addObserver(this);
@@ -122,27 +114,19 @@ public class InterpolatedSmileSection extends SmileSection {
     }
 
     /**
-     * Time-based ctor (raw-double stdDevs). Mirrors C++ lines 130-157 —
-     * wraps each value in a SimpleQuote.
+     * Time-based ctor (raw-double stdDevs). Mirrors C++ lines 130-157 — wraps each value in a SimpleQuote.
      */
-    @SuppressWarnings("unchecked")
-    public InterpolatedSmileSection(
-            final double timeToExpiry,
-            final double[] strikes,
-            final double[] stdDevs,
-            final double atmLevel,
-            final Interpolator interpolator,
-            final DayCounter dc,
-            final VolatilityType type,
-            final double shift,
-            final boolean flatStrikeExtrapolation) {
+    @SuppressWarnings( "unchecked" )
+    public InterpolatedSmileSection(final double timeToExpiry, final double[] strikes, final double[] stdDevs,
+            final double atmLevel, final Interpolator interpolator, final DayCounter dc, final VolatilityType type,
+            final double shift, final boolean flatStrikeExtrapolation) {
         super(timeToExpiry, dc, type, shift);
         this.strikes_ = strikes.clone();
-        this.stdDevHandles_ = (Handle<Quote>[]) new Handle[stdDevs.length];
-        for (int i = 0; i < stdDevs.length; ++i) {
-            this.stdDevHandles_[i] = new Handle<Quote>(new SimpleQuote(stdDevs[i]));
+        this.stdDevHandles_ = (Handle< Quote >[]) new Handle[stdDevs.length];
+        for ( int i = 0; i < stdDevs.length; ++i ) {
+            this.stdDevHandles_[i] = new Handle< Quote >(new SimpleQuote(stdDevs[i]));
         }
-        this.atmLevel_ = new Handle<Quote>(new SimpleQuote(atmLevel));
+        this.atmLevel_ = new Handle< Quote >(new SimpleQuote(atmLevel));
         this.vols_ = new double[stdDevs.length];
         this.exerciseTimeSquareRoot_ = Math.sqrt(exerciseTime());
         this.interpolator_ = interpolator;
@@ -153,16 +137,9 @@ public class InterpolatedSmileSection extends SmileSection {
     /**
      * Date-based ctor (handle-of-Quote stdDevs). Mirrors C++ lines 159-184.
      */
-    public InterpolatedSmileSection(
-            final Date d,
-            final double[] strikes,
-            final Handle<Quote>[] stdDevHandles,
-            final Handle<Quote> atmLevel,
-            final DayCounter dc,
-            final Interpolator interpolator,
-            final Date referenceDate,
-            final VolatilityType type,
-            final double shift,
+    public InterpolatedSmileSection(final Date d, final double[] strikes, final Handle< Quote >[] stdDevHandles,
+            final Handle< Quote > atmLevel, final DayCounter dc, final Interpolator interpolator,
+            final Date referenceDate, final VolatilityType type, final double shift,
             final boolean flatStrikeExtrapolation) {
         super(d, dc, referenceDate, type, shift);
         this.strikes_ = strikes.clone();
@@ -172,7 +149,7 @@ public class InterpolatedSmileSection extends SmileSection {
         this.exerciseTimeSquareRoot_ = Math.sqrt(exerciseTime());
         this.interpolator_ = interpolator;
         this.flatStrikeExtrapolation_ = flatStrikeExtrapolation;
-        for (final Handle<Quote> h : stdDevHandles_) {
+        for ( final Handle< Quote > h : stdDevHandles_ ) {
             h.addObserver(this);
         }
         atmLevel_.addObserver(this);
@@ -182,32 +159,23 @@ public class InterpolatedSmileSection extends SmileSection {
     /**
      * Date-based ctor (raw-double stdDevs). Mirrors C++ lines 186-215.
      */
-    @SuppressWarnings("unchecked")
-    public InterpolatedSmileSection(
-            final Date d,
-            final double[] strikes,
-            final double[] stdDevs,
-            final double atmLevel,
-            final DayCounter dc,
-            final Interpolator interpolator,
-            final Date referenceDate,
-            final VolatilityType type,
-            final double shift,
-            final boolean flatStrikeExtrapolation) {
+    @SuppressWarnings( "unchecked" )
+    public InterpolatedSmileSection(final Date d, final double[] strikes, final double[] stdDevs, final double atmLevel,
+            final DayCounter dc, final Interpolator interpolator, final Date referenceDate, final VolatilityType type,
+            final double shift, final boolean flatStrikeExtrapolation) {
         super(d, dc, referenceDate, type, shift);
         this.strikes_ = strikes.clone();
-        this.stdDevHandles_ = (Handle<Quote>[]) new Handle[stdDevs.length];
-        for (int i = 0; i < stdDevs.length; ++i) {
-            this.stdDevHandles_[i] = new Handle<Quote>(new SimpleQuote(stdDevs[i]));
+        this.stdDevHandles_ = (Handle< Quote >[]) new Handle[stdDevs.length];
+        for ( int i = 0; i < stdDevs.length; ++i ) {
+            this.stdDevHandles_[i] = new Handle< Quote >(new SimpleQuote(stdDevs[i]));
         }
-        this.atmLevel_ = new Handle<Quote>(new SimpleQuote(atmLevel));
+        this.atmLevel_ = new Handle< Quote >(new SimpleQuote(atmLevel));
         this.vols_ = new double[stdDevs.length];
         this.exerciseTimeSquareRoot_ = Math.sqrt(exerciseTime());
         this.interpolator_ = interpolator;
         this.flatStrikeExtrapolation_ = flatStrikeExtrapolation;
         checkStrikes();
     }
-
 
     //
     // SmileSection overrides
@@ -238,10 +206,10 @@ public class InterpolatedSmileSection extends SmileSection {
     @Override
     protected double volatilityImpl(final double strike) {
         calculate();
-        if (flatStrikeExtrapolation_) {
-            if (strike < minStrike()) {
+        if ( flatStrikeExtrapolation_ ) {
+            if ( strike < minStrike() ) {
                 return interpolation_.op(minStrike(), true);
-            } else if (strike > maxStrike()) {
+            } else if ( strike > maxStrike() ) {
                 return interpolation_.op(maxStrike(), true);
             }
         }
@@ -262,7 +230,7 @@ public class InterpolatedSmileSection extends SmileSection {
         // sourced from this smile section, breaking observer chains.
         final boolean wasCalculated = calculated_;
         calculated_ = false;
-        if (wasCalculated) {
+        if ( wasCalculated ) {
             notifyObservers();
         }
     }
@@ -272,11 +240,11 @@ public class InterpolatedSmileSection extends SmileSection {
     //
 
     private void calculate() {
-        if (!calculated_) {
+        if ( !calculated_ ) {
             calculated_ = true;
             try {
                 performCalculations();
-            } catch (final RuntimeException e) {
+            } catch ( final RuntimeException e ) {
                 calculated_ = false;
                 throw e;
             }
@@ -284,12 +252,11 @@ public class InterpolatedSmileSection extends SmileSection {
     }
 
     /**
-     * Mirrors C++ {@code performCalculations()}: refresh vols from handles,
-     * then (re)build the interpolation. The C++ code rebuilds a single
-     * Interpolation object per query; we keep one and recompute on update.
+     * Mirrors C++ {@code performCalculations()}: refresh vols from handles, then (re)build the interpolation. The C++
+     * code rebuilds a single Interpolation object per query; we keep one and recompute on update.
      */
     private void performCalculations() {
-        for (int i = 0; i < stdDevHandles_.length; ++i) {
+        for ( int i = 0; i < stdDevHandles_.length; ++i ) {
             vols_[i] = stdDevHandles_[i].currentLink().value() / exerciseTimeSquareRoot_;
         }
         // Build (or rebuild) the interpolator. In C++ Interpolation.update()
@@ -299,9 +266,8 @@ public class InterpolatedSmileSection extends SmileSection {
     }
 
     private void checkStrikes() {
-        for (int i = 1; i < strikes_.length; ++i) {
-            QL.require(strikes_[i] >= strikes_[i - 1],
-                    "Strikes have to be sorted in ascending order");
+        for ( int i = 1; i < strikes_.length; ++i ) {
+            QL.require(strikes_[i] >= strikes_[i - 1], "Strikes have to be sorted in ascending order");
         }
     }
 }

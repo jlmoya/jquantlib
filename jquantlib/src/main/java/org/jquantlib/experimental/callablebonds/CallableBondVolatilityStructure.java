@@ -26,11 +26,10 @@ import org.jquantlib.util.Pair;
 /**
  * Callable-bond volatility structure (abstract).
  * <p>
- * Port of C++ v1.42.1
- * {@code ql/experimental/callablebonds/callablebondvolstructure.{hpp,cpp}}.
+ * Port of C++ v1.42.1 {@code ql/experimental/callablebonds/callablebondvolstructure.{hpp,cpp}}.
  * <p>
- * This class is purely abstract and defines the interface of concrete
- * callable-bond volatility structures which derive from it.
+ * This class is purely abstract and defines the interface of concrete callable-bond volatility structures which derive
+ * from it.
  */
 public abstract class CallableBondVolatilityStructure extends AbstractTermStructure {
 
@@ -45,14 +44,13 @@ public abstract class CallableBondVolatilityStructure extends AbstractTermStruct
         this(dc, BusinessDayConvention.Following);
     }
 
-    public CallableBondVolatilityStructure(final Date referenceDate, final Calendar calendar,
-            final DayCounter dc, final BusinessDayConvention bdc) {
+    public CallableBondVolatilityStructure(final Date referenceDate, final Calendar calendar, final DayCounter dc,
+            final BusinessDayConvention bdc) {
         super(referenceDate, calendar, dc);
         this.bdc_ = bdc;
     }
 
-    public CallableBondVolatilityStructure(final Date referenceDate, final Calendar calendar,
-            final DayCounter dc) {
+    public CallableBondVolatilityStructure(final Date referenceDate, final Calendar calendar, final DayCounter dc) {
         this(referenceDate, calendar, dc, BusinessDayConvention.Following);
     }
 
@@ -61,95 +59,88 @@ public abstract class CallableBondVolatilityStructure extends AbstractTermStruct
                 new org.jquantlib.daycounters.Actual365Fixed());
     }
 
-    public CallableBondVolatilityStructure(final int settlementDays, final Calendar calendar,
-            final DayCounter dc, final BusinessDayConvention bdc) {
+    public CallableBondVolatilityStructure(final int settlementDays, final Calendar calendar, final DayCounter dc,
+            final BusinessDayConvention bdc) {
         super(settlementDays, calendar, dc);
         this.bdc_ = bdc;
     }
 
-    public CallableBondVolatilityStructure(final int settlementDays, final Calendar calendar,
-            final DayCounter dc) {
+    public CallableBondVolatilityStructure(final int settlementDays, final Calendar calendar, final DayCounter dc) {
         this(settlementDays, calendar, dc, BusinessDayConvention.Following);
     }
 
     /** returns the volatility for a given option time and bondLength */
-    public final double volatility(final double optionTime, final double bondLength,
-            final double strike, final boolean extrapolate) {
+    public final double volatility(final double optionTime, final double bondLength, final double strike,
+            final boolean extrapolate) {
         checkRange(optionTime, bondLength, strike, extrapolate);
         return volatilityImpl(optionTime, bondLength, strike);
     }
 
-    public final double volatility(final double optionTime, final double bondLength,
-            final double strike) {
+    public final double volatility(final double optionTime, final double bondLength, final double strike) {
         return volatility(optionTime, bondLength, strike, false);
     }
 
     /** returns the Black variance for a given option time and bondLength */
-    public final double blackVariance(final double optionTime, final double bondLength,
-            final double strike, final boolean extrapolate) {
+    public final double blackVariance(final double optionTime, final double bondLength, final double strike,
+            final boolean extrapolate) {
         checkRange(optionTime, bondLength, strike, extrapolate);
         final double vol = volatilityImpl(optionTime, bondLength, strike);
         return vol * vol * optionTime;
     }
 
-    public final double blackVariance(final double optionTime, final double bondLength,
-            final double strike) {
+    public final double blackVariance(final double optionTime, final double bondLength, final double strike) {
         return blackVariance(optionTime, bondLength, strike, false);
     }
 
     /** returns the volatility for a given option date and bond tenor */
-    public final double volatility(final Date optionDate, final Period bondTenor,
-            final double strike, final boolean extrapolate) {
+    public final double volatility(final Date optionDate, final Period bondTenor, final double strike,
+            final boolean extrapolate) {
         checkRange(optionDate, bondTenor, strike, extrapolate);
         return volatilityImpl(optionDate, bondTenor, strike);
     }
 
-    public final double volatility(final Date optionDate, final Period bondTenor,
-            final double strike) {
+    public final double volatility(final Date optionDate, final Period bondTenor, final double strike) {
         return volatility(optionDate, bondTenor, strike, false);
     }
 
     /** returns the Black variance for a given option date and bond tenor */
-    public final double blackVariance(final Date optionDate, final Period bondTenor,
-            final double strike, final boolean extrapolate) {
+    public final double blackVariance(final Date optionDate, final Period bondTenor, final double strike,
+            final boolean extrapolate) {
         final double vol = volatility(optionDate, bondTenor, strike, extrapolate);
-        final Pair<Double, Double> p = convertDates(optionDate, bondTenor);
+        final Pair< Double, Double > p = convertDates(optionDate, bondTenor);
         return vol * vol * p.first();
     }
 
-    public final double blackVariance(final Date optionDate, final Period bondTenor,
-            final double strike) {
+    public final double blackVariance(final Date optionDate, final Period bondTenor, final double strike) {
         return blackVariance(optionDate, bondTenor, strike, false);
     }
 
     public SmileSection smileSection(final Date optionDate, final Period bondTenor) {
-        final Pair<Double, Double> p = convertDates(optionDate, bondTenor);
+        final Pair< Double, Double > p = convertDates(optionDate, bondTenor);
         return smileSectionImpl(p.first(), p.second());
     }
 
     /** returns the volatility for a given option tenor and bond tenor */
-    public final double volatility(final Period optionTenor, final Period bondTenor,
-            final double strike, final boolean extrapolate) {
+    public final double volatility(final Period optionTenor, final Period bondTenor, final double strike,
+            final boolean extrapolate) {
         final Date optionDate = optionDateFromTenor(optionTenor);
         return volatility(optionDate, bondTenor, strike, extrapolate);
     }
 
-    public final double volatility(final Period optionTenor, final Period bondTenor,
-            final double strike) {
+    public final double volatility(final Period optionTenor, final Period bondTenor, final double strike) {
         return volatility(optionTenor, bondTenor, strike, false);
     }
 
     /** returns the Black variance for a given option tenor and bond tenor */
-    public final double blackVariance(final Period optionTenor, final Period bondTenor,
-            final double strike, final boolean extrapolate) {
+    public final double blackVariance(final Period optionTenor, final Period bondTenor, final double strike,
+            final boolean extrapolate) {
         final Date optionDate = optionDateFromTenor(optionTenor);
         final double vol = volatility(optionDate, bondTenor, strike, extrapolate);
-        final Pair<Double, Double> p = convertDates(optionDate, bondTenor);
+        final Pair< Double, Double > p = convertDates(optionDate, bondTenor);
         return vol * vol * p.first();
     }
 
-    public final double blackVariance(final Period optionTenor, final Period bondTenor,
-            final double strike) {
+    public final double blackVariance(final Period optionTenor, final Period bondTenor, final double strike) {
         return blackVariance(optionTenor, bondTenor, strike, false);
     }
 
@@ -173,12 +164,12 @@ public abstract class CallableBondVolatilityStructure extends AbstractTermStruct
     public abstract double maxStrike();
 
     /** implements the conversion between dates and times */
-    public Pair<Double, Double> convertDates(final Date optionDate, final Period bondTenor) {
+    public Pair< Double, Double > convertDates(final Date optionDate, final Period bondTenor) {
         final Date end = optionDate.add(bondTenor);
         QL.require(end.gt(optionDate), "negative bond tenor given");
         final double optionTime = timeFromReference(optionDate);
         final double timeLength = dayCounter().yearFraction(optionDate, end);
-        return new Pair<Double, Double>(optionTime, timeLength);
+        return new Pair< Double, Double >(optionTime, timeLength);
     }
 
     /** the business day convention used for option date calculation */
@@ -197,9 +188,8 @@ public abstract class CallableBondVolatilityStructure extends AbstractTermStruct
     /** implements the actual volatility calculation in derived classes */
     protected abstract double volatilityImpl(double optionTime, double bondLength, double strike);
 
-    protected double volatilityImpl(final Date optionDate, final Period bondTenor,
-            final double strike) {
-        final Pair<Double, Double> p = convertDates(optionDate, bondTenor);
+    protected double volatilityImpl(final Date optionDate, final Period bondTenor, final double strike) {
+        final Pair< Double, Double > p = convertDates(optionDate, bondTenor);
         return volatilityImpl(p.first(), p.second(), strike);
     }
 
@@ -209,8 +199,7 @@ public abstract class CallableBondVolatilityStructure extends AbstractTermStruct
         QL.require(bondLength >= 0.0, "negative bondLength given");
         QL.require(extrapolate || allowsExtrapolation() || bondLength <= maxBondLength(),
                 "bondLength is past max curve bondLength");
-        QL.require(extrapolate || allowsExtrapolation()
-                        || (k >= minStrike() && k <= maxStrike()),
+        QL.require(extrapolate || allowsExtrapolation() || (k >= minStrike() && k <= maxStrike()),
                 "strike is outside the curve domain");
     }
 
@@ -220,8 +209,7 @@ public abstract class CallableBondVolatilityStructure extends AbstractTermStruct
         QL.require(bondTenor.length() > 0, "negative bond tenor given");
         QL.require(extrapolate || allowsExtrapolation() || bondTenor.le(maxBondTenor()),
                 "bond tenor is past max tenor");
-        QL.require(extrapolate || allowsExtrapolation()
-                        || (k >= minStrike() && k <= maxStrike()),
+        QL.require(extrapolate || allowsExtrapolation() || (k >= minStrike() && k <= maxStrike()),
                 "strike is outside the curve domain");
     }
 }

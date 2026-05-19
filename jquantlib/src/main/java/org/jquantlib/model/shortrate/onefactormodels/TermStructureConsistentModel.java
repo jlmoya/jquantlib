@@ -30,11 +30,10 @@ import org.jquantlib.util.Observable;
  * <p>
  * This is a base class for models that can reprice exactly any discount bond.
  *
- * @category shortrate
- *
  * @author Praneet Tiwari
+ * @category shortrate
  */
 public interface TermStructureConsistentModel extends Observable {
 
-    public Handle<YieldTermStructure> termStructure();
+    Handle< YieldTermStructure > termStructure();
 }

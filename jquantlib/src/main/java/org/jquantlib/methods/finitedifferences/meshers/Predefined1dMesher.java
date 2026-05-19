@@ -24,20 +24,19 @@ package org.jquantlib.methods.finitedifferences.meshers;
  * One-dimensional mesher built from a caller-supplied set of points.
  *
  * <p>Java port of v1.42.1
- * {@code ql/methods/finitedifferences/meshers/predefined1dmesher.hpp}
- * (header-only in C++).
+ * {@code ql/methods/finitedifferences/meshers/predefined1dmesher.hpp} (header-only in C++).
  *
  * <p>The locations array is copied verbatim; the {@code dplus} / {@code dminus}
- * arrays are populated as adjacent differences with {@link Double#NaN}
- * sentinels at the ends (mirroring C++ {@code Null<Real>()}).
+ * arrays are populated as adjacent differences with {@link Double#NaN} sentinels at the ends (mirroring C++
+ * {@code Null<Real>()}).
  *
  * @author Phase 5h.5-RND-b port
  */
 public class Predefined1dMesher extends Fdm1dMesher {
 
     /**
-     * Build a 1D mesh from the supplied locations. The input array is copied
-     * defensively (callers may mutate or reuse it after construction).
+     * Build a 1D mesh from the supplied locations. The input array is copied defensively (callers may mutate or reuse
+     * it after construction).
      */
     public Predefined1dMesher(final double[] x) {
         super(x.length);
@@ -48,11 +47,11 @@ public class Predefined1dMesher extends Fdm1dMesher {
 
         // dplus/dminus: adjacent differences with NaN sentinels at the ends.
         // Matches C++ predefined1dmesher.hpp:40-43.
-        for (int i = 0; i + 1 < n; ++i) {
+        for ( int i = 0; i + 1 < n; ++i ) {
             this.dplus[i] = x[i + 1] - x[i];
             this.dminus[i + 1] = this.dplus[i];
         }
         this.dplus[n - 1] = Double.NaN;
-        this.dminus[0]    = Double.NaN;
+        this.dminus[0] = Double.NaN;
     }
 }

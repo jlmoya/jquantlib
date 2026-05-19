@@ -22,18 +22,18 @@
 
 package org.jquantlib.instruments;
 
-import java.util.ArrayList;
-
 import org.jquantlib.QL;
 import org.jquantlib.cashflow.Callability;
+
+import java.util.ArrayList;
 
 /**
  * @author Zahid Hussain
  */
-public class CallabilitySchedule extends ArrayList<Callability> implements Cloneable {
-	private static final long serialVersionUID = 1L;
+public class CallabilitySchedule extends ArrayList< Callability > implements Cloneable {
+    private static final long serialVersionUID = 1L;
 
-	public CallabilitySchedule() {
+    public CallabilitySchedule() {
         super();
     }
 
@@ -42,18 +42,18 @@ public class CallabilitySchedule extends ArrayList<Callability> implements Clone
     }
 
     public Callability first() {
-        QL.require(this.size() > 0 , "no Callability"); 
+        QL.require(this.size() > 0, "no Callability");
         return this.get(0);
     }
 
     public Callability last() {
-        QL.require(this.size() > 0 , "no Callability");
-        return this.get(this.size()-1);
+        QL.require(this.size() > 0, "no Callability");
+        return this.get(this.size() - 1);
     }
 
     @Override
     public Object clone() {
-    	return (CallabilitySchedule)super.clone();
+        return super.clone();
     }
 
 }

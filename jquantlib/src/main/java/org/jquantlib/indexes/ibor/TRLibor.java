@@ -51,38 +51,30 @@ import org.jquantlib.time.Period;
 import org.jquantlib.time.calendars.Turkey;
 
 /**
- * TRY LIBOR fixed by TBA.
- * See <http://www.trlibor.org/trlibor/english/default.asp>
- * 
+ * TRY LIBOR fixed by TBA. See <http://www.trlibor.org/trlibor/english/default.asp>
+ *
  * TODO check end-of-month adjustment.
- * 
+ *
  */
 public class TRLibor extends IborIndex {
 
-	public TRLibor(final Period tenor) {
-		this(tenor, new Handle<YieldTermStructure>(
-						new AbstractYieldTermStructure() {
-							@Override
-							protected double discountImpl(final double t) {
-								throw new UnsupportedOperationException();
-							}
-							@Override
-							public Date maxDate() {
-								throw new UnsupportedOperationException();
-							}
-						}
-				));
-	}
+    public TRLibor(final Period tenor) {
+        this(tenor, new Handle< YieldTermStructure >(new AbstractYieldTermStructure() {
+            @Override
+            protected double discountImpl(final double t) {
+                throw new UnsupportedOperationException();
+            }
 
-	public TRLibor(final Period tenor,
-			final Handle<YieldTermStructure> h) {
-		super("TRLibor", tenor, 0,
-				new TRYCurrency(),
-				new Turkey(),
-				BusinessDayConvention.ModifiedFollowing,
-				false,
-				new Actual360(), 
-				h);
-	}
+            @Override
+            public Date maxDate() {
+                throw new UnsupportedOperationException();
+            }
+        }));
+    }
+
+    public TRLibor(final Period tenor, final Handle< YieldTermStructure > h) {
+        super("TRLibor", tenor, 0, new TRYCurrency(), new Turkey(), BusinessDayConvention.ModifiedFollowing, false,
+                new Actual360(), h);
+    }
 
 }

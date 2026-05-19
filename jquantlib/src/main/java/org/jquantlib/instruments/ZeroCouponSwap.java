@@ -21,36 +21,23 @@
 package org.jquantlib.instruments;
 
 import org.jquantlib.QL;
-import org.jquantlib.cashflow.CashFlow;
-import org.jquantlib.cashflow.CompoundingMultipleResetsPricer;
-import org.jquantlib.cashflow.FixedRateCoupon;
-import org.jquantlib.cashflow.Leg;
-import org.jquantlib.cashflow.MultipleResetsCoupon;
-import org.jquantlib.cashflow.SimpleCashFlow;
+import org.jquantlib.cashflow.*;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.indexes.IborIndex;
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.termstructures.Compounding;
 import org.jquantlib.termstructures.InterestRate;
-import org.jquantlib.time.BusinessDayConvention;
-import org.jquantlib.time.Calendar;
-import org.jquantlib.time.Date;
-import org.jquantlib.time.DateGeneration;
-import org.jquantlib.time.Frequency;
-import org.jquantlib.time.Schedule;
-import org.jquantlib.time.TimeUnit;
+import org.jquantlib.time.*;
 
 /**
  * Zero-coupon interest rate swap.
  * <p>
- * Quoted in terms of either a known fixed cash flow {@code N^FIX} or a
- * fixed rate {@code R}, where:
+ * Quoted in terms of either a known fixed cash flow {@code N^FIX} or a fixed rate {@code R}, where:
  * <pre>
  *   N^FIX = N * [ (1 + R)^alpha(T_0, T_K) - 1 ]
  * </pre>
- * with {@code alpha(T_0, T_K)} the time fraction between the start date
- * and the end date according to a given day count convention. {@code N}
- * is the base notional amount prior to compounding.
+ * with {@code alpha(T_0, T_K)} the time fraction between the start date and the end date according to a given day count
+ * convention. {@code N} is the base notional amount prior to compounding.
  *
  * <p>The floating leg pays a single cash flow {@code N^FLT} obtained by
  * compounding the periodic IBOR fixings:
@@ -59,8 +46,7 @@ import org.jquantlib.time.TimeUnit;
  * </pre>
  *
  * <p>Faithful port of QuantLib v1.42.1 {@code ZeroCouponSwap}
- * (ql/instruments/zerocouponswap.{hpp,cpp}). The floating leg is built as
- * a single {@link MultipleResetsCoupon} with a
+ * (ql/instruments/zerocouponswap.{hpp,cpp}). The floating leg is built as a single {@link MultipleResetsCoupon} with a
  * {@link CompoundingMultipleResetsPricer}.
  *
  * <p>Phase 5d.5-ZCS+FB.
@@ -77,29 +63,22 @@ public class ZeroCouponSwap extends Swap {
     /**
      * Construct a ZCS quoted by a known fixed payment.
      */
-    public ZeroCouponSwap(final VanillaSwap.Type type,
-                          final double baseNominal,
-                          final Date startDate,
-                          final Date maturityDate,
-                          final double fixedPayment,
-                          final IborIndex iborIndex,
-                          final Calendar paymentCalendar,
-                          final BusinessDayConvention paymentConvention,
-                          final int paymentDelay) {
+    public ZeroCouponSwap(final VanillaSwap.Type type, final double baseNominal, final Date startDate,
+            final Date maturityDate, final double fixedPayment, final IborIndex iborIndex,
+            final Calendar paymentCalendar, final BusinessDayConvention paymentConvention, final int paymentDelay) {
         // Common base init
         super(2);
         QL.require(!(baseNominal < 0.0), "base nominal cannot be negative");
         QL.require(startDate.lt(maturityDate),
-                "start date (" + startDate + ") later than or equal to maturity date ("
-                + maturityDate + ")");
+                "start date (" + startDate + ") later than or equal to maturity date (" + maturityDate + ")");
 
         this.type_ = type;
         this.baseNominal_ = baseNominal;
         this.iborIndex_ = iborIndex;
         this.startDate_ = startDate;
         this.maturityDate_ = maturityDate;
-        this.paymentDate_ = paymentCalendar.advance(maturityDate, paymentDelay,
-                TimeUnit.Days, paymentConvention, false);
+        this.paymentDate_ = paymentCalendar.advance(maturityDate, paymentDelay, TimeUnit.Days, paymentConvention,
+                false);
 
         // Build legs (legs[0] = fixed, legs[1] = float).
         final Leg fixedLeg = new Leg();
@@ -112,7 +91,7 @@ public class ZeroCouponSwap extends Swap {
         fixedLeg.add(new SimpleCashFlow(fixedPayment, paymentDate_));
 
         // Observer wiring
-        for (final CashFlow cf : floatingLeg) {
+        for ( final CashFlow cf : floatingLeg ) {
             cf.addObserver(this);
         }
 
@@ -122,29 +101,22 @@ public class ZeroCouponSwap extends Swap {
     /**
      * Construct a ZCS quoted by a fixed rate.
      */
-    public ZeroCouponSwap(final VanillaSwap.Type type,
-                          final double baseNominal,
-                          final Date startDate,
-                          final Date maturityDate,
-                          final double fixedRate,
-                          final DayCounter fixedDayCounter,
-                          final IborIndex iborIndex,
-                          final Calendar paymentCalendar,
-                          final BusinessDayConvention paymentConvention,
-                          final int paymentDelay) {
+    public ZeroCouponSwap(final VanillaSwap.Type type, final double baseNominal, final Date startDate,
+            final Date maturityDate, final double fixedRate, final DayCounter fixedDayCounter,
+            final IborIndex iborIndex, final Calendar paymentCalendar, final BusinessDayConvention paymentConvention,
+            final int paymentDelay) {
         super(2);
         QL.require(!(baseNominal < 0.0), "base nominal cannot be negative");
         QL.require(startDate.lt(maturityDate),
-                "start date (" + startDate + ") later than or equal to maturity date ("
-                + maturityDate + ")");
+                "start date (" + startDate + ") later than or equal to maturity date (" + maturityDate + ")");
 
         this.type_ = type;
         this.baseNominal_ = baseNominal;
         this.iborIndex_ = iborIndex;
         this.startDate_ = startDate;
         this.maturityDate_ = maturityDate;
-        this.paymentDate_ = paymentCalendar.advance(maturityDate, paymentDelay,
-                TimeUnit.Days, paymentConvention, false);
+        this.paymentDate_ = paymentCalendar.advance(maturityDate, paymentDelay, TimeUnit.Days, paymentConvention,
+                false);
 
         final Leg fixedLeg = new Leg();
         final Leg floatingLeg = buildFloatingLeg();
@@ -152,12 +124,12 @@ public class ZeroCouponSwap extends Swap {
         super.legs.add(floatingLeg);
 
         // Fixed-rate coupon (compounded annually) — same convention as C++
-        final InterestRate interest = new InterestRate(fixedRate, fixedDayCounter,
-                Compounding.Compounded, Frequency.Annual);
-        fixedLeg.add(new FixedRateCoupon(baseNominal_, paymentDate_,
-                interest, fixedDayCounter, startDate, maturityDate));
+        final InterestRate interest = new InterestRate(fixedRate, fixedDayCounter, Compounding.Compounded,
+                Frequency.Annual);
+        fixedLeg.add(
+                new FixedRateCoupon(baseNominal_, paymentDate_, interest, fixedDayCounter, startDate, maturityDate));
 
-        for (final CashFlow cf : floatingLeg) {
+        for ( final CashFlow cf : floatingLeg ) {
             cf.addObserver(this);
         }
 
@@ -174,8 +146,7 @@ public class ZeroCouponSwap extends Swap {
         //              .endOfMonth(index.endOfMonth());
         // The Java MakeSchedule helper does not yet expose the fluent setters
         // used in C++, so build the Schedule directly with equivalent inputs.
-        final Schedule schedule = new Schedule(
-                startDate_,                                 // effective
+        final Schedule schedule = new Schedule(startDate_,                                 // effective
                 maturityDate_,                              // termination
                 iborIndex_.tenor(),                         // tenor
                 iborIndex_.fixingCalendar(),                // calendar
@@ -187,8 +158,7 @@ public class ZeroCouponSwap extends Swap {
                 new Date()                                  // nextToLastDate (default)
         );
 
-        final MultipleResetsCoupon cpn = new MultipleResetsCoupon(
-                paymentDate_, baseNominal_, schedule,
+        final MultipleResetsCoupon cpn = new MultipleResetsCoupon(paymentDate_, baseNominal_, schedule,
                 iborIndex_.fixingDays(), iborIndex_);
         cpn.setPricer(new CompoundingMultipleResetsPricer());
 
@@ -198,17 +168,17 @@ public class ZeroCouponSwap extends Swap {
     }
 
     private void applyPayer() {
-        switch (type_) {
-            case Payer:
-                super.payer[0] = -1.0;
-                super.payer[1] = +1.0;
-                break;
-            case Receiver:
-                super.payer[0] = +1.0;
-                super.payer[1] = -1.0;
-                break;
-            default:
-                throw new LibraryException("unknown zero coupon swap type");
+        switch ( type_ ) {
+        case Payer:
+            super.payer[0] = -1.0;
+            super.payer[1] = +1.0;
+            break;
+        case Receiver:
+            super.payer[0] = +1.0;
+            super.payer[1] = -1.0;
+            break;
+        default:
+            throw new LibraryException("unknown zero coupon swap type");
         }
     }
 
@@ -216,38 +186,58 @@ public class ZeroCouponSwap extends Swap {
     // public inspectors
     //
 
-    public VanillaSwap.Type type() { return type_; }
+    public VanillaSwap.Type type() {
+        return type_;
+    }
 
-    public double baseNominal() { return baseNominal_; }
+    public double baseNominal() {
+        return baseNominal_;
+    }
 
     @Override
-    public Date startDate() { return startDate_.clone(); }
+    public Date startDate() {
+        return startDate_.clone();
+    }
 
     @Override
-    public Date maturityDate() { return maturityDate_.clone(); }
+    public Date maturityDate() {
+        return maturityDate_.clone();
+    }
 
-    public IborIndex iborIndex() { return iborIndex_; }
+    public IborIndex iborIndex() {
+        return iborIndex_;
+    }
 
     /** Single-cashflow fixed leg. */
-    public Leg fixedLeg() { return legs.get(0); }
+    public Leg fixedLeg() {
+        return legs.get(0);
+    }
 
     /** Single-cashflow floating leg. */
-    public Leg floatingLeg() { return legs.get(1); }
+    public Leg floatingLeg() {
+        return legs.get(1);
+    }
 
     /** Notional amount of the fixed cashflow. */
-    public double fixedPayment() { return fixedLeg().get(0).amount(); }
+    public double fixedPayment() {
+        return fixedLeg().get(0).amount();
+    }
 
     //
     // public results — require the curve via the engine
     //
 
-    public double fixedLegNPV() { return legNPV(0); }
+    public double fixedLegNPV() {
+        return legNPV(0);
+    }
 
-    public double floatingLegNPV() { return legNPV(1); }
+    public double floatingLegNPV() {
+        return legNPV(1);
+    }
 
     /**
-     * Fair fixed payment such that the NPV equals zero, given the current
-     * floating leg NPV and discount factor at the fixed cashflow date.
+     * Fair fixed payment such that the NPV equals zero, given the current floating leg NPV and discount factor at the
+     * fixed cashflow date.
      */
     public double fairFixedPayment() {
         // NPV = (discount at fixed pay date) * (payer[0] * fixed amount)
@@ -263,7 +253,7 @@ public class ZeroCouponSwap extends Swap {
     public double fairFixedRate(final DayCounter dayCounter) {
         // Compound factor C = N^FIX / N + 1
         final double compound = fairFixedPayment() / baseNominal_ + 1.0;
-        return InterestRate.impliedRate(compound, startDate_, maturityDate_,
-                dayCounter, Compounding.Compounded, Frequency.Annual).rate();
+        return InterestRate.impliedRate(compound, startDate_, maturityDate_, dayCounter, Compounding.Compounded,
+                Frequency.Annual).rate();
     }
 }

@@ -34,24 +34,17 @@ import org.jquantlib.Settings;
 import org.jquantlib.daycounters.Actual360;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.pricingengines.PricingEngine;
-import org.jquantlib.time.BusinessDayConvention;
-import org.jquantlib.time.Date;
-import org.jquantlib.time.DateGeneration;
-import org.jquantlib.time.Period;
-import org.jquantlib.time.Schedule;
-import org.jquantlib.time.TimeUnit;
+import org.jquantlib.time.*;
 import org.jquantlib.time.calendars.WeekendsOnly;
 
 /**
  * Helper class to instantiate a standard market credit default swap.
  *
  * <p>Java port of QuantLib v1.42.1 {@code QuantLib::MakeCreditDefaultSwap}
- * ({@code ql/instruments/makecds.{hpp,cpp}}). Provides a fluent builder for
- * CDS construction with sensible defaults: WeekendsOnly calendar, Actual360
- * day counter, quarterly coupon tenor, Following business-day convention,
- * Buyer side, nominal 1.0, upfront 0, three-day cash settlement,
- * settles-accrual / pays-at-default-time / rebates-accrual all enabled,
- * {@link DateGeneration.Rule#CDS} schedule rule.
+ * ({@code ql/instruments/makecds.{hpp,cpp}}). Provides a fluent builder for CDS construction with sensible defaults:
+ * WeekendsOnly calendar, Actual360 day counter, quarterly coupon tenor, Following business-day convention, Buyer side,
+ * nominal 1.0, upfront 0, three-day cash settlement, settles-accrual / pays-at-default-time / rebates-accrual all
+ * enabled, {@link DateGeneration.Rule#CDS} schedule rule.
  *
  * <p>Three constructor overloads mirror the C++ originals:
  * <ul>
@@ -105,8 +98,9 @@ public class MakeCreditDefaultSwap {
     private Date protectionStart_;       // null sentinel
     private Date upfrontDate_;           // null sentinel
     private Claim claim_;                // null = use FaceValueClaim
-    /** C++ defaults to {@code Actual360(true)} ("Actual/360 (inc)"). Java now
-     *  matches as of Phase 3d L0 A.2. */
+    /**
+     * C++ defaults to {@code Actual360(true)} ("Actual/360 (inc)"). Java now matches as of Phase 3d L0 A.2.
+     */
     private DayCounter lastPeriodDayCounter_ = new Actual360(true);
     private boolean rebatesAccrual_ = true;
     private Date tradeDate_;             // null = use Settings.evaluationDate()
@@ -233,8 +227,8 @@ public class MakeCreditDefaultSwap {
     //
 
     /**
-     * Builds the configured {@link CreditDefaultSwap}, attaching the pricing
-     * engine if one was supplied via {@link #withPricingEngine}.
+     * Builds the configured {@link CreditDefaultSwap}, attaching the pricing engine if one was supplied via
+     * {@link #withPricingEngine}.
      */
     public CreditDefaultSwap build() {
         final Date tradeDate = (tradeDate_ != null && !tradeDate_.isNull())
@@ -242,19 +236,18 @@ public class MakeCreditDefaultSwap {
                 : new Settings().evaluationDate();
 
         final Date upfrontDate;
-        if (upfrontDate_ != null && !upfrontDate_.isNull()) {
+        if ( upfrontDate_ != null && !upfrontDate_.isNull() ) {
             upfrontDate = upfrontDate_;
         } else {
             upfrontDate = new WeekendsOnly().advance(tradeDate, cashSettlementDays_, TimeUnit.Days);
         }
 
         Date protectionStart = protectionStart_;
-        if (protectionStart == null || protectionStart.isNull()) {
-            if (schedule_ != null) {
+        if ( protectionStart == null || protectionStart.isNull() ) {
+            if ( schedule_ != null ) {
                 protectionStart = schedule_.date(0);
             } else {
-                if (rule_ == DateGeneration.Rule.CDS2015
-                        || rule_ == DateGeneration.Rule.CDS) {
+                if ( rule_ == DateGeneration.Rule.CDS2015 || rule_ == DateGeneration.Rule.CDS ) {
                     protectionStart = tradeDate;
                 } else {
                     protectionStart = tradeDate.add(1);
@@ -265,14 +258,13 @@ public class MakeCreditDefaultSwap {
         // Schedule, tenor and termDate come from different constructors;
         // exactly one of them is non-null.
         final Schedule schedule;
-        if (schedule_ != null) {
+        if ( schedule_ != null ) {
             schedule = schedule_;
         } else {
             final Date end;
-            if (tenor_ != null) {
-                if (rule_ == DateGeneration.Rule.CDS2015
-                        || rule_ == DateGeneration.Rule.CDS
-                        || rule_ == DateGeneration.Rule.OldCDS) {
+            if ( tenor_ != null ) {
+                if ( rule_ == DateGeneration.Rule.CDS2015 || rule_ == DateGeneration.Rule.CDS
+                        || rule_ == DateGeneration.Rule.OldCDS ) {
                     end = CreditDefaultSwap.cdsMaturity(tradeDate, tenor_, rule_);
                 } else {
                     end = tradeDate.add(tenor_);
@@ -281,26 +273,24 @@ public class MakeCreditDefaultSwap {
                 // termDate_ is the only one left.
                 end = termDate_;
             }
-            schedule = new Schedule(protectionStart, end, couponTenor_,
-                    new WeekendsOnly(), convention_,
+            schedule = new Schedule(protectionStart, end, couponTenor_, new WeekendsOnly(), convention_,
                     BusinessDayConvention.Unadjusted, rule_, false);
         }
 
-        final CreditDefaultSwap cds = new CreditDefaultSwap(
-                side_, nominal_, upfrontRate_, runningSpread_,
-                schedule, convention_, dayCounter_,
-                settlesAccrual_, paysAtDefaultTime_, protectionStart,
-                upfrontDate, claim_, lastPeriodDayCounter_,
-                rebatesAccrual_, tradeDate, cashSettlementDays_);
+        final CreditDefaultSwap cds = new CreditDefaultSwap(side_, nominal_, upfrontRate_, runningSpread_, schedule,
+                convention_, dayCounter_, settlesAccrual_, paysAtDefaultTime_, protectionStart, upfrontDate, claim_,
+                lastPeriodDayCounter_, rebatesAccrual_, tradeDate, cashSettlementDays_);
 
-        if (engine_ != null) {
+        if ( engine_ != null ) {
             cds.setPricingEngine(engine_);
         }
         return cds;
     }
 
-    /** Convenience alias for {@link #build()}. Mirrors C++ implicit
-     *  {@code operator ext::shared_ptr<CreditDefaultSwap>()} call sites. */
+    /**
+     * Convenience alias for {@link #build()}. Mirrors C++ implicit
+     * {@code operator ext::shared_ptr<CreditDefaultSwap>()} call sites.
+     */
     public CreditDefaultSwap value() {
         return build();
     }

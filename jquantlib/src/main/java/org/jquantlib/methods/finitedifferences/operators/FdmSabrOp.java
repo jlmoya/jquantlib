@@ -21,17 +21,17 @@
 
 package org.jquantlib.methods.finitedifferences.operators;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import org.jquantlib.math.matrixutilities.Array;
-import org.jquantlib.math.transcendental.JQuantMath;
 import org.jquantlib.math.matrixutilities.Matrix;
+import org.jquantlib.math.transcendental.JQuantMath;
 import org.jquantlib.methods.finitedifferences.meshers.FdmMesher;
 import org.jquantlib.termstructures.Compounding;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.time.Frequency;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Finite-difference operator for the SABR model.
@@ -73,26 +73,20 @@ public final class FdmSabrOp implements FdmLinearOpComposite {
     private final TripleBandLinearOp mapF_;
     private final TripleBandLinearOp mapA_;
 
-    public FdmSabrOp(
-            final FdmMesher mesher,
-            final YieldTermStructure rTS,
-            final double f0,
-            final double alpha,
-            final double beta,
-            final double nu,
-            final double rho) {
+    public FdmSabrOp(final FdmMesher mesher, final YieldTermStructure rTS, final double f0, final double alpha,
+            final double beta, final double nu, final double rho) {
 
         this.rTS_ = rTS;
 
         final int n = mesher.layout().size();
 
         // Precompute: locations along direction 0 (forward f) and 1 (x = log alpha)
-        final Array fLocs  = mesher.locations(0);  // f mesh node values
-        final Array xLocs  = mesher.locations(1);  // x = log(alpha) values
+        final Array fLocs = mesher.locations(0);  // f mesh node values
+        final Array xLocs = mesher.locations(1);  // x = log(alpha) values
 
         // --- dffMap_: 0.5 * exp(2*x) * f^{2*beta} * d^2/df^2 ---
         final Array dffCoeff = new Array(n);
-        for (int i = 0; i < n; ++i) {
+        for ( int i = 0; i < n; ++i ) {
             final double f = fLocs.get(i);
             final double x = xLocs.get(i);
             dffCoeff.set(i, 0.5 * Math.exp(2.0 * x) * JQuantMath.pow(f, 2.0 * beta));
@@ -101,7 +95,7 @@ public final class FdmSabrOp implements FdmLinearOpComposite {
 
         // --- dxMap_: -0.5 * nu^2 * d/dx (constant coefficient) ---
         final Array dxCoeff = new Array(n).fill(-0.5 * nu * nu);
-        dxMap_  = new FirstDerivativeOp(1, mesher).mult(dxCoeff);
+        dxMap_ = new FirstDerivativeOp(1, mesher).mult(dxCoeff);
 
         // --- dxxMap_: +0.5 * nu^2 * d^2/dx^2 (constant coefficient) ---
         final Array dxxCoeff = new Array(n).fill(0.5 * nu * nu);
@@ -109,13 +103,12 @@ public final class FdmSabrOp implements FdmLinearOpComposite {
 
         // --- correlationMap_: rho * nu * exp(x) * f^beta * d^2/(df dx) ---
         final Array corrCoeff = new Array(n);
-        for (int i = 0; i < n; ++i) {
+        for ( int i = 0; i < n; ++i ) {
             final double f = fLocs.get(i);
             final double x = xLocs.get(i);
             corrCoeff.set(i, rho * nu * Math.exp(x) * JQuantMath.pow(f, beta));
         }
-        correlationMap_ = new SecondOrderMixedDerivativeOp(0, 1, mesher)
-                .mult(corrCoeff);
+        correlationMap_ = new SecondOrderMixedDerivativeOp(0, 1, mesher).mult(corrCoeff);
 
         // mutable direction maps — filled in setTime
         mapF_ = new TripleBandLinearOp(0, mesher);
@@ -138,23 +131,20 @@ public final class FdmSabrOp implements FdmLinearOpComposite {
      */
     @Override
     public void setTime(final double t1, final double t2) {
-        final double r = rTS_.forwardRate(
-                t1, t2, Compounding.Continuous, Frequency.NoFrequency, true).rate();
+        final double r = rTS_.forwardRate(t1, t2, Compounding.Continuous, Frequency.NoFrequency, true).rate();
         final double halfR = -0.5 * r;
 
         // mapF_ = dffMap_ + diag(-0.5*r)
         // axpyb(Array(), dffMap_, dffMap_, Array(1, -0.5*r)):
         //   x is empty (no left map), a = dffMap_, b = dffMap_, c = scalar
         //   => mapF_ = 0*mapF_ + 1*dffMap_ + diag(c)
-        mapF_.axpyb(new Array(0), dffMap_, dffMap_,
-                new Array(1).fill(halfR));
+        mapF_.axpyb(new Array(0), dffMap_, dffMap_, new Array(1).fill(halfR));
 
         // mapA_ = dxMap_ + dxxMap_ + diag(-0.5*r)
         // axpyb(Array(1,1), dxMap_, dxxMap_, Array(1, -0.5*r)):
         //   x = [1], a = dxMap_, b = dxxMap_, c = -0.5*r
         //   => mapA_ = 1*dxMap_ + dxxMap_ + diag(c)
-        mapA_.axpyb(new Array(1).fill(1.0), dxMap_, dxxMap_,
-                new Array(1).fill(halfR));
+        mapA_.axpyb(new Array(1).fill(1.0), dxMap_, dxxMap_, new Array(1).fill(halfR));
     }
 
     @Override
@@ -169,15 +159,19 @@ public final class FdmSabrOp implements FdmLinearOpComposite {
 
     @Override
     public Array applyDirection(final int direction, final Array r) {
-        if (direction == 0) return mapF_.apply(r);
-        if (direction == 1) return mapA_.apply(r);
+        if ( direction == 0 )
+            return mapF_.apply(r);
+        if ( direction == 1 )
+            return mapA_.apply(r);
         throw new IllegalArgumentException("direction too large: " + direction);
     }
 
     @Override
     public Array solveSplitting(final int direction, final Array r, final double s) {
-        if (direction == 0) return mapF_.solveSplitting(r, s, 1.0);
-        if (direction == 1) return mapA_.solveSplitting(r, s, 1.0);
+        if ( direction == 0 )
+            return mapF_.solveSplitting(r, s, 1.0);
+        if ( direction == 1 )
+            return mapA_.solveSplitting(r, s, 1.0);
         throw new IllegalArgumentException("direction too large: " + direction);
     }
 
@@ -192,8 +186,8 @@ public final class FdmSabrOp implements FdmLinearOpComposite {
     }
 
     @Override
-    public List<Matrix> toMatrixDecomp() {
-        final List<Matrix> ret = new ArrayList<>(3);
+    public List< Matrix > toMatrixDecomp() {
+        final List< Matrix > ret = new ArrayList<>(3);
         ret.add(mapA_.toMatrix());
         ret.add(mapF_.toMatrix());
         ret.add(correlationMap_.toMatrix());

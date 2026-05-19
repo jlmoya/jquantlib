@@ -26,10 +26,6 @@
 
 package org.jquantlib.model.marketmodels.products.multistep;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.math.matrixutilities.Matrix;
 import org.jquantlib.methods.montecarlo.ExerciseStrategy;
@@ -38,9 +34,13 @@ import org.jquantlib.model.marketmodels.EvolutionDescription;
 import org.jquantlib.model.marketmodels.MarketModelMultiProduct;
 import org.jquantlib.model.marketmodels.Utilities;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 /**
- * Callable market-model product — wraps an underlying {@link MarketModelMultiProduct}
- * with an {@link ExerciseStrategy} and a rebate.
+ * Callable market-model product — wraps an underlying {@link MarketModelMultiProduct} with an {@link ExerciseStrategy}
+ * and a rebate.
  * <p>
  * Mirrors C++ {@code class CallSpecifiedMultiProduct}
  * (ql/models/marketmodels/products/multistep/callspecifiedmultiproduct.{hpp,cpp} v1.42.1).
@@ -51,20 +51,19 @@ public class CallSpecifiedMultiProduct extends MarketModelMultiProduct {
 
     private final MarketModelMultiProduct underlying_;
     private final ExerciseStrategy strategy_;
-    private MarketModelMultiProduct rebate_;
     private final EvolutionDescription evolution_;
     private final boolean[][] isPresent_;
     private final double[] cashFlowTimes_;
     private final int rebateOffset_;
     private final int[] dummyCashFlowsThisStep_;
     private final MarketModelMultiProduct.CashFlow[][] dummyCashFlowsGenerated_;
+    private final MarketModelMultiProduct rebate_;
     private boolean wasCalled_;
     private int currentIndex_;
     private boolean callable_ = true;
 
-    public CallSpecifiedMultiProduct(final MarketModelMultiProduct underlying,
-                                     final ExerciseStrategy strategy,
-                                     final MarketModelMultiProduct rebate) {
+    public CallSpecifiedMultiProduct(final MarketModelMultiProduct underlying, final ExerciseStrategy strategy,
+            final MarketModelMultiProduct rebate) {
         this.underlying_ = underlying.clone();
         this.strategy_ = strategy.clone();
 
@@ -74,7 +73,7 @@ public class CallSpecifiedMultiProduct extends MarketModelMultiProduct {
         final double[] evolutionTimes1 = d1.evolutionTimes();
         final double[] exerciseTimes = strategy_.exerciseTimes();
 
-        if (rebate != null) {
+        if ( rebate != null ) {
             final EvolutionDescription d2 = rebate.evolution();
             final double[] rateTimes2 = d2.rateTimes();
             QL.require(rateTimes1.length == rateTimes2.length && Arrays.equals(rateTimes1, rateTimes2),
@@ -88,7 +87,7 @@ public class CallSpecifiedMultiProduct extends MarketModelMultiProduct {
         }
 
         // merge evolution times: underlying ∪ exerciseTimes ∪ rebate.evolution ∪ strategy.relevantTimes
-        final List<double[]> allEvolutionTimes = new ArrayList<>();
+        final List< double[] > allEvolutionTimes = new ArrayList<>();
         allEvolutionTimes.add(evolutionTimes1.clone());
         allEvolutionTimes.add(exerciseTimes.clone());
         allEvolutionTimes.add(rebate_.evolution().evolutionTimes().clone());
@@ -111,29 +110,36 @@ public class CallSpecifiedMultiProduct extends MarketModelMultiProduct {
         this.dummyCashFlowsThisStep_ = new int[products];
         final int n = rebate_.maxNumberOfCashFlowsPerProductPerStep();
         this.dummyCashFlowsGenerated_ = new MarketModelMultiProduct.CashFlow[products][n];
-        for (int i = 0; i < products; ++i) {
-            for (int j = 0; j < n; ++j) {
+        for ( int i = 0; i < products; ++i ) {
+            for ( int j = 0; j < n; ++j ) {
                 dummyCashFlowsGenerated_[i][j] = new MarketModelMultiProduct.CashFlow();
             }
         }
     }
 
-    public CallSpecifiedMultiProduct(final MarketModelMultiProduct underlying,
-                                     final ExerciseStrategy strategy) {
+    public CallSpecifiedMultiProduct(final MarketModelMultiProduct underlying, final ExerciseStrategy strategy) {
         this(underlying, strategy, null);
     }
 
     @Override
-    public int[] suggestedNumeraires() { return underlying_.suggestedNumeraires(); }
+    public int[] suggestedNumeraires() {
+        return underlying_.suggestedNumeraires();
+    }
 
     @Override
-    public EvolutionDescription evolution() { return evolution_; }
+    public EvolutionDescription evolution() {
+        return evolution_;
+    }
 
     @Override
-    public double[] possibleCashFlowTimes() { return cashFlowTimes_; }
+    public double[] possibleCashFlowTimes() {
+        return cashFlowTimes_;
+    }
 
     @Override
-    public int numberOfProducts() { return underlying_.numberOfProducts(); }
+    public int numberOfProducts() {
+        return underlying_.numberOfProducts();
+    }
 
     @Override
     public int maxNumberOfCashFlowsPerProductPerStep() {
@@ -151,9 +157,8 @@ public class CallSpecifiedMultiProduct extends MarketModelMultiProduct {
     }
 
     @Override
-    public boolean nextTimeStep(final CurveState currentState,
-                                final int[] numberCashFlowsThisStep,
-                                final MarketModelMultiProduct.CashFlow[][] cashFlowsGenerated) {
+    public boolean nextTimeStep(final CurveState currentState, final int[] numberCashFlowsThisStep,
+            final MarketModelMultiProduct.CashFlow[][] cashFlowsGenerated) {
         final boolean isUnderlyingTime = isPresent_[0][currentIndex_];
         final boolean isExerciseTime = isPresent_[1][currentIndex_];
         final boolean isRebateTime = isPresent_[2][currentIndex_];
@@ -161,27 +166,27 @@ public class CallSpecifiedMultiProduct extends MarketModelMultiProduct {
 
         boolean done = false;
 
-        if (!wasCalled_ && isStrategyRelevantTime) {
+        if ( !wasCalled_ && isStrategyRelevantTime ) {
             strategy_.nextStep(currentState);
         }
-        if (!wasCalled_ && isExerciseTime && callable_) {
+        if ( !wasCalled_ && isExerciseTime && callable_ ) {
             wasCalled_ = strategy_.exercise(currentState);
         }
 
-        if (wasCalled_) {
-            if (isRebateTime) {
+        if ( wasCalled_ ) {
+            if ( isRebateTime ) {
                 done = rebate_.nextTimeStep(currentState, numberCashFlowsThisStep, cashFlowsGenerated);
-                for (int i = 0; i < numberCashFlowsThisStep.length; ++i) {
-                    for (int j = 0; j < numberCashFlowsThisStep[i]; ++j) {
+                for ( int i = 0; i < numberCashFlowsThisStep.length; ++i ) {
+                    for ( int j = 0; j < numberCashFlowsThisStep[i]; ++j ) {
                         cashFlowsGenerated[i][j].timeIndex += rebateOffset_;
                     }
                 }
             }
         } else {
-            if (isRebateTime) {
+            if ( isRebateTime ) {
                 rebate_.nextTimeStep(currentState, dummyCashFlowsThisStep_, dummyCashFlowsGenerated_);
             }
-            if (isUnderlyingTime) {
+            if ( isUnderlyingTime ) {
                 done = underlying_.nextTimeStep(currentState, numberCashFlowsThisStep, cashFlowsGenerated);
             }
         }
@@ -195,13 +200,23 @@ public class CallSpecifiedMultiProduct extends MarketModelMultiProduct {
         return new CallSpecifiedMultiProduct(underlying_, strategy_, rebate_);
     }
 
-    public MarketModelMultiProduct underlying() { return underlying_; }
+    public MarketModelMultiProduct underlying() {
+        return underlying_;
+    }
 
-    public ExerciseStrategy strategy() { return strategy_; }
+    public ExerciseStrategy strategy() {
+        return strategy_;
+    }
 
-    public MarketModelMultiProduct rebate() { return rebate_; }
+    public MarketModelMultiProduct rebate() {
+        return rebate_;
+    }
 
-    public void enableCallability() { callable_ = true; }
+    public void enableCallability() {
+        callable_ = true;
+    }
 
-    public void disableCallability() { callable_ = false; }
+    public void disableCallability() {
+        callable_ = false;
+    }
 }

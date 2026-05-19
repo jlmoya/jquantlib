@@ -45,9 +45,8 @@ package org.jquantlib.methods.finitedifferences;
  * The differential operator {@latex$ D_{-} } discretizes the first derivative with the first-order formula
  * <p>{@latex[ \frac{\partial u_{i}}{\partial x} \approx \frac{u_{i}-u_{i-1}}{h} = D_{-} u_{i} }
  *
- * @category findiff
- *
  * @author Srinivas Hasti
+ * @category findiff
  */
 public class DMinus extends TridiagonalOperator {
 

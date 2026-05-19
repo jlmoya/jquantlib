@@ -28,12 +28,11 @@ package org.jquantlib.experimental.mcbasket;
 import org.jquantlib.model.shortrate.StochasticProcessArray;
 
 /**
- * Least-square Monte Carlo engine for American-style multi-asset path
- * options.
+ * Least-square Monte Carlo engine for American-style multi-asset path options.
  *
  * <p>Phase 4i scaffold port of C++ QuantLib v1.42.1
- * {@code ql/experimental/mcbasket/mcamericanpathengine.hpp}.
- * Pinned commit {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
+ * {@code ql/experimental/mcbasket/mcamericanpathengine.hpp}. Pinned commit
+ * {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
  *
  * <p>Per the C++ docstring: "This method is intrinsically weak for
  * out-of-the-money options."
@@ -41,27 +40,20 @@ import org.jquantlib.model.shortrate.StochasticProcessArray;
  * <h3>Phase 4i carry-forward (Phase 4i.5)</h3>
  *
  * <p>The constructor wires up all named parameters and the
- * {@link #lsmPathPricer()} factory builds a
- * {@link LongstaffSchwartzMultiPathPricer} with the canonical
- * {@code (polynomialOrder = 2, polynomialType = Monomial)} defaults.
- * The full {@link #calculate()} dispatch is inherited (and currently
- * stubbed) from {@link MCLongstaffSchwartzPathEngine}.
+ * {@link #lsmPathPricer()} factory builds a {@link LongstaffSchwartzMultiPathPricer} with the canonical
+ * {@code (polynomialOrder = 2, polynomialType = Monomial)} defaults. The full {@link #calculate()} dispatch is
+ * inherited (and currently stubbed) from {@link MCLongstaffSchwartzPathEngine}.
  */
 public class MCAmericanPathEngine extends MCLongstaffSchwartzPathEngine {
 
     private final StochasticProcessArray processArray_;
 
-    public MCAmericanPathEngine(final StochasticProcessArray processes,
-            final int timeSteps, final int timeStepsPerYear,
-            final boolean brownianBridge,
-            final boolean antitheticVariate, final boolean controlVariate,
-            final int requiredSamples, final double requiredTolerance,
-            final int maxSamples, final long seed,
+    public MCAmericanPathEngine(final StochasticProcessArray processes, final int timeSteps, final int timeStepsPerYear,
+            final boolean brownianBridge, final boolean antitheticVariate, final boolean controlVariate,
+            final int requiredSamples, final double requiredTolerance, final int maxSamples, final long seed,
             final int nCalibrationSamples) {
-        super(processes, timeSteps, timeStepsPerYear, brownianBridge,
-                antitheticVariate, controlVariate,
-                requiredSamples, requiredTolerance, maxSamples, seed,
-                nCalibrationSamples);
+        super(processes, timeSteps, timeStepsPerYear, brownianBridge, antitheticVariate, controlVariate,
+                requiredSamples, requiredTolerance, maxSamples, seed, nCalibrationSamples);
         this.processArray_ = processes;
     }
 
@@ -76,9 +68,8 @@ public class MCAmericanPathEngine extends MCLongstaffSchwartzPathEngine {
         //                  - polynomialOrder = 2,
         //                  - PolynomialType.Monomial.
         // See mcamericanpathengine.hpp lines 114-161.
-        throw new UnsupportedOperationException(
-                "MCAmericanPathEngine.lsmPathPricer pending Phase 4i.5 "
-              + "(timeGrid, ImpliedTermStructure handles per fixing date)");
+        throw new UnsupportedOperationException("MCAmericanPathEngine.lsmPathPricer pending Phase 4i.5 "
+                + "(timeGrid, ImpliedTermStructure handles per fixing date)");
     }
 
     public StochasticProcessArray processArray() {

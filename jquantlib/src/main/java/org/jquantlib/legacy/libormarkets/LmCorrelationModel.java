@@ -23,14 +23,14 @@
 
 package org.jquantlib.legacy.libormarkets;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.matrixutilities.Matrix;
 import org.jquantlib.math.matrixutilities.PseudoSqrt;
 import org.jquantlib.math.matrixutilities.PseudoSqrt.SalvagingAlgorithm;
 import org.jquantlib.model.Parameter;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Abstract base class for libor-market-model correlation models.
@@ -40,12 +40,12 @@ import org.jquantlib.model.Parameter;
 public abstract class LmCorrelationModel {
 
     protected int size_;
-    protected List<Parameter> arguments_;
+    protected List< Parameter > arguments_;
 
     public LmCorrelationModel(final int size, final int nArguments) {
         this.size_ = size;
-        this.arguments_ = new ArrayList<Parameter>(nArguments);
-        for (int i = 0; i < nArguments; ++i) {
+        this.arguments_ = new ArrayList< Parameter >(nArguments);
+        for ( int i = 0; i < nArguments; ++i ) {
             this.arguments_.add(new Parameter());
         }
     }
@@ -85,11 +85,11 @@ public abstract class LmCorrelationModel {
         return correlation(t, new Array(0));
     }
 
-    public List<Parameter> params() {
+    public List< Parameter > params() {
         return arguments_;
     }
 
-    public void setParams(final List<Parameter> arguments) {
+    public void setParams(final List< Parameter > arguments) {
         arguments_ = arguments;
         generateArguments();
     }

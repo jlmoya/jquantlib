@@ -31,16 +31,9 @@
 
 package org.jquantlib.instruments;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
-import org.jquantlib.cashflow.CashFlow;
-import org.jquantlib.cashflow.CashFlows;
-import org.jquantlib.cashflow.Leg;
-import org.jquantlib.cashflow.YoYInflationCoupon;
-import org.jquantlib.cashflow.YoYInflationCouponPricer;
+import org.jquantlib.cashflow.*;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.daycounters.Thirty360;
 import org.jquantlib.indexes.CPI;
@@ -49,14 +42,10 @@ import org.jquantlib.math.Constants;
 import org.jquantlib.pricingengines.PricingEngine;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.termstructures.YieldTermStructure;
-import org.jquantlib.time.BusinessDayConvention;
-import org.jquantlib.time.Calendar;
-import org.jquantlib.time.DateGeneration;
-import org.jquantlib.time.Date;
-import org.jquantlib.time.MakeSchedule;
-import org.jquantlib.time.Period;
-import org.jquantlib.time.Schedule;
-import org.jquantlib.time.TimeUnit;
+import org.jquantlib.time.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Helper class to instantiate a standard YoY inflation cap or floor.
@@ -65,8 +54,8 @@ import org.jquantlib.time.TimeUnit;
  * ({@code ql/instruments/makeyoyinflationcapfloor.{hpp,cpp}}).
  *
  * <p>Inlines the C++ {@code yoyInflationLeg} builder for the simple
- * (non-cap/floor) coupon path; gearings/spreads default to 1.0/0.0,
- * matching the standard YoY cap/floor's leg coupon shape.
+ * (non-cap/floor) coupon path; gearings/spreads default to 1.0/0.0, matching the standard YoY cap/floor's leg coupon
+ * shape.
  *
  * @author JQuantLib migration team (Phase 2r C.1)
  */
@@ -88,15 +77,12 @@ public class MakeYoYInflationCapFloor {
     private BusinessDayConvention roll_ = BusinessDayConvention.ModifiedFollowing;
     private int fixingDays_ = 0;
     private double nominal_ = 1000000.0;
-    private Handle<YieldTermStructure> nominalTermStructure_ = new Handle<>();
+    private Handle< YieldTermStructure > nominalTermStructure_ = new Handle<>();
     private PricingEngine engine_;
 
-    public MakeYoYInflationCapFloor(final InflationCapFloor.Type capFloorType,
-                                    final YoYInflationIndex index,
-                                    final int length,
-                                    final Calendar cal,
-                                    final Period observationLag,
-                                    final CPI.InterpolationType interpolation) {
+    public MakeYoYInflationCapFloor(final InflationCapFloor.Type capFloorType, final YoYInflationIndex index,
+            final int length, final Calendar cal, final Period observationLag,
+            final CPI.InterpolationType interpolation) {
         this.capFloorType_ = capFloorType;
         this.length_ = length;
         this.calendar_ = cal;
@@ -156,10 +142,8 @@ public class MakeYoYInflationCapFloor {
         return this;
     }
 
-    public MakeYoYInflationCapFloor withAtmStrike(
-            final Handle<YieldTermStructure> nominalTermStructure) {
-        QL.require(strike_ == Constants.NULL_REAL || Double.isNaN(strike_),
-                "explicit strike already given");
+    public MakeYoYInflationCapFloor withAtmStrike(final Handle< YieldTermStructure > nominalTermStructure) {
+        QL.require(strike_ == Constants.NULL_REAL || Double.isNaN(strike_), "explicit strike already given");
         this.nominalTermStructure_ = nominalTermStructure;
         return this;
     }
@@ -172,54 +156,47 @@ public class MakeYoYInflationCapFloor {
     /** Build and return the configured {@link InflationCapFloor}. */
     public InflationCapFloor build() {
         Date startDate;
-        if (effectiveDate_ != null && !effectiveDate_.isNull()) {
+        if ( effectiveDate_ != null && !effectiveDate_.isNull() ) {
             startDate = effectiveDate_;
         } else {
             final Date referenceDate = new Settings().evaluationDate();
-            final Date spotDate = calendar_.advance(referenceDate,
-                    new Period(fixingDays_, TimeUnit.Days),
+            final Date spotDate = calendar_.advance(referenceDate, new Period(fixingDays_, TimeUnit.Days),
                     BusinessDayConvention.Following);
             startDate = spotDate.add(forwardStart_);
         }
 
-        final Date endDate = calendar_.advance(startDate,
-                new Period(length_, TimeUnit.Years),
+        final Date endDate = calendar_.advance(startDate, new Period(length_, TimeUnit.Years),
                 BusinessDayConvention.Unadjusted);
-        final Schedule schedule = new MakeSchedule(startDate, endDate,
-                new Period(1, TimeUnit.Years), calendar_,
-                BusinessDayConvention.Unadjusted)
-                .withTerminationDateConvention(BusinessDayConvention.Unadjusted)
-                .forwards()
-                .schedule();
+        final Schedule schedule = new MakeSchedule(startDate, endDate, new Period(1, TimeUnit.Years), calendar_,
+                BusinessDayConvention.Unadjusted).withTerminationDateConvention(BusinessDayConvention.Unadjusted)
+                .forwards().schedule();
 
         // Build YoY leg inline (mirrors C++ yoyInflationLeg::operator Leg()
         // for the simple-coupon path: gearing=1.0, spread=0.0, no caps/floors).
         final Leg leg = buildYoyLeg(schedule);
 
-        if (firstCapletExcluded_) {
+        if ( firstCapletExcluded_ ) {
             leg.remove(0);
         }
-        if (asOptionlet_ && leg.size() > 1) {
+        if ( asOptionlet_ && leg.size() > 1 ) {
             // remove all but the last
-            while (leg.size() > 1) {
+            while ( leg.size() > 1 ) {
                 leg.remove(0);
             }
         }
 
         // Strike resolution
-        final List<Double> strikeVector = new ArrayList<>();
-        if (strike_ == Constants.NULL_REAL || Double.isNaN(strike_)) {
+        final List< Double > strikeVector = new ArrayList<>();
+        if ( strike_ == Constants.NULL_REAL || Double.isNaN(strike_) ) {
             // ATM on the forecasting curve
-            QL.require(!nominalTermStructure_.empty(),
-                    "either a strike or a nominal term structure must be supplied");
+            QL.require(!nominalTermStructure_.empty(), "either a strike or a nominal term structure must be supplied");
             strikeVector.add(CashFlows.getInstance().atmRate(leg, nominalTermStructure_));
         } else {
             strikeVector.add(strike_);
         }
 
-        final InflationCapFloor capFloor = new InflationCapFloor(
-                capFloorType_, leg, strikeVector);
-        if (engine_ != null) {
+        final InflationCapFloor capFloor = new InflationCapFloor(capFloorType_, leg, strikeVector);
+        if ( engine_ != null ) {
             capFloor.setPricingEngine(engine_);
         }
         return capFloor;
@@ -232,29 +209,21 @@ public class MakeYoYInflationCapFloor {
         QL.require(dayCounter_ != null, "no payment daycounter given");
 
         final Leg leg = new Leg();
-        for (int i = 0; i < n; ++i) {
+        for ( int i = 0; i < n; ++i ) {
             final Date start = schedule.date(i);
             final Date end = schedule.date(i + 1);
             final Date paymentDate = calendar_.adjust(end, roll_);
-            final YoYInflationCoupon coupon = new YoYInflationCoupon(
-                    nominal_,
-                    paymentDate,
-                    start, end,
-                    fixingDays_,
-                    index_,
-                    observationLag_,
-                    interpolation_,
-                    dayCounter_,
+            final YoYInflationCoupon coupon = new YoYInflationCoupon(nominal_, paymentDate, start, end, fixingDays_,
+                    index_, observationLag_, interpolation_, dayCounter_,
                     /* gearing */ 1.0,
-                    /* spread  */ 0.0,
-                    start, end);
+                    /* spread  */ 0.0, start, end);
             leg.add(coupon);
         }
 
         // Standard YoY pricer (no caps/floors at this layer)
         final YoYInflationCouponPricer pricer = new YoYInflationCouponPricer();
-        for (final CashFlow cf : leg) {
-            if (cf instanceof YoYInflationCoupon) {
+        for ( final CashFlow cf : leg ) {
+            if ( cf instanceof YoYInflationCoupon ) {
                 ((YoYInflationCoupon) cf).setPricer(pricer);
             }
         }

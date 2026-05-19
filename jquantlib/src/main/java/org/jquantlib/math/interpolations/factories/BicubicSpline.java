@@ -48,9 +48,8 @@ import org.jquantlib.math.matrixutilities.Matrix;
 /**
  * Bicubic spline interpolation factory
  *
- * @see BicubicSplineInterpolation
- *
  * @author Richard Gomes
+ * @see BicubicSplineInterpolation
  */
 // TODO: rename to Bicubic
 public class BicubicSpline implements Interpolation2D.Interpolator2D {

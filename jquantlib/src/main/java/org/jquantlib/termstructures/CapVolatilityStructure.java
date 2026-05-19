@@ -63,7 +63,8 @@ public abstract class CapVolatilityStructure extends AbstractTermStructure {
 
     // ! returns the volatility for a given cap/floor length and strike rate
     public double volatility(final Period optionTenor, final double strike, final boolean extrapolate) {
-        final Date exerciseDate = calendar().advance(referenceDate(), optionTenor, BusinessDayConvention.Following); // FIXME: Original
+        final Date exerciseDate = calendar().advance(referenceDate(), optionTenor,
+                BusinessDayConvention.Following); // FIXME: Original
         // C++ comment
         return volatility(exerciseDate, strike, extrapolate);
     }
@@ -84,7 +85,8 @@ public abstract class CapVolatilityStructure extends AbstractTermStructure {
 
     private void checkRange(final double t, final double k, final boolean extrapolate) {
         super.checkRange(t, extrapolate);
-        QL.require(extrapolate||allowsExtrapolation()||(k >= minStrike() && k <= maxStrike()) , "strike is outside curve domain"); // TODO: message
+        QL.require(extrapolate || allowsExtrapolation() || (k >= minStrike() && k <= maxStrike()),
+                "strike is outside curve domain"); // TODO: message
     }
 
 }

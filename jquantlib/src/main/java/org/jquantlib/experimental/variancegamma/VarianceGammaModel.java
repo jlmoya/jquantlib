@@ -51,8 +51,8 @@ import org.jquantlib.model.ConstantParameter;
  * (v1.42.1 ql/experimental/variancegamma/variancegammamodel.{hpp,cpp}).
  *
  * <p>References:
- * Dilip B. Madan, Peter Carr, Eric C. Chang (1998), "The variance gamma
- * process and option pricing," European Finance Review, 2, 79-105.
+ * Dilip B. Madan, Peter Carr, Eric C. Chang (1998), "The variance gamma process and option pricing," European Finance
+ * Review, 2, 79-105.
  *
  * <p><b>Warning:</b> calibration is not implemented for VG.
  *
@@ -94,10 +94,7 @@ public class VarianceGammaModel extends CalibratedModel {
 
     @Override
     protected void generateArguments() {
-        process_ = new VarianceGammaProcess(
-                process_.s0(),
-                process_.dividendYield(),
-                process_.riskFreeRate(),
-                sigma(), nu(), theta());
+        process_ = new VarianceGammaProcess(process_.s0(), process_.dividendYield(), process_.riskFreeRate(), sigma(),
+                nu(), theta());
     }
 }

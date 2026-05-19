@@ -28,13 +28,13 @@
 */
 package org.jquantlib.experimental.inflation;
 
-import java.util.List;
-
 import org.jquantlib.pricingengines.inflation.InflationCapFloorEngine;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Frequency;
 import org.jquantlib.time.Period;
 import org.jquantlib.util.Pair;
+
+import java.util.List;
 
 /**
  * Interface for inflation cap stripping (i.e. from price surfaces).
@@ -46,11 +46,9 @@ import org.jquantlib.util.Pair;
  * In {@link #initialize} they actually do the stripping along each K.
  *
  * <p>Java port note: the C++ class declares mutable protected members
- * ({@code YoYCapFloorTermPriceSurface_}, {@code p_}, {@code lag_},
- * {@code frequency_}, {@code indexIsInterpolated_}). We mirror these as
- * package-private protected fields for the same reason — concrete subclasses
- * (e.g. {@link InterpolatedYoYOptionletStripper}) populate them in
- * {@code initialize()} and read them in other operations.
+ * ({@code YoYCapFloorTermPriceSurface_}, {@code p_}, {@code lag_}, {@code frequency_}, {@code indexIsInterpolated_}).
+ * We mirror these as package-private protected fields for the same reason — concrete subclasses (e.g.
+ * {@link InterpolatedYoYOptionletStripper}) populate them in {@code initialize()} and read them in other operations.
  *
  * @author JQuantLib migration team (Phase 2s Track B)
  */
@@ -80,13 +78,11 @@ public abstract class YoYOptionletStripper {
     //
 
     /**
-     * Mirrors C++ {@code virtual void initialize(...) const = 0;}.
-     * Strips optionlets out of the price surface using the given cap/floor
-     * engine and an initial slope assumption for the per-K base vol.
+     * Mirrors C++ {@code virtual void initialize(...) const = 0;}. Strips optionlets out of the price surface using the
+     * given cap/floor engine and an initial slope assumption for the per-K base vol.
      */
-    public abstract void initialize(YoYCapFloorTermPriceSurfaceLike capFloorPrices,
-                                    InflationCapFloorEngine pricer,
-                                    double slope);
+    public abstract void initialize(YoYCapFloorTermPriceSurfaceLike capFloorPrices, InflationCapFloorEngine pricer,
+            double slope);
 
     /** Smallest strike in the surface. */
     public abstract double minStrike();
@@ -95,12 +91,11 @@ public abstract class YoYOptionletStripper {
     public abstract double maxStrike();
 
     /** All strikes covered by the stripper (in surface order). */
-    public abstract List<Double> strikes();
+    public abstract List< Double > strikes();
 
     /**
-     * Return a (strikes, volatilities) slice of the stripped surface at
-     * date {@code d}. Mirrors C++
+     * Return a (strikes, volatilities) slice of the stripped surface at date {@code d}. Mirrors C++
      * {@code virtual std::pair<std::vector<Rate>, std::vector<Volatility>> slice(const Date&) const = 0;}.
      */
-    public abstract Pair<List<Double>, List<Double>> slice(Date d);
+    public abstract Pair< List< Double >, List< Double > > slice(Date d);
 }

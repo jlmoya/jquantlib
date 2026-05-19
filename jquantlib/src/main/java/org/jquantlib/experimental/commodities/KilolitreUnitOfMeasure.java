@@ -22,13 +22,11 @@ package org.jquantlib.experimental.commodities;
 /**
  * Kilolitre unit of measure (kl).
  * <p>
- * Java port of QuantLib v1.42.1 {@code KilolitreUnitOfMeasure} from
- * {@code petroleumunitsofmeasure.hpp}.
+ * Java port of QuantLib v1.42.1 {@code KilolitreUnitOfMeasure} from {@code petroleumunitsofmeasure.hpp}.
  */
 public class KilolitreUnitOfMeasure extends UnitOfMeasure {
 
-    private static final Data SHARED =
-            new Data("Kilolitres", "kl", Type.Volume, new BarrelUnitOfMeasure());
+    private static final Data SHARED = new Data("Kilolitres", "kl", Type.Volume, new BarrelUnitOfMeasure());
 
     public KilolitreUnitOfMeasure() {
         super();

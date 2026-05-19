@@ -21,29 +21,28 @@
  */
 package org.jquantlib.experimental.credit;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.experimental.math.CopulaPolicy;
 import org.jquantlib.time.Date;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Default loss-distribution convolution for a finite non-homogeneous pool.
  *
  * <p>Java port of QuantLib v1.42.1 template
- * {@code template <class copulaPolicy> class InhomogeneousPoolLossModel}
- * (declared in {@code ql/experimental/credit/inhomogeneouspooldef.hpp}).
+ * {@code template <class copulaPolicy> class InhomogeneousPoolLossModel} (declared in
+ * {@code ql/experimental/credit/inhomogeneouspooldef.hpp}).
  *
  * <p>Builds the loss distribution via {@link LossDistBucketing} convolution
  * inside a 1D trapezoid integration over the systemic factor.
  *
- * @param <P> the {@link CopulaPolicy} bound through the underlying
- *            {@link ConstantLossLatentModel}
+ * @param <P> the {@link CopulaPolicy} bound through the underlying {@link ConstantLossLatentModel}
  */
-public class InhomogeneousPoolLossModel<P extends CopulaPolicy> extends DefaultLossModel {
+public class InhomogeneousPoolLossModel< P extends CopulaPolicy > extends DefaultLossModel {
 
-    private final ConstantLossLatentModel<P> copula_;
+    private final ConstantLossLatentModel< P > copula_;
     private final int nBuckets_;
     private final double max_;
     private final double min_;
@@ -56,20 +55,15 @@ public class InhomogeneousPoolLossModel<P extends CopulaPolicy> extends DefaultL
     private double notional_;
     private double attachAmount_;
     private double detachAmount_;
-    private List<Double> notionals_;
+    private List< Double > notionals_;
 
-    public InhomogeneousPoolLossModel(final ConstantLossLatentModel<P> copula,
-                                      final int nBuckets) {
+    public InhomogeneousPoolLossModel(final ConstantLossLatentModel< P > copula, final int nBuckets) {
         this(copula, nBuckets, 5.0, -5.0, 50);
     }
 
-    public InhomogeneousPoolLossModel(final ConstantLossLatentModel<P> copula,
-                                      final int nBuckets,
-                                      final double max,
-                                      final double min,
-                                      final int nSteps) {
-        QL.require(copula.numFactors() == 1,
-                "Inhomogeneous model not implemented for multifactor");
+    public InhomogeneousPoolLossModel(final ConstantLossLatentModel< P > copula, final int nBuckets, final double max,
+            final double min, final int nSteps) {
+        QL.require(copula.numFactors() == 1, "Inhomogeneous model not implemented for multifactor");
         this.copula_ = copula;
         this.nBuckets_ = nBuckets;
         this.max_ = max;
@@ -78,9 +72,17 @@ public class InhomogeneousPoolLossModel<P extends CopulaPolicy> extends DefaultL
         this.delta_ = (max - min) / nSteps;
     }
 
+    private static List< Double > toList(final double[] a) {
+        final List< Double > l = new ArrayList<>(a.length);
+        for ( final double v : a ) {
+            l.add(v);
+        }
+        return l;
+    }
+
     @Override
     protected void resetModel() {
-        if (basket == null) {
+        if ( basket == null ) {
             return;
         }
         attach_ = Math.min(basket.remainingAttachmentAmount() / basket.remainingNotional(), 1.0);
@@ -96,26 +98,26 @@ public class InhomogeneousPoolLossModel<P extends CopulaPolicy> extends DefaultL
     public Distribution lossDistrib(final Date d) {
         QL.require(basket != null, "Basket not set on InhomogeneousPoolLossModel");
         final LossDistBucketing bucktLDistBuff = new LossDistBucketing(nBuckets_, detachAmount_);
-        final List<Double> recoveries = copula_.recoveries();
-        final List<Double> lgd = new ArrayList<>(recoveries.size());
-        for (int i = 0; i < recoveries.size(); ++i) {
+        final List< Double > recoveries = copula_.recoveries();
+        final List< Double > lgd = new ArrayList<>(recoveries.size());
+        for ( int i = 0; i < recoveries.size(); ++i ) {
             lgd.add((1.0 - recoveries.get(i)) * notionals_.get(i));
         }
-        final List<Double> probsList = basket.remainingProbabilities(d);
+        final List< Double > probsList = basket.remainingProbabilities(d);
         final double[] prob = new double[probsList.size()];
-        for (int i = 0; i < prob.length; ++i) {
+        for ( int i = 0; i < prob.length; ++i ) {
             prob[i] = copula_.inverseCumulativeY(probsList.get(i), i);
         }
         final Distribution dist = new Distribution(nBuckets_, 0.0, detachAmount_);
-        final double[] mkft = new double[]{min_ + delta_ / 2.0};
-        for (int i = 0; i < nSteps_; ++i) {
-            final List<Double> conditionalProbs = new ArrayList<>(notionals_.size());
-            for (int iName = 0; iName < notionals_.size(); ++iName) {
+        final double[] mkft = new double[] { min_ + delta_ / 2.0 };
+        for ( int i = 0; i < nSteps_; ++i ) {
+            final List< Double > conditionalProbs = new ArrayList<>(notionals_.size());
+            for ( int iName = 0; iName < notionals_.size(); ++iName ) {
                 conditionalProbs.add(copula_.conditionalDefaultProbabilityInvP(prob[iName], iName, mkft));
             }
             final Distribution bld = bucktLDistBuff.op(lgd, conditionalProbs);
             final double densitydm = delta_ * copula_.density(toList(mkft));
-            for (int j = 0; j < nBuckets_; ++j) {
+            for ( int j = 0; j < nBuckets_; ++j ) {
                 dist.addDensity(j, bld.density(j) * densitydm);
             }
             mkft[0] += delta_;
@@ -139,13 +141,5 @@ public class InhomogeneousPoolLossModel<P extends CopulaPolicy> extends DefaultL
         final Distribution dist = lossDistrib(d);
         dist.tranche(attachAmount_, detachAmount_);
         return dist.expectedShortfall(percentile);
-    }
-
-    private static List<Double> toList(final double[] a) {
-        final List<Double> l = new ArrayList<>(a.length);
-        for (final double v : a) {
-            l.add(v);
-        }
-        return l;
     }
 }

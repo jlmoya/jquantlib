@@ -33,12 +33,12 @@ import org.jquantlib.methods.montecarlo.PathPricer;
  * Multi-path pricer for the Heston-driven discrete geometric-average-price Asian.
  *
  * <p>Java port of {@code QuantLib v1.42.1
- * ql/pricingengines/asian/mc_discr_geom_av_price_heston.{hpp,cpp}}
- * {@code GeometricAPOHestonPathPricer} (Phase 5e.5b-CFC-d-114).
+ * ql/pricingengines/asian/mc_discr_geom_av_price_heston.{hpp,cpp}} {@code GeometricAPOHestonPathPricer} (Phase
+ * 5e.5b-CFC-d-114).
  *
  * @author JQuantLib
  */
-public final class GeometricAPOHestonPathPricer extends PathPricer<MultiPath> {
+public final class GeometricAPOHestonPathPricer extends PathPricer< MultiPath > {
 
     private final PlainVanillaPayoff payoff_;
     private final double discount_;
@@ -46,19 +46,13 @@ public final class GeometricAPOHestonPathPricer extends PathPricer<MultiPath> {
     private final double runningProduct_;
     private final int pastFixings_;
 
-    public GeometricAPOHestonPathPricer(final Option.Type type,
-                                        final double strike,
-                                        final double discount,
-                                        final int[] fixingIndices) {
+    public GeometricAPOHestonPathPricer(final Option.Type type, final double strike, final double discount,
+            final int[] fixingIndices) {
         this(type, strike, discount, fixingIndices, 1.0, 0);
     }
 
-    public GeometricAPOHestonPathPricer(final Option.Type type,
-                                        final double strike,
-                                        final double discount,
-                                        final int[] fixingIndices,
-                                        final double runningProduct,
-                                        final int pastFixings) {
+    public GeometricAPOHestonPathPricer(final Option.Type type, final double strike, final double discount,
+            final int[] fixingIndices, final double runningProduct, final int pastFixings) {
         QL.require(strike >= 0.0, "strike less than zero not allowed");
         this.payoff_ = new PlainVanillaPayoff(type, strike);
         this.discount_ = discount;
@@ -79,9 +73,9 @@ public final class GeometricAPOHestonPathPricer extends PathPricer<MultiPath> {
 
         // care must be taken not to overflow product
         final double maxValue = Double.MAX_VALUE;
-        for (final int fixingIndice : fixingIndices_) {
+        for ( final int fixingIndice : fixingIndices_ ) {
             final double price = path.get(fixingIndice);
-            if (product < maxValue / price) {
+            if ( product < maxValue / price ) {
                 product *= price;
             } else {
                 averagePrice *= Math.pow(product, 1.0 / fixings);

@@ -32,9 +32,7 @@ import org.jquantlib.math.matrixutilities.SVD;
  * {@code ql/experimental/math/moorepenroseinverse.hpp}.
  *
  * <p>Reference: <a href="http://de.mathworks.com/help/matlab/ref/pinv.html">
- * MATLAB pinv()</a>; <a
- * href="https://en.wikipedia.org/wiki/Moore%E2%80%93Penrose_pseudoinverse">
- * Wikipedia</a>.
+ * MATLAB pinv()</a>; <a href="https://en.wikipedia.org/wiki/Moore%E2%80%93Penrose_pseudoinverse"> Wikipedia</a>.
  */
 public final class MoorePenroseInverse {
 
@@ -50,10 +48,8 @@ public final class MoorePenroseInverse {
      * Compute the Moore-Penrose pseudoinverse of {@code A}.
      *
      * @param A   input matrix
-     * @param tol singular-value tolerance; pass {@link Double#NaN} (or
-     *            {@link org.jquantlib.lang.annotation.Natural} {@code Null<Real>()}
-     *            in C++ parlance) to use the default heuristic
-     *            {@code max(m,n) * eps * max_sv}.
+     * @param tol singular-value tolerance; pass {@link Double#NaN} (or {@link org.jquantlib.lang.annotation.Natural}
+     *            {@code Null<Real>()} in C++ parlance) to use the default heuristic {@code max(m,n) * eps * max_sv}.
      */
     public static Matrix moorePenroseInverse(final Matrix A, final double tol) {
         final int m = A.rows();
@@ -63,15 +59,14 @@ public final class MoorePenroseInverse {
         final SVD svd = new SVD(new Matrix(A));
 
         double tol0 = tol;
-        if (Double.isNaN(tol0)) {
-            tol0 = Math.max(m, n) * Constants.QL_EPSILON
-                    * Math.abs(svd.singularValues().get(0));
+        if ( Double.isNaN(tol0) ) {
+            tol0 = Math.max(m, n) * Constants.QL_EPSILON * Math.abs(svd.singularValues().get(0));
         }
 
         final Matrix sp = new Matrix(n, n);
-        for (int i = 0; i < n; ++i) {
+        for ( int i = 0; i < n; ++i ) {
             final double sv = svd.singularValues().get(i);
-            if (Math.abs(sv) > tol0) {
+            if ( Math.abs(sv) > tol0 ) {
                 sp.set(i, i, 1.0 / sv);
             }
         }

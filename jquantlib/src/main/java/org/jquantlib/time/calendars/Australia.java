@@ -22,15 +22,6 @@
 
 package org.jquantlib.time.calendars;
 
-import static org.jquantlib.time.Month.April;
-import static org.jquantlib.time.Month.August;
-import static org.jquantlib.time.Month.December;
-import static org.jquantlib.time.Month.January;
-import static org.jquantlib.time.Month.June;
-import static org.jquantlib.time.Month.October;
-import static org.jquantlib.time.Weekday.Monday;
-import static org.jquantlib.time.Weekday.Tuesday;
-
 import org.jquantlib.lang.annotation.QualityAssurance;
 import org.jquantlib.lang.annotation.QualityAssurance.Quality;
 import org.jquantlib.lang.annotation.QualityAssurance.Version;
@@ -38,6 +29,10 @@ import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Month;
 import org.jquantlib.time.Weekday;
+
+import static org.jquantlib.time.Month.*;
+import static org.jquantlib.time.Weekday.Monday;
+import static org.jquantlib.time.Weekday.Tuesday;
 
 /**
  * Australian calendar
@@ -57,11 +52,12 @@ import org.jquantlib.time.Weekday;
  * <li>Christmas, December 25th (possibly moved to MONDAY or TUESDAY)</li>
  * <li>Boxing Day, December 26th (possibly moved to MONDAY or TUESDAY)</li>
  * </ul>
+ *
  * @author Tim Swetonic
  * @author Richard Gomes
  *
  */
-@QualityAssurance(quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Zahid Hussain" })
+@QualityAssurance( quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Zahid Hussain" } )
 
 public class Australia extends Calendar {
 
@@ -69,54 +65,49 @@ public class Australia extends Calendar {
     // public constructors
     //
 
-	public Australia() {
-        impl =  new AustraliaImpl();
+    public Australia() {
+        impl = new AustraliaImpl();
     }
-
 
     //
     // private final inner classes
     //
 
-	private final class AustraliaImpl extends WesternImpl {
+    private final class AustraliaImpl extends WesternImpl {
 
-	  @Override
-	  public String name() { return "Australia"; }
-
-	  @Override
-	  public boolean isBusinessDay(final Date date)  {
-        final Weekday w = date.weekday();
-        final int d = date.dayOfMonth(), dd = date.dayOfYear();
-        final Month m = date.month();
-        final int y = date.year();
-        final int em = easterMonday(y);
-        if (isWeekend(w)
-            // New Year's Day (possibly moved to Monday)
-            || (d == 1  && m == January)
-            // Australia Day, JANUARY 26th (possibly moved to Monday)
-            || ((d == 26 || ((d == 27 || d == 28) && w == Monday)) &&
-                m == January)
-            // Good Friday
-            || (dd == em-3)
-            // Easter Monday
-            || (dd == em)
-            // ANZAC Day, April 25th (possibly moved to Monday)
-            || ((d == 25 || (d == 26 && w == Monday)) && m == April)
-            // Queen's Birthday, second Monday in June
-            || ((d > 7 && d <= 14) && w == Monday && m == June)
-            // Bank Holiday, first Monday in August
-            || (d <= 7 && w == Monday && m == August)
-            // Labour Day, first Monday in October
-            || (d <= 7 && w == Monday && m == October)
-            // Christmas, December 25th (possibly Monday or Tuesday)
-            || ((d == 25 || (d == 27 && (w == Monday || w == Tuesday)))
-                && m == December)
-            // Boxing Day, DECEMBER 26th (possibly MONDAY or TUESDAY)
-            || ((d == 26 || (d == 28 && (w == Monday || w == Tuesday)))
-                && m == December)) {
-            return false;
+        @Override
+        public String name() {
+            return "Australia";
         }
-        return true;
+
+        @Override
+        public boolean isBusinessDay(final Date date) {
+            final Weekday w = date.weekday();
+            final int d = date.dayOfMonth(), dd = date.dayOfYear();
+            final Month m = date.month();
+            final int y = date.year();
+            final int em = easterMonday(y);
+            return !isWeekend(w)
+                    // New Year's Day (possibly moved to Monday)
+                    && (d != 1 || m != January)
+                    // Australia Day, JANUARY 26th (possibly moved to Monday)
+                    && ((d != 26 && ((d != 27 && d != 28) || w != Monday)) || m != January)
+                    // Good Friday
+                    && (dd != em - 3)
+                    // Easter Monday
+                    && (dd != em)
+                    // ANZAC Day, April 25th (possibly moved to Monday)
+                    && ((d != 25 && (d != 26 || w != Monday)) || m != April)
+                    // Queen's Birthday, second Monday in June
+                    && ((d <= 7 || d > 14) || w != Monday || m != June)
+                    // Bank Holiday, first Monday in August
+                    && (d > 7 || w != Monday || m != August)
+                    // Labour Day, first Monday in October
+                    && (d > 7 || w != Monday || m != October)
+                    // Christmas, December 25th (possibly Monday or Tuesday)
+                    && ((d != 25 && (d != 27 || (w != Monday && w != Tuesday))) || m != December)
+                    // Boxing Day, DECEMBER 26th (possibly MONDAY or TUESDAY)
+                    && ((d != 26 && (d != 28 || (w != Monday && w != Tuesday))) || m != December);
+        }
     }
-  }
 }

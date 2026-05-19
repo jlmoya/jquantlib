@@ -46,16 +46,16 @@ import org.jquantlib.math.IntervalPrice;
  */
 public class ParkinsonSigma extends GarmanKlassAbstract {
 
-	public ParkinsonSigma(final double y) {
-		super(y);
-	}
+    public ParkinsonSigma(final double y) {
+        super(y);
+    }
 
-	@Override
-	protected double calculatePoint(final IntervalPrice p /* @ReadOnly */) {
-		final double u = Math.log(p.high() / p.open());
-		final double d = Math.log(p.low() / p.open());
-		final double r = (u - d) * (u - d) / 4.0 / Math.log(2.0);
-		return r;
-	}
+    @Override
+    protected double calculatePoint(final IntervalPrice p /* @ReadOnly */) {
+        final double u = Math.log(p.high() / p.open());
+        final double d = Math.log(p.low() / p.open());
+        final double r = (u - d) * (u - d) / 4.0 / Math.log(2.0);
+        return r;
+    }
 
 }

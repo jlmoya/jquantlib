@@ -31,9 +31,8 @@ import org.jquantlib.util.LazyObject;
  * {@code ql/methods/finitedifferences/solvers/fdmndimsolver.hpp} (header-only).
  *
  * <p>C++ dispatches on {@code N} at compile time via templates
- * ({@code FdmNdimSolver<N>}); the Java port stores the dimension as a runtime
- * field and uses {@link MultiCubicSpline}'s flat-array implementation, which
- * is functionally identical (natural cubic spline along every axis).
+ * ({@code FdmNdimSolver<N>}); the Java port stores the dimension as a runtime field and uses {@link MultiCubicSpline}'s
+ * flat-array implementation, which is functionally identical (natural cubic spline along every axis).
  *
  * <p>Algorithm:
  * <ol>
@@ -65,9 +64,8 @@ public final class FdmNdimSolver extends LazyObject {
     private double[] f;                              // flat grid result
     private MultiCubicSpline interp;
 
-    public FdmNdimSolver(final FdmSolverDesc solverDesc,
-                         final FdmSchemeDesc schemeDesc,
-                         final FdmLinearOpComposite op) {
+    public FdmNdimSolver(final FdmSolverDesc solverDesc, final FdmSchemeDesc schemeDesc,
+            final FdmLinearOpComposite op) {
         this.solverDesc = solverDesc;
         this.schemeDesc = schemeDesc;
         this.op = op;
@@ -75,10 +73,8 @@ public final class FdmNdimSolver extends LazyObject {
         final double earliestStop = solverDesc.condition.stoppingTimes().isEmpty()
                 ? solverDesc.maturity
                 : solverDesc.condition.stoppingTimes().get(0);
-        this.thetaCondition = new FdmSnapshotCondition(
-                0.99 * Math.min(1.0 / 365.0, earliestStop));
-        this.conditions = FdmStepConditionComposite.joinConditions(
-                thetaCondition, solverDesc.condition);
+        this.thetaCondition = new FdmSnapshotCondition(0.99 * Math.min(1.0 / 365.0, earliestStop));
+        this.conditions = FdmStepConditionComposite.joinConditions(thetaCondition, solverDesc.condition);
 
         final FdmLinearOpLayout layout = solverDesc.mesher.layout();
         final int[] dim = layout.dim();
@@ -86,7 +82,7 @@ public final class FdmNdimSolver extends LazyObject {
         QL.require(n >= 1, "solver dim must be >= 1");
 
         this.x = new double[n][];
-        for (int i = 0; i < n; ++i) {
+        for ( int i = 0; i < n; ++i ) {
             this.x[i] = new double[dim[i]];
         }
         this.initialValues = new double[layout.size()];
@@ -96,14 +92,14 @@ public final class FdmNdimSolver extends LazyObject {
         // the other coordinates are all zero) also capture the axis knot.
         // This mirrors C++ which uses `std::accumulate(c.begin(), c.end(), 0UL) - c[i] == 0U`.
         final int[] axisCursor = new int[n];
-        for (final FdmLinearOpIterator iter : layout) {
-            initialValues[iter.index()] =
-                    solverDesc.calculator.avgInnerValue(iter, solverDesc.maturity);
+        for ( final FdmLinearOpIterator iter : layout ) {
+            initialValues[iter.index()] = solverDesc.calculator.avgInnerValue(iter, solverDesc.maturity);
             final int[] c = iter.coordinates();
             int sum = 0;
-            for (final int ci : c) sum += ci;
-            for (int i = 0; i < n; ++i) {
-                if (sum - c[i] == 0) {
+            for ( final int ci : c )
+                sum += ci;
+            for ( int i = 0; i < n; ++i ) {
+                if ( sum - c[i] == 0 ) {
                     x[i][axisCursor[i]++] = solverDesc.mesher.location(iter, i);
                 }
             }
@@ -113,21 +109,20 @@ public final class FdmNdimSolver extends LazyObject {
     @Override
     protected void performCalculations() {
         final Array rhs = new Array(initialValues.length);
-        for (int i = 0; i < initialValues.length; ++i) rhs.set(i, initialValues[i]);
+        for ( int i = 0; i < initialValues.length; ++i )
+            rhs.set(i, initialValues[i]);
 
-        new FdmBackwardSolver(op, solverDesc.bcSet, conditions, schemeDesc)
-                .rollback(rhs, solverDesc.maturity, 0.0,
-                          solverDesc.timeSteps, solverDesc.dampingSteps);
+        new FdmBackwardSolver(op, solverDesc.bcSet, conditions, schemeDesc).rollback(rhs, solverDesc.maturity, 0.0,
+                solverDesc.timeSteps, solverDesc.dampingSteps);
 
         f = layoutToGrid(rhs);
         interp = new MultiCubicSpline(x, f, extrapolation);
     }
 
     /**
-     * Re-shape the layout-ordered flat vector into a grid whose flat layout
-     * matches {@link MultiCubicSpline}'s row-major (last-axis-fastest)
-     * convention. The {@link FdmLinearOpLayout} walks coordinates with the
-     * first axis fastest (C++ column-major), so we transpose here.
+     * Re-shape the layout-ordered flat vector into a grid whose flat layout matches {@link MultiCubicSpline}'s
+     * row-major (last-axis-fastest) convention. The {@link FdmLinearOpLayout} walks coordinates with the first axis
+     * fastest (C++ column-major), so we transpose here.
      */
     private double[] layoutToGrid(final Array rhs) {
         final FdmLinearOpLayout layout = solverDesc.mesher.layout();
@@ -137,12 +132,14 @@ public final class FdmNdimSolver extends LazyObject {
         // strides for the MultiCubicSpline ordering: stride[n-1]=1, stride[i]=stride[i+1]*dim[i+1]
         final int[] stride = new int[n];
         stride[n - 1] = 1;
-        for (int i = n - 2; i >= 0; --i) stride[i] = stride[i + 1] * dim[i + 1];
+        for ( int i = n - 2; i >= 0; --i )
+            stride[i] = stride[i + 1] * dim[i + 1];
 
-        for (final FdmLinearOpIterator iter : layout) {
+        for ( final FdmLinearOpIterator iter : layout ) {
             final int[] c = iter.coordinates();
             int flat = 0;
-            for (int i = 0; i < n; ++i) flat += c[i] * stride[i];
+            for ( int i = 0; i < n; ++i )
+                flat += c[i] * stride[i];
             g[flat] = rhs.get(iter.index());
         }
         return g;
@@ -156,7 +153,7 @@ public final class FdmNdimSolver extends LazyObject {
 
     /** Theta estimate at the supplied N-d point. */
     public double thetaAt(final double[] x) {
-        if (conditions.stoppingTimes().get(0) == 0.0) {
+        if ( conditions.stoppingTimes().get(0) == 0.0 ) {
             return Double.NaN;
         }
         calculate();

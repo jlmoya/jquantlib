@@ -37,55 +37,40 @@ import org.jquantlib.model.marketmodels.BrownianGenerator;
 /**
  * Sobol Brownian generator for market-model simulations.
  * <p>
- * Incremental Brownian generator using a Sobol low-discrepancy generator,
- * inverse-cumulative Gaussian transformation, and Brownian-bridge ordering.
+ * Incremental Brownian generator using a Sobol low-discrepancy generator, inverse-cumulative Gaussian transformation,
+ * and Brownian-bridge ordering.
  * <p>
- * The {@link Ordering} controls how the dimensions of the Sobol sequence are
- * mapped to factors and steps. {@link Ordering#Factors} ranks the best Sobol
- * dimensions on the first factor's full path; {@link Ordering#Steps} ranks
- * the best on the largest steps of all factors; {@link Ordering#Diagonal}
- * uses a diagonal scheme.
- *
- * @see "ql/models/marketmodels/browniangenerators/sobolbrowniangenerator.{hpp,cpp}" v1.42.1
+ * The {@link Ordering} controls how the dimensions of the Sobol sequence are mapped to factors and steps.
+ * {@link Ordering#Factors} ranks the best Sobol dimensions on the first factor's full path; {@link Ordering#Steps}
+ * ranks the best on the largest steps of all factors; {@link Ordering#Diagonal} uses a diagonal scheme.
  *
  * @author Jose Moya
+ * @see "ql/models/marketmodels/browniangenerators/sobolbrowniangenerator.{hpp,cpp}" v1.42.1
  */
 public class SobolBrownianGenerator extends BrownianGenerator {
-
-    /** Mapping of Sobol dimensions to (factor, step) cells. */
-    public enum Ordering {
-        /** The variates with the best quality will be used for the evolution of the first factor. */
-        Factors,
-        /** The variates with the best quality will be used for the largest steps of all factors. */
-        Steps,
-        /** A diagonal schema assigns the best variates to the most important factors and largest steps. */
-        Diagonal
-    }
 
     private final int factors_;
     private final int steps_;
     private final Ordering ordering_;
     private final BrownianBridge bridge_;
-    // work variables
-    private int lastStep_;
     private final int[][] orderedIndices_;
     private final double[][] bridgedVariates_;
     // generator
-    private final InverseCumulativeRsg<SobolRsg, InverseCumulativeNormal> generator_;
+    private final InverseCumulativeRsg< SobolRsg, InverseCumulativeNormal > generator_;
     // scratch
     private final double[] permuted_;
-
+    // work variables
+    private int lastStep_;
     public SobolBrownianGenerator(final int factors, final int steps, final Ordering ordering) {
         this(factors, steps, ordering, 0L, SobolRsg.DirectionIntegers.Jaeckel);
     }
 
-    public SobolBrownianGenerator(final int factors, final int steps, final Ordering ordering,
-                                  final long seed) {
+    public SobolBrownianGenerator(final int factors, final int steps, final Ordering ordering, final long seed) {
         this(factors, steps, ordering, seed, SobolRsg.DirectionIntegers.Jaeckel);
     }
 
-    public SobolBrownianGenerator(final int factors, final int steps, final Ordering ordering,
-                                  final long seed, final SobolRsg.DirectionIntegers directionIntegers) {
+    public SobolBrownianGenerator(final int factors, final int steps, final Ordering ordering, final long seed,
+            final SobolRsg.DirectionIntegers directionIntegers) {
         this.factors_ = factors;
         this.steps_ = steps;
         this.ordering_ = ordering;
@@ -95,29 +80,28 @@ public class SobolBrownianGenerator extends BrownianGenerator {
         this.bridgedVariates_ = new double[factors][steps];
         this.permuted_ = new double[steps];
 
-        switch (ordering_) {
-            case Factors:
-                fillByFactor(orderedIndices_, factors_, steps_);
-                break;
-            case Steps:
-                fillByStep(orderedIndices_, factors_, steps_);
-                break;
-            case Diagonal:
-                fillByDiagonal(orderedIndices_, factors_, steps_);
-                break;
-            default:
-                QL.error("unknown ordering");
+        switch ( ordering_ ) {
+        case Factors:
+            fillByFactor(orderedIndices_, factors_, steps_);
+            break;
+        case Steps:
+            fillByStep(orderedIndices_, factors_, steps_);
+            break;
+        case Diagonal:
+            fillByDiagonal(orderedIndices_, factors_, steps_);
+            break;
+        default:
+            QL.error("unknown ordering");
         }
 
-        this.generator_ = new InverseCumulativeRsg<SobolRsg, InverseCumulativeNormal>(
-                new SobolRsg(factors * steps, seed, directionIntegers),
-                new InverseCumulativeNormal());
+        this.generator_ = new InverseCumulativeRsg< SobolRsg, InverseCumulativeNormal >(
+                new SobolRsg(factors * steps, seed, directionIntegers), new InverseCumulativeNormal());
     }
 
     private static void fillByFactor(final int[][] m, final int factors, final int steps) {
         int counter = 0;
-        for (int i = 0; i < factors; ++i) {
-            for (int j = 0; j < steps; ++j) {
+        for ( int i = 0; i < factors; ++i ) {
+            for ( int j = 0; j < steps; ++j ) {
                 m[i][j] = counter++;
             }
         }
@@ -125,8 +109,8 @@ public class SobolBrownianGenerator extends BrownianGenerator {
 
     private static void fillByStep(final int[][] m, final int factors, final int steps) {
         int counter = 0;
-        for (int j = 0; j < steps; ++j) {
-            for (int i = 0; i < factors; ++i) {
+        for ( int j = 0; j < steps; ++j ) {
+            for ( int i = 0; i < factors; ++i ) {
                 m[i][j] = counter++;
             }
         }
@@ -141,11 +125,11 @@ public class SobolBrownianGenerator extends BrownianGenerator {
         int i = 0;
         int j = 0;
         int counter = 0;
-        while (counter < factors * steps) {
+        while ( counter < factors * steps ) {
             m[i][j] = counter++;
-            if (i == 0 || j == steps - 1) {
+            if ( i == 0 || j == steps - 1 ) {
                 // we completed a diagonal; start a new one
-                if (i0 < factors - 1) {
+                if ( i0 < factors - 1 ) {
                     // start the path of the next factor
                     i0 = i0 + 1;
                     j0 = 0;
@@ -166,12 +150,12 @@ public class SobolBrownianGenerator extends BrownianGenerator {
 
     @Override
     public double nextPath() {
-        final Sample<double[]> sample = generator_.nextSequence();
+        final Sample< double[] > sample = generator_.nextSequence();
         final double[] value = sample.value();
         // Brownian-bridge the variates according to the ordered indices
-        for (int i = 0; i < factors_; ++i) {
+        for ( int i = 0; i < factors_; ++i ) {
             // build a permuted view of `value` according to orderedIndices_[i]
-            for (int s = 0; s < steps_; ++s) {
+            for ( int s = 0; s < steps_; ++s ) {
                 permuted_[s] = value[orderedIndices_[i][s]];
             }
             bridge_.transform(permuted_, bridgedVariates_[i]);
@@ -184,7 +168,7 @@ public class SobolBrownianGenerator extends BrownianGenerator {
     public double nextStep(final double[] output) {
         QL.require(output.length == factors_, "size mismatch");
         QL.require(lastStep_ < steps_, "sequence exhausted");
-        for (int i = 0; i < factors_; ++i) {
+        for ( int i = 0; i < factors_; ++i ) {
             output[i] = bridgedVariates_[i][lastStep_];
         }
         ++lastStep_;
@@ -207,9 +191,8 @@ public class SobolBrownianGenerator extends BrownianGenerator {
     }
 
     /**
-     * Test interface — applies the Brownian-bridge reordering to a batch of
-     * pre-generated variate paths. Mirrors the C++ {@code transform(...)} test
-     * helper.
+     * Test interface — applies the Brownian-bridge reordering to a batch of pre-generated variate paths. Mirrors the
+     * C++ {@code transform(...)} test helper.
      *
      * @param variates [factors*steps][nPaths] — input variates per dimension
      * @return [factors][nPaths*steps] — bridged & rearranged variates
@@ -225,12 +208,12 @@ public class SobolBrownianGenerator extends BrownianGenerator {
         final double[] tempPermuted = new double[steps_];
         final double[] tempBridged = new double[steps_];
 
-        for (int j = 0; j < nPaths; ++j) {
-            for (int k = 0; k < dim; ++k) {
+        for ( int j = 0; j < nPaths; ++j ) {
+            for ( int k = 0; k < dim; ++k ) {
                 sample[k] = variates[k][j];
             }
-            for (int i = 0; i < factors_; ++i) {
-                for (int s = 0; s < steps_; ++s) {
+            for ( int i = 0; i < factors_; ++i ) {
+                for ( int s = 0; s < steps_; ++s ) {
                     tempPermuted[s] = sample[orderedIndices_[i][s]];
                 }
                 bridge_.transform(tempPermuted, tempBridged);
@@ -239,5 +222,15 @@ public class SobolBrownianGenerator extends BrownianGenerator {
         }
 
         return retVal;
+    }
+
+    /** Mapping of Sobol dimensions to (factor, step) cells. */
+    public enum Ordering {
+        /** The variates with the best quality will be used for the evolution of the first factor. */
+        Factors,
+        /** The variates with the best quality will be used for the largest steps of all factors. */
+        Steps,
+        /** A diagonal schema assigns the best variates to the most important factors and largest steps. */
+        Diagonal
     }
 }

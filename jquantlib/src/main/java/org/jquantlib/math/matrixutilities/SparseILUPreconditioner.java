@@ -33,17 +33,15 @@ package org.jquantlib.math.matrixutilities;
 import java.util.TreeSet;
 
 /**
- * Incomplete LU preconditioner with level-of-fill control (ILU(p)) for
- * {@link SparseMatrix}.
+ * Incomplete LU preconditioner with level-of-fill control (ILU(p)) for {@link SparseMatrix}.
  *
  * <p>Direct port of the algorithm in
- * {@code ql/math/matrixutilities/sparseilupreconditioner.cpp} from
- * QuantLib v1.42.1 (originally by Ralph Schreyer, 2009).
+ * {@code ql/math/matrixutilities/sparseilupreconditioner.cpp} from QuantLib v1.42.1 (originally by Ralph Schreyer,
+ * 2009).
  *
  * <p>{@link #apply(Array)} computes {@code (LU)^{-1} b} via forward + backward
- * substitution against the precomputed factors {@code L} (unit lower
- * triangular) and {@code U} (upper triangular).  Used as a left
- * preconditioner for {@link BiCGStab} and {@link GMRES}.
+ * substitution against the precomputed factors {@code L} (unit lower triangular) and {@code U} (upper triangular).
+ * Used as a left preconditioner for {@link BiCGStab} and {@link GMRES}.
  *
  * <p>Phase 5b.5 — JQuantLib migration.
  */
@@ -61,26 +59,25 @@ public class SparseILUPreconditioner {
      * Build the ILU(lfil) preconditioner for {@code A}.
      *
      * @param A    square sparse matrix
-     * @param lfil level of fill ({@code >= 0}); higher retains more of the
-     *             true LU at the cost of preconditioner density
+     * @param lfil level of fill ({@code >= 0}); higher retains more of the true LU at the cost of preconditioner
+     *             density
      */
     public SparseILUPreconditioner(final SparseMatrix A, final int lfil) {
-        if (A.rows() != A.columns()) {
+        if ( A.rows() != A.columns() ) {
             throw new IllegalArgumentException(
-                    "SparseILUPreconditioner: requires square matrix ("
-                            + A.rows() + "x" + A.columns() + ")");
+                    "SparseILUPreconditioner: requires square matrix (" + A.rows() + "x" + A.columns() + ")");
         }
 
         final int n = A.rows();
         L_ = new SparseMatrix(n, n);
         U_ = new SparseMatrix(n, n);
 
-        for (int i = 0; i < n; i++) {
+        for ( int i = 0; i < n; i++ ) {
             L_.set(i, i, 1.0);
         }
 
-        final TreeSet<Integer> lBandSet = new TreeSet<>();
-        final TreeSet<Integer> uBandSet = new TreeSet<>();
+        final TreeSet< Integer > lBandSet = new TreeSet<>();
+        final TreeSet< Integer > uBandSet = new TreeSet<>();
 
         // levs is a sparse matrix of level-of-fill integers (mirrors the C++
         // boost::numeric::ublas::compressed_matrix<Integer> levs(n,n)).
@@ -88,21 +85,21 @@ public class SparseILUPreconditioner {
 
         final int lfilp = lfil + 1;
 
-        for (int ii = 0; ii < n; ii++) {
+        for ( int ii = 0; ii < n; ii++ ) {
             final double[] w = new double[n];
-            for (int k = 0; k < n; k++) {
+            for ( int k = 0; k < n; k++ ) {
                 w[k] = A.get(ii, k);
             }
 
             final int[] levii = new int[n];
-            for (int i = 0; i < n; i++) {
-                if (w[i] > QL_EPSILON || w[i] < -QL_EPSILON) {
+            for ( int i = 0; i < n; i++ ) {
+                if ( w[i] > QL_EPSILON || w[i] < -QL_EPSILON ) {
                     levii[i] = 1;
                 }
             }
 
             int jj = -1;
-            while (jj < ii) {
+            while ( jj < ii ) {
                 // Mirror C++: scan k=jj+1..n for next non-zero levii[k]; if
                 // found, jj=k.  If no such k exists in range, jj stays at its
                 // old value but we break out via the `jj >= ii` check after
@@ -110,19 +107,19 @@ public class SparseILUPreconditioner {
                 // levii[ii] is set and the search always finds at least
                 // index ii.
                 boolean found = false;
-                for (int k = jj + 1; k < n; k++) {
-                    if (levii[k] != 0) {
+                for ( int k = jj + 1; k < n; k++ ) {
+                    if ( levii[k] != 0 ) {
                         jj = k;
                         found = true;
                         break;
                     }
                 }
-                if (!found || jj >= ii) {
+                if ( !found || jj >= ii ) {
                     break;
                 }
 
                 final int jlev = levii[jj];
-                if (jlev <= lfilp) {
+                if ( jlev <= lfilp ) {
                     // Collect non-zero entries on row jj of U (including
                     // diagonal U(jj,jj)).
                     final int[] nonZeros = new int[uBandSet.size() + 1];
@@ -130,16 +127,17 @@ public class SparseILUPreconditioner {
                     int nzCount = 0;
 
                     final double diag = U_.get(jj, jj);
-                    if (diag > QL_EPSILON || diag < -QL_EPSILON) {
+                    if ( diag > QL_EPSILON || diag < -QL_EPSILON ) {
                         nonZeros[nzCount] = jj;
                         nonZeroEntries[nzCount] = diag;
                         nzCount++;
                     }
-                    for (final Integer band : uBandSet) {
+                    for ( final Integer band : uBandSet ) {
                         final int colIdx = jj + band;
-                        if (colIdx >= n) continue;
+                        if ( colIdx >= n )
+                            continue;
                         final double entry = U_.get(jj, colIdx);
-                        if (entry > QL_EPSILON || entry < -QL_EPSILON) {
+                        if ( entry > QL_EPSILON || entry < -QL_EPSILON ) {
                             nonZeros[nzCount] = colIdx;
                             nonZeroEntries[nzCount] = entry;
                             nzCount++;
@@ -147,14 +145,14 @@ public class SparseILUPreconditioner {
                     }
 
                     double fact = w[jj];
-                    if (nzCount > 0) {
+                    if ( nzCount > 0 ) {
                         fact /= nonZeroEntries[0];
                     }
-                    for (int k = 0; k < nzCount; k++) {
+                    for ( int k = 0; k < nzCount; k++ ) {
                         final int j = nonZeros[k];
                         final int temp = levs.get(jj, j) + jlev;
-                        if (levii[j] == 0) {
-                            if (temp <= lfilp) {
+                        if ( levii[j] == 0 ) {
+                            if ( temp <= lfilp ) {
                                 w[j] = -fact * nonZeroEntries[k];
                                 levii[j] = temp;
                             }
@@ -172,9 +170,9 @@ public class SparseILUPreconditioner {
             final int[] wNonZeros = new int[n];
             final double[] wNonZeroEntries = new double[n];
             int wnzCount = 0;
-            for (int i = 0; i < n; i++) {
+            for ( int i = 0; i < n; i++ ) {
                 final double entry = w[i];
-                if (entry > QL_EPSILON || entry < -QL_EPSILON) {
+                if ( entry > QL_EPSILON || entry < -QL_EPSILON ) {
                     wNonZeros[wnzCount] = i;
                     wNonZeroEntries[wnzCount] = entry;
                     wnzCount++;
@@ -187,24 +185,24 @@ public class SparseILUPreconditioner {
             //  for an int that's effectively != 0 since |1| > eps).
             final int[] leviiNonZero = new int[n];
             int lvnzCount = 0;
-            for (int i = 0; i < n; i++) {
+            for ( int i = 0; i < n; i++ ) {
                 final int entry = levii[i];
-                if (entry > QL_EPSILON || entry < -QL_EPSILON) {
+                if ( entry > QL_EPSILON || entry < -QL_EPSILON ) {
                     leviiNonZero[lvnzCount++] = entry;
                 }
             }
 
-            for (int k = 0; k < wnzCount; k++) {
+            for ( int k = 0; k < wnzCount; k++ ) {
                 final int j = wNonZeros[k];
-                if (j < ii) {
+                if ( j < ii ) {
                     L_.set(ii, j, wNonZeroEntries[k]);
                     lBandSet.add(ii - j);
                 } else {
                     U_.set(ii, j, wNonZeroEntries[k]);
-                    if (k < lvnzCount) {
+                    if ( k < lvnzCount ) {
                         levs.set(ii, j, leviiNonZero[k]);
                     }
-                    if (j - ii > 0) {
+                    if ( j - ii > 0 ) {
                         uBandSet.add(j - ii);
                     }
                 }
@@ -215,9 +213,11 @@ public class SparseILUPreconditioner {
         lBands_ = new int[lBandSet.size()];
         uBands_ = new int[uBandSet.size()];
         int idx = 0;
-        for (final Integer band : lBandSet) lBands_[idx++] = band;
+        for ( final Integer band : lBandSet )
+            lBands_[idx++] = band;
         idx = 0;
-        for (final Integer band : uBandSet) uBands_[idx++] = band;
+        for ( final Integer band : uBandSet )
+            uBands_[idx++] = band;
     }
 
     /**
@@ -240,8 +240,7 @@ public class SparseILUPreconditioner {
     }
 
     /**
-     * Apply the preconditioner: {@code (LU)^{-1} b}, computed as
-     * {@code U \ (L \ b)}.
+     * Apply the preconditioner: {@code (LU)^{-1} b}, computed as {@code U \ (L \ b)}.
      *
      * @param b right-hand side
      * @return preconditioned vector
@@ -256,11 +255,11 @@ public class SparseILUPreconditioner {
         final int n = b.size();
         final double[] y = new double[n];
         y[0] = b.get(0) / L_.get(0, 0);
-        for (int i = 1; i <= n - 1; i++) {
+        for ( int i = 1; i <= n - 1; i++ ) {
             y[i] = b.get(i) / L_.get(i, i);
-            for (int j = lBands_.length - 1; j >= 0 && i - lBands_[j] <= i - 1; j--) {
+            for ( int j = lBands_.length - 1; j >= 0 && i - lBands_[j] <= i - 1; j-- ) {
                 final int k = i - lBands_[j];
-                if (k >= 0) {
+                if ( k >= 0 ) {
                     y[i] -= L_.get(i, k) * y[k] / L_.get(i, i);
                 }
             }
@@ -272,9 +271,9 @@ public class SparseILUPreconditioner {
         final int n = y.size();
         final double[] x = new double[n];
         x[n - 1] = y.get(n - 1) / U_.get(n - 1, n - 1);
-        for (int i = n - 2; i >= 0; i--) {
+        for ( int i = n - 2; i >= 0; i-- ) {
             x[i] = y.get(i) / U_.get(i, i);
-            for (int j = 0; j < uBands_.length && i + uBands_[j] <= n - 1; j++) {
+            for ( int j = 0; j < uBands_.length && i + uBands_[j] <= n - 1; j++ ) {
                 x[i] -= U_.get(i, i + uBands_[j]) * x[i + uBands_[j]] / U_.get(i, i);
             }
         }
@@ -291,7 +290,7 @@ public class SparseILUPreconditioner {
         private final int cols;
         // Simple dictionary keyed by (i*cols + j).  Acceptable since only used
         // inside the ILU build for relatively small matrices in practice.
-        private final java.util.HashMap<Long, Integer> data = new java.util.HashMap<>();
+        private final java.util.HashMap< Long, Integer > data = new java.util.HashMap<>();
 
         SparseIntMatrix(final int rows, final int cols) {
             this.rows = rows;

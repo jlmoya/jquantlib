@@ -33,11 +33,11 @@ import org.jquantlib.math.Constants;
 import org.jquantlib.pricingengines.GenericEngine;
 import org.jquantlib.pricingengines.PricingEngine;
 import org.jquantlib.util.Observer;
+
 /**
  * Double Barrier option on a single asset.
  * <p>
- * Mirrors {@code QuantLib::DoubleBarrierOption} from
- * {@code ql/instruments/doublebarrieroption.hpp} (v1.42.1).
+ * Mirrors {@code QuantLib::DoubleBarrierOption} from {@code ql/instruments/doublebarrieroption.hpp} (v1.42.1).
  *
  * <p>The implied-volatility helper present in C++ is omitted in this initial port
  * (Phase 4e.5 may add it once {@code AnalyticDoubleBarrierEngine} ships in
@@ -56,25 +56,18 @@ public class DoubleBarrierOption extends OneAssetOption {
     protected double barrier_hi;
     protected double rebate;
 
-
     //
     // public constructors
     //
 
-    public DoubleBarrierOption(
-            final DoubleBarrierType barrierType,
-            final double barrier_lo,
-            final double barrier_hi,
-            final double rebate,
-            final StrikedTypePayoff payoff,
-            final Exercise exercise) {
+    public DoubleBarrierOption(final DoubleBarrierType barrierType, final double barrier_lo, final double barrier_hi,
+            final double rebate, final StrikedTypePayoff payoff, final Exercise exercise) {
         super(payoff, exercise);
         this.barrierType = barrierType;
         this.barrier_lo = barrier_lo;
         this.barrier_hi = barrier_hi;
         this.rebate = rebate;
     }
-
 
     //
     // overrides OneAssetOption
@@ -92,23 +85,23 @@ public class DoubleBarrierOption extends OneAssetOption {
         a.rebate = rebate;
     }
 
-
     //
     // inner interfaces / classes
     //
 
-    public interface Arguments extends OneAssetOption.Arguments { /* marking interface */ }
+    public interface Arguments extends OneAssetOption.Arguments { /* marking interface */
+    }
 
-    public interface Results extends OneAssetOption.Results { /* marking interface */ }
+    public interface Results extends OneAssetOption.Results { /* marking interface */
+    }
 
-    public interface Engine extends PricingEngine, Observer { /* marking interface */ }
-
+    public interface Engine extends PricingEngine, Observer { /* marking interface */
+    }
 
     /**
      * Arguments for double barrier option calculation.
      */
-    public static class ArgumentsImpl extends OneAssetOption.ArgumentsImpl
-            implements DoubleBarrierOption.Arguments {
+    public static class ArgumentsImpl extends OneAssetOption.ArgumentsImpl implements DoubleBarrierOption.Arguments {
 
         public DoubleBarrierType barrierType;
         public double barrier_lo;
@@ -126,10 +119,8 @@ public class DoubleBarrierOption extends OneAssetOption {
         public void validate() {
             super.validate();
 
-            QL.require(barrierType == DoubleBarrierType.KnockIn
-                    || barrierType == DoubleBarrierType.KnockOut
-                    || barrierType == DoubleBarrierType.KIKO
-                    || barrierType == DoubleBarrierType.KOKI,
+            QL.require(barrierType == DoubleBarrierType.KnockIn || barrierType == DoubleBarrierType.KnockOut
+                            || barrierType == DoubleBarrierType.KIKO || barrierType == DoubleBarrierType.KOKI,
                     "Invalid barrier type");
             QL.require(!Double.isNaN(barrier_lo), "no low barrier given");
             QL.require(!Double.isNaN(barrier_hi), "no high barrier given");
@@ -137,16 +128,15 @@ public class DoubleBarrierOption extends OneAssetOption {
         }
     }
 
-
     public static class ResultsImpl extends OneAssetOption.ResultsImpl
-            implements DoubleBarrierOption.Results { /* marking class */ }
-
+            implements DoubleBarrierOption.Results { /* marking class */
+    }
 
     /**
      * Double-Barrier-option engine base class.
      */
     public abstract static class EngineImpl
-            extends GenericEngine<DoubleBarrierOption.Arguments, OneAssetOption.Results> {
+            extends GenericEngine< DoubleBarrierOption.Arguments, OneAssetOption.Results > {
 
         private final DoubleBarrierOption.ArgumentsImpl a;
 
@@ -155,23 +145,20 @@ public class DoubleBarrierOption extends OneAssetOption {
             this.a = (DoubleBarrierOption.ArgumentsImpl) arguments_;
         }
 
-        protected EngineImpl(final DoubleBarrierOption.Arguments arguments,
-                             final OneAssetOption.Results results) {
+        protected EngineImpl(final DoubleBarrierOption.Arguments arguments, final OneAssetOption.Results results) {
             super(arguments, results);
             this.a = (DoubleBarrierOption.ArgumentsImpl) arguments_;
         }
 
         /**
-         * Mirrors {@code DoubleBarrierOption::engine::triggered} (v1.42.1):
-         * underlying is at or beyond either barrier.
+         * Mirrors {@code DoubleBarrierOption::engine::triggered} (v1.42.1): underlying is at or beyond either barrier.
          */
         protected boolean triggered(final double underlying) {
             return underlying <= a.barrier_lo || underlying >= a.barrier_hi;
         }
 
         /**
-         * Convenience accessor for subclasses that need the typed arguments
-         * without re-casting.
+         * Convenience accessor for subclasses that need the typed arguments without re-casting.
          */
         protected DoubleBarrierOption.ArgumentsImpl args() {
             return a;

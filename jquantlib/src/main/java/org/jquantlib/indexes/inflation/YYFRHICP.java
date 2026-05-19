@@ -42,19 +42,11 @@ import org.jquantlib.time.TimeUnit;
 public class YYFRHICP extends YoYInflationIndex {
 
     public YYFRHICP(final boolean interpolated) {
-        this(interpolated, new Handle<YoYInflationTermStructure>());
+        this(interpolated, new Handle< YoYInflationTermStructure >());
     }
 
-    public YYFRHICP(final boolean interpolated,
-                    final Handle<YoYInflationTermStructure> termStructure) {
-        super("YY_HICP",
-                new FranceRegion(),
-                false,
-                interpolated,
-                false,
-                Frequency.Monthly,
-                new Period(1, TimeUnit.Months),
-                new EURCurrency(),
-                termStructure);
+    public YYFRHICP(final boolean interpolated, final Handle< YoYInflationTermStructure > termStructure) {
+        super("YY_HICP", new FranceRegion(), false, interpolated, false, Frequency.Monthly,
+                new Period(1, TimeUnit.Months), new EURCurrency(), termStructure);
     }
 }

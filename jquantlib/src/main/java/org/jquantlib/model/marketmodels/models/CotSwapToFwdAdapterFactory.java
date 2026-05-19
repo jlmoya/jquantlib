@@ -28,8 +28,6 @@
 
 package org.jquantlib.model.marketmodels.models;
 
-import java.util.List;
-
 import org.jquantlib.model.marketmodels.EvolutionDescription;
 import org.jquantlib.model.marketmodels.MarketModel;
 import org.jquantlib.model.marketmodels.MarketModelFactory;
@@ -37,13 +35,14 @@ import org.jquantlib.util.DefaultObservable;
 import org.jquantlib.util.Observable;
 import org.jquantlib.util.Observer;
 
+import java.util.List;
+
 /**
- * Factory for {@link CotSwapToFwdAdapter}: wraps another factory that produces
- * a coterminal-measure model and converts each result to forward measure.
+ * Factory for {@link CotSwapToFwdAdapter}: wraps another factory that produces a coterminal-measure model and converts
+ * each result to forward measure.
  *
  * <p>Mirrors {@code CotSwapToFwdAdapterFactory} from
- * {@code ql/models/marketmodels/models/cotswaptofwdadapter.{hpp,cpp}}
- * (QuantLib v1.42.1).
+ * {@code ql/models/marketmodels/models/cotswaptofwdadapter.{hpp,cpp}} (QuantLib v1.42.1).
  *
  * @author Jose Moya
  */
@@ -54,14 +53,13 @@ public class CotSwapToFwdAdapterFactory implements MarketModelFactory, Observabl
 
     public CotSwapToFwdAdapterFactory(final MarketModelFactory coterminalFactory) {
         this.coterminalFactory_ = coterminalFactory;
-        if (coterminalFactory instanceof Observable) {
+        if ( coterminalFactory instanceof Observable ) {
             ((Observable) coterminalFactory).addObserver(this);
         }
     }
 
     @Override
-    public MarketModel create(final EvolutionDescription evolution,
-                              final int numberOfFactors) {
+    public MarketModel create(final EvolutionDescription evolution, final int numberOfFactors) {
         final MarketModel coterminalModel = coterminalFactory_.create(evolution, numberOfFactors);
         return new CotSwapToFwdAdapter(coterminalModel);
     }
@@ -71,11 +69,38 @@ public class CotSwapToFwdAdapterFactory implements MarketModelFactory, Observabl
         notifyObservers();
     }
 
-    @Override public void addObserver(final Observer observer) { obs_.addObserver(observer); }
-    @Override public int countObservers() { return obs_.countObservers(); }
-    @Override public List<Observer> getObservers() { return obs_.getObservers(); }
-    @Override public void deleteObserver(final Observer observer) { obs_.deleteObserver(observer); }
-    @Override public void deleteObservers() { obs_.deleteObservers(); }
-    @Override public void notifyObservers() { obs_.notifyObservers(); }
-    @Override public void notifyObservers(final Object arg) { obs_.notifyObservers(arg); }
+    @Override
+    public void addObserver(final Observer observer) {
+        obs_.addObserver(observer);
+    }
+
+    @Override
+    public int countObservers() {
+        return obs_.countObservers();
+    }
+
+    @Override
+    public List< Observer > getObservers() {
+        return obs_.getObservers();
+    }
+
+    @Override
+    public void deleteObserver(final Observer observer) {
+        obs_.deleteObserver(observer);
+    }
+
+    @Override
+    public void deleteObservers() {
+        obs_.deleteObservers();
+    }
+
+    @Override
+    public void notifyObservers() {
+        obs_.notifyObservers();
+    }
+
+    @Override
+    public void notifyObservers(final Object arg) {
+        obs_.notifyObservers(arg);
+    }
 }

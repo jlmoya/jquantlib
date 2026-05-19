@@ -21,68 +21,50 @@
  */
 package org.jquantlib.methods.finitedifferences.meshers;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.methods.finitedifferences.operators.FdmLinearOpIterator;
 import org.jquantlib.methods.finitedifferences.operators.FdmLinearOpLayout;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 /**
  * {@link FdmMesher} composed of N {@link Fdm1dMesher} 1D meshes.
  * <p>
- * Java port of v1.42.1
- * ql/methods/finitedifferences/meshers/fdmmeshercomposite.{hpp,cpp}.
+ * Java port of v1.42.1 ql/methods/finitedifferences/meshers/fdmmeshercomposite.{hpp,cpp}.
  * <p>
- * Each direction's per-cell {@code dplus / dminus / location} is delegated to
- * the corresponding 1D mesh, indexed by the iterator's coordinate along that
- * direction. The {@link FdmLinearOpLayout} is built from the per-direction
- * sizes when not supplied by the caller.
+ * Each direction's per-cell {@code dplus / dminus / location} is delegated to the corresponding 1D mesh, indexed by the
+ * iterator's coordinate along that direction. The {@link FdmLinearOpLayout} is built from the per-direction sizes when
+ * not supplied by the caller.
  *
  * @author Phase 2h WI-1 port
  */
 public class FdmMesherComposite implements FdmMesher {
 
     private final FdmLinearOpLayout layout;
-    private final List<Fdm1dMesher> meshers;
+    private final List< Fdm1dMesher > meshers;
 
     /**
-     * Build the layout from the per-direction sizes of the supplied
-     * {@code meshers}. Mirrors the anonymous-namespace
-     * {@code getLayoutFromMeshers} helper in C++.
+     * Primary constructor — the caller supplies the layout. The 1D meshes' sizes must match {@code layout.dim()}.
      */
-    private static FdmLinearOpLayout layoutFrom(final List<Fdm1dMesher> meshers) {
-        final int[] dim = new int[meshers.size()];
-        for (int i = 0; i < dim.length; ++i) {
-            dim[i] = meshers.get(i).size();
-        }
-        return new FdmLinearOpLayout(dim);
-    }
-
-    /**
-     * Primary constructor — the caller supplies the layout. The 1D meshes'
-     * sizes must match {@code layout.dim()}.
-     */
-    public FdmMesherComposite(final FdmLinearOpLayout layout,
-                              final List<Fdm1dMesher> meshers) {
+    public FdmMesherComposite(final FdmLinearOpLayout layout, final List< Fdm1dMesher > meshers) {
         this.layout = layout;
         this.meshers = Collections.unmodifiableList(Arrays.asList(meshers.toArray(new Fdm1dMesher[0])));
-        for (int i = 0; i < meshers.size(); ++i) {
-            QL.require(meshers.get(i).size() == layout.dim()[i],
-                    "size of 1d mesher " + i + " does not fit to layout");
+        for ( int i = 0; i < meshers.size(); ++i ) {
+            QL.require(meshers.get(i).size() == layout.dim()[i], "size of 1d mesher " + i + " does not fit to layout");
         }
     }
 
     /** Convenience constructor — derives layout from the meshers. */
-    public FdmMesherComposite(final List<Fdm1dMesher> meshers) {
+    public FdmMesherComposite(final List< Fdm1dMesher > meshers) {
         this(layoutFrom(meshers), meshers);
     }
 
     /** Single-mesh convenience constructor. */
     public FdmMesherComposite(final Fdm1dMesher mesher) {
-        this(Arrays.asList(mesher));
+        this(Collections.singletonList(mesher));
     }
 
     /** Two-mesh convenience constructor. */
@@ -96,9 +78,20 @@ public class FdmMesherComposite implements FdmMesher {
     }
 
     /** Four-mesh convenience constructor. */
-    public FdmMesherComposite(final Fdm1dMesher m1, final Fdm1dMesher m2,
-                              final Fdm1dMesher m3, final Fdm1dMesher m4) {
+    public FdmMesherComposite(final Fdm1dMesher m1, final Fdm1dMesher m2, final Fdm1dMesher m3, final Fdm1dMesher m4) {
         this(Arrays.asList(m1, m2, m3, m4));
+    }
+
+    /**
+     * Build the layout from the per-direction sizes of the supplied {@code meshers}. Mirrors the anonymous-namespace
+     * {@code getLayoutFromMeshers} helper in C++.
+     */
+    private static FdmLinearOpLayout layoutFrom(final List< Fdm1dMesher > meshers) {
+        final int[] dim = new int[meshers.size()];
+        for ( int i = 0; i < dim.length; ++i ) {
+            dim[i] = meshers.get(i).size();
+        }
+        return new FdmLinearOpLayout(dim);
     }
 
     @Override
@@ -120,7 +113,7 @@ public class FdmMesherComposite implements FdmMesher {
     public final Array locations(final int direction) {
         final Array retVal = new Array(layout.size());
         final double[] perDimLocations = meshers.get(direction).locations();
-        for (final FdmLinearOpIterator iter : layout) {
+        for ( final FdmLinearOpIterator iter : layout ) {
             retVal.set(iter.index(), perDimLocations[iter.coordinates()[direction]]);
         }
         return retVal;
@@ -132,7 +125,7 @@ public class FdmMesherComposite implements FdmMesher {
     }
 
     /** Read-only view of the underlying 1D meshes. */
-    public final List<Fdm1dMesher> getFdm1dMeshers() {
+    public final List< Fdm1dMesher > getFdm1dMeshers() {
         return meshers;
     }
 }

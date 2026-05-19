@@ -33,23 +33,19 @@ import org.jquantlib.model.marketmodels.MarketModelPathwiseMultiProduct;
 import org.jquantlib.model.marketmodels.Utilities;
 
 /**
- * Pathwise co-terminal payer swaptions, deflated. Numberproducts equals the
- * number of rates; product {@code i} corresponds to the swaption struck at
- * {@code strikes[i]} with start time = rate {@code i} reset, all sharing the
- * common terminal date. The analytic adjoint computes ∂value/∂rate via the
- * exact swap-rate × annuity decomposition (no implied vol involved here).
+ * Pathwise co-terminal payer swaptions, deflated. Numberproducts equals the number of rates; product {@code i}
+ * corresponds to the swaption struck at {@code strikes[i]} with start time = rate {@code i} reset, all sharing the
+ * common terminal date. The analytic adjoint computes ∂value/∂rate via the exact swap-rate × annuity decomposition (no
+ * implied vol involved here).
  *
  * <p>Mirrors C++ {@code MarketModelPathwiseCoterminalSwaptionsDeflated}
- * (ql/models/marketmodels/products/pathwise/pathwiseproductswaption.{hpp,cpp}
- * v1.42.1). Tested against the numerical (FD-bumped) variant in C++
- * {@code testPathwiseVegas}.
- *
- * @see "ql/models/marketmodels/products/pathwise/pathwiseproductswaption" v1.42.1
+ * (ql/models/marketmodels/products/pathwise/pathwiseproductswaption.{hpp,cpp} v1.42.1). Tested against the numerical
+ * (FD-bumped) variant in C++ {@code testPathwiseVegas}.
  *
  * @author Jose Moya
+ * @see "ql/models/marketmodels/products/pathwise/pathwiseproductswaption" v1.42.1
  */
-public class MarketModelPathwiseCoterminalSwaptionsDeflated
-        extends MarketModelPathwiseMultiProduct {
+public class MarketModelPathwiseCoterminalSwaptionsDeflated extends MarketModelPathwiseMultiProduct {
 
     private final double[] rateTimes_;
     private final double[] strikes_;
@@ -59,8 +55,7 @@ public class MarketModelPathwiseCoterminalSwaptionsDeflated
 
     private int currentIndex_;
 
-    public MarketModelPathwiseCoterminalSwaptionsDeflated(final double[] rateTimes,
-                                                          final double[] strikes) {
+    public MarketModelPathwiseCoterminalSwaptionsDeflated(final double[] rateTimes, final double[] strikes) {
         Utilities.checkIncreasingTimes(rateTimes);
         this.rateTimes_ = rateTimes.clone();
         this.strikes_ = strikes.clone();
@@ -68,10 +63,8 @@ public class MarketModelPathwiseCoterminalSwaptionsDeflated
 
         final double[] evolTimes = new double[numberRates_];
         System.arraycopy(rateTimes_, 0, evolTimes, 0, numberRates_);
-        QL.require(evolTimes.length == numberRates_,
-                "rateTimes.size()<> numberOfRates+1");
-        QL.require(strikes.length == numberRates_,
-                "strikes.size()<> numberOfRates");
+        QL.require(evolTimes.length == numberRates_, "rateTimes.size()<> numberOfRates+1");
+        QL.require(strikes.length == numberRates_, "strikes.size()<> numberOfRates");
 
         this.evolution_ = new EvolutionDescription(rateTimes_, evolTimes);
         this.currentIndex_ = 0;
@@ -83,41 +76,35 @@ public class MarketModelPathwiseCoterminalSwaptionsDeflated
     }
 
     @Override
-    public boolean nextTimeStep(final CurveState currentState,
-                                final int[] numberCashFlowsThisStep,
-                                final CashFlow[][] cashFlowsGenerated) {
+    public boolean nextTimeStep(final CurveState currentState, final int[] numberCashFlowsThisStep,
+            final CashFlow[][] cashFlowsGenerated) {
         final double swapRate = currentState.coterminalSwapRate(currentIndex_);
         cashFlowsGenerated[currentIndex_][0].timeIndex = currentIndex_;
 
         final double annuity = currentState.coterminalSwapAnnuity(currentIndex_, currentIndex_);
-        cashFlowsGenerated[currentIndex_][0].amount[0] =
-                (swapRate - strikes_[currentIndex_]) * annuity;
+        cashFlowsGenerated[currentIndex_][0].amount[0] = (swapRate - strikes_[currentIndex_]) * annuity;
 
         // zero all numberCashFlowsThisStep
-        for (int i = 0; i < numberCashFlowsThisStep.length; ++i) {
+        for ( int i = 0; i < numberCashFlowsThisStep.length; ++i ) {
             numberCashFlowsThisStep[i] = 0;
         }
 
-        if (cashFlowsGenerated[currentIndex_][0].amount[0] > 0) {
+        if ( cashFlowsGenerated[currentIndex_][0].amount[0] > 0 ) {
             numberCashFlowsThisStep[currentIndex_] = 1;
-            for (int i = 1; i <= numberRates_; ++i) {
+            for ( int i = 1; i <= numberRates_; ++i ) {
                 cashFlowsGenerated[currentIndex_][0].amount[i] = 0.0;
             }
 
-            for (int k = currentIndex_; k < numberRates_; ++k) {
+            for ( int k = currentIndex_; k < numberRates_; ++k ) {
                 cashFlowsGenerated[currentIndex_][0].amount[k + 1] =
-                        (rateTimes_[k + 1] - rateTimes_[k])
-                                * currentState.discountRatio(k + 1, currentIndex_);
+                        (rateTimes_[k + 1] - rateTimes_[k]) * currentState.discountRatio(k + 1, currentIndex_);
 
-                final double multiplier = -(rateTimes_[k + 1] - rateTimes_[k])
-                        * currentState.discountRatio(k + 1, k);
+                final double multiplier = -(rateTimes_[k + 1] - rateTimes_[k]) * currentState.discountRatio(k + 1, k);
 
-                for (int l = k; l < numberRates_; ++l) {
+                for ( int l = k; l < numberRates_; ++l ) {
                     cashFlowsGenerated[currentIndex_][0].amount[k + 1] +=
-                            (currentState.forwardRate(l) - strikes_[currentIndex_])
-                                    * (rateTimes_[l + 1] - rateTimes_[l])
-                                    * multiplier
-                                    * currentState.discountRatio(l + 1, currentIndex_);
+                            (currentState.forwardRate(l) - strikes_[currentIndex_]) * (rateTimes_[l + 1]
+                                    - rateTimes_[l]) * multiplier * currentState.discountRatio(l + 1, currentIndex_);
                 }
             }
         }
@@ -127,8 +114,8 @@ public class MarketModelPathwiseCoterminalSwaptionsDeflated
 
     @Override
     public MarketModelPathwiseMultiProduct clone() {
-        final MarketModelPathwiseCoterminalSwaptionsDeflated copy =
-                new MarketModelPathwiseCoterminalSwaptionsDeflated(rateTimes_, strikes_);
+        final MarketModelPathwiseCoterminalSwaptionsDeflated copy = new MarketModelPathwiseCoterminalSwaptionsDeflated(
+                rateTimes_, strikes_);
         copy.currentIndex_ = this.currentIndex_;
         return copy;
     }
@@ -136,7 +123,7 @@ public class MarketModelPathwiseCoterminalSwaptionsDeflated
     @Override
     public int[] suggestedNumeraires() {
         final int[] numeraires = new int[numberRates_];
-        for (int i = 0; i < numberRates_; ++i) {
+        for ( int i = 0; i < numberRates_; ++i ) {
             numeraires[i] = i;
         }
         return numeraires;

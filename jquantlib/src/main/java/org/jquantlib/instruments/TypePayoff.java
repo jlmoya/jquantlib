@@ -47,13 +47,12 @@ import org.jquantlib.instruments.Option.Type;
 /**
  * Intermediate class for typed payoffs (CALL/PUT)
  *
- * @see Option.Type
- *
  * @author Richard Gomes
+ * @see Option.Type
  */
 public abstract class TypePayoff extends Payoff {
 
-	//
+    //
     // protected fields
     //
 
@@ -62,7 +61,7 @@ public abstract class TypePayoff extends Payoff {
      */
     protected Option.Type type;
 
-	//
+    //
     // public constructors
     //
 
@@ -70,27 +69,23 @@ public abstract class TypePayoff extends Payoff {
      * Constructs a {@link Payoff} backed on a {@link Type}
      *
      * @param type is the {@link Type} backing this {@link Payoff}
-     *
      * @see Option.Type
      */
     public TypePayoff(final Option.Type type) {
-		this.type = type;
-	}
+        this.type = type;
+    }
 
-
-	//
+    //
     // public final methods
     //
 
     /**
      * @return the {@link Type} backing this {@link Payoff}
-     *
      * @see Option.Type
      */
     public final Option.Type optionType() {
-		return this.type;
-	}
-
+        return this.type;
+    }
 
     //
     // overrides Payoff
@@ -98,9 +93,7 @@ public abstract class TypePayoff extends Payoff {
 
     @Override
     public String description() /* @ReadOnly */ {
-        final StringBuilder sb = new StringBuilder();
-        sb.append(name()).append(' ').append(optionType());
-        return sb.toString();
+        return name() + ' ' + optionType();
     }
 
 }

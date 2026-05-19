@@ -21,8 +21,6 @@ When applicable, the original copyright notice follows this notice.
  */
 package org.jquantlib.model.shortrate.onefactormodels;
 
-import static org.jquantlib.pricingengines.BlackFormula.blackFormula;
-
 import org.jquantlib.instruments.Option;
 import org.jquantlib.math.Constants;
 import org.jquantlib.math.optimization.NoConstraint;
@@ -32,15 +30,16 @@ import org.jquantlib.model.ConstantParameter;
 import org.jquantlib.model.Parameter;
 import org.jquantlib.processes.OrnsteinUhlenbeckProcess;
 
+import static org.jquantlib.pricingengines.BlackFormula.blackFormula;
+
 /**
  * Vasicek model class
  * <p>
- * This class implements the Vasicek model defined by \f[ dr_t = a(b - r_t)dt + \sigma dW_t , \f] where \f$ a \f$, \f$ b \f$ and
- * \f$ \sigma \f$ are constants; a risk premium \f$ \lambda \f$ can also be specified.
- *
- * @category shortrate
+ * This class implements the Vasicek model defined by \f[ dr_t = a(b - r_t)dt + \sigma dW_t , \f] where \f$ a \f$, \f$ b
+ * \f$ and \f$ \sigma \f$ are constants; a risk premium \f$ \lambda \f$ can also be specified.
  *
  * @author Praneet Tiwari
+ * @category shortrate
  */
 // TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class Vasicek extends OneFactorAffineModel {
@@ -51,12 +50,12 @@ public class Vasicek extends OneFactorAffineModel {
 
     protected double r0_;
 
-
     //
     // public methods
     //
 
-    public Vasicek(/* @Rate */ final double r0, final double a, final double b, final double sigma, final double lambda) {
+    public Vasicek(/* @Rate */ final double r0, final double a, final double b, final double sigma,
+            final double lambda) {
         super(4);
         this.r0_ = r0;
         // Phase 2b WI-3: write Parameters directly into arguments_ so the
@@ -69,7 +68,6 @@ public class Vasicek extends OneFactorAffineModel {
         arguments_.set(3, new ConstantParameter(lambda, new NoConstraint()));
     }
 
-
     //
     // protected methods
     //
@@ -78,10 +76,21 @@ public class Vasicek extends OneFactorAffineModel {
     // the C++ Parameter& reference binding in the init list). Visibility
     // is protected so subclasses (HullWhite et al., Tasks 3.2-3.4) can
     // read through them without re-deriving the slot indices.
-    protected Parameter aParam()      { return arguments_.get(0); }
-    protected Parameter bParam()      { return arguments_.get(1); }
-    protected Parameter sigmaParam()  { return arguments_.get(2); }
-    protected Parameter lambdaParam() { return arguments_.get(3); }
+    protected Parameter aParam() {
+        return arguments_.get(0);
+    }
+
+    protected Parameter bParam() {
+        return arguments_.get(1);
+    }
+
+    protected Parameter sigmaParam() {
+        return arguments_.get(2);
+    }
+
+    protected Parameter lambdaParam() {
+        return arguments_.get(3);
+    }
 
     // Aligned to v1.42.1 vasicek.hpp lines 54-57: a(), b(), sigma() are
     // declared {@code public} in C++. Elevated from {@code protected} to
@@ -103,22 +112,19 @@ public class Vasicek extends OneFactorAffineModel {
         return sigmaParam().get(0.0);
     }
 
-
     //
     // implements AffineModel
     //
 
     @Override
-    public double discountBondOption(
-            final Option.Type type,
-            final double strike,
+    public double discountBondOption(final Option.Type type, final double strike,
             /* @Time */ final double maturity,
             /* @Time */ final double bondMaturity) /* @ReadOnly */ {
         double v;
         final double _a = a();
-        if (Math.abs(maturity) < Constants.QL_EPSILON)
+        if ( Math.abs(maturity) < Constants.QL_EPSILON )
             v = 0.0;
-        else if (_a < Math.sqrt(Constants.QL_EPSILON))
+        else if ( _a < Math.sqrt(Constants.QL_EPSILON) )
             v = sigma() * B(maturity, bondMaturity) * Math.sqrt(maturity);
         else
             v = sigma() * B(maturity, bondMaturity) * Math.sqrt(0.5 * (1.0 - Math.exp(-2.0 * _a * maturity)) / _a);
@@ -129,40 +135,37 @@ public class Vasicek extends OneFactorAffineModel {
         return blackFormula(type, k, f, v);
     }
 
-
     //
     // implements OneFactorAffineModel
     //
 
     @Override
-    public  ShortRateDynamics dynamics() /* @ReadOnly */ {
+    public ShortRateDynamics dynamics() /* @ReadOnly */ {
         return new Dynamics(a(), b(), sigma(), r0_);
     }
-
 
     @Override
     protected double A(/* @Time */ final double t, /* @Time */ final double T) /* @ReadOnly */ {
         final double /* @Real */_a = a();
-        if (_a < Math.sqrt(Constants.QL_EPSILON))
+        if ( _a < Math.sqrt(Constants.QL_EPSILON) )
             return 0.0;
         else {
             final double /* @Real */sigma2 = sigma() * sigma();
             final double /* @Real */bt = B(t, T);
-            return Math.exp((b() + lambda() * sigma() / _a - 0.5 * sigma2 / (_a * _a)) * (bt - (T - t)) - 0.25 * sigma2 * bt * bt
-                    / _a);
+            return Math.exp((b() + lambda() * sigma() / _a - 0.5 * sigma2 / (_a * _a)) * (bt - (T - t))
+                    - 0.25 * sigma2 * bt * bt / _a);
         }
     }
 
     @Override
     protected double B(/* @Time */ final double t, /* @Time */ final double T) /* @ReadOnly */ {
         final double /* @Real */_a = a();
-        if (_a < Math.sqrt(Constants.QL_EPSILON))
+        if ( _a < Math.sqrt(Constants.QL_EPSILON) )
             return (T - t);
         else
             // Phase 2i WI-2 B-1: JQuantMath.exp on FdHullWhite hot path.
             return (1.0 - JQuantMath.exp(-_a * (T - t))) / _a;
     }
-
 
     //
     // private inner classes
@@ -183,15 +186,14 @@ public class Vasicek extends OneFactorAffineModel {
         private final double b_;
         private final double r0_;
 
-
         //
         // public methods
         //
 
         public Dynamics(final double a, final double b, final double sigma, final double r0) {
             super(new OrnsteinUhlenbeckProcess(a, sigma, r0 - b, 0.0));
-            this.a_  = a;
-            this.b_  = b;
+            this.a_ = a;
+            this.b_ = b;
             this.r0_ = r0;
         }
 

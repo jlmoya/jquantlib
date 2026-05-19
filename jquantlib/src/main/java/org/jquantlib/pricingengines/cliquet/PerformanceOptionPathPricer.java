@@ -44,21 +44,18 @@ import org.jquantlib.methods.montecarlo.PathPricer;
 /**
  * Path pricer for the cliquet performance option.
  * <p>
- * Sums {@code discount[i-1] * payoff(path[i] / path[i-1])} for {@code i=2..n-1},
- * matching the C++ template form where index 0 is "today" and index 1..n-1 are
- * the reset / fixing times.
+ * Sums {@code discount[i-1] * payoff(path[i] / path[i-1])} for {@code i=2..n-1}, matching the C++ template form where
+ * index 0 is "today" and index 1..n-1 are the reset / fixing times.
  * <p>
  * Mirrors C++ QuantLib v1.42.1 {@code PerformanceOptionPathPricer} declared in
  * {@code ql/pricingengines/cliquet/mcperformanceengine.{hpp,cpp}}.
  */
-public final class PerformanceOptionPathPricer extends PathPricer<Path> {
+public final class PerformanceOptionPathPricer extends PathPricer< Path > {
 
     private final PlainVanillaPayoff payoff;
     private final double[] discounts;
 
-    public PerformanceOptionPathPricer(final Option.Type type,
-                                       final double strike,
-                                       final double[] discounts) {
+    public PerformanceOptionPathPricer(final Option.Type type, final double strike, final double[] discounts) {
         QL.require(strike >= 0.0, "strike less than zero not allowed");
         this.payoff = new PlainVanillaPayoff(type, strike);
         this.discounts = discounts.clone();
@@ -70,7 +67,7 @@ public final class PerformanceOptionPathPricer extends PathPricer<Path> {
         QL.require(n == discounts.length + 1, "discounts/options mismatch");
 
         double sum = 0.0;
-        for (int i = 2; i < n; i++) {
+        for ( int i = 2; i < n; i++ ) {
             sum += discounts[i - 1] * payoff.get(path.get(i) / path.get(i - 1));
         }
         return sum;

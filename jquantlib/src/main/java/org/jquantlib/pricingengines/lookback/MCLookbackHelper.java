@@ -37,32 +37,26 @@ import org.jquantlib.processes.GeneralizedBlackScholesProcess;
 import org.jquantlib.time.TimeGrid;
 
 /**
- * Shared Monte-Carlo plumbing used by the four {@code MCLookback*Engine}
- * variants. Mirrors the bits of C++ {@code MCLookbackEngine} that are
- * independent of the instrument-specific arguments / path-pricer choice.
+ * Shared Monte-Carlo plumbing used by the four {@code MCLookback*Engine} variants. Mirrors the bits of C++
+ * {@code MCLookbackEngine} that are independent of the instrument-specific arguments / path-pricer choice.
  *
  * <p>Specialised to {@code MC = SingleVariate, RNG = PseudoRandom}
- * (Mersenne-Twister + InverseCumulativeNormal). Lifting that restriction
- * is a follow-up.
+ * (Mersenne-Twister + InverseCumulativeNormal). Lifting that restriction is a follow-up.
  */
 final class MCLookbackHelper {
 
     private MCLookbackHelper() { /* static-only */ }
 
     /**
-     * Mirrors C++ {@code MCLookbackEngine::timeGrid()}: uniform grid from
-     * {@code 0} to the option's residual time, with either
-     * {@code timeSteps} steps or {@code timeStepsPerYear * residualTime}
-     * steps.
+     * Mirrors C++ {@code MCLookbackEngine::timeGrid()}: uniform grid from {@code 0} to the option's residual time, with
+     * either {@code timeSteps} steps or {@code timeStepsPerYear * residualTime} steps.
      */
-    static TimeGrid timeGrid(final GeneralizedBlackScholesProcess process,
-                             final Exercise exercise,
-                             final int timeSteps,
-                             final int timeStepsPerYear) {
+    static TimeGrid timeGrid(final GeneralizedBlackScholesProcess process, final Exercise exercise, final int timeSteps,
+            final int timeStepsPerYear) {
         final double residualTime = process.time(exercise.lastDate());
-        if (timeSteps != McSimulation.NULL_SAMPLES) {
+        if ( timeSteps != McSimulation.NULL_SAMPLES ) {
             return new TimeGrid(residualTime, timeSteps);
-        } else if (timeStepsPerYear != McSimulation.NULL_SAMPLES) {
+        } else if ( timeStepsPerYear != McSimulation.NULL_SAMPLES ) {
             final int steps = (int) (timeStepsPerYear * residualTime);
             return new TimeGrid(residualTime, Math.max(steps, 1));
         } else {
@@ -71,44 +65,31 @@ final class MCLookbackHelper {
     }
 
     /**
-     * Builds the PseudoRandom path generator adapter for the given grid.
-     * Mirrors C++ {@code MCLookbackEngine::pathGenerator()} specialised
-     * to {@code RNG = PseudoRandom}.
+     * Builds the PseudoRandom path generator adapter for the given grid. Mirrors C++
+     * {@code MCLookbackEngine::pathGenerator()} specialised to {@code RNG = PseudoRandom}.
      */
-    static MonteCarloModel.PathGeneratorAdapter<Path> pathGenerator(
-            final GeneralizedBlackScholesProcess process,
-            final TimeGrid grid,
-            final boolean brownianBridge,
-            final long seed) {
+    static MonteCarloModel.PathGeneratorAdapter< Path > pathGenerator(final GeneralizedBlackScholesProcess process,
+            final TimeGrid grid, final boolean brownianBridge, final long seed) {
         final int dimensions = process.factors() * (grid.size() - 1);
-        final RandomSequenceGenerator<MersenneTwisterUniformRng> uniformRsg =
-                new RandomSequenceGenerator<MersenneTwisterUniformRng>(
-                        MersenneTwisterUniformRng.class, dimensions, seed);
-        final InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                InverseCumulativeNormal> gsg =
-                new InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                        InverseCumulativeNormal>(uniformRsg, new InverseCumulativeNormal());
-        final PathGenerator<InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                InverseCumulativeNormal>> gen =
-                new PathGenerator<InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                        InverseCumulativeNormal>>(process, grid, gsg, brownianBridge);
+        final RandomSequenceGenerator< MersenneTwisterUniformRng > uniformRsg = new RandomSequenceGenerator< MersenneTwisterUniformRng >(
+                MersenneTwisterUniformRng.class, dimensions, seed);
+        final InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal > gsg = new InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal >(
+                uniformRsg, new InverseCumulativeNormal());
+        final PathGenerator< InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal > > gen = new PathGenerator< InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal > >(
+                process, grid, gsg, brownianBridge);
         return new MonteCarloModel.PathGeneratorAdapterImpl(gen);
     }
 
     /**
-     * Validates the (timeSteps | timeStepsPerYear) bookkeeping. Mirrors
-     * C++ {@code MCLookbackEngine} constructor preconditions.
+     * Validates the (timeSteps | timeStepsPerYear) bookkeeping. Mirrors C++ {@code MCLookbackEngine} constructor
+     * preconditions.
      */
     static void validateTimeStepArgs(final int timeSteps, final int timeStepsPerYear) {
-        QL.require(timeSteps != McSimulation.NULL_SAMPLES
-                || timeStepsPerYear != McSimulation.NULL_SAMPLES,
+        QL.require(timeSteps != McSimulation.NULL_SAMPLES || timeStepsPerYear != McSimulation.NULL_SAMPLES,
                 "no time steps provided");
-        QL.require(timeSteps == McSimulation.NULL_SAMPLES
-                || timeStepsPerYear == McSimulation.NULL_SAMPLES,
+        QL.require(timeSteps == McSimulation.NULL_SAMPLES || timeStepsPerYear == McSimulation.NULL_SAMPLES,
                 "both time steps and time steps per year were provided");
-        QL.require(timeSteps != 0,
-                "timeSteps must be positive, " + timeSteps + " not allowed");
-        QL.require(timeStepsPerYear != 0,
-                "timeStepsPerYear must be positive, " + timeStepsPerYear + " not allowed");
+        QL.require(timeSteps != 0, "timeSteps must be positive, " + timeSteps + " not allowed");
+        QL.require(timeStepsPerYear != 0, "timeStepsPerYear must be positive, " + timeStepsPerYear + " not allowed");
     }
 }

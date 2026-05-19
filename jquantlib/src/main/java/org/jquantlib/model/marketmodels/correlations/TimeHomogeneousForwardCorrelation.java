@@ -30,74 +30,70 @@
 
 package org.jquantlib.model.marketmodels.correlations;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.math.matrixutilities.Matrix;
 import org.jquantlib.model.marketmodels.PiecewiseConstantCorrelation;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * Time-homogeneous forward correlation structure built from a single
- * forward-rate correlation matrix. Per step k, the upper-left k diagonal block
- * of the original matrix is preserved and the still-alive entries shift along
- * the diagonal.
+ * Time-homogeneous forward correlation structure built from a single forward-rate correlation matrix. Per step k, the
+ * upper-left k diagonal block of the original matrix is preserved and the still-alive entries shift along the
+ * diagonal.
  *
  * @author Jose Moya
- *
  * @see "ql/models/marketmodels/correlations/timehomogeneousforwardcorrelation.{hpp,cpp}" v1.42.1
  */
 public class TimeHomogeneousForwardCorrelation extends PiecewiseConstantCorrelation {
 
     private final int numberOfRates_;
     private final Matrix fwdCorrelation_;
-    private final List<Double> rateTimes_;
-    private final List<Double> times_;
-    private final List<Matrix> correlations_;
+    private final List< Double > rateTimes_;
+    private final List< Double > times_;
+    private final List< Matrix > correlations_;
 
-    public TimeHomogeneousForwardCorrelation(
-            final Matrix fwdCorrelation,
-            final List<Double> rateTimes) {
+    public TimeHomogeneousForwardCorrelation(final Matrix fwdCorrelation, final List< Double > rateTimes) {
         this.numberOfRates_ = rateTimes == null || rateTimes.isEmpty() ? 0 : rateTimes.size() - 1;
         this.fwdCorrelation_ = fwdCorrelation;
-        this.rateTimes_ = new ArrayList<Double>(rateTimes);
-        this.times_ = new ArrayList<Double>(numberOfRates_);
+        this.rateTimes_ = new ArrayList< Double >(rateTimes);
+        this.times_ = new ArrayList< Double >(numberOfRates_);
 
         ExponentialForwardCorrelation.checkIncreasingTimes(this.rateTimes_);
         QL.require(numberOfRates_ >= 1, "Rate times must contain at least two values");
         QL.require(numberOfRates_ == fwdCorrelation.rows(),
-                "mismatch between number of rates (" + numberOfRates_
-                        + ") and fwdCorrelation rows (" + fwdCorrelation.rows() + ")");
+                "mismatch between number of rates (" + numberOfRates_ + ") and fwdCorrelation rows ("
+                        + fwdCorrelation.rows() + ")");
         QL.require(numberOfRates_ == fwdCorrelation.columns(),
-                "mismatch between number of rates (" + numberOfRates_
-                        + ") and fwdCorrelation columns (" + fwdCorrelation.columns() + ")");
+                "mismatch between number of rates (" + numberOfRates_ + ") and fwdCorrelation columns ("
+                        + fwdCorrelation.columns() + ")");
 
         // copy rateTimes[0..n-1] into times_
-        for (int i = 0; i < numberOfRates_; ++i) {
+        for ( int i = 0; i < numberOfRates_; ++i ) {
             this.times_.add(this.rateTimes_.get(i));
         }
         this.correlations_ = evolvedMatrices(fwdCorrelation_);
     }
 
     /**
-     * Build the per-step list of correlation matrices from the input
-     * forward correlation matrix using the time-homogeneous shift rule.
+     * Build the per-step list of correlation matrices from the input forward correlation matrix using the
+     * time-homogeneous shift rule.
      */
-    public static List<Matrix> evolvedMatrices(final Matrix fwdCorrelation) {
+    public static List< Matrix > evolvedMatrices(final Matrix fwdCorrelation) {
         final int numberOfRates = fwdCorrelation.rows();
-        final List<Matrix> correlations = new ArrayList<Matrix>(numberOfRates);
-        for (int k = 0; k < numberOfRates; ++k) {
+        final List< Matrix > correlations = new ArrayList< Matrix >(numberOfRates);
+        for ( int k = 0; k < numberOfRates; ++k ) {
             correlations.add(new Matrix(numberOfRates, numberOfRates));
         }
-        for (int k = 0; k < correlations.size(); ++k) {
+        for ( int k = 0; k < correlations.size(); ++k ) {
             final Matrix m = correlations.get(k);
             // proper diagonal values
-            for (int i = k; i < numberOfRates; ++i) {
+            for ( int i = k; i < numberOfRates; ++i ) {
                 m.set(i, i, 1.0);
             }
             // copy only time-homogeneous values
-            for (int i = k; i < numberOfRates; ++i) {
-                for (int j = k; j < i; ++j) {
+            for ( int i = k; i < numberOfRates; ++i ) {
+                for ( int j = k; j < i; ++j ) {
                     final double v = fwdCorrelation.get(i - k, j - k);
                     m.set(i, j, v);
                     m.set(j, i, v);
@@ -108,17 +104,17 @@ public class TimeHomogeneousForwardCorrelation extends PiecewiseConstantCorrelat
     }
 
     @Override
-    public List<Double> times() {
+    public List< Double > times() {
         return times_;
     }
 
     @Override
-    public List<Double> rateTimes() {
+    public List< Double > rateTimes() {
         return rateTimes_;
     }
 
     @Override
-    public List<Matrix> correlations() {
+    public List< Matrix > correlations() {
         return correlations_;
     }
 

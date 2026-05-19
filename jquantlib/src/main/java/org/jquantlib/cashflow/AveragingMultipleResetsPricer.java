@@ -43,8 +43,7 @@ package org.jquantlib.cashflow;
 import java.util.List;
 
 /**
- * Multiple-reset pricer that averages sub-period fixings (simple
- * convention).
+ * Multiple-reset pricer that averages sub-period fixings (simple convention).
  *
  * <p>Mirrors C++ v1.42.1 {@code QuantLib::AveragingMultipleResetsPricer}
  * in {@code ql/cashflows/multipleresetscoupon.cpp}:
@@ -63,9 +62,9 @@ public class AveragingMultipleResetsPricer extends MultipleResetsPricer {
     public double swapletRate() {
         // past or future fixing is managed in InterestRateIndex::fixing()
         final int nCount = subPeriodFixings_.size();
-        final List<Double> subPeriodFractions = coupon_.dt();
+        final List< Double > subPeriodFractions = coupon_.dt();
         double aggregateFactor = 0.0;
-        for (int i = 0; i < nCount; i++) {
+        for ( int i = 0; i < nCount; i++ ) {
             aggregateFactor += subPeriodFixings_.get(i) * subPeriodFractions.get(i);
         }
 

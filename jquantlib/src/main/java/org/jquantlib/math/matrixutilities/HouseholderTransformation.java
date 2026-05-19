@@ -46,12 +46,12 @@ public class HouseholderTransformation {
         final double norm2 = Math.sqrt(v.dotProduct(v));
         final int n = v.size();
         final double[] y = new double[n];
-        for (int i = 0; i < n; ++i) {
+        for ( int i = 0; i < n; ++i ) {
             y[i] = v.get(i) / norm2;
         }
         final Matrix m = new Matrix(n, n);
-        for (int i = 0; i < n; ++i) {
-            for (int j = 0; j < n; ++j) {
+        for ( int i = 0; i < n; ++i ) {
+            for ( int j = 0; j < n; ++j ) {
                 m.set(i, j, ((i == j) ? 1.0 : 0.0) - 2.0 * y[i] * y[j]);
             }
         }

@@ -38,10 +38,8 @@ import org.jquantlib.util.Visitor;
  * Black volatility (smile) surface.
  *
  * <p>Faithful port of QuantLib v1.42.1
- * {@code ql/experimental/volatility/blackvolsurface.{hpp,cpp}}. Abstract
- * base for volatility surfaces; concrete subclasses implement
- * {@link #smileSectionImpl(double)} and the surface returns smile sections
- * along the time axis.
+ * {@code ql/experimental/volatility/blackvolsurface.{hpp,cpp}}. Abstract base for volatility surfaces; concrete
+ * subclasses implement {@link #smileSectionImpl(double)} and the surface returns smile sections along the time axis.
  *
  * <p>Volatilities are expressed on an annual basis.
  */
@@ -51,13 +49,13 @@ public abstract class BlackVolSurface extends BlackAtmVolCurve {
         super(bdc, dc);
     }
 
-    public BlackVolSurface(final Date referenceDate, final Calendar cal,
-            final BusinessDayConvention bdc, final DayCounter dc) {
+    public BlackVolSurface(final Date referenceDate, final Calendar cal, final BusinessDayConvention bdc,
+            final DayCounter dc) {
         super(referenceDate, cal, bdc, dc);
     }
 
-    public BlackVolSurface(final int settlementDays, final Calendar cal,
-            final BusinessDayConvention bdc, final DayCounter dc) {
+    public BlackVolSurface(final int settlementDays, final Calendar cal, final BusinessDayConvention bdc,
+            final DayCounter dc) {
         super(settlementDays, cal, bdc, dc);
     }
 
@@ -103,8 +101,8 @@ public abstract class BlackVolSurface extends BlackAtmVolCurve {
 
     @Override
     public void accept(final PolymorphicVisitor pv) {
-        final Visitor<BlackVolSurface> v = (pv != null) ? pv.<BlackVolSurface>visitor(this.getClass()) : null;
-        if (v != null) {
+        final Visitor< BlackVolSurface > v = (pv != null) ? pv.visitor(this.getClass()) : null;
+        if ( v != null ) {
             v.visit(this);
         } else {
             super.accept(pv);
@@ -116,8 +114,8 @@ public abstract class BlackVolSurface extends BlackAtmVolCurve {
     // -------------------------------------------------------------------
 
     /**
-     * Smile section calculation. Called after range check, so the
-     * implementation must assume time-extrapolation is allowed.
+     * Smile section calculation. Called after range check, so the implementation must assume time-extrapolation is
+     * allowed.
      */
     protected abstract SmileSection smileSectionImpl(double t);
 }

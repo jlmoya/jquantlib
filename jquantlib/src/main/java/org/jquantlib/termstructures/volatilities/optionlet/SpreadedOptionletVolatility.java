@@ -27,8 +27,7 @@ import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
 
 /**
- * Spreaded caplet/floorlet volatility — adds a constant
- * additive spread to a base optionlet vol surface.
+ * Spreaded caplet/floorlet volatility — adds a constant additive spread to a base optionlet vol surface.
  *
  * <p>Port of C++ QuantLib v1.42.1
  * {@code ql/termstructures/volatility/optionlet/spreadedoptionletvol.{hpp,cpp}}.
@@ -50,24 +49,22 @@ public class SpreadedOptionletVolatility extends OptionletVolatilityStructure {
     // private fields
     //
 
-    private final Handle<OptionletVolatilityStructure> baseVol_;
-    private final Handle<Quote> spread_;
+    private final Handle< OptionletVolatilityStructure > baseVol_;
+    private final Handle< Quote > spread_;
 
     //
     // public constructor
     //
 
-    public SpreadedOptionletVolatility(final Handle<OptionletVolatilityStructure> baseVol,
-                                       final Handle<Quote> spread) {
+    public SpreadedOptionletVolatility(final Handle< OptionletVolatilityStructure > baseVol,
+            final Handle< Quote > spread) {
         // We pass the base's settings via super(), then forward inspectors below.
-        super(baseVol.currentLink().settlementDays(),
-                baseVol.currentLink().calendar(),
-                baseVol.currentLink().businessDayConvention(),
-                baseVol.currentLink().dayCounter());
+        super(baseVol.currentLink().settlementDays(), baseVol.currentLink().calendar(),
+                baseVol.currentLink().businessDayConvention(), baseVol.currentLink().dayCounter());
         this.baseVol_ = baseVol;
         this.spread_ = spread;
         // Mirrors C++ enableExtrapolation(baseVol->allowsExtrapolation()).
-        if (baseVol.currentLink().allowsExtrapolation()) {
+        if ( baseVol.currentLink().allowsExtrapolation() ) {
             enableExtrapolation();
         }
         baseVol.addObserver(this);
@@ -138,8 +135,8 @@ public class SpreadedOptionletVolatility extends OptionletVolatilityStructure {
     //
 
     /**
-     * Mirrors C++ v1.42.1 SpreadedOptionletVolatility::smileSectionImpl
-     * (time-based overload, lines 44-49 of spreadedoptionletvol.cpp):
+     * Mirrors C++ v1.42.1 SpreadedOptionletVolatility::smileSectionImpl (time-based overload, lines 44-49 of
+     * spreadedoptionletvol.cpp):
      * <pre>
      *   baseSmile = baseVol_.smileSection(optionTime, true)
      *   return new SpreadedSmileSection(baseSmile, spread_)
@@ -147,14 +144,12 @@ public class SpreadedOptionletVolatility extends OptionletVolatilityStructure {
      */
     @Override
     protected SmileSection smileSectionImpl(final double optionTime) {
-        final SmileSection baseSmile =
-                baseVol_.currentLink().smileSection(optionTime, true);
+        final SmileSection baseSmile = baseVol_.currentLink().smileSection(optionTime, true);
         return new SpreadedSmileSection(baseSmile, spread_);
     }
 
     @Override
     protected double volatilityImpl(final double t, final double strike) {
-        return baseVol_.currentLink().volatility(t, strike, true)
-                + spread_.currentLink().value();
+        return baseVol_.currentLink().volatility(t, strike, true) + spread_.currentLink().value();
     }
 }

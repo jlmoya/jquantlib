@@ -14,8 +14,6 @@
  */
 package org.jquantlib.pricingengines.swap;
 
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.instruments.Swap;
@@ -28,11 +26,12 @@ import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.TimeGrid;
 
+import java.util.List;
+
 /**
  * Numerical lattice engine for simple swaps.
  * <p>
- * Port of C++ v1.42.1
- * {@code ql/pricingengines/swap/treeswapengine.{hpp,cpp}}.
+ * Port of C++ v1.42.1 {@code ql/pricingengines/swap/treeswapengine.{hpp,cpp}}.
  *
  * <h3>Java port deviations from C++ v1.42.1</h3>
  * <ul>
@@ -56,6 +55,7 @@ import org.jquantlib.time.TimeGrid;
  * mandatory time, rolls back to 0.0, and reads the present value.
  *
  * <p>Source: C++ v1.42.1 {@code ql/pricingengines/swap/treeswapengine.cpp}
+ *
  * @ {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
  */
 public class TreeVanillaSwapEngine extends Swap.EngineImpl {
@@ -65,25 +65,20 @@ public class TreeVanillaSwapEngine extends Swap.EngineImpl {
     private final int timeSteps_;
     private final TimeGrid timeGrid_;
     private final Lattice lattice_;
-    private final Handle<YieldTermStructure> termStructure_;
+    private final Handle< YieldTermStructure > termStructure_;
 
     /**
-     * Build with a step count. The grid is constructed lazily from the
-     * swap's mandatory times in {@link #calculate()}.
+     * Build with a step count. The grid is constructed lazily from the swap's mandatory times in {@link #calculate()}.
      *
-     * @param swap          the underlying {@link VanillaSwap} (Java deviation —
-     *                      C++ extracts everything from
+     * @param swap          the underlying {@link VanillaSwap} (Java deviation — C++ extracts everything from
      *                      {@code VanillaSwap::arguments}).
      * @param model         short-rate model providing the lattice.
      * @param timeSteps     time-step count passed to the lazy {@link TimeGrid}.
-     * @param termStructure optional discount curve; only needed when
-     *                      {@code model} is not a
+     * @param termStructure optional discount curve; only needed when {@code model} is not a
      *                      {@link TermStructureConsistentModel}.
      */
-    public TreeVanillaSwapEngine(final VanillaSwap swap,
-            final ShortRateModel model,
-            final int timeSteps,
-            final Handle<YieldTermStructure> termStructure) {
+    public TreeVanillaSwapEngine(final VanillaSwap swap, final ShortRateModel model, final int timeSteps,
+            final Handle< YieldTermStructure > termStructure) {
         super();
         this.swap_ = swap;
         this.model_ = model;
@@ -91,22 +86,19 @@ public class TreeVanillaSwapEngine extends Swap.EngineImpl {
         this.timeGrid_ = null;
         this.lattice_ = null;
         this.termStructure_ = termStructure;
-        if (this.model_ != null) {
+        if ( this.model_ != null ) {
             this.model_.addObserver(this);
         }
-        if (this.termStructure_ != null) {
+        if ( this.termStructure_ != null ) {
             this.termStructure_.addObserver(this);
         }
     }
 
     /**
-     * Build with an explicit time grid; the model's tree is built on this
-     * grid up-front.
+     * Build with an explicit time grid; the model's tree is built on this grid up-front.
      */
-    public TreeVanillaSwapEngine(final VanillaSwap swap,
-            final ShortRateModel model,
-            final TimeGrid grid,
-            final Handle<YieldTermStructure> termStructure) {
+    public TreeVanillaSwapEngine(final VanillaSwap swap, final ShortRateModel model, final TimeGrid grid,
+            final Handle< YieldTermStructure > termStructure) {
         super();
         this.swap_ = swap;
         this.model_ = model;
@@ -114,10 +106,10 @@ public class TreeVanillaSwapEngine extends Swap.EngineImpl {
         this.timeGrid_ = grid;
         this.lattice_ = (model != null) ? model.tree(grid) : null;
         this.termStructure_ = termStructure;
-        if (this.model_ != null) {
+        if ( this.model_ != null ) {
             this.model_.addObserver(this);
         }
-        if (this.termStructure_ != null) {
+        if ( this.termStructure_ != null ) {
             this.termStructure_.addObserver(this);
         }
     }
@@ -129,23 +121,21 @@ public class TreeVanillaSwapEngine extends Swap.EngineImpl {
 
         final Date referenceDate;
         final DayCounter dayCounter;
-        if (model_ instanceof TermStructureConsistentModel) {
+        if ( model_ instanceof TermStructureConsistentModel ) {
             final TermStructureConsistentModel tsm = (TermStructureConsistentModel) model_;
             referenceDate = tsm.termStructure().currentLink().referenceDate();
             dayCounter = tsm.termStructure().currentLink().dayCounter();
         } else {
-            QL.require(termStructure_ != null && !termStructure_.empty(),
-                    "no term structure available");
+            QL.require(termStructure_ != null && !termStructure_.empty(), "no term structure available");
             referenceDate = termStructure_.currentLink().referenceDate();
             dayCounter = termStructure_.currentLink().dayCounter();
         }
 
-        final DiscretizedSwap swap = new DiscretizedSwap(
-                swap_, referenceDate, dayCounter);
-        final List<Double> times = swap.mandatoryTimes();
+        final DiscretizedSwap swap = new DiscretizedSwap(swap_, referenceDate, dayCounter);
+        final List< Double > times = swap.mandatoryTimes();
 
         final Lattice lattice;
-        if (lattice_ != null) {
+        if ( lattice_ != null ) {
             lattice = lattice_;
         } else {
             final TimeGrid grid = new TimeGrid(times, timeSteps_);
@@ -153,8 +143,8 @@ public class TreeVanillaSwapEngine extends Swap.EngineImpl {
         }
 
         double maxTime = Double.NEGATIVE_INFINITY;
-        for (final double t : times) {
-            if (t > maxTime) {
+        for ( final double t : times ) {
+            if ( t > maxTime ) {
                 maxTime = t;
             }
         }
@@ -166,8 +156,7 @@ public class TreeVanillaSwapEngine extends Swap.EngineImpl {
         // fetchResults path. We only set the NPV; leg-level results (NPV/BPS/
         // discounts) are not produced by the tree engine — matches C++ which
         // only writes results_.value.
-        final org.jquantlib.instruments.Swap.ResultsImpl r =
-                (org.jquantlib.instruments.Swap.ResultsImpl) results_;
+        final org.jquantlib.instruments.Swap.ResultsImpl r = (org.jquantlib.instruments.Swap.ResultsImpl) results_;
         r.value = swap.presentValue();
         // Set leg arrays to empty so Swap.fetchResults' length-check branches
         // take the "fill NULL_REAL" fallback rather than NPE on null arrays.

@@ -32,12 +32,11 @@ import org.jquantlib.processes.StochasticProcess;
 /**
  * Joint Kluge process and Extended Ornstein-Uhlenbeck process.
  * <p>
- * Java port of v1.42.1
- * {@code ql/experimental/processes/klugeextouprocess.{hpp,cpp}}.
+ * Java port of v1.42.1 {@code ql/experimental/processes/klugeextouprocess.{hpp,cpp}}.
  * <p>
- * Three-dimensional state combining a {@link ExtOUWithJumpsProcess} (Kluge
- * model for power) with a separate {@link ExtendedOrnsteinUhlenbeckProcess}
- * (gas spot), correlated through {@code rho} between the diffusive components.
+ * Three-dimensional state combining a {@link ExtOUWithJumpsProcess} (Kluge model for power) with a separate
+ * {@link ExtendedOrnsteinUhlenbeckProcess} (gas spot), correlated through {@code rho} between the diffusive
+ * components.
  *
  * @author Phase 4n WI port
  */
@@ -48,9 +47,7 @@ public class KlugeExtOUProcess extends StochasticProcess {
     private final ExtOUWithJumpsProcess klugeProcess_;
     private final ExtendedOrnsteinUhlenbeckProcess ouProcess_;
 
-    public KlugeExtOUProcess(
-            final double rho,
-            final ExtOUWithJumpsProcess klugeProcess,
+    public KlugeExtOUProcess(final double rho, final ExtOUWithJumpsProcess klugeProcess,
             final ExtendedOrnsteinUhlenbeckProcess extOU) {
         super();
         QL.require(klugeProcess != null, "null Kluge process");
@@ -76,7 +73,7 @@ public class KlugeExtOUProcess extends StochasticProcess {
         final int n = size();
         final Array retVal = new Array(n);
         final Array x0 = klugeProcess_.initialValues();
-        for (int i = 0; i < x0.size(); ++i) {
+        for ( int i = 0; i < x0.size(); ++i ) {
             retVal.set(i, x0.get(i));
         }
         retVal.set(n - 1, ouProcess_.x0());
@@ -88,7 +85,7 @@ public class KlugeExtOUProcess extends StochasticProcess {
         final int n = size();
         final Array retVal = new Array(n);
         final Array mu = klugeProcess_.drift(t, x);
-        for (int i = 0; i < mu.size(); ++i) {
+        for ( int i = 0; i < mu.size(); ++i ) {
             retVal.set(i, mu.get(i));
         }
         retVal.set(n - 1, ouProcess_.drift(t, x.get(x.size() - 1)));
@@ -124,7 +121,7 @@ public class KlugeExtOUProcess extends StochasticProcess {
         final int n = size();
         final Array retVal = new Array(n);
         final Array ev = klugeProcess_.evolve(t0, x0, dt, dw);
-        for (int i = 0; i < ev.size(); ++i) {
+        for ( int i = 0; i < ev.size(); ++i ) {
             retVal.set(i, ev.get(i));
         }
         final double dz = dw.get(dw.size() - 1) * sqrtMRho_ + dw.get(0) * rho_;

@@ -28,29 +28,25 @@ import org.jquantlib.util.LazyObject;
 /**
  * G2++ two-factor short-rate FDM solver.
  * <p>
- * Java port of v1.42.1
- * {@code ql/methods/finitedifferences/solvers/fdmg2solver.{hpp,cpp}}.
- * Wires {@link FdmG2Op} into a {@link Fdm2DimSolver}.
+ * Java port of v1.42.1 {@code ql/methods/finitedifferences/solvers/fdmg2solver.{hpp,cpp}}. Wires {@link FdmG2Op} into a
+ * {@link Fdm2DimSolver}.
  *
  * @author Phase 2h WI-1 port
  */
 public class FdmG2Solver extends LazyObject {
 
-    private final Handle<G2> model;
+    private final Handle< G2 > model;
     private final FdmSolverDesc solverDesc;
     private final FdmSchemeDesc schemeDesc;
 
     private Fdm2DimSolver solver;
 
     /** Convenience overload matching C++ default {@code FdmSchemeDesc::Hundsdorfer()}. */
-    public FdmG2Solver(final Handle<G2> model,
-                       final FdmSolverDesc solverDesc) {
+    public FdmG2Solver(final Handle< G2 > model, final FdmSolverDesc solverDesc) {
         this(model, solverDesc, FdmSchemeDesc.Hundsdorfer());
     }
 
-    public FdmG2Solver(final Handle<G2> model,
-                       final FdmSolverDesc solverDesc,
-                       final FdmSchemeDesc schemeDesc) {
+    public FdmG2Solver(final Handle< G2 > model, final FdmSolverDesc solverDesc, final FdmSchemeDesc schemeDesc) {
         this.model = model;
         this.solverDesc = solverDesc;
         this.schemeDesc = schemeDesc;
@@ -61,8 +57,7 @@ public class FdmG2Solver extends LazyObject {
 
     @Override
     protected void performCalculations() {
-        final FdmG2Op op = new FdmG2Op(
-                solverDesc.mesher, model.currentLink(), 0, 1);
+        final FdmG2Op op = new FdmG2Op(solverDesc.mesher, model.currentLink(), 0, 1);
         solver = new Fdm2DimSolver(solverDesc, schemeDesc, op);
     }
 

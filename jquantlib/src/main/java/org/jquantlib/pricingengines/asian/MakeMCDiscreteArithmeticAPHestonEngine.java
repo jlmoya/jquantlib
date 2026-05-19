@@ -48,51 +48,56 @@ public class MakeMCDiscreteArithmeticAPHestonEngine {
         this.antithetic_ = b;
         return this;
     }
+
     public MakeMCDiscreteArithmeticAPHestonEngine withAntitheticVariate() {
         return withAntitheticVariate(true);
     }
+
     public MakeMCDiscreteArithmeticAPHestonEngine withControlVariate(final boolean b) {
         this.controlVariate_ = b;
         return this;
     }
+
     public MakeMCDiscreteArithmeticAPHestonEngine withControlVariate() {
         return withControlVariate(true);
     }
+
     public MakeMCDiscreteArithmeticAPHestonEngine withSamples(final int samples) {
         QL.require(Double.isNaN(tolerance_), "tolerance already set");
         this.samples_ = samples;
         return this;
     }
+
     public MakeMCDiscreteArithmeticAPHestonEngine withAbsoluteTolerance(final double tolerance) {
         QL.require(samples_ == McSimulation.NULL_SAMPLES, "number of samples already set");
         this.tolerance_ = tolerance;
         return this;
     }
+
     public MakeMCDiscreteArithmeticAPHestonEngine withMaxSamples(final int samples) {
         this.maxSamples_ = samples;
         return this;
     }
+
     public MakeMCDiscreteArithmeticAPHestonEngine withSeed(final long seed) {
         this.seed_ = seed;
         return this;
     }
+
     public MakeMCDiscreteArithmeticAPHestonEngine withSteps(final int steps) {
-        QL.require(stepsPerYear_ == McSimulation.NULL_SAMPLES,
-                "number of steps per year already set");
+        QL.require(stepsPerYear_ == McSimulation.NULL_SAMPLES, "number of steps per year already set");
         this.steps_ = steps;
         return this;
     }
+
     public MakeMCDiscreteArithmeticAPHestonEngine withStepsPerYear(final int steps) {
-        QL.require(steps_ == McSimulation.NULL_SAMPLES,
-                "number of steps already set");
+        QL.require(steps_ == McSimulation.NULL_SAMPLES, "number of steps already set");
         this.stepsPerYear_ = steps;
         return this;
     }
 
     public PricingEngine value() {
-        return new MCDiscreteArithmeticAPHestonEngine(
-                process_, antithetic_, controlVariate_,
-                samples_, tolerance_, maxSamples_,
-                seed_, steps_, stepsPerYear_);
+        return new MCDiscreteArithmeticAPHestonEngine(process_, antithetic_, controlVariate_, samples_, tolerance_,
+                maxSamples_, seed_, steps_, stepsPerYear_);
     }
 }

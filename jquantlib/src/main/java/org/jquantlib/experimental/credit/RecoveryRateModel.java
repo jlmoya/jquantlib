@@ -24,16 +24,15 @@
 
 package org.jquantlib.experimental.credit;
 
-import java.util.List;
-
 import org.jquantlib.time.Date;
 import org.jquantlib.util.DefaultObservable;
 import org.jquantlib.util.Observable;
 import org.jquantlib.util.Observer;
 
+import java.util.List;
+
 /**
- * Models of the recovery rate provide future values of a recovery rate
- * in the event of a default.
+ * Models of the recovery rate provide future values of a recovery rate in the event of a default.
  *
  * <p>Java port of QuantLib v1.42.1 abstract {@code QuantLib::RecoveryRateModel}
  * ({@code ql/experimental/credit/recoveryratemodel.{hpp,cpp}}).
@@ -75,16 +74,14 @@ public abstract class RecoveryRateModel implements Observable {
     }
 
     @Override
-    public List<Observer> getObservers() {
+    public List< Observer > getObservers() {
         return delegatedObservable.getObservers();
     }
 
     /**
-     * Returns the expected recovery rate at a future time conditional on
-     * some default event type and seniority.
+     * Returns the expected recovery rate at a future time conditional on some default event type and seniority.
      */
-    public double recoveryValue(final Date defaultDate,
-                                final DefaultProbKey defaultKey) {
+    public double recoveryValue(final Date defaultDate, final DefaultProbKey defaultKey) {
         return recoveryValueImpl(defaultDate, defaultKey);
     }
 
@@ -96,8 +93,8 @@ public abstract class RecoveryRateModel implements Observable {
     public abstract boolean appliesToSeniority(Seniority sen);
 
     /**
-     * Returns {@code Constants.NULL_REAL} (corresponds to C++ {@code Null<Real>()})
-     * if the model is unable to produce a recovery for the requested seniority.
+     * Returns {@code Constants.NULL_REAL} (corresponds to C++ {@code Null<Real>()}) if the model is unable to produce a
+     * recovery for the requested seniority.
      */
     protected abstract double recoveryValueImpl(Date date, DefaultProbKey defaultKey);
 }

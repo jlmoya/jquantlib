@@ -28,8 +28,8 @@ import org.jquantlib.termstructures.volatility.AbcdFunction;
  * (QuantLib v1.42.1).
  *
  * <p>Variance over each piecewise interval [rateTimes[i-1], rateTimes[i]] is
- * computed via {@link AbcdFunction#variance(double, double, double)} of
- * the T-fixing rate at {@code rateTimes[resetIndex]}.
+ * computed via {@link AbcdFunction#variance(double, double, double)} of the T-fixing rate at
+ * {@code rateTimes[resetIndex]}.
  *
  * <p>Phase 3j B.2 (Track B).
  */
@@ -40,15 +40,13 @@ public class PiecewiseConstantAbcdVariance extends PiecewiseConstantVariance {
     private final double[] rateTimes_;
     private final double a_, b_, c_, d_;
 
-    public PiecewiseConstantAbcdVariance(final double a, final double b,
-                                         final double c, final double d,
-                                         final int resetIndex,
-                                         final double[] rateTimes) {
+    public PiecewiseConstantAbcdVariance(final double a, final double b, final double c, final double d,
+            final int resetIndex, final double[] rateTimes) {
         Utilities.checkIncreasingTimes(rateTimes);
         QL.require(rateTimes.length > 1, "Rate times must contain at least two values");
         QL.require(resetIndex < rateTimes.length - 1,
-                "resetIndex (" + resetIndex + ") must be less than rateTimes.size()-1 ("
-                        + (rateTimes.length - 1) + ")");
+                "resetIndex (" + resetIndex + ") must be less than rateTimes.size()-1 (" + (rateTimes.length - 1)
+                        + ")");
 
         this.rateTimes_ = rateTimes.clone();
         this.a_ = a;
@@ -59,7 +57,7 @@ public class PiecewiseConstantAbcdVariance extends PiecewiseConstantVariance {
         this.volatilities_ = new double[rateTimes.length - 1];
 
         final AbcdFunction abcd = new AbcdFunction(a, b, c, d);
-        for (int i = 0; i <= resetIndex; ++i) {
+        for ( int i = 0; i <= resetIndex; ++i ) {
             final double startTime = (i == 0) ? 0.0 : rateTimes_[i - 1];
             variances_[i] = abcd.variance(startTime, rateTimes_[i], rateTimes_[resetIndex]);
             final double totTime = rateTimes_[i] - startTime;
@@ -78,9 +76,20 @@ public class PiecewiseConstantAbcdVariance extends PiecewiseConstantVariance {
         this.volatilities_ = other.volatilities_.clone();
     }
 
-    @Override public double[] variances() { return variances_; }
-    @Override public double[] volatilities() { return volatilities_; }
-    @Override public double[] rateTimes() { return rateTimes_; }
+    @Override
+    public double[] variances() {
+        return variances_;
+    }
+
+    @Override
+    public double[] volatilities() {
+        return volatilities_;
+    }
+
+    @Override
+    public double[] rateTimes() {
+        return rateTimes_;
+    }
 
     /** Returns the (a,b,c,d) parameters into a length-4 output array. */
     public void getABCD(final double[] out) {

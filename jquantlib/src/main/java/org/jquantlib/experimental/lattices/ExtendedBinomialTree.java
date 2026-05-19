@@ -48,9 +48,8 @@ import org.jquantlib.processes.StochasticProcess1D;
 /**
  * Binomial tree base class.
  *
- * @category lattices
- *
  * @author Richard Gomes
+ * @category lattices
  */
 public abstract class ExtendedBinomialTree extends Tree /* <T> */ {
 
@@ -67,33 +66,27 @@ public abstract class ExtendedBinomialTree extends Tree /* <T> */ {
     protected /* @Time */ double dt;
     protected StochasticProcess1D treeProcess;
 
-
     //
     // public methods
     //
 
-    public ExtendedBinomialTree(
-            final StochasticProcess1D process,
-            final /* @Time */ double end,
-            final int steps) {
-        super(steps+1);
+    public ExtendedBinomialTree(final StochasticProcess1D process, final /* @Time */ double end, final int steps) {
+        super(steps + 1);
         this.treeProcess = process;
         this.x0 = process.x0();
-        this.dt = end/steps;
+        this.dt = end / steps;
         this.driftPerStep = process.drift(0.0, x0) * dt;
     }
 
     @Override
     public int size(final int i) /* @ReadOnly */ {
-        return i+1;
+        return i + 1;
     }
 
     @Override
     public int descendant(final int ref, final int index, final int branch) /* @ReadOnly */ {
         return index + branch;
     }
-
-
 
     //
     // protected methods

@@ -38,30 +38,27 @@ import org.jquantlib.QL;
 import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.math.Constants;
-import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.interpolations.SABRInterpolation;
+import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.optimization.EndCriteria;
 import org.jquantlib.math.optimization.OptimizationMethod;
 import org.jquantlib.model.VolatilityType;
 import org.jquantlib.time.Date;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
  * SABR-interpolated smile section.
  *
  * <p>Mirrors C++ QuantLib v1.42.1
- * {@code ql/termstructures/volatility/sabrinterpolatedsmilesection.{hpp,cpp}}.
- * Fits a SABR model to a set of market strike/volatility pairs via the
- * existing {@link SABRInterpolation} optimizer and exposes the calibrated
- * surface as a {@link SmileSection}.
+ * {@code ql/termstructures/volatility/sabrinterpolatedsmilesection.{hpp,cpp}}. Fits a SABR model to a set of market
+ * strike/volatility pairs via the existing {@link SABRInterpolation} optimizer and exposes the calibrated surface as a
+ * {@link SmileSection}.
  *
  * <p>Java single-inheritance precludes the C++ double-inheritance from
- * {@code SmileSection} and {@code LazyObject}. Instead we maintain a
- * {@code dirty_} flag: any setter or constructor sets {@code dirty_ = true};
- * {@link #ensureCalculated()} runs {@link #performCalculations()} on demand
- * before any accessor is used.
+ * {@code SmileSection} and {@code LazyObject}. Instead we maintain a {@code dirty_} flag: any setter or constructor
+ * sets {@code dirty_ = true}; {@link #ensureCalculated()} runs {@link #performCalculations()} on demand before any
+ * accessor is used.
  *
  * <p>Two constructor variants mirror C++:
  * <ol>
@@ -88,9 +85,8 @@ public class SabrInterpolatedSmileSection extends SmileSection {
     private final double[] strikes_;
 
     /**
-     * Strikes actually used in calibration: when {@code hasFloatingStrikes_}
-     * these are {@code forward + strikes_[i]}; invalid vol handles are skipped
-     * (plain-values variant: all are always valid).
+     * Strikes actually used in calibration: when {@code hasFloatingStrikes_} these are {@code forward + strikes_[i]};
+     * invalid vol handles are skipped (plain-values variant: all are always valid).
      */
     private final double[] actualStrikes_;
 
@@ -136,220 +132,171 @@ public class SabrInterpolatedSmileSection extends SmileSection {
     // -----------------------------------------------------------------------
 
     /**
-     * Full-arity "plain values" constructor — mirrors C++ second ctor
-     * (the one without {@code Handle<Quote>}).
+     * Full-arity "plain values" constructor — mirrors C++ second ctor (the one without {@code Handle<Quote>}).
      *
-     * @param optionDate        expiry date of this smile slice
-     * @param forward           current forward rate
-     * @param strikes           market strikes (absolute or floating offsets)
+     * @param optionDate         expiry date of this smile slice
+     * @param forward            current forward rate
+     * @param strikes            market strikes (absolute or floating offsets)
      * @param hasFloatingStrikes true if strikes are relative offsets from forward
-     * @param atmVolatility     ATM volatility
-     * @param vols              market volatilities (same length as strikes)
-     * @param alpha             SABR alpha initial value
-     * @param beta              SABR beta initial value
-     * @param nu                SABR nu initial value
-     * @param rho               SABR rho initial value
-     * @param isAlphaFixed      fix alpha during calibration
-     * @param isBetaFixed       fix beta during calibration
-     * @param isNuFixed         fix nu during calibration
-     * @param isRhoFixed        fix rho during calibration
-     * @param vegaWeighted      use vega-weighted calibration
-     * @param endCriteria       calibration stopping criterion (null = default)
-     * @param method            optimization method (null = default)
-     * @param dc                day counter for time conversion
-     * @param shift             shift for shifted-lognormal SABR (0 = standard)
+     * @param atmVolatility      ATM volatility
+     * @param vols               market volatilities (same length as strikes)
+     * @param alpha              SABR alpha initial value
+     * @param beta               SABR beta initial value
+     * @param nu                 SABR nu initial value
+     * @param rho                SABR rho initial value
+     * @param isAlphaFixed       fix alpha during calibration
+     * @param isBetaFixed        fix beta during calibration
+     * @param isNuFixed          fix nu during calibration
+     * @param isRhoFixed         fix rho during calibration
+     * @param vegaWeighted       use vega-weighted calibration
+     * @param endCriteria        calibration stopping criterion (null = default)
+     * @param method             optimization method (null = default)
+     * @param dc                 day counter for time conversion
+     * @param shift              shift for shifted-lognormal SABR (0 = standard)
      */
-    public SabrInterpolatedSmileSection(
-            final Date optionDate,
-            final double forward,
-            final double[] strikes,
-            final boolean hasFloatingStrikes,
-            final double atmVolatility,
-            final double[] vols,
-            final double alpha,
-            final double beta,
-            final double nu,
-            final double rho,
-            final boolean isAlphaFixed,
-            final boolean isBetaFixed,
-            final boolean isNuFixed,
-            final boolean isRhoFixed,
-            final boolean vegaWeighted,
-            final EndCriteria endCriteria,
-            final OptimizationMethod method,
-            final DayCounter dc,
-            final double shift) {
+    public SabrInterpolatedSmileSection(final Date optionDate, final double forward, final double[] strikes,
+            final boolean hasFloatingStrikes, final double atmVolatility, final double[] vols, final double alpha,
+            final double beta, final double nu, final double rho, final boolean isAlphaFixed, final boolean isBetaFixed,
+            final boolean isNuFixed, final boolean isRhoFixed, final boolean vegaWeighted,
+            final EndCriteria endCriteria, final OptimizationMethod method, final DayCounter dc, final double shift) {
 
         super(optionDate, dc == null ? new Actual365Fixed() : dc,
-              new Date() /* null date → isFloating_ = true, mirrors C++ Date() */,
-              VolatilityType.ShiftedLognormal, shift);
+                new Date() /* null date → isFloating_ = true, mirrors C++ Date() */, VolatilityType.ShiftedLognormal,
+                shift);
 
-        QL.require(strikes != null && vols != null,
-                "strikes and vols must not be null");
-        QL.require(strikes.length == vols.length,
-                "strikes (%d) and vols (%d) must have the same length",
+        QL.require(strikes != null && vols != null, "strikes and vols must not be null");
+        QL.require(strikes.length == vols.length, "strikes (%d) and vols (%d) must have the same length",
                 strikes.length, vols.length);
-        QL.require(strikes.length >= 1,
-                "at least one strike/vol pair is required");
+        QL.require(strikes.length >= 1, "at least one strike/vol pair is required");
 
-        this.forwardValue_    = forward;
-        this.atmVolatility_   = atmVolatility;
+        this.forwardValue_ = forward;
+        this.atmVolatility_ = atmVolatility;
         this.hasFloatingStrikes_ = hasFloatingStrikes;
-        this.strikes_         = strikes.clone();
-        this.alpha0_          = alpha;
-        this.beta0_           = beta;
-        this.nu0_             = nu;
-        this.rho0_            = rho;
-        this.isAlphaFixed_    = isAlphaFixed;
-        this.isBetaFixed_     = isBetaFixed;
-        this.isNuFixed_       = isNuFixed;
-        this.isRhoFixed_      = isRhoFixed;
-        this.vegaWeighted_    = vegaWeighted;
-        this.endCriteria_     = endCriteria;
-        this.method_          = method;
+        this.strikes_ = strikes.clone();
+        this.alpha0_ = alpha;
+        this.beta0_ = beta;
+        this.nu0_ = nu;
+        this.rho0_ = rho;
+        this.isAlphaFixed_ = isAlphaFixed;
+        this.isBetaFixed_ = isBetaFixed;
+        this.isNuFixed_ = isNuFixed;
+        this.isRhoFixed_ = isRhoFixed;
+        this.vegaWeighted_ = vegaWeighted;
+        this.endCriteria_ = endCriteria;
+        this.method_ = method;
 
         // Build actualStrikes_ and vols_ (all entries valid for the plain-values variant)
-        if (hasFloatingStrikes) {
+        if ( hasFloatingStrikes ) {
             final double[] aStrikes = new double[vols.length];
-            final double[] aVols    = new double[vols.length];
-            for (int i = 0; i < vols.length; i++) {
+            final double[] aVols = new double[vols.length];
+            for ( int i = 0; i < vols.length; i++ ) {
                 aStrikes[i] = forward + strikes[i];
-                aVols[i]    = atmVolatility + vols[i];
+                aVols[i] = atmVolatility + vols[i];
             }
             this.actualStrikes_ = aStrikes;
-            this.vols_          = aVols;
+            this.vols_ = aVols;
         } else {
             this.actualStrikes_ = strikes.clone();
-            this.vols_          = vols.clone();
+            this.vols_ = vols.clone();
         }
     }
 
     /**
-     * Convenience constructor with default SABR initial guesses and settings.
-     * Strikes must be absolute (hasFloatingStrikes=false), all parameters free,
-     * vegaWeighted=true, default EndCriteria/OptimizationMethod, Actual365Fixed, shift=0.
+     * Convenience constructor with default SABR initial guesses and settings. Strikes must be absolute
+     * (hasFloatingStrikes=false), all parameters free, vegaWeighted=true, default EndCriteria/OptimizationMethod,
+     * Actual365Fixed, shift=0.
      */
-    public SabrInterpolatedSmileSection(
-            final Date optionDate,
-            final double forward,
-            final double[] strikes,
-            final double atmVolatility,
-            final double[] vols) {
-        this(optionDate, forward, strikes, false, atmVolatility, vols,
-             Constants.NULL_REAL, Constants.NULL_REAL,
-             Constants.NULL_REAL, Constants.NULL_REAL,
-             false, false, false, false, true,
-             null, null, new Actual365Fixed(), 0.0);
+    public SabrInterpolatedSmileSection(final Date optionDate, final double forward, final double[] strikes,
+            final double atmVolatility, final double[] vols) {
+        this(optionDate, forward, strikes, false, atmVolatility, vols, Constants.NULL_REAL, Constants.NULL_REAL,
+                Constants.NULL_REAL, Constants.NULL_REAL, false, false, false, false, true, null, null,
+                new Actual365Fixed(), 0.0);
     }
 
     /**
-     * Constructor using the same market data as C++
-     * {@code SabrInterpolatedSmileSection} second ctor but with {@code List}
-     * arguments (convenience for callers passing List&lt;Rate&gt; from
-     * MarkovFunctional's strike-grid).
+     * Constructor using the same market data as C++ {@code SabrInterpolatedSmileSection} second ctor but with
+     * {@code List} arguments (convenience for callers passing List&lt;Rate&gt; from MarkovFunctional's strike-grid).
      *
-     * @param optionDate        expiry date
-     * @param forward           current forward rate
-     * @param strikes           strike list
+     * @param optionDate         expiry date
+     * @param forward            current forward rate
+     * @param strikes            strike list
      * @param hasFloatingStrikes whether strikes are floating offsets from forward
-     * @param atmVolatility     ATM volatility
-     * @param vols              market volatility list (same length as strikes)
-     * @param alpha             initial SABR alpha
-     * @param beta              initial SABR beta
-     * @param nu                initial SABR nu
-     * @param rho               initial SABR rho
-     * @param isAlphaFixed      fix alpha during calibration
-     * @param isBetaFixed       fix beta during calibration
-     * @param isNuFixed         fix nu during calibration
-     * @param isRhoFixed        fix rho during calibration
-     * @param vegaWeighted      use vega-weighted calibration
-     * @param endCriteria       calibration stopping criterion (null = default)
-     * @param method            optimization method (null = default)
-     * @param dc                day counter for time conversion
-     * @param shift             SABR shift
+     * @param atmVolatility      ATM volatility
+     * @param vols               market volatility list (same length as strikes)
+     * @param alpha              initial SABR alpha
+     * @param beta               initial SABR beta
+     * @param nu                 initial SABR nu
+     * @param rho                initial SABR rho
+     * @param isAlphaFixed       fix alpha during calibration
+     * @param isBetaFixed        fix beta during calibration
+     * @param isNuFixed          fix nu during calibration
+     * @param isRhoFixed         fix rho during calibration
+     * @param vegaWeighted       use vega-weighted calibration
+     * @param endCriteria        calibration stopping criterion (null = default)
+     * @param method             optimization method (null = default)
+     * @param dc                 day counter for time conversion
+     * @param shift              SABR shift
      */
-    public SabrInterpolatedSmileSection(
-            final Date optionDate,
-            final double forward,
-            final List<Double> strikes,
-            final boolean hasFloatingStrikes,
-            final double atmVolatility,
-            final List<Double> vols,
-            final double alpha,
-            final double beta,
-            final double nu,
-            final double rho,
-            final boolean isAlphaFixed,
-            final boolean isBetaFixed,
-            final boolean isNuFixed,
-            final boolean isRhoFixed,
-            final boolean vegaWeighted,
-            final EndCriteria endCriteria,
-            final OptimizationMethod method,
-            final DayCounter dc,
-            final double shift) {
-        this(optionDate, forward,
-             toDoubleArray(strikes),
-             hasFloatingStrikes,
-             atmVolatility,
-             toDoubleArray(vols),
-             alpha, beta, nu, rho,
-             isAlphaFixed, isBetaFixed, isNuFixed, isRhoFixed,
-             vegaWeighted, endCriteria, method, dc, shift);
+    public SabrInterpolatedSmileSection(final Date optionDate, final double forward, final List< Double > strikes,
+            final boolean hasFloatingStrikes, final double atmVolatility, final List< Double > vols, final double alpha,
+            final double beta, final double nu, final double rho, final boolean isAlphaFixed, final boolean isBetaFixed,
+            final boolean isNuFixed, final boolean isRhoFixed, final boolean vegaWeighted,
+            final EndCriteria endCriteria, final OptimizationMethod method, final DayCounter dc, final double shift) {
+        this(optionDate, forward, toDoubleArray(strikes), hasFloatingStrikes, atmVolatility, toDoubleArray(vols), alpha,
+                beta, nu, rho, isAlphaFixed, isBetaFixed, isNuFixed, isRhoFixed, vegaWeighted, endCriteria, method, dc,
+                shift);
     }
 
     // -----------------------------------------------------------------------
     // Lazy-calculation machinery (mirrors C++ LazyObject pattern)
     // -----------------------------------------------------------------------
 
+    private static double[] toDoubleArray(final List< Double > list) {
+        final double[] arr = new double[list.size()];
+        for ( int i = 0; i < arr.length; i++ ) {
+            arr[i] = list.get(i);
+        }
+        return arr;
+    }
+
     /**
-     * Run calibration if the section is dirty.
-     * Called by every accessor before returning results.
+     * Run calibration if the section is dirty. Called by every accessor before returning results.
      */
     private void ensureCalculated() {
-        if (dirty_) {
+        if ( dirty_ ) {
             performCalculations();
             dirty_ = false;
         }
     }
 
     /**
-     * (Re-)creates and calibrates the {@link SABRInterpolation} object.
-     * Mirrors C++ {@code SabrInterpolatedSmileSection::performCalculations()}.
+     * (Re-)creates and calibrates the {@link SABRInterpolation} object. Mirrors C++
+     * {@code SabrInterpolatedSmileSection::performCalculations()}.
      */
     private void performCalculations() {
         createInterpolation();
         sabrInterpolation_.update();
     }
 
+    // -----------------------------------------------------------------------
+    // SmileSection interface
+    // -----------------------------------------------------------------------
+
     /**
-     * Builds a fresh {@link SABRInterpolation} from the pre-computed
-     * {@code actualStrikes_} and {@code vols_}. Mirrors C++
-     * {@code SabrInterpolatedSmileSection::createInterpolation()}.
+     * Builds a fresh {@link SABRInterpolation} from the pre-computed {@code actualStrikes_} and {@code vols_}. Mirrors
+     * C++ {@code SabrInterpolatedSmileSection::createInterpolation()}.
      *
      * <p>C++ passes {@code 0.0020} for {@code errorAccept},
-     * {@code false} for {@code useMaxError}, and {@code 50} for
-     * {@code maxGuesses} — this matches the defaults of the full-arity
-     * {@link SABRInterpolation} constructor.
+     * {@code false} for {@code useMaxError}, and {@code 50} for {@code maxGuesses} — this matches the defaults of the
+     * full-arity {@link SABRInterpolation} constructor.
      */
     private void createInterpolation() {
         final Array vx = new Array(actualStrikes_);
         final Array vy = new Array(vols_);
-        sabrInterpolation_ = new SABRInterpolation(
-                vx, vy,
-                exerciseTime(),
-                forwardValue_,
-                alpha0_, beta0_, nu0_, rho0_,
-                isAlphaFixed_, isBetaFixed_, isNuFixed_, isRhoFixed_,
-                vegaWeighted_,
-                endCriteria_, method_,
-                0.0020, false, 50,
-                shift());
+        sabrInterpolation_ = new SABRInterpolation(vx, vy, exerciseTime(), forwardValue_, alpha0_, beta0_, nu0_, rho0_,
+                isAlphaFixed_, isBetaFixed_, isNuFixed_, isRhoFixed_, vegaWeighted_, endCriteria_, method_, 0.0020,
+                false, 50, shift());
     }
-
-    // -----------------------------------------------------------------------
-    // SmileSection interface
-    // -----------------------------------------------------------------------
 
     @Override
     public double minStrike() {
@@ -374,16 +321,16 @@ public class SabrInterpolatedSmileSection extends SmileSection {
         return sabrInterpolation_.op(strike, true);
     }
 
+    // -----------------------------------------------------------------------
+    // Inspectors (mirror C++ inline accessors)
+    // -----------------------------------------------------------------------
+
     @Override
     protected double varianceImpl(final double strike) {
         ensureCalculated();
         final double v = sabrInterpolation_.op(strike, true);
         return v * v * exerciseTime();
     }
-
-    // -----------------------------------------------------------------------
-    // Inspectors (mirror C++ inline accessors)
-    // -----------------------------------------------------------------------
 
     /**
      * Calibrated SABR alpha.
@@ -433,6 +380,10 @@ public class SabrInterpolatedSmileSection extends SmileSection {
         return sabrInterpolation_.maxError();
     }
 
+    // -----------------------------------------------------------------------
+    // SmileSection.update() override
+    // -----------------------------------------------------------------------
+
     /**
      * End-criteria outcome of the calibration optimizer.
      */
@@ -442,28 +393,16 @@ public class SabrInterpolatedSmileSection extends SmileSection {
     }
 
     // -----------------------------------------------------------------------
-    // SmileSection.update() override
+    // Private helpers
     // -----------------------------------------------------------------------
 
     /**
-     * Marks the section as dirty so the next accessor call will re-calibrate.
-     * Mirrors C++ {@code SabrInterpolatedSmileSection::update()}.
+     * Marks the section as dirty so the next accessor call will re-calibrate. Mirrors C++
+     * {@code SabrInterpolatedSmileSection::update()}.
      */
     @Override
     public void update() {
         dirty_ = true;
         super.update();
-    }
-
-    // -----------------------------------------------------------------------
-    // Private helpers
-    // -----------------------------------------------------------------------
-
-    private static double[] toDoubleArray(final List<Double> list) {
-        final double[] arr = new double[list.size()];
-        for (int i = 0; i < arr.length; i++) {
-            arr[i] = list.get(i);
-        }
-        return arr;
     }
 }

@@ -29,23 +29,20 @@
 
 package org.jquantlib.math;
 
+import org.jquantlib.math.matrixutilities.Array;
+
 import java.util.ArrayList;
 import java.util.List;
 
-import org.jquantlib.math.matrixutilities.Array;
-
 /**
- * Linear regression {@code y_i = a_0 + a_1*x_0 + ... + a_n*x_{n-1} + eps},
- * solved via SVD-based least squares.
+ * Linear regression {@code y_i = a_0 + a_1*x_0 + ... + a_n*x_{n-1} + eps}, solved via SVD-based least squares.
  *
  * <p>Java port of {@code QuantLib v1.42.1
- * ql/math/linearleastsquaresregression.hpp::LinearRegression} (Phase
- * 5e.5b-CFC-d-16b). Pinned commit
+ * ql/math/linearleastsquaresregression.hpp::LinearRegression} (Phase 5e.5b-CFC-d-16b). Pinned commit
  * {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
  *
  * <p>Convenience wrapper over {@link GeneralLinearLeastSquares} that builds
- * a default basis from the input. The basis layout matches C++
- * {@code details::LinearFcts}:
+ * a default basis from the input. The basis layout matches C++ {@code details::LinearFcts}:
  *
  * <ul>
  *   <li>For single-variate ({@code double[] x}, {@code double[] y}):
@@ -66,50 +63,44 @@ import org.jquantlib.math.matrixutilities.Array;
 public class LinearRegression extends GeneralLinearLeastSquares {
 
     /**
-     * Single-variate regression {@code y = a_0 + a_1 * x + eps} with
-     * unit intercept (default behaviour matching the C++ default
-     * {@code intercept = 1.0}).
+     * Single-variate regression {@code y = a_0 + a_1 * x + eps} with unit intercept (default behaviour matching the C++
+     * default {@code intercept = 1.0}).
      *
-     * @param x  sample state values, size {@code n}
-     * @param y  observed values, size {@code n}
+     * @param x sample state values, size {@code n}
+     * @param y observed values, size {@code n}
      */
     public LinearRegression(final double[] x, final double[] y) {
         this(x, y, 1.0);
     }
 
     /**
-     * Single-variate regression {@code y = a_0 + a_1 * x + eps} with the
-     * given intercept term: pass {@code 0.0} to omit the constant column.
+     * Single-variate regression {@code y = a_0 + a_1 * x + eps} with the given intercept term: pass {@code 0.0} to omit
+     * the constant column.
      *
-     * @param x          sample state values, size {@code n}
-     * @param y          observed values, size {@code n}
-     * @param intercept  intercept value (0.0 → no constant column)
+     * @param x         sample state values, size {@code n}
+     * @param y         observed values, size {@code n}
+     * @param intercept intercept value (0.0 → no constant column)
      */
-    public LinearRegression(final double[] x,
-                            final double[] y,
-                            final double intercept) {
+    public LinearRegression(final double[] x, final double[] y, final double intercept) {
         super(x, y, makeLinearFcts(intercept));
     }
 
     /**
      * Single-variate regression with explicit basis system.
      *
-     * @param x  sample state values, size {@code n}
-     * @param y  observed values, size {@code n}
-     * @param v  basis system, size {@code m}
+     * @param x sample state values, size {@code n}
+     * @param y observed values, size {@code n}
+     * @param v basis system, size {@code m}
      */
-    public LinearRegression(final double[] x,
-                            final double[] y,
-                            final List<? extends Ops.DoubleOp> v) {
+    public LinearRegression(final double[] x, final double[] y, final List< ? extends Ops.DoubleOp > v) {
         super(x, y, v);
     }
 
     /**
-     * Multi-variate regression {@code y = a_0 + a_1*x[0] + ... + a_m*x[m-1] + eps}
-     * with unit intercept.
+     * Multi-variate regression {@code y = a_0 + a_1*x[0] + ... + a_m*x[m-1] + eps} with unit intercept.
      *
-     * @param x  sample state vectors, size {@code n}
-     * @param y  observed values, size {@code n}
+     * @param x sample state vectors, size {@code n}
+     * @param y observed values, size {@code n}
      */
     public LinearRegression(final Array[] x, final double[] y) {
         this(x, y, 1.0);
@@ -118,36 +109,32 @@ public class LinearRegression extends GeneralLinearLeastSquares {
     /**
      * Multi-variate regression with the given intercept term.
      *
-     * @param x          sample state vectors, size {@code n}
-     * @param y          observed values, size {@code n}
-     * @param intercept  intercept value (0.0 → no constant column)
+     * @param x         sample state vectors, size {@code n}
+     * @param y         observed values, size {@code n}
+     * @param intercept intercept value (0.0 → no constant column)
      */
-    public LinearRegression(final Array[] x,
-                            final double[] y,
-                            final double intercept) {
+    public LinearRegression(final Array[] x, final double[] y, final double intercept) {
         super(x, y, makeMultiLinearFcts(x, intercept));
     }
 
     /**
      * Multi-variate regression with explicit basis system.
      *
-     * @param x  sample state vectors, size {@code n}
-     * @param y  observed values, size {@code n}
-     * @param v  multi-state basis system, size {@code m}
+     * @param x sample state vectors, size {@code n}
+     * @param y observed values, size {@code n}
+     * @param v multi-state basis system, size {@code m}
      */
-    public LinearRegression(final Array[] x,
-                            final double[] y,
-                            final List<? extends Ops.ObjectToDouble<Array>> v) {
+    public LinearRegression(final Array[] x, final double[] y, final List< ? extends Ops.ObjectToDouble< Array > > v) {
         super(x, y, v);
     }
 
     /**
-     * Mirrors C++ {@code details::LinearFcts<arithmetic>} construction:
-     * an optional constant column followed by the identity function.
+     * Mirrors C++ {@code details::LinearFcts<arithmetic>} construction: an optional constant column followed by the
+     * identity function.
      */
-    private static List<Ops.DoubleOp> makeLinearFcts(final double intercept) {
-        final List<Ops.DoubleOp> v = new ArrayList<>();
-        if (intercept != 0.0) {
+    private static List< Ops.DoubleOp > makeLinearFcts(final double intercept) {
+        final List< Ops.DoubleOp > v = new ArrayList<>();
+        if ( intercept != 0.0 ) {
             v.add(new ConstFct(intercept));
         }
         v.add(new IdFct());
@@ -155,19 +142,17 @@ public class LinearRegression extends GeneralLinearLeastSquares {
     }
 
     /**
-     * Mirrors C++ {@code details::LinearFcts<Array-like>} construction:
-     * an optional constant column followed by one component-extractor per
-     * dimension of the input vectors.
+     * Mirrors C++ {@code details::LinearFcts<Array-like>} construction: an optional constant column followed by one
+     * component-extractor per dimension of the input vectors.
      */
-    private static List<Ops.ObjectToDouble<Array>> makeMultiLinearFcts(
-            final Array[] x, final double intercept) {
-        final List<Ops.ObjectToDouble<Array>> v = new ArrayList<>();
-        if (intercept != 0.0) {
+    private static List< Ops.ObjectToDouble< Array > > makeMultiLinearFcts(final Array[] x, final double intercept) {
+        final List< Ops.ObjectToDouble< Array > > v = new ArrayList<>();
+        if ( intercept != 0.0 ) {
             v.add(new ConstArrayFct(intercept));
         }
-        if (x != null && x.length > 0 && x[0] != null) {
+        if ( x != null && x.length > 0 && x[0] != null ) {
             final int m = x[0].size();
-            for (int i = 0; i < m; ++i) {
+            for ( int i = 0; i < m; ++i ) {
                 v.add(new GetItemFct(i));
             }
         }
@@ -180,23 +165,47 @@ public class LinearRegression extends GeneralLinearLeastSquares {
 
     private static final class ConstFct implements Ops.DoubleOp {
         private final double c;
-        ConstFct(final double c) { this.c = c; }
-        @Override public double op(final double x) { return c; }
+
+        ConstFct(final double c) {
+            this.c = c;
+        }
+
+        @Override
+        public double op(final double x) {
+            return c;
+        }
     }
 
     private static final class IdFct implements Ops.DoubleOp {
-        @Override public double op(final double x) { return x; }
+        @Override
+        public double op(final double x) {
+            return x;
+        }
     }
 
-    private static final class ConstArrayFct implements Ops.ObjectToDouble<Array> {
+    private static final class ConstArrayFct implements Ops.ObjectToDouble< Array > {
         private final double c;
-        ConstArrayFct(final double c) { this.c = c; }
-        @Override public double op(final Array x) { return c; }
+
+        ConstArrayFct(final double c) {
+            this.c = c;
+        }
+
+        @Override
+        public double op(final Array x) {
+            return c;
+        }
     }
 
-    private static final class GetItemFct implements Ops.ObjectToDouble<Array> {
+    private static final class GetItemFct implements Ops.ObjectToDouble< Array > {
         private final int i;
-        GetItemFct(final int i) { this.i = i; }
-        @Override public double op(final Array x) { return x.get(i); }
+
+        GetItemFct(final int i) {
+            this.i = i;
+        }
+
+        @Override
+        public double op(final Array x) {
+            return x.get(i);
+        }
     }
 }

@@ -21,11 +21,11 @@
 
 package org.jquantlib.experimental.credit;
 
+import org.jquantlib.math.distributions.BinomialDistribution;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
-import org.jquantlib.math.distributions.BinomialDistribution;
 
 /**
  * Binomial loss distribution.
@@ -41,8 +41,8 @@ public class LossDistBinomial extends LossDist {
     private final double maximum_;
     private double volume_;
     private int n_;
-    private List<Double> probability_ = new ArrayList<>();
-    private List<Double> excessProbability_ = new ArrayList<>();
+    private List< Double > probability_ = new ArrayList<>();
+    private List< Double > excessProbability_ = new ArrayList<>();
 
     public LossDistBinomial(final int nBuckets, final double maximum) {
         this.nBuckets_ = nBuckets;
@@ -53,13 +53,13 @@ public class LossDistBinomial extends LossDist {
         n_ = n;
         volume_ = volume;
         probability_ = new ArrayList<>(n + 1);
-        for (int i = 0; i <= n; ++i) {
+        for ( int i = 0; i <= n; ++i ) {
             probability_.add(0.0);
         }
         final Distribution dist = new Distribution(nBuckets_, 0.0, maximum_);
         final BinomialDistribution binomial = new BinomialDistribution(probability, n);
-        for (int i = 0; i <= n; ++i) {
-            if (volume * i <= maximum_) {
+        for ( int i = 0; i <= n; ++i ) {
+            if ( volume * i <= maximum_ ) {
                 probability_.set(i, binomial.op(i));
                 final int bucket = dist.locate(volume * i);
                 dist.addDensity(bucket, probability_.get(i) / dist.dx(bucket));
@@ -68,11 +68,11 @@ public class LossDistBinomial extends LossDist {
         }
 
         excessProbability_ = new ArrayList<>(n + 1);
-        for (int i = 0; i <= n; ++i) {
+        for ( int i = 0; i <= n; ++i ) {
             excessProbability_.add(0.0);
         }
         excessProbability_.set(n_, probability_.get(n_));
-        for (int k = n_ - 1; k >= 0; --k) {
+        for ( int k = n_ - 1; k >= 0; --k ) {
             excessProbability_.set(k, excessProbability_.get(k + 1) + probability_.get(k));
         }
 
@@ -81,7 +81,7 @@ public class LossDistBinomial extends LossDist {
     }
 
     @Override
-    public Distribution op(final List<Double> nominals, final List<Double> probabilities) {
+    public Distribution op(final List< Double > nominals, final List< Double > probabilities) {
         return op(nominals.size(), nominals.get(0), probabilities.get(0));
     }
 
@@ -103,11 +103,11 @@ public class LossDistBinomial extends LossDist {
         return n_;
     }
 
-    public List<Double> probability() {
+    public List< Double > probability() {
         return Collections.unmodifiableList(probability_);
     }
 
-    public List<Double> excessProbability() {
+    public List< Double > excessProbability() {
         return Collections.unmodifiableList(excessProbability_);
     }
 }

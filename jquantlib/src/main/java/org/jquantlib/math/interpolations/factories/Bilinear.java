@@ -30,9 +30,8 @@ import org.jquantlib.math.matrixutilities.Matrix;
 /**
  * Bilinear interpolation factory
  *
- * @see BilinearInterpolation
- *
  * @author Richard Gomes
+ * @see BilinearInterpolation
  */
 public class Bilinear implements Interpolation2D.Interpolator2D {
 

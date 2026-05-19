@@ -27,9 +27,8 @@ package org.jquantlib.termstructures;
 /**
  * Pillar-date choice for a rate helper.
  * <p>
- * Port of C++ QuantLib v1.42.1 {@code ql/termstructures/yield/ratehelpers.hpp}
- * {@code Pillar::Choice}. Controls which date is used as the curve pillar
- * (anchor) when bootstrapping a yield curve from this helper.
+ * Port of C++ QuantLib v1.42.1 {@code ql/termstructures/yield/ratehelpers.hpp} {@code Pillar::Choice}. Controls which
+ * date is used as the curve pillar (anchor) when bootstrapping a yield curve from this helper.
  *
  * <ul>
  *   <li>{@link #MaturityDate}: maturity (delivery) date of the instrument;</li>
@@ -43,11 +42,10 @@ package org.jquantlib.termstructures;
  */
 public final class Pillar {
 
-    private Pillar() {}
+    private Pillar() {
+    }
 
     public enum Choice {
-        MaturityDate,
-        LastRelevantDate,
-        CustomDate
+        MaturityDate, LastRelevantDate, CustomDate
     }
 }

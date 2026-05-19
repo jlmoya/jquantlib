@@ -35,27 +35,19 @@ import org.jquantlib.time.calendars.Target;
  * <p>
  * Euribor rate fixed by the ECB.
  *
- * @note This is the rate fixed by the ECB. Use EurLibor if you're interested in the London fixing by BBA.
- *
  * @author Srinivas Hasti
+ * @note This is the rate fixed by the ECB. Use EurLibor if you're interested in the London fixing by BBA.
  */
 public class Euribor extends IborIndex {
 
     public Euribor(final Period tenor) {
-    	this(tenor, new Handle<YieldTermStructure>());
+        this(tenor, new Handle< YieldTermStructure >());
     }
-	
-    public Euribor(final Period tenor, final Handle<YieldTermStructure> h) {
-        super("Euribor",
-                tenor,
-                2, // settlement days
-                new EURCurrency(),
-                new Target(),
-                euriborConvention(tenor),
-                euriborEOM(tenor),
-                new Actual360(),
-                h);
-        QL.require(tenor().units() != TimeUnit.Days , "for daily tenors dedicated DailyTenor constructor must be used");
+
+    public Euribor(final Period tenor, final Handle< YieldTermStructure > h) {
+        super("Euribor", tenor, 2, // settlement days
+                new EURCurrency(), new Target(), euriborConvention(tenor), euriborEOM(tenor), new Actual360(), h);
+        QL.require(tenor().units() != TimeUnit.Days, "for daily tenors dedicated DailyTenor constructor must be used");
     }
 
 }

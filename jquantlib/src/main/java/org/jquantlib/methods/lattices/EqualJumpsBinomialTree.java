@@ -28,31 +28,28 @@ import org.jquantlib.processes.StochasticProcess1D;
 /**
  * Base class for equal jumps binomial tree
  *
- * @category lattices
- *
  * @author Srinivas Hasti
  * @author Tim Swetonic
+ * @category lattices
  */
 public abstract class EqualJumpsBinomialTree extends BinomialTree {
 
-	protected double dx, pu, pd;
+    protected double dx, pu, pd;
 
-	protected EqualJumpsBinomialTree(
-	        final StochasticProcess1D process,
-	        final @Time double end,
-	        final @NonNegative int steps) {
+    protected EqualJumpsBinomialTree(final StochasticProcess1D process, final @Time double end,
+            final @NonNegative int steps) {
         super(process, end, steps);
     }
 
-	@Override
-	public double probability(final int i, final int index, final int branch) {
-		return branch == 1 ? pu : pd;
-	}
+    @Override
+    public double probability(final int i, final int index, final int branch) {
+        return branch == 1 ? pu : pd;
+    }
 
-	@Override
-	public double underlying(final int i, final int index) {
-		final int j = index * 2 - i;
-		return this.x0 * Math.exp(j * this.dx);
-	}
+    @Override
+    public double underlying(final int i, final int index) {
+        final int j = index * 2 - i;
+        return this.x0 * Math.exp(j * this.dx);
+    }
 
 }

@@ -24,33 +24,26 @@ package org.jquantlib.math.randomnumbers;
 
 import org.jquantlib.methods.montecarlo.Sample;
 
-
 /**
- * This class implements a powerful pseudo-random number generator
- * developed by Makoto Matsumoto and Takuji Nishimura during
- * 1996-1997.
+ * This class implements a powerful pseudo-random number generator developed by Makoto Matsumoto and Takuji Nishimura
+ * during 1996-1997.
  *
  * <p>This generator features an extremely long period
- * (2<sup>19937</sup>-1) and 623-dimensional equidistribution up to 32
- * bits accuracy. The home page for this generator is located at <a
- * href="http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/emt.html">
+ * (2<sup>19937</sup>-1) and 623-dimensional equidistribution up to 32 bits accuracy. The home page for this generator
+ * is located at <a href="http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/emt.html">
  * http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/emt.html</a>.</p>
  *
  * <p>This generator is described in a paper by Makoto Matsumoto and
- * Takuji Nishimura in 1998: <a
- * href="http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/ARTICLES/mt.pdf">Mersenne
- * Twister: A 623-Dimensionally Equidistributed Uniform Pseudo-Random
- * Number Generator</a>, ACM Transactions on Modeling and Computer
- * Simulation, Vol. 8, No. 1, JANUARY 1998, pp 3--30</p>
+ * Takuji Nishimura in 1998: <a href="http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/ARTICLES/mt.pdf">Mersenne Twister:
+ * A 623-Dimensionally Equidistributed Uniform Pseudo-Random Number Generator</a>, ACM Transactions on Modeling and
+ * Computer Simulation, Vol. 8, No. 1, JANUARY 1998, pp 3--30</p>
  *
  * <p>The class is implemented as a specialization of the standard
  * <code>java.util.Random</code> class. This allows to use it in
- * algorithms expecting a standard random generator, and hence benefit
- * from a better generator without code change.</p>
+ * algorithms expecting a standard random generator, and hence benefit from a better generator without code change.</p>
  *
  * <p>This class is mainly a Java port of the 2002-01-26 version of
- * the generator written in C by Makoto Matsumoto and Takuji
- * Nishimura. Here is their original copyright:</p>
+ * the generator written in C by Makoto Matsumoto and Takuji Nishimura. Here is their original copyright:</p>
  *
  * <table border="0" width="80%" cellpadding="10" align="center" bgcolor="#E0E0E0">
  * <tr><td>Copyright (C) 1997 - 2002, Makoto Matsumoto and Takuji Nishimura,
@@ -86,10 +79,16 @@ import org.jquantlib.methods.montecarlo.Sample;
  * </table>
  *
  * @author Makoto Matsumoto and Takuji Nishimura (C version), Luc Maisonobe (Java port)
- *
  * @version $Id: MersenneTwister.java 1666 2005-12-15 16:37:55Z luc $
  */
 public class MersenneTwisterUniformRng implements RandomNumberGenerator {
+
+    private static final int N = 624;
+    private static final int M = 397;
+    private static final int[] MAG01 = { 0x0, 0x9908b0df };
+    private static final long serialVersionUID = 7666069655872848609L;
+    private final int[] mt;
+    private int mti;
 
     /**
      * Creates a new random number generator.
@@ -115,7 +114,8 @@ public class MersenneTwisterUniformRng implements RandomNumberGenerator {
     /**
      * Creates a new random number generator using an int array seed.
      *
-     * @param seed the initial seed (32 bits integers array), if null the seed of the generator will be related to the current time
+     * @param seed the initial seed (32 bits integers array), if null the seed of the generator will be related to the
+     *             current time
      */
     public MersenneTwisterUniformRng(final int[] seed) {
         mt = new int[N];
@@ -144,10 +144,10 @@ public class MersenneTwisterUniformRng implements RandomNumberGenerator {
         // we use a long masked by 0xffffffffL as a poor man unsigned int
         long longMT = seed;
         mt[0] = (int) longMT;
-        for (mti = 1; mti < N; ++mti) {
+        for ( mti = 1; mti < N; ++mti ) {
             // See Knuth TAOCP Vol2. 3rd Ed. P.106 for multiplier.
             // initializer from the 2002-01-09 C version by Makoto Matsumoto
-            longMT = (1812433253l * (longMT ^ (longMT >> 30)) + mti) & 0xffffffffL;
+            longMT = (1812433253L * (longMT ^ (longMT >> 30)) + mti) & 0xffffffffL;
             mt[mti] = (int) longMT;
         }
     }
@@ -158,11 +158,12 @@ public class MersenneTwisterUniformRng implements RandomNumberGenerator {
      * The state of the generator is exactly the same as a new generator built with the same seed.
      * </p>
      *
-     * @param seed the initial seed (32 bits integers array), if null the seed of the generator will be related to the current time
+     * @param seed the initial seed (32 bits integers array), if null the seed of the generator will be related to the
+     *             current time
      */
     public void setSeed(final int[] seed) {
 
-        if (seed == null) {
+        if ( seed == null ) {
             setSeed(System.currentTimeMillis());
             return;
         }
@@ -171,29 +172,29 @@ public class MersenneTwisterUniformRng implements RandomNumberGenerator {
         int i = 1;
         int j = 0;
 
-        for (int k = Math.max(N, seed.length); k != 0; k--) {
-            final long l0 = (mt[i] & 0x7fffffffl) | ((mt[i] < 0) ? 0x80000000l : 0x0l);
-            final long l1 = (mt[i - 1] & 0x7fffffffl) | ((mt[i - 1] < 0) ? 0x80000000l : 0x0l);
-            final long l = (l0 ^ ((l1 ^ (l1 >> 30)) * 1664525l)) + seed[j] + j; // non linear
-            mt[i] = (int) (l & 0xffffffffl);
+        for ( int k = Math.max(N, seed.length); k != 0; k-- ) {
+            final long l0 = (mt[i] & 0x7fffffffL) | ((mt[i] < 0) ? 0x80000000L : 0x0L);
+            final long l1 = (mt[i - 1] & 0x7fffffffL) | ((mt[i - 1] < 0) ? 0x80000000L : 0x0L);
+            final long l = (l0 ^ ((l1 ^ (l1 >> 30)) * 1664525L)) + seed[j] + j; // non linear
+            mt[i] = (int) (l & 0xffffffffL);
             i++;
             j++;
-            if (i >= N) {
+            if ( i >= N ) {
                 mt[0] = mt[N - 1];
                 i = 1;
             }
-            if (j >= seed.length) {
+            if ( j >= seed.length ) {
                 j = 0;
             }
         }
 
-        for (int k = N - 1; k != 0; k--) {
-            final long l0 = (mt[i] & 0x7fffffffl) | ((mt[i] < 0) ? 0x80000000l : 0x0l);
-            final long l1 = (mt[i - 1] & 0x7fffffffl) | ((mt[i - 1] < 0) ? 0x80000000l : 0x0l);
-            final long l = (l0 ^ ((l1 ^ (l1 >> 30)) * 1566083941l)) - i; // non linear
+        for ( int k = N - 1; k != 0; k-- ) {
+            final long l0 = (mt[i] & 0x7fffffffL) | ((mt[i] < 0) ? 0x80000000L : 0x0L);
+            final long l1 = (mt[i - 1] & 0x7fffffffL) | ((mt[i - 1] < 0) ? 0x80000000L : 0x0L);
+            final long l = (l0 ^ ((l1 ^ (l1 >> 30)) * 1566083941L)) - i; // non linear
             mt[i] = (int) (l & 0xffffffffL);
             i++;
-            if (i >= N) {
+            if ( i >= N ) {
                 mt[0] = mt[N - 1];
                 i = 1;
             }
@@ -206,58 +207,42 @@ public class MersenneTwisterUniformRng implements RandomNumberGenerator {
     /**
      * Reinitialize the generator as if just built with the given long seed.
      * <p>
-     * The state of the generator is exactly the same as a new generator built
-     * with the same seed via the {@code (int)} constructor — i.e. the long is
-     * narrowed to its low 32 bits and dispatched to the
-     * {@code init_genrand}-style {@link #setSeed(int)} path. This matches the
-     * C++ v1.42.1 reference, where
-     * {@code MersenneTwisterUniformRng(unsigned long seed)} runs
-     * {@code seedInitialization(seed)}, which assigns
-     * {@code mt[0] = s & 0xffffffffUL} and continues with the standard
-     * {@code init_genrand} recurrence.
+     * The state of the generator is exactly the same as a new generator built with the same seed via the {@code (int)}
+     * constructor — i.e. the long is narrowed to its low 32 bits and dispatched to the {@code init_genrand}-style
+     * {@link #setSeed(int)} path. This matches the C++ v1.42.1 reference, where
+     * {@code MersenneTwisterUniformRng(unsigned long seed)} runs {@code seedInitialization(seed)}, which assigns
+     * {@code mt[0] = s & 0xffffffffUL} and continues with the standard {@code init_genrand} recurrence.
      * </p>
      *
      * <p>
      * <b>Bug history (Phase 5e.5b-CFC-d-23, fix commit follows
-     * {@code ea0b8ab7}):</b> the previous implementation forwarded to
-     * {@link #setSeed(int[])} with two int halves of the long. That dispatched
-     * to the MT {@code init_by_array} path, producing a completely different
-     * initial state versus C++. Concrete divergence:
-     * {@code seed = 86421UL} yielded a first {@code uint32} of
-     * {@code 919700544} on Java vs {@code 710307208} on C++. Every Java MC
-     * engine that took a {@code long seed} (via
-     * {@link RandomSequenceGenerator#RandomSequenceGenerator(Class, int, long)}
-     * reflective construction) was affected. C++ source location:
-     * {@code ql/math/randomnumbers/mt19937uniformrng.cpp}, function
+     * {@code ea0b8ab7}):</b> the previous implementation forwarded to {@link #setSeed(int[])} with two int halves of
+     * the long. That dispatched to the MT {@code init_by_array} path, producing a completely different initial state
+     * versus C++. Concrete divergence: {@code seed = 86421UL} yielded a first {@code uint32} of {@code 919700544} on
+     * Java vs {@code 710307208} on C++. Every Java MC engine that took a {@code long seed} (via
+     * {@link RandomSequenceGenerator#RandomSequenceGenerator(Class, int, long)} reflective construction) was affected.
+     * C++ source location: {@code ql/math/randomnumbers/mt19937uniformrng.cpp}, function
      * {@code MersenneTwisterUniformRng::seedInitialization}.
      * </p>
      *
      * <p>
      * <b>Cross-validation (Phase 5e.5b-CFC-d-165):</b> bit-exact alignment
-     * with the reference C++ {@code MersenneTwisterUniformRng(unsigned long)}
-     * was reconfirmed via a standalone C++ probe for seeds
-     * {@code 42}, {@code 123456}, and the Matsumoto/Nishimura canonical
-     * {@code 5489}. For {@code seed = 123456} the first 10 {@code uint32}
-     * draws are
-     * {@code 545331265, 2211535594, 4152021490, 3857419313, 1118735928,
-     *  3031474347, 3853601519, 3345048107, 1618127707, 4001288224}
-     * — identical on both Java and C++. The four Halton-discrepancy tests
-     * previously {@code @Ignore}'d in
+     * with the reference C++ {@code MersenneTwisterUniformRng(unsigned long)} was reconfirmed via a standalone C++
+     * probe for seeds {@code 42}, {@code 123456}, and the Matsumoto/Nishimura canonical {@code 5489}. For
+     * {@code seed = 123456} the first 10 {@code uint32} draws are
+     * {@code 545331265, 2211535594, 4152021490, 3857419313, 1118735928, 3031474347, 3853601519, 3345048107, 1618127707,
+     * 4001288224} — identical on both Java and C++. The four Halton-discrepancy tests previously {@code @Ignore}'d in
      * {@code LowDiscrepancySequencesTest} ({@code testMersenneTwisterDiscrepancy},
-     * {@code testRandomStartHaltonDiscrepancy},
-     * {@code testRandomShiftHaltonDiscrepancy},
-     * {@code testRandomStartRandomShiftHaltonDiscrepancy}) were enabled in
-     * this phase against pivot tables from
-     * {@code migration-harness/references/math/randomnumbers/halton_discrepancy.json}
-     * and the C++ {@code dim*DiscrMersenneTwis} table in
-     * {@code test-suite/lowdiscrepancysequences.cpp}.
+     * {@code testRandomStartHaltonDiscrepancy}, {@code testRandomShiftHaltonDiscrepancy},
+     * {@code testRandomStartRandomShiftHaltonDiscrepancy}) were enabled in this phase against pivot tables from
+     * {@code migration-harness/references/math/randomnumbers/halton_discrepancy.json} and the C++
+     * {@code dim*DiscrMersenneTwis} table in {@code test-suite/lowdiscrepancysequences.cpp}.
      * </p>
      *
-     * @param seed the initial seed (low 32 bits used, matching C++
-     *             {@code unsigned long} semantics)
+     * @param seed the initial seed (low 32 bits used, matching C++ {@code unsigned long} semantics)
      */
     public void setSeed(final long seed) {
-        if (mt == null) {
+        if ( mt == null ) {
             // this is probably a spurious call from base class constructor,
             // we do nothing and wait for the setSeed in our own
             // constructors after array allocation
@@ -272,8 +257,8 @@ public class MersenneTwisterUniformRng implements RandomNumberGenerator {
     /**
      * Generate next pseudorandom number.
      * <p>
-     * This method is the core generation algorithm. As per {@link java.util.Random Random } contract, it is used by all the public
-     * generation methods for the various primitive types {@link java.util.Random#nextBoolean nextBoolean},
+     * This method is the core generation algorithm. As per {@link java.util.Random Random } contract, it is used by all
+     * the public generation methods for the various primitive types {@link java.util.Random#nextBoolean nextBoolean},
      * {@link java.util.Random#nextBytes nextBytes}, {@link java.util.Random#nextDouble nextDouble},
      * {@link java.util.Random#nextFloat nextFloat}, {@link java.util.Random#nextGaussian nextGaussian},
      * {@link java.util.Random#nextInt() nextInt} and {@link java.util.Random#nextLong nextLong}.
@@ -285,15 +270,15 @@ public class MersenneTwisterUniformRng implements RandomNumberGenerator {
 
         int y;
 
-        if (mti >= N) { // generate N words at one time
+        if ( mti >= N ) { // generate N words at one time
             int mtNext = mt[0];
-            for (int k = 0; k < N - M; ++k) {
+            for ( int k = 0; k < N - M; ++k ) {
                 final int mtCurr = mtNext;
                 mtNext = mt[k + 1];
                 y = (mtCurr & 0x80000000) | (mtNext & 0x7fffffff);
                 mt[k] = mt[k + M] ^ (y >>> 1) ^ MAG01[y & 0x1];
             }
-            for (int k = N - M; k < N - 1; ++k) {
+            for ( int k = N - M; k < N - 1; ++k ) {
                 final int mtCurr = mtNext;
                 mtNext = mt[k + 1];
                 y = (mtCurr & 0x80000000) | (mtNext & 0x7fffffff);
@@ -327,19 +312,10 @@ public class MersenneTwisterUniformRng implements RandomNumberGenerator {
         return next(32) & 0xFFFFFFFFL;
     }
 
-    public Sample<Double> next() /* @ReadOnly */{
+    public Sample< Double > next() /* @ReadOnly */ {
         // divide by 2^32
         final double result = (nextInt32() + 0.5) / 4294967296.0;
-        return new Sample<Double>(result, 1.0);
+        return new Sample< Double >(result, 1.0);
     }
-
-    private static final int N = 624;
-    private static final int M = 397;
-    private static final int[] MAG01 = { 0x0, 0x9908b0df };
-
-    private final int[] mt;
-    private int mti;
-
-    private static final long serialVersionUID = 7666069655872848609L;
 
 }

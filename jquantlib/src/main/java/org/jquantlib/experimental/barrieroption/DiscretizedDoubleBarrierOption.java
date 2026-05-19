@@ -24,9 +24,6 @@
 
 package org.jquantlib.experimental.barrieroption;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.instruments.DiscretizedAsset;
 import org.jquantlib.instruments.VanillaOption;
@@ -36,11 +33,13 @@ import org.jquantlib.pricingengines.vanilla.DiscretizedVanillaOption;
 import org.jquantlib.processes.StochasticProcess;
 import org.jquantlib.time.TimeGrid;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Standard discretized double-barrier option helper class.
  * <p>
- * Used with {@link BinomialDoubleBarrierEngine} to implement a standard
- * binomial algorithm for double barrier options.
+ * Used with {@link BinomialDoubleBarrierEngine} to implement a standard binomial algorithm for double barrier options.
  * <p>
  * Mirrors {@code QuantLib::DiscretizedDoubleBarrierOption} from
  * {@code ql/experimental/barrieroption/discretizeddoublebarrieroption.hpp} (v1.42.1).
@@ -54,18 +53,15 @@ public class DiscretizedDoubleBarrierOption extends DiscretizedAsset {
     //
 
     private final DoubleBarrierOption.ArgumentsImpl arguments_;
-    private final List<Double> stoppingTimes_;
+    private final List< Double > stoppingTimes_;
     private final DiscretizedVanillaOption vanilla_;
-
 
     //
     // public constructors
     //
 
-    public DiscretizedDoubleBarrierOption(
-            final DoubleBarrierOption.Arguments arguments,
-            final StochasticProcess process,
-            final TimeGrid grid) {
+    public DiscretizedDoubleBarrierOption(final DoubleBarrierOption.Arguments arguments,
+            final StochasticProcess process, final TimeGrid grid) {
         this.arguments_ = (DoubleBarrierOption.ArgumentsImpl) arguments;
         // Reuse a vanilla option discretization so KnockIn-family contracts can
         // fall back to the unrestricted European value when needed.
@@ -77,20 +73,18 @@ public class DiscretizedDoubleBarrierOption extends DiscretizedAsset {
         vanillaArgs.exercise = arguments_.exercise;
         this.vanilla_ = new DiscretizedVanillaOption(vanillaArgs, process, grid);
 
-        QL.require(!arguments_.exercise.dates().isEmpty(),
-                "specify at least one stopping date");
+        QL.require(!arguments_.exercise.dates().isEmpty(), "specify at least one stopping date");
 
         final int n = arguments_.exercise.dates().size();
-        this.stoppingTimes_ = new ArrayList<Double>(n);
-        for (int i = 0; i < n; ++i) {
+        this.stoppingTimes_ = new ArrayList< Double >(n);
+        for ( int i = 0; i < n; ++i ) {
             double t = process.time(arguments_.exercise.date(i));
-            if (!grid.empty()) {
+            if ( !grid.empty() ) {
                 t = grid.closestTime(t);
             }
             stoppingTimes_.add(t);
         }
     }
-
 
     //
     // public accessors
@@ -104,7 +98,6 @@ public class DiscretizedDoubleBarrierOption extends DiscretizedAsset {
         return arguments_;
     }
 
-
     //
     // overrides DiscretizedAsset
     //
@@ -117,19 +110,18 @@ public class DiscretizedDoubleBarrierOption extends DiscretizedAsset {
     }
 
     @Override
-    public List<Double> mandatoryTimes() {
+    public List< Double > mandatoryTimes() {
         return stoppingTimes_;
     }
 
     @Override
     protected void postAdjustValuesImpl() {
-        if (arguments_.barrierType != DoubleBarrierType.KnockOut) {
+        if ( arguments_.barrierType != DoubleBarrierType.KnockOut ) {
             vanilla_.rollback(time());
         }
         final Array grid = method().grid(time());
         checkBarrier(values_, grid);
     }
-
 
     //
     // package-visible helpers (used by Derman-Kani extension)
@@ -140,96 +132,91 @@ public class DiscretizedDoubleBarrierOption extends DiscretizedAsset {
         final boolean endTime = isOnTime(stoppingTimes_.get(stoppingTimes_.size() - 1));
         boolean stoppingTime = false;
 
-        switch (arguments_.exercise.type()) {
-            case American:
-                if (now <= stoppingTimes_.get(1) && now >= stoppingTimes_.get(0)) {
+        switch ( arguments_.exercise.type() ) {
+        case American:
+            if ( now <= stoppingTimes_.get(1) && now >= stoppingTimes_.get(0) ) {
+                stoppingTime = true;
+            }
+            break;
+        case European:
+            if ( isOnTime(stoppingTimes_.get(0)) ) {
+                stoppingTime = true;
+            }
+            break;
+        case Bermudan:
+            for ( final double s : stoppingTimes_ ) {
+                if ( isOnTime(s) ) {
                     stoppingTime = true;
+                    break;
                 }
-                break;
-            case European:
-                if (isOnTime(stoppingTimes_.get(0))) {
-                    stoppingTime = true;
-                }
-                break;
-            case Bermudan:
-                for (final double s : stoppingTimes_) {
-                    if (isOnTime(s)) {
-                        stoppingTime = true;
-                        break;
+            }
+            break;
+        default:
+            throw new LibraryException("invalid option type");
+        }
+
+        for ( int j = 0; j < optvalues.size(); j++ ) {
+            switch ( arguments_.barrierType ) {
+            case KnockIn:
+                if ( grid.get(j) <= arguments_.barrier_lo ) {
+                    // knocked in dn
+                    if ( stoppingTime ) {
+                        optvalues.set(j, Math.max(vanilla().get(j), arguments_.payoff.get(grid.get(j))));
+                    } else {
+                        optvalues.set(j, vanilla().get(j));
                     }
+                } else if ( grid.get(j) >= arguments_.barrier_hi ) {
+                    // knocked in up
+                    if ( stoppingTime ) {
+                        optvalues.set(j, Math.max(vanilla().get(j), arguments_.payoff.get(grid.get(j))));
+                    } else {
+                        optvalues.set(j, vanilla().get(j));
+                    }
+                } else if ( endTime ) {
+                    optvalues.set(j, arguments_.rebate);
+                }
+                break;
+            case KnockOut:
+                if ( grid.get(j) <= arguments_.barrier_lo ) {
+                    optvalues.set(j, arguments_.rebate); // knocked out lo
+                } else if ( grid.get(j) >= arguments_.barrier_hi ) {
+                    optvalues.set(j, arguments_.rebate); // knocked out hi
+                } else if ( stoppingTime ) {
+                    optvalues.set(j, Math.max(optvalues.get(j), arguments_.payoff.get(grid.get(j))));
+                }
+                break;
+            case KIKO:
+                // low barrier is KI, high is KO
+                if ( grid.get(j) <= arguments_.barrier_lo ) {
+                    // knocked in dn
+                    if ( stoppingTime ) {
+                        optvalues.set(j, Math.max(vanilla().get(j), arguments_.payoff.get(grid.get(j))));
+                    } else {
+                        optvalues.set(j, vanilla().get(j));
+                    }
+                } else if ( grid.get(j) >= arguments_.barrier_hi ) {
+                    optvalues.set(j, arguments_.rebate); // knocked out hi
+                } else if ( endTime ) {
+                    optvalues.set(j, arguments_.rebate);
+                }
+                break;
+            case KOKI:
+                // low barrier is KO, high is KI
+                if ( grid.get(j) <= arguments_.barrier_lo ) {
+                    optvalues.set(j, arguments_.rebate); // knocked out lo
+                } else if ( grid.get(j) >= arguments_.barrier_hi ) {
+                    // knocked in up
+                    if ( stoppingTime ) {
+                        optvalues.set(j, Math.max(vanilla().get(j), arguments_.payoff.get(grid.get(j))));
+                    } else {
+                        optvalues.set(j, vanilla().get(j));
+                    }
+                } else if ( endTime ) {
+                    optvalues.set(j, arguments_.rebate);
                 }
                 break;
             default:
-                throw new LibraryException("invalid option type");
-        }
-
-        for (int j = 0; j < optvalues.size(); j++) {
-            switch (arguments_.barrierType) {
-                case KnockIn:
-                    if (grid.get(j) <= arguments_.barrier_lo) {
-                        // knocked in dn
-                        if (stoppingTime) {
-                            optvalues.set(j, Math.max(vanilla().get(j),
-                                    arguments_.payoff.get(grid.get(j))));
-                        } else {
-                            optvalues.set(j, vanilla().get(j));
-                        }
-                    } else if (grid.get(j) >= arguments_.barrier_hi) {
-                        // knocked in up
-                        if (stoppingTime) {
-                            optvalues.set(j, Math.max(vanilla().get(j),
-                                    arguments_.payoff.get(grid.get(j))));
-                        } else {
-                            optvalues.set(j, vanilla().get(j));
-                        }
-                    } else if (endTime) {
-                        optvalues.set(j, arguments_.rebate);
-                    }
-                    break;
-                case KnockOut:
-                    if (grid.get(j) <= arguments_.barrier_lo) {
-                        optvalues.set(j, arguments_.rebate); // knocked out lo
-                    } else if (grid.get(j) >= arguments_.barrier_hi) {
-                        optvalues.set(j, arguments_.rebate); // knocked out hi
-                    } else if (stoppingTime) {
-                        optvalues.set(j, Math.max(optvalues.get(j),
-                                arguments_.payoff.get(grid.get(j))));
-                    }
-                    break;
-                case KIKO:
-                    // low barrier is KI, high is KO
-                    if (grid.get(j) <= arguments_.barrier_lo) {
-                        // knocked in dn
-                        if (stoppingTime) {
-                            optvalues.set(j, Math.max(vanilla().get(j),
-                                    arguments_.payoff.get(grid.get(j))));
-                        } else {
-                            optvalues.set(j, vanilla().get(j));
-                        }
-                    } else if (grid.get(j) >= arguments_.barrier_hi) {
-                        optvalues.set(j, arguments_.rebate); // knocked out hi
-                    } else if (endTime) {
-                        optvalues.set(j, arguments_.rebate);
-                    }
-                    break;
-                case KOKI:
-                    // low barrier is KO, high is KI
-                    if (grid.get(j) <= arguments_.barrier_lo) {
-                        optvalues.set(j, arguments_.rebate); // knocked out lo
-                    } else if (grid.get(j) >= arguments_.barrier_hi) {
-                        // knocked in up
-                        if (stoppingTime) {
-                            optvalues.set(j, Math.max(vanilla().get(j),
-                                    arguments_.payoff.get(grid.get(j))));
-                        } else {
-                            optvalues.set(j, vanilla().get(j));
-                        }
-                    } else if (endTime) {
-                        optvalues.set(j, arguments_.rebate);
-                    }
-                    break;
-                default:
-                    throw new LibraryException("invalid barrier type");
+                throw new LibraryException("invalid barrier type");
             }
         }
     }

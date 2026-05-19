@@ -20,22 +20,21 @@
  */
 package org.jquantlib.experimental.credit;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.function.Function;
-
 import org.jquantlib.QL;
 import org.jquantlib.math.integrals.Integrator;
 import org.jquantlib.math.integrals.MultidimIntegral;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Function;
+
 /**
- * {@link LMIntegration} backed by {@link MultidimIntegral}, a tensor product of
- * arbitrary 1D integrators (typically trapezoid) over a hyper-rectangle.
+ * {@link LMIntegration} backed by {@link MultidimIntegral}, a tensor product of arbitrary 1D integrators (typically
+ * trapezoid) over a hyper-rectangle.
  *
  * <p>Java port of QuantLib v1.42.1 specialisation
- * {@code IntegrationBase<MultidimIntegral>} (declared inline in
- * {@code ql/experimental/math/latentmodel.hpp}). Pinned commit
- * {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
+ * {@code IntegrationBase<MultidimIntegral>} (declared inline in {@code ql/experimental/math/latentmodel.hpp}). Pinned
+ * commit {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
  *
  * <p>The C++ specialisation participates in a CRTP-style hierarchy via
  * multiple inheritance; Java composes the underlying integrator instead.
@@ -51,7 +50,7 @@ public final class MultidimIntegralLMIntegration implements LMIntegration {
      * @param a           lower bound applied to every dimension
      * @param b           upper bound applied to every dimension
      */
-    public MultidimIntegralLMIntegration(final List<Integrator> integrators, final double a, final double b) {
+    public MultidimIntegralLMIntegration(final List< Integrator > integrators, final double a, final double b) {
         QL.require(integrators != null && !integrators.isEmpty(), "integrators required");
         this.integrator_ = new MultidimIntegral(integrators);
         final int n = integrators.size();
@@ -62,7 +61,7 @@ public final class MultidimIntegralLMIntegration implements LMIntegration {
     }
 
     @Override
-    public double integrate(final Function<double[], Double> f) {
+    public double integrate(final Function< double[], Double > f) {
         return integrator_.op(f, a_, b_);
     }
 

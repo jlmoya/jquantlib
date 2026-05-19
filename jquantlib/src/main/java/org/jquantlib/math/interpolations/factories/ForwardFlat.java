@@ -48,21 +48,24 @@ import org.jquantlib.math.matrixutilities.Array;
 /**
  * This class provides linear interpolation factory and traits
  *
- * @see ForwardFlatInterpolation
- *
  * @author Anand Mani
  * @author Richard Gomes
+ * @see ForwardFlatInterpolation
  */
 public class ForwardFlat implements Interpolation.Interpolator {
 
     @Override
-    public final boolean global()     { return false; }
+    public final boolean global() {
+        return false;
+    }
 
     @Override
-    public final int requiredPoints() { return 2; }
+    public final int requiredPoints() {
+        return 2;
+    }
 
     @Override
-    public Interpolation interpolate(final Array vx, final Array vy) /* @ReadOnly */{
+    public Interpolation interpolate(final Array vx, final Array vy) /* @ReadOnly */ {
         return new ForwardFlatInterpolation(vx, vy);
     }
 }

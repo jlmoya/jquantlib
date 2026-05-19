@@ -24,11 +24,10 @@ package org.jquantlib.cashflow;
 import org.jquantlib.instruments.Option;
 
 /**
- * Functional interface for evaluating a vanilla swaption-style option price
- * given strike, type, and an arbitrary deflator (annuity / discount).
+ * Functional interface for evaluating a vanilla swaption-style option price given strike, type, and an arbitrary
+ * deflator (annuity / discount).
  * <p>
- * Mirrors C++ QuantLib v1.42.1 {@code VanillaOptionPricer} in
- * {@code ql/cashflows/conundrumpricer.hpp}:
+ * Mirrors C++ QuantLib v1.42.1 {@code VanillaOptionPricer} in {@code ql/cashflows/conundrumpricer.hpp}:
  * <pre>{@code
  * class VanillaOptionPricer {
  *   public:
@@ -39,9 +38,8 @@ import org.jquantlib.instruments.Option;
  * };
  * }</pre>
  * <p>
- * The standard concrete implementation is
- * {@link MarketQuotedOptionPricer}, which deflates the
- * Black/Bachelier formula by the supplied factor.
+ * The standard concrete implementation is {@link MarketQuotedOptionPricer}, which deflates the Black/Bachelier formula
+ * by the supplied factor.
  */
 @FunctionalInterface
 public interface VanillaOptionPricer {

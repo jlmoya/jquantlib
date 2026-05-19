@@ -41,9 +41,8 @@ import org.jquantlib.pricingengines.GenericEngine;
  * Basket option on a number of assets.
  *
  * <p>A basket option's payoff is a function of multiple underlying asset
- * values at exercise, combined into a single scalar by a {@link BasketPayoff}
- * (min/max/average/spread) and then fed into a base single-asset payoff
- * (typically a {@link PlainVanillaPayoff}).</p>
+ * values at exercise, combined into a single scalar by a {@link BasketPayoff} (min/max/average/spread) and then fed
+ * into a base single-asset payoff (typically a {@link PlainVanillaPayoff}).</p>
  *
  * <p>Ported from C++ QuantLib v1.42.1
  * {@code ql/instruments/basketoption.hpp}.</p>
@@ -60,11 +59,11 @@ public class BasketOption extends MultiAssetOption {
      * Engine base class for basket options.
      *
      * <p>Mirrors C++ {@code BasketOption::engine} which is a typedef of
-     * {@code GenericEngine<BasketOption::arguments, BasketOption::results>}.
-     * Concrete engines extend this to provide pricing.</p>
+     * {@code GenericEngine<BasketOption::arguments, BasketOption::results>}. Concrete engines extend this to provide
+     * pricing.</p>
      */
     public static abstract class Engine
-            extends GenericEngine<MultiAssetOption.ArgumentsImpl, MultiAssetOption.ResultsImpl>
+            extends GenericEngine< MultiAssetOption.ArgumentsImpl, MultiAssetOption.ResultsImpl >
             implements MultiAssetOption.Engine {
 
         public Engine() {

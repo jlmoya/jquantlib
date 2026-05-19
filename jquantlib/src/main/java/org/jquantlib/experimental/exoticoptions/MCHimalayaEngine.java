@@ -22,9 +22,6 @@
 
 package org.jquantlib.experimental.exoticoptions;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.math.distributions.InverseCumulativeNormal;
 import org.jquantlib.math.randomnumbers.InverseCumulativeRsg;
@@ -41,6 +38,9 @@ import org.jquantlib.processes.StochasticProcess1D;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.TimeGrid;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Monte Carlo engine for Himalaya options.
  *
@@ -48,10 +48,9 @@ import org.jquantlib.time.TimeGrid;
  * ql/experimental/exoticoptions/mchimalayaengine.{hpp,cpp}} (Phase 4i.5 WI-3).
  *
  * <p>Specialised for {@code RNG = PseudoRandom}; quasi-random variants are
- * deferred to Phase 4i.5b. The engine extends
- * {@link HimalayaOption.EngineImpl} (single-inheritance) and embeds an
- * {@link McSimulation McSimulation&lt;MultiPath&gt;} delegate via composition,
- * mirroring {@code MCEuropeanBasketEngine}.
+ * deferred to Phase 4i.5b. The engine extends {@link HimalayaOption.EngineImpl} (single-inheritance) and embeds an
+ * {@link McSimulation McSimulation&lt;MultiPath&gt;} delegate via composition, mirroring
+ * {@code MCEuropeanBasketEngine}.
  *
  * @author JQuantLib
  */
@@ -70,20 +69,15 @@ public class MCHimalayaEngine extends HimalayaOption.EngineImpl {
     protected final long seed_;
 
     /** Lazily-built delegate that owns the {@link MonteCarloModel}. */
-    protected McSimulation<MultiPath> simulation_;
-
+    protected McSimulation< MultiPath > simulation_;
 
     //
     // constructors
     //
 
-    public MCHimalayaEngine(final StochasticProcessArray processes,
-                            final boolean brownianBridge,
-                            final boolean antitheticVariate,
-                            final int requiredSamples,
-                            final double requiredTolerance,
-                            final int maxSamples,
-                            final long seed) {
+    public MCHimalayaEngine(final StochasticProcessArray processes, final boolean brownianBridge,
+            final boolean antitheticVariate, final int requiredSamples, final double requiredTolerance,
+            final int maxSamples, final long seed) {
         super();
         this.processes_ = processes;
         this.brownianBridge_ = brownianBridge;
@@ -95,24 +89,22 @@ public class MCHimalayaEngine extends HimalayaOption.EngineImpl {
         this.processes_.addObserver(this);
     }
 
-
     //
     // McSimulation-shaped helpers
     //
 
     /**
-     * Mirrors C++ {@code TimeGrid timeGrid()}: builds a non-uniform
-     * time grid from the option's fixing dates.
+     * Mirrors C++ {@code TimeGrid timeGrid()}: builds a non-uniform time grid from the option's fixing dates.
      */
     protected TimeGrid timeGrid() {
-        final HimalayaOption.ArgumentsImpl a = (HimalayaOption.ArgumentsImpl) arguments_;
-        final List<Double> fixingTimes = new ArrayList<Double>(a.fixingDates.size());
+        final HimalayaOption.ArgumentsImpl a = arguments_;
+        final List< Double > fixingTimes = new ArrayList< Double >(a.fixingDates.size());
         double prev = -1.0;
-        for (int i = 0; i < a.fixingDates.size(); i++) {
+        for ( int i = 0; i < a.fixingDates.size(); i++ ) {
             final Date d = a.fixingDates.get(i);
             final double t = processes_.time(d);
             QL.require(t >= 0.0, "seasoned options are not handled");
-            if (i > 0) {
+            if ( i > 0 ) {
                 QL.require(t > prev, "fixing dates not sorted");
             }
             fixingTimes.add(t);
@@ -121,36 +113,29 @@ public class MCHimalayaEngine extends HimalayaOption.EngineImpl {
         return new TimeGrid(fixingTimes);
     }
 
-    protected MonteCarloModel.PathGeneratorAdapter<MultiPath> pathGenerator() {
+    protected MonteCarloModel.PathGeneratorAdapter< MultiPath > pathGenerator() {
         final int numAssets = processes_.size();
         final TimeGrid grid = timeGrid();
         final int dimensions = numAssets * (grid.size() - 1);
-        final RandomSequenceGenerator<MersenneTwisterUniformRng> uniformRsg =
-                new RandomSequenceGenerator<MersenneTwisterUniformRng>(
-                        MersenneTwisterUniformRng.class, dimensions, seed_);
-        final InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                InverseCumulativeNormal> gsg =
-                new InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                        InverseCumulativeNormal>(uniformRsg, new InverseCumulativeNormal());
-        final MultiPathGenerator<InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                InverseCumulativeNormal>> gen =
-                new MultiPathGenerator<InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                        InverseCumulativeNormal>>(processes_, grid, gsg, brownianBridge_);
+        final RandomSequenceGenerator< MersenneTwisterUniformRng > uniformRsg = new RandomSequenceGenerator< MersenneTwisterUniformRng >(
+                MersenneTwisterUniformRng.class, dimensions, seed_);
+        final InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal > gsg = new InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal >(
+                uniformRsg, new InverseCumulativeNormal());
+        final MultiPathGenerator< InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal > > gen = new MultiPathGenerator< InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal > >(
+                processes_, grid, gsg, brownianBridge_);
         return new MonteCarloModel.MultiPathGeneratorAdapterImpl(gen);
     }
 
-    protected PathPricer<MultiPath> pathPricer() {
-        final HimalayaOption.ArgumentsImpl a = (HimalayaOption.ArgumentsImpl) arguments_;
+    protected PathPricer< MultiPath > pathPricer() {
+        final HimalayaOption.ArgumentsImpl a = arguments_;
         final StochasticProcess1D first = processes_.process(0);
-        if (!(first instanceof GeneralizedBlackScholesProcess)) {
+        if ( !(first instanceof GeneralizedBlackScholesProcess) ) {
             throw new RuntimeException("Black-Scholes process required");
         }
         final GeneralizedBlackScholesProcess process = (GeneralizedBlackScholesProcess) first;
-        final double discount = process.riskFreeRate().currentLink()
-                .discount(a.exercise.lastDate());
+        final double discount = process.riskFreeRate().currentLink().discount(a.exercise.lastDate());
         return new HimalayaMultiPathPricer(a.payoff, discount);
     }
-
 
     //
     // PricingEngine
@@ -158,16 +143,21 @@ public class MCHimalayaEngine extends HimalayaOption.EngineImpl {
 
     @Override
     public void calculate() /* @ReadOnly */ {
-        final HimalayaOption.ResultsImpl r = (HimalayaOption.ResultsImpl) results_;
+        final HimalayaOption.ResultsImpl r = results_;
 
-        this.simulation_ = new McSimulation<MultiPath>(antitheticVariate_, /* controlVariate */ false) {
-            @Override protected PathPricer<MultiPath> pathPricer() {
+        this.simulation_ = new McSimulation< MultiPath >(antitheticVariate_, /* controlVariate */ false) {
+            @Override
+            protected PathPricer< MultiPath > pathPricer() {
                 return MCHimalayaEngine.this.pathPricer();
             }
-            @Override protected MonteCarloModel.PathGeneratorAdapter<MultiPath> pathGenerator() {
+
+            @Override
+            protected MonteCarloModel.PathGeneratorAdapter< MultiPath > pathGenerator() {
                 return MCHimalayaEngine.this.pathGenerator();
             }
-            @Override protected TimeGrid timeGrid() {
+
+            @Override
+            protected TimeGrid timeGrid() {
                 return MCHimalayaEngine.this.timeGrid();
             }
         };

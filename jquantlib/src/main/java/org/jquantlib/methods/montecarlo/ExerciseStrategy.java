@@ -31,43 +31,38 @@ import org.jquantlib.model.marketmodels.CurveState;
 /**
  * Exercise strategy interface for LMM/market-model Monte Carlo pricing.
  * <p>
- * Mirrors C++ {@code ExerciseStrategy<CurveState>} template
- * (ql/methods/montecarlo/exercisestrategy.hpp v1.42.1). The C++ template is
- * always instantiated with {@code CurveState} in the market-model context, so
- * the Java interface is non-generic (per design decision P3K-2).
+ * Mirrors C++ {@code ExerciseStrategy<CurveState>} template (ql/methods/montecarlo/exercisestrategy.hpp v1.42.1). The
+ * C++ template is always instantiated with {@code CurveState} in the market-model context, so the Java interface is
+ * non-generic (per design decision P3K-2).
  * <p>
- * An exercise strategy encapsulates the rule for deciding, at each simulation
- * node, whether the holder of a callable instrument should exercise.
- *
- * @see "ql/methods/montecarlo/exercisestrategy.hpp" v1.42.1
+ * An exercise strategy encapsulates the rule for deciding, at each simulation node, whether the holder of a callable
+ * instrument should exercise.
  *
  * @author Jose Moya
+ * @see "ql/methods/montecarlo/exercisestrategy.hpp" v1.42.1
  */
 public interface ExerciseStrategy {
 
     /**
-     * Returns the sorted list of times at which exercise is possible.
-     * Mirrors C++ {@code std::vector<Time> exerciseTimes() const}.
+     * Returns the sorted list of times at which exercise is possible. Mirrors C++
+     * {@code std::vector<Time> exerciseTimes() const}.
      */
     double[] exerciseTimes();
 
     /**
-     * Returns the sorted list of all times relevant to the strategy
-     * (a superset of {@link #exerciseTimes()} — may include observation times).
-     * Mirrors C++ {@code std::vector<Time> relevantTimes() const}.
+     * Returns the sorted list of all times relevant to the strategy (a superset of {@link #exerciseTimes()} — may
+     * include observation times). Mirrors C++ {@code std::vector<Time> relevantTimes() const}.
      */
     double[] relevantTimes();
 
     /**
-     * Resets the strategy to the start of a new simulation path.
-     * Mirrors C++ {@code void reset()}.
+     * Resets the strategy to the start of a new simulation path. Mirrors C++ {@code void reset()}.
      */
     void reset();
 
     /**
-     * Returns {@code true} if the strategy recommends exercising at the
-     * current state.
-     * Mirrors C++ {@code bool exercise(const CurveState&) const}.
+     * Returns {@code true} if the strategy recommends exercising at the current state. Mirrors C++
+     * {@code bool exercise(const CurveState&) const}.
      *
      * @param currentState the current yield-curve state
      * @return {@code true} to exercise, {@code false} to continue
@@ -75,17 +70,16 @@ public interface ExerciseStrategy {
     boolean exercise(CurveState currentState);
 
     /**
-     * Advances the strategy by one simulation step using the current state.
-     * Must be called after {@link #exercise} at each exercise time.
-     * Mirrors C++ {@code void nextStep(const CurveState&)}.
+     * Advances the strategy by one simulation step using the current state. Must be called after {@link #exercise} at
+     * each exercise time. Mirrors C++ {@code void nextStep(const CurveState&)}.
      *
      * @param currentState the current yield-curve state
      */
     void nextStep(CurveState currentState);
 
     /**
-     * Returns a newly-allocated copy of itself.
-     * Mirrors C++ {@code std::unique_ptr<ExerciseStrategy<State>> clone() const}.
+     * Returns a newly-allocated copy of itself. Mirrors C++
+     * {@code std::unique_ptr<ExerciseStrategy<State>> clone() const}.
      */
     ExerciseStrategy clone();
 }

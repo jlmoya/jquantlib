@@ -31,21 +31,17 @@ import org.jquantlib.util.Visitor;
 /**
  * Capped and/or floored floating-rate coupon
  * <p>
- * The payoff {@latex$ P } of a capped floating-rate coupon is:
- * {@latex[ P = N \times T \times \min(a L + b, C) }
+ * The payoff {@latex$ P } of a capped floating-rate coupon is: {@latex[ P = N \times T \times \min(a L + b, C) }
  * <p>
- * The payoff of a floored floating-rate coupon is:
- * {@latex[ P = N \times T \times \max(a L + b, F) }
+ * The payoff of a floored floating-rate coupon is: {@latex[ P = N \times T \times \max(a L + b, F) }
  * <p>
- * The payoff of a collared floating-rate coupon is:
- * {@latex[ P = N \times T \times \min(\max(a L + b, F), C) } where
+ * The payoff of a collared floating-rate coupon is: {@latex[ P = N \times T \times \min(\max(a L + b, F), C) } where
  * <p>
- * {@latex$ N } is the notional, {@latex$ T }is the accrual time, {@latex$ L } is the floating rate, {@latex$ a } is its gearing,
- * {@latex$ b } is the spread, and {@latex$ C } and {@latex$ F } are the strikes.
+ * {@latex$ N } is the notional, {@latex$ T }is the accrual time, {@latex$ L } is the floating rate, {@latex$ a } is its
+ * gearing, {@latex$ b } is the spread, and {@latex$ C } and {@latex$ F } are the strikes.
  * <p>
  * They can be decomposed in the following manner. Decomposition of a capped floating rate coupon:
- * {@latex[ R = \min(a L + b, C) = (a L + b) + \min(C - b - \xi |a| L, 0) } where
- * {@latex$ \xi = sgn(a) }. Then:
+ * {@latex[ R = \min(a L + b, C) = (a L + b) + \min(C - b - \xi |a| L, 0) } where {@latex$ \xi = sgn(a) }. Then:
  * {@latex[ R = (a L + b) + |a| \min(\frac{C - b}{|a|} - \xi L, 0) }
  *
  * @author Ueli Hofstetter
@@ -87,7 +83,6 @@ public class CappedFlooredCoupon extends FloatingRateCoupon {
     protected boolean isCapped_, isFloored_;
     protected /* @Rate */ double cap_, floor_;
 
-
     //
     // public constructors
     //
@@ -97,11 +92,10 @@ public class CappedFlooredCoupon extends FloatingRateCoupon {
     }
 
     public CappedFlooredCoupon(final FloatingRateCoupon underlying, final double cap, final double floor) {
-        super(underlying.date(), underlying.nominal,
-                underlying.accrualStartDate(), underlying.accrualEndDate(),
+        super(underlying.date(), underlying.nominal, underlying.accrualStartDate(), underlying.accrualEndDate(),
                 underlying.fixingDays(), underlying.index(), underlying.gearing(), underlying.spread(),
-                underlying.referencePeriodStart(), underlying.referencePeriodEnd(),
-                underlying.dayCounter(), underlying.isInArrears());
+                underlying.referencePeriodStart(), underlying.referencePeriodEnd(), underlying.dayCounter(),
+                underlying.isInArrears());
         this.underlying_ = underlying;
         isCapped_ = false;
         isFloored_ = false;
@@ -109,15 +103,15 @@ public class CappedFlooredCoupon extends FloatingRateCoupon {
         // Phase 2j.5 fix: treat both NaN and NULL_RATE (= Double.MAX_VALUE) as
         // "missing", matching how the rest of the JQuantLib leg builders
         // populate cap/floor sentinels (and matching C++ Null<Real>()).
-        final boolean capPresent   = !Double.isNaN(cap)   && cap   != Constants.NULL_RATE;
+        final boolean capPresent = !Double.isNaN(cap) && cap != Constants.NULL_RATE;
         final boolean floorPresent = !Double.isNaN(floor) && floor != Constants.NULL_RATE;
 
-        if (gearing_ > 0) {
-            if (capPresent) {
+        if ( gearing_ > 0 ) {
+            if ( capPresent ) {
                 isCapped_ = true;
                 cap_ = cap;
             }
-            if (floorPresent) {
+            if ( floorPresent ) {
                 floor_ = floor;
                 isFloored_ = true;
             }
@@ -133,18 +127,18 @@ public class CappedFlooredCoupon extends FloatingRateCoupon {
         // gearing again through the floor and cap functions.
 
         else {
-            if (capPresent) {
+            if ( capPresent ) {
                 floor_ = cap;
                 isFloored_ = true;
             }
-            if (floorPresent) {
+            if ( floorPresent ) {
                 isCapped_ = true;
                 cap_ = floor;
             }
         }
 
-        if (isCapped_ && isFloored_) {
-            QL.require(cap >= floor , "cap level less than floor level"); // TODO: message
+        if ( isCapped_ && isFloored_ ) {
+            QL.require(cap >= floor, "cap level less than floor level"); // TODO: message
         }
 
         this.underlying_.addObserver(this);
@@ -155,28 +149,28 @@ public class CappedFlooredCoupon extends FloatingRateCoupon {
     @Override
     public void setPricer(final FloatingRateCouponPricer pricer) {
 
-        if (this.pricer_ != null) {
-            this.pricer_.deleteObserver (this);
+        if ( this.pricer_ != null ) {
+            this.pricer_.deleteObserver(this);
         }
         this.pricer_ = pricer;
-        if (this.pricer_ != null) {
-            this.pricer_.addObserver (this);
+        if ( this.pricer_ != null ) {
+            this.pricer_.addObserver(this);
         }
         update();
-        underlying_.setPricer (pricer);
+        underlying_.setPricer(pricer);
     }
 
     @Override
     public /*@Rate*/ double rate() /* @ReadOnly */ {
-        QL.require (underlying_.pricer_ != null, "pricer not set");
+        QL.require(underlying_.pricer_ != null, "pricer not set");
         final double swapletRate = underlying_.rate();
         double floorRate = 0.0;
         double capRate = 0.0;
-        if (isFloored_) {
+        if ( isFloored_ ) {
             floorRate = underlying_.pricer_.floorletRate(effectiveFloor());
         }
-        if (isCapped_) {
-            capRate = underlying_.pricer_.capletRate (effectiveCap());
+        if ( isCapped_ ) {
+            capRate = underlying_.pricer_.capletRate(effectiveCap());
         }
         return swapletRate + floorRate - capRate;
     }
@@ -186,29 +180,29 @@ public class CappedFlooredCoupon extends FloatingRateCoupon {
         return underlying_.convexityAdjustment();
     }
 
-    public boolean isCapped() /* @ReadOnly */{
+    public boolean isCapped() /* @ReadOnly */ {
         return isCapped_;
     }
 
-    public boolean isFloored() /* @ReadOnly */{
+    public boolean isFloored() /* @ReadOnly */ {
         return isFloored_;
     }
 
     public /*@Rate*/ double cap() /* @ReadOnly */ {
-        if (gearing_ > 0 && isCapped_) {
+        if ( gearing_ > 0 && isCapped_ ) {
             return cap_;
         }
-        if (gearing_ < 0 && isFloored_) {
+        if ( gearing_ < 0 && isFloored_ ) {
             return floor_;
         }
         return Constants.NULL_REAL;
     }
 
     public /*@Rate*/ double floor() /* @ReadOnly */ {
-        if (gearing_ > 0 && isFloored_) {
+        if ( gearing_ > 0 && isFloored_ ) {
             return floor_;
         }
-        if (gearing_ < 0 && isCapped_) {
+        if ( gearing_ < 0 && isCapped_ ) {
             return cap_;
         }
         return Constants.NULL_REAL;
@@ -222,7 +216,6 @@ public class CappedFlooredCoupon extends FloatingRateCoupon {
         return (floor_ - spread()) / gearing();
     }
 
-
     //
     // implements Observer
     //
@@ -232,20 +225,18 @@ public class CappedFlooredCoupon extends FloatingRateCoupon {
         notifyObservers();
     }
 
-
     //
     // implements PolymorphicVisitable
     //
 
     @Override
     public void accept(final PolymorphicVisitor pv) {
-        final Visitor<CappedFlooredCoupon> v = (pv!=null) ? pv.visitor(this.getClass()) : null;
-        if (v != null) {
+        final Visitor< CappedFlooredCoupon > v = (pv != null) ? pv.visitor(this.getClass()) : null;
+        if ( v != null ) {
             v.visit(this);
         } else {
             super.accept(pv);
         }
     }
-
 
 }

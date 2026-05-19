@@ -29,29 +29,22 @@ package org.jquantlib.experimental.credit;
  * Restructuring type. ISDA-defined, scoped via an enclosing struct in C++.
  *
  * <p>Java port of QuantLib v1.42.1 {@code QuantLib::Restructuring::Type}
- * from {@code ql/experimental/credit/defaulttype.hpp}.  The Markit
- * shorthand aliases (XR / MR / MM / CR) re-use underlying enum slots in
- * C++ and are exposed as {@code public static final} references in Java.
+ * from {@code ql/experimental/credit/defaulttype.hpp}.  The Markit shorthand aliases (XR / MR / MM / CR) re-use
+ * underlying enum slots in C++ and are exposed as {@code public static final} references in Java.
  *
  * <p>Phase 4m foundation.
  */
 public final class Restructuring {
-
-    private Restructuring() {
-        // utility
-    }
-
-    public enum Type {
-        NoRestructuring,
-        ModifiedRestructuring,
-        ModifiedModifiedRestructuring,
-        FullRestructuring,
-        AnyRestructuring
-    }
 
     // Markit notation aliases.
     public static final Type XR = Type.NoRestructuring;
     public static final Type MR = Type.ModifiedRestructuring;
     public static final Type MM = Type.ModifiedModifiedRestructuring;
     public static final Type CR = Type.FullRestructuring;
+    private Restructuring() {
+        // utility
+    }
+    public enum Type {
+        NoRestructuring, ModifiedRestructuring, ModifiedModifiedRestructuring, FullRestructuring, AnyRestructuring
+    }
 }

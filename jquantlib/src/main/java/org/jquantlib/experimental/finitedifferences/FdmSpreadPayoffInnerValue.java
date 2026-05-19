@@ -35,9 +35,8 @@ import org.jquantlib.methods.finitedifferences.utilities.FdmInnerValueCalculator
  * {@code ql/experimental/finitedifferences/fdmspreadpayoffinnervalue.hpp}.</p>
  *
  * <p>Composes two inner-value calculators (one per asset) and applies a
- * {@link BasketPayoff} to the resulting pair. Used by the FD spread-option
- * engines (e.g. {@link FdKlugeExtOUSpreadEngine}) to evaluate the spark-
- * spread payoff on a 3D mesh.</p>
+ * {@link BasketPayoff} to the resulting pair. Used by the FD spread-option engines (e.g.
+ * {@link FdKlugeExtOUSpreadEngine}) to evaluate the spark- spread payoff on a 3D mesh.</p>
  *
  * @author Phase 5e.5b-CFC-d-164 port
  */
@@ -47,12 +46,11 @@ public class FdmSpreadPayoffInnerValue implements FdmInnerValueCalculator {
     private final FdmInnerValueCalculator calc1_;
     private final FdmInnerValueCalculator calc2_;
 
-    public FdmSpreadPayoffInnerValue(final BasketPayoff payoff,
-                                     final FdmInnerValueCalculator calc1,
-                                     final FdmInnerValueCalculator calc2) {
+    public FdmSpreadPayoffInnerValue(final BasketPayoff payoff, final FdmInnerValueCalculator calc1,
+            final FdmInnerValueCalculator calc2) {
         this.payoff_ = payoff;
-        this.calc1_  = calc1;
-        this.calc2_  = calc2;
+        this.calc1_ = calc1;
+        this.calc2_ = calc2;
     }
 
     @Override

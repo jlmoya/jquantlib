@@ -27,8 +27,7 @@ package org.jquantlib.experimental.barrieroption;
 /**
  * Double Barrier types.
  * <p>
- * Mirrors {@code QuantLib::DoubleBarrier::Type} from {@code ql/instruments/doublebarriertype.hpp}
- * (v1.42.1).
+ * Mirrors {@code QuantLib::DoubleBarrier::Type} from {@code ql/instruments/doublebarriertype.hpp} (v1.42.1).
  *
  * @author JQuantLib migration
  */
@@ -39,8 +38,7 @@ public enum DoubleBarrierType {
         public String toString() {
             return "KnockIn";
         }
-    },
-    KnockOut {
+    }, KnockOut {
         @Override
         public String toString() {
             return "KnockOut";

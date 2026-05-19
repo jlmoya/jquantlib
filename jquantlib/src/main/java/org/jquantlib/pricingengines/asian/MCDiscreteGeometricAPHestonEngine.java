@@ -43,45 +43,32 @@ import org.jquantlib.time.TimeGrid;
  * Heston Monte Carlo pricing engine for discrete geometric average-price Asian options.
  *
  * <p>Java port of {@code QuantLib v1.42.1
- * ql/pricingengines/asian/mc_discr_geom_av_price_heston.{hpp,cpp}}
- * {@code MCDiscreteGeometricAPHestonEngine} (Phase 5e.5b-CFC-d-114).
+ * ql/pricingengines/asian/mc_discr_geom_av_price_heston.{hpp,cpp}} {@code MCDiscreteGeometricAPHestonEngine} (Phase
+ * 5e.5b-CFC-d-114).
  *
  * @author JQuantLib
  */
-public class MCDiscreteGeometricAPHestonEngine extends MCDiscreteAveragingAsianEngineBase<MultiPath> {
+public class MCDiscreteGeometricAPHestonEngine extends MCDiscreteAveragingAsianEngineBase< MultiPath > {
 
-    public MCDiscreteGeometricAPHestonEngine(final HestonProcess process,
-                                             final boolean antitheticVariate,
-                                             final int requiredSamples,
-                                             final double requiredTolerance,
-                                             final int maxSamples,
-                                             final long seed,
-                                             final int timeSteps,
-                                             final int timeStepsPerYear) {
+    public MCDiscreteGeometricAPHestonEngine(final HestonProcess process, final boolean antitheticVariate,
+            final int requiredSamples, final double requiredTolerance, final int maxSamples, final long seed,
+            final int timeSteps, final int timeStepsPerYear) {
         super(process,
-                /* brownianBridge */ false,
-                antitheticVariate,
-                /* controlVariate */ false,
-                requiredSamples,
-                requiredTolerance,
-                maxSamples,
-                seed,
-                timeSteps,
+                /* brownianBridge */ false, antitheticVariate,
+                /* controlVariate */ false, requiredSamples, requiredTolerance, maxSamples, seed, timeSteps,
                 timeStepsPerYear,
                 /* includeExerciseDate */ false);
-        QL.require(timeSteps == McSimulation.NULL_SAMPLES
-                || timeStepsPerYear == McSimulation.NULL_SAMPLES,
+        QL.require(timeSteps == McSimulation.NULL_SAMPLES || timeStepsPerYear == McSimulation.NULL_SAMPLES,
                 "both time steps and time steps per year were provided");
     }
 
     @Override
-    protected PathPricer<MultiPath> pathPricer() {
-        final DiscreteAveragingAsianOption.ArgumentsImpl a =
-                (DiscreteAveragingAsianOption.ArgumentsImpl) arguments_;
+    protected PathPricer< MultiPath > pathPricer() {
+        final DiscreteAveragingAsianOption.ArgumentsImpl a = (DiscreteAveragingAsianOption.ArgumentsImpl) arguments_;
         final PlainVanillaPayoff payoff;
         try {
             payoff = (PlainVanillaPayoff) a.payoff;
-        } catch (final ClassCastException e) {
+        } catch ( final ClassCastException e ) {
             throw new RuntimeException("non-plain payoff given");
         }
         QL.require(payoff != null, "non-plain payoff given");
@@ -92,36 +79,25 @@ public class MCDiscreteGeometricAPHestonEngine extends MCDiscreteAveragingAsianE
         final TimeGrid grid = timeGrid();
         final Array mandatory = grid.mandatoryTimes();
         final int[] fixingIndexes = new int[mandatory.size()];
-        for (int i = 0; i < mandatory.size(); i++) {
+        for ( int i = 0; i < mandatory.size(); i++ ) {
             fixingIndexes[i] = grid.closestIndex(mandatory.get(i));
         }
 
-        final double discount = process.riskFreeRate().currentLink()
-                .discount(a.exercise.lastDate());
-        return new GeometricAPOHestonPathPricer(
-                payoff.optionType(),
-                payoff.strike(),
-                discount,
-                fixingIndexes,
-                a.runningAccumulator,
-                a.pastFixings);
+        final double discount = process.riskFreeRate().currentLink().discount(a.exercise.lastDate());
+        return new GeometricAPOHestonPathPricer(payoff.optionType(), payoff.strike(), discount, fixingIndexes,
+                a.runningAccumulator, a.pastFixings);
     }
 
     @Override
-    protected MonteCarloModel.PathGeneratorAdapter<MultiPath> pathGenerator() {
+    protected MonteCarloModel.PathGeneratorAdapter< MultiPath > pathGenerator() {
         final TimeGrid grid = timeGrid();
         final int dimensions = process_.factors() * (grid.size() - 1);
-        final RandomSequenceGenerator<MersenneTwisterUniformRng> uniformRsg =
-                new RandomSequenceGenerator<MersenneTwisterUniformRng>(
-                        MersenneTwisterUniformRng.class, dimensions, seed_);
-        final InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                InverseCumulativeNormal> gsg =
-                new InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                        InverseCumulativeNormal>(uniformRsg, new InverseCumulativeNormal());
-        final MultiPathGenerator<InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                InverseCumulativeNormal>> gen =
-                new MultiPathGenerator<InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                        InverseCumulativeNormal>>(process_, grid, gsg, brownianBridge_);
+        final RandomSequenceGenerator< MersenneTwisterUniformRng > uniformRsg = new RandomSequenceGenerator< MersenneTwisterUniformRng >(
+                MersenneTwisterUniformRng.class, dimensions, seed_);
+        final InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal > gsg = new InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal >(
+                uniformRsg, new InverseCumulativeNormal());
+        final MultiPathGenerator< InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal > > gen = new MultiPathGenerator< InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal > >(
+                process_, grid, gsg, brownianBridge_);
         return new MonteCarloModel.MultiPathGeneratorAdapterImpl(gen);
     }
 }

@@ -42,17 +42,15 @@ import org.jquantlib.time.Weekday;
 /**
  * Bespoke calendar.
  * <p>
- * This calendar has no predefined set of business days. Holidays and weekdays
- * can be defined by means of the provided interface.
+ * This calendar has no predefined set of business days. Holidays and weekdays can be defined by means of the provided
+ * interface.
  * <p>
- * Phase 5e.5b-CFC-d-14: ported from C++ v1.42.1
- * ql/time/calendars/bespokecalendar.{hpp,cpp}.
+ * Phase 5e.5b-CFC-d-14: ported from C++ v1.42.1 ql/time/calendars/bespokecalendar.{hpp,cpp}.
  * <p>
- * Note on linked-instances semantics: the C++ port keeps a {@code shared_ptr}
- * to a single {@code BespokeCalendar::Impl} so that copies remain linked. Java
- * does not have copy constructors; each {@code new BespokeCalendar(name)}
- * carries its own {@code Impl}. Passing the same instance around (the common
- * use case in test-suite/indexes.cpp) preserves identity.
+ * Note on linked-instances semantics: the C++ port keeps a {@code shared_ptr} to a single {@code BespokeCalendar::Impl}
+ * so that copies remain linked. Java does not have copy constructors; each {@code new BespokeCalendar(name)} carries
+ * its own {@code Impl}. Passing the same instance around (the common use case in test-suite/indexes.cpp) preserves
+ * identity.
  *
  * @author Jose Moya
  */
@@ -62,9 +60,8 @@ public class BespokeCalendar extends Calendar {
      * Constructs a BespokeCalendar with no holidays and no weekends.
      * <p>
      * <b>Warning:</b> different bespoke calendars created with the same name
-     * (or different bespoke calendars created with no name) will compare as
-     * equal under {@link Calendar#eq(Calendar, Calendar)} (mirrors C++
-     * v1.42.1 ql/time/calendars/bespokecalendar.hpp:55-58).
+     * (or different bespoke calendars created with no name) will compare as equal under
+     * {@link Calendar#eq(Calendar, Calendar)} (mirrors C++ v1.42.1 ql/time/calendars/bespokecalendar.hpp:55-58).
      *
      * @param name the calendar name; defaults to empty string
      */

@@ -28,112 +28,109 @@ import org.jquantlib.math.Constants;
 /**
  * Provides the probability density function (pdf) of the (unit) normal distribution
  *
- * {@latex[
- * 	\frac{1}{\sigma \sqrt{2\pi} } \exp \left(-\frac{(x-\mu)^2}{2\sigma ^2} \right)
- * }
- *
- * @see <a href="http://en.wikipedia.org/wiki/Probability_density_function">Normal Distribution</a>
+ * {@latex[ \frac{1}{\sigma \sqrt{2\pi} } \exp \left(-\frac{(x-\mu)^2}{2\sigma ^2} \right) }
  *
  * @author Richard Gomes
+ * @see <a href="http://en.wikipedia.org/wiki/Probability_density_function">Normal Distribution</a>
  */
 // TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class NormalDistribution implements Derivative {
 
-	//
-	// protected fields
-	//
+    //
+    // protected fields
+    //
 
-	protected double average;
-	protected double sigma;
+    private final double normalizationFactor; // FIXME: code review
+    private final double denominator; // FIXME: code review
 
-	//
-	// private fields
-	//
+    //
+    // private fields
+    //
+    private final double denormalizationFactor;
+    protected double average;
+    protected double sigma;
 
-	private final double normalizationFactor; // FIXME: code review
-	private final double denominator; // FIXME: code review
-	private final double denormalizationFactor;
+    //
+    // public constructors
+    //
 
-
-	//
-	// public constructors
-	//
-
-	/**
-	 * Default constructor which assumes {@latex$ \mu \leftarrow 0.0} and {@latex \sigma \leftarrow 1.0 }.
-	 */
-	public NormalDistribution() {
-		this(0.0, 1.0);
-	}
+    /**
+     * Default constructor which assumes {@latex$ \mu \leftarrow 0.0} and {@latex \sigma \leftarrow 1.0 }.
+     */
+    public NormalDistribution() {
+        this(0.0, 1.0);
+    }
 
     /**
      * Default constructor which assumes {@latex \sigma \leftarrow 1.0 }.
+     *
      * @param average
      */
     public NormalDistribution(final double average) {
         this(average, 1.0);
     }
 
-	/**
-	 * Constructor which initializes {@latex$ \mu } and {@latex \sigma }.
-	 * @param average
-	 * @param sigma
-	 */
-	public NormalDistribution(final double average, final double sigma) {
-        QL.require(sigma > 0.0 , "sigma must be greater than 0.0"); // TODO: message
+    /**
+     * Constructor which initializes {@latex$ \mu } and {@latex \sigma }.
+     *
+     * @param average
+     * @param sigma
+     */
+    public NormalDistribution(final double average, final double sigma) {
+        QL.require(sigma > 0.0, "sigma must be greater than 0.0"); // TODO: message
 
-		this.average = average;
-		this.sigma = sigma;
+        this.average = average;
+        this.sigma = sigma;
 
-	    this.normalizationFactor = Constants.M_SQRT_2*Constants.M_1_SQRTPI/sigma;
-	    this.denormalizationFactor = sigma*sigma;
-	    this.denominator = 2.0*denormalizationFactor;
-	}
-
+        this.normalizationFactor = Constants.M_SQRT_2 * Constants.M_1_SQRTPI / sigma;
+        this.denormalizationFactor = sigma * sigma;
+        this.denominator = 2.0 * denormalizationFactor;
+    }
 
     //
     // implements Ops.DoubleOp
     //
 
-	/**
+    /**
      * {@inheritDoc}
      * <p>
-	 * Computes the Normal distribution at point {@latex$ x }
-	 *
-	 * @param x
-	 * @return the Normal distribution at point {@latex$ x }
-	 */
-	@Override
-	public double op(final double x) /* @ReadOnly */ {
-		// Mirrors C++ v1.42.1 normaldistribution.hpp NormalDistribution::operator():
-		//   delta = x - mean
-		//   exponent = -delta^2 / (2*sigma^2)
-		//   pdf = M_SQRT_2 * M_1_SQRTPI / sigma * exp(exponent)
-		// Phase 5h.5-RND align: the previous implementation computed only the
-		// standard-normal density, ignoring stored mean/sigma. Callers using
-		// the (mean, sigma) constructor (e.g. GenericGaussianStatistics,
-		// BSMRNDCalculator, LocalVolRNDCalculator) now match C++.
-		final double delta = x - average;
-		final double exponent = -(delta * delta) / denominator;
-		if (exponent <= -690.0) return 0.0;
-		return normalizationFactor * Math.exp(exponent);
-	}
+     * Computes the Normal distribution at point {@latex$ x }
+     *
+     * @param x
+     * @return the Normal distribution at point {@latex$ x }
+     */
+    @Override
+    public double op(final double x) /* @ReadOnly */ {
+        // Mirrors C++ v1.42.1 normaldistribution.hpp NormalDistribution::operator():
+        //   delta = x - mean
+        //   exponent = -delta^2 / (2*sigma^2)
+        //   pdf = M_SQRT_2 * M_1_SQRTPI / sigma * exp(exponent)
+        // Phase 5h.5-RND align: the previous implementation computed only the
+        // standard-normal density, ignoring stored mean/sigma. Callers using
+        // the (mean, sigma) constructor (e.g. GenericGaussianStatistics,
+        // BSMRNDCalculator, LocalVolRNDCalculator) now match C++.
+        final double delta = x - average;
+        final double exponent = -(delta * delta) / denominator;
+        if ( exponent <= -690.0 )
+            return 0.0;
+        return normalizationFactor * Math.exp(exponent);
+    }
 
     //
     // implements Derivative
     //
 
-	/**
+    /**
      * {@inheritDoc}
      * <p>
-	 * Calculates the first derivative of a Normal distribution at point {@latex$ x }
-	 *
-	 * @param x
-	 * @return the first derivative of a Normal distribution at point {@latex$ x }
-	 */
-	@Override
-	public double derivative(final double x) /* @ReadOnly */ {
-	    return (op(x) * (average - x)) / denormalizationFactor;
-	}
+     * Calculates the first derivative of a Normal distribution at point {@latex$ x }
+     *
+     * @param x
+     * @return the first derivative of a Normal distribution at point {@latex$ x }
+     */
+    @Override
+    public double derivative(final double x) /* @ReadOnly */ {
+        return (op(x) * (average - x)) / denormalizationFactor;
+    }
 
 }

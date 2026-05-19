@@ -32,23 +32,20 @@ import org.jquantlib.methods.montecarlo.PathPricer;
  * Path pricer for discrete arithmetic-average-strike Asian payoffs.
  *
  * <p>Java port of {@code QuantLib v1.42.1
- * ql/pricingengines/asian/mc_discr_arith_av_strike.{hpp,cpp}}
- * {@code ArithmeticASOPathPricer} (Phase 5e.5b-CFC-d-243).
+ * ql/pricingengines/asian/mc_discr_arith_av_strike.{hpp,cpp}} {@code ArithmeticASOPathPricer} (Phase 5e.5b-CFC-d-243).
  *
  * <p>The strike of the {@link PlainVanillaPayoff} is the arithmetic
- * average of the path's fixing values (optionally seeded by a
- * {@code runningSum} from past fixings); the payoff is then evaluated
- * at the path's terminal spot.
+ * average of the path's fixing values (optionally seeded by a {@code runningSum} from past fixings); the payoff is then
+ * evaluated at the path's terminal spot.
  *
  * <p>When {@code fixingCount} is supplied (i.e., not {@link Integer#MAX_VALUE}),
- * the path may include an extra point past the last fixing date (the
- * exercise date — see Issue #646 in v1.41); the averaging window is
- * restricted to the first {@code fixingCount} path points and the terminal
- * spot used for payoff evaluation is taken from {@link Path#back()}.
+ * the path may include an extra point past the last fixing date (the exercise date — see Issue #646 in v1.41); the
+ * averaging window is restricted to the first {@code fixingCount} path points and the terminal spot used for payoff
+ * evaluation is taken from {@link Path#back()}.
  *
  * @author JQuantLib
  */
-public final class ArithmeticASOPathPricer extends PathPricer<Path> {
+public final class ArithmeticASOPathPricer extends PathPricer< Path > {
 
     /** Sentinel for "fixingCount not set" (mirrors C++ {@code Null<Size>()}). */
     public static final int NULL_FIXING_COUNT = Integer.MAX_VALUE;
@@ -59,23 +56,17 @@ public final class ArithmeticASOPathPricer extends PathPricer<Path> {
     private final int pastFixings_;
     private final int fixingCount_;
 
-    public ArithmeticASOPathPricer(final Option.Type type,
-                                   final double discount) {
+    public ArithmeticASOPathPricer(final Option.Type type, final double discount) {
         this(type, discount, 0.0, 0, NULL_FIXING_COUNT);
     }
 
-    public ArithmeticASOPathPricer(final Option.Type type,
-                                   final double discount,
-                                   final double runningSum,
-                                   final int pastFixings) {
+    public ArithmeticASOPathPricer(final Option.Type type, final double discount, final double runningSum,
+            final int pastFixings) {
         this(type, discount, runningSum, pastFixings, NULL_FIXING_COUNT);
     }
 
-    public ArithmeticASOPathPricer(final Option.Type type,
-                                   final double discount,
-                                   final double runningSum,
-                                   final int pastFixings,
-                                   final int fixingCount) {
+    public ArithmeticASOPathPricer(final Option.Type type, final double discount, final double runningSum,
+            final int pastFixings, final int fixingCount) {
         this.type_ = type;
         this.discount_ = discount;
         this.runningSum_ = runningSum;
@@ -93,21 +84,20 @@ public final class ArithmeticASOPathPricer extends PathPricer<Path> {
         // only over the fixing points; use path.back() for the spot
         // at exercise.
         final int nFixings = (fixingCount_ != NULL_FIXING_COUNT) ? fixingCount_ : n;
-        QL.require(nFixings <= n, "fixingCount (" + nFixings
-                + ") exceeds path length (" + n + ")");
+        QL.require(nFixings <= n, "fixingCount (" + nFixings + ") exceeds path length (" + n + ")");
 
         double averageStrike;
-        if (path.timeGrid().mandatoryTimes().get(0) == 0.0) {
+        if ( path.timeGrid().mandatoryTimes().get(0) == 0.0 ) {
             // include initial fixing (T=0 is a fixing date)
             double sum = runningSum_;
-            for (int i = 0; i < nFixings; i++) {
+            for ( int i = 0; i < nFixings; i++ ) {
                 sum += path.get(i);
             }
             averageStrike = sum / (pastFixings_ + nFixings);
         } else {
             // first path point is T=0 (not a fixing), skip it
             double sum = runningSum_;
-            for (int i = 1; i < nFixings; i++) {
+            for ( int i = 1; i < nFixings; i++ ) {
                 sum += path.get(i);
             }
             averageStrike = sum / (pastFixings_ + nFixings - 1);

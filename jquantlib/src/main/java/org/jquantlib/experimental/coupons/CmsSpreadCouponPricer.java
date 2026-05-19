@@ -36,51 +36,47 @@ import org.jquantlib.quotes.Quote;
 /**
  * Base pricer for vanilla CMS-spread coupons.
  * <p>
- * Subclasses are expected to provide a concrete pricing model for the spread
- * (e.g. {@link LognormalCmsSpreadPricer}, which integrates a Brigo-style
- * bivariate-lognormal payoff via Gauss-Hermite quadrature).
+ * Subclasses are expected to provide a concrete pricing model for the spread (e.g. {@link LognormalCmsSpreadPricer},
+ * which integrates a Brigo-style bivariate-lognormal payoff via Gauss-Hermite quadrature).
  * <p>
- * Port of C++ QuantLib v1.42.1
- * {@code ql/experimental/coupons/cmsspreadcoupon.hpp} (the
- * {@code CmsSpreadCouponPricer} class lines 141-161).
+ * Port of C++ QuantLib v1.42.1 {@code ql/experimental/coupons/cmsspreadcoupon.hpp} (the {@code CmsSpreadCouponPricer}
+ * class lines 141-161).
  *
  * @author Peter Caspers (C++ original)
  */
 public abstract class CmsSpreadCouponPricer extends FloatingRateCouponPricer {
 
-    private Handle<? extends Quote> correlation_;
-
+    private Handle< ? extends Quote > correlation_;
 
     //
     // public constructors
     //
 
     public CmsSpreadCouponPricer() {
-        this(new Handle<Quote>());
+        this(new Handle< Quote >());
     }
 
-    public CmsSpreadCouponPricer(final Handle<? extends Quote> correlation) {
+    public CmsSpreadCouponPricer(final Handle< ? extends Quote > correlation) {
         this.correlation_ = correlation;
-        if (correlation_ != null && !correlation_.empty()) {
+        if ( correlation_ != null && !correlation_.empty() ) {
             correlation_.addObserver(this);
         }
     }
-
 
     //
     // public methods
     //
 
-    public Handle<? extends Quote> correlation() {
+    public Handle< ? extends Quote > correlation() {
         return correlation_;
     }
 
-    public void setCorrelation(final Handle<? extends Quote> correlation) {
-        if (correlation_ != null && !correlation_.empty()) {
+    public void setCorrelation(final Handle< ? extends Quote > correlation) {
+        if ( correlation_ != null && !correlation_.empty() ) {
             correlation_.deleteObserver(this);
         }
         this.correlation_ = correlation;
-        if (correlation_ != null && !correlation_.empty()) {
+        if ( correlation_ != null && !correlation_.empty() ) {
             correlation_.addObserver(this);
         }
         update();

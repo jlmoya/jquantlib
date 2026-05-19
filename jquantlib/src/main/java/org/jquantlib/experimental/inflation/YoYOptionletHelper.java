@@ -54,7 +54,7 @@ import org.jquantlib.time.Period;
  *
  * @author JQuantLib migration team (Phase 2s Track B)
  */
-public class YoYOptionletHelper extends BootstrapHelper<YoYOptionletVolatilitySurface> {
+public class YoYOptionletHelper extends BootstrapHelper< YoYOptionletVolatilitySurface > {
 
     //
     // protected fields (mirror C++ verbatim)
@@ -77,18 +77,11 @@ public class YoYOptionletHelper extends BootstrapHelper<YoYOptionletVolatilitySu
     // constructor
     //
 
-    public YoYOptionletHelper(final Handle<Quote> price,
-                              final double notional,
-                              final InflationCapFloor.Type capFloorType,
-                              final Period lag,
-                              final DayCounter yoyDayCounter,
-                              final Calendar paymentCalendar,
-                              final int fixingDays,
-                              final YoYInflationIndex index,
-                              final CPI.InterpolationType interpolation,
-                              final double strike,
-                              final int n,
-                              final InflationCapFloorEngine pricer) {
+    public YoYOptionletHelper(final Handle< Quote > price, final double notional,
+            final InflationCapFloor.Type capFloorType, final Period lag, final DayCounter yoyDayCounter,
+            final Calendar paymentCalendar, final int fixingDays, final YoYInflationIndex index,
+            final CPI.InterpolationType interpolation, final double strike, final int n,
+            final InflationCapFloorEngine pricer) {
         super(price);
         this.notional_ = notional;
         this.capFloorType_ = capFloorType;
@@ -102,25 +95,19 @@ public class YoYOptionletHelper extends BootstrapHelper<YoYOptionletVolatilitySu
         this.pricer_ = pricer;
 
         // Build the instrument to reprice (only need do this once)
-        this.yoyCapFloor_ =
-                new MakeYoYInflationCapFloor(capFloorType_, index_,
-                        n_, calendar_, lag_, interpolation)
-                .withNominal(notional_)
-                .withFixingDays(fixingDays_)
-                .withPaymentDayCounter(yoyDayCounter_)
-                .withStrike(strike_)
-                .build();
+        this.yoyCapFloor_ = new MakeYoYInflationCapFloor(capFloorType_, index_, n_, calendar_, lag_,
+                interpolation).withNominal(notional_).withFixingDays(fixingDays_).withPaymentDayCounter(yoyDayCounter_)
+                .withStrike(strike_).build();
 
         // dates already built in lag of index/instrument
         // these are the dates of the values of the index
         // that fix the capfloor
         final CashFlow firstCF = yoyCapFloor_.yoyLeg().get(0);
-        final CashFlow lastCF = yoyCapFloor_.yoyLeg()
-                .get(yoyCapFloor_.yoyLeg().size() - 1);
-        if (firstCF instanceof YoYInflationCoupon) {
+        final CashFlow lastCF = yoyCapFloor_.yoyLeg().get(yoyCapFloor_.yoyLeg().size() - 1);
+        if ( firstCF instanceof YoYInflationCoupon ) {
             this.earliestDate = ((YoYInflationCoupon) firstCF).fixingDate();
         }
-        if (lastCF instanceof YoYInflationCoupon) {
+        if ( lastCF instanceof YoYInflationCoupon ) {
             this.latestDate = ((YoYInflationCoupon) lastCF).fixingDate();
         }
 
@@ -135,8 +122,8 @@ public class YoYOptionletHelper extends BootstrapHelper<YoYOptionletVolatilitySu
     //
 
     /**
-     * Mirrors C++ {@code Real impliedQuote() const}: prices the underlying
-     * YoY cap/floor under the currently-installed vol surface.
+     * Mirrors C++ {@code Real impliedQuote() const}: prices the underlying YoY cap/floor under the currently-installed
+     * vol surface.
      */
     @Override
     public double impliedQuote() {
@@ -147,9 +134,8 @@ public class YoYOptionletHelper extends BootstrapHelper<YoYOptionletVolatilitySu
     }
 
     /**
-     * Mirrors C++ {@code void setTermStructure(YoYOptionletVolatilitySurface*)}.
-     * The new vol surface is a different one each time, so we forward it to
-     * the pricer (the cap/floor itself only knows about the engine).
+     * Mirrors C++ {@code void setTermStructure(YoYOptionletVolatilitySurface*)}. The new vol surface is a different one
+     * each time, so we forward it to the pricer (the cap/floor itself only knows about the engine).
      */
     @Override
     public void setTermStructure(final YoYOptionletVolatilitySurface v) {
@@ -157,7 +143,7 @@ public class YoYOptionletHelper extends BootstrapHelper<YoYOptionletVolatilitySu
         // Wrap the surface in a Handle and reset the vol on the pricer.
         // The C++ uses null_deleter (own=false) because the helper owns
         // the lifecycle; Java GC handles this naturally.
-        final Handle<YoYOptionletVolatilitySurface> volSurf = new Handle<>(v);
+        final Handle< YoYOptionletVolatilitySurface > volSurf = new Handle<>(v);
         pricer_.setVolatility(volSurf);
     }
 }

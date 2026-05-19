@@ -52,44 +52,6 @@ public class PseudoSqrt {
 
     private final static String unknown_salvaging_algorithm = "unknown salvaging algorithm";
 
-    public enum SalvagingAlgorithm {
-        None, Spectral, Hypersphere, LowerDiagonal, Higham, Principal;
-    }
-
-    //! Returns the pseudo square root of a real symmetric matrix
-    /*! Given a matrix \f$ M \f$, the result \f$ S \f$ is defined
-        as the matrix such that \f$ S S^T = M. \f$
-        If the matrix is not positive semi definite, it can
-        return an approximation of the pseudo square root
-        using a (user selected) salvaging algorithm.
-
-        For more information see: "The most general methodology to create
-        a valid correlation matrix for risk management and option pricing
-        purposes", by R. Rebonato and P. Jaeckel.
-        The Journal of Risk, 2(2), Winter 1999/2000
-        http://www.rebonato.com/correlationmatrix.pdf
-
-        Revised and extended in "Monte Carlo Methods in Finance",
-        by Peter Jaeckel, Chapter 6.
-
-        \pre the given matrix must be symmetric.
-
-        \relates Matrix
-
-        \warning Higham algorithm only works for correlation matrices.
-
-        \test
-        - the correctness of the results is tested by reproducing
-          known good data.
-        - the correctness of the results is tested by checking
-          returned values against numerical calculations.
-     */
-    public Matrix pseudoSqrt( final Matrix matrix){
-        return pseudoSqrt(matrix, SalvagingAlgorithm.None);
-    }
-
-
-
     //! Returns the rank-reduced pseudo square root of a real symmetric matrix
     /*! The result matrix has rank<=maxRank. If maxRank>=size, then the
         specified percentage of eigenvalues out of the eigenvalues' sum is
@@ -103,18 +65,14 @@ public class PseudoSqrt {
 
         \relates Matrix
      */
-    public static Matrix rankReducedSqrt(final Matrix matrix,
-            final int maxRank,
-            final int componentRetainedPercentage,
-            final SalvagingAlgorithm sa){
-
-
+    public static Matrix rankReducedSqrt(final Matrix matrix, final int maxRank, final int componentRetainedPercentage,
+            final SalvagingAlgorithm sa) {
 
         QL.require(matrix.rows == matrix.columns(), Cells.MATRIX_MUST_BE_SQUARE); // QA:[RG]::verified
         QL.require(checkSymmetry(matrix), Cells.MATRIX_MUST_BE_SYMMETRIC); // QA:[RG]::verified
-        QL.require(componentRetainedPercentage>0.0, "no eigenvalues retained"); // TODO: message
-        QL.require(componentRetainedPercentage<=1.0, "percentage to be retained > 100%"); // TODO: message
-        QL.require(maxRank>=1, "max rank required < 1"); // TODO: message
+        QL.require(componentRetainedPercentage > 0.0, "no eigenvalues retained"); // TODO: message
+        QL.require(componentRetainedPercentage <= 1.0, "percentage to be retained > 100%"); // TODO: message
+        QL.require(maxRank >= 1, "max rank required < 1"); // TODO: message
 
         final int size = matrix.rows;
 
@@ -123,17 +81,16 @@ public class PseudoSqrt {
         Array eigenValues = jd.eigenvalues();
 
         // salvaging algorithm
-        switch (sa) {
+        switch ( sa ) {
         case None:
             // eigenvalues are sorted in decreasing order
-            if(eigenValues.get(size-1)<-1e-16)
-                throw new IllegalArgumentException("negative eigenvalue(s) ("
-                        + eigenValues.get(size-1)+")");
+            if ( eigenValues.get(size - 1) < -1e-16 )
+                throw new IllegalArgumentException("negative eigenvalue(s) (" + eigenValues.get(size - 1) + ")");
             break;
         case Spectral:
             // negative eigenvalues set to zero
-            for (int i=0; i<size; ++i) {
-                eigenValues.set(i,Math.max(eigenValues.get(i), 0.0));
+            for ( int i = 0; i < size; ++i ) {
+                eigenValues.set(i, Math.max(eigenValues.get(i), 0.0));
             }
             break;
         case Higham:
@@ -149,23 +106,23 @@ public class PseudoSqrt {
 
         // factor reduction
         double enough = componentRetainedPercentage * eigenValues.accumulate();
-        if (componentRetainedPercentage == 1.0) {
+        if ( componentRetainedPercentage == 1.0 ) {
             // numerical glitches might cause some factors to be discarded
             enough *= 1.1;
         }
         // retain at least one factor
         double components = eigenValues.first();
         int retainedFactors = 1;
-        for (int i=1; components<enough && i<size; ++i) {
+        for ( int i = 1; components < enough && i < size; ++i ) {
             components += eigenValues.get(i);
             retainedFactors++;
         }
         // output is granted to have a rank<=maxRank
-        retainedFactors=Math.min(retainedFactors, maxRank);
+        retainedFactors = Math.min(retainedFactors, maxRank);
 
         final Matrix diagonal = new Matrix(size, retainedFactors);
-        for (int i=0; i<retainedFactors; ++i) {
-            diagonal.set(i,i, Math.sqrt(eigenValues.get(i)));
+        for ( int i = 0; i < retainedFactors; ++i ) {
+            diagonal.set(i, i, Math.sqrt(eigenValues.get(i)));
         }
         // Phase 3j align: C++ pseudosqrt.cpp:532 is `eigenvectors() * diagonal`
         // (one multiplication). Java port previously had the duplicated factor
@@ -176,13 +133,11 @@ public class PseudoSqrt {
         return result;
     }
 
-
     public static void normalizePseudoRoot(final Matrix matrix, final Matrix pseudo) {
-
 
         final int size = matrix.rows;
 
-        if (size != pseudo.rows)
+        if ( size != pseudo.rows )
             throw new IllegalArgumentException(
                     "matrix/pseudo mismatch: matrix rows are " + size + " while pseudo rows are " + pseudo.cols);
 
@@ -192,14 +147,14 @@ public class PseudoSqrt {
         // Phase 3j align: C++ pseudosqrt.cpp:62-63 sums `pseudo[i][j]*pseudo[i][j]`
         // (squared row norm). Java port previously used `pseudo[i][j]*pseudo[j][i]`
         // which is asymmetric and OOB when pseudoCols != rows.
-        for (int i=0; i<size; ++i) {
+        for ( int i = 0; i < size; ++i ) {
             double norm = 0.0;
-            for (int j=0; j<pseudoCols; ++j) {
+            for ( int j = 0; j < pseudoCols; ++j ) {
                 norm += pseudo.get(i, j) * pseudo.get(i, j);
             }
-            if (norm>0.0) {
-                final double normAdj = Math.sqrt(matrix.get(i,i)/norm);
-                for (int j=0; j<pseudoCols; ++j) {
+            if ( norm > 0.0 ) {
+                final double normAdj = Math.sqrt(matrix.get(i, i) / norm);
+                for ( int j = 0; j < pseudoCols; ++j ) {
                     pseudo.set(i, j, pseudo.get(i, j) * normAdj);
                 }
             }
@@ -425,7 +380,6 @@ public class PseudoSqrt {
      */
     public static Matrix pseudoSqrt(final Matrix matrix, final SalvagingAlgorithm sa) {
 
-
         QL.require(matrix.rows() == matrix.columns(), Cells.MATRIX_MUST_BE_SQUARE); // QA:[RG]::verified
         QL.require(checkSymmetry(matrix), Cells.MATRIX_MUST_BE_SYMMETRIC); // QA:[RG]::verified
 
@@ -438,20 +392,19 @@ public class PseudoSqrt {
         // salvaging algorithm
         final Matrix result;
         boolean negative;
-        switch (sa) {
+        switch ( sa ) {
         case None:
             // eigenvalues are sorted in decreasing order
-            if (jd.eigenvalues().get(size-1)<-1e-16)
-                throw new IllegalArgumentException( "negative eigenvalue(s) ("
-                        + /*std::scientific*/ + jd.eigenvalues().get(size-1)
-                        + ")");
+            if ( jd.eigenvalues().get(size - 1) < -1e-16 )
+                throw new IllegalArgumentException(
+                        "negative eigenvalue(s) (" + /*std::scientific*/ +jd.eigenvalues().get(size - 1) + ")");
             // Phase 5e.5b-CFC-d-52 align: C++ pseudosqrt.cpp:375 uses the
             // free function CholeskyDecomposition(matrix, true).
             result = CholeskyDecomposition.CholeskyDecomposition(matrix, true);
             break;
         case Spectral:
             // negative eigenvalues set to zero
-            for (int i=0; i<size; i++) {
+            for ( int i = 0; i < size; i++ ) {
                 diagonal.set(i, i, Math.sqrt(Math.max((jd.eigenvalues().get(i)), 0.0)));
             }
             // Phase 4i.5 align: C++ pseudosqrt.cpp:165 is `eigenvectors() * diagonal`.
@@ -460,37 +413,37 @@ public class PseudoSqrt {
             break;
         case Hypersphere:
             // negative eigenvalues set to zero
-            negative=false;
-            for (int i=0; i<size; ++i){
+            negative = false;
+            for ( int i = 0; i < size; ++i ) {
                 diagonal.set(i, i, Math.sqrt(Math.max(jd.eigenvalues().get(i), 0.0)));
-                if (jd.eigenvalues().get(i)<0.0) {
-                    negative=true;
+                if ( jd.eigenvalues().get(i) < 0.0 ) {
+                    negative = true;
                 }
             }
-            if(true)
+            if ( true )
                 throw new UnsupportedOperationException("work in progress");
             //result = jd.eigenvectors() * diagonal;
             normalizePseudoRoot(matrix, result);
 
-            if (negative)
+            if ( negative )
                 throw new UnsupportedOperationException("work in progress");
             //result = hypersphereOptimize(matrix, result, false);
             break;
         case LowerDiagonal:
             // negative eigenvalues set to zero
-            negative=false;
-            for (int i=0; i<size; ++i){
+            negative = false;
+            for ( int i = 0; i < size; ++i ) {
                 diagonal.set(i, i, Math.sqrt(Math.max(jd.eigenvalues().get(i), 0.0)));
-                if (jd.eigenvalues().get(i)<0.0) {
-                    negative=true;
+                if ( jd.eigenvalues().get(i) < 0.0 ) {
+                    negative = true;
                 }
             }
-            if(true)
+            if ( true )
                 throw new UnsupportedOperationException("work in progress");
             //result = jd.eigenvectors() * diagonal;
             normalizePseudoRoot(matrix, result);
 
-            if (negative)
+            if ( negative )
                 throw new UnsupportedOperationException("work in progress");
             //result = hypersphereOptimize(matrix, result, true);
             break;
@@ -504,24 +457,23 @@ public class PseudoSqrt {
         }
         case Principal: {
             // Phase 5e.5b-CFC-d-52 port of C++ pseudosqrt.cpp:422-447.
-            if (jd.eigenvalues().get(size-1) < -10.0 * org.jquantlib.math.Constants.QL_EPSILON) {
-                throw new IllegalArgumentException("negative eigenvalue(s) ("
-                        + jd.eigenvalues().get(size-1) + ")");
+            if ( jd.eigenvalues().get(size - 1) < -10.0 * org.jquantlib.math.Constants.QL_EPSILON ) {
+                throw new IllegalArgumentException("negative eigenvalue(s) (" + jd.eigenvalues().get(size - 1) + ")");
             }
             final double[] sqrtEv = new double[size];
-            for (int i = 0; i < size; ++i) {
+            for ( int i = 0; i < size; ++i ) {
                 sqrtEv[i] = Math.sqrt(Math.max(jd.eigenvalues().get(i), 0.0));
             }
             // C++ pseudosqrt.cpp:437-443: diagonal[k][i] = eigenvectors[i][k] * sqrtEv[k]
-            for (int i = 0; i < size; ++i) {
-                for (int k = 0; k < size; ++k) {
+            for ( int i = 0; i < size; ++i ) {
+                for ( int k = 0; k < size; ++k ) {
                     diagonal.set(k, i, sqrtEv[k] * jd.eigenvectors().get(i, k));
                 }
             }
             final Matrix prod = jd.eigenvectors().mul(diagonal);
             final Matrix sym = new Matrix(size, size);
-            for (int i = 0; i < size; ++i) {
-                for (int j = 0; j < size; ++j) {
+            for ( int i = 0; i < size; ++i ) {
+                for ( int j = 0; j < size; ++j ) {
                     sym.set(i, j, 0.5 * (prod.get(i, j) + prod.get(j, i)));
                 }
             }
@@ -534,17 +486,12 @@ public class PseudoSqrt {
         return result;
     }
 
-
-    //
-    // Higham nearest-correlation-matrix iteration (Phase 5e.5b-CFC-d-52)
-    //
-
     /** Matrix infinity norm: max over rows of sum |a_ij|. C++ pseudosqrt.cpp:268. */
     private static double normInf(final Matrix M) {
         double norm = 0.0;
-        for (int i = 0; i < M.rows(); ++i) {
+        for ( int i = 0; i < M.rows(); ++i ) {
             double colSum = 0.0;
-            for (int j = 0; j < M.cols(); ++j) {
+            for ( int j = 0; j < M.cols(); ++j ) {
                 colSum += Math.abs(M.get(i, j));
             }
             norm = Math.max(norm, colSum);
@@ -557,11 +504,15 @@ public class PseudoSqrt {
         final int size = M.rows();
         QL.require(size == M.cols(), Cells.MATRIX_MUST_BE_SQUARE);
         final Matrix result = M.clone();
-        for (int i = 0; i < size; ++i) {
+        for ( int i = 0; i < size; ++i ) {
             result.set(i, i, 1.0);
         }
         return result;
     }
+
+    //
+    // Higham nearest-correlation-matrix iteration (Phase 5e.5b-CFC-d-52)
+    //
 
     /** Project to positive-semidefinite: V * diag(max(lambda_i, 0)) * V^T. C++ pseudosqrt.cpp:295. */
     private static Matrix projectToPositiveSemidefiniteMatrix(final Matrix M) {
@@ -569,15 +520,14 @@ public class PseudoSqrt {
         QL.require(size == M.cols(), Cells.MATRIX_MUST_BE_SQUARE);
         final SymmetricSchurDecomposition jd = new SymmetricSchurDecomposition(M);
         final Matrix diag = new Matrix(size, size);
-        for (int i = 0; i < size; ++i) {
+        for ( int i = 0; i < size; ++i ) {
             diag.set(i, i, Math.max(jd.eigenvalues().get(i), 0.0));
         }
         return jd.eigenvectors().mul(diag).mul(jd.eigenvectors().transpose());
     }
 
     /**
-     * Higham iteration for nearest correlation matrix. Java port of
-     * QuantLib v1.42.1 {@code highamImplementation} in
+     * Higham iteration for nearest correlation matrix. Java port of QuantLib v1.42.1 {@code highamImplementation} in
      * {@code ql/math/matrixutilities/pseudosqrt.cpp:312}.
      */
     private static Matrix highamImplementation(final Matrix A, final int maxIterations, final double tolerance) {
@@ -588,7 +538,7 @@ public class PseudoSqrt {
         Matrix lastX = X.clone();
         Matrix lastY = Y.clone();
 
-        for (int i = 0; i < maxIterations; ++i) {
+        for ( int i = 0; i < maxIterations; ++i ) {
             final Matrix R = Y.sub(deltaS);
             X = projectToPositiveSemidefiniteMatrix(R);
             deltaS = X.sub(R);
@@ -597,19 +547,70 @@ public class PseudoSqrt {
             final double convX = normInf(X.sub(lastX)) / normInf(X);
             final double convY = normInf(Y.sub(lastY)) / normInf(Y);
             final double convYX = normInf(Y.sub(X)) / normInf(Y);
-            if (Math.max(convX, Math.max(convY, convYX)) <= tolerance) {
+            if ( Math.max(convX, Math.max(convY, convYX)) <= tolerance ) {
                 break;
             }
             lastX = X.clone();
             lastY = Y.clone();
         }
 
-        for (int i = 0; i < size; ++i) {
-            for (int j = 0; j < i; ++j) {
+        for ( int i = 0; i < size; ++i ) {
+            for ( int j = 0; j < i; ++j ) {
                 Y.set(i, j, Y.get(j, i));
             }
         }
         return Y;
+    }
+
+    /**
+     * Returns {@code true} iff {@code matrix} is symmetric (within {@link Closeness#isClose} tolerance). Mirrors C++
+     * {@code checkSymmetry} in {@code ql/math/matrixutilities/pseudosqrt.cpp} (under {@code QL_EXTRA_SAFETY_CHECKS}):
+     * for each strict-lower-triangle pair, requires {@code matrix[i][j] ~ matrix[j][i]}.
+     *
+     * <p>Phase 3j align: previously inverted condition (returned {@code true}
+     * only when no close pairs were found, i.e. for non-symmetric matrices), which made every covariance assembly fail
+     * PseudoSqrt's input validation.
+     */
+    private static boolean checkSymmetry(final Matrix matrix) {
+        final int size = matrix.rows;
+        for ( int i = 0; i < size; ++i ) {
+            for ( int j = 0; j < i; ++j )
+                if ( !Closeness.isClose(matrix.get(i, j), matrix.get(j, i)) )
+                    return false;
+        }
+        return true;
+    }
+
+    //! Returns the pseudo square root of a real symmetric matrix
+    /*! Given a matrix \f$ M \f$, the result \f$ S \f$ is defined
+        as the matrix such that \f$ S S^T = M. \f$
+        If the matrix is not positive semi definite, it can
+        return an approximation of the pseudo square root
+        using a (user selected) salvaging algorithm.
+
+        For more information see: "The most general methodology to create
+        a valid correlation matrix for risk management and option pricing
+        purposes", by R. Rebonato and P. Jaeckel.
+        The Journal of Risk, 2(2), Winter 1999/2000
+        http://www.rebonato.com/correlationmatrix.pdf
+
+        Revised and extended in "Monte Carlo Methods in Finance",
+        by Peter Jaeckel, Chapter 6.
+
+        \pre the given matrix must be symmetric.
+
+        \relates Matrix
+
+        \warning Higham algorithm only works for correlation matrices.
+
+        \test
+        - the correctness of the results is tested by reproducing
+          known good data.
+        - the correctness of the results is tested by checking
+          returned values against numerical calculations.
+     */
+    public Matrix pseudoSqrt(final Matrix matrix) {
+        return pseudoSqrt(matrix, SalvagingAlgorithm.None);
     }
 
     /*
@@ -696,33 +697,12 @@ const Disposable<Matrix> rankReducedSqrt(const Matrix& matrix,
 
      */
 
-
     //
     // private methods
     //
 
-    /**
-     * Returns {@code true} iff {@code matrix} is symmetric (within
-     * {@link Closeness#isClose} tolerance). Mirrors C++
-     * {@code checkSymmetry} in {@code ql/math/matrixutilities/pseudosqrt.cpp}
-     * (under {@code QL_EXTRA_SAFETY_CHECKS}): for each strict-lower-triangle
-     * pair, requires {@code matrix[i][j] ~ matrix[j][i]}.
-     *
-     * <p>Phase 3j align: previously inverted condition (returned {@code true}
-     * only when no close pairs were found, i.e. for non-symmetric matrices),
-     * which made every covariance assembly fail PseudoSqrt's input validation.
-     */
-    private static boolean checkSymmetry(final Matrix matrix) {
-        final int size = matrix.rows;
-        for (int i=0; i<size; ++i) {
-            for (int j=0; j<i; ++j)
-                if (!Closeness.isClose(matrix.get(i, j), matrix.get(j, i)))
-                    return false;
-        }
-        return true;
+    public enum SalvagingAlgorithm {
+        None, Spectral, Hypersphere, LowerDiagonal, Higham, Principal
     }
 
 }
-
-
-

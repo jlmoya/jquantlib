@@ -32,9 +32,8 @@ import org.jquantlib.model.marketmodels.BrownianGeneratorFactory;
 /**
  * Factory producing {@link MTBrownianGenerator} instances with a stored seed.
  *
- * @see "ql/models/marketmodels/browniangenerators/mtbrowniangenerator.{hpp,cpp}" v1.42.1
- *
  * @author Jose Moya
+ * @see "ql/models/marketmodels/browniangenerators/mtbrowniangenerator.{hpp,cpp}" v1.42.1
  */
 public class MTBrownianGeneratorFactory extends BrownianGeneratorFactory {
 

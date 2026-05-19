@@ -32,12 +32,10 @@ import org.jquantlib.math.ode.AdaptiveRungeKutta;
 /**
  * Matrix exponential exp(t*M) based on the ordinary-differential-equation method.
  * <p>
- * Java port of QuantLib v1.42.1 {@code ql/math/matrixutilities/expm.{hpp,cpp}}
- * (Klaus Spanderen, 2013).
+ * Java port of QuantLib v1.42.1 {@code ql/math/matrixutilities/expm.{hpp,cpp}} (Klaus Spanderen, 2013).
  * <p>
- * The implementation mirrors the C++ algorithm exactly: for each unit basis
- * vector {@code e_i}, the ODE {@code y' = M y} is integrated from {@code 0}
- * to {@code t} using {@link AdaptiveRungeKutta}, and the resulting vector
+ * The implementation mirrors the C++ algorithm exactly: for each unit basis vector {@code e_i}, the ODE
+ * {@code y' = M y} is integrated from {@code 0} to {@code t} using {@link AdaptiveRungeKutta}, and the resulting vector
  * becomes column {@code i} of the output matrix {@code exp(t*M)}.
  * <p>
  * References:
@@ -71,10 +69,10 @@ public final class Expm {
     /**
      * Returns the matrix exponential exp(t*M).
      *
-     * @param m    square matrix
-     * @param t    scalar multiplier
-     * @param tol  RK tolerance (relative)
-     * @return     exp(t*M)
+     * @param m   square matrix
+     * @param t   scalar multiplier
+     * @param tol RK tolerance (relative)
+     * @return exp(t*M)
      */
     public static Matrix expm(final Matrix m, final double t, final double tol) {
         final int n = m.rows();
@@ -86,17 +84,17 @@ public final class Expm {
 
         // MatrixVectorProductFct: y' = M * y
         final double[][] mData = new double[n][n];
-        for (int i = 0; i < n; ++i) {
-            for (int j = 0; j < n; ++j) {
+        for ( int i = 0; i < n; ++i ) {
+            for ( int j = 0; j < n; ++j ) {
                 mData[i][j] = m.get(i, j);
             }
         }
         final AdaptiveRungeKutta.OdeFct odeFct = (time, y) -> {
             final double[] result = new double[n];
-            for (int i = 0; i < n; ++i) {
+            for ( int i = 0; i < n; ++i ) {
                 double s = 0.0;
                 final double[] row = mData[i];
-                for (int j = 0; j < n; ++j) {
+                for ( int j = 0; j < n; ++j ) {
                     s += row[j] * y[j];
                 }
                 result[i] = s;
@@ -105,11 +103,11 @@ public final class Expm {
         };
 
         final Matrix result = new Matrix(n, n);
-        for (int i = 0; i < n; ++i) {
+        for ( int i = 0; i < n; ++i ) {
             final double[] x0 = new double[n];
             x0[i] = 1.0;
             final double[] r = rk.solve(odeFct, x0, 0.0, t);
-            for (int j = 0; j < n; ++j) {
+            for ( int j = 0; j < n; ++j ) {
                 result.set(j, i, r[j]);
             }
         }

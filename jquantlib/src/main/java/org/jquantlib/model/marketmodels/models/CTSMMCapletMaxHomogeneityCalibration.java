@@ -17,9 +17,6 @@
 
 package org.jquantlib.model.marketmodels.models;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.math.Quadratic;
 import org.jquantlib.math.matrixutilities.BasisIncompleteOrdered;
@@ -31,6 +28,9 @@ import org.jquantlib.model.marketmodels.CurveState;
 import org.jquantlib.model.marketmodels.EvolutionDescription;
 import org.jquantlib.model.marketmodels.PiecewiseConstantCorrelation;
 import org.jquantlib.model.marketmodels.SwapForwardMappings;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Maximum-homogeneity CTSMM caplet calibration via sphere-cylinder optimization.
@@ -47,60 +47,28 @@ public final class CTSMMCapletMaxHomogeneityCalibration extends CTSMMCapletCalib
     private double totalSwaptionError_;
 
     public CTSMMCapletMaxHomogeneityCalibration(final EvolutionDescription evolution,
-                                                final PiecewiseConstantCorrelation corr,
-                                                final List<PiecewiseConstantVariance> displacedSwapVariances,
-                                                final double[] capletVols,
-                                                final CurveState cs,
-                                                final double displacement,
-                                                final double caplet0Swaption1Priority) {
+            final PiecewiseConstantCorrelation corr, final List< PiecewiseConstantVariance > displacedSwapVariances,
+            final double[] capletVols, final CurveState cs, final double displacement,
+            final double caplet0Swaption1Priority) {
         super(evolution, corr, displacedSwapVariances, capletVols, cs, displacement);
         QL.require(caplet0Swaption1Priority >= 0.0 && caplet0Swaption1Priority <= 1.0,
-                "caplet0Swaption1Priority (" + caplet0Swaption1Priority
-                        + ") must be in [0.0, 1.0]");
+                "caplet0Swaption1Priority (" + caplet0Swaption1Priority + ") must be in [0.0, 1.0]");
         this.caplet0Swaption1Priority_ = caplet0Swaption1Priority;
     }
 
     public CTSMMCapletMaxHomogeneityCalibration(final EvolutionDescription evolution,
-                                                final PiecewiseConstantCorrelation corr,
-                                                final List<PiecewiseConstantVariance> displacedSwapVariances,
-                                                final double[] capletVols,
-                                                final CurveState cs,
-                                                final double displacement) {
+            final PiecewiseConstantCorrelation corr, final List< PiecewiseConstantVariance > displacedSwapVariances,
+            final double[] capletVols, final CurveState cs, final double displacement) {
         this(evolution, corr, displacedSwapVariances, capletVols, cs, displacement, 1.0);
     }
 
-    @Override
-    protected int calibrationImpl(final int numberOfFactors,
-                                  final int maxIterations,
-                                  final double tolerance) {
-        final List<Matrix> result = new ArrayList<>();
-        final double[] deformation = new double[1];
-        final double[] swaptionErr = new double[1];
-        final int failures = capletMaxHomogeneityCalibration(evolution_, corr_,
-                displacedSwapVariances_, usedCapletVols_, cs_, displacement_,
-                caplet0Swaption1Priority_, numberOfFactors, maxIterations, tolerance,
-                deformation, swaptionErr, result);
-        this.deformationSize_ = deformation[0];
-        this.totalSwaptionError_ = swaptionErr[0];
-        this.swapCovariancePseudoRoots_ = result;
-        return failures;
-    }
-
     /** The actual calibration function. */
-    public static int capletMaxHomogeneityCalibration(
-            final EvolutionDescription evolution,
-            final PiecewiseConstantCorrelation corr,
-            final List<PiecewiseConstantVariance> displacedSwapVariances,
-            final double[] capletVols,
-            final CurveState cs,
-            final double displacement,
-            final double caplet0Swaption1Priority,
-            final int numberOfFactors,
-            final int maxIterations,
-            final double tolerance,
-            final double[] deformationSize,
-            final double[] totalSwaptionError,
-            final List<Matrix> swapCovariancePseudoRoots) {
+    public static int capletMaxHomogeneityCalibration(final EvolutionDescription evolution,
+            final PiecewiseConstantCorrelation corr, final List< PiecewiseConstantVariance > displacedSwapVariances,
+            final double[] capletVols, final CurveState cs, final double displacement,
+            final double caplet0Swaption1Priority, final int numberOfFactors, final int maxIterations,
+            final double tolerance, final double[] deformationSize, final double[] totalSwaptionError,
+            final List< Matrix > swapCovariancePseudoRoots) {
 
         CTSMMCapletCalibration.performChecks(evolution, corr, displacedSwapVariances, capletVols, cs);
 
@@ -109,27 +77,26 @@ public final class CTSMMCapletMaxHomogeneityCalibration extends CTSMMCapletCalib
         final double[] rateTimes = evolution.rateTimes();
 
         QL.require(numberOfFactors <= numberOfRates,
-                "number of factors (" + numberOfFactors
-                        + ") cannot be greater than numberOfRates (" + numberOfRates + ")");
-        QL.require(numberOfFactors > 0,
-                "number of factors (" + numberOfFactors + ") must be greater than zero");
+                "number of factors (" + numberOfFactors + ") cannot be greater than numberOfRates (" + numberOfRates
+                        + ")");
+        QL.require(numberOfFactors > 0, "number of factors (" + numberOfFactors + ") must be greater than zero");
 
         int failures = 0;
         totalSwaptionError[0] = 0.0;
         deformationSize[0] = 0.0;
 
         // factor reduction
-        final List<Matrix> corrPseudo = new ArrayList<>(corr.times().size());
-        for (int i = 0; i < corr.times().size(); ++i) {
-            corrPseudo.add(PseudoSqrt.rankReducedSqrt(corr.correlation(i), numberOfFactors,
-                    1, SalvagingAlgorithm.None));
+        final List< Matrix > corrPseudo = new ArrayList<>(corr.times().size());
+        for ( int i = 0; i < corr.times().size(); ++i ) {
+            corrPseudo.add(
+                    PseudoSqrt.rankReducedSqrt(corr.correlation(i), numberOfFactors, 1, SalvagingAlgorithm.None));
         }
 
         final Matrix zedMatrix = SwapForwardMappings.coterminalSwapZedMatrix(cs, displacement);
         final Matrix invertedZedMatrix = zedMatrix.inverse();
 
         // vectors for new vols of all swap rates
-        final List<double[]> newVols = new ArrayList<>();
+        final List< double[] > newVols = new ArrayList<>();
         final double[] theseNewVols = new double[numberOfRates];
         final double[] firstRateVols = new double[numberOfRates];
         firstRateVols[0] = Math.sqrt(displacedSwapVariances.get(0).variances()[0]);
@@ -140,17 +107,17 @@ public final class CTSMMCapletMaxHomogeneityCalibration extends CTSMMCapletCalib
         double[] firstSrc = firstRateVols;
 
         // skip last (final caplet == final swaption)
-        for (int i = 0; i < numberOfRates - 1; ++i) {
+        for ( int i = 0; i < numberOfRates - 1; ++i ) {
             final double thisFinalWeight = i > 1 ? (i - 1) / 2.0 : 1.0;
 
             final double[] var = displacedSwapVariances.get(i + 1).variances();
-            for (int j = 0; j < i + 2; ++j) {
+            for ( int j = 0; j < i + 2; ++j ) {
                 secondRateVols[j] = Math.sqrt(var[j]);
             }
 
-            for (int k = 0; k < i + 1; k++) {
+            for ( int k = 0; k < i + 1; k++ ) {
                 double correlation = 0.0;
-                for (int l = 0; l < numberOfFactors; ++l) {
+                for ( int l = 0; l < numberOfFactors; ++l ) {
                     correlation += corrPseudo.get(k).get(i, l) * corrPseudo.get(k).get(i + 1, l);
                 }
                 correlations[k] = correlation;
@@ -158,7 +125,7 @@ public final class CTSMMCapletMaxHomogeneityCalibration extends CTSMMCapletCalib
 
             double w0 = invertedZedMatrix.get(i, i);
             final double w1 = invertedZedMatrix.get(i, i + 1);
-            for (int k = i + 2; k < invertedZedMatrix.columns(); ++k) {
+            for ( int k = i + 2; k < invertedZedMatrix.columns(); ++k ) {
                 w0 += invertedZedMatrix.get(i, k);
             }
 
@@ -167,18 +134,17 @@ public final class CTSMMCapletMaxHomogeneityCalibration extends CTSMMCapletCalib
             final double[] thisCapletErr = new double[1];
             final double[] thisSwaptionErr = new double[1];
 
-            final boolean success = singleRateClosestPointFinder(
-                    i, secondRateVols, firstSrc, targetCapletVariance, correlations,
-                    w0, w1, caplet0Swaption1Priority, maxIterations, tolerance,
-                    theseNewVols, thisFinalWeight, thisSwaptionErr, thisCapletErr);
+            final boolean success = singleRateClosestPointFinder(i, secondRateVols, firstSrc, targetCapletVariance,
+                    correlations, w0, w1, caplet0Swaption1Priority, maxIterations, tolerance, theseNewVols,
+                    thisFinalWeight, thisSwaptionErr, thisCapletErr);
 
             totalSwaptionError[0] += thisSwaptionErr[0] * thisSwaptionErr[0];
 
-            if (!success) ++failures;
+            if ( !success )
+                ++failures;
 
-            for (int j = 0; j < i + 2; ++j) {
-                deformationSize[0] += (theseNewVols[i] - secondRateVols[i])
-                        * (theseNewVols[i] - secondRateVols[i]);
+            for ( int j = 0; j < i + 2; ++j ) {
+                deformationSize[0] += (theseNewVols[i] - secondRateVols[i]) * (theseNewVols[i] - secondRateVols[i]);
             }
 
             newVols.add(theseNewVols.clone());
@@ -186,56 +152,37 @@ public final class CTSMMCapletMaxHomogeneityCalibration extends CTSMMCapletCalib
         }
 
         swapCovariancePseudoRoots.clear();
-        for (int k = 0; k < numberOfSteps; ++k) {
+        for ( int k = 0; k < numberOfSteps; ++k ) {
             final Matrix m = new Matrix(corrPseudo.get(k));  // copy
-            for (int j = 0; j < numberOfRates; ++j) {
+            for ( int j = 0; j < numberOfRates; ++j ) {
                 final double coeff = newVols.get(j)[k];
-                for (int i = 0; i < numberOfFactors; ++i) {
+                for ( int i = 0; i < numberOfFactors; ++i ) {
                     m.set(j, i, m.get(j, i) * coeff);
                 }
             }
             QL.require(m.rows() == numberOfRates,
-                    "step " + k + " abcd vol wrong number of rows: "
-                            + m.rows() + " instead of " + numberOfRates);
+                    "step " + k + " abcd vol wrong number of rows: " + m.rows() + " instead of " + numberOfRates);
             QL.require(m.columns() == numberOfFactors,
-                    "step " + k + " abcd vol wrong number of columns: "
-                            + m.columns() + " instead of " + numberOfFactors);
+                    "step " + k + " abcd vol wrong number of columns: " + m.columns() + " instead of "
+                            + numberOfFactors);
             swapCovariancePseudoRoots.add(m);
         }
 
         return failures;
     }
 
-    /** Inspector for the total swaption error. */
-    public double totalSwaptionError() {
-        QL.require(calibrated_, "not successfully calibrated yet");
-        return totalSwaptionError_;
-    }
-
-    // -- private --------------------------------------------------------------
-
     /** Mirrors the C++ namespace-level singleRateClosestPointFinder. */
-    private static boolean singleRateClosestPointFinder(
-            final int capletNumber,
-            final double[] homogeneousSolution,
-            final double[] previousRateSolution,
-            final double capletVariance,
-            final double[] correlations,
-            final double w0,
-            final double w1,
-            final double capletSwaptionPriority,
-            final int maxIterations,
-            final double tolerance,
-            final double[] solution,
-            final double finalWeight,
-            final double[] swaptionError,
+    private static boolean singleRateClosestPointFinder(final int capletNumber, final double[] homogeneousSolution,
+            final double[] previousRateSolution, final double capletVariance, final double[] correlations,
+            final double w0, final double w1, final double capletSwaptionPriority, final int maxIterations,
+            final double tolerance, final double[] solution, final double finalWeight, final double[] swaptionError,
             final double[] capletError) {
 
-        if (capletNumber == 0) {
+        if ( capletNumber == 0 ) {
             // single caplet special case
             final double previousSwapVariance = previousRateSolution[0] * previousRateSolution[0];
-            final double thisSwapVariance = homogeneousSolution[0] * homogeneousSolution[0]
-                    + homogeneousSolution[1] * homogeneousSolution[1];
+            final double thisSwapVariance =
+                    homogeneousSolution[0] * homogeneousSolution[0] + homogeneousSolution[1] * homogeneousSolution[1];
             final double crossTerm = 2 * w0 * w1 * correlations[0] * previousRateSolution[0];
             final double constantTerm = w0 * w0 * previousSwapVariance - capletVariance;
             final double theta = w1 * w1;
@@ -248,7 +195,7 @@ public final class CTSMMCapletMaxHomogeneityCalibration extends CTSMMCapletCalib
             final boolean swapSuccess = residual >= 0.0;
             final boolean success = capSuccess && swapSuccess;
 
-            if (success) {
+            if ( success ) {
                 solution[0] = volminus;
                 solution[1] = Math.sqrt(residual);
                 swaptionError[0] = 0.0;
@@ -258,14 +205,14 @@ public final class CTSMMCapletMaxHomogeneityCalibration extends CTSMMCapletCalib
 
             final boolean prioritizeCaplet = capletSwaptionPriority < 0.5;
 
-            if (capSuccess && prioritizeCaplet) {
+            if ( capSuccess && prioritizeCaplet ) {
                 solution[0] = volminus;
                 solution[1] = 0;
                 swaptionError[0] = Math.sqrt(thisSwapVariance) - volminus;
                 capletError[0] = 0.0;
                 return success;
             }
-            if (capSuccess) {
+            if ( capSuccess ) {
                 // !prioritizeCaplet
                 solution[0] = Math.sqrt(thisSwapVariance);
                 solution[1] = 0.0;
@@ -275,7 +222,7 @@ public final class CTSMMCapletMaxHomogeneityCalibration extends CTSMMCapletCalib
             }
 
             // caplets failed
-            if (swapSuccess) {
+            if ( swapSuccess ) {
                 solution[0] = volminus;
                 solution[1] = Math.sqrt(residual);
                 swaptionError[0] = 0.0;
@@ -283,7 +230,7 @@ public final class CTSMMCapletMaxHomogeneityCalibration extends CTSMMCapletCalib
                 return success;
             }
 
-            if (prioritizeCaplet) {
+            if ( prioritizeCaplet ) {
                 solution[0] = volminus;
                 solution[1] = 0;
                 swaptionError[0] = Math.sqrt(thisSwapVariance) - volminus;
@@ -300,7 +247,7 @@ public final class CTSMMCapletMaxHomogeneityCalibration extends CTSMMCapletCalib
         // general case
         double previousSwapVariance = 0.0;
         double thisSwapVariance = 0.0;
-        for (int i2 = 0; i2 < capletNumber + 1; ++i2) {
+        for ( int i2 = 0; i2 < capletNumber + 1; ++i2 ) {
             previousSwapVariance += previousRateSolution[i2] * previousRateSolution[i2];
             thisSwapVariance += homogeneousSolution[i2] * homogeneousSolution[i2];
         }
@@ -313,7 +260,7 @@ public final class CTSMMCapletMaxHomogeneityCalibration extends CTSMMCapletCalib
         final double[] targetArrayRestricted = new double[capletNumber + 1];
 
         double bsq = 0.0;
-        for (int i = 0; i < capletNumber + 1; ++i) {
+        for ( int i = 0; i < capletNumber + 1; ++i ) {
             bArr[i] = 2 * w0 * w1 * correlations[i] * previousRateSolution[i] / theta;
             cylinderCentre[i] = -0.5 * bArr[i];
             targetArray[i] = homogeneousSolution[i];
@@ -332,7 +279,7 @@ public final class CTSMMCapletMaxHomogeneityCalibration extends CTSMMCapletCalib
         final BasisIncompleteOrdered basis = new BasisIncompleteOrdered(capletNumber + 1);
         basis.addVector(cylinderCentre);
         basis.addVector(targetArrayRestricted);
-        for (int i = 0; i < capletNumber + 1; ++i) {
+        for ( int i = 0; i < capletNumber + 1; ++i ) {
             final double[] ei = new double[capletNumber + 1];
             ei[i] = 1.0;
             basis.addVector(ei);
@@ -340,12 +287,12 @@ public final class CTSMMCapletMaxHomogeneityCalibration extends CTSMMCapletCalib
 
         final Matrix orthTransformationRestricted = basis.getBasisAsRowsInMatrix();
         final Matrix orthTransformation = new Matrix(capletNumber + 2, capletNumber + 2);
-        for (int r = 0; r < capletNumber + 2; ++r)
-            for (int c = 0; c < capletNumber + 2; ++c)
+        for ( int r = 0; r < capletNumber + 2; ++r )
+            for ( int c = 0; c < capletNumber + 2; ++c )
                 orthTransformation.set(r, c, 0.0);
         orthTransformation.set(capletNumber + 1, capletNumber + 1, 1.0);
-        for (int k = 0; k < capletNumber + 1; ++k) {
-            for (int l = 0; l < capletNumber + 1; ++l) {
+        for ( int k = 0; k < capletNumber + 1; ++k ) {
+            for ( int l = 0; l < capletNumber + 1; ++l ) {
                 orthTransformation.set(k, l, orthTransformationRestricted.get(k, l));
             }
         }
@@ -359,17 +306,16 @@ public final class CTSMMCapletMaxHomogeneityCalibration extends CTSMMCapletCalib
 
         boolean success = false;
 
-        if (alpha <= 0.0) {
+        if ( alpha <= 0.0 ) {
             // SphereCylinderOptimizer ctor requires alpha > 0; treat as infeasible
             Z1 = R * capletSwaptionPriority + (1 - capletSwaptionPriority) * (-alpha - S);
             swaptionError[0] = Z1 - R;
             capletError[0] = (-alpha - S) - Z1;
         } else {
-            final SphereCylinderOptimizer optimizer = new SphereCylinderOptimizer(
-                    R, S, alpha, movedTarget[0], movedTarget[1], movedTarget[movedTarget.length - 1],
-                    finalWeight);
+            final SphereCylinderOptimizer optimizer = new SphereCylinderOptimizer(R, S, alpha, movedTarget[0],
+                    movedTarget[1], movedTarget[movedTarget.length - 1], finalWeight);
 
-            if (!optimizer.isIntersectionNonEmpty()) {
+            if ( !optimizer.isIntersectionNonEmpty() ) {
                 Z1 = R * capletSwaptionPriority + (1 - capletSwaptionPriority) * (alpha - S);
                 Z2 = 0.0;
                 Z3 = 0.0;
@@ -381,12 +327,14 @@ public final class CTSMMCapletMaxHomogeneityCalibration extends CTSMMCapletCalib
                 swaptionError[0] = 0.0;
 
                 final double[] y = new double[3];
-                if (maxIterations > 0) {
+                if ( maxIterations > 0 ) {
                     optimizer.findClosest(maxIterations, tolerance, y);
                 } else {
                     optimizer.findByProjection(y);
                 }
-                Z1 = y[0]; Z2 = y[1]; Z3 = y[2];
+                Z1 = y[0];
+                Z2 = y[1];
+                Z3 = y[2];
             }
         }
 
@@ -399,10 +347,10 @@ public final class CTSMMCapletMaxHomogeneityCalibration extends CTSMMCapletCalib
         final double[] arraySolution = matVec(orthTransposed, rotatedSolution);
 
         int idx = 0;
-        for (; idx < arraySolution.length; ++idx) {
+        for ( ; idx < arraySolution.length; ++idx ) {
             solution[idx] = arraySolution[idx];
         }
-        for (; idx < solution.length; ++idx) {
+        for ( ; idx < solution.length; ++idx ) {
             solution[idx] = 0.0;
         }
         return success;
@@ -413,13 +361,35 @@ public final class CTSMMCapletMaxHomogeneityCalibration extends CTSMMCapletCalib
         final int rows = m.rows();
         final int cols = m.columns();
         final double[] out = new double[rows];
-        for (int i = 0; i < rows; ++i) {
+        for ( int i = 0; i < rows; ++i ) {
             double s = 0.0;
-            for (int j = 0; j < cols && j < v.length; ++j) {
+            for ( int j = 0; j < cols && j < v.length; ++j ) {
                 s += m.get(i, j) * v[j];
             }
             out[i] = s;
         }
         return out;
+    }
+
+    // -- private --------------------------------------------------------------
+
+    @Override
+    protected int calibrationImpl(final int numberOfFactors, final int maxIterations, final double tolerance) {
+        final List< Matrix > result = new ArrayList<>();
+        final double[] deformation = new double[1];
+        final double[] swaptionErr = new double[1];
+        final int failures = capletMaxHomogeneityCalibration(evolution_, corr_, displacedSwapVariances_,
+                usedCapletVols_, cs_, displacement_, caplet0Swaption1Priority_, numberOfFactors, maxIterations,
+                tolerance, deformation, swaptionErr, result);
+        this.deformationSize_ = deformation[0];
+        this.totalSwaptionError_ = swaptionErr[0];
+        this.swapCovariancePseudoRoots_ = result;
+        return failures;
+    }
+
+    /** Inspector for the total swaption error. */
+    public double totalSwaptionError() {
+        QL.require(calibrated_, "not successfully calibrated yet");
+        return totalSwaptionError_;
     }
 }

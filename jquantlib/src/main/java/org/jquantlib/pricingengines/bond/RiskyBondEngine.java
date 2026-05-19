@@ -39,13 +39,12 @@ import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.time.Date;
 
 /**
- * Risky pricing engine for bonds — Java port of QuantLib v1.42.1
- * {@code RiskyBondEngine}
+ * Risky pricing engine for bonds — Java port of QuantLib v1.42.1 {@code RiskyBondEngine}
  * ({@code ql/pricingengines/bond/riskybondengine.{hpp,cpp}}).
  *
  * <p>The value of each cashflow is contingent on issuer survival; default
- * is assumed to occur in the middle of each coupon period and the recovery
- * payment is the time-{@code T_mid} notional fraction.
+ * is assumed to occur in the middle of each coupon period and the recovery payment is the time-{@code T_mid} notional
+ * fraction.
  *
  * <p>For each coupon period {@code [T_{i-1}, T_i]}:
  * <ul>
@@ -65,13 +64,12 @@ import org.jquantlib.time.Date;
  */
 public class RiskyBondEngine extends Bond.EngineImpl {
 
-    private final Handle<DefaultProbabilityTermStructure> defaultTS;
+    private final Handle< DefaultProbabilityTermStructure > defaultTS;
     private final double recoveryRate;
-    private final Handle<YieldTermStructure> yieldTS;
+    private final Handle< YieldTermStructure > yieldTS;
 
-    public RiskyBondEngine(final Handle<DefaultProbabilityTermStructure> defaultTS,
-                           final double recoveryRate,
-                           final Handle<YieldTermStructure> yieldTS) {
+    public RiskyBondEngine(final Handle< DefaultProbabilityTermStructure > defaultTS, final double recoveryRate,
+            final Handle< YieldTermStructure > yieldTS) {
         this.defaultTS = defaultTS;
         this.recoveryRate = recoveryRate;
         this.yieldTS = yieldTS;
@@ -79,7 +77,7 @@ public class RiskyBondEngine extends Bond.EngineImpl {
         this.yieldTS.addObserver(this);
     }
 
-    public Handle<DefaultProbabilityTermStructure> defaultTS() {
+    public Handle< DefaultProbabilityTermStructure > defaultTS() {
         return defaultTS;
     }
 
@@ -87,14 +85,14 @@ public class RiskyBondEngine extends Bond.EngineImpl {
         return recoveryRate;
     }
 
-    public Handle<YieldTermStructure> yieldTS() {
+    public Handle< YieldTermStructure > yieldTS() {
         return yieldTS;
     }
 
     @Override
     public void calculate() {
         final Bond.ArgumentsImpl a = (Bond.ArgumentsImpl) arguments_;
-        final Bond.ResultsImpl   r = (Bond.ResultsImpl)   results_;
+        final Bond.ResultsImpl r = (Bond.ResultsImpl) results_;
 
         final Date npvDate = yieldTS.currentLink().referenceDate();
         final Date settlementDate = a.settlementDate;
@@ -106,11 +104,9 @@ public class RiskyBondEngine extends Bond.EngineImpl {
         // inline the C++-faithful traversal here. Mirrors
         // {@code ql/cashflows/cashflows.cpp:38-50}.
         Date startDate = Date.maxDate();
-        for (int i = 0; i < cashflows.size(); ++i) {
+        for ( int i = 0; i < cashflows.size(); ++i ) {
             final CashFlow ci = cashflows.get(i);
-            final Date di = (ci instanceof Coupon)
-                    ? ((Coupon) ci).accrualStartDate()
-                    : ci.date();
+            final Date di = (ci instanceof Coupon) ? ((Coupon) ci).accrualStartDate() : ci.date();
             startDate = Date.min(startDate, di);
         }
 
@@ -122,32 +118,30 @@ public class RiskyBondEngine extends Bond.EngineImpl {
         double NPV = 0.0;
         double settlementValue = 0.0;
 
-        for (int i = 0; i < cashflows.size(); ++i) {
+        for ( int i = 0; i < cashflows.size(); ++i ) {
             final CashFlow cf = cashflows.get(i);
             final Date d2 = cf.date();
-            if (d2.gt(npvDate)) {
-                final double weightedCouponAmount =
-                        cf.amount() * defaultTS.currentLink().survivalProbability(d2);
+            if ( d2.gt(npvDate) ) {
+                final double weightedCouponAmount = cf.amount() * defaultTS.currentLink().survivalProbability(d2);
                 final double discToD2 = yieldTS.currentLink().discount(d2);
                 NPV += weightedCouponAmount * discToD2;
-                if (d2.gt(settlementDate)) {
+                if ( d2.gt(settlementDate) ) {
                     settlementValue += weightedCouponAmount * discToD2;
                 }
 
-                if (cf instanceof Coupon) {
+                if ( cf instanceof Coupon ) {
                     final Coupon coupon = (Coupon) cf;
                     // C++: Date defaultDate = d1 + (d2 - d1) / 2.
                     final long span = d2.sub(d1);
                     final Date defaultDate = d1.add((int) (span / 2));
 
                     final double survivalDiff =
-                            defaultTS.currentLink().survivalProbability(d1)
-                            - defaultTS.currentLink().survivalProbability(d2);
-                    final double weightedRecovery =
-                            coupon.nominal() * recoveryRate * survivalDiff;
+                            defaultTS.currentLink().survivalProbability(d1) - defaultTS.currentLink()
+                                    .survivalProbability(d2);
+                    final double weightedRecovery = coupon.nominal() * recoveryRate * survivalDiff;
                     final double discToMid = yieldTS.currentLink().discount(defaultDate);
                     NPV += weightedRecovery * discToMid;
-                    if (d2.gt(settlementDate)) {
+                    if ( d2.gt(settlementDate) ) {
                         settlementValue += weightedRecovery * discToMid;
                     }
                     d1 = d2.clone();

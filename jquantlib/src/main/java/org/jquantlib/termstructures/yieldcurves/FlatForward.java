@@ -57,28 +57,22 @@ import org.jquantlib.util.Observer;
 /**
  * Flat interest-rate curve
  *
- * @category yieldtermstructures
- *
  * @author Richard Gomes
+ * @category yieldtermstructures
  */
 public class FlatForward extends AbstractYieldTermStructure {
 
-    private final Handle<? extends Quote> forward;
+    private final Handle< ? extends Quote > forward;
     private final Compounding compounding;
     private final Frequency frequency;
     private InterestRate rate;
-
 
     //
     // public constructors
     //
 
-    public FlatForward(
-            final Date referenceDate,
-            final Handle<? extends Quote> forward,
-            final DayCounter dayCounter,
-            final Compounding compounding,
-            final Frequency frequency) {
+    public FlatForward(final Date referenceDate, final Handle< ? extends Quote > forward, final DayCounter dayCounter,
+            final Compounding compounding, final Frequency frequency) {
         super(referenceDate, new NullCalendar(), dayCounter);
         this.compounding = compounding;
         this.frequency = frequency;
@@ -87,60 +81,39 @@ public class FlatForward extends AbstractYieldTermStructure {
         updateRate();
     }
 
-    public FlatForward(
-            final Date referenceDate,
-            final Handle<? extends Quote> forward,
-            final DayCounter dayCounter,
+    public FlatForward(final Date referenceDate, final Handle< ? extends Quote > forward, final DayCounter dayCounter,
             final Compounding compounding) {
         this(referenceDate, forward, dayCounter, compounding, Frequency.Annual);
     }
 
-    public FlatForward(
-            final Date referenceDate,
-            final Handle<? extends Quote> forward,
-            final DayCounter dayCounter) {
+    public FlatForward(final Date referenceDate, final Handle< ? extends Quote > forward, final DayCounter dayCounter) {
         this(referenceDate, forward, dayCounter, Compounding.Continuous);
     }
 
     // --------------------------------------------
 
-    public FlatForward(
-            final Date referenceDate,
-            final /*@Rate*/ double forward,
-            final DayCounter dayCounter,
-            final Compounding compounding,
-            final Frequency frequency) {
+    public FlatForward(final Date referenceDate, final /*@Rate*/ double forward, final DayCounter dayCounter,
+            final Compounding compounding, final Frequency frequency) {
         super(referenceDate, new NullCalendar(), dayCounter);
-        this.forward = new Handle<SimpleQuote>(new SimpleQuote(forward));
+        this.forward = new Handle< SimpleQuote >(new SimpleQuote(forward));
         this.compounding = compounding;
         this.frequency = frequency;
         updateRate();
     }
 
-    public FlatForward(
-            final Date referenceDate,
-            final /*@Rate*/ double forward,
-            final DayCounter dayCounter,
+    public FlatForward(final Date referenceDate, final /*@Rate*/ double forward, final DayCounter dayCounter,
             final Compounding compounding) {
         this(referenceDate, forward, dayCounter, compounding, Frequency.Annual);
     }
 
-    public FlatForward(
-            final Date referenceDate,
-            final /*@Rate*/ double forward,
-            final DayCounter dayCounter) {
+    public FlatForward(final Date referenceDate, final /*@Rate*/ double forward, final DayCounter dayCounter) {
         this(referenceDate, forward, dayCounter, Compounding.Continuous);
     }
 
     // --------------------------------------------
 
-    public FlatForward(
-            final int settlementDays,
-            final Calendar calendar,
-            final Handle<? extends Quote> forward,
-            final DayCounter dayCounter,
-            final Compounding compounding,
-            final Frequency frequency) {
+    public FlatForward(final int settlementDays, final Calendar calendar, final Handle< ? extends Quote > forward,
+            final DayCounter dayCounter, final Compounding compounding, final Frequency frequency) {
         super(settlementDays, calendar, dayCounter);
         this.compounding = compounding;
         this.frequency = frequency;
@@ -149,56 +122,36 @@ public class FlatForward extends AbstractYieldTermStructure {
         updateRate();
     }
 
-    public FlatForward(
-            final int settlementDays,
-            final Calendar calendar,
-            final Handle<? extends Quote> forward,
+    public FlatForward(final int settlementDays, final Calendar calendar, final Handle< ? extends Quote > forward,
             final DayCounter dayCounter) {
         this(settlementDays, calendar, forward, dayCounter, Compounding.Continuous);
     }
 
-    public FlatForward(
-            final int settlementDays,
-            final Calendar calendar,
-            final Handle<? extends Quote> forward,
-            final DayCounter dayCounter,
-            final Compounding compounding) {
+    public FlatForward(final int settlementDays, final Calendar calendar, final Handle< ? extends Quote > forward,
+            final DayCounter dayCounter, final Compounding compounding) {
         this(settlementDays, calendar, forward, dayCounter, compounding, Frequency.Annual);
     }
 
     // --------------------------------------------
 
-    public FlatForward(
-            final int settlementDays,
-            final Calendar calendar,
-            final /*@Rate*/ double forward,
-            final DayCounter dayCounter,
-            final Compounding compounding,
-            final Frequency frequency) {
+    public FlatForward(final int settlementDays, final Calendar calendar, final /*@Rate*/ double forward,
+            final DayCounter dayCounter, final Compounding compounding, final Frequency frequency) {
         super(settlementDays, calendar, dayCounter);
-        this.forward = new Handle<Quote>(new SimpleQuote(forward));
+        this.forward = new Handle< Quote >(new SimpleQuote(forward));
         this.compounding = compounding;
         this.frequency = frequency;
         updateRate();
     }
 
-    public FlatForward(
-            final int settlementDays,
-            final Calendar calendar,
-            final /*@Rate*/ double forward,
+    public FlatForward(final int settlementDays, final Calendar calendar, final /*@Rate*/ double forward,
             final DayCounter dayCounter) {
         this(settlementDays, calendar, forward, dayCounter, Compounding.Continuous);
     }
 
-    public FlatForward(
-            final int settlementDays,
-            final Calendar calendar,
-            final /*@Rate*/ double forward,
-            final DayCounter dayCounter,
-            final Compounding compounding) {
+    public FlatForward(final int settlementDays, final Calendar calendar, final /*@Rate*/ double forward,
+            final DayCounter dayCounter, final Compounding compounding) {
         this(settlementDays, calendar, forward, dayCounter, compounding, Frequency.Annual);
     }
-
 
     //
     // public methods
@@ -212,7 +165,6 @@ public class FlatForward extends AbstractYieldTermStructure {
         return frequency;
     }
 
-
     //
     // private methods
     //
@@ -220,7 +172,6 @@ public class FlatForward extends AbstractYieldTermStructure {
     private void updateRate() {
         rate = new InterestRate(forward.currentLink().value(), this.dayCounter(), this.compounding, this.frequency);
     }
-
 
     //
     // overrides YieldTermStructure
@@ -239,7 +190,6 @@ public class FlatForward extends AbstractYieldTermStructure {
     public final Date maxDate() {
         return Date.maxDate();
     }
-
 
     //
     // implements Observer interface

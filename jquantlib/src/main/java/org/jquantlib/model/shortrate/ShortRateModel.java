@@ -46,15 +46,13 @@ import org.jquantlib.methods.lattices.Lattice;
 import org.jquantlib.model.CalibratedModel;
 import org.jquantlib.time.TimeGrid;
 
-
 /**
  * Abstract short-rate model class
- * 
- * @category shortrate
- * 
+ *
  * @author Praneet Tiwari
+ * @category shortrate
  */
-@QualityAssurance(quality=Quality.Q3_DOCUMENTATION, version=Version.V097, reviewers="Richard Gomes")
+@QualityAssurance( quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = "Richard Gomes" )
 public abstract class ShortRateModel extends CalibratedModel {
 
     //
@@ -65,11 +63,10 @@ public abstract class ShortRateModel extends CalibratedModel {
         super(nArguments);
     }
 
-
     //
     // public abstract methods
     //
 
-    public abstract  Lattice tree(final TimeGrid  ref) /* @ReadOnly */ ;
+    public abstract Lattice tree(final TimeGrid ref) /* @ReadOnly */;
 
 }

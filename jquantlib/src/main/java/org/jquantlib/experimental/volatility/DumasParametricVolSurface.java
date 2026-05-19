@@ -33,30 +33,24 @@ import org.jquantlib.time.Date;
 import org.jquantlib.time.calendars.NullCalendar;
 
 /**
- * Five-parameter Dumas parametric Black-volatility surface
- * (Borovkova / Permana, "Implied volatility in oil markets").
+ * Five-parameter Dumas parametric Black-volatility surface (Borovkova / Permana, "Implied volatility in oil markets").
  *
  * <p>Java port of the inline reference helper in v1.42.1
- * {@code test-suite/riskneutraldensitycalculator.cpp} (lines 213-249).
- * QuantLib does not ship a public {@code DumasParametricVolSurface} in
- * {@code ql/...}; the class lives only in the test suite. We promote it
- * to {@code org.jquantlib.experimental.volatility} so the Java port of
- * {@code RiskNeutralDensityCalculatorTest} (and any downstream user)
- * can wire it up the same way.
+ * {@code test-suite/riskneutraldensitycalculator.cpp} (lines 213-249). QuantLib does not ship a public
+ * {@code DumasParametricVolSurface} in {@code ql/...}; the class lives only in the test suite. We promote it to
+ * {@code org.jquantlib.experimental.volatility} so the Java port of {@code RiskNeutralDensityCalculatorTest} (and any
+ * downstream user) can wire it up the same way.
  *
  * <p>Surface formula:
  * <pre>
  *   blackVol(t, K) = b1 + b2 * mn + b3 * mn^2 + b4 * t + b5 * mn * t
  * </pre>
- * where {@code mn = ln(F / K) / sqrt(t)} is moneyness on the
- * standard-deviation scale and {@code F = spot * q.discount(t) /
- * r.discount(t)} is the forward.
+ * where {@code mn = ln(F / K) / sqrt(t)} is moneyness on the standard-deviation scale and
+ * {@code F = spot * q.discount(t) / r.discount(t)} is the forward.
  *
  * <p>At {@code t = 0} the formula reduces to the at-the-money level
- * {@code b1}. Negative blackVol is mathematically possible for
- * pathological parameter sets — callers should pair this with
- * {@link NoExceptLocalVolSurface} when feeding into a Dupire
- * derivation.
+ * {@code b1}. Negative blackVol is mathematically possible for pathological parameter sets — callers should pair this
+ * with {@link NoExceptLocalVolSurface} when feeding into a Dupire derivation.
  *
  * <p>Reference: Svetlana Borovkova, Ferry J. Permana,
  * <em>Implied volatility in oil markets</em>,
@@ -67,31 +61,24 @@ import org.jquantlib.time.calendars.NullCalendar;
 public class DumasParametricVolSurface extends BlackVolatilityTermStructure {
 
     private final double b1_, b2_, b3_, b4_, b5_;
-    private final Handle<? extends Quote> spot_;
-    private final Handle<YieldTermStructure> rTS_;
-    private final Handle<YieldTermStructure> qTS_;
+    private final Handle< ? extends Quote > spot_;
+    private final Handle< YieldTermStructure > rTS_;
+    private final Handle< YieldTermStructure > qTS_;
 
-    public DumasParametricVolSurface(final double b1,
-                                     final double b2,
-                                     final double b3,
-                                     final double b4,
-                                     final double b5,
-                                     final Handle<? extends Quote> spot,
-                                     final Handle<YieldTermStructure> rTS,
-                                     final Handle<YieldTermStructure> qTS) {
+    public DumasParametricVolSurface(final double b1, final double b2, final double b3, final double b4,
+            final double b5, final Handle< ? extends Quote > spot, final Handle< YieldTermStructure > rTS,
+            final Handle< YieldTermStructure > qTS) {
         // C++: BlackVolatilityTermStructure(0, NullCalendar(), Following, rTS->dayCounter())
-        super(0 /* settlement days */,
-              new NullCalendar(),
-              BusinessDayConvention.Following,
-              rTS.currentLink().dayCounter());
+        super(0 /* settlement days */, new NullCalendar(), BusinessDayConvention.Following,
+                rTS.currentLink().dayCounter());
         this.b1_ = b1;
         this.b2_ = b2;
         this.b3_ = b3;
         this.b4_ = b4;
         this.b5_ = b5;
         this.spot_ = spot;
-        this.rTS_  = rTS;
-        this.qTS_  = qTS;
+        this.rTS_ = rTS;
+        this.qTS_ = qTS;
 
         // Observer wiring so callers re-pricing on quote changes notice.
         this.spot_.addObserver(this);
@@ -116,24 +103,22 @@ public class DumasParametricVolSurface extends BlackVolatilityTermStructure {
     }
 
     /**
-     * Implements the Dumas parametric surface:
-     * {@code b1 + b2*mn + b3*mn^2 + b4*t + b5*mn*t}.
+     * Implements the Dumas parametric surface: {@code b1 + b2*mn + b3*mn^2 + b4*t + b5*mn*t}.
      *
      * <p>Mirrors v1.42.1 verbatim, including the {@code t < QL_EPSILON}
      * short-circuit to {@code b1}.
      */
     @Override
-    protected /*@Volatility*/ double blackVolImpl(final /*@Time*/ double t,
-                                                  final /*@Real*/ double strike) {
+    protected /*@Volatility*/ double blackVolImpl(final /*@Time*/ double t, final /*@Real*/ double strike) {
         QL.require(t >= 0.0, "t must be >= 0");
 
-        if (t < Constants.QL_EPSILON) {
+        if ( t < Constants.QL_EPSILON ) {
             return b1_;
         }
 
-        final double fwd = spot_.currentLink().value()
-                * qTS_.currentLink().discount(t) / rTS_.currentLink().discount(t);
-        final double mn  = Math.log(fwd / strike) / Math.sqrt(t);
+        final double fwd =
+                spot_.currentLink().value() * qTS_.currentLink().discount(t) / rTS_.currentLink().discount(t);
+        final double mn = Math.log(fwd / strike) / Math.sqrt(t);
 
         return b1_ + b2_ * mn + b3_ * mn * mn + b4_ * t + b5_ * mn * t;
     }

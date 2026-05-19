@@ -23,31 +23,28 @@
 package org.jquantlib.util;
 
 /**
- * This interface defines the {@link Visitable} side of the Visitor design pattern 
+ * This interface defines the {@link Visitable} side of the Visitor design pattern
  *
+ * @param <T> defines de data structure to be visited
  * @author Richard Gomes
- * 
  * @see Visitor
  * @see PolymorphicVisitor
  * @see PolymorphicVisitable
- * 
- * @see <a href="http://www.exciton.cs.rice.edu/JavaResources/DesignPatterns/VisitorPattern.htm">The Visitor Design Pattern</a>
- *
- * @param <T> defines de data structure to be visited
+ * @see <a href="http://www.exciton.cs.rice.edu/JavaResources/DesignPatterns/VisitorPattern.htm">The Visitor Design
+ * Pattern</a>
  */
-public interface Visitable<T> {
+public interface Visitable< T > {
 
-	/**
-	 * This method is responsible for determining if a Visitor passed as argument is eligible for handling the data structures
-	 * kept by <code>this</code> class. In the affirmative case, <code>accept</code> is responsible for passing <code>this</code>
-	 * data structures to the Visitor. 
-	 * 
-	 * @param v is the Visitor<T>
-	 * 
-	 * @see Visitor
-	 * @see PolymorphicVisitor
-	 * @see PolymorphicVisitable
-	 */
-    public void accept(Visitor<T> v);
-	
+    /**
+     * This method is responsible for determining if a Visitor passed as argument is eligible for handling the data
+     * structures kept by <code>this</code> class. In the affirmative case, <code>accept</code> is responsible for
+     * passing <code>this</code> data structures to the Visitor.
+     *
+     * @param v is the Visitor<T>
+     * @see Visitor
+     * @see PolymorphicVisitor
+     * @see PolymorphicVisitable
+     */
+    void accept(Visitor< T > v);
+
 }

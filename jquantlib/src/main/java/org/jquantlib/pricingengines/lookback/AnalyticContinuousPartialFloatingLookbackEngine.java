@@ -38,8 +38,7 @@ import org.jquantlib.termstructures.Compounding;
 import org.jquantlib.time.Frequency;
 
 /**
- * Pricing engine for European continuous partial-time floating-strike
- * lookback options.
+ * Pricing engine for European continuous partial-time floating-strike lookback options.
  *
  * <p>Formula from "Option Pricing Formulas, Second Edition", E.G. Haug,
  * 2006, p.146 (Heynen-Kat 1994 partial-time lookback).
@@ -59,7 +58,7 @@ public class AnalyticContinuousPartialFloatingLookbackEngine
     private final CumulativeNormalDistribution f;
 
     private final ContinuousPartialFloatingLookbackOption.ArgumentsImpl a;
-    private final ContinuousPartialFloatingLookbackOption.ResultsImpl   r;
+    private final ContinuousPartialFloatingLookbackOption.ResultsImpl r;
 
     public AnalyticContinuousPartialFloatingLookbackEngine(final GeneralizedBlackScholesProcess process) {
         this.process = process;
@@ -75,15 +74,15 @@ public class AnalyticContinuousPartialFloatingLookbackEngine
         final FloatingTypePayoff payoff = (FloatingTypePayoff) a.payoff;
         QL.require(underlying() > 0.0, NEGATIVE_OR_NULL_UNDERLYING);
 
-        switch (payoff.optionType()) {
-            case Call:
-                r.value = A(1);
-                break;
-            case Put:
-                r.value = A(-1);
-                break;
-            default:
-                throw new LibraryException(UNKNOWN_TYPE);
+        switch ( payoff.optionType() ) {
+        case Call:
+            r.value = A(1);
+            break;
+        case Put:
+            r.value = A(-1);
+            break;
+        default:
+            throw new LibraryException(UNKNOWN_TYPE);
         }
     }
 
@@ -104,8 +103,8 @@ public class AnalyticContinuousPartialFloatingLookbackEngine
     }
 
     private double riskFreeRate() {
-        return process.riskFreeRate().currentLink().zeroRate(
-                residualTime(), Compounding.Continuous, Frequency.NoFrequency, false).rate();
+        return process.riskFreeRate().currentLink()
+                .zeroRate(residualTime(), Compounding.Continuous, Frequency.NoFrequency, false).rate();
     }
 
     private double riskFreeDiscount() {
@@ -113,8 +112,8 @@ public class AnalyticContinuousPartialFloatingLookbackEngine
     }
 
     private double dividendYield() {
-        return process.dividendYield().currentLink().zeroRate(
-                residualTime(), Compounding.Continuous, Frequency.NoFrequency, false).rate();
+        return process.dividendYield().currentLink()
+                .zeroRate(residualTime(), Compounding.Continuous, Frequency.NoFrequency, false).rate();
     }
 
     private double dividendDiscount() {
@@ -134,12 +133,10 @@ public class AnalyticContinuousPartialFloatingLookbackEngine
     }
 
     /**
-     * Heynen-Kat partial-time floating-strike formula. {@code eta = +1} for
-     * call, {@code -1} for put.
+     * Heynen-Kat partial-time floating-strike formula. {@code eta = +1} for call, {@code -1} for put.
      *
      * <p>Branches on whether {@code lookbackPeriodEndTime == residualTime}
-     * (full lookback period — simpler) or strictly less (partial period —
-     * full bivariate-normal expansion).
+     * (full lookback period — simpler) or strictly less (partial period — full bivariate-normal expansion).
      */
     private double A(final double eta) {
         final boolean fullLookbackPeriod = lookbackPeriodEndTime() == residualTime();
@@ -154,14 +151,14 @@ public class AnalyticContinuousPartialFloatingLookbackEngine
         final double d2 = d1 - sd;
 
         double e1 = 0.0, e2 = 0.0;
-        if (!fullLookbackPeriod) {
+        if ( !fullLookbackPeriod ) {
             final double tau = residualTime() - lookbackPeriodEndTime();
             e1 = (carry + vol * vol / 2.0) * tau / (vol * Math.sqrt(tau));
             e2 = e1 - vol * Math.sqrt(tau);
         }
 
-        final double f1 = (ls + (carry + vol * vol / 2.0) * lookbackPeriodEndTime())
-                / (vol * Math.sqrt(lookbackPeriodEndTime()));
+        final double f1 =
+                (ls + (carry + vol * vol / 2.0) * lookbackPeriodEndTime()) / (vol * Math.sqrt(lookbackPeriodEndTime()));
         final double f2 = f1 - vol * Math.sqrt(lookbackPeriodEndTime());
 
         final double l1 = Math.log(lambda()) / vol;
@@ -173,16 +170,16 @@ public class AnalyticContinuousPartialFloatingLookbackEngine
         BivariateNormalDistribution cnbn1 = new BivariateNormalDistribution(1);
         BivariateNormalDistribution cnbn2 = new BivariateNormalDistribution(0);
         BivariateNormalDistribution cnbn3 = new BivariateNormalDistribution(-1);
-        if (!fullLookbackPeriod) {
+        if ( !fullLookbackPeriod ) {
             cnbn1 = new BivariateNormalDistribution(Math.sqrt(lookbackPeriodEndTime() / residualTime()));
             cnbn2 = new BivariateNormalDistribution(-Math.sqrt(1 - lookbackPeriodEndTime() / residualTime()));
             cnbn3 = new BivariateNormalDistribution(-Math.sqrt(lookbackPeriodEndTime() / residualTime()));
         }
 
         final double n3 = cnbn1.op(eta * (-f1 + 2.0 * carry * Math.sqrt(lookbackPeriodEndTime()) / vol),
-                                   eta * (-d1 + x * sd - g1));
+                eta * (-d1 + x * sd - g1));
         double n4 = 0.0, n5 = 0.0, n6 = 0.0, n7 = 0.0;
-        if (!fullLookbackPeriod) {
+        if ( !fullLookbackPeriod ) {
             final double tau = residualTime() - lookbackPeriodEndTime();
             final double g2 = l1 / Math.sqrt(tau);
             n4 = cnbn2.op(-eta * (d1 + g1), eta * (e1 + g2));
@@ -197,22 +194,18 @@ public class AnalyticContinuousPartialFloatingLookbackEngine
         final double pow_s = Math.pow(s, -x);
         final double pow_l = Math.pow(lambda(), x);
 
-        if (!fullLookbackPeriod) {
-            return eta * (underlying() * dividendDiscount() * n1 -
-                          lambda() * minmax() * riskFreeDiscount() * n2 +
-                          underlying() * riskFreeDiscount() * lambda() / x *
-                          (pow_s * n3 - dividendDiscount() / riskFreeDiscount() * pow_l * n4)
-                          + underlying() * dividendDiscount() * n5 +
-                          riskFreeDiscount() * lambda() * minmax() * n6 -
-                          Math.exp(-carry * (residualTime() - lookbackPeriodEndTime())) *
-                          dividendDiscount() * (1 + 0.5 * vol * vol / carry) * lambda() *
-                          underlying() * n7 * n8);
+        if ( !fullLookbackPeriod ) {
+            return eta * (underlying() * dividendDiscount() * n1 - lambda() * minmax() * riskFreeDiscount() * n2
+                    + underlying() * riskFreeDiscount() * lambda() / x * (pow_s * n3
+                    - dividendDiscount() / riskFreeDiscount() * pow_l * n4) + underlying() * dividendDiscount() * n5
+                    + riskFreeDiscount() * lambda() * minmax() * n6
+                    - Math.exp(-carry * (residualTime() - lookbackPeriodEndTime())) * dividendDiscount() * (1
+                    + 0.5 * vol * vol / carry) * lambda() * underlying() * n7 * n8);
         } else {
             // Simpler calculation
-            return eta * (underlying() * dividendDiscount() * n1 -
-                          lambda() * minmax() * riskFreeDiscount() * n2 +
-                          underlying() * riskFreeDiscount() * lambda() / x *
-                          (pow_s * n3 - dividendDiscount() / riskFreeDiscount() * pow_l * n4));
+            return eta * (underlying() * dividendDiscount() * n1 - lambda() * minmax() * riskFreeDiscount() * n2
+                    + underlying() * riskFreeDiscount() * lambda() / x * (pow_s * n3
+                    - dividendDiscount() / riskFreeDiscount() * pow_l * n4));
         }
     }
 }

@@ -23,14 +23,11 @@ When applicable, the original copyright notice follows this notice.
  */
 package org.jquantlib.model.shortrate.twofactormodels;
 
-import static org.jquantlib.pricingengines.BlackFormula.blackFormula;
-
 import org.jquantlib.QL;
 import org.jquantlib.cashflow.Coupon;
 import org.jquantlib.cashflow.Leg;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.instruments.Option;
-import org.jquantlib.instruments.Swap;
 import org.jquantlib.instruments.Swaption;
 import org.jquantlib.instruments.VanillaSwap;
 import org.jquantlib.lang.annotation.QualityAssurance;
@@ -57,26 +54,24 @@ import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Frequency;
 
+import static org.jquantlib.pricingengines.BlackFormula.blackFormula;
+
 /**
  * Two-additive-factor gaussian model class.
  * <p>
- * This class implements a two-additive-factor model defined by {@latex$ dr_t = \varphi(t) + x_t + y_t }
- * where {@latex$ x_t } and {@latex$ y_t } are defined by
- * {@latex[ dx_t = -a x_t dt + \sigma dW^1_t, x_0 = 0 }
+ * This class implements a two-additive-factor model defined by {@latex$ dr_t = \varphi(t) + x_t + y_t } where
+ * {@latex$ x_t } and {@latex$ y_t } are defined by {@latex[ dx_t = -a x_t dt + \sigma dW^1_t, x_0 = 0 }
  * {@latex[ dy_t = -b y_t dt + \sigma dW^2_t, y_0 = 0 } and {@latex$ dW^1_t dW^2_t = \rho dt }
- *
- * @note This class was not tested enough to guarantee its functionality.
- *
- * @category shortrate
  *
  * @author Praneet Tiwari
  * @author Richard Gomes
+ * @note This class was not tested enough to guarantee its functionality.
+ * @category shortrate
  */
-@QualityAssurance(quality=Quality.Q1_TRANSLATION, version=Version.V097, reviewers="Richard Gomes")
+@QualityAssurance( quality = Quality.Q1_TRANSLATION, version = Version.V097, reviewers = "Richard Gomes" )
 public class G2 extends TwoFactorModel implements AffineModel, TermStructureConsistentModel {
 
-    private static final String g2_model_needs_two_factors =
-            "g2 model needs two factors to compute discount bond";
+    private static final String g2_model_needs_two_factors = "g2 model needs two factors to compute discount bond";
 
     // Phase 2e WI-1: TermStructureConsistentModel is implemented by composition
     // (Java single-inheritance limit — TwoFactorModel extends ShortRateModel).
@@ -91,46 +86,31 @@ public class G2 extends TwoFactorModel implements AffineModel, TermStructureCons
     // outside arguments_ because it is not part of the calibratable vector.
     private Parameter phi_;
 
-    public G2(final Handle<YieldTermStructure> termStructure) {
+    public G2(final Handle< YieldTermStructure > termStructure) {
         this(termStructure, 0.1, 0.01, 0.1, 0.01, -0.75);
     }
 
-    public G2(
-            final Handle<YieldTermStructure> termStructure,
-            final double /* @Real */ a) {
+    public G2(final Handle< YieldTermStructure > termStructure, final double /* @Real */ a) {
         this(termStructure, a, 0.01, 0.1, 0.01, -0.75);
     }
 
-    public G2(
-            final Handle<YieldTermStructure> termStructure,
-            final double /* @Real */ a,
+    public G2(final Handle< YieldTermStructure > termStructure, final double /* @Real */ a,
             final double /* @Real */ sigma) {
         this(termStructure, a, sigma, 0.1, 0.01, -0.75);
     }
 
-    public G2(
-            final Handle<YieldTermStructure> termStructure,
-            final double /* @Real */ a,
-            final double /* @Real */ sigma,
-            final double /* @Real */ b) {
+    public G2(final Handle< YieldTermStructure > termStructure, final double /* @Real */ a,
+            final double /* @Real */ sigma, final double /* @Real */ b) {
         this(termStructure, a, sigma, b, 0.01, -0.75);
     }
 
-    public G2(
-            final Handle<YieldTermStructure> termStructure,
-            final double /* @Real */ a,
-            final double /* @Real */ sigma,
-            final double /* @Real */ b,
-            final double /* @Real */ eta) {
+    public G2(final Handle< YieldTermStructure > termStructure, final double /* @Real */ a,
+            final double /* @Real */ sigma, final double /* @Real */ b, final double /* @Real */ eta) {
         this(termStructure, a, sigma, b, eta, -0.75);
     }
 
-    public G2(
-            final Handle<YieldTermStructure> termStructure,
-            final double /* @Real */ a,
-            final double /* @Real */ sigma,
-            final double /* @Real */ b,
-            final double /* @Real */ eta,
+    public G2(final Handle< YieldTermStructure > termStructure, final double /* @Real */ a,
+            final double /* @Real */ sigma, final double /* @Real */ b, final double /* @Real */ eta,
             final double /* @Real */ rho) {
         super(5);
 
@@ -138,17 +118,16 @@ public class G2 extends TwoFactorModel implements AffineModel, TermStructureCons
         // Phase 2e WI-1: write Parameters directly into arguments_ so the
         // calibratable vector and the read accessors share one source of
         // truth (replaces C++'s Parameter& reference-binding pattern).
-        arguments_.set(0, new ConstantParameter(a,     new PositiveConstraint()));
+        arguments_.set(0, new ConstantParameter(a, new PositiveConstraint()));
         arguments_.set(1, new ConstantParameter(sigma, new PositiveConstraint()));
-        arguments_.set(2, new ConstantParameter(b,     new PositiveConstraint()));
-        arguments_.set(3, new ConstantParameter(eta,   new PositiveConstraint()));
-        arguments_.set(4, new ConstantParameter(rho,   new BoundaryConstraint(-1.0, 1.0)));
+        arguments_.set(2, new ConstantParameter(b, new PositiveConstraint()));
+        arguments_.set(3, new ConstantParameter(eta, new PositiveConstraint()));
+        arguments_.set(4, new ConstantParameter(rho, new BoundaryConstraint(-1.0, 1.0)));
 
         generateArguments();
 
         termStructure.addObserver(this);
     }
-
 
     //
     // public methods
@@ -162,11 +141,10 @@ public class G2 extends TwoFactorModel implements AffineModel, TermStructureCons
     /**
      * Two-factor discount bond closed form.
      * <p>
-     * Mirrors C++ v1.42.1 g2.cpp:
-     * {@code A(t,T) * exp(-B(a,T-t)*x - B(b,T-t)*y)}.
+     * Mirrors C++ v1.42.1 g2.cpp: {@code A(t,T) * exp(-B(a,T-t)*x - B(b,T-t)*y)}.
      */
-    public double discountBond(final double /* @Time */ t, final double /* @Time */ T,
-                               final double /* @Real */ x, final double /* @Real */ y) {
+    public double discountBond(final double /* @Time */ t, final double /* @Time */ T, final double /* @Real */ x,
+            final double /* @Real */ y) {
         return A(t, T) * Math.exp(-B(a(), T - t) * x - B(b(), T - t) * y);
     }
 
@@ -177,15 +155,14 @@ public class G2 extends TwoFactorModel implements AffineModel, TermStructureCons
     }
 
     @Override
-    public double /* @Real */ discountBondOption(
-            final Option.Type type,
-            final double /* @Real */ strike,
-            final double /* @Time */ maturity,
-            final double /* @Time */ bondMaturity) {
+    public double /* @Real */ discountBondOption(final Option.Type type, final double /* @Real */ strike,
+            final double /* @Time */ maturity, final double /* @Time */ bondMaturity) {
 
         final double /* @Real */ v = sigmaP(maturity, bondMaturity);
-        final double /* @Real */ f = termStructureConsistentModelClass.termStructure().currentLink().discount(bondMaturity);
-        final double /* @Real */ k = termStructureConsistentModelClass.termStructure().currentLink().discount(maturity) * strike;
+        final double /* @Real */ f = termStructureConsistentModelClass.termStructure().currentLink()
+                .discount(bondMaturity);
+        final double /* @Real */ k =
+                termStructureConsistentModelClass.termStructure().currentLink().discount(maturity) * strike;
 
         return blackFormula(type, k, f, v);
     }
@@ -195,31 +172,41 @@ public class G2 extends TwoFactorModel implements AffineModel, TermStructureCons
         return termStructureConsistentModelClass.termStructure().currentLink().discount(t);
     }
 
-    public double /* @Real */ a()     { return arguments_.get(0).get(0.0); }
-    public double /* @Real */ sigma() { return arguments_.get(1).get(0.0); }
-    public double /* @Real */ b()     { return arguments_.get(2).get(0.0); }
-    public double /* @Real */ eta()   { return arguments_.get(3).get(0.0); }
-    public double /* @Real */ rho()   { return arguments_.get(4).get(0.0); }
+    public double /* @Real */ a() {
+        return arguments_.get(0).get(0.0);
+    }
+
+    public double /* @Real */ sigma() {
+        return arguments_.get(1).get(0.0);
+    }
+
+    public double /* @Real */ b() {
+        return arguments_.get(2).get(0.0);
+    }
+
+    public double /* @Real */ eta() {
+        return arguments_.get(3).get(0.0);
+    }
+
+    public double /* @Real */ rho() {
+        return arguments_.get(4).get(0.0);
+    }
 
     /**
-     * Swaption pricing via the inner {@link SwaptionPricingFunction}
-     * integrated over the x-process axis.
+     * Swaption pricing via the inner {@link SwaptionPricingFunction} integrated over the x-process axis.
      * <p>
-     * Mirrors C++ v1.42.1 g2.cpp lines 218-246 verbatim. The integration
-     * domain is {@code [mux ± range*sigmax]} and uses {@link SegmentIntegral}
-     * with {@code intervals} subdivisions. The inner Brent solver finds the
-     * y-root of the bond-equality equation at each x sample.
+     * Mirrors C++ v1.42.1 g2.cpp lines 218-246 verbatim. The integration domain is {@code [mux ± range*sigmax]} and
+     * uses {@link SegmentIntegral} with {@code intervals} subdivisions. The inner Brent solver finds the y-root of the
+     * bond-equality equation at each x sample.
      *
-     * @param arguments  swaption arguments (must carry a {@link VanillaSwap}
-     *                   reference and the European exercise; nominal must be
-     *                   non-null).
-     * @param fixedRate  fixed rate of the underlying swap.
-     * @param range      half-width of the integration domain in units of
-     *                   {@code sigmax}.
-     * @param intervals  number of trapezoid-rule sub-intervals.
+     * @param arguments swaption arguments (must carry a {@link VanillaSwap} reference and the European exercise;
+     *                  nominal must be non-null).
+     * @param fixedRate fixed rate of the underlying swap.
+     * @param range     half-width of the integration domain in units of {@code sigmax}.
+     * @param intervals number of trapezoid-rule sub-intervals.
      */
-    public double swaption(final Swaption.ArgumentsImpl arguments, final double fixedRate,
-                           final double range, final int intervals) {
+    public double swaption(final Swaption.ArgumentsImpl arguments, final double fixedRate, final double range,
+            final int intervals) {
         final double nominal = arguments.swap.nominal();
         QL.require(!Double.isNaN(nominal) && nominal != Constants.NULL_REAL,
                 "non-constant nominals are not supported yet");
@@ -242,25 +229,141 @@ public class G2 extends TwoFactorModel implements AffineModel, TermStructureCons
         final Leg fixedLeg = swap.fixedLeg();
         final int n = fixedLeg.size();
         final double[] fixedPayTimes = new double[n];
-        for (int i = 0; i < n; i++) {
-            fixedPayTimes[i] = dayCounter.yearFraction(settlement,
-                    ((Coupon) fixedLeg.get(i)).date());
+        for ( int i = 0; i < n; i++ ) {
+            fixedPayTimes[i] = dayCounter.yearFraction(settlement, fixedLeg.get(i).date());
         }
 
-        final SwaptionPricingFunction function = new SwaptionPricingFunction(
-                a(), sigma(), b(), eta(), rho(), w, start,
+        final SwaptionPricingFunction function = new SwaptionPricingFunction(a(), sigma(), b(), eta(), rho(), w, start,
                 fixedPayTimes, fixedRate);
 
         final double upper = function.mux() + range * function.sigmax();
         final double lower = function.mux() - range * function.sigmax();
         final SegmentIntegral integrator = new SegmentIntegral(intervals);
-        return nominal * w * termStructure().currentLink().discount(start)
-                * integrator.op(function, lower, upper);
+        return nominal * w * termStructure().currentLink().discount(start) * integrator.op(function, lower, upper);
+    }
+
+    @Override
+    public Handle< YieldTermStructure > termStructure() {
+        return termStructureConsistentModelClass.termStructure();
+    }
+
+    //
+    // implements TermStructureConsistentModel
+    //
+
+    @Override
+    public void generateArguments() {
+        phi_ = new FittingParameter(termStructureConsistentModelClass.termStructure(), a(), sigma(), b(), eta(), rho());
+    }
+
+    //
+    // protected methods
+    //
+
+    protected double /* @Real */ A(final double /* @Time */ t, final double /* @Time */ T) {
+        return termStructureConsistentModelClass.termStructure().currentLink().discount(T)
+                / termStructureConsistentModelClass.termStructure().currentLink().discount(t) * Math.exp(
+                0.5 * (V(T - t) - V(T) + V(t)));
+    }
+
+    protected double /* @Real */ B(final double /* @Real */ x, final double /* @Time */ t) {
+        return (1.0 - Math.exp(-x * t)) / x;
+    }
+
+    private double /* @Real */ V(final double /* @Time */ t) {
+        final double expat = Math.exp(-a() * t);
+        final double expbt = Math.exp(-b() * t);
+        final double cx = sigma() / a();
+        final double cy = eta() / b();
+        final double valuex = cx * cx * (t + (2.0 * expat - 0.5 * expat * expat - 1.5) / a());
+        final double valuey = cy * cy * (t + (2.0 * expbt - 0.5 * expbt * expbt - 1.5) / b());
+        final double value =
+                2.0 * rho() * cx * cy * (t + (expat - 1.0) / a() + (expbt - 1.0) / b() - (expat * expbt - 1.0) / (a()
+                        + b()));
+        return valuex + valuey + value;
+    }
+
+    //
+    // private methods
+    //
+
+    private double /* @Real */ sigmaP(final double /* @Time */ t, final double /* @Time */ s) {
+        final double temp = 1.0 - Math.exp(-(a() + b()) * t);
+        final double temp1 = 1.0 - Math.exp(-a() * (s - t));
+        final double temp2 = 1.0 - Math.exp(-b() * (s - t));
+        final double a3 = a() * a() * a();
+        final double b3 = b() * b() * b();
+        final double sigma2 = sigma() * sigma();
+        final double eta2 = eta() * eta();
+        final double value = 0.5 * sigma2 * temp1 * temp1 * (1.0 - Math.exp(-2.0 * a() * t)) / a3
+                + 0.5 * eta2 * temp2 * temp2 * (1.0 - Math.exp(-2.0 * b() * t)) / b3
+                + 2.0 * rho() * sigma() * eta() / (a() * b() * (a() + b())) * temp1 * temp2 * temp;
+        return Math.sqrt(value);
     }
 
     /**
-     * Inner pricing-kernel function evaluated by SegmentIntegral over x.
-     * Mirrors C++ {@code G2::SwaptionPricingFunction} (g2.cpp lines 100-216).
+     * Analytical term-structure fitting parameter {@latex$ \varphi(t) }.
+     * <p>
+     * {@latex$ \varphi(t) } is analytically defined by
+     * <p>
+     * {@latex[ \varphi(t) = f(t) + \frac{1}{2}(\frac{\sigma(1-e^{-at})}{a})^2 +
+     * \frac{1}{2}(\frac{\eta(1-e^{-bt})}{b})^2 + \rho\frac{\sigma(1-e^{-at})}{a}\frac{\eta(1-e^{-bt})}{b} },
+     * <p>
+     * where {@latex$ f(t)} is the instantaneous forward rate at {@latex$ t}.
+     */
+    static private class FittingParameter extends TermStructureFittingParameter {
+
+        public FittingParameter(final Handle< YieldTermStructure > termStructure, final double /* @Real */ a,
+                final double /* @Real */ sigma, final double /* @Real */ b, final double /* @Real */ eta,
+                final double /* @Real */ rho) {
+            super(new Impl(termStructure, a, sigma, b, eta, rho));
+        }
+
+        //
+        // static private inner classes
+        //
+
+        static private class Impl implements Parameter.Impl {
+
+            private final Handle< YieldTermStructure > termStructure_;
+            private final double /* @Real */ a_;
+            private final double /* @Real */ sigma_;
+            private final double /* @Real */ b_;
+            private final double /* @Real */ eta_;
+            private final double /* @Real */ rho_;
+
+            public Impl(final Handle< YieldTermStructure > termStructure, final double /* @Real */ a,
+                    final double /* @Real */ sigma, final double /* @Real */ b, final double /* @Real */ eta,
+                    final double /* @Real */ rho) {
+                this.termStructure_ = termStructure;
+                this.a_ = a;
+                this.sigma_ = sigma;
+                this.b_ = b;
+                this.eta_ = eta;
+                this.rho_ = rho;
+            }
+
+            @Override
+            public double /* @Real */ value(final Array params, final double /* @Time */ t) {
+                final double /* @Rate */ forward = termStructure_.currentLink()
+                        .forwardRate(t, t, Compounding.Continuous, Frequency.NoFrequency).rate();
+
+                final double temp1 = sigma_ * (1.0 - Math.exp(-a_ * t)) / a_;
+                final double temp2 = eta_ * (1.0 - Math.exp(-b_ * t)) / b_;
+                return 0.5 * temp1 * temp1 + 0.5 * temp2 * temp2 + rho_ * temp1 * temp2 + forward;
+            }
+
+        }
+
+    }
+
+    //
+    // private inner classes
+    //
+
+    /**
+     * Inner pricing-kernel function evaluated by SegmentIntegral over x. Mirrors C++
+     * {@code G2::SwaptionPricingFunction} (g2.cpp lines 100-216).
      */
     private final class SwaptionPricingFunction implements Ops.DoubleOp {
 
@@ -284,10 +387,8 @@ public class G2 extends TwoFactorModel implements AffineModel, TermStructureCons
         private final double sigmay_;
         private final double rhoxy_;
 
-        SwaptionPricingFunction(final double a, final double sigma,
-                final double b, final double eta, final double rho,
-                final double w, final double T, final double[] payTimes,
-                final double fixedRate) {
+        SwaptionPricingFunction(final double a, final double sigma, final double b, final double eta, final double rho,
+                final double w, final double T, final double[] payTimes, final double fixedRate) {
             this.a_ = a;
             this.sigma_ = sigma;
             this.b_ = b;
@@ -304,32 +405,32 @@ public class G2 extends TwoFactorModel implements AffineModel, TermStructureCons
 
             this.sigmax_ = sigma_ * Math.sqrt(0.5 * (1.0 - Math.exp(-2.0 * a_ * T_)) / a_);
             this.sigmay_ = eta_ * Math.sqrt(0.5 * (1.0 - Math.exp(-2.0 * b_ * T_)) / b_);
-            this.rhoxy_ = rho_ * eta_ * sigma_ * (1.0 - Math.exp(-(a_ + b_) * T_))
-                    / ((a_ + b_) * sigmax_ * sigmay_);
+            this.rhoxy_ = rho_ * eta_ * sigma_ * (1.0 - Math.exp(-(a_ + b_) * T_)) / ((a_ + b_) * sigmax_ * sigmay_);
 
             double temp = sigma_ * sigma_ / (a_ * a_);
-            this.mux_ = -((temp + rho_ * sigma_ * eta_ / (a_ * b_))
-                            * (1.0 - Math.exp(-a_ * T_))
-                          - 0.5 * temp * (1.0 - Math.exp(-2.0 * a_ * T_))
-                          - rho_ * sigma_ * eta_ / (b_ * (a_ + b_))
-                            * (1.0 - Math.exp(-(b_ + a_) * T_)));
+            this.mux_ = -((temp + rho_ * sigma_ * eta_ / (a_ * b_)) * (1.0 - Math.exp(-a_ * T_)) - 0.5 * temp * (1.0
+                    - Math.exp(-2.0 * a_ * T_)) - rho_ * sigma_ * eta_ / (b_ * (a_ + b_)) * (1.0 - Math.exp(
+                    -(b_ + a_) * T_)));
 
             temp = eta_ * eta_ / (b_ * b_);
-            this.muy_ = -((temp + rho_ * sigma_ * eta_ / (a_ * b_))
-                            * (1.0 - Math.exp(-b_ * T_))
-                          - 0.5 * temp * (1.0 - Math.exp(-2.0 * b_ * T_))
-                          - rho_ * sigma_ * eta_ / (a_ * (a_ + b_))
-                            * (1.0 - Math.exp(-(b_ + a_) * T_)));
+            this.muy_ = -((temp + rho_ * sigma_ * eta_ / (a_ * b_)) * (1.0 - Math.exp(-b_ * T_)) - 0.5 * temp * (1.0
+                    - Math.exp(-2.0 * b_ * T_)) - rho_ * sigma_ * eta_ / (a_ * (a_ + b_)) * (1.0 - Math.exp(
+                    -(b_ + a_) * T_)));
 
-            for (int i = 0; i < size_; i++) {
-                A_[i]  = G2.this.A(T_, t_[i]);
+            for ( int i = 0; i < size_; i++ ) {
+                A_[i] = G2.this.A(T_, t_[i]);
                 Ba_[i] = G2.this.B(a_, t_[i] - T_);
                 Bb_[i] = G2.this.B(b_, t_[i] - T_);
             }
         }
 
-        double mux()    { return mux_; }
-        double sigmax() { return sigmax_; }
+        double mux() {
+            return mux_;
+        }
+
+        double sigmax() {
+            return sigmax_;
+        }
 
         @Override
         public double op(final double x) {
@@ -338,7 +439,7 @@ public class G2 extends TwoFactorModel implements AffineModel, TermStructureCons
             final double txy = Math.sqrt(1.0 - rhoxy_ * rhoxy_);
 
             final double[] lambda = new double[size_];
-            for (int i = 0; i < size_; i++) {
+            for ( int i = 0; i < size_; i++ ) {
                 final double tau = (i == 0) ? (t_[0] - T_) : (t_[i] - t_[i - 1]);
                 final double c = (i == size_ - 1) ? (1.0 + rate_ * tau) : (rate_ * tau);
                 lambda[i] = c * A_[i] * Math.exp(-Ba_[i] * x);
@@ -350,26 +451,22 @@ public class G2 extends TwoFactorModel implements AffineModel, TermStructureCons
             final double searchBound = Math.max(10.0 * sigmay_, 1.0);
             final double yb = s1d.solve(function, 1.0e-6, 0.00, -searchBound, searchBound);
 
-            final double h1 = (yb - muy_) / (sigmay_ * txy)
-                    - rhoxy_ * (x - mux_) / (sigmax_ * txy);
+            final double h1 = (yb - muy_) / (sigmay_ * txy) - rhoxy_ * (x - mux_) / (sigmax_ * txy);
             double value = phi.op(-w_ * h1);
 
-            for (int i = 0; i < size_; i++) {
+            for ( int i = 0; i < size_; i++ ) {
                 final double h2 = h1 + Bb_[i] * sigmay_ * Math.sqrt(1.0 - rhoxy_ * rhoxy_);
-                final double kappa = -Bb_[i]
-                        * (muy_ - 0.5 * txy * txy * sigmay_ * sigmay_ * Bb_[i]
-                                + rhoxy_ * sigmay_ * (x - mux_) / sigmax_);
+                final double kappa = -Bb_[i] * (muy_ - 0.5 * txy * txy * sigmay_ * sigmay_ * Bb_[i]
+                        + rhoxy_ * sigmay_ * (x - mux_) / sigmax_);
                 value -= lambda[i] * Math.exp(kappa) * phi.op(-w_ * h2);
             }
 
-            return Math.exp(-0.5 * temp * temp) * value
-                    / (sigmax_ * Math.sqrt(2.0 * Math.PI));
+            return Math.exp(-0.5 * temp * temp) * value / (sigmax_ * Math.sqrt(2.0 * Math.PI));
         }
 
         /**
-         * Inner Brent cost function: returns
-         * {@code 1 - sum(lambda[i] * exp(-Bb[i] * y))}.
-         * Mirrors C++ {@code SolvingFunction} (g2.cpp lines 193-207).
+         * Inner Brent cost function: returns {@code 1 - sum(lambda[i] * exp(-Bb[i] * y))}. Mirrors C++
+         * {@code SolvingFunction} (g2.cpp lines 193-207).
          */
         private final class SolvingFunction implements Ops.DoubleOp {
             private final double[] lambda_;
@@ -383,7 +480,7 @@ public class G2 extends TwoFactorModel implements AffineModel, TermStructureCons
             @Override
             public double op(final double y) {
                 double value = 1.0;
-                for (int i = 0; i < lambda_.length; i++) {
+                for ( int i = 0; i < lambda_.length; i++ ) {
                     value -= lambda_[i] * Math.exp(-Bb_[i] * y);
                 }
                 return value;
@@ -391,179 +488,31 @@ public class G2 extends TwoFactorModel implements AffineModel, TermStructureCons
         }
     }
 
-
-    //
-    // implements TermStructureConsistentModel
-    //
-
-    @Override
-    public Handle<YieldTermStructure> termStructure() {
-        return termStructureConsistentModelClass.termStructure();
-    }
-
-
-    //
-    // protected methods
-    //
-
-    @Override
-    public void generateArguments() {
-        phi_ = new FittingParameter(termStructureConsistentModelClass.termStructure(),
-                a(), sigma(), b(), eta(), rho());
-    }
-
-    protected double /* @Real */ A(final double /* @Time */ t, final double /* @Time */ T) {
-        return termStructureConsistentModelClass.termStructure().currentLink().discount(T)
-             / termStructureConsistentModelClass.termStructure().currentLink().discount(t)
-             * Math.exp(0.5 * (V(T - t) - V(T) + V(t)));
-    }
-
-    protected double /* @Real */ B(final double /* @Real */ x, final double /* @Time */ t) {
-        return (1.0 - Math.exp(-x * t)) / x;
-    }
-
-
-    //
-    // private methods
-    //
-
-    private double /* @Real */ V(final double /* @Time */ t) {
-        final double expat = Math.exp(-a() * t);
-        final double expbt = Math.exp(-b() * t);
-        final double cx = sigma() / a();
-        final double cy = eta()   / b();
-        final double valuex = cx * cx * (t + (2.0 * expat - 0.5 * expat * expat - 1.5) / a());
-        final double valuey = cy * cy * (t + (2.0 * expbt - 0.5 * expbt * expbt - 1.5) / b());
-        final double value = 2.0 * rho() * cx * cy
-                * (t + (expat - 1.0) / a()
-                     + (expbt - 1.0) / b()
-                     - (expat * expbt - 1.0) / (a() + b()));
-        return valuex + valuey + value;
-    }
-
-    private double /* @Real */ sigmaP(final double /* @Time */ t, final double /* @Time */ s) {
-        final double temp  = 1.0 - Math.exp(-(a() + b()) * t);
-        final double temp1 = 1.0 - Math.exp(-a() * (s - t));
-        final double temp2 = 1.0 - Math.exp(-b() * (s - t));
-        final double a3 = a() * a() * a();
-        final double b3 = b() * b() * b();
-        final double sigma2 = sigma() * sigma();
-        final double eta2   = eta()   * eta();
-        final double value =
-                0.5 * sigma2 * temp1 * temp1 * (1.0 - Math.exp(-2.0 * a() * t)) / a3
-              + 0.5 * eta2   * temp2 * temp2 * (1.0 - Math.exp(-2.0 * b() * t)) / b3
-              + 2.0 * rho() * sigma() * eta() / (a() * b() * (a() + b()))
-                * temp1 * temp2 * temp;
-        return Math.sqrt(value);
-    }
-
-
-    //
-    // private inner classes
-    //
-
-    /**
-     * Short-rate dynamics in the G2++ model.
-     * <p>
-     * Two correlated Ornstein-Uhlenbeck processes {@latex$ x_t, y_t } with
-     * {@latex$ r_t = \varphi(t) + x_t + y_t }.
-     */
-    private final class Dynamics extends TwoFactorModel.ShortRateDynamics {
-
-        private final Parameter fitting_;
-
-        Dynamics(final Parameter fitting,
-                 final double /* @Real */ a, final double /* @Real */ sigma,
-                 final double /* @Real */ b, final double /* @Real */ eta,
-                 final double /* @Real */ rho) {
-            super(new OrnsteinUhlenbeckProcess(a, sigma, 0.0, 0.0),
-                  new OrnsteinUhlenbeckProcess(b, eta,  0.0, 0.0),
-                  rho);
-            this.fitting_ = fitting;
-        }
-
-        @Override
-        public double /* @Rate */ shortRate(final double /* @Time */ t,
-                                            final double /* @Real */ x,
-                                            final double /* @Real */ y) {
-            return fitting_.get(t) + x + y;
-        }
-    }
-
-
     //
     // static private inner classes
     //
 
     /**
-     * Analytical term-structure fitting parameter {@latex$ \varphi(t) }.
+     * Short-rate dynamics in the G2++ model.
      * <p>
-     * {@latex$ \varphi(t) } is analytically defined by
-     * <p>
-     * {@latex[ \varphi(t) =
-     *          f(t)
-     *          + \frac{1}{2}(\frac{\sigma(1-e^{-at})}{a})^2
-     *          + \frac{1}{2}(\frac{\eta(1-e^{-bt})}{b})^2 + \rho\frac{\sigma(1-e^{-at})}{a}\frac{\eta(1-e^{-bt})}{b} },
-     * <p>
-     * where {@latex$ f(t)} is the instantaneous forward rate at {@latex$ t}.
+     * Two correlated Ornstein-Uhlenbeck processes {@latex$ x_t, y_t } with {@latex$ r_t = \varphi(t) + x_t + y_t }.
      */
-    static private class FittingParameter extends TermStructureFittingParameter {
+    private final class Dynamics extends TwoFactorModel.ShortRateDynamics {
 
-        public FittingParameter(
-                final Handle<YieldTermStructure> termStructure,
-                final double /* @Real */ a,
-                final double /* @Real */ sigma,
-                final double /* @Real */ b,
-                final double /* @Real */ eta,
-                final double /* @Real */ rho) {
-            super(new Impl(termStructure, a, sigma, b, eta, rho));
+        private final Parameter fitting_;
+
+        Dynamics(final Parameter fitting, final double /* @Real */ a, final double /* @Real */ sigma,
+                final double /* @Real */ b, final double /* @Real */ eta, final double /* @Real */ rho) {
+            super(new OrnsteinUhlenbeckProcess(a, sigma, 0.0, 0.0), new OrnsteinUhlenbeckProcess(b, eta, 0.0, 0.0),
+                    rho);
+            this.fitting_ = fitting;
         }
 
-
-        //
-        // static private inner classes
-        //
-
-        static private class Impl implements Parameter.Impl {
-
-            private final Handle<YieldTermStructure> termStructure_;
-            private final double /* @Real */ a_;
-            private final double /* @Real */ sigma_;
-            private final double /* @Real */ b_;
-            private final double /* @Real */ eta_;
-            private final double /* @Real */ rho_;
-
-            public Impl(
-                    final Handle<YieldTermStructure> termStructure,
-                    final double /* @Real */ a,
-                    final double /* @Real */ sigma,
-                    final double /* @Real */ b,
-                    final double /* @Real */ eta,
-                    final double /* @Real */ rho) {
-                this.termStructure_ = termStructure;
-                this.a_ = a;
-                this.sigma_ = sigma;
-                this.b_ = b;
-                this.eta_ = eta;
-                this.rho_ = rho;
-            }
-
-            @Override
-            public double /* @Real */ value(final Array params, final double /* @Time */ t) {
-                final double /* @Rate */ forward =
-                        termStructure_.currentLink().forwardRate(
-                                t, t, Compounding.Continuous, Frequency.NoFrequency).rate();
-
-                final double temp1 = sigma_ * (1.0 - Math.exp(-a_ * t)) / a_;
-                final double temp2 = eta_   * (1.0 - Math.exp(-b_ * t)) / b_;
-                return 0.5 * temp1 * temp1
-                     + 0.5 * temp2 * temp2
-                     + rho_ * temp1 * temp2
-                     + forward;
-            }
-
+        @Override
+        public double /* @Rate */ shortRate(final double /* @Time */ t, final double /* @Real */ x,
+                final double /* @Real */ y) {
+            return fitting_.get(t) + x + y;
         }
-
     }
 
 }

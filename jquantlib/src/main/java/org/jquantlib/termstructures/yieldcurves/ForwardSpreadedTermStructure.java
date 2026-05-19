@@ -40,7 +40,6 @@
 
 package org.jquantlib.termstructures.yieldcurves;
 
-import org.jquantlib.QL;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
@@ -53,12 +52,10 @@ import org.jquantlib.time.Frequency;
 /**
  * Term structure with added spread on the instantaneous forward rate
  *
- * @note This term structure will remain linked to the original structure, i.e., any changes in the latter will be reflected in this
- *       structure as well.
- *
- * @category yieldtermstructures
- *
  * @author Ueli Hofstetter
+ * @note This term structure will remain linked to the original structure, i.e., any changes in the latter will be
+ * reflected in this structure as well.
+ * @category yieldtermstructures
  */
 public class ForwardSpreadedTermStructure extends ForwardRateStructure {
 
@@ -66,15 +63,14 @@ public class ForwardSpreadedTermStructure extends ForwardRateStructure {
     // private fields
     //
 
-    private final Handle<YieldTermStructure> originalCurve;
-    private final Handle<Quote> spread;
-
+    private final Handle< YieldTermStructure > originalCurve;
+    private final Handle< Quote > spread;
 
     //
     // public constructors
     //
 
-    public ForwardSpreadedTermStructure(final Handle<YieldTermStructure> h, final Handle<Quote> spread) {
+    public ForwardSpreadedTermStructure(final Handle< YieldTermStructure > h, final Handle< Quote > spread) {
 
         this.originalCurve = h;
         this.spread = spread;
@@ -82,7 +78,6 @@ public class ForwardSpreadedTermStructure extends ForwardRateStructure {
         this.originalCurve.addObserver(this);
         this.spread.addObserver(this);
     }
-
 
     //
     // overrides TermStructure
@@ -113,21 +108,20 @@ public class ForwardSpreadedTermStructure extends ForwardRateStructure {
         return originalCurve.currentLink().maxTime();
     }
 
-
     //
     // overrides ForwardRateStructure
     //
 
     @Override
     protected double forwardImpl(final double t) {
-        return originalCurve.currentLink().forwardRate(
-                t, t, Compounding.Continuous, Frequency.NoFrequency, true).rate() + spread.currentLink().value();
+        return originalCurve.currentLink().forwardRate(t, t, Compounding.Continuous, Frequency.NoFrequency, true).rate()
+                + spread.currentLink().value();
     }
 
     @Override
     public double zeroYieldImpl(final double t) {
-        return originalCurve.currentLink().zeroRate(
-                t, Compounding.Continuous, Frequency.NoFrequency, true).rate() + spread.currentLink().value();
+        return originalCurve.currentLink().zeroRate(t, Compounding.Continuous, Frequency.NoFrequency, true).rate()
+                + spread.currentLink().value();
     }
 
 }

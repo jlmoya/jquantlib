@@ -25,10 +25,8 @@ package org.jquantlib.indexes;
  * South Africa as geographical/economic region used for inflation applicability.
  *
  * <p>Mirrors C++ v1.42.1 {@code QuantLib::ZARegion}
- * ({@code ql/indexes/region.cpp:56-59}). Region name is
- * {@code "South Africa"} with code {@code "ZA"}, so an inflation index built
- * with {@code ZARegion} will report a
- * {@link org.jquantlib.indexes.InflationIndex#name()} of
+ * ({@code ql/indexes/region.cpp:56-59}). Region name is {@code "South Africa"} with code {@code "ZA"}, so an inflation
+ * index built with {@code ZARegion} will report a {@link org.jquantlib.indexes.InflationIndex#name()} of
  * {@code "South Africa <familyName>"}.
  */
 public class ZARegion extends Region {

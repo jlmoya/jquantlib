@@ -29,9 +29,6 @@
 
 package org.jquantlib.experimental.exoticoptions;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.exercise.EuropeanExercise;
 import org.jquantlib.instruments.MultiAssetOption;
@@ -42,13 +39,15 @@ import org.jquantlib.pricingengines.GenericEngine;
 import org.jquantlib.pricingengines.PricingEngine;
 import org.jquantlib.time.Date;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Roofed Asian option on a number of assets.
  *
  * <p>The payoff is a given fraction multiplied by the minimum
- * between a given roof and the positive portfolio performance.
- * If the performance of the portfolio is below then the payoff
- * is null.</p>
+ * between a given roof and the positive portfolio performance. If the performance of the portfolio is below then the
+ * payoff is null.</p>
  *
  * <p>This implementation still does not manage seasoned options.</p>
  *
@@ -59,18 +58,15 @@ import org.jquantlib.time.Date;
  */
 public class PagodaOption extends MultiAssetOption {
 
-    private final List<Date> fixingDates_;
+    private final List< Date > fixingDates_;
     private final double roof_;
     private final double fraction_;
 
-    public PagodaOption(final List<Date> fixingDates,
-                        final double roof,
-                        final double fraction) {
-        super(new NullPayoff(),
-              new EuropeanExercise(fixingDates.get(fixingDates.size() - 1)));
+    public PagodaOption(final List< Date > fixingDates, final double roof, final double fraction) {
+        super(new NullPayoff(), new EuropeanExercise(fixingDates.get(fixingDates.size() - 1)));
         // defensive copy mirroring C++ store-by-value semantics
-        this.fixingDates_ = new ArrayList<Date>(fixingDates);
-        this.roof_     = roof;
+        this.fixingDates_ = new ArrayList< Date >(fixingDates);
+        this.roof_ = roof;
         this.fraction_ = fraction;
     }
 
@@ -81,8 +77,8 @@ public class PagodaOption extends MultiAssetOption {
         QL.require(PagodaOption.ArgumentsImpl.class.isAssignableFrom(args.getClass()),
                 ReflectConstants.WRONG_ARGUMENT_TYPE);
         final PagodaOption.ArgumentsImpl arguments = (PagodaOption.ArgumentsImpl) args;
-        arguments.fixingDates = new ArrayList<Date>(fixingDates_);
-        arguments.roof     = roof_;
+        arguments.fixingDates = new ArrayList< Date >(fixingDates_);
+        arguments.roof = roof_;
         arguments.fraction = fraction_;
     }
 
@@ -90,15 +86,14 @@ public class PagodaOption extends MultiAssetOption {
     // public inner classes
     //
 
-    public static class ArgumentsImpl extends MultiAssetOption.ArgumentsImpl
-            implements MultiAssetOption.Arguments {
+    public static class ArgumentsImpl extends MultiAssetOption.ArgumentsImpl implements MultiAssetOption.Arguments {
 
-        public List<Date> fixingDates;
+        public List< Date > fixingDates;
         public double roof;
         public double fraction;
 
         public ArgumentsImpl() {
-            this.roof     = Constants.NULL_REAL;
+            this.roof = Constants.NULL_REAL;
             this.fraction = Constants.NULL_REAL;
         }
 
@@ -106,15 +101,16 @@ public class PagodaOption extends MultiAssetOption {
         public void validate() /* @ReadOnly */ {
             super.validate();
             QL.require(fixingDates != null && !fixingDates.isEmpty(), "no fixingDates given");
-            QL.require(roof     != Constants.NULL_REAL, "no roof given");
+            QL.require(roof != Constants.NULL_REAL, "no roof given");
             QL.require(fraction != Constants.NULL_REAL, "no fraction given");
         }
     }
 
-    public static class ResultsImpl extends MultiAssetOption.ResultsImpl { /* marking */ }
+    public static class ResultsImpl extends MultiAssetOption.ResultsImpl { /* marking */
+    }
 
     public static abstract class EngineImpl
-            extends GenericEngine<PagodaOption.ArgumentsImpl, PagodaOption.ResultsImpl>
+            extends GenericEngine< PagodaOption.ArgumentsImpl, PagodaOption.ResultsImpl >
             implements MultiAssetOption.Engine {
 
         public EngineImpl() {

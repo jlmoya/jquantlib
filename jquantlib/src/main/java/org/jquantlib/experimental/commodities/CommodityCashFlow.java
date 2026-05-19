@@ -25,8 +25,8 @@ import org.jquantlib.currencies.Money;
 import org.jquantlib.time.Date;
 
 /**
- * Cash-flow used by commodity pricing engines, carrying both discounted
- * and undiscounted amounts and the discount factors used to obtain them.
+ * Cash-flow used by commodity pricing engines, carrying both discounted and undiscounted amounts and the discount
+ * factors used to obtain them.
  * <p>
  * Java port of QuantLib v1.42.1 {@code commoditycashflow.{hpp,cpp}}.
  */
@@ -41,14 +41,9 @@ public class CommodityCashFlow extends CashFlow {
     private final double paymentDiscountFactor_;
     private final boolean finalized_;
 
-    public CommodityCashFlow(final Date date,
-                             final Money discountedAmount,
-                             final Money undiscountedAmount,
-                             final Money discountedPaymentAmount,
-                             final Money undiscountedPaymentAmount,
-                             final double discountFactor,
-                             final double paymentDiscountFactor,
-                             final boolean finalized) {
+    public CommodityCashFlow(final Date date, final Money discountedAmount, final Money undiscountedAmount,
+            final Money discountedPaymentAmount, final Money undiscountedPaymentAmount, final double discountFactor,
+            final double paymentDiscountFactor, final boolean finalized) {
         this.date_ = date;
         this.discountedAmount_ = discountedAmount;
         this.undiscountedAmount_ = undiscountedAmount;

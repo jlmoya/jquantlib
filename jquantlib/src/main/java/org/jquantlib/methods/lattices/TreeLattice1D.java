@@ -45,37 +45,35 @@ import org.jquantlib.time.TimeGrid;
 /**
  * One-dimensional tree-based lattice
  *
- * @category lattices
- *
  * @author Srinivas Hasti
+ * @category lattices
  */
 public abstract class TreeLattice1D extends TreeLattice {
 
-	//
+    //
     // public constructors
     //
 
     public TreeLattice1D(final TimeGrid timeGrid, final int n) {
-		super(timeGrid, n);
-	}
+        super(timeGrid, n);
+    }
 
-	//
+    //
     // overrides Lattice
     //
 
     @Override
     public Array grid(final double t) {
-		final int i = timeGrid().index(t);
-		final Array grid = new Array(size(i));
-		for (int j = 0; j < grid.size(); j++)
+        final int i = timeGrid().index(t);
+        final Array grid = new Array(size(i));
+        for ( int j = 0; j < grid.size(); j++ )
             grid.set(j, underlying(i, j));
-		return grid;
-	}
+        return grid;
+    }
 
+    //
+    // abstract methods
+    //
 
-	//
-	// abstract methods
-	//
-
-	public abstract double underlying(int i, int index);
+    public abstract double underlying(int i, int index);
 }

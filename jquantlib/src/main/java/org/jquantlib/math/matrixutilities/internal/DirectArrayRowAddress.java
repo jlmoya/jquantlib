@@ -37,32 +37,25 @@ POSSIBILITY OF SUCH DAMAGE.
 */
 package org.jquantlib.math.matrixutilities.internal;
 
+import org.jquantlib.lang.exceptions.LibraryException;
+
 import java.util.EnumSet;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
-import org.jquantlib.lang.exceptions.LibraryException;
-
 /**
  * This accessor provides contiguous addressing on row-arrays
  *
- * @see Array
- *
  * @author Richard Gomes
+ * @see Array
  */
 public class DirectArrayRowAddress extends DirectAddress implements Address.ArrayAddress {
 
-    public DirectArrayRowAddress(
-            final double[] data,
-            final int row,
-            final Address chain,
-            final int col0, final int col1,
-            final Set<Address.Flags> flags,
-            final boolean contiguous,
-            final int rows, final int cols) {
-        super(data, row, row+1, chain, col0, col1, flags, contiguous, rows, cols);
+    public DirectArrayRowAddress(final double[] data, final int row, final Address chain, final int col0,
+            final int col1, final Set< Address.Flags > flags, final boolean contiguous, final int rows,
+            final int cols) {
+        super(data, row, row + 1, chain, col0, col1, flags, contiguous, rows, cols);
     }
-
 
     //
     // implements ArrayAddress
@@ -70,15 +63,16 @@ public class DirectArrayRowAddress extends DirectAddress implements Address.Arra
 
     @Override
     public ArrayAddress toFortran() {
-        return isFortran() ? this :
-            new DirectArrayRowAddress(data, row0, this.chain, col0, col1, EnumSet.of(Address.Flags.FORTRAN), contiguous, rows, cols);
+        return isFortran()
+                ? this
+                : new DirectArrayRowAddress(data, row0, this.chain, col0, col1, EnumSet.of(Address.Flags.FORTRAN),
+                        contiguous, rows, cols);
     }
 
     @Override
     public ArrayAddress toJava() {
-        return isFortran() ?
-            new DirectArrayRowAddress(data, row0+1, this.chain, col0+1, col1+1, EnumSet.noneOf(Address.Flags.class), contiguous, rows, cols)
-            : this;
+        return isFortran() ? new DirectArrayRowAddress(data, row0 + 1, this.chain, col0 + 1, col1 + 1,
+                EnumSet.noneOf(Address.Flags.class), contiguous, rows, cols) : this;
     }
 
     @Override
@@ -93,9 +87,8 @@ public class DirectArrayRowAddress extends DirectAddress implements Address.Arra
 
     @Override
     public int op(final int index) {
-        return (row0+offset)*cols + (col0+index);
+        return (row0 + offset) * cols + (col0 + index);
     }
-
 
     //
     // implements Cloneable
@@ -105,11 +98,10 @@ public class DirectArrayRowAddress extends DirectAddress implements Address.Arra
     public DirectArrayRowAddress clone() {
         try {
             return (DirectArrayRowAddress) super.clone();
-        } catch (final Exception e) {
+        } catch ( final Exception e ) {
             throw new LibraryException(e);
         }
     }
-
 
     //
     // private inner classes
@@ -118,10 +110,9 @@ public class DirectArrayRowAddress extends DirectAddress implements Address.Arra
     private class DirectArrayRowAddressOffset extends DirectAddressOffset implements Address.ArrayAddress.ArrayOffset {
 
         public DirectArrayRowAddressOffset(final int row, final int col) {
-            super.row = row0+row;
-            super.col = col0+col;
+            super.row = row0 + row;
+            super.col = col0 + col;
         }
-
 
         //
         // implements Offset
@@ -129,9 +120,8 @@ public class DirectArrayRowAddress extends DirectAddress implements Address.Arra
 
         @Override
         public int op() {
-            return row*cols + col;
+            return row * cols + col;
         }
-
 
         //
         // implements ArrayOffset
@@ -139,9 +129,8 @@ public class DirectArrayRowAddress extends DirectAddress implements Address.Arra
 
         @Override
         public void setIndex(final int index) {
-            super.col = col0+index;
+            super.col = col0 + index;
         }
-
 
         //
         // implements ListIterator
@@ -181,26 +170,26 @@ public class DirectArrayRowAddress extends DirectAddress implements Address.Arra
         public Double next() {
             final int idx = op();
             nextIndex();
-            if (idx==col1) throw new NoSuchElementException();
+            if ( idx == col1 )
+                throw new NoSuchElementException();
             return data[idx];
         }
 
         @Override
         public Double previous() {
             final int idx = previousIndex();
-            if (idx==-1) throw new NoSuchElementException();
+            if ( idx == -1 )
+                throw new NoSuchElementException();
             return data[op()];
         }
 
         @Override
         public void set(final Double e) {
             final int idx = op();
-            if ((idx==-1)||(idx==cols)) throw new IllegalStateException();
+            if ( (idx == -1) || (idx == cols) )
+                throw new IllegalStateException();
             data[idx] = e;
         }
-
-
-
 
     }
 

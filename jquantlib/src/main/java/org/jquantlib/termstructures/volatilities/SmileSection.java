@@ -40,8 +40,6 @@
 
 package org.jquantlib.termstructures.volatilities;
 
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.daycounters.DayCounter;
@@ -54,6 +52,8 @@ import org.jquantlib.util.DefaultObservable;
 import org.jquantlib.util.Observable;
 import org.jquantlib.util.Observer;
 
+import java.util.List;
+
 /**
  * Smile section base class
  *
@@ -62,76 +62,66 @@ import org.jquantlib.util.Observer;
  */
 public abstract class SmileSection implements Observer, Observable {
 
-    private Date exerciseDate_;
-    private Date reference_;
-
     private final DayCounter dc_;
     private final boolean isFloating_;
-
     /** Mirrors C++ {@code volatilityType_}; defaults to ShiftedLognormal. */
     private final VolatilityType volatilityType_;
     /** Mirrors C++ {@code shift_}; defaults to 0.0. */
     private final double shift_;
-
+    /**
+     * Implements multiple inheritance via delegate pattern to an inner class
+     *
+     * @see Observable
+     * @see DefaultObservable
+     */
+    // Phase 2x A.4: WeakReferenceObservable to break cumulative
+    // observer-list bleed across tests.
+    private final DefaultObservable delegatedObservable = new org.jquantlib.util.WeakReferenceObservable(this);
     protected double exerciseTime_;
-
+    private Date exerciseDate_;
 
     //
     // public constructors
     //
+    private Date reference_;
 
-    public SmileSection(
-            final Date d,
-            final DayCounter dc,
-            final Date referenceDate) {
+    public SmileSection(final Date d, final DayCounter dc, final Date referenceDate) {
         this(d, dc, referenceDate, VolatilityType.ShiftedLognormal, 0.0);
     }
 
-    public SmileSection(
-            final Date d,
-            final DayCounter dc,
-            final Date referenceDate,
-            final VolatilityType type,
+    public SmileSection(final Date d, final DayCounter dc, final Date referenceDate, final VolatilityType type,
             final double shift) {
-    	exerciseDate_ = d;
-    	dc_ = dc;
+        exerciseDate_ = d;
+        dc_ = dc;
         volatilityType_ = type;
         shift_ = shift;
-    	isFloating_ = referenceDate.isNull();
-    	if (isFloating_) {
-    		final Settings settings = new Settings();
-    		settings.evaluationDate().addObserver(this);
-    		reference_ = settings.evaluationDate();
-    	} else
+        isFloating_ = referenceDate.isNull();
+        if ( isFloating_ ) {
+            final Settings settings = new Settings();
+            settings.evaluationDate().addObserver(this);
+            reference_ = settings.evaluationDate();
+        } else
             reference_ = referenceDate;
-    	initializeExerciseTime();
+        initializeExerciseTime();
     }
 
-    public SmileSection(
-            final /* @Time */ double exerciseTime,
-            final DayCounter dc) {
+    public SmileSection(final /* @Time */ double exerciseTime, final DayCounter dc) {
         this(exerciseTime, dc, VolatilityType.ShiftedLognormal, 0.0);
     }
-
-    public SmileSection(
-            final /* @Time */ double exerciseTime,
-            final DayCounter dc,
-            final VolatilityType type,
-            final double shift) {
-    	isFloating_ = false;
-    	dc_ = dc;
-        volatilityType_ = type;
-        shift_ = shift;
-    	exerciseTime_ = exerciseTime;
-    	QL.require(exerciseTime_>=0.0,
-    			"expiry time must be positive: " +
-    			exerciseTime_ + " not allowed");
-    }
-
 
     //
     // abstract methods
     //
+
+    public SmileSection(final /* @Time */ double exerciseTime, final DayCounter dc, final VolatilityType type,
+            final double shift) {
+        isFloating_ = false;
+        dc_ = dc;
+        volatilityType_ = type;
+        shift_ = shift;
+        exerciseTime_ = exerciseTime;
+        QL.require(exerciseTime_ >= 0.0, "expiry time must be positive: " + exerciseTime_ + " not allowed");
+    }
 
     public abstract double minStrike();
 
@@ -139,38 +129,35 @@ public abstract class SmileSection implements Observer, Observable {
 
     public abstract double atmLevel();
 
-    protected abstract /* @Real */ double volatilityImpl(/* @Rate */ double strike);
-
-
     //
     // public methods
     //
 
+    protected abstract /* @Real */ double volatilityImpl(/* @Rate */ double strike);
+
     public double variance() {
-    	return variance(Constants.NULL_REAL);
+        return variance(Constants.NULL_REAL);
     }
 
     public double volatility() {
-    	return volatility(Constants.NULL_REAL);
+        return volatility(Constants.NULL_REAL);
     }
 
     public void initializeExerciseTime() {
         QL.require(exerciseDate_.ge(reference_),
-                "expiry date (" + exerciseDate_ +
-                ") must be greater than reference date (" +
-                reference_ + ")");
-     exerciseTime_ = dc_.yearFraction(reference_, exerciseDate_);
+                "expiry date (" + exerciseDate_ + ") must be greater than reference date (" + reference_ + ")");
+        exerciseTime_ = dc_.yearFraction(reference_, exerciseDate_);
 
     }
 
     public double variance(double strike) {
-        if (Double.isNaN(strike))
+        if ( Double.isNaN(strike) )
             strike = atmLevel();
         return varianceImpl(strike);
     }
 
     public double volatility(double strike) {
-        if (Double.isNaN(strike))
+        if ( Double.isNaN(strike) )
             strike = atmLevel();
         return volatilityImpl(strike);
     }
@@ -188,40 +175,34 @@ public abstract class SmileSection implements Observer, Observable {
     }
 
     /**
-     * Volatility type (ShiftedLognormal or Normal).
-     * Mirrors C++ {@code SmileSection::volatilityType()}.
+     * Volatility type (ShiftedLognormal or Normal). Mirrors C++ {@code SmileSection::volatilityType()}.
      */
     public VolatilityType volatilityType() {
         return volatilityType_;
     }
 
     /**
-     * Displacement shift (zero for unshifted lognormal / normal).
-     * Mirrors C++ {@code SmileSection::shift()}.
+     * Displacement shift (zero for unshifted lognormal / normal). Mirrors C++ {@code SmileSection::shift()}.
      */
     public double shift() {
         return shift_;
     }
 
     /**
-     * Call or put option price using this smile section.
-     * Mirrors C++ {@code SmileSection::optionPrice}.
+     * Call or put option price using this smile section. Mirrors C++ {@code SmileSection::optionPrice}.
      *
      * <p>For ShiftedLognormal: uses Black formula. For Normal: uses Bachelier formula.
      * Discount defaults to 1.0 (undiscounted).
      */
     public double optionPrice(final double strike, final Option.Type type, final double discount) {
         final double atm = atmLevel();
-        QL.require(atm != Constants.NULL_REAL,
-                "smile section must provide atm level to compute option price");
-        if (volatilityType_ == VolatilityType.ShiftedLognormal) {
+        QL.require(atm != Constants.NULL_REAL, "smile section must provide atm level to compute option price");
+        if ( volatilityType_ == VolatilityType.ShiftedLognormal ) {
             // Mirror C++: if strike == -shift (at lower barrier) use default stddev=0.2
-            final double stddev = Math.abs(strike + shift_) < Constants.QL_EPSILON
-                    ? 0.2
-                    : Math.sqrt(variance(strike));
+            final double stddev = Math.abs(strike + shift_) < Constants.QL_EPSILON ? 0.2 : Math.sqrt(variance(strike));
             // When strike+shift == 0 (at-barrier), replicate C++ blackFormula inline:
             // strike_shifted = 0 → formula returns fwd*discount for Call, 0 for Put.
-            if (Math.abs(strike + shift_) < Constants.QL_EPSILON) {
+            if ( Math.abs(strike + shift_) < Constants.QL_EPSILON ) {
                 final double fwd = atm + shift_;
                 return type == Option.Type.Call ? fwd * discount : 0.0;
             }
@@ -239,8 +220,7 @@ public abstract class SmileSection implements Observer, Observable {
     }
 
     /**
-     * Digital call/put option price computed via a centred finite difference
-     * on the call price function, mirroring C++
+     * Digital call/put option price computed via a centred finite difference on the call price function, mirroring C++
      * {@code SmileSection::digitalOptionPrice}:
      * <pre>
      *   m  = (volatilityType == ShiftedLognormal ? -shift() : -infinity)
@@ -256,48 +236,35 @@ public abstract class SmileSection implements Observer, Observable {
      * @param gap      finite-difference gap (e.g. 1e-5)
      * @return digital option price
      */
-    public double digitalOptionPrice(
-            final double strike, final Option.Type type,
-            final double discount, final double gap) {
-        final double m = (volatilityType_ == VolatilityType.ShiftedLognormal)
-                ? -shift_
-                : -Double.MAX_VALUE;
+    public double digitalOptionPrice(final double strike, final Option.Type type, final double discount,
+            final double gap) {
+        final double m = (volatilityType_ == VolatilityType.ShiftedLognormal) ? -shift_ : -Double.MAX_VALUE;
         final double kl = Math.max(strike - 0.5 * gap, m);
         final double kr = kl + gap;
         final double sign = (type == Option.Type.Call) ? 1.0 : -1.0;
         return sign * (optionPrice(kl, type, discount) - optionPrice(kr, type, discount)) / gap;
     }
 
+    //
+    // protected methods
+    //
+
     /**
-     * Convenience overload: undiscounted ({@code discount=1.0}) digital with
-     * {@code gap=1e-5} (matches C++ default {@code marketRateAccuracy_} class).
+     * Convenience overload: undiscounted ({@code discount=1.0}) digital with {@code gap=1e-5} (matches C++ default
+     * {@code marketRateAccuracy_} class).
      */
     public double digitalOptionPrice(final double strike, final Option.Type type) {
         return digitalOptionPrice(strike, type, 1.0, 1.0e-5);
     }
 
     //
-    // protected methods
-    //
-
-    protected /* @Real */ double varianceImpl(/* @Rate */ final double strike) {
-    	/* @Volatility */ final double v = volatilityImpl(strike);
-        return v*v*exerciseTime();
-
-    }
-
-
-    //
     // implements Observer
     //
 
-    @Override
-    public void update() {
-        if (isFloating_) {
-            final Settings settings = new Settings();
-            reference_ = settings.evaluationDate();
-            initializeExerciseTime();
-        }
+    protected /* @Real */ double varianceImpl(/* @Rate */ final double strike) {
+        /* @Volatility */
+        final double v = volatilityImpl(strike);
+        return v * v * exerciseTime();
 
     }
 
@@ -305,15 +272,15 @@ public abstract class SmileSection implements Observer, Observable {
     // implements Observable
     //
 
-    /**
-     * Implements multiple inheritance via delegate pattern to an inner class
-     *
-     * @see Observable
-     * @see DefaultObservable
-     */
-    // Phase 2x A.4: WeakReferenceObservable to break cumulative
-    // observer-list bleed across tests.
-    private final DefaultObservable delegatedObservable = new org.jquantlib.util.WeakReferenceObservable(this);
+    @Override
+    public void update() {
+        if ( isFloating_ ) {
+            final Settings settings = new Settings();
+            reference_ = settings.evaluationDate();
+            initializeExerciseTime();
+        }
+
+    }
 
     @Override
     public void addObserver(final Observer observer) {
@@ -346,7 +313,7 @@ public abstract class SmileSection implements Observer, Observable {
     }
 
     @Override
-    public List<Observer> getObservers() {
+    public List< Observer > getObservers() {
         return delegatedObservable.getObservers();
     }
 

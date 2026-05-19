@@ -54,9 +54,9 @@ public final class RichardsonExtrapolation {
     private final Ops.DoubleOp f_;
 
     /**
-     * Richardson Extrapolation with known order of convergence omitted
-     * (use {@link #RichardsonExtrapolation(Ops.DoubleOp, double, double)}
-     * with {@code n = Double.NaN} to defer to the unknown-order overload).
+     * Richardson Extrapolation with known order of convergence omitted (use
+     * {@link #RichardsonExtrapolation(Ops.DoubleOp, double, double)} with {@code n = Double.NaN} to defer to the
+     * unknown-order overload).
      *
      * @param f       function to be extrapolated to {@code delta_h -> 0}
      * @param delta_h step size
@@ -70,10 +70,8 @@ public final class RichardsonExtrapolation {
      *
      * @param f       function to be extrapolated to {@code delta_h -> 0}
      * @param delta_h step size
-     * @param n       if known, the order of convergence; pass
-     *                {@code Double.NaN} for the QuantLib {@code Null<Real>()}
-     *                sentinel (forces use of the two-argument
-     *                {@link #valueAt(double, double)} overload).
+     * @param n       if known, the order of convergence; pass {@code Double.NaN} for the QuantLib {@code Null<Real>()}
+     *                sentinel (forces use of the two-argument {@link #valueAt(double, double)} overload).
      */
     public RichardsonExtrapolation(final Ops.DoubleOp f, final double delta_h, final double n) {
         this.delta_h_ = delta_h;
@@ -97,8 +95,8 @@ public final class RichardsonExtrapolation {
     }
 
     /**
-     * Extrapolation for known order of convergence, with default scaling
-     * factor {@code t = 2.0} (matches C++ default argument).
+     * Extrapolation for known order of convergence, with default scaling factor {@code t = 2.0} (matches C++ default
+     * argument).
      *
      * @return the Richardson-extrapolated value
      */
@@ -126,7 +124,7 @@ public final class RichardsonExtrapolation {
         double left = 0.05;
         double fr = eqn.op(left + step);
         double fl = eqn.op(left);
-        while (fr * fl > 0.0 && left < 15.1) {
+        while ( fr * fl > 0.0 && left < 15.1 ) {
             left += step;
             fl = fr;
             fr = eqn.op(left + step);
@@ -141,9 +139,8 @@ public final class RichardsonExtrapolation {
     }
 
     /**
-     * Internal residual functor used by the Brent solver in the unknown-order
-     * overload. Mirrors the anonymous {@code RichardsonEqn} class in
-     * {@code richardsonextrapolation.cpp}.
+     * Internal residual functor used by the Brent solver in the unknown-order overload. Mirrors the anonymous
+     * {@code RichardsonEqn} class in {@code richardsonextrapolation.cpp}.
      */
     private static final class RichardsonEqn implements Ops.DoubleOp {
         private final double fdelta_h_;
@@ -152,8 +149,7 @@ public final class RichardsonExtrapolation {
         private final double t_;
         private final double s_;
 
-        RichardsonEqn(final double fh, final double ft, final double fs,
-                      final double t, final double s) {
+        RichardsonEqn(final double fh, final double ft, final double fs, final double t, final double s) {
             this.fdelta_h_ = fh;
             this.ft_ = ft;
             this.fs_ = fs;
@@ -163,8 +159,8 @@ public final class RichardsonExtrapolation {
 
         @Override
         public double op(final double k) {
-            return ft_ + (ft_ - fdelta_h_) / (Math.pow(t_, k) - 1.0)
-                 - (fs_ + (fs_ - fdelta_h_) / (Math.pow(s_, k) - 1.0));
+            return ft_ + (ft_ - fdelta_h_) / (Math.pow(t_, k) - 1.0) - (fs_ + (fs_ - fdelta_h_) / (Math.pow(s_, k)
+                    - 1.0));
         }
     }
 }

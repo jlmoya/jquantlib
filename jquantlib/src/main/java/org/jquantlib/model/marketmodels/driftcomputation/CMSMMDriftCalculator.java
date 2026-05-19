@@ -54,17 +54,13 @@ public class CMSMMDriftCalculator {
     private final Matrix PjPnWk_;
     private final Matrix wkaj_;
     private final Matrix wkajN_;
-    @SuppressWarnings("unused")
+    @SuppressWarnings( "unused" )
     private final int[] downs_;
-    @SuppressWarnings("unused")
+    @SuppressWarnings( "unused" )
     private final int[] ups_;
 
-    public CMSMMDriftCalculator(final Matrix pseudo,
-                                final double[] displacements,
-                                final double[] taus,
-                                final int numeraire,
-                                final int alive,
-                                final int spanningFwds) {
+    public CMSMMDriftCalculator(final Matrix pseudo, final double[] displacements, final double[] taus,
+            final int numeraire, final int alive, final int spanningFwds) {
         this.numberOfRates_ = taus.length;
         this.numberOfFactors_ = pseudo.columns();
         this.numeraire_ = numeraire;
@@ -81,22 +77,20 @@ public class CMSMMDriftCalculator {
         this.ups_ = new int[taus.length];
 
         QL.require(numberOfRates_ > 0, "Dim out of range");
-        QL.require(displacements.length == numberOfRates_,
-                "Displacements out of range");
-        QL.require(pseudo.rows() == numberOfRates_,
-                "pseudo.rows() not consistent with dim");
+        QL.require(displacements.length == numberOfRates_, "Displacements out of range");
+        QL.require(pseudo.rows() == numberOfRates_, "pseudo.rows() not consistent with dim");
         QL.require(pseudo.columns() > 0 && pseudo.columns() <= numberOfRates_,
                 "pseudo.rows() not consistent with pseudo.columns()");
         QL.require(alive < numberOfRates_, "Alive out of bounds");
         QL.require(numeraire_ <= numberOfRates_, "Numeraire larger than dim");
         QL.require(numeraire_ >= alive, "Numeraire smaller than alive");
 
-        for (int i = 0; i < taus.length; ++i) {
+        for ( int i = 0; i < taus.length; ++i ) {
             oneOverTaus_[i] = 1.0 / taus[i];
         }
         this.C_ = pseudo_.mul(pseudo_.transpose());
 
-        for (int i = alive_; i < numberOfRates_; ++i) {
+        for ( int i = alive_; i < numberOfRates_; ++i ) {
             downs_[i] = Math.min(i + 1, numeraire_);
             ups_[i] = Math.max(i + 1, numeraire_);
         }
@@ -106,23 +100,23 @@ public class CMSMMDriftCalculator {
         final double[] taus = cs.rateTaus();
 
         // Compute cross variations
-        for (int k = 0; k < PjPnWk_.rows(); ++k) {
+        for ( int k = 0; k < PjPnWk_.rows(); ++k ) {
             PjPnWk_.set(k, numberOfRates_, 0.0);
             wkaj_.set(k, numberOfRates_ - 1, 0.0);
 
-            for (int j = numberOfRates_ - 2; j >= alive_ - 1; --j) {
+            for ( int j = numberOfRates_ - 2; j >= alive_ - 1; --j ) {
                 final double sr = cs.cmSwapRate(j + 1, spanningFwds_);
                 final int endIndex = Math.min(j + spanningFwds_ + 1, numberOfRates_);
                 final double first = sr * wkaj_.get(k, j + 1);
-                final double second = cs.cmSwapAnnuity(numberOfRates_, j + 1, spanningFwds_)
-                        * (sr + displacements_[j + 1])
-                        * pseudo_.get(j + 1, k);
+                final double second =
+                        cs.cmSwapAnnuity(numberOfRates_, j + 1, spanningFwds_) * (sr + displacements_[j + 1])
+                                * pseudo_.get(j + 1, k);
                 final double third = PjPnWk_.get(k, endIndex);
                 PjPnWk_.set(k, j + 1, first + second + third);
 
-                if (j >= alive_) {
+                if ( j >= alive_ ) {
                     double w = wkaj_.get(k, j + 1) + PjPnWk_.get(k, j + 1) * taus[j];
-                    if (j + spanningFwds_ + 1 <= numberOfRates_) {
+                    if ( j + spanningFwds_ + 1 <= numberOfRates_ ) {
                         w -= PjPnWk_.get(k, endIndex) * taus[endIndex - 1];
                     }
                     wkaj_.set(k, j, w);
@@ -132,18 +126,17 @@ public class CMSMMDriftCalculator {
 
         final double PnOverPN = cs.discountRatio(numberOfRates_, numeraire_);
 
-        for (int j = alive_; j < numberOfRates_; ++j) {
-            for (int k = 0; k < numberOfFactors_; ++k) {
-                final double v = wkaj_.get(k, j) * PnOverPN
-                        - PjPnWk_.get(k, numeraire_) * PnOverPN
-                                * cs.cmSwapAnnuity(numeraire_, j, spanningFwds_);
+        for ( int j = alive_; j < numberOfRates_; ++j ) {
+            for ( int k = 0; k < numberOfFactors_; ++k ) {
+                final double v = wkaj_.get(k, j) * PnOverPN - PjPnWk_.get(k, numeraire_) * PnOverPN * cs.cmSwapAnnuity(
+                        numeraire_, j, spanningFwds_);
                 wkajN_.set(k, j, v);
             }
         }
 
-        for (int j = alive_; j < numberOfRates_; ++j) {
+        for ( int j = alive_; j < numberOfRates_; ++j ) {
             double d = 0.0;
-            for (int k = 0; k < numberOfFactors_; ++k) {
+            for ( int k = 0; k < numberOfFactors_; ++k ) {
                 d += pseudo_.get(j, k) * wkajN_.get(k, j);
             }
             d /= -cs.cmSwapAnnuity(numeraire_, j, spanningFwds_);

@@ -58,8 +58,7 @@ public class AnalyticDigitalAmericanEngine extends VanillaOption.EngineImpl {
         QL.require(a.exercise instanceof AmericanExercise, "non-American exercise given");
         final AmericanExercise ex = (AmericanExercise) a.exercise;
 
-        QL.require(ex.dates().get(0).le(
-                process.blackVolatility().currentLink().referenceDate()),
+        QL.require(ex.dates().get(0).le(process.blackVolatility().currentLink().referenceDate()),
                 "American option with window exercise not handled yet");
 
         QL.require(a.payoff instanceof StrikedTypePayoff, "non-striked payoff given");
@@ -68,27 +67,23 @@ public class AnalyticDigitalAmericanEngine extends VanillaOption.EngineImpl {
         final double spot = process.stateVariable().currentLink().value();
         QL.require(spot > 0.0, "negative or null underlying given");
 
-        final double variance = process.blackVolatility().currentLink()
-                .blackVariance(ex.lastDate(), payoff.strike());
-        final double dividendDiscount = process.dividendYield().currentLink()
-                .discount(ex.lastDate());
-        final double riskFreeDiscount = process.riskFreeRate().currentLink()
-                .discount(ex.lastDate());
+        final double variance = process.blackVolatility().currentLink().blackVariance(ex.lastDate(), payoff.strike());
+        final double dividendDiscount = process.dividendYield().currentLink().discount(ex.lastDate());
+        final double riskFreeDiscount = process.riskFreeRate().currentLink().discount(ex.lastDate());
 
-        if (ex.payoffAtExpiry()) {
-            final AmericanPayoffAtExpiry pricer = new AmericanPayoffAtExpiry(
-                    spot, riskFreeDiscount, dividendDiscount, variance, payoff, knock_in());
+        if ( ex.payoffAtExpiry() ) {
+            final AmericanPayoffAtExpiry pricer = new AmericanPayoffAtExpiry(spot, riskFreeDiscount, dividendDiscount,
+                    variance, payoff, knock_in());
             r.value = pricer.value();
         } else {
-            final AmericanPayoffAtHit pricer = new AmericanPayoffAtHit(
-                    spot, riskFreeDiscount, dividendDiscount, variance, payoff);
+            final AmericanPayoffAtHit pricer = new AmericanPayoffAtHit(spot, riskFreeDiscount, dividendDiscount,
+                    variance, payoff);
             r.value = pricer.value();
             greeks.delta = pricer.delta();
             greeks.gamma = pricer.gamma();
 
             final DayCounter rfdc = process.riskFreeRate().currentLink().dayCounter();
-            final double t = rfdc.yearFraction(
-                    process.riskFreeRate().currentLink().referenceDate(),
+            final double t = rfdc.yearFraction(process.riskFreeRate().currentLink().referenceDate(),
                     a.exercise.lastDate());
             greeks.rho = pricer.rho(t);
         }

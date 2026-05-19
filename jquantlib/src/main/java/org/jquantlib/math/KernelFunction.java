@@ -24,8 +24,8 @@
 package org.jquantlib.math;
 
 /**
- * Kernel function in the statistical sense: a non-negative, real-valued
- * function which integrates to one and is symmetric.
+ * Kernel function in the statistical sense: a non-negative, real-valued function which integrates to one and is
+ * symmetric.
  *
  * <p>Java port of QuantLib v1.42.1 {@code ql/math/kernelfunctions.hpp}
  * (class {@code KernelFunction}).

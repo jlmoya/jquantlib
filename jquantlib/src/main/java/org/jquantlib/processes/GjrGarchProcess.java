@@ -44,34 +44,23 @@ import org.jquantlib.time.Date;
  * Stochastic-volatility GJR-GARCH(1,1) process.
  *
  * <p>Faithful Java port of C++ QuantLib v1.42.1
- * {@code ql/processes/gjrgarchprocess.{hpp,cpp}}. Parameters supplied
- * to the constructor are daily constants and are annualized internally
- * via {@code daysPerYear} (default {@code 252.0}).
+ * {@code ql/processes/gjrgarchprocess.{hpp,cpp}}. Parameters supplied to the constructor are daily constants and are
+ * annualized internally via {@code daysPerYear} (default {@code 252.0}).
  *
  * <p>The process is governed by
- * {@latex[
- *   dS(t, S)  = \mu S\,dt + \sqrt{v}\,S\,dW_1 \\
- *   dv(t, S)  = (\omega + (\beta + \alpha q_{2} + \gamma q_{3} - 1) v)\,dt
- *               + (\alpha \sigma_{12} + \gamma \sigma_{13})\,v\,dW_1
- *               + \sqrt{\alpha^{2} (\sigma^{2}_{2} - \sigma^{2}_{12})
- *                       + \gamma^{2} (\sigma^{2}_{3} - \sigma^{2}_{13})
- *                       + 2 \alpha \gamma (\sigma_{23} - \sigma_{12} \sigma_{13})}\,v\,dW_2
- * }
- * with auxiliary moment constants derived from the standard normal mass
- * left of {@code lambda} and the corresponding density.
+ * {@latex[ dS(t, S)  = \mu S\,dt + \sqrt{v}\,S\,dW_1 \\ dv(t, S)  = (\omega + (\beta + \alpha q_{2} + \gamma q_{3} - 1)
+ * v)\,dt + (\alpha \sigma_{12} + \gamma \sigma_{13})\,v\,dW_1 + \sqrt{\alpha^{2} (\sigma^{2}_{2} - \sigma^{2}_{12}) +
+ * \gamma^{2} (\sigma^{2}_{3} - \sigma^{2}_{13}) + 2 \alpha \gamma (\sigma_{23} - \sigma_{12} \sigma_{13})}\,v\,dW_2 }
+ * with auxiliary moment constants derived from the standard normal mass left of {@code lambda} and the corresponding
+ * density.
  *
  * <p>Reference: Glosten, Jagannathan, Runkle (1993).
  */
 public class GjrGarchProcess extends StochasticProcess {
 
-    /** Lord/Koekkoek/van Dijk variance-treatment scheme. */
-    public enum Discretization {
-        PartialTruncation, FullTruncation, Reflection
-    }
-
-    private final Handle<YieldTermStructure> riskFreeRate_;
-    private final Handle<YieldTermStructure> dividendYield_;
-    private final Handle<Quote> s0_;
+    private final Handle< YieldTermStructure > riskFreeRate_;
+    private final Handle< YieldTermStructure > dividendYield_;
+    private final Handle< Quote > s0_;
     private final double v0_;
     private final double omega_;
     private final double alpha_;
@@ -80,50 +69,27 @@ public class GjrGarchProcess extends StochasticProcess {
     private final double lambda_;
     private final double daysPerYear_;
     private final Discretization discretization_;
-
     /** Convenience constructor: 252 days/year, full truncation. */
-    public GjrGarchProcess(
-            final Handle<YieldTermStructure> riskFreeRate,
-            final Handle<YieldTermStructure> dividendYield,
-            final Handle<Quote> s0,
-            final double v0,
-            final double omega,
-            final double alpha,
-            final double beta,
-            final double gamma,
-            final double lambda) {
-        this(riskFreeRate, dividendYield, s0, v0, omega, alpha, beta, gamma,
-             lambda, 252.0, Discretization.FullTruncation);
+    public GjrGarchProcess(final Handle< YieldTermStructure > riskFreeRate,
+            final Handle< YieldTermStructure > dividendYield, final Handle< Quote > s0, final double v0,
+            final double omega, final double alpha, final double beta, final double gamma, final double lambda) {
+        this(riskFreeRate, dividendYield, s0, v0, omega, alpha, beta, gamma, lambda, 252.0,
+                Discretization.FullTruncation);
     }
 
     /** Convenience constructor: custom days/year, full truncation. */
-    public GjrGarchProcess(
-            final Handle<YieldTermStructure> riskFreeRate,
-            final Handle<YieldTermStructure> dividendYield,
-            final Handle<Quote> s0,
-            final double v0,
-            final double omega,
-            final double alpha,
-            final double beta,
-            final double gamma,
-            final double lambda,
+    public GjrGarchProcess(final Handle< YieldTermStructure > riskFreeRate,
+            final Handle< YieldTermStructure > dividendYield, final Handle< Quote > s0, final double v0,
+            final double omega, final double alpha, final double beta, final double gamma, final double lambda,
             final double daysPerYear) {
-        this(riskFreeRate, dividendYield, s0, v0, omega, alpha, beta, gamma,
-             lambda, daysPerYear, Discretization.FullTruncation);
+        this(riskFreeRate, dividendYield, s0, v0, omega, alpha, beta, gamma, lambda, daysPerYear,
+                Discretization.FullTruncation);
     }
 
-    public GjrGarchProcess(
-            final Handle<YieldTermStructure> riskFreeRate,
-            final Handle<YieldTermStructure> dividendYield,
-            final Handle<Quote> s0,
-            final double v0,
-            final double omega,
-            final double alpha,
-            final double beta,
-            final double gamma,
-            final double lambda,
-            final double daysPerYear,
-            final Discretization d) {
+    public GjrGarchProcess(final Handle< YieldTermStructure > riskFreeRate,
+            final Handle< YieldTermStructure > dividendYield, final Handle< Quote > s0, final double v0,
+            final double omega, final double alpha, final double beta, final double gamma, final double lambda,
+            final double daysPerYear, final Discretization d) {
         this.riskFreeRate_ = riskFreeRate;
         this.dividendYield_ = dividendYield;
         this.s0_ = s0;
@@ -141,30 +107,58 @@ public class GjrGarchProcess extends StochasticProcess {
         this.s0_.addObserver(this);
     }
 
+    public double v0() {
+        return v0_;
+    }
+
     //
     // accessors
     //
 
-    public double v0()           { return v0_; }
-    public double lambda()       { return lambda_; }
-    public double omega()        { return omega_; }
-    public double alpha()        { return alpha_; }
-    public double beta()         { return beta_; }
-    public double gamma()        { return gamma_; }
-    public double daysPerYear()  { return daysPerYear_; }
+    public double lambda() {
+        return lambda_;
+    }
 
-    public Handle<Quote> s0()                            { return s0_; }
-    public Handle<YieldTermStructure> dividendYield()    { return dividendYield_; }
-    public Handle<YieldTermStructure> riskFreeRate()     { return riskFreeRate_; }
+    public double omega() {
+        return omega_;
+    }
 
-    //
-    // StochasticProcess overrides
-    //
+    public double alpha() {
+        return alpha_;
+    }
+
+    public double beta() {
+        return beta_;
+    }
+
+    public double gamma() {
+        return gamma_;
+    }
+
+    public double daysPerYear() {
+        return daysPerYear_;
+    }
+
+    public Handle< Quote > s0() {
+        return s0_;
+    }
+
+    public Handle< YieldTermStructure > dividendYield() {
+        return dividendYield_;
+    }
+
+    public Handle< YieldTermStructure > riskFreeRate() {
+        return riskFreeRate_;
+    }
 
     @Override
     public int size() {
         return 2;
     }
+
+    //
+    // StochasticProcess overrides
+    //
 
     @Override
     public Array initialValues() {
@@ -180,17 +174,13 @@ public class GjrGarchProcess extends StochasticProcess {
         final double q3 = lambda_ * n + N + lambda_ * lambda_ * N;
         final double vol = (x1 > 0.0)
                 ? Math.sqrt(x1)
-                : (discretization_ == Discretization.Reflection
-                        ? -Math.sqrt(-x1)
-                        : 0.0);
+                : (discretization_ == Discretization.Reflection ? -Math.sqrt(-x1) : 0.0);
 
         final double[] result = new double[2];
         result[0] = riskFreeRate_.currentLink().forwardRate(t, t, Compounding.Continuous).rate()
-                - dividendYield_.currentLink().forwardRate(t, t, Compounding.Continuous).rate()
-                - 0.5 * vol * vol;
+                - dividendYield_.currentLink().forwardRate(t, t, Compounding.Continuous).rate() - 0.5 * vol * vol;
         final double v = (discretization_ == Discretization.PartialTruncation) ? x1 : vol * vol;
-        result[1] = daysPerYear_ * daysPerYear_ * omega_
-                + daysPerYear_ * (beta_ + alpha_ * q2 + gamma_ * q3 - 1.0) * v;
+        result[1] = daysPerYear_ * daysPerYear_ * omega_ + daysPerYear_ * (beta_ + alpha_ * q2 + gamma_ * q3 - 1.0) * v;
         return new Array(result);
     }
 
@@ -207,9 +197,8 @@ public class GjrGarchProcess extends StochasticProcess {
         final double n = Math.exp(-lambda_ * lambda_ / 2.0) / Math.sqrt(2.0 * Constants.M_PI);
         final double sigma2 = 2.0 + 4.0 * lambda_ * lambda_;
         final double q3 = lambda_ * n + N + lambda_ * lambda_ * N;
-        final double Eml_e4 = lambda_ * lambda_ * lambda_ * n + 5.0 * lambda_ * n
-                + 3.0 * N + lambda_ * lambda_ * lambda_ * lambda_ * N
-                + 6.0 * lambda_ * lambda_ * N;
+        final double Eml_e4 = lambda_ * lambda_ * lambda_ * n + 5.0 * lambda_ * n + 3.0 * N
+                + lambda_ * lambda_ * lambda_ * lambda_ * N + 6.0 * lambda_ * lambda_ * N;
         final double sigma3 = Eml_e4 - q3 * q3;
         final double sigma12 = -2.0 * lambda_;
         final double sigma13 = -2.0 * n - 2.0 * lambda_ * N;
@@ -217,14 +206,12 @@ public class GjrGarchProcess extends StochasticProcess {
         final double vol = (x1 > 0.0)
                 ? Math.sqrt(x1)
                 : (discretization_ == Discretization.Reflection
-                        ? -Math.sqrt(-x1)
+                   ? -Math.sqrt(-x1)
                         : 1e-8); // set vol to (almost) zero but still
-                                 // expose some correlation information
-        final double rho1 = Math.sqrt(daysPerYear_)
-                * (alpha_ * sigma12 + gamma_ * sigma13) * vol * vol;
-        final double rho2 = vol * vol * Math.sqrt(daysPerYear_)
-                * Math.sqrt(alpha_ * alpha_ * (sigma2 - sigma12 * sigma12)
-                        + gamma_ * gamma_ * (sigma3 - sigma13 * sigma13)
+        // expose some correlation information
+        final double rho1 = Math.sqrt(daysPerYear_) * (alpha_ * sigma12 + gamma_ * sigma13) * vol * vol;
+        final double rho2 = vol * vol * Math.sqrt(daysPerYear_) * Math.sqrt(
+                alpha_ * alpha_ * (sigma2 - sigma12 * sigma12) + gamma_ * gamma_ * (sigma3 - sigma13 * sigma13)
                         + 2.0 * alpha_ * gamma_ * (sigma23 - sigma12 * sigma13));
 
         final Matrix tmp = new Matrix(2, 2);
@@ -253,17 +240,15 @@ public class GjrGarchProcess extends StochasticProcess {
         final double sigma2 = 2.0 + 4.0 * lambda_ * lambda_;
         final double q2 = 1.0 + lambda_ * lambda_;
         final double q3 = lambda_ * n + N + lambda_ * lambda_ * N;
-        final double Eml_e4 = lambda_ * lambda_ * lambda_ * n + 5.0 * lambda_ * n
-                + 3.0 * N + lambda_ * lambda_ * lambda_ * lambda_ * N
-                + 6.0 * lambda_ * lambda_ * N;
+        final double Eml_e4 = lambda_ * lambda_ * lambda_ * n + 5.0 * lambda_ * n + 3.0 * N
+                + lambda_ * lambda_ * lambda_ * lambda_ * N + 6.0 * lambda_ * lambda_ * N;
         final double sigma3 = Eml_e4 - q3 * q3;
         final double sigma12 = -2.0 * lambda_;
         final double sigma13 = -2.0 * n - 2.0 * lambda_ * N;
         final double sigma23 = 2.0 * N + sigma12 * sigma13;
         final double rho1 = Math.sqrt(daysPerYear_) * (alpha_ * sigma12 + gamma_ * sigma13);
-        final double rho2 = Math.sqrt(daysPerYear_)
-                * Math.sqrt(alpha_ * alpha_ * (sigma2 - sigma12 * sigma12)
-                        + gamma_ * gamma_ * (sigma3 - sigma13 * sigma13)
+        final double rho2 = Math.sqrt(daysPerYear_) * Math.sqrt(
+                alpha_ * alpha_ * (sigma2 - sigma12 * sigma12) + gamma_ * gamma_ * (sigma3 - sigma13 * sigma13)
                         + 2.0 * alpha_ * gamma_ * (sigma23 - sigma12 * sigma13));
 
         final double x00 = x0.get(0);
@@ -271,14 +256,13 @@ public class GjrGarchProcess extends StochasticProcess {
         final double dw0 = dw.get(0);
         final double dw1 = dw.get(1);
 
-        switch (discretization_) {
+        switch ( discretization_ ) {
         case PartialTruncation:
             vol = (x01 > 0.0) ? Math.sqrt(x01) : 0.0;
             mu = riskFreeRate_.currentLink().forwardRate(t0, t0 + dt, Compounding.Continuous).rate()
                     - dividendYield_.currentLink().forwardRate(t0, t0 + dt, Compounding.Continuous).rate()
                     - 0.5 * vol * vol;
-            nu = daysPerYear_ * daysPerYear_ * omega_
-                    + daysPerYear_ * (beta_ + alpha_ * q2 + gamma_ * q3 - 1.0) * x01;
+            nu = daysPerYear_ * daysPerYear_ * omega_ + daysPerYear_ * (beta_ + alpha_ * q2 + gamma_ * q3 - 1.0) * x01;
 
             retVal[0] = x00 * Math.exp(mu * dt + vol * dw0 * sdt);
             retVal[1] = x01 + nu * dt + sdt * vol * vol * (rho1 * dw0 + rho2 * dw1);
@@ -288,8 +272,8 @@ public class GjrGarchProcess extends StochasticProcess {
             mu = riskFreeRate_.currentLink().forwardRate(t0, t0 + dt, Compounding.Continuous).rate()
                     - dividendYield_.currentLink().forwardRate(t0, t0 + dt, Compounding.Continuous).rate()
                     - 0.5 * vol * vol;
-            nu = daysPerYear_ * daysPerYear_ * omega_
-                    + daysPerYear_ * (beta_ + alpha_ * q2 + gamma_ * q3 - 1.0) * vol * vol;
+            nu = daysPerYear_ * daysPerYear_ * omega_ + daysPerYear_ * (beta_ + alpha_ * q2 + gamma_ * q3 - 1.0) * vol
+                    * vol;
 
             retVal[0] = x00 * Math.exp(mu * dt + vol * dw0 * sdt);
             retVal[1] = x01 + nu * dt + sdt * vol * vol * (rho1 * dw0 + rho2 * dw1);
@@ -299,8 +283,8 @@ public class GjrGarchProcess extends StochasticProcess {
             mu = riskFreeRate_.currentLink().forwardRate(t0, t0 + dt, Compounding.Continuous).rate()
                     - dividendYield_.currentLink().forwardRate(t0, t0 + dt, Compounding.Continuous).rate()
                     - 0.5 * vol * vol;
-            nu = daysPerYear_ * daysPerYear_ * omega_
-                    + daysPerYear_ * (beta_ + alpha_ * q2 + gamma_ * q3 - 1.0) * vol * vol;
+            nu = daysPerYear_ * daysPerYear_ * omega_ + daysPerYear_ * (beta_ + alpha_ * q2 + gamma_ * q3 - 1.0) * vol
+                    * vol;
 
             retVal[0] = x00 * Math.exp(mu * dt + vol * dw0 * sdt);
             retVal[1] = vol * vol + nu * dt + sdt * vol * vol * (rho1 * dw0 + rho2 * dw1);
@@ -313,7 +297,11 @@ public class GjrGarchProcess extends StochasticProcess {
 
     @Override
     public double time(final Date d) {
-        return riskFreeRate_.currentLink().dayCounter().yearFraction(
-                riskFreeRate_.currentLink().referenceDate(), d);
+        return riskFreeRate_.currentLink().dayCounter().yearFraction(riskFreeRate_.currentLink().referenceDate(), d);
+    }
+
+    /** Lord/Koekkoek/van Dijk variance-treatment scheme. */
+    public enum Discretization {
+        PartialTruncation, FullTruncation, Reflection
     }
 }

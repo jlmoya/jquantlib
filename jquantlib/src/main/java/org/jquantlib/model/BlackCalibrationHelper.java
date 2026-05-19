@@ -21,8 +21,6 @@ When applicable, the original copyright notice follows this notice.
  */
 package org.jquantlib.model;
 
-import java.util.ArrayList;
-
 import org.jquantlib.lang.annotation.Time;
 import org.jquantlib.math.Ops;
 import org.jquantlib.math.solvers1D.Brent;
@@ -31,34 +29,26 @@ import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.util.LazyObject;
 
+import java.util.ArrayList;
+
 /**
- * Liquid Black76 market instrument used during calibration.
- * Port of C++ v1.42.1 ql/models/calibrationhelper.hpp lines 47-115.
+ * Liquid Black76 market instrument used during calibration. Port of C++ v1.42.1 ql/models/calibrationhelper.hpp lines
+ * 47-115.
  */
-public abstract class BlackCalibrationHelper extends LazyObject
-        implements CalibrationHelper {
+public abstract class BlackCalibrationHelper extends LazyObject implements CalibrationHelper {
 
-    public enum CalibrationErrorType {
-        RelativePriceError, PriceError, ImpliedVolError
-    }
-
-    protected double marketValue_;
-    protected final Handle<Quote> volatility_;
+    protected final Handle< Quote > volatility_;
     protected final VolatilityType volatilityType_;
     protected final double shift_;
     protected final CalibrationErrorType calibrationErrorType_;
+    protected double marketValue_;
     protected PricingEngine engine_;
-
-    public BlackCalibrationHelper(final Handle<Quote> volatility) {
-        this(volatility, CalibrationErrorType.RelativePriceError,
-                VolatilityType.ShiftedLognormal, 0.0);
+    public BlackCalibrationHelper(final Handle< Quote > volatility) {
+        this(volatility, CalibrationErrorType.RelativePriceError, VolatilityType.ShiftedLognormal, 0.0);
     }
 
-    public BlackCalibrationHelper(
-            final Handle<Quote> volatility,
-            final CalibrationErrorType calibrationErrorType,
-            final VolatilityType type,
-            final double shift) {
+    public BlackCalibrationHelper(final Handle< Quote > volatility, final CalibrationErrorType calibrationErrorType,
+            final VolatilityType type, final double shift) {
         this.volatility_ = volatility;
         this.calibrationErrorType_ = calibrationErrorType;
         this.volatilityType_ = type;
@@ -71,8 +61,13 @@ public abstract class BlackCalibrationHelper extends LazyObject
         marketValue_ = blackPrice(volatility_.currentLink().value());
     }
 
-    public Handle<Quote> volatility() { return volatility_; }
-    public VolatilityType volatilityType() { return volatilityType_; }
+    public Handle< Quote > volatility() {
+        return volatility_;
+    }
+
+    public VolatilityType volatilityType() {
+        return volatilityType_;
+    }
 
     public double marketValue() {
         calculate();
@@ -83,35 +78,36 @@ public abstract class BlackCalibrationHelper extends LazyObject
 
     @Override
     public double calibrationError() {
-        switch (calibrationErrorType_) {
-            case RelativePriceError:
-                return Math.abs(marketValue() - modelValue()) / marketValue();
-            case PriceError:
-                return marketValue() - modelValue();
-            case ImpliedVolError: {
-                final double lowerPrice = blackPrice(0.001);
-                final double upperPrice = blackPrice(10.0);
-                final double modelPrice = modelValue();
-                final double implied;
-                if (modelPrice <= lowerPrice) {
-                    implied = 0.001;
-                } else if (modelPrice >= upperPrice) {
-                    implied = 10.0;
-                } else {
-                    implied = impliedVolatility(modelPrice, 1e-12, 5000, 0.001, 10.0);
-                }
-                return implied - volatility_.currentLink().value();
+        switch ( calibrationErrorType_ ) {
+        case RelativePriceError:
+            return Math.abs(marketValue() - modelValue()) / marketValue();
+        case PriceError:
+            return marketValue() - modelValue();
+        case ImpliedVolError: {
+            final double lowerPrice = blackPrice(0.001);
+            final double upperPrice = blackPrice(10.0);
+            final double modelPrice = modelValue();
+            final double implied;
+            if ( modelPrice <= lowerPrice ) {
+                implied = 0.001;
+            } else if ( modelPrice >= upperPrice ) {
+                implied = 10.0;
+            } else {
+                implied = impliedVolatility(modelPrice, 1e-12, 5000, 0.001, 10.0);
             }
-            default:
-                throw new IllegalStateException("unknown CalibrationErrorType");
+            return implied - volatility_.currentLink().value();
+        }
+        default:
+            throw new IllegalStateException("unknown CalibrationErrorType");
         }
     }
 
-    public abstract void addTimesTo(ArrayList<Time> times);
+    public abstract void addTimesTo(ArrayList< Time > times);
+
     public abstract double blackPrice(double volatility);
 
-    public double impliedVolatility(final double targetValue, final double accuracy,
-            final int maxEvaluations, final double minVol, final double maxVol) {
+    public double impliedVolatility(final double targetValue, final double accuracy, final int maxEvaluations,
+            final double minVol, final double maxVol) {
         final ImpliedVolatilityHelper f = new ImpliedVolatilityHelper(this, targetValue);
         final Brent solver = new Brent();
         solver.setMaxEvaluations(maxEvaluations);
@@ -120,6 +116,10 @@ public abstract class BlackCalibrationHelper extends LazyObject
 
     public void setPricingEngine(final PricingEngine engine) {
         this.engine_ = engine;
+    }
+
+    public enum CalibrationErrorType {
+        RelativePriceError, PriceError, ImpliedVolError
     }
 
     private static class ImpliedVolatilityHelper implements Ops.DoubleOp {

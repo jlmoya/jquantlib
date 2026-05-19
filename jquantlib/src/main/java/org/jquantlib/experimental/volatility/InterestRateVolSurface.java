@@ -37,29 +37,25 @@ import org.jquantlib.util.Visitor;
  * Interest rate volatility (smile) surface.
  *
  * <p>Faithful port of QuantLib v1.42.1
- * {@code ql/experimental/volatility/interestratevolsurface.{hpp,cpp}}.
- * Concrete subclasses implement {@link BlackVolSurface#smileSectionImpl(double)}
- * for the actual SABR / smile representation.
+ * {@code ql/experimental/volatility/interestratevolsurface.{hpp,cpp}}. Concrete subclasses implement
+ * {@link BlackVolSurface#smileSectionImpl(double)} for the actual SABR / smile representation.
  */
 public abstract class InterestRateVolSurface extends BlackVolSurface {
 
     protected final InterestRateIndex index_;
 
-    public InterestRateVolSurface(final InterestRateIndex index,
-            final BusinessDayConvention bdc, final DayCounter dc) {
+    public InterestRateVolSurface(final InterestRateIndex index, final BusinessDayConvention bdc, final DayCounter dc) {
         super(bdc, dc);
         this.index_ = index;
     }
 
-    public InterestRateVolSurface(final InterestRateIndex index,
-            final Date referenceDate, final Calendar cal,
+    public InterestRateVolSurface(final InterestRateIndex index, final Date referenceDate, final Calendar cal,
             final BusinessDayConvention bdc, final DayCounter dc) {
         super(referenceDate, cal, bdc, dc);
         this.index_ = index;
     }
 
-    public InterestRateVolSurface(final InterestRateIndex index,
-            final int settlementDays, final Calendar cal,
+    public InterestRateVolSurface(final InterestRateIndex index, final int settlementDays, final Calendar cal,
             final BusinessDayConvention bdc, final DayCounter dc) {
         super(settlementDays, cal, bdc, dc);
         this.index_ = index;
@@ -69,8 +65,7 @@ public abstract class InterestRateVolSurface extends BlackVolSurface {
     @Override
     public Date optionDateFromTenor(final Period p) {
         // Optionlet-style (mirrors C++ interestratevolsurface.cpp lines 44-51).
-        final Date refDate = index_.fixingCalendar().adjust(referenceDate(),
-                BusinessDayConvention.Following);
+        final Date refDate = index_.fixingCalendar().adjust(referenceDate(), BusinessDayConvention.Following);
         final Date settlement = index_.valueDate(refDate);
         final Date start = settlement.add(p);
         return index_.fixingDate(start);
@@ -83,8 +78,10 @@ public abstract class InterestRateVolSurface extends BlackVolSurface {
 
     @Override
     public void accept(final PolymorphicVisitor pv) {
-        final Visitor<InterestRateVolSurface> v = (pv != null) ? pv.<InterestRateVolSurface>visitor(this.getClass()) : null;
-        if (v != null) {
+        final Visitor< InterestRateVolSurface > v = (pv != null)
+                ? pv.visitor(this.getClass())
+                : null;
+        if ( v != null ) {
             v.visit(this);
         } else {
             super.accept(pv);

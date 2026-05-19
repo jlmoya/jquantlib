@@ -29,13 +29,7 @@ import org.jquantlib.quotes.Quote;
 import org.jquantlib.termstructures.DefaultProbabilityTermStructure;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.termstructures.credit.DefaultProbabilityHelper;
-import org.jquantlib.time.BusinessDayConvention;
-import org.jquantlib.time.Calendar;
-import org.jquantlib.time.Date;
-import org.jquantlib.time.DateGeneration;
-import org.jquantlib.time.Period;
-import org.jquantlib.time.Schedule;
-import org.jquantlib.time.TimeUnit;
+import org.jquantlib.time.*;
 
 /**
  * Risky-asset-swap helper for default-probability curve bootstrap.
@@ -57,43 +51,26 @@ public class AssetSwapHelper extends DefaultProbabilityHelper {
     private final Period floatPeriod_;
     private final DayCounter floatDayCount_;
     private final double recoveryRate_;
-    private final Handle<YieldTermStructure> yieldTS_;
+    private final Handle< YieldTermStructure > yieldTS_;
     private final Period integrationStepSize_;
 
     private Date evaluationDate_;
     private RiskyAssetSwap asw_;
-    private Handle<DefaultProbabilityTermStructure> probability_;
+    private Handle< DefaultProbabilityTermStructure > probability_;
 
-    public AssetSwapHelper(final Handle<Quote> spread,
-                           final Period tenor,
-                           final int settlementDays,
-                           final Calendar calendar,
-                           final Period fixedPeriod,
-                           final BusinessDayConvention fixedConvention,
-                           final DayCounter fixedDayCount,
-                           final Period floatPeriod,
-                           final BusinessDayConvention floatConvention,
-                           final DayCounter floatDayCount,
-                           final double recoveryRate,
-                           final Handle<YieldTermStructure> yieldTS) {
-        this(spread, tenor, settlementDays, calendar, fixedPeriod, fixedConvention,
-                fixedDayCount, floatPeriod, floatConvention, floatDayCount,
-                recoveryRate, yieldTS, new Period(0, TimeUnit.Days));
+    public AssetSwapHelper(final Handle< Quote > spread, final Period tenor, final int settlementDays,
+            final Calendar calendar, final Period fixedPeriod, final BusinessDayConvention fixedConvention,
+            final DayCounter fixedDayCount, final Period floatPeriod, final BusinessDayConvention floatConvention,
+            final DayCounter floatDayCount, final double recoveryRate, final Handle< YieldTermStructure > yieldTS) {
+        this(spread, tenor, settlementDays, calendar, fixedPeriod, fixedConvention, fixedDayCount, floatPeriod,
+                floatConvention, floatDayCount, recoveryRate, yieldTS, new Period(0, TimeUnit.Days));
     }
 
-    public AssetSwapHelper(final Handle<Quote> spread,
-                           final Period tenor,
-                           final int settlementDays,
-                           final Calendar calendar,
-                           final Period fixedPeriod,
-                           final BusinessDayConvention fixedConvention,
-                           final DayCounter fixedDayCount,
-                           final Period floatPeriod,
-                           final BusinessDayConvention floatConvention,
-                           final DayCounter floatDayCount,
-                           final double recoveryRate,
-                           final Handle<YieldTermStructure> yieldTS,
-                           final Period integrationStepSize) {
+    public AssetSwapHelper(final Handle< Quote > spread, final Period tenor, final int settlementDays,
+            final Calendar calendar, final Period fixedPeriod, final BusinessDayConvention fixedConvention,
+            final DayCounter fixedDayCount, final Period floatPeriod, final BusinessDayConvention floatConvention,
+            final DayCounter floatDayCount, final double recoveryRate, final Handle< YieldTermStructure > yieldTS,
+            final Period integrationStepSize) {
         super(spread);
         this.tenor_ = tenor;
         this.settlementDays_ = settlementDays;
@@ -117,8 +94,7 @@ public class AssetSwapHelper extends DefaultProbabilityHelper {
 
     @Override
     public double impliedQuote() {
-        QL.require(probability_ != null && !probability_.empty(),
-                "default term structure not set");
+        QL.require(probability_ != null && !probability_.empty(), "default term structure not set");
         // C++: asw_->recalculate(); return asw_->fairSpread();
         // Java RiskyAssetSwap follows the LazyObject pattern.
         asw_.recalculate();
@@ -128,14 +104,13 @@ public class AssetSwapHelper extends DefaultProbabilityHelper {
     @Override
     public void setTermStructure(final DefaultProbabilityTermStructure ts) {
         super.setTermStructure(ts);
-        this.probability_ = new Handle<DefaultProbabilityTermStructure>(ts);
+        this.probability_ = new Handle< DefaultProbabilityTermStructure >(ts);
         initializeDates();
     }
 
     @Override
     public void update() {
-        if (evaluationDate_ == null
-                || !evaluationDate_.eq(new Settings().evaluationDate())) {
+        if ( evaluationDate_ == null || !evaluationDate_.eq(new Settings().evaluationDate()) ) {
             initializeDates();
         }
         super.update();
@@ -150,32 +125,20 @@ public class AssetSwapHelper extends DefaultProbabilityHelper {
 
         latestDate = calendar_.adjust(maturity, fixedConvention_);
 
-        final Schedule fixedSchedule = new Schedule(earliestDate, maturity,
-                fixedPeriod_, calendar_,
-                fixedConvention_, fixedConvention_,
-                DateGeneration.Rule.Forward, false);
-        final Schedule floatSchedule = new Schedule(earliestDate, maturity,
-                floatPeriod_, calendar_,
-                floatConvention_, floatConvention_,
-                DateGeneration.Rule.Forward, false);
+        final Schedule fixedSchedule = new Schedule(earliestDate, maturity, fixedPeriod_, calendar_, fixedConvention_,
+                fixedConvention_, DateGeneration.Rule.Forward, false);
+        final Schedule floatSchedule = new Schedule(earliestDate, maturity, floatPeriod_, calendar_, floatConvention_,
+                floatConvention_, DateGeneration.Rule.Forward, false);
 
         // Probability handle may not have been linked yet (constructor pass);
         // RiskyAssetSwap constructor still requires a non-null Handle. Use an
         // empty Handle until setTermStructure binds the real curve.
-        final Handle<DefaultProbabilityTermStructure> prob =
-                (probability_ != null) ? probability_
-                        : new Handle<DefaultProbabilityTermStructure>();
+        final Handle< DefaultProbabilityTermStructure > prob = (probability_ != null)
+                ? probability_
+                : new Handle< DefaultProbabilityTermStructure >();
 
-        asw_ = new RiskyAssetSwap(true,
-                100.0,
-                fixedSchedule,
-                floatSchedule,
-                fixedDayCount_,
-                floatDayCount_,
-                0.01,
-                recoveryRate_,
-                yieldTS_,
-                prob);
+        asw_ = new RiskyAssetSwap(true, 100.0, fixedSchedule, floatSchedule, fixedDayCount_, floatDayCount_, 0.01,
+                recoveryRate_, yieldTS_, prob);
     }
 
     /** Inspector for the integration-step-size (declared in C++ but unused). */

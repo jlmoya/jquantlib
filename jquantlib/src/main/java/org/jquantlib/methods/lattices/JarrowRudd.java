@@ -31,17 +31,13 @@ import org.jquantlib.processes.StochasticProcess1D;
 /**
  * Jarrow-Rudd (multiplicative) equal probabilities binomial tree
  *
- * @category lattices
- *
  * @author Srinivas Hasti
  * @author Tim Swetonic
+ * @category lattices
  */
 public class JarrowRudd extends EqualProbabilitiesBinomialTree {
 
-    public JarrowRudd(
-            final StochasticProcess1D process,
-            final @Time double end,
-            final @NonNegative int steps,
+    public JarrowRudd(final StochasticProcess1D process, final @Time double end, final @NonNegative int steps,
             final @Unused @Real double strike) {
         super(process, end, steps);
         // drift removed

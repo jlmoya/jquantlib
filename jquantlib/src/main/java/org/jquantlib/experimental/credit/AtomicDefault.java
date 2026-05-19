@@ -29,42 +29,32 @@ package org.jquantlib.experimental.credit;
  * Atomic (single contractual event) default events.
  *
  * <p>Java port of QuantLib v1.42.1 {@code QuantLib::AtomicDefault::Type}
- * (struct + nested enum) from
- * {@code ql/experimental/credit/defaulttype.hpp}. The C++ wrapping struct
- * exists to scope the enum; in Java we materialise the enclosing struct as
- * a class with a nested {@code enum Type} so call sites read identically:
- * {@code AtomicDefault.Type.Bankruptcy}.
+ * (struct + nested enum) from {@code ql/experimental/credit/defaulttype.hpp}. The C++ wrapping struct exists to scope
+ * the enum; in Java we materialise the enclosing struct as a class with a nested {@code enum Type} so call sites read
+ * identically: {@code AtomicDefault.Type.Bankruptcy}.
  *
  * <p>Phase 4m foundation.
  */
 public final class AtomicDefault {
 
+    // C++ enum aliases mapped to Java references.
+    public static final Type ObligationAcceleration = Type.Acceleration;
+    public static final Type ObligationDefault = Type.Default;
+    public static final Type CrossDefault = Type.Default;
     private AtomicDefault() {
         // utility
     }
-
     /**
-     * Default types defined as enum to allow easy aggregation. ISDA-aligned.
-     * The C++ enum aliases (ObligationAcceleration, ObligationDefault,
-     * CrossDefault) re-use underlying ordinal slots; Java exposes them as
+     * Default types defined as enum to allow easy aggregation. ISDA-aligned. The C++ enum aliases
+     * (ObligationAcceleration, ObligationDefault, CrossDefault) re-use underlying ordinal slots; Java exposes them as
      * {@code public static final Type} references on the enclosing class.
      */
     public enum Type {
         /** Includes one of the restructuring cases. */
-        Restructuring,
-        Bankruptcy,
-        FailureToPay,
-        RepudiationMoratorium,
-        Acceleration,
-        Default,
+        Restructuring, Bankruptcy, FailureToPay, RepudiationMoratorium, Acceleration, Default,
         /** Non-ISDA, not in FpML. */
         Downgrade,
         /** Non-ISDA, not in FpML. */
         MergerEvent
     }
-
-    // C++ enum aliases mapped to Java references.
-    public static final Type ObligationAcceleration = Type.Acceleration;
-    public static final Type ObligationDefault = Type.Default;
-    public static final Type CrossDefault = Type.Default;
 }

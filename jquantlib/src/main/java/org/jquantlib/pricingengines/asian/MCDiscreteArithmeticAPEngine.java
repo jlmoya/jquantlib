@@ -44,75 +44,55 @@ import org.jquantlib.time.TimeGrid;
  * Monte Carlo pricing engine for discrete arithmetic average-price Asian options.
  *
  * <p>Java port of {@code QuantLib v1.42.1
- * ql/pricingengines/asian/mc_discr_arith_av_price.{hpp,cpp}}
- * {@code MCDiscreteArithmeticAPEngine} (Phase 5e.5b-CFC-d-114).
+ * ql/pricingengines/asian/mc_discr_arith_av_price.{hpp,cpp}} {@code MCDiscreteArithmeticAPEngine} (Phase
+ * 5e.5b-CFC-d-114).
  *
  * @author JQuantLib
  */
-public class MCDiscreteArithmeticAPEngine extends MCDiscreteAveragingAsianEngineBase<Path> {
+public class MCDiscreteArithmeticAPEngine extends MCDiscreteAveragingAsianEngineBase< Path > {
 
-    public MCDiscreteArithmeticAPEngine(final GeneralizedBlackScholesProcess process,
-                                        final boolean brownianBridge,
-                                        final boolean antitheticVariate,
-                                        final boolean controlVariate,
-                                        final int requiredSamples,
-                                        final double requiredTolerance,
-                                        final int maxSamples,
-                                        final long seed) {
-        super(process,
-                brownianBridge,
-                antitheticVariate,
-                controlVariate,
-                requiredSamples,
-                requiredTolerance,
-                maxSamples,
-                seed,
+    public MCDiscreteArithmeticAPEngine(final GeneralizedBlackScholesProcess process, final boolean brownianBridge,
+            final boolean antitheticVariate, final boolean controlVariate, final int requiredSamples,
+            final double requiredTolerance, final int maxSamples, final long seed) {
+        super(process, brownianBridge, antitheticVariate, controlVariate, requiredSamples, requiredTolerance,
+                maxSamples, seed,
                 /* timeSteps */ McSimulation.NULL_SAMPLES,
                 /* timeStepsPerYear */ McSimulation.NULL_SAMPLES,
                 /* includeExerciseDate */ false);
     }
 
     @Override
-    protected PathPricer<Path> pathPricer() {
-        final DiscreteAveragingAsianOption.ArgumentsImpl a =
-                (DiscreteAveragingAsianOption.ArgumentsImpl) arguments_;
+    protected PathPricer< Path > pathPricer() {
+        final DiscreteAveragingAsianOption.ArgumentsImpl a = (DiscreteAveragingAsianOption.ArgumentsImpl) arguments_;
         final PlainVanillaPayoff payoff;
         try {
             payoff = (PlainVanillaPayoff) a.payoff;
-        } catch (final ClassCastException e) {
+        } catch ( final ClassCastException e ) {
             throw new RuntimeException("non-plain payoff given");
         }
         QL.require(payoff != null, "non-plain payoff given");
         QL.require(a.exercise instanceof EuropeanExercise, "wrong exercise given");
 
         final GeneralizedBlackScholesProcess process = (GeneralizedBlackScholesProcess) process_;
-        final double discount = process.riskFreeRate().currentLink()
-                .discount(a.exercise.lastDate());
-        return new ArithmeticAPOPathPricer(
-                payoff.optionType(),
-                payoff.strike(),
-                discount,
-                a.runningAccumulator,
+        final double discount = process.riskFreeRate().currentLink().discount(a.exercise.lastDate());
+        return new ArithmeticAPOPathPricer(payoff.optionType(), payoff.strike(), discount, a.runningAccumulator,
                 a.pastFixings);
     }
 
     @Override
-    protected PathPricer<Path> controlPathPricer() {
-        final DiscreteAveragingAsianOption.ArgumentsImpl a =
-                (DiscreteAveragingAsianOption.ArgumentsImpl) arguments_;
+    protected PathPricer< Path > controlPathPricer() {
+        final DiscreteAveragingAsianOption.ArgumentsImpl a = (DiscreteAveragingAsianOption.ArgumentsImpl) arguments_;
         final PlainVanillaPayoff payoff;
         try {
             payoff = (PlainVanillaPayoff) a.payoff;
-        } catch (final ClassCastException e) {
+        } catch ( final ClassCastException e ) {
             throw new RuntimeException("non-plain payoff given");
         }
         QL.require(payoff != null, "non-plain payoff given");
         QL.require(a.exercise instanceof EuropeanExercise, "wrong exercise given");
 
         final GeneralizedBlackScholesProcess process = (GeneralizedBlackScholesProcess) process_;
-        return new GeometricAPOPathPricer(
-                payoff.optionType(),
-                payoff.strike(),
+        return new GeometricAPOPathPricer(payoff.optionType(), payoff.strike(),
                 process.riskFreeRate().currentLink().discount(timeGrid().back()));
     }
 
@@ -123,21 +103,16 @@ public class MCDiscreteArithmeticAPEngine extends MCDiscreteAveragingAsianEngine
     }
 
     @Override
-    protected MonteCarloModel.PathGeneratorAdapter<Path> pathGenerator() {
+    protected MonteCarloModel.PathGeneratorAdapter< Path > pathGenerator() {
         final GeneralizedBlackScholesProcess process = (GeneralizedBlackScholesProcess) process_;
         final TimeGrid grid = timeGrid();
         final int dimensions = process.factors() * (grid.size() - 1);
-        final RandomSequenceGenerator<MersenneTwisterUniformRng> uniformRsg =
-                new RandomSequenceGenerator<MersenneTwisterUniformRng>(
-                        MersenneTwisterUniformRng.class, dimensions, seed_);
-        final InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                InverseCumulativeNormal> gsg =
-                new InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                        InverseCumulativeNormal>(uniformRsg, new InverseCumulativeNormal());
-        final PathGenerator<InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                InverseCumulativeNormal>> gen =
-                new PathGenerator<InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                        InverseCumulativeNormal>>(process, grid, gsg, brownianBridge_);
+        final RandomSequenceGenerator< MersenneTwisterUniformRng > uniformRsg = new RandomSequenceGenerator< MersenneTwisterUniformRng >(
+                MersenneTwisterUniformRng.class, dimensions, seed_);
+        final InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal > gsg = new InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal >(
+                uniformRsg, new InverseCumulativeNormal());
+        final PathGenerator< InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal > > gen = new PathGenerator< InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal > >(
+                process, grid, gsg, brownianBridge_);
         return new MonteCarloModel.PathGeneratorAdapterImpl(gen);
     }
 }

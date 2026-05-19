@@ -23,9 +23,8 @@ import org.jquantlib.time.Date;
  * <pre>
  *   dx(t) = [y(t) - G(t,T) σ(t)² - κ(t) x(t)] dt  +  σ(t) dW_T
  * </pre>
- * where the drift is the T-forward measure drift, y(t) is the variance integral,
- * and G(t,T) is the annuity-like discount factor. All closed-form quantities are
- * delegated to {@link GsrProcessCore}.
+ * where the drift is the T-forward measure drift, y(t) is the variance integral, and G(t,T) is the annuity-like
+ * discount factor. All closed-form quantities are delegated to {@link GsrProcessCore}.
  *
  * <p>If a single reversion value is provided it is treated as constant.
  * Results are cached; call {@link #flushCache()} after parameter changes.
@@ -34,7 +33,6 @@ import org.jquantlib.time.Date;
  * (commit {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}) per Phase 2j WI-1.2.
  *
  * @author Phase 2j WI-1.2 port (Peter Caspers original C++ author)
- *
  * @see GsrProcessCore
  */
 public class GsrProcess extends ForwardMeasureProcess1D {
@@ -44,16 +42,14 @@ public class GsrProcess extends ForwardMeasureProcess1D {
     private final DayCounter dc_;
 
     /**
-     * Creates the GSR process without date/day-count support.
-     * The {@link #time(Date)} method will throw if called.
+     * Creates the GSR process without date/day-count support. The {@link #time(Date)} method will throw if called.
      *
      * @param times      breakpoint times (size = vols.length - 1)
      * @param vols       piecewise volatilities
      * @param reversions piecewise mean reversions (size 1 = constant)
      * @param T          T-forward measure horizon
      */
-    public GsrProcess(final double[] times, final double[] vols,
-                      final double[] reversions, final double T) {
+    public GsrProcess(final double[] times, final double[] vols, final double[] reversions, final double T) {
         this(times, vols, reversions, T, null, null);
     }
 
@@ -67,13 +63,12 @@ public class GsrProcess extends ForwardMeasureProcess1D {
      * @param referenceDate reference date for {@link #time(Date)} (may be null)
      * @param dc            day counter for {@link #time(Date)} (may be null)
      */
-    public GsrProcess(final double[] times, final double[] vols,
-                      final double[] reversions, final double T,
-                      final Date referenceDate, final DayCounter dc) {
+    public GsrProcess(final double[] times, final double[] vols, final double[] reversions, final double T,
+            final Date referenceDate, final DayCounter dc) {
         super(T);
-        this.core_          = new GsrProcessCore(times, vols, reversions, T);
+        this.core_ = new GsrProcessCore(times, vols, reversions, T);
         this.referenceDate_ = referenceDate;
-        this.dc_            = dc;
+        this.dc_ = dc;
         flushCache();
     }
 
@@ -87,14 +82,11 @@ public class GsrProcess extends ForwardMeasureProcess1D {
     }
 
     /**
-     * Drift μ(t, x) in the T-forward measure.
-     * = y(t) - G(t, T) σ(t)² - κ(t) x
+     * Drift μ(t, x) in the T-forward measure. = y(t) - G(t, T) σ(t)² - κ(t) x
      */
     @Override
     public double drift(final double t, final double x) {
-        return core_.y(t)
-                - core_.G(t, getForwardMeasureTime()) * sigma(t) * sigma(t)
-                - reversion(t) * x;
+        return core_.y(t) - core_.G(t, getForwardMeasureTime()) * sigma(t) * sigma(t) - reversion(t) * x;
     }
 
     /**
@@ -112,9 +104,8 @@ public class GsrProcess extends ForwardMeasureProcess1D {
     @Override
     public double expectation(final double w, final double xw, final double dt) {
         checkT(w + dt);
-        return core_.expectation_x0dep_part(w, xw, dt)
-                + core_.expectation_rn_part(w, dt)
-                + core_.expectation_tf_part(w, dt);
+        return core_.expectation_x0dep_part(w, xw, dt) + core_.expectation_rn_part(w, dt) + core_.expectation_tf_part(w,
+                dt);
     }
 
     /**
@@ -193,8 +184,7 @@ public class GsrProcess extends ForwardMeasureProcess1D {
     public double G(final double t, final double w, final double x) {
         QL.require(w >= t, "G(t,w) should be called with w (%f) not lesser than t (%f)", w, t);
         QL.require(t >= 0.0 && w <= getForwardMeasureTime(),
-                "G(t,w) should be called with (t,w)=(%f,%f) in Range [0,%f]",
-                t, w, getForwardMeasureTime());
+                "G(t,w) should be called with (t,w)=(%f,%f) in Range [0,%f]", t, w, getForwardMeasureTime());
         return core_.G(t, w);
     }
 
@@ -230,7 +220,7 @@ public class GsrProcess extends ForwardMeasureProcess1D {
 
     private void checkT(final double t) {
         QL.require(t <= getForwardMeasureTime() && t >= 0.0,
-                "t (%f) must not be greater than forward measure time (%f) and non-negative",
-                t, getForwardMeasureTime());
+                "t (%f) must not be greater than forward measure time (%f) and non-negative", t,
+                getForwardMeasureTime());
     }
 }

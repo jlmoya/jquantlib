@@ -31,8 +31,8 @@ import org.jquantlib.util.Visitor;
 /**
  * Coupon accruing over a fixed period
  * <p>
- * This class implements part of the CashFlow interface but it is still abstract and provides derived classes with methods for
- * accrual period calculations.
+ * This class implements part of the CashFlow interface but it is still abstract and provides derived classes with
+ * methods for accrual period calculations.
  *
  * @author Ueli Hofstetter
  * @author Daniel Kong
@@ -50,44 +50,33 @@ public abstract class Coupon extends CashFlow {
     protected Date accrualEndDate_;
     protected Date refPeriodStart_;
     protected Date refPeriodEnd_;
-    /** Mirror of C++ {@code Coupon::exCouponDate_} (ql/cashflows/coupon.hpp:93).
-     *  Null/default-construed {@link Date} = "no ex-coupon date".
-     *  Phase 5e.5b-CFC-d-93. */
+    /**
+     * Mirror of C++ {@code Coupon::exCouponDate_} (ql/cashflows/coupon.hpp:93). Null/default-construed {@link Date} =
+     * "no ex-coupon date". Phase 5e.5b-CFC-d-93.
+     */
     protected Date exCouponDate_;
-
 
     //
     // public constructors
     //
 
-    public Coupon(final double nominal,
-            final Date paymentDate,
-            final Date accrualStartDate,
-            final Date accrualEndDate){
+    public Coupon(final double nominal, final Date paymentDate, final Date accrualStartDate,
+            final Date accrualEndDate) {
         this(nominal, paymentDate, accrualStartDate, accrualEndDate, new Date(), new Date(), new Date());
     }
 
-    public Coupon(final double nominal,
-            final Date paymentDate,
-            final Date accrualStartDate,
-            final Date accrualEndDate,
-            final Date refPeriodStart,
-            final Date refPeriodEnd){
-        this(nominal, paymentDate, accrualStartDate, accrualEndDate,
-             refPeriodStart, refPeriodEnd, new Date());
+    public Coupon(final double nominal, final Date paymentDate, final Date accrualStartDate, final Date accrualEndDate,
+            final Date refPeriodStart, final Date refPeriodEnd) {
+        this(nominal, paymentDate, accrualStartDate, accrualEndDate, refPeriodStart, refPeriodEnd, new Date());
     }
 
-    /** Mirror of C++ {@code Coupon::Coupon(paymentDate, nominal,
-     *  accrualStartDate, accrualEndDate, refPeriodStart, refPeriodEnd,
-     *  exCouponDate)} (ql/cashflows/coupon.cpp:27-42).
-     *  Phase 5e.5b-CFC-d-93. */
-    public Coupon(final double nominal,
-            final Date paymentDate,
-            final Date accrualStartDate,
-            final Date accrualEndDate,
-            final Date refPeriodStart,
-            final Date refPeriodEnd,
-            final Date exCouponDate){
+    /**
+     * Mirror of C++
+     * {@code Coupon::Coupon(paymentDate, nominal, accrualStartDate, accrualEndDate, refPeriodStart, refPeriodEnd,
+     * exCouponDate)} (ql/cashflows/coupon.cpp:27-42). Phase 5e.5b-CFC-d-93.
+     */
+    public Coupon(final double nominal, final Date paymentDate, final Date accrualStartDate, final Date accrualEndDate,
+            final Date refPeriodStart, final Date refPeriodEnd, final Date exCouponDate) {
         this.nominal = nominal;
         this.paymentDate_ = paymentDate.clone();
         this.accrualStartDate_ = accrualStartDate.clone();
@@ -96,7 +85,6 @@ public abstract class Coupon extends CashFlow {
         this.refPeriodEnd_ = refPeriodEnd.clone();
         this.exCouponDate_ = exCouponDate == null ? new Date() : exCouponDate.clone();
     }
-
 
     //
     // public abstract methods
@@ -108,20 +96,19 @@ public abstract class Coupon extends CashFlow {
 
     public abstract double accruedAmount(final Date date);
 
-
     //
     // public methods
     //
 
-    public double nominal(){
+    public double nominal() {
         return nominal;
     }
 
-    public Date accrualStartDate(){
+    public Date accrualStartDate() {
         return accrualStartDate_;
     }
 
-    public Date accrualEndDate(){
+    public Date accrualEndDate() {
         return accrualEndDate_;
     }
 
@@ -134,27 +121,22 @@ public abstract class Coupon extends CashFlow {
     }
 
     public double accrualPeriod() {
-        return dayCounter().yearFraction(accrualStartDate_,
-                accrualEndDate_,
-                refPeriodStart_,
-                refPeriodEnd_);
+        return dayCounter().yearFraction(accrualStartDate_, accrualEndDate_, refPeriodStart_, refPeriodEnd_);
     }
 
     public long accrualDays() {
-        return dayCounter().dayCount(accrualStartDate_,
-                accrualEndDate_);
+        return dayCounter().dayCount(accrualStartDate_, accrualEndDate_);
     }
 
-
-    /** Mirror of C++ {@code Coupon::exCouponDate()} (ql/cashflows/coupon.hpp:57).
-     *  Overrides {@link CashFlow#exCouponDate()} to return the configured
-     *  ex-coupon date. Returns a default-construed (null) {@link Date}
-     *  when no ex-coupon date is set. Phase 5e.5b-CFC-d-93. */
+    /**
+     * Mirror of C++ {@code Coupon::exCouponDate()} (ql/cashflows/coupon.hpp:57). Overrides
+     * {@link CashFlow#exCouponDate()} to return the configured ex-coupon date. Returns a default-construed (null)
+     * {@link Date} when no ex-coupon date is set. Phase 5e.5b-CFC-d-93.
+     */
     @Override
     public Date exCouponDate() {
         return exCouponDate_;
     }
-
 
     //
     // implements Event
@@ -165,15 +147,14 @@ public abstract class Coupon extends CashFlow {
         return paymentDate_.clone();
     }
 
-
     //
     // implements PolymorphicVisitable
     //
 
     @Override
     public void accept(final PolymorphicVisitor pv) {
-        final Visitor<Coupon> v = (pv!=null) ? pv.visitor(this.getClass()) : null;
-        if (v != null) {
+        final Visitor< Coupon > v = (pv != null) ? pv.visitor(this.getClass()) : null;
+        if ( v != null ) {
             v.visit(this);
         } else {
             super.accept(pv);

@@ -24,9 +24,6 @@
  */
 package org.jquantlib.experimental.finitedifferences;
 
-import java.util.Collections;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.matrixutilities.Matrix;
@@ -35,16 +32,17 @@ import org.jquantlib.methods.finitedifferences.operators.FdmLinearOpComposite;
 import org.jquantlib.methods.finitedifferences.operators.SecondDerivativeOp;
 import org.jquantlib.methods.finitedifferences.operators.TripleBandLinearOp;
 
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Dupire local-volatility pricing operator.
  * <p>
- * Java port of v1.42.1
- * {@code ql/experimental/finitedifferences/fdmdupire1dop.{hpp,cpp}}.
+ * Java port of v1.42.1 {@code ql/experimental/finitedifferences/fdmdupire1dop.{hpp,cpp}}.
  * <p>
- * Implements the operator {@code 0.5 * sigma_loc(S)^2 * d^2/dS^2} on a 1-D
- * mesh. Time is reversed (the operator is time-independent in the local-vol
- * formulation; {@link #setTime} is a no-op) so that backward solvers can be
- * used directly.
+ * Implements the operator {@code 0.5 * sigma_loc(S)^2 * d^2/dS^2} on a 1-D mesh. Time is reversed (the operator is
+ * time-independent in the local-vol formulation; {@link #setTime} is a no-op) so that backward solvers can be used
+ * directly.
  *
  * @author Phase 4n WI port
  */
@@ -59,7 +57,7 @@ public class FdmDupire1dOp implements FdmLinearOpComposite {
         this.localVolatility_ = localVolatility;
         // 0.5 * localVol^2 * d^2/dS^2
         final Array half = new Array(localVolatility.size());
-        for (int i = 0; i < localVolatility.size(); ++i) {
+        for ( int i = 0; i < localVolatility.size(); ++i ) {
             final double v = localVolatility.get(i);
             half.set(i, 0.5 * v * v);
         }
@@ -88,7 +86,7 @@ public class FdmDupire1dOp implements FdmLinearOpComposite {
 
     @Override
     public Array applyDirection(final int direction, final Array r) {
-        if (direction == 0) {
+        if ( direction == 0 ) {
             return mapT_.apply(r);
         }
         QL.error("direction too large");
@@ -97,7 +95,7 @@ public class FdmDupire1dOp implements FdmLinearOpComposite {
 
     @Override
     public Array solveSplitting(final int direction, final Array r, final double a) {
-        if (direction == 0) {
+        if ( direction == 0 ) {
             return mapT_.solveSplitting(r, a, 1.0);
         }
         QL.error("direction too large");
@@ -110,7 +108,7 @@ public class FdmDupire1dOp implements FdmLinearOpComposite {
     }
 
     @Override
-    public List<Matrix> toMatrixDecomp() {
+    public List< Matrix > toMatrixDecomp() {
         return Collections.singletonList(mapT_.toMatrix());
     }
 

@@ -37,21 +37,19 @@ import org.jquantlib.methods.montecarlo.PathPricer;
  * European-basket multi-path pricer.
  *
  * <p>Java port of {@code QuantLib v1.42.1
- * ql/pricingengines/basket/mceuropeanbasketengine.{hpp,cpp}}::{@code
- * EuropeanMultiPathPricer} (Phase 4i.5 WI-1).
+ * ql/pricingengines/basket/mceuropeanbasketengine.{hpp,cpp}}::{@code EuropeanMultiPathPricer} (Phase 4i.5 WI-1).
  *
  * <p>Computes {@code basketPayoff(finalPrices) * discount} where
  * {@code finalPrices[j] = multiPath[j].back()} for each asset {@code j}.
  *
  * @author JQuantLib
  */
-public class EuropeanMultiPathPricer extends PathPricer<MultiPath> {
+public class EuropeanMultiPathPricer extends PathPricer< MultiPath > {
 
     private final BasketPayoff payoff_;
     private final /* @DiscountFactor */ double discount_;
 
-    public EuropeanMultiPathPricer(final BasketPayoff payoff,
-                                   final double discount) {
+    public EuropeanMultiPathPricer(final BasketPayoff payoff, final double discount) {
         this.payoff_ = payoff;
         this.discount_ = discount;
     }
@@ -66,7 +64,7 @@ public class EuropeanMultiPathPricer extends PathPricer<MultiPath> {
 
         // calculate the final price of each asset
         final double[] finalPrice = new double[numAssets];
-        for (int j = 0; j < numAssets; j++) {
+        for ( int j = 0; j < numAssets; j++ ) {
             finalPrice[j] = multiPath.get(j).back();
         }
         return payoff_.get(finalPrice) * discount_;

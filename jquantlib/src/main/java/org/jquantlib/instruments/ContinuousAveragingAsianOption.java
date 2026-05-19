@@ -62,12 +62,9 @@ public class ContinuousAveragingAsianOption extends OneAssetOption {
     protected Date startDate;
 
     /**
-     * Unseasoned (fresh) continuously-averaging Asian option — averaging has
-     * not yet started.
+     * Unseasoned (fresh) continuously-averaging Asian option — averaging has not yet started.
      */
-    public ContinuousAveragingAsianOption(
-            final AverageType averageType,
-            final StrikedTypePayoff payoff,
+    public ContinuousAveragingAsianOption(final AverageType averageType, final StrikedTypePayoff payoff,
             final Exercise exercise) {
         super(payoff, exercise);
         this.averageType = averageType;
@@ -75,39 +72,36 @@ public class ContinuousAveragingAsianOption extends OneAssetOption {
     }
 
     /**
-     * Seasoned continuously-averaging Asian option — averaging has already
-     * started.  The {@code startDate} is a contract term specifying when
-     * averaging began; the current average (market data) should be provided
-     * to the pricing engine.
+     * Seasoned continuously-averaging Asian option — averaging has already started.  The {@code startDate} is a
+     * contract term specifying when averaging began; the current average (market data) should be provided to the
+     * pricing engine.
      *
      * <p>Port of {@code ContinuousAveragingAsianOption(Average::Type, Date,
      * StrikedTypePayoff, Exercise)} from QuantLib v1.42.1.
      */
-    public ContinuousAveragingAsianOption(
-            final AverageType averageType,
-            final Date startDate,
-            final StrikedTypePayoff payoff,
-            final Exercise exercise) {
+    public ContinuousAveragingAsianOption(final AverageType averageType, final Date startDate,
+            final StrikedTypePayoff payoff, final Exercise exercise) {
         super(payoff, exercise);
         this.averageType = averageType;
         this.startDate = startDate;
     }
 
     @Override
-    public void setupArguments(final PricingEngine.Arguments arguments) /* @ReadOnly */{
+    public void setupArguments(final PricingEngine.Arguments arguments) /* @ReadOnly */ {
         super.setupArguments(arguments);
-        QL.require(ContinuousAveragingAsianOption.Arguments.class.isAssignableFrom(arguments.getClass()), ReflectConstants.WRONG_ARGUMENT_TYPE); // QA:[RG]::verified
+        QL.require(ContinuousAveragingAsianOption.Arguments.class.isAssignableFrom(arguments.getClass()),
+                ReflectConstants.WRONG_ARGUMENT_TYPE); // QA:[RG]::verified
         final ContinuousAveragingAsianOption.ArgumentsImpl a = (ContinuousAveragingAsianOption.ArgumentsImpl) arguments;
         a.averageType = averageType;
         a.startDate = startDate;
     }
 
-
     //
     // public inner classes
     //
 
-    public static class ArgumentsImpl extends OneAssetOption.ArgumentsImpl implements ContinuousAveragingAsianOption.Arguments {
+    public static class ArgumentsImpl extends OneAssetOption.ArgumentsImpl
+            implements ContinuousAveragingAsianOption.Arguments {
 
         // TODO: refactor messages
         private static final String UNSPECIFIED_AVERAGE_TYPE = "unspecified average type";
@@ -120,7 +114,6 @@ public class ContinuousAveragingAsianOption extends OneAssetOption {
         public AverageType averageType;
         public Date startDate;
 
-
         //
         // public constructors
         //
@@ -129,24 +122,21 @@ public class ContinuousAveragingAsianOption extends OneAssetOption {
             super();
         }
 
-
         //
         // public methods
         //
 
         @Override
-        public void validate() /*@ReadOnly*/{
+        public void validate() /*@ReadOnly*/ {
             super.validate();
-            QL.require(averageType!=null , UNSPECIFIED_AVERAGE_TYPE); // QA:[RG]::verified
+            QL.require(averageType != null, UNSPECIFIED_AVERAGE_TYPE); // QA:[RG]::verified
         }
 
     }
 
-
-    public static class ResultsImpl
-            extends OneAssetOption.ResultsImpl
-            implements ContinuousAveragingAsianOption.Results { /* marking interface */ }
-
+    public static class ResultsImpl extends OneAssetOption.ResultsImpl
+            implements ContinuousAveragingAsianOption.Results { /* marking interface */
+    }
 
     /**
      * Asian option on a single asset
@@ -155,8 +145,8 @@ public class ContinuousAveragingAsianOption extends OneAssetOption {
      *
      * @author <Richard Gomes>
      */
-    static public abstract class EngineImpl
-            extends GenericEngine<ContinuousAveragingAsianOption.ArgumentsImpl, ContinuousAveragingAsianOption.ResultsImpl>
+    static public abstract class EngineImpl extends
+            GenericEngine< ContinuousAveragingAsianOption.ArgumentsImpl, ContinuousAveragingAsianOption.ResultsImpl >
             implements ContinuousAveragingAsianOption.Results {
 
         /**

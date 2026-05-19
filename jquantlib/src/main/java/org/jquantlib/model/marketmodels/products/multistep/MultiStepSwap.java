@@ -34,12 +34,10 @@ import org.jquantlib.model.marketmodels.products.MultiProductMultiStep;
 /**
  * Multi-step Swap.
  * <p>
- * Mirrors C++ {@code class MultiStepSwap}
- * (ql/models/marketmodels/products/multistep/multistepswap.{hpp,cpp} v1.42.1).
+ * Mirrors C++ {@code class MultiStepSwap} (ql/models/marketmodels/products/multistep/multistepswap.{hpp,cpp} v1.42.1).
  * <p>
- * Per step emits 2 cash flows (fixed-leg and floating-leg) for product 0.
- * The {@code payer} flag determines the sign convention:
- * {@code multiplier_ = payer ? 1.0 : -1.0}.
+ * Per step emits 2 cash flows (fixed-leg and floating-leg) for product 0. The {@code payer} flag determines the sign
+ * convention: {@code multiplier_ = payer ? 1.0 : -1.0}.
  *
  * @author Jose Moya
  */
@@ -54,12 +52,8 @@ public class MultiStepSwap extends MultiProductMultiStep {
     private final int lastIndex_;
     private int currentIndex_;
 
-    public MultiStepSwap(final double[] rateTimes,
-                         final double[] fixedAccruals,
-                         final double[] floatingAccruals,
-                         final double[] paymentTimes,
-                         final double fixedRate,
-                         final boolean payer) {
+    public MultiStepSwap(final double[] rateTimes, final double[] fixedAccruals, final double[] floatingAccruals,
+            final double[] paymentTimes, final double fixedRate, final boolean payer) {
         super(rateTimes);
         this.fixedAccruals_ = fixedAccruals.clone();
         this.floatingAccruals_ = floatingAccruals.clone();
@@ -71,30 +65,34 @@ public class MultiStepSwap extends MultiProductMultiStep {
         Utilities.checkIncreasingTimes(this.paymentTimes_);
     }
 
-    public MultiStepSwap(final double[] rateTimes,
-                         final double[] fixedAccruals,
-                         final double[] floatingAccruals,
-                         final double[] paymentTimes,
-                         final double fixedRate) {
+    public MultiStepSwap(final double[] rateTimes, final double[] fixedAccruals, final double[] floatingAccruals,
+            final double[] paymentTimes, final double fixedRate) {
         this(rateTimes, fixedAccruals, floatingAccruals, paymentTimes, fixedRate, true);
     }
 
     @Override
-    public double[] possibleCashFlowTimes() { return paymentTimes_; }
+    public double[] possibleCashFlowTimes() {
+        return paymentTimes_;
+    }
 
     @Override
-    public int numberOfProducts() { return 1; }
+    public int numberOfProducts() {
+        return 1;
+    }
 
     @Override
-    public int maxNumberOfCashFlowsPerProductPerStep() { return 2; }
+    public int maxNumberOfCashFlowsPerProductPerStep() {
+        return 2;
+    }
 
     @Override
-    public void reset() { currentIndex_ = 0; }
+    public void reset() {
+        currentIndex_ = 0;
+    }
 
     @Override
-    public boolean nextTimeStep(final CurveState currentState,
-                                final int[] numberCashFlowsThisStep,
-                                final MarketModelMultiProduct.CashFlow[][] genCashFlows) {
+    public boolean nextTimeStep(final CurveState currentState, final int[] numberCashFlowsThisStep,
+            final MarketModelMultiProduct.CashFlow[][] genCashFlows) {
         final double liborRate = currentState.forwardRate(currentIndex_);
 
         genCashFlows[0][0].timeIndex = currentIndex_;
@@ -110,7 +108,6 @@ public class MultiStepSwap extends MultiProductMultiStep {
 
     @Override
     public MarketModelMultiProduct clone() {
-        return new MultiStepSwap(rateTimes_, fixedAccruals_, floatingAccruals_,
-                paymentTimes_, fixedRate_, payer_);
+        return new MultiStepSwap(rateTimes_, fixedAccruals_, floatingAccruals_, paymentTimes_, fixedRate_, payer_);
     }
 }

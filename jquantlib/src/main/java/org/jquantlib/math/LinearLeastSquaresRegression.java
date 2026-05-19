@@ -35,8 +35,7 @@ import java.util.List;
  * General linear least squares regression — backward-compatibility wrapper.
  *
  * <p>Java port of {@code QuantLib v1.42.1
- * ql/math/linearleastsquaresregression.hpp::LinearLeastSquaresRegression}
- * (Phase 5e.5b-CFC-d-16b). Pinned commit
+ * ql/math/linearleastsquaresregression.hpp::LinearLeastSquaresRegression} (Phase 5e.5b-CFC-d-16b). Pinned commit
  * {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
  *
  * <p>This interface is supported for backward compatibility only — please
@@ -46,9 +45,7 @@ import java.util.List;
  */
 public class LinearLeastSquaresRegression extends GeneralLinearLeastSquares {
 
-    public LinearLeastSquaresRegression(final double[] x,
-                                        final double[] y,
-                                        final List<? extends Ops.DoubleOp> v) {
+    public LinearLeastSquaresRegression(final double[] x, final double[] y, final List< ? extends Ops.DoubleOp > v) {
         super(x, y, v);
     }
 }

@@ -26,22 +26,20 @@
 
 package org.jquantlib.model.marketmodels.products.pathwise;
 
-import java.util.Arrays;
-
 import org.jquantlib.QL;
 import org.jquantlib.model.marketmodels.CurveState;
 import org.jquantlib.model.marketmodels.EvolutionDescription;
 import org.jquantlib.model.marketmodels.MarketModelPathwiseMultiProduct;
 import org.jquantlib.model.marketmodels.Utilities;
 
+import java.util.Arrays;
+
 /**
- * Pathwise (adjoint Greeks) multi-caplet product, with payoffs already
- * divided by the numeraire bond (deflated). The deflation factor enters the
- * adjoint via discount-ratio derivatives.
+ * Pathwise (adjoint Greeks) multi-caplet product, with payoffs already divided by the numeraire bond (deflated). The
+ * deflation factor enters the adjoint via discount-ratio derivatives.
  *
  * <p>Mirrors C++ {@code MarketModelPathwiseMultiDeflatedCaplet}
- * (ql/models/marketmodels/products/pathwise/pathwiseproductcaplet.{hpp,cpp}
- * v1.42.1).
+ * (ql/models/marketmodels/products/pathwise/pathwiseproductcaplet.{hpp,cpp} v1.42.1).
  *
  * @author Jose Moya
  */
@@ -57,10 +55,8 @@ public class MarketModelPathwiseMultiDeflatedCaplet extends MarketModelPathwiseM
 
     private int currentIndex_;
 
-    public MarketModelPathwiseMultiDeflatedCaplet(final double[] rateTimes,
-                                                  final double[] accruals,
-                                                  final double[] paymentTimes,
-                                                  final double[] strikes) {
+    public MarketModelPathwiseMultiDeflatedCaplet(final double[] rateTimes, final double[] accruals,
+            final double[] paymentTimes, final double[] strikes) {
         Utilities.checkIncreasingTimes(rateTimes);
         Utilities.checkIncreasingTimes(paymentTimes);
         this.rateTimes_ = rateTimes.clone();
@@ -71,24 +67,18 @@ public class MarketModelPathwiseMultiDeflatedCaplet extends MarketModelPathwiseM
 
         final double[] evolTimes = new double[numberRates_];
         System.arraycopy(rateTimes_, 0, evolTimes, 0, numberRates_);
-        QL.require(evolTimes.length == numberRates_,
-                "rateTimes.size()<> numberOfRates+1");
-        QL.require(paymentTimes.length == numberRates_,
-                "paymentTimes.size()<> numberOfRates");
-        QL.require(accruals.length == numberRates_,
-                "accruals.size()<> numberOfRates");
-        QL.require(strikes.length == numberRates_,
-                "strikes.size()<> numberOfRates");
+        QL.require(evolTimes.length == numberRates_, "rateTimes.size()<> numberOfRates+1");
+        QL.require(paymentTimes.length == numberRates_, "paymentTimes.size()<> numberOfRates");
+        QL.require(accruals.length == numberRates_, "accruals.size()<> numberOfRates");
+        QL.require(strikes.length == numberRates_, "strikes.size()<> numberOfRates");
 
         this.evolution_ = new EvolutionDescription(rateTimes_, evolTimes);
         this.currentIndex_ = 0;
     }
 
     /** Constructor with a single common strike. */
-    public MarketModelPathwiseMultiDeflatedCaplet(final double[] rateTimes,
-                                                  final double[] accruals,
-                                                  final double[] paymentTimes,
-                                                  final double strike) {
+    public MarketModelPathwiseMultiDeflatedCaplet(final double[] rateTimes, final double[] accruals,
+            final double[] paymentTimes, final double strike) {
         this(rateTimes, accruals, paymentTimes, broadcast(strike, accruals.length));
     }
 
@@ -104,34 +94,31 @@ public class MarketModelPathwiseMultiDeflatedCaplet extends MarketModelPathwiseM
     }
 
     @Override
-    public boolean nextTimeStep(final CurveState currentState,
-                                final int[] numberCashFlowsThisStep,
-                                final CashFlow[][] cashFlowsGenerated) {
+    public boolean nextTimeStep(final CurveState currentState, final int[] numberCashFlowsThisStep,
+            final CashFlow[][] cashFlowsGenerated) {
         final double liborRate = currentState.forwardRate(currentIndex_);
         cashFlowsGenerated[currentIndex_][0].timeIndex = currentIndex_;
         cashFlowsGenerated[currentIndex_][0].amount[0] =
-                (liborRate - strikes_[currentIndex_]) * accruals_[currentIndex_]
-                        * currentState.discountRatio(currentIndex_ + 1, 0);
+                (liborRate - strikes_[currentIndex_]) * accruals_[currentIndex_] * currentState.discountRatio(
+                        currentIndex_ + 1, 0);
 
-        for (int i = 0; i < numberCashFlowsThisStep.length; ++i) {
+        for ( int i = 0; i < numberCashFlowsThisStep.length; ++i ) {
             numberCashFlowsThisStep[i] = 0;
         }
 
-        if (cashFlowsGenerated[currentIndex_][0].amount[0] > 0) {
+        if ( cashFlowsGenerated[currentIndex_][0].amount[0] > 0 ) {
             numberCashFlowsThisStep[currentIndex_] = 1;
-            for (int i = 1; i <= numberRates_; ++i) {
+            for ( int i = 1; i <= numberRates_; ++i ) {
                 cashFlowsGenerated[currentIndex_][0].amount[i] = 0.0;
             }
 
             cashFlowsGenerated[currentIndex_][0].amount[currentIndex_ + 1] =
-                    accruals_[currentIndex_]
-                            * currentState.discountRatio(currentIndex_ + 1, 0);
+                    accruals_[currentIndex_] * currentState.discountRatio(currentIndex_ + 1, 0);
 
-            for (int i = 0; i <= currentIndex_; ++i) {
+            for ( int i = 0; i <= currentIndex_; ++i ) {
                 final double stepDF = currentState.discountRatio(i + 1, i);
                 cashFlowsGenerated[currentIndex_][0].amount[i + 1] -=
-                        accruals_[i] * stepDF
-                                * cashFlowsGenerated[currentIndex_][0].amount[0];
+                        accruals_[i] * stepDF * cashFlowsGenerated[currentIndex_][0].amount[0];
             }
         }
         ++currentIndex_;
@@ -140,8 +127,8 @@ public class MarketModelPathwiseMultiDeflatedCaplet extends MarketModelPathwiseM
 
     @Override
     public MarketModelPathwiseMultiProduct clone() {
-        final MarketModelPathwiseMultiDeflatedCaplet copy = new MarketModelPathwiseMultiDeflatedCaplet(
-                rateTimes_, accruals_, paymentTimes_, strikes_);
+        final MarketModelPathwiseMultiDeflatedCaplet copy = new MarketModelPathwiseMultiDeflatedCaplet(rateTimes_,
+                accruals_, paymentTimes_, strikes_);
         copy.currentIndex_ = this.currentIndex_;
         return copy;
     }
@@ -149,7 +136,7 @@ public class MarketModelPathwiseMultiDeflatedCaplet extends MarketModelPathwiseM
     @Override
     public int[] suggestedNumeraires() {
         final int[] numeraires = new int[numberRates_];
-        for (int i = 0; i < numberRates_; ++i) {
+        for ( int i = 0; i < numberRates_; ++i ) {
             numeraires[i] = i;
         }
         return numeraires;

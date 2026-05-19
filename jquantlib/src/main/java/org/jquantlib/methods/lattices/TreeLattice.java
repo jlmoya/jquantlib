@@ -39,33 +39,29 @@
 
 package org.jquantlib.methods.lattices;
 
-import java.util.Vector;
-
 import org.jquantlib.QL;
 import org.jquantlib.instruments.DiscretizedAsset;
 import org.jquantlib.math.Closeness;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.time.TimeGrid;
 
+import java.util.Vector;
+
 /**
  * Tree-based lattice-method base class
  * <p>
- * This class defines a lattice method that is able to rollback
- * (with discount) a discretized asset object. It will be based
- * on one or more trees.
- *
- * @category lattices
+ * This class defines a lattice method that is able to rollback (with discount) a discretized asset object. It will be
+ * based on one or more trees.
  *
  * @author Srinivas Hasti
+ * @category lattices
  */
 public abstract class TreeLattice extends Lattice {
 
     private final int n;
-    private int statePricesLimit;
-
     // Arrow-Debrew state prices
-    protected Vector<Array> statePrices;
-
+    protected Vector< Array > statePrices;
+    private int statePricesLimit;
 
     //
     // public constructors
@@ -74,13 +70,12 @@ public abstract class TreeLattice extends Lattice {
     public TreeLattice(final TimeGrid t, final int n) {
         super(t);
         this.n = n;
-        if (n <= 0)
+        if ( n <= 0 )
             throw new IllegalStateException("there is no zeronomial lattice!");
-        statePrices = new Vector<Array>();
+        statePrices = new Vector< Array >();
         statePrices.add(new Array(1).fill(1.0));//ZH: Verified with QL097
         statePricesLimit = 0;
     }
-
 
     //
     // public abstract methods
@@ -94,19 +89,18 @@ public abstract class TreeLattice extends Lattice {
 
     public abstract int size(int i);
 
-
     //
     // protected methods
     //
 
     protected void computeStatePrices(final int until) {
-        for (int i = statePricesLimit; i < until; i++) {
+        for ( int i = statePricesLimit; i < until; i++ ) {
             statePrices.add(new Array(size(i + 1)));
-            for (int j = 0; j < size(i); j++) {
+            for ( int j = 0; j < size(i); j++ ) {
                 final double disc = discount(i, j);
                 final double statePrice = statePrices.get(i).get(j);
                 final Array array = statePrices.get(i + 1);
-                for (int l = 0; l < n; l++) {
+                for ( int l = 0; l < n; l++ ) {
                     final int index = descendant(i, j, l);
                     final double oldValue = array.get(index);
                     array.set(index, oldValue + (statePrice * disc * probability(i, j, l)));
@@ -116,27 +110,25 @@ public abstract class TreeLattice extends Lattice {
         statePricesLimit = until;
     }
 
-
     //
     // public methods
     //
 
     public Array statePrices(final int i) {
-        if (i > statePricesLimit)
+        if ( i > statePricesLimit )
             computeStatePrices(i);
         return statePrices.get(i);
     }
 
     public void stepback(final int i, final Array values, final Array newValues) {
-        for (int j = 0; j < size(i); j++) {
+        for ( int j = 0; j < size(i); j++ ) {
             double value = 0.0;
-            for (int l = 0; l < n; l++)
+            for ( int l = 0; l < n; l++ )
                 value += probability(i, j, l) * values.get(descendant(i, j, l));
             value *= discount(i, j);
             newValues.set(j, value);
         }
     }
-
 
     //
     // overrides Lattice
@@ -169,7 +161,7 @@ public abstract class TreeLattice extends Lattice {
 
         final double from = asset.time();
 
-        if (Closeness.isClose(from, to))
+        if ( Closeness.isClose(from, to) )
             return;
 
         QL.require(from > to, "cannot roll the asset"); // TODO: message
@@ -177,13 +169,13 @@ public abstract class TreeLattice extends Lattice {
         final int iFrom = t.index(from);
         final int iTo = t.index(to);
 
-        for (int i = iFrom - 1; i >= iTo; --i) {
+        for ( int i = iFrom - 1; i >= iTo; --i ) {
             final Array newValues = new Array(size(i));
             stepback(i, asset.values(), newValues);
             asset.setTime(t.get(i));
             asset.setValues(newValues);
             // skip the very last adjustment
-            if (i != iTo)
+            if ( i != iTo )
                 asset.adjustValues();
         }
     }

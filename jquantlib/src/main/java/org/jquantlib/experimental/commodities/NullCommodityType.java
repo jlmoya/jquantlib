@@ -20,11 +20,10 @@
 package org.jquantlib.experimental.commodities;
 
 /**
- * Sentinel commodity type used by code paths that need a placeholder
- * commodity (e.g. UoM conversions registered against a wildcard type).
+ * Sentinel commodity type used by code paths that need a placeholder commodity (e.g. UoM conversions registered against
+ * a wildcard type).
  * <p>
- * Java port of QuantLib v1.42.1 {@code NullCommodityType} from
- * {@code commoditytype.hpp}.
+ * Java port of QuantLib v1.42.1 {@code NullCommodityType} from {@code commoditytype.hpp}.
  */
 public class NullCommodityType extends CommodityType {
 

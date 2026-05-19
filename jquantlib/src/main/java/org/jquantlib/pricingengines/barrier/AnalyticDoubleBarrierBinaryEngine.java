@@ -42,13 +42,11 @@ import org.jquantlib.time.Frequency;
  * Mirrors {@code QuantLib::AnalyticDoubleBarrierBinaryEngine} from
  * {@code ql/pricingengines/barrier/analyticdoublebarrierbinaryengine.cpp} (v1.42.1).
  * <p>
- * Implements C.H.Hui series ("One-Touch Double Barrier Binary Option Values",
- * Applied Financial Economics 6/1996), as described in "The complete guide to
- * option pricing formulas 2nd Ed", E.G. Haug, McGraw-Hill, p.180.
+ * Implements C.H.Hui series ("One-Touch Double Barrier Binary Option Values", Applied Financial Economics 6/1996), as
+ * described in "The complete guide to option pricing formulas 2nd Ed", E.G. Haug, McGraw-Hill, p.180.
  * <p>
- * The Knock In part of KI+KO and KO+KI options pays at hit, while the Double
- * Knock In pays at end. This engine thus requires European exercise for Double
- * Knock options, and American exercise for KIKO/KOKI.
+ * The Knock In part of KI+KO and KO+KI options pays at hit, while the Double Knock In pays at end. This engine thus
+ * requires European exercise for Double Knock options, and American exercise for KIKO/KOKI.
  *
  * @author JQuantLib migration
  */
@@ -69,9 +67,8 @@ public class AnalyticDoubleBarrierBinaryEngine extends DoubleBarrierOption.Engin
         final OneAssetOption.ResultsImpl r = (OneAssetOption.ResultsImpl) results_;
         final DoubleBarrierType barrierType = a.barrierType;
 
-        if (barrierType == DoubleBarrierType.KIKO || barrierType == DoubleBarrierType.KOKI) {
-            QL.require(a.exercise instanceof AmericanExercise,
-                    "KIKO/KOKI options must have American exercise");
+        if ( barrierType == DoubleBarrierType.KIKO || barrierType == DoubleBarrierType.KOKI ) {
+            QL.require(a.exercise instanceof AmericanExercise, "KIKO/KOKI options must have American exercise");
             final AmericanExercise ex = (AmericanExercise) a.exercise;
             QL.require(ex.dates().get(0).le(process_.blackVolatility().currentLink().referenceDate()),
                     "American option with window exercise not handled yet");
@@ -79,86 +76,83 @@ public class AnalyticDoubleBarrierBinaryEngine extends DoubleBarrierOption.Engin
             QL.require(a.exercise instanceof EuropeanExercise, "non-European exercise given");
         }
 
-        QL.require(a.payoff instanceof CashOrNothingPayoff,
-                "a cash-or-nothing payoff must be given");
+        QL.require(a.payoff instanceof CashOrNothingPayoff, "a cash-or-nothing payoff must be given");
         final CashOrNothingPayoff payoff = (CashOrNothingPayoff) a.payoff;
 
         final double spot = process_.stateVariable().currentLink().value();
         QL.require(spot > 0.0, "negative or null underlying given");
 
-        final double variance = process_.blackVolatility().currentLink().blackVariance(
-                a.exercise.lastDate(), payoff.strike());
+        final double variance = process_.blackVolatility().currentLink()
+                .blackVariance(a.exercise.lastDate(), payoff.strike());
 
         final double barrierLo = a.barrier_lo;
         final double barrierHi = a.barrier_hi;
         QL.require(barrierLo > 0.0, "positive low barrier value required");
         QL.require(barrierHi > 0.0, "positive high barrier value required");
         QL.require(barrierLo < barrierHi, "barrier_lo must be < barrier_hi");
-        QL.require(barrierType == DoubleBarrierType.KnockIn
-                || barrierType == DoubleBarrierType.KnockOut
-                || barrierType == DoubleBarrierType.KIKO
-                || barrierType == DoubleBarrierType.KOKI,
+        QL.require(barrierType == DoubleBarrierType.KnockIn || barrierType == DoubleBarrierType.KnockOut
+                        || barrierType == DoubleBarrierType.KIKO || barrierType == DoubleBarrierType.KOKI,
                 "Unsupported barrier type");
 
         // degenerate cases
-        switch (barrierType) {
-            case KnockOut:
-                if (spot <= barrierLo || spot >= barrierHi) {
-                    setZeroResult(r);
-                    return;
-                }
-                break;
-            case KnockIn:
-                if (spot <= barrierLo || spot >= barrierHi) {
-                    r.value = payoff.getCashPayoff();
-                    r.greeks().delta = 0;
-                    r.greeks().gamma = 0;
-                    r.greeks().vega = 0;
-                    r.greeks().rho = 0;
-                    return;
-                }
-                break;
-            case KIKO:
-                if (spot >= barrierHi) {
-                    setZeroResult(r);
-                    return;
-                } else if (spot <= barrierLo) {
-                    r.value = payoff.getCashPayoff();
-                    r.greeks().delta = 0;
-                    r.greeks().gamma = 0;
-                    r.greeks().vega = 0;
-                    r.greeks().rho = 0;
-                    return;
-                }
-                break;
-            case KOKI:
-                if (spot <= barrierLo) {
-                    setZeroResult(r);
-                    return;
-                } else if (spot >= barrierHi) {
-                    r.value = payoff.getCashPayoff();
-                    r.greeks().delta = 0;
-                    r.greeks().gamma = 0;
-                    r.greeks().vega = 0;
-                    r.greeks().rho = 0;
-                    return;
-                }
-                break;
-            default:
-                throw new LibraryException("Unsupported barrier type");
+        switch ( barrierType ) {
+        case KnockOut:
+            if ( spot <= barrierLo || spot >= barrierHi ) {
+                setZeroResult(r);
+                return;
+            }
+            break;
+        case KnockIn:
+            if ( spot <= barrierLo || spot >= barrierHi ) {
+                r.value = payoff.getCashPayoff();
+                r.greeks().delta = 0;
+                r.greeks().gamma = 0;
+                r.greeks().vega = 0;
+                r.greeks().rho = 0;
+                return;
+            }
+            break;
+        case KIKO:
+            if ( spot >= barrierHi ) {
+                setZeroResult(r);
+                return;
+            } else if ( spot <= barrierLo ) {
+                r.value = payoff.getCashPayoff();
+                r.greeks().delta = 0;
+                r.greeks().gamma = 0;
+                r.greeks().vega = 0;
+                r.greeks().rho = 0;
+                return;
+            }
+            break;
+        case KOKI:
+            if ( spot <= barrierLo ) {
+                setZeroResult(r);
+                return;
+            } else if ( spot >= barrierHi ) {
+                r.value = payoff.getCashPayoff();
+                r.greeks().delta = 0;
+                r.greeks().gamma = 0;
+                r.greeks().vega = 0;
+                r.greeks().rho = 0;
+                return;
+            }
+            break;
+        default:
+            throw new LibraryException("Unsupported barrier type");
         }
 
-        switch (barrierType) {
-            case KnockOut:
-            case KnockIn:
-                r.value = payoffAtExpiry(payoff, a, spot, variance, barrierType);
-                break;
-            case KIKO:
-            case KOKI:
-                r.value = payoffKIKO(payoff, a, spot, variance, barrierType);
-                break;
-            default:
-                throw new LibraryException("Unsupported barrier type");
+        switch ( barrierType ) {
+        case KnockOut:
+        case KnockIn:
+            r.value = payoffAtExpiry(payoff, a, spot, variance, barrierType);
+            break;
+        case KIKO:
+        case KOKI:
+            r.value = payoffKIKO(payoff, a, spot, variance, barrierType);
+            break;
+        default:
+            throw new LibraryException("Unsupported barrier type");
         }
     }
 
@@ -170,23 +164,17 @@ public class AnalyticDoubleBarrierBinaryEngine extends DoubleBarrierOption.Engin
         r.greeks().rho = 0;
     }
 
-
     /**
      * Mirrors C++ {@code AnalyticDoubleBarrierBinaryEngine_helper::payoffAtExpiry}.
      */
-    private double payoffAtExpiry(final CashOrNothingPayoff payoff,
-                                   final DoubleBarrierOption.ArgumentsImpl a,
-                                   final double spot, final double variance,
-                                   final DoubleBarrierType barrierType) {
+    private double payoffAtExpiry(final CashOrNothingPayoff payoff, final DoubleBarrierOption.ArgumentsImpl a,
+            final double spot, final double variance, final DoubleBarrierType barrierType) {
         return payoffAtExpiry(payoff, a, spot, variance, barrierType, 100, 1e-8);
     }
 
-    private double payoffAtExpiry(final CashOrNothingPayoff payoff,
-                                   final DoubleBarrierOption.ArgumentsImpl a,
-                                   final double spot, final double variance,
-                                   final DoubleBarrierType barrierType,
-                                   final int maxIteration,
-                                   final double requiredConvergence) {
+    private double payoffAtExpiry(final CashOrNothingPayoff payoff, final DoubleBarrierOption.ArgumentsImpl a,
+            final double spot, final double variance, final DoubleBarrierType barrierType, final int maxIteration,
+            final double requiredConvergence) {
         QL.require(spot > 0.0, "positive spot value required");
         QL.require(variance >= 0.0, "negative variance not allowed");
 
@@ -198,10 +186,10 @@ public class AnalyticDoubleBarrierBinaryEngine extends DoubleBarrierOption.Engin
         final double barrierHi = a.barrier_hi;
 
         final double sigmaq = variance / residualTime;
-        final double r = process_.riskFreeRate().currentLink().zeroRate(
-                residualTime, Compounding.Continuous, Frequency.NoFrequency, false).rate();
-        final double q = process_.dividendYield().currentLink().zeroRate(
-                residualTime, Compounding.Continuous, Frequency.NoFrequency, false).rate();
+        final double r = process_.riskFreeRate().currentLink()
+                .zeroRate(residualTime, Compounding.Continuous, Frequency.NoFrequency, false).rate();
+        final double q = process_.dividendYield().currentLink()
+                .zeroRate(residualTime, Compounding.Continuous, Frequency.NoFrequency, false).rate();
         final double b = r - q;
 
         final double alpha = -0.5 * (2 * b / sigmaq - 1);
@@ -213,45 +201,36 @@ public class AnalyticDoubleBarrierBinaryEngine extends DoubleBarrierOption.Engin
 
         double tot = 0;
         double term = 0;
-        for (int i = 1; i < maxIteration; i++) {
-            final double term1 = (loAlpha - Math.pow(-1.0, i) * hiAlpha)
-                    / (alpha * alpha + Math.pow(i * PI / Z, 2));
+        for ( int i = 1; i < maxIteration; i++ ) {
+            final double term1 = (loAlpha - Math.pow(-1.0, i) * hiAlpha) / (alpha * alpha + Math.pow(i * PI / Z, 2));
             final double term2 = Math.sin(i * PI / Z * Math.log(spot / barrierLo));
             final double term3 = Math.exp(-0.5 * (Math.pow(i * PI / Z, 2) - beta) * variance);
             term = factor * i * term1 * term2 * term3;
             tot += term;
         }
 
-        QL.require(Math.abs(term) < requiredConvergence,
-                "serie did not converge sufficiently fast");
+        QL.require(Math.abs(term) < requiredConvergence, "serie did not converge sufficiently fast");
 
-        if (barrierType == DoubleBarrierType.KnockOut) {
+        if ( barrierType == DoubleBarrierType.KnockOut ) {
             return Math.max(tot, 0.0); // KO
         } else {
-            final double discount = process_.riskFreeRate().currentLink().discount(
-                    a.exercise.lastDate());
+            final double discount = process_.riskFreeRate().currentLink().discount(a.exercise.lastDate());
             QL.require(discount > 0.0, "positive discount required");
             return Math.max(cash * discount - tot, 0.0); // KI
         }
     }
 
-
     /**
      * Mirrors C++ {@code AnalyticDoubleBarrierBinaryEngine_helper::payoffKIKO}.
      */
-    private double payoffKIKO(final CashOrNothingPayoff payoff,
-                               final DoubleBarrierOption.ArgumentsImpl a,
-                               final double spot, final double variance,
-                               final DoubleBarrierType barrierType) {
+    private double payoffKIKO(final CashOrNothingPayoff payoff, final DoubleBarrierOption.ArgumentsImpl a,
+            final double spot, final double variance, final DoubleBarrierType barrierType) {
         return payoffKIKO(payoff, a, spot, variance, barrierType, 1000, 1e-8);
     }
 
-    private double payoffKIKO(final CashOrNothingPayoff payoff,
-                               final DoubleBarrierOption.ArgumentsImpl a,
-                               final double spot, final double variance,
-                               final DoubleBarrierType barrierType,
-                               final int maxIteration,
-                               final double requiredConvergence) {
+    private double payoffKIKO(final CashOrNothingPayoff payoff, final DoubleBarrierOption.ArgumentsImpl a,
+            final double spot, final double variance, final DoubleBarrierType barrierType, final int maxIteration,
+            final double requiredConvergence) {
         QL.require(spot > 0.0, "positive spot value required");
         QL.require(variance >= 0.0, "negative variance not allowed");
 
@@ -261,7 +240,7 @@ public class AnalyticDoubleBarrierBinaryEngine extends DoubleBarrierOption.Engin
         final double cash = payoff.getCashPayoff();
         double barrierLo = a.barrier_lo;
         double barrierHi = a.barrier_hi;
-        if (barrierType == DoubleBarrierType.KOKI) {
+        if ( barrierType == DoubleBarrierType.KOKI ) {
             // swap
             final double tmp = barrierLo;
             barrierLo = barrierHi;
@@ -269,10 +248,10 @@ public class AnalyticDoubleBarrierBinaryEngine extends DoubleBarrierOption.Engin
         }
 
         final double sigmaq = variance / residualTime;
-        final double r = process_.riskFreeRate().currentLink().zeroRate(
-                residualTime, Compounding.Continuous, Frequency.NoFrequency, false).rate();
-        final double q = process_.dividendYield().currentLink().zeroRate(
-                residualTime, Compounding.Continuous, Frequency.NoFrequency, false).rate();
+        final double r = process_.riskFreeRate().currentLink()
+                .zeroRate(residualTime, Compounding.Continuous, Frequency.NoFrequency, false).rate();
+        final double q = process_.dividendYield().currentLink()
+                .zeroRate(residualTime, Compounding.Continuous, Frequency.NoFrequency, false).rate();
         final double b = r - q;
 
         final double alpha = -0.5 * (2 * b / sigmaq - 1);
@@ -282,7 +261,7 @@ public class AnalyticDoubleBarrierBinaryEngine extends DoubleBarrierOption.Engin
 
         double tot = 0;
         double term = 0;
-        for (int i = 1; i < maxIteration; i++) {
+        for ( int i = 1; i < maxIteration; i++ ) {
             final double factor = Math.pow(i * PI / Z, 2) - beta;
             final double term1 = (beta - Math.pow(i * PI / Z, 2) * Math.exp(-0.5 * factor * variance)) / factor;
             final double term2 = Math.sin(i * PI / Z * logSL);
@@ -292,8 +271,7 @@ public class AnalyticDoubleBarrierBinaryEngine extends DoubleBarrierOption.Engin
         tot += 1 - logSL / Z;
         tot *= cash * Math.pow(spot / barrierLo, alpha);
 
-        QL.require(Math.abs(term) < requiredConvergence,
-                "serie did not converge sufficiently fast");
+        QL.require(Math.abs(term) < requiredConvergence, "serie did not converge sufficiently fast");
 
         return Math.max(tot, 0.0);
     }

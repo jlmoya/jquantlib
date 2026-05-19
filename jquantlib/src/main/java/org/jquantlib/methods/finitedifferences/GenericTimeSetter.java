@@ -43,11 +43,10 @@ import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.methods.finitedifferences.TridiagonalOperator.TimeSetter;
 
 /**
- * @author Srinivas Hasti
- *
  * @param <T>
+ * @author Srinivas Hasti
  */
-public class GenericTimeSetter<T extends PdeSecondOrderParabolic> implements TimeSetter {
+public class GenericTimeSetter< T extends PdeSecondOrderParabolic > implements TimeSetter {
     private final TransformedGrid grid;
     private final T pde;
 
@@ -55,7 +54,6 @@ public class GenericTimeSetter<T extends PdeSecondOrderParabolic> implements Tim
         this.grid = pde.applyGridType(grid);
         this.pde = pde;
     }
-
 
     @Override
     public void setTime(final double t, final TridiagonalOperator l) {

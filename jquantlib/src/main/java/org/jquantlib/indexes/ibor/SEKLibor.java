@@ -51,31 +51,27 @@ import org.jquantlib.time.calendars.Sweden;
 /**
  * Sweden Krone LIBOR fixed by BBA
  *
- * @see <a href="http://www.bba.org.uk/bba/jsp/polopoly.jsp?d=225&a=1414">http://www.bba.org.uk/bba/jsp/polopoly.jsp?d=225&a=1414</a>
+ * @see <a
+ * href="http://www.bba.org.uk/bba/jsp/polopoly.jsp?d=225&a=1414">http://www.bba.org.uk/bba/jsp/polopoly.jsp?d=225&a=1414</a>
  */
 public class SEKLibor extends Libor {
 
-	public SEKLibor(final Period tenor) {
-		this(tenor, new Handle<YieldTermStructure>(
-						new AbstractYieldTermStructure() {
-							@Override
-							protected double discountImpl(final double t) {
-								throw new UnsupportedOperationException();
-							}
-							@Override
-							public Date maxDate() {
-								throw new UnsupportedOperationException();
-							}
-						}
-				));
-	}
+    public SEKLibor(final Period tenor) {
+        this(tenor, new Handle< YieldTermStructure >(new AbstractYieldTermStructure() {
+            @Override
+            protected double discountImpl(final double t) {
+                throw new UnsupportedOperationException();
+            }
 
-	public SEKLibor(final Period tenor,
-			final Handle<YieldTermStructure> h) {
-		super("SEKLibor", tenor, 2,
-				new SEKCurrency(),
-				new Sweden(),
-				new Actual360(), h);
-	}
+            @Override
+            public Date maxDate() {
+                throw new UnsupportedOperationException();
+            }
+        }));
+    }
+
+    public SEKLibor(final Period tenor, final Handle< YieldTermStructure > h) {
+        super("SEKLibor", tenor, 2, new SEKCurrency(), new Sweden(), new Actual360(), h);
+    }
 
 }

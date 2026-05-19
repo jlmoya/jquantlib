@@ -23,39 +23,38 @@ When applicable, the original copyright notice follows this notice.
  */
 package org.jquantlib.model.shortrate.onefactormodels;
 
-import java.util.List;
-
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.util.DefaultObservable;
 import org.jquantlib.util.Observable;
 import org.jquantlib.util.Observer;
 
+import java.util.List;
+
 /**
- * 
+ *
  * @author Praneet Tiwari
  */
 // ! Term-structure consistent model class
 /*
  * ! This is a base class for models that can reprice exactly any discount bond.
- * 
+ *
  * \ingroup shortrate
  */
 public class TermStructureConsistentModelClass implements Observable {
-    
+
     // Phase 2x A.4: WeakReferenceObservable to break cumulative
     // observer-list bleed across tests.
-    private DefaultObservable delegatedObservable = new org.jquantlib.util.WeakReferenceObservable(this);
+    private final DefaultObservable delegatedObservable = new org.jquantlib.util.WeakReferenceObservable(this);
+    private final Handle< YieldTermStructure > termStructure_;
 
-    public TermStructureConsistentModelClass(final Handle<YieldTermStructure> termStructure) {
+    public TermStructureConsistentModelClass(final Handle< YieldTermStructure > termStructure) {
         termStructure_ = (termStructure);
     }
 
-    public final Handle<YieldTermStructure> termStructure() {
+    public final Handle< YieldTermStructure > termStructure() {
         return termStructure_;
     }
-
-    private Handle<YieldTermStructure> termStructure_;
 
     @Override
     public void addObserver(Observer observer) {
@@ -78,7 +77,7 @@ public class TermStructureConsistentModelClass implements Observable {
     }
 
     @Override
-    public List<Observer> getObservers() {
+    public List< Observer > getObservers() {
         return delegatedObservable.getObservers();
     }
 

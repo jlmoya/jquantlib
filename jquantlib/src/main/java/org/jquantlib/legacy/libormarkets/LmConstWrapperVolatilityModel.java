@@ -14,8 +14,7 @@ import org.jquantlib.math.matrixutilities.Array;
  * Const-wrapper volatility model.
  *
  * <p>Forwards every call to a held {@link LmVolatilityModel}; its own
- * {@code arguments_} list is empty so it does not participate in
- * calibration.
+ * {@code arguments_} list is empty so it does not participate in calibration.
  *
  * <p>Java port of QuantLib v1.42.1
  * {@code legacy/libormarketmodels/lmconstwrappervolmodel.hpp}.

@@ -61,27 +61,13 @@ public final class HestonSLVFokkerPlanckFdmParams {
     /** Finite-difference scheme. */
     public final FdmSchemeDesc schemeDesc;
 
-    /** Mirrors C++ {@code FdmHestonGreensFct::Algorithm} enum. */
-    public enum GreensFctAlgorithm {
-        ZeroCorrelation, Gaussian, SemiAnalytical
-    }
-
-    public HestonSLVFokkerPlanckFdmParams(
-            final int xGrid, final int vGrid,
-            final int tMaxStepsPerYear, final int tMinStepsPerYear,
-            final double tStepNumberDecay,
-            final int nRannacherTimeSteps,
-            final int predictionCorretionSteps,
-            final double x0Density,
-            final double localVolEpsProb,
-            final int maxIntegrationIterations,
-            final double vLowerEps, final double vUpperEps, final double vMin,
-            final double v0Density,
-            final double vLowerBoundDensity, final double vUpperBoundDensity,
-            final double leverageFctPropEps,
-            final GreensFctAlgorithm greensAlgorithm,
-            final TransformationType trafoType,
-            final FdmSchemeDesc schemeDesc) {
+    public HestonSLVFokkerPlanckFdmParams(final int xGrid, final int vGrid, final int tMaxStepsPerYear,
+            final int tMinStepsPerYear, final double tStepNumberDecay, final int nRannacherTimeSteps,
+            final int predictionCorretionSteps, final double x0Density, final double localVolEpsProb,
+            final int maxIntegrationIterations, final double vLowerEps, final double vUpperEps, final double vMin,
+            final double v0Density, final double vLowerBoundDensity, final double vUpperBoundDensity,
+            final double leverageFctPropEps, final GreensFctAlgorithm greensAlgorithm,
+            final TransformationType trafoType, final FdmSchemeDesc schemeDesc) {
         this.xGrid = xGrid;
         this.vGrid = vGrid;
         this.tMaxStepsPerYear = tMaxStepsPerYear;
@@ -102,5 +88,10 @@ public final class HestonSLVFokkerPlanckFdmParams {
         this.greensAlgorithm = greensAlgorithm;
         this.trafoType = trafoType;
         this.schemeDesc = schemeDesc;
+    }
+
+    /** Mirrors C++ {@code FdmHestonGreensFct::Algorithm} enum. */
+    public enum GreensFctAlgorithm {
+        ZeroCorrelation, Gaussian, SemiAnalytical
     }
 }

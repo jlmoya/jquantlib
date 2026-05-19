@@ -37,25 +37,18 @@ import org.jquantlib.indexes.CPI;
 import org.jquantlib.indexes.ZeroInflationIndex;
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.math.Constants;
-import org.jquantlib.time.BusinessDayConvention;
-import org.jquantlib.time.Calendar;
-import org.jquantlib.time.Date;
-import org.jquantlib.time.Period;
-import org.jquantlib.time.Schedule;
+import org.jquantlib.time.*;
 
 /**
  * Helper class building a sequence of capped/floored CPI coupons.
  *
  * <p>Also allowing for the inflated notional at the end (especially if there
- * is only one date in the schedule). If the fixed rate is zero you get a
- * {@link FixedRateCoupon}; otherwise you get a {@link CPICoupon}. Always
- * emits a terminal {@link CPICashFlow} for the notional.
+ * is only one date in the schedule). If the fixed rate is zero you get a {@link FixedRateCoupon}; otherwise you get a
+ * {@link CPICoupon}. Always emits a terminal {@link CPICashFlow} for the notional.
  *
  * <p>Mirrors C++ {@code QuantLib::CPILeg} at v1.42.1
- * (cashflows/cpicoupon.{hpp,cpp}). The C++ class uses an
- * {@code operator Leg() const} implicit conversion; the Java port exposes
- * {@link #Leg()} as the explicit terminal builder method (mirroring
- * {@link IborLeg#Leg()}).
+ * (cashflows/cpicoupon.{hpp,cpp}). The C++ class uses an {@code operator Leg() const} implicit conversion; the Java
+ * port exposes {@link #Leg()} as the explicit terminal builder method (mirroring {@link IborLeg#Leg()}).
  *
  * @author JQuantLib migration team (Phase 2x A.2)
  */
@@ -88,10 +81,8 @@ public class CPILeg {
     // public constructors
     //
 
-    public CPILeg(final Schedule schedule,
-                  final ZeroInflationIndex index,
-                  final double baseCPI,
-                  final Period observationLag) {
+    public CPILeg(final Schedule schedule, final ZeroInflationIndex index, final double baseCPI,
+            final Period observationLag) {
         this.schedule_ = schedule;
         this.index_ = index;
         this.baseCPI_ = baseCPI;
@@ -117,6 +108,42 @@ public class CPILeg {
     //
     // builder setters
     //
+
+    private static double get(final double[] v, final int i, final double defaultValue) {
+        if ( v == null || v.length == 0 ) {
+            return defaultValue;
+        } else if ( i < v.length ) {
+            return v[i];
+        } else {
+            return v[v.length - 1];
+        }
+    }
+
+    private static boolean noOption(final double[] caps, final double[] floors, final int i) {
+        return isNullRate(get(caps, i, Constants.NULL_REAL)) && isNullRate(get(floors, i, Constants.NULL_REAL));
+    }
+
+    private static double effectiveFixedRate(final double[] spreads, final double[] caps, final double[] floors,
+            final int i) {
+        double result = get(spreads, i, 0.0);
+        final double floor = get(floors, i, Constants.NULL_REAL);
+        if ( !isNullRate(floor) ) {
+            result = Math.max(floor, result);
+        }
+        final double cap = get(caps, i, Constants.NULL_REAL);
+        if ( !isNullRate(cap) ) {
+            result = Math.min(cap, result);
+        }
+        return result;
+    }
+
+    private static boolean isNullCPI(final double v) {
+        return Double.isNaN(v) || v == Constants.NULL_REAL;
+    }
+
+    private static boolean isNullRate(final double v) {
+        return Double.isNaN(v) || v == Constants.NULL_REAL;
+    }
 
     public CPILeg withNotionals(final double notional) {
         this.notionals_ = new double[] { notional };
@@ -173,20 +200,26 @@ public class CPILeg {
         return this;
     }
 
+    //
+    // terminal builder
+    //
+
     public CPILeg withFloors(final double floor) {
         this.floors_ = new double[] { floor };
         return this;
     }
+
+    //
+    // detail helpers (mirrors QuantLib::detail::get / noOption / effectiveFixedRate)
+    //
 
     public CPILeg withFloors(final double[] floors) {
         this.floors_ = floors.clone();
         return this;
     }
 
-    public CPILeg withExCouponPeriod(final Period period,
-                                     final Calendar cal,
-                                     final BusinessDayConvention convention,
-                                     final boolean endOfMonth) {
+    public CPILeg withExCouponPeriod(final Period period, final Calendar cal, final BusinessDayConvention convention,
+            final boolean endOfMonth) {
         this.exCouponPeriod_ = period;
         this.exCouponCalendar_ = cal;
         this.exCouponAdjustment_ = convention;
@@ -194,9 +227,7 @@ public class CPILeg {
         return this;
     }
 
-    public CPILeg withExCouponPeriod(final Period period,
-                                     final Calendar cal,
-                                     final BusinessDayConvention convention) {
+    public CPILeg withExCouponPeriod(final Period period, final Calendar cal, final BusinessDayConvention convention) {
         return withExCouponPeriod(period, cal, convention, false);
     }
 
@@ -204,10 +235,6 @@ public class CPILeg {
         this.baseDate_ = baseDate;
         return this;
     }
-
-    //
-    // terminal builder
-    //
 
     /**
      * Mirrors C++ {@code CPILeg::operator Leg() const} (cpicoupon.cpp:272-352).
@@ -223,15 +250,14 @@ public class CPILeg {
         // BaseDate and baseCPI are not given: use schedule.date(0) -
         // observationLag and let the CPICashFlow / pricer resolve via the
         // inflation index.
-        if (n > 0) {
-            QL.require(fixedRates_ != null && fixedRates_.length > 0,
-                    "no fixedRates given");
+        if ( n > 0 ) {
+            QL.require(fixedRates_ != null && fixedRates_.length > 0, "no fixedRates given");
 
-            if (baseDate_.isNull() && isNullCPI(baseCPI_)) {
+            if ( baseDate_.isNull() && isNullCPI(baseCPI_) ) {
                 baseDate = schedule_.date(0).sub(observationLag_);
             }
 
-            for (int i = 0; i < n; ++i) {
+            for ( int i = 0; i < n; ++i ) {
                 Date refStart = schedule_.date(i);
                 Date start = refStart;
                 Date refEnd = schedule_.date(i + 1);
@@ -239,12 +265,9 @@ public class CPILeg {
                 final Date paymentDate = paymentCalendar_.adjust(end, paymentAdjustment_);
 
                 Date exCouponDate = new Date();
-                if (exCouponPeriod_ != null && exCouponPeriod_.length() != 0) {
-                    exCouponDate = exCouponCalendar_.advance(
-                            paymentDate,
-                            exCouponPeriod_.negative(),
-                            exCouponAdjustment_,
-                            exCouponEndOfMonth_);
+                if ( exCouponPeriod_ != null && exCouponPeriod_.length() != 0 ) {
+                    exCouponDate = exCouponCalendar_.advance(paymentDate, exCouponPeriod_.negative(),
+                            exCouponAdjustment_, exCouponEndOfMonth_);
                 }
 
                 // Short-stub adjustment for irregular first/last periods
@@ -252,38 +275,28 @@ public class CPILeg {
                 // exposes isRegular(i+1) — when fullInterface_ is false
                 // isRegular() returns true for all periods, so this branch
                 // is a no-op (matches C++ when hasIsRegular()==false).
-                if (i == 0 && schedule_.size() > 1 && !schedule_.isRegular(i + 1)) {
+                if ( i == 0 && schedule_.size() > 1 && !schedule_.isRegular(i + 1) ) {
                     final BusinessDayConvention bdc = schedule_.businessDayConvention();
                     refStart = schedule_.calendar().adjust(end.sub(schedule_.tenor()), bdc);
                 }
-                if (i == n - 1 && schedule_.size() > 1 && !schedule_.isRegular(i + 1)) {
+                if ( i == n - 1 && schedule_.size() > 1 && !schedule_.isRegular(i + 1) ) {
                     final BusinessDayConvention bdc = schedule_.businessDayConvention();
                     refEnd = schedule_.calendar().adjust(start.add(schedule_.tenor()), bdc);
                 }
 
-                if (get(fixedRates_, i, 1.0) == 0.0) {
+                if ( get(fixedRates_, i, 1.0) == 0.0 ) {
                     // Zero-rate optimization: emit a FixedRateCoupon at the
                     // (possibly capped/floored) effective rate.
-                    leg.add(new FixedRateCoupon(
-                            get(notionals_, i, 0.0), paymentDate,
-                            effectiveFixedRate(new double[0], caps_, floors_, i),
-                            paymentDayCounter_,
-                            start, end, refStart, refEnd));
+                    leg.add(new FixedRateCoupon(get(notionals_, i, 0.0), paymentDate,
+                            effectiveFixedRate(new double[0], caps_, floors_, i), paymentDayCounter_, start, end,
+                            refStart, refEnd));
                 } else {
-                    if (noOption(caps_, floors_, i)) {
-                        leg.add(new CPICoupon(
-                                baseCPI_, baseDate,
-                                paymentDate,
-                                get(notionals_, i, 0.0),
-                                start, end,
-                                index_, observationLag_,
-                                observationInterpolation_,
-                                paymentDayCounter_,
-                                get(fixedRates_, i, 0.0),
-                                refStart, refEnd, exCouponDate));
+                    if ( noOption(caps_, floors_, i) ) {
+                        leg.add(new CPICoupon(baseCPI_, baseDate, paymentDate, get(notionals_, i, 0.0), start, end,
+                                index_, observationLag_, observationInterpolation_, paymentDayCounter_,
+                                get(fixedRates_, i, 0.0), refStart, refEnd, exCouponDate));
                     } else {
-                        throw new LibraryException(
-                                "caps/floors on CPI coupons not implemented.");
+                        throw new LibraryException("caps/floors on CPI coupons not implemented.");
                     }
                 }
             }
@@ -291,66 +304,17 @@ public class CPILeg {
 
         // Terminal notional cash flow — always present in CPI legs.
         final Date payDate = paymentCalendar_.adjust(schedule_.date(n), paymentAdjustment_);
-        leg.add(new CPICashFlow(
-                get(notionals_, n, 0.0), index_,
-                baseDate, baseCPI_,
-                schedule_.date(n),
-                observationLag_,
-                observationInterpolation_,
-                payDate,
-                subtractInflationNominal_));
+        leg.add(new CPICashFlow(get(notionals_, n, 0.0), index_, baseDate, baseCPI_, schedule_.date(n), observationLag_,
+                observationInterpolation_, payDate, subtractInflationNominal_));
 
         // Attach a default CPICouponPricer to every CPICoupon in the leg
         // (mirrors C++ setCouponPricer(leg, make_shared<CPICouponPricer>())).
         final CPICouponPricer pricer = new CPICouponPricer();
-        for (final CashFlow cf : leg) {
-            if (cf instanceof CPICoupon) {
+        for ( final CashFlow cf : leg ) {
+            if ( cf instanceof CPICoupon ) {
                 ((CPICoupon) cf).setPricer(pricer);
             }
         }
         return leg;
-    }
-
-    //
-    // detail helpers (mirrors QuantLib::detail::get / noOption / effectiveFixedRate)
-    //
-
-    private static double get(final double[] v, final int i, final double defaultValue) {
-        if (v == null || v.length == 0) {
-            return defaultValue;
-        } else if (i < v.length) {
-            return v[i];
-        } else {
-            return v[v.length - 1];
-        }
-    }
-
-    private static boolean noOption(final double[] caps, final double[] floors, final int i) {
-        return isNullRate(get(caps, i, Constants.NULL_REAL))
-                && isNullRate(get(floors, i, Constants.NULL_REAL));
-    }
-
-    private static double effectiveFixedRate(final double[] spreads,
-                                             final double[] caps,
-                                             final double[] floors,
-                                             final int i) {
-        double result = get(spreads, i, 0.0);
-        final double floor = get(floors, i, Constants.NULL_REAL);
-        if (!isNullRate(floor)) {
-            result = Math.max(floor, result);
-        }
-        final double cap = get(caps, i, Constants.NULL_REAL);
-        if (!isNullRate(cap)) {
-            result = Math.min(cap, result);
-        }
-        return result;
-    }
-
-    private static boolean isNullCPI(final double v) {
-        return Double.isNaN(v) || v == Constants.NULL_REAL;
-    }
-
-    private static boolean isNullRate(final double v) {
-        return Double.isNaN(v) || v == Constants.NULL_REAL;
     }
 }

@@ -48,11 +48,8 @@ public class MultiStepCoinitialSwaps extends MultiProductMultiStep {
     private final int lastIndex_;
     private int currentIndex_;
 
-    public MultiStepCoinitialSwaps(final double[] rateTimes,
-                                   final double[] fixedAccruals,
-                                   final double[] floatingAccruals,
-                                   final double[] paymentTimes,
-                                   final double fixedRate) {
+    public MultiStepCoinitialSwaps(final double[] rateTimes, final double[] fixedAccruals,
+            final double[] floatingAccruals, final double[] paymentTimes, final double fixedRate) {
         super(rateTimes);
         this.fixedAccruals_ = fixedAccruals.clone();
         this.floatingAccruals_ = floatingAccruals.clone();
@@ -63,26 +60,33 @@ public class MultiStepCoinitialSwaps extends MultiProductMultiStep {
     }
 
     @Override
-    public double[] possibleCashFlowTimes() { return paymentTimes_; }
+    public double[] possibleCashFlowTimes() {
+        return paymentTimes_;
+    }
 
     @Override
-    public int numberOfProducts() { return lastIndex_; }
+    public int numberOfProducts() {
+        return lastIndex_;
+    }
 
     @Override
-    public int maxNumberOfCashFlowsPerProductPerStep() { return 2; }
+    public int maxNumberOfCashFlowsPerProductPerStep() {
+        return 2;
+    }
 
     @Override
-    public void reset() { currentIndex_ = 0; }
+    public void reset() {
+        currentIndex_ = 0;
+    }
 
     @Override
-    public boolean nextTimeStep(final CurveState currentState,
-                                final int[] numberCashFlowsThisStep,
-                                final MarketModelMultiProduct.CashFlow[][] genCashFlows) {
+    public boolean nextTimeStep(final CurveState currentState, final int[] numberCashFlowsThisStep,
+            final MarketModelMultiProduct.CashFlow[][] genCashFlows) {
         final double liborRate = currentState.forwardRate(currentIndex_);
-        for (int i = 0; i < numberCashFlowsThisStep.length; ++i) {
+        for ( int i = 0; i < numberCashFlowsThisStep.length; ++i ) {
             numberCashFlowsThisStep[i] = 0;
         }
-        for (int i = currentIndex_; i < lastIndex_; ++i) {
+        for ( int i = currentIndex_; i < lastIndex_; ++i ) {
             genCashFlows[i][0].timeIndex = currentIndex_;
             genCashFlows[i][0].amount = -fixedRate_ * fixedAccruals_[currentIndex_];
 
@@ -97,7 +101,6 @@ public class MultiStepCoinitialSwaps extends MultiProductMultiStep {
 
     @Override
     public MarketModelMultiProduct clone() {
-        return new MultiStepCoinitialSwaps(rateTimes_, fixedAccruals_, floatingAccruals_,
-                paymentTimes_, fixedRate_);
+        return new MultiStepCoinitialSwaps(rateTimes_, fixedAccruals_, floatingAccruals_, paymentTimes_, fixedRate_);
     }
 }

@@ -40,24 +40,17 @@ import org.jquantlib.time.TimeUnit;
  * availability lag 1 month, {@code revised = false}.
  *
  * <p>The Java port retains the ({@code interpolated}) constructor parameter
- * required by the {@link ZeroInflationIndex} base class (the C++ class drops
- * this parameter as of v1.38, but the Java base class is still pre-merge).
+ * required by the {@link ZeroInflationIndex} base class (the C++ class drops this parameter as of v1.38, but the Java
+ * base class is still pre-merge).
  */
 public class UKHICP extends ZeroInflationIndex {
 
     public UKHICP(final boolean interpolated) {
-        this(interpolated, new Handle<ZeroInflationTermStructure>());
+        this(interpolated, new Handle< ZeroInflationTermStructure >());
     }
 
-    public UKHICP(final boolean interpolated,
-                  final Handle<ZeroInflationTermStructure> termStructure) {
-        super("HICP",
-                new UKRegion(),
-                false,
-                interpolated,
-                Frequency.Monthly,
-                new Period(1, TimeUnit.Months),
-                new GBPCurrency(),
-                termStructure);
+    public UKHICP(final boolean interpolated, final Handle< ZeroInflationTermStructure > termStructure) {
+        super("HICP", new UKRegion(), false, interpolated, Frequency.Monthly, new Period(1, TimeUnit.Months),
+                new GBPCurrency(), termStructure);
     }
 }

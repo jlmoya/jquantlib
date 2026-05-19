@@ -33,19 +33,17 @@ import org.jquantlib.processes.HestonProcess;
  * Bates stochastic-volatility model (Heston SV plus jump diffusion).
  *
  * <p>Mirrors C++ v1.42.1 {@code ql/models/equity/batesmodel.{hpp,cpp}}
- * BatesModel. The C++ ctor calls {@code arguments_.resize(8)} after
- * {@code HestonModel(process)} sets 5 slots; the Java port appends three
- * NullParameter slots to extend the inherited size-5 list before assigning
- * nu/delta/lambda. (Pre-Phase 5h.5 the Java code attempted
- * {@code arguments_.set(5,...)} which would have thrown IOOBE — fixed in
- * the align commit prior to BatesEngine port.)
+ * BatesModel. The C++ ctor calls {@code arguments_.resize(8)} after {@code HestonModel(process)} sets 5 slots; the Java
+ * port appends three NullParameter slots to extend the inherited size-5 list before assigning nu/delta/lambda.
+ * (Pre-Phase 5h.5 the Java code attempted {@code arguments_.set(5,...)} which would have thrown IOOBE — fixed in the
+ * align commit prior to BatesEngine port.)
  */
 public class BatesModel extends HestonModel {
 
     public BatesModel(final HestonProcess process, final double lambda, final double nu, final double delta) {
         super(process);
         // Match C++ arguments_.resize(8): extend by 3 NullParameter slots.
-        while (arguments_.size() < 8) {
+        while ( arguments_.size() < 8 ) {
             arguments_.add(new NullParameter());
         }
         arguments_.set(5, new ConstantParameter(nu, new NoConstraint()));
@@ -57,7 +55,6 @@ public class BatesModel extends HestonModel {
     public BatesModel(final HestonProcess process) {
         this(process, 0.1, 0.0, 0.1);
     }
-
 
     public double nu() {
         return arguments_.get(5).get(0.0);

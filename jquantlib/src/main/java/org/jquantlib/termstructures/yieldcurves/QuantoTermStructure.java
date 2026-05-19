@@ -37,23 +37,19 @@ import org.jquantlib.time.Frequency;
  */
 public class QuantoTermStructure extends ZeroYieldStructure {
 
-    private final Handle<YieldTermStructure> underlyingDividendTS_;
-    private final Handle<YieldTermStructure> riskFreeTS_;
-    private final Handle<YieldTermStructure> foreignRiskFreeTS_;
-    private final Handle<BlackVolTermStructure> underlyingBlackVolTS_;
-    private final Handle<BlackVolTermStructure> exchRateBlackVolTS_;
+    private final Handle< YieldTermStructure > underlyingDividendTS_;
+    private final Handle< YieldTermStructure > riskFreeTS_;
+    private final Handle< YieldTermStructure > foreignRiskFreeTS_;
+    private final Handle< BlackVolTermStructure > underlyingBlackVolTS_;
+    private final Handle< BlackVolTermStructure > exchRateBlackVolTS_;
     private final double underlyingExchRateCorrelation_;
     private final double strike_;
     private final double exchRateATMlevel_;
 
-    public QuantoTermStructure(
-            final Handle<YieldTermStructure> underlyingDividendTS,
-            final Handle<YieldTermStructure> riskFreeTS,
-            final Handle<YieldTermStructure> foreignRiskFreeTS,
-            final Handle<BlackVolTermStructure> underlyingBlackVolTS,
-            final double strike,
-            final Handle<BlackVolTermStructure> exchRateBlackVolTS,
-            final double exchRateATMlevel,
+    public QuantoTermStructure(final Handle< YieldTermStructure > underlyingDividendTS,
+            final Handle< YieldTermStructure > riskFreeTS, final Handle< YieldTermStructure > foreignRiskFreeTS,
+            final Handle< BlackVolTermStructure > underlyingBlackVolTS, final double strike,
+            final Handle< BlackVolTermStructure > exchRateBlackVolTS, final double exchRateATMlevel,
             final double underlyingExchRateCorrelation) {
         super(underlyingDividendTS.currentLink().dayCounter());
         this.underlyingDividendTS_ = underlyingDividendTS;
@@ -95,16 +91,16 @@ public class QuantoTermStructure extends ZeroYieldStructure {
     @Override
     public Date maxDate() {
         Date m = underlyingDividendTS_.currentLink().maxDate();
-        if (riskFreeTS_.currentLink().maxDate().lt(m)) {
+        if ( riskFreeTS_.currentLink().maxDate().lt(m) ) {
             m = riskFreeTS_.currentLink().maxDate();
         }
-        if (foreignRiskFreeTS_.currentLink().maxDate().lt(m)) {
+        if ( foreignRiskFreeTS_.currentLink().maxDate().lt(m) ) {
             m = foreignRiskFreeTS_.currentLink().maxDate();
         }
-        if (underlyingBlackVolTS_.currentLink().maxDate().lt(m)) {
+        if ( underlyingBlackVolTS_.currentLink().maxDate().lt(m) ) {
             m = underlyingBlackVolTS_.currentLink().maxDate();
         }
-        if (exchRateBlackVolTS_.currentLink().maxDate().lt(m)) {
+        if ( exchRateBlackVolTS_.currentLink().maxDate().lt(m) ) {
             m = exchRateBlackVolTS_.currentLink().maxDate();
         }
         return m;
@@ -113,11 +109,11 @@ public class QuantoTermStructure extends ZeroYieldStructure {
     @Override
     protected double zeroYieldImpl(final double t) {
         // warning: assumes all TS use the same daycount.
-        return underlyingDividendTS_.currentLink().zeroRate(t, Compounding.Continuous, Frequency.NoFrequency, true).rate()
-            +            riskFreeTS_.currentLink().zeroRate(t, Compounding.Continuous, Frequency.NoFrequency, true).rate()
-            -     foreignRiskFreeTS_.currentLink().zeroRate(t, Compounding.Continuous, Frequency.NoFrequency, true).rate()
-            + underlyingExchRateCorrelation_
-            * underlyingBlackVolTS_.currentLink().blackVol(t, strike_, true)
-            *   exchRateBlackVolTS_.currentLink().blackVol(t, exchRateATMlevel_, true);
+        return underlyingDividendTS_.currentLink().zeroRate(t, Compounding.Continuous, Frequency.NoFrequency, true)
+                .rate() + riskFreeTS_.currentLink().zeroRate(t, Compounding.Continuous, Frequency.NoFrequency, true)
+                .rate() - foreignRiskFreeTS_.currentLink()
+                .zeroRate(t, Compounding.Continuous, Frequency.NoFrequency, true).rate()
+                + underlyingExchRateCorrelation_ * underlyingBlackVolTS_.currentLink().blackVol(t, strike_, true)
+                * exchRateBlackVolTS_.currentLink().blackVol(t, exchRateATMlevel_, true);
     }
 }

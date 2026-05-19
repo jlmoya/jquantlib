@@ -53,31 +53,27 @@ import org.jquantlib.time.calendars.Switzerland;
  * <p>
  * LIBOR fixed by BBA.
  *
- * @see <a href="http://www.bba.org.uk/bba/jsp/polopoly.jsp?d=225&a=1414">http://www.bba.org.uk/bba/jsp/polopoly.jsp?d=225&a=1414</a>
+ * @see <a
+ * href="http://www.bba.org.uk/bba/jsp/polopoly.jsp?d=225&a=1414">http://www.bba.org.uk/bba/jsp/polopoly.jsp?d=225&a=1414</a>
  */
 public class CHFLibor extends Libor {
 
-	public CHFLibor(final Period tenor) {
-		this(tenor, new Handle<YieldTermStructure>(
-						new AbstractYieldTermStructure() {
-							@Override
-							protected double discountImpl(final double t) {
-								throw new UnsupportedOperationException();
-							}
-							@Override
-							public Date maxDate() {
-								throw new UnsupportedOperationException();
-							}
-						}
-				));
-	}
+    public CHFLibor(final Period tenor) {
+        this(tenor, new Handle< YieldTermStructure >(new AbstractYieldTermStructure() {
+            @Override
+            protected double discountImpl(final double t) {
+                throw new UnsupportedOperationException();
+            }
 
-	public CHFLibor(final Period tenor,
-			final Handle<YieldTermStructure> h) {
-		super("CHFLibor", tenor, 2,
-				new CHFCurrency(),
-				new Switzerland(),
-				new Actual360(), h);
-	}
+            @Override
+            public Date maxDate() {
+                throw new UnsupportedOperationException();
+            }
+        }));
+    }
+
+    public CHFLibor(final Period tenor, final Handle< YieldTermStructure > h) {
+        super("CHFLibor", tenor, 2, new CHFCurrency(), new Switzerland(), new Actual360(), h);
+    }
 
 }

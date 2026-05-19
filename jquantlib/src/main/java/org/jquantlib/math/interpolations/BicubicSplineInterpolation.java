@@ -49,9 +49,8 @@ import org.jquantlib.math.matrixutilities.Matrix;
 /**
  * Bicubic spline interpolation between discrete points
  *
- * @see Bicubic
- *
  * @author Richard Gomes
+ * @see Bicubic
  */
 // TODO: rename to BicubicSpline
 public class BicubicSplineInterpolation extends AbstractInterpolation2D {
@@ -118,7 +117,7 @@ public class BicubicSplineInterpolation extends AbstractInterpolation2D {
         @Override
         public void calculate() {
             splines_ = new Interpolation[mz.rows()];
-            for (int i=0; i<mz.rows(); i++) {
+            for ( int i = 0; i < mz.rows(); i++ ) {
                 // Materialise the row into a dense Array. CubicInterpolation
                 // accesses {@code Array.$} directly (raw underlying double[]),
                 // which is broken for view-style Arrays returned by
@@ -127,28 +126,23 @@ public class BicubicSplineInterpolation extends AbstractInterpolation2D {
                 // the matrix's first row by accident.
                 final Array row = mz.rangeRow(i);
                 final double[] rowData = new double[row.size()];
-                for (int k = 0; k < row.size(); ++k) {
+                for ( int k = 0; k < row.size(); ++k ) {
                     rowData[k] = row.get(k);
                 }
-                splines_[i] = new CubicInterpolation(
-                                vx, new Array(rowData),
-                                DerivativeApprox.Spline, false,
-                                BoundaryCondition.SecondDerivative, 0.0,
-                                BoundaryCondition.SecondDerivative, 0.0);
+                splines_[i] = new CubicInterpolation(vx, new Array(rowData), DerivativeApprox.Spline, false,
+                        BoundaryCondition.SecondDerivative, 0.0, BoundaryCondition.SecondDerivative, 0.0);
             }
         }
 
         @Override
         public double op(final double x, final double y) /* @ReadOnly */ {
             final double[] section = new double[splines_.length];
-            for (int i=0; i<splines_.length; i++) {
+            for ( int i = 0; i < splines_.length; i++ ) {
                 section[i] = splines_[i].op(x, true);
             }
 
-            final CubicInterpolation spline = new CubicInterpolation(vy, new Array(section),
-                                      DerivativeApprox.Spline, false,
-                                      BoundaryCondition.SecondDerivative, 0.0,
-                                      BoundaryCondition.SecondDerivative, 0.0);
+            final CubicInterpolation spline = new CubicInterpolation(vy, new Array(section), DerivativeApprox.Spline,
+                    false, BoundaryCondition.SecondDerivative, 0.0, BoundaryCondition.SecondDerivative, 0.0);
             return spline.op(y, true);
         }
 
@@ -162,62 +156,49 @@ public class BicubicSplineInterpolation extends AbstractInterpolation2D {
 
         public double derivativeX(final double x, final double y) {
             final double[] section = new double[mz.columns()];
-            for (int i = 0; i < section.length; ++i) {
+            for ( int i = 0; i < section.length; ++i ) {
                 section[i] = op(vx.get(i), y);
             }
-            return new CubicInterpolation(
-                    vx, new Array(section),
-                    DerivativeApprox.Spline, false,
-                    BoundaryCondition.SecondDerivative, 0.0,
-                    BoundaryCondition.SecondDerivative, 0.0).derivative(x);
+            return new CubicInterpolation(vx, new Array(section), DerivativeApprox.Spline, false,
+                    BoundaryCondition.SecondDerivative, 0.0, BoundaryCondition.SecondDerivative, 0.0).derivative(x);
         }
 
         public double secondDerivativeX(final double x, final double y) {
             final double[] section = new double[mz.columns()];
-            for (int i = 0; i < section.length; ++i) {
+            for ( int i = 0; i < section.length; ++i ) {
                 section[i] = op(vx.get(i), y);
             }
-            return new CubicInterpolation(
-                    vx, new Array(section),
-                    DerivativeApprox.Spline, false,
-                    BoundaryCondition.SecondDerivative, 0.0,
-                    BoundaryCondition.SecondDerivative, 0.0).secondDerivative(x);
+            return new CubicInterpolation(vx, new Array(section), DerivativeApprox.Spline, false,
+                    BoundaryCondition.SecondDerivative, 0.0, BoundaryCondition.SecondDerivative, 0.0).secondDerivative(
+                    x);
         }
 
         public double derivativeY(final double x, final double y) {
             final double[] section = new double[splines_.length];
-            for (int i = 0; i < splines_.length; i++) {
+            for ( int i = 0; i < splines_.length; i++ ) {
                 section[i] = splines_[i].op(x, true);
             }
-            return new CubicInterpolation(
-                    vy, new Array(section),
-                    DerivativeApprox.Spline, false,
-                    BoundaryCondition.SecondDerivative, 0.0,
-                    BoundaryCondition.SecondDerivative, 0.0).derivative(y);
+            return new CubicInterpolation(vy, new Array(section), DerivativeApprox.Spline, false,
+                    BoundaryCondition.SecondDerivative, 0.0, BoundaryCondition.SecondDerivative, 0.0).derivative(y);
         }
 
         public double secondDerivativeY(final double x, final double y) {
             final double[] section = new double[splines_.length];
-            for (int i = 0; i < splines_.length; i++) {
+            for ( int i = 0; i < splines_.length; i++ ) {
                 section[i] = splines_[i].op(x, true);
             }
-            return new CubicInterpolation(
-                    vy, new Array(section),
-                    DerivativeApprox.Spline, false,
-                    BoundaryCondition.SecondDerivative, 0.0,
-                    BoundaryCondition.SecondDerivative, 0.0).secondDerivative(y);
+            return new CubicInterpolation(vy, new Array(section), DerivativeApprox.Spline, false,
+                    BoundaryCondition.SecondDerivative, 0.0, BoundaryCondition.SecondDerivative, 0.0).secondDerivative(
+                    y);
         }
 
         public double derivativeXY(final double x, final double y) {
             final double[] section = new double[mz.columns()];
-            for (int i = 0; i < section.length; ++i) {
+            for ( int i = 0; i < section.length; ++i ) {
                 section[i] = derivativeY(vx.get(i), y);
             }
-            return new CubicInterpolation(
-                    vx, new Array(section),
-                    DerivativeApprox.Spline, false,
-                    BoundaryCondition.SecondDerivative, 0.0,
-                    BoundaryCondition.SecondDerivative, 0.0).derivative(x);
+            return new CubicInterpolation(vx, new Array(section), DerivativeApprox.Spline, false,
+                    BoundaryCondition.SecondDerivative, 0.0, BoundaryCondition.SecondDerivative, 0.0).derivative(x);
         }
 
     }

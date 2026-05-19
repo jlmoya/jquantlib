@@ -30,11 +30,6 @@
 
 package org.jquantlib.termstructures.inflation;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.function.Supplier;
-
 import org.jquantlib.QL;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.lang.exceptions.LibraryException;
@@ -46,51 +41,48 @@ import org.jquantlib.math.solvers1D.FiniteDifferenceNewtonSafe;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Frequency;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Supplier;
+
 /**
  * Piecewise zero-inflation term structure — Java port of QuantLib v1.42.1
- * {@code PiecewiseZeroInflationCurve<Interpolator,Bootstrap,Traits>} with the
- * default template arguments
+ * {@code PiecewiseZeroInflationCurve<Interpolator,Bootstrap,Traits>} with the default template arguments
  * ({@code Bootstrap = IterativeBootstrap}, {@code Traits = ZeroInflationTraits}).
  *
  * <p>Bootstrap is performed lazily on first access: the curve nodes are placed
- * at each helper's pillar date, and the corresponding data values are solved
- * via a 1D Brent search such that each helper's
- * {@link org.jquantlib.termstructures.BootstrapHelper#impliedQuote()} matches
- * its input quote.
+ * at each helper's pillar date, and the corresponding data values are solved via a 1D Brent search such that each
+ * helper's {@link org.jquantlib.termstructures.BootstrapHelper#impliedQuote()} matches its input quote.
  *
  * <h3>Why a self-contained bootstrap loop?</h3>
  * <p>The existing JQuantLib generic bootstrap framework
  * ({@link org.jquantlib.termstructures.IterativeBootstrap},
- *  {@link org.jquantlib.termstructures.yieldcurves.PiecewiseYieldCurve}) is
- * tightly tied to {@link org.jquantlib.termstructures.YieldTermStructure}
- * via concrete type parameters. Rather than restructure that framework
- * (out-of-scope for Phase 2p A.1, would risk regressing yield-curve tests),
- * we inline a focused inflation-only bootstrap loop here, modelled directly
- * after the C++ {@code IterativeBootstrap::calculate} algorithm.
+ * {@link org.jquantlib.termstructures.yieldcurves.PiecewiseYieldCurve}) is tightly tied to
+ * {@link org.jquantlib.termstructures.YieldTermStructure} via concrete type parameters. Rather than restructure that
+ * framework (out-of-scope for Phase 2p A.1, would risk regressing yield-curve tests), we inline a focused
+ * inflation-only bootstrap loop here, modelled directly after the C++ {@code IterativeBootstrap::calculate} algorithm.
  *
  * @param <I> interpolator type
  * @see InflationTraits
  * @see ZeroCouponInflationSwapHelper
  */
-public class PiecewiseZeroInflationCurve<I extends Interpolator>
-        extends InterpolatedZeroInflationCurve<I> {
+public class PiecewiseZeroInflationCurve< I extends Interpolator > extends InterpolatedZeroInflationCurve< I > {
 
     //
     // private fields
     //
 
-    private final List<ZeroCouponInflationSwapHelper> instruments;
+    private final List< ZeroCouponInflationSwapHelper > instruments;
     private final InflationTraits traits;
     private final double accuracy;
     private final GlobalBootstrap globalBootstrap;
     /**
-     * Optional lazy base-date supplier — when non-null, the curve's
-     * baseDate (stored in {@code dates[0]}) is reset on each
-     * {@link #performCalculations()} from {@code baseDateSupplier.get()}.
-     * Mirrors C++ v1.42.1 {@code BaseDateFunc baseDateFunc_}
-     * ({@code piecewisezeroinflationcurve.hpp:48,89-92,128-132,166-170}).
+     * Optional lazy base-date supplier — when non-null, the curve's baseDate (stored in {@code dates[0]}) is reset on
+     * each {@link #performCalculations()} from {@code baseDateSupplier.get()}. Mirrors C++ v1.42.1
+     * {@code BaseDateFunc baseDateFunc_} ({@code piecewisezeroinflationcurve.hpp:48,89-92,128-132,166-170}).
      */
-    private final Supplier<Date> baseDateSupplier;
+    private final Supplier< Date > baseDateSupplier;
     private boolean validCurve;
     private boolean calculated;
     private boolean calculating;
@@ -99,51 +91,33 @@ public class PiecewiseZeroInflationCurve<I extends Interpolator>
     // public constructors
     //
 
-    public PiecewiseZeroInflationCurve(
-            final Class<I> classI,
-            final Date referenceDate,
-            final Date baseDate,
-            final Frequency frequency,
-            final DayCounter dayCounter,
-            final List<ZeroCouponInflationSwapHelper> instruments) {
+    public PiecewiseZeroInflationCurve(final Class< I > classI, final Date referenceDate, final Date baseDate,
+            final Frequency frequency, final DayCounter dayCounter,
+            final List< ZeroCouponInflationSwapHelper > instruments) {
         this(classI, referenceDate, baseDate, frequency, dayCounter, instruments, 1.0e-14);
     }
 
-    public PiecewiseZeroInflationCurve(
-            final Class<I> classI,
-            final Date referenceDate,
-            final Date baseDate,
-            final Frequency frequency,
-            final DayCounter dayCounter,
-            final List<ZeroCouponInflationSwapHelper> instruments,
-            final double accuracy) {
+    public PiecewiseZeroInflationCurve(final Class< I > classI, final Date referenceDate, final Date baseDate,
+            final Frequency frequency, final DayCounter dayCounter,
+            final List< ZeroCouponInflationSwapHelper > instruments, final double accuracy) {
         this(classI, referenceDate, baseDate, frequency, dayCounter, instruments, accuracy, null);
     }
 
     /**
-     * Constructor selecting a {@link GlobalBootstrap} strategy. When
-     * {@code globalBootstrap} is non-null, the curve will solve all pillars
-     * simultaneously via Levenberg-Marquardt at first calculation rather
-     * than running the iterative Brent/FDNewtonSafe loop. Mirrors C++
-     * {@code PiecewiseZeroInflationCurve<Linear, GlobalBootstrap>}
-     * ({@code ql/termstructures/inflation/piecewisezeroinflationcurve.hpp}
-     * with non-default {@code Bootstrap} template parameter).
+     * Constructor selecting a {@link GlobalBootstrap} strategy. When {@code globalBootstrap} is non-null, the curve
+     * will solve all pillars simultaneously via Levenberg-Marquardt at first calculation rather than running the
+     * iterative Brent/FDNewtonSafe loop. Mirrors C++ {@code PiecewiseZeroInflationCurve<Linear, GlobalBootstrap>}
+     * ({@code ql/termstructures/inflation/piecewisezeroinflationcurve.hpp} with non-default {@code Bootstrap} template
+     * parameter).
      *
-     * @param globalBootstrap non-null to use the global solver strategy;
-     *                        null for the default iterative bootstrap.
+     * @param globalBootstrap non-null to use the global solver strategy; null for the default iterative bootstrap.
      */
-    public PiecewiseZeroInflationCurve(
-            final Class<I> classI,
-            final Date referenceDate,
-            final Date baseDate,
-            final Frequency frequency,
-            final DayCounter dayCounter,
-            final List<ZeroCouponInflationSwapHelper> instruments,
-            final double accuracy,
+    public PiecewiseZeroInflationCurve(final Class< I > classI, final Date referenceDate, final Date baseDate,
+            final Frequency frequency, final DayCounter dayCounter,
+            final List< ZeroCouponInflationSwapHelper > instruments, final double accuracy,
             final GlobalBootstrap globalBootstrap) {
         super(classI, referenceDate, baseDate, frequency, dayCounter);
-        QL.require(instruments != null && !instruments.isEmpty(),
-                "no helpers provided to piecewise inflation curve");
+        QL.require(instruments != null && !instruments.isEmpty(), "no helpers provided to piecewise inflation curve");
         this.instruments = new ArrayList<>(instruments);
         this.traits = new InflationTraits();
         this.accuracy = accuracy;
@@ -154,7 +128,7 @@ public class PiecewiseZeroInflationCurve<I extends Interpolator>
 
         // Register helpers — bootstrapping needs each helper to know about
         // the curve being built.
-        for (final ZeroCouponInflationSwapHelper h : this.instruments) {
+        for ( final ZeroCouponInflationSwapHelper h : this.instruments ) {
             h.addObserver(this);
         }
     }
@@ -165,46 +139,32 @@ public class PiecewiseZeroInflationCurve<I extends Interpolator>
      * ({@code piecewisezeroinflationcurve.hpp:74-92}).
      *
      * <p>The {@code baseDateSupplier} is invoked on every
-     * {@link #performCalculations()} call (typically the first time a public
-     * accessor — including {@link #baseDate()} — is invoked). This lets
-     * callers create a curve whose base date depends on data that does not
-     * yet exist at construction time (e.g. an index's {@code lastFixingDate}
-     * before fixings are added).
+     * {@link #performCalculations()} call (typically the first time a public accessor — including {@link #baseDate()} —
+     * is invoked). This lets callers create a curve whose base date depends on data that does not yet exist at
+     * construction time (e.g. an index's {@code lastFixingDate} before fixings are added).
      *
      * <p>The placeholder base date passed to the base class is {@code referenceDate}
-     * — a sensible default that won't trip negative-Period checks during
-     * construction. The real base date is installed on the first
-     * {@link #performCalculations()}.
+     * — a sensible default that won't trip negative-Period checks during construction. The real base date is installed
+     * on the first {@link #performCalculations()}.
      *
-     * @param baseDateSupplier non-null supplier returning the curve base date.
-     *                         Invoked at every {@code performCalculations()}.
+     * @param baseDateSupplier non-null supplier returning the curve base date. Invoked at every
+     *                         {@code performCalculations()}.
      */
-    public PiecewiseZeroInflationCurve(
-            final Class<I> classI,
-            final Date referenceDate,
-            final Supplier<Date> baseDateSupplier,
-            final Frequency frequency,
-            final DayCounter dayCounter,
-            final List<ZeroCouponInflationSwapHelper> instruments) {
-        this(classI, referenceDate, baseDateSupplier, frequency, dayCounter,
-             instruments, 1.0e-14);
+    public PiecewiseZeroInflationCurve(final Class< I > classI, final Date referenceDate,
+            final Supplier< Date > baseDateSupplier, final Frequency frequency, final DayCounter dayCounter,
+            final List< ZeroCouponInflationSwapHelper > instruments) {
+        this(classI, referenceDate, baseDateSupplier, frequency, dayCounter, instruments, 1.0e-14);
     }
 
-    public PiecewiseZeroInflationCurve(
-            final Class<I> classI,
-            final Date referenceDate,
-            final Supplier<Date> baseDateSupplier,
-            final Frequency frequency,
-            final DayCounter dayCounter,
-            final List<ZeroCouponInflationSwapHelper> instruments,
-            final double accuracy) {
+    public PiecewiseZeroInflationCurve(final Class< I > classI, final Date referenceDate,
+            final Supplier< Date > baseDateSupplier, final Frequency frequency, final DayCounter dayCounter,
+            final List< ZeroCouponInflationSwapHelper > instruments, final double accuracy) {
         // Use referenceDate as the placeholder base date — non-null,
         // sensible-Period default. The real value is installed on the
         // first performCalculations() via baseDateSupplier.
         super(classI, referenceDate, referenceDate, frequency, dayCounter);
         QL.require(baseDateSupplier != null, "null baseDateSupplier");
-        QL.require(instruments != null && !instruments.isEmpty(),
-                "no helpers provided to piecewise inflation curve");
+        QL.require(instruments != null && !instruments.isEmpty(), "no helpers provided to piecewise inflation curve");
         this.instruments = new ArrayList<>(instruments);
         this.traits = new InflationTraits();
         this.accuracy = accuracy;
@@ -213,7 +173,7 @@ public class PiecewiseZeroInflationCurve<I extends Interpolator>
         this.validCurve = false;
         this.calculated = false;
 
-        for (final ZeroCouponInflationSwapHelper h : this.instruments) {
+        for ( final ZeroCouponInflationSwapHelper h : this.instruments ) {
             h.addObserver(this);
         }
     }
@@ -223,15 +183,15 @@ public class PiecewiseZeroInflationCurve<I extends Interpolator>
     //
 
     /**
-     * Triggers bootstrap if not yet performed. All public read accessors call
-     * this first. Mirrors C++ {@code LazyObject::calculate}.
+     * Triggers bootstrap if not yet performed. All public read accessors call this first. Mirrors C++
+     * {@code LazyObject::calculate}.
      *
      * <p>Re-entry guard ({@code calculating}) prevents infinite recursion
-     * when a helper's {@code impliedQuote()} triggers a back-call into the
-     * curve during the bootstrap loop itself.
+     * when a helper's {@code impliedQuote()} triggers a back-call into the curve during the bootstrap loop itself.
      */
     private void ensureCalculated() {
-        if (calculated || calculating) return;
+        if ( calculated || calculating )
+            return;
         calculating = true;
         try {
             performCalculations();
@@ -242,18 +202,17 @@ public class PiecewiseZeroInflationCurve<I extends Interpolator>
     }
 
     /**
-     * Invalidates the bootstrap when any observed input changes (quote, index
-     * fixing, seasonality). Mirrors C++ {@code LazyObject::update()} which sets
-     * {@code calculated_ = false} so that the next access re-triggers
+     * Invalidates the bootstrap when any observed input changes (quote, index fixing, seasonality). Mirrors C++
+     * {@code LazyObject::update()} which sets {@code calculated_ = false} so that the next access re-triggers
      * {@link #performCalculations()}.
      *
      * <p>The {@code calculating} guard prevents us from resetting
-     * {@code calculated} while a bootstrap is already in progress (which would
-     * cause immediate infinite recursion on the next helper access).
+     * {@code calculated} while a bootstrap is already in progress (which would cause immediate infinite recursion on
+     * the next helper access).
      */
     @Override
     public void update() {
-        if (!calculating) {
+        if ( !calculating ) {
             calculated = false;
             validCurve = false;
         }
@@ -272,7 +231,7 @@ public class PiecewiseZeroInflationCurve<I extends Interpolator>
         // may need fixings/quotes/etc. that arrive after construction.
         // Mirrors C++ PiecewiseZeroInflationCurve<...>::baseDate() at
         // piecewisezeroinflationcurve.hpp:128-132.
-        if (baseDateSupplier != null) {
+        if ( baseDateSupplier != null ) {
             ensureCalculated();
         }
         return super.baseDate();
@@ -285,16 +244,28 @@ public class PiecewiseZeroInflationCurve<I extends Interpolator>
     }
 
     @Override
-    public Date[] dates() { ensureCalculated(); return super.dates(); }
+    public Date[] dates() {
+        ensureCalculated();
+        return super.dates();
+    }
 
     @Override
-    public double[] times() { ensureCalculated(); return super.times(); }
+    public double[] times() {
+        ensureCalculated();
+        return super.times();
+    }
 
     @Override
-    public double[] data() { ensureCalculated(); return super.data(); }
+    public double[] data() {
+        ensureCalculated();
+        return super.data();
+    }
 
     @Override
-    public double[] rates() { ensureCalculated(); return super.data(); }
+    public double[] rates() {
+        ensureCalculated();
+        return super.data();
+    }
 
     //
     // bootstrap loop — mirrors C++ IterativeBootstrap::calculate
@@ -304,10 +275,9 @@ public class PiecewiseZeroInflationCurve<I extends Interpolator>
         // Lazy base-date evaluation — mirrors C++
         // PiecewiseZeroInflationCurve<...>::performCalculations() at
         // piecewisezeroinflationcurve.hpp:166-170.
-        if (baseDateSupplier != null) {
+        if ( baseDateSupplier != null ) {
             final Date evaluatedBaseDate = baseDateSupplier.get();
-            QL.require(evaluatedBaseDate != null,
-                    "baseDateSupplier returned null");
+            QL.require(evaluatedBaseDate != null, "baseDateSupplier returned null");
             // Replace the placeholder dates[0] with the evaluated base date.
             // The bootstrap (iterative or global) will rebuild the full
             // dates/times grid below; we only need dates[0] correct so that
@@ -317,7 +287,7 @@ public class PiecewiseZeroInflationCurve<I extends Interpolator>
 
         // Branch to GlobalBootstrap if configured — mirrors C++
         // PiecewiseZeroInflationCurve<I, GlobalBootstrap, Traits> path.
-        if (globalBootstrap != null) {
+        if ( globalBootstrap != null ) {
             globalBootstrap.calculate(this, instruments);
             validCurve = true;
             return;
@@ -331,15 +301,14 @@ public class PiecewiseZeroInflationCurve<I extends Interpolator>
         instruments.sort((a, b) -> a.pillarDate().compareTo(b.pillarDate()));
 
         // Check no two helpers share a pillar date.
-        for (int i = 1; i < n; ++i) {
+        for ( int i = 1; i < n; ++i ) {
             QL.require(!instruments.get(i - 1).pillarDate().eq(instruments.get(i).pillarDate()),
                     "two instruments have the same pillar date");
         }
 
         // Check all quotes are valid.
-        for (int i = 0; i < n; ++i) {
-            QL.require(instruments.get(i).quoteIsValid(),
-                    "instrument has an invalid quote");
+        for ( int i = 0; i < n; ++i ) {
+            QL.require(instruments.get(i).quoteIsValid(), "instrument has an invalid quote");
         }
 
         // Setup pre-bootstrap dates / times / data: dates[0] = baseDate,
@@ -353,7 +322,7 @@ public class PiecewiseZeroInflationCurve<I extends Interpolator>
         newTimes[0] = timeFromReference(newDates[0]);
         newData[0] = traits.initialValue(this);
 
-        for (int i = 0; i < n; ++i) {
+        for ( int i = 0; i < n; ++i ) {
             newDates[i + 1] = instruments.get(i).pillarDate();
             newTimes[i + 1] = timeFromReference(newDates[i + 1]);
             newData[i + 1] = traits.guess(i + 1, newData, false);
@@ -364,7 +333,7 @@ public class PiecewiseZeroInflationCurve<I extends Interpolator>
         setData(newData);
 
         // Wire each helper to this curve so its impliedQuote() reads from us.
-        for (int i = 0; i < n; ++i) {
+        for ( int i = 0; i < n; ++i ) {
             instruments.get(i).setTermStructure(this);
         }
 
@@ -373,11 +342,13 @@ public class PiecewiseZeroInflationCurve<I extends Interpolator>
         // up to the helper's right interpolation node — needed for CPI::Linear
         // where the swap's inflation cashflow forecasts at fixingPeriod.second+1.
         Date maxLatest = instruments.get(0).latestDate();
-        for (int i = 1; i < n; ++i) {
+        for ( int i = 1; i < n; ++i ) {
             final Date d = instruments.get(i).latestDate();
-            if (d.gt(maxLatest)) maxLatest = d;
+            if ( d.gt(maxLatest) )
+                maxLatest = d;
         }
-        if (newDates[n].gt(maxLatest)) maxLatest = newDates[n];
+        if ( newDates[n].gt(maxLatest) )
+            maxLatest = newDates[n];
         setMaxDate(maxLatest);
 
         // C++ IterativeBootstrap uses two solvers:
@@ -388,20 +359,19 @@ public class PiecewiseZeroInflationCurve<I extends Interpolator>
         final FiniteDifferenceNewtonSafe solver = new FiniteDifferenceNewtonSafe();
         final int maxIterations = traits.maxIterations();
 
-        for (int iteration = 0; ; ++iteration) {
+        for ( int iteration = 0; ; ++iteration ) {
             final double[] previousData = data().clone();
 
             // Restart the interpolation from the previous solved data.
-            setInterpolation(interpolator().interpolate(
-                    new Array(times()), new Array(data())));
+            setInterpolation(interpolator().interpolate(new Array(times()), new Array(data())));
 
-            for (int i = 1; i < n + 1; ++i) {
+            for ( int i = 1; i < n + 1; ++i ) {
                 final ZeroCouponInflationSwapHelper instrument = instruments.get(i - 1);
                 final boolean validData = validCurve || iteration > 0;
                 double guess;
-                if (validData) {
+                if ( validData ) {
                     guess = data()[i];
-                } else if (i == 1) {
+                } else if ( i == 1 ) {
                     // First node — base value seeds from average inflation.
                     guess = traits.guess(i, data(), false);
                 } else {
@@ -412,17 +382,16 @@ public class PiecewiseZeroInflationCurve<I extends Interpolator>
                 final double[] curData = data();
                 final double min = traits.minValueAfter(i, curData, validData);
                 final double max = traits.maxValueAfter(i, curData, validData);
-                if (guess <= min || guess >= max) {
+                if ( guess <= min || guess >= max ) {
                     guess = (min + max) / 2.0;
                 }
 
                 // For the first iteration, extend the interpolation one node at a time
                 // (lets us probe partially-bootstrapped values).
-                if (!validCurve && iteration == 0) {
+                if ( !validCurve && iteration == 0 ) {
                     final double[] partialTimes = Arrays.copyOf(times(), i + 1);
                     final double[] partialData = Arrays.copyOf(data(), i + 1);
-                    setInterpolation(interpolator().interpolate(
-                            new Array(partialTimes), new Array(partialData)));
+                    setInterpolation(interpolator().interpolate(new Array(partialTimes), new Array(partialData)));
                 }
                 interpolation().update();
 
@@ -438,41 +407,38 @@ public class PiecewiseZeroInflationCurve<I extends Interpolator>
                     r = validData
                             ? solver.solve(error, accuracy, guess, min, max)
                             : firstSolver.solve(error, accuracy, guess, min, max);
-                } catch (final RuntimeException e) {
+                } catch ( final RuntimeException e ) {
                     validCurve = false;
                     throw new LibraryException(
-                            "could not bootstrap inflation curve at instrument " + i +
-                            " (latest date " + instruments.get(i - 1).latestDate() + "): " +
-                            e.getMessage(), e);
+                            "could not bootstrap inflation curve at instrument " + i + " (latest date "
+                                    + instruments.get(i - 1).latestDate() + "): " + e.getMessage(), e);
                 }
                 // Update via traits — copies r into data[i] and (if i==1) data[0].
                 traits.updateGuess(data(), r, i);
             }
 
             // Re-install the full interpolation now that all nodes are solved.
-            setInterpolation(interpolator().interpolate(
-                    new Array(times()), new Array(data())));
+            setInterpolation(interpolator().interpolate(new Array(times()), new Array(data())));
 
             // For non-global interpolators, no convergence loop is needed.
-            if (!interpolator().global()) {
+            if ( !interpolator().global() ) {
                 break;
-            } else if (!validCurve && iteration == 0) {
+            } else if ( !validCurve && iteration == 0 ) {
                 continue;
             }
 
             // Check convergence.
             double improvement = 0.0;
-            for (int i = 1; i < n + 1; ++i) {
+            for ( int i = 1; i < n + 1; ++i ) {
                 improvement = Math.max(improvement, Math.abs(data()[i] - previousData[i]));
             }
-            if (improvement <= accuracy) {
+            if ( improvement <= accuracy ) {
                 break;
             }
 
             QL.require(iteration + 1 < maxIterations,
-                    "convergence not reached after " + (iteration + 1) +
-                    " iterations; last improvement " + improvement +
-                    ", required accuracy " + accuracy);
+                    "convergence not reached after " + (iteration + 1) + " iterations; last improvement " + improvement
+                            + ", required accuracy " + accuracy);
         }
         validCurve = true;
 
@@ -485,26 +451,68 @@ public class PiecewiseZeroInflationCurve<I extends Interpolator>
     //
 
     /**
-     * Adapts {@code helper.impliedQuote() - helper.quote()} as a function of
-     * {@code data[i]} for the Brent solver.
+     * Install the date / time / data grids prepared by {@link GlobalBootstrap}. Called once at the start of each
+     * global-bootstrap calculation; mirrors the body of C++ {@code GlobalBootstrap::initialize()}.
+     *
+     * <p>Package-private so {@link GlobalBootstrap} can mutate the curve's
+     * private grids without exposing them on the public surface.
+     */
+    void installGlobalBootstrapState(final Date[] newDates, final double[] newTimes, final double[] newData) {
+        installGlobalBootstrapState(newDates, newTimes, newData, newDates[newDates.length - 1]);
+    }
+
+    //
+    // package-private helpers for {@link GlobalBootstrap}
+    //
+
+    /**
+     * Variant that takes an explicit {@code maxDateOverride} — used by {@link GlobalBootstrap} to widen the curve max
+     * to the rightmost helper.latestDate() (right interpolation node) when the curve pillars are pillar dates (which
+     * may be smaller, e.g. left nodes for CPI::Linear).
+     */
+    void installGlobalBootstrapState(final Date[] newDates, final double[] newTimes, final double[] newData,
+            final Date maxDateOverride) {
+        setDates(newDates);
+        setTimes(newTimes);
+        setData(newData);
+        final Date lastPillar = newDates[newDates.length - 1];
+        setMaxDate(maxDateOverride.gt(lastPillar) ? maxDateOverride : lastPillar);
+        setInterpolation(interpolator().interpolate(new Array(newTimes), new Array(newData)));
+    }
+
+    /**
+     * Re-create the interpolation from the current {@code times}/{@code data} grids — called from
+     * {@link GlobalBootstrap}'s cost function at every LM step (after {@code data[i]} mutations).
+     */
+    void refreshInterpolationForGlobalBootstrap() {
+        setInterpolation(interpolator().interpolate(new Array(times()), new Array(data())));
+    }
+
+    /**
+     * Update the curve's base-rate slot — called once at the end of each global-bootstrap calculation. Mirrors C++
+     * {@code Traits::updateGuess}'s propagation of {@code data[1]} to {@code data[0]} for the inflation trait.
+     */
+    void overrideBaseRateForGlobalBootstrap(final double r) {
+        overrideBaseRate(r);
+    }
+
+    /**
+     * Adapts {@code helper.impliedQuote() - helper.quote()} as a function of {@code data[i]} for the Brent solver.
      *
      * <p>Implementation note: the Java {@link Array} class copies its source
-     * {@code double[]} on construction, so the interpolation built earlier
-     * holds a stale snapshot. We rebuild the interpolation from the current
-     * {@code data[]} on every Brent step. This adds O(n) overhead per Brent
-     * iteration vs the C++ iterator-binding approach, but is correct and
-     * adequate for the small number of helpers in a practical inflation curve.
+     * {@code double[]} on construction, so the interpolation built earlier holds a stale snapshot. We rebuild the
+     * interpolation from the current {@code data[]} on every Brent step. This adds O(n) overhead per Brent iteration vs
+     * the C++ iterator-binding approach, but is correct and adequate for the small number of helpers in a practical
+     * inflation curve.
      */
     private static final class BootstrapErrorFn implements Ops.DoubleOp {
         private final ZeroCouponInflationSwapHelper helper;
-        private final PiecewiseZeroInflationCurve<?> curve;
+        private final PiecewiseZeroInflationCurve< ? > curve;
         private final int idx;
         private final int size;
 
-        BootstrapErrorFn(final ZeroCouponInflationSwapHelper helper,
-                         final PiecewiseZeroInflationCurve<?> curve,
-                         final int idx,
-                         final int size) {
+        BootstrapErrorFn(final ZeroCouponInflationSwapHelper helper, final PiecewiseZeroInflationCurve< ? > curve,
+                final int idx, final int size) {
             this.helper = helper;
             this.curve = curve;
             this.idx = idx;
@@ -518,67 +526,8 @@ public class PiecewiseZeroInflationCurve<I extends Interpolator>
             // this picks up the just-mutated data[idx]/data[0] values.
             final double[] partialT = java.util.Arrays.copyOf(curve.times(), size);
             final double[] partialD = java.util.Arrays.copyOf(curve.data(), size);
-            curve.setInterpolation(curve.interpolator().interpolate(
-                    new Array(partialT), new Array(partialD)));
+            curve.setInterpolation(curve.interpolator().interpolate(new Array(partialT), new Array(partialD)));
             return helper.quoteError();
         }
-    }
-
-    //
-    // package-private helpers for {@link GlobalBootstrap}
-    //
-
-    /**
-     * Install the date / time / data grids prepared by {@link GlobalBootstrap}.
-     * Called once at the start of each global-bootstrap calculation; mirrors
-     * the body of C++ {@code GlobalBootstrap::initialize()}.
-     *
-     * <p>Package-private so {@link GlobalBootstrap} can mutate the curve's
-     * private grids without exposing them on the public surface.
-     */
-    void installGlobalBootstrapState(final Date[] newDates,
-                                      final double[] newTimes,
-                                      final double[] newData) {
-        installGlobalBootstrapState(newDates, newTimes, newData,
-                newDates[newDates.length - 1]);
-    }
-
-    /**
-     * Variant that takes an explicit {@code maxDateOverride} — used by
-     * {@link GlobalBootstrap} to widen the curve max to the rightmost
-     * helper.latestDate() (right interpolation node) when the curve pillars
-     * are pillar dates (which may be smaller, e.g. left nodes for CPI::Linear).
-     */
-    void installGlobalBootstrapState(final Date[] newDates,
-                                      final double[] newTimes,
-                                      final double[] newData,
-                                      final Date maxDateOverride) {
-        setDates(newDates);
-        setTimes(newTimes);
-        setData(newData);
-        final Date lastPillar = newDates[newDates.length - 1];
-        setMaxDate(maxDateOverride.gt(lastPillar) ? maxDateOverride : lastPillar);
-        setInterpolation(interpolator().interpolate(
-                new Array(newTimes), new Array(newData)));
-    }
-
-    /**
-     * Re-create the interpolation from the current {@code times}/{@code data}
-     * grids — called from {@link GlobalBootstrap}'s cost function at every LM
-     * step (after {@code data[i]} mutations).
-     */
-    void refreshInterpolationForGlobalBootstrap() {
-        setInterpolation(interpolator().interpolate(
-                new Array(times()), new Array(data())));
-    }
-
-    /**
-     * Update the curve's base-rate slot — called once at the end of each
-     * global-bootstrap calculation. Mirrors C++ {@code Traits::updateGuess}'s
-     * propagation of {@code data[1]} to {@code data[0]} for the inflation
-     * trait.
-     */
-    void overrideBaseRateForGlobalBootstrap(final double r) {
-        overrideBaseRate(r);
     }
 }

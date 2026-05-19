@@ -23,20 +23,17 @@ package org.jquantlib.experimental.math;
 import java.util.List;
 
 /**
- * Common interface for the copula-policy template parameter
- * {@code copulaPolicyImpl} of QuantLib's {@code LatentModel} (v1.42.1
- * {@code ql/experimental/math/latentmodel.hpp}). Pinned commit
+ * Common interface for the copula-policy template parameter {@code copulaPolicyImpl} of QuantLib's {@code LatentModel}
+ * (v1.42.1 {@code ql/experimental/math/latentmodel.hpp}). Pinned commit
  * {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
  *
  * <p>Java cannot replicate C++ template parameterisation directly; this
- * interface formalises the duck-typed contract the C++ policies satisfy
- * (cumulativeY, cumulativeZ, density, inverseCumulativeY, ...) so that the
- * Java {@code LatentModel<P extends CopulaPolicy>} generic can dispatch
+ * interface formalises the duck-typed contract the C++ policies satisfy (cumulativeY, cumulativeZ, density,
+ * inverseCumulativeY, ...) so that the Java {@code LatentModel<P extends CopulaPolicy>} generic can dispatch
  * uniformly.
  *
  * <p>Concrete policies (GaussianCopulaPolicy, TCopulaPolicy, ...) implement
- * this interface and may carry policy-specific initialisation traits as
- * inner classes.
+ * this interface and may carry policy-specific initialisation traits as inner classes.
  */
 public interface CopulaPolicy {
 
@@ -44,8 +41,7 @@ public interface CopulaPolicy {
     int numFactors();
 
     /**
-     * Cumulative probability of the latent variable {@code Y_iVariable} taking
-     * the value {@code val}.
+     * Cumulative probability of the latent variable {@code Y_iVariable} taking the value {@code val}.
      */
     double cumulativeY(double val, int iVariable);
 
@@ -53,14 +49,12 @@ public interface CopulaPolicy {
     double cumulativeZ(double z);
 
     /**
-     * Probability density evaluated at a vector realisation of the systemic
-     * factors.
+     * Probability density evaluated at a vector realisation of the systemic factors.
      */
-    double density(List<Double> m);
+    double density(List< Double > m);
 
     /**
-     * Inverse cumulative distribution of the modelled latent variable
-     * {@code Y_iVariable}.
+     * Inverse cumulative distribution of the modelled latent variable {@code Y_iVariable}.
      */
     double inverseCumulativeY(double p, int iVariable);
 
@@ -71,8 +65,7 @@ public interface CopulaPolicy {
     double inverseCumulativeDensity(double p, int iFactor);
 
     /**
-     * Maps a vector of uniform variates to the underlying factor distribution
-     * via inverse-cumulative transformation.
+     * Maps a vector of uniform variates to the underlying factor distribution via inverse-cumulative transformation.
      */
     double[] allFactorCumulInverter(double[] probs);
 }

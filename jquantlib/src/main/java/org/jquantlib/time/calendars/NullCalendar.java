@@ -35,7 +35,7 @@ import org.jquantlib.time.Weekday;
  *
  * @author Richard Gomes
  */
-@QualityAssurance(quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Richard Gomes" })
+@QualityAssurance( quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Richard Gomes" } )
 public class NullCalendar extends Calendar {
 
     //
@@ -46,24 +46,23 @@ public class NullCalendar extends Calendar {
         impl = new Impl();
     }
 
-
     //
     // private final inner classes
     //
 
     private final class Impl extends Calendar.Impl {
         @Override
-        public String name() /* @ReadOnly */{
+        public String name() /* @ReadOnly */ {
             return "Null";
         }
 
         @Override
-        public boolean isWeekend(final Weekday weekday) /* @ReadOnly */{
+        public boolean isWeekend(final Weekday weekday) /* @ReadOnly */ {
             return false;
         }
 
         @Override
-        public boolean isBusinessDay(final Date date) /* @ReadOnly */{
+        public boolean isBusinessDay(final Date date) /* @ReadOnly */ {
             return true;
         }
     }

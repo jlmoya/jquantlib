@@ -29,18 +29,16 @@ package org.jquantlib.model.marketmodels;
 /**
  * Brownian-motion generator interface for market-model simulations.
  * <p>
- * Each call to {@link #nextStep(double[])} fills the supplied array with the
- * Gaussian variates for one evolution step and returns the path-weight
- * contribution from this step (always 1.0 for pseudo-random generators;
- * Sobol-bridge variants may return a non-trivial weight).
+ * Each call to {@link #nextStep(double[])} fills the supplied array with the Gaussian variates for one evolution step
+ * and returns the path-weight contribution from this step (always 1.0 for pseudo-random generators; Sobol-bridge
+ * variants may return a non-trivial weight).
  * <p>
- * {@link #nextPath()} starts a new path and returns the path's total weight
- * (typically 1.0; non-trivial only for low-discrepancy sequences).
- *
- * @see "ql/models/marketmodels/browniangenerator.hpp" v1.42.1
+ * {@link #nextPath()} starts a new path and returns the path's total weight (typically 1.0; non-trivial only for
+ * low-discrepancy sequences).
  *
  * @author Ueli Hofstetter (original stub)
  * @author Jose Moya (Phase 3h B.7-align: signature fix to match C++ out-param)
+ * @see "ql/models/marketmodels/browniangenerator.hpp" v1.42.1
  */
 // Phase 3h decision P3H-1: nextStep() → nextStep(double[]) to match C++
 //   virtual Real nextStep(std::vector<Real>&) = 0
@@ -50,8 +48,8 @@ public abstract class BrownianGenerator {
     }
 
     /**
-     * Fills the supplied array with the Gaussian variates for the next step
-     * and returns the per-step weight contribution.
+     * Fills the supplied array with the Gaussian variates for the next step and returns the per-step weight
+     * contribution.
      */
     public abstract double nextStep(double[] output);
 

@@ -29,12 +29,10 @@ import org.jquantlib.util.LazyObject;
 /**
  * Solver for the Heston–Hull-White 3-factor PDE system.
  * <p>
- * Java port of v1.42.1
- * {@code ql/methods/finitedifferences/solvers/fdmhestonhullwhitesolver.{hpp,cpp}}.
+ * Java port of v1.42.1 {@code ql/methods/finitedifferences/solvers/fdmhestonhullwhitesolver.{hpp,cpp}}.
  * <p>
- * Wraps {@link Fdm3DimSolver} with a {@link FdmHestonHullWhiteOp} operator.
- * The solution is in log-spot space; {@link #valueAt(double, double, double)}
- * converts from {@code (S, v, r)} to {@code (log S, v, r)}.
+ * Wraps {@link Fdm3DimSolver} with a {@link FdmHestonHullWhiteOp} operator. The solution is in log-spot space;
+ * {@link #valueAt(double, double, double)} converts from {@code (S, v, r)} to {@code (log S, v, r)}.
  *
  * @author Phase 2m Track B port
  */
@@ -48,22 +46,19 @@ public class FdmHestonHullWhiteSolver extends LazyObject {
 
     private Fdm3DimSolver solver;
 
-    public FdmHestonHullWhiteSolver(final HestonProcess hestonProcess,
-                                      final HullWhiteProcess hwProcess,
-                                      final double corrEquityShortRate,
-                                      final FdmSolverDesc solverDesc,
-                                      final FdmSchemeDesc schemeDesc) {
-        this.hestonProcess       = hestonProcess;
-        this.hwProcess           = hwProcess;
+    public FdmHestonHullWhiteSolver(final HestonProcess hestonProcess, final HullWhiteProcess hwProcess,
+            final double corrEquityShortRate, final FdmSolverDesc solverDesc, final FdmSchemeDesc schemeDesc) {
+        this.hestonProcess = hestonProcess;
+        this.hwProcess = hwProcess;
         this.corrEquityShortRate = corrEquityShortRate;
-        this.solverDesc          = solverDesc;
-        this.schemeDesc          = schemeDesc;
+        this.solverDesc = solverDesc;
+        this.schemeDesc = schemeDesc;
     }
 
     @Override
     protected void performCalculations() {
-        final FdmHestonHullWhiteOp op = new FdmHestonHullWhiteOp(
-            solverDesc.mesher, hestonProcess, hwProcess, corrEquityShortRate);
+        final FdmHestonHullWhiteOp op = new FdmHestonHullWhiteOp(solverDesc.mesher, hestonProcess, hwProcess,
+                corrEquityShortRate);
         solver = new Fdm3DimSolver(solverDesc, schemeDesc, op);
     }
 
@@ -80,8 +75,7 @@ public class FdmHestonHullWhiteSolver extends LazyObject {
 
     /** Finite-difference gamma at {@code (s, v, r)} with bump {@code eps}. */
     public double gammaAt(final double s, final double v, final double r, final double eps) {
-        return (valueAt(s + eps, v, r) + valueAt(s - eps, v, r) - 2.0 * valueAt(s, v, r))
-               / (eps * eps);
+        return (valueAt(s + eps, v, r) + valueAt(s - eps, v, r) - 2.0 * valueAt(s, v, r)) / (eps * eps);
     }
 
     /** Time derivative of option value at {@code (s, v, r)}. */

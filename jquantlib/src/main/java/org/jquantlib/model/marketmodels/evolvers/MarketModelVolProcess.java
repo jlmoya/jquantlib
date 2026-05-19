@@ -27,16 +27,13 @@
 package org.jquantlib.model.marketmodels.evolvers;
 
 /**
- * Vol-process abstract base for displaced-diffusion LMM with uncorrelated
- * vol process. Called "Shifted BGM" with Heston vol by Brace in
- * "Engineering BGM."
+ * Vol-process abstract base for displaced-diffusion LMM with uncorrelated vol process. Called "Shifted BGM" with Heston
+ * vol by Brace in "Engineering BGM."
  * <p>
- * The vol process is an external input plugged into evolvers such as
- * {@link SVDDFwdRatePc}.
- *
- * @see "ql/models/marketmodels/evolvers/marketmodelvolprocess.hpp" v1.42.1
+ * The vol process is an external input plugged into evolvers such as {@link SVDDFwdRatePc}.
  *
  * @author Jose Moya
+ * @see "ql/models/marketmodels/evolvers/marketmodelvolprocess.hpp" v1.42.1
  */
 public abstract class MarketModelVolProcess {
 

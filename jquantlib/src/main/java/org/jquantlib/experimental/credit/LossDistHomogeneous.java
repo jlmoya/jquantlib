@@ -26,8 +26,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Loss distribution for a homogeneous pool of underlyings (equal volumes,
- * varying default probabilities).
+ * Loss distribution for a homogeneous pool of underlyings (equal volumes, varying default probabilities).
  *
  * <p>Java port of QuantLib v1.42.1 {@code QuantLib::LossDistHomogeneous}
  * ({@code ql/experimental/credit/lossdistribution.{hpp,cpp}}).
@@ -49,43 +48,43 @@ public class LossDistHomogeneous extends LossDist {
     private final double maximum_;
     private int n_ = 0;
     private double volume_ = 0.0;
-    private List<Double> probability_ = new ArrayList<>();
-    private List<Double> excessProbability_ = new ArrayList<>();
+    private List< Double > probability_ = new ArrayList<>();
+    private List< Double > excessProbability_ = new ArrayList<>();
 
     public LossDistHomogeneous(final int nBuckets, final double maximum) {
         this.nBuckets_ = nBuckets;
         this.maximum_ = maximum;
     }
 
-    public Distribution op(final double volume, final List<Double> p) {
+    public Distribution op(final double volume, final List< Double > p) {
         volume_ = volume;
         n_ = p.size();
         probability_ = new ArrayList<>(n_ + 1);
-        for (int i = 0; i <= n_; ++i) {
+        for ( int i = 0; i <= n_; ++i ) {
             probability_.add(0.0);
         }
         probability_.set(0, 1.0);
-        for (int k = 0; k < n_; ++k) {
-            final List<Double> prev = new ArrayList<>(probability_);
+        for ( int k = 0; k < n_; ++k ) {
+            final List< Double > prev = new ArrayList<>(probability_);
             probability_.set(0, prev.get(0) * (1.0 - p.get(k)));
-            for (int i = 1; i <= k; ++i) {
+            for ( int i = 1; i <= k; ++i ) {
                 probability_.set(i, prev.get(i - 1) * p.get(k) + prev.get(i) * (1.0 - p.get(k)));
             }
             probability_.set(k + 1, prev.get(k) * p.get(k));
         }
 
         excessProbability_ = new ArrayList<>(n_ + 1);
-        for (int i = 0; i <= n_; ++i) {
+        for ( int i = 0; i <= n_; ++i ) {
             excessProbability_.add(0.0);
         }
         excessProbability_.set(n_, probability_.get(n_));
-        for (int k = n_ - 1; k >= 0; --k) {
+        for ( int k = n_ - 1; k >= 0; --k ) {
             excessProbability_.set(k, excessProbability_.get(k + 1) + probability_.get(k));
         }
 
         final Distribution dist = new Distribution(nBuckets_, 0.0, maximum_);
-        for (int i = 0; i <= n_; ++i) {
-            if (volume * i <= maximum_) {
+        for ( int i = 0; i <= n_; ++i ) {
+            if ( volume * i <= maximum_ ) {
                 final int bucket = dist.locate(volume * i);
                 dist.addDensity(bucket, probability_.get(i) / dist.dx(bucket));
                 dist.addAverage(bucket, volume * i);
@@ -97,7 +96,7 @@ public class LossDistHomogeneous extends LossDist {
     }
 
     @Override
-    public Distribution op(final List<Double> nominals, final List<Double> probabilities) {
+    public Distribution op(final List< Double > nominals, final List< Double > probabilities) {
         return op(nominals.get(0), probabilities);
     }
 
@@ -119,11 +118,11 @@ public class LossDistHomogeneous extends LossDist {
         return volume_;
     }
 
-    public List<Double> probability() {
+    public List< Double > probability() {
         return Collections.unmodifiableList(probability_);
     }
 
-    public List<Double> excessProbability() {
+    public List< Double > excessProbability() {
         return Collections.unmodifiableList(excessProbability_);
     }
 }

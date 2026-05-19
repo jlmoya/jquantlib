@@ -59,11 +59,11 @@ public class InverseCumulativeStudent implements Ops.DoubleOp {
         do {
             x -= (f_.op(x) - y) / d_.op(x);
             count++;
-        } while (Math.abs(f_.op(x) - y) > accuracy_ && count < maxIterations_);
+        } while ( Math.abs(f_.op(x) - y) > accuracy_ && count < maxIterations_ );
 
         QL.require(count < maxIterations_,
-                "maximum number of iterations " + maxIterations_
-                        + " reached in InverseCumulativeStudent, y=" + y + ", x=" + x);
+                "maximum number of iterations " + maxIterations_ + " reached in InverseCumulativeStudent, y=" + y
+                        + ", x=" + x);
         return x;
     }
 }

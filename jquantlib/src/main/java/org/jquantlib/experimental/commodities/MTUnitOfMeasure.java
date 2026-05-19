@@ -22,8 +22,7 @@ package org.jquantlib.experimental.commodities;
 /**
  * Metric tonne unit of measure (MT).
  * <p>
- * Java port of QuantLib v1.42.1 {@code MTUnitOfMeasure} from
- * {@code petroleumunitsofmeasure.hpp}.
+ * Java port of QuantLib v1.42.1 {@code MTUnitOfMeasure} from {@code petroleumunitsofmeasure.hpp}.
  */
 public class MTUnitOfMeasure extends UnitOfMeasure {
 

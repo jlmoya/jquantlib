@@ -53,31 +53,28 @@ import org.jquantlib.time.calendars.UnitedKingdom;
  * <p>
  * LIBOR fixed by BBA.
  *
- * @see <a href="http://www.bba.org.uk/bba/jsp/polopoly.jsp?d=225&a=1414">http://www.bba.org.uk/bba/jsp/polopoly.jsp?d=225&a=1414</a>
+ * @see <a
+ * href="http://www.bba.org.uk/bba/jsp/polopoly.jsp?d=225&a=1414">http://www.bba.org.uk/bba/jsp/polopoly.jsp?d=225&a=1414</a>
  */
 public class GBPLibor extends Libor {
 
-	public GBPLibor(final Period tenor) {
-		this(tenor, new Handle<YieldTermStructure>(
-						new AbstractYieldTermStructure() {
-							@Override
-							protected double discountImpl(final double t) {
-								throw new UnsupportedOperationException();
-							}
-							@Override
-							public Date maxDate() {
-								throw new UnsupportedOperationException();
-							}
-						}
-				));
-	}
+    public GBPLibor(final Period tenor) {
+        this(tenor, new Handle< YieldTermStructure >(new AbstractYieldTermStructure() {
+            @Override
+            protected double discountImpl(final double t) {
+                throw new UnsupportedOperationException();
+            }
 
-	public GBPLibor(final Period tenor,
-			final Handle<YieldTermStructure> h) {
-		super("GBPLibor", tenor, 0,
-				new GBPCurrency(),
-				new UnitedKingdom(UnitedKingdom.Market.Exchange),
-				new Actual365Fixed(), h);
-	}
+            @Override
+            public Date maxDate() {
+                throw new UnsupportedOperationException();
+            }
+        }));
+    }
+
+    public GBPLibor(final Period tenor, final Handle< YieldTermStructure > h) {
+        super("GBPLibor", tenor, 0, new GBPCurrency(), new UnitedKingdom(UnitedKingdom.Market.Exchange),
+                new Actual365Fixed(), h);
+    }
 
 }

@@ -28,30 +28,26 @@ import org.jquantlib.methods.finitedifferences.operators.FdmLinearOpLayout;
 /**
  * Multi-dimensional Fdm grid mesher.
  * <p>
- * Java port of v1.42.1
- * ql/methods/finitedifferences/meshers/fdmmesher.hpp.
+ * Java port of v1.42.1 ql/methods/finitedifferences/meshers/fdmmesher.hpp.
  * <p>
- * Phase 2h WI-1 sub-layer 1.1 introduces this interface as a forward
- * declaration so the operator classes (FdmHullWhiteOp, FdmG2Op,
- * FirstDerivativeOp, SecondDerivativeOp, NinePointLinearOp,
- * SecondOrderMixedDerivativeOp, TripleBandLinearOp) can compile.
- * Sub-layer 1.2 supplies the concrete {@code Fdm1dMesher},
- * {@code FdmSimpleProcess1dMesher}, and {@code FdmMesherComposite}
- * implementations.
+ * Phase 2h WI-1 sub-layer 1.1 introduces this interface as a forward declaration so the operator classes
+ * (FdmHullWhiteOp, FdmG2Op, FirstDerivativeOp, SecondDerivativeOp, NinePointLinearOp, SecondOrderMixedDerivativeOp,
+ * TripleBandLinearOp) can compile. Sub-layer 1.2 supplies the concrete {@code Fdm1dMesher},
+ * {@code FdmSimpleProcess1dMesher}, and {@code FdmMesherComposite} implementations.
  *
  * @author Phase 2h WI-1 port
  */
 public interface FdmMesher {
 
     /**
-     * Forward-mesh-spacing at the cell pointed to by {@code iter} along
-     * direction {@code direction}: {@code locations[direction][i+1] - locations[direction][i]}.
+     * Forward-mesh-spacing at the cell pointed to by {@code iter} along direction {@code direction}:
+     * {@code locations[direction][i+1] - locations[direction][i]}.
      */
     double dplus(final FdmLinearOpIterator iter, final int direction);
 
     /**
-     * Backward-mesh-spacing at the cell pointed to by {@code iter} along
-     * direction {@code direction}: {@code locations[direction][i] - locations[direction][i-1]}.
+     * Backward-mesh-spacing at the cell pointed to by {@code iter} along direction {@code direction}:
+     * {@code locations[direction][i] - locations[direction][i-1]}.
      */
     double dminus(final FdmLinearOpIterator iter, final int direction);
 

@@ -29,8 +29,7 @@ import org.jquantlib.math.optimization.OptimizationMethod;
 /**
  * Nelson-Siegel fitting method.
  * <p>
- * Fits a discount function {@code d(t) = exp(-r*t)} where the zero rate
- * {@code r} is defined as
+ * Fits a discount function {@code d(t) = exp(-r*t)} where the zero rate {@code r} is defined as
  * <pre>
  * r = c0 + (c1 + c2) * (1 - exp(-k*t)) / (k*t) - c2 * exp(-k*t)
  * </pre>
@@ -57,21 +56,13 @@ public class NelsonSiegelFitting extends FittingMethod {
         this(weights, null, new Array(0), 0.0, Double.MAX_VALUE, new NoConstraint());
     }
 
-    public NelsonSiegelFitting(final Array weights,
-                               final OptimizationMethod optimizationMethod,
-                               final Array l2,
-                               final double minCutoffTime,
-                               final double maxCutoffTime,
-                               final Constraint constraint) {
-        super(true, weights, optimizationMethod, l2,
-              minCutoffTime, maxCutoffTime, constraint);
+    public NelsonSiegelFitting(final Array weights, final OptimizationMethod optimizationMethod, final Array l2,
+            final double minCutoffTime, final double maxCutoffTime, final Constraint constraint) {
+        super(true, weights, optimizationMethod, l2, minCutoffTime, maxCutoffTime, constraint);
     }
 
-    public NelsonSiegelFitting(final Array weights,
-                               final Array l2,
-                               final double minCutoffTime,
-                               final double maxCutoffTime,
-                               final Constraint constraint) {
+    public NelsonSiegelFitting(final Array weights, final Array l2, final double minCutoffTime,
+            final double maxCutoffTime, final Constraint constraint) {
         this(weights, null, l2, minCutoffTime, maxCutoffTime, constraint);
     }
 
@@ -81,8 +72,7 @@ public class NelsonSiegelFitting extends FittingMethod {
         // by the optimizer (solution_/curve_) are intentionally not copied
         // because the C++ equivalent uses std::make_unique<NelsonSiegelFitting>(*this)
         // which copy-constructs the configuration only.
-        return new NelsonSiegelFitting(weights(), optimizationMethod(),
-                l2(), 0.0, Double.MAX_VALUE, constraint());
+        return new NelsonSiegelFitting(weights(), optimizationMethod(), l2(), 0.0, Double.MAX_VALUE, constraint());
     }
 
     @Override
@@ -93,11 +83,9 @@ public class NelsonSiegelFitting extends FittingMethod {
     @Override
     protected double discountFunction(final Array x, final double t) {
         final double kappa = x.get(size() - 1);
-        final double zeroRate = x.get(0)
-                + (x.get(1) + x.get(2))
-                  * (1.0 - Math.exp(-kappa * t))
-                  / ((kappa + QL_EPSILON) * (t + QL_EPSILON))
-                - x.get(2) * Math.exp(-kappa * t);
+        final double zeroRate =
+                x.get(0) + (x.get(1) + x.get(2)) * (1.0 - Math.exp(-kappa * t)) / ((kappa + QL_EPSILON) * (t
+                        + QL_EPSILON)) - x.get(2) * Math.exp(-kappa * t);
         return Math.exp(-zeroRate * t);
     }
 }

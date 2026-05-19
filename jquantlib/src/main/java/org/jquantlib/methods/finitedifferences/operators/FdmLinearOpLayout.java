@@ -27,16 +27,14 @@ import java.util.NoSuchElementException;
 /**
  * Memory layout of an N-d Fdm linear operator.
  * <p>
- * Java port of v1.42.1
- * ql/methods/finitedifferences/operators/fdmlinearoplayout.{hpp,cpp}.
+ * Java port of v1.42.1 ql/methods/finitedifferences/operators/fdmlinearoplayout.{hpp,cpp}.
  * <p>
- * Stores the per-direction extents in {@link #dim()} and the column-major
- * stride in {@link #spacing()}. Provides a flat-index iterator and
- * boundary-reflecting neighborhood lookups used by the difference operators.
+ * Stores the per-direction extents in {@link #dim()} and the column-major stride in {@link #spacing()}. Provides a
+ * flat-index iterator and boundary-reflecting neighborhood lookups used by the difference operators.
  *
  * @author Phase 2h WI-1 port
  */
-public final class FdmLinearOpLayout implements Iterable<FdmLinearOpIterator> {
+public final class FdmLinearOpLayout implements Iterable< FdmLinearOpIterator > {
 
     private final int size;
     private final int[] dim;
@@ -47,7 +45,7 @@ public final class FdmLinearOpLayout implements Iterable<FdmLinearOpIterator> {
         this.spacing = new int[dim.length];
         // partial_sum with multiplication: spacing[0]=1; spacing[k]=prod(dim[0..k-1]).
         spacing[0] = 1;
-        for (int i = 1; i < dim.length; ++i) {
+        for ( int i = 1; i < dim.length; ++i ) {
             spacing[i] = spacing[i - 1] * dim[i - 1];
         }
         this.size = spacing[dim.length - 1] * dim[dim.length - 1];
@@ -69,27 +67,25 @@ public final class FdmLinearOpLayout implements Iterable<FdmLinearOpIterator> {
     }
 
     /**
-     * Map an N-d coordinate to its flat index.
-     * Java port of {@code FdmLinearOpLayout::index} —
+     * Map an N-d coordinate to its flat index. Java port of {@code FdmLinearOpLayout::index} —
      * {@code inner_product(coords, spacing, 0)}.
      */
     public int index(final int[] coordinates) {
         int sum = 0;
-        for (int i = 0; i < coordinates.length; ++i) {
+        for ( int i = 0; i < coordinates.length; ++i ) {
             sum += coordinates[i] * spacing[i];
         }
         return sum;
     }
 
     /**
-     * Map a flat index to its N-d coordinate.
-     * Provided for the Java side only — C++ does not expose this directly,
-     * but it is convenient for tests and for boundary-condition wiring.
+     * Map a flat index to its N-d coordinate. Provided for the Java side only — C++ does not expose this directly, but
+     * it is convenient for tests and for boundary-condition wiring.
      */
     public int[] coordinates(final int flat) {
         final int[] coords = new int[dim.length];
         int rem = flat;
-        for (int i = dim.length - 1; i >= 0; --i) {
+        for ( int i = dim.length - 1; i >= 0; --i ) {
             coords[i] = rem / spacing[i];
             rem -= coords[i] * spacing[i];
         }
@@ -97,8 +93,7 @@ public final class FdmLinearOpLayout implements Iterable<FdmLinearOpIterator> {
     }
 
     /**
-     * Reflecting-boundary neighbour at {@code coords[i] + offset} along
-     * direction {@code i}. Java port of single-axis
+     * Reflecting-boundary neighbour at {@code coords[i] + offset} along direction {@code i}. Java port of single-axis
      * {@code FdmLinearOpLayout::neighbourhood}.
      */
     public int neighbourhood(final FdmLinearOpIterator iter, final int direction, final int offset) {
@@ -106,55 +101,49 @@ public final class FdmLinearOpLayout implements Iterable<FdmLinearOpIterator> {
         final int myIndex = iter.index() - coords[direction] * spacing[direction];
 
         int coorOffset = coords[direction] + offset;
-        if (coorOffset < 0) {
+        if ( coorOffset < 0 ) {
             coorOffset = -coorOffset;
-        } else if (coorOffset >= dim[direction]) {
+        } else if ( coorOffset >= dim[direction] ) {
             coorOffset = 2 * (dim[direction] - 1) - coorOffset;
         }
         return myIndex + coorOffset * spacing[direction];
     }
 
     /**
-     * Reflecting-boundary neighbour at {@code (coords[i1]+off1, coords[i2]+off2)}.
-     * Java port of two-axis {@code FdmLinearOpLayout::neighbourhood}.
+     * Reflecting-boundary neighbour at {@code (coords[i1]+off1, coords[i2]+off2)}. Java port of two-axis
+     * {@code FdmLinearOpLayout::neighbourhood}.
      */
-    public int neighbourhood(final FdmLinearOpIterator iter,
-                             final int i1, final int offset1,
-                             final int i2, final int offset2) {
+    public int neighbourhood(final FdmLinearOpIterator iter, final int i1, final int offset1, final int i2,
+            final int offset2) {
         final int[] coords = iter.coordinates();
-        final int myIndex = iter.index()
-                - coords[i1] * spacing[i1]
-                - coords[i2] * spacing[i2];
+        final int myIndex = iter.index() - coords[i1] * spacing[i1] - coords[i2] * spacing[i2];
 
         int coorOffset1 = coords[i1] + offset1;
-        if (coorOffset1 < 0) {
+        if ( coorOffset1 < 0 ) {
             coorOffset1 = -coorOffset1;
-        } else if (coorOffset1 >= dim[i1]) {
+        } else if ( coorOffset1 >= dim[i1] ) {
             coorOffset1 = 2 * (dim[i1] - 1) - coorOffset1;
         }
         int coorOffset2 = coords[i2] + offset2;
-        if (coorOffset2 < 0) {
+        if ( coorOffset2 < 0 ) {
             coorOffset2 = -coorOffset2;
-        } else if (coorOffset2 >= dim[i2]) {
+        } else if ( coorOffset2 >= dim[i2] ) {
             coorOffset2 = 2 * (dim[i2] - 1) - coorOffset2;
         }
-        return myIndex
-                + coorOffset1 * spacing[i1]
-                + coorOffset2 * spacing[i2];
+        return myIndex + coorOffset1 * spacing[i1] + coorOffset2 * spacing[i2];
     }
 
     /**
-     * Construct an iterator at the reflected neighbour of {@code iter}
-     * along direction {@code i}. Java port of
+     * Construct an iterator at the reflected neighbour of {@code iter} along direction {@code i}. Java port of
      * {@code FdmLinearOpLayout::iter_neighbourhood}.
      */
-    public FdmLinearOpIterator iterNeighbourhood(final FdmLinearOpIterator iter,
-                                                 final int direction, final int offset) {
+    public FdmLinearOpIterator iterNeighbourhood(final FdmLinearOpIterator iter, final int direction,
+            final int offset) {
         final int[] coords = iter.coordinates().clone();
         int coorOffset = coords[direction] + offset;
-        if (coorOffset < 0) {
+        if ( coorOffset < 0 ) {
             coorOffset = -coorOffset;
-        } else if (coorOffset >= dim[direction]) {
+        } else if ( coorOffset >= dim[direction] ) {
             coorOffset = 2 * (dim[direction] - 1) - coorOffset;
         }
         coords[direction] = coorOffset;
@@ -172,14 +161,13 @@ public final class FdmLinearOpLayout implements Iterable<FdmLinearOpIterator> {
     }
 
     /**
-     * For-each support — yields snapshots of an internal walking iterator.
-     * The returned iterators are the same {@link FdmLinearOpIterator} object
-     * (recycled across iterations) to mirror C++ range-for semantics where
+     * For-each support — yields snapshots of an internal walking iterator. The returned iterators are the same
+     * {@link FdmLinearOpIterator} object (recycled across iterations) to mirror C++ range-for semantics where
      * {@code *iter} aliases the iterator itself.
      */
     @Override
-    public Iterator<FdmLinearOpIterator> iterator() {
-        return new Iterator<FdmLinearOpIterator>() {
+    public Iterator< FdmLinearOpIterator > iterator() {
+        return new Iterator< FdmLinearOpIterator >() {
             private final FdmLinearOpIterator cur = begin();
 
             @Override
@@ -189,11 +177,10 @@ public final class FdmLinearOpLayout implements Iterable<FdmLinearOpIterator> {
 
             @Override
             public FdmLinearOpIterator next() {
-                if (cur.index() >= size) {
+                if ( cur.index() >= size ) {
                     throw new NoSuchElementException();
                 }
-                final FdmLinearOpIterator snapshot =
-                        new FdmLinearOpIterator(dim, cur.coordinates(), cur.index());
+                final FdmLinearOpIterator snapshot = new FdmLinearOpIterator(dim, cur.coordinates(), cur.index());
                 cur.increment();
                 return snapshot;
             }

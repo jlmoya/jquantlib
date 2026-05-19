@@ -38,11 +38,9 @@ import org.jquantlib.QL;
  * <a href="http://mathworld.wolfram.com/B-Spline.html">mathworld.wolfram.com/B-Spline.html</a>.
  *
  * <p>{@code (p+1)}-th order B-spline (or p degree polynomial) basis functions
- * {@code N_{i,p}(x), i = 0,1,2 ... n}, with {@code n+1} control points, or
- * equivalently, an associated knot vector of size {@code p+n+2} defined at the
- * increasingly sorted points {@code (x_0, x_1 ... x_{n+p+1})}. A linear
- * B-spline has {@code p=1}, quadratic B-spline has {@code p=2}, a cubic
- * B-spline has {@code p=3}, etc.
+ * {@code N_{i,p}(x), i = 0,1,2 ... n}, with {@code n+1} control points, or equivalently, an associated knot vector of
+ * size {@code p+n+2} defined at the increasingly sorted points {@code (x_0, x_1 ... x_{n+p+1})}. A linear B-spline has
+ * {@code p=1}, quadratic B-spline has {@code p=2}, a cubic B-spline has {@code p=3}, etc.
  *
  * <p>The B-spline basis functions are defined recursively:
  * <pre>
@@ -68,7 +66,7 @@ public final class BSpline {
         QL.require(p <= n, "must have p <= n");
         QL.require(knots.length == p + n + 2, "number of knots must equal p+n+2");
 
-        for (int i = 0; i < knots.length - 1; ++i) {
+        for ( int i = 0; i < knots.length - 1; ++i ) {
             QL.require(knots[i] <= knots[i + 1], "knots points must be nondecreasing");
         }
 
@@ -91,11 +89,11 @@ public final class BSpline {
 
     /** Recursive definition of N, the B-spline basis function. */
     private double N(final int i, final int p, final double x) {
-        if (p == 0) {
+        if ( p == 0 ) {
             return (knots_[i] <= x && x < knots_[i + 1]) ? 1.0 : 0.0;
         } else {
             return ((x - knots_[i]) / (knots_[i + p] - knots_[i])) * N(i, p - 1, x)
-                 + ((knots_[i + p + 1] - x) / (knots_[i + p + 1] - knots_[i + 1])) * N(i + 1, p - 1, x);
+                    + ((knots_[i + p + 1] - x) / (knots_[i + p + 1] - knots_[i + 1])) * N(i + 1, p - 1, x);
         }
     }
 }

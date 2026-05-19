@@ -49,17 +49,16 @@ import org.jquantlib.time.Period;
  *   P_n(0,T) max( y * (N * [(1+K)^T - 1]
  *                    - N * [I(T)/I(0) - 1] ), 0 )
  * </pre>
- * where {@code T} is the maturity time, {@code P_n(0,t)} is the nominal
- * discount factor at time {@code t}, {@code N} is the notional, and
- * {@code I(t)} is the inflation index value at time {@code t}.
+ * where {@code T} is the maturity time, {@code P_n(0,t)} is the nominal discount factor at time {@code t}, {@code N} is
+ * the notional, and {@code I(t)} is the inflation index value at time {@code t}.
  *
  * <p>Inflation is generally available on every day, including holidays and
- * weekends. Hence there is a variable to state whether the observe/fix dates
- * for inflation are adjusted or not. The default is not to adjust.
+ * weekends. Hence there is a variable to state whether the observe/fix dates for inflation are adjusted or not. The
+ * default is not to adjust.
  *
  * <p>N.B. a CPI cap or floor is an option, not a cap or floor on a coupon.
- * Thus this is very similar to a ZCIIS and has a single flow; this is as
- * usual for CPI because it is cumulative up to option maturity from base date.
+ * Thus this is very similar to a ZCIIS and has a single flow; this is as usual for CPI because it is cumulative up to
+ * option maturity from base date.
  *
  * <p>We do not inherit from {@link Option}, although that would be reasonable,
  * because we do not have that degree of generality.
@@ -93,36 +92,19 @@ public class CPICapFloor extends Instrument {
     // public constructors
     //
 
-    public CPICapFloor(final Option.Type type,
-                       final double nominal,
-                       final Date startDate,
-                       final double baseCPI,
-                       final Date maturity,
-                       final Calendar fixCalendar,
-                       final BusinessDayConvention fixConvention,
-                       final Calendar payCalendar,
-                       final BusinessDayConvention payConvention,
-                       final double strike,
-                       final ZeroInflationIndex inflationIndex,
-                       final Period observationLag) {
-        this(type, nominal, startDate, baseCPI, maturity, fixCalendar,
-                fixConvention, payCalendar, payConvention, strike,
-                inflationIndex, observationLag, CPI.InterpolationType.AsIndex);
+    public CPICapFloor(final Option.Type type, final double nominal, final Date startDate, final double baseCPI,
+            final Date maturity, final Calendar fixCalendar, final BusinessDayConvention fixConvention,
+            final Calendar payCalendar, final BusinessDayConvention payConvention, final double strike,
+            final ZeroInflationIndex inflationIndex, final Period observationLag) {
+        this(type, nominal, startDate, baseCPI, maturity, fixCalendar, fixConvention, payCalendar, payConvention,
+                strike, inflationIndex, observationLag, CPI.InterpolationType.AsIndex);
     }
 
-    public CPICapFloor(final Option.Type type,
-                       final double nominal,
-                       final Date startDate,
-                       final double baseCPI,
-                       final Date maturity,
-                       final Calendar fixCalendar,
-                       final BusinessDayConvention fixConvention,
-                       final Calendar payCalendar,
-                       final BusinessDayConvention payConvention,
-                       final double strike,
-                       final ZeroInflationIndex inflationIndex,
-                       final Period observationLag,
-                       final CPI.InterpolationType observationInterpolation) {
+    public CPICapFloor(final Option.Type type, final double nominal, final Date startDate, final double baseCPI,
+            final Date maturity, final Calendar fixCalendar, final BusinessDayConvention fixConvention,
+            final Calendar payCalendar, final BusinessDayConvention payConvention, final double strike,
+            final ZeroInflationIndex inflationIndex, final Period observationLag,
+            final CPI.InterpolationType observationInterpolation) {
         this.type_ = type;
         this.nominal_ = nominal;
         this.startDate_ = startDate;
@@ -141,7 +123,7 @@ public class CPICapFloor extends Instrument {
         QL.require(fixCalendar_ != null, "no fixing calendar passed");
         QL.require(payCalendar_ != null, "no payment calendar passed");
 
-        if (!isInterpolated(observationInterpolation_)) {
+        if ( !isInterpolated(observationInterpolation_) ) {
             QL.require(observationLag_.ge(index_.availabilityLag()),
                     "CPI capfloor's observationLag must be at least availabilityLag of inflation index "
                             + "when the observation is effectively flat");
@@ -153,8 +135,7 @@ public class CPICapFloor extends Instrument {
     }
 
     /**
-     * Mirror of C++ {@code detail::CPI::isInterpolated} —
-     * Linear is interpolated; AsIndex/Flat are not.
+     * Mirror of C++ {@code detail::CPI::isInterpolated} — Linear is interpolated; AsIndex/Flat are not.
      */
     private static boolean isInterpolated(final CPI.InterpolationType t) {
         return t == CPI.InterpolationType.Linear;
@@ -229,10 +210,12 @@ public class CPICapFloor extends Instrument {
     //
 
     /** Marking interface; mirrors C++ {@code CPICapFloor::arguments}. */
-    public interface Arguments extends Instrument.Arguments { /* marker */ }
+    public interface Arguments extends Instrument.Arguments { /* marker */
+    }
 
     /** Marking interface; mirrors C++ {@code CPICapFloor::results}. */
-    public interface Results extends Instrument.Results { /* marker */ }
+    public interface Results extends Instrument.Results { /* marker */
+    }
 
     /** Concrete arguments DTO. */
     public static class ArgumentsImpl implements CPICapFloor.Arguments {
@@ -255,16 +238,14 @@ public class CPICapFloor extends Instrument {
     }
 
     /** Concrete results DTO. */
-    public static class ResultsImpl extends Instrument.ResultsImpl
-            implements CPICapFloor.Results {
+    public static class ResultsImpl extends Instrument.ResultsImpl implements CPICapFloor.Results {
     }
 
     /**
-     * Base class for CPI cap/floor pricing engines.
-     * Mirrors C++ {@code CPICapFloor::engine = GenericEngine<arguments, results>}.
+     * Base class for CPI cap/floor pricing engines. Mirrors C++
+     * {@code CPICapFloor::engine = GenericEngine<arguments, results>}.
      */
-    public abstract static class Engine
-            extends GenericEngine<CPICapFloor.Arguments, CPICapFloor.Results> {
+    public abstract static class Engine extends GenericEngine< CPICapFloor.Arguments, CPICapFloor.Results > {
         protected Engine() {
             super(new CPICapFloor.ArgumentsImpl(), new CPICapFloor.ResultsImpl());
         }

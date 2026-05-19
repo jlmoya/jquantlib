@@ -46,18 +46,15 @@ import org.jquantlib.lang.annotation.QualityAssurance.Quality;
 import org.jquantlib.lang.annotation.QualityAssurance.Version;
 import org.jquantlib.time.Date;
 
-
 /**
- * This interface provides methods for determining the length of a time
- * period according to given market convention, both as a number
- * of days and as a year fraction.
- *
- * @see <a href="http://en.wikipedia.org/wiki/Day_count_convention">Day count convention</a>
+ * This interface provides methods for determining the length of a time period according to given market convention,
+ * both as a number of days and as a year fraction.
  *
  * @author Richard Gomes
  * @author Srinivas Hasti
+ * @see <a href="http://en.wikipedia.org/wiki/Day_count_convention">Day count convention</a>
  */
-@QualityAssurance(quality=Quality.Q4_UNIT, version=Version.V097, reviewers="Richard Gomes")
+@QualityAssurance( quality = Quality.Q4_UNIT, version = Version.V097, reviewers = "Richard Gomes" )
 public class DayCounter {
 
     private static final String NO_IMPLEMENTATION_PROVIDED = "no implementation provided";
@@ -68,7 +65,6 @@ public class DayCounter {
 
     protected Impl impl;
 
-
     //
     // public constructors
     //
@@ -76,7 +72,6 @@ public class DayCounter {
     public DayCounter() {
         // nothing
     }
-
 
     //
     // public methods
@@ -92,25 +87,24 @@ public class DayCounter {
     /**
      * @return the name of this DayCounter
      */
-	public String name() /* @ReadOnly */ {
+    public String name() /* @ReadOnly */ {
         QL.require(impl != null, NO_IMPLEMENTATION_PROVIDED);
         return impl.name();
     }
 
-
-	/**
+    /**
      * Returns the number of days between two dates
-	 *
-	 * @param dateStart is the starting Date
-	 * @param dateEnd is the ending Date
-	 * @return the number of days between two dates.
-	 */
-	public long dayCount(final Date dateStart, final Date dateEnd) /* @ReadOnly */ {
+     *
+     * @param dateStart is the starting Date
+     * @param dateEnd   is the ending Date
+     * @return the number of days between two dates.
+     */
+    public long dayCount(final Date dateStart, final Date dateEnd) /* @ReadOnly */ {
         QL.require(impl != null, NO_IMPLEMENTATION_PROVIDED);
         return impl.dayCount(dateStart, dateEnd);
-	}
+    }
 
-	   /**
+    /**
      * Returns the period between two dates as a fraction of year
      *
      * @param dateStart
@@ -121,20 +115,20 @@ public class DayCounter {
         return yearFraction(dateStart, dateEnd, new Date(), new Date());
     }
 
-
-	/**
-	 * Returns the period between two dates as a fraction of year, considering referencing dates for both.
-	 *
-	 * @param dateStart
-	 * @param dateEnd
-	 * @param refPeriodStart
-	 * @param refPeriodEnd
-	 * @return the period between two dates as a fraction of year, considering referencing dates for both.
-	 */
-	public /*@Time*/ double yearFraction(final Date dateStart, final Date dateEnd, final Date refPeriodStart, final Date refPeriodEnd) /* @ReadOnly */ {
+    /**
+     * Returns the period between two dates as a fraction of year, considering referencing dates for both.
+     *
+     * @param dateStart
+     * @param dateEnd
+     * @param refPeriodStart
+     * @param refPeriodEnd
+     * @return the period between two dates as a fraction of year, considering referencing dates for both.
+     */
+    public /*@Time*/ double yearFraction(final Date dateStart, final Date dateEnd, final Date refPeriodStart,
+            final Date refPeriodEnd) /* @ReadOnly */ {
         QL.require(impl != null, NO_IMPLEMENTATION_PROVIDED);
         return impl.yearFraction(dateStart, dateEnd, refPeriodStart, refPeriodEnd);
-	}
+    }
 
     /**
      * Returns <tt>true</tt> if <code>this</code> and <code>other</code> belong to the same derived class.
@@ -150,10 +144,9 @@ public class DayCounter {
         return !equals(another);
     }
 
-
-	//
-	// overrides Object
-	//
+    //
+    // overrides Object
+    //
 
     @Override
     public int hashCode() {
@@ -164,51 +157,47 @@ public class DayCounter {
         return result;
     }
 
-//    @Override
-//    public boolean equals(final Object obj) {
-//        if (this == obj)
-//            return true;
-//        if (obj == null || !(obj instanceof DayCounter))
-//            return false;
-//
-//        final DayCounter other = (DayCounter) obj;
-//        if (this.empty() && other.empty())
-//            return true;
-//        if (this.name().equals(other.name()))
-//            return true;
-//        return false;
-//    }
-    
+    //    @Override
+    //    public boolean equals(final Object obj) {
+    //        if (this == obj)
+    //            return true;
+    //        if (obj == null || !(obj instanceof DayCounter))
+    //            return false;
+    //
+    //        final DayCounter other = (DayCounter) obj;
+    //        if (this.empty() && other.empty())
+    //            return true;
+    //        if (this.name().equals(other.name()))
+    //            return true;
+    //        return false;
+    //    }
+
     @Override
-  	public boolean equals(final Object obj) {
-    	if (this == obj)
-    		return true;
-    	if (obj == null)
-    		return false;
-    	
-        return obj instanceof DayCounter &&
-        ((DayCounter) obj).fEquals(this);
-   	
-    }	
-    
+    public boolean equals(final Object obj) {
+        if ( this == obj )
+            return true;
+        if ( obj == null )
+            return false;
+
+        return obj instanceof DayCounter && ((DayCounter) obj).fEquals(this);
+
+    }
+
     @Override
     public String toString() {
         return (impl == null) ? "null" : impl.name();
     }
 
-    
     //
     // protected methods
     //
 
     protected boolean fEquals(DayCounter other) {
-    	if (this.empty() && other.empty())
-    		return true;
-    	if (this.name().equals(other.name()))
-    		return true;
-    	return false;  	
+        if ( this.empty() && other.empty() )
+            return true;
+        return this.name().equals(other.name());
     }
-    
+
     //
     // protected inner classes
     //
@@ -216,30 +205,31 @@ public class DayCounter {
     /**
      * Base class for day counter implementations.
      */
-	protected abstract class Impl {
+    protected abstract class Impl {
 
         //
         // protected abstract methods
         //
 
         protected abstract String name() /* @ReadOnly */;
-        protected abstract /*@Time*/ double yearFraction(final Date dateStart, final Date dateEnd, final Date refPeriodStart, final Date refPeriodEnd) /* @ReadOnly */;
 
+        protected abstract /*@Time*/ double yearFraction(final Date dateStart, final Date dateEnd,
+                final Date refPeriodStart, final Date refPeriodEnd) /* @ReadOnly */;
 
-	    //
-	    // protected methods
-	    //
+        //
+        // protected methods
+        //
 
-	    /**
-	     * To be overloaded by more complex day counters
-	     *
-	     * @param dateStart is the starting Date
-	     * @param dateEnd is the ending Date
-	     * @return the period between two dates as a fraction of year
-	     */
-	    protected long dayCount(final Date dateStart, final Date dateEnd) /* @ReadOnly */ {
-	        return dateEnd.sub(dateStart);
-	    }
+        /**
+         * To be overloaded by more complex day counters
+         *
+         * @param dateStart is the starting Date
+         * @param dateEnd   is the ending Date
+         * @return the period between two dates as a fraction of year
+         */
+        protected long dayCount(final Date dateStart, final Date dateEnd) /* @ReadOnly */ {
+            return dateEnd.sub(dateStart);
+        }
 
     }
 

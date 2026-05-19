@@ -53,18 +53,18 @@ import org.jquantlib.time.Date;
  *
  * @author Richard Gomes
  */
-@QualityAssurance(quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Richard Gomes" })
+@QualityAssurance( quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Richard Gomes" } )
 public class EuropeanExercise extends Exercise {
 
-	/**
-	 * Defines the exercise date for an European Option.
-	 *
-	 * @param date is the exercise date
-	 */
+    /**
+     * Defines the exercise date for an European Option.
+     *
+     * @param date is the exercise date
+     */
     public EuropeanExercise(final Date date) {
-		super(Exercise.Type.European);
-		QL.require(date!=null , "empty exercise date");  // TODO: message
-		super.dates.add(date.clone());
-	}
+        super(Exercise.Type.European);
+        QL.require(date != null, "empty exercise date");  // TODO: message
+        super.dates.add(date.clone());
+    }
 
 }

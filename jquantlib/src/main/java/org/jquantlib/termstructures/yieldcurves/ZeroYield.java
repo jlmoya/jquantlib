@@ -40,7 +40,6 @@ FOR A PARTICULAR PURPOSE.  See the license for more details.
 
 package org.jquantlib.termstructures.yieldcurves;
 
-import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.math.Constants;
 import org.jquantlib.termstructures.Compounding;
@@ -79,14 +78,13 @@ public class ZeroYield implements Traits {
     }
 
     @Override
-    public double minValueAfter(final int i, final double[] data,
-                                final boolean validData, final double[] times) {
+    public double minValueAfter(final int i, final double[] data, final boolean validData, final double[] times) {
         // Phase Bug-Fix-Curve: pillar-aware bound matching C++ v1.42.1
         // ZeroYield::minValueAfter (bootstraptraits.hpp lines 165-179).
-        if (validData) {
+        if ( validData ) {
             double r = data[0];
-            for (int k = 1; k < data.length; ++k) {
-                if (data[k] < r) {
+            for ( int k = 1; k < data.length; ++k ) {
+                if ( data[k] < r ) {
                     r = data[k];
                 }
             }
@@ -100,21 +98,20 @@ public class ZeroYield implements Traits {
         // Settings.isNegativeRates() to preserve Java's safe-positive behavior
         // when negative rates aren't expected (matches Java's pre-existing
         // semantics; documented divergence from C++ for backward compatibility).
-        if (new Settings().isNegativeRates()) {
+        if ( new Settings().isNegativeRates() ) {
             return -maxRate;
         }
         return Constants.QL_EPSILON;
     }
 
     @Override
-    public double maxValueAfter(final int i, final double[] data,
-                                final boolean validData, final double[] times) {
+    public double maxValueAfter(final int i, final double[] data, final boolean validData, final double[] times) {
         // Phase Bug-Fix-Curve: pillar-aware bound matching C++ v1.42.1
         // ZeroYield::maxValueAfter (bootstraptraits.hpp lines 180-193).
-        if (validData) {
+        if ( validData ) {
             double r = data[0];
-            for (int k = 1; k < data.length; ++k) {
-                if (data[k] > r) {
+            for ( int k = 1; k < data.length; ++k ) {
+                if ( data[k] > r ) {
                     r = data[k];
                 }
             }
@@ -127,7 +124,7 @@ public class ZeroYield implements Traits {
     @Override
     public void updateGuess(final double[] data, final double value, final int i) {
         data[i] = value;
-        if (i == 1) {
+        if ( i == 1 ) {
             data[0] = value; // first point is updated as well
         }
     }

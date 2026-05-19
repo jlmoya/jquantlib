@@ -45,30 +45,22 @@ import org.jquantlib.model.shortrate.onefactormodels.gaussian1d.Gaussian1dModel;
 import org.jquantlib.pricingengines.PricingEngine;
 import org.jquantlib.termstructures.SwaptionVolatilityStructure;
 import org.jquantlib.termstructures.volatilities.SmileSection;
-import org.jquantlib.time.BusinessDayConvention;
-import org.jquantlib.time.Calendar;
-import org.jquantlib.time.Date;
-import org.jquantlib.time.Period;
-import org.jquantlib.time.TimeUnit;
+import org.jquantlib.time.*;
 
 /**
  * Swaption volatility structure implied by a Gaussian 1d model.
  * <p>
- * Java port of QuantLib v1.42.1
- * {@code ql/termstructures/volatility/swaption/gaussian1dswaptionvolatility.{hpp,cpp}}
+ * Java port of QuantLib v1.42.1 {@code ql/termstructures/volatility/swaption/gaussian1dswaptionvolatility.{hpp,cpp}}
  * (commit {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}). Phase 2j WI-1.4.
  * <p>
- * Per-smile-section pricing uses {@link Gaussian1dSmileSection}. The
- * {@link #smileSectionImpl(double, double)} overload performs a
- * {@code NewtonSafe} date inversion to convert {@code optionTime} back to
- * a fixing {@link Date}, exactly as in C++.
+ * Per-smile-section pricing uses {@link Gaussian1dSmileSection}. The {@link #smileSectionImpl(double, double)} overload
+ * performs a {@code NewtonSafe} date inversion to convert {@code optionTime} back to a fixing {@link Date}, exactly as
+ * in C++.
  * <p>
  * <strong>WI-1.4 scope:</strong> {@link #volatilityImpl(Date, Period, double)}
- * and {@link #volatilityImpl(double, double, double)} both delegate to
- * {@link Gaussian1dSmileSection#volatilityImpl}, which in turn requires WI-2
- * swaption/cap-floor engines.  The structural plumbing (constructors,
- * {@code smileSectionImpl} routing, {@code maxDate}/{@code maxSwapTenor} etc.)
- * is fully functional.
+ * and {@link #volatilityImpl(double, double, double)} both delegate to {@link Gaussian1dSmileSection#volatilityImpl},
+ * which in turn requires WI-2 swaption/cap-floor engines.  The structural plumbing (constructors,
+ * {@code smileSectionImpl} routing, {@code maxDate}/{@code maxSwapTenor} etc.) is fully functional.
  *
  * @author Peter Caspers (C++ original)
  * @author JQuantLib contributors (Java port)
@@ -89,8 +81,7 @@ public class Gaussian1dSwaptionVolatility extends SwaptionVolatilityStructure {
     private final Gaussian1dModel model_;
 
     /**
-     * Optional pricing engine ({@code Gaussian1dSwaptionEngine}).
-     * {@code null} until WI-2 injects the engine.
+     * Optional pricing engine ({@code Gaussian1dSwaptionEngine}). {@code null} until WI-2 injects the engine.
      */
     private final PricingEngine engine_;
 
@@ -99,42 +90,31 @@ public class Gaussian1dSwaptionVolatility extends SwaptionVolatilityStructure {
     /**
      * Full constructor.
      *
-     * @param cal        fixing calendar (typically the swap index calendar)
-     * @param bdc        business day convention for option dates
-     * @param indexBase  swap-index template; the tenor will be overridden in
-     *                   {@link #smileSectionImpl(Date, Period)} via
-     *                   {@code cloneWithTenor(indexBase, tenor)}
-     * @param model      Gaussian 1d model (provides swap-rate/annuity)
-     * @param dc         day counter
-     * @param engine     {@code Gaussian1dSwaptionEngine} — may be {@code null}
-     *                   (WI-1.4 partial port; WI-2 will inject)
+     * @param cal       fixing calendar (typically the swap index calendar)
+     * @param bdc       business day convention for option dates
+     * @param indexBase swap-index template; the tenor will be overridden in {@link #smileSectionImpl(Date, Period)} via
+     *                  {@code cloneWithTenor(indexBase, tenor)}
+     * @param model     Gaussian 1d model (provides swap-rate/annuity)
+     * @param dc        day counter
+     * @param engine    {@code Gaussian1dSwaptionEngine} — may be {@code null} (WI-1.4 partial port; WI-2 will inject)
      */
-    public Gaussian1dSwaptionVolatility(
-            final Calendar cal,
-            final BusinessDayConvention bdc,
-            final SwapIndex indexBase,
-            final Gaussian1dModel model,
-            final DayCounter dc,
-            final PricingEngine engine) {
+    public Gaussian1dSwaptionVolatility(final Calendar cal, final BusinessDayConvention bdc, final SwapIndex indexBase,
+            final Gaussian1dModel model, final DayCounter dc, final PricingEngine engine) {
 
         // C++: SwaptionVolatilityStructure(model->termStructure()->referenceDate(), cal, bdc, dc)
         super(model.termStructure().currentLink().referenceDate(), cal, dc, bdc);
 
-        this.bdc_       = bdc;
+        this.bdc_ = bdc;
         this.indexBase_ = indexBase;
-        this.model_     = model;
-        this.engine_    = engine;
+        this.model_ = model;
+        this.engine_ = engine;
     }
 
     /**
      * Convenience constructor without an engine.
      */
-    public Gaussian1dSwaptionVolatility(
-            final Calendar cal,
-            final BusinessDayConvention bdc,
-            final SwapIndex indexBase,
-            final Gaussian1dModel model,
-            final DayCounter dc) {
+    public Gaussian1dSwaptionVolatility(final Calendar cal, final BusinessDayConvention bdc, final SwapIndex indexBase,
+            final Gaussian1dModel model, final DayCounter dc) {
         this(cal, bdc, indexBase, model, dc, null);
     }
 
@@ -168,8 +148,8 @@ public class Gaussian1dSwaptionVolatility extends SwaptionVolatilityStructure {
     // ── smileSectionImpl overloads ────────────────────────────────────────────
 
     /**
-     * Creates a {@link Gaussian1dSmileSection} for the given expiry date and
-     * swap tenor. Mirrors C++ {@code smileSectionImpl(const Date&, const Period&)}.
+     * Creates a {@link Gaussian1dSmileSection} for the given expiry date and swap tenor. Mirrors C++
+     * {@code smileSectionImpl(const Date&, const Period&)}.
      */
     @Override
     protected SmileSection smileSectionImpl(final Date optionDate, final Period swapTenor) {
@@ -182,9 +162,8 @@ public class Gaussian1dSwaptionVolatility extends SwaptionVolatilityStructure {
     }
 
     /**
-     * Creates a {@link Gaussian1dSmileSection} for a given option time and
-     * swap length (in years). Performs a {@code NewtonSafe} date inversion to
-     * recover the fixing date, matching C++ exactly.
+     * Creates a {@link Gaussian1dSmileSection} for a given option time and swap length (in years). Performs a
+     * {@code NewtonSafe} date inversion to recover the fixing date, matching C++ exactly.
      */
     @Override
     protected SmileSection smileSectionImpl(final double optionTime, final double swapLength) {
@@ -207,8 +186,7 @@ public class Gaussian1dSwaptionVolatility extends SwaptionVolatilityStructure {
     // ── volatilityImpl overloads ──────────────────────────────────────────────
 
     @Override
-    public double volatilityImpl(final double optionTime, final double swapLength,
-                                 final double strike) {
+    public double volatilityImpl(final double optionTime, final double swapLength, final double strike) {
         return smileSectionImpl(optionTime, swapLength).volatility(strike);
     }
 
@@ -217,16 +195,15 @@ public class Gaussian1dSwaptionVolatility extends SwaptionVolatilityStructure {
      * {@link SwaptionVolatilityStructure#volatility(Date, Period, double, boolean)} chain.
      */
     @Override
-    protected double volatilityImpl(final Date optionDate, final Period swapTenor,
-                                    final double strike) {
+    protected double volatilityImpl(final Date optionDate, final Period swapTenor, final double strike) {
         return smileSectionImpl(optionDate, swapTenor).volatility(strike);
     }
 
     // ── blackVariance ─────────────────────────────────────────────────────────
 
     @Override
-    public double blackVariance(final double optionTime, final double swapLength,
-                                final double strike, final boolean extrapolate) {
+    public double blackVariance(final double optionTime, final double swapLength, final double strike,
+            final boolean extrapolate) {
         checkRange(optionTime, swapLength, strike, extrapolate);
         final double vol = volatilityImpl(optionTime, swapLength, strike);
         return vol * vol * optionTime;
@@ -235,10 +212,9 @@ public class Gaussian1dSwaptionVolatility extends SwaptionVolatilityStructure {
     // ── private helpers ───────────────────────────────────────────────────────
 
     /**
-     * Creates a SwapIndex with the same conventions as {@code base} but with
-     * a different tenor.  Currently only handles {@link EuriborSwapIsdaFixA};
-     * other index types will fall back to the base index (which then uses the
-     * wrong tenor but will not fail).
+     * Creates a SwapIndex with the same conventions as {@code base} but with a different tenor.  Currently only handles
+     * {@link EuriborSwapIsdaFixA}; other index types will fall back to the base index (which then uses the wrong tenor
+     * but will not fail).
      */
     private SwapIndex cloneWithTenor(final SwapIndex base, final Period tenor) {
         // C++ calls indexBase_->clone(tenor) which is a virtual method.
@@ -248,11 +224,9 @@ public class Gaussian1dSwaptionVolatility extends SwaptionVolatilityStructure {
     }
 
     /**
-     * Inner functor implementing the {@link Derivative} interface for the
-     * NewtonSafe date inversion:
-     * {@code f(serial) = timeFromReference(Date(serial)) - optionTime}.
-     * The derivative approximation uses a forward difference (step 1e-6),
-     * matching C++ DateHelper::derivative.
+     * Inner functor implementing the {@link Derivative} interface for the NewtonSafe date inversion:
+     * {@code f(serial) = timeFromReference(Date(serial)) - optionTime}. The derivative approximation uses a forward
+     * difference (step 1e-6), matching C++ DateHelper::derivative.
      */
     private final class DateHelper implements Derivative {
 
@@ -263,8 +237,7 @@ public class Gaussian1dSwaptionVolatility extends SwaptionVolatilityStructure {
         }
 
         /**
-         * Interpolated time-from-reference at fractional serial number.
-         * Mirrors C++ {@code DateHelper::operator()}.
+         * Interpolated time-from-reference at fractional serial number. Mirrors C++ {@code DateHelper::operator()}.
          */
         @Override
         public double op(final double serial) {
@@ -272,13 +245,12 @@ public class Gaussian1dSwaptionVolatility extends SwaptionVolatilityStructure {
             final Date d2 = new Date((long) serial + 1L);
             final double t1 = timeFromReference(d1) - targetTime_;
             final double t2 = timeFromReference(d2) - targetTime_;
-            final double h  = serial - (long) serial;
+            final double h = serial - (long) serial;
             return h * t2 + (1.0 - h) * t1;
         }
 
         /**
-         * Forward-difference derivative approximation.
-         * Mirrors C++ {@code DateHelper::derivative}.
+         * Forward-difference derivative approximation. Mirrors C++ {@code DateHelper::derivative}.
          */
         @Override
         public double derivative(final double serial) {

@@ -52,69 +52,52 @@ import org.jquantlib.time.calendars.NullCalendar;
  * Black-formula cap/floor engine.
  *
  * <p>Mirrors C++ v1.42.1 ql/pricingengines/capfloor/blackcapfloorengine.{hpp,cpp}.
- * Java's {@link OptionletVolatilityStructure} does not yet expose
- * {@code displacement()} (C++ adds it in v1.42.1 but Java has not been
- * retrofitted), so the {@code (YTS, Handle<OVS>)} ctor still defaults the
- * displacement to 0.0 unless overridden via the
- * {@code (YTS, Handle<OVS>, double displacement)} overload.
- * Phase 5g.5d adds the {@code displacement} parameter to all ctors,
- * matching v1.42.1's API.
+ * Java's {@link OptionletVolatilityStructure} does not yet expose {@code displacement()} (C++ adds it in v1.42.1 but
+ * Java has not been retrofitted), so the {@code (YTS, Handle<OVS>)} ctor still defaults the displacement to 0.0 unless
+ * overridden via the {@code (YTS, Handle<OVS>, double displacement)} overload. Phase 5g.5d adds the
+ * {@code displacement} parameter to all ctors, matching v1.42.1's API.
  *
  * <p>Phase 2e WI-2; displacement parameter added Phase 5g.5d.
  */
 public class BlackCapFloorEngine extends CapFloor.Engine {
 
-    private final Handle<YieldTermStructure> discountCurve_;
-    private final Handle<OptionletVolatilityStructure> vol_;
+    private final Handle< YieldTermStructure > discountCurve_;
+    private final Handle< OptionletVolatilityStructure > vol_;
     private final double displacement_;
 
-    public BlackCapFloorEngine(
-            final Handle<YieldTermStructure> discountCurve,
-            final double v,
-            final DayCounter dc) {
+    public BlackCapFloorEngine(final Handle< YieldTermStructure > discountCurve, final double v, final DayCounter dc) {
         this(discountCurve, v, dc, 0.0);
     }
 
-    public BlackCapFloorEngine(
-            final Handle<YieldTermStructure> discountCurve,
-            final double v,
-            final DayCounter dc,
+    public BlackCapFloorEngine(final Handle< YieldTermStructure > discountCurve, final double v, final DayCounter dc,
             final double displacement) {
         this.discountCurve_ = discountCurve;
         // Wrap the fixed double in a SimpleQuote so the engine can hold
         // a Handle<OptionletVolatilityStructure> uniformly.
-        this.vol_ = new Handle<OptionletVolatilityStructure>(
-                new ConstantOptionletVolatility(0, new NullCalendar(),
-                        BusinessDayConvention.Following,
-                        new Handle<Quote>(new SimpleQuote(v)), dc));
+        this.vol_ = new Handle< OptionletVolatilityStructure >(
+                new ConstantOptionletVolatility(0, new NullCalendar(), BusinessDayConvention.Following,
+                        new Handle< Quote >(new SimpleQuote(v)), dc));
         this.displacement_ = displacement;
         this.discountCurve_.addObserver(this);
     }
 
-    public BlackCapFloorEngine(
-            final Handle<YieldTermStructure> discountCurve,
-            final Handle<Quote> v,
+    public BlackCapFloorEngine(final Handle< YieldTermStructure > discountCurve, final Handle< Quote > v,
             final DayCounter dc) {
         this(discountCurve, v, dc, 0.0);
     }
 
-    public BlackCapFloorEngine(
-            final Handle<YieldTermStructure> discountCurve,
-            final Handle<Quote> v,
-            final DayCounter dc,
-            final double displacement) {
+    public BlackCapFloorEngine(final Handle< YieldTermStructure > discountCurve, final Handle< Quote > v,
+            final DayCounter dc, final double displacement) {
         this.discountCurve_ = discountCurve;
-        this.vol_ = new Handle<OptionletVolatilityStructure>(
-                new ConstantOptionletVolatility(0, new NullCalendar(),
-                        BusinessDayConvention.Following, v, dc));
+        this.vol_ = new Handle< OptionletVolatilityStructure >(
+                new ConstantOptionletVolatility(0, new NullCalendar(), BusinessDayConvention.Following, v, dc));
         this.displacement_ = displacement;
         this.discountCurve_.addObserver(this);
         this.vol_.addObserver(this);
     }
 
-    public BlackCapFloorEngine(
-            final Handle<YieldTermStructure> discountCurve,
-            final Handle<OptionletVolatilityStructure> volatility) {
+    public BlackCapFloorEngine(final Handle< YieldTermStructure > discountCurve,
+            final Handle< OptionletVolatilityStructure > volatility) {
         this(discountCurve, volatility, 0.0);
     }
 
@@ -122,16 +105,12 @@ public class BlackCapFloorEngine extends CapFloor.Engine {
      * Mirrors C++ v1.42.1 ctor with displacement parameter.
      *
      * <p>C++ asserts the OVS uses ShiftedLognormal model and compares the
-     * caller-provided displacement to the OVS-stored displacement when the
-     * caller passes a non-Null value. Java's OVS has not yet been
-     * retrofitted with {@code displacement()}, so we only store the
-     * caller-supplied value. Pass {@code 0.0} (or use the no-displacement
-     * overload) for the legacy zero-shift behavior.
+     * caller-provided displacement to the OVS-stored displacement when the caller passes a non-Null value. Java's OVS
+     * has not yet been retrofitted with {@code displacement()}, so we only store the caller-supplied value. Pass
+     * {@code 0.0} (or use the no-displacement overload) for the legacy zero-shift behavior.
      */
-    public BlackCapFloorEngine(
-            final Handle<YieldTermStructure> discountCurve,
-            final Handle<OptionletVolatilityStructure> volatility,
-            final double displacement) {
+    public BlackCapFloorEngine(final Handle< YieldTermStructure > discountCurve,
+            final Handle< OptionletVolatilityStructure > volatility, final double displacement) {
         this.discountCurve_ = discountCurve;
         this.vol_ = volatility;
         // Java OVS lacks displacement(); see class javadoc.
@@ -142,9 +121,7 @@ public class BlackCapFloorEngine extends CapFloor.Engine {
         this.vol_.addObserver(this);
     }
 
-    public BlackCapFloorEngine(
-            final Handle<YieldTermStructure> discountCurve,
-            final double v) {
+    public BlackCapFloorEngine(final Handle< YieldTermStructure > discountCurve, final double v) {
         this(discountCurve, v, new Actual365Fixed());
     }
 
@@ -153,11 +130,11 @@ public class BlackCapFloorEngine extends CapFloor.Engine {
     // to the same JVM signature. Callers using the Handle<Quote> shape must
     // pass the DayCounter explicitly (use Actual365Fixed to match C++).
 
-    public Handle<YieldTermStructure> termStructure() {
+    public Handle< YieldTermStructure > termStructure() {
         return discountCurve_;
     }
 
-    public Handle<OptionletVolatilityStructure> volatility() {
+    public Handle< OptionletVolatilityStructure > volatility() {
         return vol_;
     }
 
@@ -169,16 +146,13 @@ public class BlackCapFloorEngine extends CapFloor.Engine {
      * Mirrors C++ blackcapfloorengine.cpp lines 77-166.
      *
      * <p>Populates {@code results.value} plus the named additionalResults
-     * (vega, optionletsPrice, optionletsVega, optionletsDelta,
-     * optionletsDiscountFactor, optionletsAtmForward, optionletsStdDev)
-     * exactly as C++ does — Phase 5e.5b-CFC-d-49 finished the port.
+     * (vega, optionletsPrice, optionletsVega, optionletsDelta, optionletsDiscountFactor, optionletsAtmForward,
+     * optionletsStdDev) exactly as C++ does — Phase 5e.5b-CFC-d-49 finished the port.
      *
      * <p>When the OVS is stripped under the Bachelier (Normal) model the
-     * engine falls back to {@code bachelierBlackFormula} for the optionlet
-     * value to stay compatible with legacy callers. The analytic vega /
-     * delta entries are then left at zero — the proper Java
-     * {@code BachelierCapFloorEngine} (Phase 5e.5 WI-5e.5-CF-2) owns that
-     * dispatch.
+     * engine falls back to {@code bachelierBlackFormula} for the optionlet value to stay compatible with legacy
+     * callers. The analytic vega / delta entries are then left at zero — the proper Java
+     * {@code BachelierCapFloorEngine} (Phase 5e.5 WI-5e.5-CF-2) owns that dispatch.
      */
     @Override
     public void calculate() {
@@ -204,77 +178,65 @@ public class BlackCapFloorEngine extends CapFloor.Engine {
         // construction; Java picks the formula at calculate() time so the
         // same Java BlackCapFloorEngine instance can be used regardless
         // of how the OVS was stripped.
-        final boolean useBachelier =
-                vol_.currentLink().volatilityType() == VolatilityType.Normal;
+        final boolean useBachelier = vol_.currentLink().volatilityType() == VolatilityType.Normal;
 
-        for (int i = 0; i < optionlets; ++i) {
+        for ( int i = 0; i < optionlets; ++i ) {
             final Date paymentDate = arguments.endDates[i];
             // handling of settlementDate, npvDate and includeSettlementFlows
             // should be implemented; for the time being just discard expired
             // caplets.
-            if (paymentDate.gt(settlement)) {
+            if ( paymentDate.gt(settlement) ) {
                 final double d = discountCurve_.currentLink().discount(paymentDate);
                 discountFactors[i] = d;
-                final double accrualFactor = arguments.nominals[i]
-                        * arguments.gearings[i]
-                        * arguments.accrualTimes[i];
+                final double accrualFactor = arguments.nominals[i] * arguments.gearings[i] * arguments.accrualTimes[i];
                 final double discountedAccrual = d * accrualFactor;
                 final double forward = arguments.forwards[i];
 
                 final Date fixingDate = arguments.fixingDates[i];
                 double sqrtTime = 0.0;
-                if (fixingDate.gt(today)) {
+                if ( fixingDate.gt(today) ) {
                     sqrtTime = Math.sqrt(vol_.currentLink().timeFromReference(fixingDate));
                 }
 
-                if (type == CapFloor.Type.Cap || type == CapFloor.Type.Collar) {
+                if ( type == CapFloor.Type.Cap || type == CapFloor.Type.Collar ) {
                     final double strike = arguments.capRates[i];
-                    if (sqrtTime > 0.0) {
-                        stdDevs[i] = Math.sqrt(
-                                vol_.currentLink().blackVariance(fixingDate, strike));
-                        if (!useBachelier) {
-                            vegas[i] = BlackFormula.blackFormulaStdDevDerivative(
-                                    strike, forward, stdDevs[i],
-                                    discountedAccrual, displacement_)
-                                    * sqrtTime;
-                            deltas[i] = BlackFormula.blackFormulaAssetItmProbability(
-                                    Option.Type.Call, strike, forward,
+                    if ( sqrtTime > 0.0 ) {
+                        stdDevs[i] = Math.sqrt(vol_.currentLink().blackVariance(fixingDate, strike));
+                        if ( !useBachelier ) {
+                            vegas[i] = BlackFormula.blackFormulaStdDevDerivative(strike, forward, stdDevs[i],
+                                    discountedAccrual, displacement_) * sqrtTime;
+                            deltas[i] = BlackFormula.blackFormulaAssetItmProbability(Option.Type.Call, strike, forward,
                                     stdDevs[i], displacement_);
                         }
                     }
                     // include caplets with past fixing date
                     values[i] = useBachelier
-                            ? BlackFormula.bachelierBlackFormula(Option.Type.Call,
-                                    strike, forward, stdDevs[i], discountedAccrual)
-                            : BlackFormula.blackFormula(Option.Type.Call,
-                                    strike, forward, stdDevs[i], discountedAccrual, displacement_);
+                            ? BlackFormula.bachelierBlackFormula(Option.Type.Call, strike, forward, stdDevs[i],
+                            discountedAccrual)
+                            : BlackFormula.blackFormula(Option.Type.Call, strike, forward, stdDevs[i],
+                                    discountedAccrual, displacement_);
                 }
-                if (type == CapFloor.Type.Floor || type == CapFloor.Type.Collar) {
+                if ( type == CapFloor.Type.Floor || type == CapFloor.Type.Collar ) {
                     final double strike = arguments.floorRates[i];
                     double floorletVega = 0.0;
                     double floorletDelta = 0.0;
-                    if (sqrtTime > 0.0) {
-                        stdDevs[i] = Math.sqrt(
-                                vol_.currentLink().blackVariance(fixingDate, strike));
-                        if (!useBachelier) {
-                            floorletVega = BlackFormula.blackFormulaStdDevDerivative(
-                                    strike, forward, stdDevs[i],
-                                    discountedAccrual, displacement_)
-                                    * sqrtTime;
+                    if ( sqrtTime > 0.0 ) {
+                        stdDevs[i] = Math.sqrt(vol_.currentLink().blackVariance(fixingDate, strike));
+                        if ( !useBachelier ) {
+                            floorletVega = BlackFormula.blackFormulaStdDevDerivative(strike, forward, stdDevs[i],
+                                    discountedAccrual, displacement_) * sqrtTime;
                             // C++: Integer(Option::Put) * blackFormulaAssetItmProbability(Put, ...)
                             //      = -1 * Phi(-d1) — a non-positive delta.
-                            floorletDelta = Option.Type.Put.toInteger()
-                                    * BlackFormula.blackFormulaAssetItmProbability(
-                                            Option.Type.Put, strike, forward,
-                                            stdDevs[i], displacement_);
+                            floorletDelta = Option.Type.Put.toInteger() * BlackFormula.blackFormulaAssetItmProbability(
+                                    Option.Type.Put, strike, forward, stdDevs[i], displacement_);
                         }
                     }
                     final double floorlet = useBachelier
-                            ? BlackFormula.bachelierBlackFormula(Option.Type.Put,
-                                    strike, forward, stdDevs[i], discountedAccrual)
-                            : BlackFormula.blackFormula(Option.Type.Put,
-                                    strike, forward, stdDevs[i], discountedAccrual, displacement_);
-                    if (type == CapFloor.Type.Floor) {
+                            ? BlackFormula.bachelierBlackFormula(Option.Type.Put, strike, forward, stdDevs[i],
+                            discountedAccrual)
+                            : BlackFormula.blackFormula(Option.Type.Put, strike, forward, stdDevs[i], discountedAccrual,
+                                    displacement_);
+                    if ( type == CapFloor.Type.Floor ) {
                         values[i] = floorlet;
                         vegas[i] = floorletVega;
                         deltas[i] = floorletDelta;
@@ -301,7 +263,7 @@ public class BlackCapFloorEngine extends CapFloor.Engine {
         results.additionalResults().put("optionletsDelta", deltas);
         results.additionalResults().put("optionletsDiscountFactor", discountFactors);
         results.additionalResults().put("optionletsAtmForward", arguments.forwards);
-        if (type != CapFloor.Type.Collar) {
+        if ( type != CapFloor.Type.Collar ) {
             results.additionalResults().put("optionletsStdDev", stdDevs);
         }
     }

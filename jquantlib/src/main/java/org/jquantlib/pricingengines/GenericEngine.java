@@ -39,45 +39,54 @@
 
 package org.jquantlib.pricingengines;
 
-import java.util.List;
-
 import org.jquantlib.instruments.Instrument;
 import org.jquantlib.util.DefaultObservable;
 import org.jquantlib.util.Observable;
 import org.jquantlib.util.Observer;
 
+import java.util.List;
+
 /**
- * This is a generic definition of a PriceEngine which takes its arguments from an {@link Arguments} structure and returns its
- * results in a {@link Results} structure.
+ * This is a generic definition of a PriceEngine which takes its arguments from an {@link Arguments} structure and
+ * returns its results in a {@link Results} structure.
  *
  * @param <A> is an parameterized Arguments object
  * @param <R> is an parameterized Results object
- *
  * @author Richard Gomes
  */
-public abstract class GenericEngine
-            <A extends Instrument.Arguments, R extends Instrument.Results>
-            implements PricingEngine, Observer {
+public abstract class GenericEngine< A extends Instrument.Arguments, R extends Instrument.Results >
+        implements PricingEngine, Observer {
 
     //
     // protected fields
     //
 
+    /**
+     * Implements multiple inheritance via delegate pattern to an inner class.
+     *
+     * <p>Phase 2x A.4: switched to {@link
+     * org.jquantlib.util.WeakReferenceObservable} so that instruments from completed tests don't accumulate on the
+     * engine's observer list and cascade on every Settings.setEvaluationDate.
+     *
+     * @see Observable
+     * @see DefaultObservable
+     */
+    private final Observable delegatedObservable = new org.jquantlib.util.WeakReferenceObservable(this);
     protected A arguments_;
-    protected R results_;
 
     //
     // protected constructors
+    //
+    protected R results_;
+
+    //
+    // implements PricingEngine
     //
 
     protected GenericEngine(final A arguments, final R results) {
         this.arguments_ = arguments;
         this.results_ = results;
     }
-
-    //
-    // implements PricingEngine
-    //
 
     @Override
     public final A getArguments() {
@@ -89,13 +98,17 @@ public abstract class GenericEngine
         return results_;
     }
 
+    //
+    // implements Observer
+    //
+
     @Override
     public void reset() {
         results_.reset();
     }
 
     //
-    // implements Observer
+    // implements Observable
     //
 
     @Override
@@ -104,23 +117,6 @@ public abstract class GenericEngine
         //XXX:OBS update();
         notifyObservers();
     }
-
-    //
-    // implements Observable
-    //
-
-    /**
-     * Implements multiple inheritance via delegate pattern to an inner class.
-     *
-     * <p>Phase 2x A.4: switched to {@link
-     * org.jquantlib.util.WeakReferenceObservable} so that instruments
-     * from completed tests don't accumulate on the engine's observer
-     * list and cascade on every Settings.setEvaluationDate.
-     *
-     * @see Observable
-     * @see DefaultObservable
-     */
-    private final Observable delegatedObservable = new org.jquantlib.util.WeakReferenceObservable(this);
 
     @Override
     public final void addObserver(final Observer observer) {
@@ -153,7 +149,7 @@ public abstract class GenericEngine
     }
 
     @Override
-    public final List<Observer> getObservers() {
+    public final List< Observer > getObservers() {
         return delegatedObservable.getObservers();
     }
 

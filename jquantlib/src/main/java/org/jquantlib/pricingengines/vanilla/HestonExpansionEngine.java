@@ -37,12 +37,11 @@ import org.jquantlib.processes.HestonProcess;
 import org.jquantlib.time.Date;
 
 /**
- * Heston-model engine for European options based on analytic expansions of
- * the implied volatility.
+ * Heston-model engine for European options based on analytic expansions of the implied volatility.
  *
  * <p>Phase 5h.5 port of {@code QuantLib::HestonExpansionEngine}
- * (v1.42.1 ql/pricingengines/vanilla/hestonexpansionengine.{hpp,cpp}). Pinned
- * commit {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
+ * (v1.42.1 ql/pricingengines/vanilla/hestonexpansionengine.{hpp,cpp}). Pinned commit
+ * {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
  *
  * <p>References:
  * <ul>
@@ -74,23 +73,10 @@ import org.jquantlib.time.Date;
  * {@link AnalyticHestonEngine}.
  */
 public class HestonExpansionEngine
-        extends GenericModelEngine<HestonModel,
-                                   OneAssetOption.Arguments,
-                                   OneAssetOption.Results> {
-
-    /** Heston-implied-volatility expansion formula choice. */
-    public enum Formula {
-        /** Lorig-Pagliarani-Pascucci order-2 expansion (deferred to Phase 5h.5b). */
-        LPP2,
-        /** Lorig-Pagliarani-Pascucci order-3 expansion (deferred to Phase 5h.5b). */
-        LPP3,
-        /** Forde-Jacquier-Lee small-time expansion. Fully implemented. */
-        Forde
-    }
+        extends GenericModelEngine< HestonModel, OneAssetOption.Arguments, OneAssetOption.Results > {
 
     private final HestonProcess process_;
     private final Formula formula_;
-
     /**
      * Construct an expansion engine using the supplied formula.
      *
@@ -98,25 +84,18 @@ public class HestonExpansionEngine
      * @param process the Heston process (provides s0/discount/div/time)
      * @param formula expansion formula to dispatch to
      */
-    public HestonExpansionEngine(final HestonModel model,
-                                 final HestonProcess process,
-                                 final Formula formula) {
-        super(model,
-              new OneAssetOption.ArgumentsImpl(),
-              new OneAssetOption.ResultsImpl());
+    public HestonExpansionEngine(final HestonModel model, final HestonProcess process, final Formula formula) {
+        super(model, new OneAssetOption.ArgumentsImpl(), new OneAssetOption.ResultsImpl());
         this.process_ = process;
         this.formula_ = formula;
     }
 
     @Override
     public void calculate() {
-        final OneAssetOption.ArgumentsImpl args =
-                (OneAssetOption.ArgumentsImpl) arguments_;
+        final OneAssetOption.ArgumentsImpl args = (OneAssetOption.ArgumentsImpl) arguments_;
 
-        QL.require(args.exercise.type() == Exercise.Type.European,
-                   "not an European option");
-        QL.require(args.payoff instanceof PlainVanillaPayoff,
-                   "non plain vanilla payoff given");
+        QL.require(args.exercise.type() == Exercise.Type.European, "not an European option");
+        QL.require(args.payoff instanceof PlainVanillaPayoff, "non plain vanilla payoff given");
         final PlainVanillaPayoff payoff = (PlainVanillaPayoff) args.payoff;
 
         final Date exerciseDate = args.exercise.lastDate();
@@ -132,36 +111,40 @@ public class HestonExpansionEngine
         final double forward = spotPrice * dividendDiscount / riskFreeDiscount;
 
         final double vol;
-        switch (formula_) {
-            case Forde: {
-                final FordeHestonExpansion expansion = new FordeHestonExpansion(
-                        model.kappa(), model.theta(),
-                        model.sigma(), model.v0(),
-                        model.rho(), term);
-                vol = expansion.impliedVolatility(strikePrice, forward);
-                break;
-            }
-            case LPP2: {
-                final LPP2HestonExpansion expansion = new LPP2HestonExpansion(
-                        model.kappa(), model.theta(),
-                        model.sigma(), model.v0(),
-                        model.rho(), term);
-                vol = expansion.impliedVolatility(strikePrice, forward);
-                break;
-            }
-            case LPP3:
-                throw new UnsupportedOperationException(
-                        "LPP3 Heston expansion deferred to Phase 5h.5b "
-                        + "(requires porting ~600 LOC of Mathematica-emitted formulas)");
-            default:
-                throw new IllegalStateException("unknown expansion formula: " + formula_);
+        switch ( formula_ ) {
+        case Forde: {
+            final FordeHestonExpansion expansion = new FordeHestonExpansion(model.kappa(), model.theta(), model.sigma(),
+                    model.v0(), model.rho(), term);
+            vol = expansion.impliedVolatility(strikePrice, forward);
+            break;
+        }
+        case LPP2: {
+            final LPP2HestonExpansion expansion = new LPP2HestonExpansion(model.kappa(), model.theta(), model.sigma(),
+                    model.v0(), model.rho(), term);
+            vol = expansion.impliedVolatility(strikePrice, forward);
+            break;
+        }
+        case LPP3:
+            throw new UnsupportedOperationException("LPP3 Heston expansion deferred to Phase 5h.5b "
+                    + "(requires porting ~600 LOC of Mathematica-emitted formulas)");
+        default:
+            throw new IllegalStateException("unknown expansion formula: " + formula_);
         }
 
-        final double price = BlackFormula.blackFormula(
-                payoff, strikePrice, forward,
-                vol * Math.sqrt(term), riskFreeDiscount, 0.0);
+        final double price = BlackFormula.blackFormula(payoff, strikePrice, forward, vol * Math.sqrt(term),
+                riskFreeDiscount, 0.0);
 
         final OneAssetOption.ResultsImpl res = (OneAssetOption.ResultsImpl) results_;
         res.value = price;
+    }
+
+    /** Heston-implied-volatility expansion formula choice. */
+    public enum Formula {
+        /** Lorig-Pagliarani-Pascucci order-2 expansion (deferred to Phase 5h.5b). */
+        LPP2,
+        /** Lorig-Pagliarani-Pascucci order-3 expansion (deferred to Phase 5h.5b). */
+        LPP3,
+        /** Forde-Jacquier-Lee small-time expansion. Fully implemented. */
+        Forde
     }
 }

@@ -38,8 +38,7 @@ import org.jquantlib.pricingengines.BlackCalculator;
 import org.jquantlib.processes.GeneralizedBlackScholesProcess;
 
 /**
- * Pricing engine for a European spread option on two futures using Kirk's
- * 1995 approximation.
+ * Pricing engine for a European spread option on two futures using Kirk's 1995 approximation.
  *
  * <p>Kirk, E. "Correlation in the Energy Markets", in <i>Managing Energy
  * Price Risk</i>, London: Risk Publications and Enron, pp. 71-78.</p>
@@ -51,32 +50,24 @@ import org.jquantlib.processes.GeneralizedBlackScholesProcess;
  */
 public class KirkEngine extends SpreadBlackScholesVanillaEngine {
 
-    public KirkEngine(
-            final GeneralizedBlackScholesProcess process1,
-            final GeneralizedBlackScholesProcess process2,
+    public KirkEngine(final GeneralizedBlackScholesProcess process1, final GeneralizedBlackScholesProcess process2,
             final double correlation) {
         super(process1, process2, correlation);
     }
 
     @Override
-    protected double calculateSpread(
-            final double f1, final double f2, final double strike,
-            final Option.Type optionType,
-            final double variance1, final double variance2,
-            final double df) {
+    protected double calculateSpread(final double f1, final double f2, final double strike,
+            final Option.Type optionType, final double variance1, final double variance2, final double df) {
 
         // Kirk's approximation: model spread as a single Black-process
         // with adjusted "moneyness" forward and effective volatility.
         final double f = f1 / (f2 + strike);
         final double ratio = f2 / (f2 + strike);
         final double v = Math.sqrt(
-                variance1
-                + variance2 * ratio * ratio
-                - 2.0 * rho * Math.sqrt(variance1 * variance2) * ratio);
+                variance1 + variance2 * ratio * ratio - 2.0 * rho * Math.sqrt(variance1 * variance2) * ratio);
 
         // BlackCalculator with strike=1.0, forward=f, stdDev=v, discount=df.
-        final BlackCalculator black = new BlackCalculator(
-                new PlainVanillaPayoff(optionType, 1.0), f, v, df);
+        final BlackCalculator black = new BlackCalculator(new PlainVanillaPayoff(optionType, 1.0), f, v, df);
 
         return (f2 + strike) * black.value();
     }

@@ -22,17 +22,13 @@ package org.jquantlib.methods.finitedifferences.operators;
 import org.jquantlib.methods.finitedifferences.meshers.FdmMesher;
 
 /**
- * Modifiable triple-band linear operator — exposes the protected
- * {@code lower}, {@code diag}, and {@code upper} arrays of
- * {@link TripleBandLinearOp} so that boundary-condition setters can
- * patch individual stencil cells in place.
+ * Modifiable triple-band linear operator — exposes the protected {@code lower}, {@code diag}, and {@code upper} arrays
+ * of {@link TripleBandLinearOp} so that boundary-condition setters can patch individual stencil cells in place.
  * <p>
- * Java port of v1.42.1
- * {@code ql/methods/finitedifferences/operators/modtriplebandlinearop.hpp}.
+ * Java port of v1.42.1 {@code ql/methods/finitedifferences/operators/modtriplebandlinearop.hpp}.
  * <p>
- * The C++ class uses C++ reference accessors ({@code Real& lower(Size i)})
- * to allow in-place mutation. In Java we expose explicit setters and
- * getters since Java does not have references.
+ * The C++ class uses C++ reference accessors ({@code Real& lower(Size i)}) to allow in-place mutation. In Java we
+ * expose explicit setters and getters since Java does not have references.
  *
  * @author Phase 5h.5-SLV port
  */
@@ -47,15 +43,39 @@ public class ModTripleBandLinearOp extends TripleBandLinearOp {
         super(m);
     }
 
-    public double lowerAt(final int i) { return lower[i]; }
-    public double diagAt (final int i) { return diag [i]; }
-    public double upperAt(final int i) { return upper[i]; }
+    public double lowerAt(final int i) {
+        return lower[i];
+    }
 
-    public void setLower(final int i, final double v) { lower[i] = v; }
-    public void setDiag (final int i, final double v) { diag [i] = v; }
-    public void setUpper(final int i, final double v) { upper[i] = v; }
+    public double diagAt(final int i) {
+        return diag[i];
+    }
 
-    public void addLower(final int i, final double v) { lower[i] += v; }
-    public void addDiag (final int i, final double v) { diag [i] += v; }
-    public void addUpper(final int i, final double v) { upper[i] += v; }
+    public double upperAt(final int i) {
+        return upper[i];
+    }
+
+    public void setLower(final int i, final double v) {
+        lower[i] = v;
+    }
+
+    public void setDiag(final int i, final double v) {
+        diag[i] = v;
+    }
+
+    public void setUpper(final int i, final double v) {
+        upper[i] = v;
+    }
+
+    public void addLower(final int i, final double v) {
+        lower[i] += v;
+    }
+
+    public void addDiag(final int i, final double v) {
+        diag[i] += v;
+    }
+
+    public void addUpper(final int i, final double v) {
+        upper[i] += v;
+    }
 }

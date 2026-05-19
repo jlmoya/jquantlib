@@ -28,13 +28,11 @@ import org.jquantlib.model.AffineModel;
 /**
  * Single-factor affine base class
  * <p>
- * Single-factor models with an analytical formula for discount bonds should inherit from this class.
- * They must then implement the functions \f$ A(t,T) \f$ and \f$ B(t,T) \f$ such that
- * \f[ P(t, T, r_t) = A(t,T)e^{ -B(t,T) r_t}. \f]
- * 
- * @category shortrate
- * 
+ * Single-factor models with an analytical formula for discount bonds should inherit from this class. They must then
+ * implement the functions \f$ A(t,T) \f$ and \f$ B(t,T) \f$ such that \f[ P(t, T, r_t) = A(t,T)e^{ -B(t,T) r_t}. \f]
+ *
  * @author Praneet Tiwari
+ * @category shortrate
  */
 public abstract class OneFactorAffineModel extends OneFactorModel implements AffineModel {
 
@@ -46,15 +44,14 @@ public abstract class OneFactorAffineModel extends OneFactorModel implements Aff
         super(nArguments);
     }
 
-
-    public double discountBond(/* @Time */ final double now, /* @Time */ final double maturity, /* @Rate */ final double rate) /* @ReadOnly */ {
+    public double discountBond(/* @Time */ final double now, /* @Time */ final double maturity, /* @Rate */
+            final double rate) /* @ReadOnly */ {
         // Phase 2i WI-2 B-1: JQuantMath.exp (CORE-MATH cr_exp) instead
         // of JVM Math.exp to remove the 1-ULP slack accumulated across
         // ~100 ADI rollback steps × ~100 mesh nodes × ~20 coupons in
         // FdHullWhite/FdG2 swaption pricing (Phase 2h LOOSE 2e-12 floor).
         return A(now, maturity) * JQuantMath.exp(-B(now, maturity) * rate);
     }
-
 
     //
     // protected abstract methods
@@ -64,13 +61,13 @@ public abstract class OneFactorAffineModel extends OneFactorModel implements Aff
 
     protected abstract double B(/* @Time */ final double t, /* @Time */ final double T) /* @ReadOnly */;
 
-
     //
     // implements AffineModel
     //
 
     @Override
-    public double discountBond(/* @Time */ final double now, /* @Time */ final double maturity, final Array factors) /* @ReadOnly */ {
+    public double discountBond(/* @Time */ final double now, /* @Time */ final double maturity,
+            final Array factors) /* @ReadOnly */ {
         return discountBond(now, maturity, factors.first());
     }
 

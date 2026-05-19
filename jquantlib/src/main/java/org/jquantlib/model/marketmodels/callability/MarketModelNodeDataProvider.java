@@ -30,19 +30,17 @@ import org.jquantlib.model.marketmodels.CurveState;
 import org.jquantlib.model.marketmodels.EvolutionDescription;
 
 /**
- * Common base for callability node-data providers (basis systems and
- * parametric exercises).
+ * Common base for callability node-data providers (basis systems and parametric exercises).
  *
  * <p>Java port of {@code MarketModelNodeDataProvider}
  * (ql/models/marketmodels/callability/nodedataprovider.hpp v1.42.1).
  *
  * <p>The Java translation uses {@code int[]} for {@code std::vector<Size>} and
- * {@code boolean[]} for {@code std::valarray<bool>}, and uses an in-place
- * {@code values(CurveState, double[])} signature.
- *
- * @see "ql/models/marketmodels/callability/nodedataprovider.hpp" v1.42.1
+ * {@code boolean[]} for {@code std::valarray<bool>}, and uses an in-place {@code values(CurveState, double[])}
+ * signature.
  *
  * @author Jose Moya
+ * @see "ql/models/marketmodels/callability/nodedataprovider.hpp" v1.42.1
  */
 public interface MarketModelNodeDataProvider {
 
@@ -53,8 +51,7 @@ public interface MarketModelNodeDataProvider {
     int[] numberOfData();
 
     /**
-     * Returns the evolution description (including any time at which state
-     * should be updated).
+     * Returns the evolution description (including any time at which state should be updated).
      */
     EvolutionDescription evolution();
 
@@ -65,27 +62,24 @@ public interface MarketModelNodeDataProvider {
     void reset();
 
     /**
-     * Returns, for each evolution time, whether it is an exercise time.
-     * Mirrors C++ {@code std::valarray<bool> isExerciseTime() const}.
+     * Returns, for each evolution time, whether it is an exercise time. Mirrors C++
+     * {@code std::valarray<bool> isExerciseTime() const}.
      */
     boolean[] isExerciseTime();
 
     /**
-     * Fills {@code results} with the basis-function or parametric-variable
-     * values for the current state. Length is
-     * {@code numberOfData()[currentExerciseIndex]}.
-     * Mirrors C++ {@code void values(const CurveState&, std::vector<Real>&)}.
+     * Fills {@code results} with the basis-function or parametric-variable values for the current state. Length is
+     * {@code numberOfData()[currentExerciseIndex]}. Mirrors C++
+     * {@code void values(const CurveState&, std::vector<Real>&)}.
      */
     void values(CurveState currentState, double[] results);
 
     /**
-     * Resizing variant: most concrete implementations need to grow the result
-     * array. Default delegates to {@link #values(CurveState, double[])} with
-     * the supplied container.
+     * Resizing variant: most concrete implementations need to grow the result array. Default delegates to
+     * {@link #values(CurveState, double[])} with the supplied container.
      */
     default double[] values(final CurveState currentState) {
         // helper for callers who want a fresh array; size determined by impl
-        throw new UnsupportedOperationException(
-                "use values(CurveState, double[]) and pre-size the array");
+        throw new UnsupportedOperationException("use values(CurveState, double[]) and pre-size the array");
     }
 }

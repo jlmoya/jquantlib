@@ -25,8 +25,8 @@ import org.jquantlib.QL;
 import org.jquantlib.math.Constants;
 
 /**
- * Householder reflection projecting onto the unit vector e.
- * Java port of QuantLib v1.42.1 ql/math/matrixutilities/householder.hpp,cpp.
+ * Householder reflection projecting onto the unit vector e. Java port of QuantLib v1.42.1
+ * ql/math/matrixutilities/householder.hpp,cpp.
  */
 public class HouseholderReflection {
 
@@ -46,16 +46,14 @@ public class HouseholderReflection {
         final Array a2 = a.sub(a1);
 
         final double eps = a2.dotProduct(a2) / (aDotE * aDotE);
-        if (eps < Constants.QL_EPSILON * Constants.QL_EPSILON) {
+        if ( eps < Constants.QL_EPSILON * Constants.QL_EPSILON ) {
             return new Array(a.size()).fill(0.0);
-        } else if (eps < 1e-4) {
+        } else if ( eps < 1e-4 ) {
             final double eps2 = eps * eps;
             final double eps3 = eps * eps2;
             final double eps4 = eps2 * eps2;
-            final double coeff = eps / 2.0 - eps2 / 8.0 + eps3 / 16.0
-                    - (5.0 / 128.0) * eps4;
-            final double denom = aDotE * Math.sqrt(
-                    eps + eps2 / 4.0 - eps3 / 8.0 + (5.0 / 64.0) * eps4);
+            final double coeff = eps / 2.0 - eps2 / 8.0 + eps3 / 16.0 - (5.0 / 128.0) * eps4;
+            final double denom = aDotE * Math.sqrt(eps + eps2 / 4.0 - eps3 / 8.0 + (5.0 / 64.0) * eps4);
             final Array num = a2.sub(a1.mul(coeff));
             return num.mul(1.0 / denom);
         } else {

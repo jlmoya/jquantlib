@@ -40,7 +40,6 @@ FOR A PARTICULAR PURPOSE.  See the license for more details.
 
 package org.jquantlib.termstructures.yieldcurves;
 
-import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.math.Constants;
 import org.jquantlib.termstructures.Compounding;
@@ -79,14 +78,13 @@ public class ForwardRate implements Traits {
     }
 
     @Override
-    public double minValueAfter(final int i, final double[] data,
-                                final boolean validData, final double[] times) {
+    public double minValueAfter(final int i, final double[] data, final boolean validData, final double[] times) {
         // Phase Bug-Fix-Curve: pillar-aware bound matching C++ v1.42.1
         // ForwardRate::minValueAfter (bootstraptraits.hpp lines 258-272).
-        if (validData) {
+        if ( validData ) {
             double r = data[0];
-            for (int k = 1; k < data.length; ++k) {
-                if (data[k] < r) {
+            for ( int k = 1; k < data.length; ++k ) {
+                if ( data[k] < r ) {
                     r = data[k];
                 }
             }
@@ -96,21 +94,20 @@ public class ForwardRate implements Traits {
         // breaks when y <= 0 in update(); C++ doesn't exercise LogLinear+ForwardRate
         // either. Gate on Settings.isNegativeRates() to preserve Java's safe-positive
         // bracket when negative rates aren't expected (documented divergence from C++).
-        if (new Settings().isNegativeRates()) {
+        if ( new Settings().isNegativeRates() ) {
             return -maxRate;
         }
         return Constants.QL_EPSILON;
     }
 
     @Override
-    public double maxValueAfter(final int i, final double[] data,
-                                final boolean validData, final double[] times) {
+    public double maxValueAfter(final int i, final double[] data, final boolean validData, final double[] times) {
         // Phase Bug-Fix-Curve: pillar-aware bound matching C++ v1.42.1
         // ForwardRate::maxValueAfter (bootstraptraits.hpp lines 273-286).
-        if (validData) {
+        if ( validData ) {
             double r = data[0];
-            for (int k = 1; k < data.length; ++k) {
-                if (data[k] > r) {
+            for ( int k = 1; k < data.length; ++k ) {
+                if ( data[k] > r ) {
                     r = data[k];
                 }
             }
@@ -123,7 +120,7 @@ public class ForwardRate implements Traits {
     @Override
     public void updateGuess(final double[] data, final double value, final int i) {
         data[i] = value;
-        if (i == 1) {
+        if ( i == 1 ) {
             data[0] = value; // first point is updated as well
         }
     }

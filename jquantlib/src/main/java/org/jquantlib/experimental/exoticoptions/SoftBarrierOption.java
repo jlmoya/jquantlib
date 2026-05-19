@@ -38,12 +38,10 @@ import org.jquantlib.util.Observer;
 /**
  * Soft barrier option on a single asset.
  * <p>
- * A soft barrier option gets knocked in/out proportionally over the barrier range
- * instead of being knocked in/out in full at a hard barrier. Currently only
- * available with European payoff style.
+ * A soft barrier option gets knocked in/out proportionally over the barrier range instead of being knocked in/out in
+ * full at a hard barrier. Currently only available with European payoff style.
  * <p>
- * Mirrors {@code QuantLib::SoftBarrierOption} from
- * {@code ql/instruments/softbarrieroption.hpp} (v1.42.1).
+ * Mirrors {@code QuantLib::SoftBarrierOption} from {@code ql/instruments/softbarrieroption.hpp} (v1.42.1).
  *
  * @author JQuantLib migration
  */
@@ -57,23 +55,17 @@ public class SoftBarrierOption extends OneAssetOption {
     protected double barrierLo;
     protected double barrierHi;
 
-
     //
     // public constructors
     //
 
-    public SoftBarrierOption(
-            final BarrierType barrierType,
-            final double barrierLo,
-            final double barrierHi,
-            final StrikedTypePayoff payoff,
-            final Exercise exercise) {
+    public SoftBarrierOption(final BarrierType barrierType, final double barrierLo, final double barrierHi,
+            final StrikedTypePayoff payoff, final Exercise exercise) {
         super(payoff, exercise);
         this.barrierType = barrierType;
         this.barrierLo = barrierLo;
         this.barrierHi = barrierHi;
     }
-
 
     //
     // overrides OneAssetOption
@@ -90,23 +82,23 @@ public class SoftBarrierOption extends OneAssetOption {
         a.barrierHi = barrierHi;
     }
 
-
     //
     // inner interfaces / classes
     //
 
-    public interface Arguments extends OneAssetOption.Arguments { /* marking interface */ }
+    public interface Arguments extends OneAssetOption.Arguments { /* marking interface */
+    }
 
-    public interface Results extends OneAssetOption.Results { /* marking interface */ }
+    public interface Results extends OneAssetOption.Results { /* marking interface */
+    }
 
-    public interface Engine extends PricingEngine, Observer { /* marking interface */ }
-
+    public interface Engine extends PricingEngine, Observer { /* marking interface */
+    }
 
     /**
      * Arguments for soft barrier option calculation.
      */
-    public static class ArgumentsImpl extends OneAssetOption.ArgumentsImpl
-            implements SoftBarrierOption.Arguments {
+    public static class ArgumentsImpl extends OneAssetOption.ArgumentsImpl implements SoftBarrierOption.Arguments {
 
         public BarrierType barrierType;
         public double barrierLo;
@@ -119,16 +111,15 @@ public class SoftBarrierOption extends OneAssetOption {
         }
     }
 
-
     public static class ResultsImpl extends OneAssetOption.ResultsImpl
-            implements SoftBarrierOption.Results { /* marking class */ }
-
+            implements SoftBarrierOption.Results { /* marking class */
+    }
 
     /**
      * Soft barrier-option engine base class.
      */
     public abstract static class EngineImpl
-            extends GenericEngine<SoftBarrierOption.Arguments, OneAssetOption.Results> {
+            extends GenericEngine< SoftBarrierOption.Arguments, OneAssetOption.Results > {
 
         protected EngineImpl() {
             super(new ArgumentsImpl(), new ResultsImpl());

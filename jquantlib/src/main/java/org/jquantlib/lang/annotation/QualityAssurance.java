@@ -8,24 +8,24 @@ import java.lang.annotation.Target;
  *
  * @author Richard Gomes
  */
-@Target( { ElementType.TYPE })
+@Target( { ElementType.TYPE } )
 public @interface QualityAssurance {
 
     Version version();
-    Quality quality();
-    String[] reviewers();
 
+    Quality quality();
+
+    String[] reviewers();
 
     //
     // inner enums
     //
 
-    public enum Version {
+    enum Version {
         /**
          * Not verified against any version
          */
         NONE,
-
 
         /**
          * Not based on QuantLib
@@ -44,7 +44,7 @@ public @interface QualityAssurance {
 
     }
 
-    public enum Quality {
+    enum Quality {
         /**
          * Translation not finished. Needs detailed code review.
          */

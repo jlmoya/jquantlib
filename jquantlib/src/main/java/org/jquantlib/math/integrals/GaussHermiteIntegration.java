@@ -29,8 +29,8 @@ package org.jquantlib.math.integrals;
  * {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
  *
  * <p>Thin convenience wrapper over {@link GaussianQuadrature} parametrized
- * by {@link GaussHermitePolynomial}. The C++ summation order — highest
- * abscissa first — is preserved by inheriting {@link GaussianQuadrature#op}.
+ * by {@link GaussHermitePolynomial}. The C++ summation order — highest abscissa first — is preserved by inheriting
+ * {@link GaussianQuadrature#op}.
  */
 public final class GaussHermiteIntegration extends GaussianQuadrature {
 

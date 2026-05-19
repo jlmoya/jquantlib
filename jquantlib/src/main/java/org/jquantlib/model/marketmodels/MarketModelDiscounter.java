@@ -27,20 +27,17 @@
 package org.jquantlib.model.marketmodels;
 
 /**
- * Discount-factor calculator for an arbitrary payment time, expressed in
- * units of a numeraire bond using a {@link CurveState}.
+ * Discount-factor calculator for an arbitrary payment time, expressed in units of a numeraire bond using a
+ * {@link CurveState}.
  *
  * <p>The constructor identifies the rate-time index immediately before the
- * payment time and computes the linear-interpolation weight {@code beforeWeight_}
- * between {@code rateTimes[before_]} and {@code rateTimes[before_+1]}. The
- * accessor {@link #numeraireBonds(CurveState, int)} returns the value
- * {@code preDF^w * postDF^(1-w)} where {@code preDF}, {@code postDF} are
- * discount-ratios from the curve state evaluated at the bracketing rate
- * indices vs the numeraire.
- *
- * @see "ql/models/marketmodels/discounter.{hpp,cpp}" v1.42.1
+ * payment time and computes the linear-interpolation weight {@code beforeWeight_} between {@code rateTimes[before_]}
+ * and {@code rateTimes[before_+1]}. The accessor {@link #numeraireBonds(CurveState, int)} returns the value
+ * {@code preDF^w * postDF^(1-w)} where {@code preDF}, {@code postDF} are discount-ratios from the curve state evaluated
+ * at the bracketing rate indices vs the numeraire.
  *
  * @author Jose Moya
+ * @see "ql/models/marketmodels/discounter.{hpp,cpp}" v1.42.1
  */
 public class MarketModelDiscounter {
 
@@ -53,42 +50,40 @@ public class MarketModelDiscounter {
         // C++: lower_bound returns first index whose value is NOT less than paymentTime
         int b = lowerBound(rateTimes, paymentTime);
         // handle the case where the payment is in the last period or after
-        if (b > rateTimes.length - 2) {
+        if ( b > rateTimes.length - 2 ) {
             b = rateTimes.length - 2;
         }
         this.before_ = b;
-        this.beforeWeight_ = 1.0 - (paymentTime - rateTimes[before_])
-                / (rateTimes[before_ + 1] - rateTimes[before_]);
-    }
-
-    public double numeraireBonds(final CurveState curveState, final int numeraire) {
-        final double preDF = curveState.discountRatio(before_, numeraire);
-        if (beforeWeight_ == 1.0) {
-            return preDF;
-        }
-        final double postDF = curveState.discountRatio(before_ + 1, numeraire);
-        if (beforeWeight_ == 0.0) {
-            return postDF;
-        }
-        return Math.pow(preDF, beforeWeight_) * Math.pow(postDF, 1.0 - beforeWeight_);
+        this.beforeWeight_ = 1.0 - (paymentTime - rateTimes[before_]) / (rateTimes[before_ + 1] - rateTimes[before_]);
     }
 
     /**
-     * Mirrors {@code std::lower_bound}: returns the first index {@code i} in
-     * {@code arr[0..arr.length]} such that {@code arr[i] >= value}, or
-     * {@code arr.length} if no such index exists.
+     * Mirrors {@code std::lower_bound}: returns the first index {@code i} in {@code arr[0..arr.length]} such that
+     * {@code arr[i] >= value}, or {@code arr.length} if no such index exists.
      */
     private static int lowerBound(final double[] arr, final double value) {
         int lo = 0;
         int hi = arr.length;
-        while (lo < hi) {
+        while ( lo < hi ) {
             final int mid = (lo + hi) >>> 1;
-            if (arr[mid] < value) {
+            if ( arr[mid] < value ) {
                 lo = mid + 1;
             } else {
                 hi = mid;
             }
         }
         return lo;
+    }
+
+    public double numeraireBonds(final CurveState curveState, final int numeraire) {
+        final double preDF = curveState.discountRatio(before_, numeraire);
+        if ( beforeWeight_ == 1.0 ) {
+            return preDF;
+        }
+        final double postDF = curveState.discountRatio(before_ + 1, numeraire);
+        if ( beforeWeight_ == 0.0 ) {
+            return postDF;
+        }
+        return Math.pow(preDF, beforeWeight_) * Math.pow(postDF, 1.0 - beforeWeight_);
     }
 }

@@ -46,25 +46,25 @@ package org.jquantlib.math.interpolations;
  */
 public interface Extrapolator {
 
-	/**
-	 * enable extrapolation in subsequent calls
-	 *
-	 * @category modifiers
-	 */
-    public void enableExtrapolation();
+    /**
+     * enable extrapolation in subsequent calls
+     *
+     * @category modifiers
+     */
+    void enableExtrapolation();
 
     /**
      * disable extrapolation in subsequent calls
      *
      * @category modifiers
      */
-    public void disableExtrapolation();
+    void disableExtrapolation();
 
     /**
      * tells whether extrapolation is enabled
      *
      * @category inspectors
      */
-    public boolean allowsExtrapolation();
+    boolean allowsExtrapolation();
 
 }

@@ -43,12 +43,10 @@ import org.jquantlib.termstructures.Compounding;
 import org.jquantlib.time.Frequency;
 
 /**
- * Analytic engine for barrier option on two assets (Heynen-Kat 1994 closed-form,
- * from Haug "Option Pricing Formulas").
+ * Analytic engine for barrier option on two assets (Heynen-Kat 1994 closed-form, from Haug "Option Pricing Formulas").
  * <p>
- * The first asset drives the strike-based payoff; the second asset is monitored
- * for barrier touch. The {@code rho} {@link Handle} is the correlation between
- * the two driving Brownian motions.
+ * The first asset drives the strike-based payoff; the second asset is monitored for barrier touch. The {@code rho}
+ * {@link Handle} is the correlation between the two driving Brownian motions.
  * <p>
  * Mirrors C++ QuantLib v1.42.1 {@code AnalyticTwoAssetBarrierEngine} in
  * {@code ql/pricingengines/barrier/analytictwoassetbarrierengine.{hpp,cpp}}.
@@ -61,25 +59,23 @@ public class AnalyticTwoAssetBarrierEngine extends TwoAssetBarrierOption.EngineI
 
     private final GeneralizedBlackScholesProcess process1_;
     private final GeneralizedBlackScholesProcess process2_;
-    private final Handle<? extends Quote> rho_;
+    private final Handle< ? extends Quote > rho_;
 
     private final TwoAssetBarrierOption.ArgumentsImpl a;
-    private final TwoAssetBarrierOption.ResultsImpl   r;
+    private final TwoAssetBarrierOption.ResultsImpl r;
 
     public AnalyticTwoAssetBarrierEngine(final GeneralizedBlackScholesProcess process1,
-                                         final GeneralizedBlackScholesProcess process2,
-                                         final Handle<? extends Quote> rho) {
+            final GeneralizedBlackScholesProcess process2, final Handle< ? extends Quote > rho) {
         super();
         this.process1_ = process1;
         this.process2_ = process2;
-        this.rho_      = rho;
-        this.a = (TwoAssetBarrierOption.ArgumentsImpl) arguments_;
-        this.r = (TwoAssetBarrierOption.ResultsImpl)   results_;
+        this.rho_ = rho;
+        this.a = arguments_;
+        this.r = results_;
         this.process1_.addObserver(this);
         this.process2_.addObserver(this);
         this.rho_.addObserver(this);
     }
-
 
     //
     // implements PricingEngine
@@ -98,55 +94,59 @@ public class AnalyticTwoAssetBarrierEngine extends TwoAssetBarrierOption.EngineI
 
         final BarrierType barrierType = a.barrierType;
 
-        switch (payoff.optionType()) {
-          case Call:
-            switch (barrierType) {
-              case DownOut:
-                r.value = A( 1, -1) + B( 1, -1);
+        switch ( payoff.optionType() ) {
+        case Call:
+            switch ( barrierType ) {
+            case DownOut:
+                r.value = A(1, -1) + B(1, -1);
                 break;
-              case UpOut:
-                r.value = A( 1,  1) + B( 1,  1);
+            case UpOut:
+                r.value = A(1, 1) + B(1, 1);
                 break;
-              case DownIn:
-                r.value = call() - (A( 1, -1) + B( 1, -1));
+            case DownIn:
+                r.value = call() - (A(1, -1) + B(1, -1));
                 break;
-              case UpIn:
-                r.value = call() - (A( 1,  1) + B( 1,  1));
+            case UpIn:
+                r.value = call() - (A(1, 1) + B(1, 1));
                 break;
-              default:
+            default:
                 throw new LibraryException(UNKNOWN_TYPE);
             }
             break;
-          case Put:
-            switch (barrierType) {
-              case DownOut:
+        case Put:
+            switch ( barrierType ) {
+            case DownOut:
                 r.value = A(-1, -1) + B(-1, -1);
                 break;
-              case UpOut:
-                r.value = A(-1,  1) + B(-1,  1);
+            case UpOut:
+                r.value = A(-1, 1) + B(-1, 1);
                 break;
-              case DownIn:
+            case DownIn:
                 r.value = put() - (A(-1, -1) + B(-1, -1));
                 break;
-              case UpIn:
-                r.value = put() - (A(-1,  1) + B(-1,  1));
+            case UpIn:
+                r.value = put() - (A(-1, 1) + B(-1, 1));
                 break;
-              default:
+            default:
                 throw new LibraryException(UNKNOWN_TYPE);
             }
             break;
-          default:
+        default:
             throw new LibraryException(UNKNOWN_TYPE);
         }
     }
-
 
     //
     // private helpers (mirror C++ engine helpers)
     //
 
-    private double underlying1() { return process1_.x0(); }
-    private double underlying2() { return process2_.x0(); }
+    private double underlying1() {
+        return process1_.x0();
+    }
+
+    private double underlying2() {
+        return process2_.x0();
+    }
 
     private double strike() {
         QL.require(a.payoff instanceof PlainVanillaPayoff, "non-plain payoff given");
@@ -165,30 +165,36 @@ public class AnalyticTwoAssetBarrierEngine extends TwoAssetBarrierOption.EngineI
         return process2_.blackVolatility().currentLink().blackVol(residualTime(), strike());
     }
 
-    private double barrier() { return a.barrier; }
+    private double barrier() {
+        return a.barrier;
+    }
 
-    private double rho() { return rho_.currentLink().value(); }
+    private double rho() {
+        return rho_.currentLink().value();
+    }
 
     private double riskFreeRate() {
         return process1_.riskFreeRate().currentLink()
-                .zeroRate(residualTime(), Compounding.Continuous, Frequency.NoFrequency, false)
-                .rate();
+                .zeroRate(residualTime(), Compounding.Continuous, Frequency.NoFrequency, false).rate();
     }
 
     private double dividendYield1() {
         return process1_.dividendYield().currentLink()
-                .zeroRate(residualTime(), Compounding.Continuous, Frequency.NoFrequency, false)
-                .rate();
+                .zeroRate(residualTime(), Compounding.Continuous, Frequency.NoFrequency, false).rate();
     }
 
     private double dividendYield2() {
         return process2_.dividendYield().currentLink()
-                .zeroRate(residualTime(), Compounding.Continuous, Frequency.NoFrequency, false)
-                .rate();
+                .zeroRate(residualTime(), Compounding.Continuous, Frequency.NoFrequency, false).rate();
     }
 
-    private double costOfCarry1() { return riskFreeRate() - dividendYield1(); }
-    private double costOfCarry2() { return riskFreeRate() - dividendYield2(); }
+    private double costOfCarry1() {
+        return riskFreeRate() - dividendYield1();
+    }
+
+    private double costOfCarry2() {
+        return riskFreeRate() - dividendYield2();
+    }
 
     private double mu(final double b, final double vol) {
         return b - (vol * vol) / 2.0;
@@ -200,8 +206,8 @@ public class AnalyticTwoAssetBarrierEngine extends TwoAssetBarrierOption.EngineI
         final double sqrtT = Math.sqrt(T);
         final double sigma1 = volatility1();
         final double S1 = underlying1();
-        final double X  = strike();
-        final double r  = riskFreeRate();
+        final double X = strike();
+        final double r = riskFreeRate();
         final double b1 = costOfCarry1();
         final double mu1 = mu(b1, sigma1);
         final double d1 = (Math.log(S1 / X) + (mu1 + sigma1 * sigma1) * T) / (sigma1 * sqrtT);
@@ -215,8 +221,8 @@ public class AnalyticTwoAssetBarrierEngine extends TwoAssetBarrierOption.EngineI
         final double sqrtT = Math.sqrt(T);
         final double sigma1 = volatility1();
         final double S1 = underlying1();
-        final double X  = strike();
-        final double r  = riskFreeRate();
+        final double X = strike();
+        final double r = riskFreeRate();
         final double b1 = costOfCarry1();
         final double mu1 = mu(b1, sigma1);
         final double d1 = (Math.log(S1 / X) + (mu1 + sigma1 * sigma1) * T) / (sigma1 * sqrtT);
@@ -229,19 +235,19 @@ public class AnalyticTwoAssetBarrierEngine extends TwoAssetBarrierOption.EngineI
      * <p>
      * Mirrors C++ {@code AnalyticTwoAssetBarrierEngine::A(eta, phi)}.
      */
-    @SuppressWarnings("PMD.MethodNamingConventions")
+    @SuppressWarnings( "PMD.MethodNamingConventions" )
     private double A(final double eta, final double phi) {
         final double S1 = underlying1();
         final double S2 = underlying2();
         final double b1 = costOfCarry1();
         final double b2 = costOfCarry2();
-        final double r  = riskFreeRate();
-        final double T  = residualTime();
-        final double H  = barrier();
-        final double X  = strike();
+        final double r = riskFreeRate();
+        final double T = residualTime();
+        final double H = barrier();
+        final double X = strike();
         final double sigma1 = volatility1();
         final double sigma2 = volatility2();
-        final double rho    = rho();
+        final double rho = rho();
 
         final double sqrtT = Math.sqrt(T);
 
@@ -258,16 +264,11 @@ public class AnalyticTwoAssetBarrierEngine extends TwoAssetBarrierOption.EngineI
         final double e3 = e1 - (2.0 * Math.log(H / S2)) / (sigma2 * sqrtT);
         final double e4 = e2 - (2.0 * Math.log(H / S2)) / (sigma2 * sqrtT);
 
-        final double w =
-            eta * S1 * Math.exp((b1 - r) * T) *
-              (M(eta * d1, phi * e1, -eta * phi * rho)
-               - Math.exp((2.0 * (mu2 + rho * sigma1 * sigma2) * Math.log(H / S2))
-                          / (sigma2 * sigma2))
-                 * M(eta * d3, phi * e3, -eta * phi * rho))
-          - eta * X * Math.exp(-r * T) *
-              (M(eta * d2, phi * e2, -eta * phi * rho)
-               - Math.exp((2.0 * mu2 * Math.log(H / S2)) / (sigma2 * sigma2))
-                 * M(eta * d4, phi * e4, -eta * phi * rho));
+        final double w = eta * S1 * Math.exp((b1 - r) * T) * (M(eta * d1, phi * e1, -eta * phi * rho)
+                - Math.exp((2.0 * (mu2 + rho * sigma1 * sigma2) * Math.log(H / S2)) / (sigma2 * sigma2)) * M(eta * d3,
+                phi * e3, -eta * phi * rho)) - eta * X * Math.exp(-r * T) * (M(eta * d2, phi * e2, -eta * phi * rho)
+                - Math.exp((2.0 * mu2 * Math.log(H / S2)) / (sigma2 * sigma2)) * M(eta * d4, phi * e4,
+                -eta * phi * rho));
 
         return w;
     }
@@ -275,22 +276,19 @@ public class AnalyticTwoAssetBarrierEngine extends TwoAssetBarrierOption.EngineI
     /**
      * Heynen-Kat closed-form contribution {@code B(eta, phi)}.
      * <p>
-     * Currently returns 0, matching C++ v1.42.1 placeholder for the partial
-     * barrier surface.
+     * Currently returns 0, matching C++ v1.42.1 placeholder for the partial barrier surface.
      */
-    @SuppressWarnings("PMD.MethodNamingConventions")
+    @SuppressWarnings( "PMD.MethodNamingConventions" )
     private double B(final double eta, final double phi) {
         return 0.0;
     }
 
     /**
-     * Bivariate cumulative normal CDF at {@code (m_a, m_b)} with correlation
-     * {@code rho}.
+     * Bivariate cumulative normal CDF at {@code (m_a, m_b)} with correlation {@code rho}.
      */
-    @SuppressWarnings("PMD.MethodNamingConventions")
+    @SuppressWarnings( "PMD.MethodNamingConventions" )
     private double M(final double mA, final double mB, final double rho) {
-        final BivariateCumulativeNormalDistributionDr78 f =
-                new BivariateCumulativeNormalDistributionDr78(rho);
+        final BivariateCumulativeNormalDistributionDr78 f = new BivariateCumulativeNormalDistributionDr78(rho);
         return f.op(mA, mB);
     }
 }

@@ -21,9 +21,9 @@
 
 package org.jquantlib.experimental.credit;
 
-import java.util.List;
-
 import org.jquantlib.math.randomnumbers.MersenneTwisterUniformRng;
+
+import java.util.List;
 
 /**
  * Loss distribution via Monte Carlo simulation of independent default events.
@@ -45,8 +45,8 @@ public class LossDistMonteCarlo extends LossDist {
         this(nBuckets, maximum, simulations, 42L, 1.0e-6);
     }
 
-    public LossDistMonteCarlo(final int nBuckets, final double maximum, final int simulations,
-                              final long seed, final double epsilon) {
+    public LossDistMonteCarlo(final int nBuckets, final double maximum, final int simulations, final long seed,
+            final double epsilon) {
         this.nBuckets_ = nBuckets;
         this.maximum_ = maximum;
         this.simulations_ = simulations;
@@ -55,14 +55,14 @@ public class LossDistMonteCarlo extends LossDist {
     }
 
     @Override
-    public Distribution op(final List<Double> nominals, final List<Double> probabilities) {
+    public Distribution op(final List< Double > nominals, final List< Double > probabilities) {
         final Distribution dist = new Distribution(nBuckets_, 0.0, maximum_);
         final MersenneTwisterUniformRng rng = new MersenneTwisterUniformRng(seed_);
-        for (int i = 0; i < simulations_; ++i) {
+        for ( int i = 0; i < simulations_; ++i ) {
             double e = 0;
-            for (int j = 0; j < nominals.size(); ++j) {
+            for ( int j = 0; j < nominals.size(); ++j ) {
                 final double r = rng.next().value();
-                if (r <= probabilities.get(j)) {
+                if ( r <= probabilities.get(j) ) {
                     e += nominals.get(j);
                 }
             }

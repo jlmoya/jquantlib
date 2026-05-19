@@ -44,13 +44,12 @@ import org.jquantlib.math.matrixutilities.Array;
 /**
  * Neumann boundary condition (i.e., constant value)
  *
- * @category findiff
- *
  * @author Srinivas Hasti
+ * @category findiff
  */
-public class DirichletBC implements BoundaryCondition<TridiagonalOperator> {
+public class DirichletBC implements BoundaryCondition< TridiagonalOperator > {
 
-    private final /* @Real */double value;
+    private final /* @Real */ double value;
     private final Side side;
 
     public DirichletBC(final double value, final Side side) {
@@ -60,7 +59,7 @@ public class DirichletBC implements BoundaryCondition<TridiagonalOperator> {
 
     @Override
     public void applyAfterApplying(final Array u) {
-        switch (side) {
+        switch ( side ) {
         case Lower:
             u.set(0, value);
             break;
@@ -79,7 +78,7 @@ public class DirichletBC implements BoundaryCondition<TridiagonalOperator> {
 
     @Override
     public void applyBeforeApplying(final TridiagonalOperator operator) {
-        switch (side) {
+        switch ( side ) {
         case Lower:
             operator.setFirstRow(1.0, 0.0);
             break;
@@ -93,7 +92,7 @@ public class DirichletBC implements BoundaryCondition<TridiagonalOperator> {
 
     @Override
     public void applyBeforeSolving(final TridiagonalOperator operator, final Array rhs) {
-        switch (side) {
+        switch ( side ) {
         case Lower:
             operator.setFirstRow(1.0, 0.0);
             rhs.set(0, value);

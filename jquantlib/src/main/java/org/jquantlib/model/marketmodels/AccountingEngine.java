@@ -33,15 +33,13 @@ import org.jquantlib.model.marketmodels.MarketModelMultiProduct.CashFlow;
 /**
  * Engine collecting cash flows along a market-model simulation.
  * <p>
- * Drives a {@link MarketModelEvolver} step by step, asks the
- * {@link MarketModelMultiProduct} for cash flows at each step, and
- * accumulates path NPVs in numeraire units. The result of one path is the
- * vector of products' NPVs scaled by the initial numeraire value.
- *
- * @see "ql/models/marketmodels/accountingengine.{hpp,cpp}" v1.42.1
+ * Drives a {@link MarketModelEvolver} step by step, asks the {@link MarketModelMultiProduct} for cash flows at each
+ * step, and accumulates path NPVs in numeraire units. The result of one path is the vector of products' NPVs scaled by
+ * the initial numeraire value.
  *
  * @author Ueli Hofstetter (original empty stub)
  * @author Jose Moya (Phase 3h B.8 — full body)
+ * @see "ql/models/marketmodels/accountingengine.{hpp,cpp}" v1.42.1
  */
 public class AccountingEngine {
 
@@ -56,9 +54,7 @@ public class AccountingEngine {
     private final CashFlow[][] cashFlowsGenerated_;
     private final MarketModelDiscounter[] discounters_;
 
-    public AccountingEngine(
-            final MarketModelEvolver evolver,
-            final MarketModelMultiProduct product,
+    public AccountingEngine(final MarketModelEvolver evolver, final MarketModelMultiProduct product,
             final double initialNumeraireValue) {
         this.evolver_ = evolver;
         // C++ Clone<MarketModelMultiProduct> performs a deep copy via clone();
@@ -71,9 +67,9 @@ public class AccountingEngine {
         this.numerairesHeld_ = new double[numberProducts_];
         this.numberCashFlowsThisStep_ = new int[numberProducts_];
         this.cashFlowsGenerated_ = new CashFlow[numberProducts_][];
-        for (int i = 0; i < numberProducts_; ++i) {
+        for ( int i = 0; i < numberProducts_; ++i ) {
             cashFlowsGenerated_[i] = new CashFlow[product_.maxNumberOfCashFlowsPerProductPerStep()];
-            for (int k = 0; k < cashFlowsGenerated_[i].length; ++k) {
+            for ( int k = 0; k < cashFlowsGenerated_[i].length; ++k ) {
                 cashFlowsGenerated_[i][k] = new CashFlow();
             }
         }
@@ -81,19 +77,19 @@ public class AccountingEngine {
         final double[] cashFlowTimes = product_.possibleCashFlowTimes();
         final double[] rateTimes = product_.evolution().rateTimes();
         this.discounters_ = new MarketModelDiscounter[cashFlowTimes.length];
-        for (int i = 0; i < cashFlowTimes.length; ++i) {
+        for ( int i = 0; i < cashFlowTimes.length; ++i ) {
             discounters_[i] = new MarketModelDiscounter(cashFlowTimes[i], rateTimes);
         }
     }
 
     /**
-     * Run one path; output the per-product NPVs (in {@code values}) and return
-     * the path weight contribution from the evolver.
+     * Run one path; output the per-product NPVs (in {@code values}) and return the path weight contribution from the
+     * evolver.
      * <p>
      * Mirrors C++ {@code AccountingEngine::singlePathValues}.
      */
     private double singlePathValues(final double[] values) {
-        for (int i = 0; i < numerairesHeld_.length; ++i) {
+        for ( int i = 0; i < numerairesHeld_.length; ++i ) {
             numerairesHeld_[i] = 0.0;
         }
         double weight = evolver_.startNewPath();
@@ -104,22 +100,21 @@ public class AccountingEngine {
         do {
             final int thisStep = evolver_.currentStep();
             weight *= evolver_.advanceStep();
-            done = product_.nextTimeStep(evolver_.currentState(),
-                    numberCashFlowsThisStep_, cashFlowsGenerated_);
+            done = product_.nextTimeStep(evolver_.currentState(), numberCashFlowsThisStep_, cashFlowsGenerated_);
             final int numeraire = evolver_.numeraires()[thisStep];
 
             // for each product...
-            for (int i = 0; i < numberProducts_; ++i) {
+            for ( int i = 0; i < numberProducts_; ++i ) {
                 final CashFlow[] cashflows = cashFlowsGenerated_[i];
                 // ...and each cash flow...
-                for (int j = 0; j < numberCashFlowsThisStep_[i]; ++j) {
+                for ( int j = 0; j < numberCashFlowsThisStep_[i]; ++j ) {
                     // ...convert the cash flow to numeraires.
                     // This is done by calculating the number of
                     // numeraire bonds corresponding to such cash flow...
                     final MarketModelDiscounter discounter = discounters_[cashflows[j].timeIndex];
 
-                    final double bonds = cashflows[j].amount
-                            * discounter.numeraireBonds(evolver_.currentState(), numeraire);
+                    final double bonds =
+                            cashflows[j].amount * discounter.numeraireBonds(evolver_.currentState(), numeraire);
 
                     // ...and adding the newly bought bonds to the number
                     // of numeraires held.
@@ -127,34 +122,31 @@ public class AccountingEngine {
                 }
             }
 
-            if (!done) {
+            if ( !done ) {
                 // The numeraire might change between steps. Convert the
                 // numeraire bonds for this step into a corresponding amount of
                 // numeraire bonds for the next step by changing the principal
                 // of the numeraire portfolio.
                 final int nextNumeraire = evolver_.numeraires()[thisStep + 1];
-                principalInNumerairePortfolio *=
-                        evolver_.currentState().discountRatio(numeraire, nextNumeraire);
+                principalInNumerairePortfolio *= evolver_.currentState().discountRatio(numeraire, nextNumeraire);
             }
-        } while (!done);
+        } while ( !done );
 
-        for (int i = 0; i < numerairesHeld_.length; ++i) {
+        for ( int i = 0; i < numerairesHeld_.length; ++i ) {
             values[i] = numerairesHeld_[i] * initialNumeraireValue_;
         }
         return weight;
     }
 
     /**
-     * Accumulate {@code numberOfPaths} path realizations of the per-product
-     * NPV vector into {@code stats}.
+     * Accumulate {@code numberOfPaths} path realizations of the per-product NPV vector into {@code stats}.
      * <p>
-     * Mirrors C++ {@code AccountingEngine::multiplePathValues}; uses
-     * Java {@link GenericSequenceStatistics} (incremental statistics) which
-     * mirrors C++ {@code SequenceStatisticsInc} per design P3H-3.
+     * Mirrors C++ {@code AccountingEngine::multiplePathValues}; uses Java {@link GenericSequenceStatistics}
+     * (incremental statistics) which mirrors C++ {@code SequenceStatisticsInc} per design P3H-3.
      */
     public void multiplePathValues(final GenericSequenceStatistics stats, final int numberOfPaths) {
         final double[] values = new double[product_.numberOfProducts()];
-        for (int i = 0; i < numberOfPaths; ++i) {
+        for ( int i = 0; i < numberOfPaths; ++i ) {
             final double weight = singlePathValues(values);
             stats.add(values, weight);
         }

@@ -29,33 +29,27 @@ import org.jquantlib.methods.finitedifferences.utilities.FdmBoundaryConditionSet
 /**
  * Douglas-Rachford ADI operator-splitting scheme.
  * <p>
- * Java port of v1.42.1 ql/methods/finitedifferences/schemes/douglasscheme.hpp
- * + .cpp.
+ * Java port of v1.42.1 ql/methods/finitedifferences/schemes/douglasscheme.hpp + .cpp.
  * <p>
- * Predictor (explicit Euler) followed by an implicit per-direction sweep;
- * no corrector pass. With {@code theta = 0.5} this coincides with
- * Crank-Nicolson on a 1D problem.
+ * Predictor (explicit Euler) followed by an implicit per-direction sweep; no corrector pass. With {@code theta = 0.5}
+ * this coincides with Crank-Nicolson on a 1D problem.
  *
  * @author Phase 2h WI-1 port
  */
 public class DouglasScheme {
 
-    /** Time step (set by {@link #setStep}). NaN until first {@code setStep}. */
-    protected double dt;
-
     protected final double theta;
-
     protected final FdmLinearOpComposite map;
     protected final BoundaryConditionSchemeHelper bcSet;
+    /** Time step (set by {@link #setStep}). NaN until first {@code setStep}. */
+    protected double dt;
 
     /** Constructor with empty boundary-condition set (mirrors C++ default arg). */
     public DouglasScheme(final double theta, final FdmLinearOpComposite map) {
         this(theta, map, new FdmBoundaryConditionSet());
     }
 
-    public DouglasScheme(final double theta,
-                         final FdmLinearOpComposite map,
-                         final FdmBoundaryConditionSet bcSet) {
+    public DouglasScheme(final double theta, final FdmLinearOpComposite map, final FdmBoundaryConditionSet bcSet) {
         this.dt = Double.NaN;
         this.theta = theta;
         this.map = map;
@@ -68,8 +62,7 @@ public class DouglasScheme {
     }
 
     /**
-     * Advance {@code a} from time {@code t} to {@code t-dt} in-place.
-     * Mirrors C++ {@code DouglasScheme::step}.
+     * Advance {@code a} from time {@code t} to {@code t-dt} in-place. Mirrors C++ {@code DouglasScheme::step}.
      */
     public void step(final Array a, final double t) {
         QL.require(t - dt > -1e-8, "a step towards negative time given");
@@ -84,7 +77,7 @@ public class DouglasScheme {
         bcSet.applyAfterApplying(y);
 
         // Implicit per-direction sweep
-        for (int i = 0; i < map.size(); ++i) {
+        for ( int i = 0; i < map.size(); ++i ) {
             final Array rhs = y.sub(map.applyDirection(i, a).mulAssign(theta * dt));
             y = map.solveSplitting(i, rhs, -theta * dt);
         }

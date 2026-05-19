@@ -40,11 +40,10 @@ public class ConstantParameter extends Parameter {
     public ConstantParameter(final double /* @Real */value, final Constraint constraint) {
         super(1, new Impl(), constraint);
         super.params.set(0, value);
-        if (!testParams(params))
+        if ( !testParams(params) )
             throw new IllegalArgumentException(value + ": invalid value");
 
     }
-
 
     //
     // private inner classes
@@ -57,6 +56,5 @@ public class ConstantParameter extends Parameter {
             return params.first();
         }
     }
-
 
 }

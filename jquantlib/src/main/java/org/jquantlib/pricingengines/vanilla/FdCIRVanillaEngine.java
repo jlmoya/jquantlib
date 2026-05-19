@@ -28,13 +28,8 @@ import org.jquantlib.instruments.DividendSchedule;
 import org.jquantlib.instruments.OneAssetOption;
 import org.jquantlib.instruments.Option;
 import org.jquantlib.instruments.StrikedTypePayoff;
-import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.transcendental.JQuantMath;
-import org.jquantlib.methods.finitedifferences.meshers.Fdm1dMesher;
-import org.jquantlib.methods.finitedifferences.meshers.FdmBlackScholesMesher;
-import org.jquantlib.methods.finitedifferences.meshers.FdmMesher;
-import org.jquantlib.methods.finitedifferences.meshers.FdmMesherComposite;
-import org.jquantlib.methods.finitedifferences.meshers.FdmSimpleProcess1dMesher;
+import org.jquantlib.methods.finitedifferences.meshers.*;
 import org.jquantlib.methods.finitedifferences.operators.FdmCIROp;
 import org.jquantlib.methods.finitedifferences.schemes.FdmSchemeDesc;
 import org.jquantlib.methods.finitedifferences.solvers.Fdm2DimSolver;
@@ -47,17 +42,14 @@ import org.jquantlib.processes.GeneralizedBlackScholesProcess;
 import org.jquantlib.time.Date;
 
 /**
- * Finite-differences vanilla-option engine with stochastic short rate
- * (Cox-Ingersoll-Ross) and Black-Scholes equity dynamics.
+ * Finite-differences vanilla-option engine with stochastic short rate (Cox-Ingersoll-Ross) and Black-Scholes equity
+ * dynamics.
  * <p>
- * Java port of v1.42.1
- * {@code ql/pricingengines/vanilla/fdcirvanillaengine.{hpp,cpp}}.
+ * Java port of v1.42.1 {@code ql/pricingengines/vanilla/fdcirvanillaengine.{hpp,cpp}}.
  * <p>
- * The 2-D PDE is rolled back on a (log-S, r) grid using a configurable
- * ADI scheme (default ModifiedHundsdorfer per C++). Greeks {@code delta},
- * {@code gamma}, and {@code theta} come from the bicubic-spline derivatives
- * of {@link Fdm2DimSolver} in log-spot space (with the chain-rule jacobian
- * applied for delta/gamma).
+ * The 2-D PDE is rolled back on a (log-S, r) grid using a configurable ADI scheme (default ModifiedHundsdorfer per
+ * C++). Greeks {@code delta}, {@code gamma}, and {@code theta} come from the bicubic-spline derivatives of
+ * {@link Fdm2DimSolver} in log-spot space (with the chain-rule jacobian applied for delta/gamma).
  *
  * <h3>Constructor variants</h3>
  * <ul>
@@ -87,53 +79,41 @@ public class FdCIRVanillaEngine extends OneAssetOption.EngineImpl {
     private final FdmSchemeDesc schemeDesc;
 
     private final OneAssetOption.ArgumentsImpl a;
-    private final OneAssetOption.ResultsImpl   r;
-    private final Option.GreeksImpl            greeks;
+    private final OneAssetOption.ResultsImpl r;
+    private final Option.GreeksImpl greeks;
 
     // ----------------------------------------------------------------
     // constructors
     // ----------------------------------------------------------------
 
     /** Full constructor without dividends. */
-    public FdCIRVanillaEngine(final CoxIngersollRossProcess cirProcess,
-                              final GeneralizedBlackScholesProcess bsProcess,
-                              final int tGrid,
-                              final int xGrid,
-                              final int rGrid,
-                              final int dampingSteps,
-                              final double rho,
-                              final FdmSchemeDesc schemeDesc) {
-        this(cirProcess, bsProcess, null,
-                tGrid, xGrid, rGrid, dampingSteps, rho, schemeDesc);
+    public FdCIRVanillaEngine(final CoxIngersollRossProcess cirProcess, final GeneralizedBlackScholesProcess bsProcess,
+            final int tGrid, final int xGrid, final int rGrid, final int dampingSteps, final double rho,
+            final FdmSchemeDesc schemeDesc) {
+        this(cirProcess, bsProcess, null, tGrid, xGrid, rGrid, dampingSteps, rho, schemeDesc);
     }
 
     /** Full constructor mirroring C++ v1.42.1. */
-    public FdCIRVanillaEngine(final CoxIngersollRossProcess cirProcess,
-                              final GeneralizedBlackScholesProcess bsProcess,
-                              final DividendSchedule dividends,
-                              final int tGrid,
-                              final int xGrid,
-                              final int rGrid,
-                              final int dampingSteps,
-                              final double rho,
-                              final FdmSchemeDesc schemeDesc) {
+    public FdCIRVanillaEngine(final CoxIngersollRossProcess cirProcess, final GeneralizedBlackScholesProcess bsProcess,
+            final DividendSchedule dividends, final int tGrid, final int xGrid, final int rGrid, final int dampingSteps,
+            final double rho, final FdmSchemeDesc schemeDesc) {
         super();
-        QL.require(cirProcess != null,  "null CIR process");
-        QL.require(bsProcess != null,   "null BS process");
-        QL.require(schemeDesc != null,  "null scheme descriptor");
+        QL.require(cirProcess != null, "null CIR process");
+        QL.require(bsProcess != null, "null BS process");
+        QL.require(schemeDesc != null, "null scheme descriptor");
 
-        this.cirProcess   = cirProcess;
-        this.bsProcess    = bsProcess;
-        this.dividends    = (dividends != null) ? dividends : new DividendSchedule();
-        this.tGrid        = tGrid;
-        this.xGrid        = xGrid;
-        this.rGrid        = rGrid;
+        this.cirProcess = cirProcess;
+        this.bsProcess = bsProcess;
+        this.dividends = (dividends != null) ? dividends : new DividendSchedule();
+        this.tGrid = tGrid;
+        this.xGrid = xGrid;
+        this.rGrid = rGrid;
         this.dampingSteps = dampingSteps;
-        this.rho          = rho;
-        this.schemeDesc   = schemeDesc;
+        this.rho = rho;
+        this.schemeDesc = schemeDesc;
 
-        this.a      = (OneAssetOption.ArgumentsImpl) arguments_;
-        this.r      = (OneAssetOption.ResultsImpl)   results_;
+        this.a = (OneAssetOption.ArgumentsImpl) arguments_;
+        this.r = (OneAssetOption.ResultsImpl) results_;
         this.greeks = this.r.greeks();
     }
 
@@ -144,8 +124,7 @@ public class FdCIRVanillaEngine extends OneAssetOption.EngineImpl {
     /**
      * Build the {@link FdmSolverDesc} for the configured grid sizes.
      *
-     * @param equityScaleFactor scale factor (unused in this port — mirrors
-     *                          the C++ signature which also ignores it
+     * @param equityScaleFactor scale factor (unused in this port — mirrors the C++ signature which also ignores it
      *                          since the quanto helper is not wired)
      */
     public FdmSolverDesc getSolverDesc(final double equityScaleFactor) {
@@ -155,16 +134,12 @@ public class FdCIRVanillaEngine extends OneAssetOption.EngineImpl {
         final double maturity = bsProcess.time(a.exercise.lastDate());
 
         // The short-rate mesher (CIR)
-        final Fdm1dMesher shortRateMesher = new FdmSimpleProcess1dMesher(
-                rGrid, cirProcess, maturity, tGrid, 0.0001, Double.NaN);
+        final Fdm1dMesher shortRateMesher = new FdmSimpleProcess1dMesher(rGrid, cirProcess, maturity, tGrid, 0.0001,
+                Double.NaN);
 
         // The equity mesher (log-spot Black-Scholes)
-        final Fdm1dMesher equityMesher = new FdmBlackScholesMesher(
-                xGrid, bsProcess, maturity, payoff.strike(),
-                Double.NaN, Double.NaN,
-                0.0001, 1.5,
-                payoff.strike(), 0.1,
-                dividends, 0.0);
+        final Fdm1dMesher equityMesher = new FdmBlackScholesMesher(xGrid, bsProcess, maturity, payoff.strike(),
+                Double.NaN, Double.NaN, 0.0001, 1.5, payoff.strike(), 0.1, dividends, 0.0);
 
         final FdmMesher mesher = new FdmMesherComposite(equityMesher, shortRateMesher);
 
@@ -175,15 +150,13 @@ public class FdCIRVanillaEngine extends OneAssetOption.EngineImpl {
         final Date refDate = bsProcess.riskFreeRate().currentLink().referenceDate();
         final DayCounter dc = bsProcess.riskFreeRate().currentLink().dayCounter();
 
-        final FdmStepConditionComposite conditions =
-                FdmStepConditionComposite.vanillaComposite(
-                        dividends, a.exercise, mesher, calculator, refDate, dc);
+        final FdmStepConditionComposite conditions = FdmStepConditionComposite.vanillaComposite(dividends, a.exercise,
+                mesher, calculator, refDate, dc);
 
         // Boundary conditions (empty)
         final FdmBoundaryConditionSet boundaries = new FdmBoundaryConditionSet();
 
-        return new FdmSolverDesc(mesher, boundaries, conditions, calculator,
-                maturity, tGrid, dampingSteps);
+        return new FdmSolverDesc(mesher, boundaries, conditions, calculator, maturity, tGrid, dampingSteps);
     }
 
     // ----------------------------------------------------------------
@@ -198,19 +171,16 @@ public class FdCIRVanillaEngine extends OneAssetOption.EngineImpl {
 
         // FdmCIRSolver wiring — inlined here since the only consumer is
         // this engine. Mirrors C++ FdmCIRSolver::performCalculations.
-        final FdmCIROp op = new FdmCIROp(
-                solverDesc.mesher, cirProcess, bsProcess, rho, payoff.strike());
-        final Fdm2DimSolver solver =
-                new Fdm2DimSolver(solverDesc, schemeDesc, op);
+        final FdmCIROp op = new FdmCIROp(solverDesc.mesher, cirProcess, bsProcess, rho, payoff.strike());
+        final Fdm2DimSolver solver = new Fdm2DimSolver(solverDesc, schemeDesc, op);
 
-        final double r0   = cirProcess.x0();
+        final double r0 = cirProcess.x0();
         final double spot = bsProcess.x0();
         final double logS = JQuantMath.log(spot);
 
-        this.r.value     = solver.interpolateAt(logS, r0);
+        this.r.value = solver.interpolateAt(logS, r0);
         this.greeks.delta = solver.derivativeX(logS, r0) / spot;
-        this.greeks.gamma = (solver.derivativeXX(logS, r0)
-                             - solver.derivativeX(logS, r0)) / (spot * spot);
+        this.greeks.gamma = (solver.derivativeXX(logS, r0) - solver.derivativeX(logS, r0)) / (spot * spot);
         this.greeks.theta = solver.thetaAt(logS, r0);
     }
 }

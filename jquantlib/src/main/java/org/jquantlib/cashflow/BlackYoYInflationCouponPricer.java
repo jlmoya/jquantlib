@@ -42,8 +42,8 @@ import org.jquantlib.termstructures.volatility.inflation.YoYOptionletVolatilityS
  * ({@code ql/cashflows/inflationcouponpricer.{hpp,cpp}}).
  *
  * <p>The optionlet rate uses the standard Black formula on
- * {@code (forward, strike, stdDev)}. The discounting is applied externally
- * by the base class via {@link #optionletPrice(org.jquantlib.instruments.Option.Type, double)}.
+ * {@code (forward, strike, stdDev)}. The discounting is applied externally by the base class via
+ * {@link #optionletPrice(org.jquantlib.instruments.Option.Type, double)}.
  *
  * @author JQuantLib migration team (Phase 2r C.3)
  */
@@ -53,22 +53,18 @@ public class BlackYoYInflationCouponPricer extends YoYInflationCouponPricer {
         super();
     }
 
-    public BlackYoYInflationCouponPricer(
-            final Handle<YieldTermStructure> nominalTermStructure) {
+    public BlackYoYInflationCouponPricer(final Handle< YieldTermStructure > nominalTermStructure) {
         super(nominalTermStructure);
     }
 
-    public BlackYoYInflationCouponPricer(
-            final Handle<YoYOptionletVolatilitySurface> capletVol,
-            final Handle<YieldTermStructure> nominalTermStructure) {
+    public BlackYoYInflationCouponPricer(final Handle< YoYOptionletVolatilitySurface > capletVol,
+            final Handle< YieldTermStructure > nominalTermStructure) {
         super(capletVol, nominalTermStructure);
     }
 
     @Override
-    protected double optionletPriceImp(final Option.Type optionType,
-                                       final double effStrike,
-                                       final double forward,
-                                       final double stdDev) {
+    protected double optionletPriceImp(final Option.Type optionType, final double effStrike, final double forward,
+            final double stdDev) {
         return BlackFormula.blackFormula(optionType, effStrike, forward, stdDev);
     }
 }

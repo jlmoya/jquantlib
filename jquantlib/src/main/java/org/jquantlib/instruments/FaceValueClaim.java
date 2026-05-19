@@ -35,8 +35,8 @@ import org.jquantlib.time.Date;
  * Claim on a notional.
  *
  * <p>Mirrors C++ v1.42.1 {@code QuantLib::FaceValueClaim}
- * ({@code ql/instruments/claim.cpp:24-28}). Computes the standard
- * {@code notional * (1 - recoveryRate)} CDS payoff at default.
+ * ({@code ql/instruments/claim.cpp:24-28}). Computes the standard {@code notional * (1 - recoveryRate)} CDS payoff at
+ * default.
  *
  * @category instruments
  */

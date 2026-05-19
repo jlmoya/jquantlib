@@ -26,11 +26,11 @@
 
 package org.jquantlib.model.marketmodels.callability;
 
-import java.util.Arrays;
-
 import org.jquantlib.QL;
 import org.jquantlib.model.marketmodels.CurveState;
 import org.jquantlib.model.marketmodels.EvolutionDescription;
+
+import java.util.Arrays;
 
 /**
  * Basis system using forward rate + coterminal swap rate per exercise time.
@@ -39,14 +39,12 @@ import org.jquantlib.model.marketmodels.EvolutionDescription;
  * (ql/models/marketmodels/callability/swapbasissystem.{hpp,cpp} v1.42.1).
  *
  * <p>Per exercise opportunity, supplies basis function values:
- * {@code [1, forward(rateIndex), coterminalSwapRate(rateIndex+1)]} (3
- * functions), except at the last exercise where there is no further
- * coterminal swap rate available, in which case only
- * {@code [1, forward(rateIndex)]} (2 functions) are returned.
- *
- * @see "ql/models/marketmodels/callability/swapbasissystem.hpp" v1.42.1
+ * {@code [1, forward(rateIndex), coterminalSwapRate(rateIndex+1)]} (3 functions), except at the last exercise where
+ * there is no further coterminal swap rate available, in which case only {@code [1, forward(rateIndex)]} (2 functions)
+ * are returned.
  *
  * @author Jose Moya
+ * @see "ql/models/marketmodels/callability/swapbasissystem.hpp" v1.42.1
  */
 public class SwapBasisSystem implements MarketModelBasisSystem {
 
@@ -65,8 +63,8 @@ public class SwapBasisSystem implements MarketModelBasisSystem {
         this.evolution_ = new EvolutionDescription(rateTimes, exerciseTimes);
         // Build rateIndex_[i] = lower-bound rate-time index for exerciseTimes[i]
         int j = 0;
-        for (int i = 0; i < exerciseTimes.length; ++i) {
-            while (j < rateTimes.length && rateTimes[j] < exerciseTimes[i]) {
+        for ( int i = 0; i < exerciseTimes.length; ++i ) {
+            while ( j < rateTimes.length && rateTimes[j] < exerciseTimes[i] ) {
                 ++j;
             }
             this.rateIndex_[i] = j;
@@ -82,30 +80,45 @@ public class SwapBasisSystem implements MarketModelBasisSystem {
         this.currentIndex_ = other.currentIndex_;
     }
 
-    @Override public int numberOfExercises() { return exerciseTimes_.length; }
+    @Override
+    public int numberOfExercises() {
+        return exerciseTimes_.length;
+    }
 
-    @Override public int[] numberOfFunctions() {
+    @Override
+    public int[] numberOfFunctions() {
         final int[] sizes = new int[exerciseTimes_.length];
         Arrays.fill(sizes, 3);
-        if (rateIndex_[exerciseTimes_.length - 1] == rateTimes_.length - 2) {
+        if ( rateIndex_[exerciseTimes_.length - 1] == rateTimes_.length - 2 ) {
             sizes[sizes.length - 1] = 2;
         }
         return sizes;
     }
 
-    @Override public EvolutionDescription evolution() { return evolution_; }
+    @Override
+    public EvolutionDescription evolution() {
+        return evolution_;
+    }
 
-    @Override public void nextStep(final CurveState s) { ++currentIndex_; }
+    @Override
+    public void nextStep(final CurveState s) {
+        ++currentIndex_;
+    }
 
-    @Override public void reset() { currentIndex_ = 0; }
+    @Override
+    public void reset() {
+        currentIndex_ = 0;
+    }
 
-    @Override public boolean[] isExerciseTime() {
+    @Override
+    public boolean[] isExerciseTime() {
         final boolean[] r = new boolean[exerciseTimes_.length];
         Arrays.fill(r, true);
         return r;
     }
 
-    @Override public void values(final CurveState currentState, final double[] results) {
+    @Override
+    public void values(final CurveState currentState, final double[] results) {
         // C++ semantics: results.reserve(3); results.resize(2); results[0]=1.0;
         //                results[1]=forwardRate(rateIndex);
         //   if (rateIndex < rateTimes.size()-2)
@@ -117,17 +130,17 @@ public class SwapBasisSystem implements MarketModelBasisSystem {
         final boolean hasThree = rateIndex < rateTimes_.length - 2;
         final int needed = hasThree ? 3 : 2;
         QL.require(results.length == needed,
-                "results array length (" + results.length
-                        + ") must equal numberOfFunctions[currentExercise]="
+                "results array length (" + results.length + ") must equal numberOfFunctions[currentExercise]="
                         + needed);
         results[0] = 1.0;
         results[1] = currentState.forwardRate(rateIndex);
-        if (hasThree) {
+        if ( hasThree ) {
             results[2] = currentState.coterminalSwapRate(rateIndex + 1);
         }
     }
 
-    @Override public SwapBasisSystem clone() {
+    @Override
+    public SwapBasisSystem clone() {
         return new SwapBasisSystem(this);
     }
 }

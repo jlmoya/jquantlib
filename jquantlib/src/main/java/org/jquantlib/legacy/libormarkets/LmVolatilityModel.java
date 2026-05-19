@@ -23,12 +23,12 @@
 
 package org.jquantlib.legacy.libormarkets;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.model.Parameter;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Abstract base class for libor-market-model volatility models.
@@ -40,17 +40,17 @@ public abstract class LmVolatilityModel {
     private static final String integrated_variance_not_supported = "integratedVariance() method is not supported";
 
     protected final int size_;
-    protected List<Parameter> arguments_;
+    protected List< Parameter > arguments_;
 
-    public LmVolatilityModel(final int size, final int nArguments){
+    public LmVolatilityModel(final int size, final int nArguments) {
         this.size_ = size;
-        this.arguments_ = new ArrayList<Parameter>(nArguments);
-        for (int i = 0; i < nArguments; ++i) {
+        this.arguments_ = new ArrayList< Parameter >(nArguments);
+        for ( int i = 0; i < nArguments; ++i ) {
             this.arguments_.add(new Parameter());
         }
     }
 
-    public int size(){
+    public int size() {
         return size_;
     }
 
@@ -58,11 +58,11 @@ public abstract class LmVolatilityModel {
         return false;
     }
 
-    public double volatility(final int i, final double t){
+    public double volatility(final int i, final double t) {
         return volatility(t, new Array(0)).get(i);
     }
 
-    public double volatility(final int i, final double t, final Array x){
+    public double volatility(final int i, final double t, final Array x) {
         return volatility(t, x).get(i);
     }
 
@@ -72,17 +72,17 @@ public abstract class LmVolatilityModel {
 
     public abstract Array volatility(double t, Array x);
 
-    public double integratedVariance(final int i, final int ii, final double t, final Array list){
+    public double integratedVariance(final int i, final int ii, final double t, final Array list) {
         throw new LibraryException(integrated_variance_not_supported);
     }
 
-    public List<Parameter> params(){
+    public List< Parameter > params() {
         return arguments_;
     }
 
-    public void setParams(final List<Parameter> arguments){
-       this.arguments_ = arguments;
-       generateArguments();
+    public void setParams(final List< Parameter > arguments) {
+        this.arguments_ = arguments;
+        generateArguments();
     }
 
     protected abstract void generateArguments();

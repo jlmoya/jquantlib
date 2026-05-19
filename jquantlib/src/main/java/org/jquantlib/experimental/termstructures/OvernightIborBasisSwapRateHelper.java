@@ -41,29 +41,19 @@ import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.RelinkableHandle;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.termstructures.yieldcurves.RelativeDateRateHelper;
-import org.jquantlib.time.BusinessDayConvention;
-import org.jquantlib.time.Calendar;
-import org.jquantlib.time.Date;
-import org.jquantlib.time.DateGeneration;
-import org.jquantlib.time.MakeSchedule;
-import org.jquantlib.time.Period;
-import org.jquantlib.time.Schedule;
-import org.jquantlib.time.TimeUnit;
+import org.jquantlib.time.*;
 import org.jquantlib.util.PolymorphicVisitor;
 import org.jquantlib.util.Visitor;
 
 /**
  * Rate helper for bootstrapping over overnight-ibor basis swaps.
  * <p>
- * Port of C++ QuantLib v1.42.1
- * {@code ql/experimental/termstructures/basisswapratehelpers.hpp/.cpp}
+ * Port of C++ QuantLib v1.42.1 {@code ql/experimental/termstructures/basisswapratehelpers.hpp/.cpp}
  * {@code OvernightIborBasisSwapRateHelper}.
  * <p>
- * The swap is assumed to pay {@code baseIndex + basis} and receive
- * {@code otherIndex}. The helper bootstraps the forecast curve for
- * {@code otherIndex}; {@code baseIndex} (the overnight index) must already
- * have a forecast curve. An exogenous discount curve may be provided; if not,
- * the overnight-index curve is used for discounting.
+ * The swap is assumed to pay {@code baseIndex + basis} and receive {@code otherIndex}. The helper bootstraps the
+ * forecast curve for {@code otherIndex}; {@code baseIndex} (the overnight index) must already have a forecast curve. An
+ * exogenous discount curve may be provided; if not, the overnight-index curve is used for discounting.
  *
  * <h3>Java port deviations from C++ v1.42.1</h3>
  * <ul>
@@ -84,23 +74,20 @@ public class OvernightIborBasisSwapRateHelper extends RelativeDateRateHelper {
     // -------------------------------------------------------------------------
 
     protected final Period tenor_;
-    protected final int    settlementDays_;
+    protected final int settlementDays_;
     protected final Calendar calendar_;
     protected final BusinessDayConvention convention_;
     protected final boolean endOfMonth_;
 
     /**
-     * Overnight base index. In C++ this is typed {@code OvernightIndex}; here
-     * it is stored as plain {@link IborIndex} for compatibility.
+     * Overnight base index. In C++ this is typed {@code OvernightIndex}; here it is stored as plain {@link IborIndex}
+     * for compatibility.
      */
     protected final IborIndex baseIndex_;
+    protected final Handle< YieldTermStructure > discountHandle_;
+    protected final RelinkableHandle< YieldTermStructure > termStructureHandle_ = new RelinkableHandle<>(null);
     protected IborIndex otherIndex_;
-
-    protected final Handle<YieldTermStructure> discountHandle_;
-
     protected Swap swap_;
-    protected final RelinkableHandle<YieldTermStructure> termStructureHandle_ =
-            new RelinkableHandle<>(null);
 
     // -------------------------------------------------------------------------
     // Constructors
@@ -119,24 +106,17 @@ public class OvernightIborBasisSwapRateHelper extends RelativeDateRateHelper {
      * @param otherIndex     ibor index to bootstrap
      * @param discountHandle exogenous discount curve (empty = use base curve)
      */
-    public OvernightIborBasisSwapRateHelper(
-            final Handle<Quote> basis,
-            final Period tenor,
-            final int settlementDays,
-            final Calendar calendar,
-            final BusinessDayConvention convention,
-            final boolean endOfMonth,
-            final IborIndex baseIndex,
-            final IborIndex otherIndex,
-            final Handle<YieldTermStructure> discountHandle) {
+    public OvernightIborBasisSwapRateHelper(final Handle< Quote > basis, final Period tenor, final int settlementDays,
+            final Calendar calendar, final BusinessDayConvention convention, final boolean endOfMonth,
+            final IborIndex baseIndex, final IborIndex otherIndex, final Handle< YieldTermStructure > discountHandle) {
 
         super(basis);
-        tenor_          = tenor;
+        tenor_ = tenor;
         settlementDays_ = settlementDays;
-        calendar_       = calendar;
-        convention_     = convention;
-        endOfMonth_     = endOfMonth;
-        baseIndex_      = baseIndex;
+        calendar_ = calendar;
+        convention_ = convention;
+        endOfMonth_ = endOfMonth;
+        baseIndex_ = baseIndex;
         discountHandle_ = discountHandle;
 
         // Clone the other index onto the bootstrap term-structure handle
@@ -145,7 +125,7 @@ public class OvernightIborBasisSwapRateHelper extends RelativeDateRateHelper {
 
         baseIndex_.addObserver(this);
         otherIndex_.addObserver(this);
-        if (!discountHandle_.empty()) {
+        if ( !discountHandle_.empty() ) {
             discountHandle_.currentLink().addObserver(this);
         }
 
@@ -155,18 +135,11 @@ public class OvernightIborBasisSwapRateHelper extends RelativeDateRateHelper {
     /**
      * Convenience constructor without explicit discount curve (uses base curve).
      */
-    public OvernightIborBasisSwapRateHelper(
-            final Handle<Quote> basis,
-            final Period tenor,
-            final int settlementDays,
-            final Calendar calendar,
-            final BusinessDayConvention convention,
-            final boolean endOfMonth,
-            final IborIndex baseIndex,
-            final IborIndex otherIndex) {
+    public OvernightIborBasisSwapRateHelper(final Handle< Quote > basis, final Period tenor, final int settlementDays,
+            final Calendar calendar, final BusinessDayConvention convention, final boolean endOfMonth,
+            final IborIndex baseIndex, final IborIndex otherIndex) {
 
-        this(basis, tenor, settlementDays, calendar, convention, endOfMonth,
-             baseIndex, otherIndex, new Handle<>());
+        this(basis, tenor, settlementDays, calendar, convention, endOfMonth, baseIndex, otherIndex, new Handle<>());
     }
 
     // -------------------------------------------------------------------------
@@ -176,37 +149,28 @@ public class OvernightIborBasisSwapRateHelper extends RelativeDateRateHelper {
     @Override
     protected void initializeDates() {
         final Date today = new Settings().evaluationDate();
-        earliestDate = calendar_.advance(today, settlementDays_, TimeUnit.Days,
-                BusinessDayConvention.Following, false);
+        earliestDate = calendar_.advance(today, settlementDays_, TimeUnit.Days, BusinessDayConvention.Following, false);
         latestDate = calendar_.advance(earliestDate, tenor_, convention_, endOfMonth_);
 
         // Build schedule based on other (ibor) index tenor
-        final Schedule schedule = new MakeSchedule(
-                earliestDate, latestDate,
-                otherIndex_.tenor(), calendar_, convention_)
-                .endOfMonth(endOfMonth_)
-                .forwards()
-                .schedule();
+        final Schedule schedule = new MakeSchedule(earliestDate, latestDate, otherIndex_.tenor(), calendar_,
+                convention_).endOfMonth(endOfMonth_).forwards().schedule();
 
         // Base leg: overnight (approximated as IborLeg for Java portability)
-        final Leg baseLeg = new IborLeg(schedule, baseIndex_)
-                .withNotionals(100.0)
-                .Leg();
+        final Leg baseLeg = new IborLeg(schedule, baseIndex_).withNotionals(100.0).Leg();
 
         // Other leg: ibor
-        final Leg otherLeg = new IborLeg(schedule, otherIndex_)
-                .withNotionals(100.0)
-                .Leg();
+        final Leg otherLeg = new IborLeg(schedule, otherIndex_).withNotionals(100.0).Leg();
 
         // Extend latestDate to cover the last ibor fixing end date
         final IborCoupon lastOther = (IborCoupon) otherLeg.last();
-        final Date otherFixingEnd  = otherIndex_.maturityDate(
-                otherIndex_.valueDate(lastOther.fixingDate()));
+        final Date otherFixingEnd = otherIndex_.maturityDate(otherIndex_.valueDate(lastOther.fixingDate()));
         latestDate = Date.max(latestDate, otherFixingEnd);
 
         // Discount handle: use exogenous if provided, otherwise use the bootstrapped curve
-        final Handle<YieldTermStructure> discountForEngine =
-                discountHandle_.empty() ? termStructureHandle_ : discountHandle_;
+        final Handle< YieldTermStructure > discountForEngine = discountHandle_.empty()
+                ? termStructureHandle_
+                : discountHandle_;
 
         swap_ = new Swap(baseLeg, otherLeg);
         swap_.setPricingEngine(new DiscountingSwapEngine(discountForEngine));
@@ -242,9 +206,8 @@ public class OvernightIborBasisSwapRateHelper extends RelativeDateRateHelper {
 
     @Override
     public void accept(final PolymorphicVisitor pv) {
-        final Visitor<OvernightIborBasisSwapRateHelper> v =
-                (pv != null) ? pv.visitor(this.getClass()) : null;
-        if (v != null) {
+        final Visitor< OvernightIborBasisSwapRateHelper > v = (pv != null) ? pv.visitor(this.getClass()) : null;
+        if ( v != null ) {
             v.visit(this);
         } else {
             super.accept(pv);

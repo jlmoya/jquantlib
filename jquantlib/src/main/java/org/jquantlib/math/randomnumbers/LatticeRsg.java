@@ -30,28 +30,16 @@ package org.jquantlib.math.randomnumbers;
  * Rank-1 lattice rule sequence generator (low-discrepancy).
  *
  * <p>Direct port of C++ v1.42.1 {@code ql/math/randomnumbers/latticersg.{hpp,cpp}}.
- * Generates the {@code i}-th lattice point as
- * {@code theta_j = (i * z_j) / N mod 1} for {@code j = 0..dimensionality-1}.
+ * Generates the {@code i}-th lattice point as {@code theta_j = (i * z_j) / N mod 1} for
+ * {@code j = 0..dimensionality-1}.
  */
 public class LatticeRsg {
 
-    /** Weighted lattice sample (value vector + scalar weight). */
-    public static final class Sample {
-        public final double[] value;
-        public double weight;
-
-        public Sample(final int dim) {
-            this.value = new double[dim];
-            this.weight = 1.0;
-        }
-    }
-
     private final int dimensionality_;
     private final int n_;
-    private long i_ = 0;
     private final double[] z_;
     private final Sample sequence_;
-
+    private long i_ = 0;
     public LatticeRsg(final int dimensionality, final double[] z, final int n) {
         this.dimensionality_ = dimensionality;
         this.n_ = n;
@@ -65,7 +53,7 @@ public class LatticeRsg {
     }
 
     public Sample nextSequence() {
-        for (int j = 0; j < dimensionality_; ++j) {
+        for ( int j = 0; j < dimensionality_; ++j ) {
             final double theta = (double) i_ * z_[j] / (double) n_;
             // C++ uses std::fmod(theta, 1.0); for theta >= 0 (always the case
             // here since i_, z_ and N_ are non-negative) this is equivalent to
@@ -82,5 +70,16 @@ public class LatticeRsg {
 
     public Sample lastSequence() {
         return sequence_;
+    }
+
+    /** Weighted lattice sample (value vector + scalar weight). */
+    public static final class Sample {
+        public final double[] value;
+        public double weight;
+
+        public Sample(final int dim) {
+            this.value = new double[dim];
+            this.weight = 1.0;
+        }
     }
 }

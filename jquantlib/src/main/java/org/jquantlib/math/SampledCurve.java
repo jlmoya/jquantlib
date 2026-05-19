@@ -68,13 +68,13 @@ public class SampledCurve implements Cloneable {
     //
 
     public SampledCurve(final int gridSize) {
-        this.grid   = new Array(gridSize);
+        this.grid = new Array(gridSize);
         this.values = new Array(gridSize);
     }
 
     public SampledCurve(final Array grid) {
         // TODO: code review :: use of clone()
-        this.grid   = grid;
+        this.grid = grid;
         this.values = new Array(this.grid.size());
     }
 
@@ -85,10 +85,9 @@ public class SampledCurve implements Cloneable {
      */
     public SampledCurve(final SampledCurve that) {
         // TODO: code review :: use of clone()
-        this.grid   = that.grid.clone();
+        this.grid = that.grid.clone();
         this.values = that.values.clone();
     }
-
 
     //
     // public methods
@@ -99,7 +98,7 @@ public class SampledCurve implements Cloneable {
         //XXX final SampledCurve result = new SampledCurve(this);
         try {
             return (SampledCurve) super.clone();
-        } catch (final CloneNotSupportedException e) {
+        } catch ( final CloneNotSupportedException e ) {
             throw new LibraryException(e);
         }
     }
@@ -114,11 +113,11 @@ public class SampledCurve implements Cloneable {
         return this;
     }
 
-    public Array grid() /* @Readonly */{
+    public Array grid() /* @Readonly */ {
         return grid;
     }
 
-    public Array values() /* @Readonly */{
+    public Array values() /* @Readonly */ {
         return values;
     }
 
@@ -130,7 +129,7 @@ public class SampledCurve implements Cloneable {
         return values.get(i);
     }
 
-    private boolean empty() /* @Readonly */{
+    private boolean empty() /* @Readonly */ {
         return this.grid.empty();
     }
 
@@ -148,8 +147,8 @@ public class SampledCurve implements Cloneable {
         setGrid(Grid.BoundedLogGrid(min, max, size() - 1));
     }
 
-    public <T extends Ops.DoubleOp> void sample(final T func) {
-        for (int i = 0; i < this.grid.size(); i++) {
+    public < T extends Ops.DoubleOp > void sample(final T func) {
+        for ( int i = 0; i < this.grid.size(); i++ ) {
             final double v = func.op(grid.get(i));
             this.values.set(i, v);
         }
@@ -163,35 +162,37 @@ public class SampledCurve implements Cloneable {
         this.grid.mulAssign(s);
     }
 
-
-    public double valueAtCenter() /* @Readonly */{
-        QL.require(!empty() , "empty sampled curve"); // TODO: message
+    public double valueAtCenter() /* @Readonly */ {
+        QL.require(!empty(), "empty sampled curve"); // TODO: message
         final int jmid = size() / 2;
-        if (size() % 2 != 0)
+        if ( size() % 2 != 0 )
             return values.get(jmid);
         else
             return (values.get(jmid) + values.get(jmid - 1)) / 2.0;
     }
 
-    public double firstDerivativeAtCenter() /* @Readonly */{
-        QL.require(size() >= 3 , "the size of the curve must be at least 3"); // TODO: message
+    public double firstDerivativeAtCenter() /* @Readonly */ {
+        QL.require(size() >= 3, "the size of the curve must be at least 3"); // TODO: message
         final int jmid = size() / 2;
-        if (size() % 2 != 0)
+        if ( size() % 2 != 0 )
             return (values.get(jmid + 1) - values.get(jmid - 1)) / (grid.get(jmid + 1) - grid.get(jmid - 1));
         else
             return (values.get(jmid) - values.get(jmid - 1)) / (grid.get(jmid) - grid.get(jmid - 1));
     }
 
-    public double secondDerivativeAtCenter() /* @Readonly */{
-        QL.require(size() >= 4 , "the size of the curve must be at least 4"); // TODO: message
+    public double secondDerivativeAtCenter() /* @Readonly */ {
+        QL.require(size() >= 4, "the size of the curve must be at least 4"); // TODO: message
         final int jmid = size() / 2;
-        if (size() % 2 != 0) {
-            final double deltaPlus = (values.get(jmid + 1) - values.get(jmid)) / ((grid.get(jmid + 1) - grid.get(jmid)));
-            final double deltaMinus = (values.get(jmid) - values.get(jmid - 1)) / ((grid.get(jmid) - grid.get(jmid - 1)));
+        if ( size() % 2 != 0 ) {
+            final double deltaPlus =
+                    (values.get(jmid + 1) - values.get(jmid)) / ((grid.get(jmid + 1) - grid.get(jmid)));
+            final double deltaMinus =
+                    (values.get(jmid) - values.get(jmid - 1)) / ((grid.get(jmid) - grid.get(jmid - 1)));
             final double dS = (grid.get(jmid + 1) - grid.get(jmid - 1)) / 2.0;
             return (deltaPlus - deltaMinus) / dS;
         } else {
-            final double deltaPlus = (values.get(jmid + 1) - values.get(jmid - 1)) / ((grid.get(jmid + 1) - grid.get(jmid - 1)));
+            final double deltaPlus =
+                    (values.get(jmid + 1) - values.get(jmid - 1)) / ((grid.get(jmid + 1) - grid.get(jmid - 1)));
             final double deltaMinus = (values.get(jmid) - values.get(jmid - 2)) / (grid.get(jmid) - grid.get(jmid - 2));
             return (deltaPlus - deltaMinus) / (grid.get(jmid) - grid.get(jmid - 1));
         }
@@ -202,16 +203,15 @@ public class SampledCurve implements Cloneable {
     }
 
     /**
-     * @note This method modifies contents of parameter newGrid
-     *
      * @param newGrid
      * @param f
+     * @note This method modifies contents of parameter newGrid
      */
     public void regrid(final Array newGrid, final Ops.DoubleOp f) {
         final Array transformed;
         final Array newValues;
 
-        if (f instanceof Identity) {
+        if ( f instanceof Identity ) {
             transformed = this.grid;
             newValues = newGrid.clone();
         } else {
@@ -222,8 +222,8 @@ public class SampledCurve implements Cloneable {
         final CubicInterpolation priceSpline = new NaturalCubicInterpolation(transformed, values);
 
         priceSpline.update();
-        for (int i=0; i<newValues.size(); i++) {
-            newValues.set(i, priceSpline.op(newValues.get(i), true) );
+        for ( int i = 0; i < newValues.size(); i++ ) {
+            newValues.set(i, priceSpline.op(newValues.get(i), true));
         }
 
         this.grid.swap(newGrid);

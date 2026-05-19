@@ -29,31 +29,27 @@ import org.jquantlib.methods.finitedifferences.utilities.FdmBoundaryConditionSet
 /**
  * Explicit-Euler time-stepping scheme.
  * <p>
- * Java port of v1.42.1
- * {@code ql/methods/finitedifferences/schemes/expliciteulerscheme.{hpp,cpp}}.
+ * Java port of v1.42.1 {@code ql/methods/finitedifferences/schemes/expliciteulerscheme.{hpp,cpp}}.
  * <p>
- * The scheme advances by one full step: {@code a += theta * dt * L(a)},
- * where {@code L} is the spatial operator. With {@code theta = 1} this is
- * the standard forward-Euler method; smaller {@code theta} provides an
- * explicit blend used by {@link CrankNicolsonScheme}.
+ * The scheme advances by one full step: {@code a += theta * dt * L(a)}, where {@code L} is the spatial operator. With
+ * {@code theta = 1} this is the standard forward-Euler method; smaller {@code theta} provides an explicit blend used by
+ * {@link CrankNicolsonScheme}.
  *
  * @author Phase 2l Track C.1 port
  */
 public class ExplicitEulerScheme {
 
-    /** Time step (NaN until {@link #setStep} is called). */
-    protected double dt;
-
     protected final FdmLinearOpComposite map;
     protected final BoundaryConditionSchemeHelper bcSet;
+    /** Time step (NaN until {@link #setStep} is called). */
+    protected double dt;
 
     /** Constructor with empty boundary-condition set (mirrors C++ default arg). */
     public ExplicitEulerScheme(final FdmLinearOpComposite map) {
         this(map, new FdmBoundaryConditionSet());
     }
 
-    public ExplicitEulerScheme(final FdmLinearOpComposite map,
-                               final FdmBoundaryConditionSet bcSet) {
+    public ExplicitEulerScheme(final FdmLinearOpComposite map, final FdmBoundaryConditionSet bcSet) {
         this.dt = Double.NaN;
         this.map = map;
         this.bcSet = new BoundaryConditionSchemeHelper(bcSet);
@@ -70,14 +66,12 @@ public class ExplicitEulerScheme {
     }
 
     /**
-     * Advance {@code a} from time {@code t} to {@code t-dt} in-place with
-     * explicit weight {@code theta}.
+     * Advance {@code a} from time {@code t} to {@code t-dt} in-place with explicit weight {@code theta}.
      * <p>
-     * Mirrors C++ {@code ExplicitEulerScheme::step(a, t, theta)}:
-     * {@code a += theta * dt * map.apply(a)}.
+     * Mirrors C++ {@code ExplicitEulerScheme::step(a, t, theta)}: {@code a += theta * dt * map.apply(a)}.
      * <p>
-     * The {@code protected} version with {@code theta} is called by
-     * {@link CrankNicolsonScheme} for the explicit sub-step.
+     * The {@code protected} version with {@code theta} is called by {@link CrankNicolsonScheme} for the explicit
+     * sub-step.
      */
     protected void step(final Array a, final double t, final double theta) {
         QL.require(t - dt > -1e-8, "a step towards negative time given");

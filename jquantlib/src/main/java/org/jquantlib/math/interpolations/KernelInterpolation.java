@@ -36,21 +36,19 @@ import org.jquantlib.math.matrixutilities.Matrix;
  * {@code ql/math/interpolations/kernelinterpolation.hpp}.
  *
  * <p>Implementation of the kernel interpolation approach described in
- * "Foreign Exchange Risk" by Hakala &amp; Wystup (page 256). The interpolated
- * value at {@code x} is a Nadaraya-Watson type combination:
+ * "Foreign Exchange Risk" by Hakala &amp; Wystup (page 256). The interpolated value at {@code x} is a Nadaraya-Watson
+ * type combination:
  * <pre>
  *   y(x) = ( sum_i alpha_i * K(|x - x_i|) ) / ( sum_i K(|x - x_i|) )
  * </pre>
- * where the coefficients {@code alpha} are obtained by solving the linear
- * system {@code M * alpha = y} with
+ * where the coefficients {@code alpha} are obtained by solving the linear system {@code M * alpha = y} with
  * <pre>
  *   M[r][c] = K(|x_r - x_c|) / gamma(x_r),
  *   gamma(x) = sum_i K(|x - x_i|).
  * </pre>
  *
  * <p>The kernel is kept general; {@link org.jquantlib.math.GaussianKernel}
- * is the canonical choice (Hakala &amp; Wystup), but any
- * {@link KernelFunction} may be supplied.
+ * is the canonical choice (Hakala &amp; Wystup), but any {@link KernelFunction} may be supplied.
  *
  * <p>A failure is reported if {@code ||M*alpha - y||_inf >= epsilon}
  * (default {@code 1e-7}).
@@ -60,29 +58,24 @@ import org.jquantlib.math.matrixutilities.Matrix;
 public class KernelInterpolation extends AbstractInterpolation {
 
     /**
-     * Construct a kernel interpolation with the default precision
-     * {@code 1e-7}.
+     * Construct a kernel interpolation with the default precision {@code 1e-7}.
      */
-    public KernelInterpolation(final Array x, final Array y,
-                               final KernelFunction kernel) {
+    public KernelInterpolation(final Array x, final Array y, final KernelFunction kernel) {
         this(x, y, kernel, 1.0e-7);
     }
 
     /**
      * Construct a kernel interpolation.
      *
-     * @param x      x-nodes (must be sorted)
-     * @param y      y-values at the x-nodes
-     * @param kernel kernel function K(.)
+     * @param x       x-nodes (must be sorted)
+     * @param y       y-values at the x-nodes
+     * @param kernel  kernel function K(.)
      * @param epsilon allowed slack in the linear-system residual check
      */
-    public KernelInterpolation(final Array x, final Array y,
-                               final KernelFunction kernel,
-                               final double epsilon) {
+    public KernelInterpolation(final Array x, final Array y, final KernelFunction kernel, final double epsilon) {
         this.impl = new KernelInterpolationImpl(x, y, kernel, epsilon);
         this.impl.update();
     }
-
 
     //
     // private inner class
@@ -97,16 +90,14 @@ public class KernelInterpolation extends AbstractInterpolation {
         private final Array alphaVec_;
         private final Array yVec_;
 
-        KernelInterpolationImpl(final Array vx, final Array vy,
-                                final KernelFunction kernel,
-                                final double epsilon) {
+        KernelInterpolationImpl(final Array vx, final Array vy, final KernelFunction kernel, final double epsilon) {
             super(vx, vy);
-            this.kernel_   = kernel;
-            this.xSize_    = vx.size();
-            this.invPrec_  = epsilon;
-            this.M_        = new Matrix(xSize_, xSize_);
+            this.kernel_ = kernel;
+            this.xSize_ = vx.size();
+            this.invPrec_ = epsilon;
+            this.M_ = new Matrix(xSize_, xSize_);
             this.alphaVec_ = new Array(xSize_);
-            this.yVec_     = new Array(xSize_);
+            this.yVec_ = new Array(xSize_);
         }
 
         @Override
@@ -117,7 +108,7 @@ public class KernelInterpolation extends AbstractInterpolation {
         @Override
         public double op(final double x) {
             double res = 0.0;
-            for (int i = 0; i < xSize_; ++i) {
+            for ( int i = 0; i < xSize_; ++i ) {
                 res += alphaVec_.get(i) * kernelAbs(x, vx.get(i));
             }
             return res / gammaFunc(x);
@@ -125,20 +116,19 @@ public class KernelInterpolation extends AbstractInterpolation {
 
         @Override
         public double primitive(final double x) {
-            throw new UnsupportedOperationException(
-                "Primitive calculation not implemented for kernel interpolation");
+            throw new UnsupportedOperationException("Primitive calculation not implemented for kernel interpolation");
         }
 
         @Override
         public double derivative(final double x) {
             throw new UnsupportedOperationException(
-                "First derivative calculation not implemented for kernel interpolation");
+                    "First derivative calculation not implemented for kernel interpolation");
         }
 
         @Override
         public double secondDerivative(final double x) {
             throw new UnsupportedOperationException(
-                "Second derivative calculation not implemented for kernel interpolation");
+                    "Second derivative calculation not implemented for kernel interpolation");
         }
 
         // ---------- helpers ----------
@@ -149,7 +139,7 @@ public class KernelInterpolation extends AbstractInterpolation {
 
         private double gammaFunc(final double x) {
             double res = 0.0;
-            for (int i = 0; i < xSize_; ++i) {
+            for ( int i = 0; i < xSize_; ++i ) {
                 res += kernelAbs(x, vx.get(i));
             }
             return res;
@@ -157,12 +147,11 @@ public class KernelInterpolation extends AbstractInterpolation {
 
         private void updateAlphaVec() {
             // Build matrix M and the right-hand-side y-vector.
-            for (int rowIt = 0; rowIt < xSize_; ++rowIt) {
+            for ( int rowIt = 0; rowIt < xSize_; ++rowIt ) {
                 yVec_.set(rowIt, vy.get(rowIt));
                 final double tmp = 1.0 / gammaFunc(vx.get(rowIt));
-                for (int colIt = 0; colIt < xSize_; ++colIt) {
-                    M_.set(rowIt, colIt,
-                           kernelAbs(vx.get(rowIt), vx.get(colIt)) * tmp);
+                for ( int colIt = 0; colIt < xSize_; ++colIt ) {
+                    M_.set(rowIt, colIt, kernelAbs(vx.get(rowIt), vx.get(colIt)) * tmp);
                 }
             }
 
@@ -172,23 +161,22 @@ public class KernelInterpolation extends AbstractInterpolation {
             // JQuantLib. The residual check below catches the case where
             // the solve degraded numerically.
             final Matrix b = new Matrix(xSize_, 1);
-            for (int i = 0; i < xSize_; ++i) {
+            for ( int i = 0; i < xSize_; ++i ) {
                 b.set(i, 0, yVec_.get(i));
             }
             final Matrix sol = new LUDecomposition(M_).solve(b);
-            for (int i = 0; i < xSize_; ++i) {
+            for ( int i = 0; i < xSize_; ++i ) {
                 alphaVec_.set(i, sol.get(i, 0));
             }
 
             // residual: |M * alpha - y|_inf < invPrec_
-            for (int i = 0; i < xSize_; ++i) {
+            for ( int i = 0; i < xSize_; ++i ) {
                 double row = 0.0;
-                for (int j = 0; j < xSize_; ++j) {
+                for ( int j = 0; j < xSize_; ++j ) {
                     row += M_.get(i, j) * alphaVec_.get(j);
                 }
                 final double diff = Math.abs(row - yVec_.get(i));
-                QL.require(diff < invPrec_,
-                           "Inversion failed in 1d kernel interpolation");
+                QL.require(diff < invPrec_, "Inversion failed in 1d kernel interpolation");
             }
         }
     }

@@ -28,9 +28,8 @@ import org.jquantlib.processes.GeneralizedBlackScholesProcess;
 /**
  * Pricing engine for European options using finite-differences
  *
- * @category vanillaengines
- *
  * @author Srinivas Hasti
+ * @category vanillaengines
  */
 //TODO: class comments
 //TODO: work in progress
@@ -42,28 +41,27 @@ public class FDEuropeanEngine extends OneAssetOption.EngineImpl {
 
     private final FDVanillaEngine fdVanillaEngine;
 
-
     //
     // private fields
     //
 
     private SampledCurve prices;
 
-
     //
     // public constructors
     //
 
-    public FDEuropeanEngine(final GeneralizedBlackScholesProcess process, final int timeSteps, final int gridPoints, final boolean timeDependent) {
+    public FDEuropeanEngine(final GeneralizedBlackScholesProcess process, final int timeSteps, final int gridPoints,
+            final boolean timeDependent) {
         fdVanillaEngine = new FDVanillaEngine(process, timeSteps, gridPoints, timeDependent);
         prices = new SampledCurve(gridPoints);
         process.addObserver(this);
     }
 
-    public FDEuropeanEngine(final GeneralizedBlackScholesProcess stochProcess, final int binomialSteps, final int samples) {
-        this(stochProcess,binomialSteps,samples,false);
+    public FDEuropeanEngine(final GeneralizedBlackScholesProcess stochProcess, final int binomialSteps,
+            final int samples) {
+        this(stochProcess, binomialSteps, samples, false);
     }
-
 
     //
     // implements PricingEngine
@@ -77,12 +75,14 @@ public class FDEuropeanEngine extends OneAssetOption.EngineImpl {
         fdVanillaEngine.initializeOperator();
         fdVanillaEngine.initializeBoundaryConditions();
 
-        final StandardFiniteDifferenceModel model = new StandardFiniteDifferenceModel(fdVanillaEngine.finiteDifferenceOperator, fdVanillaEngine.bcS);
+        final StandardFiniteDifferenceModel model = new StandardFiniteDifferenceModel(
+                fdVanillaEngine.finiteDifferenceOperator, fdVanillaEngine.bcS);
 
         prices = new SampledCurve(fdVanillaEngine.intrinsicValues);
-        prices.setValues( model.rollback(prices.values(), fdVanillaEngine.getResidualTime(), 0, fdVanillaEngine.timeSteps) );
+        prices.setValues(
+                model.rollback(prices.values(), fdVanillaEngine.getResidualTime(), 0, fdVanillaEngine.timeSteps));
 
-        final OneAssetOption.ResultsImpl r = (OneAssetOption.ResultsImpl)results_;
+        final OneAssetOption.ResultsImpl r = (OneAssetOption.ResultsImpl) results_;
         r.value = prices.valueAtCenter();
         final Option.GreeksImpl greeks = r.greeks();
         greeks.delta = prices.firstDerivativeAtCenter();

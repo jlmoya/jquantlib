@@ -46,7 +46,6 @@ import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.SimpleQuote;
 import org.jquantlib.termstructures.BlackVolTermStructure;
 import org.jquantlib.termstructures.LocalVolTermStructure;
-import org.jquantlib.termstructures.TermStructure;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.time.Date;
 import org.jquantlib.util.PolymorphicVisitor;
@@ -55,31 +54,25 @@ import org.jquantlib.util.Visitor;
 /**
  * Local volatility surface derived from a Black vol surface
  * <p>
- * For details about this implementation refer to "Stochastic Volatility and
- * Local Volatility" in "Case Studies and Financial Modelling Course Notes," by
- * Jim Gatheral, Fall Term, 2003
- *
- * @see <a href="http://www.math.nyu.edu/fellows_fin_math/gatheral/Lecture1_Fall02.pdf">This article</a>
+ * For details about this implementation refer to "Stochastic Volatility and Local Volatility" in "Case Studies and
+ * Financial Modelling Course Notes," by Jim Gatheral, Fall Term, 2003
  *
  * @author Richard Gomes
+ * @see <a href="http://www.math.nyu.edu/fellows_fin_math/gatheral/Lecture1_Fall02.pdf">This article</a>
  */
 // TODO: this class is untested, probably unreliable.
 public class LocalVolSurface extends LocalVolTermStructure {
 
-    private final Handle<BlackVolTermStructure> blackTS_;
-    private final Handle<YieldTermStructure> riskFreeTS_;
-    private final Handle<YieldTermStructure> dividendTS_;
-    private final Handle<? extends Quote> underlying_;
+    private final Handle< BlackVolTermStructure > blackTS_;
+    private final Handle< YieldTermStructure > riskFreeTS_;
+    private final Handle< YieldTermStructure > dividendTS_;
+    private final Handle< ? extends Quote > underlying_;
 
-    public LocalVolSurface(
-            final Handle<BlackVolTermStructure> blackTS,
-            final Handle<YieldTermStructure> riskFreeTS,
-            final Handle<YieldTermStructure> dividendTS,
-            final Handle<? extends Quote> underlying) {
+    public LocalVolSurface(final Handle< BlackVolTermStructure > blackTS, final Handle< YieldTermStructure > riskFreeTS,
+            final Handle< YieldTermStructure > dividendTS, final Handle< ? extends Quote > underlying) {
 
-        super(blackTS.currentLink().calendar(),
-              blackTS.currentLink().businessDayConvention(),
-              blackTS.currentLink().dayCounter());
+        super(blackTS.currentLink().calendar(), blackTS.currentLink().businessDayConvention(),
+                blackTS.currentLink().dayCounter());
 
         this.blackTS_ = blackTS;
         this.riskFreeTS_ = riskFreeTS;
@@ -92,26 +85,21 @@ public class LocalVolSurface extends LocalVolTermStructure {
         this.underlying_.addObserver(this);
     }
 
-    public LocalVolSurface(
-            final Handle<BlackVolTermStructure> blackTS,
-            final Handle<YieldTermStructure> riskFreeTS,
-            final Handle<YieldTermStructure> dividendTS,
-            final /*@Real*/ double underlying) {
+    public LocalVolSurface(final Handle< BlackVolTermStructure > blackTS, final Handle< YieldTermStructure > riskFreeTS,
+            final Handle< YieldTermStructure > dividendTS, final /*@Real*/ double underlying) {
 
-        super(blackTS.currentLink().calendar(),
-              blackTS.currentLink().businessDayConvention(),
-              blackTS.currentLink().dayCounter());
+        super(blackTS.currentLink().calendar(), blackTS.currentLink().businessDayConvention(),
+                blackTS.currentLink().dayCounter());
 
         this.blackTS_ = blackTS;
         this.riskFreeTS_ = riskFreeTS;
         this.dividendTS_ = dividendTS;
-        this.underlying_ = new Handle<Quote>(new SimpleQuote(underlying));
+        this.underlying_ = new Handle< Quote >(new SimpleQuote(underlying));
 
         this.blackTS_.addObserver(this);
         this.riskFreeTS_.addObserver(this);
         this.dividendTS_.addObserver(this);
     }
-
 
     //
     // Overrides LocalVolTermStructure
@@ -143,9 +131,7 @@ public class LocalVolSurface extends LocalVolTermStructure {
     }
 
     @Override
-    protected /*@Volatility*/ double localVolImpl(
-            final /*@Time*/ double time,
-            final /*@Real*/ double underlyingLevel) {
+    protected /*@Volatility*/ double localVolImpl(final /*@Time*/ double time, final /*@Real*/ double underlyingLevel) {
 
         // obtain local copies of objects
         final Quote u = underlying_.currentLink();
@@ -159,9 +145,12 @@ public class LocalVolSurface extends LocalVolTermStructure {
 
         // strike derivatives — mirrors C++ v1.42.1
         // ql/termstructures/volatility/equityfx/localvolsurface.cpp:90-101.
-        /*@Real*/ double strike;
-        /*@Real*/ double strikem;
-        /*@Real*/ double strikep;
+        /*@Real*/
+        double strike;
+        /*@Real*/
+        double strikem;
+        /*@Real*/
+        double strikep;
         double y, dy;
         double w, wp, wm, dwdy, d2wdy2;
         strike = underlyingLevel;
@@ -174,7 +163,7 @@ public class LocalVolSurface extends LocalVolTermStructure {
         dy = (Math.abs(y) > 0.001) ? y * 0.0001 : 0.000001;
         strikep = strike * Math.exp(dy);
         strikem = strike / Math.exp(dy);
-        w = bTS.blackVariance(time,  strike, true);
+        w = bTS.blackVariance(time, strike, true);
         wp = bTS.blackVariance(time, strikep, true);
         wm = bTS.blackVariance(time, strikem, true);
         dwdy = (wp - wm) / (2.0 * dy);
@@ -186,17 +175,19 @@ public class LocalVolSurface extends LocalVolTermStructure {
         // forward-moneyness. The Java port previously evaluated dw/dt at a
         // fixed strike, which biases the time derivative on a smile-skewed
         // surface and propagates into the local-vol estimate.
-        /*@Time*/ final double t = time;
-        /*@Time*/ double dt;
+        /*@Time*/
+        final double t = time;
+        /*@Time*/
+        double dt;
         double wpt, wmt, dwdt;
-        if (t == 0.0) {
+        if ( t == 0.0 ) {
             dt = 0.0001;
             final double drpt = rTS.discount(t + dt, true);
             final double dqpt = dTS.discount(t + dt, true);
             final double strikept = strike * dr * dqpt / (drpt * dq);
             wpt = bTS.blackVariance(t + dt, strikept, true);
-            QL.ensure(wpt >= w, "decreasing variance at strike " + strike
-                    + " between time " + t + " and time " + (t + dt));
+            QL.ensure(wpt >= w,
+                    "decreasing variance at strike " + strike + " between time " + t + " and time " + (t + dt));
             dwdt = (wpt - w) / dt;
         } else {
             dt = Math.min(0.0001, t / 2.0);
@@ -211,14 +202,14 @@ public class LocalVolSurface extends LocalVolTermStructure {
             wpt = bTS.blackVariance(t + dt, strikept, true);
             wmt = bTS.blackVariance(t - dt, strikemt, true);
 
-            QL.ensure(wpt >= w, "decreasing variance at strike " + strike
-                    + " between time " + t + " and time " + (t + dt));
-            QL.ensure(w >= wmt, "decreasing variance at strike " + strike
-                    + " between time " + (t - dt) + " and time " + t);
+            QL.ensure(wpt >= w,
+                    "decreasing variance at strike " + strike + " between time " + t + " and time " + (t + dt));
+            QL.ensure(w >= wmt,
+                    "decreasing variance at strike " + strike + " between time " + (t - dt) + " and time " + t);
             dwdt = (wpt - wmt) / (2.0 * dt);
         }
 
-        if (dwdy == 0.0 && d2wdy2 == 0.0)
+        if ( dwdy == 0.0 && d2wdy2 == 0.0 )
             return Math.sqrt(dwdt);
         else {
             final double den1 = 1.0 - y / w * dwdy;
@@ -226,9 +217,9 @@ public class LocalVolSurface extends LocalVolTermStructure {
             final double den3 = 0.5 * d2wdy2;
             final double den = den1 + den2 + den3;
             final double result = dwdt / den;
-            QL.ensure(result >= 0.0 , "negative local vol^2 at strike); the black vol surface is not smooth enough"); // TODO: message
+            QL.ensure(result >= 0.0,
+                    "negative local vol^2 at strike); the black vol surface is not smooth enough"); // TODO: message
             return Math.sqrt(result);
-
 
             // commented out at original source QuantLib
             // return std::sqrt(dwdt / (1.0 - y/w*dwdy +
@@ -236,15 +227,14 @@ public class LocalVolSurface extends LocalVolTermStructure {
         }
     }
 
-
     //
     // implements PolymorphicVisitable
     //
 
     @Override
     public void accept(final PolymorphicVisitor pv) {
-        final Visitor<LocalVolSurface> v = (pv!=null) ? pv.visitor(this.getClass()) : null;
-        if (v != null) {
+        final Visitor< LocalVolSurface > v = (pv != null) ? pv.visitor(this.getClass()) : null;
+        if ( v != null ) {
             v.visit(this);
         } else {
             super.accept(pv);

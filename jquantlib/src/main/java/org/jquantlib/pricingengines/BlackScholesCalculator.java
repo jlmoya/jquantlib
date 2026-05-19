@@ -43,8 +43,8 @@ import org.jquantlib.instruments.StrikedTypePayoff;
 /**
  * Black-Scholes 1973 calculator class.
  * <p>
- * Convenience wrapper over {@link BlackCalculator} that takes spot and growth
- * (dividend discount) instead of forward, and exposes spot-based Greeks.
+ * Convenience wrapper over {@link BlackCalculator} that takes spot and growth (dividend discount) instead of forward,
+ * and exposes spot-based Greeks.
  * <p>
  * Mirrors C++ QuantLib v1.42.1 {@code BlackScholesCalculator} in
  * {@code ql/pricingengines/blackscholescalculator.{hpp,cpp}}.
@@ -54,11 +54,8 @@ public class BlackScholesCalculator extends BlackCalculator {
     private final double spot;
     private final double growth;
 
-    public BlackScholesCalculator(final StrikedTypePayoff payoff,
-                                  final double spot,
-                                  final double growth,
-                                  final double stdDev,
-                                  final double discount) {
+    public BlackScholesCalculator(final StrikedTypePayoff payoff, final double spot, final double growth,
+            final double stdDev, final double discount) {
         super(payoff, spot * growth / discount, stdDev, discount);
         this.spot = spot;
         this.growth = growth;
@@ -66,12 +63,8 @@ public class BlackScholesCalculator extends BlackCalculator {
         QL.require(growth > 0.0, "growth must be positive");
     }
 
-    public BlackScholesCalculator(final Option.Type type,
-                                  final double strike,
-                                  final double spot,
-                                  final double growth,
-                                  final double stdDev,
-                                  final double discount) {
+    public BlackScholesCalculator(final Option.Type type, final double strike, final double spot, final double growth,
+            final double stdDev, final double discount) {
         this(new PlainVanillaPayoff(type, strike), spot, growth, stdDev, discount);
     }
 

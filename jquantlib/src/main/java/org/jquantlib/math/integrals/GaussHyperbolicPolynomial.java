@@ -18,12 +18,11 @@
 package org.jquantlib.math.integrals;
 
 /**
- * Gauss hyperbolic polynomial — orthogonal w.r.t. the weight
- * {@code w(x) = 1 / cosh(x)} on {@code (-∞, ∞)}.
+ * Gauss hyperbolic polynomial — orthogonal w.r.t. the weight {@code w(x) = 1 / cosh(x)} on {@code (-∞, ∞)}.
  *
  * <p>Phase 5h.5-MC port of {@code QuantLib::GaussHyperbolicPolynomial}
- * (v1.42.1 ql/math/integrals/gaussianorthogonalpolynomial.{hpp,cpp}). Pinned
- * commit {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
+ * (v1.42.1 ql/math/integrals/gaussianorthogonalpolynomial.{hpp,cpp}). Pinned commit
+ * {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
  *
  * <p>Three-term recurrence coefficients (per QuantLib convention):
  * <pre>
@@ -51,7 +50,7 @@ public final class GaussHyperbolicPolynomial extends GaussianOrthogonalPolynomia
 
     @Override
     public double beta(final int i) {
-        if (i == 0) {
+        if ( i == 0 ) {
             return Math.PI;
         }
         // (pi/2)^2 * i^2  — mirrors C++ M_PI_2 * M_PI_2 * i * i

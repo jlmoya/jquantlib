@@ -51,45 +51,36 @@ import org.jquantlib.time.Period;
 import org.jquantlib.time.calendars.Canada;
 
 /**
- * Canadian Dollar Offered Rate fixed by IDA
- * See <http://www.bba.org.uk/bba/jsp/polopoly.jsp?d=225&a=1414>.
- * This is the rate fixed in Canada by IDA. 
- * Use CADLibor if you're interested in the London fixing by BBA.
- *        
+ * Canadian Dollar Offered Rate fixed by IDA See <http://www.bba.org.uk/bba/jsp/polopoly.jsp?d=225&a=1414>. This is the
+ * rate fixed in Canada by IDA. Use CADLibor if you're interested in the London fixing by BBA.
+ *
  * TODO check settlement days, end-of-month adjustment, and day-count convention.
  */
 public class Cdor extends IborIndex {
 
-	public Cdor(final Period tenor) {
-		this(tenor, new Handle<YieldTermStructure>(
-						new AbstractYieldTermStructure() {
-							@Override
-							protected double discountImpl(final double t) {
-								throw new UnsupportedOperationException();
-							}
-							@Override
-							public Date maxDate() {
-								throw new UnsupportedOperationException();
-							}
-						}
-				));
-	}
+    public Cdor(final Period tenor) {
+        this(tenor, new Handle< YieldTermStructure >(new AbstractYieldTermStructure() {
+            @Override
+            protected double discountImpl(final double t) {
+                throw new UnsupportedOperationException();
+            }
 
-	public Cdor(final Period tenor,
-			final Handle<YieldTermStructure> h) {
-		// align(indexes.ibor): match C++ v1.42.1 cdor.hpp settlementDays=0
-		// (was 2) and dayCounter=Actual365Fixed (was Actual360). CDOR is the
-		// Canadian Dollar Offered Rate fixed in Canada by IDA — same
-		// Canadian Actual/365 day count and same-day value-date convention
-		// as CADLibor (per OpenGamma "Interest Rate Instruments and Market
-		// Conventions Guide", BBG, IKON).
-		super("CDOR", tenor, 0,
-				new CADCurrency(),
-				new Canada(),
-				BusinessDayConvention.ModifiedFollowing,
-				false,
-				new Actual365Fixed(),
-				h);
-	}
+            @Override
+            public Date maxDate() {
+                throw new UnsupportedOperationException();
+            }
+        }));
+    }
+
+    public Cdor(final Period tenor, final Handle< YieldTermStructure > h) {
+        // align(indexes.ibor): match C++ v1.42.1 cdor.hpp settlementDays=0
+        // (was 2) and dayCounter=Actual365Fixed (was Actual360). CDOR is the
+        // Canadian Dollar Offered Rate fixed in Canada by IDA — same
+        // Canadian Actual/365 day count and same-day value-date convention
+        // as CADLibor (per OpenGamma "Interest Rate Instruments and Market
+        // Conventions Guide", BBG, IKON).
+        super("CDOR", tenor, 0, new CADCurrency(), new Canada(), BusinessDayConvention.ModifiedFollowing, false,
+                new Actual365Fixed(), h);
+    }
 
 }

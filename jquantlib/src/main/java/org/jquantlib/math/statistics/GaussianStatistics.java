@@ -47,14 +47,14 @@ import org.jquantlib.lang.annotation.QualityAssurance.Version;
 
 /**
  * This class is an alias to GenericGaussianStatistics
- * 
+ *
  * @author Richard Gomes
  */
-@QualityAssurance(quality = Quality.Q4_UNIT, reviewers = { "Richard Gomes" }, version = Version.V097)
+@QualityAssurance( quality = Quality.Q4_UNIT, reviewers = { "Richard Gomes" }, version = Version.V097 )
 public abstract class GaussianStatistics extends GenericGaussianStatistics {
 
-	public GaussianStatistics() {
-		super();
-	} 
-	
+    public GaussianStatistics() {
+        super();
+    }
+
 }

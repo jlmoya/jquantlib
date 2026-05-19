@@ -26,8 +26,7 @@ import org.jquantlib.methods.finitedifferences.meshers.FdmMesher;
 /**
  * Central-difference first derivative on a non-uniform 1D grid.
  * <p>
- * Java port of v1.42.1
- * ql/methods/finitedifferences/operators/firstderivativeop.{hpp,cpp}.
+ * Java port of v1.42.1 ql/methods/finitedifferences/operators/firstderivativeop.{hpp,cpp}.
  * <p>
  * At interior cells:
  * {@code u'(x) ~= (-h_+/(h_-(h_-+h_+))) u_{i-1} + ((h_+ - h_-)/(h_-h_+)) u_i + (h_-/(h_+(h_-+h_+))) u_{i+1}}.
@@ -40,29 +39,29 @@ public class FirstDerivativeOp extends TripleBandLinearOp {
     public FirstDerivativeOp(final int direction, final FdmMesher mesher) {
         super(direction, mesher);
 
-        for (final FdmLinearOpIterator iter : mesher.layout()) {
+        for ( final FdmLinearOpIterator iter : mesher.layout() ) {
             final int i = iter.index();
             final double hm = mesher.dminus(iter, this.direction);
             final double hp = mesher.dplus(iter, this.direction);
 
             final double zetam1 = hm * (hm + hp);
-            final double zeta0  = hm * hp;
+            final double zeta0 = hm * hp;
             final double zetap1 = hp * (hm + hp);
 
             final int co = iter.coordinates()[this.direction];
-            if (co == 0) {
+            if ( co == 0 ) {
                 // upwinding scheme
                 lower[i] = 0.0;
                 upper[i] = 1.0 / hp;
-                diag[i]  = -upper[i];
-            } else if (co == mesher.layout().dim()[this.direction] - 1) {
+                diag[i] = -upper[i];
+            } else if ( co == mesher.layout().dim()[this.direction] - 1 ) {
                 // downwinding scheme
-                diag[i]  = 1.0 / hm;
+                diag[i] = 1.0 / hm;
                 lower[i] = -diag[i];
                 upper[i] = 0.0;
             } else {
                 lower[i] = -hp / zetam1;
-                diag[i]  = (hp - hm) / zeta0;
+                diag[i] = (hp - hm) / zeta0;
                 upper[i] = hm / zetap1;
             }
         }

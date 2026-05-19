@@ -37,8 +37,7 @@ package org.jquantlib.instruments;
 import org.jquantlib.QL;
 
 /**
- * Max-of-basket payoff: applies the base payoff to the maximum of the
- * underlying asset values at exercise.
+ * Max-of-basket payoff: applies the base payoff to the maximum of the underlying asset values at exercise.
  *
  * <p>Ported from C++ QuantLib v1.42.1
  * {@code ql/instruments/basketoption.hpp::MaxBasketPayoff}.</p>
@@ -55,8 +54,8 @@ public class MaxBasketPayoff extends BasketPayoff {
     public double accumulate(final double[] a) {
         QL.require(a != null && a.length > 0, "empty underlying array");
         double m = a[0];
-        for (int i = 1; i < a.length; ++i) {
-            if (a[i] > m) {
+        for ( int i = 1; i < a.length; ++i ) {
+            if ( a[i] > m ) {
                 m = a[i];
             }
         }

@@ -21,11 +21,6 @@
  */
 package org.jquantlib.experimental.models;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.experimental.processes.HestonStochasticLocalVolProcess;
@@ -44,11 +39,15 @@ import org.jquantlib.time.Date;
 import org.jquantlib.time.TimeGrid;
 import org.jquantlib.util.LazyObject;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+
 /**
  * MC-based calibration of a Heston Stochastic-Local-Volatility model.
  * <p>
- * Java port of v1.42.1 {@code ql/models/equity/hestonslvmcmodel.{hpp,cpp}}
- * (Phase 5h.5-SLV-b body-fill).
+ * Java port of v1.42.1 {@code ql/models/equity/hestonslvmcmodel.{hpp,cpp}} (Phase 5h.5-SLV-b body-fill).
  * <p>
  * References:
  * <pre>
@@ -61,37 +60,28 @@ import org.jquantlib.util.LazyObject;
  */
 public class HestonSLVMCModel extends LazyObject {
 
-    private final Handle<LocalVolTermStructure> localVol;
-    private final Handle<HestonModel> hestonModel;
+    private final Handle< LocalVolTermStructure > localVol;
+    private final Handle< HestonModel > hestonModel;
     private final BrownianGeneratorFactory brownianGeneratorFactory;
     private final Date endDate;
-    @SuppressWarnings("unused")
+    @SuppressWarnings( "unused" )
     private final int timeStepsPerYear;
     private final int nBins;
     private final int calibrationPaths;
-    private final List<Date> mandatoryDates;
+    private final List< Date > mandatoryDates;
     private final double mixingFactor;
     private final TimeGrid timeGrid;
 
     private FixedLocalVolSurface leverageFunction;
 
-    public HestonSLVMCModel(final Handle<LocalVolTermStructure> localVol,
-                            final Handle<HestonModel> hestonModel,
-                            final BrownianGeneratorFactory brownianGeneratorFactory,
-                            final Date endDate) {
-        this(localVol, hestonModel, brownianGeneratorFactory, endDate,
-             365, 201, 1 << 15, new ArrayList<Date>(), 1.0);
+    public HestonSLVMCModel(final Handle< LocalVolTermStructure > localVol, final Handle< HestonModel > hestonModel,
+            final BrownianGeneratorFactory brownianGeneratorFactory, final Date endDate) {
+        this(localVol, hestonModel, brownianGeneratorFactory, endDate, 365, 201, 1 << 15, new ArrayList< Date >(), 1.0);
     }
 
-    public HestonSLVMCModel(final Handle<LocalVolTermStructure> localVol,
-                            final Handle<HestonModel> hestonModel,
-                            final BrownianGeneratorFactory brownianGeneratorFactory,
-                            final Date endDate,
-                            final int timeStepsPerYear,
-                            final int nBins,
-                            final int calibrationPaths,
-                            final List<Date> mandatoryDates,
-                            final double mixingFactor) {
+    public HestonSLVMCModel(final Handle< LocalVolTermStructure > localVol, final Handle< HestonModel > hestonModel,
+            final BrownianGeneratorFactory brownianGeneratorFactory, final Date endDate, final int timeStepsPerYear,
+            final int nBins, final int calibrationPaths, final List< Date > mandatoryDates, final double mixingFactor) {
         this.localVol = localVol;
         this.hestonModel = hestonModel;
         this.brownianGeneratorFactory = brownianGeneratorFactory;
@@ -100,12 +90,14 @@ public class HestonSLVMCModel extends LazyObject {
         this.nBins = nBins;
         this.calibrationPaths = calibrationPaths;
         this.mandatoryDates = (mandatoryDates != null)
-                ? new ArrayList<Date>(mandatoryDates)
-                : new ArrayList<Date>();
+                ? new ArrayList< Date >(mandatoryDates)
+                : new ArrayList< Date >();
         this.mixingFactor = mixingFactor;
 
-        if (!hestonModel.empty()) hestonModel.addObserver(this);
-        if (!localVol.empty())    localVol   .addObserver(this);
+        if ( !hestonModel.empty() )
+            hestonModel.addObserver(this);
+        if ( !localVol.empty() )
+            localVol.addObserver(this);
 
         // Build the time grid covering all mandatory dates and the end date.
         final HestonProcess proc = hestonModel.empty() ? null : hestonModel.currentLink().process();
@@ -113,14 +105,13 @@ public class HestonSLVMCModel extends LazyObject {
         final DayCounter dc = proc.riskFreeRate().currentLink().dayCounter();
         final Date refDate = proc.riskFreeRate().currentLink().referenceDate();
 
-        final List<Double> gridTimes = new ArrayList<Double>(this.mandatoryDates.size() + 1);
-        for (final Date d : this.mandatoryDates) {
+        final List< Double > gridTimes = new ArrayList< Double >(this.mandatoryDates.size() + 1);
+        for ( final Date d : this.mandatoryDates ) {
             gridTimes.add(Double.valueOf(dc.yearFraction(refDate, d)));
         }
         gridTimes.add(Double.valueOf(dc.yearFraction(refDate, endDate)));
 
-        final int nSteps = Math.max(2, (int) (gridTimes.get(gridTimes.size() - 1).doubleValue()
-                                              * timeStepsPerYear));
+        final int nSteps = Math.max(2, (int) (gridTimes.get(gridTimes.size() - 1).doubleValue() * timeStepsPerYear));
         this.timeGrid = new TimeGrid(gridTimes, nSteps);
     }
 
@@ -139,52 +130,52 @@ public class HestonSLVMCModel extends LazyObject {
 
     @Override
     protected void performCalculations() {
-        QL.require(brownianGeneratorFactory != null,
-                "BrownianGeneratorFactory required for MC calibration");
+        QL.require(brownianGeneratorFactory != null, "BrownianGeneratorFactory required for MC calibration");
 
         final HestonProcess hestonProcess = hestonModel.currentLink().process();
         final SimpleQuote spot = (SimpleQuote) hestonProcess.s0().currentLink();
 
-        final double v0          = hestonProcess.v0().currentLink().value();
-        final DayCounter dc      = hestonProcess.riskFreeRate().currentLink().dayCounter();
-        final Date refDate       = hestonProcess.riskFreeRate().currentLink().referenceDate();
+        final double v0 = hestonProcess.v0().currentLink().value();
+        final DayCounter dc = hestonProcess.riskFreeRate().currentLink().dayCounter();
+        final Date refDate = hestonProcess.riskFreeRate().currentLink().referenceDate();
 
         final double lv0 = localVol.currentLink().localVol(0.0, spot.value()) / Math.sqrt(v0);
 
         // Allocate leverage matrix and per-time strike vectors.
         final Matrix L = new Matrix(nBins, timeGrid.size());
-        final List<double[]> vStrikes = new ArrayList<double[]>(timeGrid.size());
+        final List< double[] > vStrikes = new ArrayList< double[] >(timeGrid.size());
 
         // Strikes initially: spot ± dx*nBins/2 with dx = spot * sqrt(eps).
-        for (int i = 0; i < timeGrid.size(); ++i) {
+        for ( int i = 0; i < timeGrid.size(); ++i ) {
             final int u = nBins / 2;
             final double dx = spot.value() * Math.sqrt(Constants.QL_EPSILON);
             final double[] s = new double[nBins];
-            for (int j = 0; j < nBins; ++j) {
+            for ( int j = 0; j < nBins; ++j ) {
                 s[j] = spot.value() + (j - u) * dx;
             }
             vStrikes.add(s);
         }
 
         // Initial column: leverage = lv0 across all strikes at t=0.
-        for (int j = 0; j < nBins; ++j) {
+        for ( int j = 0; j < nBins; ++j ) {
             L.set(j, 0, lv0);
         }
 
         // Convert TimeGrid → double[] for FixedLocalVolSurface.
         final double[] tArray = new double[timeGrid.size()];
-        for (int i = 0; i < timeGrid.size(); ++i) tArray[i] = timeGrid.at(i);
+        for ( int i = 0; i < timeGrid.size(); ++i )
+            tArray[i] = timeGrid.at(i);
 
         leverageFunction = new FixedLocalVolSurface(refDate, tArray, vStrikes, L, dc,
                 FixedLocalVolSurface.Extrapolation.ConstantExtrapolation,
                 FixedLocalVolSurface.Extrapolation.ConstantExtrapolation);
 
-        final HestonStochasticLocalVolProcess slvProcess =
-                new HestonStochasticLocalVolProcess(hestonProcess, leverageFunction, mixingFactor);
+        final HestonStochasticLocalVolProcess slvProcess = new HestonStochasticLocalVolProcess(hestonProcess,
+                leverageFunction, mixingFactor);
 
         // Pair (S, v) per path.
         final double[][] pairs = new double[calibrationPaths][2];
-        for (int i = 0; i < calibrationPaths; ++i) {
+        for ( int i = 0; i < calibrationPaths; ++i ) {
             pairs[i][0] = spot.value();
             pairs[i][1] = v0;
         }
@@ -198,10 +189,10 @@ public class HestonSLVMCModel extends LazyObject {
         final double[][][] paths = new double[calibrationPaths][timeSteps][2];
 
         final BrownianGenerator brownianGenerator = brownianGeneratorFactory.create(2, timeSteps);
-        for (int i = 0; i < calibrationPaths; ++i) {
+        for ( int i = 0; i < calibrationPaths; ++i ) {
             brownianGenerator.nextPath();
             final double[] tmp = new double[2];
-            for (int j = 0; j < timeSteps; ++j) {
+            for ( int j = 0; j < timeSteps; ++j ) {
                 brownianGenerator.nextStep(tmp);
                 paths[i][j][0] = tmp[0];
                 paths[i][j][1] = tmp[1];
@@ -211,11 +202,11 @@ public class HestonSLVMCModel extends LazyObject {
         // Sweep time, evolve all paths, then bin & estimate leverage.
         final Array x0 = new Array(2);
         final Array dw = new Array(2);
-        for (int n = 1; n < timeGrid.size(); ++n) {
+        for ( int n = 1; n < timeGrid.size(); ++n ) {
             final double t = timeGrid.at(n - 1);
             final double dt = timeGrid.dt(n - 1);
 
-            for (int i = 0; i < calibrationPaths; ++i) {
+            for ( int i = 0; i < calibrationPaths; ++i ) {
                 x0.set(0, pairs[i][0]);
                 x0.set(1, pairs[i][1]);
                 dw.set(0, paths[i][n - 1][0]);
@@ -227,7 +218,7 @@ public class HestonSLVMCModel extends LazyObject {
             }
 
             // Sort by S (first component).
-            Arrays.sort(pairs, new Comparator<double[]>() {
+            Arrays.sort(pairs, new Comparator< double[] >() {
                 @Override
                 public int compare(final double[] a, final double[] b) {
                     return Double.compare(a[0], b[0]);
@@ -236,11 +227,12 @@ public class HestonSLVMCModel extends LazyObject {
 
             // Bin into nBins equally-sized buckets; estimate leverage per bin.
             int s = 0;
-            for (int i = 0; i < nBins; ++i) {
+            for ( int i = 0; i < nBins; ++i ) {
                 final int inc = k + ((i < m) ? 1 : 0);
                 final int e = s + inc;
                 double sum = 0.0;
-                for (int j = s; j < e; ++j) sum += pairs[j][1];
+                for ( int j = s; j < e; ++j )
+                    sum += pairs[j][1];
                 sum /= inc;
 
                 final double midStrike = 0.5 * (pairs[e - 1][0] + pairs[s][0]);
@@ -260,7 +252,7 @@ public class HestonSLVMCModel extends LazyObject {
                 // every interior cell.
                 final double lRaw = Math.sqrt(lv * lv / sum);
                 final double lClamped;
-                if (Double.isNaN(lRaw) || Double.isInfinite(lRaw)) {
+                if ( Double.isNaN(lRaw) || Double.isInfinite(lRaw) ) {
                     lClamped = 50.0;
                 } else {
                     lClamped = Math.min(50.0, Math.max(1.0e-3, lRaw));

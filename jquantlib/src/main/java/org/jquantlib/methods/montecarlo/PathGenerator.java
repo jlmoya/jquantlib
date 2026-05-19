@@ -39,11 +39,9 @@ import org.jquantlib.time.TimeGrid;
  * {@code S},{@code t}) using a Gaussian sequence generator.
  *
  * <p>Java port of {@code QuantLib v1.42.1
- * ql/methods/montecarlo/pathgenerator.hpp} (Phase 5h.5-MC-INFRA WI-3).
- * The Java version is type-erased over the GSG parameter (any
- * {@link RandomSequenceGeneratorIntf} works) and is specialised to a
- * single-factor {@link StochasticProcess1D}, mirroring the C++
- * dynamic_pointer_cast that is performed in the constructor.
+ * ql/methods/montecarlo/pathgenerator.hpp} (Phase 5h.5-MC-INFRA WI-3). The Java version is type-erased over the GSG
+ * parameter (any {@link RandomSequenceGeneratorIntf} works) and is specialised to a single-factor
+ * {@link StochasticProcess1D}, mirroring the C++ dynamic_pointer_cast that is performed in the constructor.
  *
  * <p>Behavioural parity with C++:
  *   <ul>
@@ -62,7 +60,7 @@ import org.jquantlib.time.TimeGrid;
  *
  * @author JQuantLib
  */
-public class PathGenerator</*<RNG extends RandomNumberGenerator,*/ GSG extends RandomSequenceGeneratorIntf> {
+public class PathGenerator</*<RNG extends RandomNumberGenerator,*/ GSG extends RandomSequenceGeneratorIntf > {
 
     //
     // private fields
@@ -73,10 +71,9 @@ public class PathGenerator</*<RNG extends RandomNumberGenerator,*/ GSG extends R
     private final /*@NonNegative*/ int dimension_;
     private final TimeGrid timeGrid_;
     private final StochasticProcess1D process_;
-    private final Sample<Path> next_;
+    private final Sample< Path > next_;
     private final double[] temp_;
     private final BrownianBridge bb_;
-
 
     //
     // public constructors
@@ -84,28 +81,22 @@ public class PathGenerator</*<RNG extends RandomNumberGenerator,*/ GSG extends R
 
     /**
      * Length-and-step constructor; mirrors C++
-     * {@code PathGenerator(StochasticProcess&, Time length, Size timeSteps,
-     * GSG, bool brownianBridge)}.
+     * {@code PathGenerator(StochasticProcess&, Time length, Size timeSteps, GSG, bool brownianBridge)}.
      */
-    public PathGenerator(
-            final StochasticProcess1D process,
-            final /*@Time*/ double length,
-            final /*@NonNegative*/ int timeSteps,
-            final GSG generator,
-            final boolean brownianBridge) {
+    public PathGenerator(final StochasticProcess1D process, final /*@Time*/ double length,
+            final /*@NonNegative*/ int timeSteps, final GSG generator, final boolean brownianBridge) {
         this.brownianBridge_ = brownianBridge;
         this.generator_ = generator;
         this.dimension_ = generator.dimension();
         this.timeGrid_ = new TimeGrid(length, timeSteps);
         this.process_ = process;
-        this.next_ = new Sample<Path>(new Path(this.timeGrid_), 1.0);
+        this.next_ = new Sample< Path >(new Path(this.timeGrid_), 1.0);
         this.temp_ = new double[this.dimension_];
         this.bb_ = new BrownianBridge(this.timeGrid_);
 
-        if (dimension_ != timeSteps) {
+        if ( dimension_ != timeSteps ) {
             throw new IllegalArgumentException(
-                    "sequence generator dimensionality (" + dimension_
-                            + ") != timeSteps (" + timeSteps + ")");
+                    "sequence generator dimensionality (" + dimension_ + ") != timeSteps (" + timeSteps + ")");
         }
     }
 
@@ -113,27 +104,23 @@ public class PathGenerator</*<RNG extends RandomNumberGenerator,*/ GSG extends R
      * Time-grid constructor; mirrors C++
      * {@code PathGenerator(StochasticProcess&, TimeGrid, GSG, bool brownianBridge)}.
      */
-    public PathGenerator(
-            final StochasticProcess1D process,
-            final TimeGrid timeGrid,
-            final GSG generator,
+    public PathGenerator(final StochasticProcess1D process, final TimeGrid timeGrid, final GSG generator,
             final boolean brownianBridge) {
         this.brownianBridge_ = brownianBridge;
         this.generator_ = generator;
         this.dimension_ = generator.dimension();
         this.timeGrid_ = timeGrid;
         this.process_ = process;
-        this.next_ = new Sample<Path>(new Path(this.timeGrid_), 1.0);
+        this.next_ = new Sample< Path >(new Path(this.timeGrid_), 1.0);
         this.temp_ = new double[this.dimension_];
         this.bb_ = new BrownianBridge(this.timeGrid_);
 
-        if (dimension_ != timeGrid_.size() - 1) {
+        if ( dimension_ != timeGrid_.size() - 1 ) {
             throw new IllegalArgumentException(
-                    "sequence generator dimensionality (" + dimension_
-                            + ") != timeSteps (" + (timeGrid_.size() - 1) + ")");
+                    "sequence generator dimensionality (" + dimension_ + ") != timeSteps (" + (timeGrid_.size() - 1)
+                            + ")");
         }
     }
-
 
     //
     // inspectors
@@ -147,35 +134,31 @@ public class PathGenerator</*<RNG extends RandomNumberGenerator,*/ GSG extends R
         return timeGrid_;
     }
 
-
     //
     // path generation
     //
 
     /**
-     * Draws the next path. The returned {@link Sample} aliases an
-     * internal buffer that is overwritten by subsequent calls; copy if
-     * you need to retain the values.
+     * Draws the next path. The returned {@link Sample} aliases an internal buffer that is overwritten by subsequent
+     * calls; copy if you need to retain the values.
      */
-    public final Sample<Path> next() /* @ReadOnly */ {
+    public final Sample< Path > next() /* @ReadOnly */ {
         return next(false);
     }
 
     /**
-     * Draws the antithetic of the last sequence. Must be called after
-     * {@link #next()} (which drives the underlying generator forward).
+     * Draws the antithetic of the last sequence. Must be called after {@link #next()} (which drives the underlying
+     * generator forward).
      */
-    public final Sample<Path> antithetic() /* @ReadOnly */ {
+    public final Sample< Path > antithetic() /* @ReadOnly */ {
         return next(true);
     }
 
-    private Sample<Path> next(final boolean antithetic) {
-        final Sample<double[]> sequence = antithetic
-                ? generator_.lastSequence()
-                : generator_.nextSequence();
+    private Sample< Path > next(final boolean antithetic) {
+        final Sample< double[] > sequence = antithetic ? generator_.lastSequence() : generator_.nextSequence();
 
         final double[] sv = sequence.value();
-        if (brownianBridge_) {
+        if ( brownianBridge_ ) {
             bb_.transform(sv, temp_);
         } else {
             // Mirrors std::copy(sequence.begin(), end(), temp.begin()).
@@ -187,7 +170,7 @@ public class PathGenerator</*<RNG extends RandomNumberGenerator,*/ GSG extends R
         final Path path = next_.value();
         path.setFront(process_.x0());
 
-        for (int i = 1; i < path.length(); i++) {
+        for ( int i = 1; i < path.length(); i++ ) {
             final /*@Time*/ double t = timeGrid_.get(i - 1);
             final /*@Time*/ double dt = timeGrid_.dt(i - 1);
             final double dw = antithetic ? -temp_[i - 1] : temp_[i - 1];

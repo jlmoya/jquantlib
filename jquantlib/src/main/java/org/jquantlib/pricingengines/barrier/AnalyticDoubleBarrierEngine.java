@@ -39,20 +39,18 @@ import org.jquantlib.termstructures.Compounding;
 import org.jquantlib.time.Frequency;
 
 /**
- * Pricing engine for double-barrier European options using the Ikeda/Kunitomo
- * (1992) analytical infinite-series expansion.
+ * Pricing engine for double-barrier European options using the Ikeda/Kunitomo (1992) analytical infinite-series
+ * expansion.
  * <p>
  * Mirrors {@code QuantLib::AnalyticDoubleBarrierEngine} from
  * {@code ql/pricingengines/barrier/analyticdoublebarrierengine.{hpp,cpp}} (v1.42.1).
  *
  * <p>The formulas are taken from "The complete guide to option pricing formulas
- * 2nd Ed", E.G. Haug, McGraw-Hill, p.156 and following, which itself implements
- * the Ikeda and Kunitomo series (see "Pricing Options with Curved Boundaries",
- * Mathematical Finance 2/1992). This code handles only flat barriers.
+ * 2nd Ed", E.G. Haug, McGraw-Hill, p.156 and following, which itself implements the Ikeda and Kunitomo series (see
+ * "Pricing Options with Curved Boundaries", Mathematical Finance 2/1992). This code handles only flat barriers.
  *
  * <p>Supports {@link DoubleBarrierType#KnockIn} and
- * {@link DoubleBarrierType#KnockOut}. {@code KIKO} and {@code KOKI} are rejected
- * (the C++ engine fails on those).
+ * {@link DoubleBarrierType#KnockOut}. {@code KIKO} and {@code KOKI} are rejected (the C++ engine fails on those).
  *
  * <p>Series truncation defaults to 5 terms (matching the C++ default).
  *
@@ -68,8 +66,7 @@ public class AnalyticDoubleBarrierEngine extends DoubleBarrierOption.EngineImpl 
         this(process, 5);
     }
 
-    public AnalyticDoubleBarrierEngine(final GeneralizedBlackScholesProcess process,
-                                       final int series) {
+    public AnalyticDoubleBarrierEngine(final GeneralizedBlackScholesProcess process, final int series) {
         this.process_ = process;
         this.series_ = series;
         this.f_ = new CumulativeNormalDistribution();
@@ -81,8 +78,7 @@ public class AnalyticDoubleBarrierEngine extends DoubleBarrierOption.EngineImpl 
         final DoubleBarrierOption.ArgumentsImpl a = args();
         final OneAssetOption.ResultsImpl r = (OneAssetOption.ResultsImpl) results_;
 
-        QL.require(a.exercise.type() == Exercise.Type.European,
-                "this engine handles only european options");
+        QL.require(a.exercise.type() == Exercise.Type.European, "this engine handles only european options");
 
         QL.require(a.payoff instanceof PlainVanillaPayoff, "non-plain payoff given");
         final PlainVanillaPayoff payoff = (PlainVanillaPayoff) a.payoff;
@@ -95,42 +91,41 @@ public class AnalyticDoubleBarrierEngine extends DoubleBarrierOption.EngineImpl 
 
         final DoubleBarrierType barrierType = a.barrierType;
 
-        switch (payoff.optionType()) {
-            case Call:
-                switch (barrierType) {
-                    case KnockIn:
-                        r.value = callKI();
-                        break;
-                    case KnockOut:
-                        r.value = callKO();
-                        break;
-                    case KIKO:
-                    case KOKI:
-                        throw new LibraryException("unsupported double-barrier type: " + barrierType);
-                    default:
-                        throw new LibraryException("unknown double-barrier type: " + barrierType);
-                }
+        switch ( payoff.optionType() ) {
+        case Call:
+            switch ( barrierType ) {
+            case KnockIn:
+                r.value = callKI();
                 break;
-            case Put:
-                switch (barrierType) {
-                    case KnockIn:
-                        r.value = putKI();
-                        break;
-                    case KnockOut:
-                        r.value = putKO();
-                        break;
-                    case KIKO:
-                    case KOKI:
-                        throw new LibraryException("unsupported double-barrier type: " + barrierType);
-                    default:
-                        throw new LibraryException("unknown double-barrier type: " + barrierType);
-                }
+            case KnockOut:
+                r.value = callKO();
                 break;
+            case KIKO:
+            case KOKI:
+                throw new LibraryException("unsupported double-barrier type: " + barrierType);
             default:
-                throw new LibraryException("unknown type");
+                throw new LibraryException("unknown double-barrier type: " + barrierType);
+            }
+            break;
+        case Put:
+            switch ( barrierType ) {
+            case KnockIn:
+                r.value = putKI();
+                break;
+            case KnockOut:
+                r.value = putKO();
+                break;
+            case KIKO:
+            case KOKI:
+                throw new LibraryException("unsupported double-barrier type: " + barrierType);
+            default:
+                throw new LibraryException("unknown double-barrier type: " + barrierType);
+            }
+            break;
+        default:
+            throw new LibraryException("unknown type");
         }
     }
-
 
     //
     // private helpers (mirror C++ private members)
@@ -171,8 +166,8 @@ public class AnalyticDoubleBarrierEngine extends DoubleBarrierOption.EngineImpl 
     }
 
     private double riskFreeRate() {
-        return process_.riskFreeRate().currentLink().zeroRate(
-                residualTime(), Compounding.Continuous, Frequency.NoFrequency, false).rate();
+        return process_.riskFreeRate().currentLink()
+                .zeroRate(residualTime(), Compounding.Continuous, Frequency.NoFrequency, false).rate();
     }
 
     private double riskFreeDiscount() {
@@ -180,8 +175,8 @@ public class AnalyticDoubleBarrierEngine extends DoubleBarrierOption.EngineImpl 
     }
 
     private double dividendYield() {
-        return process_.dividendYield().currentLink().zeroRate(
-                residualTime(), Compounding.Continuous, Frequency.NoFrequency, false).rate();
+        return process_.dividendYield().currentLink()
+                .zeroRate(residualTime(), Compounding.Continuous, Frequency.NoFrequency, false).rate();
     }
 
     private double dividendDiscount() {
@@ -193,23 +188,22 @@ public class AnalyticDoubleBarrierEngine extends DoubleBarrierOption.EngineImpl 
     }
 
     /**
-     * Vanilla equivalent — used by KI variants (KI = vanilla - KO).
-     * Mirrors {@code AnalyticDoubleBarrierEngine::vanillaEquivalent()} (C++).
+     * Vanilla equivalent — used by KI variants (KI = vanilla - KO). Mirrors
+     * {@code AnalyticDoubleBarrierEngine::vanillaEquivalent()} (C++).
      */
     private double vanillaEquivalent() {
         final StrikedTypePayoff payoff = (StrikedTypePayoff) args().payoff;
         final double forwardPrice = underlying() * dividendDiscount() / riskFreeDiscount();
         final BlackCalculator black = new BlackCalculator(payoff, forwardPrice, stdDeviation(), riskFreeDiscount());
         double vanilla = black.value();
-        if (vanilla < 0.0) {
+        if ( vanilla < 0.0 ) {
             vanilla = 0.0;
         }
         return vanilla;
     }
 
     /**
-     * Knock-out call (Ikeda/Kunitomo series).
-     * Mirrors {@code AnalyticDoubleBarrierEngine::callKO()} (C++).
+     * Knock-out call (Ikeda/Kunitomo series). Mirrors {@code AnalyticDoubleBarrierEngine::callKO()} (C++).
      */
     private double callKO() {
         // N.B. for flat barriers mu3=mu1 and mu2=0
@@ -223,7 +217,7 @@ public class AnalyticDoubleBarrierEngine extends DoubleBarrierOption.EngineImpl 
 
         double acc1 = 0.0;
         double acc2 = 0.0;
-        for (int n = -series_; n <= series_; ++n) {
+        for ( int n = -series_; n <= series_; ++n ) {
             final double L2n = Math.pow(L, 2.0 * n);
             final double U2n = Math.pow(H, 2.0 * n);
             final double d1 = Math.log(S * U2n / (K * L2n)) / sd + bsigma;
@@ -235,15 +229,11 @@ public class AnalyticDoubleBarrierEngine extends DoubleBarrierOption.EngineImpl 
             final double Ln = Math.pow(L, n);
             final double Lnp1 = Math.pow(L, n + 1);
 
-            acc1 += Math.pow(Hn / Ln, mu1) *
-                    (f_.op(d1) - f_.op(d2)) -
-                    Math.pow(Lnp1 / (Hn * S), mu1) *
-                    (f_.op(d3) - f_.op(d4));
+            acc1 += Math.pow(Hn / Ln, mu1) * (f_.op(d1) - f_.op(d2)) - Math.pow(Lnp1 / (Hn * S), mu1) * (f_.op(d3)
+                    - f_.op(d4));
 
-            acc2 += Math.pow(Hn / Ln, mu1 - 2.0) *
-                    (f_.op(d1 - sd) - f_.op(d2 - sd)) -
-                    Math.pow(Lnp1 / (Hn * S), mu1 - 2.0) *
-                    (f_.op(d3 - sd) - f_.op(d4 - sd));
+            acc2 += Math.pow(Hn / Ln, mu1 - 2.0) * (f_.op(d1 - sd) - f_.op(d2 - sd))
+                    - Math.pow(Lnp1 / (Hn * S), mu1 - 2.0) * (f_.op(d3 - sd) - f_.op(d4 - sd));
         }
 
         final double rend = Math.exp(-dividendYield() * residualTime());
@@ -252,16 +242,14 @@ public class AnalyticDoubleBarrierEngine extends DoubleBarrierOption.EngineImpl 
     }
 
     /**
-     * Knock-in call — equates to vanilla - KO.
-     * Mirrors {@code AnalyticDoubleBarrierEngine::callKI()} (C++).
+     * Knock-in call — equates to vanilla - KO. Mirrors {@code AnalyticDoubleBarrierEngine::callKI()} (C++).
      */
     private double callKI() {
         return Math.max(0.0, vanillaEquivalent() - callKO());
     }
 
     /**
-     * Knock-out put (Ikeda/Kunitomo series).
-     * Mirrors {@code AnalyticDoubleBarrierEngine::putKO()} (C++).
+     * Knock-out put (Ikeda/Kunitomo series). Mirrors {@code AnalyticDoubleBarrierEngine::putKO()} (C++).
      */
     private double putKO() {
         final double mu1 = 2.0 * costOfCarry() / volatilitySquared() + 1.0;
@@ -274,7 +262,7 @@ public class AnalyticDoubleBarrierEngine extends DoubleBarrierOption.EngineImpl 
 
         double acc1 = 0.0;
         double acc2 = 0.0;
-        for (int n = -series_; n <= series_; ++n) {
+        for ( int n = -series_; n <= series_; ++n ) {
             final double L2n = Math.pow(L, 2.0 * n);
             final double U2n = Math.pow(H, 2.0 * n);
             final double y1 = Math.log(S * U2n / Math.pow(L, 2.0 * n + 1.0)) / sd + bsigma;
@@ -286,15 +274,11 @@ public class AnalyticDoubleBarrierEngine extends DoubleBarrierOption.EngineImpl 
             final double Ln = Math.pow(L, n);
             final double Lnp1 = Math.pow(L, n + 1);
 
-            acc1 += Math.pow(Hn / Ln, mu1 - 2.0) *
-                    (f_.op(y1 - sd) - f_.op(y2 - sd)) -
-                    Math.pow(Lnp1 / (Hn * S), mu1 - 2.0) *
-                    (f_.op(y3 - sd) - f_.op(y4 - sd));
+            acc1 += Math.pow(Hn / Ln, mu1 - 2.0) * (f_.op(y1 - sd) - f_.op(y2 - sd))
+                    - Math.pow(Lnp1 / (Hn * S), mu1 - 2.0) * (f_.op(y3 - sd) - f_.op(y4 - sd));
 
-            acc2 += Math.pow(Hn / Ln, mu1) *
-                    (f_.op(y1) - f_.op(y2)) -
-                    Math.pow(Lnp1 / (Hn * S), mu1) *
-                    (f_.op(y3) - f_.op(y4));
+            acc2 += Math.pow(Hn / Ln, mu1) * (f_.op(y1) - f_.op(y2)) - Math.pow(Lnp1 / (Hn * S), mu1) * (f_.op(y3)
+                    - f_.op(y4));
         }
 
         final double rend = Math.exp(-dividendYield() * residualTime());
@@ -303,8 +287,7 @@ public class AnalyticDoubleBarrierEngine extends DoubleBarrierOption.EngineImpl 
     }
 
     /**
-     * Knock-in put — equates to vanilla - KO.
-     * Mirrors {@code AnalyticDoubleBarrierEngine::putKI()} (C++).
+     * Knock-in put — equates to vanilla - KO. Mirrors {@code AnalyticDoubleBarrierEngine::putKI()} (C++).
      */
     private double putKI() {
         return Math.max(0.0, vanillaEquivalent() - putKO());

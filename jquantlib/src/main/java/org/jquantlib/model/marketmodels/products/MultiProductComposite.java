@@ -33,12 +33,11 @@ import org.jquantlib.model.marketmodels.MarketModelMultiProduct;
 /**
  * Composition of one or more market-model multi-products.
  * <p>
- * Mirrors C++ {@code class MultiProductComposite}
- * (ql/models/marketmodels/products/multiproductcomposite.{hpp,cpp} v1.42.1).
+ * Mirrors C++ {@code class MultiProductComposite} (ql/models/marketmodels/products/multiproductcomposite.{hpp,cpp}
+ * v1.42.1).
  * <p>
- * The composite behaves as a multi-product whose number-of-products is the
- * sum of all sub-products' number-of-products, with sub-products appearing
- * sequentially.
+ * The composite behaves as a multi-product whose number-of-products is the sum of all sub-products' number-of-products,
+ * with sub-products appearing sequentially.
  *
  * @author Jose Moya
  */
@@ -49,7 +48,7 @@ public class MultiProductComposite extends MarketModelComposite {
     @Override
     public int numberOfProducts() {
         int result = 0;
-        for (final SubProduct sub : components_) {
+        for ( final SubProduct sub : components_ ) {
             result += sub.product.numberOfProducts();
         }
         return result;
@@ -58,28 +57,26 @@ public class MultiProductComposite extends MarketModelComposite {
     @Override
     public int maxNumberOfCashFlowsPerProductPerStep() {
         int result = 0;
-        for (final SubProduct sub : components_) {
+        for ( final SubProduct sub : components_ ) {
             result = Math.max(result, sub.product.maxNumberOfCashFlowsPerProductPerStep());
         }
         return result;
     }
 
     @Override
-    public boolean nextTimeStep(final CurveState currentState,
-                                final int[] numberCashFlowsThisStep,
-                                final MarketModelMultiProduct.CashFlow[][] cashFlowsGenerated) {
+    public boolean nextTimeStep(final CurveState currentState, final int[] numberCashFlowsThisStep,
+            final MarketModelMultiProduct.CashFlow[][] cashFlowsGenerated) {
         QL.require(finalized_, "composite not finalized");
         boolean done = true;
         int n = 0;
         int offset = 0;
-        for (final SubProduct sub : components_) {
-            if (isInSubset_[n][currentIndex_] && !sub.done) {
-                final boolean thisDone = sub.product.nextTimeStep(currentState,
-                        sub.numberOfCashflows, sub.cashflows);
+        for ( final SubProduct sub : components_ ) {
+            if ( isInSubset_[n][currentIndex_] && !sub.done ) {
+                final boolean thisDone = sub.product.nextTimeStep(currentState, sub.numberOfCashflows, sub.cashflows);
                 final int np = sub.product.numberOfProducts();
-                for (int j = 0; j < np; ++j) {
+                for ( int j = 0; j < np; ++j ) {
                     numberCashFlowsThisStep[j + offset] = sub.numberOfCashflows[j];
-                    for (int k = 0; k < sub.numberOfCashflows[j]; ++k) {
+                    for ( int k = 0; k < sub.numberOfCashflows[j]; ++k ) {
                         final MarketModelMultiProduct.CashFlow from = sub.cashflows[j][k];
                         final MarketModelMultiProduct.CashFlow to = cashFlowsGenerated[j + offset][k];
                         to.timeIndex = sub.timeIndices[from.timeIndex];
@@ -89,7 +86,7 @@ public class MultiProductComposite extends MarketModelComposite {
                 done = done && thisDone;
             } else {
                 final int np = sub.product.numberOfProducts();
-                for (int j = 0; j < np; ++j) {
+                for ( int j = 0; j < np; ++j ) {
                     numberCashFlowsThisStep[j + offset] = 0;
                 }
             }
@@ -109,16 +106,16 @@ public class MultiProductComposite extends MarketModelComposite {
         c.finalized_ = finalized_;
         c.currentIndex_ = currentIndex_;
         c.cashflowTimes_ = (cashflowTimes_ == null) ? null : cashflowTimes_.clone();
-        if (isInSubset_ != null) {
+        if ( isInSubset_ != null ) {
             c.isInSubset_ = new boolean[isInSubset_.length][];
-            for (int i = 0; i < isInSubset_.length; ++i) {
+            for ( int i = 0; i < isInSubset_.length; ++i ) {
                 c.isInSubset_[i] = isInSubset_[i].clone();
             }
         }
-        for (final double[] t : allEvolutionTimes_) {
+        for ( final double[] t : allEvolutionTimes_ ) {
             c.allEvolutionTimes_.add(t.clone());
         }
-        for (final SubProduct sub : components_) {
+        for ( final SubProduct sub : components_ ) {
             c.components_.add(sub.copyDeep());
         }
         return c;

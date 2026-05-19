@@ -34,17 +34,15 @@ import org.jquantlib.termstructures.ZeroInflationTermStructure;
 import org.jquantlib.time.Date;
 
 /**
- * Bootstrap traits for {@code PiecewiseZeroInflationCurve} — Java port of
- * QuantLib v1.42.1 {@code ZeroInflationTraits}.
+ * Bootstrap traits for {@code PiecewiseZeroInflationCurve} — Java port of QuantLib v1.42.1
+ * {@code ZeroInflationTraits}.
  *
  * <p>Traits encode the curve-specific decisions a generic bootstrap loop needs:
- * the initial node date and value, per-iteration guesses, value-domain
- * constraints (min/max-after), how to update the data array on each Newton
- * step, and an iteration cap.
+ * the initial node date and value, per-iteration guesses, value-domain constraints (min/max-after), how to update the
+ * data array on each Newton step, and an iteration cap.
  *
  * <p>The Java port mirrors the C++ class structurally. We deliberately use a
- * non-generic, non-templated, instance-method shape rather than the C++
- * static-template form because:
+ * non-generic, non-templated, instance-method shape rather than the C++ static-template form because:
  * <ul>
  *   <li>Java's existing yield-curve {@code Traits} interface
  *       ({@code org.jquantlib.termstructures.yieldcurves.Traits}) is wired
@@ -77,12 +75,11 @@ public final class InflationTraits {
     }
 
     /**
-     * Iterative guess for node {@code i}. If the curve already holds valid
-     * data (a previous bootstrap iteration), reuse {@code data[i]}; otherwise
-     * fall back to the average inflation constant.
+     * Iterative guess for node {@code i}. If the curve already holds valid data (a previous bootstrap iteration), reuse
+     * {@code data[i]}; otherwise fall back to the average inflation constant.
      */
     public double guess(final int i, final double[] data, final boolean validData) {
-        if (validData) {
+        if ( validData ) {
             return data[i];
         }
         return AVG_INFLATION;
@@ -90,10 +87,11 @@ public final class InflationTraits {
 
     /** Lower bound for node {@code i}'s value. Mirrors C++ minValueAfter. */
     public double minValueAfter(final int i, final double[] data, final boolean validData) {
-        if (validData) {
+        if ( validData ) {
             double r = data[0];
-            for (int k = 1; k < data.length; ++k) {
-                if (data[k] < r) r = data[k];
+            for ( int k = 1; k < data.length; ++k ) {
+                if ( data[k] < r )
+                    r = data[k];
             }
             return r < 0.0 ? r * 2.0 : r / 2.0;
         }
@@ -102,10 +100,11 @@ public final class InflationTraits {
 
     /** Upper bound for node {@code i}'s value. Mirrors C++ maxValueAfter. */
     public double maxValueAfter(final int i, final double[] data, final boolean validData) {
-        if (validData) {
+        if ( validData ) {
             double r = data[0];
-            for (int k = 1; k < data.length; ++k) {
-                if (data[k] > r) r = data[k];
+            for ( int k = 1; k < data.length; ++k ) {
+                if ( data[k] > r )
+                    r = data[k];
             }
             return r < 0.0 ? r / 2.0 : r * 2.0;
         }
@@ -113,14 +112,13 @@ public final class InflationTraits {
     }
 
     /**
-     * Update data on a Newton step. Mirrors C++ {@code updateGuess}: assigns
-     * {@code data[i] = level}, and additionally propagates {@code level} to
-     * {@code data[0]} when {@code i == 1} (which sets the curve's base-rate
-     * once the first helper has been solved).
+     * Update data on a Newton step. Mirrors C++ {@code updateGuess}: assigns {@code data[i] = level}, and additionally
+     * propagates {@code level} to {@code data[0]} when {@code i == 1} (which sets the curve's base-rate once the first
+     * helper has been solved).
      */
     public void updateGuess(final double[] data, final double level, final int i) {
         data[i] = level;
-        if (i == 1) {
+        if ( i == 1 ) {
             data[0] = level;
         }
     }

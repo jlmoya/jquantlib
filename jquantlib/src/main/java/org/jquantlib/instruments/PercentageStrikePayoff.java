@@ -49,8 +49,8 @@ import org.jquantlib.util.Visitor;
 /**
  * Payoff with strike expressed as percentage (moneyness) of the underlying spot.
  * <p>
- * Used by Cliquet (Ratchet) options where each forward-starting period uses a
- * strike set to a fixed percentage of the spot at the period's reset date.
+ * Used by Cliquet (Ratchet) options where each forward-starting period uses a strike set to a fixed percentage of the
+ * spot at the period's reset date.
  * <ul>
  *   <li>CALL: {@code price * max(1 - moneyness, 0)}</li>
  *   <li>PUT:  {@code price * max(moneyness - 1, 0)}</li>
@@ -72,9 +72,9 @@ public class PercentageStrikePayoff extends StrikedTypePayoff {
 
     @Override
     public final double get(final double price) /* @ReadOnly */ {
-        if (type == Option.Type.Call) {
+        if ( type == Option.Type.Call ) {
             return price * Math.max(1.0 - strike, 0.0);
-        } else if (type == Option.Type.Put) {
+        } else if ( type == Option.Type.Put ) {
             return price * Math.max(strike - 1.0, 0.0);
         } else {
             throw new LibraryException(UNKNOWN_OPTION_TYPE);
@@ -83,8 +83,8 @@ public class PercentageStrikePayoff extends StrikedTypePayoff {
 
     @Override
     public void accept(final PolymorphicVisitor pv) {
-        final Visitor<PercentageStrikePayoff> v = (pv != null) ? pv.visitor(this.getClass()) : null;
-        if (v != null) {
+        final Visitor< PercentageStrikePayoff > v = (pv != null) ? pv.visitor(this.getClass()) : null;
+        if ( v != null ) {
             v.visit(this);
         } else {
             super.accept(pv);

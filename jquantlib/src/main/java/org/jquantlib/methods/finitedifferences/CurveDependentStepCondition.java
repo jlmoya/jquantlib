@@ -45,22 +45,16 @@ import org.jquantlib.instruments.PlainVanillaPayoff;
 import org.jquantlib.math.matrixutilities.Array;
 
 /**
- * Abstract base class which allows step conditions to use both payoff and array functions.
- * Subclasses (e.g. {@code AmericanCondition}, {@code ShoutCondition}) implement
- * {@link #applyToValue(double, double)}.
+ * Abstract base class which allows step conditions to use both payoff and array functions. Subclasses (e.g.
+ * {@code AmericanCondition}, {@code ShoutCondition}) implement {@link #applyToValue(double, double)}.
  *
  * <p>Note: no direct C++ v1.42.1 counterpart — the newer C++ step-condition
- * framework is Fdm*-prefixed with a different class layout. This class
- * remains as a Java-only shim for the two existing subclasses; see
- * docs/migration/phase1-carveouts.md for Phase 2 reorganization notes.
+ * framework is Fdm*-prefixed with a different class layout. This class remains as a Java-only shim for the two existing
+ * subclasses; see docs/migration/phase1-carveouts.md for Phase 2 reorganization notes.
  *
  * @author Richard Gomes
  */
-public abstract class CurveDependentStepCondition implements StepCondition<Array> {
-
-    public static interface CurveWrapper {
-        double getValue(Array a, int i);
-    }
+public abstract class CurveDependentStepCondition implements StepCondition< Array > {
 
     private final CurveWrapper curveItem;
 
@@ -77,21 +71,24 @@ public abstract class CurveDependentStepCondition implements StepCondition<Array
     }
 
     /**
-     * Subclasses must provide the scalar step-condition logic:
-     * transform the current value of the grid node given the corresponding
-     * payoff/curve value.
+     * Subclasses must provide the scalar step-condition logic: transform the current value of the grid node given the
+     * corresponding payoff/curve value.
      */
     protected abstract double applyToValue(double current, double intrinsic);
 
     @Override
     public void applyTo(final Array a, final double t) {
-        for (int i = 0; i < a.size(); i++) {
+        for ( int i = 0; i < a.size(); i++ ) {
             a.set(i, applyToValue(a.get(i), getValue(a, i)));
         }
     }
 
     protected double getValue(final Array a, final int index) {
         return curveItem.getValue(a, index);
+    }
+
+    public interface CurveWrapper {
+        double getValue(Array a, int i);
     }
 
     static class ArrayWrapper implements CurveWrapper {
@@ -104,7 +101,7 @@ public abstract class CurveDependentStepCondition implements StepCondition<Array
         public double getValue(final Array a, final int i) {
             return values.get(i);
         }
-    };
+    }
 
     static class PayoffWrapper implements CurveWrapper {
         private final Payoff payoff;
@@ -120,5 +117,6 @@ public abstract class CurveDependentStepCondition implements StepCondition<Array
         public double getValue(final Array a, final int i) {
             return payoff.get(a.get(i));
         }
-    };
+    }
+
 }

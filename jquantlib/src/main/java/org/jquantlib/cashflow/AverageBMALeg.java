@@ -58,7 +58,7 @@ import org.jquantlib.time.Schedule;
  * @author John Martin
  */
 public class AverageBMALeg {
-	
+
     private final Schedule schedule;
     private final BMAIndex index;
     private Array notionals;
@@ -79,7 +79,7 @@ public class AverageBMALeg {
         // quantlib behavoir
         gearings = new Array(0);
         spreads = new Array(0);
-  
+
     }
 
     public final AverageBMALeg withNotionals(/* @Real */final double notional) {
@@ -122,7 +122,7 @@ public class AverageBMALeg {
         return this;
     }
 
-    public Leg Leg() /* @ReadOnly */{
+    public Leg Leg() /* @ReadOnly */ {
 
         QL.require(!this.notionals.empty(), "no notional given");
 
@@ -134,41 +134,31 @@ public class AverageBMALeg {
         Date refStart, start, refEnd, end;
         Date paymentDate;
 
-        int n = schedule.size()-1;
-        	
-        for (int i=0; i<n ; i++) {
-        	refStart = schedule.date(i);
-        	start = schedule.date(i);
-        	
-        	refEnd = schedule.date(i+1);
-        	end = schedule.date(i+1);
-        	paymentDate = calendar.adjust(end, paymentAdjustment);
-        	
-        	if (i == 0 && !schedule.isRegular(i+1)) {
-        		refStart = calendar.adjust(end.sub(schedule.tenor()),
-                        				   paymentAdjustment);
-        	}
+        int n = schedule.size() - 1;
 
-        	if (i == n-1 && !schedule.isRegular(i+1))
-        		refEnd = calendar.adjust(start.add(schedule.tenor()),
-                                   		 paymentAdjustment);
-        	
-        	AverageBMACoupon coupon = new AverageBMACoupon(paymentDate,
-        													notionals.get(i) != 0.0 ? notionals.get(i):notionals.last(),
-        													start,
-        													end,
-        													index,
-        													gearings.get(i) != 0.0 ? gearings.get(i) : 1.0,
-        													spreads.get(i) != 0.0 ? spreads.get(i) : 0.0,
-        													refStart,
-        													refEnd,
-        													paymentDayCounter);
-        	
-        	cashflows.add(coupon);       	
-        	
+        for ( int i = 0; i < n; i++ ) {
+            refStart = schedule.date(i);
+            start = schedule.date(i);
+
+            refEnd = schedule.date(i + 1);
+            end = schedule.date(i + 1);
+            paymentDate = calendar.adjust(end, paymentAdjustment);
+
+            if ( i == 0 && !schedule.isRegular(i + 1) ) {
+                refStart = calendar.adjust(end.sub(schedule.tenor()), paymentAdjustment);
+            }
+
+            if ( i == n - 1 && !schedule.isRegular(i + 1) )
+                refEnd = calendar.adjust(start.add(schedule.tenor()), paymentAdjustment);
+
+            AverageBMACoupon coupon = new AverageBMACoupon(paymentDate,
+                    notionals.get(i) != 0.0 ? notionals.get(i) : notionals.last(), start, end, index,
+                    gearings.get(i) != 0.0 ? gearings.get(i) : 1.0, spreads.get(i) != 0.0 ? spreads.get(i) : 0.0,
+                    refStart, refEnd, paymentDayCounter);
+
+            cashflows.add(coupon);
+
         }
-    	
-        
 
         return cashflows;
     }

@@ -22,10 +22,6 @@
 
 package org.jquantlib.time;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.lang.annotation.QualityAssurance;
@@ -34,13 +30,16 @@ import org.jquantlib.lang.annotation.QualityAssurance.Version;
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.time.calendars.NullCalendar;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * Payment schedule
- * 
+ *
  * @author Zahid Hussain
  */
-@QualityAssurance(quality=Quality.Q0_UNFINISHED, version=Version.V097, reviewers="Richard Gomes")
+@QualityAssurance( quality = Quality.Q0_UNFINISHED, version = Version.V097, reviewers = "Richard Gomes" )
 public class Schedule {
 
     //
@@ -54,8 +53,7 @@ public class Schedule {
     private final boolean endOfMonth_;
     private final boolean finalIsRegular_;
     private final List< Date > dates_;
-    private final List<Boolean> isRegular_;
-
+    private final List< Boolean > isRegular_;
 
     //
     // private fields
@@ -66,58 +64,49 @@ public class Schedule {
     private Date firstDate_;
     private Date nextToLastDate_;
 
-
-
     //
     // public methods
     //
 
-    public Schedule(final List<Date> dates) {
-    	this(dates, new NullCalendar(), BusinessDayConvention.Unadjusted);
+    public Schedule(final List< Date > dates) {
+        this(dates, new NullCalendar(), BusinessDayConvention.Unadjusted);
     }
 
-    public Schedule(final List<Date> dates, final Calendar calendar) {
-    	this(dates, calendar, BusinessDayConvention.Unadjusted);
+    public Schedule(final List< Date > dates, final Calendar calendar) {
+        this(dates, calendar, BusinessDayConvention.Unadjusted);
     }
 
-    public Schedule(final List<Date> dates, final Calendar calendar, final BusinessDayConvention convention) {
-    	this.dates_ = dates;
-        this.isRegular_ = new ArrayList<Boolean>(); // TODO: use a data structure backed by primitive types instead
+    public Schedule(final List< Date > dates, final Calendar calendar, final BusinessDayConvention convention) {
+        this.dates_ = dates;
+        this.isRegular_ = new ArrayList< Boolean >(); // TODO: use a data structure backed by primitive types instead
 
-    	this.calendar_ = calendar;
-    	this.convention_ = convention;
+        this.calendar_ = calendar;
+        this.convention_ = convention;
 
-    	//Default values
-    	this.fullInterface_ = false;
-    	this.tenor_ = new Period();
-    	this.terminationDateConvention_ = convention;
-    	this.rule_ = DateGeneration.Rule.Forward;
-    	this.endOfMonth_ = false;
-    	this.finalIsRegular_ = true;
+        //Default values
+        this.fullInterface_ = false;
+        this.tenor_ = new Period();
+        this.terminationDateConvention_ = convention;
+        this.rule_ = DateGeneration.Rule.Forward;
+        this.endOfMonth_ = false;
+        this.finalIsRegular_ = true;
     }
 
     /**
-     * Mirror of C++ {@code Schedule(dates, calendar, convention,
-     * terminationDateConvention, tenor, rule, endOfMonth, isRegular)}
-     * (ql/time/schedule.cpp:53-74). Preserves the meta-info
-     * (tenor, rule, EOM, isRegular per-period) from an existing schedule
-     * while replacing the date vector — used by date-vector "clone" patterns
-     * such as the South-African R2048 bond test where individual dates are
-     * adjusted (e.g. 29-Feb -> 28-Feb) but the schedule's tenor / rule /
+     * Mirror of C++
+     * {@code Schedule(dates, calendar, convention, terminationDateConvention, tenor, rule, endOfMonth, isRegular)}
+     * (ql/time/schedule.cpp:53-74). Preserves the meta-info (tenor, rule, EOM, isRegular per-period) from an existing
+     * schedule while replacing the date vector — used by date-vector "clone" patterns such as the South-African R2048
+     * bond test where individual dates are adjusted (e.g. 29-Feb -> 28-Feb) but the schedule's tenor / rule /
      * regularity metadata should be retained.
      *
      * <p>Phase 5e.5b-CFC-d-93.
      */
-    public Schedule(final List<Date> dates,
-                    final Calendar calendar,
-                    final BusinessDayConvention convention,
-                    final BusinessDayConvention terminationDateConvention,
-                    final Period tenor,
-                    final DateGeneration.Rule rule,
-                    final boolean endOfMonth,
-                    final List<Boolean> isRegular) {
+    public Schedule(final List< Date > dates, final Calendar calendar, final BusinessDayConvention convention,
+            final BusinessDayConvention terminationDateConvention, final Period tenor, final DateGeneration.Rule rule,
+            final boolean endOfMonth, final List< Boolean > isRegular) {
         this.dates_ = dates;
-        this.isRegular_ = (isRegular == null) ? new ArrayList<Boolean>() : new ArrayList<Boolean>(isRegular);
+        this.isRegular_ = (isRegular == null) ? new ArrayList< Boolean >() : new ArrayList< Boolean >(isRegular);
 
         this.calendar_ = calendar;
         this.convention_ = convention;
@@ -128,7 +117,7 @@ public class Schedule {
         // tenor.length() >= 1 Month; we approximate the C++ behaviour by
         // honouring the caller's flag when tenor is non-empty.
         this.tenor_ = (tenor == null) ? new Period() : tenor;
-        this.endOfMonth_ = (this.tenor_.length() == 0) ? false : endOfMonth;
+        this.endOfMonth_ = this.tenor_.length() != 0 && endOfMonth;
 
         this.rule_ = (rule == null) ? DateGeneration.Rule.Forward : rule;
 
@@ -138,42 +127,27 @@ public class Schedule {
         // ActualActual ISMA) can read tenor / rule / isRegular without
         // throwing.
         this.fullInterface_ = (this.tenor_.length() != 0);
-        this.finalIsRegular_ = this.isRegular_.isEmpty()
-                ? true
-                : this.isRegular_.get(this.isRegular_.size() - 1);
+        this.finalIsRegular_ = this.isRegular_.isEmpty() || this.isRegular_.get(this.isRegular_.size() - 1);
 
         // Mirror C++ schedule.cpp:70-73 isRegular size invariant.
-        QL.require(this.isRegular_.isEmpty()
-                || this.isRegular_.size() == dates.size() - 1,
-                "isRegular size (" + this.isRegular_.size()
-                + ") must be zero or equal to the number of dates minus 1 ("
-                + (dates.size() - 1) + ")");
+        QL.require(this.isRegular_.isEmpty() || this.isRegular_.size() == dates.size() - 1,
+                "isRegular size (" + this.isRegular_.size() + ") must be zero or equal to the number of dates minus 1 ("
+                        + (dates.size() - 1) + ")");
     }
 
-    public Schedule(final Date  effectiveDate,
-    				final Date  terminationDate,
-    				final Period  tenor,
-    				final Calendar  calendar,
-    				final BusinessDayConvention convention,
-    				final BusinessDayConvention terminationDateConvention,
-    				final DateGeneration.Rule rule,
-    				final boolean endOfMonth) {
-    	this(effectiveDate, terminationDate, tenor, calendar, convention, terminationDateConvention, rule, endOfMonth, new Date(), new Date());
+    public Schedule(final Date effectiveDate, final Date terminationDate, final Period tenor, final Calendar calendar,
+            final BusinessDayConvention convention, final BusinessDayConvention terminationDateConvention,
+            final DateGeneration.Rule rule, final boolean endOfMonth) {
+        this(effectiveDate, terminationDate, tenor, calendar, convention, terminationDateConvention, rule, endOfMonth,
+                new Date(), new Date());
     }
 
-    public Schedule(final Date  effectiveDate,
-			final Date  terminationDate,
-			final Period  tenor,
-			final Calendar  calendar,
-			final BusinessDayConvention convention,
-			final BusinessDayConvention terminationDateConvention,
-			final DateGeneration.Rule rule,
-			final boolean endOfMonth,
-			final Date firstDate,
-			final Date nextToLastDate) {
+    public Schedule(final Date effectiveDate, final Date terminationDate, final Period tenor, final Calendar calendar,
+            final BusinessDayConvention convention, final BusinessDayConvention terminationDateConvention,
+            final DateGeneration.Rule rule, final boolean endOfMonth, final Date firstDate, final Date nextToLastDate) {
 
-        this.dates_ = new ArrayList<Date>(); // TODO: use a data structure backed by primitive types instead
-        this.isRegular_ = new ArrayList<Boolean>(); // TODO: use a data structure backed by primitive types instead
+        this.dates_ = new ArrayList< Date >(); // TODO: use a data structure backed by primitive types instead
+        this.isRegular_ = new ArrayList< Boolean >(); // TODO: use a data structure backed by primitive types instead
 
         this.fullInterface_ = true;
         this.tenor_ = tenor;
@@ -189,94 +163,81 @@ public class Schedule {
         // sanity checks
         QL.require(effectiveDate != null && !effectiveDate.isNull(), "null effective date"); // TODO: message
         QL.require(terminationDate != null && !terminationDate.isNull(), "null termination date"); // TODO: message
-        QL.require(effectiveDate .lt(terminationDate),
-                   "effective date (" + effectiveDate
-                   + ") later than or equal to termination date ("
-                   + terminationDate + ")"); // TODO: message
+        QL.require(effectiveDate.lt(terminationDate),
+                "effective date (" + effectiveDate + ") later than or equal to termination date (" + terminationDate
+                        + ")"); // TODO: message
 
-        if (tenor.length()==0) {
+        if ( tenor.length() == 0 ) {
             rule_ = DateGeneration.Rule.Zero;
         } else {
-            QL.require(tenor.length() > 0,
-                       "non positive tenor (" + tenor + ") not allowed"); // TODO: message
+            QL.require(tenor.length() > 0, "non positive tenor (" + tenor + ") not allowed"); // TODO: message
         }
 
         if ( firstDate != null && !firstDate.isNull() ) {
-            switch (rule_) {
-              case Backward:
-              case Forward:
-            	  QL.require(firstDate.gt(effectiveDate) &&
-                           firstDate.lt(terminationDate),
-                           "first date (" + firstDate +
-                           ") out of [effective (" + effectiveDate +
-                           "), termination (" + terminationDate +
-                           ")] date range"); // TODO: message
-            	  break;
-              case ThirdWednesday:
-            	  QL.require(IMM.isIMMdate(firstDate, false),
-                             "first date (" + firstDate +
-                             ") is not an IMM date"); // TODO: message
-            	  break;
-              case Zero:
-              case Twentieth:
-              case TwentiethIMM:
-              case OldCDS:
-              case CDS:
-              case CDS2015:
-            	 String errMsg = "first date incompatible with " + rule_ +
-            	 			" date generation rule";
+            switch ( rule_ ) {
+            case Backward:
+            case Forward:
+                QL.require(firstDate.gt(effectiveDate) && firstDate.lt(terminationDate),
+                        "first date (" + firstDate + ") out of [effective (" + effectiveDate + "), termination ("
+                                + terminationDate + ")] date range"); // TODO: message
+                break;
+            case ThirdWednesday:
+                QL.require(IMM.isIMMdate(firstDate, false),
+                        "first date (" + firstDate + ") is not an IMM date"); // TODO: message
+                break;
+            case Zero:
+            case Twentieth:
+            case TwentiethIMM:
+            case OldCDS:
+            case CDS:
+            case CDS2015:
+                String errMsg = "first date incompatible with " + rule_ + " date generation rule";
                 throw new LibraryException(errMsg); // TODO: message
-              default:
-            	errMsg = "unknown Rule (" + rule_ + ")";
+            default:
+                errMsg = "unknown Rule (" + rule_ + ")";
                 throw new LibraryException(errMsg); // TODO: message
             }
         }
         if ( nextToLastDate != null && !nextToLastDate.isNull() ) {
-            switch (rule_) {
-              case Backward:
-              case Forward:
-                QL.require(nextToLastDate.gt(effectiveDate) &&
-                           nextToLastDate.lt(terminationDate),
-                           "next to last date (" + nextToLastDate +
-                           ") out of [effective (" + effectiveDate +
-                           "), termination (" + terminationDate +
-                           ")] date range"); // TODO: message
+            switch ( rule_ ) {
+            case Backward:
+            case Forward:
+                QL.require(nextToLastDate.gt(effectiveDate) && nextToLastDate.lt(terminationDate),
+                        "next to last date (" + nextToLastDate + ") out of [effective (" + effectiveDate
+                                + "), termination (" + terminationDate + ")] date range"); // TODO: message
                 break;
-              case ThirdWednesday:
-                  QL.require(IMM.isIMMdate(nextToLastDate, false),
-                             "first date (" + firstDate +
-                             ") is not an IMM date"); // TODO: message
-              case Zero:
-              case Twentieth:
-              case TwentiethIMM:
-              case OldCDS:
-              case CDS:
-              case CDS2015:
-                String errMsg = "next to last date incompatible with " + rule_ +
-                		" date generation rule";
+            case ThirdWednesday:
+                QL.require(IMM.isIMMdate(nextToLastDate, false),
+                        "first date (" + firstDate + ") is not an IMM date"); // TODO: message
+            case Zero:
+            case Twentieth:
+            case TwentiethIMM:
+            case OldCDS:
+            case CDS:
+            case CDS2015:
+                String errMsg = "next to last date incompatible with " + rule_ + " date generation rule";
                 throw new LibraryException(errMsg); // TODO: message
-              default:
-            	errMsg = "unknown Rule (" + rule_ + ")";
+            default:
+                errMsg = "unknown Rule (" + rule_ + ")";
                 throw new LibraryException(errMsg); // TODO: message
             }
         }
-
 
         // calendar needed for endOfMonth adjustment
         final Calendar nullCalendar = new NullCalendar();
         int periods = 1;
         Date seed = new Date();
         Date exitDate;
-        switch (rule_) {
+        switch ( rule_ ) {
 
-          case Zero:
+        case Zero:
             tenor_ = new Period(0, TimeUnit.Days);
             dates_.add(effectiveDate);
             dates_.add(terminationDate);
-            isRegular_.add(new Boolean(true));
+            isRegular_.add(Boolean.TRUE);
             break;
 
-          case Backward:
+        case Backward:
 
             dates_.add(terminationDate);
 
@@ -284,10 +245,10 @@ public class Schedule {
             if ( nextToLastDate != null && !nextToLastDate.isNull() ) {
                 dates_.add(0, nextToLastDate);
                 final Date temp = nullCalendar.advance(seed, tenor_.mul(periods).negative(), convention, endOfMonth);
-                if (temp.ne(nextToLastDate)) {
-                    isRegular_.add(0, new Boolean(false));
+                if ( temp.ne(nextToLastDate) ) {
+                    isRegular_.add(0, Boolean.FALSE);
                 } else {
-                    isRegular_.add(0, new Boolean(true));
+                    isRegular_.add(0, Boolean.TRUE);
                 }
                 seed = nextToLastDate.clone();
             }
@@ -297,9 +258,9 @@ public class Schedule {
                 exitDate = firstDate.clone();
             }
 
-            while (true) {
+            while ( true ) {
                 final Date temp = nullCalendar.advance(seed, tenor_.mul(periods).negative(), convention, endOfMonth);
-                if (temp .lt(exitDate)) {
+                if ( temp.lt(exitDate) ) {
                     break;
                 } else {
                     // Skip dates that would result in duplicates after BDC
@@ -309,10 +270,9 @@ public class Schedule {
                     // per calendar day; consecutive non-business days then
                     // collapse onto the same adjusted date during post-loop
                     // BDC application, leaving silent duplicates.
-                    if (calendar.adjust(dates_.get(0), convention).ne(
-                            calendar.adjust(temp, convention))) {
+                    if ( calendar.adjust(dates_.get(0), convention).ne(calendar.adjust(temp, convention)) ) {
                         dates_.add(0, temp);
-                        isRegular_.add(0, new Boolean(true));
+                        isRegular_.add(0, Boolean.TRUE);
                     }
                     ++periods;
                 }
@@ -327,34 +287,31 @@ public class Schedule {
             // mutation that previously caused first-date Preceding-snaps on
             // EOM-flagged backward schedules (e.g. 30-Sep-2017 -> 29-Sep-2017
             // under USGovBond when the seed was 30-Sep-2022).
-            if (calendar.adjust(dates_.get(0),convention).ne(
-                calendar.adjust(effectiveDate, convention))) {
+            if ( calendar.adjust(dates_.get(0), convention).ne(calendar.adjust(effectiveDate, convention)) ) {
                 dates_.add(0, effectiveDate);
-                isRegular_.add(0, new Boolean(false));
+                isRegular_.add(0, Boolean.FALSE);
             }
             break;
 
-          case Twentieth:
-          case TwentiethIMM:
-          case ThirdWednesday:
-          case ThirdWednesdayInclusive:
-          case OldCDS:
-          case CDS:
-          case CDS2015:
+        case Twentieth:
+        case TwentiethIMM:
+        case ThirdWednesday:
+        case ThirdWednesdayInclusive:
+        case OldCDS:
+        case CDS:
+        case CDS2015:
             QL.require(!endOfMonth,
-                       "endOfMonth convention incompatible with " + rule_ +
-                       " date generation rule"); // TODO: message
-          // fall through
-          case Forward:
+                    "endOfMonth convention incompatible with " + rule_ + " date generation rule"); // TODO: message
+            // fall through
+        case Forward:
 
             // Mirrors C++ schedule.cpp lines 263-272: for CDS / CDS2015 rules,
             // the schedule may begin with the previous 20th of the month.
-            if (rule_ == DateGeneration.Rule.CDS
-                    || rule_ == DateGeneration.Rule.CDS2015) {
+            if ( rule_ == DateGeneration.Rule.CDS || rule_ == DateGeneration.Rule.CDS2015 ) {
                 final Date prev20th = previousTwentieth(effectiveDate, rule_);
-                if (calendar.adjust(prev20th, convention).gt(effectiveDate)) {
+                if ( calendar.adjust(prev20th, convention).gt(effectiveDate) ) {
                     dates_.add(prev20th.sub(new Period(3, TimeUnit.Months)));
-                    isRegular_.add(new Boolean(true));
+                    isRegular_.add(Boolean.TRUE);
                 }
                 dates_.add(prev20th);
             } else {
@@ -363,33 +320,30 @@ public class Schedule {
 
             seed = dates_.get(dates_.size() - 1).clone();
 
-            if (firstDate != null && !firstDate.isNull() ) {
+            if ( firstDate != null && !firstDate.isNull() ) {
                 dates_.add(firstDate);
                 final Date temp = nullCalendar.advance(seed, tenor_.mul(periods), convention, endOfMonth);
-                if (temp.ne(firstDate) ) {
-                    isRegular_.add(new Boolean(false));
+                if ( temp.ne(firstDate) ) {
+                    isRegular_.add(Boolean.FALSE);
                 } else {
-                    isRegular_.add(new Boolean(true));
+                    isRegular_.add(Boolean.TRUE);
                 }
                 seed = firstDate.clone();
-            } else if (rule_ == DateGeneration.Rule.Twentieth ||
-                       rule_ == DateGeneration.Rule.TwentiethIMM ||
-                       rule_ == DateGeneration.Rule.OldCDS ||
-                       rule_ == DateGeneration.Rule.CDS ||
-                       rule_ == DateGeneration.Rule.CDS2015) {
+            } else if ( rule_ == DateGeneration.Rule.Twentieth || rule_ == DateGeneration.Rule.TwentiethIMM
+                    || rule_ == DateGeneration.Rule.OldCDS || rule_ == DateGeneration.Rule.CDS
+                    || rule_ == DateGeneration.Rule.CDS2015 ) {
                 Date next20th = nextTwentieth(effectiveDate, rule_);
-                if (rule_ == DateGeneration.Rule.OldCDS) {
+                if ( rule_ == DateGeneration.Rule.OldCDS ) {
                     // distance rule enforced in natural days
                     final long stubDays = 30L;
-                    if (next20th.sub(effectiveDate) < stubDays) {
+                    if ( next20th.sub(effectiveDate) < stubDays ) {
                         // +1 will skip this one and get the next
                         next20th = nextTwentieth(next20th.add(1), rule_);
                     }
                 }
-                if (next20th.ne(effectiveDate)) {
+                if ( next20th.ne(effectiveDate) ) {
                     dates_.add(next20th);
-                    isRegular_.add(rule_ == DateGeneration.Rule.CDS
-                            || rule_ == DateGeneration.Rule.CDS2015);
+                    isRegular_.add(rule_ == DateGeneration.Rule.CDS || rule_ == DateGeneration.Rule.CDS2015);
                     seed = next20th.clone();
                 }
             }
@@ -399,7 +353,7 @@ public class Schedule {
                 exitDate = nextToLastDate.clone();
             }
 
-            while (true) {
+            while ( true ) {
                 final Date temp = nullCalendar.advance(seed, tenor_.mul(periods), convention, endOfMonth);
                 if ( temp.gt(exitDate) ) {
                     break;
@@ -407,10 +361,10 @@ public class Schedule {
                     // Skip dates that would result in duplicates after BDC
                     // adjustment (mirrors C++ schedule.cpp:326-330 dedup
                     // check inside the forward loop).
-                    if (calendar.adjust(dates_.get(dates_.size() - 1), convention).ne(
-                            calendar.adjust(temp, convention))) {
+                    if ( calendar.adjust(dates_.get(dates_.size() - 1), convention)
+                            .ne(calendar.adjust(temp, convention)) ) {
                         dates_.add(temp);
-                        isRegular_.add(new Boolean(true));
+                        isRegular_.add(Boolean.TRUE);
                     }
                     ++periods;
                 }
@@ -422,13 +376,11 @@ public class Schedule {
             // {@code endOfMonth && calendar.isEndOfMonth(seed)} as the prior
             // Java impl did). Interior EOM snapping happens in the unified
             // post-loop adjustment block. Phase 5e.5b-CFC-d-137.
-            if (calendar.adjust(dates_.get(dates_.size()-1),terminationDateConvention).ne(
-                calendar.adjust(terminationDate, terminationDateConvention)))
-                if (rule_ == DateGeneration.Rule.Twentieth ||
-                    rule_ == DateGeneration.Rule.TwentiethIMM ||
-                    rule_ == DateGeneration.Rule.OldCDS ||
-                    rule_ == DateGeneration.Rule.CDS ||
-                    rule_ == DateGeneration.Rule.CDS2015) {
+            if ( calendar.adjust(dates_.get(dates_.size() - 1), terminationDateConvention)
+                    .ne(calendar.adjust(terminationDate, terminationDateConvention)) )
+                if ( rule_ == DateGeneration.Rule.Twentieth || rule_ == DateGeneration.Rule.TwentiethIMM
+                        || rule_ == DateGeneration.Rule.OldCDS || rule_ == DateGeneration.Rule.CDS
+                        || rule_ == DateGeneration.Rule.CDS2015 ) {
                     dates_.add(nextTwentieth(terminationDate, rule_));
                     isRegular_.add(Boolean.valueOf(true));
                 } else {
@@ -438,31 +390,26 @@ public class Schedule {
 
             break;
 
-          default:
-        	final String errMsg = "unknown Rule (" + rule_ + ")";
+        default:
+            final String errMsg = "unknown Rule (" + rule_ + ")";
             throw new LibraryException(errMsg); // TODO: message
         }
 
         // adjustments
-        if (rule_== DateGeneration.Rule.ThirdWednesday) {
-            for (int i=1; i<dates_.size()-1; ++i) {
-                dates_.set(i, Date.nthWeekday(3, Weekday.Wednesday,
-                                             dates_.get(i).month(),
-                                             dates_.get(i).year()));
+        if ( rule_ == DateGeneration.Rule.ThirdWednesday ) {
+            for ( int i = 1; i < dates_.size() - 1; ++i ) {
+                dates_.set(i, Date.nthWeekday(3, Weekday.Wednesday, dates_.get(i).month(), dates_.get(i).year()));
             }
-        } else if (rule_ == DateGeneration.Rule.ThirdWednesdayInclusive) {
+        } else if ( rule_ == DateGeneration.Rule.ThirdWednesdayInclusive ) {
             // Mirrors C++ schedule.cpp:362-364 — adjust ALL dates (including
             // first and last) to the third Wednesday of their month.
-            for (int i = 0; i < dates_.size(); ++i) {
-                dates_.set(i, Date.nthWeekday(3, Weekday.Wednesday,
-                                             dates_.get(i).month(),
-                                             dates_.get(i).year()));
+            for ( int i = 0; i < dates_.size(); ++i ) {
+                dates_.set(i, Date.nthWeekday(3, Weekday.Wednesday, dates_.get(i).month(), dates_.get(i).year()));
             }
         }
 
         // first date not adjusted for OldCDS schedules — mirrors C++ schedule.cpp:367
-        if (convention != BusinessDayConvention.Unadjusted
-                && rule_ != DateGeneration.Rule.OldCDS) {
+        if ( convention != BusinessDayConvention.Unadjusted && rule_ != DateGeneration.Rule.OldCDS ) {
             dates_.set(0, calendar.adjust(dates_.get(0), convention));
         }
 
@@ -473,11 +420,9 @@ public class Schedule {
         // (moved BEFORE the interior-date adjustment block to mirror the
         //  ordering of C++ schedule.cpp:374-388, where the EOM interior
         //  adjustment is the last per-date pass.)
-        if (terminationDateConvention != BusinessDayConvention.Unadjusted
-                && rule_ != DateGeneration.Rule.CDS
-                && rule_ != DateGeneration.Rule.CDS2015) {
-            dates_.set(dates_.size()-1, calendar.adjust(dates_.get(dates_.size()-1),
-                                                    terminationDateConvention));
+        if ( terminationDateConvention != BusinessDayConvention.Unadjusted && rule_ != DateGeneration.Rule.CDS
+                && rule_ != DateGeneration.Rule.CDS2015 ) {
+            dates_.set(dates_.size() - 1, calendar.adjust(dates_.get(dates_.size() - 1), terminationDateConvention));
         }
 
         // Interior-date adjustment — mirrors C++ schedule.cpp:381-388.
@@ -489,137 +434,177 @@ public class Schedule {
         // (after mutating {@code convention=Preceding} when EOM held),
         // which both mis-snapped the first/last dates and skipped the
         // end-of-month rollover. Phase 5e.5b-CFC-d-137.
-        if (endOfMonth && seed != null && !seed.isNull() && calendar.isEndOfMonth(seed)) {
-            for (int i = 1; i < dates_.size() - 1; ++i) {
+        if ( endOfMonth && seed != null && !seed.isNull() && calendar.isEndOfMonth(seed) ) {
+            for ( int i = 1; i < dates_.size() - 1; ++i ) {
                 dates_.set(i, calendar.adjust(Date.endOfMonth(dates_.get(i)), convention));
             }
         } else {
-            for (int i = 1; i < dates_.size() - 1; ++i) {
+            for ( int i = 1; i < dates_.size() - 1; ++i ) {
                 dates_.set(i, calendar.adjust(dates_.get(i), convention));
             }
         }
     }
 
+    /**
+     * Returns the date on or after {@code d} that is the 20th of the month and obeys the given date-generation
+     * {@code rule} if it is relevant. Mirrors the C++ free function
+     * {@code QuantLib::nextTwentieth(Date, DateGeneration::Rule)} declared in {@code ql/time/schedule.cpp} (anonymous
+     * namespace) and exposed for parity with the public C++ {@code previousTwentieth} declaration.
+     */
+    public static Date nextTwentieth(final Date d, final DateGeneration.Rule rule) {
+        final Date result = new Date(20, d.month(), d.year());
+        if ( result.lt(d) ) {
+            result.addAssign(new Period(1, TimeUnit.Months)); //result +=1*Months
+        }
+        if ( rule == DateGeneration.Rule.TwentiethIMM || rule == DateGeneration.Rule.OldCDS
+                || rule == DateGeneration.Rule.CDS || rule == DateGeneration.Rule.CDS2015 ) {
+            final Month m = result.month();
+            final int mVal = m.value();
+            if ( mVal % 3 != 0 ) { // not a main IMM month
+                final int skip = 3 - mVal % 3;
+                result.addAssign(new Period(skip, TimeUnit.Months));
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Returns the date on or before {@code d} that is the 20th of the month and obeys the given date-generation
+     * {@code rule} if it is relevant. Mirrors C++ {@code QuantLib::previousTwentieth(Date, DateGeneration::Rule)}
+     * declared in {@code ql/time/schedule.hpp} (helper for CDS/CDS2015/OldCDS schedule construction).
+     */
+    public static Date previousTwentieth(final Date d, final DateGeneration.Rule rule) {
+        final Date result = new Date(20, d.month(), d.year());
+        if ( result.gt(d) ) {
+            result.subAssign(new Period(1, TimeUnit.Months));
+        }
+        if ( rule == DateGeneration.Rule.TwentiethIMM || rule == DateGeneration.Rule.OldCDS
+                || rule == DateGeneration.Rule.CDS || rule == DateGeneration.Rule.CDS2015 ) {
+            final Month m = result.month();
+            final int mVal = m.value();
+            if ( mVal % 3 != 0 ) { // not a main IMM month
+                final int skip = mVal % 3;
+                result.subAssign(new Period(skip, TimeUnit.Months));
+            }
+        }
+        return result;
+    }
+
     // Date access
     public int size() /* @ReadOnly */ {
-    	return dates_.size();
+        return dates_.size();
     }
 
     public final Date at(final int i) /* @ReadOnly */ {
-    	return dates_.get(i);
+        return dates_.get(i);
     }
 
     public final Date date(final int i) /* @ReadOnly */ {
-    	return dates_.get(i);
+        return dates_.get(i);
     }
 
-
-    public Date previousDate(final Date  refDate) /* @ReadOnly */ {
+    public Date previousDate(final Date refDate) /* @ReadOnly */ {
         final int index = Date.lowerBound(dates_, refDate);
-    	if ( index > 0 )
-            return dates_.get(index-1).clone();
+        if ( index > 0 )
+            return dates_.get(index - 1).clone();
         else
             return new Date();
     }
 
-    public Date nextDate(final Date  refDate) /* @ReadOnly */ {
-    	final int index = Date.lowerBound(dates_, refDate);
-    	if ( index < dates_.size() )
+    public Date nextDate(final Date refDate) /* @ReadOnly */ {
+        final int index = Date.lowerBound(dates_, refDate);
+        if ( index < dates_.size() )
             return dates_.get(index).clone();
         else
             return new Date();
     }
 
-    public List<Date> dates() /* @ReadOnly */ {
+    public List< Date > dates() /* @ReadOnly */ {
         return dates_;
     }
 
     public boolean isRegular(final int i) /* @ReadOnly */ {
-       QL.require(hasIsRegular(), "full interface (isRegular) not available"); // mirrors C++ schedule.cpp
-       QL.require(i<=isRegular_.size() && i>0,
-                       "index (" + i + ") must be in [1, " +
-                       isRegular_.size() +"]"); // TODO: message
-       return isRegular_.get(i-1);
+        QL.require(hasIsRegular(), "full interface (isRegular) not available"); // mirrors C++ schedule.cpp
+        QL.require(i <= isRegular_.size() && i > 0,
+                "index (" + i + ") must be in [1, " + isRegular_.size() + "]"); // TODO: message
+        return isRegular_.get(i - 1);
     }
 
-    /** Mirror of C++ {@code Schedule::isRegular()} (ql/time/schedule.hpp:170).
-     *  Returns the full per-period regularity vector — used by the
-     *  metadata-preserving {@link #Schedule(List, Calendar, BusinessDayConvention,
-     *  BusinessDayConvention, Period, DateGeneration.Rule, boolean, List)}
-     *  ctor when callers (e.g. R2048 South-African bond test) need to clone
-     *  a schedule with adjusted dates. Phase 5e.5b-CFC-d-93. */
-    public List<Boolean> isRegular() /* @ReadOnly */ {
+    /**
+     * Mirror of C++ {@code Schedule::isRegular()} (ql/time/schedule.hpp:170). Returns the full per-period regularity
+     * vector — used by the metadata-preserving
+     * {@link #Schedule(List, Calendar, BusinessDayConvention, BusinessDayConvention, Period, DateGeneration.Rule,
+     * boolean, List)} ctor when callers (e.g. R2048 South-African bond test) need to clone a schedule with adjusted
+     * dates. Phase 5e.5b-CFC-d-93.
+     */
+    public List< Boolean > isRegular() /* @ReadOnly */ {
         QL.require(hasIsRegular(), "full interface (isRegular) not available");
         return isRegular_;
     }
 
     /**
-     * Whether this schedule was constructed with a tenor / rule / EOM
-     * meta-information block. Mirrors C++ {@code Schedule::hasTenor()}
-     * (ql/time/schedule.hpp:88, schedule.hpp:206-208). The C++ accessor
-     * tests {@code static_cast<bool>(tenor_)}; the Java port's
-     * {@code fullInterface_} flag is set true iff the rule-based
-     * constructor was used (i.e. tenor was supplied), so the two are
-     * equivalent for our purposes.
+     * Whether this schedule was constructed with a tenor / rule / EOM meta-information block. Mirrors C++
+     * {@code Schedule::hasTenor()} (ql/time/schedule.hpp:88, schedule.hpp:206-208). The C++ accessor tests
+     * {@code static_cast<bool>(tenor_)}; the Java port's {@code fullInterface_} flag is set true iff the rule-based
+     * constructor was used (i.e. tenor was supplied), so the two are equivalent for our purposes.
      */
     public boolean hasTenor() /* @ReadOnly */ {
         return fullInterface_;
     }
 
+    // Other inspectors
+
     /**
-     * Whether per-period regularity flags are available. Mirrors C++
-     * {@code Schedule::hasIsRegular()} (ql/time/schedule.hpp:82). Returns
-     * true iff the {@link #isRegular(int)} accessor can be invoked
-     * without throwing.
+     * Whether per-period regularity flags are available. Mirrors C++ {@code Schedule::hasIsRegular()}
+     * (ql/time/schedule.hpp:82). Returns true iff the {@link #isRegular(int)} accessor can be invoked without
+     * throwing.
      */
     public boolean hasIsRegular() /* @ReadOnly */ {
         return fullInterface_ && !isRegular_.isEmpty();
     }
 
     /**
-     * Whether the schedule was built with the full meta-information
-     * interface (rule-based constructor) versus the date-vector
-     * constructor. Exposes the existing {@code fullInterface_} field so
-     * callers (e.g. {@link org.jquantlib.cashflow.FixedRateLeg},
-     * {@link org.jquantlib.instruments.bonds.FixedRateBond}) can branch
-     * on the C++ {@code hasTenor()} / {@code hasIsRegular()} fall-back
-     * logic without catching {@link
-     * org.jquantlib.lang.exceptions.LibraryException}.
+     * Whether the schedule was built with the full meta-information interface (rule-based constructor) versus the
+     * date-vector constructor. Exposes the existing {@code fullInterface_} field so callers (e.g.
+     * {@link org.jquantlib.cashflow.FixedRateLeg}, {@link org.jquantlib.instruments.bonds.FixedRateBond}) can branch on
+     * the C++ {@code hasTenor()} / {@code hasIsRegular()} fall-back logic without catching
+     * {@link org.jquantlib.lang.exceptions.LibraryException}.
      */
     public boolean fullInterface() /* @ReadOnly */ {
         return fullInterface_;
     }
 
-    // Other inspectors
-
     public boolean empty() /* @ReadOnly */ {
-        return  dates_.isEmpty();
+        return dates_.isEmpty();
     }
 
     public final Calendar calendar() /* @ReadOnly */ {
         return calendar_;
     }
 
-    public final Date  startDate() /* @ReadOnly */ {
-         return dates_.isEmpty() ? null :  dates_.get(0);
+    public final Date startDate() /* @ReadOnly */ {
+        return dates_.isEmpty() ? null : dates_.get(0);
     }
 
-    public final Date  endDate() /* @ReadOnly */ {
-        return dates_.isEmpty() ? null : dates_.get(dates_.size()-1);
+    public final Date endDate() /* @ReadOnly */ {
+        return dates_.isEmpty() ? null : dates_.get(dates_.size() - 1);
     }
 
-    public final Period  tenor() /* @ReadOnly */ {
+    public final Period tenor() /* @ReadOnly */ {
         QL.require(hasTenor(), "full interface (tenor) not available"); // mirrors C++ schedule.hpp:211-212
         return tenor_;
     }
+
     public BusinessDayConvention businessDayConvention() /* @ReadOnly */ {
         return convention_;
     }
 
     public BusinessDayConvention terminationDateBusinessDayConvention() /* @ReadOnly */ {
         QL.require(fullInterface_, "full interface not available"); // TODO: message
-    	return terminationDateConvention_;
+        return terminationDateConvention_;
     }
+
+    // Iterators
 
     public DateGeneration.Rule rule() /* @ReadOnly */ {
         QL.require(fullInterface_, "full interface not available"); // TODO: message
@@ -631,109 +616,52 @@ public class Schedule {
         return endOfMonth_;
     }
 
-    // Iterators
-
     @Deprecated
     //FIXME: this method will probably disappear as begin() and end() does not make sense withou pointers
-    public Iterator<Date> begin() /* @ReadOnly */ {
+    public Iterator< Date > begin() /* @ReadOnly */ {
         throw new UnsupportedOperationException();
     }
 
     @Deprecated
     //FIXME: this method will probably disappear as begin() and end() does not make sense withou pointers
-    public Iterator<Date> end() /* @ReadOnly */ {
+    public Iterator< Date > end() /* @ReadOnly */ {
         throw new UnsupportedOperationException();
     }
+
+    //TODO :: operator Schedule() const;
 
     public int lowerBound() /* @ReadOnly */ {
-        return lowerBound( new Date() );
-     }
+        return lowerBound(new Date());
+    }
 
-    public int lowerBound(final Date refDate) /* @ReadOnly */{
+    public int lowerBound(final Date refDate) /* @ReadOnly */ {
         final Date d = (refDate.isNull() ? new Settings().evaluationDate() : refDate);
         return Date.lowerBound(dates_, d.clone());
     }
 
-
-
-    //TODO :: operator Schedule() const;
-
-
     /**
-     * Returns the date on or after {@code d} that is the 20th of the month and
-     * obeys the given date-generation {@code rule} if it is relevant. Mirrors
-     * the C++ free function {@code QuantLib::nextTwentieth(Date,
-     * DateGeneration::Rule)} declared in {@code ql/time/schedule.cpp} (anonymous
-     * namespace) and exposed for parity with the public C++
-     * {@code previousTwentieth} declaration.
-     */
-    public static Date nextTwentieth(final Date d, final DateGeneration.Rule rule) {
-        final Date result = new Date(20, d.month(), d.year());
-        if (result.lt(d) ) {
-            result.addAssign(new Period(1, TimeUnit.Months)); //result +=1*Months
-        }
-        if (rule == DateGeneration.Rule.TwentiethIMM
-                || rule == DateGeneration.Rule.OldCDS
-                || rule == DateGeneration.Rule.CDS
-                || rule == DateGeneration.Rule.CDS2015) {
-            final Month m = result.month();
-            final int mVal = m.value();
-            if (mVal % 3 != 0) { // not a main IMM month
-                final int skip = 3 - mVal % 3;
-            	result.addAssign(new Period(skip, TimeUnit.Months));
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Returns the date on or before {@code d} that is the 20th of the month and
-     * obeys the given date-generation {@code rule} if it is relevant. Mirrors
-     * C++ {@code QuantLib::previousTwentieth(Date, DateGeneration::Rule)}
-     * declared in {@code ql/time/schedule.hpp} (helper for CDS/CDS2015/OldCDS
-     * schedule construction).
-     */
-    public static Date previousTwentieth(final Date d, final DateGeneration.Rule rule) {
-        final Date result = new Date(20, d.month(), d.year());
-        if (result.gt(d)) {
-            result.subAssign(new Period(1, TimeUnit.Months));
-        }
-        if (rule == DateGeneration.Rule.TwentiethIMM
-                || rule == DateGeneration.Rule.OldCDS
-                || rule == DateGeneration.Rule.CDS
-                || rule == DateGeneration.Rule.CDS2015) {
-            final Month m = result.month();
-            final int mVal = m.value();
-            if (mVal % 3 != 0) { // not a main IMM month
-                final int skip = mVal % 3;
-                result.subAssign(new Period(skip, TimeUnit.Months));
-            }
-        }
-        return result;
-    }
-
-
-    /**
-     * Standard C++ Library Reference lower_bound Finds the position of the first element in an ordered range that has a value greater than or equivalent to a specified value, where the ordering criterion may be specified by a binary predicate.
+     * Standard C++ Library Reference lower_bound Finds the position of the first element in an ordered range that has a
+     * value greater than or equivalent to a specified value, where the ordering criterion may be specified by a binary
+     * predicate.
      *
      * @see http://www.sgi.com/tech/stl/lower_bound.html
      */
     // FIXME: http://bugs.jquantlib.org/view.php?id=67
-    private Iterator<Date> std_lower_bound(final Date date) {
+    private Iterator< Date > std_lower_bound(final Date date) {
 
-        final List<Date> ldates = new ArrayList<Date>();
+        final List< Date > ldates = new ArrayList< Date >();
 
-        if (dates_.size() > 0) {
+        if ( dates_.size() > 0 ) {
             int index = -1;
-            for (int i = 0; i < dates_.size(); i++) {
+            for ( int i = 0; i < dates_.size(); i++ ) {
                 final Date d = dates_.get(i);
-                if (d.equals(date)) {
+                if ( d.equals(date) ) {
                     index = i;
                     break;
                 }
             }
-            if (index > 0) {
-                for (int i = index; i < dates_.size(); i++) {
+            if ( index > 0 ) {
+                for ( int i = index; i < dates_.size(); i++ ) {
                     ldates.add(dates_.get(i));
                 }
                 return ldates.iterator();
@@ -742,7 +670,7 @@ public class Schedule {
         return ldates.iterator();
     }
 
-    public Iterator<Date> getDatesAfter(final Date date) {
-    	return std_lower_bound(date);
+    public Iterator< Date > getDatesAfter(final Date date) {
+        return std_lower_bound(date);
     }
 }

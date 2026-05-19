@@ -53,37 +53,33 @@ import org.jquantlib.time.calendars.Japan;
  * <p>
  * LIBOR fixed by BBA.
  *
- * @see <a href="http://www.bba.org.uk/bba/jsp/polopoly.jsp?d=225&a=1414">http://www.bba.org.uk/bba/jsp/polopoly.jsp?d=225&a=1414</a>
+ * @see <a
+ * href="http://www.bba.org.uk/bba/jsp/polopoly.jsp?d=225&a=1414">http://www.bba.org.uk/bba/jsp/polopoly.jsp?d=225&a=1414</a>
  */
 public class JPYLibor extends Libor {
 
-	public JPYLibor(final Period tenor) {
-		this(tenor, new Handle<YieldTermStructure>(
-						new AbstractYieldTermStructure() {
-							@Override
-							protected double discountImpl(final double t) {
-								throw new UnsupportedOperationException();
-							}
-							@Override
-							public Date maxDate() {
-								throw new UnsupportedOperationException();
-							}
-						}
-				));
-	}
+    public JPYLibor(final Period tenor) {
+        this(tenor, new Handle< YieldTermStructure >(new AbstractYieldTermStructure() {
+            @Override
+            protected double discountImpl(final double t) {
+                throw new UnsupportedOperationException();
+            }
 
-	public JPYLibor(final Period tenor,
-			final Handle<YieldTermStructure> h) {
-		// align(indexes.ibor): match C++ v1.42.1 jpylibor.hpp settlementDays=2
-		// (was 0). Per ICE BBA spec, JPY LIBOR is fixed in London with 2-day
-		// value-date convention; the previous Java port's 0 caused
-		// fixing/value/maturity-date misalignment, propagating to swap rate
-		// helpers in PiecewiseYieldCurve and triggering bootstrap failure
-		// (testJpyLibor: fairRate exploded to ~2^52).
-		super("JPYLibor", tenor, 2,
-				new JPYCurrency(),
-				new Japan(),
-				new Actual360(), h);
-	}
+            @Override
+            public Date maxDate() {
+                throw new UnsupportedOperationException();
+            }
+        }));
+    }
+
+    public JPYLibor(final Period tenor, final Handle< YieldTermStructure > h) {
+        // align(indexes.ibor): match C++ v1.42.1 jpylibor.hpp settlementDays=2
+        // (was 0). Per ICE BBA spec, JPY LIBOR is fixed in London with 2-day
+        // value-date convention; the previous Java port's 0 caused
+        // fixing/value/maturity-date misalignment, propagating to swap rate
+        // helpers in PiecewiseYieldCurve and triggering bootstrap failure
+        // (testJpyLibor: fairRate exploded to ~2^52).
+        super("JPYLibor", tenor, 2, new JPYCurrency(), new Japan(), new Actual360(), h);
+    }
 
 }

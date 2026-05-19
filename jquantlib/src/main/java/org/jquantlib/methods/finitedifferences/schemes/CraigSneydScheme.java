@@ -29,36 +29,29 @@ import org.jquantlib.methods.finitedifferences.utilities.FdmBoundaryConditionSet
 /**
  * Craig-Sneyd operator-splitting ADI scheme.
  * <p>
- * Java port of v1.42.1
- * {@code ql/methods/finitedifferences/schemes/craigsneydscheme.{hpp,cpp}}.
+ * Java port of v1.42.1 {@code ql/methods/finitedifferences/schemes/craigsneydscheme.{hpp,cpp}}.
  * <p>
- * The scheme is a predictor-corrector ADI method. A predictor explicit step
- * is followed by implicit per-direction solves. A corrector then applies
- * the mixed part (with weight {@code mu}) and repeats the implicit sweeps.
+ * The scheme is a predictor-corrector ADI method. A predictor explicit step is followed by implicit per-direction
+ * solves. A corrector then applies the mixed part (with weight {@code mu}) and repeats the implicit sweeps.
  *
  * @author Phase 2l Track C.3 port
  */
 public class CraigSneydScheme {
 
-    /** Time step (NaN until {@link #setStep} is called). */
-    protected double dt;
-
     protected final double theta;
     protected final double mu;
     protected final FdmLinearOpComposite map;
     protected final BoundaryConditionSchemeHelper bcSet;
+    /** Time step (NaN until {@link #setStep} is called). */
+    protected double dt;
 
     /** Constructor with empty boundary-condition set (mirrors C++ default arg). */
-    public CraigSneydScheme(final double theta,
-                            final double mu,
-                            final FdmLinearOpComposite map) {
+    public CraigSneydScheme(final double theta, final double mu, final FdmLinearOpComposite map) {
         this(theta, mu, map, new FdmBoundaryConditionSet());
     }
 
-    public CraigSneydScheme(final double theta,
-                            final double mu,
-                            final FdmLinearOpComposite map,
-                            final FdmBoundaryConditionSet bcSet) {
+    public CraigSneydScheme(final double theta, final double mu, final FdmLinearOpComposite map,
+            final FdmBoundaryConditionSet bcSet) {
         this.dt = Double.NaN;
         this.theta = theta;
         this.mu = mu;
@@ -91,7 +84,7 @@ public class CraigSneydScheme {
         final Array y0 = y.clone();
 
         // Implicit per-direction sweep on predictor
-        for (int i = 0; i < map.size(); ++i) {
+        for ( int i = 0; i < map.size(); ++i ) {
             final Array rhs = y.sub(map.applyDirection(i, a).mulAssign(theta * dt));
             y = map.solveSplitting(i, rhs, -theta * dt);
         }
@@ -102,7 +95,7 @@ public class CraigSneydScheme {
         bcSet.applyAfterApplying(yt);
 
         // Implicit per-direction sweep on corrector
-        for (int i = 0; i < map.size(); ++i) {
+        for ( int i = 0; i < map.size(); ++i ) {
             final Array rhs = yt.sub(map.applyDirection(i, a).mulAssign(theta * dt));
             yt = map.solveSplitting(i, rhs, -theta * dt);
         }

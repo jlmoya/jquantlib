@@ -32,30 +32,26 @@ import org.jquantlib.methods.montecarlo.ParametricExercise;
  * Parametric exercise strategy for callable market-model products.
  *
  * <p>Java port of {@code MarketModelParametricExercise}
- * (ql/models/marketmodels/callability/marketmodelparametricexercise.hpp
- * v1.42.1).
+ * (ql/models/marketmodels/callability/marketmodelparametricexercise.hpp v1.42.1).
  *
  * <p>The C++ class derives from both {@code MarketModelNodeDataProvider} and
- * {@code ParametricExercise}; Java uses interface multiple-inheritance with the
- * same combination. Concrete implementations supply both the node data
- * (state-variable values) and the parametric exercise rule.
- *
- * @see "ql/models/marketmodels/callability/marketmodelparametricexercise.hpp" v1.42.1
+ * {@code ParametricExercise}; Java uses interface multiple-inheritance with the same combination. Concrete
+ * implementations supply both the node data (state-variable values) and the parametric exercise rule.
  *
  * @author Jose Moya
+ * @see "ql/models/marketmodels/callability/marketmodelparametricexercise.hpp" v1.42.1
  */
-public interface MarketModelParametricExercise
-        extends MarketModelNodeDataProvider, ParametricExercise {
+public interface MarketModelParametricExercise extends MarketModelNodeDataProvider, ParametricExercise {
 
     /**
-     * Returns a newly-allocated copy of this parametric exercise.
-     * Mirrors C++ {@code std::unique_ptr<MarketModelParametricExercise> clone()}.
+     * Returns a newly-allocated copy of this parametric exercise. Mirrors C++
+     * {@code std::unique_ptr<MarketModelParametricExercise> clone()}.
      */
     MarketModelParametricExercise clone();
 
     /**
-     * Default implementation returns {@link ParametricExercise#numberOfVariables()},
-     * matching C++ {@code numberOfData() = numberOfVariables()}.
+     * Default implementation returns {@link ParametricExercise#numberOfVariables()}, matching C++
+     * {@code numberOfData() = numberOfVariables()}.
      */
     @Override
     default int[] numberOfData() {

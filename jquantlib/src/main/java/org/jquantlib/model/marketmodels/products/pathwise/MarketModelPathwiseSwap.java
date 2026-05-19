@@ -26,29 +26,27 @@
 
 package org.jquantlib.model.marketmodels.products.pathwise;
 
-import java.util.Arrays;
-
 import org.jquantlib.QL;
 import org.jquantlib.model.marketmodels.CurveState;
 import org.jquantlib.model.marketmodels.EvolutionDescription;
 import org.jquantlib.model.marketmodels.MarketModelPathwiseMultiProduct;
 import org.jquantlib.model.marketmodels.Utilities;
 
+import java.util.Arrays;
+
 /**
  * Pathwise multi-product wrapping a single LIBOR swap: at each step emits
- * {@code (rate - strike) * accrual * multiplier} together with the partial
- * derivative with respect to the same step's forward rate.
+ * {@code (rate - strike) * accrual * multiplier} together with the partial derivative with respect to the same step's
+ * forward rate.
  *
  * <p>Mirrors C++ {@code MarketModelPathwiseSwap}
- * (ql/models/marketmodels/products/pathwise/pathwiseproductswap.{hpp,cpp}
- * v1.42.1).
+ * (ql/models/marketmodels/products/pathwise/pathwiseproductswap.{hpp,cpp} v1.42.1).
  *
  * <p>Useful primarily as a building block for breakable swaps; tested against
  * the non-pathwise Swap product in {@code testInverseFloater}.
  *
- * @see "ql/models/marketmodels/products/pathwise/pathwiseproductswap" v1.42.1
- *
  * @author Jose Moya
+ * @see "ql/models/marketmodels/products/pathwise/pathwiseproductswap" v1.42.1
  */
 public class MarketModelPathwiseSwap extends MarketModelPathwiseMultiProduct {
 
@@ -63,42 +61,37 @@ public class MarketModelPathwiseSwap extends MarketModelPathwiseMultiProduct {
     // path-varying state
     private int currentIndex_;
 
-    public MarketModelPathwiseSwap(final double[] rateTimes,
-                                   final double[] accruals,
-                                   final double[] strikes,
-                                   final double multiplier) {
+    public MarketModelPathwiseSwap(final double[] rateTimes, final double[] accruals, final double[] strikes,
+            final double multiplier) {
         Utilities.checkIncreasingTimes(rateTimes);
         this.rateTimes_ = rateTimes.clone();
         this.numberRates_ = rateTimes.length - 1;
         this.multiplier_ = multiplier;
 
         // accruals: broadcast scalar to numberRates_
-        if (accruals.length == 1) {
+        if ( accruals.length == 1 ) {
             final double a0 = accruals[0];
             this.accruals_ = new double[numberRates_];
             Arrays.fill(this.accruals_, a0);
         } else {
             this.accruals_ = accruals.clone();
         }
-        QL.require(this.accruals_.length == numberRates_,
-                "accruals.size() does not equal numberOfRates or 1");
+        QL.require(this.accruals_.length == numberRates_, "accruals.size() does not equal numberOfRates or 1");
 
         // strikes: broadcast scalar to numberRates_
-        if (strikes.length == 1) {
+        if ( strikes.length == 1 ) {
             final double s0 = strikes[0];
             this.strikes_ = new double[numberRates_];
             Arrays.fill(this.strikes_, s0);
         } else {
             this.strikes_ = strikes.clone();
         }
-        QL.require(this.strikes_.length == numberRates_,
-                "strikes.size() does not equal numberOfRates or 1");
+        QL.require(this.strikes_.length == numberRates_, "strikes.size() does not equal numberOfRates or 1");
 
         // evolution times = rateTimes minus the last entry
         final double[] evolTimes = new double[numberRates_];
         System.arraycopy(rateTimes_, 0, evolTimes, 0, numberRates_);
-        QL.require(evolTimes.length == numberRates_,
-                "rateTimes.size()<> numberOfRates+1");
+        QL.require(evolTimes.length == numberRates_, "rateTimes.size()<> numberOfRates+1");
 
         this.evolution_ = new EvolutionDescription(rateTimes_, evolTimes);
 
@@ -106,9 +99,7 @@ public class MarketModelPathwiseSwap extends MarketModelPathwiseMultiProduct {
     }
 
     /** Convenience constructor with multiplier = 1.0 (receiver convention). */
-    public MarketModelPathwiseSwap(final double[] rateTimes,
-                                   final double[] accruals,
-                                   final double[] strikes) {
+    public MarketModelPathwiseSwap(final double[] rateTimes, final double[] accruals, final double[] strikes) {
         this(rateTimes, accruals, strikes, 1.0);
     }
 
@@ -118,9 +109,8 @@ public class MarketModelPathwiseSwap extends MarketModelPathwiseMultiProduct {
     }
 
     @Override
-    public boolean nextTimeStep(final CurveState currentState,
-                                final int[] numberCashFlowsThisStep,
-                                final CashFlow[][] cashFlowsGenerated) {
+    public boolean nextTimeStep(final CurveState currentState, final int[] numberCashFlowsThisStep,
+            final CashFlow[][] cashFlowsGenerated) {
         final double liborRate = currentState.forwardRate(currentIndex_);
         cashFlowsGenerated[0][0].timeIndex = currentIndex_ + 1;
 
@@ -129,12 +119,11 @@ public class MarketModelPathwiseSwap extends MarketModelPathwiseMultiProduct {
 
         numberCashFlowsThisStep[0] = 1;
 
-        for (int i = 1; i <= numberRates_; ++i) {
+        for ( int i = 1; i <= numberRates_; ++i ) {
             cashFlowsGenerated[0][0].amount[i] = 0.0;
         }
 
-        cashFlowsGenerated[0][0].amount[currentIndex_ + 1] =
-                accruals_[currentIndex_] * multiplier_;
+        cashFlowsGenerated[0][0].amount[currentIndex_ + 1] = accruals_[currentIndex_] * multiplier_;
 
         ++currentIndex_;
         return currentIndex_ == strikes_.length;
@@ -142,8 +131,7 @@ public class MarketModelPathwiseSwap extends MarketModelPathwiseMultiProduct {
 
     @Override
     public MarketModelPathwiseMultiProduct clone() {
-        final MarketModelPathwiseSwap copy = new MarketModelPathwiseSwap(
-                rateTimes_, accruals_, strikes_, multiplier_);
+        final MarketModelPathwiseSwap copy = new MarketModelPathwiseSwap(rateTimes_, accruals_, strikes_, multiplier_);
         copy.currentIndex_ = this.currentIndex_;
         return copy;
     }
@@ -151,7 +139,7 @@ public class MarketModelPathwiseSwap extends MarketModelPathwiseMultiProduct {
     @Override
     public int[] suggestedNumeraires() {
         final int[] numeraires = new int[numberRates_];
-        for (int i = 0; i < numberRates_; ++i) {
+        for ( int i = 0; i < numberRates_; ++i ) {
             numeraires[i] = i;
         }
         return numeraires;

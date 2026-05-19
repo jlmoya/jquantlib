@@ -38,17 +38,18 @@ public class LmFixedVolatilityModel extends LmVolatilityModel {
         this.volatilities_ = volatilities;
         this.startTimes_ = startTimes;
 
-        QL.require(startTimes_.size()>1 , "too few dates"); // TODO: message
-        QL.require(volatilities_.size() == startTimes_.size() , "volatility array and fixing time array have to have the same size"); // TODO: message
+        QL.require(startTimes_.size() > 1, "too few dates"); // TODO: message
+        QL.require(volatilities_.size() == startTimes_.size(),
+                "volatility array and fixing time array have to have the same size"); // TODO: message
 
-        for (int i = 1; i < startTimes_.size(); i++)
-            if(startTimes_.get(i) <= startTimes_.get(i-1))
-                throw new IllegalArgumentException("invalid time (" + startTimes_.get(i) + ", vs " + startTimes_.get(i) + ")");
+        for ( int i = 1; i < startTimes_.size(); i++ )
+            if ( startTimes_.get(i) <= startTimes_.get(i - 1) )
+                throw new IllegalArgumentException(
+                        "invalid time (" + startTimes_.get(i) + ", vs " + startTimes_.get(i) + ")");
     }
 
     @Override
     protected void generateArguments() {
-        return;
     }
 
     @Override
@@ -57,23 +58,22 @@ public class LmFixedVolatilityModel extends LmVolatilityModel {
         // {@code QL_REQUIRE(t >= startTimes_.front() && t <= startTimes_.back(), ...)}.
         // The previous Java port had the predicate inverted (it required t
         // outside the range), which made every legitimate call throw.
-        QL.require(t >= startTimes_.first() && t <= startTimes_.last(),
-                "invalid time given for volatility model");
+        QL.require(t >= startTimes_.first() && t <= startTimes_.last(), "invalid time given for volatility model");
         // C++ {@code upper_bound(begin, end-1, t) - begin - 1}. {@code Array.upperBound}
         // returns the absolute index of the first element strictly greater than
         // {@code t} (per the Array.upperBound contract); we then subtract 1
         // and clamp at zero to mirror the C++ "exclude the last entry"
         // {@code end-1} search.
         int ti = startTimes_.upperBound(t) - 1;
-        if (ti < 0) {
+        if ( ti < 0 ) {
             ti = 0;
         }
-        if (ti > size_ - 1) {
+        if ( ti > size_ - 1 ) {
             ti = size_ - 1;
         }
 
         final Array tmp = new Array(size_);
-        for (int i = ti; i < size_; ++i) {
+        for ( int i = ti; i < size_; ++i ) {
             tmp.set(i, volatilities_.get(i - ti));
         }
         return tmp;
@@ -81,14 +81,14 @@ public class LmFixedVolatilityModel extends LmVolatilityModel {
 
     @Override
     public double /* @Volatility */volatility(final int i, /* @Time */final double t, final Array x) {
-        if (t < startTimes_.first() || t > startTimes_.last()) {
+        if ( t < startTimes_.first() || t > startTimes_.last() ) {
             throw new IllegalArgumentException("invalid time given for volatility model");
         }
         int ti = startTimes_.upperBound(t) - 1;
-        if (ti < 0) {
+        if ( ti < 0 ) {
             ti = 0;
         }
-        if (ti > size_ - 1) {
+        if ( ti > size_ - 1 ) {
             ti = size_ - 1;
         }
         return volatilities_.get(i - ti);

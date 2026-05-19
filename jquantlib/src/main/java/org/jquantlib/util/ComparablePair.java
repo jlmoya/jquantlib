@@ -24,37 +24,35 @@ package org.jquantlib.util;
 
 /**
  * Mimicks std::pair
- * 
- * @see <a href="http://www.sgi.com/tech/stl/pair.html">std::pair</a> 
- * 
+ *
  * @author Richard Gomes
+ * @see <a href="http://www.sgi.com/tech/stl/pair.html">std::pair</a>
  */
-public class ComparablePair<T1 extends Comparable<T1>, T2> implements Comparable<ComparablePair<T1, T2>> {
+public class ComparablePair< T1 extends Comparable< T1 >, T2 > implements Comparable< ComparablePair< T1, T2 > > {
 
-	private final T1 first;
-	private final T2 second;
+    private final T1 first;
+    private final T2 second;
 
-	public ComparablePair(final T1 first, final T2 second) {
-		this.first = first;
-		this.second = second;
-	}
+    public ComparablePair(final T1 first, final T2 second) {
+        this.first = first;
+        this.second = second;
+    }
 
-	public T1 first() {
-		return first;
-	}
+    public T1 first() {
+        return first;
+    }
 
-	public T2 second() {
-		return second;
-	}
+    public T2 second() {
+        return second;
+    }
 
+    //
+    // implements Comparable
+    //
 
-	//
-	// implements Comparable
-	//
-	
-	@Override
-	public int compareTo(ComparablePair<T1, T2> o) {
-		return this.first().compareTo(o.first());
-	}
+    @Override
+    public int compareTo(ComparablePair< T1, T2 > o) {
+        return this.first().compareTo(o.first());
+    }
 
 }

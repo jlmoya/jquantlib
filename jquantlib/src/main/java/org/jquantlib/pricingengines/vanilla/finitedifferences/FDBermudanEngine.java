@@ -56,40 +56,29 @@ public class FDBermudanEngine extends OneAssetOption.EngineImpl {
     // private fields
     //
 
-    private double extraTermInBermuda; // TODO: code review
     private final FDMultiPeriodEngine fdVanillaEngine;
-
+    private double extraTermInBermuda; // TODO: code review
 
     //
     // public constructors
     //
 
-    public FDBermudanEngine(
-            final GeneralizedBlackScholesProcess process) {
-        this(process, 100,100, false);
+    public FDBermudanEngine(final GeneralizedBlackScholesProcess process) {
+        this(process, 100, 100, false);
     }
 
-    public FDBermudanEngine(
-            final GeneralizedBlackScholesProcess process,
-            final int timeSteps) {
+    public FDBermudanEngine(final GeneralizedBlackScholesProcess process, final int timeSteps) {
         this(process, timeSteps, 100, false);
     }
 
-    public FDBermudanEngine(
-            final GeneralizedBlackScholesProcess process,
-            final int timeSteps,
-            final int gridPoints) {
+    public FDBermudanEngine(final GeneralizedBlackScholesProcess process, final int timeSteps, final int gridPoints) {
         this(process, timeSteps, gridPoints, false);
     }
 
-    public FDBermudanEngine(
-            final GeneralizedBlackScholesProcess process,
-            final int timeSteps,
-            final int gridPoints,
+    public FDBermudanEngine(final GeneralizedBlackScholesProcess process, final int timeSteps, final int gridPoints,
             final boolean timeDependent) {
         fdVanillaEngine = new FDBermudianMPEngine(process, timeSteps, gridPoints, timeDependent);
     }
-
 
     //
     // private methods
@@ -97,17 +86,17 @@ public class FDBermudanEngine extends OneAssetOption.EngineImpl {
 
     // TODO: verify how this method is called
     private void initializeStepCondition() {
-        fdVanillaEngine.stepCondition = new NullCondition<Array>();
+        fdVanillaEngine.stepCondition = new NullCondition< Array >();
     }
 
     // TODO: verify how this method is called
     private void executeIntermediateStep(final int step) {
         final int size = fdVanillaEngine.intrinsicValues.size();
-        for (int j = 0; j < size; j++) {
-            fdVanillaEngine.prices.values().set(j, Math.max(fdVanillaEngine.prices.value(j), fdVanillaEngine.intrinsicValues.value(j)));
+        for ( int j = 0; j < size; j++ ) {
+            fdVanillaEngine.prices.values()
+                    .set(j, Math.max(fdVanillaEngine.prices.value(j), fdVanillaEngine.intrinsicValues.value(j)));
         }
     }
-
 
     //
     // implements PricingEngine
@@ -115,11 +104,10 @@ public class FDBermudanEngine extends OneAssetOption.EngineImpl {
 
     @Override
     public void calculate() {
-        final Option.ArgumentsImpl a = (Option.ArgumentsImpl)arguments_;
+        final Option.ArgumentsImpl a = (Option.ArgumentsImpl) arguments_;
         fdVanillaEngine.setupArguments(a);
         fdVanillaEngine.calculate(results_);
     }
-
 
     //
     // private inner classes
@@ -127,10 +115,10 @@ public class FDBermudanEngine extends OneAssetOption.EngineImpl {
 
     private static class FDBermudianMPEngine extends FDMultiPeriodEngine {
 
-        public FDBermudianMPEngine(final GeneralizedBlackScholesProcess process, final int timeSteps, final int gridPoints, final boolean timeDependent) {
+        public FDBermudianMPEngine(final GeneralizedBlackScholesProcess process, final int timeSteps,
+                final int gridPoints, final boolean timeDependent) {
             super(process, timeSteps, gridPoints, timeDependent);
         }
-
 
         //
         // overrides FDMultiPeriodEngine
@@ -139,7 +127,7 @@ public class FDBermudanEngine extends OneAssetOption.EngineImpl {
         @Override
         protected void executeIntermediateStep(final int step) {
             final int size = intrinsicValues.size();
-            for (int j = 0; j < size; j++) {
+            for ( int j = 0; j < size; j++ ) {
                 prices.values().set(j, Math.max(prices.value(j), intrinsicValues.value(j)));
             }
         }

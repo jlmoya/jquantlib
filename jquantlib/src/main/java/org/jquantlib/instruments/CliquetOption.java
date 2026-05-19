@@ -39,34 +39,31 @@
 
 package org.jquantlib.instruments;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.exercise.EuropeanExercise;
 import org.jquantlib.math.Constants;
 import org.jquantlib.pricingengines.PricingEngine;
 import org.jquantlib.time.Date;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Cliquet (Ratchet) option.
  * <p>
- * A series of forward-starting (deferred-strike) options where the strike for each
- * forward-start option is set equal to a fixed percentage of the spot price at the
- * beginning of each period.
+ * A series of forward-starting (deferred-strike) options where the strike for each forward-start option is set equal to
+ * a fixed percentage of the spot price at the beginning of each period.
  * <p>
- * Mirrors C++ QuantLib v1.42.1 {@code CliquetOption} in
- * {@code ql/instruments/cliquetoption.{hpp,cpp}}.
+ * Mirrors C++ QuantLib v1.42.1 {@code CliquetOption} in {@code ql/instruments/cliquetoption.{hpp,cpp}}.
  */
 public class CliquetOption extends OneAssetOption {
 
-    private final List<Date> resetDates;
+    private final List< Date > resetDates;
 
-    public CliquetOption(final PercentageStrikePayoff payoff,
-                         final EuropeanExercise maturity,
-                         final List<Date> resetDates) {
+    public CliquetOption(final PercentageStrikePayoff payoff, final EuropeanExercise maturity,
+            final List< Date > resetDates) {
         super(payoff, maturity);
-        this.resetDates = new ArrayList<Date>(resetDates);
+        this.resetDates = new ArrayList< Date >(resetDates);
     }
 
     @Override
@@ -74,7 +71,7 @@ public class CliquetOption extends OneAssetOption {
         super.setupArguments(args);
         QL.require(args instanceof CliquetOption.ArgumentsImpl, "wrong engine type");
         final CliquetOption.ArgumentsImpl moreArgs = (CliquetOption.ArgumentsImpl) args;
-        moreArgs.resetDates = new ArrayList<Date>(resetDates);
+        moreArgs.resetDates = new ArrayList< Date >(resetDates);
     }
 
     /**
@@ -82,8 +79,7 @@ public class CliquetOption extends OneAssetOption {
      * <p>
      * Mirrors C++ QuantLib v1.42.1 {@code CliquetOption::arguments}.
      */
-    public static class ArgumentsImpl extends OneAssetOption.ArgumentsImpl
-            implements OneAssetOption.Arguments {
+    public static class ArgumentsImpl extends OneAssetOption.ArgumentsImpl implements OneAssetOption.Arguments {
 
         public /*@Real*/ double accruedCoupon;
         public /*@Real*/ double lastFixing;
@@ -91,7 +87,7 @@ public class CliquetOption extends OneAssetOption {
         public /*@Real*/ double localFloor;
         public /*@Real*/ double globalCap;
         public /*@Real*/ double globalFloor;
-        public List<Date> resetDates;
+        public List< Date > resetDates;
 
         public ArgumentsImpl() {
             this.accruedCoupon = Constants.NULL_REAL;
@@ -100,7 +96,7 @@ public class CliquetOption extends OneAssetOption {
             this.localFloor = Constants.NULL_REAL;
             this.globalCap = Constants.NULL_REAL;
             this.globalFloor = Constants.NULL_REAL;
-            this.resetDates = new ArrayList<Date>();
+            this.resetDates = new ArrayList< Date >();
         }
 
         @Override
@@ -111,23 +107,16 @@ public class CliquetOption extends OneAssetOption {
             final PercentageStrikePayoff moneyness = (PercentageStrikePayoff) payoff;
             QL.require(moneyness.strike() > 0.0, "negative or zero moneyness given");
 
-            QL.require(accruedCoupon == Constants.NULL_REAL || accruedCoupon >= 0.0,
-                       "negative accrued coupon");
-            QL.require(localCap == Constants.NULL_REAL || localCap >= 0.0,
-                       "negative local cap");
-            QL.require(localFloor == Constants.NULL_REAL || localFloor >= 0.0,
-                       "negative local floor");
-            QL.require(globalCap == Constants.NULL_REAL || globalCap >= 0.0,
-                       "negative global cap");
-            QL.require(globalFloor == Constants.NULL_REAL || globalFloor >= 0.0,
-                       "negative global floor");
+            QL.require(accruedCoupon == Constants.NULL_REAL || accruedCoupon >= 0.0, "negative accrued coupon");
+            QL.require(localCap == Constants.NULL_REAL || localCap >= 0.0, "negative local cap");
+            QL.require(localFloor == Constants.NULL_REAL || localFloor >= 0.0, "negative local floor");
+            QL.require(globalCap == Constants.NULL_REAL || globalCap >= 0.0, "negative global cap");
+            QL.require(globalFloor == Constants.NULL_REAL || globalFloor >= 0.0, "negative global floor");
             QL.require(!resetDates.isEmpty(), "no reset dates given");
 
-            for (int i = 0; i < resetDates.size(); ++i) {
-                QL.require(exercise.lastDate().gt(resetDates.get(i)),
-                           "reset date greater or equal to maturity");
-                QL.require(i == 0 || resetDates.get(i).gt(resetDates.get(i - 1)),
-                           "unsorted reset dates");
+            for ( int i = 0; i < resetDates.size(); ++i ) {
+                QL.require(exercise.lastDate().gt(resetDates.get(i)), "reset date greater or equal to maturity");
+                QL.require(i == 0 || resetDates.get(i).gt(resetDates.get(i - 1)), "unsorted reset dates");
             }
         }
     }

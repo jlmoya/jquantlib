@@ -34,21 +34,17 @@ import org.jquantlib.processes.GeneralizedBlackScholesProcess;
 import org.jquantlib.time.TimeGrid;
 
 /**
- * Continuous fixed-strike lookback option pricing engine using Monte
- * Carlo simulation.
+ * Continuous fixed-strike lookback option pricing engine using Monte Carlo simulation.
  *
  * <p>Java port of {@code QuantLib v1.42.1
- * ql/pricingengines/lookback/mclookbackengine.hpp} instantiated with
- * {@code I = ContinuousFixedLookbackOption} (Phase 5e.5b-CFC-d-183).
- * Specialised for {@code RNG = PseudoRandom} (MT + InverseCumulativeNormal).
+ * ql/pricingengines/lookback/mclookbackengine.hpp} instantiated with {@code I = ContinuousFixedLookbackOption} (Phase
+ * 5e.5b-CFC-d-183). Specialised for {@code RNG = PseudoRandom} (MT + InverseCumulativeNormal).
  *
  * <p>The MC engine generates Black-Scholes paths and prices the option
- * by averaging the discounted payoff against the running extremum of the
- * path. Cross-validated against
+ * by averaging the discounted payoff against the running extremum of the path. Cross-validated against
  * {@link AnalyticContinuousFixedLookbackEngine}.
  */
-public final class MCContinuousFixedLookbackEngine
-        extends ContinuousFixedLookbackOption.EngineImpl {
+public final class MCContinuousFixedLookbackEngine extends ContinuousFixedLookbackOption.EngineImpl {
 
     private final GeneralizedBlackScholesProcess process_;
     private final int timeSteps_;
@@ -60,16 +56,9 @@ public final class MCContinuousFixedLookbackEngine
     private final double requiredTolerance_;
     private final long seed_;
 
-    public MCContinuousFixedLookbackEngine(
-            final GeneralizedBlackScholesProcess process,
-            final int timeSteps,
-            final int timeStepsPerYear,
-            final boolean brownianBridge,
-            final boolean antitheticVariate,
-            final int requiredSamples,
-            final double requiredTolerance,
-            final int maxSamples,
-            final long seed) {
+    public MCContinuousFixedLookbackEngine(final GeneralizedBlackScholesProcess process, final int timeSteps,
+            final int timeStepsPerYear, final boolean brownianBridge, final boolean antitheticVariate,
+            final int requiredSamples, final double requiredTolerance, final int maxSamples, final long seed) {
         super();
         MCLookbackHelper.validateTimeStepArgs(timeSteps, timeStepsPerYear);
         this.process_ = process;
@@ -90,19 +79,28 @@ public final class MCContinuousFixedLookbackEngine
         final ContinuousFixedLookbackOption.ArgumentsImpl a = arguments_;
         QL.require(a.payoff instanceof PlainVanillaPayoff, "non-plain payoff given");
         final PlainVanillaPayoff payoff = (PlainVanillaPayoff) a.payoff;
-        final TimeGrid grid = MCLookbackHelper.timeGrid(
-                process_, a.exercise, timeSteps_, timeStepsPerYear_);
+        final TimeGrid grid = MCLookbackHelper.timeGrid(process_, a.exercise, timeSteps_, timeStepsPerYear_);
         final double discount = process_.riskFreeRate().currentLink().discount(grid.back());
 
-        final PathPricer<Path> pp = new LookbackPathPricers.Fixed(
-                payoff.optionType(), payoff.strike(), discount);
-        final MonteCarloModel.PathGeneratorAdapter<Path> pg =
-                MCLookbackHelper.pathGenerator(process_, grid, brownianBridge_, seed_);
+        final PathPricer< Path > pp = new LookbackPathPricers.Fixed(payoff.optionType(), payoff.strike(), discount);
+        final MonteCarloModel.PathGeneratorAdapter< Path > pg = MCLookbackHelper.pathGenerator(process_, grid,
+                brownianBridge_, seed_);
 
-        final McSimulation<Path> simulation = new McSimulation<Path>(antitheticVariate_, false) {
-            @Override protected PathPricer<Path> pathPricer() { return pp; }
-            @Override protected MonteCarloModel.PathGeneratorAdapter<Path> pathGenerator() { return pg; }
-            @Override protected TimeGrid timeGrid() { return grid; }
+        final McSimulation< Path > simulation = new McSimulation< Path >(antitheticVariate_, false) {
+            @Override
+            protected PathPricer< Path > pathPricer() {
+                return pp;
+            }
+
+            @Override
+            protected MonteCarloModel.PathGeneratorAdapter< Path > pathGenerator() {
+                return pg;
+            }
+
+            @Override
+            protected TimeGrid timeGrid() {
+                return grid;
+            }
         };
         simulation.calculate(requiredTolerance_, requiredSamples_, maxSamples_);
         results_.value = simulation.sampleAccumulator().mean();

@@ -39,7 +39,6 @@
  WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
  or FITNESS FOR A PARTICULAR PURPOSE. See the license for more details. */
 
-
 package org.jquantlib.cashflow;
 
 import org.jquantlib.daycounters.DayCounter;
@@ -48,104 +47,57 @@ import org.jquantlib.time.Date;
 import org.jquantlib.util.PolymorphicVisitor;
 import org.jquantlib.util.Visitor;
 
-
 /**
  * CMS coupon class
- * @author Richard Gomes
  *
- * @warning This class does not perform any date adjustment,
- *          i.e., the start and end date passed upon finalruction
- *          should be already rolled to a business day.
+ * @author Richard Gomes
+ * @warning This class does not perform any date adjustment, i.e., the start and end date passed upon finalruction
+ * should be already rolled to a business day.
  */
 public class CmsCoupon extends FloatingRateCoupon {
 
     protected SwapIndex swapIndex_;
 
-    public CmsCoupon(final Date paymentDate,
-                     final double nominal,
-                     final Date startDate,
-                     final Date endDate,
-                     final int fixingDays,
-                     final SwapIndex index) {
+    public CmsCoupon(final Date paymentDate, final double nominal, final Date startDate, final Date endDate,
+            final int fixingDays, final SwapIndex index) {
         // gearing default
-        this (paymentDate, nominal, startDate, endDate, fixingDays, index, 1.0);
+        this(paymentDate, nominal, startDate, endDate, fixingDays, index, 1.0);
     }
 
-    public CmsCoupon(final Date paymentDate,
-                     final double nominal,
-                     final Date startDate,
-                     final Date endDate,
-                     final int fixingDays,
-                     final SwapIndex index,
-                     final double gearing) {
+    public CmsCoupon(final Date paymentDate, final double nominal, final Date startDate, final Date endDate,
+            final int fixingDays, final SwapIndex index, final double gearing) {
         // spread default
-        this (paymentDate, nominal, startDate, endDate, fixingDays, index, gearing, 0.0);
+        this(paymentDate, nominal, startDate, endDate, fixingDays, index, gearing, 0.0);
     }
 
-    public CmsCoupon(final Date paymentDate,
-                     final double nominal,
-                     final Date startDate,
-                     final Date endDate,
-                     final int fixingDays,
-                     final SwapIndex index,
-                     final double gearing,
-                     final double spread) {
+    public CmsCoupon(final Date paymentDate, final double nominal, final Date startDate, final Date endDate,
+            final int fixingDays, final SwapIndex index, final double gearing, final double spread) {
         // reference dates defaults
-        this (paymentDate, nominal, startDate, endDate, fixingDays,
-              index, gearing, spread, new Date(), new Date());
+        this(paymentDate, nominal, startDate, endDate, fixingDays, index, gearing, spread, new Date(), new Date());
     }
 
-
-    public CmsCoupon(final Date paymentDate,
-                     final double nominal,
-                     final Date startDate,
-                     final Date endDate,
-                     final int fixingDays,
-                     final SwapIndex index,
-                     final double gearing,
-                     final double spread,
-                     final Date refPeriodStart,
-                     final Date refPeriodEnd) {
+    public CmsCoupon(final Date paymentDate, final double nominal, final Date startDate, final Date endDate,
+            final int fixingDays, final SwapIndex index, final double gearing, final double spread,
+            final Date refPeriodStart, final Date refPeriodEnd) {
         // daycounter default
-        this (paymentDate, nominal, startDate, endDate, fixingDays,
-              index, gearing, spread, refPeriodStart, refPeriodEnd,
-              new DayCounter());
+        this(paymentDate, nominal, startDate, endDate, fixingDays, index, gearing, spread, refPeriodStart, refPeriodEnd,
+                new DayCounter());
     }
 
-
-    public CmsCoupon(final Date paymentDate,
-                     final double nominal,
-                     final Date startDate,
-                     final Date endDate,
-                     final int fixingDays,
-                     final SwapIndex index,
-                     final double gearing,
-                     final double spread,
-                     final Date refPeriodStart,
-                     final Date refPeriodEnd,
-                     final DayCounter dayCounter) {
+    public CmsCoupon(final Date paymentDate, final double nominal, final Date startDate, final Date endDate,
+            final int fixingDays, final SwapIndex index, final double gearing, final double spread,
+            final Date refPeriodStart, final Date refPeriodEnd, final DayCounter dayCounter) {
         // inArrears default
-        this (paymentDate, nominal, startDate, endDate, fixingDays,
-              index, gearing, spread, refPeriodStart, refPeriodEnd,
-              dayCounter, false);
+        this(paymentDate, nominal, startDate, endDate, fixingDays, index, gearing, spread, refPeriodStart, refPeriodEnd,
+                dayCounter, false);
     }
 
-
-    public CmsCoupon(final Date paymentDate,
-                     final double nominal,
-                     final Date startDate,
-                     final Date endDate,
-                     final int fixingDays,
-                     final SwapIndex index,
-                     final double gearing,
-                     final double spread,
-                     final Date refPeriodStart,
-                     final Date refPeriodEnd,
-                     final DayCounter dayCounter,
-                     final boolean isInArrears) {
-        super (paymentDate, nominal, startDate, endDate, fixingDays,
-               index, gearing, spread, refPeriodStart, refPeriodEnd,
-               dayCounter, isInArrears);
+    public CmsCoupon(final Date paymentDate, final double nominal, final Date startDate, final Date endDate,
+            final int fixingDays, final SwapIndex index, final double gearing, final double spread,
+            final Date refPeriodStart, final Date refPeriodEnd, final DayCounter dayCounter,
+            final boolean isInArrears) {
+        super(paymentDate, nominal, startDate, endDate, fixingDays, index, gearing, spread, refPeriodStart,
+                refPeriodEnd, dayCounter, isInArrears);
         // C++ CmsCoupon stores its SwapIndex as both base-class index_ and
         // its own swapIndex_ field. The Java port previously left this
         // field null, which Hagan/LinearTSR pricers and CmsLeg pricer
@@ -157,15 +109,14 @@ public class CmsCoupon extends FloatingRateCoupon {
         return swapIndex_;
     }
 
-
     //
     // implements PolymorphicVisitable
     //
 
     @Override
     public void accept(final PolymorphicVisitor pv) {
-        final Visitor<CmsCoupon> v = (pv!=null) ? pv.visitor(this.getClass()) : null;
-        if (v != null) {
+        final Visitor< CmsCoupon > v = (pv != null) ? pv.visitor(this.getClass()) : null;
+        if ( v != null ) {
             v.visit(this);
         } else {
             super.accept(pv);

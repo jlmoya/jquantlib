@@ -36,70 +36,58 @@ import org.jquantlib.util.PolymorphicVisitor;
 import org.jquantlib.util.Visitor;
 
 /**
- * Capped/floored overnight-indexed coupon. Wraps an {@link OvernightIndexedCoupon}
- * and applies a cap and/or floor to either the effective period rate (default)
- * or to each daily fixing.
+ * Capped/floored overnight-indexed coupon. Wraps an {@link OvernightIndexedCoupon} and applies a cap and/or floor to
+ * either the effective period rate (default) or to each daily fixing.
  * <p>
- * Port of C++ QuantLib v1.42.1
- * {@code ql/cashflows/overnightindexedcoupon.{hpp,cpp}}
+ * Port of C++ QuantLib v1.42.1 {@code ql/cashflows/overnightindexedcoupon.{hpp,cpp}}
  * {@code CappedFlooredOvernightIndexedCoupon}.
  * <p>
  * <b>Phase 5e.5b-CFC:</b> initial port. The naked-option behaviour and
- * effective-cap/floor logic mirror C++ exactly. Pricing is delegated to an
- * {@link OvernightIndexedCouponPricer} (typically a Black variant) via the
- * inherited {@link FloatingRateCoupon#setPricer(FloatingRateCouponPricer)}
+ * effective-cap/floor logic mirror C++ exactly. Pricing is delegated to an {@link OvernightIndexedCouponPricer}
+ * (typically a Black variant) via the inherited {@link FloatingRateCoupon#setPricer(FloatingRateCouponPricer)}
  * mechanism.
  *
- * @category cashflows
- *
  * @author JQuantLib migration team
+ * @category cashflows
  */
 public class CappedFlooredOvernightIndexedCoupon extends FloatingRateCoupon {
 
     private final OvernightIndexedCoupon underlying_;
-    private double cap_;
-    private double floor_;
     private final boolean nakedOption_;
     private final boolean dailyCapFloor_;
+    private final double cap_;
+    private final double floor_;
     private double effectiveCapletVolatility_ = Constants.NULL_REAL;
     private double effectiveFloorletVolatility_ = Constants.NULL_REAL;
 
     /**
      * Convenience constructor — no naked option, global (period) cap/floor.
      */
-    public CappedFlooredOvernightIndexedCoupon(final OvernightIndexedCoupon underlying,
-                                               final double cap,
-                                               final double floor) {
+    public CappedFlooredOvernightIndexedCoupon(final OvernightIndexedCoupon underlying, final double cap,
+            final double floor) {
         this(underlying, cap, floor, false, false);
     }
 
     /**
-     * Full constructor mirroring C++
-     * {@code CappedFlooredOvernightIndexedCoupon::CappedFlooredOvernightIndexedCoupon}.
+     * Full constructor mirroring C++ {@code CappedFlooredOvernightIndexedCoupon::CappedFlooredOvernightIndexedCoupon}.
      */
-    public CappedFlooredOvernightIndexedCoupon(final OvernightIndexedCoupon underlying,
-                                               final double cap,
-                                               final double floor,
-                                               final boolean nakedOption,
-                                               final boolean dailyCapFloor) {
-        super(underlying.date(), underlying.nominal(),
-              underlying.accrualStartDate(), underlying.accrualEndDate(),
-              underlying.fixingDays(), underlying.index(),
-              underlying.gearing(), underlying.spread(),
-              underlying.referencePeriodStart(), underlying.referencePeriodEnd(),
-              underlying.dayCounter(), false /* isInArrears */);
+    public CappedFlooredOvernightIndexedCoupon(final OvernightIndexedCoupon underlying, final double cap,
+            final double floor, final boolean nakedOption, final boolean dailyCapFloor) {
+        super(underlying.date(), underlying.nominal(), underlying.accrualStartDate(), underlying.accrualEndDate(),
+                underlying.fixingDays(), underlying.index(), underlying.gearing(), underlying.spread(),
+                underlying.referencePeriodStart(), underlying.referencePeriodEnd(), underlying.dayCounter(),
+                false /* isInArrears */);
         this.underlying_ = underlying;
         this.nakedOption_ = nakedOption;
         this.dailyCapFloor_ = dailyCapFloor;
 
-        QL.require(!underlying_.compoundSpreadDaily()
-                   || Closeness.isCloseEnough(underlying_.gearing(), 1.0),
-            "CappedFlooredOvernightIndexedCoupon: if include spread = true, only "
-          + "a gearing 1.0 is allowed - scale the notional in this case instead.");
+        QL.require(!underlying_.compoundSpreadDaily() || Closeness.isCloseEnough(underlying_.gearing(), 1.0),
+                "CappedFlooredOvernightIndexedCoupon: if include spread = true, only "
+                        + "a gearing 1.0 is allowed - scale the notional in this case instead.");
 
         // C++ swaps cap/floor for negative gearing only when global (not daily).
-        if (!dailyCapFloor) {
-            if (gearing_ > 0.0) {
+        if ( !dailyCapFloor ) {
+            if ( gearing_ > 0.0 ) {
                 cap_ = cap;
                 floor_ = floor;
             } else {
@@ -114,9 +102,8 @@ public class CappedFlooredOvernightIndexedCoupon extends FloatingRateCoupon {
         // pre-swap). This means for positive gearing the check is cap >= floor,
         // and for negative gearing the check is floor >= floor i.e. trivially true.
         // See ql/cashflows/overnightindexedcoupon.cpp v1.42.1 line 300.
-        if (cap_ != Constants.NULL_REAL && floor_ != Constants.NULL_REAL) {
-            QL.require(cap_ >= floor,
-                "cap level (" + cap_ + ") less than floor level (" + floor_ + ")");
+        if ( cap_ != Constants.NULL_REAL && floor_ != Constants.NULL_REAL ) {
+            QL.require(cap_ >= floor, "cap level (" + cap_ + ") less than floor level (" + floor_ + ")");
         }
         this.underlying_.addObserver(this);
     }
@@ -164,24 +151,22 @@ public class CappedFlooredOvernightIndexedCoupon extends FloatingRateCoupon {
     }
 
     /**
-     * Effective cap of the underlying fixing — depends on
-     * {@link #dailyCapFloor()}, {@link OvernightIndexedCoupon#compoundSpreadDaily()},
-     * gearing, and spread. See C++
-     * {@code CappedFlooredOvernightIndexedCoupon::effectiveCap()} for the four
-     * algebraic cases.
+     * Effective cap of the underlying fixing — depends on {@link #dailyCapFloor()},
+     * {@link OvernightIndexedCoupon#compoundSpreadDaily()}, gearing, and spread. See C++
+     * {@code CappedFlooredOvernightIndexedCoupon::effectiveCap()} for the four algebraic cases.
      */
     public double effectiveCap() {
-        if (cap_ == Constants.NULL_REAL) {
+        if ( cap_ == Constants.NULL_REAL ) {
             return Constants.NULL_REAL;
         }
-        if (dailyCapFloor_) {
-            if (underlying_.compoundSpreadDaily()) {
+        if ( dailyCapFloor_ ) {
+            if ( underlying_.compoundSpreadDaily() ) {
                 return cap_ - underlying_.spread();
             }
             return cap_;
         }
         // global (period-rate) cap
-        if (underlying_.compoundSpreadDaily()) {
+        if ( underlying_.compoundSpreadDaily() ) {
             // C++: (cap_ / gearing - underlying_->effectiveSpread())
             return (cap_ / gearing()) - underlying_.spread();
         }
@@ -190,16 +175,16 @@ public class CappedFlooredOvernightIndexedCoupon extends FloatingRateCoupon {
     }
 
     public double effectiveFloor() {
-        if (floor_ == Constants.NULL_REAL) {
+        if ( floor_ == Constants.NULL_REAL ) {
             return Constants.NULL_REAL;
         }
-        if (dailyCapFloor_) {
-            if (underlying_.compoundSpreadDaily()) {
+        if ( dailyCapFloor_ ) {
+            if ( underlying_.compoundSpreadDaily() ) {
                 return floor_ - underlying_.spread();
             }
             return floor_;
         }
-        if (underlying_.compoundSpreadDaily()) {
+        if ( underlying_.compoundSpreadDaily() ) {
             return floor_ - underlying_.spread();
         }
         return (floor_ - underlying_.spread()) / gearing();
@@ -228,22 +213,20 @@ public class CappedFlooredOvernightIndexedCoupon extends FloatingRateCoupon {
         final double swapletRate = nakedOption_ ? 0.0 : underlying_.rate();
 
         QL.require(pricer_ instanceof OvernightIndexedCouponPricer,
-            "coupon pricer not an instance of OvernightIndexedCouponPricer");
-        final OvernightIndexedCouponPricer cfPricer =
-                (OvernightIndexedCouponPricer) pricer_;
+                "coupon pricer not an instance of OvernightIndexedCouponPricer");
+        final OvernightIndexedCouponPricer cfPricer = (OvernightIndexedCouponPricer) pricer_;
 
-        if (floor_ != Constants.NULL_REAL || cap_ != Constants.NULL_REAL) {
+        if ( floor_ != Constants.NULL_REAL || cap_ != Constants.NULL_REAL ) {
             cfPricer.initialize(this);
         }
 
         double floorletRate = 0.0;
-        if (floor_ != Constants.NULL_REAL) {
+        if ( floor_ != Constants.NULL_REAL ) {
             floorletRate = cfPricer.floorletRate(effectiveFloor(), dailyCapFloor_);
         }
         double capletRate = 0.0;
-        if (cap_ != Constants.NULL_REAL) {
-            final double sign = (nakedOption_ && floor_ == Constants.NULL_REAL)
-                    ? -1.0 : 1.0;
+        if ( cap_ != Constants.NULL_REAL ) {
+            final double sign = (nakedOption_ && floor_ == Constants.NULL_REAL) ? -1.0 : 1.0;
             capletRate = sign * cfPricer.capletRate(effectiveCap(), dailyCapFloor_);
         }
 
@@ -267,7 +250,7 @@ public class CappedFlooredOvernightIndexedCoupon extends FloatingRateCoupon {
     @Override
     public void setPricer(final FloatingRateCouponPricer pricer) {
         QL.require(pricer == null || pricer instanceof OvernightIndexedCouponPricer,
-            "The pricer is required to be an instance of OvernightIndexedCouponPricer");
+                "The pricer is required to be an instance of OvernightIndexedCouponPricer");
         super.setPricer(pricer);
     }
 
@@ -278,9 +261,8 @@ public class CappedFlooredOvernightIndexedCoupon extends FloatingRateCoupon {
 
     @Override
     public void accept(final PolymorphicVisitor pv) {
-        final Visitor<CappedFlooredOvernightIndexedCoupon> v =
-            (pv != null) ? pv.visitor(this.getClass()) : null;
-        if (v != null) {
+        final Visitor< CappedFlooredOvernightIndexedCoupon > v = (pv != null) ? pv.visitor(this.getClass()) : null;
+        if ( v != null ) {
             v.visit(this);
         } else {
             super.accept(pv);

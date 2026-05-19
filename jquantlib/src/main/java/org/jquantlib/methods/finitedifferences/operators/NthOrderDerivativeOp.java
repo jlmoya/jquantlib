@@ -20,26 +20,24 @@
  */
 package org.jquantlib.methods.finitedifferences.operators;
 
-import java.util.TreeSet;
-
 import org.jquantlib.QL;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.matrixutilities.Matrix;
 import org.jquantlib.math.matrixutilities.SparseMatrix;
 import org.jquantlib.methods.finitedifferences.meshers.FdmMesher;
 
+import java.util.TreeSet;
+
 /**
- * Arbitrary {@code n}-th order finite-difference linear operator on a 1D
- * direction of an N-d {@link FdmMesher}.
+ * Arbitrary {@code n}-th order finite-difference linear operator on a 1D direction of an N-d {@link FdmMesher}.
  *
  * <p>Java port of v1.42.1
  * {@code ql/methods/finitedifferences/operators/nthorderderivativeop.{hpp,cpp}}.
  *
  * <p>Builds a {@link SparseMatrix} of stencil weights computed by
- * {@link NumericalDifferentiation} (Fornberg, 1998) for the {@code order}-th
- * derivative on {@code nPoints} stencil points. Boundaries are handled by
- * sliding the central stencil so that all {@code nPoints} points stay within
- * the grid.
+ * {@link NumericalDifferentiation} (Fornberg, 1998) for the {@code order}-th derivative on {@code nPoints} stencil
+ * points. Boundaries are handled by sliding the central stencil so that all {@code nPoints} points stay within the
+ * grid.
  *
  * <p>Used by Heston-Richardson high-order pricing
  * (testHigherOrderHestonOptionPricing in C++ test-suite).
@@ -58,8 +56,7 @@ public class NthOrderDerivativeOp implements FdmLinearOp {
      * @param nPoints   stencil width ({@code > 1}, {@code <= grid extent in {@code direction}})
      * @param mesher    enclosing mesher
      */
-    public NthOrderDerivativeOp(final int direction, final int order,
-                                 final int nPoints, final FdmMesher mesher) {
+    public NthOrderDerivativeOp(final int direction, final int order, final int nPoints, final FdmMesher mesher) {
         this.m = new SparseMatrix(mesher.layout().size(), mesher.layout().size());
 
         final int hPoints = nPoints / 2;
@@ -67,43 +64,39 @@ public class NthOrderDerivativeOp implements FdmLinearOp {
 
         // Unique sorted x-values along the direction.
         final Array meshLocations = mesher.locations(direction);
-        final TreeSet<Double> tmp = new TreeSet<>();
-        for (int i = 0; i < meshLocations.size(); ++i) {
+        final TreeSet< Double > tmp = new TreeSet<>();
+        for ( int i = 0; i < meshLocations.size(); ++i ) {
             tmp.add(meshLocations.get(i));
         }
         final double[] xValues = new double[tmp.size()];
         int xi = 0;
-        for (final Double v : tmp) {
+        for ( final Double v : tmp ) {
             xValues[xi++] = v;
         }
 
         final int nx = mesher.layout().dim()[direction];
-        QL.require(xValues.length == nx,
-                "inconsistent set of grid values in direction " + direction);
-        QL.require(nPoints > 1 && nPoints <= nx,
-                "inconsistent number of points");
+        QL.require(xValues.length == nx, "inconsistent set of grid values in direction " + direction);
+        QL.require(nPoints > 1 && nPoints <= nx, "inconsistent number of points");
 
         final double[] xOffsetsBuf = new double[nPoints];
 
-        for (final FdmLinearOpIterator iter : mesher.layout()) {
+        for ( final FdmLinearOpIterator iter : mesher.layout() ) {
             final int ix = iter.coordinates()[direction];
 
             // Slide stencil so that [ilx, ilx+nPoints) stays inside [0, nx).
-            final int offset = Math.max(0, hPoints - ix)
-                - Math.max(0, hPoints - (nx - (isEven ? 0 : 1) - ix));
+            final int offset = Math.max(0, hPoints - ix) - Math.max(0, hPoints - (nx - (isEven ? 0 : 1) - ix));
             final int ilx = ix - hPoints + offset;
 
-            for (int j = 0; j < nPoints; ++j) {
+            for ( int j = 0; j < nPoints; ++j ) {
                 final int idx = ilx + j;
                 xOffsetsBuf[j] = xValues[idx] - xValues[ix];
             }
             final Array xOffsets = new Array(xOffsetsBuf.clone());
 
-            final Array weights =
-                new NumericalDifferentiation(null, order, xOffsets).weights();
+            final Array weights = new NumericalDifferentiation(null, order, xOffsets).weights();
 
             final int i = iter.index();
-            for (int j = 0; j < nPoints; ++j) {
+            for ( int j = 0; j < nPoints; ++j ) {
                 final int k = mesher.layout().neighbourhood(iter, direction, ilx - ix + j);
                 m.set(i, k, weights.get(j));
             }
@@ -119,17 +112,17 @@ public class NthOrderDerivativeOp implements FdmLinearOp {
      * Dense materialization of the underlying sparse matrix.
      *
      * <p>Mirrors C++ {@code SparseMatrix toMatrix()} — the Java
-     * {@link FdmLinearOp} interface returns a dense {@link Matrix} for
-     * back-compat; the sparse view is available via {@link #toSparseMatrix()}.
+     * {@link FdmLinearOp} interface returns a dense {@link Matrix} for back-compat; the sparse view is available via
+     * {@link #toSparseMatrix()}.
      */
     @Override
     public Matrix toMatrix() {
         final int n = m.rows();
         final Matrix out = new Matrix(n, n);
-        for (int row = 0; row < n; ++row) {
-            for (int col = 0; col < m.columns(); ++col) {
+        for ( int row = 0; row < n; ++row ) {
+            for ( int col = 0; col < m.columns(); ++col ) {
                 final double v = m.get(row, col);
-                if (v != 0.0) {
+                if ( v != 0.0 ) {
                     out.set(row, col, v);
                 }
             }
@@ -141,10 +134,8 @@ public class NthOrderDerivativeOp implements FdmLinearOp {
      * Native sparse view of the operator.
      *
      * <p>This is the C++ counterpart of {@code toMatrix()} (which returns
-     * a {@code SparseMatrix} in C++); preserved as a separate method so that
-     * the Java {@link FdmLinearOp#toMatrix()} contract (returning dense
-     * {@link Matrix}) is unchanged for the existing Hull-White / G2 / Bates
-     * call-sites.
+     * a {@code SparseMatrix} in C++); preserved as a separate method so that the Java {@link FdmLinearOp#toMatrix()}
+     * contract (returning dense {@link Matrix}) is unchanged for the existing Hull-White / G2 / Bates call-sites.
      *
      * @return reference to the underlying CSR matrix
      */

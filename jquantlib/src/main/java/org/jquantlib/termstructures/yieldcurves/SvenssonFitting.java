@@ -29,8 +29,7 @@ import org.jquantlib.math.optimization.OptimizationMethod;
 /**
  * Svensson fitting method.
  * <p>
- * Fits a discount function {@code d(t) = exp(-r*t)} where the zero rate
- * {@code r} is defined as
+ * Fits a discount function {@code d(t) = exp(-r*t)} where the zero rate {@code r} is defined as
  * <pre>
  * r = c0 + (c1 + c2) * (1 - exp(-k*t)) / (k*t) - c2 * exp(-k*t)
  *   + c3 * ((1 - exp(-k1*t)) / (k1*t) - exp(-k1*t))
@@ -43,8 +42,7 @@ import org.jquantlib.math.optimization.OptimizationMethod;
  * <p>Phase 5d.5-ZCS+FB.
  *
  * <p>Reference: Svensson, L. (1994). "Estimating and interpreting forward
- * interest rates: Sweden 1992-4." Discussion paper, Centre for Economic
- * Policy Research(1051).
+ * interest rates: Sweden 1992-4." Discussion paper, Centre for Economic Policy Research(1051).
  */
 public class SvenssonFitting extends FittingMethod {
 
@@ -58,28 +56,19 @@ public class SvenssonFitting extends FittingMethod {
         this(weights, null, new Array(0), 0.0, Double.MAX_VALUE, new NoConstraint());
     }
 
-    public SvenssonFitting(final Array weights,
-                           final OptimizationMethod optimizationMethod,
-                           final Array l2,
-                           final double minCutoffTime,
-                           final double maxCutoffTime,
-                           final Constraint constraint) {
-        super(true, weights, optimizationMethod, l2,
-              minCutoffTime, maxCutoffTime, constraint);
+    public SvenssonFitting(final Array weights, final OptimizationMethod optimizationMethod, final Array l2,
+            final double minCutoffTime, final double maxCutoffTime, final Constraint constraint) {
+        super(true, weights, optimizationMethod, l2, minCutoffTime, maxCutoffTime, constraint);
     }
 
-    public SvenssonFitting(final Array weights,
-                           final Array l2,
-                           final double minCutoffTime,
-                           final double maxCutoffTime,
-                           final Constraint constraint) {
+    public SvenssonFitting(final Array weights, final Array l2, final double minCutoffTime, final double maxCutoffTime,
+            final Constraint constraint) {
         this(weights, null, l2, minCutoffTime, maxCutoffTime, constraint);
     }
 
     @Override
     public SvenssonFitting clone() {
-        return new SvenssonFitting(weights(), optimizationMethod(),
-                l2(), 0.0, Double.MAX_VALUE, constraint());
+        return new SvenssonFitting(weights(), optimizationMethod(), l2(), 0.0, Double.MAX_VALUE, constraint());
     }
 
     @Override
@@ -92,14 +81,11 @@ public class SvenssonFitting extends FittingMethod {
         final double kappa = x.get(size() - 2);
         final double kappa1 = x.get(size() - 1);
 
-        final double zeroRate = x.get(0)
-                + (x.get(1) + x.get(2))
-                  * (1.0 - Math.exp(-kappa * t))
-                  / ((kappa + QL_EPSILON) * (t + QL_EPSILON))
-                - x.get(2) * Math.exp(-kappa * t)
-                + x.get(3) * (((1.0 - Math.exp(-kappa1 * t))
-                                / ((kappa1 + QL_EPSILON) * (t + QL_EPSILON)))
-                              - Math.exp(-kappa1 * t));
+        final double zeroRate =
+                x.get(0) + (x.get(1) + x.get(2)) * (1.0 - Math.exp(-kappa * t)) / ((kappa + QL_EPSILON) * (t
+                        + QL_EPSILON)) - x.get(2) * Math.exp(-kappa * t) + x.get(3) * (
+                        ((1.0 - Math.exp(-kappa1 * t)) / ((kappa1 + QL_EPSILON) * (t + QL_EPSILON))) - Math.exp(
+                                -kappa1 * t));
         return Math.exp(-zeroRate * t);
     }
 }

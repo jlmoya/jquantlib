@@ -44,29 +44,28 @@ import org.jquantlib.lang.exceptions.LibraryException;
  * @author John Martin
  */
 public enum Position {
-	Long(1),
-	Short(-1);
+    Long(1), Short(-1);
 
     private static final String UNKNOWN_POSITION_TYPE = "Unknown Position Type";
 
-	private int value;
+    private final int value;
 
-	private Position(final int type) {
-		this.value = type;
-	}
+    Position(final int type) {
+        this.value = type;
+    }
 
-	public int toInteger() {
-		return value;
-	}
+    public int toInteger() {
+        return value;
+    }
 
-	@Override
-	public String toString() {
-		if (value == 1) {
-			return "Long";
-		}
-		if (value == -1) {
-			return "Short";
-		}
-		throw new LibraryException(UNKNOWN_POSITION_TYPE);
-	}
+    @Override
+    public String toString() {
+        if ( value == 1 ) {
+            return "Long";
+        }
+        if ( value == -1 ) {
+            return "Short";
+        }
+        throw new LibraryException(UNKNOWN_POSITION_TYPE);
+    }
 }

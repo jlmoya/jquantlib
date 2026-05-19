@@ -28,41 +28,50 @@ import org.jquantlib.methods.finitedifferences.utilities.FdmBoundaryConditionSet
 /**
  * Method-of-lines time-stepping scheme.
  * <p>
- * Java port of v1.42.1
- * {@code ql/methods/finitedifferences/schemes/methodoflinesscheme.{hpp,cpp}}.
+ * Java port of v1.42.1 {@code ql/methods/finitedifferences/schemes/methodoflinesscheme.{hpp,cpp}}.
  * <p>
- * Converts the spatial discretisation into a system of ODEs and integrates
- * with an adaptive Runge-Kutta solver ({@link AdaptiveRungeKutta}). This
- * avoids choosing a fixed time step but may be expensive for large systems.
+ * Converts the spatial discretisation into a system of ODEs and integrates with an adaptive Runge-Kutta solver
+ * ({@link AdaptiveRungeKutta}). This avoids choosing a fixed time step but may be expensive for large systems.
  *
  * @author Phase 2l Track C.5 port
  */
 public class MethodOfLinesScheme {
 
+    protected final FdmLinearOpComposite map;
+    protected final BoundaryConditionSchemeHelper bcSet;
+    private final double eps;
+    private final double relInitStepSize;
     /** Time step (NaN until {@link #setStep} is called). */
     protected double dt;
 
-    private final double eps;
-    private final double relInitStepSize;
-    protected final FdmLinearOpComposite map;
-    protected final BoundaryConditionSchemeHelper bcSet;
-
     /** Constructor with empty boundary-condition set (mirrors C++ default arg). */
-    public MethodOfLinesScheme(final double eps,
-                               final double relInitStepSize,
-                               final FdmLinearOpComposite map) {
+    public MethodOfLinesScheme(final double eps, final double relInitStepSize, final FdmLinearOpComposite map) {
         this(eps, relInitStepSize, map, new FdmBoundaryConditionSet());
     }
 
-    public MethodOfLinesScheme(final double eps,
-                               final double relInitStepSize,
-                               final FdmLinearOpComposite map,
-                               final FdmBoundaryConditionSet bcSet) {
+    public MethodOfLinesScheme(final double eps, final double relInitStepSize, final FdmLinearOpComposite map,
+            final FdmBoundaryConditionSet bcSet) {
         this.dt = Double.NaN;
         this.eps = eps;
         this.relInitStepSize = relInitStepSize;
         this.map = map;
         this.bcSet = new BoundaryConditionSchemeHelper(bcSet);
+    }
+
+    private static double[] toDoubleArray(final Array a) {
+        final double[] result = new double[a.size()];
+        for ( int i = 0; i < a.size(); i++ ) {
+            result[i] = a.get(i);
+        }
+        return result;
+    }
+
+    private static Array fromDoubleArray(final double[] v) {
+        final Array a = new Array(v.length);
+        for ( int i = 0; i < v.length; i++ ) {
+            a.set(i, v[i]);
+        }
+        return a;
     }
 
     /** Set the rollback step size. */
@@ -73,9 +82,8 @@ public class MethodOfLinesScheme {
     /**
      * Advance {@code a} from time {@code t} to {@code t-dt} in-place.
      * <p>
-     * Mirrors C++ {@code MethodOfLinesScheme::step}. Integrates the ODE
-     * {@code dy/dt = -L(y)} from {@code t} to {@code max(0, t-dt)} using
-     * an adaptive Cash-Karp Runge-Kutta stepper.
+     * Mirrors C++ {@code MethodOfLinesScheme::step}. Integrates the ODE {@code dy/dt = -L(y)} from {@code t} to
+     * {@code max(0, t-dt)} using an adaptive Cash-Karp Runge-Kutta stepper.
      */
     public void step(final Array a, final double t) {
         QL.require(t - dt > -1e-8, "a step towards negative time given");
@@ -99,8 +107,8 @@ public class MethodOfLinesScheme {
     }
 
     /**
-     * ODE right-hand-side for the adaptive integrator: {@code dy/dt = -L(y)}.
-     * Mirrors C++ {@code MethodOfLinesScheme::apply}.
+     * ODE right-hand-side for the adaptive integrator: {@code dy/dt = -L(y)}. Mirrors C++
+     * {@code MethodOfLinesScheme::apply}.
      */
     private double[] applyOde(final double t, final double[] u) {
         map.setTime(t, t + 0.0001);
@@ -110,21 +118,5 @@ public class MethodOfLinesScheme {
         final Array dxdt = map.apply(arr).mulAssign(-1.0);
 
         return toDoubleArray(dxdt);
-    }
-
-    private static double[] toDoubleArray(final Array a) {
-        final double[] result = new double[a.size()];
-        for (int i = 0; i < a.size(); i++) {
-            result[i] = a.get(i);
-        }
-        return result;
-    }
-
-    private static Array fromDoubleArray(final double[] v) {
-        final Array a = new Array(v.length);
-        for (int i = 0; i < v.length; i++) {
-            a.set(i, v[i]);
-        }
-        return a;
     }
 }

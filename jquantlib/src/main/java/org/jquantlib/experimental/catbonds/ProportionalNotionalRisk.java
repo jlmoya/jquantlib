@@ -11,12 +11,13 @@
 
 package org.jquantlib.experimental.catbonds;
 
-import java.util.List;
 import org.jquantlib.QL;
 
+import java.util.List;
+
 /**
- * Notional risk model that proportionally reduces the notional once cumulative
- * losses exceed an attachment point, reaching zero at an exhaustion point.
+ * Notional risk model that proportionally reduces the notional once cumulative losses exceed an attachment point,
+ * reaching zero at an exhaustion point.
  *
  * <p>Port of {@code ql/experimental/catbonds/riskynotional.hpp}
  * {@code ProportionalNotionalRisk}.
@@ -26,28 +27,24 @@ public class ProportionalNotionalRisk extends NotionalRisk {
     private final double attachement_;
     private final double exhaustion_;
 
-    public ProportionalNotionalRisk(
-            final EventPaymentOffset paymentOffset,
-            final double attachement,
+    public ProportionalNotionalRisk(final EventPaymentOffset paymentOffset, final double attachement,
             final double exhaustion) {
 
         super(paymentOffset);
-        QL.require(attachement < exhaustion,
-                "exhaustion level needs to be greater than attachement");
+        QL.require(attachement < exhaustion, "exhaustion level needs to be greater than attachement");
         this.attachement_ = attachement;
-        this.exhaustion_  = exhaustion;
+        this.exhaustion_ = exhaustion;
     }
 
     @Override
-    public void updatePath(final List<DateRealPair> events, final NotionalPath path) {
+    public void updatePath(final List< DateRealPair > events, final NotionalPath path) {
         path.reset();
         double losses = 0.0;
         double previousNotional = 1.0;
-        for (final DateRealPair event : events) {
+        for ( final DateRealPair event : events ) {
             losses += event.value;
-            if (losses > attachement_ && previousNotional > 0.0) {
-                previousNotional = Math.max(0.0,
-                        (exhaustion_ - losses) / (exhaustion_ - attachement_));
+            if ( losses > attachement_ && previousNotional > 0.0 ) {
+                previousNotional = Math.max(0.0, (exhaustion_ - losses) / (exhaustion_ - attachement_));
                 path.addReduction(paymentOffset_.paymentDate(event.date), previousNotional);
             }
         }

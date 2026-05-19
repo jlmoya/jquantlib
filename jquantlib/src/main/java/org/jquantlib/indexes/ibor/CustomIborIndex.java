@@ -28,15 +28,10 @@ import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.indexes.IborIndex;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.termstructures.YieldTermStructure;
-import org.jquantlib.time.BusinessDayConvention;
-import org.jquantlib.time.Calendar;
-import org.jquantlib.time.Date;
-import org.jquantlib.time.Period;
-import org.jquantlib.time.TimeUnit;
+import org.jquantlib.time.*;
 
 /**
- * LIBOR-like index that allows specifying custom calendars for value and
- * maturity date calculations.
+ * LIBOR-like index that allows specifying custom calendars for value and maturity date calculations.
  * <ul>
  *   <li>{@code valueDate()} advances on the {@code valueCalendar} and adjusts
  *       on the {@code maturityCalendar}.</li>
@@ -54,36 +49,21 @@ public class CustomIborIndex extends IborIndex {
     private final Calendar valueCalendar;
     private final Calendar maturityCalendar;
 
-    public CustomIborIndex(final String familyName,
-                           final Period tenor,
-                           final int settlementDays,
-                           final Currency currency,
-                           final Calendar fixingCalendar,
-                           final Calendar valueCalendar,
-                           final Calendar maturityCalendar,
-                           final BusinessDayConvention convention,
-                           final boolean endOfMonth,
-                           final DayCounter dayCounter,
-                           final Handle<YieldTermStructure> h) {
-        super(familyName, tenor, settlementDays, currency, fixingCalendar,
-                convention, endOfMonth, dayCounter, h);
+    public CustomIborIndex(final String familyName, final Period tenor, final int settlementDays,
+            final Currency currency, final Calendar fixingCalendar, final Calendar valueCalendar,
+            final Calendar maturityCalendar, final BusinessDayConvention convention, final boolean endOfMonth,
+            final DayCounter dayCounter, final Handle< YieldTermStructure > h) {
+        super(familyName, tenor, settlementDays, currency, fixingCalendar, convention, endOfMonth, dayCounter, h);
         this.valueCalendar = valueCalendar;
         this.maturityCalendar = maturityCalendar;
     }
 
-    public CustomIborIndex(final String familyName,
-                           final Period tenor,
-                           final int settlementDays,
-                           final Currency currency,
-                           final Calendar fixingCalendar,
-                           final Calendar valueCalendar,
-                           final Calendar maturityCalendar,
-                           final BusinessDayConvention convention,
-                           final boolean endOfMonth,
-                           final DayCounter dayCounter) {
-        this(familyName, tenor, settlementDays, currency, fixingCalendar,
-                valueCalendar, maturityCalendar, convention, endOfMonth,
-                dayCounter, new Handle<YieldTermStructure>());
+    public CustomIborIndex(final String familyName, final Period tenor, final int settlementDays,
+            final Currency currency, final Calendar fixingCalendar, final Calendar valueCalendar,
+            final Calendar maturityCalendar, final BusinessDayConvention convention, final boolean endOfMonth,
+            final DayCounter dayCounter) {
+        this(familyName, tenor, settlementDays, currency, fixingCalendar, valueCalendar, maturityCalendar, convention,
+                endOfMonth, dayCounter, new Handle< YieldTermStructure >());
     }
 
     //
@@ -91,10 +71,8 @@ public class CustomIborIndex extends IborIndex {
     //
 
     /**
-     * Mirrors C++ v1.42.1 ql/indexes/ibor/custom.cpp:23-27.
-     * Walks back {@code fixingDays} on the {@code valueCalendar}, then snaps
-     * the result to a {@code fixingCalendar} business day with
-     * {@link BusinessDayConvention#Preceding}.
+     * Mirrors C++ v1.42.1 ql/indexes/ibor/custom.cpp:23-27. Walks back {@code fixingDays} on the {@code valueCalendar},
+     * then snaps the result to a {@code fixingCalendar} business day with {@link BusinessDayConvention#Preceding}.
      */
     @Override
     public Date fixingDate(final Date valueDate) {
@@ -103,27 +81,23 @@ public class CustomIborIndex extends IborIndex {
     }
 
     /**
-     * Mirrors C++ v1.42.1 ql/indexes/ibor/custom.cpp:29-36.
-     * Advances forward {@code fixingDays} on the {@code valueCalendar}, then
-     * adjusts onto a {@code maturityCalendar} business day (Following).
+     * Mirrors C++ v1.42.1 ql/indexes/ibor/custom.cpp:29-36. Advances forward {@code fixingDays} on the
+     * {@code valueCalendar}, then adjusts onto a {@code maturityCalendar} business day (Following).
      */
     @Override
     public Date valueDate(final Date fixingDate) {
-        QL.require(isValidFixingDate(fixingDate),
-                "Fixing date " + fixingDate + " is not valid");
+        QL.require(isValidFixingDate(fixingDate), "Fixing date " + fixingDate + " is not valid");
         final Date d = valueCalendar.advance(fixingDate, fixingDays(), TimeUnit.Days);
         return maturityCalendar.adjust(d);
     }
 
     /**
-     * Mirrors C++ v1.42.1 ql/indexes/ibor/custom.cpp:38-41.
-     * Advances {@code tenor} on the {@code maturityCalendar} using the
-     * configured business-day convention and end-of-month flag.
+     * Mirrors C++ v1.42.1 ql/indexes/ibor/custom.cpp:38-41. Advances {@code tenor} on the {@code maturityCalendar}
+     * using the configured business-day convention and end-of-month flag.
      */
     @Override
     public Date maturityDate(final Date valueDate) {
-        return maturityCalendar.advance(valueDate, tenor(), businessDayConvention(),
-                endOfMonth());
+        return maturityCalendar.advance(valueDate, tenor(), businessDayConvention(), endOfMonth());
     }
 
     //
@@ -134,20 +108,11 @@ public class CustomIborIndex extends IborIndex {
      * Mirrors C++ v1.42.1 ql/indexes/ibor/custom.cpp:43-49.
      */
     @Override
-    public Handle<IborIndex> clone(final Handle<YieldTermStructure> h) {
-        final CustomIborIndex clone = new CustomIborIndex(
-                familyName(),
-                tenor(),
-                fixingDays(),
-                currency(),
-                fixingCalendar(),
-                valueCalendar,
-                maturityCalendar,
-                businessDayConvention(),
-                endOfMonth(),
-                dayCounter(),
+    public Handle< IborIndex > clone(final Handle< YieldTermStructure > h) {
+        final CustomIborIndex clone = new CustomIborIndex(familyName(), tenor(), fixingDays(), currency(),
+                fixingCalendar(), valueCalendar, maturityCalendar, businessDayConvention(), endOfMonth(), dayCounter(),
                 h);
-        return new Handle<IborIndex>(clone);
+        return new Handle< IborIndex >(clone);
     }
 
     //

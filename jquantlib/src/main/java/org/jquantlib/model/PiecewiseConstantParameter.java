@@ -52,15 +52,13 @@ import org.jquantlib.math.optimization.NoConstraint;
  */
 public class PiecewiseConstantParameter extends Parameter {
 
-
     //
     // public methods
     //
 
     public PiecewiseConstantParameter(final /* @Time */ double[] times) {
-        super(times.length+1, new Impl(times), new NoConstraint());
+        super(times.length + 1, new Impl(times), new NoConstraint());
     }
-
 
     //
     // private inner classes
@@ -83,10 +81,11 @@ public class PiecewiseConstantParameter extends Parameter {
         }
 
         @Override
-        public double value(final Array  params, /* @Time */ final double t) /* @ReadOnly */ {
-            /*@NonNegative*/ final int size = times_.length;
-            for (/*@NonNegative*/ int i=0; i<size; i++)
-                if (t<times_[i])
+        public double value(final Array params, /* @Time */ final double t) /* @ReadOnly */ {
+            /*@NonNegative*/
+            final int size = times_.length;
+            for (/*@NonNegative*/ int i = 0; i < size; i++ )
+                if ( t < times_[i] )
                     return params.get(i);
             return params.get(size);
         }

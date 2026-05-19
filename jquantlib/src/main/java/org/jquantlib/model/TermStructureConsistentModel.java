@@ -44,15 +44,15 @@ import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.util.Observable;
 
 public abstract class TermStructureConsistentModel implements Observable {
-    private final Handle<YieldTermStructure> termStructure_;
+    private final Handle< YieldTermStructure > termStructure_;
 
     //-- TermStructureConsistentModel(Handle<YieldTermStructure> termStructure);
     //-- in ql/models/model.hpp (inline)
-    public TermStructureConsistentModel(final Handle<YieldTermStructure> termStructure) {
+    public TermStructureConsistentModel(final Handle< YieldTermStructure > termStructure) {
         this.termStructure_ = termStructure;
     }
 
-    public Handle<YieldTermStructure> termStructure(){
+    public Handle< YieldTermStructure > termStructure() {
         return termStructure_;
     }
 }

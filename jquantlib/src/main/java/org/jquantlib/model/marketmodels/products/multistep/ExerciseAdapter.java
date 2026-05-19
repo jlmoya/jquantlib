@@ -33,11 +33,11 @@ import org.jquantlib.model.marketmodels.callability.MarketModelExerciseValue;
 import org.jquantlib.model.marketmodels.products.MultiProductMultiStep;
 
 /**
- * Adapts a {@link MarketModelExerciseValue} into a {@link MarketModelMultiProduct},
- * presenting the exercise cash flow as a rebate-style product.
+ * Adapts a {@link MarketModelExerciseValue} into a {@link MarketModelMultiProduct}, presenting the exercise cash flow
+ * as a rebate-style product.
  * <p>
- * Mirrors C++ {@code class ExerciseAdapter}
- * (ql/models/marketmodels/products/multistep/exerciseadapter.{hpp,cpp} v1.42.1).
+ * Mirrors C++ {@code class ExerciseAdapter} (ql/models/marketmodels/products/multistep/exerciseadapter.{hpp,cpp}
+ * v1.42.1).
  *
  * @author Jose Moya
  */
@@ -60,13 +60,19 @@ public class ExerciseAdapter extends MultiProductMultiStep {
     }
 
     @Override
-    public double[] possibleCashFlowTimes() { return exercise_.possibleCashFlowTimes(); }
+    public double[] possibleCashFlowTimes() {
+        return exercise_.possibleCashFlowTimes();
+    }
 
     @Override
-    public int numberOfProducts() { return numberOfProducts_; }
+    public int numberOfProducts() {
+        return numberOfProducts_;
+    }
 
     @Override
-    public int maxNumberOfCashFlowsPerProductPerStep() { return 1; }
+    public int maxNumberOfCashFlowsPerProductPerStep() {
+        return 1;
+    }
 
     @Override
     public void reset() {
@@ -75,19 +81,20 @@ public class ExerciseAdapter extends MultiProductMultiStep {
     }
 
     /** Inspector — exposes the wrapped exercise-value provider. */
-    public MarketModelExerciseValue exerciseValue() { return exercise_; }
+    public MarketModelExerciseValue exerciseValue() {
+        return exercise_;
+    }
 
     @Override
-    public boolean nextTimeStep(final CurveState currentState,
-                                final int[] numberCashFlowsThisStep,
-                                final MarketModelMultiProduct.CashFlow[][] generatedCashFlows) {
-        for (int i = 0; i < numberCashFlowsThisStep.length; ++i) {
+    public boolean nextTimeStep(final CurveState currentState, final int[] numberCashFlowsThisStep,
+            final MarketModelMultiProduct.CashFlow[][] generatedCashFlows) {
+        for ( int i = 0; i < numberCashFlowsThisStep.length; ++i ) {
             numberCashFlowsThisStep[i] = 0;
         }
         boolean done = false;
 
         exercise_.nextStep(currentState);
-        if (isExerciseTime_[currentIndex_]) {
+        if ( isExerciseTime_[currentIndex_] ) {
             final MarketModelMultiProduct.CashFlow cashflow = exercise_.value(currentState);
             numberCashFlowsThisStep[0] = 1;
             generatedCashFlows[0][0].timeIndex = cashflow.timeIndex;

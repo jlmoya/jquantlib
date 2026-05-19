@@ -54,7 +54,6 @@ public class PriceError implements DoubleOp {
     private final SimpleQuote vol;
     private final double targetValue;
 
-
     public PriceError(final PricingEngine engine, final SimpleQuote vol, final double targetValue) {
         this.engine = engine;
         this.vol = vol;
@@ -62,7 +61,6 @@ public class PriceError implements DoubleOp {
         this.results = (Instrument.ResultsImpl) engine.getResults();
         QL.require(results != null, "pricing engine does not supply needed results"); // TODO: message
     }
-
 
     //
     // implements Ops.DoubleOp

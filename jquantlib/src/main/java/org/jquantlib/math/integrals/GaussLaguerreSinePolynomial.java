@@ -37,8 +37,8 @@ package org.jquantlib.math.integrals;
  * where {@code m0 = 1 + u/(1+u*u)} so that {@code mu_0 = 1}.
  *
  * <p>The arbitrary-precision template parameter {@code mp_real} in C++ is not
- * needed in the Java port; {@code double} is used throughout. See
- * {@link MomentBasedGaussianPolynomial} for the precision rationale.
+ * needed in the Java port; {@code double} is used throughout. See {@link MomentBasedGaussianPolynomial} for the
+ * precision rationale.
  */
 public class GaussLaguerreSinePolynomial extends GaussLaguerreTrigonometricBase {
 

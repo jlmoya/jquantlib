@@ -40,12 +40,7 @@ import org.jquantlib.pricingengines.credit.MidPointCdsEngine;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.termstructures.YieldTermStructure;
-import org.jquantlib.time.BusinessDayConvention;
-import org.jquantlib.time.Calendar;
-import org.jquantlib.time.Date;
-import org.jquantlib.time.DateGeneration;
-import org.jquantlib.time.Frequency;
-import org.jquantlib.time.Period;
+import org.jquantlib.time.*;
 
 /**
  * Spread-quoted CDS hazard-rate bootstrap helper.
@@ -61,70 +56,39 @@ import org.jquantlib.time.Period;
  */
 public class SpreadCdsHelper extends CdsHelper {
 
-    public SpreadCdsHelper(
-            final Handle<Quote> runningSpread,
-            final Period tenor,
-            final int settlementDays,
-            final Calendar calendar,
-            final Frequency frequency,
-            final BusinessDayConvention paymentConvention,
-            final DateGeneration.Rule rule,
-            final DayCounter dayCounter,
-            final double recoveryRate,
-            final Handle<YieldTermStructure> discountCurve,
-            final boolean settlesAccrual,
-            final boolean paysAtDefaultTime,
-            final Date startDate,
-            final DayCounter lastPeriodDayCounter,
-            final boolean rebatesAccrual,
-            final PricingModel model) {
-        super(runningSpread, tenor, settlementDays, calendar,
-              frequency, paymentConvention, rule, dayCounter,
-              recoveryRate, discountCurve, settlesAccrual, paysAtDefaultTime,
-              startDate, lastPeriodDayCounter, rebatesAccrual, model);
+    public SpreadCdsHelper(final Handle< Quote > runningSpread, final Period tenor, final int settlementDays,
+            final Calendar calendar, final Frequency frequency, final BusinessDayConvention paymentConvention,
+            final DateGeneration.Rule rule, final DayCounter dayCounter, final double recoveryRate,
+            final Handle< YieldTermStructure > discountCurve, final boolean settlesAccrual,
+            final boolean paysAtDefaultTime, final Date startDate, final DayCounter lastPeriodDayCounter,
+            final boolean rebatesAccrual, final PricingModel model) {
+        super(runningSpread, tenor, settlementDays, calendar, frequency, paymentConvention, rule, dayCounter,
+                recoveryRate, discountCurve, settlesAccrual, paysAtDefaultTime, startDate, lastPeriodDayCounter,
+                rebatesAccrual, model);
     }
 
     /** Spread-as-double overload. */
-    public SpreadCdsHelper(
-            final double runningSpread,
-            final Period tenor,
-            final int settlementDays,
-            final Calendar calendar,
-            final Frequency frequency,
-            final BusinessDayConvention paymentConvention,
-            final DateGeneration.Rule rule,
-            final DayCounter dayCounter,
-            final double recoveryRate,
-            final Handle<YieldTermStructure> discountCurve,
-            final boolean settlesAccrual,
-            final boolean paysAtDefaultTime,
-            final Date startDate,
-            final DayCounter lastPeriodDayCounter,
-            final boolean rebatesAccrual,
-            final PricingModel model) {
-        super(runningSpread, tenor, settlementDays, calendar,
-              frequency, paymentConvention, rule, dayCounter,
-              recoveryRate, discountCurve, settlesAccrual, paysAtDefaultTime,
-              startDate, lastPeriodDayCounter, rebatesAccrual, model);
+    public SpreadCdsHelper(final double runningSpread, final Period tenor, final int settlementDays,
+            final Calendar calendar, final Frequency frequency, final BusinessDayConvention paymentConvention,
+            final DateGeneration.Rule rule, final DayCounter dayCounter, final double recoveryRate,
+            final Handle< YieldTermStructure > discountCurve, final boolean settlesAccrual,
+            final boolean paysAtDefaultTime, final Date startDate, final DayCounter lastPeriodDayCounter,
+            final boolean rebatesAccrual, final PricingModel model) {
+        super(runningSpread, tenor, settlementDays, calendar, frequency, paymentConvention, rule, dayCounter,
+                recoveryRate, discountCurve, settlesAccrual, paysAtDefaultTime, startDate, lastPeriodDayCounter,
+                rebatesAccrual, model);
     }
 
-    /** Convenience overload defaulting settlesAccrual=true,
-     *  paysAtDefaultTime=true, startDate=null, lastPeriodDayCounter=null,
-     *  rebatesAccrual=true, model=Midpoint — matches C++ default arguments. */
-    public SpreadCdsHelper(
-            final double runningSpread,
-            final Period tenor,
-            final int settlementDays,
-            final Calendar calendar,
-            final Frequency frequency,
-            final BusinessDayConvention paymentConvention,
-            final DateGeneration.Rule rule,
-            final DayCounter dayCounter,
-            final double recoveryRate,
-            final Handle<YieldTermStructure> discountCurve) {
-        this(runningSpread, tenor, settlementDays, calendar, frequency,
-             paymentConvention, rule, dayCounter, recoveryRate, discountCurve,
-             true, true, null, null, true, PricingModel.Midpoint);
+    /**
+     * Convenience overload defaulting settlesAccrual=true, paysAtDefaultTime=true, startDate=null,
+     * lastPeriodDayCounter=null, rebatesAccrual=true, model=Midpoint — matches C++ default arguments.
+     */
+    public SpreadCdsHelper(final double runningSpread, final Period tenor, final int settlementDays,
+            final Calendar calendar, final Frequency frequency, final BusinessDayConvention paymentConvention,
+            final DateGeneration.Rule rule, final DayCounter dayCounter, final double recoveryRate,
+            final Handle< YieldTermStructure > discountCurve) {
+        this(runningSpread, tenor, settlementDays, calendar, frequency, paymentConvention, rule, dayCounter,
+                recoveryRate, discountCurve, true, true, null, null, true, PricingModel.Midpoint);
     }
 
     @Override
@@ -140,39 +104,25 @@ public class SpreadCdsHelper extends CdsHelper {
     protected void resetEngine() {
         // C++ uses Protection::Buyer with notional 100.0 and a temporary
         // 1% spread; the engine then solves for the actual fair spread.
-        swap_ = new CreditDefaultSwap(
-                Protection.Side.Buyer,
-                100.0,
-                0.01,
-                schedule_,
-                paymentConvention_,
-                dayCounter_,
-                settlesAccrual_,
-                paysAtDefaultTime_,
-                protectionStart_,
+        swap_ = new CreditDefaultSwap(Protection.Side.Buyer, 100.0, 0.01, schedule_, paymentConvention_, dayCounter_,
+                settlesAccrual_, paysAtDefaultTime_, protectionStart_,
                 null,                  // claim — defaults to FaceValueClaim
-                lastPeriodDC_,
-                rebatesAccrual_,
-                evaluationDate_,
-                3);
+                lastPeriodDC_, rebatesAccrual_, evaluationDate_, 3);
 
-        switch (model_) {
-          case Midpoint:
-            swap_.setPricingEngine(new MidPointCdsEngine(
-                    probability_, recoveryRate_, discountCurve_));
+        switch ( model_ ) {
+        case Midpoint:
+            swap_.setPricingEngine(new MidPointCdsEngine(probability_, recoveryRate_, discountCurve_));
             break;
-          case ISDA:
+        case ISDA:
             // Phase 3d L1: wire IsdaCdsEngine with the C++ default settings
             // (Taylor / HalfDayBias / Piecewise, includeSettlementDateFlows=false).
             swap_.setPricingEngine(
-                    new org.jquantlib.pricingengines.credit.IsdaCdsEngine(
-                            probability_, recoveryRate_, discountCurve_,
-                            Boolean.FALSE,
-                            org.jquantlib.pricingengines.credit.IsdaCdsEngine.NumericalFix.Taylor,
+                    new org.jquantlib.pricingengines.credit.IsdaCdsEngine(probability_, recoveryRate_, discountCurve_,
+                            Boolean.FALSE, org.jquantlib.pricingengines.credit.IsdaCdsEngine.NumericalFix.Taylor,
                             org.jquantlib.pricingengines.credit.IsdaCdsEngine.AccrualBias.HalfDayBias,
                             org.jquantlib.pricingengines.credit.IsdaCdsEngine.ForwardsInCouponPeriod.Piecewise));
             break;
-          default:
+        default:
             throw new IllegalArgumentException("unknown CDS pricing model: " + model_);
         }
     }

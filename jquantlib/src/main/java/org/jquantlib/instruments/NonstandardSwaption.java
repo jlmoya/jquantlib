@@ -44,8 +44,6 @@
 
 package org.jquantlib.instruments;
 
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.exercise.Exercise;
@@ -58,12 +56,13 @@ import org.jquantlib.pricingengines.swaption.gaussian1d.Gaussian1dNonstandardSwa
 import org.jquantlib.termstructures.SwaptionVolatilityStructure;
 import org.jquantlib.time.Date;
 
+import java.util.List;
+
 /**
  * Non-standard swaption: an option on a {@link NonstandardSwap}.
  *
  * <p>Structurally analogous to {@link Swaption} wrapping a {@link VanillaSwap}.
- * Mirrors C++ v1.42.1 {@code ql/instruments/nonstandardswaption.hpp} /
- * {@code .cpp} (author Peter Caspers, 2013/2018).
+ * Mirrors C++ v1.42.1 {@code ql/instruments/nonstandardswaption.hpp} / {@code .cpp} (author Peter Caspers, 2013/2018).
  *
  * <h3>Java port deviations from C++ v1.42.1</h3>
  * <ul>
@@ -89,18 +88,16 @@ public class NonstandardSwaption extends Option {
     private final Settlement.Type settlementType_;
     private final Settlement.Method settlementMethod_;
 
-
     // ── constructors ──────────────────────────────────────────────────────────
 
     /**
-     * Construct from an existing {@link Swaption}.
-     * Converts the underlying {@link VanillaSwap} to a {@link NonstandardSwap}
-     * and copies the exercise and settlement fields.
-     * Mirrors C++ {@code NonstandardSwaption(const Swaption&)}.
+     * Construct from an existing {@link Swaption}. Converts the underlying {@link VanillaSwap} to a
+     * {@link NonstandardSwap} and copies the exercise and settlement fields. Mirrors C++
+     * {@code NonstandardSwaption(const Swaption&)}.
      */
     public NonstandardSwaption(final Swaption fromSwaption) {
         super(null /* payoff */, fromSwaption.exercise);
-        this.swap_           = new NonstandardSwap(fromSwaption.underlying());
+        this.swap_ = new NonstandardSwap(fromSwaption.underlying());
         this.settlementType_ = fromSwaption.settlementType();
         this.settlementMethod_ = fromSwaption.settlementMethod();
         this.swap_.addObserver(this);
@@ -108,31 +105,25 @@ public class NonstandardSwaption extends Option {
     }
 
     /**
-     * Construct with explicit settlement type/method, defaulting to
-     * {@link Settlement.Type#Physical} / {@link Settlement.Method#PhysicalOTC}.
+     * Construct with explicit settlement type/method, defaulting to {@link Settlement.Type#Physical} /
+     * {@link Settlement.Method#PhysicalOTC}.
      */
-    public NonstandardSwaption(final NonstandardSwap swap,
-                               final Exercise exercise) {
-        this(swap, exercise,
-             Settlement.Type.Physical, Settlement.Method.PhysicalOTC);
+    public NonstandardSwaption(final NonstandardSwap swap, final Exercise exercise) {
+        this(swap, exercise, Settlement.Type.Physical, Settlement.Method.PhysicalOTC);
     }
 
     /**
-     * Full constructor.
-     * Mirrors C++ {@code NonstandardSwaption(shared_ptr<NonstandardSwap>, Exercise, Type, Method)}.
+     * Full constructor. Mirrors C++ {@code NonstandardSwaption(shared_ptr<NonstandardSwap>, Exercise, Type, Method)}.
      */
-    public NonstandardSwaption(final NonstandardSwap swap,
-                               final Exercise exercise,
-                               final Settlement.Type delivery,
-                               final Settlement.Method settlementMethod) {
+    public NonstandardSwaption(final NonstandardSwap swap, final Exercise exercise, final Settlement.Type delivery,
+            final Settlement.Method settlementMethod) {
         super(null /* payoff */, exercise);
-        this.swap_             = swap;
-        this.settlementType_   = delivery;
+        this.swap_ = swap;
+        this.settlementType_ = delivery;
         this.settlementMethod_ = settlementMethod;
         this.swap_.addObserver(this);
         this.swap_.alwaysForwardNotifications();
     }
-
 
     // ── inspectors ────────────────────────────────────────────────────────────
 
@@ -147,16 +138,14 @@ public class NonstandardSwaption extends Option {
     }
 
     /**
-     * Returns the underlying swap type (Payer/Receiver).
-     * Mirrors C++ {@code NonstandardSwaption::type()}.
+     * Returns the underlying swap type (Payer/Receiver). Mirrors C++ {@code NonstandardSwaption::type()}.
      */
     public VanillaSwap.Type type() {
         return swap_.type();
     }
 
     /**
-     * Returns the underlying non-standard swap.
-     * Mirrors C++ {@code NonstandardSwaption::underlyingSwap()}.
+     * Returns the underlying non-standard swap. Mirrors C++ {@code NonstandardSwaption::underlyingSwap()}.
      */
     public NonstandardSwap underlyingSwap() {
         return swap_;
@@ -173,40 +162,35 @@ public class NonstandardSwaption extends Option {
      * Generates a calibration basket of swaption helpers.
      *
      * <p>Mirrors C++ {@code NonstandardSwaption::calibrationBasket(SwapIndex,
-     * SwaptionVolatilityStructure, CalibrationBasketType)}. Delegates to the
-     * pricing engine which must be a
-     * {@link Gaussian1dNonstandardSwaptionEngine} (or another engine that
-     * exposes {@code calibrationBasket()}). Phase 2k Track B.
+     * SwaptionVolatilityStructure, CalibrationBasketType)}. Delegates to the pricing engine which must be a
+     * {@link Gaussian1dNonstandardSwaptionEngine} (or another engine that exposes {@code calibrationBasket()}). Phase
+     * 2k Track B.
      *
-     * @param standardSwapBase    swap index defining basket swaption attributes
-     * @param swaptionVolatility  vol surface for helper construction
-     * @param basketType          Naive or MaturityStrikeByDeltaGamma
+     * @param standardSwapBase   swap index defining basket swaption attributes
+     * @param swaptionVolatility vol surface for helper construction
+     * @param basketType         Naive or MaturityStrikeByDeltaGamma
      * @return list of calibration helpers
      */
-    public List<BlackCalibrationHelper> calibrationBasket(
-            final SwapIndex standardSwapBase,
+    public List< BlackCalibrationHelper > calibrationBasket(final SwapIndex standardSwapBase,
             final SwaptionVolatilityStructure swaptionVolatility,
             final BasketGeneratingEngine.CalibrationBasketType basketType) {
 
-        QL.require(engine != null,
-                "no pricing engine set — cannot generate calibration basket");
+        QL.require(engine != null, "no pricing engine set — cannot generate calibration basket");
         QL.require(engine instanceof Gaussian1dNonstandardSwaptionEngine,
                 "calibrationBasket requires a Gaussian1dNonstandardSwaptionEngine");
 
         // Trigger setupArguments so engine's arguments_ are populated
         setupArguments(engine.getArguments());
 
-        return ((Gaussian1dNonstandardSwaptionEngine) engine)
-                .calibrationBasket(exercise, standardSwapBase, swaptionVolatility, basketType);
+        return ((Gaussian1dNonstandardSwaptionEngine) engine).calibrationBasket(exercise, standardSwapBase,
+                swaptionVolatility, basketType);
     }
-
 
     // ── Instrument interface ──────────────────────────────────────────────────
 
     /**
-     * Mirrors C++ {@code NonstandardSwaption::isExpired()}.
-     * The swaption is expired when the last exercise date has occurred
-     * (i.e. is less than or equal to today's evaluation date).
+     * Mirrors C++ {@code NonstandardSwaption::isExpired()}. The swaption is expired when the last exercise date has
+     * occurred (i.e. is less than or equal to today's evaluation date).
      */
     @Override
     public boolean isExpired() /* @ReadOnly */ {
@@ -215,36 +199,30 @@ public class NonstandardSwaption extends Option {
     }
 
     /**
-     * Mirrors C++ {@code NonstandardSwaption::setupArguments()}.
-     * Chains to the underlying swap to fill Swap-level fields, then
-     * overlays swaption-specific fields.
+     * Mirrors C++ {@code NonstandardSwaption::setupArguments()}. Chains to the underlying swap to fill Swap-level
+     * fields, then overlays swaption-specific fields.
      */
     @Override
     protected void setupArguments(final PricingEngine.Arguments args) /* @ReadOnly */ {
         // Populate NonstandardSwap-level fields (legs, payer, type, nominals, …).
         swap_.setupArguments(args);
 
-        QL.require(args instanceof NonstandardSwaption.ArgumentsImpl,
-                   "wrong argument type");
-        final NonstandardSwaption.ArgumentsImpl a =
-                (NonstandardSwaption.ArgumentsImpl) args;
+        QL.require(args instanceof NonstandardSwaption.ArgumentsImpl, "wrong argument type");
+        final NonstandardSwaption.ArgumentsImpl a = (NonstandardSwaption.ArgumentsImpl) args;
 
-        a.swap             = swap_;
-        a.exercise         = exercise;
-        a.settlementType   = settlementType_;
+        a.swap = swap_;
+        a.exercise = exercise;
+        a.settlementType = settlementType_;
         a.settlementMethod = settlementMethod_;
     }
-
 
     // ── inner interfaces ──────────────────────────────────────────────────────
 
     /**
-     * Marking interface for NonstandardSwaption arguments.
-     * Mirrors C++ {@code NonstandardSwaption::arguments} (multiple base classes
-     * collapsed to a single interface here).
+     * Marking interface for NonstandardSwaption arguments. Mirrors C++ {@code NonstandardSwaption::arguments} (multiple
+     * base classes collapsed to a single interface here).
      */
-    public interface Arguments extends NonstandardSwap.Arguments,
-                                        Option.Arguments {
+    public interface Arguments extends NonstandardSwap.Arguments, Option.Arguments {
         /* marker */
     }
 
@@ -255,16 +233,13 @@ public class NonstandardSwaption extends Option {
         /* marker */
     }
 
-
     // ── inner classes ─────────────────────────────────────────────────────────
 
     /**
-     * Concrete arguments for {@link NonstandardSwaption}.
-     * Mirrors C++ {@code NonstandardSwaption::arguments} which multiply-inherits
-     * from {@code NonstandardSwap::arguments} and {@code Option::arguments}.
+     * Concrete arguments for {@link NonstandardSwaption}. Mirrors C++ {@code NonstandardSwaption::arguments} which
+     * multiply-inherits from {@code NonstandardSwap::arguments} and {@code Option::arguments}.
      */
-    public static class ArgumentsImpl extends NonstandardSwap.ArgumentsImpl
-            implements NonstandardSwaption.Arguments {
+    public static class ArgumentsImpl extends NonstandardSwap.ArgumentsImpl implements NonstandardSwaption.Arguments {
 
         public NonstandardSwap swap;
         public Exercise exercise;
@@ -277,19 +252,17 @@ public class NonstandardSwaption extends Option {
         @Override
         public void validate() /* @ReadOnly */ {
             super.validate();
-            QL.require(swap     != null, "underlying non standard swap not set");
+            QL.require(swap != null, "underlying non standard swap not set");
             QL.require(exercise != null, "exercise not set");
             Settlement.checkTypeAndMethodConsistency(settlementType, settlementMethod);
         }
     }
 
     /**
-     * Concrete results for {@link NonstandardSwaption}.
-     * Adds no fields beyond {@link Instrument.ResultsImpl}; engines may publish
-     * extra values via {@link Instrument.ResultsImpl#additionalResults()}.
+     * Concrete results for {@link NonstandardSwaption}. Adds no fields beyond {@link Instrument.ResultsImpl}; engines
+     * may publish extra values via {@link Instrument.ResultsImpl#additionalResults()}.
      */
-    public static class ResultsImpl extends Instrument.ResultsImpl
-            implements NonstandardSwaption.Results {
+    public static class ResultsImpl extends Instrument.ResultsImpl implements NonstandardSwaption.Results {
 
         @Override
         public void reset() {
@@ -298,17 +271,15 @@ public class NonstandardSwaption extends Option {
     }
 
     /**
-     * Abstract engine base for {@link NonstandardSwaption}.
-     * Mirrors C++ {@code NonstandardSwaption::engine =
-     * GenericEngine<NonstandardSwaption::arguments, NonstandardSwaption::results>}.
+     * Abstract engine base for {@link NonstandardSwaption}. Mirrors C++
+     * {@code NonstandardSwaption::engine = GenericEngine<NonstandardSwaption::arguments,
+     * NonstandardSwaption::results>}.
      */
     public abstract static class EngineImpl
-            extends GenericEngine<NonstandardSwaption.Arguments,
-                                  NonstandardSwaption.Results> {
+            extends GenericEngine< NonstandardSwaption.Arguments, NonstandardSwaption.Results > {
 
         protected EngineImpl() {
-            super(new NonstandardSwaption.ArgumentsImpl(),
-                  new NonstandardSwaption.ResultsImpl());
+            super(new NonstandardSwaption.ArgumentsImpl(), new NonstandardSwaption.ResultsImpl());
         }
     }
 }

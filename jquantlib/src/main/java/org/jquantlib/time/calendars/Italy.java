@@ -22,14 +22,6 @@
 
 package org.jquantlib.time.calendars;
 
-import static org.jquantlib.time.Month.April;
-import static org.jquantlib.time.Month.August;
-import static org.jquantlib.time.Month.December;
-import static org.jquantlib.time.Month.January;
-import static org.jquantlib.time.Month.June;
-import static org.jquantlib.time.Month.May;
-import static org.jquantlib.time.Month.November;
-
 import org.jquantlib.lang.annotation.QualityAssurance;
 import org.jquantlib.lang.annotation.QualityAssurance.Quality;
 import org.jquantlib.lang.annotation.QualityAssurance.Version;
@@ -38,6 +30,8 @@ import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Month;
 import org.jquantlib.time.Weekday;
+
+import static org.jquantlib.time.Month.*;
 
 /**
  *
@@ -73,41 +67,26 @@ import org.jquantlib.time.Weekday;
  * <li>New Year's Eve, December 31st</li>
  * </ul>
  *
- * @test the correctness of the returned results is tested against a list of known holidays.
- *
- * @category calendars
- * @see <a href="http://www.borsaitalia.it">Borsa Italiana</a>
- *
  * @author Srinivas Hasti
  * @author Zahid Hussain
+ * @test the correctness of the returned results is tested against a list of known holidays.
+ * @category calendars
+ * @see <a href="http://www.borsaitalia.it">Borsa Italiana</a>
  */
 
-@QualityAssurance(quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Zahid Hussain" })
+@QualityAssurance( quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Zahid Hussain" } )
 public class Italy extends Calendar {
-
-    public static enum Market {
-        /**
-         * Generic settlement calendar
-         */
-        Settlement,
-
-        /**
-         * Milan stock-exchange calendar
-         */
-        Exchange
-    }
-
-
-    //
-    // public constructors
-    //
 
     public Italy() {
         this(Market.Settlement);
     }
 
+    //
+    // public constructors
+    //
+
     public Italy(final Market market) {
-        switch (market) {
+        switch ( market ) {
         case Settlement:
             impl = new SettlementImpl();
             break;
@@ -119,6 +98,17 @@ public class Italy extends Calendar {
         }
     }
 
+    public enum Market {
+        /**
+         * Generic settlement calendar
+         */
+        Settlement,
+
+        /**
+         * Milan stock-exchange calendar
+         */
+        Exchange
+    }
 
     //
     // private final inner classes
@@ -137,34 +127,31 @@ public class Italy extends Calendar {
             final Month m = date.month();
             final int y = date.year();
             final int em = easterMonday(y);
-            if (isWeekend(w)
-            // New Year's Day
-                    || (d == 1 && m == January)
+            return !isWeekend(w)
+                    // New Year's Day
+                    && (d != 1 || m != January)
                     // Epiphany
-                    || (d == 6 && m == January)
+                    && (d != 6 || m != January)
                     // Easter Monday
-                    || (dd == em)
+                    && (dd != em)
                     // Liberation Day
-                    || (d == 25 && m == April)
+                    && (d != 25 || m != April)
                     // Labour Day
-                    || (d == 1 && m == May)
+                    && (d != 1 || m != May)
                     // Republic Day
-                    || (d == 2 && m == June && y >= 2000)
+                    && (d != 2 || m != June || y < 2000)
                     // Assumption
-                    || (d == 15 && m == August)
+                    && (d != 15 || m != August)
                     // All Saints' Day
-                    || (d == 1 && m == November)
+                    && (d != 1 || m != November)
                     // Immaculate Conception
-                    || (d == 8 && m == December)
+                    && (d != 8 || m != December)
                     // Christmas
-                    || (d == 25 && m == December)
+                    && (d != 25 || m != December)
                     // St. Stephen
-                    || (d == 26 && m == December)
+                    && (d != 26 || m != December)
                     // DECEMBER 31st, 1999 only
-                    || (d == 31 && m == December && y == 1999)) {
-                return false;
-            }
-            return true;
+                    && (d != 31 || m != December || y != 1999);
         }
     }
 
@@ -181,28 +168,25 @@ public class Italy extends Calendar {
             final Month m = date.month();
             final int y = date.year();
             final int em = easterMonday(y);
-            if (isWeekend(w)
-            // New Year's Day
-                    || (d == 1 && m == January)
+            return !isWeekend(w)
+                    // New Year's Day
+                    && (d != 1 || m != January)
                     // Good Friday
-                    || (dd == em - 3)
+                    && (dd != em - 3)
                     // Easter Monday
-                    || (dd == em)
+                    && (dd != em)
                     // Labour Day
-                    || (d == 1 && m == May)
+                    && (d != 1 || m != May)
                     // Assumption
-                    || (d == 15 && m == August)
+                    && (d != 15 || m != August)
                     // Christmas' Eve
-                    || (d == 24 && m == December)
+                    && (d != 24 || m != December)
                     // Christmas
-                    || (d == 25 && m == December)
+                    && (d != 25 || m != December)
                     // St. Stephen
-                    || (d == 26 && m == December)
+                    && (d != 26 || m != December)
                     // New Year's Eve
-                    || (d == 31 && m == December)) {
-                return false;
-            }
-            return true;
+                    && (d != 31 || m != December);
         }
     }
 }

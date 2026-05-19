@@ -23,14 +23,6 @@
 
 package org.jquantlib.time.calendars;
 
-import static org.jquantlib.time.Month.April;
-import static org.jquantlib.time.Month.December;
-import static org.jquantlib.time.Month.January;
-import static org.jquantlib.time.Month.July;
-import static org.jquantlib.time.Month.May;
-import static org.jquantlib.time.Month.November;
-import static org.jquantlib.time.Weekday.Friday;
-
 import org.jquantlib.lang.annotation.QualityAssurance;
 import org.jquantlib.lang.annotation.QualityAssurance.Quality;
 import org.jquantlib.lang.annotation.QualityAssurance.Version;
@@ -40,7 +32,11 @@ import org.jquantlib.time.Date;
 import org.jquantlib.time.Month;
 import org.jquantlib.time.Weekday;
 
+import static org.jquantlib.time.Month.*;
+import static org.jquantlib.time.Weekday.Friday;
+
 //  Brazilian calendar
+
 /**
  * Banking holidays:
  * <ul>
@@ -84,35 +80,19 @@ import org.jquantlib.time.Weekday;
  * @author Srinivas Hasti
  * @author Dominik Holenstein
  */
-@QualityAssurance(quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Richard Gomes" })
+@QualityAssurance( quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Richard Gomes" } )
 public class Brazil extends Calendar {
-
-    /**
-     * Brazil calendars
-     */
-    public static enum Market {
-        /**
-         * Generic settlement calendar
-         */
-        SETTLEMENT,
-
-        /**
-         * Bolsa de Valores de Sao Paulo
-         */
-        BOVESPA
-    }
-
-
-    //
-    // public constructors
-    //
 
     public Brazil() {
         this(Market.SETTLEMENT);
     }
 
+    //
+    // public constructors
+    //
+
     public Brazil(final Market market) {
-        switch (market) {
+        switch ( market ) {
         case SETTLEMENT:
             impl = new SettlementImpl();
             break;
@@ -124,6 +104,20 @@ public class Brazil extends Calendar {
         }
     }
 
+    /**
+     * Brazil calendars
+     */
+    public enum Market {
+        /**
+         * Generic settlement calendar
+         */
+        SETTLEMENT,
+
+        /**
+         * Bolsa de Valores de Sao Paulo
+         */
+        BOVESPA
+    }
 
     //
     // private final inner classes
@@ -145,34 +139,31 @@ public class Brazil extends Calendar {
             final int dd = date.dayOfYear();
             final int em = easterMonday(y);
 
-            if (isWeekend(w)
+            return !isWeekend(w)
                     // New Year's Day
-                    || (d == 1 && m == Month.January)
+                    && (d != 1 || m != Month.January)
                     // Tiradentes Day
-                    || (d == 21 && m == Month.April)
+                    && (d != 21 || m != Month.April)
                     // Labor Day
-                    || (d == 1 && m == Month.May)
+                    && (d != 1 || m != Month.May)
                     // Independence Day
-                    || (d == 7 && m == Month.September)
+                    && (d != 7 || m != Month.September)
                     // Nossa Sra. Aparecida Day
-                    || (d == 12 && m == Month.October)
+                    && (d != 12 || m != Month.October)
                     // All Souls Day
-                    || (d == 2 && m == Month.November)
+                    && (d != 2 || m != Month.November)
                     // Republic Day
-                    || (d == 15 && m == Month.November)
+                    && (d != 15 || m != Month.November)
                     // Black Awareness Day (Lei 14.759/2023; national holiday since 2024)
-                    || (d == 20 && m == Month.November && y >= 2024)
+                    && (d != 20 || m != Month.November || y < 2024)
                     // Christmas
-                    || (d == 25 && m == Month.December)
+                    && (d != 25 || m != Month.December)
                     // Passion of Christ
-                    || (dd == em - 3)
+                    && (dd != em - 3)
                     // Carnival
-                    || (dd == em - 49 || dd == em - 48)
+                    && (dd != em - 49 && dd != em - 48)
                     // Corpus Christi
-                    || (dd == em + 59)) {
-                return false;
-            }
-            return true;
+                    && (dd != em + 59);
         }
 
     }
@@ -193,17 +184,17 @@ public class Brazil extends Calendar {
             final int dd = date.dayOfYear();
             final int em = easterMonday(y);
 
-            if (isWeekend(w)
+            return !isWeekend(w)
                     // New Year's Day
-                    || (d == 1 && m == January)
+                    && (d != 1 || m != January)
                     // Sao Paulo City Day (B3 dropped municipal holiday from 2022)
-                    || (d == 25 && m == January && y < 2022)
+                    && (d != 25 || m != January || y >= 2022)
                     // Tiradentes Day
-                    || (d == 21 && m == April)
+                    && (d != 21 || m != April)
                     // Labor Day
-                    || (d == 1 && m == May)
+                    && (d != 1 || m != May)
                     // Revolution Day (Sao Paulo; B3 dropped from 2022)
-                    || (d == 9 && m == July && y < 2022)
+                    && (d != 9 || m != July || y >= 2022)
                     // Nossa Sra. Aparecida Day
                     // || (d == 12 && m == OCTOBER)-> not closed at the 12th October
                     // All Souls Day
@@ -214,22 +205,19 @@ public class Brazil extends Calendar {
                     // November
                     // Black Consciousness Day (B3 traded on Nov 20, 2022 and
                     // 2023 — re-added as national holiday in Lei 14.759/2023)
-                    || (d == 20 && m == November && y >= 2007 && y != 2022 && y != 2023)
+                    && (d != 20 || m != November || y < 2007 || y == 2022 || y == 2023)
                     // Christmas Eve
-                    || (d == 24 && m == December)
+                    && (d != 24 || m != December)
                     // Christmas
-                    || (d == 25 && m == December)
+                    && (d != 25 || m != December)
                     // Passion of Christ / Good Friday
-                    || (dd == em - 3)
+                    && (dd != em - 3)
                     // Carnival
-                    || (dd == em - 49 || dd == em - 48)
+                    && (dd != em - 49 && dd != em - 48)
                     // Corpus Christi
-                    || (dd == em + 59)
+                    && (dd != em + 59)
                     // last business day of the year
-                    || (m == December && (d == 31 || (d >= 29 && w == Friday)))) {
-                return false;
-            }
-            return true;
+                    && (m != December || (d != 31 && (d < 29 || w != Friday)));
         }
     }
 

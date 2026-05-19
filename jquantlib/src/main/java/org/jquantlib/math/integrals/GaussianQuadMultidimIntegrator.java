@@ -20,28 +20,26 @@
  */
 package org.jquantlib.math.integrals;
 
-import java.util.function.Function;
-
 import org.jquantlib.QL;
 import org.jquantlib.math.Ops;
 
+import java.util.function.Function;
+
 /**
- * Multi-dimensional Gauss-Hermite quadrature, computing
- * {@code ∫_{R^d} f(x_1,...,x_d) dx_1 ... dx_d} as a tensor product of 1D
- * Gauss-Hermite rules along each dimension.
+ * Multi-dimensional Gauss-Hermite quadrature, computing {@code ∫_{R^d} f(x_1,...,x_d) dx_1 ... dx_d} as a tensor
+ * product of 1D Gauss-Hermite rules along each dimension.
  *
  * <p>Java port of QuantLib v1.42.1
- * {@code ql/experimental/math/multidimquadrature.{hpp,cpp}} (Jose Aparicio,
- * 2014). Pinned commit {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
+ * {@code ql/experimental/math/multidimquadrature.{hpp,cpp}} (Jose Aparicio, 2014). Pinned commit
+ * {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
  *
  * <p>The C++ implementation uses template recursion over dimension to avoid
- * runtime depth tests; Java replaces this with a single recursive helper
- * dispatched on a mutable buffer index. Algorithmic semantics match the C++
- * cascade {@code scalarIntegrator<intgDepth>}.
+ * runtime depth tests; Java replaces this with a single recursive helper dispatched on a mutable buffer index.
+ * Algorithmic semantics match the C++ cascade {@code scalarIntegrator<intgDepth>}.
  *
  * <p>Both scalar ({@code integrate}) and vector ({@code integrateV}) integrand
- * variants are supported, mirroring the C++ template specializations
- * {@code integrate<Real>} and {@code integrate<std::vector<Real>>}.
+ * variants are supported, mirroring the C++ template specializations {@code integrate<Real>} and
+ * {@code integrate<std::vector<Real>>}.
  *
  * @see GaussHermiteIntegration
  */
@@ -85,28 +83,25 @@ public final class GaussianQuadMultidimIntegrator {
     }
 
     /**
-     * Integrate scalar function {@code f: R^d → R} as a tensor product of 1D
-     * Gauss-Hermite quadratures.
+     * Integrate scalar function {@code f: R^d → R} as a tensor product of 1D Gauss-Hermite quadratures.
      *
      * @param f integrand; receives a {@code double[]} of length {@link #dimension()}
      * @return the multi-dimensional integral
      */
-    public double integrate(final Function<double[], Double> f) {
+    public double integrate(final Function< double[], Double > f) {
         // Top-level entry: integrate over the highest-index dimension.
         return scalarIntegrator(dimension_, f);
     }
 
     /**
-     * Recursive helper. The C++ template depth corresponds to the {@code level}
-     * argument here. At {@code level == 1} (terminal) we evaluate the integrand
-     * directly; otherwise we wrap a 1D Gauss-Hermite call.
+     * Recursive helper. The C++ template depth corresponds to the {@code level} argument here. At {@code level == 1}
+     * (terminal) we evaluate the integrand directly; otherwise we wrap a 1D Gauss-Hermite call.
      *
      * <p>The C++ recursion writes {@code varBuffer_[intgDepth-1]} before
-     * recursing into {@code intgDepth-1}; this Java method mirrors that
-     * indexing.
+     * recursing into {@code intgDepth-1}; this Java method mirrors that indexing.
      */
-    private double scalarIntegrator(final int level, final Function<double[], Double> f) {
-        if (level == 1) {
+    private double scalarIntegrator(final int level, final Function< double[], Double > f) {
+        if ( level == 1 ) {
             // Terminal: 1D Gauss-Hermite over varBuffer_[0]; mFctr already
             // captured above, but at the top level we still need to do the
             // full 1D integration. Match C++: top-level entry calls
@@ -130,34 +125,30 @@ public final class GaussianQuadMultidimIntegrator {
     }
 
     /**
-     * Integrate vector function {@code f: R^d → R^k} as a tensor product of 1D
-     * Gauss-Hermite quadratures. Component-wise quadrature: each output
-     * component is integrated independently using shared abscissae and weights.
+     * Integrate vector function {@code f: R^d → R^k} as a tensor product of 1D Gauss-Hermite quadratures.
+     * Component-wise quadrature: each output component is integrated independently using shared abscissae and weights.
      *
      * <p>Java port of C++ {@code integrate<std::vector<Real>>(f)}.
      *
      * <p>The output vector size {@code k} is inferred from the first call to
      * {@code f}; subsequent calls must return vectors of the same length.
      *
-     * @param f integrand; receives a {@code double[]} of length
-     *          {@link #dimension()} and returns a {@code double[]} of length
-     *          {@code k}
+     * @param f integrand; receives a {@code double[]} of length {@link #dimension()} and returns a {@code double[]} of
+     *          length {@code k}
      * @return component-wise integrals
      */
-    public double[] integrateV(final Function<double[], double[]> f) {
+    public double[] integrateV(final Function< double[], double[] > f) {
         return vectorIntegrator(dimension_, f);
     }
 
     /**
-     * Recursive vector-valued helper, mirroring
-     * {@code vectorIntegratorVR<intgDepth>}. Component-wise tensor-product
-     * quadrature: at each level we accumulate {@code Σᵢ wᵢ · g(xᵢ)} over the
-     * 1D Gauss-Hermite rule, summed in reverse abscissa order to match the C++
-     * VectorIntegrator (highest index first).
+     * Recursive vector-valued helper, mirroring {@code vectorIntegratorVR<intgDepth>}. Component-wise tensor-product
+     * quadrature: at each level we accumulate {@code Σᵢ wᵢ · g(xᵢ)} over the 1D Gauss-Hermite rule, summed in reverse
+     * abscissa order to match the C++ VectorIntegrator (highest index first).
      */
-    private double[] vectorIntegrator(final int level, final Function<double[], double[]> f) {
+    private double[] vectorIntegrator(final int level, final Function< double[], double[] > f) {
         final int n = integral_.order();
-        if (level == 1) {
+        if ( level == 1 ) {
             // Terminal: evaluate f over varBuffer_[0] = x_[i] for each abscissa.
             // Match C++ VectorIntegrator: walk indices high → low; first iter
             // sets the result-vector size from the first f-call.
@@ -167,14 +158,14 @@ public final class GaussianQuadMultidimIntegrator {
             final int k = term0.length;
             final double[] sum = new double[k];
             final double w0 = integral_.weight(i);
-            for (int j = 0; j < k; ++j) {
+            for ( int j = 0; j < k; ++j ) {
                 sum[j] = w0 * term0[j];
             }
-            for (i--; i >= 0; --i) {
+            for ( i--; i >= 0; --i ) {
                 varBuffer_[0] = integral_.x(i);
                 final double[] term = f.apply(varBuffer_);
                 final double w = integral_.weight(i);
-                for (int j = 0; j < k; ++j) {
+                for ( int j = 0; j < k; ++j ) {
                     sum[j] += w * term[j];
                 }
             }
@@ -188,14 +179,14 @@ public final class GaussianQuadMultidimIntegrator {
         final int k = term0.length;
         final double[] sum = new double[k];
         final double w0 = integral_.weight(i);
-        for (int j = 0; j < k; ++j) {
+        for ( int j = 0; j < k; ++j ) {
             sum[j] = w0 * term0[j];
         }
-        for (i--; i >= 0; --i) {
+        for ( i--; i >= 0; --i ) {
             varBuffer_[idx] = integral_.x(i);
             final double[] term = vectorIntegrator(idx, f);
             final double w = integral_.weight(i);
-            for (int j = 0; j < k; ++j) {
+            for ( int j = 0; j < k; ++j ) {
                 sum[j] += w * term[j];
             }
         }

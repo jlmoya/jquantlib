@@ -1,12 +1,10 @@
 package org.jquantlib.math.transcendental;
 
 /**
- * Pure-Java emulation of CORE-MATH's {@code qint64_t} extended-precision
- * type — a 256-bit signed-magnitude mantissa (4&nbsp;&times;&nbsp;64-bit
- * unsigned limbs) plus signed 64-bit base-2 exponent and a sign bit. Used by
- * CORE-MATH's accurate-path correctly-rounded transcendental algorithms in
- * the third Ziv iteration (see {@code pow.c} → {@code log_3 / exp_3 /
- * q_3 / p_3}).
+ * Pure-Java emulation of CORE-MATH's {@code qint64_t} extended-precision type — a 256-bit signed-magnitude mantissa
+ * (4&nbsp;&times;&nbsp;64-bit unsigned limbs) plus signed 64-bit base-2 exponent and a sign bit. Used by CORE-MATH's
+ * accurate-path correctly-rounded transcendental algorithms in the third Ziv iteration (see {@code pow.c} →
+ * {@code log_3 / exp_3 / q_3 / p_3}).
  *
  * <p>Layout matches CORE-MATH's C struct in
  * {@code migration-harness/cpp/probes/transcendental/coremath/qint.h}:
@@ -21,37 +19,54 @@ package org.jquantlib.math.transcendental;
  * </pre>
  *
  * <p>This class is package-private — used internally by the future
- * {@code PowKernel} (sub-layer 2n A.1). Public API surface is solely the
- * {@link JQuantMath} facade.
+ * {@code PowKernel} (sub-layer 2n A.1). Public API surface is solely the {@link JQuantMath} facade.
  *
  * <p>Source: CORE-MATH (Sibidanov / Zimmermann / Hubrecht et al., Inria;
- * MIT-licensed; {@code https://core-math.gitlabpages.inria.fr/}). The
- * Java port is transcribed faithfully from {@code qint.h} and
- * cross-validated bit-exact via the {@code qint64_probe} reference at
+ * MIT-licensed; {@code https://core-math.gitlabpages.inria.fr/}). The Java port is transcribed faithfully from
+ * {@code qint.h} and cross-validated bit-exact via the {@code qint64_probe} reference at
  * {@code migration-harness/references/math/transcendental/qint64.json}.
  *
  * <p><b>Mutability:</b> instances are mutable for performance — CORE-MATH
- * uses out-parameters (e.g. {@code add_qint(*r, *a, *b)}); the Java port
- * follows suit. Arithmetic methods write into the receiver. Aliasing of the
- * destination with one of the source operands is supported by the C
- * reference for several operations (e.g. {@code mul_qint_2(r, k, &K)} where
- * {@code r == &K}); to mirror that, all operations capture inputs into
- * locals before writing the destination.
+ * uses out-parameters (e.g. {@code add_qint(*r, *a, *b)}); the Java port follows suit. Arithmetic methods write into
+ * the receiver. Aliasing of the destination with one of the source operands is supported by the C reference for several
+ * operations (e.g. {@code mul_qint_2(r, k, &K)} where {@code r == &K}); to mirror that, all operations capture inputs
+ * into locals before writing the destination.
  *
  * <p><b>Unsigned semantics:</b> the limb fields and {@code sgn} are
- * conceptually unsigned 64-bit. Java has no unsigned long, so we store the
- * raw bits in a signed {@code long} and use {@code Long.compareUnsigned},
- * {@code Long.numberOfLeadingZeros}, and {@code >>>} (logical shift) where
- * the C reference uses unsigned semantics. The {@code ex} field is signed.
+ * conceptually unsigned 64-bit. Java has no unsigned long, so we store the raw bits in a signed {@code long} and use
+ * {@code Long.compareUnsigned}, {@code Long.numberOfLeadingZeros}, and {@code >>>} (logical shift) where the C
+ * reference uses unsigned semantics. The {@code ex} field is signed.
  *
  * <p><b>JDK target:</b> the project targets Java 11, which lacks
- * {@code Math.unsignedMultiplyHigh}. We provide an inline 64&times;64
- * &rarr; high-64 helper, mirroring the one in {@link Dint64}.
+ * {@code Math.unsignedMultiplyHigh}. We provide an inline 64&times;64 &rarr; high-64 helper, mirroring the one in
+ * {@link Dint64}.
  */
 final class Qint64 {
 
+    /** ZERO sentinel (matches CORE-MATH {@code ZERO_Q}). */
+    static final Qint64 ZERO_Q = new Qint64(0L, 0L, 0L, 0L, 0L, 0L);
+    /** Encodes +1 exactly (matches CORE-MATH {@code ONE_Q}). */
+    static final Qint64 ONE_Q = new Qint64(0L, 0L, 0L, 0x8000000000000000L, 0L, 0L);
+    /** Encodes -1 exactly (matches CORE-MATH {@code M_ONE_Q}). */
+    static final Qint64 M_ONE_Q = new Qint64(0L, 0L, 0L, 0x8000000000000000L, 0L, 1L);
+    /**
+     * Approximation of log(2) with absolute error &lt; 2^-256.14 (matches CORE-MATH {@code LOG2_Q}).
+     */
+    static final Qint64 LOG2_Q = new Qint64(0x8a0d175b8baafa2bL, 0x40f343267298b62dL, 0xc9e3b39803f2f6afL,
+            0xb17217f7d1cf79abL, -1L, 0L);
+    /**
+     * Approximation of 2^12/log(2) with absolute error &lt; 2^-52.96 (matches CORE-MATH {@code LOG2_INV_Q}).
+     */
+    static final Qint64 LOG2_INV_Q = new Qint64(0L, 0L, 0L, 0xb8aa3b295c17f0bcL, 12L, 0L);
     /** Lower-low 64 bits of the 256-bit mantissa (least significant). */
     long ll;
+
+    // -------------------------------------------------------------------
+    // Constants — package-private fresh instances. Callers MUST NOT mutate
+    // these. Defensive copies via copyFrom are cheap.
+    //
+    // Mirrors CORE-MATH's `static const qint64_t` definitions in qint.h.
+    // -------------------------------------------------------------------
     /** Upper-low 64 bits. */
     long lh;
     /** Lower-high 64 bits. */
@@ -62,44 +77,6 @@ final class Qint64 {
     long ex;
     /** Sign bit: 0 = positive, 1 = negative. */
     long sgn;
-
-    // -------------------------------------------------------------------
-    // Constants — package-private fresh instances. Callers MUST NOT mutate
-    // these. Defensive copies via copyFrom are cheap.
-    //
-    // Mirrors CORE-MATH's `static const qint64_t` definitions in qint.h.
-    // -------------------------------------------------------------------
-
-    /** ZERO sentinel (matches CORE-MATH {@code ZERO_Q}). */
-    static final Qint64 ZERO_Q = new Qint64(0L, 0L, 0L, 0L, 0L, 0L);
-
-    /** Encodes +1 exactly (matches CORE-MATH {@code ONE_Q}). */
-    static final Qint64 ONE_Q = new Qint64(0L, 0L, 0L, 0x8000000000000000L, 0L, 0L);
-
-    /** Encodes -1 exactly (matches CORE-MATH {@code M_ONE_Q}). */
-    static final Qint64 M_ONE_Q = new Qint64(0L, 0L, 0L, 0x8000000000000000L, 0L, 1L);
-
-    /**
-     * Approximation of log(2) with absolute error &lt; 2^-256.14
-     * (matches CORE-MATH {@code LOG2_Q}).
-     */
-    static final Qint64 LOG2_Q = new Qint64(
-            0x8a0d175b8baafa2bL,
-            0x40f343267298b62dL,
-            0xc9e3b39803f2f6afL,
-            0xb17217f7d1cf79abL,
-            -1L,
-            0L);
-
-    /**
-     * Approximation of 2^12/log(2) with absolute error &lt; 2^-52.96
-     * (matches CORE-MATH {@code LOG2_INV_Q}).
-     */
-    static final Qint64 LOG2_INV_Q = new Qint64(
-            0L, 0L, 0L,
-            0xb8aa3b295c17f0bcL,
-            12L,
-            0L);
 
     Qint64() {
         // Default zero state.
@@ -119,9 +96,159 @@ final class Qint64 {
     // -------------------------------------------------------------------
 
     /**
-     * Set this qint from a non-zero finite double, matching CORE-MATH
-     * {@code qint_fromd}. Behaviour is undefined for ±0, ±inf, NaN; production
-     * callers (cr_pow) branch out beforehand. Result is exact.
+     * Compare absolute values of {@code a} and {@code b}, matching CORE-MATH {@code cmp_qint}: returns -1 if
+     * {@code |a| < |b|}, 0 if equal, +1 if {@code |a| > |b|}.
+     *
+     * <p>Note: ordering is exponent-first then 256-bit mantissa
+     * (high-to-low). Same convention as Dint64.cmpAbs.
+     */
+    static int cmpQint(Qint64 a, Qint64 b) {
+        final int c1 = Long.compare(a.ex, b.ex);
+        if ( c1 != 0 ) {
+            return c1;
+        }
+        final int c2 = Long.compareUnsigned(a.hh, b.hh);
+        if ( c2 != 0 ) {
+            return c2;
+        }
+        final int c3 = Long.compareUnsigned(a.hl, b.hl);
+        if ( c3 != 0 ) {
+            return c3;
+        }
+        final int c4 = Long.compareUnsigned(a.lh, b.lh);
+        if ( c4 != 0 ) {
+            return c4;
+        }
+        return Long.compareUnsigned(a.ll, b.ll);
+    }
+
+    /**
+     * Same as {@link #cmpQint} but only compares the upper 2 limbs (matches CORE-MATH {@code cmp_qint_22}).
+     */
+    static int cmpQint22(Qint64 a, Qint64 b) {
+        final int c1 = Long.compare(a.ex, b.ex);
+        if ( c1 != 0 ) {
+            return c1;
+        }
+        final int c2 = Long.compareUnsigned(a.hh, b.hh);
+        if ( c2 != 0 ) {
+            return c2;
+        }
+        return Long.compareUnsigned(a.hl, b.hl);
+    }
+
+    /**
+     * Unsigned 64×64 → high 64 bits of the 128-bit product. Java 11 has no {@code Math.unsignedMultiplyHigh}; this
+     * matches that semantics.
+     */
+    private static long unsignedMulHigh(long a, long b) {
+        final long aLo = a & 0xffffffffL;
+        final long aHi = a >>> 32;
+        final long bLo = b & 0xffffffffL;
+        final long bHi = b >>> 32;
+
+        final long ll = aLo * bLo;
+        final long lh = aLo * bHi;
+        final long hl = aHi * bLo;
+        final long hh = aHi * bHi;
+
+        final long mid = (ll >>> 32) + (lh & 0xffffffffL) + (hl & 0xffffffffL);
+        return hh + (lh >>> 32) + (hl >>> 32) + (mid >>> 32);
+    }
+
+    /**
+     * 128-bit add: {@code (aHi,aLo) + (bHi,bLo)}. Returns {@code [sumLo, sumHi, carry]} where carry is 0 or 1.
+     */
+    private static long[] add128(long aHi, long aLo, long bHi, long bLo) {
+        final long sumLo = aLo + bLo;
+        final long carryLo = (Long.compareUnsigned(sumLo, aLo) < 0) ? 1L : 0L;
+        final long sumHi = aHi + bHi + carryLo;
+        // Did the high addition wrap? Mirror Dint64's overflow logic.
+        final long carry;
+        if ( carryLo != 0L ) {
+            // sumHi = aHi + bHi + 1; wraps if sumHi <= aHi (unsigned) AND we
+            // carried in (so equality is also overflow — aHi + bHi = ~0L).
+            carry = (Long.compareUnsigned(sumHi, aHi) <= 0) ? 1L : 0L;
+        } else {
+            carry = (Long.compareUnsigned(sumHi, aHi) < 0) ? 1L : 0L;
+        }
+        return new long[] { sumLo, sumHi, carry };
+    }
+
+    /**
+     * 128-bit subtract: {@code (aHi,aLo) - (bHi,bLo)}. Returns {@code [diffLo, diffHi, borrow]} where borrow is 0 or
+     * 1.
+     */
+    private static long[] sub128(long aHi, long aLo, long bHi, long bLo) {
+        final long diffLo = aLo - bLo;
+        final long borrowLo = (Long.compareUnsigned(aLo, bLo) < 0) ? 1L : 0L;
+        final long diffHi = aHi - bHi - borrowLo;
+        final long borrow;
+        if ( borrowLo != 0L ) {
+            // diffHi = aHi - bHi - 1; borrows if aHi <= bHi (unsigned).
+            borrow = (Long.compareUnsigned(aHi, bHi) <= 0) ? 1L : 0L;
+        } else {
+            borrow = (Long.compareUnsigned(aHi, bHi) < 0) ? 1L : 0L;
+        }
+        return new long[] { diffLo, diffHi, borrow };
+    }
+
+    // -------------------------------------------------------------------
+    // Comparison
+    // -------------------------------------------------------------------
+
+    /**
+     * Logical left shift of the 128-bit value {@code (hi, lo)} by {@code n} bits, returning {@code [newLo, newHi]}.
+     *
+     * <p>Java semantic note: {@code x << 64} is undefined-by-spec (it
+     * actually shifts by {@code n & 63}), so the {@code n == 0} and {@code n >= 64} branches are explicit.
+     */
+    private static long[] shiftLeft128(long hi, long lo, int n) {
+        if ( n == 0 ) {
+            return new long[] { lo, hi };
+        }
+        if ( n >= 128 ) {
+            return new long[] { 0L, 0L };
+        }
+        if ( n >= 64 ) {
+            final int sh = n - 64;
+            final long newHi = (sh == 0) ? lo : (lo << sh);
+            return new long[] { 0L, newHi };
+        }
+        // 0 < n < 64
+        final long newHi = (hi << n) | (lo >>> (64 - n));
+        final long newLo = lo << n;
+        return new long[] { newLo, newHi };
+    }
+
+    /**
+     * Logical right shift of the 128-bit value {@code (hi, lo)} by {@code n} bits, returning {@code [newLo, newHi]}.
+     */
+    private static long[] shiftRight128(long hi, long lo, int n) {
+        if ( n == 0 ) {
+            return new long[] { lo, hi };
+        }
+        if ( n >= 128 ) {
+            return new long[] { 0L, 0L };
+        }
+        if ( n >= 64 ) {
+            final int sh = n - 64;
+            final long newLo = (sh == 0) ? hi : (hi >>> sh);
+            return new long[] { newLo, 0L };
+        }
+        // 0 < n < 64
+        final long newLo = (lo >>> n) | (hi << (64 - n));
+        final long newHi = hi >>> n;
+        return new long[] { newLo, newHi };
+    }
+
+    // -------------------------------------------------------------------
+    // Arithmetic — addition
+    // -------------------------------------------------------------------
+
+    /**
+     * Set this qint from a non-zero finite double, matching CORE-MATH {@code qint_fromd}. Behaviour is undefined for
+     * ±0, ±inf, NaN; production callers (cr_pow) branch out beforehand. Result is exact.
      */
     void fromDouble(double b) {
         // fast_extract: extract biased exponent + raw mantissa from the IEEE-754 bits.
@@ -151,12 +278,11 @@ final class Qint64 {
     }
 
     /**
-     * Convert this qint to a 64-bit signed integer, truncating toward zero,
-     * matching CORE-MATH {@code qint_toi}. Used by exp_3 to extract the
-     * integer part of the reduction. Returns 0 if {@code ex < 0}.
+     * Convert this qint to a 64-bit signed integer, truncating toward zero, matching CORE-MATH {@code qint_toi}. Used
+     * by exp_3 to extract the integer part of the reduction. Returns 0 if {@code ex < 0}.
      */
     long toLong() {
-        if (this.ex < 0L) {
+        if ( this.ex < 0L ) {
             return 0L;
         }
         // C: int64_t r = a->hh >> (63 - a->ex);
@@ -167,17 +293,19 @@ final class Qint64 {
         return (this.sgn != 0L) ? -r : r;
     }
 
+    // -------------------------------------------------------------------
+    // Arithmetic — multiplication
+    // -------------------------------------------------------------------
+
     /**
-     * In-place subnormalisation, matching CORE-MATH {@code subnormalize_qint}.
-     * No-op if {@code ex > -1023}; otherwise rounds the mantissa toward
-     * subnormal-double range using round-to-nearest-even.
+     * In-place subnormalisation, matching CORE-MATH {@code subnormalize_qint}. No-op if {@code ex > -1023}; otherwise
+     * rounds the mantissa toward subnormal-double range using round-to-nearest-even.
      *
      * <p>The C reference branches on the FP rounding mode via {@code fegetround()};
-     * Java's IEEE-754 stack is fixed at {@code FE_TONEAREST}, so we hard-code
-     * that branch (round-to-nearest-even).
+     * Java's IEEE-754 stack is fixed at {@code FE_TONEAREST}, so we hard-code that branch (round-to-nearest-even).
      */
     void subnormalize() {
-        if (this.ex > -1023L) {
+        if ( this.ex > -1023L ) {
             return;
         }
 
@@ -199,14 +327,11 @@ final class Qint64 {
         // C: `lo = (a.hh & (~0ull >> ex)) || a.hl || a.lh || a.ll;`
         // (logical-or coerces to {0,1})
         long mask = ~0L >>> sh;
-        long lo = (((this.hh & mask) != 0L)
-                || (this.hl != 0L)
-                || (this.lh != 0L)
-                || (this.ll != 0L)) ? 1L : 0L;
+        long lo = (((this.hh & mask) != 0L) || (this.hl != 0L) || (this.lh != 0L) || (this.ll != 0L)) ? 1L : 0L;
 
         // Round to nearest even (FE_TONEAREST):
         //   hi += lo ? md : hi & md;
-        if (lo != 0L) {
+        if ( lo != 0L ) {
             hi += md;
         } else {
             hi += (hi & md);
@@ -220,16 +345,15 @@ final class Qint64 {
         this.lh = 0L;
         this.ll = 0L;
 
-        if (this.hh == 0L) {
+        if ( this.hh == 0L ) {
             this.ex++;
             this.hh = 1L << 63;
         }
     }
 
     /**
-     * Convert this qint to a double with correct rounding, matching CORE-MATH
-     * {@code qint_tod}. Note: this method <b>mutates</b> the receiver via
-     * {@link #subnormalize}, mirroring the C reference's in-place behaviour.
+     * Convert this qint to a double with correct rounding, matching CORE-MATH {@code qint_tod}. Note: this method
+     * <b>mutates</b> the receiver via {@link #subnormalize}, mirroring the C reference's in-place behaviour.
      */
     double toDouble() {
         subnormalize();
@@ -238,16 +362,13 @@ final class Qint64 {
         long rBits = (this.hh >>> 11) | (0x3ffL << 52);
 
         double rd = 0.0;
-        if ((this.hh & 0x400L) != 0L) {
+        if ( (this.hh & 0x400L) != 0L ) {
             rd += 0x1p-53;
         }
-        if (((this.hh & 0x3ffL) != 0L)
-                || (this.hl != 0L)
-                || (this.lh != 0L)
-                || (this.ll != 0L)) {
+        if ( ((this.hh & 0x3ffL) != 0L) || (this.hl != 0L) || (this.lh != 0L) || (this.ll != 0L) ) {
             rd += 0x1p-54;
         }
-        if (this.sgn != 0L) {
+        if ( this.sgn != 0L ) {
             rd = -rd;
         }
 
@@ -255,10 +376,10 @@ final class Qint64 {
         double r = Double.longBitsToDouble(rBits) + rd;
 
         double e;
-        if (this.ex > -1023L) {
+        if ( this.ex > -1023L ) {
             // Normal-double regime.
-            if (this.ex > 1023L) {
-                if (this.ex == 1024L) {
+            if ( this.ex > 1023L ) {
+                if ( this.ex == 1024L ) {
                     r = r * 0x1p+1;
                     e = 0x1p+1023;
                 } else {
@@ -271,8 +392,8 @@ final class Qint64 {
             }
         } else {
             // Subnormal regime.
-            if (this.ex < -1074L) {
-                if (this.ex == -1075L) {
+            if ( this.ex < -1074L ) {
+                if ( this.ex == -1075L ) {
                     r = r * 0x1p-1;
                     e = 0x1p-1074;
                 } else {
@@ -300,81 +421,29 @@ final class Qint64 {
         this.sgn = src.sgn;
     }
 
-    // -------------------------------------------------------------------
-    // Comparison
-    // -------------------------------------------------------------------
-
     /**
-     * Compare absolute values of {@code a} and {@code b}, matching CORE-MATH
-     * {@code cmp_qint}: returns -1 if {@code |a| < |b|}, 0 if equal, +1 if
-     * {@code |a| > |b|}.
-     *
-     * <p>Note: ordering is exponent-first then 256-bit mantissa
-     * (high-to-low). Same convention as Dint64.cmpAbs.
-     */
-    static int cmpQint(Qint64 a, Qint64 b) {
-        final int c1 = Long.compare(a.ex, b.ex);
-        if (c1 != 0) {
-            return c1;
-        }
-        final int c2 = Long.compareUnsigned(a.hh, b.hh);
-        if (c2 != 0) {
-            return c2;
-        }
-        final int c3 = Long.compareUnsigned(a.hl, b.hl);
-        if (c3 != 0) {
-            return c3;
-        }
-        final int c4 = Long.compareUnsigned(a.lh, b.lh);
-        if (c4 != 0) {
-            return c4;
-        }
-        return Long.compareUnsigned(a.ll, b.ll);
-    }
-
-    /**
-     * Same as {@link #cmpQint} but only compares the upper 2 limbs (matches
-     * CORE-MATH {@code cmp_qint_22}).
-     */
-    static int cmpQint22(Qint64 a, Qint64 b) {
-        final int c1 = Long.compare(a.ex, b.ex);
-        if (c1 != 0) {
-            return c1;
-        }
-        final int c2 = Long.compareUnsigned(a.hh, b.hh);
-        if (c2 != 0) {
-            return c2;
-        }
-        return Long.compareUnsigned(a.hl, b.hl);
-    }
-
-    // -------------------------------------------------------------------
-    // Arithmetic — addition
-    // -------------------------------------------------------------------
-
-    /**
-     * {@code this = a + b}, matching CORE-MATH {@code add_qint}. Error
-     * bounded by 2 ulps_256 (1 ulp same-sign, exact under Sterbenz).
+     * {@code this = a + b}, matching CORE-MATH {@code add_qint}. Error bounded by 2 ulps_256 (1 ulp same-sign, exact
+     * under Sterbenz).
      *
      * <p>The destination may alias one of the operands — inputs are
      * snapshot into locals before the destination is written.
      */
     void addAssign(Qint64 a, Qint64 b) {
         // CORE-MATH special-cases: if a or b is zero (rh|rl == 0), copy the other.
-        if (a.hh == 0L && a.hl == 0L && a.lh == 0L && a.ll == 0L) {
+        if ( a.hh == 0L && a.hl == 0L && a.lh == 0L && a.ll == 0L ) {
             this.copyFrom(b);
             return;
         }
-        if (b.hh == 0L && b.hl == 0L && b.lh == 0L && b.ll == 0L) {
+        if ( b.hh == 0L && b.hl == 0L && b.lh == 0L && b.ll == 0L ) {
             this.copyFrom(a);
             return;
         }
 
         // Compare absolute values.
         final int c = cmpQint(a, b);
-        if (c == 0) {
+        if ( c == 0 ) {
             // |a| == |b|.
-            if ((a.sgn ^ b.sgn) != 0L) {
+            if ( (a.sgn ^ b.sgn) != 0L ) {
                 // Opposite signs → exact zero.
                 this.copyFrom(ZERO_Q);
                 return;
@@ -384,7 +453,7 @@ final class Qint64 {
             this.ex++;
             return;
         }
-        if (c < 0) {
+        if ( c < 0 ) {
             // |a| < |b| — recursive call swaps order.
             addAssign(b, a);
             return;
@@ -402,16 +471,21 @@ final class Qint64 {
         // Right-shift B by k bits (treating (bhHi:bhLo:blHi:blLo) as a 256-bit
         // number). The C reference uses a u128 abstraction: rh and rl are 128
         // bits each, and shifts by k mix between them.
-        if (k > 0L) {
-            if (k >= 256L) {
+        if ( k > 0L ) {
+            if ( k >= 256L ) {
                 // Entire B drops below precision.
-                bhHi = 0L; bhLo = 0L; blHi = 0L; blLo = 0L;
-            } else if (k >= 128L) {
+                bhHi = 0L;
+                bhLo = 0L;
+                blHi = 0L;
+                blLo = 0L;
+            } else if ( k >= 128L ) {
                 // bl = (k < 256) ? bh >> (k - 128) : 0;  bh = 0;
                 final int sh = (int) (k - 128L);
                 final long[] shifted = shiftRight128(bhHi, bhLo, sh);
-                blHi = shifted[1]; blLo = shifted[0];
-                bhHi = 0L; bhLo = 0L;
+                blHi = shifted[1];
+                blLo = shifted[0];
+                bhHi = 0L;
+                bhLo = 0L;
             } else { // 1 <= k <= 127
                 // bl = (bl >> k) | (bh << (128 - k));  bh = bh >> k;
                 final int sh = (int) k;
@@ -420,8 +494,10 @@ final class Qint64 {
                 final long newBlHi = blShifted[1] | bhShiftedLeft[1];
                 final long newBlLo = blShifted[0] | bhShiftedLeft[0];
                 final long[] bhShiftedRight = shiftRight128(bhHi, bhLo, sh);
-                blHi = newBlHi; blLo = newBlLo;
-                bhHi = bhShiftedRight[1]; bhLo = bhShiftedRight[0];
+                blHi = newBlHi;
+                blLo = newBlLo;
+                bhHi = bhShiftedRight[1];
+                bhLo = bhShiftedRight[0];
             }
         }
 
@@ -430,47 +506,52 @@ final class Qint64 {
         long sgn = a.sgn;
         long exOut = mEx;
 
-        if ((a.sgn ^ b.sgn) != 0L) {
+        if ( (a.sgn ^ b.sgn) != 0L ) {
             // Subtraction: C = A + (-B), |A| > |B|.
             //   ch = ah - bh;
             //   if (subu128(al, bl, &cl)) ch--;
             // We need the low-128 borrow into the high-128 subtraction.
             final long[] clSub = sub128(alHi, alLo, blHi, blLo);
             final long borrowLo = clSub[2];
-            clHi = clSub[1]; clLo = clSub[0];
+            clHi = clSub[1];
+            clLo = clSub[0];
             final long[] chSub = sub128(ahHi, ahLo, bhHi, bhLo);
             // Apply the borrow from the low subtraction.
-            chHi = chSub[1]; chLo = chSub[0];
-            if (borrowLo != 0L) {
+            chHi = chSub[1];
+            chLo = chSub[0];
+            if ( borrowLo != 0L ) {
                 final long[] dec = sub128(chHi, chLo, 0L, 1L);
-                chHi = dec[1]; chLo = dec[0];
+                chHi = dec[1];
+                chLo = dec[0];
             }
 
             // Count leading zeros of the 256-bit C = (chHi:chLo:clHi:clLo).
             int cex;
-            if (chHi != 0L) {
+            if ( chHi != 0L ) {
                 cex = Long.numberOfLeadingZeros(chHi);
-            } else if (chLo != 0L) {
+            } else if ( chLo != 0L ) {
                 cex = 64 + Long.numberOfLeadingZeros(chLo);
-            } else if (clHi != 0L) {
+            } else if ( clHi != 0L ) {
                 cex = 128 + Long.numberOfLeadingZeros(clHi);
             } else {
                 cex = 192 + Long.numberOfLeadingZeros(clLo);
             }
             // cex < 256 because |A| > |B| implies C != 0.
 
-            if (cex > 0) {
+            if ( cex > 0 ) {
                 // Recompute C with full precision: shift A by `cex` bits left,
                 // and B by `cex - k` bits left/right.
                 long sah, sal_lo, sal_hi;
                 {
                     // shift A by cex bits to the left (256-bit shift, but A's
                     // low half is (al)).
-                    if (cex >= 128) {
+                    if ( cex >= 128 ) {
                         // ah = al << (cex - 128); al = 0;
                         final long[] shifted = shiftLeft128(alHi, alLo, cex - 128);
-                        ahHi = shifted[1]; ahLo = shifted[0];
-                        alHi = 0L; alLo = 0L;
+                        ahHi = shifted[1];
+                        ahLo = shifted[0];
+                        alHi = 0L;
+                        alLo = 0L;
                     } else { // 1 <= cex < 128
                         // ah = (ah << cex) | (al >> (128 - cex));
                         // al = al << cex;
@@ -479,21 +560,26 @@ final class Qint64 {
                         ahHi = ahLeft[1] | alRight[1];
                         ahLo = ahLeft[0] | alRight[0];
                         final long[] alLeft = shiftLeft128(alHi, alLo, cex);
-                        alHi = alLeft[1]; alLo = alLeft[0];
+                        alHi = alLeft[1];
+                        alLo = alLeft[0];
                     }
                 }
 
                 final long sh = (long) cex - k;
                 // Reset bh,bl from b's pristine values.
-                bhHi = b.hh; bhLo = b.hl;
-                blHi = b.lh; blLo = b.ll;
-                if (sh >= 0L) {
-                    if (sh >= 128L) {
+                bhHi = b.hh;
+                bhLo = b.hl;
+                blHi = b.lh;
+                blLo = b.ll;
+                if ( sh >= 0L ) {
+                    if ( sh >= 128L ) {
                         // bh = bl << (sh - 128);  bl = 0;
                         final long[] shifted = shiftLeft128(blHi, blLo, (int) (sh - 128));
-                        bhHi = shifted[1]; bhLo = shifted[0];
-                        blHi = 0L; blLo = 0L;
-                    } else if (sh > 0L) { // 1 <= sh < 128
+                        bhHi = shifted[1];
+                        bhLo = shifted[0];
+                        blHi = 0L;
+                        blLo = 0L;
+                    } else if ( sh > 0L ) { // 1 <= sh < 128
                         // bh = (bh << sh) | (bl >> (128 - sh));
                         // bl = bl << sh;
                         final int sh_i = (int) sh;
@@ -502,17 +588,20 @@ final class Qint64 {
                         bhHi = bhLeft[1] | blRight[1];
                         bhLo = bhLeft[0] | blRight[0];
                         final long[] blLeft = shiftLeft128(blHi, blLo, sh_i);
-                        blHi = blLeft[1]; blLo = blLeft[0];
+                        blHi = blLeft[1];
+                        blLo = blLeft[0];
                     }
                     // sh == 0: no shift needed.
                 } else {
                     // sh < 0: shift b by -sh bits to the right.
                     final long j = -sh;
-                    if (j >= 128L) {
+                    if ( j >= 128L ) {
                         // bl = bh >> (j - 128); bh = 0;
                         final long[] shifted = shiftRight128(bhHi, bhLo, (int) (j - 128));
-                        blHi = shifted[1]; blLo = shifted[0];
-                        bhHi = 0L; bhLo = 0L;
+                        blHi = shifted[1];
+                        blLo = shifted[0];
+                        bhHi = 0L;
+                        bhLo = 0L;
                     } else { // 0 < j < 128
                         // bl = (bh << (128 - j)) | (bl >> j);
                         // bh = bh >> j;
@@ -522,8 +611,10 @@ final class Qint64 {
                         final long newBlHi = bhLeft[1] | blRight[1];
                         final long newBlLo = bhLeft[0] | blRight[0];
                         final long[] bhRight = shiftRight128(bhHi, bhLo, j_i);
-                        bhHi = bhRight[1]; bhLo = bhRight[0];
-                        blHi = newBlHi; blLo = newBlLo;
+                        bhHi = bhRight[1];
+                        bhLo = bhRight[0];
+                        blHi = newBlHi;
+                        blLo = newBlLo;
                     }
                 }
 
@@ -532,40 +623,46 @@ final class Qint64 {
                 // Recompute C = A - B (with the low/high borrow chain again).
                 final long[] clSub2 = sub128(alHi, alLo, blHi, blLo);
                 final long borrowLo2 = clSub2[2];
-                clHi = clSub2[1]; clLo = clSub2[0];
+                clHi = clSub2[1];
+                clLo = clSub2[0];
                 final long[] chSub2 = sub128(ahHi, ahLo, bhHi, bhLo);
-                chHi = chSub2[1]; chLo = chSub2[0];
-                if (borrowLo2 != 0L) {
+                chHi = chSub2[1];
+                chLo = chSub2[0];
+                if ( borrowLo2 != 0L ) {
                     final long[] dec = sub128(chHi, chLo, 0L, 1L);
-                    chHi = dec[1]; chLo = dec[0];
+                    chHi = dec[1];
+                    chLo = dec[0];
                 }
 
                 // Recount leading zeros (for the final left shift).
-                if (chHi != 0L) {
+                if ( chHi != 0L ) {
                     cex = Long.numberOfLeadingZeros(chHi);
-                } else if (chLo != 0L) {
+                } else if ( chLo != 0L ) {
                     cex = 64 + Long.numberOfLeadingZeros(chLo);
-                } else if (clHi != 0L) {
+                } else if ( clHi != 0L ) {
                     cex = 128 + Long.numberOfLeadingZeros(clHi);
                 } else {
                     cex = 192 + Long.numberOfLeadingZeros(clLo);
                 }
             }
             // Final left shift by `cex` bits.
-            if (cex > 0) {
+            if ( cex > 0 ) {
                 // ch = (ch << ex) | (cl >> (128 - ex)); cl = cl << ex;
-                if (cex >= 128) {
+                if ( cex >= 128 ) {
                     // 128-bit chunk crossover: ch becomes cl shifted left.
                     final long[] shifted = shiftLeft128(clHi, clLo, cex - 128);
-                    chHi = shifted[1]; chLo = shifted[0];
-                    clHi = 0L; clLo = 0L;
+                    chHi = shifted[1];
+                    chLo = shifted[0];
+                    clHi = 0L;
+                    clLo = 0L;
                 } else { // 1 <= cex < 128
                     final long[] chLeft = shiftLeft128(chHi, chLo, cex);
                     final long[] clRight = shiftRight128(clHi, clLo, 128 - cex);
                     chHi = chLeft[1] | clRight[1];
                     chLo = chLeft[0] | clRight[0];
                     final long[] clLeft = shiftLeft128(clHi, clLo, cex);
-                    clHi = clLeft[1]; clLo = clLeft[0];
+                    clHi = clLeft[1];
+                    clLo = clLeft[0];
                 }
                 exOut -= cex;
             }
@@ -576,23 +673,26 @@ final class Qint64 {
             // Add low halves first to compute the carry into the high addition.
             final long[] clAdd = add128(alHi, alLo, blHi, blLo);
             final long carryLo = clAdd[2];
-            clHi = clAdd[1]; clLo = clAdd[0];
+            clHi = clAdd[1];
+            clLo = clAdd[0];
 
             final long[] chAdd = add128(ahHi, ahLo, bhHi, bhLo);
             long cy = chAdd[2];
-            chHi = chAdd[1]; chLo = chAdd[0];
+            chHi = chAdd[1];
+            chLo = chAdd[0];
 
-            if (carryLo != 0L) {
+            if ( carryLo != 0L ) {
                 // ++ch and possibly bump cy if ch wrapped from all-ones.
                 final long[] inc = add128(chHi, chLo, 0L, 1L);
                 final long incCarry = inc[2];
-                chHi = inc[1]; chLo = inc[0];
-                if (incCarry != 0L) {
+                chHi = inc[1];
+                chLo = inc[0];
+                if ( incCarry != 0L ) {
                     cy++;
                 }
             }
 
-            if (cy != 0L) {
+            if ( cy != 0L ) {
                 // Carry in the 256-bit addition: shift right by 1 and OR in
                 // the top bit.
                 //   cl = (ch << 127) | (cl >> 1);
@@ -608,31 +708,32 @@ final class Qint64 {
         }
 
         this.sgn = sgn;
-        this.hh = chHi; this.hl = chLo;
-        this.lh = clHi; this.ll = clLo;
+        this.hh = chHi;
+        this.hl = chLo;
+        this.lh = clHi;
+        this.ll = clLo;
         this.ex = exOut;
     }
 
     /**
-     * Same as {@link #addAssign} but only considers the upper 2 limbs of
-     * a and b (matches CORE-MATH {@code add_qint_22}). Error bounded by
-     * 2 ulps_128.
+     * Same as {@link #addAssign} but only considers the upper 2 limbs of a and b (matches CORE-MATH
+     * {@code add_qint_22}). Error bounded by 2 ulps_128.
      *
      * <p>The destination may alias one of the operands.
      */
     void addAssign22(Qint64 a, Qint64 b) {
-        if (a.hh == 0L) {
+        if ( a.hh == 0L ) {
             this.copyFrom(b);
             return;
         }
-        if (b.hh == 0L) {
+        if ( b.hh == 0L ) {
             this.copyFrom(a);
             return;
         }
 
         final int c = cmpQint22(a, b);
-        if (c == 0) {
-            if ((a.sgn ^ b.sgn) != 0L) {
+        if ( c == 0 ) {
+            if ( (a.sgn ^ b.sgn) != 0L ) {
                 this.copyFrom(ZERO_Q);
                 return;
             }
@@ -640,7 +741,7 @@ final class Qint64 {
             this.ex++;
             return;
         }
-        if (c < 0) {
+        if ( c < 0 ) {
             addAssign22(b, a);
             return;
         }
@@ -654,13 +755,15 @@ final class Qint64 {
         long mEx = a.ex;
         final long k = a.ex - b.ex;
 
-        if (k > 0L) {
+        if ( k > 0L ) {
             // bh = (k >= 128) ? 0 : bh >> k;
-            if (k >= 128L) {
-                bhHi = 0L; bhLo = 0L;
+            if ( k >= 128L ) {
+                bhHi = 0L;
+                bhLo = 0L;
             } else {
                 final long[] shifted = shiftRight128(bhHi, bhLo, (int) k);
-                bhHi = shifted[1]; bhLo = shifted[0];
+                bhHi = shifted[1];
+                bhLo = shifted[0];
             }
         }
 
@@ -668,57 +771,64 @@ final class Qint64 {
         long sgn = a.sgn;
         long exOut = mEx;
 
-        if ((a.sgn ^ b.sgn) != 0L) {
+        if ( (a.sgn ^ b.sgn) != 0L ) {
             // Subtraction: ch = ah - bh.
             final long[] sub = sub128(ahHi, ahLo, bhHi, bhLo);
-            chHi = sub[1]; chLo = sub[0];
+            chHi = sub[1];
+            chLo = sub[0];
 
             int cex;
-            if (chHi != 0L) {
+            if ( chHi != 0L ) {
                 cex = Long.numberOfLeadingZeros(chHi);
             } else {
                 cex = 64 + Long.numberOfLeadingZeros(chLo);
             }
             // cex < 128 because |A| > |B|.
 
-            if (cex > 0) {
+            if ( cex > 0 ) {
                 // ah <<= cex
                 final long[] ahLeft = shiftLeft128(ahHi, ahLo, cex);
-                ahHi = ahLeft[1]; ahLo = ahLeft[0];
+                ahHi = ahLeft[1];
+                ahLo = ahLeft[0];
 
                 // bh = (cex >= k) ? b->rh << (cex - k) : b->rh >> (k - cex);
-                if ((long) cex >= k) {
+                if ( (long) cex >= k ) {
                     final long[] shifted = shiftLeft128(bhHi0, bhLo0, (int) (cex - k));
-                    bhHi = shifted[1]; bhLo = shifted[0];
+                    bhHi = shifted[1];
+                    bhLo = shifted[0];
                 } else {
                     final long[] shifted = shiftRight128(bhHi0, bhLo0, (int) (k - cex));
-                    bhHi = shifted[1]; bhLo = shifted[0];
+                    bhHi = shifted[1];
+                    bhLo = shifted[0];
                 }
                 exOut -= cex;
 
                 final long[] sub2 = sub128(ahHi, ahLo, bhHi, bhLo);
-                chHi = sub2[1]; chLo = sub2[0];
+                chHi = sub2[1];
+                chLo = sub2[0];
 
                 // Recount leading zeros.
-                if (chHi != 0L) {
+                if ( chHi != 0L ) {
                     cex = Long.numberOfLeadingZeros(chHi);
                 } else {
                     cex = 64 + Long.numberOfLeadingZeros(chLo);
                 }
             }
             // ch <<= cex
-            if (cex > 0) {
+            if ( cex > 0 ) {
                 final long[] shifted = shiftLeft128(chHi, chLo, cex);
-                chHi = shifted[1]; chLo = shifted[0];
+                chHi = shifted[1];
+                chLo = shifted[0];
                 exOut -= cex;
             }
         } else {
             // Addition: ch = ah + bh, cy = carry.
             final long[] add = add128(ahHi, ahLo, bhHi, bhLo);
             final long cy = add[2];
-            chHi = add[1]; chLo = add[0];
+            chHi = add[1];
+            chLo = add[0];
 
-            if (cy != 0L) {
+            if ( cy != 0L ) {
                 // ch = ((u128) 1 << 127) | (ch >> 1);
                 chLo = (chLo >>> 1) | (chHi << 63);
                 chHi = (chHi >>> 1) | (1L << 63);
@@ -727,18 +837,16 @@ final class Qint64 {
         }
 
         this.sgn = sgn;
-        this.hh = chHi; this.hl = chLo;
-        this.lh = 0L; this.ll = 0L;
+        this.hh = chHi;
+        this.hl = chLo;
+        this.lh = 0L;
+        this.ll = 0L;
         this.ex = exOut;
     }
 
-    // -------------------------------------------------------------------
-    // Arithmetic — multiplication
-    // -------------------------------------------------------------------
-
     /**
-     * {@code this = a * b}, full 4&times;4 limb mul (matches CORE-MATH
-     * {@code mul_qint}). Error bounded by 14 ulps_256.
+     * {@code this = a * b}, full 4&times;4 limb mul (matches CORE-MATH {@code mul_qint}). Error bounded by 14
+     * ulps_256.
      *
      * <p>Inputs are snapshot before writing the destination, so aliasing
      * is supported (e.g. {@code mul_qint(r, r, x)}).
@@ -786,19 +894,22 @@ final class Qint64 {
         long c4 = 0L;
         {
             final long[] add = add128(r22Hi, r22Lo, t3Hi, t3Lo);
-            t4Hi = add[1]; t4Lo = add[0];
+            t4Hi = add[1];
+            t4Lo = add[0];
             c4 += add[2];
         }
         // t4 += r13
         {
             final long[] add = add128(t4Hi, t4Lo, r13Hi, r13Lo);
-            t4Hi = add[1]; t4Lo = add[0];
+            t4Hi = add[1];
+            t4Lo = add[0];
             c4 += add[2];
         }
         // t4 += r31
         {
             final long[] add = add128(t4Hi, t4Lo, r31Hi, r31Lo);
-            t4Hi = add[1]; t4Lo = add[0];
+            t4Hi = add[1];
+            t4Lo = add[0];
             c4 += add[2];
         }
 
@@ -808,13 +919,15 @@ final class Qint64 {
         long c5 = 0L;
         {
             final long[] add = add128(0L, t4Hi, r23Hi, r23Lo);
-            t5Hi = add[1]; t5Lo = add[0];
+            t5Hi = add[1];
+            t5Lo = add[0];
             c5 += add[2];
         }
         // t5 += r32
         {
             final long[] add = add128(t5Hi, t5Lo, r32Hi, r32Lo);
-            t5Hi = add[1]; t5Lo = add[0];
+            t5Hi = add[1];
+            t5Lo = add[0];
             c5 += add[2];
         }
 
@@ -826,12 +939,14 @@ final class Qint64 {
         long t6Lo, t6Hi;
         {
             final long[] add = add128(r33Hi, r33Lo, midHi, midLo);
-            t6Hi = add[1]; t6Lo = add[0];
+            t6Hi = add[1];
+            t6Lo = add[0];
             // ignore final carry — full product is bounded by 2^512.
         }
         {
             final long[] add = add128(t6Hi, t6Lo, 0L, c4);
-            t6Hi = add[1]; t6Lo = add[0];
+            t6Hi = add[1];
+            t6Lo = add[0];
         }
 
         // ex = !(t6 >> 127); i.e. ex = (top bit of t6Hi == 0) ? 1 : 0
@@ -844,7 +959,7 @@ final class Qint64 {
         t5Lo = t5_newLo;
         t5Hi = t5_newHi;
 
-        if (ex != 0L) {
+        if ( ex != 0L ) {
             // r->rh = (t6 << 1) | (t5 >> 127);
             // r->rl = t5 << 1;
             final long rhLo = (t6Lo << 1);
@@ -868,9 +983,8 @@ final class Qint64 {
     }
 
     /**
-     * Same as {@link #mulAssign} but considering only the upper 3 limbs of
-     * each operand (matches CORE-MATH {@code mul_qint_33}). Error bounded by
-     * 6 ulps_256.
+     * Same as {@link #mulAssign} but considering only the upper 3 limbs of each operand (matches CORE-MATH
+     * {@code mul_qint_33}). Error bounded by 6 ulps_256.
      */
     void mulAssign33(Qint64 a, Qint64 b) {
         final long aHh = a.hh, aHl = a.hl, aLh = a.lh;
@@ -897,44 +1011,57 @@ final class Qint64 {
         long t4Lo, t4Hi, c4 = 0L;
         {
             final long[] add = add128(r22Hi, r22Lo, t3Hi, t3Lo);
-            t4Hi = add[1]; t4Lo = add[0]; c4 += add[2];
+            t4Hi = add[1];
+            t4Lo = add[0];
+            c4 += add[2];
         }
         {
             final long[] add = add128(t4Hi, t4Lo, r13Hi, r13Lo);
-            t4Hi = add[1]; t4Lo = add[0]; c4 += add[2];
+            t4Hi = add[1];
+            t4Lo = add[0];
+            c4 += add[2];
         }
         {
             final long[] add = add128(t4Hi, t4Lo, r31Hi, r31Lo);
-            t4Hi = add[1]; t4Lo = add[0]; c4 += add[2];
+            t4Hi = add[1];
+            t4Lo = add[0];
+            c4 += add[2];
         }
 
         long t5Lo, t5Hi, c5 = 0L;
         {
             final long[] add = add128(0L, t4Hi, r23Hi, r23Lo);
-            t5Hi = add[1]; t5Lo = add[0]; c5 += add[2];
+            t5Hi = add[1];
+            t5Lo = add[0];
+            c5 += add[2];
         }
         {
             final long[] add = add128(t5Hi, t5Lo, r32Hi, r32Lo);
-            t5Hi = add[1]; t5Lo = add[0]; c5 += add[2];
+            t5Hi = add[1];
+            t5Lo = add[0];
+            c5 += add[2];
         }
 
         long midLo = t5Hi, midHi = c5;
         long t6Lo, t6Hi;
         {
             final long[] add = add128(r33Hi, r33Lo, midHi, midLo);
-            t6Hi = add[1]; t6Lo = add[0];
+            t6Hi = add[1];
+            t6Lo = add[0];
         }
         {
             final long[] add = add128(t6Hi, t6Lo, 0L, c4);
-            t6Hi = add[1]; t6Lo = add[0];
+            t6Hi = add[1];
+            t6Lo = add[0];
         }
 
         final long ex = ((t6Hi >>> 63) & 1L) == 0L ? 1L : 0L;
 
         long t5_newLo = t4Lo, t5_newHi = t5Lo;
-        t5Lo = t5_newLo; t5Hi = t5_newHi;
+        t5Lo = t5_newLo;
+        t5Hi = t5_newHi;
 
-        if (ex != 0L) {
+        if ( ex != 0L ) {
             final long rhLo = (t6Lo << 1);
             final long rhHi = (t6Hi << 1) | (t6Lo >>> 63);
             final long t5TopBit = (t5Hi >>> 63) & 1L;
@@ -943,17 +1070,18 @@ final class Qint64 {
             this.lh = (t5Hi << 1) | (t5Lo >>> 63);
             this.ll = t5Lo << 1;
         } else {
-            this.hh = t6Hi; this.hl = t6Lo;
-            this.lh = t5Hi; this.ll = t5Lo;
+            this.hh = t6Hi;
+            this.hl = t6Lo;
+            this.lh = t5Hi;
+            this.ll = t5Lo;
         }
         this.ex = aex + bex + 1L - ex;
         this.sgn = asgn ^ bsgn;
     }
 
     /**
-     * Same as {@link #mulAssign} but considering only the upper limb of
-     * b (matches CORE-MATH {@code mul_qint_41}). Error bounded by 2
-     * ulps_256.
+     * Same as {@link #mulAssign} but considering only the upper limb of b (matches CORE-MATH {@code mul_qint_41}).
+     * Error bounded by 2 ulps_256.
      */
     void mulAssign41(Qint64 a, Qint64 b) {
         final long aHh = a.hh, aHl = a.hl, aLh = a.lh, aLl = a.ll;
@@ -972,32 +1100,39 @@ final class Qint64 {
         long t4Lo, t4Hi, c4 = 0L;
         {
             final long[] add = add128(r13Hi, r13Lo, t3Hi, t3Lo);
-            t4Hi = add[1]; t4Lo = add[0]; c4 += add[2];
+            t4Hi = add[1];
+            t4Lo = add[0];
+            c4 += add[2];
         }
 
         long t5Lo, t5Hi, c5 = 0L;
         {
             final long[] add = add128(0L, t4Hi, r23Hi, r23Lo);
-            t5Hi = add[1]; t5Lo = add[0]; c5 += add[2];
+            t5Hi = add[1];
+            t5Lo = add[0];
+            c5 += add[2];
         }
 
         long midLo = t5Hi, midHi = c5;
         long t6Lo, t6Hi;
         {
             final long[] add = add128(r33Hi, r33Lo, midHi, midLo);
-            t6Hi = add[1]; t6Lo = add[0];
+            t6Hi = add[1];
+            t6Lo = add[0];
         }
         {
             final long[] add = add128(t6Hi, t6Lo, 0L, c4);
-            t6Hi = add[1]; t6Lo = add[0];
+            t6Hi = add[1];
+            t6Lo = add[0];
         }
 
         final long ex = ((t6Hi >>> 63) & 1L) == 0L ? 1L : 0L;
 
         long t5_newLo = t4Lo, t5_newHi = t5Lo;
-        t5Lo = t5_newLo; t5Hi = t5_newHi;
+        t5Lo = t5_newLo;
+        t5Hi = t5_newHi;
 
-        if (ex != 0L) {
+        if ( ex != 0L ) {
             final long rhLo = (t6Lo << 1);
             final long rhHi = (t6Hi << 1) | (t6Lo >>> 63);
             final long t5TopBit = (t5Hi >>> 63) & 1L;
@@ -1006,17 +1141,22 @@ final class Qint64 {
             this.lh = (t5Hi << 1) | (t5Lo >>> 63);
             this.ll = t5Lo << 1;
         } else {
-            this.hh = t6Hi; this.hl = t6Lo;
-            this.lh = t5Hi; this.ll = t5Lo;
+            this.hh = t6Hi;
+            this.hl = t6Lo;
+            this.lh = t5Hi;
+            this.ll = t5Lo;
         }
         this.ex = aex + bex + 1L - ex;
         this.sgn = asgn ^ bsgn;
     }
 
+    // -------------------------------------------------------------------
+    // Internal 128-bit primitives
+    // -------------------------------------------------------------------
+
     /**
-     * Same as {@link #mulAssign} but considering only the upper 3 limbs of
-     * a and the upper limb of b (matches CORE-MATH {@code mul_qint_31}).
-     * Exact product (the full result fits in 256 bits).
+     * Same as {@link #mulAssign} but considering only the upper 3 limbs of a and the upper limb of b (matches CORE-MATH
+     * {@code mul_qint_31}). Exact product (the full result fits in 256 bits).
      */
     void mulAssign31(Qint64 a, Qint64 b) {
         final long aHh = a.hh, aHl = a.hl, aLh = a.lh;
@@ -1034,22 +1174,26 @@ final class Qint64 {
         long t5Lo, t5Hi, c5 = 0L;
         {
             final long[] add = add128(0L, t4Hi, r23Hi, r23Lo);
-            t5Hi = add[1]; t5Lo = add[0]; c5 += add[2];
+            t5Hi = add[1];
+            t5Lo = add[0];
+            c5 += add[2];
         }
 
         long midLo = t5Hi, midHi = c5;
         long t6Lo, t6Hi;
         {
             final long[] add = add128(r33Hi, r33Lo, midHi, midLo);
-            t6Hi = add[1]; t6Lo = add[0];
+            t6Hi = add[1];
+            t6Lo = add[0];
         }
 
         final long ex = ((t6Hi >>> 63) & 1L) == 0L ? 1L : 0L;
 
         long t5_newLo = t4Lo, t5_newHi = t5Lo;
-        t5Lo = t5_newLo; t5Hi = t5_newHi;
+        t5Lo = t5_newLo;
+        t5Hi = t5_newHi;
 
-        if (ex != 0L) {
+        if ( ex != 0L ) {
             final long rhLo = (t6Lo << 1);
             final long rhHi = (t6Hi << 1) | (t6Lo >>> 63);
             final long t5TopBit = (t5Hi >>> 63) & 1L;
@@ -1058,16 +1202,18 @@ final class Qint64 {
             this.lh = (t5Hi << 1) | (t5Lo >>> 63);
             this.ll = t5Lo << 1;
         } else {
-            this.hh = t6Hi; this.hl = t6Lo;
-            this.lh = t5Hi; this.ll = t5Lo;
+            this.hh = t6Hi;
+            this.hl = t6Lo;
+            this.lh = t5Hi;
+            this.ll = t5Lo;
         }
         this.ex = aex + bex + 1L - ex;
         this.sgn = asgn ^ bsgn;
     }
 
     /**
-     * Same as {@link #mulAssign} but considering only the upper 2 limbs of
-     * each operand (matches CORE-MATH {@code mul_qint_22}). Exact product.
+     * Same as {@link #mulAssign} but considering only the upper 2 limbs of each operand (matches CORE-MATH
+     * {@code mul_qint_22}). Exact product.
      */
     void mulAssign22(Qint64 a, Qint64 b) {
         final long aHh = a.hh, aHl = a.hl;
@@ -1086,26 +1232,32 @@ final class Qint64 {
         long t5Lo, t5Hi, c5 = 0L;
         {
             final long[] add = add128(0L, t4Hi, r23Hi, r23Lo);
-            t5Hi = add[1]; t5Lo = add[0]; c5 += add[2];
+            t5Hi = add[1];
+            t5Lo = add[0];
+            c5 += add[2];
         }
         {
             final long[] add = add128(t5Hi, t5Lo, r32Hi, r32Lo);
-            t5Hi = add[1]; t5Lo = add[0]; c5 += add[2];
+            t5Hi = add[1];
+            t5Lo = add[0];
+            c5 += add[2];
         }
 
         long midLo = t5Hi, midHi = c5;
         long t6Lo, t6Hi;
         {
             final long[] add = add128(r33Hi, r33Lo, midHi, midLo);
-            t6Hi = add[1]; t6Lo = add[0];
+            t6Hi = add[1];
+            t6Lo = add[0];
         }
 
         final long ex = ((t6Hi >>> 63) & 1L) == 0L ? 1L : 0L;
 
         long t5_newLo = t4Lo, t5_newHi = t5Lo;
-        t5Lo = t5_newLo; t5Hi = t5_newHi;
+        t5Lo = t5_newLo;
+        t5Hi = t5_newHi;
 
-        if (ex != 0L) {
+        if ( ex != 0L ) {
             final long rhLo = (t6Lo << 1);
             final long rhHi = (t6Hi << 1) | (t6Lo >>> 63);
             final long t5TopBit = (t5Hi >>> 63) & 1L;
@@ -1114,17 +1266,18 @@ final class Qint64 {
             this.lh = (t5Hi << 1) | (t5Lo >>> 63);
             this.ll = t5Lo << 1;
         } else {
-            this.hh = t6Hi; this.hl = t6Lo;
-            this.lh = t5Hi; this.ll = t5Lo;
+            this.hh = t6Hi;
+            this.hl = t6Lo;
+            this.lh = t5Hi;
+            this.ll = t5Lo;
         }
         this.ex = aex + bex + 1L - ex;
         this.sgn = asgn ^ bsgn;
     }
 
     /**
-     * Same as {@link #mulAssign} but considering only the upper 2 limbs of
-     * a and the upper limb of b (matches CORE-MATH {@code mul_qint_21}).
-     * Exact product.
+     * Same as {@link #mulAssign} but considering only the upper 2 limbs of a and the upper limb of b (matches CORE-MATH
+     * {@code mul_qint_21}). Exact product.
      */
     void mulAssign21(Qint64 a, Qint64 b) {
         final long aHh = a.hh, aHl = a.hl;
@@ -1143,7 +1296,8 @@ final class Qint64 {
         {
             // (r23 >> 64) → low = r23Hi, high = 0
             final long[] add = add128(r33Hi, r33Lo, 0L, r23Hi);
-            t6Hi = add[1]; t6Lo = add[0];
+            t6Hi = add[1];
+            t6Lo = add[0];
         }
         // ex = !(t6 >> 127)
         final long ex = ((t6Hi >>> 63) & 1L) == 0L ? 1L : 0L;
@@ -1152,7 +1306,7 @@ final class Qint64 {
         // (low becomes 0, high becomes r23Lo as a 128-bit value)
         long t5Lo = 0L, t5Hi = r23Lo;
 
-        if (ex != 0L) {
+        if ( ex != 0L ) {
             final long rhLo = (t6Lo << 1);
             final long rhHi = (t6Hi << 1) | (t6Lo >>> 63);
             final long t5TopBit = (t5Hi >>> 63) & 1L;
@@ -1161,16 +1315,18 @@ final class Qint64 {
             this.lh = (t5Hi << 1) | (t5Lo >>> 63);
             this.ll = t5Lo << 1;
         } else {
-            this.hh = t6Hi; this.hl = t6Lo;
-            this.lh = t5Hi; this.ll = t5Lo;
+            this.hh = t6Hi;
+            this.hl = t6Lo;
+            this.lh = t5Hi;
+            this.ll = t5Lo;
         }
         this.ex = aex + bex + 1L - ex;
         this.sgn = asgn ^ bsgn;
     }
 
     /**
-     * Same as {@link #mulAssign} but considering only the upper limb of
-     * each operand (matches CORE-MATH {@code mul_qint_11}). Exact product.
+     * Same as {@link #mulAssign} but considering only the upper limb of each operand (matches CORE-MATH
+     * {@code mul_qint_11}). Exact product.
      */
     void mulAssign11(Qint64 a, Qint64 b) {
         final long aHh = a.hh, bHh = b.hh;
@@ -1182,7 +1338,7 @@ final class Qint64 {
         // ex = !(t6 >> 127)
         final long ex = ((t6Hi >>> 63) & 1L) == 0L ? 1L : 0L;
 
-        if (ex != 0L) {
+        if ( ex != 0L ) {
             // r->rh = t6 << 1
             this.hh = (t6Hi << 1) | (t6Lo >>> 63);
             this.hl = t6Lo << 1;
@@ -1197,11 +1353,11 @@ final class Qint64 {
     }
 
     /**
-     * {@code this = b * a}, where b is a signed 64-bit integer (matches
-     * CORE-MATH {@code mul_qint_2}). Error bounded by 2 ulps_256.
+     * {@code this = b * a}, where b is a signed 64-bit integer (matches CORE-MATH {@code mul_qint_2}). Error bounded by
+     * 2 ulps_256.
      */
     void mulAssign2(long b, Qint64 a) {
-        if (b == 0L) {
+        if ( b == 0L ) {
             this.copyFrom(ZERO_Q);
             return;
         }
@@ -1211,9 +1367,12 @@ final class Qint64 {
         final long asgn = a.sgn;
 
         long c = (b < 0L) ? -b : b;
-        if (c == 1L) {
+        if ( c == 1L ) {
             // r = a, but possibly flipped sign.
-            this.hh = aHh; this.hl = aHl; this.lh = aLh; this.ll = aLl;
+            this.hh = aHh;
+            this.hl = aHl;
+            this.lh = aLh;
+            this.ll = aLl;
             this.ex = aex;
             this.sgn = ((b < 0L) ? 1L : 0L) ^ asgn;
             return;
@@ -1240,17 +1399,22 @@ final class Qint64 {
         long t1NewLo, t1NewHi, cy;
         {
             final long[] add = add128(t1Hi, t1Lo, tHi, tLo);
-            t1NewHi = add[1]; t1NewLo = add[0]; cy = add[2];
+            t1NewHi = add[1];
+            t1NewLo = add[0];
+            cy = add[2];
         }
 
         // t = ((u128) cy << 64) | (t1 >> 64) → low = t1NewHi, high = cy
-        tLo = t1NewHi; tHi = cy;
+        tLo = t1NewHi;
+        tHi = cy;
 
         // (cy:1, t2:128) = t + t2
         long t2NewLo, t2NewHi;
         {
             final long[] add = add128(t2Hi, t2Lo, tHi, tLo);
-            t2NewHi = add[1]; t2NewLo = add[0]; cy = add[2];
+            t2NewHi = add[1];
+            t2NewLo = add[0];
+            cy = add[2];
         }
 
         // t3 += ((u128) cy << 64) | (t2 >> 64)
@@ -1258,7 +1422,8 @@ final class Qint64 {
         long t3Lo_v = t3Lo, t3Hi_v = t3HiInit;
         {
             final long[] add = add128(t3Hi_v, t3Lo_v, cy, t2NewHi);
-            t3Hi_v = add[1]; t3Lo_v = add[0];
+            t3Hi_v = add[1];
+            t3Lo_v = add[0];
             // ignore final carry — full product bounded above.
         }
 
@@ -1269,7 +1434,7 @@ final class Qint64 {
         // → 128-bit value where low = t1NewLo (low 64 of t1), high = t2NewLo.
         long t2_newLo = t1NewLo, t2_newHi = t2NewLo;
 
-        if (ex != 0) {
+        if ( ex != 0 ) {
             // r->rh = (t3 << 1) | (t2 >> 127)
             // r->rl = t2 << 1
             // ex == 1 in CORE-MATH because both operands are normalized.
@@ -1290,117 +1455,12 @@ final class Qint64 {
             this.ll = t2_newLo << ex;
             this.ex = exOut - 1L;
         } else {
-            this.hh = t3Hi_v; this.hl = t3Lo_v;
-            this.lh = t2_newHi; this.ll = t2_newLo;
+            this.hh = t3Hi_v;
+            this.hl = t3Lo_v;
+            this.lh = t2_newHi;
+            this.ll = t2_newLo;
             this.ex = exOut;
         }
         this.sgn = sgnOut;
-    }
-
-    // -------------------------------------------------------------------
-    // Internal 128-bit primitives
-    // -------------------------------------------------------------------
-
-    /** Unsigned 64×64 → high 64 bits of the 128-bit product. Java 11 has no
-     *  {@code Math.unsignedMultiplyHigh}; this matches that semantics. */
-    private static long unsignedMulHigh(long a, long b) {
-        final long aLo = a & 0xffffffffL;
-        final long aHi = a >>> 32;
-        final long bLo = b & 0xffffffffL;
-        final long bHi = b >>> 32;
-
-        final long ll = aLo * bLo;
-        final long lh = aLo * bHi;
-        final long hl = aHi * bLo;
-        final long hh = aHi * bHi;
-
-        final long mid = (ll >>> 32) + (lh & 0xffffffffL) + (hl & 0xffffffffL);
-        return hh + (lh >>> 32) + (hl >>> 32) + (mid >>> 32);
-    }
-
-    /**
-     * 128-bit add: {@code (aHi,aLo) + (bHi,bLo)}. Returns
-     * {@code [sumLo, sumHi, carry]} where carry is 0 or 1.
-     */
-    private static long[] add128(long aHi, long aLo, long bHi, long bLo) {
-        final long sumLo = aLo + bLo;
-        final long carryLo = (Long.compareUnsigned(sumLo, aLo) < 0) ? 1L : 0L;
-        final long sumHi = aHi + bHi + carryLo;
-        // Did the high addition wrap? Mirror Dint64's overflow logic.
-        final long carry;
-        if (carryLo != 0L) {
-            // sumHi = aHi + bHi + 1; wraps if sumHi <= aHi (unsigned) AND we
-            // carried in (so equality is also overflow — aHi + bHi = ~0L).
-            carry = (Long.compareUnsigned(sumHi, aHi) <= 0) ? 1L : 0L;
-        } else {
-            carry = (Long.compareUnsigned(sumHi, aHi) < 0) ? 1L : 0L;
-        }
-        return new long[]{sumLo, sumHi, carry};
-    }
-
-    /**
-     * 128-bit subtract: {@code (aHi,aLo) - (bHi,bLo)}. Returns
-     * {@code [diffLo, diffHi, borrow]} where borrow is 0 or 1.
-     */
-    private static long[] sub128(long aHi, long aLo, long bHi, long bLo) {
-        final long diffLo = aLo - bLo;
-        final long borrowLo = (Long.compareUnsigned(aLo, bLo) < 0) ? 1L : 0L;
-        final long diffHi = aHi - bHi - borrowLo;
-        final long borrow;
-        if (borrowLo != 0L) {
-            // diffHi = aHi - bHi - 1; borrows if aHi <= bHi (unsigned).
-            borrow = (Long.compareUnsigned(aHi, bHi) <= 0) ? 1L : 0L;
-        } else {
-            borrow = (Long.compareUnsigned(aHi, bHi) < 0) ? 1L : 0L;
-        }
-        return new long[]{diffLo, diffHi, borrow};
-    }
-
-    /**
-     * Logical left shift of the 128-bit value {@code (hi, lo)} by {@code n}
-     * bits, returning {@code [newLo, newHi]}.
-     *
-     * <p>Java semantic note: {@code x << 64} is undefined-by-spec (it
-     * actually shifts by {@code n & 63}), so the {@code n == 0} and
-     * {@code n >= 64} branches are explicit.
-     */
-    private static long[] shiftLeft128(long hi, long lo, int n) {
-        if (n == 0) {
-            return new long[]{lo, hi};
-        }
-        if (n >= 128) {
-            return new long[]{0L, 0L};
-        }
-        if (n >= 64) {
-            final int sh = n - 64;
-            final long newHi = (sh == 0) ? lo : (lo << sh);
-            return new long[]{0L, newHi};
-        }
-        // 0 < n < 64
-        final long newHi = (hi << n) | (lo >>> (64 - n));
-        final long newLo = lo << n;
-        return new long[]{newLo, newHi};
-    }
-
-    /**
-     * Logical right shift of the 128-bit value {@code (hi, lo)} by {@code n}
-     * bits, returning {@code [newLo, newHi]}.
-     */
-    private static long[] shiftRight128(long hi, long lo, int n) {
-        if (n == 0) {
-            return new long[]{lo, hi};
-        }
-        if (n >= 128) {
-            return new long[]{0L, 0L};
-        }
-        if (n >= 64) {
-            final int sh = n - 64;
-            final long newLo = (sh == 0) ? hi : (hi >>> sh);
-            return new long[]{newLo, 0L};
-        }
-        // 0 < n < 64
-        final long newLo = (lo >>> n) | (hi << (64 - n));
-        final long newHi = hi >>> n;
-        return new long[]{newLo, newHi};
     }
 }

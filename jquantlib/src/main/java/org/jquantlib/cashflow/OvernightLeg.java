@@ -15,49 +15,41 @@
 
 package org.jquantlib.cashflow;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.indexes.OvernightIndex;
 import org.jquantlib.math.Constants;
-import org.jquantlib.time.BusinessDayConvention;
-import org.jquantlib.time.Calendar;
-import org.jquantlib.time.Date;
-import org.jquantlib.time.Schedule;
-import org.jquantlib.time.TimeUnit;
+import org.jquantlib.time.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * Helper class building a sequence of overnight-indexed coupons, fluent
- * Java translation of C++ {@code OvernightLeg}.
+ * Helper class building a sequence of overnight-indexed coupons, fluent Java translation of C++ {@code OvernightLeg}.
  * <p>
- * Port of C++ QuantLib v1.42.1
- * {@code ql/cashflows/overnightindexedcoupon.hpp/cpp}
- * {@code OvernightLeg}.
- *
- * @category cashflows
+ * Port of C++ QuantLib v1.42.1 {@code ql/cashflows/overnightindexedcoupon.hpp/cpp} {@code OvernightLeg}.
  *
  * @author JQuantLib migration team
+ * @category cashflows
  */
 public class OvernightLeg {
 
     private final Schedule schedule_;
     private final OvernightIndex overnightIndex_;
-    private List<Double> notionals_ = new ArrayList<Double>();
+    private List< Double > notionals_ = new ArrayList< Double >();
     private DayCounter paymentDayCounter_ = new DayCounter();
     private Calendar paymentCalendar_;
     private BusinessDayConvention paymentAdjustment_ = BusinessDayConvention.Following;
     private int paymentLag_ = 0;
-    private List<Double> gearings_ = new ArrayList<Double>();
-    private List<Double> spreads_ = new ArrayList<Double>();
+    private List< Double > gearings_ = new ArrayList< Double >();
+    private List< Double > spreads_ = new ArrayList< Double >();
     private boolean telescopicValueDates_ = false;
     private RateAveraging.Type averagingMethod_ = RateAveraging.Type.Compound;
     private int lookbackDays_ = Constants.NULL_NATURAL;
     private int lockoutDays_ = 0;
     private boolean applyObservationShift_ = false;
-    private List<Double> caps_ = new ArrayList<Double>();
-    private List<Double> floors_ = new ArrayList<Double>();
+    private List< Double > caps_ = new ArrayList< Double >();
+    private List< Double > floors_ = new ArrayList< Double >();
     private boolean nakedOption_ = false;
     private boolean dailyCapFloor_ = false;
     private OvernightIndexedCouponPricer couponPricer_ = null;
@@ -69,14 +61,28 @@ public class OvernightLeg {
         this.paymentCalendar_ = schedule.calendar();
     }
 
+    private static double pickValue(final List< Double > vec, final int index) {
+        if ( vec.isEmpty() ) {
+            throw new org.jquantlib.lang.exceptions.LibraryException("no value provided");
+        }
+        return vec.get(index >= vec.size() ? vec.size() - 1 : index);
+    }
+
+    private static double pickValueOrDefault(final List< Double > vec, final int index, final double dflt) {
+        if ( vec.isEmpty() ) {
+            return dflt;
+        }
+        return vec.get(index >= vec.size() ? vec.size() - 1 : index);
+    }
+
     public OvernightLeg withNotionals(final double notional) {
-        notionals_ = new ArrayList<Double>();
+        notionals_ = new ArrayList< Double >();
         notionals_.add(notional);
         return this;
     }
 
-    public OvernightLeg withNotionals(final List<Double> notionals) {
-        notionals_ = new ArrayList<Double>(notionals);
+    public OvernightLeg withNotionals(final List< Double > notionals) {
+        notionals_ = new ArrayList< Double >(notionals);
         return this;
     }
 
@@ -101,24 +107,24 @@ public class OvernightLeg {
     }
 
     public OvernightLeg withGearings(final double gearing) {
-        gearings_ = new ArrayList<Double>();
+        gearings_ = new ArrayList< Double >();
         gearings_.add(gearing);
         return this;
     }
 
-    public OvernightLeg withGearings(final List<Double> gearings) {
-        gearings_ = new ArrayList<Double>(gearings);
+    public OvernightLeg withGearings(final List< Double > gearings) {
+        gearings_ = new ArrayList< Double >(gearings);
         return this;
     }
 
     public OvernightLeg withSpreads(final double spread) {
-        spreads_ = new ArrayList<Double>();
+        spreads_ = new ArrayList< Double >();
         spreads_.add(spread);
         return this;
     }
 
-    public OvernightLeg withSpreads(final List<Double> spreads) {
-        spreads_ = new ArrayList<Double>(spreads);
+    public OvernightLeg withSpreads(final List< Double > spreads) {
+        spreads_ = new ArrayList< Double >(spreads);
         return this;
     }
 
@@ -148,24 +154,24 @@ public class OvernightLeg {
     }
 
     public OvernightLeg withCaps(final double cap) {
-        caps_ = new ArrayList<Double>();
+        caps_ = new ArrayList< Double >();
         caps_.add(cap);
         return this;
     }
 
-    public OvernightLeg withCaps(final List<Double> caps) {
-        caps_ = new ArrayList<Double>(caps);
+    public OvernightLeg withCaps(final List< Double > caps) {
+        caps_ = new ArrayList< Double >(caps);
         return this;
     }
 
     public OvernightLeg withFloors(final double floor) {
-        floors_ = new ArrayList<Double>();
+        floors_ = new ArrayList< Double >();
         floors_.add(floor);
         return this;
     }
 
-    public OvernightLeg withFloors(final List<Double> floors) {
-        floors_ = new ArrayList<Double>(floors);
+    public OvernightLeg withFloors(final List< Double > floors) {
+        floors_ = new ArrayList< Double >(floors);
         return this;
     }
 
@@ -189,65 +195,43 @@ public class OvernightLeg {
      */
     public Leg leg() {
         QL.require(!notionals_.isEmpty(), "no notional given");
-        final List<Date> dates = schedule_.dates();
+        final List< Date > dates = schedule_.dates();
         final Leg cashflows = new Leg();
-        final DayCounter dc = paymentDayCounter_.empty()
-                ? overnightIndex_.dayCounter() : paymentDayCounter_;
+        final DayCounter dc = paymentDayCounter_.empty() ? overnightIndex_.dayCounter() : paymentDayCounter_;
 
-        for (int i = 1; i < dates.size(); ++i) {
+        for ( int i = 1; i < dates.size(); ++i ) {
             final Date startDate = dates.get(i - 1);
             final Date endDate = dates.get(i);
             Date paymentDate = paymentCalendar_.adjust(endDate, paymentAdjustment_);
-            if (paymentLag_ != 0) {
+            if ( paymentLag_ != 0 ) {
                 paymentDate = paymentCalendar_.advance(paymentDate,
-                                                       new org.jquantlib.time.Period(paymentLag_, TimeUnit.Days),
-                                                       paymentAdjustment_);
+                        new org.jquantlib.time.Period(paymentLag_, TimeUnit.Days), paymentAdjustment_);
             }
             final double nominal = pickValue(notionals_, i - 1);
             final double gearing = pickValueOrDefault(gearings_, i - 1, 1.0);
-            final double spread  = pickValueOrDefault(spreads_, i - 1, 0.0);
+            final double spread = pickValueOrDefault(spreads_, i - 1, 0.0);
 
-            final OvernightIndexedCoupon coupon = new OvernightIndexedCoupon(
-                    paymentDate, nominal, startDate, endDate,
-                    overnightIndex_, gearing, spread,
-                    new Date(), new Date(), dc,
-                    telescopicValueDates_, averagingMethod_,
-                    lookbackDays_, lockoutDays_, applyObservationShift_,
+            final OvernightIndexedCoupon coupon = new OvernightIndexedCoupon(paymentDate, nominal, startDate, endDate,
+                    overnightIndex_, gearing, spread, new Date(), new Date(), dc, telescopicValueDates_,
+                    averagingMethod_, lookbackDays_, lockoutDays_, applyObservationShift_,
                     false /* compoundSpreadDaily */);
-            if (couponPricer_ != null) {
+            if ( couponPricer_ != null ) {
                 coupon.setPricer(couponPricer_);
             }
             // Apply cap/floor wrapper if either is provided.
             final double cap = pickValueOrDefault(caps_, i - 1, Constants.NULL_REAL);
             final double floor = pickValueOrDefault(floors_, i - 1, Constants.NULL_REAL);
-            if (cap == Constants.NULL_REAL && floor == Constants.NULL_REAL) {
+            if ( cap == Constants.NULL_REAL && floor == Constants.NULL_REAL ) {
                 cashflows.add(coupon);
             } else {
-                final CappedFlooredOvernightIndexedCoupon cfCpn =
-                    new CappedFlooredOvernightIndexedCoupon(coupon, cap, floor,
-                                                            nakedOption_, dailyCapFloor_);
-                if (couponPricer_ != null) {
+                final CappedFlooredOvernightIndexedCoupon cfCpn = new CappedFlooredOvernightIndexedCoupon(coupon, cap,
+                        floor, nakedOption_, dailyCapFloor_);
+                if ( couponPricer_ != null ) {
                     cfCpn.setPricer(couponPricer_);
                 }
                 cashflows.add(cfCpn);
             }
         }
         return cashflows;
-    }
-
-    private static double pickValue(final List<Double> vec, final int index) {
-        if (vec.isEmpty()) {
-            throw new org.jquantlib.lang.exceptions.LibraryException(
-                "no value provided");
-        }
-        return vec.get(index >= vec.size() ? vec.size() - 1 : index);
-    }
-
-    private static double pickValueOrDefault(final List<Double> vec, final int index,
-                                             final double dflt) {
-        if (vec.isEmpty()) {
-            return dflt;
-        }
-        return vec.get(index >= vec.size() ? vec.size() - 1 : index);
     }
 }

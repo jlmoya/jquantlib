@@ -38,7 +38,7 @@ public class DateInterval {
     }
 
     public DateInterval(final Date startDate, final Date endDate) {
-        if (endDate.lt(startDate)) {
+        if ( endDate.lt(startDate) ) {
             throw new LibraryException("end date must be >= start date");
         }
         this.startDate_ = startDate;
@@ -57,20 +57,21 @@ public class DateInterval {
         return isDateBetween(date, true, true);
     }
 
-    public boolean isDateBetween(final Date date,
-                                 final boolean includeFirst,
-                                 final boolean includeLast) {
+    public boolean isDateBetween(final Date date, final boolean includeFirst, final boolean includeLast) {
         // Mirrors C++ semantics from dateinterval.hpp
-        if (includeFirst && !date.ge(startDate_)) return false;
-        else if (!date.gt(startDate_)) return false;
-        if (includeLast && !date.le(endDate_)) return false;
-        else if (!date.lt(endDate_)) return false;
-        return true;
+        if ( includeFirst && !date.ge(startDate_) )
+            return false;
+        else if ( !date.gt(startDate_) )
+            return false;
+        if ( includeLast && !date.le(endDate_) )
+            return false;
+        else
+            return date.lt(endDate_);
     }
 
     public DateInterval intersection(final DateInterval di) {
-        if ((startDate_.lt(di.startDate_) && endDate_.lt(di.startDate_))
-                || (startDate_.gt(di.endDate_) && endDate_.gt(di.endDate_))) {
+        if ( (startDate_.lt(di.startDate_) && endDate_.lt(di.startDate_)) || (startDate_.gt(di.endDate_) && endDate_.gt(
+                di.endDate_)) ) {
             return new DateInterval();
         }
         final Date start = startDate_.gt(di.startDate_) ? startDate_ : di.startDate_;
@@ -80,8 +81,10 @@ public class DateInterval {
 
     @Override
     public boolean equals(final Object obj) {
-        if (this == obj) return true;
-        if (!(obj instanceof DateInterval)) return false;
+        if ( this == obj )
+            return true;
+        if ( !(obj instanceof DateInterval) )
+            return false;
         final DateInterval other = (DateInterval) obj;
         return startDate_.equals(other.startDate_) && endDate_.equals(other.endDate_);
     }
@@ -93,7 +96,7 @@ public class DateInterval {
 
     @Override
     public String toString() {
-        if (startDate_.equals(new Date()) || endDate_.equals(new Date())) {
+        if ( startDate_.equals(new Date()) || endDate_.equals(new Date()) ) {
             return "Null<DateInterval>()";
         }
         return startDate_ + " to " + endDate_;

@@ -25,9 +25,8 @@ package org.jquantlib.indexes;
  * USA as geographical/economic region used for inflation applicability.
  *
  * <p>Mirrors C++ v1.42.1 {@code QuantLib::USRegion}
- * ({@code ql/indexes/region.cpp:51-54}). Region name is {@code "USA"} with
- * code {@code "US"}, so an inflation index built with {@code USRegion} will
- * report a {@link org.jquantlib.indexes.InflationIndex#name()} of
+ * ({@code ql/indexes/region.cpp:51-54}). Region name is {@code "USA"} with code {@code "US"}, so an inflation index
+ * built with {@code USRegion} will report a {@link org.jquantlib.indexes.InflationIndex#name()} of
  * {@code "USA <familyName>"}.
  */
 public class USRegion extends Region {

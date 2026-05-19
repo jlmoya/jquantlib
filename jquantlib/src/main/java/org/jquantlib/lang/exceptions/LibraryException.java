@@ -38,10 +38,10 @@ POSSIBILITY OF SUCH DAMAGE.
 
 package org.jquantlib.lang.exceptions;
 
+import org.jquantlib.QL;
+
 import java.io.PrintStream;
 import java.io.PrintWriter;
-
-import org.jquantlib.QL;
 
 /**
  * A specialized RuntimeException used internally by JQuantLib
@@ -68,9 +68,9 @@ public class LibraryException extends RuntimeException {
         QL.error(this);
     }
 
-
     /**
      * Constructs a new runtime exception with the specified detail message and cause.
+     *
      * @param message
      * @param cause
      */
@@ -79,10 +79,9 @@ public class LibraryException extends RuntimeException {
         QL.error(this);
     }
 
-
     /**
-     * Constructs a new runtime exception with the specified cause and a detail message of (cause==null ? null : cause.toString())
-     * (which typically contains the class and detail message of cause).
+     * Constructs a new runtime exception with the specified cause and a detail message of (cause==null ? null :
+     * cause.toString()) (which typically contains the class and detail message of cause).
      *
      * @param cause
      */
@@ -90,8 +89,6 @@ public class LibraryException extends RuntimeException {
         super(cause);
         QL.error(this);
     }
-
-
 
     @Override
     public synchronized Throwable fillInStackTrace() {
@@ -119,6 +116,11 @@ public class LibraryException extends RuntimeException {
     }
 
     @Override
+    public void setStackTrace(final StackTraceElement[] stackTrace) {
+        super.setStackTrace(stackTrace);
+    }
+
+    @Override
     public synchronized Throwable initCause(final Throwable cause) {
         return super.initCause(cause);
     }
@@ -136,11 +138,6 @@ public class LibraryException extends RuntimeException {
     @Override
     public void printStackTrace(final PrintWriter s) {
         super.printStackTrace(s);
-    }
-
-    @Override
-    public void setStackTrace(final StackTraceElement[] stackTrace) {
-        super.setStackTrace(stackTrace);
     }
 
     @Override

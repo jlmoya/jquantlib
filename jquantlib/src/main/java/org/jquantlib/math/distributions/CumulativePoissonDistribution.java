@@ -24,24 +24,21 @@ package org.jquantlib.math.distributions;
 
 import org.jquantlib.math.Ops;
 
+import java.awt.print.Book;
 
 /**
  * Cumulative Poisson distribution function
  * <p>
- * This function provides an approximation of the integral of the Poisson
- * distribution.
+ * This function provides an approximation of the integral of the Poisson distribution.
  * <p>
- * In probability theory and statistics, the Poisson distribution is a discrete
- * probability distribution that expresses the probability of a number of events
- * occurring in a fixed period of time if these events occur with a known
- * average rate and independently of the time since the last event. The Poisson
- * distribution can also be used for the number of events in other specified
- * intervals such as distance, area or volume.
- *
- * @see Wikipedia: <a href="http://en.wikipedia.org/wiki/Poisson_distribution">Poisson Distribution</a>
- * @see Book: <i>"Numerical Recipes in C", 2nd edition, Teukolsky, Vetterling, Flannery, chapter 6.</i>
+ * In probability theory and statistics, the Poisson distribution is a discrete probability distribution that expresses
+ * the probability of a number of events occurring in a fixed period of time if these events occur with a known average
+ * rate and independently of the time since the last event. The Poisson distribution can also be used for the number of
+ * events in other specified intervals such as distance, area or volume.
  *
  * @author Dominik Holenstein
+ * @see Wikipedia: <a href="http://en.wikipedia.org/wiki/Poisson_distribution">Poisson Distribution</a>
+ * @see Book : <i>"Numerical Recipes in C", 2nd edition, Teukolsky, Vetterling, Flannery, chapter 6.</i>
  */
 //TODO Test the correctness of the returned value against known good results.
 //TODO CumulativePoissonDistribution: Write a test case.
@@ -68,7 +65,6 @@ public class CumulativePoissonDistribution implements Ops.IntToDouble {
         this.mu = mu;
     }
 
-
     //
     // implements UnaryFunctionInteger
     //
@@ -76,15 +72,15 @@ public class CumulativePoissonDistribution implements Ops.IntToDouble {
     /**
      * {@inheritDoc}
      * <p>
-     * Computes the cumulative Poisson distribution by using the incomplete gamma function
-     * .
+     * Computes the cumulative Poisson distribution by using the incomplete gamma function .
+     *
      * @param k is the number of occurrences of an event
      * @return the cumulative Poisson distribution by using the incomplete gamma function
      */
     @Override
     public double op(final int k) /* @Read-only */ {
         final IncompleteGamma incompleteGamma = new IncompleteGamma();
-        return 1.0 - incompleteGamma.incompleteGammaFunction((double)k +1, mu, accuracy, maxIteration);
+        return 1.0 - incompleteGamma.incompleteGammaFunction((double) k + 1, mu, accuracy, maxIteration);
     }
 
 }

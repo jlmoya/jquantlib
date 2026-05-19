@@ -31,14 +31,15 @@ import org.jquantlib.math.Ops;
  * The implementation of the algorithm was inspired by
  * <i>Press, Teukolsky, Vetterling, and Flannery, "Numerical Recipes
  * in C", 2nd edition, Cambridge University Press</i>
- * 
+ *
  * @author Dominik Holenstein
  */
-public class Bisection extends AbstractSolver1D<Ops.DoubleOp>  {
+public class Bisection extends AbstractSolver1D< Ops.DoubleOp > {
 
     /**
      * Computes the roots of a function by using the Bisection method.
-     * @param f the function
+     *
+     * @param f         the function
      * @param xAccuracy the provided accuracy
      * @returns <code>root_</code>
      */
@@ -48,7 +49,7 @@ public class Bisection extends AbstractSolver1D<Ops.DoubleOp>  {
         double dx, xMid, fMid;
 
         // Orient the search so that f>0 lies at root_+dx
-        if (fxMin < 0.0) {
+        if ( fxMin < 0.0 ) {
             dx = xMax - xMin;
             root = xMin;
         } else {
@@ -56,14 +57,14 @@ public class Bisection extends AbstractSolver1D<Ops.DoubleOp>  {
             root = xMax;
         }
 
-        while (evaluationNumber <= getMaxEvaluations()) {
+        while ( evaluationNumber <= getMaxEvaluations() ) {
             dx /= 2.0;
             xMid = root + dx;
             fMid = f.op(xMid);
             evaluationNumber++;
-            if (fMid <= 0.0)
+            if ( fMid <= 0.0 )
                 root = xMid;
-            if (Math.abs(dx) < xAccuracy || fMid == 0.0)
+            if ( Math.abs(dx) < xAccuracy || fMid == 0.0 )
                 return root;
         }
         throw new ArithmeticException("maximum number of function evaluations exceeded"); // TODO: message

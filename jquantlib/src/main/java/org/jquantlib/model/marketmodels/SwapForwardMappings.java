@@ -44,11 +44,12 @@ import org.jquantlib.model.marketmodels.curvestates.LMMCurveState;
 public final class SwapForwardMappings {
 
     /** Prevent instantiation — all methods are static. */
-    private SwapForwardMappings() {}
+    private SwapForwardMappings() {
+    }
 
     /**
-     * Computes the annuity of an arbitrary swap rate over {@code [startIndex, endIndex)},
-     * discounted to the numeraire {@code numeraireIndex}.
+     * Computes the annuity of an arbitrary swap rate over {@code [startIndex, endIndex)}, discounted to the numeraire
+     * {@code numeraireIndex}.
      *
      * <p>Mirrors {@code SwapForwardMappings::annuity} in C++.
      *
@@ -58,21 +59,18 @@ public final class SwapForwardMappings {
      * @param numeraireIndex numeraire index for discounting
      * @return annuity value in units of the numeraire bond
      */
-    public static double annuity(final CurveState cs,
-                                 final int startIndex,
-                                 final int endIndex,
-                                 final int numeraireIndex) {
+    public static double annuity(final CurveState cs, final int startIndex, final int endIndex,
+            final int numeraireIndex) {
         double ann = 0.0;
-        for (int i = startIndex; i < endIndex; ++i) {
+        for ( int i = startIndex; i < endIndex; ++i ) {
             ann += cs.rateTaus()[i] * cs.discountRatio(i + 1, numeraireIndex);
         }
         return ann;
     }
 
     /**
-     * Computes the derivative {@code dsr/df[forwardIndex]} of the swap rate over
-     * {@code [startIndex, endIndex)} with respect to the forward rate at
-     * {@code forwardIndex}.
+     * Computes the derivative {@code dsr/df[forwardIndex]} of the swap rate over {@code [startIndex, endIndex)} with
+     * respect to the forward rate at {@code forwardIndex}.
      *
      * <p>Returns 0 if {@code forwardIndex < startIndex} or
      * {@code forwardIndex >= endIndex}.
@@ -85,25 +83,24 @@ public final class SwapForwardMappings {
      * @param forwardIndex the forward rate to differentiate with respect to
      * @return partial derivative value
      */
-    public static double swapDerivative(final CurveState cs,
-                                        final int startIndex,
-                                        final int endIndex,
-                                        final int forwardIndex) {
-        if (forwardIndex < startIndex) return 0.0;
-        if (forwardIndex >= endIndex)  return 0.0;
+    public static double swapDerivative(final CurveState cs, final int startIndex, final int endIndex,
+            final int forwardIndex) {
+        if ( forwardIndex < startIndex )
+            return 0.0;
+        if ( forwardIndex >= endIndex )
+            return 0.0;
 
-        final double numerator  = cs.discountRatio(startIndex, endIndex) - 1.0;
+        final double numerator = cs.discountRatio(startIndex, endIndex) - 1.0;
         final double swapAnnuity = annuity(cs, startIndex, endIndex, endIndex);
 
-        final double tau   = cs.rateTaus()[forwardIndex];
-        final double f     = cs.forwardRate(forwardIndex);
+        final double tau = cs.rateTaus()[forwardIndex];
+        final double f = cs.forwardRate(forwardIndex);
         final double ratio = tau / (1.0 + tau * f);
 
         final double part1 = ratio * (numerator + 1.0) / swapAnnuity;
         final double part2;
-        if (forwardIndex >= 1) {
-            part2 = numerator / (swapAnnuity * swapAnnuity)
-                    * ratio * annuity(cs, startIndex, forwardIndex, endIndex);
+        if ( forwardIndex >= 1 ) {
+            part2 = numerator / (swapAnnuity * swapAnnuity) * ratio * annuity(cs, startIndex, forwardIndex, endIndex);
         } else {
             part2 = 0.0;
         }
@@ -112,8 +109,7 @@ public final class SwapForwardMappings {
     }
 
     /**
-     * Returns the {@code dsr[i]/df[j]} Jacobian between coterminal swap rates
-     * and forward rates.
+     * Returns the {@code dsr[i]/df[j]} Jacobian between coterminal swap rates and forward rates.
      *
      * <p>Result is an {@code n x n} lower-triangular matrix (upper triangle is
      * non-zero as well; see C++ for details).
@@ -125,28 +121,26 @@ public final class SwapForwardMappings {
      */
     public static Matrix coterminalSwapForwardJacobian(final CurveState cs) {
         final int n = cs.numberOfRates();
-        final double[] f   = cs.forwardRates();
+        final double[] f = cs.forwardRates();
         final double[] tau = cs.rateTaus();
 
         // coterminal floating leg values: a[k] = discountRatio(k,n) - 1
         final double[] a = new double[n];
-        for (int k = 0; k < n; ++k) {
+        for ( int k = 0; k < n; ++k ) {
             a[k] = cs.discountRatio(k, n) - 1.0;
         }
 
         final Matrix jacobian = new Matrix(n, n);
-        for (int row = 0; row < n; ++row)
-            for (int col = 0; col < n; ++col)
+        for ( int row = 0; row < n; ++row )
+            for ( int col = 0; col < n; ++col )
                 jacobian.set(row, col, 0.0);
 
-        for (int i = 0; i < n; ++i) {       // i = swap rate index
-            for (int j = i; j < n; ++j) {   // j = forward rate index
+        for ( int i = 0; i < n; ++i ) {       // i = swap rate index
+            for ( int j = i; j < n; ++j ) {   // j = forward rate index
                 final double bi = cs.coterminalSwapAnnuity(n, i);
                 final double bj = cs.coterminalSwapAnnuity(n, j);
-                final double val =
-                        tau[j] / cs.coterminalSwapAnnuity(j + 1, i)
-                        + tau[j] / (1.0 + f[j] * tau[j])
-                                * (-a[j] * bi + a[i] * bj) / (bi * bi);
+                final double val = tau[j] / cs.coterminalSwapAnnuity(j + 1, i)
+                        + tau[j] / (1.0 + f[j] * tau[j]) * (-a[j] * bi + a[i] * bj) / (bi * bi);
                 jacobian.set(i, j, val);
             }
         }
@@ -154,8 +148,8 @@ public final class SwapForwardMappings {
     }
 
     /**
-     * Returns the Z matrix to switch base from forward rates to coterminal swap
-     * rates, applying a uniform displacement.
+     * Returns the Z matrix to switch base from forward rates to coterminal swap rates, applying a uniform
+     * displacement.
      *
      * <p>Mirrors {@code SwapForwardMappings::coterminalSwapZedMatrix}.
      *
@@ -163,14 +157,13 @@ public final class SwapForwardMappings {
      * @param displacement common displacement for all rates
      * @return n&times;n Z matrix
      */
-    public static Matrix coterminalSwapZedMatrix(final CurveState cs,
-                                                 final double displacement) {
+    public static Matrix coterminalSwapZedMatrix(final CurveState cs, final double displacement) {
         final int n = cs.numberOfRates();
         final Matrix zMatrix = coterminalSwapForwardJacobian(cs);
-        final double[] f  = cs.forwardRates();
+        final double[] f = cs.forwardRates();
         final double[] sr = cs.coterminalSwapRates();
-        for (int i = 0; i < n; ++i) {
-            for (int j = i; j < n; ++j) {
+        for ( int i = 0; i < n; ++i ) {
+            for ( int j = i; j < n; ++j ) {
                 zMatrix.set(i, j, zMatrix.get(i, j) * (f[j] + displacement) / (sr[i] + displacement));
             }
         }
@@ -178,8 +171,7 @@ public final class SwapForwardMappings {
     }
 
     /**
-     * Returns the {@code dsr[i]/df[j]} Jacobian between coinitial swap rates
-     * and forward rates.
+     * Returns the {@code dsr[i]/df[j]} Jacobian between coinitial swap rates and forward rates.
      *
      * <p>Mirrors {@code SwapForwardMappings::coinitialSwapForwardJacobian}.
      *
@@ -189,12 +181,12 @@ public final class SwapForwardMappings {
     public static Matrix coinitialSwapForwardJacobian(final CurveState cs) {
         final int n = cs.numberOfRates();
         final Matrix jacobian = new Matrix(n, n);
-        for (int row = 0; row < n; ++row)
-            for (int col = 0; col < n; ++col)
+        for ( int row = 0; row < n; ++row )
+            for ( int col = 0; col < n; ++col )
                 jacobian.set(row, col, 0.0);
 
-        for (int i = 0; i < n; ++i) {       // i = swap rate index
-            for (int j = 0; j < n; ++j) {   // j = forward rate index
+        for ( int i = 0; i < n; ++i ) {       // i = swap rate index
+            for ( int j = 0; j < n; ++j ) {   // j = forward rate index
                 jacobian.set(i, j, swapDerivative(cs, 0, i + 1, j));
             }
         }
@@ -202,8 +194,7 @@ public final class SwapForwardMappings {
     }
 
     /**
-     * Returns the Z matrix to switch base from forward rates to coinitial swap
-     * rates, applying a uniform displacement.
+     * Returns the Z matrix to switch base from forward rates to coinitial swap rates, applying a uniform displacement.
      *
      * <p>Mirrors {@code SwapForwardMappings::coinitialSwapZedMatrix}.
      *
@@ -211,20 +202,19 @@ public final class SwapForwardMappings {
      * @param displacement common displacement for all rates
      * @return n&times;n Z matrix
      */
-    public static Matrix coinitialSwapZedMatrix(final CurveState cs,
-                                                final double displacement) {
+    public static Matrix coinitialSwapZedMatrix(final CurveState cs, final double displacement) {
         final int n = cs.numberOfRates();
         final Matrix zMatrix = coinitialSwapForwardJacobian(cs);
         final double[] f = cs.forwardRates();
 
         // coinitial swap rates: sr[i] = cs.cmSwapRate(0, i+1)
         final double[] sr = new double[n];
-        for (int i = 0; i < n; ++i) {
+        for ( int i = 0; i < n; ++i ) {
             sr[i] = cs.cmSwapRate(0, i + 1);
         }
 
-        for (int i = 0; i < n; ++i) {
-            for (int j = i; j < n; ++j) {
+        for ( int i = 0; i < n; ++i ) {
+            for ( int j = i; j < n; ++j ) {
                 zMatrix.set(i, j, zMatrix.get(i, j) * (f[j] + displacement) / (sr[i] + displacement));
             }
         }
@@ -232,8 +222,7 @@ public final class SwapForwardMappings {
     }
 
     /**
-     * Returns the {@code dsr[i]/df[j]} Jacobian between constant-maturity swap
-     * (CMS) rates and forward rates.
+     * Returns the {@code dsr[i]/df[j]} Jacobian between constant-maturity swap (CMS) rates and forward rates.
      *
      * <p>Mirrors {@code SwapForwardMappings::cmSwapForwardJacobian}.
      *
@@ -241,16 +230,15 @@ public final class SwapForwardMappings {
      * @param spanningForwards number of consecutive forwards spanned by each CMS rate
      * @return n&times;n Jacobian matrix
      */
-    public static Matrix cmSwapForwardJacobian(final CurveState cs,
-                                               final int spanningForwards) {
+    public static Matrix cmSwapForwardJacobian(final CurveState cs, final int spanningForwards) {
         final int n = cs.numberOfRates();
         final Matrix jacobian = new Matrix(n, n);
-        for (int row = 0; row < n; ++row)
-            for (int col = 0; col < n; ++col)
+        for ( int row = 0; row < n; ++row )
+            for ( int col = 0; col < n; ++col )
                 jacobian.set(row, col, 0.0);
 
-        for (int i = 0; i < n; ++i) {       // i = swap rate index
-            for (int j = 0; j < n; ++j) {   // j = forward rate index
+        for ( int i = 0; i < n; ++i ) {       // i = swap rate index
+            for ( int j = 0; j < n; ++j ) {   // j = forward rate index
                 jacobian.set(i, j, swapDerivative(cs, i, Math.min(n, i + spanningForwards), j));
             }
         }
@@ -258,8 +246,7 @@ public final class SwapForwardMappings {
     }
 
     /**
-     * Returns the Z matrix to switch base from forward rates to CMS rates,
-     * applying a uniform displacement.
+     * Returns the Z matrix to switch base from forward rates to CMS rates, applying a uniform displacement.
      *
      * <p>Mirrors {@code SwapForwardMappings::cmSwapZedMatrix}.
      *
@@ -268,21 +255,19 @@ public final class SwapForwardMappings {
      * @param displacement     common displacement for all rates
      * @return n&times;n Z matrix
      */
-    public static Matrix cmSwapZedMatrix(final CurveState cs,
-                                         final int spanningForwards,
-                                         final double displacement) {
+    public static Matrix cmSwapZedMatrix(final CurveState cs, final int spanningForwards, final double displacement) {
         final int n = cs.numberOfRates();
         final Matrix zMatrix = cmSwapForwardJacobian(cs, spanningForwards);
         final double[] f = cs.forwardRates();
 
         // CMS rates: sr[i] = cs.cmSwapRate(i, spanningForwards)
         final double[] sr = new double[n];
-        for (int i = 0; i < n; ++i) {
+        for ( int i = 0; i < n; ++i ) {
             sr[i] = cs.cmSwapRate(i, spanningForwards);
         }
 
-        for (int i = 0; i < n; ++i) {
-            for (int j = i; j < n; ++j) {
+        for ( int i = 0; i < n; ++i ) {
+            for ( int j = i; j < n; ++j ) {
                 zMatrix.set(i, j, zMatrix.get(i, j) * (f[j] + displacement) / (sr[i] + displacement));
             }
         }
@@ -290,8 +275,8 @@ public final class SwapForwardMappings {
     }
 
     /**
-     * Computes the implied volatility of a swaption using the freezing-coefficients
-     * methodology of Brace-Gatarek-Musiela.
+     * Computes the implied volatility of a swaption using the freezing-coefficients methodology of
+     * Brace-Gatarek-Musiela.
      *
      * <p>Mirrors {@code SwapForwardMappings::swaptionImpliedVolatility} in C++.
      *
@@ -300,16 +285,13 @@ public final class SwapForwardMappings {
      * @param endIndex     end index (one past last forward) of the underlying swap
      * @return implied Black volatility
      */
-    public static double swaptionImpliedVolatility(final MarketModel volStructure,
-                                                   final int startIndex,
-                                                   final int endIndex) {
-        if (startIndex >= endIndex) {
-            throw new IllegalArgumentException(
-                    "start index must be before end index in swaptionImpliedVolatility");
+    public static double swaptionImpliedVolatility(final MarketModel volStructure, final int startIndex,
+            final int endIndex) {
+        if ( startIndex >= endIndex ) {
+            throw new IllegalArgumentException("start index must be before end index in swaptionImpliedVolatility");
         }
 
-        final LMMCurveState cs = new LMMCurveState(
-                volStructure.evolution().rateTimes());
+        final LMMCurveState cs = new LMMCurveState(volStructure.evolution().rateTimes());
         cs.setOnForwardRates(volStructure.initialRates());
         final double displacement = volStructure.displacements()[0];
 
@@ -322,13 +304,12 @@ public final class SwapForwardMappings {
         final int factors = volStructure.numberOfFactors();
         final int[] firstAlive = evolution.firstAliveRate();
 
-        while (index < evolution.numberOfSteps()
-                && startIndex >= firstAlive[index]) {
+        while ( index < evolution.numberOfSteps() && startIndex >= firstAlive[index] ) {
             final Matrix thisPseudo = volStructure.pseudoRoot(index);
             double thisVariance = 0.0;
-            for (int f = 0; f < factors; ++f) {
+            for ( int f = 0; f < factors; ++f ) {
                 double sum = 0.0;
-                for (int j = startIndex; j < endIndex; ++j) {
+                for ( int j = startIndex; j < endIndex; ++j ) {
                     sum += cmsZed.get(startIndex, j) * thisPseudo.get(j, f);
                 }
                 thisVariance += sum * sum;

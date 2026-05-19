@@ -34,21 +34,17 @@ import org.jquantlib.time.Period;
 /**
  * Vanilla-option pricer driven by a swaption smile section.
  * <p>
- * Mirrors C++ QuantLib v1.42.1 {@code MarketQuotedOptionPricer} in
- * {@code ql/cashflows/conundrumpricer.{hpp,cpp}}. Used internally by
- * Hagan/CMS pricers (e.g. {@code AnalyticHaganPricer},
- * {@code NumericHaganPricer}) to evaluate the conundrum integrand.
+ * Mirrors C++ QuantLib v1.42.1 {@code MarketQuotedOptionPricer} in {@code ql/cashflows/conundrumpricer.{hpp,cpp}}. Used
+ * internally by Hagan/CMS pricers (e.g. {@code AnalyticHaganPricer}, {@code NumericHaganPricer}) to evaluate the
+ * conundrum integrand.
  * <p>
- * Construction asserts the supplied volatility surface is either
- * {@link VolatilityType#Normal} or {@link VolatilityType#ShiftedLognormal}
- * with zero shift -- the only types the conundrum machinery handles
- * without ambiguity (matches C++ {@code QL_REQUIRE} on lines 55-58 of
- * {@code conundrumpricer.cpp}).
+ * Construction asserts the supplied volatility surface is either {@link VolatilityType#Normal} or
+ * {@link VolatilityType#ShiftedLognormal} with zero shift -- the only types the conundrum machinery handles without
+ * ambiguity (matches C++ {@code QL_REQUIRE} on lines 55-58 of {@code conundrumpricer.cpp}).
  */
 public class MarketQuotedOptionPricer implements VanillaOptionPricer {
 
-    private static final String MISSING_VOL =
-            "VanillaOptionPricer: a normal or a zero-shift lognormal volatility is required";
+    private static final String MISSING_VOL = "VanillaOptionPricer: a normal or a zero-shift lognormal volatility is required";
 
     private final double forwardValue_;
     private final Date expiryDate_;
@@ -56,10 +52,8 @@ public class MarketQuotedOptionPricer implements VanillaOptionPricer {
     private final SwaptionVolatilityStructure volatilityStructure_;
     private final SmileSection smile_;
 
-    public MarketQuotedOptionPricer(final double forwardValue,
-                                    final Date expiryDate,
-                                    final Period swapTenor,
-                                    final SwaptionVolatilityStructure volatilityStructure) {
+    public MarketQuotedOptionPricer(final double forwardValue, final Date expiryDate, final Period swapTenor,
+            final SwaptionVolatilityStructure volatilityStructure) {
         this.forwardValue_ = forwardValue;
         this.expiryDate_ = expiryDate;
         this.swapTenor_ = swapTenor;
@@ -69,8 +63,8 @@ public class MarketQuotedOptionPricer implements VanillaOptionPricer {
 
         final boolean isNormal = volatilityStructure.volatilityType() == VolatilityType.Normal;
         final boolean isZeroShiftLognormal =
-                volatilityStructure.volatilityType() == VolatilityType.ShiftedLognormal
-                && Closeness.isCloseEnough(volatilityStructure.shift(), 0.0);
+                volatilityStructure.volatilityType() == VolatilityType.ShiftedLognormal && Closeness.isCloseEnough(
+                        volatilityStructure.shift(), 0.0);
         QL.require(isNormal || isZeroShiftLognormal, MISSING_VOL);
 
         // Java has no smileSection(Date, Period) without extrapolate flag;
@@ -79,17 +73,13 @@ public class MarketQuotedOptionPricer implements VanillaOptionPricer {
     }
 
     @Override
-    public double evaluate(final double strike,
-                           final Option.Type optionType,
-                           final double deflator) {
+    public double evaluate(final double strike, final Option.Type optionType, final double deflator) {
         final double variance = smile_.variance(strike);
         final double stdDev = Math.sqrt(variance);
-        if (volatilityStructure_.volatilityType() == VolatilityType.ShiftedLognormal) {
-            return deflator
-                    * BlackFormula.blackFormula(optionType, strike, forwardValue_, stdDev);
+        if ( volatilityStructure_.volatilityType() == VolatilityType.ShiftedLognormal ) {
+            return deflator * BlackFormula.blackFormula(optionType, strike, forwardValue_, stdDev);
         }
-        return deflator
-                * BlackFormula.bachelierBlackFormula(optionType, strike, forwardValue_, stdDev);
+        return deflator * BlackFormula.bachelierBlackFormula(optionType, strike, forwardValue_, stdDev);
     }
 
     public double forwardValue() {

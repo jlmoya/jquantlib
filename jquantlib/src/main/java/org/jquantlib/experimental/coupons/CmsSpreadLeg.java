@@ -44,16 +44,13 @@ import org.jquantlib.time.Schedule;
 /**
  * Helper class building a sequence of capped/floored CMS-spread coupons.
  * <p>
- * Port of C++ QuantLib v1.42.1
- * {@code ql/experimental/coupons/cmsspreadcoupon.hpp} (the {@code CmsSpreadLeg}
- * class lines 106-137) and {@code cmsspreadcoupon.cpp} lines 48-145.
+ * Port of C++ QuantLib v1.42.1 {@code ql/experimental/coupons/cmsspreadcoupon.hpp} (the {@code CmsSpreadLeg} class
+ * lines 106-137) and {@code cmsspreadcoupon.cpp} lines 48-145.
  *
  * <p>Java port note: rather than going through the reflection-based
- * {@link org.jquantlib.cashflow.FloatingLeg} (which is hard-wired to
- * {@code IborIndex.class} in its constructor lookup), we construct the
- * coupons directly here, mirroring the same control flow as
- * {@code FloatingLeg<SwapSpreadIndex, CmsSpreadCoupon, CappedFlooredCmsSpreadCoupon>}
- * in C++.
+ * {@link org.jquantlib.cashflow.FloatingLeg} (which is hard-wired to {@code IborIndex.class} in its constructor
+ * lookup), we construct the coupons directly here, mirroring the same control flow as
+ * {@code FloatingLeg<SwapSpreadIndex, CmsSpreadCoupon, CappedFlooredCmsSpreadCoupon>} in C++.
  *
  * @author Peter Caspers (C++ original)
  */
@@ -72,7 +69,6 @@ public class CmsSpreadLeg {
     private boolean inArrears_ = false;
     private boolean zeroPayments_ = false;
 
-
     //
     // public constructor
     //
@@ -83,10 +79,37 @@ public class CmsSpreadLeg {
         this.swapSpreadIndex_ = swapSpreadIndex;
     }
 
-
     //
     // builder methods (matching C++ withXxx fluent API)
     //
+
+    private static double get(final Array v, final int i, final double defaultValue) {
+        if ( v == null || v.empty() ) {
+            return defaultValue;
+        }
+        if ( i < v.size() ) {
+            return v.get(i);
+        }
+        return v.get(v.size() - 1);
+    }
+
+    private static double effectiveFixedRate(final Array spreads, final Array caps, final Array floors, final int i) {
+        double result = get(spreads, i, 0.0);
+        final double floor = get(floors, i, Constants.NULL_REAL);
+        if ( floor != Constants.NULL_REAL ) {
+            result = Math.max(floor, result);
+        }
+        final double cap = get(caps, i, Constants.NULL_REAL);
+        if ( cap != Constants.NULL_REAL ) {
+            result = Math.min(cap, result);
+        }
+        return result;
+    }
+
+    private static boolean noOption(final Array caps, final Array floors, final int i) {
+        return get(caps, i, Constants.NULL_REAL) == Constants.NULL_REAL
+                && get(floors, i, Constants.NULL_REAL) == Constants.NULL_REAL;
+    }
 
     public CmsSpreadLeg withNotionals(final double notional) {
         notionals_ = new Array(1).fill(notional);
@@ -153,10 +176,18 @@ public class CmsSpreadLeg {
         return this;
     }
 
+    //
+    // build the leg
+    //
+
     public CmsSpreadLeg withFloors(final Array floors) {
         floors_ = floors.clone();
         return this;
     }
+
+    //
+    // helpers (mirror FloatingLeg.get / effectiveFixedRate / noOption)
+    //
 
     public CmsSpreadLeg inArrears(final boolean flag) {
         inArrears_ = flag;
@@ -167,11 +198,6 @@ public class CmsSpreadLeg {
         zeroPayments_ = flag;
         return this;
     }
-
-
-    //
-    // build the leg
-    //
 
     /**
      * Materialise the leg.
@@ -187,106 +213,48 @@ public class CmsSpreadLeg {
                 "too many gearings (" + gearings_.size() + "), only " + n + " required");
         QL.require(spreads_ != null && spreads_.size() <= n,
                 "too many spreads (" + spreads_.size() + "), only " + n + " required");
-        QL.require(caps_ != null && caps_.size() <= n,
-                "too many caps (" + caps_.size() + "), only " + n + " required");
+        QL.require(caps_ != null && caps_.size() <= n, "too many caps (" + caps_.size() + "), only " + n + " required");
         QL.require(floors_ != null && floors_.size() <= n,
                 "too many floors (" + floors_.size() + "), only " + n + " required");
-        QL.require(!zeroPayments_ || !inArrears_,
-                "in-arrears and zero features are not compatible");
+        QL.require(!zeroPayments_ || !inArrears_, "in-arrears and zero features are not compatible");
 
         final Leg leg = new Leg(n);
         final Calendar calendar = schedule_.calendar();
         final Date lastPaymentDate = calendar.adjust(schedule_.date(n), paymentAdjustment_);
 
-        for (int i = 0; i < n; ++i) {
+        for ( int i = 0; i < n; ++i ) {
             Date refStart = schedule_.date(i);
             Date start = refStart;
             Date refEnd = schedule_.date(i + 1);
             Date end = refEnd;
-            final Date paymentDate = zeroPayments_ ? lastPaymentDate
-                    : calendar.adjust(end, paymentAdjustment_);
-            if (i == 0 && !schedule_.isRegular(i + 1)) {
+            final Date paymentDate = zeroPayments_ ? lastPaymentDate : calendar.adjust(end, paymentAdjustment_);
+            if ( i == 0 && !schedule_.isRegular(i + 1) ) {
                 final BusinessDayConvention bdc = schedule_.businessDayConvention();
                 refStart = calendar.adjust(end.sub(schedule_.tenor()), bdc);
             }
-            if (i == n - 1 && !schedule_.isRegular(i + 1)) {
+            if ( i == n - 1 && !schedule_.isRegular(i + 1) ) {
                 final BusinessDayConvention bdc = schedule_.businessDayConvention();
                 refEnd = calendar.adjust(start.add(schedule_.tenor()), bdc);
             }
 
             final double gearing = get(gearings_, i, 1.0);
-            if (gearing == 0.0) {
+            if ( gearing == 0.0 ) {
                 // fixed coupon
-                leg.add(new FixedRateCoupon(get(notionals_, i, 1.0),
-                        paymentDate,
-                        effectiveFixedRate(spreads_, caps_, floors_, i),
-                        paymentDayCounter_,
-                        start, end, refStart, refEnd));
-            } else if (noOption(caps_, floors_, i)) {
-                leg.add(new CmsSpreadCoupon(
-                        paymentDate,
-                        get(notionals_, i, 1.0),
-                        start, end,
-                        (int) get(fixingDays_, i, swapSpreadIndex_.fixingDays()),
-                        swapSpreadIndex_,
-                        gearing,
-                        get(spreads_, i, 0.0),
-                        refStart, refEnd,
-                        paymentDayCounter_,
-                        inArrears_));
+                leg.add(new FixedRateCoupon(get(notionals_, i, 1.0), paymentDate,
+                        effectiveFixedRate(spreads_, caps_, floors_, i), paymentDayCounter_, start, end, refStart,
+                        refEnd));
+            } else if ( noOption(caps_, floors_, i) ) {
+                leg.add(new CmsSpreadCoupon(paymentDate, get(notionals_, i, 1.0), start, end,
+                        (int) get(fixingDays_, i, swapSpreadIndex_.fixingDays()), swapSpreadIndex_, gearing,
+                        get(spreads_, i, 0.0), refStart, refEnd, paymentDayCounter_, inArrears_));
             } else {
                 final double cap = get(caps_, i, Constants.NULL_REAL);
                 final double floor = get(floors_, i, Constants.NULL_REAL);
-                leg.add((CashFlow) new CappedFlooredCmsSpreadCoupon(
-                        paymentDate,
-                        get(notionals_, i, 1.0),
-                        start, end,
-                        (int) get(fixingDays_, i, swapSpreadIndex_.fixingDays()),
-                        swapSpreadIndex_,
-                        gearing,
-                        get(spreads_, i, 0.0),
-                        cap, floor,
-                        refStart, refEnd,
-                        paymentDayCounter_,
-                        inArrears_));
+                leg.add(new CappedFlooredCmsSpreadCoupon(paymentDate, get(notionals_, i, 1.0), start, end,
+                        (int) get(fixingDays_, i, swapSpreadIndex_.fixingDays()), swapSpreadIndex_, gearing,
+                        get(spreads_, i, 0.0), cap, floor, refStart, refEnd, paymentDayCounter_, inArrears_));
             }
         }
         return leg;
-    }
-
-
-    //
-    // helpers (mirror FloatingLeg.get / effectiveFixedRate / noOption)
-    //
-
-    private static double get(final Array v, final int i, final double defaultValue) {
-        if (v == null || v.empty()) {
-            return defaultValue;
-        }
-        if (i < v.size()) {
-            return v.get(i);
-        }
-        return v.get(v.size() - 1);
-    }
-
-    private static double effectiveFixedRate(final Array spreads,
-                                             final Array caps,
-                                             final Array floors,
-                                             final int i) {
-        double result = get(spreads, i, 0.0);
-        final double floor = get(floors, i, Constants.NULL_REAL);
-        if (floor != Constants.NULL_REAL) {
-            result = Math.max(floor, result);
-        }
-        final double cap = get(caps, i, Constants.NULL_REAL);
-        if (cap != Constants.NULL_REAL) {
-            result = Math.min(cap, result);
-        }
-        return result;
-    }
-
-    private static boolean noOption(final Array caps, final Array floors, final int i) {
-        return get(caps, i, Constants.NULL_REAL) == Constants.NULL_REAL
-                && get(floors, i, Constants.NULL_REAL) == Constants.NULL_REAL;
     }
 }

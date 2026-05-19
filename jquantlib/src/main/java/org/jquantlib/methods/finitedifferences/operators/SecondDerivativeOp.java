@@ -26,13 +26,10 @@ import org.jquantlib.methods.finitedifferences.meshers.FdmMesher;
 /**
  * Central-difference second derivative on a non-uniform 1D grid.
  * <p>
- * Java port of v1.42.1
- * ql/methods/finitedifferences/operators/secondderivativeop.{hpp,cpp}.
+ * Java port of v1.42.1 ql/methods/finitedifferences/operators/secondderivativeop.{hpp,cpp}.
  * <p>
- * At interior cells:
- * {@code u''(x) ~= 2/(h_-(h_-+h_+)) u_{i-1} - 2/(h_-h_+) u_i + 2/(h_+(h_-+h_+)) u_{i+1}}.
- * Boundary cells are zeroed out (Dirichlet contribution comes from the
- * boundary-condition pass, not the operator).
+ * At interior cells: {@code u''(x) ~= 2/(h_-(h_-+h_+)) u_{i-1} - 2/(h_-h_+) u_i + 2/(h_+(h_-+h_+)) u_{i+1}}. Boundary
+ * cells are zeroed out (Dirichlet contribution comes from the boundary-condition pass, not the operator).
  *
  * @author Phase 2h WI-1 port
  */
@@ -41,24 +38,24 @@ public class SecondDerivativeOp extends TripleBandLinearOp {
     public SecondDerivativeOp(final int direction, final FdmMesher mesher) {
         super(direction, mesher);
 
-        for (final FdmLinearOpIterator iter : mesher.layout()) {
+        for ( final FdmLinearOpIterator iter : mesher.layout() ) {
             final int i = iter.index();
             final double hm = mesher.dminus(iter, this.direction);
             final double hp = mesher.dplus(iter, this.direction);
 
             final double zetam1 = hm * (hm + hp);
-            final double zeta0  = hm * hp;
+            final double zeta0 = hm * hp;
             final double zetap1 = hp * (hm + hp);
 
             final int co = iter.coordinates()[this.direction];
-            if (co == 0 || co == mesher.layout().dim()[this.direction] - 1) {
+            if ( co == 0 || co == mesher.layout().dim()[this.direction] - 1 ) {
                 lower[i] = 0.0;
-                diag[i]  = 0.0;
+                diag[i] = 0.0;
                 upper[i] = 0.0;
             } else {
-                lower[i] =  2.0 / zetam1;
-                diag[i]  = -2.0 / zeta0;
-                upper[i] =  2.0 / zetap1;
+                lower[i] = 2.0 / zetam1;
+                diag[i] = -2.0 / zeta0;
+                upper[i] = 2.0 / zetap1;
             }
         }
     }

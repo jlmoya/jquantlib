@@ -32,8 +32,7 @@ import java.util.Arrays;
  * Compressed Sparse Row (CSR) sparse matrix of doubles.
  *
  * <p>Java equivalent of the C++ {@code boost::numeric::ublas::compressed_matrix<Real>}
- * which is typedef'd as {@code SparseMatrix} in
- * {@code ql/math/matrixutilities/sparsematrix.hpp}.
+ * which is typedef'd as {@code SparseMatrix} in {@code ql/math/matrixutilities/sparsematrix.hpp}.
  *
  * <p>The CSR storage uses three internal arrays:
  * <ul>
@@ -63,7 +62,7 @@ public class SparseMatrix {
     private final int cols;
 
     /** rowPtr[i] = start offset (inclusive) of row i; rowPtr[rows] = nnz. */
-    private int[] rowPtr;
+    private final int[] rowPtr;
     /** colIdx[k] = column index of entry k (sorted ascending within each row). */
     private int[] colIdx;
     /** values[k] = value of entry k. */
@@ -81,10 +80,9 @@ public class SparseMatrix {
      * @param cols number of columns ({@code >= 0})
      */
     public SparseMatrix(final int rows, final int cols) {
-        if (rows < 0 || cols < 0) {
+        if ( rows < 0 || cols < 0 ) {
             throw new IllegalArgumentException(
-                    "SparseMatrix: dimensions must be non-negative ("
-                            + rows + "x" + cols + ")");
+                    "SparseMatrix: dimensions must be non-negative (" + rows + "x" + cols + ")");
         }
         this.rows = rows;
         this.cols = cols;
@@ -111,6 +109,17 @@ public class SparseMatrix {
     // -----------------------------------------------------------------------
     // Dimensions
 
+    /**
+     * Static convenience equivalent of C++ {@code prod(const SparseMatrix& A, const Array& x)}.
+     *
+     * @param A sparse matrix
+     * @param x input vector
+     * @return {@code A * x}
+     */
+    public static Array prod(final SparseMatrix A, final Array x) {
+        return A.mul(x);
+    }
+
     /** @return number of rows. */
     public int rows() {
         return rows;
@@ -135,8 +144,7 @@ public class SparseMatrix {
      * Number of allocated CSR entries (boost {@code nnz()}).
      *
      * <p><strong>Note:</strong> matches the C++ helper
-     * {@code nrElementsOfSparseMatrix(m)} (used in
-     * {@code testSparseMatrixZeroAssignment}) — counts entries, including
+     * {@code nrElementsOfSparseMatrix(m)} (used in {@code testSparseMatrixZeroAssignment}) — counts entries, including
      * those whose value happens to be zero.
      *
      * @return entry count
@@ -146,9 +154,8 @@ public class SparseMatrix {
     }
 
     /**
-     * Number of "filled" rows + 1 (boost {@code filled1()}); equal to
-     * {@code rows + 1}.  Provided for parity with boost-style iteration in
-     * the {@code prod(SparseMatrix, Array)} helper below.
+     * Number of "filled" rows + 1 (boost {@code filled1()}); equal to {@code rows + 1}.  Provided for parity with
+     * boost-style iteration in the {@code prod(SparseMatrix, Array)} helper below.
      *
      * @return rows + 1
      */
@@ -157,9 +164,8 @@ public class SparseMatrix {
     }
 
     /**
-     * Reference to the row-pointer array of length {@code filled1()}.
-     * Boost-compat name: {@code index1_data()}.  Index {@code i} gives the
-     * start offset of row {@code i} in {@code valueData()}/{@code index2Data()}.
+     * Reference to the row-pointer array of length {@code filled1()}. Boost-compat name: {@code index1_data()}.  Index
+     * {@code i} gives the start offset of row {@code i} in {@code valueData()}/{@code index2Data()}.
      *
      * <p>The returned array is the live internal buffer; do not mutate.
      *
@@ -170,8 +176,7 @@ public class SparseMatrix {
     }
 
     /**
-     * Reference to the column-index array of length {@code nrElements()}.
-     * Boost-compat name: {@code index2_data()}.
+     * Reference to the column-index array of length {@code nrElements()}. Boost-compat name: {@code index2_data()}.
      *
      * <p>The returned array's first {@code nrElements()} positions are valid;
      * trailing positions (capacity overhead) are unused.
@@ -182,18 +187,17 @@ public class SparseMatrix {
         return colIdx;
     }
 
+    // -----------------------------------------------------------------------
+    // Element access
+
     /**
-     * Reference to the value array of length {@code nrElements()}.
-     * Boost-compat name: {@code value_data()}.
+     * Reference to the value array of length {@code nrElements()}. Boost-compat name: {@code value_data()}.
      *
      * @return internal value array
      */
     public double[] valueData() {
         return values;
     }
-
-    // -----------------------------------------------------------------------
-    // Element access
 
     /**
      * Return the value at {@code (row, col)}, or {@code 0.0} if unset.
@@ -221,7 +225,7 @@ public class SparseMatrix {
     public void set(final int row, final int col, final double v) {
         checkBounds(row, col);
         final int k = findEntry(row, col);
-        if (k >= 0) {
+        if ( k >= 0 ) {
             values[k] = v;
         } else {
             insertEntry(row, col, v);
@@ -229,8 +233,8 @@ public class SparseMatrix {
     }
 
     /**
-     * In-place: {@code this(row,col) += v}.  Allocates an entry if needed
-     * (even if {@code v + existing == 0.0}, the entry remains allocated).
+     * In-place: {@code this(row,col) += v}.  Allocates an entry if needed (even if {@code v + existing == 0.0}, the
+     * entry remains allocated).
      *
      * @param row row index
      * @param col column index
@@ -239,7 +243,7 @@ public class SparseMatrix {
     public void addAt(final int row, final int col, final double v) {
         checkBounds(row, col);
         final int k = findEntry(row, col);
-        if (k >= 0) {
+        if ( k >= 0 ) {
             values[k] += v;
         } else {
             insertEntry(row, col, v);
@@ -247,29 +251,30 @@ public class SparseMatrix {
     }
 
     /**
-     * In-place addition: {@code this += other}.  Both matrices must have the
-     * same shape.  Equivalent to summing entries of {@code other} into
-     * {@code this} via {@link #addAt(int, int, double)}.
+     * In-place addition: {@code this += other}.  Both matrices must have the same shape.  Equivalent to summing entries
+     * of {@code other} into {@code this} via {@link #addAt(int, int, double)}.
      *
      * @param other addend
      * @return {@code this}
      */
     public SparseMatrix addAssign(final SparseMatrix other) {
-        if (rows != other.rows || cols != other.cols) {
+        if ( rows != other.rows || cols != other.cols ) {
             throw new IllegalArgumentException(
-                    "SparseMatrix: shape mismatch in addAssign ("
-                            + rows + "x" + cols + " vs "
-                            + other.rows + "x" + other.cols + ")");
+                    "SparseMatrix: shape mismatch in addAssign (" + rows + "x" + cols + " vs " + other.rows + "x"
+                            + other.cols + ")");
         }
-        for (int i = 0; i < other.rows; i++) {
+        for ( int i = 0; i < other.rows; i++ ) {
             final int beg = other.rowPtr[i];
             final int end = other.rowPtr[i + 1];
-            for (int k = beg; k < end; k++) {
+            for ( int k = beg; k < end; k++ ) {
                 addAt(i, other.colIdx[k], other.values[k]);
             }
         }
         return this;
     }
+
+    // -----------------------------------------------------------------------
+    // Matrix-vector product:  y = this * x
 
     /**
      * Out-of-place addition: returns a new matrix equal to {@code this + other}.
@@ -281,28 +286,24 @@ public class SparseMatrix {
         return new SparseMatrix(this).addAssign(other);
     }
 
-    // -----------------------------------------------------------------------
-    // Matrix-vector product:  y = this * x
-
     /**
-     * Compute {@code y = this * x}.  Mirrors the {@code prod(SparseMatrix, Array)}
-     * helper in {@code ql/math/matrixutilities/sparsematrix.hpp}.
+     * Compute {@code y = this * x}.  Mirrors the {@code prod(SparseMatrix, Array)} helper in
+     * {@code ql/math/matrixutilities/sparsematrix.hpp}.
      *
      * @param x input vector of length {@code columns()}
      * @return new array of length {@code rows()}
      */
     public Array mul(final Array x) {
-        if (x.size() != cols) {
+        if ( x.size() != cols ) {
             throw new IllegalArgumentException(
-                    "SparseMatrix.mul: vector size " + x.size()
-                            + " != matrix columns " + cols);
+                    "SparseMatrix.mul: vector size " + x.size() + " != matrix columns " + cols);
         }
         final double[] y = new double[rows];
-        for (int i = 0; i < rows; i++) {
+        for ( int i = 0; i < rows; i++ ) {
             double s = 0.0;
             final int beg = rowPtr[i];
             final int end = rowPtr[i + 1];
-            for (int k = beg; k < end; k++) {
+            for ( int k = beg; k < end; k++ ) {
                 s += values[k] * x.get(colIdx[k]);
             }
             y[i] = s;
@@ -310,25 +311,13 @@ public class SparseMatrix {
         return new Array(y, y.length);
     }
 
-    /**
-     * Static convenience equivalent of C++ {@code prod(const SparseMatrix& A, const Array& x)}.
-     *
-     * @param A sparse matrix
-     * @param x input vector
-     * @return {@code A * x}
-     */
-    public static Array prod(final SparseMatrix A, final Array x) {
-        return A.mul(x);
-    }
-
     // -----------------------------------------------------------------------
     // Internal helpers
 
     private void checkBounds(final int row, final int col) {
-        if (row < 0 || row >= rows || col < 0 || col >= cols) {
+        if ( row < 0 || row >= rows || col < 0 || col >= cols ) {
             throw new IndexOutOfBoundsException(
-                    "SparseMatrix: index (" + row + "," + col + ") out of "
-                            + rows + "x" + cols + " bounds");
+                    "SparseMatrix: index (" + row + "," + col + ") out of " + rows + "x" + cols + " bounds");
         }
     }
 
@@ -343,12 +332,12 @@ public class SparseMatrix {
         // Linear search is fine for small rows — typical FDM operators have
         // bandwidth O(1)..O(few).  Binary would still be acceptable but not
         // measurably faster for n<=10.
-        for (int k = lo; k < hi; k++) {
+        for ( int k = lo; k < hi; k++ ) {
             final int c = colIdx[k];
-            if (c == col) {
+            if ( c == col ) {
                 return k;
             }
-            if (c > col) {
+            if ( c > col ) {
                 return -1;
             }
         }
@@ -356,30 +345,30 @@ public class SparseMatrix {
     }
 
     /**
-     * Insert a new entry at the proper sorted position within row {@code row},
-     * shifting subsequent entries right and bumping all later row pointers.
+     * Insert a new entry at the proper sorted position within row {@code row}, shifting subsequent entries right and
+     * bumping all later row pointers.
      */
     private void insertEntry(final int row, final int col, final double v) {
         // Find insertion point within row [rowPtr[row], rowPtr[row+1])
         final int beg = rowPtr[row];
         final int end = rowPtr[row + 1];
         int pos = end;
-        for (int k = beg; k < end; k++) {
-            if (colIdx[k] > col) {
+        for ( int k = beg; k < end; k++ ) {
+            if ( colIdx[k] > col ) {
                 pos = k;
                 break;
             }
         }
 
         // Grow capacity if needed.
-        if (nnz == colIdx.length) {
+        if ( nnz == colIdx.length ) {
             final int newCap = Math.max(8, colIdx.length * 2);
             colIdx = Arrays.copyOf(colIdx, newCap);
             values = Arrays.copyOf(values, newCap);
         }
 
         // Shift entries at [pos, nnz) one position right.
-        if (pos < nnz) {
+        if ( pos < nnz ) {
             System.arraycopy(colIdx, pos, colIdx, pos + 1, nnz - pos);
             System.arraycopy(values, pos, values, pos + 1, nnz - pos);
         }
@@ -389,7 +378,7 @@ public class SparseMatrix {
         nnz++;
 
         // Bump rowPtr for all rows after `row`.
-        for (int r = row + 1; r <= rows; r++) {
+        for ( int r = row + 1; r <= rows; r++ ) {
             rowPtr[r]++;
         }
     }
@@ -400,15 +389,14 @@ public class SparseMatrix {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder();
-        sb.append("SparseMatrix(").append(rows).append("x").append(cols)
-                .append(", nnz=").append(nnz).append(") {");
-        for (int i = 0; i < rows; i++) {
+        sb.append("SparseMatrix(").append(rows).append("x").append(cols).append(", nnz=").append(nnz).append(") {");
+        for ( int i = 0; i < rows; i++ ) {
             final int beg = rowPtr[i];
             final int end = rowPtr[i + 1];
-            for (int k = beg; k < end; k++) {
-                if (sb.charAt(sb.length() - 1) != '{') sb.append(", ");
-                sb.append("(").append(i).append(",").append(colIdx[k])
-                        .append(")=").append(values[k]);
+            for ( int k = beg; k < end; k++ ) {
+                if ( sb.charAt(sb.length() - 1) != '{' )
+                    sb.append(", ");
+                sb.append("(").append(i).append(",").append(colIdx[k]).append(")=").append(values[k]);
             }
         }
         sb.append("}");

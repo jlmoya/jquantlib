@@ -29,12 +29,11 @@ package org.jquantlib.math.interpolations;
  */
 public class DefaultExtrapolator implements Extrapolator {
 
-	//
+    //
     // private fields
     //
 
     private boolean extrapolate;
-
 
     //
     // public constructors
@@ -44,27 +43,26 @@ public class DefaultExtrapolator implements Extrapolator {
      * @category constructors
      */
     public DefaultExtrapolator() {
-		this.extrapolate = false;
-	}
+        this.extrapolate = false;
+    }
 
-
-	//
-	// implements Extrapolator
-	//
+    //
+    // implements Extrapolator
+    //
 
     @Override
     public void enableExtrapolation() {
-		extrapolate = true;
-	}
+        extrapolate = true;
+    }
 
     @Override
-	public void disableExtrapolation() {
-		extrapolate = false;
-	}
+    public void disableExtrapolation() {
+        extrapolate = false;
+    }
 
     @Override
-	public final boolean allowsExtrapolation() {
-		return extrapolate;
-	}
+    public final boolean allowsExtrapolation() {
+        return extrapolate;
+    }
 
 }

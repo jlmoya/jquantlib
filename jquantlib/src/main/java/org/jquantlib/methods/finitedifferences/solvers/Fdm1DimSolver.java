@@ -29,16 +29,14 @@ import org.jquantlib.methods.finitedifferences.stepconditions.FdmStepConditionCo
 import org.jquantlib.util.LazyObject;
 
 /**
- * Lazy 1D wrapper around {@link FdmBackwardSolver} that interpolates the
- * rolled-back state as a function of the underlying.
+ * Lazy 1D wrapper around {@link FdmBackwardSolver} that interpolates the rolled-back state as a function of the
+ * underlying.
  * <p>
- * Java port of v1.42.1
- * {@code ql/methods/finitedifferences/solvers/fdm1dimsolver.{hpp,cpp}}.
+ * Java port of v1.42.1 {@code ql/methods/finitedifferences/solvers/fdm1dimsolver.{hpp,cpp}}.
  *
  * <p>The Java port uses {@link MonotonicNaturalCubicInterpolation} as a
- * direct equivalent of C++ {@code MonotonicCubicNaturalSpline} (both wrap
- * the same underlying {@code CubicInterpolation} configuration:
- * spline + natural BCs + monotonicity-preserving derivative approximation).
+ * direct equivalent of C++ {@code MonotonicCubicNaturalSpline} (both wrap the same underlying
+ * {@code CubicInterpolation} configuration: spline + natural BCs + monotonicity-preserving derivative approximation).
  *
  * @author Phase 2h WI-1 port
  */
@@ -56,9 +54,8 @@ public class Fdm1DimSolver extends LazyObject {
     private final Array resultValues;
     private MonotonicNaturalCubicInterpolation interpolation;
 
-    public Fdm1DimSolver(final FdmSolverDesc solverDesc,
-                         final FdmSchemeDesc schemeDesc,
-                         final FdmLinearOpComposite op) {
+    public Fdm1DimSolver(final FdmSolverDesc solverDesc, final FdmSchemeDesc schemeDesc,
+            final FdmLinearOpComposite op) {
         this.solverDesc = solverDesc;
         this.schemeDesc = schemeDesc;
         this.op = op;
@@ -68,20 +65,17 @@ public class Fdm1DimSolver extends LazyObject {
         final double earliestStop = solverDesc.condition.stoppingTimes().isEmpty()
                 ? solverDesc.maturity
                 : solverDesc.condition.stoppingTimes().get(0);
-        this.thetaCondition = new FdmSnapshotCondition(
-                0.99 * Math.min(1.0 / 365.0, earliestStop));
+        this.thetaCondition = new FdmSnapshotCondition(0.99 * Math.min(1.0 / 365.0, earliestStop));
 
-        this.conditions = FdmStepConditionComposite.joinConditions(
-                thetaCondition, solverDesc.condition);
+        this.conditions = FdmStepConditionComposite.joinConditions(thetaCondition, solverDesc.condition);
 
         final int size = solverDesc.mesher.layout().size();
         this.x = new Array(size);
         this.initialValues = new Array(size);
         this.resultValues = new Array(size);
 
-        for (final FdmLinearOpIterator iter : solverDesc.mesher.layout()) {
-            initialValues.set(iter.index(),
-                    solverDesc.calculator.avgInnerValue(iter, solverDesc.maturity));
+        for ( final FdmLinearOpIterator iter : solverDesc.mesher.layout() ) {
+            initialValues.set(iter.index(), solverDesc.calculator.avgInnerValue(iter, solverDesc.maturity));
             x.set(iter.index(), solverDesc.mesher.location(iter, 0));
         }
     }
@@ -90,9 +84,8 @@ public class Fdm1DimSolver extends LazyObject {
     protected void performCalculations() {
         final Array rhs = initialValues.clone();
 
-        new FdmBackwardSolver(op, solverDesc.bcSet, conditions, schemeDesc)
-                .rollback(rhs, solverDesc.maturity, 0.0,
-                        solverDesc.timeSteps, solverDesc.dampingSteps);
+        new FdmBackwardSolver(op, solverDesc.bcSet, conditions, schemeDesc).rollback(rhs, solverDesc.maturity, 0.0,
+                solverDesc.timeSteps, solverDesc.dampingSteps);
 
         resultValues.fill(rhs);
         // Constructor calls update() — no further work needed.
@@ -106,21 +99,17 @@ public class Fdm1DimSolver extends LazyObject {
     }
 
     /**
-     * Finite-difference theta estimate at {@code x}: difference between the
-     * snapshot at {@link #thetaCondition}'s target time and the present
-     * value, divided by the snapshot time. Returns {@link Double#NaN}
-     * (matching C++ {@code Null<Real>()}) if the first stopping time is
-     * exactly zero.
+     * Finite-difference theta estimate at {@code x}: difference between the snapshot at {@link #thetaCondition}'s
+     * target time and the present value, divided by the snapshot time. Returns {@link Double#NaN} (matching C++
+     * {@code Null<Real>()}) if the first stopping time is exactly zero.
      */
     public double thetaAt(final double xq) {
-        if (!conditions.stoppingTimes().isEmpty()
-                && conditions.stoppingTimes().get(0) == 0.0) {
+        if ( !conditions.stoppingTimes().isEmpty() && conditions.stoppingTimes().get(0) == 0.0 ) {
             return Double.NaN;
         }
         calculate();
         final Array snapshot = thetaCondition.getValues();
-        final MonotonicNaturalCubicInterpolation snap =
-                new MonotonicNaturalCubicInterpolation(x, snapshot);
+        final MonotonicNaturalCubicInterpolation snap = new MonotonicNaturalCubicInterpolation(x, snapshot);
         return (snap.op(xq) - interpolateAt(xq)) / thetaCondition.getTime();
     }
 

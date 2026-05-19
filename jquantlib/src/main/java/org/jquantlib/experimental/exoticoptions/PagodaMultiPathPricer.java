@@ -29,26 +29,21 @@ import org.jquantlib.methods.montecarlo.PathPricer;
  * Pagoda multi-path pricer.
  *
  * <p>Java port of {@code QuantLib v1.42.1
- * ql/experimental/exoticoptions/mcpagodaengine.{hpp,cpp}}::{@code
- * PagodaMultiPathPricer} (Phase 4i.5 WI-5).
+ * ql/experimental/exoticoptions/mcpagodaengine.{hpp,cpp}}::{@code PagodaMultiPathPricer} (Phase 4i.5 WI-5).
  *
  * <p>The Pagoda payoff is {@code discount * fraction *
- * max(0, min(roof, averagePerformance))}, where the average
- * performance is taken over each (asset, fixing) pair via
- * {@code S(t-1) * (S(t)/S(t-1) - 1)} and divided by the number
- * of assets.
+ * max(0, min(roof, averagePerformance))}, where the average performance is taken over each (asset, fixing) pair via
+ * {@code S(t-1) * (S(t)/S(t-1) - 1)} and divided by the number of assets.
  *
  * @author JQuantLib
  */
-public class PagodaMultiPathPricer extends PathPricer<MultiPath> {
+public class PagodaMultiPathPricer extends PathPricer< MultiPath > {
 
     private final /* @DiscountFactor */ double discount_;
     private final double roof_;
     private final double fraction_;
 
-    public PagodaMultiPathPricer(final double roof,
-                                 final double fraction,
-                                 final double discount) {
+    public PagodaMultiPathPricer(final double roof, final double fraction, final double discount) {
         this.discount_ = discount;
         this.roof_ = roof;
         this.fraction_ = fraction;
@@ -60,16 +55,14 @@ public class PagodaMultiPathPricer extends PathPricer<MultiPath> {
         final int numSteps = multiPath.pathSize();
 
         double averagePerformance = 0.0;
-        for (int i = 1; i < numSteps; i++) {
-            for (int j = 0; j < numAssets; j++) {
+        for ( int i = 1; i < numSteps; i++ ) {
+            for ( int j = 0; j < numAssets; j++ ) {
                 averagePerformance +=
-                        multiPath.get(j).front()
-                        * (multiPath.get(j).get(i) / multiPath.get(j).get(i - 1) - 1.0);
+                        multiPath.get(j).front() * (multiPath.get(j).get(i) / multiPath.get(j).get(i - 1) - 1.0);
             }
         }
         averagePerformance /= numAssets;
 
-        return discount_ * fraction_
-                * Math.max(0.0, Math.min(roof_, averagePerformance));
+        return discount_ * fraction_ * Math.max(0.0, Math.min(roof_, averagePerformance));
     }
 }

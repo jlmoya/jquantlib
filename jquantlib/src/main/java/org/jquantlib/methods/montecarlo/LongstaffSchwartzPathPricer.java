@@ -28,9 +28,6 @@
 
 package org.jquantlib.methods.montecarlo;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.math.GeneralLinearLeastSquares;
 import org.jquantlib.math.Ops;
@@ -39,12 +36,15 @@ import org.jquantlib.math.statistics.IncrementalStatistics;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.time.TimeGrid;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Longstaff-Schwartz path pricer for early-exercise options.
  *
  * <p>Java port of {@code QuantLib v1.42.1
- * ql/methods/montecarlo/longstaffschwartzpathpricer.hpp} (Phase 5h.5-MC-AME
- * WI-3). Pinned commit {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
+ * ql/methods/montecarlo/longstaffschwartzpathpricer.hpp} (Phase 5h.5-MC-AME WI-3). Pinned commit
+ * {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
  *
  * <p>References: Francis Longstaff, Eduardo Schwartz, 2001.
  * <i>Valuing American Options by Simulation: A Simple Least-Squares
@@ -65,44 +65,33 @@ import org.jquantlib.time.TimeGrid;
  *       The discounted final price is returned.</li>
  * </ul>
  *
- * @param <PathType>  concrete path type ({@link Path} for single-asset,
- *                    {@code MultiPath} for multi-asset).
- * @param <StateType> regression-state type ({@code Double} for single,
- *                    {@code Array} for multi).
- *
+ * @param <PathType>  concrete path type ({@link Path} for single-asset, {@code MultiPath} for multi-asset).
+ * @param <StateType> regression-state type ({@code Double} for single, {@code Array} for multi).
  * @author JQuantLib
  */
-public class LongstaffSchwartzPathPricer<PathType, StateType>
-        extends PathPricer<PathType> {
+public class LongstaffSchwartzPathPricer< PathType, StateType > extends PathPricer< PathType > {
 
     //
     // protected fields (mirror C++ exactly)
     //
 
-    protected boolean calibrationPhase_ = true;
-
-    protected final EarlyExercisePathPricer<PathType, StateType> pathPricer_;
+    protected final EarlyExercisePathPricer< PathType, StateType > pathPricer_;
     protected final IncrementalStatistics exerciseProbability_ = new IncrementalStatistics();
-
+    protected final List< PathType > paths_ = new ArrayList< PathType >();
+    protected final List< ? extends Ops.Op< StateType, Double > > v_;
+    protected final int len_;
+    protected boolean calibrationPhase_ = true;
     /** Regression coefficients per interior time step (size {@code len_-2}). */
     protected Array[] coeff_;
     /** Step-by-step discount factors {@code DF(t_{i+1})/DF(t_i)} (size {@code len_-1}). */
     protected double[] dF_;
 
-    protected final List<PathType> paths_ = new ArrayList<PathType>();
-    protected final List<? extends Ops.Op<StateType, Double>> v_;
-
-    protected final int len_;
-
-
     //
     // constructor
     //
 
-    public LongstaffSchwartzPathPricer(
-            final TimeGrid times,
-            final EarlyExercisePathPricer<PathType, StateType> pathPricer,
-            final YieldTermStructure termStructure) {
+    public LongstaffSchwartzPathPricer(final TimeGrid times,
+            final EarlyExercisePathPricer< PathType, StateType > pathPricer, final YieldTermStructure termStructure) {
         QL.require(times != null && pathPricer != null && termStructure != null,
                 "times, pathPricer and termStructure must be non-null");
         this.pathPricer_ = pathPricer;
@@ -113,26 +102,22 @@ public class LongstaffSchwartzPathPricer<PathType, StateType>
         this.dF_ = new double[len_ - 1];
         this.v_ = pathPricer.basisSystem();
 
-        for (int i = 0; i < len_ - 1; ++i) {
-            dF_[i] = termStructure.discount(times.get(i + 1))
-                    / termStructure.discount(times.get(i));
+        for ( int i = 0; i < len_ - 1; ++i ) {
+            dF_[i] = termStructure.discount(times.get(i + 1)) / termStructure.discount(times.get(i));
         }
     }
-
 
     //
     // pricing-phase API
     //
 
     /**
-     * During calibration: store path (deep-copied — the path generator
-     * recycles its output buffer), return 0.
-     * During pricing: roll back from terminal exercise; compare regressed
-     * continuation value vs exercise at each step.
+     * During calibration: store path (deep-copied — the path generator recycles its output buffer), return 0. During
+     * pricing: roll back from terminal exercise; compare regressed continuation value vs exercise at each step.
      */
     @Override
     public Double op(final PathType path) {
-        if (calibrationPhase_) {
+        if ( calibrationPhase_ ) {
             // PathGenerator / MultiPathGenerator both recycle their Path
             // object across draws, so the StateType passed in is a shared
             // reference. Deep-copy before stashing to prevent aliasing.
@@ -143,18 +128,18 @@ public class LongstaffSchwartzPathPricer<PathType, StateType>
         double price = pathPricer_.operator(path, len_ - 1);
         boolean exercised = (price > 0.0);
 
-        for (int i = len_ - 2; i > 0; --i) {
+        for ( int i = len_ - 2; i > 0; --i ) {
             price *= dF_[i];
 
             final double exercise = pathPricer_.operator(path, i);
-            if (exercise > 0.0) {
+            if ( exercise > 0.0 ) {
                 final StateType regValue = pathPricer_.state(path, i);
 
                 double continuationValue = 0.0;
-                for (int l = 0; l < v_.size(); ++l) {
+                for ( int l = 0; l < v_.size(); ++l ) {
                     continuationValue += coeff_[i - 1].get(l) * v_.get(l).op(regValue);
                 }
-                if (continuationValue < exercise) {
+                if ( continuationValue < exercise ) {
                     price = exercise;
                     exercised = true;
                 }
@@ -165,20 +150,17 @@ public class LongstaffSchwartzPathPricer<PathType, StateType>
         return price * dF_[0];
     }
 
-
     //
     // calibration-phase API
     //
 
     /**
-     * Solve the LSM regression at every interior time step using the
-     * stored calibration paths. Switches the pricer to the pricing
-     * phase.
+     * Solve the LSM regression at every interior time step using the stored calibration paths. Switches the pricer to
+     * the pricing phase.
      *
      * <p>Supports both single-variate (StateType=Double, single-asset
-     * Path) and multi-variate (StateType=Array, MultiPath) regression
-     * paths. The state-type is detected at calibrate-time on the first
-     * non-empty ITM sample; mismatched homogeneity throws.
+     * Path) and multi-variate (StateType=Array, MultiPath) regression paths. The state-type is detected at
+     * calibrate-time on the first non-empty ITM sample; mismatched homogeneity throws.
      */
     public void calibrate() {
         final int n = paths_.size();
@@ -188,28 +170,28 @@ public class LongstaffSchwartzPathPricer<PathType, StateType>
         final double[] exercise = new double[n];
 
         // Initialize from terminal exercise.
-        for (int j = 0; j < n; ++j) {
+        for ( int j = 0; j < n; ++j ) {
             prices[j] = pathPricer_.operator(paths_.get(j), len_ - 1);
         }
 
         // Backward induction over interior time steps.
-        for (int i = len_ - 2; i > 0; --i) {
+        for ( int i = len_ - 2; i > 0; --i ) {
             // Collect in-the-money sub-population: states (homogeneous
             // type) and discounted prices.
-            final List<StateType> xList = new ArrayList<StateType>(n);
-            final List<Double> yList = new ArrayList<Double>(n);
+            final List< StateType > xList = new ArrayList< StateType >(n);
+            final List< Double > yList = new ArrayList< Double >(n);
 
-            for (int j = 0; j < n; ++j) {
+            for ( int j = 0; j < n; ++j ) {
                 exercise[j] = pathPricer_.operator(paths_.get(j), i);
-                if (exercise[j] > 0.0) {
+                if ( exercise[j] > 0.0 ) {
                     xList.add(pathPricer_.state(paths_.get(j), i));
                     yList.add(dF_[i] * prices[j]);
                 }
             }
 
-            if (v_.size() <= xList.size()) {
+            if ( v_.size() <= xList.size() ) {
                 final double[] yArr = new double[yList.size()];
-                for (int k = 0; k < yList.size(); ++k) {
+                for ( int k = 0; k < yList.size(); ++k ) {
                     yArr[k] = yList.get(k);
                 }
                 coeff_[i - 1] = solveStepRegression(xList, yArr);
@@ -219,15 +201,15 @@ public class LongstaffSchwartzPathPricer<PathType, StateType>
             }
 
             // Roll back per-path prices.
-            for (int j = 0; j < n; ++j) {
+            for ( int j = 0; j < n; ++j ) {
                 prices[j] *= dF_[i];
-                if (exercise[j] > 0.0) {
+                if ( exercise[j] > 0.0 ) {
                     final StateType s = pathPricer_.state(paths_.get(j), i);
                     double continuationValue = 0.0;
-                    for (int l = 0; l < v_.size(); ++l) {
+                    for ( int l = 0; l < v_.size(); ++l ) {
                         continuationValue += coeff_[i - 1].get(l) * v_.get(l).op(s);
                     }
-                    if (continuationValue < exercise[j]) {
+                    if ( continuationValue < exercise[j] ) {
                         prices[j] = exercise[j];
                     }
                 }
@@ -240,61 +222,59 @@ public class LongstaffSchwartzPathPricer<PathType, StateType>
     }
 
     /**
-     * Solve one time-step's LSE regression — dispatches on the runtime
-     * state-type of the ITM samples.
+     * Solve one time-step's LSE regression — dispatches on the runtime state-type of the ITM samples.
      *
      * <p>Single-variate ({@code Double}) → routes through the original
-     * {@code GeneralLinearLeastSquares(double[], double[], List&lt;DoubleOp&gt;)}
-     * constructor.
+     * {@code GeneralLinearLeastSquares(double[], double[], List&lt;DoubleOp&gt;)} constructor.
      *
      * <p>Multi-variate ({@code Array}) → routes through the new
-     * {@code GeneralLinearLeastSquares(Array[], double[], List&lt;ObjectToDouble&lt;Array&gt;&gt;)}
-     * constructor (Phase MC-extras WI-1).
+     * {@code GeneralLinearLeastSquares(Array[], double[], List&lt;ObjectToDouble&lt;Array&gt;&gt;)} constructor (Phase
+     * MC-extras WI-1).
      */
-    @SuppressWarnings("unchecked")
-    private Array solveStepRegression(final List<StateType> xList, final double[] yArr) {
+    @SuppressWarnings( "unchecked" )
+    private Array solveStepRegression(final List< StateType > xList, final double[] yArr) {
         final int m = xList.size();
         QL.require(m > 0, "empty regression sample");
         final StateType first = xList.get(0);
 
-        if (first instanceof Double) {
-            final List<Ops.DoubleOp> basisDouble = new ArrayList<Ops.DoubleOp>(v_.size());
-            for (final Ops.Op<StateType, Double> bf : v_) {
+        if ( first instanceof Double ) {
+            final List< Ops.DoubleOp > basisDouble = new ArrayList< Ops.DoubleOp >(v_.size());
+            for ( final Ops.Op< StateType, Double > bf : v_ ) {
                 basisDouble.add(new Ops.DoubleOp() {
-                    @Override public double op(final double x) {
+                    @Override
+                    public double op(final double x) {
                         return bf.op((StateType) Double.valueOf(x));
                     }
                 });
             }
             final double[] xArr = new double[m];
-            for (int k = 0; k < m; ++k) {
+            for ( int k = 0; k < m; ++k ) {
                 xArr[k] = (Double) xList.get(k);
             }
             return new GeneralLinearLeastSquares(xArr, yArr, basisDouble).coefficients();
         }
 
-        if (first instanceof Array) {
-            final List<Ops.ObjectToDouble<Array>> basisArr =
-                    new ArrayList<Ops.ObjectToDouble<Array>>(v_.size());
-            for (final Ops.Op<StateType, Double> bf : v_) {
-                basisArr.add(new Ops.ObjectToDouble<Array>() {
-                    @Override public double op(final Array a) {
+        if ( first instanceof Array ) {
+            final List< Ops.ObjectToDouble< Array > > basisArr = new ArrayList< Ops.ObjectToDouble< Array > >(
+                    v_.size());
+            for ( final Ops.Op< StateType, Double > bf : v_ ) {
+                basisArr.add(new Ops.ObjectToDouble< Array >() {
+                    @Override
+                    public double op(final Array a) {
                         return bf.op((StateType) a);
                     }
                 });
             }
             final Array[] xArr = new Array[m];
-            for (int k = 0; k < m; ++k) {
+            for ( int k = 0; k < m; ++k ) {
                 xArr[k] = (Array) xList.get(k);
             }
             return new GeneralLinearLeastSquares(xArr, yArr, basisArr).coefficients();
         }
 
-        throw new UnsupportedOperationException(
-                "regression state type not supported: " + first.getClass().getName()
+        throw new UnsupportedOperationException("regression state type not supported: " + first.getClass().getName()
                 + " — extend solveStepRegression for this state type");
     }
-
 
     //
     // diagnostics
@@ -305,38 +285,35 @@ public class LongstaffSchwartzPathPricer<PathType, StateType>
         return exerciseProbability_.mean();
     }
 
-
     //
     // path-clone helper — Path / MultiPath subclasses can override
     //
 
     /**
-     * Deep-copy the path so the calibration-phase storage doesn't alias
-     * the path-generator's reusable output buffer.
+     * Deep-copy the path so the calibration-phase storage doesn't alias the path-generator's reusable output buffer.
      *
      * <p>Default supports {@link Path} and {@link MultiPath}; other path
      * types must override.
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     protected PathType deepCopyPath(final PathType path) {
-        if (path instanceof Path) {
+        if ( path instanceof Path ) {
             final Path src = (Path) path;
             final double[] vals = src.values().clone();
             return (PathType) new Path(src.timeGrid(), vals);
         }
-        if (path instanceof MultiPath) {
+        if ( path instanceof MultiPath ) {
             final MultiPath src = (MultiPath) path;
             // Snapshot every component path's values.
             final int n = src.assetNumber();
-            final List<Path> copies = new ArrayList<Path>(n);
-            for (int a = 0; a < n; ++a) {
+            final List< Path > copies = new ArrayList< Path >(n);
+            for ( int a = 0; a < n; ++a ) {
                 final Path p = src.get(a);
                 copies.add(new Path(p.timeGrid(), p.values().clone()));
             }
             return (PathType) new MultiPath(copies);
         }
-        throw new UnsupportedOperationException(
-                "deepCopyPath: unsupported path type " + path.getClass().getName()
-                        + " — override deepCopyPath in a subclass");
+        throw new UnsupportedOperationException("deepCopyPath: unsupported path type " + path.getClass().getName()
+                + " — override deepCopyPath in a subclass");
     }
 }

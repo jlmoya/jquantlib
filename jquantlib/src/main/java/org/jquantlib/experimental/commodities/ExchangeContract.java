@@ -22,8 +22,7 @@ package org.jquantlib.experimental.commodities;
 import org.jquantlib.time.Date;
 
 /**
- * Exchange-traded futures contract metadata: code, expiry, and underlying
- * delivery window.
+ * Exchange-traded futures contract metadata: code, expiry, and underlying delivery window.
  * <p>
  * Java port of QuantLib v1.42.1 {@code exchangecontract.hpp}.
  */
@@ -41,10 +40,8 @@ public class ExchangeContract {
         this.underlyingEndDate_ = new Date();
     }
 
-    public ExchangeContract(final String code,
-                            final Date expirationDate,
-                            final Date underlyingStartDate,
-                            final Date underlyingEndDate) {
+    public ExchangeContract(final String code, final Date expirationDate, final Date underlyingStartDate,
+            final Date underlyingEndDate) {
         this.code_ = code;
         this.expirationDate_ = expirationDate;
         this.underlyingStartDate_ = underlyingStartDate;

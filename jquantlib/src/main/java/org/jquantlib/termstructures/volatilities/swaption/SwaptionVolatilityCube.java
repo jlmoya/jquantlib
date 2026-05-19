@@ -29,8 +29,6 @@
  */
 package org.jquantlib.termstructures.volatilities.swaption;
 
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.indexes.SwapIndex;
 import org.jquantlib.model.VolatilityType;
@@ -40,6 +38,8 @@ import org.jquantlib.termstructures.SwaptionVolatilityStructure;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Period;
 
+import java.util.List;
+
 /**
  * Swaption-volatility cube (abstract).
  *
@@ -47,10 +47,9 @@ import org.jquantlib.time.Period;
  * ql/termstructures/volatility/swaption/swaptionvolcube.{hpp,cpp}}.
  *
  * <p>The cube is built on top of an ATM {@link SwaptionVolatilityStructure} and
- * a grid of additive volatility spreads at a set of {@code strikeSpreads}
- * relative to the ATM strike. Concrete subclasses (interpolated /
- * SABR-fitted) decide how to combine the spreads with the ATM surface to
- * produce a smile section at any (option, swap) coordinate.
+ * a grid of additive volatility spreads at a set of {@code strikeSpreads} relative to the ATM strike. Concrete
+ * subclasses (interpolated / SABR-fitted) decide how to combine the spreads with the ATM surface to produce a smile
+ * section at any (option, swap) coordinate.
  *
  * <h3>Java port deviations from C++ v1.42.1</h3>
  * <ul>
@@ -71,12 +70,12 @@ public abstract class SwaptionVolatilityCube extends SwaptionVolatilityDiscrete 
     // protected fields
     //
 
-    protected final Handle<SwaptionVolatilityStructure> atmVol_;
+    protected final Handle< SwaptionVolatilityStructure > atmVol_;
     protected final int nStrikes_;
-    protected final List<Double> strikeSpreads_;
+    protected final List< Double > strikeSpreads_;
     protected final double[] localStrikes_;
     protected final double[] localSmile_;
-    protected final List<List<Handle<Quote>>> volSpreads_;
+    protected final List< List< Handle< Quote > > > volSpreads_;
     protected final SwapIndex swapIndexBase_;
     protected final SwapIndex shortSwapIndexBase_;
     protected final boolean vegaWeightedSmileFit_;
@@ -85,21 +84,12 @@ public abstract class SwaptionVolatilityCube extends SwaptionVolatilityDiscrete 
     // public constructor
     //
 
-    public SwaptionVolatilityCube(
-            final Handle<SwaptionVolatilityStructure> atmVolStructure,
-            final List<Period> optionTenors,
-            final List<Period> swapTenors,
-            final List<Double> strikeSpreads,
-            final List<List<Handle<Quote>>> volSpreads,
-            final SwapIndex swapIndexBase,
-            final SwapIndex shortSwapIndexBase,
-            final boolean vegaWeightedSmileFit) {
-        super(optionTenors,
-                swapTenors,
-                0,
-                atmVolStructure.currentLink().calendar(),
-                atmVolStructure.currentLink().businessDayConvention(),
-                atmVolStructure.currentLink().dayCounter());
+    public SwaptionVolatilityCube(final Handle< SwaptionVolatilityStructure > atmVolStructure,
+            final List< Period > optionTenors, final List< Period > swapTenors, final List< Double > strikeSpreads,
+            final List< List< Handle< Quote > > > volSpreads, final SwapIndex swapIndexBase,
+            final SwapIndex shortSwapIndexBase, final boolean vegaWeightedSmileFit) {
+        super(optionTenors, swapTenors, 0, atmVolStructure.currentLink().calendar(),
+                atmVolStructure.currentLink().businessDayConvention(), atmVolStructure.currentLink().dayCounter());
 
         this.atmVol_ = atmVolStructure;
         this.nStrikes_ = strikeSpreads.size();
@@ -112,36 +102,32 @@ public abstract class SwaptionVolatilityCube extends SwaptionVolatilityDiscrete 
         this.vegaWeightedSmileFit_ = vegaWeightedSmileFit;
 
         QL.require(!atmVol_.empty(), "atm vol handle not linked to anything");
-        for (int i = 1; i < nStrikes_; ++i) {
+        for ( int i = 1; i < nStrikes_; ++i ) {
             QL.require(strikeSpreads_.get(i - 1) < strikeSpreads_.get(i),
                     "non increasing strike spreads at position " + i);
         }
         QL.require(!volSpreads_.isEmpty(), "empty vol spreads matrix");
         QL.require(nOptionTenors_ * nSwapTenors_ == volSpreads_.size(),
-                "mismatch between number of option tenors * swap tenors ("
-                        + (nOptionTenors_ * nSwapTenors_)
+                "mismatch between number of option tenors * swap tenors (" + (nOptionTenors_ * nSwapTenors_)
                         + ") and number of rows (" + volSpreads_.size() + ")");
-        for (int i = 0; i < volSpreads_.size(); ++i) {
+        for ( int i = 0; i < volSpreads_.size(); ++i ) {
             QL.require(nStrikes_ == volSpreads_.get(i).size(),
-                    "mismatch between number of strikes (" + nStrikes_
-                            + ") and number of columns ("
-                            + volSpreads_.get(i).size()
-                            + ") in row " + (i + 1));
+                    "mismatch between number of strikes (" + nStrikes_ + ") and number of columns (" + volSpreads_.get(
+                            i).size() + ") in row " + (i + 1));
         }
 
         atmVol_.addObserver(this);
         atmVol_.currentLink().enableExtrapolation();
 
-        if (swapIndexBase_ != null) {
+        if ( swapIndexBase_ != null ) {
             swapIndexBase_.addObserver(this);
         }
-        if (shortSwapIndexBase_ != null) {
+        if ( shortSwapIndexBase_ != null ) {
             shortSwapIndexBase_.addObserver(this);
         }
 
         QL.require(shortSwapIndexBase_.tenor().le(swapIndexBase_.tenor()),
-                "short index tenor (" + shortSwapIndexBase_.tenor()
-                        + ") is not less or equal than index tenor ("
+                "short index tenor (" + shortSwapIndexBase_.tenor() + ") is not less or equal than index tenor ("
                         + swapIndexBase_.tenor() + ")");
 
         registerWithVolatilitySpread();
@@ -152,15 +138,14 @@ public abstract class SwaptionVolatilityCube extends SwaptionVolatilityDiscrete 
     //
 
     /**
-     * Mirrors C++ {@code registerWithVolatilitySpread()}: register as an
-     * observer of every Quote in the spreads grid.
+     * Mirrors C++ {@code registerWithVolatilitySpread()}: register as an observer of every Quote in the spreads grid.
      */
     protected final void registerWithVolatilitySpread() {
-        for (int i = 0; i < nStrikes_; i++) {
-            for (int j = 0; j < nOptionTenors_; j++) {
-                for (int k = 0; k < nSwapTenors_; k++) {
-                    final Handle<Quote> q = volSpreads_.get(j * nSwapTenors_ + k).get(i);
-                    if (q != null) {
+        for ( int i = 0; i < nStrikes_; i++ ) {
+            for ( int j = 0; j < nOptionTenors_; j++ ) {
+                for ( int k = 0; k < nSwapTenors_; k++ ) {
+                    final Handle< Quote > q = volSpreads_.get(j * nSwapTenors_ + k).get(i);
+                    if ( q != null ) {
                         q.addObserver(this);
                     }
                 }
@@ -209,14 +194,11 @@ public abstract class SwaptionVolatilityCube extends SwaptionVolatilityDiscrete 
     //
 
     /**
-     * Returns the ATM strike for a given option date and swap tenor.
-     * Mirrors C++ {@code SwaptionVolatilityCube::atmStrike(Date, Period)}.
+     * Returns the ATM strike for a given option date and swap tenor. Mirrors C++
+     * {@code SwaptionVolatilityCube::atmStrike(Date, Period)}.
      */
     public double atmStrike(final Date optionD, final Period swapTenor) {
-        final SwapIndex indexToUse =
-                swapTenor.gt(shortSwapIndexBase_.tenor())
-                        ? swapIndexBase_
-                        : shortSwapIndexBase_;
+        final SwapIndex indexToUse = swapTenor.gt(shortSwapIndexBase_.tenor()) ? swapIndexBase_ : shortSwapIndexBase_;
         return indexToUse.clone(swapTenor).fixing(optionD);
     }
 
@@ -228,17 +210,29 @@ public abstract class SwaptionVolatilityCube extends SwaptionVolatilityDiscrete 
         return atmStrike(optionDate, swapTenor);
     }
 
-    public Handle<SwaptionVolatilityStructure> atmVol() { return atmVol_; }
+    public Handle< SwaptionVolatilityStructure > atmVol() {
+        return atmVol_;
+    }
 
-    public List<Double> strikeSpreads() { return strikeSpreads_; }
+    public List< Double > strikeSpreads() {
+        return strikeSpreads_;
+    }
 
-    public List<List<Handle<Quote>>> volSpreads() { return volSpreads_; }
+    public List< List< Handle< Quote > > > volSpreads() {
+        return volSpreads_;
+    }
 
-    public SwapIndex swapIndexBase() { return swapIndexBase_; }
+    public SwapIndex swapIndexBase() {
+        return swapIndexBase_;
+    }
 
-    public SwapIndex shortSwapIndexBase() { return shortSwapIndexBase_; }
+    public SwapIndex shortSwapIndexBase() {
+        return shortSwapIndexBase_;
+    }
 
-    public boolean vegaWeightedSmileFit() { return vegaWeightedSmileFit_; }
+    public boolean vegaWeightedSmileFit() {
+        return vegaWeightedSmileFit_;
+    }
 
     @Override
     public VolatilityType volatilityType() {
@@ -246,8 +240,7 @@ public abstract class SwaptionVolatilityCube extends SwaptionVolatilityDiscrete 
     }
 
     /**
-     * Minimum number of strikes the spreads grid must carry (defaults to 2;
-     * SABR-style derived classes may override).
+     * Minimum number of strikes the spreads grid must carry (defaults to 2; SABR-style derived classes may override).
      */
     protected int requiredNumberOfStrikes() {
         return 2;
@@ -258,34 +251,27 @@ public abstract class SwaptionVolatilityCube extends SwaptionVolatilityDiscrete 
     //
 
     @Override
-    public double volatilityImpl(final double optionTime,
-                                 final double swapLength,
-                                 final double strike) {
+    public double volatilityImpl(final double optionTime, final double swapLength, final double strike) {
         return smileSectionImpl(optionTime, swapLength).volatility(strike);
     }
 
     @Override
-    protected double volatilityImpl(final Date optionDate,
-                                    final Period swapTenor,
-                                    final double strike) {
+    protected double volatilityImpl(final Date optionDate, final Period swapTenor, final double strike) {
         return smileSectionImpl(optionDate, swapTenor).volatility(strike);
     }
 
     @Override
-    public double blackVariance(final double optionTime,
-                                final double swapLength,
-                                final double strike,
-                                final boolean extrapolate) {
+    public double blackVariance(final double optionTime, final double swapLength, final double strike,
+            final boolean extrapolate) {
         final double v = volatility(optionTime, swapLength, strike, extrapolate);
         return v * v * optionTime;
     }
 
     /**
-     * Shift at the given (optionTime, swapLength); forwards to the ATM
-     * surface (C++ {@code shiftImpl}).
+     * Shift at the given (optionTime, swapLength); forwards to the ATM surface (C++ {@code shiftImpl}).
      */
     protected double shiftImpl(final double optionTime, final double swapLength) {
-        if (atmVol_.currentLink() instanceof SwaptionVolatilityMatrix) {
+        if ( atmVol_.currentLink() instanceof SwaptionVolatilityMatrix ) {
             final SwaptionVolatilityMatrix m = (SwaptionVolatilityMatrix) atmVol_.currentLink();
             return m.shift(optionTime, swapLength, true);
         }
@@ -299,8 +285,7 @@ public abstract class SwaptionVolatilityCube extends SwaptionVolatilityDiscrete 
     @Override
     protected void performCalculations() {
         QL.require(nStrikes_ >= requiredNumberOfStrikes(),
-                "too few strikes (" + nStrikes_
-                        + ") — required are at least " + requiredNumberOfStrikes());
+                "too few strikes (" + nStrikes_ + ") — required are at least " + requiredNumberOfStrikes());
         super.performCalculations();
     }
 }

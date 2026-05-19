@@ -23,11 +23,11 @@
 
 package org.jquantlib.legacy.libormarkets;
 
-import java.util.List;
-
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.optimization.PositiveConstraint;
 import org.jquantlib.model.ConstantParameter;
+
+import java.util.List;
 
 /**
  * Linear-exponential volatility model.
@@ -38,16 +38,14 @@ import org.jquantlib.model.ConstantParameter;
  * {@code legacy/libormarketmodels/lmlinexpvolmodel.{hpp,cpp}}.
  *
  * <p>References: Brigo, Mercurio, Morini (2003) "Different Covariance
- * Parameterizations of Libor Market Model and Joint Caps/Swaptions
- * Calibration".
+ * Parameterizations of Libor Market Model and Joint Caps/Swaptions Calibration".
  */
 public class LmLinearExponentialVolatilityModel extends LmVolatilityModel {
 
-    protected final List<Double> fixingTimes_;
+    protected final List< Double > fixingTimes_;
 
-    public LmLinearExponentialVolatilityModel(final List<Double> fixingTimes,
-                                              final double a, final double b,
-                                              final double c, final double d) {
+    public LmLinearExponentialVolatilityModel(final List< Double > fixingTimes, final double a, final double b,
+            final double c, final double d) {
         super(fixingTimes.size(), 4);
 
         this.fixingTimes_ = fixingTimes;
@@ -65,9 +63,9 @@ public class LmLinearExponentialVolatilityModel extends LmVolatilityModel {
         final double d = arguments_.get(3).get(0.0);
 
         final Array tmp = new Array(size_);
-        for (int i = 0; i < size_; ++i) {
+        for ( int i = 0; i < size_; ++i ) {
             final double T = fixingTimes_.get(i);
-            if (T > t) {
+            if ( T > t ) {
                 tmp.set(i, (a * (T - t) + d) * Math.exp(-b * (T - t)) + c);
             } else {
                 tmp.set(i, 0.0);
@@ -101,21 +99,12 @@ public class LmLinearExponentialVolatilityModel extends LmVolatilityModel {
         final double k2 = Math.exp(b * S);
         final double k3 = Math.exp(b * T);
 
-        return (a * a
-                * (-1 - 2 * b * b * S * T - b * (S + T)
-                   + k1 * k1 * (1 + b * (S + T - 2 * u)
-                                + 2 * b * b * (S - u) * (T - u)))
-                + 2 * b * b * (2 * c * d * (k2 + k3) * (k1 - 1)
-                               + d * d * (k1 * k1 - 1)
-                               + 2 * b * c * c * k2 * k3 * u)
-                + 2 * a * b
-                    * (d * (-1 - b * (S + T)
-                            + k1 * k1 * (1 + b * (S + T - 2 * u)))
-                       - 2 * c * (k3 * (1 + b * S)
-                                  + k2 * (1 + b * T)
-                                  - k1 * k3 * (1 + b * (S - u))
-                                  - k1 * k2 * (1 + b * (T - u)))))
-                / (4 * b * b * b * k2 * k3);
+        return (a * a * (-1 - 2 * b * b * S * T - b * (S + T) + k1 * k1 * (1 + b * (S + T - 2 * u) + 2 * b * b * (S - u)
+                * (T - u))) + 2 * b * b * (2 * c * d * (k2 + k3) * (k1 - 1) + d * d * (k1 * k1 - 1)
+                + 2 * b * c * c * k2 * k3 * u) + 2 * a * b * (
+                d * (-1 - b * (S + T) + k1 * k1 * (1 + b * (S + T - 2 * u))) - 2 * c * (
+                        k3 * (1 + b * S) + k2 * (1 + b * T) - k1 * k3 * (1 + b * (S - u)) - k1 * k2 * (1 + b * (T
+                                - u))))) / (4 * b * b * b * k2 * k3);
     }
 
     @Override

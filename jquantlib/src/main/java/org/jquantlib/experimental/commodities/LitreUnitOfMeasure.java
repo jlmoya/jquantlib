@@ -22,13 +22,11 @@ package org.jquantlib.experimental.commodities;
 /**
  * Litre unit of measure (l).
  * <p>
- * Java port of QuantLib v1.42.1 {@code LitreUnitOfMeasure} from
- * {@code petroleumunitsofmeasure.hpp}.
+ * Java port of QuantLib v1.42.1 {@code LitreUnitOfMeasure} from {@code petroleumunitsofmeasure.hpp}.
  */
 public class LitreUnitOfMeasure extends UnitOfMeasure {
 
-    private static final Data SHARED =
-            new Data("Litres", "l", Type.Volume, new BarrelUnitOfMeasure());
+    private static final Data SHARED = new Data("Litres", "l", Type.Volume, new BarrelUnitOfMeasure());
 
     public LitreUnitOfMeasure() {
         super();

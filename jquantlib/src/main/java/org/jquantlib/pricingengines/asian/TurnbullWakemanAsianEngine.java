@@ -39,9 +39,6 @@
 
 package org.jquantlib.pricingengines.asian;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.exercise.Exercise;
 import org.jquantlib.instruments.AverageType;
@@ -52,9 +49,12 @@ import org.jquantlib.pricingengines.BlackCalculator;
 import org.jquantlib.processes.GeneralizedBlackScholesProcess;
 import org.jquantlib.time.Date;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * Turnbull-Wakeman two moment-matching analytical pricing engine for
- * discrete-time arithmetic average-rate Asian options.
+ * Turnbull-Wakeman two moment-matching analytical pricing engine for discrete-time arithmetic average-rate Asian
+ * options.
  *
  * <p>References:
  * <ul>
@@ -89,14 +89,13 @@ public class TurnbullWakemanAsianEngine extends DiscreteAveragingAsianOption.Eng
 
         // Enforce required preconditions
         QL.require(a.exercise.type() == Exercise.Type.European, "not a European Option");
-        QL.require(a.averageType == AverageType.Arithmetic,
-                "must be Arithmetic AverageType");
+        QL.require(a.averageType == AverageType.Arithmetic, "must be Arithmetic AverageType");
 
         // Calculate the accrued portion
         final int pastFixings = a.pastFixings;
         final int futureFixings = a.fixingDates.size();
         double accruedAverage = 0.0;
-        if (pastFixings != 0) {
+        if ( pastFixings != 0 ) {
             accruedAverage = a.runningAccumulator / (pastFixings + futureFixings);
         }
 
@@ -111,18 +110,18 @@ public class TurnbullWakemanAsianEngine extends DiscreteAveragingAsianOption.Eng
         // If the effective strike is negative, exercise resp. permanent OTM is
         // guaranteed and the valuation is made easy
         final int m = futureFixings + pastFixings;
-        if (effectiveStrike <= 0.0) {
+        if ( effectiveStrike <= 0.0 ) {
             // For a reference, see "Option Pricing Formulas", Haug, 2nd ed, p. 193
-            if (payoff.optionType() == Option.Type.Call) {
+            if ( payoff.optionType() == Option.Type.Call ) {
                 final double spot = process.stateVariable().currentLink().value();
                 double S_A_hat = accruedAverage;
-                for (final Date fd : a.fixingDates) {
-                    S_A_hat += (spot * process.dividendYield().currentLink().discount(fd) /
-                                process.riskFreeRate().currentLink().discount(fd)) / m;
+                for ( final Date fd : a.fixingDates ) {
+                    S_A_hat += (spot * process.dividendYield().currentLink().discount(fd) / process.riskFreeRate()
+                            .currentLink().discount(fd)) / m;
                 }
                 r.value = discount * (S_A_hat - payoff.strike());
                 greeks.delta = discount * (S_A_hat - accruedAverage) / spot;
-            } else if (payoff.optionType() == Option.Type.Put) {
+            } else if ( payoff.optionType() == Option.Type.Put ) {
                 r.value = 0.0;
                 greeks.delta = 0.0;
             }
@@ -136,12 +135,12 @@ public class TurnbullWakemanAsianEngine extends DiscreteAveragingAsianOption.Eng
         // Expected value of the non-accrued portion of the average prices
         // In general, m will equal n below if there is no accrued. If accrued, m > n.
         double EA = 0.0;
-        final List<Double> forwards = new ArrayList<Double>();
-        final List<Double> times = new ArrayList<Double>();
-        final List<Double> spotVars = new ArrayList<Double>();
+        final List< Double > forwards = new ArrayList< Double >();
+        final List< Double > times = new ArrayList< Double >();
+        final List< Double > spotVars = new ArrayList< Double >();
         final double spot = process.stateVariable().currentLink().value();
 
-        for (final Date fd : a.fixingDates) {
+        for ( final Date fd : a.fixingDates ) {
             final double dividendDiscount = process.dividendYield().currentLink().discount(fd);
             final double riskFreeDiscountForFwdEstimation = process.riskFreeRate().currentLink().discount(fd);
 
@@ -159,10 +158,10 @@ public class TurnbullWakemanAsianEngine extends DiscreteAveragingAsianOption.Eng
         double EA2 = 0.0;
         final int n = forwards.size();
 
-        for (int i = 0; i < n; ++i) {
+        for ( int i = 0; i < n; ++i ) {
             final double fi = forwards.get(i);
             EA2 += fi * fi * Math.exp(spotVars.get(i));
-            for (int j = 0; j < i; ++j) {
+            for ( int j = 0; j < i; ++j ) {
                 EA2 += 2.0 * fi * forwards.get(j) * Math.exp(spotVars.get(j));
             }
         }
@@ -174,8 +173,8 @@ public class TurnbullWakemanAsianEngine extends DiscreteAveragingAsianOption.Eng
         final double sigma = Math.sqrt(Math.log(EA2 / (EA * EA)) / tn);
 
         // Populate results
-        final BlackCalculator black = new BlackCalculator(
-                payoff.optionType(), effectiveStrike, EA, sigma * Math.sqrt(tn), discount);
+        final BlackCalculator black = new BlackCalculator(payoff.optionType(), effectiveStrike, EA,
+                sigma * Math.sqrt(tn), discount);
 
         r.value = black.value();
         greeks.delta = black.delta(spot);

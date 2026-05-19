@@ -23,15 +23,13 @@ import org.jquantlib.math.solvers1D.Brent;
 /**
  * Inverse non-central chi-squared cumulative distribution.
  * <p>
- * Direct port of {@code QuantLib::InverseNonCentralCumulativeChiSquareDistribution}
- * (v1.42.1, ql/math/distributions/chisquaredistribution.{hpp,cpp}). Uses a
- * Brent root-finder against {@link NonCentralCumulativeChiSquaredDistribution}.
+ * Direct port of {@code QuantLib::InverseNonCentralCumulativeChiSquareDistribution} (v1.42.1,
+ * ql/math/distributions/chisquaredistribution.{hpp,cpp}). Uses a Brent root-finder against
+ * {@link NonCentralCumulativeChiSquaredDistribution}.
  * <p>
- * The constructor mirrors v1.42.1's defaults: {@code maxEvaluations = 10}
- * and {@code accuracy = 1e-8}. These are intentionally tight bounds and
- * may need to be raised for large {@code ncp} (the upper-bracket search
- * doubles the guess until the CDF reaches the target, consuming
- * evaluations from the same budget that Brent later uses).
+ * The constructor mirrors v1.42.1's defaults: {@code maxEvaluations = 10} and {@code accuracy = 1e-8}. These are
+ * intentionally tight bounds and may need to be raised for large {@code ncp} (the upper-bracket search doubles the
+ * guess until the CDF reaches the target, consuming evaluations from the same budget that Brent later uses).
  */
 public class InverseNonCentralCumulativeChiSquaredDistribution implements Ops.DoubleOp {
 
@@ -44,8 +42,7 @@ public class InverseNonCentralCumulativeChiSquaredDistribution implements Ops.Do
         this(df, ncp, 10, 1.0e-8);
     }
 
-    public InverseNonCentralCumulativeChiSquaredDistribution(
-            final double df, final double ncp,
+    public InverseNonCentralCumulativeChiSquaredDistribution(final double df, final double ncp,
             final int maxEvaluations, final double accuracy) {
         this.nonCentralDist_ = new NonCentralCumulativeChiSquaredDistribution(df, ncp);
         this.guess_ = df + ncp;
@@ -59,7 +56,7 @@ public class InverseNonCentralCumulativeChiSquaredDistribution implements Ops.Do
         //   while (nonCentralDist_(upper) < x && evaluations > 0) { upper*=2; --evaluations; }
         double upper = guess_;
         int evaluations = maxEvaluations_;
-        while (nonCentralDist_.op(upper) < x && evaluations > 0) {
+        while ( nonCentralDist_.op(upper) < x && evaluations > 0 ) {
             upper *= 2.0;
             --evaluations;
         }

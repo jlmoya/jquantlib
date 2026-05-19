@@ -31,12 +31,12 @@ import org.jquantlib.time.Period;
  * Failure-to-Pay atomic event type.
  *
  * <p>Java port of QuantLib v1.42.1 {@code QuantLib::FailureToPay}
- * ({@code ql/experimental/credit/defaulttype.hpp}). Atomic construction
- * only, with grace period and minimum default amount triggering the event.
+ * ({@code ql/experimental/credit/defaulttype.hpp}). Atomic construction only, with grace period and minimum default
+ * amount triggering the event.
  *
  * <p>The C++ default amount is {@code 1.e+6} (one million units) per ISDA
- * docs. Note the C++ comment that the contract is in dollars by default
- * and not in the contract currency — this is preserved as-is.
+ * docs. Note the C++ comment that the contract is in dollars by default and not in the contract currency — this is
+ * preserved as-is.
  *
  * <p>Phase 4m foundation.
  */

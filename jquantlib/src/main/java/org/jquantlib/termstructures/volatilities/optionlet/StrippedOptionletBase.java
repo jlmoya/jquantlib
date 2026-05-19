@@ -16,8 +16,6 @@
  */
 package org.jquantlib.termstructures.volatilities.optionlet;
 
-import java.util.List;
-
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.model.VolatilityType;
 import org.jquantlib.time.BusinessDayConvention;
@@ -25,9 +23,11 @@ import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
 import org.jquantlib.util.LazyObject;
 
+import java.util.List;
+
 /**
- * Abstract base class interface for a (time indexed) vector of (strike
- * indexed) optionlet (i.e. caplet/floorlet) volatilities.
+ * Abstract base class interface for a (time indexed) vector of (strike indexed) optionlet (i.e. caplet/floorlet)
+ * volatilities.
  *
  * <p>Port of C++ QuantLib v1.42.1
  * {@code ql/termstructures/volatility/optionlet/strippedoptionletbase.{hpp}}.
@@ -43,17 +43,17 @@ import org.jquantlib.util.LazyObject;
  */
 public abstract class StrippedOptionletBase extends LazyObject {
 
-    public abstract List<Double> optionletStrikes(int i);
+    public abstract List< Double > optionletStrikes(int i);
 
-    public abstract List<Double> optionletVolatilities(int i);
+    public abstract List< Double > optionletVolatilities(int i);
 
-    public abstract List<Date> optionletFixingDates();
+    public abstract List< Date > optionletFixingDates();
 
-    public abstract List<Double> optionletFixingTimes();
+    public abstract List< Double > optionletFixingTimes();
 
     public abstract int optionletMaturities();
 
-    public abstract List<Double> atmOptionletRates();
+    public abstract List< Double > atmOptionletRates();
 
     public abstract DayCounter dayCounter();
 

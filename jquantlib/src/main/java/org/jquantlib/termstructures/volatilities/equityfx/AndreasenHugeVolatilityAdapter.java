@@ -37,30 +37,26 @@ public class AndreasenHugeVolatilityAdapter extends BlackVarianceTermStructure {
     private final double eps_;
     private final AndreasenHugeVolatilityInterpl volInterpl_;
 
-    public AndreasenHugeVolatilityAdapter(
-            final AndreasenHugeVolatilityInterpl volInterpl, final double eps) {
+    public AndreasenHugeVolatilityAdapter(final AndreasenHugeVolatilityInterpl volInterpl, final double eps) {
         this.volInterpl_ = volInterpl;
-        this.eps_        = eps;
+        this.eps_ = eps;
     }
 
     /** Convenience constructor with default eps = 1e-6. */
-    public AndreasenHugeVolatilityAdapter(
-            final AndreasenHugeVolatilityInterpl volInterpl) {
+    public AndreasenHugeVolatilityAdapter(final AndreasenHugeVolatilityInterpl volInterpl) {
         this(volInterpl, 1e-6);
     }
 
     @Override
     protected double blackVarianceImpl(final double t, final double strike) {
         final double fwd = volInterpl_.fwd(t);
-        final Option.Type optionType =
-                (fwd > strike) ? Option.Type.Put : Option.Type.Call;
+        final Option.Type optionType = (fwd > strike) ? Option.Type.Put : Option.Type.Call;
 
         final double npv = volInterpl_.optionPrice(t, strike, optionType);
         final double discount = volInterpl_.riskFreeRate().currentLink().discount(t);
 
-        final double stdDev = BlackFormula.blackFormulaImpliedStdDevLiRS(
-                optionType, strike, fwd, npv, discount,
-                0.0, Double.NaN, 1.0, eps_, 1000);
+        final double stdDev = BlackFormula.blackFormulaImpliedStdDevLiRS(optionType, strike, fwd, npv, discount, 0.0,
+                Double.NaN, 1.0, eps_, 1000);
 
         return stdDev * stdDev;
     }

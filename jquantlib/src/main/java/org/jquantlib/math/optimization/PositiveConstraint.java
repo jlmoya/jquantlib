@@ -44,10 +44,10 @@ import org.jquantlib.math.matrixutilities.Array;
 
 /**
  * Constraint imposing positivity to all arguments
- * 
+ *
  * @author Richard Gomes
  */
-@QualityAssurance(quality=Quality.Q3_DOCUMENTATION, version=Version.V097, reviewers="Richard Gomes")
+@QualityAssurance( quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = "Richard Gomes" )
 public class PositiveConstraint extends Constraint {
 
     //
@@ -57,7 +57,6 @@ public class PositiveConstraint extends Constraint {
     public PositiveConstraint() {
         super.impl = new Impl();
     }
-
 
     //
     // private inner classes
@@ -76,9 +75,9 @@ public class PositiveConstraint extends Constraint {
          * Tests if params satisfy the constraint.
          */
         @Override
-        public boolean test(final Array  params) /* @ReadOnly */ {
-            for (int i=0; i<params.size(); ++i) {
-                if (params.get(i) <= 0.0) {
+        public boolean test(final Array params) /* @ReadOnly */ {
+            for ( int i = 0; i < params.size(); ++i ) {
+                if ( params.get(i) <= 0.0 ) {
                     return false;
                 }
             }

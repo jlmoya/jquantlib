@@ -34,31 +34,29 @@ import org.jquantlib.time.Date;
 
 public class FixedDividend extends Dividend {
 
-	protected double amount;
+    protected double amount;
 
-	public FixedDividend(final double amount, final Date date) {
-		super(date);
-		this.amount = amount;
-	}
+    public FixedDividend(final double amount, final Date date) {
+        super(date);
+        this.amount = amount;
+    }
 
+    //
+    // Overrides Dividend
+    //
 
-	//
-	// Overrides Dividend
-	//
+    @Override
+    public double amount(final double underlying) {
+        return amount;
+    }
 
-	@Override
-	public double amount(final double underlying) {
-		return amount;
-	}
+    //
+    // Overrides Cashflow
+    //
 
-
-	//
-	// Overrides Cashflow
-	//
-
-	@Override
-	public double amount() {
-		return amount;
-	}
+    @Override
+    public double amount() {
+        return amount;
+    }
 
 }

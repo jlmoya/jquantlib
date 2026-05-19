@@ -46,17 +46,15 @@ import org.jquantlib.termstructures.volatility.inflation.YoYOptionletVolatilityS
  */
 public class YoYInflationBlackCapFloorEngine extends InflationCapFloorEngine {
 
-    public YoYInflationBlackCapFloorEngine(
-            final YoYInflationIndex index,
-            final Handle<YoYOptionletVolatilitySurface> volatility,
-            final Handle<YieldTermStructure> nominalTermStructure) {
+    public YoYInflationBlackCapFloorEngine(final YoYInflationIndex index,
+            final Handle< YoYOptionletVolatilitySurface > volatility,
+            final Handle< YieldTermStructure > nominalTermStructure) {
         super(index, volatility, nominalTermStructure);
     }
 
     @Override
-    protected double optionletImpl(final Option.Type type, final double strike,
-                                   final double forward, final double stdDev,
-                                   final double d) {
+    protected double optionletImpl(final Option.Type type, final double strike, final double forward,
+            final double stdDev, final double d) {
         return BlackFormula.blackFormula(type, strike, forward, stdDev, d);
     }
 }

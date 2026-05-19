@@ -29,13 +29,12 @@ package org.jquantlib.model.marketmodels;
 /**
  * Market-model evolver
  * <p>
- * Abstract base class. The evolver does the actual gritty work of evolving
- * the forward rates from one time to the next.
- *
- * @see "ql/models/marketmodels/evolver.hpp" v1.42.1
+ * Abstract base class. The evolver does the actual gritty work of evolving the forward rates from one time to the
+ * next.
  *
  * @author Ueli Hofstetter (original stub)
  * @author Jose Moya (Phase 3h B.8: widen visibility to public per C++)
+ * @see "ql/models/marketmodels/evolver.hpp" v1.42.1
  */
 // Phase 3h decision P3H-2: numeraires() returns int[] (acceptable as-is per
 // existing JQuantLib int[] convention). All abstract methods widened from

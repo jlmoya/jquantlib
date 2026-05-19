@@ -73,26 +73,42 @@ import org.jquantlib.math.matrixutilities.Matrix;
  *
  * <p><b>Prerequisites:</b> x and y values must be sorted in ascending order.
  *
- * @see org.jquantlib.experimental.inflation.Polynomial2DSpline.Polynomial interpolator factory
- *
  * @author JQuantLib migration contributors (Phase 2s L0)
+ * @see org.jquantlib.experimental.inflation.Polynomial2DSpline.Polynomial interpolator factory
  */
 public class Polynomial2DSpline extends AbstractInterpolation2D {
 
     /**
      * Constructs a 2D polynomial/spline interpolation from the given axes and data matrix.
      *
-     * @param vx  x-axis values (size N, sorted ascending)
-     * @param vy  y-axis values (size M, sorted ascending)
-     * @param mz  z data matrix (M rows x N columns), where mz[y_index][x_index] = z(x,y)
+     * @param vx x-axis values (size N, sorted ascending)
+     * @param vy y-axis values (size M, sorted ascending)
+     * @param mz z data matrix (M rows x N columns), where mz[y_index][x_index] = z(x,y)
      */
     public Polynomial2DSpline(final Array vx, final Array vy, final Matrix mz) {
         super.impl_ = new Polynomial2DSplineImpl(vx, vy, mz);
     }
 
-
     //
     // private inner classes
+    //
+
+    /**
+     * Factory for creating {@link Polynomial2DSpline} instances.
+     *
+     * <p>Mirrors C++ {@code QuantLib::Polynomial} factory class.
+     */
+    public static class Polynomial implements Interpolation2D.Interpolator2D {
+
+        @Override
+        public Interpolation2D interpolate(final Array vx, final Array vy, final Matrix mz) {
+            return new Polynomial2DSpline(vx, vy, mz);
+        }
+
+    }
+
+    //
+    // Interpolator2D factory
     //
 
     /**
@@ -114,21 +130,20 @@ public class Polynomial2DSpline extends AbstractInterpolation2D {
         public void calculate() {
             // C++ checks: zData_.rows() == yEnd_ - yBegin_
             QL.require(mz.rows() == vy.size(),
-                    "size mismatch of the interpolation data: mz.rows()="
-                    + mz.rows() + " vy.size()=" + vy.size());
+                    "size mismatch of the interpolation data: mz.rows()=" + mz.rows() + " vy.size()=" + vy.size());
 
             // One parabolic polynomial per x-column; each interpolates along y.
             // C++: polynomials_.reserve(zData_.columns())
             //      polynomials_.push_back(Parabolic(yBegin_, yEnd_, zData_.column_begin(i)))
             polynomials_ = new Interpolation[mz.cols()];
-            for (int i = 0; i < mz.cols(); ++i) {
+            for ( int i = 0; i < mz.cols(); ++i ) {
                 // Extract column i: z-values at x[i] for all y points.
                 // mz.rangeCol(i) is a view; materialise to a dense array to
                 // ensure CubicInterpolation's raw-array access works correctly
                 // (same fix as BicubicSplineInterpolation for row views).
                 final Array colView = mz.rangeCol(i);
                 final double[] colData = new double[colView.size()];
-                for (int k = 0; k < colView.size(); ++k) {
+                for ( int k = 0; k < colView.size(); ++k ) {
                     colData[k] = colView.get(k);
                 }
                 // Parabolic = CubicInterpolation(Parabolic, false, SecondDerivative, ...)
@@ -138,11 +153,8 @@ public class Polynomial2DSpline extends AbstractInterpolation2D {
                 // Use NotAKnot for non-Spline da to avoid invalid unused path.
                 // C++ Parabolic class sets: da=Parabolic, monotone=false,
                 //   leftCondition=SecondDerivative/0, rightCondition=SecondDerivative/0
-                polynomials_[i] = new CubicInterpolation(
-                        vy, new Array(colData),
-                        DerivativeApprox.Parabolic, false,
-                        BoundaryCondition.SecondDerivative, 0.0,
-                        BoundaryCondition.SecondDerivative, 0.0);
+                polynomials_[i] = new CubicInterpolation(vy, new Array(colData), DerivativeApprox.Parabolic, false,
+                        BoundaryCondition.SecondDerivative, 0.0, BoundaryCondition.SecondDerivative, 0.0);
             }
         }
 
@@ -151,43 +163,21 @@ public class Polynomial2DSpline extends AbstractInterpolation2D {
             // C++: for each column polynomial, evaluate at y (with extrapolation).
             // section[i] = z at (x[i], y).
             final double[] section = new double[polynomials_.length];
-            for (int i = 0; i < polynomials_.length; ++i) {
+            for ( int i = 0; i < polynomials_.length; ++i ) {
                 section[i] = polynomials_[i].op(y, true);
             }
 
             // C++ requires section.size() == xEnd_ - xBegin_
             QL.require(section.length == vx.size(),
-                    "size mismatch of the interpolation data: section.length="
-                    + section.length + " vx.size()=" + vx.size());
+                    "size mismatch of the interpolation data: section.length=" + section.length + " vx.size()="
+                            + vx.size());
 
             // Fit a natural cubic spline over x on the cross-section and evaluate.
             // C++: CubicInterpolation(xBegin_, xEnd_, section.begin(),
             //       Spline, true, SecondDerivative, 0.0, SecondDerivative, 0.0)
-            final CubicInterpolation spline = new CubicInterpolation(
-                    vx, new Array(section),
-                    DerivativeApprox.Spline, true,
-                    BoundaryCondition.SecondDerivative, 0.0,
-                    BoundaryCondition.SecondDerivative, 0.0);
+            final CubicInterpolation spline = new CubicInterpolation(vx, new Array(section), DerivativeApprox.Spline,
+                    true, BoundaryCondition.SecondDerivative, 0.0, BoundaryCondition.SecondDerivative, 0.0);
             return spline.op(x, true);
-        }
-
-    }
-
-
-    //
-    // Interpolator2D factory
-    //
-
-    /**
-     * Factory for creating {@link Polynomial2DSpline} instances.
-     *
-     * <p>Mirrors C++ {@code QuantLib::Polynomial} factory class.
-     */
-    public static class Polynomial implements Interpolation2D.Interpolator2D {
-
-        @Override
-        public Interpolation2D interpolate(final Array vx, final Array vy, final Matrix mz) {
-            return new Polynomial2DSpline(vx, vy, mz);
         }
 
     }

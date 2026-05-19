@@ -41,9 +41,6 @@
 
 package org.jquantlib.pricingengines.vanilla.finitedifferences;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.cashflow.Dividend;
 import org.jquantlib.cashflow.Event;
@@ -53,13 +50,16 @@ import org.jquantlib.pricingengines.PricingEngine.Arguments;
 import org.jquantlib.processes.GeneralizedBlackScholesProcess;
 import org.jquantlib.time.Date;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Abstract base class for dividend engines
  *
- * @todo The dividend class really needs to be made more sophisticated to distinguish between fixed dividends and fractional dividends
- *
  * @author Srinivas Hasti
  * @author Richard Gomes
+ * @todo The dividend class really needs to be made more sophisticated to distinguish between fixed dividends and
+ * fractional dividends
  */
 //TODO: The dividend class really needs to be made more sophisticated to distinguish between fixed dividends and fractional dividends
 public abstract class FDDividendEngineBase extends FDMultiPeriodEngine {
@@ -68,51 +68,43 @@ public abstract class FDDividendEngineBase extends FDMultiPeriodEngine {
     // public methods
     //
 
-    public FDDividendEngineBase(
-            final GeneralizedBlackScholesProcess process) {
+    public FDDividendEngineBase(final GeneralizedBlackScholesProcess process) {
         this(process, 100, 100, false);
     }
 
-    public FDDividendEngineBase(
-            final GeneralizedBlackScholesProcess process,
-            final int timeSteps) {
+    public FDDividendEngineBase(final GeneralizedBlackScholesProcess process, final int timeSteps) {
         this(process, timeSteps, 100, false);
     }
 
-    public FDDividendEngineBase(
-            final GeneralizedBlackScholesProcess process,
-            final int timeSteps,
+    public FDDividendEngineBase(final GeneralizedBlackScholesProcess process, final int timeSteps,
             final int gridPoints) {
         this(process, timeSteps, gridPoints, false);
     }
 
-    public FDDividendEngineBase(
-            final GeneralizedBlackScholesProcess process,
-            final int timeSteps,
-            final int gridPoints,
+    public FDDividendEngineBase(final GeneralizedBlackScholesProcess process, final int timeSteps, final int gridPoints,
             final boolean timeDependent) {
         super(process, timeSteps, gridPoints, timeDependent);
     }
-
 
     //
     // protected methods
     //
 
     @Override
-    protected void setupArguments(final Arguments  args) /* @ReadOnly */ {
-        QL.require(DividendVanillaOption.ArgumentsImpl.class.isAssignableFrom(args.getClass()), ReflectConstants.WRONG_ARGUMENT_TYPE); // QA:[RG]::verified
-        final DividendVanillaOption.ArgumentsImpl arguments = (DividendVanillaOption.ArgumentsImpl)args;
-        final List<Event> events = new ArrayList<Event>(arguments.cashFlow.size());
-        for (final Dividend cashFlow : arguments.cashFlow) {
+    protected void setupArguments(final Arguments args) /* @ReadOnly */ {
+        QL.require(DividendVanillaOption.ArgumentsImpl.class.isAssignableFrom(args.getClass()),
+                ReflectConstants.WRONG_ARGUMENT_TYPE); // QA:[RG]::verified
+        final DividendVanillaOption.ArgumentsImpl arguments = (DividendVanillaOption.ArgumentsImpl) args;
+        final List< Event > events = new ArrayList< Event >(arguments.cashFlow.size());
+        for ( final Dividend cashFlow : arguments.cashFlow ) {
             events.add(cashFlow);
         }
         super.setupArguments(args, events);
     }
 
     protected double getDividendAmount(final int i) /* @ReadOnly */ {
-        final Dividend dividend = (Dividend)(events.get(i));
-        if (dividend!=null) {
+        final Dividend dividend = (Dividend) (events.get(i));
+        if ( dividend != null ) {
             return dividend.amount();
         } else {
             return 0.0;
@@ -122,20 +114,20 @@ public abstract class FDDividendEngineBase extends FDMultiPeriodEngine {
     protected double getDiscountedDividend(final int i) /* @ReadOnly */ {
         final double dividend = getDividendAmount(i);
         final Date date = events.get(i).date();
-        final double discount = process.riskFreeRate().currentLink().discount(date)
-                              / process.dividendYield().currentLink().discount(date);
+        final double discount =
+                process.riskFreeRate().currentLink().discount(date) / process.dividendYield().currentLink()
+                        .discount(date);
         return dividend * discount;
     }
-
 
     //
     // protected abstract methods
     //
 
     @Override
-    protected abstract void setGridLimits() /* @ReadOnly */ ;
+    protected abstract void setGridLimits() /* @ReadOnly */;
 
     @Override
-    protected abstract void executeIntermediateStep(int step) /* @ReadOnly */ ;
+    protected abstract void executeIntermediateStep(int step) /* @ReadOnly */;
 
 }

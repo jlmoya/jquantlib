@@ -22,10 +22,6 @@
 
 package org.jquantlib.time.calendars;
 
-import static org.jquantlib.time.Month.December;
-import static org.jquantlib.time.Month.January;
-import static org.jquantlib.time.Month.May;
-
 import org.jquantlib.lang.annotation.QualityAssurance;
 import org.jquantlib.lang.annotation.QualityAssurance.Quality;
 import org.jquantlib.lang.annotation.QualityAssurance.Version;
@@ -33,6 +29,8 @@ import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Month;
 import org.jquantlib.time.Weekday;
+
+import static org.jquantlib.time.Month.*;
 
 /**
  * TARGET calendar relative to the European Central Bank
@@ -51,61 +49,55 @@ import org.jquantlib.time.Weekday;
  * <li>Day of Goodwill, December 26th (since 2000)</li>
  * <li>December 31st (1998, 1999, and 2001)</li>
  *
- * @see <a href="http://www.ecb.int">European Central Bank</a>
- *
  * @author Srinivas Hasti
- *
  * @category calendars
+ * @see <a href="http://www.ecb.int">European Central Bank</a>
  */
-@QualityAssurance(quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Richard Gomes" })
+@QualityAssurance( quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Richard Gomes" } )
 public class Target extends Calendar {
 
-	//
-	// public constructors
-	//
+    //
+    // public constructors
+    //
 
-	public Target() {
-		impl = new Impl();
-	}
+    public Target() {
+        impl = new Impl();
+    }
 
-
-	//
-	// private final inner classes
-	//
+    //
+    // private final inner classes
+    //
 
     private final class Impl extends Calendar.WesternImpl {
 
-    	@Override
+        @Override
         public String name() {
-    		return "TARGET";
-    	}
+            return "TARGET";
+        }
 
-    	@Override
+        @Override
         public boolean isBusinessDay(final Date date) {
-    		final Weekday w = date.weekday();
-    		final int d = date.dayOfMonth(), dd = date.dayOfYear();
-    		final Month m = date.month();
-    		final int y = date.year();
-    		final int em = easterMonday(y);
-    		if (isWeekend(w)
-    		// New Year's Day
-    				|| (d == 1 && m == January)
-    				// Good Friday
-    				|| (dd == em - 3 && y >= 2000)
-    				// Easter Monday
-    				|| (dd == em && y >= 2000)
-    				// Labour Day
-    				|| (d == 1 && m == May && y >= 2000)
-    				// Christmas
-    				|| (d == 25 && m == December)
-    				// Day of Goodwill
-    				|| (d == 26 && m == December && y >= 2000)
-    				// December 31st, 1998, 1999, and 2001 only
-    				|| (d == 31 && m == December && (y == 1998 || y == 1999 || y == 2001))) {
-                return false;
-            }
-    		return true;
-    	}
+            final Weekday w = date.weekday();
+            final int d = date.dayOfMonth(), dd = date.dayOfYear();
+            final Month m = date.month();
+            final int y = date.year();
+            final int em = easterMonday(y);
+            return !isWeekend(w)
+                    // New Year's Day
+                    && (d != 1 || m != January)
+                    // Good Friday
+                    && (dd != em - 3 || y < 2000)
+                    // Easter Monday
+                    && (dd != em || y < 2000)
+                    // Labour Day
+                    && (d != 1 || m != May || y < 2000)
+                    // Christmas
+                    && (d != 25 || m != December)
+                    // Day of Goodwill
+                    && (d != 26 || m != December || y < 2000)
+                    // December 31st, 1998, 1999, and 2001 only
+                    && (d != 31 || m != December || (y != 1998 && y != 1999 && y != 2001));
+        }
     }
 
 }

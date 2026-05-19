@@ -34,17 +34,15 @@ import org.jquantlib.model.marketmodels.MarketModelMultiProduct;
 /**
  * Single-step market-model product abstract base.
  * <p>
- * Mirrors C++ {@code class MultiProductOneStep}
- * (ql/models/marketmodels/products/multiproductonestep.{hpp,cpp} v1.42.1).
+ * Mirrors C++ {@code class MultiProductOneStep} (ql/models/marketmodels/products/multiproductonestep.{hpp,cpp}
+ * v1.42.1).
  * <p>
- * This is the abstract base class that encapsulates the notion of a
- * {@link MarketModelMultiProduct} which can be evaluated in one single
- * step (aka Rebonato's very long jump). The suggested numeraire is the
- * terminal measure (last rate index).
- *
- * @see "ql/models/marketmodels/products/multiproductonestep.hpp" v1.42.1
+ * This is the abstract base class that encapsulates the notion of a {@link MarketModelMultiProduct} which can be
+ * evaluated in one single step (aka Rebonato's very long jump). The suggested numeraire is the terminal measure (last
+ * rate index).
  *
  * @author Jose Moya
+ * @see "ql/models/marketmodels/products/multiproductonestep.hpp" v1.42.1
  */
 public abstract class MultiProductOneStep extends MarketModelMultiProduct {
 
@@ -55,8 +53,7 @@ public abstract class MultiProductOneStep extends MarketModelMultiProduct {
      * @param rateTimes the rate fixing times (must contain at least two values)
      */
     protected MultiProductOneStep(final double[] rateTimes) {
-        QL.require(rateTimes != null && rateTimes.length > 1,
-                "Rate times must contain at least two values");
+        QL.require(rateTimes != null && rateTimes.length > 1, "Rate times must contain at least two values");
         this.rateTimes_ = rateTimes.clone();
         // single evolution time at the second-to-last rate time
         final double[] evolutionTimes = { this.rateTimes_[this.rateTimes_.length - 2] };

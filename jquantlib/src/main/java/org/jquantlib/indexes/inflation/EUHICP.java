@@ -31,36 +31,26 @@ import org.jquantlib.time.Period;
 import org.jquantlib.time.TimeUnit;
 
 /**
- * 
+ *
  * EU HICP index
- * 
+ *
  * @author Tim Blackler
  *
  */
 
 public class EUHICP extends ZeroInflationIndex {
 
-	public EUHICP(final Frequency frequency,
-         	      final boolean revised,
-         	      final boolean interpolated) {
-		this(frequency, revised, interpolated, new Handle<ZeroInflationTermStructure>());
-		   
-	   }
-	
-    public EUHICP(final Frequency frequency,
-            	  final boolean revised,
-            	  final boolean interpolated,
-            	  final Handle<ZeroInflationTermStructure> termStructure) {
-    	
-    	super("HICP",
-              new EURegion(),
-              revised,
-              interpolated,
-              frequency,
-              new Period(1, TimeUnit.Months),
-              new EURCurrency(),
-              termStructure);
-    	
+    public EUHICP(final Frequency frequency, final boolean revised, final boolean interpolated) {
+        this(frequency, revised, interpolated, new Handle< ZeroInflationTermStructure >());
+
+    }
+
+    public EUHICP(final Frequency frequency, final boolean revised, final boolean interpolated,
+            final Handle< ZeroInflationTermStructure > termStructure) {
+
+        super("HICP", new EURegion(), revised, interpolated, frequency, new Period(1, TimeUnit.Months),
+                new EURCurrency(), termStructure);
+
     }
 
 }

@@ -11,13 +11,11 @@
 
 package org.jquantlib.experimental.catbonds;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.time.Date;
-import org.jquantlib.time.Month;
 import org.jquantlib.time.Period;
 import org.jquantlib.time.TimeUnit;
+
+import java.util.List;
 
 /**
  * Simulation based on a historical event set.
@@ -27,7 +25,7 @@ import org.jquantlib.time.TimeUnit;
  */
 public class EventSetSimulation extends CatSimulation {
 
-    private final List<DateRealPair> events_;
+    private final List< DateRealPair > events_;
     private final Date eventsStart_;
     private final Date eventsEnd_;
 
@@ -36,24 +34,20 @@ public class EventSetSimulation extends CatSimulation {
     private Date periodEnd_;
     private int i_;                   // current pointer into events_
 
-    public EventSetSimulation(
-            final List<DateRealPair> events,
-            final Date eventsStart,
-            final Date eventsEnd,
-            final Date start,
-            final Date end) {
+    public EventSetSimulation(final List< DateRealPair > events, final Date eventsStart, final Date eventsEnd,
+            final Date start, final Date end) {
 
         super(start, end);
         this.events_ = events;
         this.eventsStart_ = eventsStart.clone();
-        this.eventsEnd_   = eventsEnd.clone();
+        this.eventsEnd_ = eventsEnd.clone();
 
         years_ = end_.year() - start_.year();
 
         // Determine the first period start within the events data
-        if (eventsStart_.month().value() < start_.month().value()
-                || (eventsStart_.month().value() == start_.month().value()
-                        && eventsStart_.dayOfMonth() <= start_.dayOfMonth())) {
+        if ( eventsStart_.month().value() < start_.month().value() || (
+                eventsStart_.month().value() == start_.month().value()
+                        && eventsStart_.dayOfMonth() <= start_.dayOfMonth()) ) {
             periodStart_ = new Date(start_.dayOfMonth(), start_.month(), eventsStart_.year());
         } else {
             periodStart_ = new Date(start_.dayOfMonth(), start_.month(), eventsStart_.year() + 1);
@@ -63,28 +57,28 @@ public class EventSetSimulation extends CatSimulation {
 
         // Advance i_ to the first event at or after periodStart_
         i_ = 0;
-        while (i_ < events_.size() && events_.get(i_).date.lt(periodStart_)) {
+        while ( i_ < events_.size() && events_.get(i_).date.lt(periodStart_) ) {
             i_++;
         }
     }
 
     @Override
-    public boolean nextPath(final List<DateRealPair> path) {
+    public boolean nextPath(final List< DateRealPair > path) {
         path.clear();
 
         // Ran out of event data
-        if (periodEnd_.gt(eventsEnd_)) {
+        if ( periodEnd_.gt(eventsEnd_) ) {
             return false;
         }
 
         // Skip events between previous and current period
-        while (i_ < events_.size() && events_.get(i_).date.lt(periodStart_)) {
+        while ( i_ < events_.size() && events_.get(i_).date.lt(periodStart_) ) {
             i_++;
         }
 
         // Collect events within the current period, adjusting year
         final int yearShift = start_.year() - periodStart_.year();
-        while (i_ < events_.size() && !events_.get(i_).date.gt(periodEnd_)) {
+        while ( i_ < events_.size() && !events_.get(i_).date.gt(periodEnd_) ) {
             final DateRealPair orig = events_.get(i_);
             // Translate the event date into the simulation period's year
             final Date adjustedDate = orig.date.add(new Period(yearShift, TimeUnit.Years));
@@ -93,12 +87,12 @@ public class EventSetSimulation extends CatSimulation {
         }
 
         // Advance to the next period
-        if (start_.add(new Period(years_, TimeUnit.Years)).lt(end_)) {
+        if ( start_.add(new Period(years_, TimeUnit.Years)).lt(end_) ) {
             periodStart_ = periodStart_.add(new Period(years_ + 1, TimeUnit.Years));
-            periodEnd_   = periodEnd_.add(new Period(years_ + 1, TimeUnit.Years));
+            periodEnd_ = periodEnd_.add(new Period(years_ + 1, TimeUnit.Years));
         } else {
             periodStart_ = periodStart_.add(new Period(years_, TimeUnit.Years));
-            periodEnd_   = periodEnd_.add(new Period(years_, TimeUnit.Years));
+            periodEnd_ = periodEnd_.add(new Period(years_, TimeUnit.Years));
         }
 
         return true;

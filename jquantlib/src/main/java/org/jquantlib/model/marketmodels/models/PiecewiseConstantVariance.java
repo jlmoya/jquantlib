@@ -47,7 +47,9 @@ import org.jquantlib.QL;
 public abstract class PiecewiseConstantVariance {
 
     public abstract double[] variances();
+
     public abstract double[] volatilities();
+
     public abstract double[] rateTimes();
 
     /** Variance at step i. */
@@ -67,7 +69,7 @@ public abstract class PiecewiseConstantVariance {
         QL.require(i < variances().length, "invalid step index");
         final double[] v = variances();
         double sum = 0.0;
-        for (int k = 0; k <= i; ++k) {
+        for ( int k = 0; k <= i; ++k ) {
             sum += v[k];
         }
         return sum;

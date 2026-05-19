@@ -28,11 +28,7 @@ package org.jquantlib.experimental.credit;
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.exercise.Exercise;
-import org.jquantlib.instruments.CreditDefaultSwap;
-import org.jquantlib.instruments.NullPayoff;
-import org.jquantlib.instruments.Option;
-import org.jquantlib.instruments.Payoff;
-import org.jquantlib.instruments.Protection;
+import org.jquantlib.instruments.*;
 import org.jquantlib.lang.reflect.ReflectConstants;
 import org.jquantlib.math.Constants;
 import org.jquantlib.math.Ops;
@@ -51,16 +47,13 @@ import org.jquantlib.termstructures.YieldTermStructure;
  * ({@code ql/experimental/credit/cdsoption.{hpp,cpp}}).
  *
  * <p>The side of the swaption is determined by the side of the
- * underlying CDS. A receiver CDS option is a right to buy an underlying
- * CDS selling protection (receiving coupon); a payer is the right to buy
- * an underlying CDS buying protection (paying coupon).
+ * underlying CDS. A receiver CDS option is a right to buy an underlying CDS selling protection (receiving coupon); a
+ * payer is the right to buy an underlying CDS buying protection (paying coupon).
  *
  * <p><b>Java MI workaround</b>: the C++ {@code CdsOption::arguments}
- * inherits both {@code CreditDefaultSwap::arguments} and
- * {@code Option::arguments}. Java does not allow MI on classes, so the
- * port uses composition: {@link ArgumentsImpl} extends
- * {@code CreditDefaultSwap.ArgumentsImpl} and adds the option payload
- * (payoff, exercise, swap, knocksOut) as additional fields.
+ * inherits both {@code CreditDefaultSwap::arguments} and {@code Option::arguments}. Java does not allow MI on classes,
+ * so the port uses composition: {@link ArgumentsImpl} extends {@code CreditDefaultSwap.ArgumentsImpl} and adds the
+ * option payload (payoff, exercise, swap, knocksOut) as additional fields.
  *
  * <p>Phase 4m.5 work-item 2.
  */
@@ -71,16 +64,12 @@ public class CdsOption extends Option {
 
     private double riskyAnnuity = Constants.NULL_REAL;
 
-    public CdsOption(final CreditDefaultSwap swap,
-                     final Exercise exercise,
-                     final boolean knocksOut) {
+    public CdsOption(final CreditDefaultSwap swap, final Exercise exercise, final boolean knocksOut) {
         super(new NullPayoff(), exercise);
         this.swap = swap;
         this.knocksOut = knocksOut;
-        QL.require(swap.side() == Protection.Side.Buyer || knocksOut,
-                "receiver CDS options must knock out");
-        QL.require(swap.upfront() == null,
-                "underlying must be running-spread only");
+        QL.require(swap.side() == Protection.Side.Buyer || knocksOut, "receiver CDS options must knock out");
+        QL.require(swap.upfront() == null, "underlying must be running-spread only");
         swap.addObserver(this);
     }
 
@@ -105,8 +94,7 @@ public class CdsOption extends Option {
         // Step 1: have the underlying CDS populate its CDS-arguments fields
         swap.setupArguments(args);
         // Step 2: Option fields (payoff/exercise) — direct set, avoiding Option.setupArguments
-        QL.require(args instanceof CdsOption.ArgumentsImpl,
-                ReflectConstants.WRONG_ARGUMENT_TYPE);
+        QL.require(args instanceof CdsOption.ArgumentsImpl, ReflectConstants.WRONG_ARGUMENT_TYPE);
         final CdsOption.ArgumentsImpl a = (CdsOption.ArgumentsImpl) args;
         a.payoff = this.payoff;
         a.exercise = this.exercise;
@@ -117,8 +105,7 @@ public class CdsOption extends Option {
     @Override
     protected void fetchResults(final PricingEngine.Results r) {
         super.fetchResults(r);
-        QL.require(r instanceof CdsOption.ResultsImpl,
-                ReflectConstants.WRONG_ARGUMENT_TYPE);
+        QL.require(r instanceof CdsOption.ResultsImpl, ReflectConstants.WRONG_ARGUMENT_TYPE);
         riskyAnnuity = ((CdsOption.ResultsImpl) r).riskyAnnuity;
     }
 
@@ -136,36 +123,27 @@ public class CdsOption extends Option {
         return riskyAnnuity;
     }
 
-    public double impliedVolatility(final double targetValue,
-                                    final Handle<YieldTermStructure> termStructure,
-                                    final Handle<DefaultProbabilityTermStructure> probability,
-                                    final double recoveryRate,
-                                    final double accuracy,
-                                    final int maxEvaluations,
-                                    final double minVol,
-                                    final double maxVol) {
+    public double impliedVolatility(final double targetValue, final Handle< YieldTermStructure > termStructure,
+            final Handle< DefaultProbabilityTermStructure > probability, final double recoveryRate,
+            final double accuracy, final int maxEvaluations, final double minVol, final double maxVol) {
         calculate();
         QL.require(!isExpired(), "instrument expired");
 
         final double guess = 0.10;
-        final ImpliedVolHelper f = new ImpliedVolHelper(this, probability, recoveryRate,
-                termStructure, targetValue);
+        final ImpliedVolHelper f = new ImpliedVolHelper(this, probability, recoveryRate, termStructure, targetValue);
         final Brent solver = new Brent();
         solver.setMaxEvaluations(maxEvaluations);
         return solver.solve(f, accuracy, guess, minVol, maxVol);
     }
 
-    public double impliedVolatility(final double targetValue,
-                                    final Handle<YieldTermStructure> termStructure,
-                                    final Handle<DefaultProbabilityTermStructure> probability,
-                                    final double recoveryRate) {
-        return impliedVolatility(targetValue, termStructure, probability, recoveryRate,
-                1.0e-4, 100, 1.0e-7, 4.0);
+    public double impliedVolatility(final double targetValue, final Handle< YieldTermStructure > termStructure,
+            final Handle< DefaultProbabilityTermStructure > probability, final double recoveryRate) {
+        return impliedVolatility(targetValue, termStructure, probability, recoveryRate, 1.0e-4, 100, 1.0e-7, 4.0);
     }
 
     /**
-     * CDS-option arguments — composition over MI. Extends
-     * {@code CreditDefaultSwap.ArgumentsImpl} and adds option fields.
+     * CDS-option arguments — composition over MI. Extends {@code CreditDefaultSwap.ArgumentsImpl} and adds option
+     * fields.
      */
     public static class ArgumentsImpl extends CreditDefaultSwap.ArgumentsImpl {
         public Payoff payoff;
@@ -202,16 +180,12 @@ public class CdsOption extends Option {
         private final double targetValue;
         private final CdsOption.ResultsImpl results;
 
-        ImpliedVolHelper(final CdsOption opt,
-                         final Handle<DefaultProbabilityTermStructure> probability,
-                         final double recoveryRate,
-                         final Handle<YieldTermStructure> termStructure,
-                         final double targetValue) {
+        ImpliedVolHelper(final CdsOption opt, final Handle< DefaultProbabilityTermStructure > probability,
+                final double recoveryRate, final Handle< YieldTermStructure > termStructure, final double targetValue) {
             this.targetValue = targetValue;
-            this.engine = new BlackCdsOptionEngine(probability, recoveryRate,
-                    termStructure, new Handle<Quote>(vol));
+            this.engine = new BlackCdsOptionEngine(probability, recoveryRate, termStructure, new Handle< Quote >(vol));
             opt.setupArguments(engine.getArguments());
-            this.results = (CdsOption.ResultsImpl) engine.getResults();
+            this.results = engine.getResults();
         }
 
         @Override

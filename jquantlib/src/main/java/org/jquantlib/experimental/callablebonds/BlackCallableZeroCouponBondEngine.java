@@ -20,35 +20,32 @@ import org.jquantlib.termstructures.YieldTermStructure;
 /**
  * Black-formula callable zero-coupon bond engine.
  * <p>
- * Port of C++ v1.42.1
- * {@code ql/experimental/callablebonds/blackcallablebondengine.{hpp,cpp}}
- * (the {@code BlackCallableZeroCouponBondEngine} portion).
+ * Port of C++ v1.42.1 {@code ql/experimental/callablebonds/blackcallablebondengine.{hpp,cpp}} (the
+ * {@code BlackCallableZeroCouponBondEngine} portion).
  * <p>
- * Behaviorally identical to {@link BlackCallableFixedRateBondEngine}; exists
- * as a separate class for source-level parity with the C++ API.
+ * Behaviorally identical to {@link BlackCallableFixedRateBondEngine}; exists as a separate class for source-level
+ * parity with the C++ API.
  */
 public class BlackCallableZeroCouponBondEngine extends BlackCallableFixedRateBondEngine {
 
-    public BlackCallableZeroCouponBondEngine(final Handle<Quote> fwdYieldVol,
-            final Handle<YieldTermStructure> discountCurve) {
+    public BlackCallableZeroCouponBondEngine(final Handle< Quote > fwdYieldVol,
+            final Handle< YieldTermStructure > discountCurve) {
         super(fwdYieldVol, discountCurve);
     }
 
-    /**
-     * Java port: factory matching the C++ ctor that takes a
-     * {@code Handle<CallableBondVolatilityStructure>}. Because Java type
-     * erasure forbids two ctors differing only in the {@link Handle} type
-     * parameter, we expose this as a static factory.
-     */
-    public static BlackCallableZeroCouponBondEngine fromVolStructure(
-            final Handle<CallableBondVolatilityStructure> yieldVolStructure,
-            final Handle<YieldTermStructure> discountCurve) {
-        return new BlackCallableZeroCouponBondEngine(yieldVolStructure, discountCurve, true);
+    private BlackCallableZeroCouponBondEngine(final Handle< CallableBondVolatilityStructure > yieldVolStructure,
+            final Handle< YieldTermStructure > discountCurve, final boolean marker) {
+        super(yieldVolStructure, discountCurve, marker);
     }
 
-    private BlackCallableZeroCouponBondEngine(
-            final Handle<CallableBondVolatilityStructure> yieldVolStructure,
-            final Handle<YieldTermStructure> discountCurve, final boolean marker) {
-        super(yieldVolStructure, discountCurve, marker);
+    /**
+     * Java port: factory matching the C++ ctor that takes a {@code Handle<CallableBondVolatilityStructure>}. Because
+     * Java type erasure forbids two ctors differing only in the {@link Handle} type parameter, we expose this as a
+     * static factory.
+     */
+    public static BlackCallableZeroCouponBondEngine fromVolStructure(
+            final Handle< CallableBondVolatilityStructure > yieldVolStructure,
+            final Handle< YieldTermStructure > discountCurve) {
+        return new BlackCallableZeroCouponBondEngine(yieldVolStructure, discountCurve, true);
     }
 }

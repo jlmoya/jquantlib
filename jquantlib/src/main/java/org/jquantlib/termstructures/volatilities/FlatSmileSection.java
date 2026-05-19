@@ -40,7 +40,6 @@
 */
 package org.jquantlib.termstructures.volatilities;
 
-
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.math.Constants;
 import org.jquantlib.model.VolatilityType;
@@ -61,19 +60,11 @@ public class FlatSmileSection extends SmileSection {
     // public constructors
     //
 
-    public FlatSmileSection(
-            final Date d,
-            final double vol,
-            final DayCounter dc,
-            final Date referenceDate) {
-    	this(d, vol, dc, referenceDate, Constants.NULL_REAL);
+    public FlatSmileSection(final Date d, final double vol, final DayCounter dc, final Date referenceDate) {
+        this(d, vol, dc, referenceDate, Constants.NULL_REAL);
     }
 
-    public FlatSmileSection(
-            final Date d,
-            final double vol,
-            final DayCounter dc,
-            final Date referenceDate,
+    public FlatSmileSection(final Date d, final double vol, final DayCounter dc, final Date referenceDate,
             final /* @Real */ double atmLevel) {
 
         super(d, dc, referenceDate);
@@ -81,36 +72,24 @@ public class FlatSmileSection extends SmileSection {
         this.atmLevel_ = atmLevel;
     }
 
-    public FlatSmileSection(
-            final /* @Time */ double exerciseTime,
-            final double vol,
-            final DayCounter dc,
+    public FlatSmileSection(final /* @Time */ double exerciseTime, final double vol, final DayCounter dc,
             final /* @Real */ double atmLevel) {
-    	this(exerciseTime, vol, dc, atmLevel, VolatilityType.ShiftedLognormal, 0.0);
+        this(exerciseTime, vol, dc, atmLevel, VolatilityType.ShiftedLognormal, 0.0);
     }
 
-    public FlatSmileSection(
-            final /* @Time */ double exerciseTime,
-            final double vol, final DayCounter dc) {
-    	this(exerciseTime, vol, dc, Constants.NULL_REAL);
+    public FlatSmileSection(final /* @Time */ double exerciseTime, final double vol, final DayCounter dc) {
+        this(exerciseTime, vol, dc, Constants.NULL_REAL);
     }
 
     /**
-     * Full constructor mirroring C++ v1.42.1 {@code FlatSmileSection}
-     * with explicit volatility type and shift.
+     * Full constructor mirroring C++ v1.42.1 {@code FlatSmileSection} with explicit volatility type and shift.
      */
-    public FlatSmileSection(
-            final /* @Time */ double exerciseTime,
-            final double vol,
-            final DayCounter dc,
-            final /* @Real */ double atmLevel,
-            final VolatilityType type,
-            final double shift) {
+    public FlatSmileSection(final /* @Time */ double exerciseTime, final double vol, final DayCounter dc,
+            final /* @Real */ double atmLevel, final VolatilityType type, final double shift) {
         super(exerciseTime, dc, type, shift);
         vol_ = vol;
         atmLevel_ = atmLevel;
     }
-
 
     //
     // overrides SmileSection
@@ -127,8 +106,8 @@ public class FlatSmileSection extends SmileSection {
     }
 
     /**
-     * Mirrors C++ {@code FlatSmileSection::minStrike()}: {@code QL_MIN_REAL - shift()}.
-     * QL_MIN_REAL == -Double.MAX_VALUE; shift() == 0 unless constructed with non-zero shift.
+     * Mirrors C++ {@code FlatSmileSection::minStrike()}: {@code QL_MIN_REAL - shift()}. QL_MIN_REAL ==
+     * -Double.MAX_VALUE; shift() == 0 unless constructed with non-zero shift.
      */
     @Override
     public double minStrike() {

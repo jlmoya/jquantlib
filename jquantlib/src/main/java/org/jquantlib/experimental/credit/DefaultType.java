@@ -28,15 +28,13 @@ package org.jquantlib.experimental.credit;
 import org.jquantlib.QL;
 
 /**
- * Atomic credit-event type. Encapsulates the ISDA default contractual
- * types and their combinations.
+ * Atomic credit-event type. Encapsulates the ISDA default contractual types and their combinations.
  *
  * <p>Java port of QuantLib v1.42.1 {@code QuantLib::DefaultType}
  * ({@code ql/experimental/credit/defaulttype.{hpp,cpp}}).
  *
  * <p>Equality is the criteria for indexing the curves and depends only on
- * the atomic types, not on idiosyncrasies of derived types: see
- * {@link #equals(Object)} below mirroring the free C++
+ * the atomic types, not on idiosyncrasies of derived types: see {@link #equals(Object)} below mirroring the free C++
  * {@code operator==(const DefaultType&, const DefaultType&)}.
  *
  * <p>Phase 4m foundation.
@@ -50,15 +48,13 @@ public class DefaultType {
         this(AtomicDefault.Type.Bankruptcy, Restructuring.XR);
     }
 
-    public DefaultType(final AtomicDefault.Type defType,
-                       final Restructuring.Type restType) {
+    public DefaultType(final AtomicDefault.Type defType, final Restructuring.Type restType) {
         this.defTypes = defType;
         this.restrType = restType;
         // checks restruct and norestruct are never together (XOR).
         final boolean defIsRestruct = defType == AtomicDefault.Type.Restructuring;
         final boolean noRestruct = restrType == Restructuring.Type.NoRestructuring;
-        QL.require(defIsRestruct ^ noRestruct,
-                "Incoherent credit event type definition.");
+        QL.require(defIsRestruct ^ noRestruct, "Incoherent credit event type definition.");
     }
 
     public AtomicDefault.Type defaultType() {
@@ -74,25 +70,24 @@ public class DefaultType {
     }
 
     /**
-     * Returns true if {@code defType} is within this one and as such will
-     * be recognised as a trigger. Strict match (no event hierarchy).
+     * Returns true if {@code defType} is within this one and as such will be recognised as a trigger. Strict match (no
+     * event hierarchy).
      */
     public boolean containsDefaultType(final AtomicDefault.Type defType) {
         return defTypes == defType;
     }
 
     public boolean containsRestructuringType(final Restructuring.Type resType) {
-        return (restrType == resType) ||
-               (Restructuring.Type.AnyRestructuring == resType);
+        return (restrType == resType) || (Restructuring.Type.AnyRestructuring == resType);
     }
 
     /** Mirrors C++ free {@code operator==(const DefaultType&, const DefaultType&)}. */
     @Override
     public boolean equals(final Object o) {
-        if (this == o) {
+        if ( this == o ) {
             return true;
         }
-        if (!(o instanceof DefaultType)) {
+        if ( !(o instanceof DefaultType) ) {
             return false;
         }
         final DefaultType rhs = (DefaultType) o;

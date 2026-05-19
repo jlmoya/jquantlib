@@ -31,12 +31,11 @@ import org.jquantlib.quotes.Quote;
  * One-factor double Student-t copula.
  *
  * <p>Java port of QuantLib v1.42.1
- * {@code QuantLib::OneFactorStudentCopula}
- * ({@code ql/experimental/credit/onefactorstudentcopula.{hpp,cpp}}).
+ * {@code QuantLib::OneFactorStudentCopula} ({@code ql/experimental/credit/onefactorstudentcopula.{hpp,cpp}}).
  *
  * <p>Specifies the densities of M and Z to Student-t distributions with
- * {@code nm} and {@code nz} degrees of freedom respectively. Variables are
- * scaled by {@code sqrt((nu-2)/nu)} to ensure unit variance.
+ * {@code nm} and {@code nz} degrees of freedom respectively. Variables are scaled by {@code sqrt((nu-2)/nu)} to ensure
+ * unit variance.
  *
  * <p>Phase 4m.6 — Phase 4m.5 deferred this pending the
  * {@link org.jquantlib.math.distributions.StudentDistribution} prereq.
@@ -50,10 +49,8 @@ public class OneFactorStudentCopula extends OneFactorCopula {
     private final double scaleM_;
     private final double scaleZ_;
 
-    public OneFactorStudentCopula(final Handle<Quote> correlation,
-                                  final int nz, final int nm,
-                                  final double maximum,
-                                  final int integrationSteps) {
+    public OneFactorStudentCopula(final Handle< Quote > correlation, final int nz, final int nm, final double maximum,
+            final int integrationSteps) {
         super(correlation, maximum, integrationSteps, -maximum);
         QL.require(nz > 2 && nm > 2, "degrees of freedom must be > 2");
         this.density_ = new StudentDistribution(nm);
@@ -65,8 +62,7 @@ public class OneFactorStudentCopula extends OneFactorCopula {
         calculate();
     }
 
-    public OneFactorStudentCopula(final Handle<Quote> correlation,
-                                  final int nz, final int nm) {
+    public OneFactorStudentCopula(final Handle< Quote > correlation, final int nz, final int nm) {
         this(correlation, nz, nm, 10.0, 200);
     }
 
@@ -90,7 +86,7 @@ public class OneFactorStudentCopula extends OneFactorCopula {
         final double ymin = -10.0;
         final double ymax = 10.0;
         final int steps = 200;
-        for (int i = 0; i <= steps; ++i) {
+        for ( int i = 0; i <= steps; ++i ) {
             final double yv = ymin + (ymax - ymin) * i / steps;
             final double c = cumulativeYintegral(yv);
             y.add(yv);
@@ -101,10 +97,10 @@ public class OneFactorStudentCopula extends OneFactorCopula {
     private double cumulativeYintegral(final double yv) {
         final double c = correlation.currentLink().value();
 
-        if (c == 0.0) {
+        if ( c == 0.0 ) {
             return new CumulativeStudentDistribution(nz_).op(yv / scaleZ_);
         }
-        if (c == 1.0) {
+        if ( c == 1.0 ) {
             return new CumulativeStudentDistribution(nm_).op(yv / scaleM_);
         }
 
@@ -117,20 +113,18 @@ public class OneFactorStudentCopula extends OneFactorCopula {
         final double delta = (maximum - minimum) / steps;
         double cumulated = 0.0;
 
-        if (c < 0.5) {
-            for (double m = minimum + delta / 2; m < maximum; m += delta) {
+        if ( c < 0.5 ) {
+            for ( double m = minimum + delta / 2; m < maximum; m += delta ) {
                 final double zMax = (yv - Math.sqrt(c) * m) / Math.sqrt(1.0 - c);
-                for (double z = minimum + delta / 2; z < zMax; z += delta) {
-                    cumulated += dm.op(m / scaleM_) / scaleM_
-                            * dz.op(z / scaleZ_) / scaleZ_;
+                for ( double z = minimum + delta / 2; z < zMax; z += delta ) {
+                    cumulated += dm.op(m / scaleM_) / scaleM_ * dz.op(z / scaleZ_) / scaleZ_;
                 }
             }
         } else {
-            for (double z = minimum + delta / 2; z < maximum; z += delta) {
+            for ( double z = minimum + delta / 2; z < maximum; z += delta ) {
                 final double mMax = (yv - Math.sqrt(1.0 - c) * z) / Math.sqrt(c);
-                for (double m = minimum + delta / 2; m < mMax; m += delta) {
-                    cumulated += dm.op(m / scaleM_) / scaleM_
-                            * dz.op(z / scaleZ_) / scaleZ_;
+                for ( double m = minimum + delta / 2; m < mMax; m += delta ) {
+                    cumulated += dm.op(m / scaleM_) / scaleM_ * dz.op(z / scaleZ_) / scaleZ_;
                 }
             }
         }

@@ -44,10 +44,6 @@
 
 package org.jquantlib.instruments;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.exercise.Exercise;
@@ -60,13 +56,16 @@ import org.jquantlib.pricingengines.swaption.gaussian1d.Gaussian1dFloatFloatSwap
 import org.jquantlib.termstructures.SwaptionVolatilityStructure;
 import org.jquantlib.time.Date;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
  * FloatFloat swaption: an option on a {@link FloatFloatSwap}.
  *
  * <p>Structurally analogous to {@link NonstandardSwaption} wrapping a
- * {@link NonstandardSwap}, but the underlying here is a
- * {@link FloatFloatSwap} (two floating legs with per-coupon gearings,
- * spreads, caps, and floors).
+ * {@link NonstandardSwap}, but the underlying here is a {@link FloatFloatSwap} (two floating legs with per-coupon
+ * gearings, spreads, caps, and floors).
  *
  * <p>Mirrors C++ v1.42.1 {@code ql/instruments/floatfloatswaption.hpp} /
  * {@code .cpp} (author Peter Caspers, 2013/2018).
@@ -96,44 +95,36 @@ public class FloatFloatSwaption extends Option {
     private final Settlement.Method settlementMethod_;
 
     /**
-     * Cached copy of the engine's additionalResults (keyed by name). Populated
-     * during {@link #fetchResults(PricingEngine.Results)} so callers can
-     * retrieve named extra results via {@link #result(String)} (mirrors C++
-     * {@code Instrument::result<T>(name)}).
+     * Cached copy of the engine's additionalResults (keyed by name). Populated during
+     * {@link #fetchResults(PricingEngine.Results)} so callers can retrieve named extra results via
+     * {@link #result(String)} (mirrors C++ {@code Instrument::result<T>(name)}).
      */
-    private Map<String, Object> additionalResults_ = new HashMap<String, Object>();
-
+    private Map< String, Object > additionalResults_ = new HashMap< String, Object >();
 
     // ── constructors ──────────────────────────────────────────────────────────
 
     /**
-     * Construct with explicit settlement type/method, defaulting to
-     * {@link Settlement.Type#Physical} / {@link Settlement.Method#PhysicalOTC}.
-     * Mirrors C++ {@code FloatFloatSwaption(shared_ptr<FloatFloatSwap>, Exercise)}.
+     * Construct with explicit settlement type/method, defaulting to {@link Settlement.Type#Physical} /
+     * {@link Settlement.Method#PhysicalOTC}. Mirrors C++
+     * {@code FloatFloatSwaption(shared_ptr<FloatFloatSwap>, Exercise)}.
      */
-    public FloatFloatSwaption(final FloatFloatSwap swap,
-                               final Exercise exercise) {
-        this(swap, exercise,
-             Settlement.Type.Physical, Settlement.Method.PhysicalOTC);
+    public FloatFloatSwaption(final FloatFloatSwap swap, final Exercise exercise) {
+        this(swap, exercise, Settlement.Type.Physical, Settlement.Method.PhysicalOTC);
     }
 
     /**
-     * Full constructor.
-     * Mirrors C++ {@code FloatFloatSwaption(shared_ptr<FloatFloatSwap>,
-     * Exercise, Settlement::Type, Settlement::Method)}.
+     * Full constructor. Mirrors C++
+     * {@code FloatFloatSwaption(shared_ptr<FloatFloatSwap>, Exercise, Settlement::Type, Settlement::Method)}.
      */
-    public FloatFloatSwaption(final FloatFloatSwap swap,
-                               final Exercise exercise,
-                               final Settlement.Type delivery,
-                               final Settlement.Method settlementMethod) {
+    public FloatFloatSwaption(final FloatFloatSwap swap, final Exercise exercise, final Settlement.Type delivery,
+            final Settlement.Method settlementMethod) {
         super(null /* payoff */, exercise);
-        this.swap_             = swap;
-        this.settlementType_   = delivery;
+        this.swap_ = swap;
+        this.settlementType_ = delivery;
         this.settlementMethod_ = settlementMethod;
         this.swap_.addObserver(this);
         this.swap_.alwaysForwardNotifications();
     }
-
 
     // ── inspectors ────────────────────────────────────────────────────────────
 
@@ -148,16 +139,14 @@ public class FloatFloatSwaption extends Option {
     }
 
     /**
-     * Returns the underlying swap type (Payer/Receiver).
-     * Mirrors C++ {@code FloatFloatSwaption::type()}.
+     * Returns the underlying swap type (Payer/Receiver). Mirrors C++ {@code FloatFloatSwaption::type()}.
      */
     public VanillaSwap.Type type() {
         return swap_.type();
     }
 
     /**
-     * Returns the underlying float-float swap.
-     * Mirrors C++ {@code FloatFloatSwaption::underlyingSwap()}.
+     * Returns the underlying float-float swap. Mirrors C++ {@code FloatFloatSwaption::underlyingSwap()}.
      */
     public FloatFloatSwap underlyingSwap() {
         return swap_;
@@ -174,36 +163,32 @@ public class FloatFloatSwaption extends Option {
      * Generates a calibration basket of swaption helpers.
      *
      * <p>Mirrors C++ {@code FloatFloatSwaption::calibrationBasket(SwapIndex,
-     * SwaptionVolatilityStructure, CalibrationBasketType)}.
-     * Delegates to the pricing engine which must be a
+     * SwaptionVolatilityStructure, CalibrationBasketType)}. Delegates to the pricing engine which must be a
      * {@link Gaussian1dFloatFloatSwaptionEngine}. Phase 2k Track B.
      *
-     * @param standardSwapBase    swap index defining basket swaption attributes
-     * @param swaptionVolatility  vol surface for helper construction
-     * @param basketType          Naive or MaturityStrikeByDeltaGamma
+     * @param standardSwapBase   swap index defining basket swaption attributes
+     * @param swaptionVolatility vol surface for helper construction
+     * @param basketType         Naive or MaturityStrikeByDeltaGamma
      * @return list of calibration helpers
      */
-    public List<BlackCalibrationHelper> calibrationBasket(
-            final SwapIndex standardSwapBase,
+    public List< BlackCalibrationHelper > calibrationBasket(final SwapIndex standardSwapBase,
             final SwaptionVolatilityStructure swaptionVolatility,
             final BasketGeneratingEngine.CalibrationBasketType basketType) {
 
-        QL.require(engine != null,
-                "no pricing engine set — cannot generate calibration basket");
+        QL.require(engine != null, "no pricing engine set — cannot generate calibration basket");
         QL.require(engine instanceof Gaussian1dFloatFloatSwaptionEngine,
                 "calibrationBasket requires a Gaussian1dFloatFloatSwaptionEngine");
 
         // Trigger setupArguments so engine's arguments_ are populated
         setupArguments(engine.getArguments());
 
-        return ((Gaussian1dFloatFloatSwaptionEngine) engine)
-                .calibrationBasket(exercise, standardSwapBase, swaptionVolatility, basketType);
+        return ((Gaussian1dFloatFloatSwaptionEngine) engine).calibrationBasket(exercise, standardSwapBase,
+                swaptionVolatility, basketType);
     }
 
     /**
-     * Retrieve a named additional result populated by the pricing engine.
-     * Mirrors C++ {@code Instrument::result<T>(name)}. Returns {@code null}
-     * if not present.
+     * Retrieve a named additional result populated by the pricing engine. Mirrors C++
+     * {@code Instrument::result<T>(name)}. Returns {@code null} if not present.
      */
     public Object result(final String key) /* @ReadOnly */ {
         calculate();
@@ -211,17 +196,16 @@ public class FloatFloatSwaption extends Option {
     }
 
     /** Read-only access to the engine's additional-results snapshot. */
-    public Map<String, Object> additionalResults() /* @ReadOnly */ {
+    public Map< String, Object > additionalResults() /* @ReadOnly */ {
         calculate();
         return additionalResults_;
     }
 
-
     // ── Instrument interface ──────────────────────────────────────────────────
 
     /**
-     * Mirrors C++ {@code FloatFloatSwaption::isExpired()}.
-     * The swaption is expired when the last exercise date has occurred.
+     * Mirrors C++ {@code FloatFloatSwaption::isExpired()}. The swaption is expired when the last exercise date has
+     * occurred.
      */
     @Override
     public boolean isExpired() /* @ReadOnly */ {
@@ -230,53 +214,45 @@ public class FloatFloatSwaption extends Option {
     }
 
     /**
-     * Snapshot the engine's additional-results map alongside the standard
-     * NPV/error fields. Mirrors C++ {@code Instrument::fetchResults} which
-     * implicitly captures additionalResults from the engine's results object.
+     * Snapshot the engine's additional-results map alongside the standard NPV/error fields. Mirrors C++
+     * {@code Instrument::fetchResults} which implicitly captures additionalResults from the engine's results object.
      */
     @Override
     protected void fetchResults(final PricingEngine.Results r) /* @ReadOnly */ {
         super.fetchResults(r);
-        if (r instanceof Instrument.ResultsImpl) {
+        if ( r instanceof Instrument.ResultsImpl ) {
             // copy by reference — engine.reset() will replace map next round
-            additionalResults_ = new HashMap<String, Object>(
-                    ((Instrument.ResultsImpl) r).additionalResults());
+            additionalResults_ = new HashMap< String, Object >(((Instrument.ResultsImpl) r).additionalResults());
         } else {
-            additionalResults_ = new HashMap<String, Object>();
+            additionalResults_ = new HashMap< String, Object >();
         }
     }
 
     /**
-     * Mirrors C++ {@code FloatFloatSwaption::setupArguments()}.
-     * Chains to the underlying swap to fill FloatFloatSwap-level fields, then
-     * overlays swaption-specific fields.
+     * Mirrors C++ {@code FloatFloatSwaption::setupArguments()}. Chains to the underlying swap to fill
+     * FloatFloatSwap-level fields, then overlays swaption-specific fields.
      */
     @Override
     protected void setupArguments(final PricingEngine.Arguments args) /* @ReadOnly */ {
         // Populate FloatFloatSwap-level fields.
         swap_.setupArguments(args);
 
-        QL.require(args instanceof FloatFloatSwaption.ArgumentsImpl,
-                   "wrong argument type");
-        final FloatFloatSwaption.ArgumentsImpl a =
-                (FloatFloatSwaption.ArgumentsImpl) args;
+        QL.require(args instanceof FloatFloatSwaption.ArgumentsImpl, "wrong argument type");
+        final FloatFloatSwaption.ArgumentsImpl a = (FloatFloatSwaption.ArgumentsImpl) args;
 
-        a.swap             = swap_;
-        a.exercise         = exercise;
-        a.settlementType   = settlementType_;
+        a.swap = swap_;
+        a.exercise = exercise;
+        a.settlementType = settlementType_;
         a.settlementMethod = settlementMethod_;
     }
-
 
     // ── inner interfaces ──────────────────────────────────────────────────────
 
     /**
-     * Marking interface for FloatFloatSwaption arguments.
-     * Mirrors C++ {@code FloatFloatSwaption::arguments} (multiple base classes
-     * collapsed to a single interface here).
+     * Marking interface for FloatFloatSwaption arguments. Mirrors C++ {@code FloatFloatSwaption::arguments} (multiple
+     * base classes collapsed to a single interface here).
      */
-    public interface Arguments extends FloatFloatSwap.Arguments,
-                                        Option.Arguments {
+    public interface Arguments extends FloatFloatSwap.Arguments, Option.Arguments {
         /* marker */
     }
 
@@ -287,16 +263,13 @@ public class FloatFloatSwaption extends Option {
         /* marker */
     }
 
-
     // ── inner classes ─────────────────────────────────────────────────────────
 
     /**
-     * Concrete arguments for {@link FloatFloatSwaption}.
-     * Mirrors C++ {@code FloatFloatSwaption::arguments} which multiply-inherits
-     * from {@code FloatFloatSwap::arguments} and {@code Option::arguments}.
+     * Concrete arguments for {@link FloatFloatSwaption}. Mirrors C++ {@code FloatFloatSwaption::arguments} which
+     * multiply-inherits from {@code FloatFloatSwap::arguments} and {@code Option::arguments}.
      */
-    public static class ArgumentsImpl extends FloatFloatSwap.ArgumentsImpl
-            implements FloatFloatSwaption.Arguments {
+    public static class ArgumentsImpl extends FloatFloatSwap.ArgumentsImpl implements FloatFloatSwaption.Arguments {
 
         public FloatFloatSwap swap;
         public Exercise exercise;
@@ -309,19 +282,17 @@ public class FloatFloatSwaption extends Option {
         @Override
         public void validate() /* @ReadOnly */ {
             super.validate();
-            QL.require(swap     != null, "underlying float-float swap not set");
+            QL.require(swap != null, "underlying float-float swap not set");
             QL.require(exercise != null, "exercise not set");
             Settlement.checkTypeAndMethodConsistency(settlementType, settlementMethod);
         }
     }
 
     /**
-     * Concrete results for {@link FloatFloatSwaption}.
-     * Adds no fields beyond {@link Instrument.ResultsImpl}; engines may publish
-     * extra values via {@link Instrument.ResultsImpl#additionalResults()}.
+     * Concrete results for {@link FloatFloatSwaption}. Adds no fields beyond {@link Instrument.ResultsImpl}; engines
+     * may publish extra values via {@link Instrument.ResultsImpl#additionalResults()}.
      */
-    public static class ResultsImpl extends Instrument.ResultsImpl
-            implements FloatFloatSwaption.Results {
+    public static class ResultsImpl extends Instrument.ResultsImpl implements FloatFloatSwaption.Results {
 
         @Override
         public void reset() {
@@ -330,17 +301,14 @@ public class FloatFloatSwaption extends Option {
     }
 
     /**
-     * Abstract engine base for {@link FloatFloatSwaption}.
-     * Mirrors C++ {@code FloatFloatSwaption::engine =
-     * GenericEngine<FloatFloatSwaption::arguments, FloatFloatSwaption::results>}.
+     * Abstract engine base for {@link FloatFloatSwaption}. Mirrors C++
+     * {@code FloatFloatSwaption::engine = GenericEngine<FloatFloatSwaption::arguments, FloatFloatSwaption::results>}.
      */
     public abstract static class EngineImpl
-            extends GenericEngine<FloatFloatSwaption.Arguments,
-                                  FloatFloatSwaption.Results> {
+            extends GenericEngine< FloatFloatSwaption.Arguments, FloatFloatSwaption.Results > {
 
         protected EngineImpl() {
-            super(new FloatFloatSwaption.ArgumentsImpl(),
-                  new FloatFloatSwaption.ResultsImpl());
+            super(new FloatFloatSwaption.ArgumentsImpl(), new FloatFloatSwaption.ResultsImpl());
         }
     }
 }

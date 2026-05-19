@@ -25,17 +25,14 @@ package org.jquantlib.processes;
 import org.jquantlib.QL;
 import org.jquantlib.math.Constants;
 
-
 /**
  * Ornstein-Uhlenbeck process class
  * <p>
- * This class describes the Ornstein-Uhlenbeck process governed by
- * {@latex[ dx = a (r - x_t) dt + \sigma dW_t }
- *
- * @category processes
+ * This class describes the Ornstein-Uhlenbeck process governed by {@latex[ dx = a (r - x_t) dt + \sigma dW_t }
  *
  * @author Praneet Tiwari
  * @author Richard Gomes
+ * @category processes
  */
 // TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class OrnsteinUhlenbeckProcess extends StochasticProcess1D {
@@ -46,24 +43,17 @@ public class OrnsteinUhlenbeckProcess extends StochasticProcess1D {
     private final double /* @Real */x0_, speed_, level_;
     private final double /* @Volatility */volatility_;
 
-    public OrnsteinUhlenbeckProcess(
-            final double /* @Real */speed,
-            final double /* @Volatility */ vol) {
+    public OrnsteinUhlenbeckProcess(final double /* @Real */speed, final double /* @Volatility */ vol) {
         this(speed, vol, 0.0, 0.0);
     }
 
-    public OrnsteinUhlenbeckProcess(
-            final double /* @Real */speed,
-            final double /* @Volatility */vol,
+    public OrnsteinUhlenbeckProcess(final double /* @Real */speed, final double /* @Volatility */vol,
             final double /* @Real */x0) {
         this(speed, vol, x0, 0.0);
     }
 
-    public OrnsteinUhlenbeckProcess(
-            final double /* @Real */speed,
-            final double /* @Volatility */vol,
-            final double /* @Real */x0,
-            final double /* @Real */level) {
+    public OrnsteinUhlenbeckProcess(final double /* @Real */speed, final double /* @Volatility */vol,
+            final double /* @Real */x0, final double /* @Real */level) {
         super();
 
         QL.require(speed >= 0.0, NEGATIVE_SPEED_GIVEN); // TODO: message
@@ -74,7 +64,6 @@ public class OrnsteinUhlenbeckProcess extends StochasticProcess1D {
         level_ = (level);
         volatility_ = (vol);
     }
-
 
     //
     // public methods
@@ -102,41 +91,31 @@ public class OrnsteinUhlenbeckProcess extends StochasticProcess1D {
     }
 
     @Override
-    public double /* @Real */drift(
-            final double /* @Time */t,
-            final double /* @Real */x) {
+    public double /* @Real */drift(final double /* @Time */t, final double /* @Real */x) {
         return speed_ * (level_ - x);
     }
 
     @Override
-    public double /* @Real */diffusion(
-            final double /* @Time */t,
-            final double /* @Real */x) {
+    public double /* @Real */diffusion(final double /* @Time */t, final double /* @Real */x) {
         return volatility_;
     }
 
     @Override
-    public double /* @Real */expectation(
-            final double /* @Time */t0,
-            final double /* @Real */x0,
+    public double /* @Real */expectation(final double /* @Time */t0, final double /* @Real */x0,
             final double /* @Time */dt) {
         return level_ + (x0 - level_) * Math.exp(-speed_ * dt);
     }
 
     @Override
-    public double /* @Real */stdDeviation(
-            final double /* @Time */t0,
-            final double /* @Real */x0,
+    public double /* @Real */stdDeviation(final double /* @Time */t0, final double /* @Real */x0,
             final double /* @Time */dt) {
         return Math.sqrt(variance(t0, x0, dt));
     }
 
     @Override
-    public double /* @Real */variance(
-            final double /* @Time */t0,
-            final double /* @Real */x0,
+    public double /* @Real */variance(final double /* @Time */t0, final double /* @Real */x0,
             final double /* @Time */dt) {
-        if (speed_ < Math.sqrt(Constants.QL_EPSILON))
+        if ( speed_ < Math.sqrt(Constants.QL_EPSILON) )
             // algebraic limit for small speed
             return volatility_ * volatility_ * dt;
         else

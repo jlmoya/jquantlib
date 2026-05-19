@@ -39,8 +39,6 @@
 
 package org.jquantlib.quotes;
 
-import java.util.List;
-
 import org.jquantlib.lang.annotation.QualityAssurance;
 import org.jquantlib.lang.annotation.QualityAssurance.Quality;
 import org.jquantlib.lang.annotation.QualityAssurance.Version;
@@ -48,41 +46,41 @@ import org.jquantlib.util.DefaultObservable;
 import org.jquantlib.util.Observable;
 import org.jquantlib.util.Observer;
 
+import java.util.List;
+
 /**
  * Purely virtual base class for market observables
- * 
+ *
  * @author Richard Gomes
  */
-@QualityAssurance(quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Richard Gomes" })
+@QualityAssurance( quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Richard Gomes" } )
 public abstract class Quote implements Observable {
+
+    /**
+     * Implements multiple inheritance via delegate pattern to an inner class.
+     *
+     * <p>Phase 2x A.4: switched to {@link
+     * org.jquantlib.util.WeakReferenceObservable} so that observers from completed tests don't accumulate on the
+     * quote's observer list and cascade on every Settings.setEvaluationDate.
+     *
+     * @see Observable
+     * @see DefaultObservable
+     */
+    private final Observable delegatedObservable = new org.jquantlib.util.WeakReferenceObservable(this);
 
     /**
      * @return the current value
      */
     public abstract double value() /* @ReadOnly */;
 
-    /**
-     * @return true if the Quote holds a valid value
-     */
-    public abstract boolean isValid() /* @ReadOnly */;
-
-
     //
     // implements Observable
     //
 
     /**
-     * Implements multiple inheritance via delegate pattern to an inner class.
-     *
-     * <p>Phase 2x A.4: switched to {@link
-     * org.jquantlib.util.WeakReferenceObservable} so that observers from
-     * completed tests don't accumulate on the quote's observer list and
-     * cascade on every Settings.setEvaluationDate.
-     *
-     * @see Observable
-     * @see DefaultObservable
+     * @return true if the Quote holds a valid value
      */
-    private final Observable delegatedObservable = new org.jquantlib.util.WeakReferenceObservable(this);
+    public abstract boolean isValid() /* @ReadOnly */;
 
     @Override
     public void addObserver(final Observer observer) {
@@ -115,7 +113,7 @@ public abstract class Quote implements Observable {
     }
 
     @Override
-    public List<Observer> getObservers() {
+    public List< Observer > getObservers() {
         return delegatedObservable.getObservers();
     }
 

@@ -44,12 +44,11 @@ import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.time.Date;
 
 /**
- * Irregular Swaption: a European/Bermudan/American option to enter into an
- * {@link IrregularSwap}.
+ * Irregular Swaption: a European/Bermudan/American option to enter into an {@link IrregularSwap}.
  *
  * <p>Phase 4i port of C++ QuantLib v1.42.1
- * {@code ql/experimental/swaptions/irregularswaption.{hpp,cpp}}.
- * Pinned commit {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
+ * {@code ql/experimental/swaptions/irregularswaption.{hpp,cpp}}. Pinned commit
+ * {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
  *
  * <h3>Java port deviations from C++ v1.42.1</h3>
  * <ul>
@@ -122,36 +121,24 @@ public class IrregularSwaption extends Option {
     }
 
     /**
-     * Implied volatility scaffold. Mirrors the C++ signature but throws
-     * {@link UnsupportedOperationException}: the helper class
-     * {@code IrregularImpliedVolHelper} requires running a
-     * {@code BlackSwaptionEngine} on an {@link IrregularSwap} (not yet
-     * supported in Java because the engine is keyed on
-     * {@link VanillaSwap}).
+     * Implied volatility scaffold. Mirrors the C++ signature but throws {@link UnsupportedOperationException}: the
+     * helper class {@code IrregularImpliedVolHelper} requires running a {@code BlackSwaptionEngine} on an
+     * {@link IrregularSwap} (not yet supported in Java because the engine is keyed on {@link VanillaSwap}).
      */
-    public double impliedVolatility(
-            final double targetValue,
-            final Handle<YieldTermStructure> discountCurve,
-            final double guess,
-            final double accuracy,
-            final int maxEvaluations,
-            final double minVol,
+    public double impliedVolatility(final double targetValue, final Handle< YieldTermStructure > discountCurve,
+            final double guess, final double accuracy, final int maxEvaluations, final double minVol,
             final double maxVol) {
         calculate();
         QL.require(!isExpired(), "instrument expired");
         // TODO Phase 4i.5: port IrregularImpliedVolHelper once
         //      BlackSwaptionEngine accepts an arbitrary swap base type.
         throw new LibraryException(
-                "IrregularSwaption.impliedVolatility not yet implemented "
-              + "(see Phase 4i.5 carry-forward)");
+                "IrregularSwaption.impliedVolatility not yet implemented " + "(see Phase 4i.5 carry-forward)");
     }
 
-    public double impliedVolatility(
-            final double targetValue,
-            final Handle<YieldTermStructure> discountCurve,
+    public double impliedVolatility(final double targetValue, final Handle< YieldTermStructure > discountCurve,
             final double guess) {
-        return impliedVolatility(targetValue, discountCurve, guess,
-                1.0e-4, 100, 1.0e-7, 4.0);
+        return impliedVolatility(targetValue, discountCurve, guess, 1.0e-4, 100, 1.0e-7, 4.0);
     }
 
     //
@@ -159,23 +146,22 @@ public class IrregularSwaption extends Option {
     //
 
     /**
-     * Marker interface for irregular-swaption arguments. Mirrors the C++
-     * multiple-inheritance from {@code IrregularSwap::arguments} and
-     * {@code Option::arguments}; Java exposes the union as direct fields on
+     * Marker interface for irregular-swaption arguments. Mirrors the C++ multiple-inheritance from
+     * {@code IrregularSwap::arguments} and {@code Option::arguments}; Java exposes the union as direct fields on
      * {@link ArgumentsImpl}.
      */
     public interface Arguments extends IrregularSwap.Arguments, Option.Arguments {
         /* marker */
     }
 
-    public interface Results extends Instrument.Results { /* marker */ }
+    public interface Results extends Instrument.Results { /* marker */
+    }
 
     //
     // public inner classes
     //
 
-    public static class ArgumentsImpl extends IrregularSwap.ArgumentsImpl
-            implements IrregularSwaption.Arguments {
+    public static class ArgumentsImpl extends IrregularSwap.ArgumentsImpl implements IrregularSwaption.Arguments {
 
         public IrregularSwap swap;
         public IrregularSettlement.Type settlementType = IrregularSettlement.Type.Physical;
@@ -190,8 +176,7 @@ public class IrregularSwaption extends Option {
         }
     }
 
-    public static class ResultsImpl extends Instrument.ResultsImpl
-            implements IrregularSwaption.Results {
+    public static class ResultsImpl extends Instrument.ResultsImpl implements IrregularSwaption.Results {
         @Override
         public void reset() {
             super.reset();
@@ -199,7 +184,7 @@ public class IrregularSwaption extends Option {
     }
 
     public abstract static class EngineImpl
-            extends GenericEngine<IrregularSwaption.Arguments, IrregularSwaption.Results> {
+            extends GenericEngine< IrregularSwaption.Arguments, IrregularSwaption.Results > {
 
         protected EngineImpl() {
             super(new IrregularSwaption.ArgumentsImpl(), new IrregularSwaption.ResultsImpl());

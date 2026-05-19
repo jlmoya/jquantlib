@@ -37,8 +37,8 @@ import org.jquantlib.math.matrixutilities.Array;
 /**
  * Mixed linear/cubic interpolation factory and traits.
  * <p>
- * Mirrors C++ {@code MixedLinearCubic} in
- * {@code ql/math/interpolations/mixedinterpolation.hpp} (v1.42.1, lines 96-130).
+ * Mirrors C++ {@code MixedLinearCubic} in {@code ql/math/interpolations/mixedinterpolation.hpp} (v1.42.1, lines
+ * 96-130).
  *
  * @see MixedLinearCubicInterpolation
  */
@@ -53,24 +53,16 @@ public class MixedLinearCubic implements Interpolation.Interpolator {
     private final CubicInterpolation.BoundaryCondition rightType;
     private final double rightValue;
 
-    public MixedLinearCubic(
-            final int n,
-            final MixedLinearCubicInterpolation.Behavior behavior,
+    public MixedLinearCubic(final int n, final MixedLinearCubicInterpolation.Behavior behavior,
             final CubicInterpolation.DerivativeApprox da) {
-        this(n, behavior, da, true,
-             CubicInterpolation.BoundaryCondition.SecondDerivative, 0.0,
-             CubicInterpolation.BoundaryCondition.SecondDerivative, 0.0);
+        this(n, behavior, da, true, CubicInterpolation.BoundaryCondition.SecondDerivative, 0.0,
+                CubicInterpolation.BoundaryCondition.SecondDerivative, 0.0);
     }
 
-    public MixedLinearCubic(
-            final int n,
-            final MixedLinearCubicInterpolation.Behavior behavior,
-            final CubicInterpolation.DerivativeApprox da,
-            final boolean monotonic,
-            final CubicInterpolation.BoundaryCondition leftCondition,
-            final double leftConditionValue,
-            final CubicInterpolation.BoundaryCondition rightCondition,
-            final double rightConditionValue) {
+    public MixedLinearCubic(final int n, final MixedLinearCubicInterpolation.Behavior behavior,
+            final CubicInterpolation.DerivativeApprox da, final boolean monotonic,
+            final CubicInterpolation.BoundaryCondition leftCondition, final double leftConditionValue,
+            final CubicInterpolation.BoundaryCondition rightCondition, final double rightConditionValue) {
         this.n = n;
         this.behavior = behavior;
         this.da = da;
@@ -82,15 +74,18 @@ public class MixedLinearCubic implements Interpolation.Interpolator {
     }
 
     @Override
-    public final boolean global() { return true; }
+    public final boolean global() {
+        return true;
+    }
 
     @Override
-    public final int requiredPoints() { return 3; }
+    public final int requiredPoints() {
+        return 3;
+    }
 
     @Override
     public final Interpolation interpolate(final Array vx, final Array vy) /* @ReadOnly */ {
-        return new MixedLinearCubicInterpolation(
-                vx, vy, n, behavior, da, monotonic,
-                leftType, leftValue, rightType, rightValue);
+        return new MixedLinearCubicInterpolation(vx, vy, n, behavior, da, monotonic, leftType, leftValue, rightType,
+                rightValue);
     }
 }

@@ -43,10 +43,8 @@ import org.jquantlib.time.Date;
 /**
  * Holder-extensible option.
  * <p>
- * This option can be exercised on maturity date, or it can be extended
- * by its holder until a second maturity date by paying a premium to the
- * writer of the option. In case of extension, the strike can also be
- * changed.
+ * This option can be exercised on maturity date, or it can be extended by its holder until a second maturity date by
+ * paying a premium to the writer of the option. In case of extension, the strike can also be changed.
  * <p>
  * Mirrors C++ QuantLib v1.42.1 {@code HolderExtensibleOption} in
  * {@code ql/instruments/holderextensibleoption.{hpp,cpp}}.
@@ -57,12 +55,8 @@ public class HolderExtensibleOption extends OneAssetOption {
     private final Date secondExpiryDate;
     private final double secondStrike;
 
-    public HolderExtensibleOption(final Option.Type type,
-                                  final double premium,
-                                  final Date secondExpiryDate,
-                                  final double secondStrike,
-                                  final StrikedTypePayoff payoff,
-                                  final Exercise exercise) {
+    public HolderExtensibleOption(final Option.Type type, final double premium, final Date secondExpiryDate,
+            final double secondStrike, final StrikedTypePayoff payoff, final Exercise exercise) {
         super(payoff, exercise);
         this.premium = premium;
         this.secondExpiryDate = secondExpiryDate;
@@ -72,10 +66,8 @@ public class HolderExtensibleOption extends OneAssetOption {
     @Override
     protected void setupArguments(final PricingEngine.Arguments args) {
         super.setupArguments(args);
-        QL.require(args instanceof HolderExtensibleOption.ArgumentsImpl,
-                   "wrong argument type");
-        final HolderExtensibleOption.ArgumentsImpl moreArgs =
-                (HolderExtensibleOption.ArgumentsImpl) args;
+        QL.require(args instanceof HolderExtensibleOption.ArgumentsImpl, "wrong argument type");
+        final HolderExtensibleOption.ArgumentsImpl moreArgs = (HolderExtensibleOption.ArgumentsImpl) args;
         moreArgs.premium = premium;
         moreArgs.secondExpiryDate = secondExpiryDate;
         moreArgs.secondStrike = secondStrike;
@@ -86,8 +78,7 @@ public class HolderExtensibleOption extends OneAssetOption {
      * <p>
      * Mirrors C++ QuantLib v1.42.1 {@code HolderExtensibleOption::arguments}.
      */
-    public static class ArgumentsImpl extends OneAssetOption.ArgumentsImpl
-            implements OneAssetOption.Arguments {
+    public static class ArgumentsImpl extends OneAssetOption.ArgumentsImpl implements OneAssetOption.Arguments {
 
         public double premium;
         public Date secondExpiryDate;
@@ -97,10 +88,9 @@ public class HolderExtensibleOption extends OneAssetOption {
         public void validate() {
             super.validate();
             QL.require(premium > 0, "negative premium not allowed");
-            QL.require(secondExpiryDate != null && !secondExpiryDate.isNull(),
-                       "no extending date given");
+            QL.require(secondExpiryDate != null && !secondExpiryDate.isNull(), "no extending date given");
             QL.require(secondExpiryDate.ge(exercise.lastDate()),
-                       "extended date is earlier than or equal to first maturity date");
+                    "extended date is earlier than or equal to first maturity date");
         }
     }
 }

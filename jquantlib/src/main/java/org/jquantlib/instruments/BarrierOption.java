@@ -66,24 +66,18 @@ public class BarrierOption extends OneAssetOption {
     protected double barrier;
     protected double rebate;
 
-
     //
     // public constructors
     //
 
-    public BarrierOption(
-            final BarrierType barrierType,
-			final double barrier,
-			final double rebate,
-			final StrikedTypePayoff payoff,
-			final Exercise exercise) {
+    public BarrierOption(final BarrierType barrierType, final double barrier, final double rebate,
+            final StrikedTypePayoff payoff, final Exercise exercise) {
 
-    	super(payoff, exercise);
-    	this.barrierType = barrierType;
-    	this.barrier = barrier;
-    	this.rebate = rebate;
+        super(payoff, exercise);
+        this.barrierType = barrierType;
+        this.barrier = barrier;
+        this.rebate = rebate;
     }
-
 
     //
     // overrides OneAssetStrikedOption
@@ -92,48 +86,45 @@ public class BarrierOption extends OneAssetOption {
     @Override
     public void setupArguments(final PricingEngine.Arguments arguments) {
         super.setupArguments(arguments);
-        QL.require(BarrierOption.Arguments.class.isAssignableFrom(arguments.getClass()), ReflectConstants.WRONG_ARGUMENT_TYPE); // QA:[RG]::verified
+        QL.require(BarrierOption.Arguments.class.isAssignableFrom(arguments.getClass()),
+                ReflectConstants.WRONG_ARGUMENT_TYPE); // QA:[RG]::verified
         final BarrierOption.ArgumentsImpl a = (BarrierOption.ArgumentsImpl) arguments;
         a.barrierType = barrierType;
         a.barrier = barrier;
         a.rebate = rebate;
     }
 
-
-//
-//    //
-//    // inner interfaces
-//    //
-//
-//    /**
-//     * barrier option arguments
-//     *
-//     * @author Richard Gomes
-//     */
-//    public interface Arguments extends OneAssetOption.Arguments { /* marking interface */ }
-//
-//
-//    /**
-//     * barrier option results
-//     *
-//     * @author Richard Gomes
-//     */
-//    public interface Results extends OneAssetOption.Results { /* marking interface */ }
-//
-//
-//    /**
-//     * barrier option price engine
-//     *
-//     * @author Richard Gomes
-//     */
-//    public interface Engine extends PricingEngine, Observer { /* marking interface */ }
-
+    //
+    //    //
+    //    // inner interfaces
+    //    //
+    //
+    //    /**
+    //     * barrier option arguments
+    //     *
+    //     * @author Richard Gomes
+    //     */
+    //    public interface Arguments extends OneAssetOption.Arguments { /* marking interface */ }
+    //
+    //
+    //    /**
+    //     * barrier option results
+    //     *
+    //     * @author Richard Gomes
+    //     */
+    //    public interface Results extends OneAssetOption.Results { /* marking interface */ }
+    //
+    //
+    //    /**
+    //     * barrier option price engine
+    //     *
+    //     * @author Richard Gomes
+    //     */
+    //    public interface Engine extends PricingEngine, Observer { /* marking interface */ }
 
     //
     // inner classes
     //
-
-
 
     /**
      * This class defines validation for option arguments
@@ -154,7 +145,6 @@ public class BarrierOption extends OneAssetOption {
         public BarrierType barrierType;
         public double barrier, rebate;
 
-
         //
         // public constructors
         //
@@ -165,14 +155,13 @@ public class BarrierOption extends OneAssetOption {
             this.rebate = Constants.NULL_REAL;
         }
 
-
         //
         // public methods
         //
 
         /**
-         * This method performs additional validation of needed to conform to the barrier type.
-         * The validation is done by comparing the underlying price against the barrier type.
+         * This method performs additional validation of needed to conform to the barrier type. The validation is done
+         * by comparing the underlying price against the barrier type.
          *
          * @see org.jquantlib.pricingengines.arguments.OneAssetStrikedOptionArguments#validate()
          */
@@ -180,49 +169,48 @@ public class BarrierOption extends OneAssetOption {
         public void validate() {
             super.validate();
 
-            switch (barrierType) {
+            switch ( barrierType ) {
             case DownIn:
             case UpIn:
             case DownOut:
             case UpOut:
-              break;
+                break;
             default:
                 throw new LibraryException(UNKNOWN_TYPE); // QA:[RG]::verified
-          }
+            }
 
-          QL.require(!Double.isNaN(barrier), "no barrier given"); // TODO: message
-          QL.require(!Double.isNaN(rebate), "no rebate given"); // TODO: message
+            QL.require(!Double.isNaN(barrier), "no barrier given"); // TODO: message
+            QL.require(!Double.isNaN(rebate), "no rebate given"); // TODO: message
         }
     }
 
-
-    static public class ResultsImpl extends OneAssetOption.ResultsImpl implements BarrierOption.Results { /* marking class */ }
-
+    static public class ResultsImpl extends OneAssetOption.ResultsImpl
+            implements BarrierOption.Results { /* marking class */
+    }
 
     /**
      * Barrier-option engine base class
      *
      * @author <Richard Gomes>
      */
-    static public abstract class EngineImpl
-            extends GenericEngine<BarrierOption.Arguments, OneAssetOption.Results> {
+    static public abstract class EngineImpl extends GenericEngine< BarrierOption.Arguments, OneAssetOption.Results > {
 
         final private BarrierOption.ArgumentsImpl a;
 
         protected EngineImpl() {
             super(new ArgumentsImpl(), new ResultsImpl());
-            this.a = (BarrierOption.ArgumentsImpl)arguments_;
+            this.a = (BarrierOption.ArgumentsImpl) arguments_;
         }
 
         protected boolean triggered(final /*@Real*/ double underlying) /* @ReadOnly */ {
-            switch (a.barrierType) {
-              case DownIn:
-              case DownOut:
+            switch ( a.barrierType ) {
+            case DownIn:
+            case DownOut:
                 return underlying < a.barrier;
-              case UpIn:
-              case UpOut:
+            case UpIn:
+            case UpOut:
                 return underlying > a.barrier;
-              default:
+            default:
                 throw new LibraryException("Unknown type"); // TODO: message
             }
         }

@@ -39,12 +39,10 @@ import org.jquantlib.time.Date;
  * ql/instruments/varianceswap.{hpp,cpp}} (Phase 5e.5b-CFC-d-180).
  *
  * <p>A variance swap pays {@code position * notional * (realized_variance
- * - strike)} at maturity, where realized variance is the annualised
- * average squared return over the contract's life.
+ * - strike)} at maturity, where realized variance is the annualised average squared return over the contract's life.
  *
  * <p>This class does not manage seasoned variance swaps (start date is
- * recorded but currently used only by replicating engines that mark it
- * as the inception date of the contract).
+ * recorded but currently used only by replicating engines that mark it as the inception date of the contract).
  */
 public class VarianceSwap extends Instrument {
 
@@ -61,16 +59,12 @@ public class VarianceSwap extends Instrument {
     // results
     protected double variance_ = Double.NaN;
 
-
     //
     // constructor
     //
 
-    public VarianceSwap(final Position position,
-                        final double strike,
-                        final double notional,
-                        final Date startDate,
-                        final Date maturityDate) {
+    public VarianceSwap(final Position position, final double strike, final double notional, final Date startDate,
+            final Date maturityDate) {
         super();
         this.position_ = position;
         this.strike_ = strike;
@@ -78,7 +72,6 @@ public class VarianceSwap extends Instrument {
         this.startDate_ = startDate;
         this.maturityDate_ = maturityDate;
     }
-
 
     //
     // Instrument interface
@@ -89,17 +82,29 @@ public class VarianceSwap extends Instrument {
         return maturityDate_.lt(new Settings().evaluationDate());
     }
 
-
     //
     // Additional interface — inspectors
     //
 
-    public double strike()         { return strike_; }
-    public Position position()     { return position_; }
-    public Date startDate()        { return startDate_; }
-    public Date maturityDate()     { return maturityDate_; }
-    public double notional()       { return notional_; }
+    public double strike() {
+        return strike_;
+    }
 
+    public Position position() {
+        return position_;
+    }
+
+    public Date startDate() {
+        return startDate_;
+    }
+
+    public Date maturityDate() {
+        return maturityDate_;
+    }
+
+    public double notional() {
+        return notional_;
+    }
 
     //
     // Additional interface — results
@@ -112,7 +117,6 @@ public class VarianceSwap extends Instrument {
         return variance_;
     }
 
-
     //
     // overrides Instrument
     //
@@ -121,10 +125,10 @@ public class VarianceSwap extends Instrument {
     protected void setupArguments(final PricingEngine.Arguments args) {
         QL.require(args instanceof VarianceSwap.ArgumentsImpl, "wrong argument type");
         final VarianceSwap.ArgumentsImpl a = (VarianceSwap.ArgumentsImpl) args;
-        a.position     = position_;
-        a.strike       = strike_;
-        a.notional     = notional_;
-        a.startDate    = startDate_;
+        a.position = position_;
+        a.strike = strike_;
+        a.notional = notional_;
+        a.startDate = startDate_;
         a.maturityDate = maturityDate_;
     }
 
@@ -142,24 +146,24 @@ public class VarianceSwap extends Instrument {
         variance_ = Double.NaN;
     }
 
-
     //
     // public inner classes
     //
 
     /** Marking interface — extra fields in {@link ArgumentsImpl}. */
-    public interface Arguments extends Instrument.Arguments { /* marker */ }
+    public interface Arguments extends Instrument.Arguments { /* marker */
+    }
 
     /** Marking interface — extra field {@code variance} in {@link ResultsImpl}. */
-    public interface Results extends Instrument.Results { /* marker */ }
+    public interface Results extends Instrument.Results { /* marker */
+    }
 
     /**
-     * Arguments for forward fair-variance calculation. Mirrors C++
-     * {@code VarianceSwap::arguments}.
+     * Arguments for forward fair-variance calculation. Mirrors C++ {@code VarianceSwap::arguments}.
      */
     public static class ArgumentsImpl implements VarianceSwap.Arguments {
         public Position position;
-        public double strike   = Double.NaN;
+        public double strike = Double.NaN;
         public double notional = Double.NaN;
         public Date startDate;
         public Date maturityDate;
@@ -176,11 +180,9 @@ public class VarianceSwap extends Instrument {
     }
 
     /**
-     * Results from variance-swap calculation. Mirrors C++
-     * {@code VarianceSwap::results}.
+     * Results from variance-swap calculation. Mirrors C++ {@code VarianceSwap::results}.
      */
-    public static class ResultsImpl extends Instrument.ResultsImpl
-            implements VarianceSwap.Results {
+    public static class ResultsImpl extends Instrument.ResultsImpl implements VarianceSwap.Results {
 
         public double variance = Double.NaN;
 
@@ -195,8 +197,7 @@ public class VarianceSwap extends Instrument {
      * Pricing-engine base for variance swaps. Mirrors C++
      * {@code GenericEngine<VarianceSwap::arguments, VarianceSwap::results>}.
      */
-    public abstract static class EngineImpl
-            extends GenericEngine<VarianceSwap.Arguments, VarianceSwap.Results> {
+    public abstract static class EngineImpl extends GenericEngine< VarianceSwap.Arguments, VarianceSwap.Results > {
         public EngineImpl() {
             super(new ArgumentsImpl(), new ResultsImpl());
         }

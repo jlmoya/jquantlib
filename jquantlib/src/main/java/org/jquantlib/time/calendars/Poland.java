@@ -22,12 +22,6 @@
 
 package org.jquantlib.time.calendars;
 
-import static org.jquantlib.time.Month.August;
-import static org.jquantlib.time.Month.December;
-import static org.jquantlib.time.Month.January;
-import static org.jquantlib.time.Month.May;
-import static org.jquantlib.time.Month.November;
-
 import org.jquantlib.lang.annotation.QualityAssurance;
 import org.jquantlib.lang.annotation.QualityAssurance.Quality;
 import org.jquantlib.lang.annotation.QualityAssurance.Version;
@@ -35,6 +29,8 @@ import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Month;
 import org.jquantlib.time.Weekday;
+
+import static org.jquantlib.time.Month.*;
 
 /**
  * Polish calendar
@@ -55,16 +51,14 @@ import org.jquantlib.time.Weekday;
  * <li>2nd Day of Christmas, December 26th</li>
  * </ul>
  *
- * @category calendars
- *
- * @see <a href="http://www.gpw.pl/">Warsaw Stock Exchange</a>
- *
  * @author Anand Mani
  * @author Renjith Nair
  * @author Richard Gomes
+ * @category calendars
+ * @see <a href="http://www.gpw.pl/">Warsaw Stock Exchange</a>
  */
 
-@QualityAssurance(quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Zahid Hussain" })
+@QualityAssurance( quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Zahid Hussain" } )
 
 public class Poland extends Calendar {
 
@@ -72,50 +66,48 @@ public class Poland extends Calendar {
     // public constructors
     //
 
-	public Poland() {
-		impl = new Impl();
-	}
-
+    public Poland() {
+        impl = new Impl();
+    }
 
     //
     // private final inner classes
     //
 
-	private final class Impl extends WesternImpl {
+    private final class Impl extends WesternImpl {
         @Override
-		public String name() { return "Poland"; }
+        public String name() {
+            return "Poland";
+        }
 
         @Override
         public boolean isBusinessDay(final Date date) {
-	        final Weekday w = date.weekday();
-	        final int d = date.dayOfMonth(), dd = date.dayOfYear();
-	        final Month m = date.month();
-	        final int y = date.year();
-	        final int em = easterMonday(y);
-	        if (isWeekend(w)
-	            // Easter Monday
-	            || (dd == em)
-	            // Corpus Christi
-	            || (dd == em+59)
-	            // New Year's Day
-	            || (d == 1  && m == January)
-	            // May Day
-	            || (d == 1  && m == May)
-	            // Constitution Day
-	            || (d == 3  && m == May)
-	            // Assumption of the Blessed Virgin Mary
-	            || (d == 15  && m == August)
-	            // All Saints Day
-	            || (d == 1  && m == November)
-	            // Independence Day
-	            || (d ==11  && m == November)
-	            // Christmas
-	            || (d == 25 && m == December)
-	            // 2nd Day of Christmas
-	            || (d == 26 && m == December)) {
-                return false;
-            }
-	        return true;
+            final Weekday w = date.weekday();
+            final int d = date.dayOfMonth(), dd = date.dayOfYear();
+            final Month m = date.month();
+            final int y = date.year();
+            final int em = easterMonday(y);
+            return !isWeekend(w)
+                    // Easter Monday
+                    && (dd != em)
+                    // Corpus Christi
+                    && (dd != em + 59)
+                    // New Year's Day
+                    && (d != 1 || m != January)
+                    // May Day
+                    && (d != 1 || m != May)
+                    // Constitution Day
+                    && (d != 3 || m != May)
+                    // Assumption of the Blessed Virgin Mary
+                    && (d != 15 || m != August)
+                    // All Saints Day
+                    && (d != 1 || m != November)
+                    // Independence Day
+                    && (d != 11 || m != November)
+                    // Christmas
+                    && (d != 25 || m != December)
+                    // 2nd Day of Christmas
+                    && (d != 26 || m != December);
         }
-	}
+    }
 }

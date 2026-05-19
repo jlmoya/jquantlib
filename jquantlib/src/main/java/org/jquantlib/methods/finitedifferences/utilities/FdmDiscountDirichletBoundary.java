@@ -29,32 +29,23 @@ import org.jquantlib.termstructures.YieldTermStructure;
 /**
  * Discounted value Dirichlet boundary condition.
  * <p>
- * Java port of v1.42.1
- * {@code ql/methods/finitedifferences/utilities/fdmdiscountdirichletboundary.{hpp,cpp}}.
+ * Java port of v1.42.1 {@code ql/methods/finitedifferences/utilities/fdmdiscountdirichletboundary.{hpp,cpp}}.
  *
  * <p>Delegates to {@link FdmTimeDepDirichletBoundary} with the time-dependent
  * function {@code t -> valueOnBoundary * discount(maturityTime) / discount(t)}.
  *
  * @author Phase 2m Track C port
  */
-public class FdmDiscountDirichletBoundary
-        implements BoundaryCondition<FdmLinearOp> {
+public class FdmDiscountDirichletBoundary implements BoundaryCondition< FdmLinearOp > {
 
     private final FdmTimeDepDirichletBoundary bc_;
 
-    public FdmDiscountDirichletBoundary(
-            final FdmMesher mesher,
-            final YieldTermStructure rTS,
-            final double maturityTime,
-            final double valueOnBoundary,
-            final int direction,
-            final Side side) {
+    public FdmDiscountDirichletBoundary(final FdmMesher mesher, final YieldTermStructure rTS, final double maturityTime,
+            final double valueOnBoundary, final int direction, final Side side) {
 
         final double discountAtMaturity = rTS.discount(maturityTime);
 
-        this.bc_ = new FdmTimeDepDirichletBoundary(
-                mesher,
-                t -> valueOnBoundary * discountAtMaturity / rTS.discount(t),
+        this.bc_ = new FdmTimeDepDirichletBoundary(mesher, t -> valueOnBoundary * discountAtMaturity / rTS.discount(t),
                 direction, side);
     }
 

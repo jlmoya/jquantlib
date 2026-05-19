@@ -43,7 +43,6 @@ public class PoissonDistribution implements Ops.IntToDouble {
 
     private final double mu;
 
-
     //
     // public constructors
     //
@@ -56,7 +55,7 @@ public class PoissonDistribution implements Ops.IntToDouble {
      * @param the mean value {@latex$ \mu}
      */
     public PoissonDistribution(final double mu) {
-        QL.require(mu >= 0.0 , "mu must be non negative"); // TODO: message
+        QL.require(mu >= 0.0, "mu must be non negative"); // TODO: message
         this.mu = mu;
     }
 
@@ -76,12 +75,14 @@ public class PoissonDistribution implements Ops.IntToDouble {
      */
     @Override
     public double op(final int k)/* @Read-only */ {
-        if (mu==0.0)
-            if (k==0) return 1.0;
-            else      return 0.0;
+        if ( mu == 0.0 )
+            if ( k == 0 )
+                return 1.0;
+            else
+                return 0.0;
         final Factorial fact = new Factorial();
         final double logFactorial = fact.ln(k);
-        return Math.exp(k*Math.log(mu) - logFactorial - mu);
+        return Math.exp(k * Math.log(mu) - logFactorial - mu);
     }
 
 }

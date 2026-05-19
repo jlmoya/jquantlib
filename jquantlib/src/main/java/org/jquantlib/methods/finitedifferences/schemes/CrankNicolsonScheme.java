@@ -27,37 +27,31 @@ import org.jquantlib.methods.finitedifferences.utilities.FdmBoundaryConditionSet
 /**
  * Crank-Nicolson implicit-explicit time-stepping scheme.
  * <p>
- * Java port of v1.42.1
- * {@code ql/methods/finitedifferences/schemes/cranknicolsonscheme.{hpp,cpp}}.
+ * Java port of v1.42.1 {@code ql/methods/finitedifferences/schemes/cranknicolsonscheme.{hpp,cpp}}.
  * <p>
- * In one dimension the Crank-Nicolson scheme is equivalent to the Douglas
- * scheme and in higher dimensions it is usually inferior to operator
- * splitting methods like Craig-Sneyd or Hundsdorfer-Verwer.
+ * In one dimension the Crank-Nicolson scheme is equivalent to the Douglas scheme and in higher dimensions it is usually
+ * inferior to operator splitting methods like Craig-Sneyd or Hundsdorfer-Verwer.
  * <p>
- * The scheme blends an explicit Euler step (weight {@code 1-theta}) with an
- * implicit Euler step (weight {@code theta}). With {@code theta = 0.5} the
- * result is the classical Crank-Nicolson (second-order in time).
+ * The scheme blends an explicit Euler step (weight {@code 1-theta}) with an implicit Euler step (weight {@code theta}).
+ * With {@code theta = 0.5} the result is the classical Crank-Nicolson (second-order in time).
  *
  * @author Phase 2l Track C.2 port
  */
 public class CrankNicolsonScheme {
 
-    /** Time step (NaN until {@link #setStep} is called). */
-    protected double dt;
-
     protected final double theta;
     protected final ExplicitEulerScheme explicit_;
     protected final ImplicitEulerScheme implicit_;
+    /** Time step (NaN until {@link #setStep} is called). */
+    protected double dt;
 
     /** Constructor with empty boundary-condition set (mirrors C++ default arg). */
-    public CrankNicolsonScheme(final double theta,
-                               final FdmLinearOpComposite map) {
+    public CrankNicolsonScheme(final double theta, final FdmLinearOpComposite map) {
         this(theta, map, new FdmBoundaryConditionSet());
     }
 
-    public CrankNicolsonScheme(final double theta,
-                               final FdmLinearOpComposite map,
-                               final FdmBoundaryConditionSet bcSet) {
+    public CrankNicolsonScheme(final double theta, final FdmLinearOpComposite map,
+            final FdmBoundaryConditionSet bcSet) {
         this.dt = Double.NaN;
         this.theta = theta;
         this.explicit_ = new ExplicitEulerScheme(map, bcSet);
@@ -74,27 +68,25 @@ public class CrankNicolsonScheme {
     /**
      * Advance {@code a} from time {@code t} to {@code t-dt} in-place.
      * <p>
-     * Mirrors C++ {@code CrankNicolsonScheme::step}. If {@code theta == 1}
-     * only the implicit step runs; if {@code theta == 0} only the explicit
-     * step runs. Mixed: explicit part applied first, then implicit.
+     * Mirrors C++ {@code CrankNicolsonScheme::step}. If {@code theta == 1} only the implicit step runs; if
+     * {@code theta == 0} only the explicit step runs. Mixed: explicit part applied first, then implicit.
      */
     public void step(final Array a, final double t) {
         QL.require(t - dt > -1e-8, "a step towards negative time given");
 
-        if (theta != 1.0) {
+        if ( theta != 1.0 ) {
             explicit_.step(a, t, 1.0 - theta);
         }
 
-        if (theta != 0.0) {
+        if ( theta != 0.0 ) {
             implicit_.step(a, t, theta);
         }
     }
 
     /**
-     * Number of iterative-solver iterations consumed by the implicit step.
-     * Mirrors C++ {@code CrankNicolsonScheme::numberOfIterations()} —
-     * delegates to the underlying {@link ImplicitEulerScheme}, which now
-     * (Phase 5j.5) tracks BiCGStab/GMRES iterations on the multi-d path.
+     * Number of iterative-solver iterations consumed by the implicit step. Mirrors C++
+     * {@code CrankNicolsonScheme::numberOfIterations()} — delegates to the underlying {@link ImplicitEulerScheme},
+     * which now (Phase 5j.5) tracks BiCGStab/GMRES iterations on the multi-d path.
      */
     public int numberOfIterations() {
         return implicit_.numberOfIterations();

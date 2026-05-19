@@ -45,40 +45,36 @@ import org.jquantlib.methods.montecarlo.Sample;
 /**
  * Inverse cumulative random sequence generator
  * <p>
- * It uses a sequence of uniform deviate in (0, 1) as the source of cumulative distribution values. Then an inverse cumulative
- * distribution is used to calculate the distribution deviate.
- * 
+ * It uses a sequence of uniform deviate in (0, 1) as the source of cumulative distribution values. Then an inverse
+ * cumulative distribution is used to calculate the distribution deviate.
+ *
  * The uniform deviate sequence is supplied by USG.
- * 
+ *
  * @author Richard Gomes
  */
 
 //TODO: why USG and not RSG? What's the difference between URSG and RSG??
-public class InverseCumulativeRsg<USG extends UniformRandomSequenceGenerator, IC extends InverseCumulative>
-            implements UniformRandomSequenceGenerator, RandomSequenceGeneratorIntf {
+public class InverseCumulativeRsg< USG extends UniformRandomSequenceGenerator, IC extends InverseCumulative >
+        implements UniformRandomSequenceGenerator, RandomSequenceGeneratorIntf {
 
-    private final /*@NonNegative*/ int  dimension;
-    private final USG                   ursg;
-
-    private Sample<double[]>            sequence;
-    private IC                          ic;
-    private double                      weight;
+    private final /*@NonNegative*/ int dimension;
+    private final USG ursg;
     /**
-     * Backing array for {@link #sequence}, kept across calls so that
-     * {@link #lastSequence()} returns the array that
-     * {@link #nextSequence()} actually populated. Without this, the
-     * antithetic-variate path of any MC engine driven by this RSG would
-     * read the zero-initialised constructor sample every time.
+     * Backing array for {@link #sequence}, kept across calls so that {@link #lastSequence()} returns the array that
+     * {@link #nextSequence()} actually populated. Without this, the antithetic-variate path of any MC engine driven by
+     * this RSG would read the zero-initialised constructor sample every time.
      */
-    private final double[]              storage;
-    
+    private final double[] storage;
+    private Sample< double[] > sequence;
+    private IC ic;
+    private double weight;
 
     public InverseCumulativeRsg(final USG ursg) {
         this.ursg = ursg;
         this.dimension = this.ursg.dimension();
         this.weight = 1.0;
         this.storage = new double[this.dimension];
-        this.sequence = new Sample<double[]>(this.storage, this.weight);
+        this.sequence = new Sample< double[] >(this.storage, this.weight);
         this.ic = null;
     }
 
@@ -87,13 +83,12 @@ public class InverseCumulativeRsg<USG extends UniformRandomSequenceGenerator, IC
         this.ic = ic;
     }
 
-
     //
     // implements UniformRandomSequenceGenerator
     //
 
     @Override
-    public/*@NonNegative*/int dimension() /* @ReadOnly */{
+    public/*@NonNegative*/int dimension() /* @ReadOnly */ {
         return this.dimension;
     }
 
@@ -102,28 +97,28 @@ public class InverseCumulativeRsg<USG extends UniformRandomSequenceGenerator, IC
     public long[] nextInt32Sequence() /* @ReadOnly */ {
         throw new UnsupportedOperationException(); //TODO: message
     }
-    
+
     /**
      * @return next sample from the Gaussian distribution
      */
     @Override
-    public Sample<double[]> nextSequence() /* @ReadOnly */ {
-        final Sample<double[]> sample = this.ursg.nextSequence();
+    public Sample< double[] > nextSequence() /* @ReadOnly */ {
+        final Sample< double[] > sample = this.ursg.nextSequence();
         final double[] v = sample.value();
         this.weight = sample.weight();
 
         // Write into the persistent storage so lastSequence() returns
         // the same data on the next call (mirrors the C++ template
         // contract used by PathGenerator's antithetic branch).
-        for (int i = 0; i < this.dimension; i++) {
+        for ( int i = 0; i < this.dimension; i++ ) {
             this.storage[i] = this.ic.op(v[i]);
         }
-        this.sequence = new Sample<double[]>(this.storage, this.weight);
+        this.sequence = new Sample< double[] >(this.storage, this.weight);
         return this.sequence;
     }
 
     @Override
-    public final Sample<double[]> lastSequence() /* @ReadOnly */ {
+    public final Sample< double[] > lastSequence() /* @ReadOnly */ {
         return this.sequence;
     }
 

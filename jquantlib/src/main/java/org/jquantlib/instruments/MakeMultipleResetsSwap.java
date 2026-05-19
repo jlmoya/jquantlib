@@ -49,28 +49,20 @@ import org.jquantlib.pricingengines.PricingEngine;
 import org.jquantlib.pricingengines.swap.DiscountingSwapEngine;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.termstructures.YieldTermStructure;
-import org.jquantlib.time.BusinessDayConvention;
-import org.jquantlib.time.Calendar;
-import org.jquantlib.time.Date;
-import org.jquantlib.time.DateGeneration;
-import org.jquantlib.time.Frequency;
-import org.jquantlib.time.Period;
-import org.jquantlib.time.Schedule;
-import org.jquantlib.time.TimeUnit;
+import org.jquantlib.time.*;
 import org.jquantlib.time.calendars.NullCalendar;
 
 /**
- * Helper class to instantiate {@link MultipleResetsSwap} with sensible
- * defaults (mirrors C++ v1.42.1 {@code QuantLib::MakeMultipleResetsSwap}
- * in {@code ql/instruments/makemultipleresetsswap.{hpp,cpp}}).
+ * Helper class to instantiate {@link MultipleResetsSwap} with sensible defaults (mirrors C++ v1.42.1
+ * {@code QuantLib::MakeMultipleResetsSwap} in {@code ql/instruments/makemultipleresetsswap.{hpp,cpp}}).
  *
  * <p>Phase 5d.5-MR.
  */
 public class MakeMultipleResetsSwap {
 
-    private Period tenor_;
     private final IborIndex iborIndex_;
     private final int resetsPerCoupon_;
+    private Period tenor_;
     private double fixedRate_ = Constants.NULL_REAL;
     private Period forwardStart_ = new Period();
 
@@ -86,9 +78,7 @@ public class MakeMultipleResetsSwap {
     private RateAveraging.Type averagingMethod_ = RateAveraging.Type.Compound;
     private PricingEngine engine_;
 
-    public MakeMultipleResetsSwap(final Period tenor,
-                                  final IborIndex iborIndex,
-                                  final int resetsPerCoupon) {
+    public MakeMultipleResetsSwap(final Period tenor, final IborIndex iborIndex, final int resetsPerCoupon) {
         this.tenor_ = tenor;
         this.iborIndex_ = iborIndex;
         this.resetsPerCoupon_ = resetsPerCoupon;
@@ -103,52 +93,42 @@ public class MakeMultipleResetsSwap {
                 "withEffectiveDate and withSettlementDays are mutually exclusive");
 
         Date startDate;
-        if (!effectiveDate_.isNull()) {
+        if ( !effectiveDate_.isNull() ) {
             startDate = effectiveDate_;
         } else {
             final int settlDays = (settlementDays_ != Constants.NULL_NATURAL)
-                    ? settlementDays_ : iborIndex_.fixingDays();
+                    ? settlementDays_
+                    : iborIndex_.fixingDays();
             final Date refDate = new Settings().evaluationDate();
             startDate = cal.advance(cal.adjust(refDate), settlDays, TimeUnit.Days);
-            startDate = cal.advance(
-                    startDate, forwardStart_,
-                    forwardStart_.length() < 0
-                            ? BusinessDayConvention.Preceding
-                            : BusinessDayConvention.Following);
+            startDate = cal.advance(startDate, forwardStart_,
+                    forwardStart_.length() < 0 ? BusinessDayConvention.Preceding : BusinessDayConvention.Following);
         }
 
-        final Date endDate = !terminationDate_.isNull()
-                ? terminationDate_
-                : cal.advance(startDate, tenor_, bdc);
+        final Date endDate = !terminationDate_.isNull() ? terminationDate_ : cal.advance(startDate, tenor_, bdc);
 
         final Period resetTenor = iborIndex_.tenor();
         Frequency fixedFreq = fixedFrequency_;
-        if (fixedFreq == Frequency.NoFrequency) {
-            final Period couponTenor = new Period(
-                    resetsPerCoupon_ * resetTenor.length(), resetTenor.units());
+        if ( fixedFreq == Frequency.NoFrequency ) {
+            final Period couponTenor = new Period(resetsPerCoupon_ * resetTenor.length(), resetTenor.units());
             fixedFreq = couponTenor.frequency();
         }
 
-        final Schedule fixedSchedule = new Schedule(
-                startDate, endDate, new Period(fixedFreq), cal, fixedConvention_,
+        final Schedule fixedSchedule = new Schedule(startDate, endDate, new Period(fixedFreq), cal, fixedConvention_,
                 fixedConvention_, DateGeneration.Rule.Backward, false);
 
-        final Schedule fullResetSchedule = new Schedule(
-                startDate, endDate, resetTenor, cal, bdc, bdc,
+        final Schedule fullResetSchedule = new Schedule(startDate, endDate, resetTenor, cal, bdc, bdc,
                 DateGeneration.Rule.Backward, false);
 
         double usedFixedRate = fixedRate_;
-        if (fixedRate_ == Constants.NULL_REAL || Double.isNaN(fixedRate_)) {
+        if ( fixedRate_ == Constants.NULL_REAL || Double.isNaN(fixedRate_) ) {
             // dry-run swap with rate=0 to compute the fair rate
-            final MultipleResetsSwap temp = new MultipleResetsSwap(
-                    type_, nominal_, fixedSchedule, 0.0, fixedDayCount_,
-                    fullResetSchedule, iborIndex_, resetsPerCoupon_,
-                    spread_, averagingMethod_,
-                    null, 0, new NullCalendar());
-            if (engine_ == null) {
-                final Handle<YieldTermStructure> disc = iborIndex_.termStructure();
-                QL.require(!disc.empty(),
-                        "null term structure set to this instance of " + iborIndex_.name());
+            final MultipleResetsSwap temp = new MultipleResetsSwap(type_, nominal_, fixedSchedule, 0.0, fixedDayCount_,
+                    fullResetSchedule, iborIndex_, resetsPerCoupon_, spread_, averagingMethod_, null, 0,
+                    new NullCalendar());
+            if ( engine_ == null ) {
+                final Handle< YieldTermStructure > disc = iborIndex_.termStructure();
+                QL.require(!disc.empty(), "null term structure set to this instance of " + iborIndex_.name());
                 temp.setPricingEngine(new DiscountingSwapEngine(disc));
             } else {
                 temp.setPricingEngine(engine_);
@@ -156,15 +136,13 @@ public class MakeMultipleResetsSwap {
             usedFixedRate = temp.fairRate();
         }
 
-        final MultipleResetsSwap swap = new MultipleResetsSwap(
-                type_, nominal_, fixedSchedule, usedFixedRate, fixedDayCount_,
-                fullResetSchedule, iborIndex_, resetsPerCoupon_,
-                spread_, averagingMethod_,
-                null, 0, new NullCalendar());
+        final MultipleResetsSwap swap = new MultipleResetsSwap(type_, nominal_, fixedSchedule, usedFixedRate,
+                fixedDayCount_, fullResetSchedule, iborIndex_, resetsPerCoupon_, spread_, averagingMethod_, null, 0,
+                new NullCalendar());
 
-        if (engine_ == null) {
-            final Handle<YieldTermStructure> disc = iborIndex_.termStructure();
-            if (!disc.empty()) {
+        if ( engine_ == null ) {
+            final Handle< YieldTermStructure > disc = iborIndex_.termStructure();
+            if ( !disc.empty() ) {
                 swap.setPricingEngine(new DiscountingSwapEngine(disc));
             }
         } else {
@@ -206,7 +184,8 @@ public class MakeMultipleResetsSwap {
 
     public MakeMultipleResetsSwap withTerminationDate(final Date d) {
         this.terminationDate_ = d;
-        if (!d.isNull()) this.tenor_ = new Period();
+        if ( !d.isNull() )
+            this.tenor_ = new Period();
         return this;
     }
 
@@ -240,8 +219,7 @@ public class MakeMultipleResetsSwap {
         return this;
     }
 
-    public MakeMultipleResetsSwap withDiscountingTermStructure(
-            final Handle<YieldTermStructure> d) {
+    public MakeMultipleResetsSwap withDiscountingTermStructure(final Handle< YieldTermStructure > d) {
         this.engine_ = new DiscountingSwapEngine(d);
         return this;
     }

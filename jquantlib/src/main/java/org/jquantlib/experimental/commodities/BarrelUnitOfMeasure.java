@@ -22,8 +22,7 @@ package org.jquantlib.experimental.commodities;
 /**
  * Petroleum barrel unit of measure (BBL).
  * <p>
- * Java port of QuantLib v1.42.1 {@code BarrelUnitOfMeasure} from
- * {@code petroleumunitsofmeasure.hpp}.
+ * Java port of QuantLib v1.42.1 {@code BarrelUnitOfMeasure} from {@code petroleumunitsofmeasure.hpp}.
  */
 public class BarrelUnitOfMeasure extends UnitOfMeasure {
 

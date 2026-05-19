@@ -11,14 +11,13 @@
 
 package org.jquantlib.experimental.catbonds;
 
+import org.jquantlib.time.Date;
+
 import java.util.ArrayList;
 import java.util.List;
 
-import org.jquantlib.time.Date;
-
 /**
- * Tracks the evolution of the notional fraction of a catastrophe bond along a
- * simulated path.
+ * Tracks the evolution of the notional fraction of a catastrophe bond along a simulated path.
  *
  * <p>Port of {@code ql/experimental/catbonds/riskynotional.hpp/.cpp}
  * {@code NotionalPath}.
@@ -29,19 +28,19 @@ import org.jquantlib.time.Date;
 public class NotionalPath {
 
     /** Sorted list of (Date, rate) pairs; first entry always has Date() and rate 1.0. */
-    private final List<DateRealPair> notionalRate_ = new ArrayList<>();
+    private final List< DateRealPair > notionalRate_ = new ArrayList<>();
 
     public NotionalPath() {
         notionalRate_.add(new DateRealPair(new Date(), 1.0));
     }
 
     /**
-     * Returns the fraction of the original notional remaining on {@code date}.
-     * The notional is taken after reductions (same convention as C++).
+     * Returns the fraction of the original notional remaining on {@code date}. The notional is taken after reductions
+     * (same convention as C++).
      */
     public double notionalRate(final Date date) {
         int i = 0;
-        while (i < notionalRate_.size() && !notionalRate_.get(i).date.gt(date)) {
+        while ( i < notionalRate_.size() && !notionalRate_.get(i).date.gt(date) ) {
             i++;
         }
         // notionalRate_[i-1] is the last entry with date <= d
@@ -51,7 +50,7 @@ public class NotionalPath {
     /** Resets to the initial state (full notional). */
     public void reset() {
         // Keep only the first (sentinel) entry
-        while (notionalRate_.size() > 1) {
+        while ( notionalRate_.size() > 1 ) {
             notionalRate_.remove(notionalRate_.size() - 1);
         }
     }
@@ -62,8 +61,7 @@ public class NotionalPath {
     }
 
     /**
-     * Returns the total loss as a fraction of the original notional
-     * (i.e., 1.0 - final notional rate).
+     * Returns the total loss as a fraction of the original notional (i.e., 1.0 - final notional rate).
      */
     public double loss() {
         return 1.0 - notionalRate_.get(notionalRate_.size() - 1).value;

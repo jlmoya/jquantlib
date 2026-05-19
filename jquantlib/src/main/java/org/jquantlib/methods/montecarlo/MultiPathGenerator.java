@@ -48,59 +48,48 @@ import org.jquantlib.time.TimeGrid;
  *
  * @author JQuantLib
  */
-public class MultiPathGenerator<GSG extends RandomSequenceGeneratorIntf> {
+public class MultiPathGenerator< GSG extends RandomSequenceGeneratorIntf > {
 
     private final boolean brownianBridge_;
     private final StochasticProcess process_;
     private final GSG generator_;
-    private final Sample<MultiPath> next_;
+    private final Sample< MultiPath > next_;
 
-
-    public MultiPathGenerator(
-            final StochasticProcess process,
-            final TimeGrid times,
-            final GSG generator,
+    public MultiPathGenerator(final StochasticProcess process, final TimeGrid times, final GSG generator,
             final boolean brownianBridge) {
         this.brownianBridge_ = brownianBridge;
         this.process_ = process;
         this.generator_ = generator;
-        this.next_ = new Sample<MultiPath>(new MultiPath(process.size(), times), 1.0);
+        this.next_ = new Sample< MultiPath >(new MultiPath(process.size(), times), 1.0);
 
-        if (generator_.dimension() != process.factors() * (times.size() - 1)) {
+        if ( generator_.dimension() != process.factors() * (times.size() - 1) ) {
             throw new IllegalArgumentException(
-                    "dimension (" + generator_.dimension() + ") is not equal to ("
-                            + process.factors() + " * " + (times.size() - 1)
-                            + ") the number of factors times the number of time steps");
+                    "dimension (" + generator_.dimension() + ") is not equal to (" + process.factors() + " * " + (
+                            times.size() - 1) + ") the number of factors times the number of time steps");
         }
-        if (times.size() <= 1) {
+        if ( times.size() <= 1 ) {
             throw new IllegalArgumentException("no times given");
         }
     }
 
-    public MultiPathGenerator(
-            final StochasticProcess process,
-            final TimeGrid times,
-            final GSG generator) {
+    public MultiPathGenerator(final StochasticProcess process, final TimeGrid times, final GSG generator) {
         this(process, times, generator, false);
     }
 
-
-    public final Sample<MultiPath> next() /* @ReadOnly */ {
+    public final Sample< MultiPath > next() /* @ReadOnly */ {
         return next(false);
     }
 
-    public final Sample<MultiPath> antithetic() /* @ReadOnly */ {
+    public final Sample< MultiPath > antithetic() /* @ReadOnly */ {
         return next(true);
     }
 
-    private Sample<MultiPath> next(final boolean antithetic) {
-        if (brownianBridge_) {
+    private Sample< MultiPath > next(final boolean antithetic) {
+        if ( brownianBridge_ ) {
             throw new UnsupportedOperationException("Brownian bridge not supported");
         }
 
-        final Sample<double[]> sequence = antithetic
-                ? generator_.lastSequence()
-                : generator_.nextSequence();
+        final Sample< double[] > sequence = antithetic ? generator_.lastSequence() : generator_.nextSequence();
 
         final int m = process_.size();
         final int n = process_.factors();
@@ -109,7 +98,7 @@ public class MultiPathGenerator<GSG extends RandomSequenceGeneratorIntf> {
 
         // Initialise each sub-path's front with the corresponding initial value.
         Array asset = process_.initialValues();
-        for (int j = 0; j < m; j++) {
+        for ( int j = 0; j < m; j++ ) {
             path.get(j).setFront(asset.get(j));
         }
 
@@ -117,14 +106,14 @@ public class MultiPathGenerator<GSG extends RandomSequenceGeneratorIntf> {
 
         final TimeGrid timeGrid = path.get(0).timeGrid();
         final double[] sv = sequence.value();
-        for (int i = 1; i < path.pathSize(); i++) {
+        for ( int i = 1; i < path.pathSize(); i++ ) {
             final int offset = (i - 1) * n;
             final /*@Time*/ double t = timeGrid.get(i - 1);
             final /*@Time*/ double dt = timeGrid.dt(i - 1);
 
             final double[] tempArr = new double[n];
-            if (antithetic) {
-                for (int k = 0; k < n; k++) {
+            if ( antithetic ) {
+                for ( int k = 0; k < n; k++ ) {
                     tempArr[k] = -sv[offset + k];
                 }
             } else {
@@ -133,7 +122,7 @@ public class MultiPathGenerator<GSG extends RandomSequenceGeneratorIntf> {
             final Array temp = new Array(tempArr);
 
             asset = process_.evolve(t, asset, dt, temp);
-            for (int j = 0; j < m; j++) {
+            for ( int j = 0; j < m; j++ ) {
                 path.get(j).set(i, asset.get(j));
             }
         }

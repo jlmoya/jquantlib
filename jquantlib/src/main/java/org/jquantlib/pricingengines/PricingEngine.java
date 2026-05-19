@@ -62,7 +62,6 @@ package org.jquantlib.pricingengines;
 
 import org.jquantlib.util.Observable;
 
-
 /**
  * interface for pricing engines
  *
@@ -70,27 +69,28 @@ import org.jquantlib.util.Observable;
  */
 public interface PricingEngine extends Observable {
 
-    public final static String PRICING_ENGINE_NOT_SET = "Pricing engine not set";
+    String PRICING_ENGINE_NOT_SET = "Pricing engine not set";
 
-	public PricingEngine.Arguments getArguments();
-	public PricingEngine.Results getResults();
+    PricingEngine.Arguments getArguments();
 
-	public abstract void reset();
-	public abstract void calculate() /* @ReadOnly */;
+    PricingEngine.Results getResults();
 
+    void reset();
 
+    void calculate() /* @ReadOnly */;
 
-	//TODO: for the time being.
-	// This method must be removed from there and declared on extended interfaces when necessary /////
-	public abstract void update();
-	//////////////////////////////////////////////////////////////////////////////////////////////////
+    //TODO: for the time being.
+    // This method must be removed from there and declared on extended interfaces when necessary /////
+    void update();
 
-	public abstract interface Arguments {
-          public void validate();
+    /// ///////////////////////////////////////////////////////////////////////////////////////////////
+
+    interface Arguments {
+        void validate();
     }
 
-	public abstract interface Results {
-	    public abstract void reset();
-	}
+    interface Results {
+        void reset();
+    }
 
 }

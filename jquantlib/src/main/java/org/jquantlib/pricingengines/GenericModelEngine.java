@@ -49,18 +49,14 @@ import org.jquantlib.model.CalibratedModel;
  *
  * @author Richard Gomes
  */
-public abstract class GenericModelEngine<M extends CalibratedModel,
-                                         A extends Instrument.Arguments,
-                                         R extends Instrument.Results>
-        extends GenericEngine<A, R> {
-
+public abstract class GenericModelEngine< M extends CalibratedModel, A extends Instrument.Arguments, R extends Instrument.Results >
+        extends GenericEngine< A, R > {
 
     //
     // protected fields
     //
 
     protected M model;
-
 
     //
     // public methods
@@ -77,10 +73,10 @@ public abstract class GenericModelEngine<M extends CalibratedModel,
     }
 
     public void setModel(final M model) {
-        if (this.model!=null)
+        if ( this.model != null )
             this.model.deleteObserver(this);
         this.model = model;
-        if (this.model!=null)
+        if ( this.model != null )
             this.model.addObserver(this);
         update();
     }

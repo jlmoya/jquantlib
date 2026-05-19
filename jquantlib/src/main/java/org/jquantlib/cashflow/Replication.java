@@ -32,14 +32,17 @@ package org.jquantlib.cashflow;
 /**
  * Digital-option replication strategies.
  * <p>
- * Specification of replication strategies used to price the embedded digital
- * option in a {@link DigitalCoupon}.
+ * Specification of replication strategies used to price the embedded digital option in a {@link DigitalCoupon}.
  * <p>
  * Port of C++ QuantLib v1.42.1 {@code ql/cashflows/replication.hpp}.
  *
  * @author Cristina Duminuco (C++ original)
  */
 public final class Replication {
+
+    private Replication() {
+        // utility namespace class
+    }
 
     public enum Type {
         /** Sub-replication (lower bound on the price). */
@@ -48,9 +51,5 @@ public final class Replication {
         Central,
         /** Super-replication (upper bound on the price). */
         Super
-    }
-
-    private Replication() {
-        // utility namespace class
     }
 }

@@ -42,8 +42,7 @@ import org.jquantlib.model.marketmodels.curvestates.LMMCurveState;
  * (QuantLib v1.42.1).
  *
  * <p>Returns the drift {@code mu * dt}. See Mark Joshi, <i>Rapid Computation
- * of Drifts in a Reduced Factor Libor Market Model</i>, Wilmott Magazine,
- * May 2003.
+ * of Drifts in a Reduced Factor Libor Market Model</i>, Wilmott Magazine, May 2003.
  */
 public class LMMDriftCalculator {
 
@@ -62,11 +61,8 @@ public class LMMDriftCalculator {
     private final int[] downs_;
     private final int[] ups_;
 
-    public LMMDriftCalculator(final Matrix pseudo,
-                              final double[] displacements,
-                              final double[] taus,
-                              final int numeraire,
-                              final int alive) {
+    public LMMDriftCalculator(final Matrix pseudo, final double[] displacements, final double[] taus,
+            final int numeraire, final int alive) {
         this.numberOfRates_ = taus.length;
         this.numberOfFactors_ = pseudo.columns();
         this.isFullFactor_ = (numberOfFactors_ == numberOfRates_);
@@ -82,10 +78,8 @@ public class LMMDriftCalculator {
 
         // Check requirements
         QL.require(numberOfRates_ > 0, "Dim out of range");
-        QL.require(displacements.length == numberOfRates_,
-                "Displacements out of range");
-        QL.require(pseudo.rows() == numberOfRates_,
-                "pseudo.rows() not consistent with dim");
+        QL.require(displacements.length == numberOfRates_, "Displacements out of range");
+        QL.require(pseudo.rows() == numberOfRates_, "pseudo.rows() not consistent with dim");
         QL.require(pseudo.columns() > 0 && pseudo.columns() <= numberOfRates_,
                 "pseudo.rows() not consistent with pseudo.columns()");
         QL.require(alive < numberOfRates_, "Alive out of bounds");
@@ -93,7 +87,7 @@ public class LMMDriftCalculator {
         QL.require(numeraire_ >= alive, "Numeraire smaller than alive");
 
         // Precompute 1/taus
-        for (int i = 0; i < taus.length; ++i) {
+        for ( int i = 0; i < taus.length; ++i ) {
             oneOverTaus_[i] = 1.0 / taus[i];
         }
 
@@ -101,7 +95,7 @@ public class LMMDriftCalculator {
         this.C_ = pseudo_.mul(pseudo_.transpose());
 
         // Compute lower and upper extrema
-        for (int i = alive_; i < numberOfRates_; ++i) {
+        for ( int i = alive_; i < numberOfRates_; ++i ) {
             downs_[i] = Math.min(i + 1, numeraire_);
             ups_[i] = Math.max(i + 1, numeraire_);
         }
@@ -113,7 +107,7 @@ public class LMMDriftCalculator {
     }
 
     public void compute(final double[] fwds, final double[] drifts) {
-        if (isFullFactor_) {
+        if ( isFullFactor_ ) {
             computePlain(fwds, drifts);
         } else {
             computeReduced(fwds, drifts);
@@ -127,13 +121,13 @@ public class LMMDriftCalculator {
     /** Plain drift — uses covariance matrix directly (eq 2,4 of Joshi 2003). */
     public void computePlain(final double[] forwards, final double[] drifts) {
         // Precompute forwards factor
-        for (int i = alive_; i < numberOfRates_; ++i) {
+        for ( int i = alive_; i < numberOfRates_; ++i ) {
             tmp_[i] = (forwards[i] + displacements_[i]) / (oneOverTaus_[i] + forwards[i]);
         }
         // Compute drifts
-        for (int i = alive_; i < numberOfRates_; ++i) {
+        for ( int i = alive_; i < numberOfRates_; ++i ) {
             double sum = 0.0;
-            for (int k = downs_[i]; k < ups_[i]; ++k) {
+            for ( int k = downs_[i]; k < ups_[i]; ++k ) {
                 sum += tmp_[k] * C_.get(i, k);
             }
             drifts[i] = (numeraire_ > i + 1) ? -sum : sum;
@@ -149,25 +143,25 @@ public class LMMDriftCalculator {
      */
     public void computeReduced(final double[] forwards, final double[] drifts) {
         // Precompute forwards factor
-        for (int i = alive_; i < numberOfRates_; ++i) {
+        for ( int i = alive_; i < numberOfRates_; ++i ) {
             tmp_[i] = (forwards[i] + displacements_[i]) / (oneOverTaus_[i] + forwards[i]);
         }
 
         // Enforce initialization: e_[r][max(0, numeraire_-1)] = 0
         final int initCol = Math.max(0, numeraire_ - 1);
-        for (int r = 0; r < numberOfFactors_; ++r) {
+        for ( int r = 0; r < numberOfFactors_; ++r ) {
             e_.set(r, initCol, 0.0);
         }
 
         // 1st step: drift at index numeraire_-1 is zero
-        if (numeraire_ > 0) {
+        if ( numeraire_ > 0 ) {
             drifts[numeraire_ - 1] = 0.0;
         }
 
         // 2nd step: backward from N-2 to alive (inclusive)
-        for (int i = numeraire_ - 2; i >= alive_; --i) {
+        for ( int i = numeraire_ - 2; i >= alive_; --i ) {
             drifts[i] = 0.0;
-            for (int r = 0; r < numberOfFactors_; ++r) {
+            for ( int r = 0; r < numberOfFactors_; ++r ) {
                 final double e_next = e_.get(r, i + 1);
                 final double pseudoNextR = pseudo_.get(i + 1, r);
                 final double e_i = e_next + tmp_[i + 1] * pseudoNextR;
@@ -177,12 +171,12 @@ public class LMMDriftCalculator {
         }
 
         // 3rd step: forward from N to n-1
-        for (int i = numeraire_; i < numberOfRates_; ++i) {
+        for ( int i = numeraire_; i < numberOfRates_; ++i ) {
             drifts[i] = 0.0;
-            for (int r = 0; r < numberOfFactors_; ++r) {
+            for ( int r = 0; r < numberOfFactors_; ++r ) {
                 final double pseudoIR = pseudo_.get(i, r);
                 final double e_i;
-                if (i == 0) {
+                if ( i == 0 ) {
                     e_i = tmp_[i] * pseudoIR;
                 } else {
                     e_i = e_.get(r, i - 1) + tmp_[i] * pseudoIR;

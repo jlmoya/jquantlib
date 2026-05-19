@@ -30,13 +30,11 @@ import org.jquantlib.methods.montecarlo.Sample;
 /**
  * Luescher's "luxury" uniform random number generator.
  * <p>
- * Java port of QuantLib v1.42.1
- * {@code ql/math/randomnumbers/ranluxuniformrng.hpp} (Klaus Spanderen, 2009).
+ * Java port of QuantLib v1.42.1 {@code ql/math/randomnumbers/ranluxuniformrng.hpp} (Klaus Spanderen, 2009).
  * <p>
  * The C++ implementation is a thin wrapper around
- * {@code std::discard_block_engine<std::subtract_with_carry_engine<uint_fast64_t,48,10,24>, P, R>}.
- * This Java port faithfully reproduces both STL engines bit-for-bit so that
- * the C++ reference sequence is matched exactly.
+ * {@code std::discard_block_engine<std::subtract_with_carry_engine<uint_fast64_t,48,10,24>, P, R>}. This Java port
+ * faithfully reproduces both STL engines bit-for-bit so that the C++ reference sequence is matched exactly.
  * <p>
  * Two static factory methods produce the standard luxury levels:
  * <ul>
@@ -116,29 +114,26 @@ public final class RanluxUniformRng implements RandomNumberGenerator {
     }
 
     /**
-     * Per C++ standard (§29.6.4.4): when seeded with value {@code s},
-     * the engine uses a {@code linear_congruential_engine<uint_least32_t,
-     * 40014u, 0u, 2147483563u>} (a.k.a. {@code minstd_rand0}-style but with
-     * the IBM-multiplier 40014 mod 2147483563) seeded with
-     * {@code s == 0 ? 19780503u : s mod 2147483563u}. It then generates
-     * R*n outputs (n = ceil(w/32) = 2 for w=48); each X[i] is built from
-     * two consecutive z values as {@code z0 + z1 * 2^32}, masked to 48 bits.
-     * The carry is 1 iff X[R-1] == 0, else 0.
+     * Per C++ standard (§29.6.4.4): when seeded with value {@code s}, the engine uses a
+     * {@code linear_congruential_engine<uint_least32_t, 40014u, 0u, 2147483563u>} (a.k.a. {@code minstd_rand0}-style
+     * but with the IBM-multiplier 40014 mod 2147483563) seeded with {@code s == 0 ? 19780503u : s mod 2147483563u}. It
+     * then generates R*n outputs (n = ceil(w/32) = 2 for w=48); each X[i] is built from two consecutive z values as
+     * {@code z0 + z1 * 2^32}, masked to 48 bits. The carry is 1 iff X[R-1] == 0, else 0.
      */
     private void seedSubtractWithCarry(final long seed) {
         final long lcgM = 2147483563L; // modulus
         final long lcgA = 40014L;      // multiplier
         // LCG seed: s != 0 ? s (mod M) : 19780503.
         long lcgState = seed;
-        if (lcgState == 0L) {
+        if ( lcgState == 0L ) {
             lcgState = 19780503L;
         }
         lcgState %= lcgM;
-        if (lcgState == 0L) {
+        if ( lcgState == 0L ) {
             lcgState = 19780503L;
         }
 
-        for (int i = 0; i < R; ++i) {
+        for ( int i = 0; i < R; ++i ) {
             // n = ceil(48 / 32) = 2 LCG draws per state word.
             lcgState = (lcgA * lcgState) % lcgM;
             final long z0 = lcgState;
@@ -159,20 +154,18 @@ public final class RanluxUniformRng implements RandomNumberGenerator {
     }
 
     /**
-     * Advance the subtract-with-carry recurrence one step and return the
-     * newly generated {@code X[i]} (in {@code [0, 2^48)}).
+     * Advance the subtract-with-carry recurrence one step and return the newly generated {@code X[i]} (in
+     * {@code [0, 2^48)}).
      * <p>
-     * Recurrence: {@code Y = X[(i-S+R) mod R] - X[(i-R+R) mod R] - carry},
-     * which simplifies (the X[(i-R) mod R] term is just X[i] itself prior
-     * to update) to {@code Y = X[(i+R-S) mod R] - X[i] - carry}; if
-     * {@code Y >= 0} then {@code X[i] = Y, carry = 0}, else
-     * {@code X[i] = Y + 2^48, carry = 1}.
+     * Recurrence: {@code Y = X[(i-S+R) mod R] - X[(i-R+R) mod R] - carry}, which simplifies (the X[(i-R) mod R] term is
+     * just X[i] itself prior to update) to {@code Y = X[(i+R-S) mod R] - X[i] - carry}; if {@code Y >= 0} then
+     * {@code X[i] = Y, carry = 0}, else {@code X[i] = Y + 2^48, carry = 1}.
      */
     private long nextSubtractWithCarry() {
         final int i = index;
         final int iS = (i + R - S) % R; // (i - S) mod R
         long y = state[iS] - state[i] - carry;
-        if (y < 0L) {
+        if ( y < 0L ) {
             y += M48;
             carry = 1L;
         } else {
@@ -184,14 +177,13 @@ public final class RanluxUniformRng implements RandomNumberGenerator {
     }
 
     /**
-     * discard_block_engine: returns base.next() but discards (P-R) of every
-     * P outputs after returning the first R.
+     * discard_block_engine: returns base.next() but discards (P-R) of every P outputs after returning the first R.
      */
     private long nextDiscardBlock() {
         // If we have already used all R "kept" outputs in the current block,
         // discard the remaining (P-R) and start a new block.
-        if (blockUsed >= rUsed) {
-            for (int k = rUsed; k < p; ++k) {
+        if ( blockUsed >= rUsed ) {
+            for ( int k = rUsed; k < p; ++k ) {
                 nextSubtractWithCarry();
             }
             blockUsed = 0;
@@ -207,17 +199,16 @@ public final class RanluxUniformRng implements RandomNumberGenerator {
      * Mirrors C++ {@code next()}: {@code ranlux_() * (1.0 / 2^48)}, weight 1.0.
      */
     @Override
-    public Sample<Double> next() {
+    public Sample< Double > next() {
         final long x = nextDiscardBlock();
         // C++: nx = 1.0 / (uint_fast64_t(1) << 48)
         final double v = x * (1.0 / (double) M48);
-        return new Sample<Double>(v, 1.0);
+        return new Sample< Double >(v, 1.0);
     }
 
     /**
-     * Not part of the C++ Ranlux API; provided to satisfy the JQuantLib
-     * {@link RandomNumberGenerator} interface. Returns the low 32 bits of
-     * the next 48-bit raw word.
+     * Not part of the C++ Ranlux API; provided to satisfy the JQuantLib {@link RandomNumberGenerator} interface.
+     * Returns the low 32 bits of the next 48-bit raw word.
      */
     @Override
     public long nextInt32() {

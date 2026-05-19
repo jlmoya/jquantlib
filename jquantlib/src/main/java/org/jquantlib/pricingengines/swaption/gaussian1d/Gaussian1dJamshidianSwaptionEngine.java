@@ -36,9 +36,6 @@
 
 package org.jquantlib.pricingengines.swaption.gaussian1d;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.cashflow.FixedRateCoupon;
 import org.jquantlib.cashflow.Leg;
@@ -50,20 +47,20 @@ import org.jquantlib.instruments.VanillaSwap;
 import org.jquantlib.math.Ops;
 import org.jquantlib.math.solvers1D.Brent;
 import org.jquantlib.model.shortrate.onefactormodels.gaussian1d.Gaussian1dModel;
+import org.jquantlib.pricingengines.swaption.JamshidianSwaptionEngine;
 import org.jquantlib.time.Date;
 
 /**
- * Swaption engine using Jamshidian's decomposition under a one-factor
- * Gaussian short-rate model ({@link Gaussian1dModel}).
+ * Swaption engine using Jamshidian's decomposition under a one-factor Gaussian short-rate model
+ * ({@link Gaussian1dModel}).
  *
  * <p>Java port of QuantLib v1.42.1
- * {@code ql/pricingengines/swaption/gaussian1djamshidianswaptionengine.{hpp,cpp}}
- * (commit {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}). Phase 2j WI-3.1.
+ * {@code ql/pricingengines/swaption/gaussian1djamshidianswaptionengine.{hpp,cpp}} (commit
+ * {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}). Phase 2j WI-3.1.
  *
  * <h3>Algorithm</h3>
  * <p>For European payer (receiver) swaptions on coupon bonds, Jamshidian's
- * decomposition rewrites the swaption payoff as a portfolio of bond options
- * on zero-coupon bonds. The engine:
+ * decomposition rewrites the swaption payoff as a portfolio of bond options on zero-coupon bonds. The engine:
  * <ol>
  *   <li>Locates the critical short-rate {@code y*} at which the coupon bond
  *       equals the nominal at the exercise date by solving an equation via
@@ -98,10 +95,11 @@ public class Gaussian1dJamshidianSwaptionEngine extends Swaption.EngineImpl {
     private final Gaussian1dModel model_;
 
     /**
-     * Construct with a Gaussian1d model. The model supplies its own term
-     * structure, so no separate {@code Handle<YieldTermStructure>} is needed.
+     * Construct with a Gaussian1d model. The model supplies its own term structure, so no separate
+     * {@code Handle<YieldTermStructure>} is needed.
      *
-     * @param model non-null Gaussian1dModel (typically a {@link org.jquantlib.model.shortrate.onefactormodels.gaussian1d.Gsr} instance)
+     * @param model non-null Gaussian1dModel (typically a
+     *              {@link org.jquantlib.model.shortrate.onefactormodels.gaussian1d.Gsr} instance)
      */
     public Gaussian1dJamshidianSwaptionEngine(final Gaussian1dModel model) {
         super();
@@ -126,23 +124,20 @@ public class Gaussian1dJamshidianSwaptionEngine extends Swaption.EngineImpl {
 
         // QL_REQUIREs from C++ gaussian1djamshidianswaptionengine.cpp lines 62-76
         QL.require(args.settlementMethod != Settlement.Method.ParYieldCurve,
-                "cash settled (ParYieldCurve) swaptions not priced with "
-                + "Gaussian1dJamshidianSwaptionEngine");
+                "cash settled (ParYieldCurve) swaptions not priced with " + "Gaussian1dJamshidianSwaptionEngine");
 
         final Exercise exercise = args.exercise;
         QL.require(exercise.type() == Exercise.Type.European,
                 "cannot use the Jamshidian decomposition on exotic swaptions");
 
         final VanillaSwap swap = args.swap;
-        QL.require(swap.spread() == 0.0,
-                "non zero spread (" + swap.spread() + ") not allowed");
+        QL.require(swap.spread() == 0.0, "non zero spread (" + swap.spread() + ") not allowed");
 
         final double nominal = swap.nominal();
 
         // C++ QL_REQUIRE(arguments_.nominal != Null<Real>(), ...) — Java uses
         // Double.isNaN or NULL_REAL sentinel check.
-        QL.require(!Double.isNaN(nominal),
-                "non-constant nominals are not supported yet");
+        QL.require(!Double.isNaN(nominal), "non-constant nominals are not supported yet");
 
         // Build the amounts[] vector = fixed coupons with notional added to last.
         // Mirrors C++ lines 83-85:
@@ -154,7 +149,7 @@ public class Gaussian1dJamshidianSwaptionEngine extends Swaption.EngineImpl {
         final double[] amounts = new double[n];
         final Date[] fixedPayDates = new Date[n];
         final Date[] fixedResetDates = new Date[n];
-        for (int i = 0; i < n; i++) {
+        for ( int i = 0; i < n; i++ ) {
             final FixedRateCoupon coupon = (FixedRateCoupon) fixedLeg.get(i);
             amounts[i] = coupon.amount();
             fixedPayDates[i] = coupon.date();
@@ -172,8 +167,8 @@ public class Gaussian1dJamshidianSwaptionEngine extends Swaption.EngineImpl {
         final Date exerciseDate = exercise.date(0);
         final Date searchKey = exerciseDate.sub(1);  // exerciseDate - 1 day
         int startIndex = n;  // default: all coupons before exercise
-        for (int i = 0; i < n; i++) {
-            if (fixedResetDates[i].gt(searchKey)) {
+        for ( int i = 0; i < n; i++ ) {
+            if ( fixedResetDates[i].gt(searchKey) ) {
                 startIndex = i;
                 break;
             }
@@ -181,12 +176,11 @@ public class Gaussian1dJamshidianSwaptionEngine extends Swaption.EngineImpl {
 
         // Solve for y* (rStar in C++ comment = "yStar") via Brent (lines 92-103)
         final Date valueDate = fixedResetDates[startIndex];
-        final RStarFinder finder = new RStarFinder(
-                model_, nominal, exerciseDate, valueDate,
-                fixedPayDates, amounts, startIndex);
+        final RStarFinder finder = new RStarFinder(model_, nominal, exerciseDate, valueDate, fixedPayDates, amounts,
+                startIndex);
         final Brent solver = new Brent();
         final double minStrike = -8.0;
-        final double maxStrike =  8.0;
+        final double maxStrike = 8.0;
         solver.setMaxEvaluations(10000);
         solver.setLowerBound(minStrike);
         solver.setUpperBound(maxStrike);
@@ -196,20 +190,18 @@ public class Gaussian1dJamshidianSwaptionEngine extends Swaption.EngineImpl {
         // C++ lines 105-107:
         //   Option::Type w = (arguments_.type == Swap::Payer)
         //       ? Option::Put : Option::Call;
-        final Option.Type w = (swap.type() == VanillaSwap.Type.Payer)
-                ? Option.Type.Put : Option.Type.Call;
+        final Option.Type w = (swap.type() == VanillaSwap.Type.Payer) ? Option.Type.Put : Option.Type.Call;
 
         // Sum weighted bond-option prices (C++ lines 109-123)
         double value = 0.0;
-        for (int i = startIndex; i < n; i++) {
+        for ( int i = startIndex; i < n; i++ ) {
             // K_i = P(T_start, T_i; y*) / P(T_start, T_start; y*)
             //     = zerobond(T_i, exerciseDate, y*) / zerobond(valueDate, exerciseDate, y*)
             final double strike =
-                    model_.zerobond(fixedPayDates[i], exerciseDate, rStar)
-                    / model_.zerobond(valueDate, exerciseDate, rStar);
+                    model_.zerobond(fixedPayDates[i], exerciseDate, rStar) / model_.zerobond(valueDate, exerciseDate,
+                            rStar);
 
-            final double dboValue = model_.zerobondOption(
-                    w, exerciseDate, valueDate, fixedPayDates[i], strike);
+            final double dboValue = model_.zerobondOption(w, exerciseDate, valueDate, fixedPayDates[i], strike);
 
             value += amounts[i] * dboValue;
         }
@@ -221,12 +213,12 @@ public class Gaussian1dJamshidianSwaptionEngine extends Swaption.EngineImpl {
     // ──────────────────────────────────────────────────────────────────────
 
     /**
-     * Brent cost function: f(y) = nominal - sum_{i=startIndex}^{n-1}
-     *     amounts[i] * zerobond(T_i, exerciseDate, y) / zerobond(valueDate, exerciseDate, y).
+     * Brent cost function: f(y) = nominal - sum_{i=startIndex}^{n-1} amounts[i] * zerobond(T_i, exerciseDate, y) /
+     * zerobond(valueDate, exerciseDate, y).
      *
      * <p>Root y* is the standardized short rate at which the coupon bond
-     * present-valued at the exercise date equals the nominal (strike).
-     * Mirrors C++ {@code Gaussian1dJamshidianSwaptionEngine::rStarFinder}.
+     * present-valued at the exercise date equals the nominal (strike). Mirrors C++
+     * {@code Gaussian1dJamshidianSwaptionEngine::rStarFinder}.
      */
     static final class RStarFinder implements Ops.DoubleOp {
 
@@ -238,14 +230,8 @@ public class Gaussian1dJamshidianSwaptionEngine extends Swaption.EngineImpl {
         private final Date[] times_;        // = fixedPayDates
         private final double[] amounts_;
 
-        RStarFinder(
-                final Gaussian1dModel model,
-                final double nominal,
-                final Date maturityDate,
-                final Date valueDate,
-                final Date[] fixedPayDates,
-                final double[] amounts,
-                final int startIndex) {
+        RStarFinder(final Gaussian1dModel model, final double nominal, final Date maturityDate, final Date valueDate,
+                final Date[] fixedPayDates, final double[] amounts, final int startIndex) {
             this.model_ = model;
             this.strike_ = nominal;
             this.maturityDate_ = maturityDate;
@@ -270,7 +256,7 @@ public class Gaussian1dJamshidianSwaptionEngine extends Swaption.EngineImpl {
             double value = strike_;
             final double B = model_.zerobond(valueDate_, maturityDate_, y);
             final int size = times_.length;
-            for (int i = startIndex_; i < size; i++) {
+            for ( int i = startIndex_; i < size; i++ ) {
                 final double dbValue = model_.zerobond(times_[i], maturityDate_, y) / B;
                 value -= amounts_[i] * dbValue;
             }

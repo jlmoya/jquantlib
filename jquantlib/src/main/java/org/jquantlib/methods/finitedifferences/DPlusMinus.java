@@ -23,15 +23,15 @@ package org.jquantlib.methods.finitedifferences;
 
 /**
  * @author Srinivas Hasti
- * 
+ *
  */
 // ! \f$ D_{+}D_{-} \f$ matricial representation
 /*
  * ! The differential operator \f$ D_{+}D_{-} \f$ discretizes the second derivative with the second-order formula \f[
  * \frac{\partial^2 u_{i}}{\partial x^2} \approx \frac{u_{i+1}-2u_{i}+u_{i-1}}{h^2} = D_{+}D_{-} u_{i} \f]
- * 
+ *
  * \ingroup findiff
- * 
+ *
  * \test the correctness of the returned values is tested by checking them against numerical calculations.
  */
 public class DPlusMinus extends TridiagonalOperator {

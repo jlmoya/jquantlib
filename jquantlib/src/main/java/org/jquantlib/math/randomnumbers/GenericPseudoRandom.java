@@ -41,18 +41,16 @@
 
 package org.jquantlib.math.randomnumbers;
 
-import java.lang.reflect.Constructor;
-
-import org.jquantlib.QL;
 import org.jquantlib.lang.exceptions.LibraryException;
+
+import java.lang.reflect.Constructor;
 
 /**
  * @param <RNG> represents the RandomNumberGenerator<T>
- * @param <IC> represents the InverseCumulative
- *
+ * @param <IC>  represents the InverseCumulative
  * @author Richard Gomes
  */
-public abstract class GenericPseudoRandom <RNG extends RandomNumberGenerator, IC extends InverseCumulative> {
+public abstract class GenericPseudoRandom< RNG extends RandomNumberGenerator, IC extends InverseCumulative > {
 
     //
     // static private fields
@@ -77,52 +75,42 @@ public abstract class GenericPseudoRandom <RNG extends RandomNumberGenerator, IC
     //
     static final private GenericPseudoRandom icInstance = null;
 
+    private final Class< ? extends UniformRandomSequenceGenerator > classRNG;
+    private final Class< ? extends InverseCumulative > classIC;
 
-
-    private final Class<? extends UniformRandomSequenceGenerator>	classRNG;
-    private final Class<? extends InverseCumulative>		classIC;
-    
-    
-
-    protected GenericPseudoRandom(final Class<? extends UniformRandomSequenceGenerator> classRNG, final Class<? extends InverseCumulative> classIC) {
-    	this.classRNG = classRNG;
-    	this.classIC = classIC;
+    protected GenericPseudoRandom(final Class< ? extends UniformRandomSequenceGenerator > classRNG,
+            final Class< ? extends InverseCumulative > classIC) {
+        this.classRNG = classRNG;
+        this.classIC = classIC;
     }
 
-    
-
-    protected InverseCumulativeRsg<RandomSequenceGenerator<RNG>, IC> makeSequenceGenerator(
-            final /*@NonNegative*/ int dimension, 
-            final /*@NonNegative*/ long seed) {
+    protected InverseCumulativeRsg< RandomSequenceGenerator< RNG >, IC > makeSequenceGenerator(
+            final /*@NonNegative*/ int dimension, final /*@NonNegative*/ long seed) {
 
         // instantiate a RandomNumberGenerator given its generic type (first generic parameter)
         final RNG rng;
         try {
             // obtain RNG Class from first generic parameter
-            final Constructor<RNG> c = (Constructor<RNG>) classRNG.getConstructor(long.class);
+            final Constructor< RNG > c = (Constructor< RNG >) classRNG.getConstructor(long.class);
             rng = c.newInstance(seed);
-        } catch (final Exception e) {
+        } catch ( final Exception e ) {
             throw new LibraryException(e); // QA:[RG]::verified
         }
 
         // instantiate a RandomSequenceGenerator given a RNG type
-        final RandomSequenceGenerator<RNG> rsg;
+        final RandomSequenceGenerator< RNG > rsg;
         try {
             // obtain Class from previously created RNG variable
-        	
-        	
+
             //FIXME:
-        	// "looks like" we need to add a method to RNG interface in order to obtain a RSG from a RNG
-        	//
-        	
-        	final Class<RandomSequenceGenerator<RNG>> rsgClass = null;
-            
-            
-            
-            
-            final Constructor<RandomSequenceGenerator<RNG>> c = rsgClass.getConstructor(int.class, rng.getClass());
+            // "looks like" we need to add a method to RNG interface in order to obtain a RSG from a RNG
+            //
+
+            final Class< RandomSequenceGenerator< RNG > > rsgClass = null;
+
+            final Constructor< RandomSequenceGenerator< RNG > > c = rsgClass.getConstructor(int.class, rng.getClass());
             rsg = c.newInstance(dimension, rng);
-        } catch (final Exception e) {
+        } catch ( final Exception e ) {
             throw new LibraryException(e); // QA:[RG]::verified
         }
 
@@ -130,18 +118,18 @@ public abstract class GenericPseudoRandom <RNG extends RandomNumberGenerator, IC
         final IC ic;
         try {
             // obtain IC Class from second generic parameter
-            final Constructor<IC> c;
-            if (icInstance!=null) {
-                c = (Constructor<IC>) classIC.getConstructor(rsg.getClass(), classIC.getClass());
+            final Constructor< IC > c;
+            if ( icInstance != null ) {
+                c = (Constructor< IC >) classIC.getConstructor(rsg.getClass(), classIC.getClass());
                 ic = c.newInstance(rsg, icInstance);
             } else {
-                c = (Constructor<IC>) classIC.getConstructor(rsg.getClass());
+                c = (Constructor< IC >) classIC.getConstructor(rsg.getClass());
                 ic = c.newInstance(rsg);
             }
-        } catch (final Exception e) {
+        } catch ( final Exception e ) {
             throw new LibraryException(e); // QA:[RG]::verified
         }
-        return (InverseCumulativeRsg<RandomSequenceGenerator<RNG>, IC>) ic;
+        return (InverseCumulativeRsg< RandomSequenceGenerator< RNG >, IC >) ic;
     }
 
 }

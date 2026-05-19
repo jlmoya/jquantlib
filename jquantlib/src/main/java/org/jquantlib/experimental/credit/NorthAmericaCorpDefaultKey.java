@@ -25,11 +25,11 @@
 
 package org.jquantlib.experimental.credit;
 
-import java.util.ArrayList;
-
 import org.jquantlib.currencies.Currency;
 import org.jquantlib.time.Period;
 import org.jquantlib.time.TimeUnit;
+
+import java.util.ArrayList;
 
 /**
  * ISDA standard default contractual key for corporate US debt.
@@ -38,42 +38,33 @@ import org.jquantlib.time.TimeUnit;
  * ({@code ql/experimental/credit/defaultprobabilitykey.{hpp,cpp}}).
  *
  * <p>Configures three event types: {@link FailureToPay} (with grace period
- * + amount required), {@link AtomicDefault.Type#Bankruptcy}, and
- * {@link AtomicDefault.Type#Restructuring} (unless {@code resType} is
- * {@link Restructuring.Type#NoRestructuring}). Default grace period is
- * 30 days; default amount is 1.e6.
+ * + amount required), {@link AtomicDefault.Type#Bankruptcy}, and {@link AtomicDefault.Type#Restructuring} (unless
+ * {@code resType} is {@link Restructuring.Type#NoRestructuring}). Default grace period is 30 days; default amount is
+ * 1.e6.
  *
  * <p>Phase 4m foundation.
  */
 public class NorthAmericaCorpDefaultKey extends DefaultProbKey {
 
-    public NorthAmericaCorpDefaultKey(final Currency currency,
-                                      final Seniority sen) {
+    public NorthAmericaCorpDefaultKey(final Currency currency, final Seniority sen) {
         this(currency, sen, new Period(30, TimeUnit.Days), 1.0e6, Restructuring.CR);
     }
 
-    public NorthAmericaCorpDefaultKey(final Currency currency,
-                                      final Seniority sen,
-                                      final Period graceFailureToPay) {
+    public NorthAmericaCorpDefaultKey(final Currency currency, final Seniority sen, final Period graceFailureToPay) {
         this(currency, sen, graceFailureToPay, 1.0e6, Restructuring.CR);
     }
 
-    public NorthAmericaCorpDefaultKey(final Currency currency,
-                                      final Seniority sen,
-                                      final Period graceFailureToPay,
-                                      final double amountFailure) {
+    public NorthAmericaCorpDefaultKey(final Currency currency, final Seniority sen, final Period graceFailureToPay,
+            final double amountFailure) {
         this(currency, sen, graceFailureToPay, amountFailure, Restructuring.CR);
     }
 
-    public NorthAmericaCorpDefaultKey(final Currency currency,
-                                      final Seniority sen,
-                                      final Period graceFailureToPay,
-                                      final double amountFailure,
-                                      final Restructuring.Type resType) {
+    public NorthAmericaCorpDefaultKey(final Currency currency, final Seniority sen, final Period graceFailureToPay,
+            final double amountFailure, final Restructuring.Type resType) {
         super(new ArrayList<>(), currency, sen);
         eventTypes.add(new FailureToPay(graceFailureToPay, amountFailure));
         eventTypes.add(new DefaultType(AtomicDefault.Type.Bankruptcy, Restructuring.XR));
-        if (resType != Restructuring.Type.NoRestructuring) {
+        if ( resType != Restructuring.Type.NoRestructuring ) {
             eventTypes.add(new DefaultType(AtomicDefault.Type.Restructuring, resType));
         }
     }

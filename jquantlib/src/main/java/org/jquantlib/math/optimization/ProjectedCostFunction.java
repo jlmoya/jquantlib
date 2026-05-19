@@ -22,13 +22,12 @@ package org.jquantlib.math.optimization;
 import org.jquantlib.math.matrixutilities.Array;
 
 /**
- * Parameterized cost function — creates a proxy {@link CostFunction} that depends
- * on any arbitrary subset of parameters (the rest being fixed).
+ * Parameterized cost function — creates a proxy {@link CostFunction} that depends on any arbitrary subset of parameters
+ * (the rest being fixed).
  *
  * <p>Faithful port of QuantLib C++ v1.42.1
- * {@code ql/math/optimization/projectedcostfunction.hpp|cpp}. C++ uses multiple
- * inheritance ({@code CostFunction} + {@code Projection}); Java composes a
- * {@link Projection} instance and delegates the projection-API methods.
+ * {@code ql/math/optimization/projectedcostfunction.hpp|cpp}. C++ uses multiple inheritance ({@code CostFunction} +
+ * {@code Projection}); Java composes a {@link Projection} instance and delegates the projection-API methods.
  */
 public class ProjectedCostFunction extends CostFunction {
 
@@ -37,9 +36,8 @@ public class ProjectedCostFunction extends CostFunction {
 
     //-- ProjectedCostFunction(const CostFunction&, const Array&, const std::vector<bool>&);
     //-- in ql/math/optimization/projectedcostfunction.cpp:26
-    public ProjectedCostFunction(final CostFunction costFunction,
-                                 final Array parameterValues,
-                                 final boolean[] fixParameters) {
+    public ProjectedCostFunction(final CostFunction costFunction, final Array parameterValues,
+            final boolean[] fixParameters) {
         this.costFunction_ = costFunction;
         this.projection_ = new Projection(parameterValues, fixParameters);
     }

@@ -27,17 +27,15 @@ import org.jquantlib.methods.finitedifferences.StepCondition;
 /**
  * Step condition that snapshots the state at a single target time.
  * <p>
- * Java port of v1.42.1
- * {@code ql/methods/finitedifferences/stepconditions/fdmsnapshotcondition.{hpp,cpp}}.
+ * Java port of v1.42.1 {@code ql/methods/finitedifferences/stepconditions/fdmsnapshotcondition.{hpp,cpp}}.
  * <p>
- * The {@code Fdm1DimSolver} / {@code Fdm2DimSolver} prepend a snapshot
- * condition just before the first stopping time so they can recover an
- * earlier-time state for finite-difference theta evaluation. Equality on
- * {@code t} is checked via {@code ==} to mirror C++.
+ * The {@code Fdm1DimSolver} / {@code Fdm2DimSolver} prepend a snapshot condition just before the first stopping time so
+ * they can recover an earlier-time state for finite-difference theta evaluation. Equality on {@code t} is checked via
+ * {@code ==} to mirror C++.
  *
  * @author Phase 2h WI-1 port
  */
-public final class FdmSnapshotCondition implements StepCondition<Array> {
+public final class FdmSnapshotCondition implements StepCondition< Array > {
 
     private final double t;
     private Array values;
@@ -48,7 +46,7 @@ public final class FdmSnapshotCondition implements StepCondition<Array> {
 
     @Override
     public void applyTo(final Array a, final double t) {
-        if (t == this.t) {
+        if ( t == this.t ) {
             this.values = a.clone();
         }
     }
@@ -59,8 +57,7 @@ public final class FdmSnapshotCondition implements StepCondition<Array> {
     }
 
     /**
-     * The snapshot taken at {@link #getTime()}, or {@code null} if no
-     * snapshot has been recorded yet.
+     * The snapshot taken at {@link #getTime()}, or {@code null} if no snapshot has been recorded yet.
      */
     public Array getValues() {
         return values;

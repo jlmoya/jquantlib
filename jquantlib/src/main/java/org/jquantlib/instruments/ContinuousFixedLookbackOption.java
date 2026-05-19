@@ -46,9 +46,7 @@ public class ContinuousFixedLookbackOption extends OneAssetOption {
 
     protected double minmax;
 
-    public ContinuousFixedLookbackOption(
-            final double currentMinmax,
-            final StrikedTypePayoff payoff,
+    public ContinuousFixedLookbackOption(final double currentMinmax, final StrikedTypePayoff payoff,
             final Exercise exercise) {
         super(payoff, exercise);
         this.minmax = currentMinmax;
@@ -59,11 +57,9 @@ public class ContinuousFixedLookbackOption extends OneAssetOption {
         super.setupArguments(arguments);
         QL.require(ContinuousFixedLookbackOption.Arguments.class.isAssignableFrom(arguments.getClass()),
                 ReflectConstants.WRONG_ARGUMENT_TYPE);
-        final ContinuousFixedLookbackOption.ArgumentsImpl a =
-                (ContinuousFixedLookbackOption.ArgumentsImpl) arguments;
+        final ContinuousFixedLookbackOption.ArgumentsImpl a = (ContinuousFixedLookbackOption.ArgumentsImpl) arguments;
         a.minmax = minmax;
     }
-
 
     //
     // public inner classes
@@ -90,14 +86,14 @@ public class ContinuousFixedLookbackOption extends OneAssetOption {
     }
 
     public static class ResultsImpl extends OneAssetOption.ResultsImpl
-            implements ContinuousFixedLookbackOption.Results { /* marking */ }
+            implements ContinuousFixedLookbackOption.Results { /* marking */
+    }
 
     /**
      * Continuous-fixed lookback option engine base class.
      */
-    public static abstract class EngineImpl
-            extends GenericEngine<ContinuousFixedLookbackOption.ArgumentsImpl,
-                                  ContinuousFixedLookbackOption.ResultsImpl> {
+    public static abstract class EngineImpl extends
+            GenericEngine< ContinuousFixedLookbackOption.ArgumentsImpl, ContinuousFixedLookbackOption.ResultsImpl > {
 
         protected EngineImpl() {
             super(new ArgumentsImpl(), new ResultsImpl());

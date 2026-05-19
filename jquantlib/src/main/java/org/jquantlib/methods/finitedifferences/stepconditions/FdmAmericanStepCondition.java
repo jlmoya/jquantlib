@@ -31,18 +31,16 @@ import org.jquantlib.methods.finitedifferences.utilities.FdmInnerValueCalculator
 /**
  * American exercise step condition for multi-dimensional FDM problems.
  * <p>
- * Java port of v1.42.1
- * {@code ql/methods/finitedifferences/stepconditions/fdmamericanstepcondition.{hpp,cpp}}.
+ * Java port of v1.42.1 {@code ql/methods/finitedifferences/stepconditions/fdmamericanstepcondition.{hpp,cpp}}.
  * <p>
- * At each time step for {@code t >= exerciseStart_}, iterates over all mesh
- * cells and replaces the value array entry with the intrinsic (inner) value
- * whenever the intrinsic value exceeds the current grid value. If
- * {@code t < exerciseStart_} the array is left unchanged (used for options
- * that only become American after some forward-start date).
+ * At each time step for {@code t >= exerciseStart_}, iterates over all mesh cells and replaces the value array entry
+ * with the intrinsic (inner) value whenever the intrinsic value exceeds the current grid value. If
+ * {@code t < exerciseStart_} the array is left unchanged (used for options that only become American after some
+ * forward-start date).
  *
  * @author Phase 2l Track B port
  */
-public class FdmAmericanStepCondition implements StepCondition<Array> {
+public class FdmAmericanStepCondition implements StepCondition< Array > {
 
     private final FdmMesher mesher_;
     private final FdmInnerValueCalculator calculator_;
@@ -53,9 +51,7 @@ public class FdmAmericanStepCondition implements StepCondition<Array> {
      * @param calculator    inner value (intrinsic payoff) calculator
      * @param exerciseStart time from which American exercise is active (default 0.0)
      */
-    public FdmAmericanStepCondition(
-            final FdmMesher mesher,
-            final FdmInnerValueCalculator calculator,
+    public FdmAmericanStepCondition(final FdmMesher mesher, final FdmInnerValueCalculator calculator,
             final double exerciseStart) {
         this.mesher_ = mesher;
         this.calculator_ = calculator;
@@ -65,31 +61,27 @@ public class FdmAmericanStepCondition implements StepCondition<Array> {
     /**
      * Convenience constructor with {@code exerciseStart = 0.0}.
      */
-    public FdmAmericanStepCondition(
-            final FdmMesher mesher,
-            final FdmInnerValueCalculator calculator) {
+    public FdmAmericanStepCondition(final FdmMesher mesher, final FdmInnerValueCalculator calculator) {
         this(mesher, calculator, 0.0);
     }
 
     /**
      * Apply the American exercise condition.
      * <p>
-     * If {@code t < exerciseStart_}, does nothing.
-     * Otherwise, for each cell, replaces {@code a[i]} with
+     * If {@code t < exerciseStart_}, does nothing. Otherwise, for each cell, replaces {@code a[i]} with
      * {@code max(a[i], innerValue(i, t))}.
      */
     @Override
     public void applyTo(final Array a, final double t) {
-        if (t < exerciseStart_) {
+        if ( t < exerciseStart_ ) {
             return;
         }
 
-        QL.require(mesher_.layout().size() == a.size(),
-                "inconsistent array dimensions");
+        QL.require(mesher_.layout().size() == a.size(), "inconsistent array dimensions");
 
-        for (final FdmLinearOpIterator iter : mesher_.layout()) {
+        for ( final FdmLinearOpIterator iter : mesher_.layout() ) {
             final double innerValue = calculator_.innerValue(iter, t);
-            if (innerValue > a.get(iter.index())) {
+            if ( innerValue > a.get(iter.index()) ) {
                 a.set(iter.index(), innerValue);
             }
         }

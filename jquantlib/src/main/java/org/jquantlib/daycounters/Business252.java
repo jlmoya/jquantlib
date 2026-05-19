@@ -34,15 +34,13 @@ import org.jquantlib.time.calendars.Brazil;
 /**
  * Business/252 day count convention
  *
- * @see <a href="http://en.wikipedia.org/wiki/Day_count_convention">Day count Convention</a>
- *
  * @author Daniel Kong
  * @author Richard Gomes
  * @author John Nichol
+ * @see <a href="http://en.wikipedia.org/wiki/Day_count_convention">Day count Convention</a>
  */
-@QualityAssurance(quality=Quality.Q4_UNIT, version=Version.V097, reviewers="Richard Gomes")
+@QualityAssurance( quality = Quality.Q4_UNIT, version = Version.V097, reviewers = "Richard Gomes" )
 public class Business252 extends DayCounter {
-
 
     public Business252() {
         this(new Brazil());
@@ -51,7 +49,6 @@ public class Business252 extends DayCounter {
     public Business252(final Calendar calendar) {
         super.impl = new Impl(calendar);
     }
-
 
     //
     // private inner classes
@@ -70,19 +67,18 @@ public class Business252 extends DayCounter {
         }
 
         @Override
-        public final String name() /* @ReadOnly */{
+        public String name() /* @ReadOnly */ {
             return "Business/252(" + calendar.name() + ")";
         }
 
         @Override
         public long dayCount(final Date d1, final Date d2) {
-        	return calendar.businessDaysBetween(d1, d2);
+            return calendar.businessDaysBetween(d1, d2);
         }
 
         @Override
-        public /*@Time*/ final double yearFraction(
-                final Date dateStart, final Date dateEnd,
-                final Date refPeriodStart, final Date refPeriodEnd) /* @ReadOnly */{
+        public /*@Time*/ double yearFraction(final Date dateStart, final Date dateEnd, final Date refPeriodStart,
+                final Date refPeriodEnd) /* @ReadOnly */ {
             return /*@Time*/ dayCount(dateStart, dateEnd) / 252.0;
         }
 

@@ -22,20 +22,19 @@
 
 package org.jquantlib;
 
+import org.jquantlib.time.Date;
+
 import java.util.Map;
 import java.util.TreeMap;
-
-import org.jquantlib.time.Date;
 
 /**
  * Settings for the application.
  * <p>
- * This class aggregates mutable values which have life cycle of a certain operation or
- * sequence of operations defined by the enclosing thread.
- *
- * @see ThreadLocal
+ * This class aggregates mutable values which have life cycle of a certain operation or sequence of operations defined
+ * by the enclosing thread.
  *
  * @author Richard Gomes
+ * @see ThreadLocal
  */
 public class Settings {
 
@@ -59,35 +58,29 @@ public class Settings {
      */
     private static final String USE_INDEXED_COUPON = "USE_INDEXED_COUPON";
 
-
     /**
      * ENFORCE_TODAYS_HISTORIC_FIXINGS
      */
     private static final String ENFORCES_TODAYS_HISTORIC_FIXINGS = "ENFORCES_TODAYS_HISTORIC_FIXINGS";
 
     /**
-     * Mirrors C++ {@code Settings::includeReferenceDateEvents()}
-     * (settings.hpp v1.42.1 lines 95-96, 113). When {@code true}, an
-     * {@link org.jquantlib.cashflow.Event} occurring on the reference
-     * date is treated as <em>not yet</em> happened (i.e., still
-     * pending). Default is {@code false}, matching C++.
+     * Mirrors C++ {@code Settings::includeReferenceDateEvents()} (settings.hpp v1.42.1 lines 95-96, 113). When
+     * {@code true}, an {@link org.jquantlib.cashflow.Event} occurring on the reference date is treated as <em>not
+     * yet</em> happened (i.e., still pending). Default is {@code false}, matching C++.
      */
     private static final String INCLUDE_REFERENCE_DATE_EVENTS = "INCLUDE_REFERENCE_DATE_EVENTS";
 
     /**
-     * Mirrors C++ {@code Settings::includeTodaysCashFlows()}
-     * (settings.hpp v1.42.1 lines 105-106, 114). Java's nullable
-     * {@link Boolean} corresponds to C++ {@code ext::optional<bool>}:
-     * {@code null} means unset (no override), {@code true}/{@code false}
-     * apply the override at the evaluation date. Default is {@code null}
-     * (unset), matching C++ default-constructed {@code optional}.
+     * Mirrors C++ {@code Settings::includeTodaysCashFlows()} (settings.hpp v1.42.1 lines 105-106, 114). Java's nullable
+     * {@link Boolean} corresponds to C++ {@code ext::optional<bool>}: {@code null} means unset (no override),
+     * {@code true}/{@code false} apply the override at the evaluation date. Default is {@code null} (unset), matching
+     * C++ default-constructed {@code optional}.
      */
     private static final String INCLUDE_TODAYS_CASHFLOWS = "INCLUDE_TODAYS_CASHFLOWS";
 
-
     /**
-     * The relative error of the approximation has absolute value less than 1.15e-9.
-     * One iteration of Halley's rational method (third order) gives full machine precision.
+     * The relative error of the approximation has absolute value less than 1.15e-9. One iteration of Halley's rational
+     * method (third order) gives full machine precision.
      */
     private static final String REFINE_TO_FULL_MACHINE_PRECISION_USING_HALLEYS_METHOD = "REFINE_TO_FULL_MACHINE_PRECISION_USING_HALLEYS_METHOD";
 
@@ -97,80 +90,77 @@ public class Settings {
      * Notice that a successful change of evaluationDate notifies all its listeners.
      */
     private static final String EVALUATION_DATE = "EVALUATION_DATE";
-
-
+    private static final ThreadAttributes attrs = new ThreadAttributes();
 
     public boolean isNegativeRates() {
         final Object var = attrs.get().get(NEGATIVE_RATES);
-        return var==null? false : (Boolean) var;
-    }
-
-    public boolean isExtraSafetyChecks() {
-        final Object var = attrs.get().get(EXTRA_SAFETY_CHECKS);
-        return var==null? false : (Boolean) var;
-    }
-
-    public boolean isTodaysPayments() {
-        final Object var = attrs.get().get(TODAYS_PAYMENTS);
-        return var==null? false : (Boolean) var;
-    }
-
-    public boolean isUseIndexedCoupon() {
-        final Object var = attrs.get().get(USE_INDEXED_COUPON);
-        return var==null? false : (Boolean) var;
-    }
-
-    public boolean isEnforcesTodaysHistoricFixings() {
-        final Object var = attrs.get().get(ENFORCES_TODAYS_HISTORIC_FIXINGS);
-        return var==null? false : (Boolean) var;
-    }
-
-    public boolean isRefineHighPrecisionUsingHalleysMethod() {
-        final Object var = attrs.get().get(REFINE_TO_FULL_MACHINE_PRECISION_USING_HALLEYS_METHOD);
-        return var==null? false : (Boolean) var;
+        return var != null && (Boolean) var;
     }
 
     public void setNegativeRates(final boolean negativeRates) {
         attrs.get().put(NEGATIVE_RATES, negativeRates);
     }
 
+    public boolean isExtraSafetyChecks() {
+        final Object var = attrs.get().get(EXTRA_SAFETY_CHECKS);
+        return var != null && (Boolean) var;
+    }
+
     public void setExtraSafetyChecks(final boolean extraSafetyChecks) {
         attrs.get().put(EXTRA_SAFETY_CHECKS, extraSafetyChecks);
+    }
+
+    public boolean isTodaysPayments() {
+        final Object var = attrs.get().get(TODAYS_PAYMENTS);
+        return var != null && (Boolean) var;
     }
 
     public void setTodaysPayments(final boolean todaysPayments) {
         attrs.get().put(TODAYS_PAYMENTS, todaysPayments);
     }
 
+    public boolean isUseIndexedCoupon() {
+        final Object var = attrs.get().get(USE_INDEXED_COUPON);
+        return var != null && (Boolean) var;
+    }
+
     public void setUseIndexedCoupon(final boolean todaysPayments) {
         attrs.get().put(USE_INDEXED_COUPON, todaysPayments);
     }
 
+    public boolean isEnforcesTodaysHistoricFixings() {
+        final Object var = attrs.get().get(ENFORCES_TODAYS_HISTORIC_FIXINGS);
+        return var != null && (Boolean) var;
+    }
 
     public void setEnforcesTodaysHistoricFixings(final boolean enforceTodaysHistoricFixings) {
         attrs.get().put(ENFORCES_TODAYS_HISTORIC_FIXINGS, enforceTodaysHistoricFixings);
     }
 
+    public boolean isRefineHighPrecisionUsingHalleysMethod() {
+        final Object var = attrs.get().get(REFINE_TO_FULL_MACHINE_PRECISION_USING_HALLEYS_METHOD);
+        return var != null && (Boolean) var;
+    }
+
     public void setRefineHighPrecisionUsingHalleysMethod(final boolean refineToFullMachinePrecisionUsingHalleysMethod) {
-        attrs.get().put(REFINE_TO_FULL_MACHINE_PRECISION_USING_HALLEYS_METHOD, refineToFullMachinePrecisionUsingHalleysMethod);
+        attrs.get().put(REFINE_TO_FULL_MACHINE_PRECISION_USING_HALLEYS_METHOD,
+                refineToFullMachinePrecisionUsingHalleysMethod);
     }
 
     /**
-     * Mirrors C++ {@code Settings::includeReferenceDateEvents() const}
-     * (settings.hpp v1.42.1 line 96).
+     * Mirrors C++ {@code Settings::includeReferenceDateEvents() const} (settings.hpp v1.42.1 line 96).
      *
-     * @return whether events occurring on the reference date should
-     *         be considered as not-yet-happened. Default is {@code false}.
+     * @return whether events occurring on the reference date should be considered as not-yet-happened. Default is
+     * {@code false}.
      */
     public boolean includeReferenceDateEvents() {
         final Object v = attrs.get().get(INCLUDE_REFERENCE_DATE_EVENTS);
-        return v == null ? false : (Boolean) v;
+        return v != null && (Boolean) v;
     }
 
     /**
-     * Mirrors C++ {@code Settings::includeReferenceDateEvents()} (mutable
-     * reference, settings.hpp v1.42.1 line 95). Java exposes this as a
-     * fluent setter returning {@code this} for chaining.
+     * Mirrors C++ {@code Settings::includeReferenceDateEvents()} (mutable reference, settings.hpp v1.42.1 line 95).
+     * Java exposes this as a fluent setter returning {@code this} for chaining.
      */
     public Settings setIncludeReferenceDateEvents(final boolean v) {
         attrs.get().put(INCLUDE_REFERENCE_DATE_EVENTS, v);
@@ -178,29 +168,25 @@ public class Settings {
     }
 
     /**
-     * Mirrors C++ {@code Settings::includeTodaysCashFlows() const}
-     * (settings.hpp v1.42.1 line 106). Returns {@code null} when unset
-     * (Java's nullable {@link Boolean} = C++ {@code ext::optional<bool>}).
+     * Mirrors C++ {@code Settings::includeTodaysCashFlows() const} (settings.hpp v1.42.1 line 106). Returns
+     * {@code null} when unset (Java's nullable {@link Boolean} = C++ {@code ext::optional<bool>}).
      */
     public Boolean includeTodaysCashFlows() {
         return (Boolean) attrs.get().get(INCLUDE_TODAYS_CASHFLOWS);
     }
 
     /**
-     * Mirrors C++ {@code Settings::includeTodaysCashFlows()} (mutable
-     * reference, settings.hpp v1.42.1 line 105). Pass {@code null} to
-     * unset (equivalent to assigning {@code ext::nullopt} in C++).
+     * Mirrors C++ {@code Settings::includeTodaysCashFlows()} (mutable reference, settings.hpp v1.42.1 line 105). Pass
+     * {@code null} to unset (equivalent to assigning {@code ext::nullopt} in C++).
      */
     public Settings setIncludeTodaysCashFlows(final Boolean v) {
-        if (v == null) {
+        if ( v == null ) {
             attrs.get().remove(INCLUDE_TODAYS_CASHFLOWS);
         } else {
             attrs.get().put(INCLUDE_TODAYS_CASHFLOWS, v);
         }
         return this;
     }
-
-
 
     /**
      * @return the value of field evaluationDate
@@ -209,29 +195,21 @@ public class Settings {
         return ((DateProxy) attrs.get().get(EVALUATION_DATE)).value();
     }
 
+    //
+    // private inner classes
+    //
+
     /**
      * Changes the value of field evaluationDate.
      *
      * <p>
-     * Notice that a successful change of evaluationDate notifies all its
-     * listeners.
+     * Notice that a successful change of evaluationDate notifies all its listeners.
      */
     public Date setEvaluationDate(final Date evaluationDate) {
         final DateProxy proxy = (DateProxy) attrs.get().get(EVALUATION_DATE);
         proxy.assign(evaluationDate);
         return proxy;
     }
-
-
-
-    //
-    // private inner classes
-    //
-
-
-
-
-    private static final ThreadAttributes attrs = new ThreadAttributes();
 
     //
     // Settings employs a ThreadLocal object in order to keep thread dependent data.
@@ -243,10 +221,10 @@ public class Settings {
     // no other thread will be affected bythese changes.
     // [Richard Gomes]
     //
-    private static class ThreadAttributes extends ThreadLocal<Map<String,Object>> {
+    private static class ThreadAttributes extends ThreadLocal< Map< String, Object > > {
         @Override
-        public Map<String,Object> initialValue() {
-            final Map<String, Object> map = new TreeMap<String, Object>();
+        public Map< String, Object > initialValue() {
+            final Map< String, Object > map = new TreeMap< String, Object >();
             map.put(ENFORCES_TODAYS_HISTORIC_FIXINGS, false);
             map.put(NEGATIVE_RATES, false);
             map.put(EXTRA_SAFETY_CHECKS, true);
@@ -264,7 +242,6 @@ public class Settings {
         }
     }
 
-
     //
     // private inner classes
     //
@@ -277,7 +254,7 @@ public class Settings {
         }
 
         private DateProxy value() /* @ReadOnly */ {
-            if (isNull()) {
+            if ( isNull() ) {
                 super.assign(todaysSerialNumber());
             }
             return this;
@@ -287,7 +264,7 @@ public class Settings {
             // Align with C++ QuantLib v1.42.1 (settings.hpp:141-145):
             // 'if (value() != d) ObservableValue<Date>::operator=(d);'
             // — suppress notifications when assigning the same date.
-            if (super.serialNumber() == date.serialNumber()) {
+            if ( super.serialNumber() == date.serialNumber() ) {
                 return this;
             }
             super.assign(date.serialNumber());

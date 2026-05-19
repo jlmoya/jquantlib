@@ -37,28 +37,25 @@
  */
 package org.jquantlib.pricingengines.vanilla.finitedifferences;
 
-import java.lang.reflect.Constructor;
-import java.util.List;
-
 import org.jquantlib.instruments.OneAssetOption;
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.lang.reflect.ReflectConstants;
 import org.jquantlib.processes.GeneralizedBlackScholesProcess;
 import org.jquantlib.util.Observer;
 
+import java.lang.reflect.Constructor;
+import java.util.List;
+
 /**
  * Finite-differences pricing engine for American-style vanilla options
  *
- * @category vanillaengines
- *
  * @author Srinivas Hasti
  * @author Richard Gomes
+ * @category vanillaengines
  */
 //FIXME: http://bugs.jquantlib.org/view.php?id=405
-public abstract class FDEngineAdapter<
-            Base extends FDVanillaEngine, 
-            Engine extends OneAssetOption.Engine>
-implements OneAssetOption.Engine {
+public abstract class FDEngineAdapter< Base extends FDVanillaEngine, Engine extends OneAssetOption.Engine >
+        implements OneAssetOption.Engine {
 
     //
     // private fields
@@ -75,38 +72,33 @@ implements OneAssetOption.Engine {
     // In order to keep resemblance with original QuantLib/C++ code, we define the second parameter but we never use it
     // because extended classes are responsible for initialize the p-impl reference, which also implies that it belongs
     // to the expect type, i.e.: the type the extend class expects for it.
-    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    private final Class<? extends FDVanillaEngine>	classBase;       // first generic type parameter
-    private final Class<? extends Engine>			classEngine;     // second generic type parameter
+    /// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private final Class< ? extends FDVanillaEngine > classBase;       // first generic type parameter
+    private final Class< ? extends Engine > classEngine;     // second generic type parameter
 
     protected OneAssetOption.Engine impl;
-
 
     //
     // public constructors
     //
 
-    public FDEngineAdapter(
-    	    final Class<? extends FDVanillaEngine>   classBase,
-    	    final Class<? extends Engine> classEngine,
-            final GeneralizedBlackScholesProcess process,
-            final int timeSteps,
-            final int gridPoints,
-            final boolean timeDependent) {
+    public FDEngineAdapter(final Class< ? extends FDVanillaEngine > classBase,
+            final Class< ? extends Engine > classEngine, final GeneralizedBlackScholesProcess process,
+            final int timeSteps, final int gridPoints, final boolean timeDependent) {
         // obtain generic type parameters
-        this.classBase   = classBase;
+        this.classBase = classBase;
         this.classEngine = classEngine;
-        
+
         try {
             // instantiate 1st generic parameter : a base FD engine
-            final Constructor<Base> baseConstructor = (Constructor<Base>) classBase.getConstructor(GeneralizedBlackScholesProcess.class, int.class, int.class, boolean.class);
+            final Constructor< Base > baseConstructor = (Constructor< Base >) classBase.getConstructor(
+                    GeneralizedBlackScholesProcess.class, int.class, int.class, boolean.class);
             baseInstance = baseConstructor.newInstance(process, timeSteps, gridPoints, timeDependent);
-        } catch (final Exception e) {
+        } catch ( final Exception e ) {
             throw new LibraryException(e);
         }
         process.addObserver(this);
     }
-    
 
     //
     // implements PricingEngine
@@ -115,16 +107,15 @@ implements OneAssetOption.Engine {
     @Override
     public void calculate() /* @ReadOnly */ {
         // minimum sanity check on p-impl idiom
-        if (impl==null) {
+        if ( impl == null ) {
             throw new LibraryException(PRICING_ENGINE_NOT_SET);
         }
-        if (!this.classEngine.isAssignableFrom(impl.getClass())) {
+        if ( !this.classEngine.isAssignableFrom(impl.getClass()) ) {
             throw new LibraryException(ReflectConstants.ILLEGAL_TYPE_PARAMETER);
         }
         baseInstance.setupArguments(impl.getArguments());
         baseInstance.calculate(impl.getResults());
     }
-
 
     //
     // implements Observer
@@ -132,12 +123,11 @@ implements OneAssetOption.Engine {
 
     @Override
     public void update() {
-        if (impl==null) {
+        if ( impl == null ) {
             throw new LibraryException(PRICING_ENGINE_NOT_SET);
         }
         impl.update();
     }
-
 
     //
     // implements Observable
@@ -145,7 +135,7 @@ implements OneAssetOption.Engine {
 
     @Override
     public void addObserver(final Observer observer) {
-        if (impl==null) {
+        if ( impl == null ) {
             throw new LibraryException(PRICING_ENGINE_NOT_SET);
         }
         impl.addObserver(observer);
@@ -153,7 +143,7 @@ implements OneAssetOption.Engine {
 
     @Override
     public int countObservers() {
-        if (impl==null) {
+        if ( impl == null ) {
             throw new LibraryException(PRICING_ENGINE_NOT_SET);
         }
         return impl.countObservers();
@@ -161,7 +151,7 @@ implements OneAssetOption.Engine {
 
     @Override
     public void deleteObserver(final Observer observer) {
-        if (impl==null) {
+        if ( impl == null ) {
             throw new LibraryException(PRICING_ENGINE_NOT_SET);
         }
         impl.deleteObserver(observer);
@@ -169,15 +159,15 @@ implements OneAssetOption.Engine {
 
     @Override
     public void deleteObservers() {
-        if (impl==null) {
+        if ( impl == null ) {
             throw new LibraryException(PRICING_ENGINE_NOT_SET);
         }
         impl.deleteObservers();
     }
 
     @Override
-    public List<Observer> getObservers() {
-        if (impl==null) {
+    public List< Observer > getObservers() {
+        if ( impl == null ) {
             throw new LibraryException(PRICING_ENGINE_NOT_SET);
         }
         return impl.getObservers();
@@ -185,7 +175,7 @@ implements OneAssetOption.Engine {
 
     @Override
     public void notifyObservers() {
-        if (impl==null) {
+        if ( impl == null ) {
             throw new LibraryException(PRICING_ENGINE_NOT_SET);
         }
         impl.notifyObservers();
@@ -193,7 +183,7 @@ implements OneAssetOption.Engine {
 
     @Override
     public void notifyObservers(final Object arg) {
-        if (impl==null) {
+        if ( impl == null ) {
             throw new LibraryException(PRICING_ENGINE_NOT_SET);
         }
         impl.notifyObservers(arg);

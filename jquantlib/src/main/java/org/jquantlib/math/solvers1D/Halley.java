@@ -26,12 +26,13 @@ import org.jquantlib.math.AbstractSolver1D;
 import org.jquantlib.math.distributions.Derivative;
 import org.jquantlib.math.distributions.SecondDerivative;
 
+import java.awt.print.Book;
+
 /**
  * Halley 1-D solver.
  *
  * <p>Java port of {@code QuantLib v1.42.1 ql/math/solvers1d/halley.hpp}
- * (Phase 5e.5b-CFC-d-16a). The Halley update uses both the first and second
- * derivatives of the function:
+ * (Phase 5e.5b-CFC-d-16a). The Halley update uses both the first and second derivatives of the function:
  *
  * <pre>
  *   L_f(x) = f(x) * f''(x) / (f'(x))^2
@@ -40,27 +41,25 @@ import org.jquantlib.math.distributions.SecondDerivative;
  * </pre>
  *
  * <p>Like {@link Newton}, when the iterate jumps out of the bracket
- * {@code [xMin, xMax]} the solver hands off to {@link NewtonSafe} for
- * the remainder of the budget.
- *
- * @see Book: <i>Press, Teukolsky, Vetterling, and Flannery,
- *      "Numerical Recipes in C", 2nd edition, Cambridge University Press</i>
+ * {@code [xMin, xMax]} the solver hands off to {@link NewtonSafe} for the remainder of the budget.
  *
  * @author JQuantLib
+ * @see Book : <i>Press, Teukolsky, Vetterling, and Flannery, "Numerical Recipes in C", 2nd edition, Cambridge University
+ * Press</i>
  */
-public class Halley extends AbstractSolver1D<SecondDerivative> {
+public class Halley extends AbstractSolver1D< SecondDerivative > {
 
     /**
      * Computes the roots of a function by using Halley's method.
      *
-     * @param f the function (must expose first and second derivatives)
+     * @param f         the function (must expose first and second derivatives)
      * @param xAccuracy the provided accuracy
      * @return the root
      */
     @Override
     protected double solveImpl(final SecondDerivative f, final double xAccuracy) {
 
-        while (++evaluationNumber <= getMaxEvaluations()) {
+        while ( ++evaluationNumber <= getMaxEvaluations() ) {
             final double fx = f.op(root);
             final double fPrime = f.derivative(root);
             final double lf = fx * f.secondDerivative(root) / (fPrime * fPrime);
@@ -68,19 +67,18 @@ public class Halley extends AbstractSolver1D<SecondDerivative> {
             root -= step;
 
             // jumped out of brackets, switch to NewtonSafe
-            if ((xMin - root) * (root - xMax) < 0.0) {
+            if ( (xMin - root) * (root - xMax) < 0.0 ) {
                 final NewtonSafe s = new NewtonSafe();
                 s.setMaxEvaluations(getMaxEvaluations() - evaluationNumber);
-                return s.solve((Derivative) f, xAccuracy, root + step, xMin, xMax);
+                return s.solve(f, xAccuracy, root + step, xMin, xMax);
             }
 
-            if (Math.abs(step) < xAccuracy) {
+            if ( Math.abs(step) < xAccuracy ) {
                 f.op(root);
                 ++evaluationNumber;
                 return root;
             }
         }
-        throw new ArithmeticException("maximum number of function evaluations ("
-                + getMaxEvaluations() + ") exceeded");
+        throw new ArithmeticException("maximum number of function evaluations (" + getMaxEvaluations() + ") exceeded");
     }
 }

@@ -37,8 +37,7 @@ import org.jquantlib.model.marketmodels.products.MultiProductOneStep;
  * Mirrors C++ {@code class OneStepCoinitialSwaps}
  * (ql/models/marketmodels/products/onestep/onestepcoinitialswaps.{hpp,cpp} v1.42.1).
  * <p>
- * Each product i is a swap from t_0 to t_{i+1}; all i swaps' cash flows are
- * generated in a single evolution step.
+ * Each product i is a swap from t_0 to t_{i+1}; all i swaps' cash flows are generated in a single evolution step.
  *
  * @author Jose Moya
  */
@@ -50,11 +49,8 @@ public class OneStepCoinitialSwaps extends MultiProductOneStep {
     private final double fixedRate_;
     private final int lastIndex_;
 
-    public OneStepCoinitialSwaps(final double[] rateTimes,
-                                 final double[] fixedAccruals,
-                                 final double[] floatingAccruals,
-                                 final double[] paymentTimes,
-                                 final double fixedRate) {
+    public OneStepCoinitialSwaps(final double[] rateTimes, final double[] fixedAccruals,
+            final double[] floatingAccruals, final double[] paymentTimes, final double fixedRate) {
         super(rateTimes);
         this.fixedAccruals_ = fixedAccruals.clone();
         this.floatingAccruals_ = floatingAccruals.clone();
@@ -65,35 +61,38 @@ public class OneStepCoinitialSwaps extends MultiProductOneStep {
     }
 
     @Override
-    public double[] possibleCashFlowTimes() { return paymentTimes_; }
+    public double[] possibleCashFlowTimes() {
+        return paymentTimes_;
+    }
 
     @Override
-    public int numberOfProducts() { return lastIndex_; }
+    public int numberOfProducts() {
+        return lastIndex_;
+    }
 
     @Override
-    public int maxNumberOfCashFlowsPerProductPerStep() { return 2 * lastIndex_; }
+    public int maxNumberOfCashFlowsPerProductPerStep() {
+        return 2 * lastIndex_;
+    }
 
     @Override
     public void reset() { /* nothing to do */ }
 
     @Override
-    public boolean nextTimeStep(final CurveState currentState,
-                                final int[] numberCashFlowsThisStep,
-                                final MarketModelMultiProduct.CashFlow[][] genCashFlows) {
-        for (int i = 0; i < numberCashFlowsThisStep.length; ++i) {
+    public boolean nextTimeStep(final CurveState currentState, final int[] numberCashFlowsThisStep,
+            final MarketModelMultiProduct.CashFlow[][] genCashFlows) {
+        for ( int i = 0; i < numberCashFlowsThisStep.length; ++i ) {
             numberCashFlowsThisStep[i] = 0;
         }
 
-        for (int indexOfTime = 0; indexOfTime < lastIndex_; ++indexOfTime) {
+        for ( int indexOfTime = 0; indexOfTime < lastIndex_; ++indexOfTime ) {
             final double liborRate = currentState.forwardRate(indexOfTime);
-            for (int i = indexOfTime; i < lastIndex_; ++i) {
+            for ( int i = indexOfTime; i < lastIndex_; ++i ) {
                 genCashFlows[i][indexOfTime * 2].timeIndex = indexOfTime;
-                genCashFlows[i][indexOfTime * 2].amount =
-                        -fixedRate_ * fixedAccruals_[indexOfTime];
+                genCashFlows[i][indexOfTime * 2].amount = -fixedRate_ * fixedAccruals_[indexOfTime];
 
                 genCashFlows[i][indexOfTime * 2 + 1].timeIndex = indexOfTime;
-                genCashFlows[i][indexOfTime * 2 + 1].amount =
-                        liborRate * floatingAccruals_[indexOfTime];
+                genCashFlows[i][indexOfTime * 2 + 1].amount = liborRate * floatingAccruals_[indexOfTime];
 
                 numberCashFlowsThisStep[i] += 2;
             }
@@ -103,7 +102,6 @@ public class OneStepCoinitialSwaps extends MultiProductOneStep {
 
     @Override
     public MarketModelMultiProduct clone() {
-        return new OneStepCoinitialSwaps(rateTimes_, fixedAccruals_, floatingAccruals_,
-                paymentTimes_, fixedRate_);
+        return new OneStepCoinitialSwaps(rateTimes_, fixedAccruals_, floatingAccruals_, paymentTimes_, fixedRate_);
     }
 }

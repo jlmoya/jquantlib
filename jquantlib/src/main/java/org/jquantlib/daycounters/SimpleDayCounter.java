@@ -30,25 +30,20 @@ import org.jquantlib.time.Date;
 /**
  * Simple day counter for reproducing theoretical calculations.
  * <p>
- * This day counter tries to ensure that whole-month distances are returned as a
- * simple fraction, i.e., 1 year = 1.0, 6 months = 0.5, 3 months = 0.25 and so
- * forth.
- *
- * @note This day counter should be used together with NullCalendar, which
- *       ensures that dates at whole-month distances share the same day of
- *       month. It is <b>not</b> guaranteed to work with any other calendar.
+ * This day counter tries to ensure that whole-month distances are returned as a simple fraction, i.e., 1 year = 1.0, 6
+ * months = 0.5, 3 months = 0.25 and so forth.
  *
  * @author Srinivas Hasti
  * @author Richard Gomes
+ * @note This day counter should be used together with NullCalendar, which ensures that dates at whole-month distances
+ * share the same day of month. It is <b>not</b> guaranteed to work with any other calendar.
  */
-@QualityAssurance(quality=Quality.Q4_UNIT, version=Version.V097, reviewers="Richard Gomes")
+@QualityAssurance( quality = Quality.Q4_UNIT, version = Version.V097, reviewers = "Richard Gomes" )
 public class SimpleDayCounter extends DayCounter {
-
 
     public SimpleDayCounter() {
         super.impl = new Impl();
     }
-
 
     //
     // private inner classes
@@ -63,7 +58,7 @@ public class SimpleDayCounter extends DayCounter {
         //
 
         @Override
-        protected final String name() /* @ReadOnly */{
+        protected String name() /* @ReadOnly */ {
             return "Simple";
         }
 
@@ -73,9 +68,8 @@ public class SimpleDayCounter extends DayCounter {
         }
 
         @Override
-        protected /*@Time*/ final double yearFraction(
-                final Date dateStart, final Date dateEnd,
-                final Date refPeriodStart, final Date refPeriodEnd) /* @ReadOnly */{
+        protected /*@Time*/ double yearFraction(final Date dateStart, final Date dateEnd, final Date refPeriodStart,
+                final Date refPeriodEnd) /* @ReadOnly */ {
             final int dm1 = dateStart.dayOfMonth();
             final int dm2 = dateEnd.dayOfMonth();
             final int mm1 = dateStart.month().value();
@@ -83,11 +77,11 @@ public class SimpleDayCounter extends DayCounter {
             final int yy1 = dateStart.year();
             final int yy2 = dateEnd.year();
 
-            if (dm1 == dm2 ||
+            if ( dm1 == dm2 ||
                     // e.g., Aug 30 -> Feb 28 ?
                     (dm1 > dm2 && Date.isEndOfMonth(dateEnd)) ||
                     // e.g., Feb 28 -> Aug 30 ?
-                    (dm1 < dm2 && Date.isEndOfMonth(dateStart)))
+                    (dm1 < dm2 && Date.isEndOfMonth(dateStart)) )
                 return (yy2 - yy1) + (mm2 - mm1) / 12.0;
             else
                 return fallback.yearFraction(dateStart, dateEnd, refPeriodStart, refPeriodEnd);

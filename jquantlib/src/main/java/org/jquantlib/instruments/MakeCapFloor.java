@@ -15,9 +15,6 @@
  */
 package org.jquantlib.instruments;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.cashflow.CashFlows;
 import org.jquantlib.cashflow.Leg;
@@ -29,12 +26,10 @@ import org.jquantlib.pricingengines.PricingEngine;
 import org.jquantlib.pricingengines.capfloor.BlackCapFloorEngine;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.termstructures.YieldTermStructure;
-import org.jquantlib.time.BusinessDayConvention;
-import org.jquantlib.time.Calendar;
-import org.jquantlib.time.Date;
-import org.jquantlib.time.DateGeneration;
-import org.jquantlib.time.Period;
-import org.jquantlib.time.TimeUnit;
+import org.jquantlib.time.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Helper class for instantiating standard market cap and floor.
@@ -59,47 +54,36 @@ public class MakeCapFloor {
     //
 
     private final CapFloor.Type capFloorType_;
-    private double strike_;
+    private final MakeVanillaSwap makeVanillaSwap_;
+    private final double strike_;
     private boolean firstCapletExcluded_;
     private boolean asOptionlet_ = false;
-
-    private final MakeVanillaSwap makeVanillaSwap_;
-
     private PricingEngine engine_;
 
     //
     // public constructors
     //
 
-    public MakeCapFloor(final CapFloor.Type capFloorType,
-                        final Period tenor,
-                        final IborIndex iborIndex,
-                        final double strike,
-                        final Period forwardStart) {
+    public MakeCapFloor(final CapFloor.Type capFloorType, final Period tenor, final IborIndex iborIndex,
+            final double strike, final Period forwardStart) {
         this.capFloorType_ = capFloorType;
         this.strike_ = strike;
         this.firstCapletExcluded_ = forwardStart.equals(new Period(0, TimeUnit.Days));
         // setting the fixed leg tenor avoids that MakeVanillaSwap throws
         // because of an unknown fixed leg default tenor for a currency,
         // notice that only the floating leg of the swap is used anyway
-        this.makeVanillaSwap_ = new MakeVanillaSwap(tenor, iborIndex, 0.0, forwardStart)
-                .withFixedLegTenor(new Period(1, TimeUnit.Years))
-                .withFixedLegDayCount(new Actual365Fixed());
+        this.makeVanillaSwap_ = new MakeVanillaSwap(tenor, iborIndex, 0.0, forwardStart).withFixedLegTenor(
+                new Period(1, TimeUnit.Years)).withFixedLegDayCount(new Actual365Fixed());
     }
 
     /** Convenience: ATM strike, immediate forward start. */
-    public MakeCapFloor(final CapFloor.Type capFloorType,
-                        final Period tenor,
-                        final IborIndex iborIndex) {
-        this(capFloorType, tenor, iborIndex, Constants.NULL_REAL,
-                new Period(0, TimeUnit.Days));
+    public MakeCapFloor(final CapFloor.Type capFloorType, final Period tenor, final IborIndex iborIndex) {
+        this(capFloorType, tenor, iborIndex, Constants.NULL_REAL, new Period(0, TimeUnit.Days));
     }
 
     /** Convenience: explicit strike, immediate forward start. */
-    public MakeCapFloor(final CapFloor.Type capFloorType,
-                        final Period tenor,
-                        final IborIndex iborIndex,
-                        final double strike) {
+    public MakeCapFloor(final CapFloor.Type capFloorType, final Period tenor, final IborIndex iborIndex,
+            final double strike) {
         this(capFloorType, tenor, iborIndex, strike, new Period(0, TimeUnit.Days));
     }
 
@@ -107,53 +91,63 @@ public class MakeCapFloor {
     // operator-style accessor (mirrors C++ operator CapFloor()/shared_ptr<CapFloor>())
     //
 
-    public CapFloor value() {
-        final VanillaSwap swap = makeVanillaSwap_.value();
-        Leg leg = swap.floatingLeg();
-
-        if (firstCapletExcluded_ && !leg.isEmpty()) {
-            leg = removeFirst(leg);
+    private static Leg removeFirst(final Leg leg) {
+        final Leg out = new Leg(leg.size() - 1);
+        for ( int i = 1; i < leg.size(); ++i ) {
+            out.add(leg.get(i));
         }
-        if (asOptionlet_ && leg.size() > 1) {
-            leg = lastOnly(leg);
-        }
-
-        final List<Double> strikeVector = new ArrayList<Double>(1);
-        double s = strike_;
-        if (s == Constants.NULL_REAL) {
-            // temporary patch... should be fixed for every CapFloor::Engine
-            QL.require(engine_ instanceof BlackCapFloorEngine,
-                    "cannot calculate ATM without a BlackCapFloorEngine");
-            final BlackCapFloorEngine bce = (BlackCapFloorEngine) engine_;
-            final Handle<YieldTermStructure> discountCurve = bce.termStructure();
-            s = CashFlows.getInstance().atmRate(leg, discountCurve,
-                    discountCurve.currentLink().referenceDate(),
-                    discountCurve.currentLink().referenceDate(),
-                    0, 0.0);
-        }
-        strikeVector.add(s);
-
-        // CapFloor v1.42.1-style ctor (no termStructure): pass null.
-        final CapFloor capFloor = new CapFloor(capFloorType_, leg, strikeVector,
-                (Handle<YieldTermStructure>) null, engine_);
-        // engine already wired by ctor when non-null; explicit call kept for parity.
-        if (engine_ != null) {
-            capFloor.setPricingEngine(engine_);
-        }
-        return capFloor;
+        return out;
     }
 
     //
     // builder methods (chainable)
     //
 
+    private static Leg lastOnly(final Leg leg) {
+        final Leg out = new Leg(1);
+        out.add(leg.get(leg.size() - 1));
+        return out;
+    }
+
+    public CapFloor value() {
+        final VanillaSwap swap = makeVanillaSwap_.value();
+        Leg leg = swap.floatingLeg();
+
+        if ( firstCapletExcluded_ && !leg.isEmpty() ) {
+            leg = removeFirst(leg);
+        }
+        if ( asOptionlet_ && leg.size() > 1 ) {
+            leg = lastOnly(leg);
+        }
+
+        final List< Double > strikeVector = new ArrayList< Double >(1);
+        double s = strike_;
+        if ( s == Constants.NULL_REAL ) {
+            // temporary patch... should be fixed for every CapFloor::Engine
+            QL.require(engine_ instanceof BlackCapFloorEngine, "cannot calculate ATM without a BlackCapFloorEngine");
+            final BlackCapFloorEngine bce = (BlackCapFloorEngine) engine_;
+            final Handle< YieldTermStructure > discountCurve = bce.termStructure();
+            s = CashFlows.getInstance().atmRate(leg, discountCurve, discountCurve.currentLink().referenceDate(),
+                    discountCurve.currentLink().referenceDate(), 0, 0.0);
+        }
+        strikeVector.add(s);
+
+        // CapFloor v1.42.1-style ctor (no termStructure): pass null.
+        final CapFloor capFloor = new CapFloor(capFloorType_, leg, strikeVector, null,
+                engine_);
+        // engine already wired by ctor when non-null; explicit call kept for parity.
+        if ( engine_ != null ) {
+            capFloor.setPricingEngine(engine_);
+        }
+        return capFloor;
+    }
+
     public MakeCapFloor withNominal(final double n) {
         makeVanillaSwap_.withNominal(n);
         return this;
     }
 
-    public MakeCapFloor withEffectiveDate(final Date effectiveDate,
-                                          final boolean firstCapletExcluded) {
+    public MakeCapFloor withEffectiveDate(final Date effectiveDate, final boolean firstCapletExcluded) {
         makeVanillaSwap_.withEffectiveDate(effectiveDate);
         this.firstCapletExcluded_ = firstCapletExcluded;
         return this;
@@ -210,6 +204,10 @@ public class MakeCapFloor {
         return this;
     }
 
+    //
+    // helpers
+    //
+
     /** Only keep the last coupon. */
     public MakeCapFloor asOptionlet() {
         return asOptionlet(true);
@@ -218,23 +216,5 @@ public class MakeCapFloor {
     public MakeCapFloor withPricingEngine(final PricingEngine engine) {
         this.engine_ = engine;
         return this;
-    }
-
-    //
-    // helpers
-    //
-
-    private static Leg removeFirst(final Leg leg) {
-        final Leg out = new Leg(leg.size() - 1);
-        for (int i = 1; i < leg.size(); ++i) {
-            out.add(leg.get(i));
-        }
-        return out;
-    }
-
-    private static Leg lastOnly(final Leg leg) {
-        final Leg out = new Leg(1);
-        out.add(leg.get(leg.size() - 1));
-        return out;
     }
 }

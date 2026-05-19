@@ -17,8 +17,6 @@
 
 package org.jquantlib.cashflow;
 
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.indexes.OvernightIndex;
@@ -28,27 +26,26 @@ import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.termstructures.volatilities.optionlet.OptionletVolatilityStructure;
 import org.jquantlib.time.Date;
 
+import java.util.List;
+
 /**
  * Arithmetic-averaging overnight-indexed coupon pricer.
  * <p>
- * Port of C++ QuantLib v1.42.1
- * {@code ql/cashflows/overnightindexedcouponpricer.hpp/cpp}
+ * Port of C++ QuantLib v1.42.1 {@code ql/cashflows/overnightindexedcouponpricer.hpp/cpp}
  * {@code ArithmeticAveragedOvernightIndexedCouponPricer}.
  * <p>
  * <b>Phase 5d.5 MVP:</b> exact (non-Takada-approximation) implementation.
- * Uses the telescopic forward formula
- * {@code log(D_start/D_end)} for the forward portion.
- *
- * @category cashflows
+ * Uses the telescopic forward formula {@code log(D_start/D_end)} for the forward portion.
  *
  * @author JQuantLib migration team
+ * @category cashflows
  */
 public class ArithmeticAveragedOvernightIndexedCouponPricer extends OvernightIndexedCouponPricer {
 
     private final boolean byApprox_;
-    @SuppressWarnings("unused")
+    @SuppressWarnings( "unused" )
     private final double mrs_;
-    @SuppressWarnings("unused")
+    @SuppressWarnings( "unused" )
     private final double vol_;
 
     public ArithmeticAveragedOvernightIndexedCouponPricer() {
@@ -59,8 +56,8 @@ public class ArithmeticAveragedOvernightIndexedCouponPricer extends OvernightInd
         this(byApprox, 0.03, 0.00);
     }
 
-    public ArithmeticAveragedOvernightIndexedCouponPricer(
-            final boolean byApprox, final double meanReversion, final double vol) {
+    public ArithmeticAveragedOvernightIndexedCouponPricer(final boolean byApprox, final double meanReversion,
+            final double vol) {
         this.byApprox_ = byApprox;
         this.mrs_ = meanReversion;
         this.vol_ = vol;
@@ -68,25 +65,21 @@ public class ArithmeticAveragedOvernightIndexedCouponPricer extends OvernightInd
 
     /**
      * Full constructor mirroring C++ v1.42.1
-     * {@code ArithmeticAveragedOvernightIndexedCouponPricer(meanReversion,
-     * volatility, byApprox, v, effectiveVolatilityInput)}.
+     * {@code ArithmeticAveragedOvernightIndexedCouponPricer(meanReversion, volatility, byApprox, v,
+     * effectiveVolatilityInput)}.
      * <p>
-     * Phase 5e.5b-CFC-b — added so
-     * {@link BlackAveragingOvernightIndexedCouponPricer} can supply the
-     * OptionletVolatilityStructure handle through the parent ctor (matches
-     * C++ overnightindexedcouponpricer.hpp:140-147).
+     * Phase 5e.5b-CFC-b — added so {@link BlackAveragingOvernightIndexedCouponPricer} can supply the
+     * OptionletVolatilityStructure handle through the parent ctor (matches C++
+     * overnightindexedcouponpricer.hpp:140-147).
      *
-     * @param meanReversion             Hull-White mean reversion (default 0.03)
-     * @param vol                       Hull-White short-rate vol (0.0 ⇒ no convexity adj)
-     * @param byApprox                  use Takada approximation when true
-     * @param v                         optionlet volatility handle (may be empty)
-     * @param effectiveVolatilityInput  treat the input vol as effective (caplet) vol
+     * @param meanReversion            Hull-White mean reversion (default 0.03)
+     * @param vol                      Hull-White short-rate vol (0.0 ⇒ no convexity adj)
+     * @param byApprox                 use Takada approximation when true
+     * @param v                        optionlet volatility handle (may be empty)
+     * @param effectiveVolatilityInput treat the input vol as effective (caplet) vol
      */
-    public ArithmeticAveragedOvernightIndexedCouponPricer(
-            final double meanReversion,
-            final double vol,
-            final boolean byApprox,
-            final Handle<OptionletVolatilityStructure> v,
+    public ArithmeticAveragedOvernightIndexedCouponPricer(final double meanReversion, final double vol,
+            final boolean byApprox, final Handle< OptionletVolatilityStructure > v,
             final boolean effectiveVolatilityInput) {
         super(v, effectiveVolatilityInput);
         this.byApprox_ = byApprox;
@@ -102,9 +95,9 @@ public class ArithmeticAveragedOvernightIndexedCouponPricer extends OvernightInd
     @Override
     public double averageRate(final Date date) {
         final OvernightIndex index = coupon_.overnightIndex();
-        final List<Date> fixingDates = coupon_.fixingDates();
-        final List<Date> interestDates = coupon_.interestDates();
-        final List<Date> valueDates = coupon_.valueDates();
+        final List< Date > fixingDates = coupon_.fixingDates();
+        final List< Date > interestDates = coupon_.interestDates();
+        final List< Date > valueDates = coupon_.valueDates();
         final double[] dt = coupon_.dt();
         final boolean applyObservationShift = coupon_.applyObservationShift();
 
@@ -115,10 +108,10 @@ public class ArithmeticAveragedOvernightIndexedCouponPricer extends OvernightInd
         final Date today = new Settings().evaluationDate();
 
         // historical portion
-        while (i < n && fixingDates.get(i).lt(today)) {
+        while ( i < n && fixingDates.get(i).lt(today) ) {
             final double pastFixing = index.fixing(fixingDates.get(i));
             QL.require(pastFixing != Constants.NULL_REAL,
-                "Missing " + index.name() + " fixing for " + fixingDates.get(i));
+                    "Missing " + index.name() + " fixing for " + fixingDates.get(i));
             final double span = !date.lt(interestDates.get(i + 1))
                     ? dt[i]
                     : index.dayCounter().yearFraction(interestDates.get(i), date);
@@ -127,28 +120,27 @@ public class ArithmeticAveragedOvernightIndexedCouponPricer extends OvernightInd
         }
 
         // today edge case
-        if (i < n && fixingDates.get(i).equals(today)) {
+        if ( i < n && fixingDates.get(i).equals(today) ) {
             try {
                 final double pastFixing = index.fixing(fixingDates.get(i));
-                if (pastFixing != Constants.NULL_REAL) {
+                if ( pastFixing != Constants.NULL_REAL ) {
                     final double span = !date.lt(interestDates.get(i + 1))
                             ? dt[i]
                             : index.dayCounter().yearFraction(interestDates.get(i), date);
                     accumulatedRate += pastFixing * span;
                     ++i;
                 }
-            } catch (final Exception e) {
+            } catch ( final Exception e ) {
                 // fall through and forecast
             }
         }
 
         // forward portion
-        if (i < n) {
-            final Handle<YieldTermStructure> curve = index.termStructure();
-            QL.require(!curve.empty(),
-                "null term structure set to this instance of " + index.name());
+        if ( i < n ) {
+            final Handle< YieldTermStructure > curve = index.termStructure();
+            QL.require(!curve.empty(), "null term structure set to this instance of " + index.name());
 
-            if (byApprox_) {
+            if ( byApprox_ ) {
                 // Takada approximation: log(D_start/D_end), no convexity adj
                 // (Phase 5d.5 MVP: convexity left out — caller should set
                 // byApprox=false if convexity matters).
@@ -156,7 +148,7 @@ public class ArithmeticAveragedOvernightIndexedCouponPricer extends OvernightInd
                 final double endDiscount = curve.currentLink().discount(valueDates.get(n));
                 accumulatedRate += Math.log(startDiscount / endDiscount);
             } else {
-                while (i < n) {
+                while ( i < n ) {
                     final double forecastFixing = index.fixing(fixingDates.get(i));
                     final double span = !date.lt(interestDates.get(i + 1))
                             ? dt[i]
@@ -167,11 +159,9 @@ public class ArithmeticAveragedOvernightIndexedCouponPricer extends OvernightInd
             }
         }
 
-        final double accruedPeriod = coupon_.dayCounter().yearFraction(
-                coupon_.accrualStartDate(),
-                Date.min(date, coupon_.accrualEndDate()),
-                coupon_.referencePeriodStart(),
-                coupon_.referencePeriodEnd());
+        final double accruedPeriod = coupon_.dayCounter()
+                .yearFraction(coupon_.accrualStartDate(), Date.min(date, coupon_.accrualEndDate()),
+                        coupon_.referencePeriodStart(), coupon_.referencePeriodEnd());
         final double rate = accumulatedRate / accruedPeriod;
         return coupon_.gearing() * rate + coupon_.spread();
     }

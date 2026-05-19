@@ -39,12 +39,7 @@ import org.jquantlib.quotes.Handle;
 import org.jquantlib.termstructures.AbstractTermStructure;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.termstructures.YoYInflationTermStructure;
-import org.jquantlib.time.BusinessDayConvention;
-import org.jquantlib.time.Calendar;
-import org.jquantlib.time.Date;
-import org.jquantlib.time.Frequency;
-import org.jquantlib.time.Period;
-import org.jquantlib.time.TimeUnit;
+import org.jquantlib.time.*;
 import org.jquantlib.util.Pair;
 
 /**
@@ -67,7 +62,7 @@ public abstract class YoYCapFloorTermPriceSurface extends AbstractTermStructure 
     protected BusinessDayConvention bdc_;
     protected YoYInflationIndex yoyIndex_;
     protected Period observationLag_;
-    protected Handle<YieldTermStructure> nominalTS_;
+    protected Handle< YieldTermStructure > nominalTS_;
     protected double[] cStrikes_;
     protected double[] fStrikes_;
     protected Period[] cfMaturities_;
@@ -78,8 +73,8 @@ public abstract class YoYCapFloorTermPriceSurface extends AbstractTermStructure 
     // constructed
     protected double[] cfStrikes_;
     protected YoYInflationTermStructure yoy_;
-    protected Pair<double[], double[]> atmYoYSwapTimeRates_;
-    protected Pair<Date[], double[]> atmYoYSwapDateRates_;
+    protected Pair< double[], double[] > atmYoYSwapTimeRates_;
+    protected Pair< Date[], double[] > atmYoYSwapDateRates_;
 
     //
     // public constructors
@@ -88,33 +83,24 @@ public abstract class YoYCapFloorTermPriceSurface extends AbstractTermStructure 
     /**
      * Constructs a YoY cap/floor term-price surface from quoted prices.
      *
-     * @param fixingDays         fixing days
-     * @param yyLag              observation lag
-     * @param yii                YoY inflation index
-     * @param interpolation      CPI interpolation type
-     * @param nominal            nominal yield term structure
-     * @param dc                 day counter
-     * @param cal                calendar
-     * @param bdc                business day convention
-     * @param cStrikes           cap strikes
-     * @param fStrikes           floor strikes
-     * @param cfMaturities       cap/floor maturities
-     * @param cPrice             cap price matrix
-     * @param fPrice             floor price matrix
+     * @param fixingDays    fixing days
+     * @param yyLag         observation lag
+     * @param yii           YoY inflation index
+     * @param interpolation CPI interpolation type
+     * @param nominal       nominal yield term structure
+     * @param dc            day counter
+     * @param cal           calendar
+     * @param bdc           business day convention
+     * @param cStrikes      cap strikes
+     * @param fStrikes      floor strikes
+     * @param cfMaturities  cap/floor maturities
+     * @param cPrice        cap price matrix
+     * @param fPrice        floor price matrix
      */
-    protected YoYCapFloorTermPriceSurface(final int fixingDays,
-                                          final Period yyLag,
-                                          final YoYInflationIndex yii,
-                                          final CPI.InterpolationType interpolation,
-                                          final Handle<YieldTermStructure> nominal,
-                                          final DayCounter dc,
-                                          final Calendar cal,
-                                          final BusinessDayConvention bdc,
-                                          final double[] cStrikes,
-                                          final double[] fStrikes,
-                                          final Period[] cfMaturities,
-                                          final Matrix cPrice,
-                                          final Matrix fPrice) {
+    protected YoYCapFloorTermPriceSurface(final int fixingDays, final Period yyLag, final YoYInflationIndex yii,
+            final CPI.InterpolationType interpolation, final Handle< YieldTermStructure > nominal, final DayCounter dc,
+            final Calendar cal, final BusinessDayConvention bdc, final double[] cStrikes, final double[] fStrikes,
+            final Period[] cfMaturities, final Matrix cPrice, final Matrix fPrice) {
         super(0, cal, dc);
         this.fixingDays_ = fixingDays;
         this.bdc_ = bdc;
@@ -132,36 +118,27 @@ public abstract class YoYCapFloorTermPriceSurface extends AbstractTermStructure 
         QL.require(fStrikes_.length > 1, "not enough floor strikes");
         QL.require(cStrikes_.length > 1, "not enough cap strikes");
         QL.require(cfMaturities_.length > 1, "not enough maturities");
-        QL.require(fStrikes_.length == fPrice.rows(),
-                "floor strikes vs floor price rows not equal");
-        QL.require(cStrikes_.length == cPrice.rows(),
-                "cap strikes vs cap price rows not equal");
-        QL.require(cfMaturities_.length == fPrice.cols(),
-                "maturities vs floor price columns not equal");
-        QL.require(cfMaturities_.length == cPrice.cols(),
-                "maturities vs cap price columns not equal");
+        QL.require(fStrikes_.length == fPrice.rows(), "floor strikes vs floor price rows not equal");
+        QL.require(cStrikes_.length == cPrice.rows(), "cap strikes vs cap price rows not equal");
+        QL.require(cfMaturities_.length == fPrice.cols(), "maturities vs floor price columns not equal");
+        QL.require(cfMaturities_.length == cPrice.cols(), "maturities vs cap price columns not equal");
 
         // Data has correct properties (positive, monotonic)?
-        for (int j = 0; j < cfMaturities_.length; j++) {
+        for ( int j = 0; j < cfMaturities_.length; j++ ) {
             QL.require(cfMaturities_[j].length() > 0, "non-positive maturities");
-            if (j > 0) {
-                QL.require(cfMaturities_[j].gt(cfMaturities_[j - 1]),
-                        "non-increasing maturities");
+            if ( j > 0 ) {
+                QL.require(cfMaturities_[j].gt(cfMaturities_[j - 1]), "non-increasing maturities");
             }
-            for (int i = 0; i < fPrice_.rows(); i++) {
-                QL.require(fPrice_.get(i, j) > 0.0,
-                        "non-positive floor price: " + fPrice_.get(i, j));
-                if (i > 0) {
-                    QL.require(fPrice_.get(i, j) >= fPrice_.get(i - 1, j),
-                            "non-increasing floor prices");
+            for ( int i = 0; i < fPrice_.rows(); i++ ) {
+                QL.require(fPrice_.get(i, j) > 0.0, "non-positive floor price: " + fPrice_.get(i, j));
+                if ( i > 0 ) {
+                    QL.require(fPrice_.get(i, j) >= fPrice_.get(i - 1, j), "non-increasing floor prices");
                 }
             }
-            for (int i = 0; i < cPrice_.rows(); i++) {
-                QL.require(cPrice_.get(i, j) > 0.0,
-                        "non-positive cap price: " + cPrice_.get(i, j));
-                if (i > 0) {
-                    QL.require(cPrice_.get(i, j) <= cPrice_.get(i - 1, j),
-                            "non-decreasing cap prices");
+            for ( int i = 0; i < cPrice_.rows(); i++ ) {
+                QL.require(cPrice_.get(i, j) > 0.0, "non-positive cap price: " + cPrice_.get(i, j));
+                if ( i > 0 ) {
+                    QL.require(cPrice_.get(i, j) <= cPrice_.get(i - 1, j), "non-decreasing cap prices");
                 }
             }
         }
@@ -170,40 +147,45 @@ public abstract class YoYCapFloorTermPriceSurface extends AbstractTermStructure 
         final double eps = 0.0000001;
         final double maxFstrike = fStrikes_[fStrikes_.length - 1];
         int extraCount = 0;
-        for (int i = 0; i < cStrikes_.length; i++) {
-            if (cStrikes_[i] > maxFstrike + eps) {
+        for ( int i = 0; i < cStrikes_.length; i++ ) {
+            if ( cStrikes_[i] > maxFstrike + eps ) {
                 ++extraCount;
             }
         }
         this.cfStrikes_ = new double[fStrikes_.length + extraCount];
-        for (int i = 0; i < fStrikes_.length; i++) {
-            this.cfStrikes_[i] = fStrikes_[i];
-        }
+        System.arraycopy(fStrikes_, 0, this.cfStrikes_, 0, fStrikes_.length);
         int p = fStrikes_.length;
-        for (int i = 0; i < cStrikes_.length; i++) {
-            if (cStrikes_[i] > maxFstrike + eps) {
+        for ( int i = 0; i < cStrikes_.length; i++ ) {
+            if ( cStrikes_[i] > maxFstrike + eps ) {
                 this.cfStrikes_[p++] = cStrikes_[i];
             }
         }
 
         QL.require(cfStrikes_.length > 2, "overall not enough strikes");
-        for (int i = 1; i < cfStrikes_.length; i++) {
-            QL.require(cfStrikes_[i] > cfStrikes_[i - 1],
-                    "cfStrikes not increasing");
+        for ( int i = 1; i < cfStrikes_.length; i++ ) {
+            QL.require(cfStrikes_[i] > cfStrikes_[i - 1], "cfStrikes not increasing");
         }
     }
 
     /**
-     * Mirrors C++ {@code detail::CPI::isInterpolated(CPI::InterpolationType,
-     * YoYInflationIndex)}: AsIndex follows the index, otherwise Linear is
-     * interpolated and Flat is not.
+     * Mirrors C++ {@code detail::CPI::isInterpolated(CPI::InterpolationType, YoYInflationIndex)}: AsIndex follows the
+     * index, otherwise Linear is interpolated and Flat is not.
      */
-    private static boolean isInterpolated(final CPI.InterpolationType t,
-                                          final YoYInflationIndex idx) {
-        if (t == CPI.InterpolationType.AsIndex) {
+    private static boolean isInterpolated(final CPI.InterpolationType t, final YoYInflationIndex idx) {
+        if ( t == CPI.InterpolationType.AsIndex ) {
             return idx != null && idx.interpolated();
         }
         return t == CPI.InterpolationType.Linear;
+    }
+
+    /**
+     * Mirrors C++ {@code YoYInflationIndex::interpolated()} accessor. Java's {@code YoYInflationIndex} exposes
+     * interpolated state via {@code interpolated()}; this is provided here to keep the isInterpolated logic
+     * centralised.
+     */
+    @SuppressWarnings( "unused" )
+    private static boolean indexInterpolated(final YoYInflationIndex idx) {
+        return idx != null && idx.interpolated();
     }
 
     public boolean indexIsInterpolated() {
@@ -219,9 +201,11 @@ public abstract class YoYCapFloorTermPriceSurface extends AbstractTermStructure 
     }
 
     /** ATM YoY swap times/rates from put-call parity. */
-    public abstract Pair<double[], double[]> atmYoYSwapTimeRates();
+    public abstract Pair< double[], double[] > atmYoYSwapTimeRates();
+
     /** ATM YoY swap dates/rates from put-call parity. */
-    public abstract Pair<Date[], double[]> atmYoYSwapDateRates();
+    public abstract Pair< Date[], double[] > atmYoYSwapDateRates();
+
     /** Derived YoY term structure (bootstrapped from the surface). */
     public abstract YoYInflationTermStructure yoyTS();
 
@@ -241,9 +225,13 @@ public abstract class YoYCapFloorTermPriceSurface extends AbstractTermStructure 
 
     /** Date-indexed price (cap or floor by ATM) — abstract. */
     public abstract double price(final Date d, final double k);
+
     public abstract double capPrice(final Date d, final double k);
+
     public abstract double floorPrice(final Date d, final double k);
+
     public abstract double atmYoYSwapRate(final Date d, final boolean extrapolate);
+
     public abstract double atmYoYRate(final Date d, final Period obsLag, final boolean extrapolate);
 
     /** Default obsLag = -1 day → uses observationLag(). */
@@ -251,14 +239,14 @@ public abstract class YoYCapFloorTermPriceSurface extends AbstractTermStructure 
         return atmYoYRate(d, new Period(-1, TimeUnit.Days), true);
     }
 
+    //
+    // Period overloads
+    //
+
     /** Default extrapolate=true. */
     public double atmYoYSwapRate(final Date d) {
         return atmYoYSwapRate(d, true);
     }
-
-    //
-    // Period overloads
-    //
 
     public double price(final Period d, final double k) {
         return price(yoyOptionDateFromTenor(d), k);
@@ -285,8 +273,7 @@ public abstract class YoYCapFloorTermPriceSurface extends AbstractTermStructure 
     }
 
     public double atmYoYRate(final Period d) {
-        return atmYoYRate(yoyOptionDateFromTenor(d),
-                new Period(-1, TimeUnit.Days), true);
+        return atmYoYRate(yoyOptionDateFromTenor(d), new Period(-1, TimeUnit.Days), true);
     }
 
     public double[] strikes() {
@@ -325,25 +312,14 @@ public abstract class YoYCapFloorTermPriceSurface extends AbstractTermStructure 
         return referenceDate().add(p);
     }
 
-    @SuppressWarnings("unused")
+    @SuppressWarnings( "unused" )
     protected boolean checkStrike(final double K) {
         return minStrike() <= K && K <= maxStrike();
     }
 
-    @SuppressWarnings("unused")
+    @SuppressWarnings( "unused" )
     protected boolean checkMaturity(final Date d) {
         return minMaturity().le(d) && d.le(maxMaturity());
-    }
-
-    /**
-     * Mirrors C++ {@code YoYInflationIndex::interpolated()} accessor.
-     * Java's {@code YoYInflationIndex} exposes interpolated state via
-     * {@code interpolated()}; this is provided here to keep the
-     * isInterpolated logic centralised.
-     */
-    @SuppressWarnings("unused")
-    private static boolean indexInterpolated(final YoYInflationIndex idx) {
-        return idx != null && idx.interpolated();
     }
 
 }

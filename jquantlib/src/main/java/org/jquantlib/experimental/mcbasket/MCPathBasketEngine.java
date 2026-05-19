@@ -33,16 +33,13 @@ import org.jquantlib.model.shortrate.StochasticProcessArray;
  * Monte Carlo engine for path-dependent basket options.
  *
  * <p>Phase 4i scaffold port of C++ QuantLib v1.42.1
- * {@code ql/experimental/mcbasket/mcpathbasketengine.{hpp,cpp}}::
- * {@code MCPathBasketEngine}.
- * Pinned commit {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
+ * {@code ql/experimental/mcbasket/mcpathbasketengine.{hpp,cpp}}:: {@code MCPathBasketEngine}. Pinned commit
+ * {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
  *
  * <p>The C++ engine is templated on
- * {@code <RNG = PseudoRandom, S = Statistics>} and inherits from
- * {@code McSimulation<MultiVariate,RNG,S>}. The Java port stores all the
- * named-parameter knobs but defers the actual MC loop to Phase 4i.5,
- * because it depends on {@code McSimulation<MultiVariate, ...>},
- * {@code MultiPathGenerator}, and {@code MultiPath} which are not yet
+ * {@code <RNG = PseudoRandom, S = Statistics>} and inherits from {@code McSimulation<MultiVariate,RNG,S>}. The Java
+ * port stores all the named-parameter knobs but defers the actual MC loop to Phase 4i.5, because it depends on
+ * {@code McSimulation<MultiVariate, ...>}, {@code MultiPathGenerator}, and {@code MultiPath} which are not yet
  * available in the Java codebase.
  */
 public class MCPathBasketEngine extends PathMultiAssetOption.EngineImpl {
@@ -58,12 +55,9 @@ public class MCPathBasketEngine extends PathMultiAssetOption.EngineImpl {
     protected final boolean controlVariate_;
     protected final long seed_;
 
-    public MCPathBasketEngine(final StochasticProcessArray process,
-            final int timeSteps, final int timeStepsPerYear,
-            final boolean brownianBridge,
-            final boolean antitheticVariate, final boolean controlVariate,
-            final int requiredSamples, final double requiredTolerance,
-            final int maxSamples, final long seed) {
+    public MCPathBasketEngine(final StochasticProcessArray process, final int timeSteps, final int timeStepsPerYear,
+            final boolean brownianBridge, final boolean antitheticVariate, final boolean controlVariate,
+            final int requiredSamples, final double requiredTolerance, final int maxSamples, final long seed) {
         super();
         this.process_ = process;
         this.timeSteps_ = timeSteps;
@@ -81,15 +75,12 @@ public class MCPathBasketEngine extends PathMultiAssetOption.EngineImpl {
                 "no time steps provided");
         QL.require(timeSteps == Constants.NULL_INTEGER || timeStepsPerYear == Constants.NULL_INTEGER,
                 "both time steps and time steps per year were provided");
-        QL.require(timeSteps != 0,
-                "timeSteps must be positive, " + timeSteps + " not allowed");
-        QL.require(timeStepsPerYear != 0,
-                "timeStepsPerYear must be positive, "
-                        + timeStepsPerYear + " not allowed");
+        QL.require(timeSteps != 0, "timeSteps must be positive, " + timeSteps + " not allowed");
+        QL.require(timeStepsPerYear != 0, "timeStepsPerYear must be positive, " + timeStepsPerYear + " not allowed");
 
         // C++ registers the engine with the process; the Java Observable
         // mechanism is consistent.
-        if (process_ != null) {
+        if ( process_ != null ) {
             process_.addObserver(this);
         }
     }
@@ -101,8 +92,7 @@ public class MCPathBasketEngine extends PathMultiAssetOption.EngineImpl {
         //                  codebase does not yet ship a multivariate
         //                  McSimulation; mirror lines 62-70 of
         //                  mcpathbasketengine.hpp once it does.
-        throw new UnsupportedOperationException(
-                "MCPathBasketEngine.calculate pending Phase 4i.5 "
-              + "(McSimulation<MultiVariate>, MultiPathGenerator, MultiPath)");
+        throw new UnsupportedOperationException("MCPathBasketEngine.calculate pending Phase 4i.5 "
+                + "(McSimulation<MultiVariate>, MultiPathGenerator, MultiPath)");
     }
 }

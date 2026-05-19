@@ -40,19 +40,17 @@
 
 package org.jquantlib.math.interpolations.factories;
 
-import org.jquantlib.math.interpolations.CubicInterpolation;
-import org.jquantlib.math.interpolations.Interpolation;
-import org.jquantlib.math.interpolations.LogCubicInterpolation;
 import org.jquantlib.math.interpolations.CubicInterpolation.BoundaryCondition;
 import org.jquantlib.math.interpolations.CubicInterpolation.DerivativeApprox;
+import org.jquantlib.math.interpolations.Interpolation;
+import org.jquantlib.math.interpolations.LogCubicInterpolation;
 import org.jquantlib.math.matrixutilities.Array;
 
 /**
  * LogCubic interpolation factory and traits
  *
- * @see LogCubicInterpolation
- *
  * @author Richard Gomes
+ * @see LogCubicInterpolation
  */
 public class LogCubic implements Interpolation.Interpolator {
     private final DerivativeApprox da;
@@ -62,17 +60,12 @@ public class LogCubic implements Interpolation.Interpolator {
     private final double rightValue;
     private final boolean monotonic;
 
-
     public LogCubic(final DerivativeApprox da) {
         this(da, false, BoundaryCondition.SecondDerivative, 0.0, BoundaryCondition.SecondDerivative, 0.0);
     }
-    public LogCubic(
-            final DerivativeApprox da,
-            final boolean monotonic,
-            final BoundaryCondition leftCondition,
-            final double leftConditionValue,
-            final BoundaryCondition rightCondition,
-            final double rightConditionValue) {
+
+    public LogCubic(final DerivativeApprox da, final boolean monotonic, final BoundaryCondition leftCondition,
+            final double leftConditionValue, final BoundaryCondition rightCondition, final double rightConditionValue) {
         this.da = da;
         this.monotonic = monotonic;
         this.leftType = leftCondition;
@@ -82,10 +75,14 @@ public class LogCubic implements Interpolation.Interpolator {
     }
 
     @Override
-    public final boolean global()     { return true; }
+    public final boolean global() {
+        return true;
+    }
 
     @Override
-    public final int requiredPoints() { return 2; }
+    public final int requiredPoints() {
+        return 2;
+    }
 
     @Override
     public final Interpolation interpolate(final Array vx, final Array vy) /* @ReadOnly */ {

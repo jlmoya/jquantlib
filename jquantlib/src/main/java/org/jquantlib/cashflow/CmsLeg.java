@@ -60,17 +60,16 @@ public class CmsLeg {
 
     private final Schedule schedule_;
     private final SwapIndex swapIndex_;
-    private/* @Real */Array notionals_;
+    private/* @Real */ Array notionals_;
     private DayCounter paymentDayCounter_;
     private BusinessDayConvention paymentAdjustment_;
     private Array fixingDays_;
     private Array gearings_;
-    private/* @Spread */Array spreads_;
-    private/* @Rate */Array caps_;
+    private/* @Spread */ Array spreads_;
+    private/* @Rate */ Array caps_;
     private Array floors_;
     private boolean inArrears_;
     private boolean zeroPayments_;
-
 
     public CmsLeg(final Schedule schedule, final SwapIndex swapIndex) {
         schedule_ = schedule;
@@ -78,14 +77,13 @@ public class CmsLeg {
         paymentAdjustment_ = BusinessDayConvention.Following;
         inArrears_ = false;
         zeroPayments_ = false;
-        
+
         fixingDays_ = new Array(0);
         gearings_ = new Array(0);
         spreads_ = new Array(0);
         caps_ = new Array(0);
         floors_ = new Array(0);
     }
-
 
     public CmsLeg withNotionals(/* Real */final double notional) {
         notionals_ = new Array(1).fill(notional);
@@ -97,7 +95,6 @@ public class CmsLeg {
         return this;
     }
 
-    
     public CmsLeg withPaymentDayCounter(final DayCounter dayCounter) {
         paymentDayCounter_ = dayCounter;
         return this;
@@ -107,7 +104,7 @@ public class CmsLeg {
         paymentAdjustment_ = convention;
         return this;
     }
-    
+
     public CmsLeg withFixingDays(/* Natural */final int fixingDays) {
         fixingDays_ = new Array(1).fill(fixingDays);
         return this;
@@ -169,11 +166,9 @@ public class CmsLeg {
     }
 
     public Leg Leg() {
-        return new FloatingLeg<SwapIndex, CmsCoupon, CappedFlooredCmsCoupon> (
-        		SwapIndex.class, CmsCoupon.class, CappedFlooredCmsCoupon.class,
-        		notionals_, schedule_, swapIndex_, paymentDayCounter_,
-       			paymentAdjustment_, fixingDays_, gearings_, spreads_,
-       			caps_, floors_, inArrears_, zeroPayments_);
+        return new FloatingLeg< SwapIndex, CmsCoupon, CappedFlooredCmsCoupon >(SwapIndex.class, CmsCoupon.class,
+                CappedFlooredCmsCoupon.class, notionals_, schedule_, swapIndex_, paymentDayCounter_, paymentAdjustment_,
+                fixingDays_, gearings_, spreads_, caps_, floors_, inArrears_, zeroPayments_);
     }
 
 }

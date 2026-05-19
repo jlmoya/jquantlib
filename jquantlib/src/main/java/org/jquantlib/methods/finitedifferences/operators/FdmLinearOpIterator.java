@@ -26,25 +26,21 @@ import java.util.Arrays;
 /**
  * Per-cell iterator for an N-d {@link FdmLinearOpLayout}.
  * <p>
- * Java port of v1.42.1
- * ql/methods/finitedifferences/operators/fdmlinearopiterator.hpp.
+ * Java port of v1.42.1 ql/methods/finitedifferences/operators/fdmlinearopiterator.hpp.
  * <p>
- * Holds the current flat {@link #index()} and the matching N-d
- * {@link #coordinates()}. Walks the layout in column-major (row-fastest)
- * order, which matches C++ where {@code coordinates_[0]} is the inner-most
- * loop index.
+ * Holds the current flat {@link #index()} and the matching N-d {@link #coordinates()}. Walks the layout in column-major
+ * (row-fastest) order, which matches C++ where {@code coordinates_[0]} is the inner-most loop index.
  *
  * @author Phase 2h WI-1 port
  */
 public final class FdmLinearOpIterator {
 
-    private int index;
     private final int[] dim;
     private final int[] coordinates;
+    private int index;
 
     /**
-     * "End" iterator constructor (no dimensions; just a flat index).
-     * Used by {@link FdmLinearOpLayout#end()}.
+     * "End" iterator constructor (no dimensions; just a flat index). Used by {@link FdmLinearOpLayout#end()}.
      */
     public FdmLinearOpIterator(final int index) {
         this.index = index;
@@ -62,9 +58,8 @@ public final class FdmLinearOpIterator {
     }
 
     /**
-     * Full-state constructor — used by
-     * {@link FdmLinearOpLayout#iterNeighbourhood} to construct a
-     * relocated iterator without re-walking from origin.
+     * Full-state constructor — used by {@link FdmLinearOpLayout#iterNeighbourhood} to construct a relocated iterator
+     * without re-walking from origin.
      */
     public FdmLinearOpIterator(final int[] dim, final int[] coordinates, final int index) {
         this.index = index;
@@ -75,13 +70,12 @@ public final class FdmLinearOpIterator {
     /**
      * Advance to the next cell in column-major order.
      * <p>
-     * Returns {@code this} so callers can chain.
-     * Java port of C++ {@code operator++()}.
+     * Returns {@code this} so callers can chain. Java port of C++ {@code operator++()}.
      */
     public FdmLinearOpIterator increment() {
         ++index;
-        for (int i = 0; i < dim.length; ++i) {
-            if (++coordinates[i] == dim[i]) {
+        for ( int i = 0; i < dim.length; ++i ) {
+            if ( ++coordinates[i] == dim[i] ) {
                 coordinates[i] = 0;
             } else {
                 break;
@@ -98,10 +92,9 @@ public final class FdmLinearOpIterator {
     /**
      * Read-only view into the current N-d coordinates.
      * <p>
-     * Note: C++ returns a {@code const std::vector<Size>&}; Java returns
-     * the live backing array (callers must not mutate). This avoids the
-     * cost of a defensive clone on every per-cell call from
-     * TripleBandLinearOp / NinePointLinearOp / FirstDerivativeOp etc.
+     * Note: C++ returns a {@code const std::vector<Size>&}; Java returns the live backing array (callers must not
+     * mutate). This avoids the cost of a defensive clone on every per-cell call from TripleBandLinearOp /
+     * NinePointLinearOp / FirstDerivativeOp etc.
      */
     public int[] coordinates() {
         return coordinates;
@@ -109,10 +102,10 @@ public final class FdmLinearOpIterator {
 
     @Override
     public boolean equals(final Object other) {
-        if (other == this) {
+        if ( other == this ) {
             return true;
         }
-        if (!(other instanceof FdmLinearOpIterator)) {
+        if ( !(other instanceof FdmLinearOpIterator) ) {
             return false;
         }
         return index == ((FdmLinearOpIterator) other).index;

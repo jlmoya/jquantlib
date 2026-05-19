@@ -26,29 +26,25 @@ import java.util.function.Function;
  * Common interface for the {@link LatentModel} integration backends.
  *
  * <p>Java port of QuantLib v1.42.1 {@code LMIntegration} (declared in
- * {@code ql/experimental/math/latentmodel.hpp}). Pinned commit
- * {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
+ * {@code ql/experimental/math/latentmodel.hpp}). Pinned commit {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
  *
  * <p>Unifies the two C++ multi-dimensional integration families
- * ({@code GaussianQuadMultidimIntegrator}, {@code MultidimIntegral}) under a
- * common factory-friendly interface so that {@link LatentModel} can choose
- * the integration algorithm at runtime.
+ * ({@code GaussianQuadMultidimIntegrator}, {@code MultidimIntegral}) under a common factory-friendly interface so that
+ * {@link LatentModel} can choose the integration algorithm at runtime.
  */
 public interface LMIntegration {
 
     /**
-     * Integrate a scalar function {@code f: R^d → R} over the integration
-     * domain (typically {@code R^d} or a bounded hyper-rectangle, depending
-     * on the concrete backend).
+     * Integrate a scalar function {@code f: R^d → R} over the integration domain (typically {@code R^d} or a bounded
+     * hyper-rectangle, depending on the concrete backend).
      */
-    double integrate(Function<double[], Double> f);
+    double integrate(Function< double[], Double > f);
 
     /**
-     * Integrate a vector function {@code f: R^d → R^k} over the integration
-     * domain. The default throws; backends supporting vector integration
-     * override this method.
+     * Integrate a vector function {@code f: R^d → R^k} over the integration domain. The default throws; backends
+     * supporting vector integration override this method.
      */
-    default double[] integrateV(Function<double[], double[]> f) {
+    default double[] integrateV(Function< double[], double[] > f) {
         throw new UnsupportedOperationException("No vector integration provided");
     }
 }

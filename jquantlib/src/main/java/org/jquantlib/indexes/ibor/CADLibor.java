@@ -49,40 +49,33 @@ import org.jquantlib.time.Period;
 import org.jquantlib.time.calendars.Canada;
 
 /**
- * Canadian Dollar LIBOR fixed by BBA.
- * See <http://www.bba.org.uk/bba/jsp/polopoly.jsp?d=225&a=1414>.
- * This is the rate fixed in London by BBA. Use CDOR if
- * you're interested in the Canadian fixing by IDA.
+ * Canadian Dollar LIBOR fixed by BBA. See <http://www.bba.org.uk/bba/jsp/polopoly.jsp?d=225&a=1414>. This is the rate
+ * fixed in London by BBA. Use CDOR if you're interested in the Canadian fixing by IDA.
  */
 public class CADLibor extends Libor {
 
-	public CADLibor(final Period tenor) {
-		this(tenor, new Handle<YieldTermStructure>(
-						new AbstractYieldTermStructure() {
-							@Override
-							protected double discountImpl(final double t) {
-								throw new UnsupportedOperationException();
-							}
-							@Override
-							public Date maxDate() {
-								throw new UnsupportedOperationException();
-							}
-						}
-				));
-	}
+    public CADLibor(final Period tenor) {
+        this(tenor, new Handle< YieldTermStructure >(new AbstractYieldTermStructure() {
+            @Override
+            protected double discountImpl(final double t) {
+                throw new UnsupportedOperationException();
+            }
 
-	public CADLibor(final Period tenor,
-			final Handle<YieldTermStructure> h) {
-		// align(indexes.ibor): match C++ v1.42.1 cadlibor.hpp settlementDays=0
-		// (was 2) and dayCounter=Actual365Fixed (was Actual360). Per OpenGamma
-		// "Interest Rate Instruments and Market Conventions Guide", BBG, IKON
-		// — CAD LIBOR (London BBA fixing, discontinued 2013) used CAD
-		// Actual/365 day count and a same-day value-date convention, contrary
-		// to the typical 2-day Actual/360 LIBOR template.
-		super("CADLibor", tenor, 0,
-				new CADCurrency(),
-				new Canada(),
-				new Actual365Fixed(), h);
-	}
+            @Override
+            public Date maxDate() {
+                throw new UnsupportedOperationException();
+            }
+        }));
+    }
+
+    public CADLibor(final Period tenor, final Handle< YieldTermStructure > h) {
+        // align(indexes.ibor): match C++ v1.42.1 cadlibor.hpp settlementDays=0
+        // (was 2) and dayCounter=Actual365Fixed (was Actual360). Per OpenGamma
+        // "Interest Rate Instruments and Market Conventions Guide", BBG, IKON
+        // — CAD LIBOR (London BBA fixing, discontinued 2013) used CAD
+        // Actual/365 day count and a same-day value-date convention, contrary
+        // to the typical 2-day Actual/360 LIBOR template.
+        super("CADLibor", tenor, 0, new CADCurrency(), new Canada(), new Actual365Fixed(), h);
+    }
 
 }

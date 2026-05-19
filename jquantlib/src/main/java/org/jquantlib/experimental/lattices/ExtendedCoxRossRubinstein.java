@@ -48,9 +48,8 @@ import org.jquantlib.processes.StochasticProcess1D;
 /**
  * Cox-Ross-Rubinstein (multiplicative) equal jumps binomial tree
  *
- * @category lattices
- *
  * @author Richard Gomes
+ * @category lattices
  */
 public class ExtendedCoxRossRubinstein extends ExtendedEqualJumpsBinomialTree /*<ExtendedCoxRossRubinstein> */ {
 
@@ -58,21 +57,17 @@ public class ExtendedCoxRossRubinstein extends ExtendedEqualJumpsBinomialTree /*
     // public methods
     //
 
-    public ExtendedCoxRossRubinstein(
-            final StochasticProcess1D process,
-            final /* @Time */ double end,
-            final int steps,
+    public ExtendedCoxRossRubinstein(final StochasticProcess1D process, final /* @Time */ double end, final int steps,
             final double strike) {
 
         super(process, end, steps);
         this.dx = process.stdDeviation(0.0, x0, dt);
-        this.pu = 0.5 + 0.5*driftStep(0.0)/dx;
+        this.pu = 0.5 + 0.5 * driftStep(0.0) / dx;
         this.pd = 1.0 - pu;
 
-        QL.require(pu<=1.0, NEGATIVE_PROBABILITY);
-        QL.require(pu>=0.0, NEGATIVE_PROBABILITY);
+        QL.require(pu <= 1.0, NEGATIVE_PROBABILITY);
+        QL.require(pu >= 0.0, NEGATIVE_PROBABILITY);
     }
-
 
     //
     // protected methods
@@ -85,7 +80,7 @@ public class ExtendedCoxRossRubinstein extends ExtendedEqualJumpsBinomialTree /*
 
     @Override
     protected double probUp(/* @Time */ final double stepTime) /* @ReadOnly */ {
-        return 0.5 + 0.5*driftStep(stepTime)/dxStep(stepTime);
+        return 0.5 + 0.5 * driftStep(stepTime) / dxStep(stepTime);
     }
 
 }

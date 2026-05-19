@@ -15,10 +15,6 @@
  */
 package org.jquantlib.pricingengines.swaption;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 import org.jquantlib.cashflow.FixedRateCoupon;
 import org.jquantlib.cashflow.FloatingRateCoupon;
 import org.jquantlib.cashflow.Leg;
@@ -32,15 +28,17 @@ import org.jquantlib.pricingengines.swap.DiscretizedSwap;
 import org.jquantlib.pricingengines.swap.DiscretizedSwap.CouponAdjustment;
 import org.jquantlib.time.Date;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * Discretized swaption helper for tree-based pricing.
  * <p>
- * Port of C++ v1.42.1
- * {@code ql/pricingengines/swaption/discretizedswaption.{hpp,cpp}}.
+ * Port of C++ v1.42.1 {@code ql/pricingengines/swaption/discretizedswaption.{hpp,cpp}}.
  * <p>
- * Mirrors the C++ "date snapping" pre-processing step which re-aligns
- * coupon reset/pay dates within ±7 days of any exercise date so that the
- * time vectors line up cleanly on the lattice grid (avoids mispricing).
+ * Mirrors the C++ "date snapping" pre-processing step which re-aligns coupon reset/pay dates within ±7 days of any
+ * exercise date so that the time vectors line up cleanly on the lattice grid (avoids mispricing).
  *
  * <h3>Java port deviations from C++ v1.42.1</h3>
  * <ul>
@@ -63,45 +61,34 @@ public class DiscretizedSwaption extends DiscretizedOption {
 
     private final double lastPayment_;
 
-    public DiscretizedSwaption(final Swaption.ArgumentsImpl args,
-            final Date referenceDate, final DayCounter dayCounter) {
-        super(buildSnappedSwap(args, referenceDate, dayCounter),
-                args.exercise.type(), buildExerciseTimes(args.exercise, referenceDate, dayCounter));
+    public DiscretizedSwaption(final Swaption.ArgumentsImpl args, final Date referenceDate,
+            final DayCounter dayCounter) {
+        super(buildSnappedSwap(args, referenceDate, dayCounter), args.exercise.type(),
+                buildExerciseTimes(args.exercise, referenceDate, dayCounter));
         // Compute the swaption's terminal payment time from the underlying
         // swap (snapping doesn't move the last pay date).
-        final List<Date> fixedDates = args.swap.fixedSchedule().dates();
-        final List<Date> floatDates = args.swap.floatingSchedule().dates();
-        final double lastFixed = dayCounter.yearFraction(referenceDate,
-                fixedDates.get(fixedDates.size() - 1));
-        final double lastFloat = dayCounter.yearFraction(referenceDate,
-                floatDates.get(floatDates.size() - 1));
+        final List< Date > fixedDates = args.swap.fixedSchedule().dates();
+        final List< Date > floatDates = args.swap.floatingSchedule().dates();
+        final double lastFixed = dayCounter.yearFraction(referenceDate, fixedDates.get(fixedDates.size() - 1));
+        final double lastFloat = dayCounter.yearFraction(referenceDate, floatDates.get(floatDates.size() - 1));
         this.lastPayment_ = Math.max(lastFixed, lastFloat);
     }
 
-    @Override
-    public void reset(final int size) {
-        underlying.initialize(method(), lastPayment_);
-        super.reset(size);
-    }
-
-    private static Array buildExerciseTimes(final Exercise exercise,
-            final Date referenceDate, final DayCounter dc) {
+    private static Array buildExerciseTimes(final Exercise exercise, final Date referenceDate, final DayCounter dc) {
         final int n = exercise.dates().size();
         final Array out = new Array(n);
-        for (int i = 0; i < n; i++) {
+        for ( int i = 0; i < n; i++ ) {
             out.set(i, dc.yearFraction(referenceDate, exercise.date(i)));
         }
         return out;
     }
 
     /**
-     * Mirrors C++ {@code prepareSwaptionWithSnappedDates}: collect the
-     * unadjusted coupon dates, snap any within ±7 days of an exercise date
-     * to the exercise date itself, and pass the snapped reset dates to
-     * {@link DiscretizedSwap}.
+     * Mirrors C++ {@code prepareSwaptionWithSnappedDates}: collect the unadjusted coupon dates, snap any within ±7 days
+     * of an exercise date to the exercise date itself, and pass the snapped reset dates to {@link DiscretizedSwap}.
      */
-    private static DiscretizedSwap buildSnappedSwap(final Swaption.ArgumentsImpl args,
-            final Date referenceDate, final DayCounter dayCounter) {
+    private static DiscretizedSwap buildSnappedSwap(final Swaption.ArgumentsImpl args, final Date referenceDate,
+            final DayCounter dayCounter) {
 
         final VanillaSwap orig = args.swap;
         final Leg fixedLeg = orig.fixedLeg();
@@ -110,12 +97,12 @@ public class DiscretizedSwaption extends DiscretizedOption {
         final int nFloat = floatLeg.size();
 
         // Start from each coupon's accrualStartDate (a.k.a. reset date).
-        final List<Date> snappedFixed = new ArrayList<Date>(nFixed);
-        for (int i = 0; i < nFixed; i++) {
+        final List< Date > snappedFixed = new ArrayList< Date >(nFixed);
+        for ( int i = 0; i < nFixed; i++ ) {
             snappedFixed.add(((FixedRateCoupon) fixedLeg.get(i)).accrualStartDate());
         }
-        final List<Date> snappedFloat = new ArrayList<Date>(nFloat);
-        for (int i = 0; i < nFloat; i++) {
+        final List< Date > snappedFloat = new ArrayList< Date >(nFloat);
+        for ( int i = 0; i < nFloat; i++ ) {
             snappedFloat.add(((FloatingRateCoupon) floatLeg.get(i)).accrualStartDate());
         }
 
@@ -127,44 +114,49 @@ public class DiscretizedSwaption extends DiscretizedOption {
         // C++ iterates schedule dates excluding the LAST one; in Java we map
         // that to "the reset date of every coupon" (each coupon's accrualStart
         // corresponds to a schedule date that's not the terminal pay date).
-        for (final Date exerciseDate : args.exercise.dates()) {
-            for (int j = 0; j < nFixed; j++) {
+        for ( final Date exerciseDate : args.exercise.dates() ) {
+            for ( int j = 0; j < nFixed; j++ ) {
                 final Date u = snappedFixed.get(j);
-                if (!exerciseDate.eq(u) && withinOneWeek(exerciseDate, u)) {
+                if ( !exerciseDate.eq(u) && withinOneWeek(exerciseDate, u) ) {
                     snappedFixed.set(j, exerciseDate);
-                    if (withinPreviousWeek(exerciseDate, u)) {
+                    if ( withinPreviousWeek(exerciseDate, u) ) {
                         fixedAdj[j] = CouponAdjustment.post;
                     }
                 }
             }
-            for (int j = 0; j < nFloat; j++) {
+            for ( int j = 0; j < nFloat; j++ ) {
                 final Date u = snappedFloat.get(j);
-                if (!exerciseDate.eq(u) && withinOneWeek(exerciseDate, u)) {
+                if ( !exerciseDate.eq(u) && withinOneWeek(exerciseDate, u) ) {
                     snappedFloat.set(j, exerciseDate);
-                    if (withinPreviousWeek(exerciseDate, u)) {
+                    if ( withinPreviousWeek(exerciseDate, u) ) {
                         floatAdj[j] = CouponAdjustment.post;
                     }
                 }
             }
         }
 
-        return new DiscretizedSwap(orig, referenceDate, dayCounter,
-                fixedAdj, floatAdj, snappedFixed, snappedFloat);
+        return new DiscretizedSwap(orig, referenceDate, dayCounter, fixedAdj, floatAdj, snappedFixed, snappedFloat);
     }
 
     private static boolean withinPreviousWeek(final Date d1, final Date d2) {
         // d2 is in [d1 - 7, d1].
-        final long diff = (long) d1.serialNumber() - (long) d2.serialNumber();
+        final long diff = d1.serialNumber() - d2.serialNumber();
         return diff >= 0 && diff <= 7;
     }
 
     private static boolean withinNextWeek(final Date d1, final Date d2) {
         // d2 is in [d1, d1 + 7].
-        final long diff = (long) d2.serialNumber() - (long) d1.serialNumber();
+        final long diff = d2.serialNumber() - d1.serialNumber();
         return diff >= 0 && diff <= 7;
     }
 
     private static boolean withinOneWeek(final Date d1, final Date d2) {
         return withinPreviousWeek(d1, d2) || withinNextWeek(d1, d2);
+    }
+
+    @Override
+    public void reset(final int size) {
+        underlying.initialize(method(), lastPayment_);
+        super.reset(size);
     }
 }

@@ -30,9 +30,8 @@ import org.jquantlib.QL;
 import org.jquantlib.model.marketmodels.MarketModel;
 
 /**
- * A "cluster" of pseudo-root elements that get bumped together when computing
- * vegas. When bumping vols, bumping every pseudo-root element individually
- * seems excessive, so we couple some together.
+ * A "cluster" of pseudo-root elements that get bumped together when computing vegas. When bumping vols, bumping every
+ * pseudo-root element individually seems excessive, so we couple some together.
  *
  * <p>A cluster is a tensor-product of three half-open ranges:
  * {@code [factorBegin, factorEnd) × [rateBegin, rateEnd) × [stepBegin, stepEnd)}.
@@ -51,18 +50,11 @@ public class VegaBumpCluster {
     private final int stepBegin_;
     private final int stepEnd_;
 
-    public VegaBumpCluster(final int factorBegin,
-                           final int factorEnd,
-                           final int rateBegin,
-                           final int rateEnd,
-                           final int stepBegin,
-                           final int stepEnd) {
-        QL.require(factorBegin < factorEnd,
-                "must have factorBegin_ < factorEnd_ in VegaBumpCluster");
-        QL.require(rateBegin < rateEnd,
-                "must have rateBegin_ < rateEnd_ in VegaBumpCluster");
-        QL.require(stepBegin < stepEnd,
-                "must have stepBegin_ < stepEnd_ in VegaBumpCluster");
+    public VegaBumpCluster(final int factorBegin, final int factorEnd, final int rateBegin, final int rateEnd,
+            final int stepBegin, final int stepEnd) {
+        QL.require(factorBegin < factorEnd, "must have factorBegin_ < factorEnd_ in VegaBumpCluster");
+        QL.require(rateBegin < rateEnd, "must have rateBegin_ < rateEnd_ in VegaBumpCluster");
+        QL.require(stepBegin < stepEnd, "must have stepBegin_ < stepEnd_ in VegaBumpCluster");
         this.factorBegin_ = factorBegin;
         this.factorEnd_ = factorEnd;
         this.rateBegin_ = rateBegin;
@@ -73,34 +65,57 @@ public class VegaBumpCluster {
 
     /** Tests whether this cluster overlaps any element in {@code comparee}. */
     public boolean doesIntersect(final VegaBumpCluster comparee) {
-        if (factorEnd_ <= comparee.factorBegin_) return false;
-        if (rateEnd_ <= comparee.rateBegin_) return false;
-        if (stepEnd_ <= comparee.stepBegin_) return false;
+        if ( factorEnd_ <= comparee.factorBegin_ )
+            return false;
+        if ( rateEnd_ <= comparee.rateBegin_ )
+            return false;
+        if ( stepEnd_ <= comparee.stepBegin_ )
+            return false;
 
-        if (comparee.factorEnd_ <= factorBegin_) return false;
-        if (comparee.rateEnd_ <= rateBegin_) return false;
-        if (comparee.stepEnd_ <= stepBegin_) return false;
-
-        return true;
+        if ( comparee.factorEnd_ <= factorBegin_ )
+            return false;
+        if ( comparee.rateEnd_ <= rateBegin_ )
+            return false;
+        return comparee.stepEnd_ > stepBegin_;
     }
 
     /**
-     * Tests whether this cluster fits within the dimensions of the supplied
-     * volatility structure (and references only alive rates).
+     * Tests whether this cluster fits within the dimensions of the supplied volatility structure (and references only
+     * alive rates).
      */
     public boolean isCompatible(final MarketModel volStructure) {
-        if (rateEnd_ > volStructure.numberOfRates()) return false;
-        if (stepEnd_ > volStructure.numberOfSteps()) return false;
-        if (factorEnd_ > volStructure.numberOfFactors()) return false;
+        if ( rateEnd_ > volStructure.numberOfRates() )
+            return false;
+        if ( stepEnd_ > volStructure.numberOfSteps() )
+            return false;
+        if ( factorEnd_ > volStructure.numberOfFactors() )
+            return false;
 
         final int firstAliveRate = volStructure.evolution().firstAliveRate()[stepEnd_ - 1];
         return rateBegin_ >= firstAliveRate;
     }
 
-    public int factorBegin() { return factorBegin_; }
-    public int factorEnd()   { return factorEnd_; }
-    public int rateBegin()   { return rateBegin_; }
-    public int rateEnd()     { return rateEnd_; }
-    public int stepBegin()   { return stepBegin_; }
-    public int stepEnd()     { return stepEnd_; }
+    public int factorBegin() {
+        return factorBegin_;
+    }
+
+    public int factorEnd() {
+        return factorEnd_;
+    }
+
+    public int rateBegin() {
+        return rateBegin_;
+    }
+
+    public int rateEnd() {
+        return rateEnd_;
+    }
+
+    public int stepBegin() {
+        return stepBegin_;
+    }
+
+    public int stepEnd() {
+        return stepEnd_;
+    }
 }

@@ -43,9 +43,8 @@ import org.jquantlib.time.Period;
 import org.jquantlib.time.TimeUnit;
 
 /**
- * Helper class to strip optionlet (i.e. caplet/floorlet) volatilities
- * (a.k.a. forward-forward volatilities) from the (cap/floor) term
- * volatilities of a {@link CapFloorTermVolSurface}.
+ * Helper class to strip optionlet (i.e. caplet/floorlet) volatilities (a.k.a. forward-forward volatilities) from the
+ * (cap/floor) term volatilities of a {@link CapFloorTermVolSurface}.
  *
  * <p>Port of C++ QuantLib v1.42.1
  * {@code ql/termstructures/volatility/optionlet/optionletstripper1.{hpp,cpp}}.
@@ -69,31 +68,26 @@ public class OptionletStripper1 extends OptionletStripper {
     // private fields
     //
 
-    private Matrix capFloorPrices_, optionletPrices_;
-    private Matrix capFloorVols_;
-    private Matrix optionletStDevs_, capletVols_;
-
     private final boolean floatingSwitchStrike_;
-    private double switchStrike_;
     private final double accuracy_;
-    @SuppressWarnings("unused")
+    @SuppressWarnings( "unused" )
     private final int maxIter_;
     private final boolean dontThrow_;
+    private final Matrix capFloorPrices_;
+    private final Matrix optionletPrices_;
+    private final Matrix capFloorVols_;
+    private final Matrix optionletStDevs_;
+    private final Matrix capletVols_;
+    private double switchStrike_;
 
     //
     // public constructors
     //
 
-    public OptionletStripper1(final CapFloorTermVolSurface termVolSurface,
-                              final IborIndex index,
-                              final double switchStrike,
-                              final double accuracy,
-                              final int maxIter,
-                              final Handle<YieldTermStructure> discount,
-                              final VolatilityType type,
-                              final double displacement,
-                              final boolean dontThrow,
-                              final Period optionletFrequency) {
+    public OptionletStripper1(final CapFloorTermVolSurface termVolSurface, final IborIndex index,
+            final double switchStrike, final double accuracy, final int maxIter,
+            final Handle< YieldTermStructure > discount, final VolatilityType type, final double displacement,
+            final boolean dontThrow, final Period optionletFrequency) {
         super(termVolSurface, index, discount, type, displacement, optionletFrequency);
         this.floatingSwitchStrike_ = (switchStrike == Constants.NULL_REAL);
         this.switchStrike_ = switchStrike;
@@ -109,22 +103,17 @@ public class OptionletStripper1 extends OptionletStripper {
         // C++ comment: "guess is only used for shifted lognormal vols"
         final double firstGuess = 0.14;
         this.optionletStDevs_ = new Matrix(nOptionletTenors_, nStrikes_);
-        for (int i = 0; i < nOptionletTenors_; ++i) {
-            for (int j = 0; j < nStrikes_; ++j) {
+        for ( int i = 0; i < nOptionletTenors_; ++i ) {
+            for ( int j = 0; j < nStrikes_; ++j ) {
                 optionletStDevs_.set(i, j, firstGuess);
             }
         }
     }
 
     /** Convenience: ATM switch strike, default tolerances, ShiftedLognormal. */
-    public OptionletStripper1(final CapFloorTermVolSurface termVolSurface,
-                              final IborIndex index) {
-        this(termVolSurface, index,
-                Constants.NULL_REAL,
-                1.0e-6, 100,
-                new Handle<YieldTermStructure>(),
-                VolatilityType.ShiftedLognormal, 0.0,
-                false, null);
+    public OptionletStripper1(final CapFloorTermVolSurface termVolSurface, final IborIndex index) {
+        this(termVolSurface, index, Constants.NULL_REAL, 1.0e-6, 100, new Handle< YieldTermStructure >(),
+                VolatilityType.ShiftedLognormal, 0.0, false, null);
     }
 
     //
@@ -140,8 +129,7 @@ public class OptionletStripper1 extends OptionletStripper {
         final DayCounter dc = termVolSurface_.dayCounter();
         // Discounting curve does not matter for this dummy engine — we only
         // pull fixing/payment dates from the constructed cap.
-        final BlackCapFloorEngine dummy = new BlackCapFloorEngine(
-                iborIndex_.termStructure(), 0.20, dc);
+        final BlackCapFloorEngine dummy = new BlackCapFloorEngine(iborIndex_.termStructure(), 0.20, dc);
         // Phase 5g.5f: when iborIndex is an OvernightIndex, the index's
         // native tenor() is 1*Days; OvernightLeg.leg() needs a payment-period
         // schedule (e.g., 3M) to build OvernightIndexedCoupons whose internal
@@ -149,18 +137,15 @@ public class OptionletStripper1 extends OptionletStripper {
         // optionletFrequency_ as the floating-leg tenor in that case.
         // (For an IborIndex this stays at the default index.tenor().)
         final boolean indexIsOvernight = iborIndex_ instanceof OvernightIndex;
-        for (int i = 0; i < nOptionletTenors_; ++i) {
-            final MakeCapFloor mcf = new MakeCapFloor(CapFloor.Type.Cap,
-                    capFloorLengths_.get(i), iborIndex_,
+        for ( int i = 0; i < nOptionletTenors_; ++i ) {
+            final MakeCapFloor mcf = new MakeCapFloor(CapFloor.Type.Cap, capFloorLengths_.get(i), iborIndex_,
                     0.04, // dummy strike
-                    new Period(0, TimeUnit.Days))
-                    .withPricingEngine(dummy);
-            if (indexIsOvernight) {
+                    new Period(0, TimeUnit.Days)).withPricingEngine(dummy);
+            if ( indexIsOvernight ) {
                 mcf.withTenor(optionletFrequency_);
             }
             final CapFloor temp = mcf.value();
-            final FloatingRateCoupon lFRC = (FloatingRateCoupon)
-                    temp.floatingLeg().get(temp.floatingLeg().size() - 1);
+            final FloatingRateCoupon lFRC = (FloatingRateCoupon) temp.floatingLeg().get(temp.floatingLeg().size() - 1);
             optionletDates_.set(i, lFRC.fixingDate());
             optionletPaymentDates_.set(i, lFRC.date());
             optionletAccrualPeriods_.set(i, lFRC.accrualPeriod());
@@ -168,55 +153,47 @@ public class OptionletStripper1 extends OptionletStripper {
             atmOptionletRate_.set(i, lFRC.indexFixing());
         }
 
-        if (floatingSwitchStrike_) {
+        if ( floatingSwitchStrike_ ) {
             double sum = 0.0;
-            for (int i = 0; i < nOptionletTenors_; ++i) {
+            for ( int i = 0; i < nOptionletTenors_; ++i ) {
                 sum += atmOptionletRate_.get(i);
             }
             switchStrike_ = sum / nOptionletTenors_;
         }
 
-        final Handle<YieldTermStructure> discountCurve =
-                (discount_ == null || discount_.empty())
-                        ? iborIndex_.termStructure() : discount_;
+        final Handle< YieldTermStructure > discountCurve = (discount_ == null || discount_.empty())
+                ? iborIndex_.termStructure()
+                : discount_;
 
         final double[] strikes = termVolSurface_.strikes();
 
         final SimpleQuote volQuote = new SimpleQuote(0.0);
         final PricingEngine capFloorEngine;
-        if (volatilityType_ == VolatilityType.ShiftedLognormal) {
+        if ( volatilityType_ == VolatilityType.ShiftedLognormal ) {
             // Phase 5g.5f: forward displacement_ to inner Black engine so the
             // shifted-lognormal stripping path handles negative-strike caps
             // (matches C++ optionletstripper1.cpp lines 105-109).
-            capFloorEngine = new BlackCapFloorEngine(discountCurve,
-                    new Handle<Quote>(volQuote), dc, displacement_);
-        } else if (volatilityType_ == VolatilityType.Normal) {
-            capFloorEngine = new BachelierCapFloorEngine(discountCurve,
-                    new Handle<Quote>(volQuote), dc);
+            capFloorEngine = new BlackCapFloorEngine(discountCurve, new Handle< Quote >(volQuote), dc, displacement_);
+        } else if ( volatilityType_ == VolatilityType.Normal ) {
+            capFloorEngine = new BachelierCapFloorEngine(discountCurve, new Handle< Quote >(volQuote), dc);
         } else {
-            throw new UnsupportedOperationException(
-                    "unknown volatility type: " + volatilityType_);
+            throw new UnsupportedOperationException("unknown volatility type: " + volatilityType_);
         }
 
-        for (int j = 0; j < nStrikes_; ++j) {
+        for ( int j = 0; j < nStrikes_; ++j ) {
             // using out-of-the-money options
-            final CapFloor.Type capFloorType =
-                    strikes[j] < switchStrike_ ? CapFloor.Type.Floor : CapFloor.Type.Cap;
-            final org.jquantlib.instruments.Option.Type optionletType =
-                    strikes[j] < switchStrike_
-                            ? org.jquantlib.instruments.Option.Type.Put
-                            : org.jquantlib.instruments.Option.Type.Call;
+            final CapFloor.Type capFloorType = strikes[j] < switchStrike_ ? CapFloor.Type.Floor : CapFloor.Type.Cap;
+            final org.jquantlib.instruments.Option.Type optionletType = strikes[j] < switchStrike_
+                    ? org.jquantlib.instruments.Option.Type.Put
+                    : org.jquantlib.instruments.Option.Type.Call;
 
             double previousCapFloorPrice = 0.0;
-            for (int i = 0; i < nOptionletTenors_; ++i) {
-                capFloorVols_.set(i, j, termVolSurface_.volatility(
-                        capFloorLengths_.get(i), strikes[j], true));
+            for ( int i = 0; i < nOptionletTenors_; ++i ) {
+                capFloorVols_.set(i, j, termVolSurface_.volatility(capFloorLengths_.get(i), strikes[j], true));
                 volQuote.setValue(capFloorVols_.get(i, j));
-                final MakeCapFloor mcf = new MakeCapFloor(capFloorType,
-                        capFloorLengths_.get(i), iborIndex_, strikes[j],
-                        new Period(0, TimeUnit.Days))
-                        .withPricingEngine(capFloorEngine);
-                if (indexIsOvernight) {
+                final MakeCapFloor mcf = new MakeCapFloor(capFloorType, capFloorLengths_.get(i), iborIndex_, strikes[j],
+                        new Period(0, TimeUnit.Days)).withPricingEngine(capFloorEngine);
+                if ( indexIsOvernight ) {
                     mcf.withTenor(optionletFrequency_);
                 }
                 final CapFloor capFloor = mcf.value();
@@ -224,51 +201,43 @@ public class OptionletStripper1 extends OptionletStripper {
                 capFloorPrices_.set(i, j, price);
                 optionletPrices_.set(i, j, price - previousCapFloorPrice);
                 previousCapFloorPrice = price;
-                final double d = discountCurve.currentLink().discount(
-                        optionletPaymentDates_.get(i));
+                final double d = discountCurve.currentLink().discount(optionletPaymentDates_.get(i));
                 final double optionletAnnuity = optionletAccrualPeriods_.get(i) * d;
                 try {
-                    if (volatilityType_ == VolatilityType.ShiftedLognormal) {
-                        final double stdDev = BlackFormula.blackFormulaImpliedStdDev(
-                                optionletType, strikes[j], atmOptionletRate_.get(i),
-                                optionletPrices_.get(i, j), optionletAnnuity,
+                    if ( volatilityType_ == VolatilityType.ShiftedLognormal ) {
+                        final double stdDev = BlackFormula.blackFormulaImpliedStdDev(optionletType, strikes[j],
+                                atmOptionletRate_.get(i), optionletPrices_.get(i, j), optionletAnnuity,
                                 optionletStDevs_.get(i, j), accuracy_, displacement_);
                         optionletStDevs_.set(i, j, stdDev);
-                    } else if (volatilityType_ == VolatilityType.Normal) {
+                    } else if ( volatilityType_ == VolatilityType.Normal ) {
                         // Phase 5g.5b: bachelierBlackFormulaImpliedVol now ported.
                         // Mirrors C++ optionletstripper1.cpp lines 149-155:
                         //   stdDev = sqrt(tte) * bachelierBlackFormulaImpliedVol(...)
-                        final double stdDev = Math.sqrt(optionletTimes_.get(i))
-                                * BlackFormula.bachelierBlackFormulaImpliedVol(
-                                        optionletType, strikes[j], atmOptionletRate_.get(i),
-                                        optionletTimes_.get(i), optionletPrices_.get(i, j),
-                                        optionletAnnuity);
+                        final double stdDev =
+                                Math.sqrt(optionletTimes_.get(i)) * BlackFormula.bachelierBlackFormulaImpliedVol(
+                                        optionletType, strikes[j], atmOptionletRate_.get(i), optionletTimes_.get(i),
+                                        optionletPrices_.get(i, j), optionletAnnuity);
                         optionletStDevs_.set(i, j, stdDev);
                     } else {
                         QL.error("Unknown volatility type: " + volatilityType_);
                     }
-                } catch (final ArithmeticException e) {
-                    if (dontThrow_) {
+                } catch ( final ArithmeticException e ) {
+                    if ( dontThrow_ ) {
                         optionletStDevs_.set(i, j, 0.0);
                     } else {
-                        QL.error("could not bootstrap optionlet:"
-                                + "\n type:    " + optionletType
-                                + "\n strike:  " + strikes[j]
-                                + "\n atm:     " + atmOptionletRate_.get(i)
-                                + "\n price:   " + optionletPrices_.get(i, j)
-                                + "\n annuity: " + optionletAnnuity
-                                + "\n expiry:  " + optionletDates_.get(i)
-                                + "\n error:   " + e.getMessage());
+                        QL.error("could not bootstrap optionlet:" + "\n type:    " + optionletType + "\n strike:  "
+                                + strikes[j] + "\n atm:     " + atmOptionletRate_.get(i) + "\n price:   "
+                                + optionletPrices_.get(i, j) + "\n annuity: " + optionletAnnuity + "\n expiry:  "
+                                + optionletDates_.get(i) + "\n error:   " + e.getMessage());
                     }
-                } catch (final RuntimeException e) {
-                    if (dontThrow_) {
+                } catch ( final RuntimeException e ) {
+                    if ( dontThrow_ ) {
                         optionletStDevs_.set(i, j, 0.0);
                     } else {
                         throw e;
                     }
                 }
-                optionletVolatilities_.get(i).set(j,
-                        optionletStDevs_.get(i, j) / Math.sqrt(optionletTimes_.get(i)));
+                optionletVolatilities_.get(i).set(j, optionletStDevs_.get(i, j) / Math.sqrt(optionletTimes_.get(i)));
             }
         }
     }
@@ -298,7 +267,7 @@ public class OptionletStripper1 extends OptionletStripper {
     }
 
     public double switchStrike() {
-        if (floatingSwitchStrike_) {
+        if ( floatingSwitchStrike_ ) {
             calculate();
         }
         return switchStrike_;

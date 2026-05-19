@@ -38,91 +38,62 @@
 
 package org.jquantlib.pricingengines.vanilla.finitedifferences;
 
-import java.util.List;
-
 import org.jquantlib.instruments.OneAssetOption;
 import org.jquantlib.processes.GeneralizedBlackScholesProcess;
 import org.jquantlib.util.Observer;
 
+import java.util.List;
+
 /**
  * Pricing engine for American options using finite-differences
  *
- * @category vanillaengines
- *
  * @author Srinivas Hasti
  * @author Richard Gomes
+ * @category vanillaengines
  */
 
 // typedef FDEngineAdapter<FDAmericanCondition<FDStepConditionEngine>, OneAssetOption::engine> FDAmericanEngine;
 public class FDAmericanEngine
-        extends FDEngineAdapter<FDAmericanCondition<FDStepConditionEngine>, OneAssetOption.Engine>
+        extends FDEngineAdapter< FDAmericanCondition< FDStepConditionEngine >, OneAssetOption.Engine >
         implements OneAssetOption.Engine {
 
-	
-	
     //
     // public constructors
     //
 
-    public FDAmericanEngine(
-            final GeneralizedBlackScholesProcess process) {
-        super(FDAmericanCondition.class, OneAssetOption.Engine.class, process, 100,100, false);
+    public FDAmericanEngine(final GeneralizedBlackScholesProcess process) {
+        super(FDAmericanCondition.class, OneAssetOption.Engine.class, process, 100, 100, false);
         super.impl = new Impl(this);
     }
 
-    public FDAmericanEngine(
-            final GeneralizedBlackScholesProcess process,
-            final int timeSteps) {
+    public FDAmericanEngine(final GeneralizedBlackScholesProcess process, final int timeSteps) {
         super(FDAmericanCondition.class, OneAssetOption.Engine.class, process, timeSteps, 100, false);
         super.impl = new Impl(this);
     }
 
-    public FDAmericanEngine(
-            final GeneralizedBlackScholesProcess process,
-            final int timeSteps,
-            final int gridPoints) {
+    public FDAmericanEngine(final GeneralizedBlackScholesProcess process, final int timeSteps, final int gridPoints) {
         super(FDAmericanCondition.class, OneAssetOption.Engine.class, process, timeSteps, gridPoints, false);
         super.impl = new Impl(this);
     }
 
-    public FDAmericanEngine(
-            final GeneralizedBlackScholesProcess process,
-            final int timeSteps,
-            final int gridPoints,
+    public FDAmericanEngine(final GeneralizedBlackScholesProcess process, final int timeSteps, final int gridPoints,
             final boolean timeDependent) {
         super(FDAmericanCondition.class, OneAssetOption.Engine.class, process, timeSteps, gridPoints, timeDependent);
         super.impl = new Impl(this);
     }
 
-
     //
     // private inner classes
-    //
-
-
-    private class Impl extends OneAssetOption.EngineImpl {
-        private final FDAmericanEngine engine;
-
-        private Impl(final FDAmericanEngine engine) {
-            this.engine = engine;
-        }
-
-        @Override
-        public void calculate() {
-            // calls FDEngineAdapter#calculate()
-            engine.calculate();
-        }
-    }
-
-
-    //
-    // implements OneAssetOption.Engine
     //
 
     @Override
     public Arguments getArguments() {
         return super.impl.getArguments();
     }
+
+    //
+    // implements OneAssetOption.Engine
+    //
 
     @Override
     public Results getResults() {
@@ -134,29 +105,27 @@ public class FDAmericanEngine
         super.impl.reset();
     }
 
-
-    //
-    // implements Observer
-    //
-
-//    @Override
-//XXX::OBS    public void update(final Observable o, final Object arg) {
-//        super.impl.update(o, arg);
-//    }
+    //    @Override
+    //XXX::OBS    public void update(final Observable o, final Object arg) {
+    //        super.impl.update(o, arg);
+    //    }
     @Override
     public void update() {
         super.impl.update();
     }
 
-
     //
-    // implements Observable
+    // implements Observer
     //
 
     @Override
     public void addObserver(final Observer observer) {
         super.impl.addObserver(observer);
     }
+
+    //
+    // implements Observable
+    //
 
     @Override
     public int countObservers() {
@@ -174,7 +143,7 @@ public class FDAmericanEngine
     }
 
     @Override
-    public List<Observer> getObservers() {
+    public List< Observer > getObservers() {
         return super.impl.getObservers();
     }
 
@@ -186,6 +155,20 @@ public class FDAmericanEngine
     @Override
     public void notifyObservers(final Object arg) {
         super.impl.notifyObservers(arg);
+    }
+
+    private class Impl extends OneAssetOption.EngineImpl {
+        private final FDAmericanEngine engine;
+
+        private Impl(final FDAmericanEngine engine) {
+            this.engine = engine;
+        }
+
+        @Override
+        public void calculate() {
+            // calls FDEngineAdapter#calculate()
+            engine.calculate();
+        }
     }
 
 }

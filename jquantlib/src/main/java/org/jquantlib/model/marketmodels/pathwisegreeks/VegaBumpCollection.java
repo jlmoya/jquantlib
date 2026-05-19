@@ -26,15 +26,15 @@
 
 package org.jquantlib.model.marketmodels.pathwisegreeks;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.model.marketmodels.MarketModel;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * A collection of {@link VegaBumpCluster}s — typically a partition of every
- * alive pseudo-root element into clusters that get bumped together.
+ * A collection of {@link VegaBumpCluster}s — typically a partition of every alive pseudo-root element into clusters
+ * that get bumped together.
  *
  * <p>Mirrors C++ {@code VegaBumpCollection}
  * (ql/models/marketmodels/pathwisegreeks/vegabumpcluster.{hpp,cpp} v1.42.1).
@@ -43,28 +43,27 @@ import org.jquantlib.model.marketmodels.MarketModel;
  */
 public class VegaBumpCollection {
 
-    private final List<VegaBumpCluster> allBumps_;
+    private final List< VegaBumpCluster > allBumps_;
     private final MarketModel associatedVolStructure_;
-    private boolean checked_;
+    private final boolean checked_;
     private boolean nonOverlapped_;
     private boolean full_;
 
     /**
-     * Auto-generates a full cluster collection of one-element clusters
-     * spanning every alive (rate, step) [× factor if {@code factorwiseBumping}].
+     * Auto-generates a full cluster collection of one-element clusters spanning every alive (rate, step) [× factor if
+     * {@code factorwiseBumping}].
      */
-    public VegaBumpCollection(final MarketModel volStructure,
-                              final boolean factorwiseBumping) {
+    public VegaBumpCollection(final MarketModel volStructure, final boolean factorwiseBumping) {
         this.associatedVolStructure_ = volStructure;
         this.allBumps_ = new ArrayList<>();
         final int steps = volStructure.numberOfSteps();
         final int rates = volStructure.numberOfRates();
         final int factors = volStructure.numberOfFactors();
 
-        for (int s = 0; s < steps; ++s) {
-            for (int r = volStructure.evolution().firstAliveRate()[s]; r < rates; ++r) {
-                if (factorwiseBumping) {
-                    for (int f = 0; f < factors; ++f) {
+        for ( int s = 0; s < steps; ++s ) {
+            for ( int r = volStructure.evolution().firstAliveRate()[s]; r < rates; ++r ) {
+                if ( factorwiseBumping ) {
+                    for ( int f = 0; f < factors; ++f ) {
                         allBumps_.add(new VegaBumpCluster(f, f + 1, r, r + 1, s, s + 1));
                     }
                 } else {
@@ -82,14 +81,12 @@ public class VegaBumpCollection {
     }
 
     /** Construct from a custom set of clusters; verifies compatibility. */
-    public VegaBumpCollection(final List<VegaBumpCluster> allBumps,
-                              final MarketModel volStructure) {
+    public VegaBumpCollection(final List< VegaBumpCluster > allBumps, final MarketModel volStructure) {
         this.allBumps_ = new ArrayList<>(allBumps);
         this.associatedVolStructure_ = volStructure;
         this.checked_ = false;
-        for (final VegaBumpCluster c : allBumps_) {
-            QL.require(c.isCompatible(associatedVolStructure_),
-                    "incompatible bumps passed to VegaBumpCollection");
+        for ( final VegaBumpCluster c : allBumps_ ) {
+            QL.require(c.isCompatible(associatedVolStructure_), "incompatible bumps passed to VegaBumpCollection");
         }
     }
 
@@ -97,7 +94,7 @@ public class VegaBumpCollection {
         return associatedVolStructure_;
     }
 
-    public List<VegaBumpCluster> allBumps() {
+    public List< VegaBumpCluster > allBumps() {
         return allBumps_;
     }
 
@@ -107,17 +104,18 @@ public class VegaBumpCollection {
 
     /** Is every alive pseudo-root element bumped at least once? */
     public boolean isFull() {
-        if (checked_) return full_;
+        if ( checked_ )
+            return full_;
 
         final int factors = associatedVolStructure_.numberOfFactors();
         final int rates = associatedVolStructure_.numberOfRates();
         final int steps = associatedVolStructure_.numberOfSteps();
         final boolean[][][] v = new boolean[steps][rates][factors];
 
-        for (final VegaBumpCluster b : allBumps_) {
-            for (int f = b.factorBegin(); f < b.factorEnd(); ++f) {
-                for (int r = b.rateBegin(); r < b.rateEnd(); ++r) {
-                    for (int s = b.stepBegin(); s < b.stepEnd(); ++s) {
+        for ( final VegaBumpCluster b : allBumps_ ) {
+            for ( int f = b.factorBegin(); f < b.factorEnd(); ++f ) {
+                for ( int r = b.rateBegin(); r < b.rateEnd(); ++r ) {
+                    for ( int s = b.stepBegin(); s < b.stepEnd(); ++s ) {
                         v[s][r][f] = true;
                     }
                 }
@@ -125,11 +123,10 @@ public class VegaBumpCollection {
         }
 
         int numberFailures = 0;
-        for (int s = 0; s < steps; ++s) {
-            for (int f = 0; f < factors; ++f) {
-                for (int r = associatedVolStructure_.evolution().firstAliveRate()[s];
-                     r < rates; ++r) {
-                    if (!v[s][r][f]) {
+        for ( int s = 0; s < steps; ++s ) {
+            for ( int f = 0; f < factors; ++f ) {
+                for ( int r = associatedVolStructure_.evolution().firstAliveRate()[s]; r < rates; ++r ) {
+                    if ( !v[s][r][f] ) {
                         ++numberFailures;
                     }
                 }
@@ -142,7 +139,8 @@ public class VegaBumpCollection {
 
     /** Is every alive pseudo-root element bumped at most once? */
     public boolean isNonOverlapping() {
-        if (checked_) return nonOverlapped_;
+        if ( checked_ )
+            return nonOverlapped_;
 
         final int factors = associatedVolStructure_.numberOfFactors();
         final int rates = associatedVolStructure_.numberOfRates();
@@ -150,11 +148,11 @@ public class VegaBumpCollection {
         final boolean[][][] v = new boolean[steps][rates][factors];
 
         int numberFailures = 0;
-        for (final VegaBumpCluster b : allBumps_) {
-            for (int f = b.factorBegin(); f < b.factorEnd(); ++f) {
-                for (int r = b.rateBegin(); r < b.rateEnd(); ++r) {
-                    for (int s = b.stepBegin(); s < b.stepEnd(); ++s) {
-                        if (v[s][r][f]) {
+        for ( final VegaBumpCluster b : allBumps_ ) {
+            for ( int f = b.factorBegin(); f < b.factorEnd(); ++f ) {
+                for ( int r = b.rateBegin(); r < b.rateEnd(); ++r ) {
+                    for ( int s = b.stepBegin(); s < b.stepEnd(); ++s ) {
+                        if ( v[s][r][f] ) {
                             ++numberFailures;
                         }
                         v[s][r][f] = true;
@@ -168,7 +166,8 @@ public class VegaBumpCollection {
 
     /** Is every alive pseudo-root element bumped precisely once? */
     public boolean isSensible() {
-        if (checked_) return true;
+        if ( checked_ )
+            return true;
         return isNonOverlapping() && isFull();
     }
 }

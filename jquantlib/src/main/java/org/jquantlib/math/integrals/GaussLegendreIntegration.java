@@ -29,8 +29,7 @@ package org.jquantlib.math.integrals;
  * {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
  *
  * <p>Thin convenience wrapper over {@link GaussianQuadrature} parametrized
- * by {@link GaussJacobiPolynomial} with {@code alpha = beta = 0}, matching
- * the C++ constructor:
+ * by {@link GaussJacobiPolynomial} with {@code alpha = beta = 0}, matching the C++ constructor:
  * <pre>
  *   GaussLegendreIntegration(Size n)
  *     : GaussianQuadrature(n, GaussJacobiPolynomial(0.0, 0.0)) {}

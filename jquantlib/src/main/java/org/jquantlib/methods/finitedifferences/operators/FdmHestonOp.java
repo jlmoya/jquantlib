@@ -22,10 +22,6 @@
  */
 package org.jquantlib.methods.finitedifferences.operators;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.matrixutilities.Matrix;
 import org.jquantlib.methods.finitedifferences.meshers.FdmMesher;
@@ -35,11 +31,14 @@ import org.jquantlib.termstructures.LocalVolTermStructure;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.time.Frequency;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 /**
  * 2-D finite-difference operator for the Heston model PDE.
  * <p>
- * Java port of v1.42.1
- * {@code ql/methods/finitedifferences/operators/fdmhestonop.{hpp,cpp}}.
+ * Java port of v1.42.1 {@code ql/methods/finitedifferences/operators/fdmhestonop.{hpp,cpp}}.
  * <p>
  * The two dimensions are:
  * <ul>
@@ -79,14 +78,13 @@ public class FdmHestonOp implements FdmLinearOpComposite {
 
     private final NinePointLinearOp correlationMap;
     private final FdmHestonVariancePart dyMap;
-    private final FdmHestonEquityPart   dxMap;
+    private final FdmHestonEquityPart dxMap;
 
     /**
-     * Construct the Heston FD operator with default {@code mixingFactor=1.0},
-     * no quanto adjustment and no leverage function.
+     * Construct the Heston FD operator with default {@code mixingFactor=1.0}, no quanto adjustment and no leverage
+     * function.
      */
-    public FdmHestonOp(final FdmMesher mesher,
-                       final HestonProcess hestonProcess) {
+    public FdmHestonOp(final FdmMesher mesher, final HestonProcess hestonProcess) {
         this(mesher, hestonProcess, 1.0, null);
     }
 
@@ -97,30 +95,26 @@ public class FdmHestonOp implements FdmLinearOpComposite {
      * @param hestonProcess the Heston process supplying r, q, kappa, theta, sigma, rho
      * @param mixingFactor  mixing factor applied to {@code sigma} (default 1.0)
      */
-    public FdmHestonOp(final FdmMesher mesher,
-                       final HestonProcess hestonProcess,
-                       final double mixingFactor) {
+    public FdmHestonOp(final FdmMesher mesher, final HestonProcess hestonProcess, final double mixingFactor) {
         this(mesher, hestonProcess, mixingFactor, null);
     }
 
     /**
      * Construct the Heston FD operator with an optional leverage function.
      * <p>
-     * Mirrors C++ v1.42.1 {@code FdmHestonOp(mesher, hestonProcess,
-     * quantoHelper, leverageFct, mixingFactor)} with {@code quantoHelper = null}.
+     * Mirrors C++ v1.42.1 {@code FdmHestonOp(mesher, hestonProcess, quantoHelper, leverageFct, mixingFactor)} with
+     * {@code quantoHelper = null}.
      *
      * @param mesher        2-D mesher (dim 0 = log-spot, dim 1 = variance)
      * @param hestonProcess the Heston process supplying r, q, kappa, theta, sigma, rho
      * @param mixingFactor  mixing factor applied to {@code sigma} (default 1.0)
-     * @param leverageFct   optional Heston-SLV leverage surface {@code L(t, S)}
-     *                      (may be {@code null}; null ⇒ pure-Heston)
+     * @param leverageFct   optional Heston-SLV leverage surface {@code L(t, S)} (may be {@code null}; null ⇒
+     *                      pure-Heston)
      */
-    public FdmHestonOp(final FdmMesher mesher,
-                       final HestonProcess hestonProcess,
-                       final double mixingFactor,
-                       final LocalVolTermStructure leverageFct) {
+    public FdmHestonOp(final FdmMesher mesher, final HestonProcess hestonProcess, final double mixingFactor,
+            final LocalVolTermStructure leverageFct) {
 
-        final double rho   = hestonProcess.rho().currentLink().value();
+        final double rho = hestonProcess.rho().currentLink().value();
         final double sigma = hestonProcess.sigma().currentLink().value();
         final double kappa = hestonProcess.kappa().currentLink().value();
         final double theta = hestonProcess.theta().currentLink().value();
@@ -129,23 +123,19 @@ public class FdmHestonOp implements FdmLinearOpComposite {
         // Heston v-S correlation: rho * sigma * v * d^2/dxdv  on the (0,1) mesh
         final Array vLoc = mesher.locations(1);
         final Array rhoSigmaV = vLoc.mul(rho * sigmaTimesMix);
-        this.correlationMap =
-                new SecondOrderMixedDerivativeOp(0, 1, mesher).mult(rhoSigmaV);
+        this.correlationMap = new SecondOrderMixedDerivativeOp(0, 1, mesher).mult(rhoSigmaV);
 
-        this.dyMap = new FdmHestonVariancePart(
-                mesher,
-                hestonProcess.riskFreeRate().currentLink(),
-                sigmaTimesMix, kappa, theta);
+        this.dyMap = new FdmHestonVariancePart(mesher, hestonProcess.riskFreeRate().currentLink(), sigmaTimesMix, kappa,
+                theta);
 
-        this.dxMap = new FdmHestonEquityPart(
-                mesher,
-                hestonProcess.riskFreeRate().currentLink(),
-                hestonProcess.dividendYield().currentLink(),
-                leverageFct);
+        this.dxMap = new FdmHestonEquityPart(mesher, hestonProcess.riskFreeRate().currentLink(),
+                hestonProcess.dividendYield().currentLink(), leverageFct);
     }
 
     @Override
-    public int size() { return 2; }
+    public int size() {
+        return 2;
+    }
 
     @Override
     public void setTime(final double t1, final double t2) {
@@ -155,15 +145,15 @@ public class FdmHestonOp implements FdmLinearOpComposite {
 
     @Override
     public Array apply(final Array u) {
-        return dyMap.getMap().apply(u)
-                .add(dxMap.getMap().apply(u))
-                .add(correlationMap.apply(u).mul(dxMap.getL()));
+        return dyMap.getMap().apply(u).add(dxMap.getMap().apply(u)).add(correlationMap.apply(u).mul(dxMap.getL()));
     }
 
     @Override
     public Array applyDirection(final int direction, final Array r) {
-        if (direction == 0) return dxMap.getMap().apply(r);
-        if (direction == 1) return dyMap.getMap().apply(r);
+        if ( direction == 0 )
+            return dxMap.getMap().apply(r);
+        if ( direction == 1 )
+            return dyMap.getMap().apply(r);
         throw new IllegalArgumentException("direction too large");
     }
 
@@ -174,8 +164,10 @@ public class FdmHestonOp implements FdmLinearOpComposite {
 
     @Override
     public Array solveSplitting(final int direction, final Array r, final double a) {
-        if (direction == 0) return dxMap.getMap().solveSplitting(r, a, 1.0);
-        if (direction == 1) return dyMap.getMap().solveSplitting(r, a, 1.0);
+        if ( direction == 0 )
+            return dxMap.getMap().solveSplitting(r, a, 1.0);
+        if ( direction == 1 )
+            return dyMap.getMap().solveSplitting(r, a, 1.0);
         throw new IllegalArgumentException("direction too large");
     }
 
@@ -186,13 +178,12 @@ public class FdmHestonOp implements FdmLinearOpComposite {
 
     @Override
     public Matrix toMatrix() {
-        throw new UnsupportedOperationException(
-                "FdmHestonOp.toMatrix() not implemented; use toMatrixDecomp()");
+        throw new UnsupportedOperationException("FdmHestonOp.toMatrix() not implemented; use toMatrixDecomp()");
     }
 
     @Override
-    public List<Matrix> toMatrixDecomp() {
-        final List<Matrix> ret = new ArrayList<Matrix>(3);
+    public List< Matrix > toMatrixDecomp() {
+        final List< Matrix > ret = new ArrayList< Matrix >(3);
         ret.add(dxMap.getMap().toMatrix());
         ret.add(dyMap.getMap().toMatrix());
         ret.add(correlationMap.toMatrix());
@@ -209,28 +200,23 @@ public class FdmHestonOp implements FdmLinearOpComposite {
     static class FdmHestonEquityPart {
         private final Array varianceValues;     // 0.5 * v (boundaries zeroed)
         private final Array volatilityValues;   // sqrt(2 * varianceValues) — for quanto helper (unused here)
-        private Array L;                        // leverage slice (refreshed each setTime when leverageFct != null)
-        private final FirstDerivativeOp  dxMap;
+        private final FirstDerivativeOp dxMap;
         private final TripleBandLinearOp dxxMap;
-        private TripleBandLinearOp mapT;
-
         private final FdmMesher mesher;
         private final YieldTermStructure rTS, qTS;
         private final LocalVolTermStructure leverageFct;
+        private Array L;                        // leverage slice (refreshed each setTime when leverageFct != null)
+        private final TripleBandLinearOp mapT;
 
-        FdmHestonEquityPart(final FdmMesher mesher,
-                            final YieldTermStructure rTS,
-                            final YieldTermStructure qTS) {
+        FdmHestonEquityPart(final FdmMesher mesher, final YieldTermStructure rTS, final YieldTermStructure qTS) {
             this(mesher, rTS, qTS, null);
         }
 
-        FdmHestonEquityPart(final FdmMesher mesher,
-                            final YieldTermStructure rTS,
-                            final YieldTermStructure qTS,
-                            final LocalVolTermStructure leverageFct) {
+        FdmHestonEquityPart(final FdmMesher mesher, final YieldTermStructure rTS, final YieldTermStructure qTS,
+                final LocalVolTermStructure leverageFct) {
             this.mesher = mesher;
-            this.rTS    = rTS;
-            this.qTS    = qTS;
+            this.rTS = rTS;
+            this.qTS = qTS;
             this.leverageFct = leverageFct;
 
             // C++: varianceValues_ = 0.5 * mesher->locations(1)
@@ -238,9 +224,9 @@ public class FdmHestonOp implements FdmLinearOpComposite {
             // On the boundary s_min and s_max the second derivative
             // d^2V/dS^2 is zero and due to Ito's Lemma the variance term
             // in the drift should vanish.
-            for (final FdmLinearOpIterator iter : mesher.layout()) {
+            for ( final FdmLinearOpIterator iter : mesher.layout() ) {
                 final int c0 = iter.coordinates()[0];
-                if (c0 == 0 || c0 == mesher.layout().dim()[0] - 1) {
+                if ( c0 == 0 || c0 == mesher.layout().dim()[0] - 1 ) {
                     varVals.set(iter.index(), 0.0);
                 }
             }
@@ -250,18 +236,16 @@ public class FdmHestonOp implements FdmLinearOpComposite {
             // L starts at 1.0 (no leverage); refreshed in setTime when leverageFct != null.
             this.L = new Array(mesher.layout().size()).fill(1.0);
 
-            this.dxMap   = new FirstDerivativeOp(0, mesher);
+            this.dxMap = new FirstDerivativeOp(0, mesher);
             // dxxMap_ = SecondDerivativeOp(0,mesher).mult(0.5*mesher->locations(1))
             //        but with the boundary-zeroed varianceValues.
-            this.dxxMap  = new SecondDerivativeOp(0, mesher).mult(varianceValues);
-            this.mapT    = new TripleBandLinearOp(0, mesher);
+            this.dxxMap = new SecondDerivativeOp(0, mesher).mult(varianceValues);
+            this.mapT = new TripleBandLinearOp(0, mesher);
         }
 
         void setTime(final double t1, final double t2) {
-            final double r = rTS.forwardRate(t1, t2,
-                    Compounding.Continuous, Frequency.NoFrequency).rate();
-            final double q = qTS.forwardRate(t1, t2,
-                    Compounding.Continuous, Frequency.NoFrequency).rate();
+            final double r = rTS.forwardRate(t1, t2, Compounding.Continuous, Frequency.NoFrequency).rate();
+            final double q = qTS.forwardRate(t1, t2, Compounding.Continuous, Frequency.NoFrequency).rate();
 
             // Refresh L(t,S) slice — identically 1 if no leverage fct.
             this.L = getLeverageFctSlice(t1, t2);
@@ -271,8 +255,7 @@ public class FdmHestonOp implements FdmLinearOpComposite {
 
             // drift = r - q - varianceValues * Lsquare  (per grid point)
             // varianceValues already = 0.5 * v (boundaries zeroed).
-            final Array drift = varianceValues.mul(Lsquare)
-                                .mul(-1.0).add(r - q);
+            final Array drift = varianceValues.mul(Lsquare).mul(-1.0).add(r - q);
             // mapT_.axpyb(drift, dxMap_, dxxMap_*Lsquare, Array(1, -0.5*r))
             final Array constDiag = new Array(1).fill(-0.5 * r);
             mapT.axpyb(drift, dxMap, dxxScaled, constDiag);
@@ -281,26 +264,24 @@ public class FdmHestonOp implements FdmLinearOpComposite {
         /**
          * Compute the L(t,S) slice over all grid points.
          * <p>
-         * Mirrors C++ v1.42.1 {@code FdmHestonEquityPart::getLeverageFctSlice}:
-         * for {@code v}-coordinate zero, evaluate {@code L(t̄, max(min, min(max, exp(x))))}
-         * with a {@code 0.01} floor and {@code t̄ = min(maxTime, 0.5*(t1+t2))};
-         * other variance coordinates copy the equity-row value (L is
+         * Mirrors C++ v1.42.1 {@code FdmHestonEquityPart::getLeverageFctSlice}: for {@code v}-coordinate zero, evaluate
+         * {@code L(t̄, max(min, min(max, exp(x))))} with a {@code 0.01} floor and
+         * {@code t̄ = min(maxTime, 0.5*(t1+t2))}; other variance coordinates copy the equity-row value (L is
          * variance-independent in C++).
          */
         Array getLeverageFctSlice(final double t1, final double t2) {
             final Array v = new Array(mesher.layout().size()).fill(1.0);
-            if (leverageFct == null) {
+            if ( leverageFct == null ) {
                 return v;
             }
             final double t = 0.5 * (t1 + t2);
             final double time = Math.min(leverageFct.maxTime(), t);
 
-            for (final FdmLinearOpIterator iter : mesher.layout()) {
+            for ( final FdmLinearOpIterator iter : mesher.layout() ) {
                 final int nx = iter.coordinates()[0];
-                if (iter.coordinates()[1] == 0) {
+                if ( iter.coordinates()[1] == 0 ) {
                     final double x = Math.exp(mesher.location(iter, 0));
-                    final double spot = Math.min(leverageFct.maxStrike(),
-                                                 Math.max(leverageFct.minStrike(), x));
+                    final double spot = Math.min(leverageFct.maxStrike(), Math.max(leverageFct.minStrike(), x));
                     v.set(nx, Math.max(0.01, leverageFct.localVol(time, spot, true)));
                 } else {
                     v.set(iter.index(), v.get(nx));
@@ -309,8 +290,13 @@ public class FdmHestonOp implements FdmLinearOpComposite {
             return v;
         }
 
-        TripleBandLinearOp getMap() { return mapT; }
-        Array getL() { return L; }
+        TripleBandLinearOp getMap() {
+            return mapT;
+        }
+
+        Array getL() {
+            return L;
+        }
     }
 
     // ------------------------------------------------------------------
@@ -321,14 +307,11 @@ public class FdmHestonOp implements FdmLinearOpComposite {
     /** Variance part of the Heston operator. */
     static class FdmHestonVariancePart {
         private final TripleBandLinearOp dyMap;
-        private TripleBandLinearOp mapT;
         private final YieldTermStructure rTS;
+        private final TripleBandLinearOp mapT;
 
-        FdmHestonVariancePart(final FdmMesher mesher,
-                              final YieldTermStructure rTS,
-                              final double mixedSigma,
-                              final double kappa,
-                              final double theta) {
+        FdmHestonVariancePart(final FdmMesher mesher, final YieldTermStructure rTS, final double mixedSigma,
+                final double kappa, final double theta) {
             this.rTS = rTS;
             // dyMap_ =   SecondDerivativeOp(1, mesher).mult(0.5 * mixedSigma^2 * v)
             //          + FirstDerivativeOp(1, mesher).mult(kappa * (theta - v))
@@ -336,13 +319,12 @@ public class FdmHestonOp implements FdmLinearOpComposite {
             final Array halfSigSqV = vLoc.mul(0.5 * mixedSigma * mixedSigma);
             final Array kappaThMinusV = vLoc.mul(-kappa).add(kappa * theta);
             this.dyMap = new SecondDerivativeOp(1, mesher).mult(halfSigSqV)
-                            .add(new FirstDerivativeOp(1, mesher).mult(kappaThMinusV));
-            this.mapT  = new TripleBandLinearOp(1, mesher);
+                    .add(new FirstDerivativeOp(1, mesher).mult(kappaThMinusV));
+            this.mapT = new TripleBandLinearOp(1, mesher);
         }
 
         void setTime(final double t1, final double t2) {
-            final double r = rTS.forwardRate(t1, t2,
-                    Compounding.Continuous, Frequency.NoFrequency).rate();
+            final double r = rTS.forwardRate(t1, t2, Compounding.Continuous, Frequency.NoFrequency).rate();
             // C++: mapT_.axpyb(Array(), dyMap_, dyMap_, Array(1, -0.5*r))
             // a==Array() means "no per-row scaling"; the helper mirrors that
             // by leaving dyMap untouched and adding the constant diagonal.
@@ -350,6 +332,8 @@ public class FdmHestonOp implements FdmLinearOpComposite {
             mapT.axpyb(new Array(0), dyMap, dyMap, constDiag);
         }
 
-        TripleBandLinearOp getMap() { return mapT; }
+        TripleBandLinearOp getMap() {
+            return mapT;
+        }
     }
 }

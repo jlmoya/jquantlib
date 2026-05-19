@@ -28,19 +28,17 @@ import org.jquantlib.math.Ops;
 /**
  * Non-central chi-squared cumulative distribution (legacy alias).
  * <p>
- * Despite the name (which omits "Cumulative"), this class has always been a
- * cumulative distribution function — JQuantLib historically dropped the
- * "Cumulative" qualifier from QuantLib's
+ * Despite the name (which omits "Cumulative"), this class has always been a cumulative distribution function —
+ * JQuantLib historically dropped the "Cumulative" qualifier from QuantLib's
  * {@code NonCentralCumulativeChiSquareDistribution}. Note that v1.42.1 does
  * <strong>not</strong> define a non-central chi-squared probability density
- * (PDF) class; the public surface is the cumulative distribution, the
- * Sankaran approximation, and the inverse cumulative distribution.
+ * (PDF) class; the public surface is the cumulative distribution, the Sankaran approximation, and the inverse
+ * cumulative distribution.
  * <p>
- * This class is retained for source compatibility with existing callers
- * (e.g. {@link org.jquantlib.model.shortrate.onefactormodels.CoxIngersollRoss},
- * {@link org.jquantlib.model.shortrate.onefactormodels.ExtendedCoxIngersollRoss})
- * and now delegates to {@link NonCentralCumulativeChiSquaredDistribution},
- * which is the canonical fresh port from v1.42.1.
+ * This class is retained for source compatibility with existing callers (e.g.
+ * {@link org.jquantlib.model.shortrate.onefactormodels.CoxIngersollRoss},
+ * {@link org.jquantlib.model.shortrate.onefactormodels.ExtendedCoxIngersollRoss}) and now delegates to
+ * {@link NonCentralCumulativeChiSquaredDistribution}, which is the canonical fresh port from v1.42.1.
  *
  * @author Richard Gomes
  */
@@ -60,12 +58,9 @@ public class NonCentralChiSquaredDistribution implements Ops.DoubleOp {
     /**
      * Probability density function evaluated at {@code x}.
      * <p>
-     * Phase 5h.5-SLV-d: forwards to {@link
-     * NonCentralCumulativeChiSquaredDistribution#pdf(double)}, which is the
-     * exact Boost-equivalent PDF formula (Bessel form for {@code ncp <= 50},
-     * Poisson series otherwise). Replaces the previous CDF central-difference
-     * surrogate (~1e-4 slack) used by callers that needed PDF values from
-     * the legacy alias.
+     * Phase 5h.5-SLV-d: forwards to {@link NonCentralCumulativeChiSquaredDistribution#pdf(double)}, which is the exact
+     * Boost-equivalent PDF formula (Bessel form for {@code ncp <= 50}, Poisson series otherwise). Replaces the previous
+     * CDF central-difference surrogate (~1e-4 slack) used by callers that needed PDF values from the legacy alias.
      */
     public double pdf(final double x) {
         return delegate_.pdf(x);

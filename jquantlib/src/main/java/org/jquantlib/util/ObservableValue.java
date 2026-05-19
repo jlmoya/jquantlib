@@ -44,73 +44,63 @@ import java.util.List;
 /**
  * Observable and assignable proxy to concrete value
  * <p>
-   Observers can be registered with instances of this class so
-   that they are notified when a different value is assigned to
-   such instances. Client code can copy the contained value or
-   pass it to functions via implicit conversion.
+ * Observers can be registered with instances of this class so that they are notified when a different value is assigned
+ * to such instances. Client code can copy the contained value or pass it to functions via implicit conversion.
+ *
+ * @author Srinivas Hasti
+ * @note it is not possible to call non-const method on the returned value. This is by design, as this possibility would
+ * necessarily bypass the notification code; client code should modify the value via re-assignment instead.
+ */
 
-   @note it is not possible to call non-const method on the
-          returned value. This is by design, as this possibility
-          would necessarily bypass the notification code; client
-          code should modify the value via re-assignment instead.
-
-   @author Srinivas Hasti
-*/
-
-public class ObservableValue<T> implements Observable {
+public class ObservableValue< T > implements Observable {
 
     //
     // private fields
-    //
-
-    private T value;
-
-
-    //
-    // public constructors
-    //
-
-    public ObservableValue(final T value) {
-        this.value = value;
-    }
-
-    public ObservableValue(final ObservableValue<T> observable) {
-        this.value = observable.value;
-    }
-
-
-    //
-    // public methods
-    //
-
-    public void assign(final T value) {
-        this.value = value;
-        delegatedObservable.notifyObservers();
-    }
-
-    public void assign(final ObservableValue<T> observable) {
-        this.value = observable.value;
-        delegatedObservable.notifyObservers();
-    }
-
-    public T value() {
-        return value;
-    }
-
-
-    //
-    // implements Observable
     //
 
     /**
      * Implements multiple inheritance via delegate pattern to an inner class.
      *
      * <p>Phase 2x A.4: switched to {@link WeakReferenceObservable} so
-     * that observers from completed tests don't accumulate on the
-     * observable value's observer list and cascade on every
+     * that observers from completed tests don't accumulate on the observable value's observer list and cascade on every
      * {@code Settings.setEvaluationDate}.
      */
     private final Observable delegatedObservable = new WeakReferenceObservable(this);
+
+    //
+    // public constructors
+    //
+    private T value;
+
+    public ObservableValue(final T value) {
+        this.value = value;
+    }
+
+    //
+    // public methods
+    //
+
+    public ObservableValue(final ObservableValue< T > observable) {
+        this.value = observable.value;
+    }
+
+    public void assign(final T value) {
+        this.value = value;
+        delegatedObservable.notifyObservers();
+    }
+
+    public void assign(final ObservableValue< T > observable) {
+        this.value = observable.value;
+        delegatedObservable.notifyObservers();
+    }
+
+    //
+    // implements Observable
+    //
+
+    public T value() {
+        return value;
+    }
 
     @Override
     public void addObserver(final Observer observer) {
@@ -143,7 +133,7 @@ public class ObservableValue<T> implements Observable {
     }
 
     @Override
-    public List<Observer> getObservers() {
+    public List< Observer > getObservers() {
         return delegatedObservable.getObservers();
     }
 

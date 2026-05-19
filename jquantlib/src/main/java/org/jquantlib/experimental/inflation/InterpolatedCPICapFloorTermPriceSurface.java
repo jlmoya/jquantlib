@@ -46,9 +46,8 @@ import org.jquantlib.time.Date;
 import org.jquantlib.time.Period;
 
 /**
- * Interpolated CPI cap/floor term-price surface — fills out the surface across
- * all strikes from the partial cap- and floor-price grids using put/call
- * parity, then 2D-interpolates over (time, strike).
+ * Interpolated CPI cap/floor term-price surface — fills out the surface across all strikes from the partial cap- and
+ * floor-price grids using put/call parity, then 2D-interpolates over (time, strike).
  *
  * <p>Mirrors C++ v1.42.1 {@code QuantLib::InterpolatedCPICapFloorTermPriceSurface}
  * ({@code ql/experimental/inflation/cpicapfloortermpricesurface.hpp:149}).
@@ -59,13 +58,12 @@ import org.jquantlib.time.Period;
  * @param <I> {@link Interpolation2D.Interpolator2D} factory class (e.g.
  *            {@link org.jquantlib.math.interpolations.factories.BicubicSpline} or
  *            {@link org.jquantlib.math.interpolations.factories.Bilinear}).
- *
  * @author JQuantLib migration team (Phase 2s C.1)
  */
-public class InterpolatedCPICapFloorTermPriceSurface<I extends Interpolation2D.Interpolator2D>
+public class InterpolatedCPICapFloorTermPriceSurface< I extends Interpolation2D.Interpolator2D >
         extends CPICapFloorTermPriceSurface {
 
-    private final Class<I> classI;
+    private final Class< I > classI;
     private final Interpolation2D.Interpolator2D interpolator2d_;
 
     // Filled-out price matrices (rows = cfStrikes, cols = maturities)
@@ -79,42 +77,30 @@ public class InterpolatedCPICapFloorTermPriceSurface<I extends Interpolation2D.I
     /**
      * Construct surface using the default-constructed interpolator factory.
      */
-    public InterpolatedCPICapFloorTermPriceSurface(final Class<I> classI,
-                                                   final double nominal,
-                                                   final double startRate,
-                                                   final Period observationLag,
-                                                   final Calendar cal,
-                                                   final BusinessDayConvention bdc,
-                                                   final DayCounter dc,
-                                                   final ZeroInflationIndex zii,
-                                                   final CPI.InterpolationType interpolationType,
-                                                   final Handle<YieldTermStructure> yts,
-                                                   final double[] cStrikes,
-                                                   final double[] fStrikes,
-                                                   final Period[] cfMaturities,
-                                                   final Matrix cPrice,
-                                                   final Matrix fPrice) {
-        super(nominal, startRate, observationLag, cal, bdc, dc, zii,
-              interpolationType, yts, cStrikes, fStrikes, cfMaturities,
-              cPrice, fPrice);
+    public InterpolatedCPICapFloorTermPriceSurface(final Class< I > classI, final double nominal,
+            final double startRate, final Period observationLag, final Calendar cal, final BusinessDayConvention bdc,
+            final DayCounter dc, final ZeroInflationIndex zii, final CPI.InterpolationType interpolationType,
+            final Handle< YieldTermStructure > yts, final double[] cStrikes, final double[] fStrikes,
+            final Period[] cfMaturities, final Matrix cPrice, final Matrix fPrice) {
+        super(nominal, startRate, observationLag, cal, bdc, dc, zii, interpolationType, yts, cStrikes, fStrikes,
+                cfMaturities, cPrice, fPrice);
         QL.require(classI != null, "Interpolator factory class must not be null");
         this.classI = classI;
         this.interpolator2d_ = constructInterpolator(classI);
         performCalculations();
     }
 
-    private static Interpolation2D.Interpolator2D constructInterpolator(final Class<?> klass) {
+    private static Interpolation2D.Interpolator2D constructInterpolator(final Class< ? > klass) {
         try {
             return (Interpolation2D.Interpolator2D) klass.getDeclaredConstructor().newInstance();
-        } catch (final Exception e) {
+        } catch ( final Exception e ) {
             throw new LibraryException("cannot create Interpolator2D", e);
         }
     }
 
     /**
-     * Set up the interpolations for capPrice_ and floorPrice_. Since we know
-     * ATM and we have single flows, we use put/call parity to extend the
-     * surfaces across all strikes.
+     * Set up the interpolations for capPrice_ and floorPrice_. Since we know ATM and we have single flows, we use
+     * put/call parity to extend the surfaces across all strikes.
      *
      * <p>Mirrors C++ template {@code performCalculations()}
      * ({@code cpicapfloortermpricesurface.hpp:233}).
@@ -128,43 +114,43 @@ public class InterpolatedCPICapFloorTermPriceSurface<I extends Interpolation2D.I
 
         QL.require(nominalTS_ != null && !nominalTS_.empty(), "Yts is empty!!!");
 
-        for (int j = 0; j < cfMaturities_.length; ++j) {
+        for ( int j = 0; j < cfMaturities_.length; ++j ) {
             final Period mat = cfMaturities_[j];
             final double df = nominalTS_.currentLink().discount(cpiOptionDateFromTenor(mat));
             final double atm_quote = atmRate(cpiOptionDateFromTenor(mat));
             final double atm = Math.pow(1.0 + atm_quote, mat.length());
             final double S = atm * df;
-            for (int i = 0; i < cfStrikes_.length; ++i) {
+            for ( int i = 0; i < cfStrikes_.length; ++i ) {
                 final double K_quote = cfStrikes_[i];
                 final double K = Math.pow(1.0 + K_quote, mat.length());
                 int indF = -1;
-                for (int q = 0; q < fStrikes_.length; q++) {
-                    if (Closeness.isCloseEnough(fStrikes_[q], cfStrikes_[i])) {
+                for ( int q = 0; q < fStrikes_.length; q++ ) {
+                    if ( Closeness.isCloseEnough(fStrikes_[q], cfStrikes_[i]) ) {
                         indF = q;
                         break;
                     }
                 }
                 int indC = -1;
-                for (int q = 0; q < cStrikes_.length; q++) {
-                    if (Closeness.isCloseEnough(cStrikes_[q], cfStrikes_[i])) {
+                for ( int q = 0; q < cStrikes_.length; q++ ) {
+                    if ( Closeness.isCloseEnough(cStrikes_[q], cfStrikes_[i]) ) {
                         indC = q;
                         break;
                     }
                 }
                 final boolean isFloorStrike = indF >= 0;
                 final boolean isCapStrike = indC >= 0;
-                if (isFloorStrike) {
+                if ( isFloorStrike ) {
                     fPriceB_.set(i, j, fPrice_.get(indF, j));
                     fFilled[i][j] = true;
-                    if (!isCapStrike) {
+                    if ( !isCapStrike ) {
                         cPriceB_.set(i, j, fPrice_.get(indF, j) + S - K * df);
                         cFilled[i][j] = true;
                     }
                 }
-                if (isCapStrike) {
+                if ( isCapStrike ) {
                     cPriceB_.set(i, j, cPrice_.get(indC, j));
                     cFilled[i][j] = true;
-                    if (!isFloorStrike) {
+                    if ( !isFloorStrike ) {
                         fPriceB_.set(i, j, cPrice_.get(indC, j) + K * df - S);
                         fFilled[i][j] = true;
                     }
@@ -173,37 +159,29 @@ public class InterpolatedCPICapFloorTermPriceSurface<I extends Interpolation2D.I
         }
 
         // Check that all cells are filled.
-        for (int i = 0; i < cPriceB_.rows(); ++i) {
-            for (int j = 0; j < cPriceB_.cols(); ++j) {
+        for ( int i = 0; i < cPriceB_.rows(); ++i ) {
+            for ( int j = 0; j < cPriceB_.cols(); ++j ) {
                 QL.require(cFilled[i][j],
-                        "InterpolatedCPICapFloorTermPriceSurface: did not fill"
-                                + " call price matrix at (" + i + "," + j
-                                + "), this is unexpected");
+                        "InterpolatedCPICapFloorTermPriceSurface: did not fill" + " call price matrix at (" + i + ","
+                                + j + "), this is unexpected");
                 QL.require(fFilled[i][j],
-                        "InterpolatedCPICapFloorTermPriceSurface: did not fill"
-                                + " floor price matrix at (" + i + "," + j
-                                + "), this is unexpected");
+                        "InterpolatedCPICapFloorTermPriceSurface: did not fill" + " floor price matrix at (" + i + ","
+                                + j + "), this is unexpected");
             }
         }
 
         // Build the maturity time grid.
         cfMaturityTimes_ = new double[cfMaturities_.length];
-        for (int i = 0; i < cfMaturities_.length; i++) {
+        for ( int i = 0; i < cfMaturities_.length; i++ ) {
             cfMaturityTimes_[i] = timeFromReference(cpiOptionDateFromTenor(cfMaturities_[i]));
         }
 
         // 2D-interpolate using vx=time, vy=strike, mz[strike_row][time_col].
         // Note matrices are already stored as [strike_row][maturity_col].
-        capPrice_ = interpolator2d_.interpolate(
-                new Array(cfMaturityTimes_),
-                new Array(cfStrikes_),
-                cPriceB_);
+        capPrice_ = interpolator2d_.interpolate(new Array(cfMaturityTimes_), new Array(cfStrikes_), cPriceB_);
         capPrice_.enableExtrapolation();
 
-        floorPrice_ = interpolator2d_.interpolate(
-                new Array(cfMaturityTimes_),
-                new Array(cfStrikes_),
-                fPriceB_);
+        floorPrice_ = interpolator2d_.interpolate(new Array(cfMaturityTimes_), new Array(cfStrikes_), fPriceB_);
         floorPrice_.enableExtrapolation();
     }
 
@@ -226,7 +204,7 @@ public class InterpolatedCPICapFloorTermPriceSurface<I extends Interpolation2D.I
     }
 
     /** Returns the interpolator factory class used by this surface. */
-    public Class<I> interpolator2dClass() {
+    public Class< I > interpolator2dClass() {
         return classI;
     }
 

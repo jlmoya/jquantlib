@@ -21,10 +21,6 @@
  */
 package org.jquantlib.methods.finitedifferences.operators;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.matrixutilities.Matrix;
@@ -35,11 +31,14 @@ import org.jquantlib.processes.HestonProcess;
 import org.jquantlib.processes.HullWhiteProcess;
 import org.jquantlib.termstructures.YieldTermStructure;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 /**
  * 3-D finite-difference operator for the Heston-Hull-White hybrid model.
  * <p>
- * Java port of v1.42.1
- * {@code ql/methods/finitedifferences/operators/fdmhestonhullwhiteop.{hpp,cpp}}.
+ * Java port of v1.42.1 {@code ql/methods/finitedifferences/operators/fdmhestonhullwhiteop.{hpp,cpp}}.
  * <p>
  * The three dimensions are:
  * <ul>
@@ -68,37 +67,29 @@ public class FdmHestonHullWhiteOp implements FdmLinearOpComposite {
     // Hull-White short-rate operator on direction 2
     private final FdmHullWhiteOp hullWhiteOp;
 
-    public FdmHestonHullWhiteOp(final FdmMesher mesher,
-                                  final HestonProcess hestonProcess,
-                                  final HullWhiteProcess hwProcess,
-                                  final double equityShortRateCorrelation) {
-        this.v0    = hestonProcess.v0().currentLink().value();
+    public FdmHestonHullWhiteOp(final FdmMesher mesher, final HestonProcess hestonProcess,
+            final HullWhiteProcess hwProcess, final double equityShortRateCorrelation) {
+        this.v0 = hestonProcess.v0().currentLink().value();
         this.kappa = hestonProcess.kappa().currentLink().value();
         this.theta = hestonProcess.theta().currentLink().value();
         this.sigma = hestonProcess.sigma().currentLink().value();
-        this.rho   = hestonProcess.rho().currentLink().value();
+        this.rho = hestonProcess.rho().currentLink().value();
 
         // Build HullWhite model for the drift / discount-bond calculations
-        this.hwModel = new HullWhite(
-            hestonProcess.riskFreeRate(),
-            hwProcess.a(),
-            hwProcess.sigma());
+        this.hwModel = new HullWhite(hestonProcess.riskFreeRate(), hwProcess.a(), hwProcess.sigma());
 
-        QL.require(equityShortRateCorrelation * equityShortRateCorrelation
-                 + rho * rho <= 1.0,
-                 "correlation matrix has negative eigenvalues");
+        QL.require(equityShortRateCorrelation * equityShortRateCorrelation + rho * rho <= 1.0,
+                "correlation matrix has negative eigenvalues");
 
         // Heston v–S cross-correlation: rho*sigma*v * d^2/dx dv (dims 0,1)
         final Array vLoc = mesher.locations(1);   // variance mesh
         final Array rhoSigmaV = vLoc.mul(rho * sigma);
-        this.hestonCorrMap =
-            new SecondOrderMixedDerivativeOp(0, 1, mesher).mult(rhoSigmaV);
+        this.hestonCorrMap = new SecondOrderMixedDerivativeOp(0, 1, mesher).mult(rhoSigmaV);
 
         // Equity–IR cross-correlation: sqrt(v)*hwSigma*rho_sr * d^2/dx dr (dims 0,2)
         final Array sqrtV = vLoc.sqrt();
         final Array eqIrCoeff = sqrtV.mul(hwProcess.sigma() * equityShortRateCorrelation);
-        this.equityIrCorrMap =
-            new SecondOrderMixedDerivativeOp(0, 2, mesher).mult(eqIrCoeff);
+        this.equityIrCorrMap = new SecondOrderMixedDerivativeOp(0, 2, mesher).mult(eqIrCoeff);
 
         // Heston v direction: 0.5*sigma^2*v * d^2/dv^2 + kappa*(theta - v) * d/dv
         //
@@ -130,18 +121,19 @@ public class FdmHestonHullWhiteOp implements FdmLinearOpComposite {
         final Array halfSigSqV = vLoc.mul(0.5 * sigmaForDyMap * sigmaForDyMap);
         final Array kappaThMinusV = vLoc.mul(-kappa).add(kappa * theta);
         this.dyMap = new SecondDerivativeOp(1, mesher).mult(halfSigSqV)
-                        .add(new FirstDerivativeOp(1, mesher).mult(kappaThMinusV));
+                .add(new FirstDerivativeOp(1, mesher).mult(kappaThMinusV));
 
         // Equity part (drift + d^2/dx^2) — time-dependent, updated by setTime
-        this.dxMap = new FdmHestonHullWhiteEquityPart(
-            mesher, hwModel, hestonProcess.dividendYield().currentLink());
+        this.dxMap = new FdmHestonHullWhiteEquityPart(mesher, hwModel, hestonProcess.dividendYield().currentLink());
 
         // Hull-White operator on dimension 2
         this.hullWhiteOp = new FdmHullWhiteOp(mesher, hwModel, 2);
     }
 
     @Override
-    public int size() { return 3; }
+    public int size() {
+        return 3;
+    }
 
     @Override
     public void setTime(final double t1, final double t2) {
@@ -151,11 +143,8 @@ public class FdmHestonHullWhiteOp implements FdmLinearOpComposite {
 
     @Override
     public Array apply(final Array u) {
-        return dyMap.apply(u)
-            .add(dxMap.getMap().apply(u))
-            .add(hullWhiteOp.apply(u))
-            .add(hestonCorrMap.apply(u))
-            .add(equityIrCorrMap.apply(u));
+        return dyMap.apply(u).add(dxMap.getMap().apply(u)).add(hullWhiteOp.apply(u)).add(hestonCorrMap.apply(u))
+                .add(equityIrCorrMap.apply(u));
     }
 
     @Override
@@ -165,17 +154,23 @@ public class FdmHestonHullWhiteOp implements FdmLinearOpComposite {
 
     @Override
     public Array applyDirection(final int direction, final Array r) {
-        if (direction == 0) return dxMap.getMap().apply(r);
-        if (direction == 1) return dyMap.apply(r);
-        if (direction == 2) return hullWhiteOp.apply(r);
+        if ( direction == 0 )
+            return dxMap.getMap().apply(r);
+        if ( direction == 1 )
+            return dyMap.apply(r);
+        if ( direction == 2 )
+            return hullWhiteOp.apply(r);
         throw new IllegalArgumentException("direction too large");
     }
 
     @Override
     public Array solveSplitting(final int direction, final Array r, final double s) {
-        if (direction == 0) return dxMap.getMap().solveSplitting(r, s, 1.0);
-        if (direction == 1) return dyMap.solveSplitting(r, s, 1.0);
-        if (direction == 2) return hullWhiteOp.solveSplitting(2, r, s);
+        if ( direction == 0 )
+            return dxMap.getMap().solveSplitting(r, s, 1.0);
+        if ( direction == 1 )
+            return dyMap.solveSplitting(r, s, 1.0);
+        if ( direction == 2 )
+            return hullWhiteOp.solveSplitting(2, r, s);
         throw new IllegalArgumentException("direction too large");
     }
 
@@ -187,13 +182,12 @@ public class FdmHestonHullWhiteOp implements FdmLinearOpComposite {
     @Override
     public Matrix toMatrix() {
         // For debugging / testing; not used in rollback
-        throw new UnsupportedOperationException(
-            "FdmHestonHullWhiteOp.toMatrix() not implemented");
+        throw new UnsupportedOperationException("FdmHestonHullWhiteOp.toMatrix() not implemented");
     }
 
     @Override
-    public List<Matrix> toMatrixDecomp() {
-        final List<Matrix> ret = new ArrayList<Matrix>(4);
+    public List< Matrix > toMatrixDecomp() {
+        final List< Matrix > ret = new ArrayList< Matrix >(4);
         ret.add(dxMap.getMap().toMatrix());
         ret.add(dyMap.toMatrix());
         ret.add(hullWhiteOp.toMatrixDecomp().get(0));
@@ -201,8 +195,8 @@ public class FdmHestonHullWhiteOp implements FdmLinearOpComposite {
         // add equityIrCorr to mixed
         final Matrix eqIrMat = equityIrCorrMap.toMatrix();
         final Matrix mixedCombined = new Matrix(mixed.rows(), mixed.columns());
-        for (int r = 0; r < mixed.rows(); ++r) {
-            for (int c = 0; c < mixed.columns(); ++c) {
+        for ( int r = 0; r < mixed.rows(); ++r ) {
+            for ( int c = 0; c < mixed.columns(); ++c ) {
                 mixedCombined.set(r, c, mixed.get(r, c) + eqIrMat.get(r, c));
             }
         }
@@ -213,8 +207,8 @@ public class FdmHestonHullWhiteOp implements FdmLinearOpComposite {
     // ---- inner class: equity part with Hull-White drift correction ----
 
     /**
-     * Equity (log-spot) part of the Heston-HW operator, time-dependent.
-     * Mirrors C++ {@code FdmHestonHullWhiteEquityPart}.
+     * Equity (log-spot) part of the Heston-HW operator, time-dependent. Mirrors C++
+     * {@code FdmHestonHullWhiteEquityPart}.
      */
     static class FdmHestonHullWhiteEquityPart {
         // x = short-rate mesh (dim 2) expanded to full grid size
@@ -225,27 +219,24 @@ public class FdmHestonHullWhiteOp implements FdmLinearOpComposite {
         private final FirstDerivativeOp dxMapOp;
         // dxxMap = SecondDeriv(0).mult(0.5 * v_mesh) — pre-multiplied
         private final TripleBandLinearOp dxxMap;
-        private TripleBandLinearOp mapT;
-
         private final HullWhite hwModel;
         private final FdmMesher mesher;
         private final YieldTermStructure qTS;
+        private final TripleBandLinearOp mapT;
 
-        FdmHestonHullWhiteEquityPart(final FdmMesher mesher,
-                                      final HullWhite hwModel,
-                                      final YieldTermStructure qTS) {
-            this.mesher  = mesher;
+        FdmHestonHullWhiteEquityPart(final FdmMesher mesher, final HullWhite hwModel, final YieldTermStructure qTS) {
+            this.mesher = mesher;
             this.hwModel = hwModel;
-            this.qTS     = qTS;
+            this.qTS = qTS;
 
             // Short-rate mesh locations expanded into full grid (same shape)
             this.x = mesher.locations(2);
 
             // Half-variance: 0.5 * v mesh; zero on dim-0 boundaries
             final Array varVals = mesher.locations(1).mul(0.5);
-            for (final FdmLinearOpIterator iter : mesher.layout()) {
+            for ( final FdmLinearOpIterator iter : mesher.layout() ) {
                 final int c0 = iter.coordinates()[0];
-                if (c0 == 0 || c0 == mesher.layout().dim()[0] - 1) {
+                if ( c0 == 0 || c0 == mesher.layout().dim()[0] - 1 ) {
                     varVals.set(iter.index(), 0.0);
                 }
             }
@@ -253,17 +244,15 @@ public class FdmHestonHullWhiteOp implements FdmLinearOpComposite {
 
             this.dxMapOp = new FirstDerivativeOp(0, mesher);
             // dxxMap = 0.5*v * d^2/dS^2 (pre-multiplied, constant)
-            this.dxxMap  = new SecondDerivativeOp(0, mesher).mult(varianceValues);
-            this.mapT    = new TripleBandLinearOp(0, mesher);
+            this.dxxMap = new SecondDerivativeOp(0, mesher).mult(varianceValues);
+            this.mapT = new TripleBandLinearOp(0, mesher);
         }
 
         void setTime(final double t1, final double t2) {
             final OneFactorModel.ShortRateDynamics dynamics = hwModel.dynamics();
-            final double phi = 0.5 * (dynamics.shortRate(t1, 0.0)
-                                    + dynamics.shortRate(t2, 0.0));
-            final double q = qTS.forwardRate(t1, t2,
-                org.jquantlib.termstructures.Compounding.Continuous,
-                org.jquantlib.time.Frequency.NoFrequency).rate();
+            final double phi = 0.5 * (dynamics.shortRate(t1, 0.0) + dynamics.shortRate(t2, 0.0));
+            final double q = qTS.forwardRate(t1, t2, org.jquantlib.termstructures.Compounding.Continuous,
+                    org.jquantlib.time.Frequency.NoFrequency).rate();
 
             // drift coefficient = x + phi - 0.5*v - q  (per grid point)
             final Array drift = x.add(phi).sub(varianceValues).sub(q);
@@ -272,6 +261,8 @@ public class FdmHestonHullWhiteOp implements FdmLinearOpComposite {
             mapT.axpyb(drift, dxMapOp, dxxMap, new Array(0));
         }
 
-        TripleBandLinearOp getMap() { return mapT; }
+        TripleBandLinearOp getMap() {
+            return mapT;
+        }
     }
 }

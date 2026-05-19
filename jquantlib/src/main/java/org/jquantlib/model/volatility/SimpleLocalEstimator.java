@@ -39,10 +39,10 @@
 
 package org.jquantlib.model.volatility;
 
-import java.util.Iterator;
-
 import org.jquantlib.time.Date;
 import org.jquantlib.time.TimeSeries;
+
+import java.util.Iterator;
 
 /**
  * Simple Local Estimator volatility model
@@ -54,23 +54,23 @@ import org.jquantlib.time.TimeSeries;
  */
 public class SimpleLocalEstimator {
 
-	private final /* @Real */ double yearFraction ;
+    private final /* @Real */ double yearFraction;
 
     public SimpleLocalEstimator(final /*@Real*/ double y) {
         this.yearFraction = y;
     }
 
-    public TimeSeries<Double> calculate(final TimeSeries<Double> quotes) {
-        final TimeSeries<Double> retval = new TimeSeries<Double>(Double.class);
-        final Iterator<Date> dates = quotes.navigableKeySet().iterator();
-    	double prev = quotes.get(dates.next());
-    	while (dates.hasNext()) {
-    	    final Date date = dates.next();
-            final double curr = quotes.get(date) ;
-            final double value = Math.abs(Math.log(curr/prev))/Math.sqrt(yearFraction) ;
+    public TimeSeries< Double > calculate(final TimeSeries< Double > quotes) {
+        final TimeSeries< Double > retval = new TimeSeries< Double >(Double.class);
+        final Iterator< Date > dates = quotes.navigableKeySet().iterator();
+        double prev = quotes.get(dates.next());
+        while ( dates.hasNext() ) {
+            final Date date = dates.next();
+            final double curr = quotes.get(date);
+            final double value = Math.abs(Math.log(curr / prev)) / Math.sqrt(yearFraction);
             retval.put(date, value);
             prev = curr;
-    	}
+        }
         return retval;
     }
 

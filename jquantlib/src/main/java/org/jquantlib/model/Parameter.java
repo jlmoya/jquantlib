@@ -50,7 +50,7 @@ import org.jquantlib.math.optimization.NoConstraint;
  *
  * @author Praneet Tiwari
  */
-@QualityAssurance(quality = Quality.Q1_TRANSLATION, version = Version.V097, reviewers = { "Richard Gomes" })
+@QualityAssurance( quality = Quality.Q1_TRANSLATION, version = Version.V097, reviewers = { "Richard Gomes" } )
 public class Parameter {
 
     //
@@ -61,7 +61,6 @@ public class Parameter {
     protected Array params;
     protected Impl impl;
 
-
     //
     // public constructors
     //
@@ -71,24 +70,22 @@ public class Parameter {
 
     }
 
-
     //
     // protected constructors
     //
 
-    protected Parameter(final int size, final Impl impl, final Constraint  constraint) {
+    protected Parameter(final int size, final Impl impl, final Constraint constraint) {
         this.constraint = constraint;
         this.impl = impl;
         this.params = new Array(size);
 
     }
 
-
     //
     // public methods
     //
 
-    public final Array  params() /* @ReadOnly */ {
+    public final Array params() /* @ReadOnly */ {
         return params;
     }
 
@@ -96,7 +93,7 @@ public class Parameter {
         params.set(i, x);
     }
 
-    public boolean testParams(final Array  params) /* @ReadOnly */ {
+    public boolean testParams(final Array params) /* @ReadOnly */ {
         return constraint.test(params);
     }
 
@@ -113,13 +110,12 @@ public class Parameter {
         return impl;
     }
 
-
     //
     // inner interfaces
     //
 
     protected interface Impl {
-        public abstract double value(final Array  params, final /* @Time */ double t) /* @ReadOnly */;
+        double value(final Array params, final /* @Time */ double t) /* @ReadOnly */;
     }
 
 }

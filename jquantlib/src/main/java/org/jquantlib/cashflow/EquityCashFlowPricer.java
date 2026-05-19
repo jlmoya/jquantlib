@@ -29,21 +29,20 @@
 
 package org.jquantlib.cashflow;
 
-import java.util.List;
-
 import org.jquantlib.indexes.EquityIndex;
 import org.jquantlib.time.Date;
 import org.jquantlib.util.DefaultObservable;
 import org.jquantlib.util.Observable;
 import org.jquantlib.util.Observer;
 
+import java.util.List;
+
 /**
  * Abstract pricer base for {@link EquityCashFlow}.
  *
  * <p>Mirrors C++ {@code EquityCashFlowPricer} at v1.42.1
- * ({@code ql/cashflows/equitycashflow.hpp:70-87}). Concrete implementations
- * (e.g., {@link EquityQuantoCashFlowPricer}) compute the per-unit-notional
- * price; the {@link EquityCashFlow#amount()} multiplies by notional.
+ * ({@code ql/cashflows/equitycashflow.hpp:70-87}). Concrete implementations (e.g., {@link EquityQuantoCashFlowPricer})
+ * compute the per-unit-notional price; the {@link EquityCashFlow#amount()} multiplies by notional.
  *
  * @author JQuantLib migration team (Phase 5d.5-EQ)
  */
@@ -51,8 +50,7 @@ public abstract class EquityCashFlowPricer implements Observer, Observable {
 
     // Phase 2x A.4: WeakReferenceObservable so test runs don't accumulate
     // observers across cycles.
-    private final DefaultObservable delegatedObservable =
-            new org.jquantlib.util.WeakReferenceObservable(this);
+    private final DefaultObservable delegatedObservable = new org.jquantlib.util.WeakReferenceObservable(this);
 
     protected EquityIndex index_;
     protected Date baseDate_;
@@ -109,7 +107,7 @@ public abstract class EquityCashFlowPricer implements Observer, Observable {
     }
 
     @Override
-    public List<Observer> getObservers() {
+    public List< Observer > getObservers() {
         return delegatedObservable.getObservers();
     }
 }

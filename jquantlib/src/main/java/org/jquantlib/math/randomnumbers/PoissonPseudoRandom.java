@@ -55,29 +55,26 @@ import org.jquantlib.math.distributions.InverseCumulativePoisson;
 public final class PoissonPseudoRandom {
 
     /**
-     * Optional shared inverse-cumulative functor. If {@code null}, each
-     * call to {@link #makeSequenceGenerator(int, long)} constructs the
-     * default {@link InverseCumulativePoisson} (lambda = 1.0).
+     * Whether this generator type supports an error estimate. C++ sets {@code allowsErrorEstimate = 1} in the
+     * {@code GenericPseudoRandom} traits.
+     */
+    public static final boolean ALLOWS_ERROR_ESTIMATE = true;
+    /**
+     * Optional shared inverse-cumulative functor. If {@code null}, each call to
+     * {@link #makeSequenceGenerator(int, long)} constructs the default {@link InverseCumulativePoisson} (lambda =
+     * 1.0).
      *
      * <p>Mirrors the C++ static member {@code PoissonPseudoRandom::icInstance}.
      */
     public static InverseCumulativePoisson icInstance = null;
-
-    /**
-     * Whether this generator type supports an error estimate. C++ sets
-     * {@code allowsErrorEstimate = 1} in the {@code GenericPseudoRandom}
-     * traits.
-     */
-    public static final boolean ALLOWS_ERROR_ESTIMATE = true;
 
     private PoissonPseudoRandom() {
         // utility class — not instantiable
     }
 
     /**
-     * Build an inverse-cumulative random sequence generator over a
-     * Mersenne-Twister uniform sequence, mapped through the Poisson
-     * inverse CDF.
+     * Build an inverse-cumulative random sequence generator over a Mersenne-Twister uniform sequence, mapped through
+     * the Poisson inverse CDF.
      *
      * <p>Equivalent to:
      * <pre>
@@ -90,20 +87,18 @@ public final class PoissonPseudoRandom {
      * @param seed      RNG seed
      * @return a properly wired {@link InverseCumulativeRsg}
      */
-    public static InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                                       InverseCumulativePoisson>
-    makeSequenceGenerator(final int dimension, final long seed) {
+    public static InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativePoisson > makeSequenceGenerator(
+            final int dimension, final long seed) {
 
         final MersenneTwisterUniformRng rng = new MersenneTwisterUniformRng(seed);
-        final RandomSequenceGenerator<MersenneTwisterUniformRng> ursg =
-                new RandomSequenceGenerator<MersenneTwisterUniformRng>(
-                        MersenneTwisterUniformRng.class, dimension, rng);
+        final RandomSequenceGenerator< MersenneTwisterUniformRng > ursg = new RandomSequenceGenerator< MersenneTwisterUniformRng >(
+                MersenneTwisterUniformRng.class, dimension, rng);
 
-        if (icInstance != null) {
-            return new InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                                            InverseCumulativePoisson>(ursg, icInstance);
+        if ( icInstance != null ) {
+            return new InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativePoisson >(
+                    ursg, icInstance);
         }
-        return new InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                                        InverseCumulativePoisson>(ursg, new InverseCumulativePoisson());
+        return new InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativePoisson >(
+                ursg, new InverseCumulativePoisson());
     }
 }

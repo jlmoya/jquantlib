@@ -33,22 +33,18 @@ import org.jquantlib.model.VolatilityType;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.SimpleQuote;
-import org.jquantlib.time.BusinessDayConvention;
-import org.jquantlib.time.Calendar;
-import org.jquantlib.time.Date;
-import org.jquantlib.time.Frequency;
-import org.jquantlib.time.Period;
+import org.jquantlib.time.*;
 
 /**
  * Constant YoY-inflation optionlet volatility surface — no T or K dependence.
  *
  * <p>Java port of QuantLib v1.42.1
- * {@code ql/termstructures/volatility/inflation/yoyinflationoptionletvolatilitystructure.{hpp,cpp}}
- * — class {@code ConstantYoYOptionletVolatility}.
+ * {@code ql/termstructures/volatility/inflation/yoyinflationoptionletvolatilitystructure.{hpp,cpp}} — class
+ * {@code ConstantYoYOptionletVolatility}.
  */
 public class ConstantYoYOptionletVolatility extends YoYOptionletVolatilitySurface {
 
-    private final Handle<? extends Quote> volatility_;
+    private final Handle< ? extends Quote > volatility_;
     private final double minStrike_;
     private final double maxStrike_;
 
@@ -57,72 +53,38 @@ public class ConstantYoYOptionletVolatility extends YoYOptionletVolatilitySurfac
     //
 
     /** Constant volatility from a literal value. Defaults to ShiftedLognormal/0. */
-    public ConstantYoYOptionletVolatility(
-            final double v,
-            final int settlementDays,
-            final Calendar cal,
-            final BusinessDayConvention bdc,
-            final DayCounter dc,
-            final Period observationLag,
-            final Frequency frequency,
-            final boolean indexIsInterpolated) {
-        this(v, settlementDays, cal, bdc, dc, observationLag, frequency,
-                indexIsInterpolated, -1.0, 100.0,
+    public ConstantYoYOptionletVolatility(final double v, final int settlementDays, final Calendar cal,
+            final BusinessDayConvention bdc, final DayCounter dc, final Period observationLag,
+            final Frequency frequency, final boolean indexIsInterpolated) {
+        this(v, settlementDays, cal, bdc, dc, observationLag, frequency, indexIsInterpolated, -1.0, 100.0,
                 VolatilityType.ShiftedLognormal, 0.0);
     }
 
     /** Constant volatility from a literal value with full strike/type knobs. */
-    public ConstantYoYOptionletVolatility(
-            final double v,
-            final int settlementDays,
-            final Calendar cal,
-            final BusinessDayConvention bdc,
-            final DayCounter dc,
-            final Period observationLag,
-            final Frequency frequency,
-            final boolean indexIsInterpolated,
-            final double minStrike,
-            final double maxStrike,
-            final VolatilityType volType,
-            final double displacement) {
-        super(settlementDays, cal, bdc, dc, observationLag, frequency,
-                indexIsInterpolated, volType, displacement);
-        this.volatility_ = new Handle<Quote>(new SimpleQuote(v));
+    public ConstantYoYOptionletVolatility(final double v, final int settlementDays, final Calendar cal,
+            final BusinessDayConvention bdc, final DayCounter dc, final Period observationLag,
+            final Frequency frequency, final boolean indexIsInterpolated, final double minStrike,
+            final double maxStrike, final VolatilityType volType, final double displacement) {
+        super(settlementDays, cal, bdc, dc, observationLag, frequency, indexIsInterpolated, volType, displacement);
+        this.volatility_ = new Handle< Quote >(new SimpleQuote(v));
         this.minStrike_ = minStrike;
         this.maxStrike_ = maxStrike;
     }
 
     /** Constant volatility taking a quote handle. Defaults to ShiftedLognormal/0. */
-    public ConstantYoYOptionletVolatility(
-            final Handle<? extends Quote> v,
-            final int settlementDays,
-            final Calendar cal,
-            final BusinessDayConvention bdc,
-            final DayCounter dc,
-            final Period observationLag,
-            final Frequency frequency,
-            final boolean indexIsInterpolated) {
-        this(v, settlementDays, cal, bdc, dc, observationLag, frequency,
-                indexIsInterpolated, -1.0, 100.0,
+    public ConstantYoYOptionletVolatility(final Handle< ? extends Quote > v, final int settlementDays,
+            final Calendar cal, final BusinessDayConvention bdc, final DayCounter dc, final Period observationLag,
+            final Frequency frequency, final boolean indexIsInterpolated) {
+        this(v, settlementDays, cal, bdc, dc, observationLag, frequency, indexIsInterpolated, -1.0, 100.0,
                 VolatilityType.ShiftedLognormal, 0.0);
     }
 
     /** Constant volatility taking a quote handle with full knobs. */
-    public ConstantYoYOptionletVolatility(
-            final Handle<? extends Quote> v,
-            final int settlementDays,
-            final Calendar cal,
-            final BusinessDayConvention bdc,
-            final DayCounter dc,
-            final Period observationLag,
-            final Frequency frequency,
-            final boolean indexIsInterpolated,
-            final double minStrike,
-            final double maxStrike,
-            final VolatilityType volType,
-            final double displacement) {
-        super(settlementDays, cal, bdc, dc, observationLag, frequency,
-                indexIsInterpolated, volType, displacement);
+    public ConstantYoYOptionletVolatility(final Handle< ? extends Quote > v, final int settlementDays,
+            final Calendar cal, final BusinessDayConvention bdc, final DayCounter dc, final Period observationLag,
+            final Frequency frequency, final boolean indexIsInterpolated, final double minStrike,
+            final double maxStrike, final VolatilityType volType, final double displacement) {
+        super(settlementDays, cal, bdc, dc, observationLag, frequency, indexIsInterpolated, volType, displacement);
         this.volatility_ = v;
         this.volatility_.addObserver(this);
         this.minStrike_ = minStrike;

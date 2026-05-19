@@ -28,27 +28,20 @@ package org.jquantlib.model.marketmodels.evolvers;
 
 import org.jquantlib.QL;
 import org.jquantlib.math.matrixutilities.Matrix;
-import org.jquantlib.model.marketmodels.BrownianGenerator;
-import org.jquantlib.model.marketmodels.BrownianGeneratorFactory;
-import org.jquantlib.model.marketmodels.CurveState;
-import org.jquantlib.model.marketmodels.EvolutionDescription;
-import org.jquantlib.model.marketmodels.MarketModel;
-import org.jquantlib.model.marketmodels.MarketModelEvolver;
+import org.jquantlib.model.marketmodels.*;
 import org.jquantlib.model.marketmodels.curvestates.LMMCurveState;
 import org.jquantlib.model.marketmodels.driftcomputation.LMMDriftCalculator;
 
 /**
  * Iterative Balland log-normal forward-rate evolver.
  * <p>
- * Combines the iterative-drift backward walk of {@link LogNormalFwdRateIpc}
- * with Balland's geometric-mean correction (forwards replaced by
- * sqrt(initialRates*forwards) before computing the next g_).
+ * Combines the iterative-drift backward walk of {@link LogNormalFwdRateIpc} with Balland's geometric-mean correction
+ * (forwards replaced by sqrt(initialRates*forwards) before computing the next g_).
  * <p>
  * Runs in terminal measure only (verified at construction).
  *
- * @see "ql/models/marketmodels/evolvers/lognormalfwdrateiballand.{hpp,cpp}" v1.42.1
- *
  * @author Jose Moya
+ * @see "ql/models/marketmodels/evolvers/lognormalfwdrateiballand.{hpp,cpp}" v1.42.1
  */
 public class LogNormalFwdRateiBalland extends MarketModelEvolver {
 
@@ -63,7 +56,6 @@ public class LogNormalFwdRateiBalland extends MarketModelEvolver {
     private final int numberOfRates_;
     private final int numberOfFactors_;
     private final LMMCurveState curveState_;
-    private int currentStep_;
     private final double[] forwards_;
     private final double[] displacements_;
     private final double[] logForwards_;
@@ -74,19 +66,15 @@ public class LogNormalFwdRateiBalland extends MarketModelEvolver {
     private final int[] alive_;
     // helper classes
     private final LMMDriftCalculator[] calculators_;
+    private int currentStep_;
 
-    public LogNormalFwdRateiBalland(
-            final MarketModel marketModel,
-            final BrownianGeneratorFactory factory,
+    public LogNormalFwdRateiBalland(final MarketModel marketModel, final BrownianGeneratorFactory factory,
             final int[] numeraires) {
         this(marketModel, factory, numeraires, 0);
     }
 
-    public LogNormalFwdRateiBalland(
-            final MarketModel marketModel,
-            final BrownianGeneratorFactory factory,
-            final int[] numeraires,
-            final int initialStep) {
+    public LogNormalFwdRateiBalland(final MarketModel marketModel, final BrownianGeneratorFactory factory,
+            final int[] numeraires, final int initialStep) {
         this.marketModel_ = marketModel;
         this.numeraires_ = numeraires.clone();
         this.initialStep_ = initialStep;
@@ -114,13 +102,12 @@ public class LogNormalFwdRateiBalland extends MarketModelEvolver {
 
         this.calculators_ = new LMMDriftCalculator[steps];
         this.fixedDrifts_ = new double[steps][numberOfRates_];
-        for (int j = 0; j < steps; ++j) {
+        for ( int j = 0; j < steps; ++j ) {
             final Matrix A = marketModel.pseudoRoot(j);
-            calculators_[j] = new LMMDriftCalculator(A, displacements_,
-                    marketModel.evolution().rateTaus(),
+            calculators_[j] = new LMMDriftCalculator(A, displacements_, marketModel.evolution().rateTaus(),
                     numeraires[j], alive_[j]);
             final Matrix C = marketModel.covariance(j);
-            for (int k = 0; k < numberOfRates_; ++k) {
+            for ( int k = 0; k < numberOfRates_; ++k ) {
                 fixedDrifts_[j][k] = -0.5 * C.get(k, k);
             }
         }
@@ -134,9 +121,8 @@ public class LogNormalFwdRateiBalland extends MarketModelEvolver {
     }
 
     private void setForwards(final double[] forwards) {
-        QL.require(forwards.length == numberOfRates_,
-                "mismatch between forwards and rateTimes");
-        for (int i = 0; i < numberOfRates_; ++i) {
+        QL.require(forwards.length == numberOfRates_, "mismatch between forwards and rateTimes");
+        for ( int i = 0; i < numberOfRates_; ++i ) {
             initialLogForwards_[i] = Math.log(forwards[i] + displacements_[i]);
         }
         calculators_[initialStep_].compute(forwards, initialDrifts_);
@@ -167,36 +153,34 @@ public class LogNormalFwdRateiBalland extends MarketModelEvolver {
 
         // step the longest rate first (no drift contribution from later rates)
         int i = numberOfRates_ - 1;
-        if (i >= alive) {
+        if ( i >= alive ) {
             logForwards_[i] += fixedDrift[i];
             double inner = 0.0;
-            for (int f = 0; f < numberOfFactors_; ++f) {
+            for ( int f = 0; f < numberOfFactors_; ++f ) {
                 inner += A.get(i, f) * brownians_[f];
             }
             logForwards_[i] += inner;
             forwards_[i] = Math.exp(logForwards_[i]) - displacements_[i];
             final double blFwd = Math.sqrt(initialRates[i] * forwards_[i]);
-            g[i] = rateTaus_[i] * (blFwd + displacements_[i])
-                    / (1.0 + rateTaus_[i] * blFwd);
+            g[i] = rateTaus_[i] * (blFwd + displacements_[i]) / (1.0 + rateTaus_[i] * blFwd);
         }
 
         // now walk backwards
-        for (i = numberOfRates_ - 2; i >= alive; --i) {
+        for ( i = numberOfRates_ - 2; i >= alive; --i ) {
             double drifts2 = 0.0;
-            for (int j = i + 1; j < numberOfRates_; ++j) {
+            for ( int j = i + 1; j < numberOfRates_; ++j ) {
                 drifts2 -= g[j] * C.get(i, j);
             }
             logForwards_[i] += drifts2 + fixedDrift[i];
             double inner = 0.0;
-            for (int f = 0; f < numberOfFactors_; ++f) {
+            for ( int f = 0; f < numberOfFactors_; ++f ) {
                 inner += A.get(i, f) * brownians_[f];
             }
             logForwards_[i] += inner;
             forwards_[i] = Math.exp(logForwards_[i]) - displacements_[i];
 
             final double blFwd = Math.sqrt(initialRates[i] * forwards_[i]);
-            g[i] = rateTaus_[i] * (blFwd + displacements_[i])
-                    / (1.0 + rateTaus_[i] * blFwd);
+            g[i] = rateTaus_[i] * (blFwd + displacements_[i]) / (1.0 + rateTaus_[i] * blFwd);
         }
 
         // update curve state

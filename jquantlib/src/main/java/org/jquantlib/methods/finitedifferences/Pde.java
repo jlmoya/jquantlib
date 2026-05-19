@@ -22,20 +22,19 @@
 package org.jquantlib.methods.finitedifferences;
 
 /**
- * The objects passed into Pde classes
- * must implement the methods defined by this.
- * 
+ * The objects passed into Pde classes must implement the methods defined by this.
+ *
  * @author Srinivas Hasti
- * 
+ *
  */
 public interface Pde {
 
-    public abstract /*Real*/ double diffusion(/*Time*/double t, /*Real*/
-    double x);
+    /*Real*/ double diffusion(/*Time*/double t, /*Real*/
+            double x);
 
-    public abstract /*Real*/ double drift( /*Time*/double t, /*Real*/
-    double x);
+    /*Real*/ double drift( /*Time*/double t, /*Real*/
+            double x);
 
-    public abstract /*Real*/  double discount(/*Time*/double t, /*Real*/
-    double x);
+    /*Real*/  double discount(/*Time*/double t, /*Real*/
+            double x);
 }

@@ -26,19 +26,17 @@
 
 package org.jquantlib.model.marketmodels.pathwisegreeks;
 
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.math.matrixutilities.Matrix;
 
+import java.util.List;
+
 /**
- * Analytic Jacobian for all pseudo-root elements: returns one matrix per
- * rate, whose entries are the derivatives of that rate with respect to each
- * pseudo-root element.
+ * Analytic Jacobian for all pseudo-root elements: returns one matrix per rate, whose entries are the derivatives of
+ * that rate with respect to each pseudo-root element.
  *
  * <p>Mirrors C++ {@code RatePseudoRootJacobianAllElements}
- * (ql/models/marketmodels/pathwisegreeks/ratepseudorootjacobian.{hpp,cpp}
- * v1.42.1).
+ * (ql/models/marketmodels/pathwisegreeks/ratepseudorootjacobian.{hpp,cpp} v1.42.1).
  *
  * @author Jose Moya
  */
@@ -54,11 +52,8 @@ public class RatePseudoRootJacobianAllElements {
     private final Matrix e_;
     private final double[] ratios_;
 
-    public RatePseudoRootJacobianAllElements(final Matrix pseudoRoot,
-                                             final int aliveIndex,
-                                             final int numeraire,
-                                             final double[] taus,
-                                             final double[] displacements) {
+    public RatePseudoRootJacobianAllElements(final Matrix pseudoRoot, final int aliveIndex, final int numeraire,
+            final double[] taus, final double[] displacements) {
         this.pseudoRoot_ = new Matrix(pseudoRoot);
         this.aliveIndex_ = aliveIndex;
         this.taus_ = taus.clone();
@@ -70,57 +65,50 @@ public class RatePseudoRootJacobianAllElements {
         final int numberRates = taus.length;
         QL.require(aliveIndex == numeraire,
                 "we can do only do discretely compounding MM acount so aliveIndex must equal numeraire");
-        QL.require(pseudoRoot_.rows() == numberRates,
-                "pseudoRoot_.rows()<> taus.size()");
-        QL.require(displacements_.length == numberRates,
-                "displacements_.size()<> taus.size()");
+        QL.require(pseudoRoot_.rows() == numberRates, "pseudoRoot_.rows()<> taus.size()");
+        QL.require(displacements_.length == numberRates, "displacements_.size()<> taus.size()");
     }
 
     /**
-     * Fills B (a list of matrices, one per rate). For rate {@code j},
-     * {@code B[j][k][f]} is the derivative of {@code newRate_j} with respect
-     * to {@code pseudoRoot[k][f]}.
+     * Fills B (a list of matrices, one per rate). For rate {@code j}, {@code B[j][k][f]} is the derivative of
+     * {@code newRate_j} with respect to {@code pseudoRoot[k][f]}.
      */
-    public void getBumps(final double[] oldRates,
-                         final double[] discountRatios,
-                         final double[] newRates,
-                         final double[] gaussians,
-                         final List<Matrix> B) {
+    public void getBumps(final double[] oldRates, final double[] discountRatios, final double[] newRates,
+            final double[] gaussians, final List< Matrix > B) {
         final int numberRates = taus_.length;
 
         QL.require(B.size() == numberRates,
-                "we need B.size() which is " + B.size()
-                        + " to equal numberRates which is " + numberRates);
-        for (final Matrix bj : B) {
+                "we need B.size() which is " + B.size() + " to equal numberRates which is " + numberRates);
+        for ( final Matrix bj : B ) {
             QL.require(bj.columns() == factors_ && bj.rows() == numberRates,
                     "we need B[j].rows() to equal numberRates and B[j].columns() to equal factors");
         }
 
-        for (int j = aliveIndex_; j < numberRates; ++j) {
+        for ( int j = aliveIndex_; j < numberRates; ++j ) {
             ratios_[j] = (oldRates[j] + displacements_[j]) * discountRatios[j + 1];
         }
 
-        for (int f = 0; f < factors_; ++f) {
+        for ( int f = 0; f < factors_; ++f ) {
             e_.set(aliveIndex_, f, 0.0);
-            for (int j = aliveIndex_ + 1; j < numberRates; ++j) {
+            for ( int j = aliveIndex_ + 1; j < numberRates; ++j ) {
                 e_.set(j, f, e_.get(j - 1, f) + ratios_[j - 1] * pseudoRoot_.get(j - 1, f));
             }
         }
 
         // nullify B for rates that have already reset
-        for (int j = 0; j < aliveIndex_; ++j) {
+        for ( int j = 0; j < aliveIndex_; ++j ) {
             final Matrix bj = B.get(j);
-            for (int k = 0; k < numberRates; ++k) {
-                for (int f = 0; f < factors_; ++f) {
+            for ( int k = 0; k < numberRates; ++k ) {
+                for ( int f = 0; f < factors_; ++f ) {
                     bj.set(k, f, 0.0);
                 }
             }
         }
 
-        for (int f = 0; f < factors_; ++f) {
-            for (int j = aliveIndex_; j < numberRates; ++j) {
+        for ( int f = 0; f < factors_; ++f ) {
+            for ( int j = aliveIndex_; j < numberRates; ++j ) {
                 final Matrix bj = B.get(j);
-                for (int k = aliveIndex_; k < j; ++k) {
+                for ( int k = aliveIndex_; k < j; ++k ) {
                     bj.set(k, f, newRates[j] * ratios_[k] * taus_[k] * pseudoRoot_.get(j, f));
                 }
 
@@ -132,10 +120,10 @@ public class RatePseudoRootJacobianAllElements {
 
                 bj.set(j, f, tmp);
 
-                for (int k = 0; k < aliveIndex_; ++k) {
+                for ( int k = 0; k < aliveIndex_; ++k ) {
                     bj.set(k, f, 0.0);
                 }
-                for (int k = j + 1; k < numberRates; ++k) {
+                for ( int k = j + 1; k < numberRates; ++k ) {
                     bj.set(k, f, 0.0);
                 }
             }

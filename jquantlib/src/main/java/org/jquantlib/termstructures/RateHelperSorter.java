@@ -28,17 +28,16 @@ import java.util.Comparator;
 /**
  * This class implements a {@link Comparator} for {@link RateHelper} objects.
  *
+ * @param <T>
+ * @author Richard Gomes
  * @see Comparator
  * @see RateHelper
- *
- * @author Richard Gomes
- * @param <T>
  */
-public class RateHelperSorter<T extends RateHelper> implements Comparator<T>, Serializable {
+public class RateHelperSorter< T extends RateHelper > implements Comparator< T >, Serializable {
 
-	private static final long serialVersionUID = 6335152611463577317L;
+    private static final long serialVersionUID = 6335152611463577317L;
 
-	public int compare(final T h1, final T h2) /* @ReadOnly */ {
-		return h1.latestDate().compareTo(h2.latestDate());
-	}
+    public int compare(final T h1, final T h2) /* @ReadOnly */ {
+        return h1.latestDate().compareTo(h2.latestDate());
+    }
 }

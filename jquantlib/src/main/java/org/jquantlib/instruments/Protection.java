@@ -33,14 +33,17 @@ package org.jquantlib.instruments;
  * Information on a default-protection contract.
  *
  * <p>Mirrors C++ v1.42.1 {@code QuantLib::Protection}
- * ({@code ql/default.hpp}). The C++ {@code Protection} type is a struct
- * exposing a single {@code Side} enum; in Java we model it as a final
- * non-instantiable class containing the {@code Side} enum, preserving the
- * fully-qualified {@code Protection.Side} access pattern from the C++ source.
+ * ({@code ql/default.hpp}). The C++ {@code Protection} type is a struct exposing a single {@code Side} enum; in Java we
+ * model it as a final non-instantiable class containing the {@code Side} enum, preserving the fully-qualified
+ * {@code Protection.Side} access pattern from the C++ source.
  *
  * @category instruments
  */
 public final class Protection {
+
+    private Protection() {
+        // utility class — no instances
+    }
 
     /** Side of a credit-default-swap protection contract. */
     public enum Side {
@@ -48,9 +51,5 @@ public final class Protection {
         Buyer,
         /** Seller of protection (typically receives the running spread). */
         Seller
-    }
-
-    private Protection() {
-        // utility class — no instances
     }
 }

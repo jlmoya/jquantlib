@@ -39,8 +39,8 @@ import org.jquantlib.time.TimeGrid;
  * Piecewise-time-dependent Heston model.
  *
  * <p>Phase 5h.5 port of {@code QuantLib::PiecewiseTimeDependentHestonModel}
- * (v1.42.1 ql/models/equity/piecewisetimedependenthestonmodel.{hpp,cpp}).
- * Pinned commit {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
+ * (v1.42.1 ql/models/equity/piecewisetimedependenthestonmodel.{hpp,cpp}). Pinned commit
+ * {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
  *
  * <p>References:
  * <ul>
@@ -61,37 +61,31 @@ import org.jquantlib.time.TimeGrid;
  */
 public class PiecewiseTimeDependentHestonModel extends CalibratedModel {
 
-    private final Handle<Quote> s0_;
-    private final Handle<YieldTermStructure> riskFreeRate_;
-    private final Handle<YieldTermStructure> dividendYield_;
+    private final Handle< Quote > s0_;
+    private final Handle< YieldTermStructure > riskFreeRate_;
+    private final Handle< YieldTermStructure > dividendYield_;
     private final TimeGrid timeGrid_;
 
     /**
-     * @param riskFreeRate handle to the risk-free yield curve
+     * @param riskFreeRate  handle to the risk-free yield curve
      * @param dividendYield handle to the dividend yield curve
-     * @param s0 handle to the spot quote
-     * @param v0 initial variance (constant)
-     * @param theta time-dependent long-term variance level
-     * @param kappa time-dependent variance mean-reversion speed
-     * @param sigma time-dependent vol-of-vol
-     * @param rho time-dependent spot/variance correlation
-     * @param timeGrid time grid over which the parameters are piecewise constant
+     * @param s0            handle to the spot quote
+     * @param v0            initial variance (constant)
+     * @param theta         time-dependent long-term variance level
+     * @param kappa         time-dependent variance mean-reversion speed
+     * @param sigma         time-dependent vol-of-vol
+     * @param rho           time-dependent spot/variance correlation
+     * @param timeGrid      time grid over which the parameters are piecewise constant
      */
-    public PiecewiseTimeDependentHestonModel(
-            final Handle<YieldTermStructure> riskFreeRate,
-            final Handle<YieldTermStructure> dividendYield,
-            final Handle<Quote> s0,
-            final double v0,
-            final Parameter theta,
-            final Parameter kappa,
-            final Parameter sigma,
-            final Parameter rho,
+    public PiecewiseTimeDependentHestonModel(final Handle< YieldTermStructure > riskFreeRate,
+            final Handle< YieldTermStructure > dividendYield, final Handle< Quote > s0, final double v0,
+            final Parameter theta, final Parameter kappa, final Parameter sigma, final Parameter rho,
             final TimeGrid timeGrid) {
         super(5);
-        this.s0_            = s0;
-        this.riskFreeRate_  = riskFreeRate;
+        this.s0_ = s0;
+        this.riskFreeRate_ = riskFreeRate;
         this.dividendYield_ = dividendYield;
-        this.timeGrid_      = timeGrid;
+        this.timeGrid_ = timeGrid;
 
         arguments_.set(0, theta);
         arguments_.set(1, kappa);
@@ -106,34 +100,54 @@ public class PiecewiseTimeDependentHestonModel extends CalibratedModel {
     }
 
     /** variance long-term level at time {@code t}. */
-    public double theta(final double t) { return arguments_.get(0).get(t); }
+    public double theta(final double t) {
+        return arguments_.get(0).get(t);
+    }
 
     /** variance mean-reversion speed at time {@code t}. */
-    public double kappa(final double t) { return arguments_.get(1).get(t); }
+    public double kappa(final double t) {
+        return arguments_.get(1).get(t);
+    }
 
     /** vol-of-vol at time {@code t}. */
-    public double sigma(final double t) { return arguments_.get(2).get(t); }
+    public double sigma(final double t) {
+        return arguments_.get(2).get(t);
+    }
 
     /** spot/variance correlation at time {@code t}. */
-    public double rho(final double t) { return arguments_.get(3).get(t); }
+    public double rho(final double t) {
+        return arguments_.get(3).get(t);
+    }
 
     /** spot variance (constant). */
-    public double v0() { return arguments_.get(4).get(0.0); }
+    public double v0() {
+        return arguments_.get(4).get(0.0);
+    }
 
     /** spot price. */
-    public double s0() { return s0_.currentLink().value(); }
+    public double s0() {
+        return s0_.currentLink().value();
+    }
 
     /** time grid over which parameters are piecewise constant. */
-    public TimeGrid timeGrid() { return timeGrid_; }
+    public TimeGrid timeGrid() {
+        return timeGrid_;
+    }
 
     /** dividend yield handle. */
-    public Handle<YieldTermStructure> dividendYield() { return dividendYield_; }
+    public Handle< YieldTermStructure > dividendYield() {
+        return dividendYield_;
+    }
 
     /** risk-free rate handle. */
-    public Handle<YieldTermStructure> riskFreeRate() { return riskFreeRate_; }
+    public Handle< YieldTermStructure > riskFreeRate() {
+        return riskFreeRate_;
+    }
 
     /** Spot quote handle. */
-    public Handle<Quote> s0Handle() { return s0_; }
+    public Handle< Quote > s0Handle() {
+        return s0_;
+    }
 
     @Override
     protected void generateArguments() {

@@ -52,9 +52,8 @@ import org.jquantlib.processes.StochasticProcess1D;
  * (v1.42.1 ql/experimental/shortrate/generalizedornsteinuhlenbeckprocess.{hpp,cpp}).
  *
  * <p>This class describes the Ornstein-Uhlenbeck process governed by
- * dx = a (level - x_t) dt + sigma dW_t, where the coefficients
- * {@code a (= speed)} and {@code sigma (= vol)} are piecewise-linear
- * functions of time, supplied as {@link Ops.DoubleOp} callables.
+ * dx = a (level - x_t) dt + sigma dW_t, where the coefficients {@code a (= speed)} and {@code sigma (= vol)} are
+ * piecewise-linear functions of time, supplied as {@link Ops.DoubleOp} callables.
  *
  * @category processes
  */
@@ -65,24 +64,17 @@ public class GeneralizedOrnsteinUhlenbeckProcess extends StochasticProcess1D {
     private final Ops.DoubleOp speed_;
     private final Ops.DoubleOp volatility_;
 
-    public GeneralizedOrnsteinUhlenbeckProcess(
-            final Ops.DoubleOp speed,
-            final Ops.DoubleOp vol) {
+    public GeneralizedOrnsteinUhlenbeckProcess(final Ops.DoubleOp speed, final Ops.DoubleOp vol) {
         this(speed, vol, 0.0, 0.0);
     }
 
-    public GeneralizedOrnsteinUhlenbeckProcess(
-            final Ops.DoubleOp speed,
-            final Ops.DoubleOp vol,
+    public GeneralizedOrnsteinUhlenbeckProcess(final Ops.DoubleOp speed, final Ops.DoubleOp vol,
             final /*@Real*/ double x0) {
         this(speed, vol, x0, 0.0);
     }
 
-    public GeneralizedOrnsteinUhlenbeckProcess(
-            final Ops.DoubleOp speed,
-            final Ops.DoubleOp vol,
-            final /*@Real*/ double x0,
-            final /*@Real*/ double level) {
+    public GeneralizedOrnsteinUhlenbeckProcess(final Ops.DoubleOp speed, final Ops.DoubleOp vol,
+            final /*@Real*/ double x0, final /*@Real*/ double level) {
         super();
         QL.require(x0 >= 0.0, "negative initial data given");
         QL.require(level >= 0.0, "negative level given");
@@ -108,29 +100,23 @@ public class GeneralizedOrnsteinUhlenbeckProcess extends StochasticProcess1D {
     }
 
     @Override
-    public double expectation(
-            final /*@Time*/ double t,
-            final /*@Real*/ double x0,
+    public double expectation(final /*@Time*/ double t, final /*@Real*/ double x0,
             final /*@Time*/ double dt) /*@ReadOnly*/ {
         return level_ + (x0 - level_) * Math.exp(-speed_.op(t) * dt);
     }
 
     @Override
-    public double stdDeviation(
-            final /*@Time*/ double t,
-            final /*@Real*/ double x0,
+    public double stdDeviation(final /*@Time*/ double t, final /*@Real*/ double x0,
             final /*@Time*/ double dt) /*@ReadOnly*/ {
         return Math.sqrt(variance(t, x0, dt));
     }
 
     @Override
-    public double variance(
-            final /*@Time*/ double t,
-            final /*@Real*/ double x0,
+    public double variance(final /*@Time*/ double t, final /*@Real*/ double x0,
             final /*@Time*/ double dt) /*@ReadOnly*/ {
         final double speed = speed_.op(t);
         final double vol = volatility_.op(t);
-        if (speed < Math.sqrt(Constants.QL_EPSILON)) {
+        if ( speed < Math.sqrt(Constants.QL_EPSILON) ) {
             // algebraic limit for small speed
             return vol * vol * dt;
         }

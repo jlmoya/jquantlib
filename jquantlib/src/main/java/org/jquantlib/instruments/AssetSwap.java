@@ -27,19 +27,8 @@
 
 package org.jquantlib.instruments;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import org.jquantlib.QL;
-import org.jquantlib.cashflow.CashFlow;
-import org.jquantlib.cashflow.Coupon;
-import org.jquantlib.cashflow.FixedRateCoupon;
-import org.jquantlib.cashflow.FloatingRateCoupon;
-import org.jquantlib.cashflow.IborLeg;
-import org.jquantlib.cashflow.Leg;
-import org.jquantlib.cashflow.OvernightLeg;
-import org.jquantlib.cashflow.SimpleCashFlow;
+import org.jquantlib.cashflow.*;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.indexes.IborIndex;
 import org.jquantlib.indexes.OvernightIndex;
@@ -50,6 +39,10 @@ import org.jquantlib.time.Date;
 import org.jquantlib.time.DateGeneration;
 import org.jquantlib.time.Schedule;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Bullet bond vs %Libor swap (asset swap).
  *
@@ -57,8 +50,7 @@ import org.jquantlib.time.Schedule;
  * {@code ql/instruments/assetswap.{hpp,cpp}}.
  *
  * <p>For mechanics of par asset swap and market asset swap, refer to
- * "Introduction to Asset Swap", Lehman Brothers European Fixed Income
- * Research - January 2000, D. O'Kane.
+ * "Introduction to Asset Swap", Lehman Brothers European Fixed Income Research - January 2000, D. O'Kane.
  *
  * <p><b>Carry-forwards (Phase 5e.5b):</b>
  * <ul>
@@ -90,90 +82,64 @@ public class AssetSwap extends Swap {
 
     private final Bond bond_;
     private final /*@Real*/ double bondCleanPrice_;
-    private /*@Real*/ double nonParRepayment_;
     private final /*@Spread*/ double spread_;
     private final boolean parSwap_;
     private final Date upfrontDate_;
-
+    private /*@Real*/ double nonParRepayment_;
     // results (mutable, populated lazily)
     private /*@Spread*/ double fairSpread_;
     private /*@Real*/ double fairCleanPrice_;
     private /*@Real*/ double fairNonParRepayment_;
-
 
     //
     // public constructors
     //
 
     /**
-     * Convenience constructor with default {@code parAssetSwap = true},
-     * {@code gearing = 1.0}, no {@code nonParRepayment}, and no
-     * {@code dealMaturity} truncation.
+     * Convenience constructor with default {@code parAssetSwap = true}, {@code gearing = 1.0}, no
+     * {@code nonParRepayment}, and no {@code dealMaturity} truncation.
      */
-    public AssetSwap(final boolean payBondCoupon,
-                     final Bond bond,
-                     final /*@Real*/ double bondCleanPrice,
-                     final IborIndex iborIndex,
-                     final /*@Spread*/ double spread) {
-        this(payBondCoupon, bond, bondCleanPrice, iborIndex, spread,
-                null, new DayCounter(), true, 1.0,
+    public AssetSwap(final boolean payBondCoupon, final Bond bond, final /*@Real*/ double bondCleanPrice,
+            final IborIndex iborIndex, final /*@Spread*/ double spread) {
+        this(payBondCoupon, bond, bondCleanPrice, iborIndex, spread, null, new DayCounter(), true, 1.0,
                 Constants.NULL_REAL, new Date());
     }
 
     /**
-     * Convenience constructor (parAssetSwap explicit; defaults gearing = 1,
-     * no nonParRepayment, no dealMaturity truncation). Mirrors common C++
-     * usage where the first 8 arguments are explicit and the last 3 take
-     * their defaults.
+     * Convenience constructor (parAssetSwap explicit; defaults gearing = 1, no nonParRepayment, no dealMaturity
+     * truncation). Mirrors common C++ usage where the first 8 arguments are explicit and the last 3 take their
+     * defaults.
      */
-    public AssetSwap(final boolean payBondCoupon,
-                     final Bond bond,
-                     final /*@Real*/ double bondCleanPrice,
-                     final IborIndex iborIndex,
-                     final /*@Spread*/ double spread,
-                     final Schedule floatSchedule,
-                     final DayCounter floatingDayCount,
-                     final boolean parAssetSwap) {
-        this(payBondCoupon, bond, bondCleanPrice, iborIndex, spread,
-                floatSchedule, floatingDayCount, parAssetSwap,
-                1.0 /* gearing */,
-                Constants.NULL_REAL /* nonParRepayment */,
-                new Date() /* dealMaturity */);
+    public AssetSwap(final boolean payBondCoupon, final Bond bond, final /*@Real*/ double bondCleanPrice,
+            final IborIndex iborIndex, final /*@Spread*/ double spread, final Schedule floatSchedule,
+            final DayCounter floatingDayCount, final boolean parAssetSwap) {
+        this(payBondCoupon, bond, bondCleanPrice, iborIndex, spread, floatSchedule, floatingDayCount, parAssetSwap,
+                1.0 /* gearing */, Constants.NULL_REAL /* nonParRepayment */, new Date() /* dealMaturity */);
     }
 
     /**
-     * Full constructor mirroring C++ v1.42.1
-     * {@code AssetSwap::AssetSwap}.
+     * Full constructor mirroring C++ v1.42.1 {@code AssetSwap::AssetSwap}.
      *
-     * @param payBondCoupon if {@code true}, pay the bond leg (receive
-     *                      floating); else receive bond (pay floating).
-     * @param bond          the underlying bullet bond.
-     * @param bondCleanPrice forward clean price at floating-schedule start.
-     * @param iborIndex     index for the floating leg.
-     * @param spread        spread on the floating leg.
-     * @param floatSchedule optional floating schedule (null/empty triggers
-     *                      auto-generation from the bond settlement to maturity).
+     * @param payBondCoupon    if {@code true}, pay the bond leg (receive floating); else receive bond (pay floating).
+     * @param bond             the underlying bullet bond.
+     * @param bondCleanPrice   forward clean price at floating-schedule start.
+     * @param iborIndex        index for the floating leg.
+     * @param spread           spread on the floating leg.
+     * @param floatSchedule    optional floating schedule (null/empty triggers auto-generation from the bond settlement
+     *                         to maturity).
      * @param floatingDayCount day-counter for the floating leg.
-     * @param parAssetSwap  if {@code true}, par asset swap (notional = bond
-     *                      notional); if {@code false}, market asset swap
-     *                      (notional scaled by dirty price / 100).
-     * @param gearing       leverage on the floating leg.
-     * @param nonParRepayment  optional repayment value (use {@link Constants#NULL_REAL}
-     *                         to default to bond redemption).
-     * @param dealMaturity  optional truncation date (use {@link Date#isNull()
-     *                      a null Date} to default to {@code schedule.back()}).
+     * @param parAssetSwap     if {@code true}, par asset swap (notional = bond notional); if {@code false}, market
+     *                         asset swap (notional scaled by dirty price / 100).
+     * @param gearing          leverage on the floating leg.
+     * @param nonParRepayment  optional repayment value (use {@link Constants#NULL_REAL} to default to bond
+     *                         redemption).
+     * @param dealMaturity     optional truncation date (use {@link Date#isNull() a null Date} to default to
+     *                         {@code schedule.back()}).
      */
-    public AssetSwap(final boolean payBondCoupon,
-                     final Bond bond,
-                     final /*@Real*/ double bondCleanPrice,
-                     final IborIndex iborIndex,
-                     final /*@Spread*/ double spread,
-                     Schedule floatSchedule,
-                     final DayCounter floatingDayCount,
-                     final boolean parAssetSwap,
-                     final /*@Real*/ double gearing,
-                     /*@Real*/ double nonParRepayment,
-                     Date dealMaturity) {
+    public AssetSwap(final boolean payBondCoupon, final Bond bond, final /*@Real*/ double bondCleanPrice,
+            final IborIndex iborIndex, final /*@Spread*/ double spread, Schedule floatSchedule,
+            final DayCounter floatingDayCount, final boolean parAssetSwap, final /*@Real*/ double gearing,
+            /*@Real*/ double nonParRepayment, Date dealMaturity) {
 
         super(2);
 
@@ -185,62 +151,48 @@ public class AssetSwap extends Swap {
 
         // Mirrors C++ assetswap.cpp:50-54 — overnight indices need an
         // explicit floatSchedule.
-        final OvernightIndex overnight =
-                (iborIndex instanceof OvernightIndex)
-                        ? (OvernightIndex) iborIndex : null;
-        if (overnight != null) {
+        final OvernightIndex overnight = (iborIndex instanceof OvernightIndex) ? (OvernightIndex) iborIndex : null;
+        if ( overnight != null ) {
             QL.require(floatSchedule != null && !floatSchedule.empty(),
                     "floating schedule is needed when using an overnight index");
         }
 
         Schedule schedule;
-        if (floatSchedule == null || floatSchedule.empty()) {
-            schedule = new Schedule(
-                    bond.settlementDate(),
-                    bond.maturityDate(),
-                    iborIndex.tenor(),
-                    iborIndex.fixingCalendar(),
-                    iborIndex.businessDayConvention(),
-                    iborIndex.businessDayConvention(),
-                    DateGeneration.Rule.Backward,
-                    false /* endOfMonth */);
+        if ( floatSchedule == null || floatSchedule.empty() ) {
+            schedule = new Schedule(bond.settlementDate(), bond.maturityDate(), iborIndex.tenor(),
+                    iborIndex.fixingCalendar(), iborIndex.businessDayConvention(), iborIndex.businessDayConvention(),
+                    DateGeneration.Rule.Backward, false /* endOfMonth */);
         } else {
             schedule = floatSchedule;
         }
 
-        if (dealMaturity == null || dealMaturity.isNull()) {
+        if ( dealMaturity == null || dealMaturity.isNull() ) {
             dealMaturity = schedule.endDate();
         }
         QL.require(dealMaturity.le(schedule.endDate()),
-                "deal maturity " + dealMaturity
-                + " cannot be later than (adjusted) bond maturity "
-                + schedule.endDate());
+                "deal maturity " + dealMaturity + " cannot be later than (adjusted) bond maturity "
+                        + schedule.endDate());
         QL.require(dealMaturity.gt(schedule.startDate()),
-                "deal maturity " + dealMaturity
-                + " must be later than swap start date "
-                + schedule.startDate());
+                "deal maturity " + dealMaturity + " must be later than swap start date " + schedule.startDate());
 
         // Phase 5e.5-ASW carry-forward: Schedule.until() not ported.
-        QL.require(dealMaturity.eq(schedule.endDate()),
-                "Phase 5e.5-ASW: dealMaturity != schedule.endDate() requires"
+        QL.require(dealMaturity.eq(schedule.endDate()), "Phase 5e.5-ASW: dealMaturity != schedule.endDate() requires"
                 + " Schedule.until() truncation, deferred to Phase 5e.5b.");
 
         // the following might become an input parameter
-        final BusinessDayConvention paymentAdjustment =
-                BusinessDayConvention.Following;
+        final BusinessDayConvention paymentAdjustment = BusinessDayConvention.Following;
 
-        final Date finalDate = schedule.calendar().adjust(
-                dealMaturity, paymentAdjustment);
+        final Date finalDate = schedule.calendar().adjust(dealMaturity, paymentAdjustment);
 
         // bondCleanPrice must be the (forward) clean price at the
         // floating schedule start date.
         this.upfrontDate_ = schedule.startDate();
-        final /*@Real*/ double dirtyPrice =
-                bondCleanPrice_ + bond.accruedAmount(upfrontDate_);
+        final /*@Real*/ double dirtyPrice = bondCleanPrice_ + bond.accruedAmount(upfrontDate_);
 
-        /*@Real*/ double notional = bond.notional(upfrontDate_);
+        /*@Real*/
+        double notional = bond.notional(upfrontDate_);
         // Market asset swap: notional scaled by full price.
-        if (!parSwap_) {
+        if ( !parSwap_ ) {
             notional *= dirtyPrice / 100.0;
         }
 
@@ -250,82 +202,65 @@ public class AssetSwap extends Swap {
         QL.require(!bondLeg.isEmpty(), "no cashflows from bond");
 
         final boolean includeOnUpfrontDate = false; // a cashflow on the
-                                                    // upfront date must be
-                                                    // discarded
+        // upfront date must be
+        // discarded
         final Leg leg0 = new Leg();
 
         // Add coupons (skip the redemption, which is the last cashflow).
         int i = 0;
-        for (; i < bondLeg.size() - 1
-                && bondLeg.get(i).date().le(dealMaturity); ++i) {
+        for ( ; i < bondLeg.size() - 1 && bondLeg.get(i).date().le(dealMaturity); ++i ) {
             final CashFlow cf = bondLeg.get(i);
-            if (!cf.hasOccurred(upfrontDate_, includeOnUpfrontDate)) {
+            if ( !cf.hasOccurred(upfrontDate_, includeOnUpfrontDate) ) {
                 leg0.add(cf);
             }
         }
 
         // If we're skipping a cashflow before the redemption and it's a
         // coupon, then add the accrued coupon. Mirrors C++ assetswap.cpp:114.
-        if (i < bondLeg.size() - 1) {
+        if ( i < bondLeg.size() - 1 ) {
             final CashFlow skipped = bondLeg.get(i);
-            if (skipped instanceof Coupon) {
+            if ( skipped instanceof Coupon ) {
                 final Coupon c = (Coupon) skipped;
                 final /*@Real*/ double accruedAmt = c.accruedAmount(dealMaturity);
-                final SimpleCashFlow accruedCoupon =
-                        new SimpleCashFlow(accruedAmt, finalDate);
+                final SimpleCashFlow accruedCoupon = new SimpleCashFlow(accruedAmt, finalDate);
                 leg0.add(accruedCoupon);
             }
         }
 
         // Add the redemption (or the user-supplied non-par repayment).
-        if (nonParRepayment_ == Constants.NULL_REAL) {
+        if ( nonParRepayment_ == Constants.NULL_REAL ) {
             final CashFlow redemption = bondLeg.last();
-            final SimpleCashFlow finalFlow =
-                    new SimpleCashFlow(redemption.amount(), finalDate);
+            final SimpleCashFlow finalFlow = new SimpleCashFlow(redemption.amount(), finalDate);
             leg0.add(finalFlow);
             nonParRepayment_ = 100.0;
         } else {
-            final SimpleCashFlow finalFlow =
-                    new SimpleCashFlow(nonParRepayment_, finalDate);
+            final SimpleCashFlow finalFlow = new SimpleCashFlow(nonParRepayment_, finalDate);
             leg0.add(finalFlow);
         }
 
         /******** Floating leg ********/
 
         final Leg leg1;
-        if (overnight != null) {
-            leg1 = new OvernightLeg(schedule, overnight)
-                    .withNotionals(notional)
-                    .withPaymentAdjustment(paymentAdjustment)
-                    .withGearings(gearing)
-                    .withSpreads(spread)
-                    .withPaymentDayCounter(floatingDayCount)
-                    .leg();
+        if ( overnight != null ) {
+            leg1 = new OvernightLeg(schedule, overnight).withNotionals(notional)
+                    .withPaymentAdjustment(paymentAdjustment).withGearings(gearing).withSpreads(spread)
+                    .withPaymentDayCounter(floatingDayCount).leg();
         } else {
-            leg1 = new IborLeg(schedule, iborIndex)
-                    .withNotionals(notional)
-                    .withPaymentAdjustment(paymentAdjustment)
-                    .withGearings(gearing)
-                    .withSpreads(spread)
-                    .withPaymentDayCounter(floatingDayCount)
-                    .Leg();
+            leg1 = new IborLeg(schedule, iborIndex).withNotionals(notional).withPaymentAdjustment(paymentAdjustment)
+                    .withGearings(gearing).withSpreads(spread).withPaymentDayCounter(floatingDayCount).Leg();
         }
 
-        if (parSwap_) {
+        if ( parSwap_ ) {
             // upfront
-            final /*@Real*/ double upfront =
-                    (dirtyPrice - 100.0) / 100.0 * notional;
-            final SimpleCashFlow upfrontCashFlow =
-                    new SimpleCashFlow(upfront, upfrontDate_);
+            final /*@Real*/ double upfront = (dirtyPrice - 100.0) / 100.0 * notional;
+            final SimpleCashFlow upfrontCashFlow = new SimpleCashFlow(upfront, upfrontDate_);
             leg1.add(0, upfrontCashFlow);
             // backpayment (accounts for non-par redemption, if any)
-            final SimpleCashFlow backPaymentCashFlow =
-                    new SimpleCashFlow(notional, finalDate);
+            final SimpleCashFlow backPaymentCashFlow = new SimpleCashFlow(notional, finalDate);
             leg1.add(backPaymentCashFlow);
         } else {
             // final notional exchange
-            final SimpleCashFlow finalCashFlow =
-                    new SimpleCashFlow(notional, finalDate);
+            final SimpleCashFlow finalCashFlow = new SimpleCashFlow(notional, finalDate);
             leg1.add(finalCashFlow);
         }
 
@@ -334,13 +269,13 @@ public class AssetSwap extends Swap {
         legs.add(leg0);
         legs.add(leg1);
 
-        for (final Leg leg : legs) {
-            for (final CashFlow cf : leg) {
+        for ( final Leg leg : legs ) {
+            for ( final CashFlow cf : leg ) {
                 cf.addObserver(this);
             }
         }
 
-        if (payBondCoupon) {
+        if ( payBondCoupon ) {
             payer[0] = -1.0;
             payer[1] = +1.0;
         } else {
@@ -353,7 +288,6 @@ public class AssetSwap extends Swap {
         this.fairCleanPrice_ = Constants.NULL_REAL;
         this.fairNonParRepayment_ = Constants.NULL_REAL;
     }
-
 
     //
     // public inspectors
@@ -391,17 +325,15 @@ public class AssetSwap extends Swap {
         return legs.get(1);
     }
 
-
     //
     // public results
     //
 
     public /*@Spread*/ double fairSpread() {
         calculate();
-        if (fairSpread_ != Constants.NULL_REAL) {
+        if ( fairSpread_ != Constants.NULL_REAL ) {
             return fairSpread_;
-        } else if (legBPS.length > 1 && legBPS[1] != Constants.NULL_REAL
-                && !Double.isNaN(legBPS[1])) {
+        } else if ( legBPS.length > 1 && legBPS[1] != Constants.NULL_REAL && !Double.isNaN(legBPS[1]) ) {
             fairSpread_ = spread_ - NPV / legBPS[1] * basisPoint;
             return fairSpread_;
         } else {
@@ -412,33 +344,27 @@ public class AssetSwap extends Swap {
 
     public /*@Real*/ double floatingLegBPS() {
         calculate();
-        QL.require(legBPS.length > 1
-                        && legBPS[1] != Constants.NULL_REAL
-                        && !Double.isNaN(legBPS[1]),
+        QL.require(legBPS.length > 1 && legBPS[1] != Constants.NULL_REAL && !Double.isNaN(legBPS[1]),
                 "floating-leg BPS not available");
         return legBPS[1];
     }
 
     public /*@Real*/ double floatingLegNPV() {
         calculate();
-        QL.require(legNPV.length > 1
-                        && legNPV[1] != Constants.NULL_REAL
-                        && !Double.isNaN(legNPV[1]),
+        QL.require(legNPV.length > 1 && legNPV[1] != Constants.NULL_REAL && !Double.isNaN(legNPV[1]),
                 "floating-leg NPV not available");
         return legNPV[1];
     }
 
     public /*@Real*/ double fairCleanPrice() {
         calculate();
-        if (fairCleanPrice_ != Constants.NULL_REAL) {
+        if ( fairCleanPrice_ != Constants.NULL_REAL ) {
             return fairCleanPrice_;
         } else {
-            QL.require(startDiscounts.length > 1
-                            && startDiscounts[1] != Constants.NULL_REAL
-                            && !Double.isNaN(startDiscounts[1]),
-                    "fair clean price not available for seasoned deal");
+            QL.require(startDiscounts.length > 1 && startDiscounts[1] != Constants.NULL_REAL && !Double.isNaN(
+                    startDiscounts[1]), "fair clean price not available for seasoned deal");
             final /*@Real*/ double notional = bond_.notional(upfrontDate_);
-            if (parSwap_) {
+            if ( parSwap_ ) {
                 // Mirrors C++ assetswap.cpp:271-273. NPV / startDiscount[1]
                 // gives the NPV expressed at the floating leg start date,
                 // which is then divided by notional/100 to give a
@@ -447,16 +373,12 @@ public class AssetSwap extends Swap {
                 // npvDateDiscount = 1.0 (which is exact when the discount
                 // curve's reference date equals the npv date).
                 final /*@Real*/ double npvDateDiscount = 1.0;
-                fairCleanPrice_ = bondCleanPrice_ - payer[1]
-                        * NPV * npvDateDiscount / startDiscounts[1]
-                        / (notional / 100.0);
+                fairCleanPrice_ =
+                        bondCleanPrice_ - payer[1] * NPV * npvDateDiscount / startDiscounts[1] / (notional / 100.0);
             } else {
-                final /*@Real*/ double accruedAmt =
-                        bond_.accruedAmount(upfrontDate_);
-                final /*@Real*/ double dirtyPrice =
-                        bondCleanPrice_ + accruedAmt;
-                final /*@Real*/ double fairDirtyPrice =
-                        -legNPV[0] / legNPV[1] * dirtyPrice;
+                final /*@Real*/ double accruedAmt = bond_.accruedAmount(upfrontDate_);
+                final /*@Real*/ double dirtyPrice = bondCleanPrice_ + accruedAmt;
+                final /*@Real*/ double fairDirtyPrice = -legNPV[0] / legNPV[1] * dirtyPrice;
                 fairCleanPrice_ = fairDirtyPrice - accruedAmt;
             }
             return fairCleanPrice_;
@@ -465,24 +387,21 @@ public class AssetSwap extends Swap {
 
     public /*@Real*/ double fairNonParRepayment() {
         calculate();
-        if (fairNonParRepayment_ != Constants.NULL_REAL) {
+        if ( fairNonParRepayment_ != Constants.NULL_REAL ) {
             return fairNonParRepayment_;
         } else {
-            QL.require(endDiscounts.length > 1
-                            && endDiscounts[1] != Constants.NULL_REAL
-                            && !Double.isNaN(endDiscounts[1]),
+            QL.require(
+                    endDiscounts.length > 1 && endDiscounts[1] != Constants.NULL_REAL && !Double.isNaN(endDiscounts[1]),
                     "fair non par repayment not available for expired leg");
             final /*@Real*/ double notional = bond_.notional(upfrontDate_);
             // Mirrors C++ assetswap.cpp:293-295. Same npvDateDiscount = 1.0
             // approximation as above.
             final /*@Real*/ double npvDateDiscount = 1.0;
-            fairNonParRepayment_ = nonParRepayment_ - payer[0]
-                    * NPV * npvDateDiscount / endDiscounts[1]
-                    / (notional / 100.0);
+            fairNonParRepayment_ =
+                    nonParRepayment_ - payer[0] * NPV * npvDateDiscount / endDiscounts[1] / (notional / 100.0);
             return fairNonParRepayment_;
         }
     }
-
 
     //
     // overrides Swap
@@ -500,7 +419,7 @@ public class AssetSwap extends Swap {
     public void setupArguments(final PricingEngine.Arguments args) {
         super.setupArguments(args);
 
-        if (!(args instanceof AssetSwap.Arguments)) {
+        if ( !(args instanceof AssetSwap.Arguments) ) {
             // It's a swap engine — nothing more to populate.
             return;
         }
@@ -508,18 +427,15 @@ public class AssetSwap extends Swap {
 
         final Leg fixedCoupons = bondLeg();
         final int nFixed = fixedCoupons.size();
-        a.fixedResetDates =
-                new ArrayList<Date>(Collections.nCopies(nFixed, (Date) null));
-        a.fixedPayDates =
-                new ArrayList<Date>(Collections.nCopies(nFixed, (Date) null));
-        a.fixedCoupons =
-                new ArrayList<Double>(Collections.nCopies(nFixed, (Double) null));
+        a.fixedResetDates = new ArrayList< Date >(Collections.nCopies(nFixed, null));
+        a.fixedPayDates = new ArrayList< Date >(Collections.nCopies(nFixed, null));
+        a.fixedCoupons = new ArrayList< Double >(Collections.nCopies(nFixed, null));
 
-        for (int k = 0; k < nFixed; ++k) {
+        for ( int k = 0; k < nFixed; ++k ) {
             // The bondLeg may contain SimpleCashFlow (accrued / redemption)
             // entries — only FixedRateCoupons get fixedResetDates etc.
             final CashFlow cf = fixedCoupons.get(k);
-            if (cf instanceof FixedRateCoupon) {
+            if ( cf instanceof FixedRateCoupon ) {
                 final FixedRateCoupon coupon = (FixedRateCoupon) cf;
                 a.fixedPayDates.set(k, coupon.date());
                 a.fixedResetDates.set(k, coupon.accrualStartDate());
@@ -533,20 +449,15 @@ public class AssetSwap extends Swap {
 
         final Leg floatingCoupons = floatingLeg();
         final int nFloat = floatingCoupons.size();
-        a.floatingResetDates =
-                new ArrayList<Date>(Collections.nCopies(nFloat, (Date) null));
-        a.floatingPayDates =
-                new ArrayList<Date>(Collections.nCopies(nFloat, (Date) null));
-        a.floatingFixingDates =
-                new ArrayList<Date>(Collections.nCopies(nFloat, (Date) null));
-        a.floatingAccrualTimes =
-                new ArrayList<Double>(Collections.nCopies(nFloat, (Double) null));
-        a.floatingSpreads =
-                new ArrayList<Double>(Collections.nCopies(nFloat, (Double) null));
+        a.floatingResetDates = new ArrayList< Date >(Collections.nCopies(nFloat, null));
+        a.floatingPayDates = new ArrayList< Date >(Collections.nCopies(nFloat, null));
+        a.floatingFixingDates = new ArrayList< Date >(Collections.nCopies(nFloat, null));
+        a.floatingAccrualTimes = new ArrayList< Double >(Collections.nCopies(nFloat, null));
+        a.floatingSpreads = new ArrayList< Double >(Collections.nCopies(nFloat, null));
 
-        for (int k = 0; k < nFloat; ++k) {
+        for ( int k = 0; k < nFloat; ++k ) {
             final CashFlow cf = floatingCoupons.get(k);
-            if (cf instanceof FloatingRateCoupon) {
+            if ( cf instanceof FloatingRateCoupon ) {
                 final FloatingRateCoupon coupon = (FloatingRateCoupon) cf;
                 a.floatingResetDates.set(k, coupon.accrualStartDate());
                 a.floatingPayDates.set(k, coupon.date());
@@ -567,7 +478,7 @@ public class AssetSwap extends Swap {
     @Override
     public void fetchResults(final PricingEngine.Results results) {
         super.fetchResults(results);
-        if (results instanceof AssetSwap.Results) {
+        if ( results instanceof AssetSwap.Results ) {
             final AssetSwap.ResultsImpl r = (AssetSwap.ResultsImpl) results;
             fairSpread_ = r.fairSpread;
             fairCleanPrice_ = r.fairCleanPrice;
@@ -579,60 +490,52 @@ public class AssetSwap extends Swap {
         }
     }
 
-
     //
     // public inner interfaces
     //
 
-    public interface Arguments extends Swap.Arguments { /* marker */ }
+    public interface Arguments extends Swap.Arguments { /* marker */
+    }
 
-    public interface Results extends Swap.Results { /* marker */ }
-
+    public interface Results extends Swap.Results { /* marker */
+    }
 
     //
     // public inner classes
     //
 
     /** Arguments for asset-swap calculation. */
-    public static class ArgumentsImpl extends Swap.ArgumentsImpl
-            implements AssetSwap.Arguments {
+    public static class ArgumentsImpl extends Swap.ArgumentsImpl implements AssetSwap.Arguments {
 
-        public List<Date> fixedResetDates;
-        public List<Date> fixedPayDates;
-        public List<Double> fixedCoupons;
-        public List<Double> floatingAccrualTimes;
-        public List<Date> floatingResetDates;
-        public List<Date> floatingFixingDates;
-        public List<Date> floatingPayDates;
-        public List<Double> floatingSpreads;
+        public List< Date > fixedResetDates;
+        public List< Date > fixedPayDates;
+        public List< Double > fixedCoupons;
+        public List< Double > floatingAccrualTimes;
+        public List< Date > floatingResetDates;
+        public List< Date > floatingFixingDates;
+        public List< Date > floatingPayDates;
+        public List< Double > floatingSpreads;
 
         @Override
         public void validate() {
             super.validate();
             QL.require(fixedResetDates.size() == fixedPayDates.size(),
-                    "number of fixed start dates different from"
-                    + " number of fixed payment dates");
+                    "number of fixed start dates different from" + " number of fixed payment dates");
             QL.require(fixedPayDates.size() == fixedCoupons.size(),
-                    "number of fixed payment dates different from"
-                    + " number of fixed coupon amounts");
+                    "number of fixed payment dates different from" + " number of fixed coupon amounts");
             QL.require(floatingResetDates.size() == floatingPayDates.size(),
-                    "number of floating start dates different from"
-                    + " number of floating payment dates");
+                    "number of floating start dates different from" + " number of floating payment dates");
             QL.require(floatingFixingDates.size() == floatingPayDates.size(),
-                    "number of floating fixing dates different from"
-                    + " number of floating payment dates");
+                    "number of floating fixing dates different from" + " number of floating payment dates");
             QL.require(floatingAccrualTimes.size() == floatingPayDates.size(),
-                    "number of floating accrual times different from"
-                    + " number of floating payment dates");
+                    "number of floating accrual times different from" + " number of floating payment dates");
             QL.require(floatingSpreads.size() == floatingPayDates.size(),
-                    "number of floating spreads different from"
-                    + " number of floating payment dates");
+                    "number of floating spreads different from" + " number of floating payment dates");
         }
     }
 
     /** Results from asset-swap calculation. */
-    public static class ResultsImpl extends Swap.ResultsImpl
-            implements AssetSwap.Results {
+    public static class ResultsImpl extends Swap.ResultsImpl implements AssetSwap.Results {
         public /*@Spread*/ double fairSpread;
         public /*@Real*/ double fairCleanPrice;
         public /*@Real*/ double fairNonParRepayment;

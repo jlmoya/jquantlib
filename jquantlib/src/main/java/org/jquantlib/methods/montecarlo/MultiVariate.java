@@ -43,17 +43,16 @@ import org.jquantlib.math.randomnumbers.RandomNumberGenerator;
 /**
  * @author Richard Gomes
  */
-public class MultiVariate<RNG extends RandomNumberGenerator> implements Variate {
-	
-	public MultiVariate() {
-	}
+public class MultiVariate< RNG extends RandomNumberGenerator > implements Variate {
+
+    public MultiVariate() {
+    }
 
     // FIXME: decide how to implement
-    
+
 }
 
-
-////! default Monte Carlo traits for multi-variate models
+/// /! default Monte Carlo traits for multi-variate models
 //template <class RNG = PseudoRandom>
 //struct MultiVariate {
 //    typedef RNG rng_traits;

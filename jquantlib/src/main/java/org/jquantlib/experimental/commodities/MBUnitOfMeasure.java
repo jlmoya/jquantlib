@@ -22,13 +22,11 @@ package org.jquantlib.experimental.commodities;
 /**
  * 1000 barrels unit of measure (MB).
  * <p>
- * Java port of QuantLib v1.42.1 {@code MBUnitOfMeasure} from
- * {@code petroleumunitsofmeasure.hpp}.
+ * Java port of QuantLib v1.42.1 {@code MBUnitOfMeasure} from {@code petroleumunitsofmeasure.hpp}.
  */
 public class MBUnitOfMeasure extends UnitOfMeasure {
 
-    private static final Data SHARED =
-            new Data("1000 Barrels", "MB", Type.Volume, new BarrelUnitOfMeasure());
+    private static final Data SHARED = new Data("1000 Barrels", "MB", Type.Volume, new BarrelUnitOfMeasure());
 
     public MBUnitOfMeasure() {
         super();

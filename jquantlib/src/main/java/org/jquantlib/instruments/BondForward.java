@@ -71,68 +71,43 @@ public class BondForward extends Forward {
     protected Bond bond;
 
     /**
-     * Primary constructor — mirrors the C++ ctor at
-     * {@code bondforward.cpp:27}.
+     * Primary constructor — mirrors the C++ ctor at {@code bondforward.cpp:27}.
      *
      * <p>If {@code strike} is given, {@link #NPV} is the NPV of the contract.
-     * To obtain the strike that makes the contract worth zero today, use
-     * {@link #forwardPrice()}; in that mode the {@code strike} argument is
-     * ignored.
+     * To obtain the strike that makes the contract worth zero today, use {@link #forwardPrice()}; in that mode the
+     * {@code strike} argument is ignored.
      */
-    public BondForward(final Date valueDate,
-                       final Date maturityDate,
-                       final Position type,
-                       final /* @Real */ double strike,
-                       final /* @Natural */ int settlementDays,
-                       final DayCounter dayCounter,
-                       final Calendar calendar,
-                       final BusinessDayConvention businessDayConvention,
-                       final Bond bond,
-                       final Handle<YieldTermStructure> discountCurve,
-                       final Handle<YieldTermStructure> incomeDiscountCurve) {
-        super(dayCounter, calendar, businessDayConvention, settlementDays,
-              new ForwardTypePayoff(type, strike), valueDate, maturityDate,
-              discountCurve);
+    public BondForward(final Date valueDate, final Date maturityDate, final Position type,
+            final /* @Real */ double strike, final /* @Natural */ int settlementDays, final DayCounter dayCounter,
+            final Calendar calendar, final BusinessDayConvention businessDayConvention, final Bond bond,
+            final Handle< YieldTermStructure > discountCurve, final Handle< YieldTermStructure > incomeDiscountCurve) {
+        super(dayCounter, calendar, businessDayConvention, settlementDays, new ForwardTypePayoff(type, strike),
+                valueDate, maturityDate, discountCurve);
         this.bond = bond;
         this.incomeDiscountCurve = incomeDiscountCurve;
-        if (this.incomeDiscountCurve != null) {
+        if ( this.incomeDiscountCurve != null ) {
             this.incomeDiscountCurve.addObserver(this);
         }
-        if (this.bond != null) {
+        if ( this.bond != null ) {
             this.bond.addObserver(this);
         }
     }
 
     /** Convenience overload: empty income discount curve. */
-    public BondForward(final Date valueDate,
-                       final Date maturityDate,
-                       final Position type,
-                       final /* @Real */ double strike,
-                       final /* @Natural */ int settlementDays,
-                       final DayCounter dayCounter,
-                       final Calendar calendar,
-                       final BusinessDayConvention businessDayConvention,
-                       final Bond bond,
-                       final Handle<YieldTermStructure> discountCurve) {
-        this(valueDate, maturityDate, type, strike, settlementDays, dayCounter,
-             calendar, businessDayConvention, bond, discountCurve,
-             new Handle<YieldTermStructure>());
+    public BondForward(final Date valueDate, final Date maturityDate, final Position type,
+            final /* @Real */ double strike, final /* @Natural */ int settlementDays, final DayCounter dayCounter,
+            final Calendar calendar, final BusinessDayConvention businessDayConvention, final Bond bond,
+            final Handle< YieldTermStructure > discountCurve) {
+        this(valueDate, maturityDate, type, strike, settlementDays, dayCounter, calendar, businessDayConvention, bond,
+                discountCurve, new Handle< YieldTermStructure >());
     }
 
     /** Convenience overload: empty discount and income curves. */
-    public BondForward(final Date valueDate,
-                       final Date maturityDate,
-                       final Position type,
-                       final /* @Real */ double strike,
-                       final /* @Natural */ int settlementDays,
-                       final DayCounter dayCounter,
-                       final Calendar calendar,
-                       final BusinessDayConvention businessDayConvention,
-                       final Bond bond) {
-        this(valueDate, maturityDate, type, strike, settlementDays, dayCounter,
-             calendar, businessDayConvention, bond,
-             new Handle<YieldTermStructure>(),
-             new Handle<YieldTermStructure>());
+    public BondForward(final Date valueDate, final Date maturityDate, final Position type,
+            final /* @Real */ double strike, final /* @Natural */ int settlementDays, final DayCounter dayCounter,
+            final Calendar calendar, final BusinessDayConvention businessDayConvention, final Bond bond) {
+        this(valueDate, maturityDate, type, strike, settlementDays, dayCounter, calendar, businessDayConvention, bond,
+                new Handle< YieldTermStructure >(), new Handle< YieldTermStructure >());
     }
 
     /** (dirty) forward bond price. */
@@ -152,17 +127,17 @@ public class BondForward extends Forward {
      * the bond forward contract's {@code maturityDate} are considered income.
      */
     @Override
-    public /* @Real */ double spotIncome(final Handle<YieldTermStructure> incomeDiscountCurve) {
+    public /* @Real */ double spotIncome(final Handle< YieldTermStructure > incomeDiscountCurve) {
         double income = 0.0;
         final Date settlement = settlementDate();
         final Leg cf = bond.cashflows();
         // Assumes:
         //  1. cashflows are in ascending order
         //  2. income = all coupons paid between settlementDate() and contract delivery/maturity date
-        for (int i = 0; i < cf.size(); ++i) {
-            final CashFlow flow = (CashFlow) cf.get(i);
-            if (!flow.hasOccurred(settlement)) {
-                if (flow.hasOccurred(maturityDate)) {
+        for ( int i = 0; i < cf.size(); ++i ) {
+            final CashFlow flow = cf.get(i);
+            if ( !flow.hasOccurred(settlement) ) {
+                if ( flow.hasOccurred(maturityDate) ) {
                     income += flow.amount() * incomeDiscountCurve.currentLink().discount(flow.date());
                 } else {
                     break;

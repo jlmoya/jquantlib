@@ -25,13 +25,11 @@ package org.jquantlib.math.interpolations;
 import org.jquantlib.math.interpolations.factories.BackwardFlat;
 import org.jquantlib.math.matrixutilities.Array;
 
-
 /**
  * Backward-flat interpolation between discrete points
  *
- * @see BackwardFlat
- *
  * @author Richard Gomes
+ * @see BackwardFlat
  */
 public class BackwardFlatInterpolation extends AbstractInterpolation {
 
@@ -43,7 +41,6 @@ public class BackwardFlatInterpolation extends AbstractInterpolation {
         super.impl = new BackwardFlatInterpolationImpl(vx, vy);
         super.impl.update();
     }
-
 
     //
     // protected inner classes
@@ -57,7 +54,6 @@ public class BackwardFlatInterpolation extends AbstractInterpolation {
 
         private final Array vp;
 
-
         //
         // protected constructors
         //
@@ -69,7 +65,6 @@ public class BackwardFlatInterpolation extends AbstractInterpolation {
             this.vp = new Array(vx.size());
         }
 
-
         //
         // overrides AbstractInterpolation.Impl
         //
@@ -77,9 +72,9 @@ public class BackwardFlatInterpolation extends AbstractInterpolation {
         @Override
         public void update() {
             vp.set(0, 0.0);
-            for (int i=1; i<vx.size(); i++) {
-                final double dx = vx.get(i) - vx.get(i-1);
-                vp.set(i, vp.get(i-1) + dx*vy.get(i));
+            for ( int i = 1; i < vx.size(); i++ ) {
+                final double dx = vx.get(i) - vx.get(i - 1);
+                vp.set(i, vp.get(i - 1) + dx * vy.get(i));
             }
         }
 
@@ -87,14 +82,14 @@ public class BackwardFlatInterpolation extends AbstractInterpolation {
         public double op(final double x) {
             // Mirror C++ v1.42.1: when there is a single node, the
             // backward-flat function degenerates to the constant y[0].
-            if (x <= vx.get(0) || vx.size() == 1) {
+            if ( x <= vx.get(0) || vx.size() == 1 ) {
                 return vy.get(0);
             }
             final int i = locate(x);
-            if (x == vx.get(i)) {
+            if ( x == vx.get(i) ) {
                 return vy.get(i);
             } else {
-                return vy.get(i+1);
+                return vy.get(i + 1);
             }
         }
 
@@ -102,12 +97,12 @@ public class BackwardFlatInterpolation extends AbstractInterpolation {
         public double primitive(final double x) {
             // Mirror C++ v1.42.1: on a single node, the primitive is the
             // straight line y[0] * (x - x[0]).
-            if (vx.size() == 1) {
+            if ( vx.size() == 1 ) {
                 return (x - vx.get(0)) * vy.get(0);
             }
             final int i = locate(x);
             final double dx = x - vx.get(i);
-            return vp.get(i) + dx*vy.get(i+1);
+            return vp.get(i) + dx * vy.get(i + 1);
         }
 
         @Override

@@ -30,16 +30,13 @@ import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.termstructures.volatilities.LocalVolSurface;
 
 /**
- * Wrapper around the Dupire {@link LocalVolSurface} that does not throw
- * when the local volatility derivation produces an invalid (e.g. negative
- * variance) intermediate value. Instead it substitutes a user-supplied
- * {@code illegalLocalVolOverwrite} value (typically the surface's at-the-money
- * level).
+ * Wrapper around the Dupire {@link LocalVolSurface} that does not throw when the local volatility derivation produces
+ * an invalid (e.g. negative variance) intermediate value. Instead it substitutes a user-supplied
+ * {@code illegalLocalVolOverwrite} value (typically the surface's at-the-money level).
  *
  * <p>Java port of v1.42.1
- * {@code ql/termstructures/volatility/equityfx/noexceptlocalvolsurface.hpp}
- * (header-only in C++; the entire implementation is the wrapper class
- * below).
+ * {@code ql/termstructures/volatility/equityfx/noexceptlocalvolsurface.hpp} (header-only in C++; the entire
+ * implementation is the wrapper class below).
  *
  * <p>Use cases:
  * <ul>
@@ -61,38 +58,31 @@ public class NoExceptLocalVolSurface extends LocalVolSurface {
     /**
      * Construct from a {@link Handle} underlying spot quote.
      *
-     * @param blackTS                   Black-vol surface to differentiate
-     * @param riskFreeTS                discounting curve
-     * @param dividendTS                dividend curve
-     * @param underlying                spot quote handle
-     * @param illegalLocalVolOverwrite  vol value to return when the parent
-     *                                  raises (e.g. negative variance)
+     * @param blackTS                  Black-vol surface to differentiate
+     * @param riskFreeTS               discounting curve
+     * @param dividendTS               dividend curve
+     * @param underlying               spot quote handle
+     * @param illegalLocalVolOverwrite vol value to return when the parent raises (e.g. negative variance)
      */
-    public NoExceptLocalVolSurface(final Handle<BlackVolTermStructure> blackTS,
-                                   final Handle<YieldTermStructure> riskFreeTS,
-                                   final Handle<YieldTermStructure> dividendTS,
-                                   final Handle<? extends Quote> underlying,
-                                   final /*@Real*/ double illegalLocalVolOverwrite) {
+    public NoExceptLocalVolSurface(final Handle< BlackVolTermStructure > blackTS,
+            final Handle< YieldTermStructure > riskFreeTS, final Handle< YieldTermStructure > dividendTS,
+            final Handle< ? extends Quote > underlying, final /*@Real*/ double illegalLocalVolOverwrite) {
         super(blackTS, riskFreeTS, dividendTS, underlying);
         this.illegalLocalVolOverwrite_ = illegalLocalVolOverwrite;
     }
 
     /**
-     * Construct from a fixed underlying spot value (wrapped internally
-     * in a {@code SimpleQuote}).
+     * Construct from a fixed underlying spot value (wrapped internally in a {@code SimpleQuote}).
      */
-    public NoExceptLocalVolSurface(final Handle<BlackVolTermStructure> blackTS,
-                                   final Handle<YieldTermStructure> riskFreeTS,
-                                   final Handle<YieldTermStructure> dividendTS,
-                                   final /*@Real*/ double underlying,
-                                   final /*@Real*/ double illegalLocalVolOverwrite) {
+    public NoExceptLocalVolSurface(final Handle< BlackVolTermStructure > blackTS,
+            final Handle< YieldTermStructure > riskFreeTS, final Handle< YieldTermStructure > dividendTS,
+            final /*@Real*/ double underlying, final /*@Real*/ double illegalLocalVolOverwrite) {
         super(blackTS, riskFreeTS, dividendTS, underlying);
         this.illegalLocalVolOverwrite_ = illegalLocalVolOverwrite;
     }
 
     /**
-     * Returns the override value when the underlying Dupire derivation
-     * fails, otherwise the parent class's value.
+     * Returns the override value when the underlying Dupire derivation fails, otherwise the parent class's value.
      *
      * <p>Mirrors C++ verbatim:
      * <pre>
@@ -101,18 +91,15 @@ public class NoExceptLocalVolSurface extends LocalVolSurface {
      * </pre>
      *
      * <p>Java catches all exceptions thrown by the parent (including
-     * {@link RuntimeException} subclasses raised by
-     * {@code QL.require}/{@code QL.ensure}). This is wider than the
-     * C++ {@code catch (Error&)} but matches the only failure mode the
-     * parent can produce in JQuantLib (a {@code LibraryException} from
-     * the {@code QL.ensure(result &gt;= 0)} non-negativity check).
+     * {@link RuntimeException} subclasses raised by {@code QL.require}/{@code QL.ensure}). This is wider than the C++
+     * {@code catch (Error&)} but matches the only failure mode the parent can produce in JQuantLib (a
+     * {@code LibraryException} from the {@code QL.ensure(result &gt;= 0)} non-negativity check).
      */
     @Override
-    protected /*@Volatility*/ double localVolImpl(final /*@Time*/ double t,
-                                                  final /*@Real*/ double s) {
+    protected /*@Volatility*/ double localVolImpl(final /*@Time*/ double t, final /*@Real*/ double s) {
         try {
             return super.localVolImpl(t, s);
-        } catch (final RuntimeException ex) {
+        } catch ( final RuntimeException ex ) {
             return illegalLocalVolOverwrite_;
         }
     }

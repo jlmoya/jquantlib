@@ -47,16 +47,14 @@ import org.jquantlib.util.Visitor;
  * Base inflation-coupon class.
  *
  * <p>The day counter is usually obtained from the inflation term structure
- * that the inflation index uses for forecasting. There is no gearing or
- * spread because these are relevant for YoY coupons but not zero inflation
- * coupons.
+ * that the inflation index uses for forecasting. There is no gearing or spread because these are relevant for YoY
+ * coupons but not zero inflation coupons.
  *
  * <p>Note: inflation indices do not contain day counters or calendars.
  *
  * <p>Mirrors C++ {@code QuantLib::InflationCoupon} at v1.42.1
- * (cashflows/inflationcoupon.{hpp,cpp}). Constructor parameter order matches
- * the existing JQuantLib {@link Coupon} convention
- * (nominal/paymentDate/start/end), not the C++ order.
+ * (cashflows/inflationcoupon.{hpp,cpp}). Constructor parameter order matches the existing JQuantLib {@link Coupon}
+ * convention (nominal/paymentDate/start/end), not the C++ order.
  *
  * @author JQuantLib migration team (Phase 2p A.2)
  */
@@ -79,28 +77,16 @@ public abstract class InflationCoupon extends Coupon implements Observer {
     // public constructors
     //
 
-    public InflationCoupon(final double nominal,
-                           final Date paymentDate,
-                           final Date startDate,
-                           final Date endDate,
-                           final int fixingDays,
-                           final InflationIndex index,
-                           final Period observationLag,
-                           final DayCounter dayCounter) {
-        this(nominal, paymentDate, startDate, endDate, fixingDays,
-             index, observationLag, dayCounter, new Date(), new Date());
+    public InflationCoupon(final double nominal, final Date paymentDate, final Date startDate, final Date endDate,
+            final int fixingDays, final InflationIndex index, final Period observationLag,
+            final DayCounter dayCounter) {
+        this(nominal, paymentDate, startDate, endDate, fixingDays, index, observationLag, dayCounter, new Date(),
+                new Date());
     }
 
-    public InflationCoupon(final double nominal,
-                           final Date paymentDate,
-                           final Date startDate,
-                           final Date endDate,
-                           final int fixingDays,
-                           final InflationIndex index,
-                           final Period observationLag,
-                           final DayCounter dayCounter,
-                           final Date refPeriodStart,
-                           final Date refPeriodEnd) {
+    public InflationCoupon(final double nominal, final Date paymentDate, final Date startDate, final Date endDate,
+            final int fixingDays, final InflationIndex index, final Period observationLag, final DayCounter dayCounter,
+            final Date refPeriodStart, final Date refPeriodEnd) {
         // ref period is before lag — see C++ inflationcoupon.cpp constructor body
         super(nominal, paymentDate, startDate, endDate, refPeriodStart, refPeriodEnd);
         this.index_ = index;
@@ -110,7 +96,7 @@ public abstract class InflationCoupon extends Coupon implements Observer {
         this.rate_ = Double.NaN;
 
         // C++ registerWith(index_) and registerWith(evaluationDate)
-        if (index_ != null) {
+        if ( index_ != null ) {
             index_.addObserver(this);
         }
         new Settings().evaluationDate().addObserver(this);
@@ -123,11 +109,11 @@ public abstract class InflationCoupon extends Coupon implements Observer {
     /** Set the pricer. C++ {@code setPricer}. */
     public void setPricer(final InflationCouponPricer pricer) {
         QL.require(checkPricerImpl(pricer), "pricer given is wrong type");
-        if (pricer_ != null) {
+        if ( pricer_ != null ) {
             pricer_.deleteObserver(this);
         }
         pricer_ = pricer;
-        if (pricer_ != null) {
+        if ( pricer_ != null ) {
             pricer_.addObserver(this);
         }
         update();
@@ -151,10 +137,9 @@ public abstract class InflationCoupon extends Coupon implements Observer {
 
     public Date fixingDate() {
         // Fixing calendar is usually the null calendar for inflation indices.
-        return index_.fixingCalendar().advance(
-                refPeriodEnd_.sub(observationLag_),
-                new Period(-fixingDays_, TimeUnit.Days),
-                BusinessDayConvention.ModifiedPreceding);
+        return index_.fixingCalendar()
+                .advance(refPeriodEnd_.sub(observationLag_), new Period(-fixingDays_, TimeUnit.Days),
+                        BusinessDayConvention.ModifiedPreceding);
     }
 
     /** Fixing of the underlying index, as observed by the coupon. */
@@ -162,7 +147,7 @@ public abstract class InflationCoupon extends Coupon implements Observer {
         return index_.fixing(fixingDate());
     }
 
-    public double price(final Handle<YieldTermStructure> discountingCurve) {
+    public double price(final Handle< YieldTermStructure > discountingCurve) {
         return amount() * discountingCurve.currentLink().discount(date());
     }
 
@@ -182,14 +167,11 @@ public abstract class InflationCoupon extends Coupon implements Observer {
 
     @Override
     public double accruedAmount(final Date d) {
-        if (d.le(accrualStartDate_) || d.gt(paymentDate_)) {
+        if ( d.le(accrualStartDate_) || d.gt(paymentDate_) ) {
             return 0.0;
         }
-        return nominal() * rate() * dayCounter().yearFraction(
-                accrualStartDate_,
-                Date.min(d, accrualEndDate_),
-                refPeriodStart_,
-                refPeriodEnd_);
+        return nominal() * rate() * dayCounter().yearFraction(accrualStartDate_, Date.min(d, accrualEndDate_),
+                refPeriodStart_, refPeriodEnd_);
     }
 
     @Override
@@ -201,9 +183,8 @@ public abstract class InflationCoupon extends Coupon implements Observer {
     }
 
     /**
-     * Mirrors C++ {@code performCalculations()}. Updates the cached rate via
-     * the configured pricer. Public to match LazyObject contract; not called
-     * directly by users.
+     * Mirrors C++ {@code performCalculations()}. Updates the cached rate via the configured pricer. Public to match
+     * LazyObject contract; not called directly by users.
      */
     public void performCalculations() {
         QL.require(pricer_ != null, "pricer not set");
@@ -214,9 +195,8 @@ public abstract class InflationCoupon extends Coupon implements Observer {
     }
 
     /**
-     * Make sure the given pricer is the correct concrete type. Implemented by
-     * subclasses; mirrors C++ {@code checkPricerImpl}. Can also be done via
-     * the accept/visit mechanism in external pricer-setter classes.
+     * Make sure the given pricer is the correct concrete type. Implemented by subclasses; mirrors C++
+     * {@code checkPricerImpl}. Can also be done via the accept/visit mechanism in external pricer-setter classes.
      */
     protected abstract boolean checkPricerImpl(InflationCouponPricer pricer);
 
@@ -235,8 +215,8 @@ public abstract class InflationCoupon extends Coupon implements Observer {
 
     @Override
     public void accept(final PolymorphicVisitor pv) {
-        final Visitor<InflationCoupon> v = (pv != null) ? pv.visitor(this.getClass()) : null;
-        if (v != null) {
+        final Visitor< InflationCoupon > v = (pv != null) ? pv.visitor(this.getClass()) : null;
+        if ( v != null ) {
             v.visit(this);
         } else {
             super.accept(pv);

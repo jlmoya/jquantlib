@@ -30,9 +30,6 @@
 
 package org.jquantlib.experimental.inflation;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.indexes.CPI;
@@ -53,12 +50,11 @@ import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.termstructures.YoYInflationTermStructure;
 import org.jquantlib.termstructures.inflation.PiecewiseYoYInflationCurve;
 import org.jquantlib.termstructures.inflation.YearOnYearInflationSwapHelper;
-import org.jquantlib.time.BusinessDayConvention;
-import org.jquantlib.time.Calendar;
-import org.jquantlib.time.Date;
-import org.jquantlib.time.Period;
-import org.jquantlib.time.TimeUnit;
+import org.jquantlib.time.*;
 import org.jquantlib.util.Pair;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Interpolated YoY cap/floor term-price surface — concrete subclass.
@@ -67,23 +63,19 @@ import org.jquantlib.util.Pair;
  * ({@code ql/experimental/inflation/yoycapfloortermpricesurface.hpp:148}).
  *
  * <p>Interpolators are passed by class (factory-pattern) — {@code I2D} is
- * a 2D interpolator factory class (e.g. {@link
- * org.jquantlib.math.interpolations.factories.BicubicSpline} or
- * {@link org.jquantlib.math.interpolations.factories.Bilinear}); {@code I1D}
- * is a 1D interpolator factory class (e.g. {@link Linear}).
+ * a 2D interpolator factory class (e.g. {@link org.jquantlib.math.interpolations.factories.BicubicSpline} or
+ * {@link org.jquantlib.math.interpolations.factories.Bilinear}); {@code I1D} is a 1D interpolator factory class (e.g.
+ * {@link Linear}).
  *
  * @param <I2D> 2D interpolator factory class
  * @param <I1D> 1D interpolator factory class
- *
  * @author JQuantLib migration team (Phase 2s C.1)
  */
-public class InterpolatedYoYCapFloorTermPriceSurface<
-        I2D extends Interpolation2D.Interpolator2D,
-        I1D extends Interpolation.Interpolator>
+public class InterpolatedYoYCapFloorTermPriceSurface< I2D extends Interpolation2D.Interpolator2D, I1D extends Interpolation.Interpolator >
         extends YoYCapFloorTermPriceSurface {
 
-    private final Class<I2D> classI2D;
-    private final Class<I1D> classI1D;
+    private final Class< I2D > classI2D;
+    private final Class< I1D > classI1D;
     private final Interpolation2D.Interpolator2D interpolator2d_;
     private final Interpolation.Interpolator interpolator1d_;
 
@@ -94,23 +86,13 @@ public class InterpolatedYoYCapFloorTermPriceSurface<
     /**
      * Construct using default-constructed interpolator factories.
      */
-    public InterpolatedYoYCapFloorTermPriceSurface(final Class<I2D> classI2D,
-                                                   final Class<I1D> classI1D,
-                                                   final int fixingDays,
-                                                   final Period yyLag,
-                                                   final YoYInflationIndex yii,
-                                                   final CPI.InterpolationType interpolation,
-                                                   final Handle<YieldTermStructure> nominal,
-                                                   final DayCounter dc,
-                                                   final Calendar cal,
-                                                   final BusinessDayConvention bdc,
-                                                   final double[] cStrikes,
-                                                   final double[] fStrikes,
-                                                   final Period[] cfMaturities,
-                                                   final Matrix cPrice,
-                                                   final Matrix fPrice) {
-        super(fixingDays, yyLag, yii, interpolation, nominal, dc, cal, bdc,
-              cStrikes, fStrikes, cfMaturities, cPrice, fPrice);
+    public InterpolatedYoYCapFloorTermPriceSurface(final Class< I2D > classI2D, final Class< I1D > classI1D,
+            final int fixingDays, final Period yyLag, final YoYInflationIndex yii,
+            final CPI.InterpolationType interpolation, final Handle< YieldTermStructure > nominal, final DayCounter dc,
+            final Calendar cal, final BusinessDayConvention bdc, final double[] cStrikes, final double[] fStrikes,
+            final Period[] cfMaturities, final Matrix cPrice, final Matrix fPrice) {
+        super(fixingDays, yyLag, yii, interpolation, nominal, dc, cal, bdc, cStrikes, fStrikes, cfMaturities, cPrice,
+                fPrice);
         QL.require(classI2D != null, "Interpolator2D factory class must not be null");
         QL.require(classI1D != null, "Interpolator1D factory class must not be null");
         this.classI2D = classI2D;
@@ -120,31 +102,38 @@ public class InterpolatedYoYCapFloorTermPriceSurface<
         performCalculations();
     }
 
-    private static Interpolation2D.Interpolator2D construct2D(final Class<?> klass) {
+    private static Interpolation2D.Interpolator2D construct2D(final Class< ? > klass) {
         try {
             return (Interpolation2D.Interpolator2D) klass.getDeclaredConstructor().newInstance();
-        } catch (final Exception e) {
+        } catch ( final Exception e ) {
             throw new LibraryException("cannot create Interpolator2D", e);
         }
     }
 
-    private static Interpolation.Interpolator construct1D(final Class<?> klass) {
+    private static Interpolation.Interpolator construct1D(final Class< ? > klass) {
         try {
             return (Interpolation.Interpolator) klass.getDeclaredConstructor().newInstance();
-        } catch (final Exception e) {
+        } catch ( final Exception e ) {
             throw new LibraryException("cannot create Interpolator1D", e);
         }
     }
 
+    private static double[] toArr(final List< Double > xs) {
+        final double[] r = new double[xs.size()];
+        for ( int i = 0; i < xs.size(); i++ )
+            r[i] = xs.get(i);
+        return r;
+    }
+
     @Override
     public Date maxDate() {
-        return yoy_ == null ? referenceDate().add(cfMaturities_[cfMaturities_.length - 1])
-                            : yoy_.maxDate();
+        return yoy_ == null ? referenceDate().add(cfMaturities_[cfMaturities_.length - 1]) : yoy_.maxDate();
     }
 
     @Override
     public Date baseDate() {
-        if (yoy_ != null) return yoy_.baseDate();
+        if ( yoy_ != null )
+            return yoy_.baseDate();
         // Fallback: derive from observation lag against reference date.
         return referenceDate().sub(observationLag_);
     }
@@ -155,12 +144,12 @@ public class InterpolatedYoYCapFloorTermPriceSurface<
     }
 
     @Override
-    public Pair<double[], double[]> atmYoYSwapTimeRates() {
+    public Pair< double[], double[] > atmYoYSwapTimeRates() {
         return atmYoYSwapTimeRates_;
     }
 
     @Override
-    public Pair<Date[], double[]> atmYoYSwapDateRates() {
+    public Pair< Date[], double[] > atmYoYSwapDateRates() {
         return atmYoYSwapDateRates_;
     }
 
@@ -195,8 +184,7 @@ public class InterpolatedYoYCapFloorTermPriceSurface<
 
     @Override
     public double atmYoYRate(final Date d, final Period obsLag, final boolean extrapolate) {
-        final Period p = obsLag.equals(new Period(-1, TimeUnit.Days))
-                ? observationLag() : obsLag;
+        final Period p = obsLag.equals(new Period(-1, TimeUnit.Days)) ? observationLag() : obsLag;
         return yoy_.yoyRate(d.sub(p), extrapolate);
     }
 
@@ -221,7 +209,7 @@ public class InterpolatedYoYCapFloorTermPriceSurface<
         // surface coverage exposed by Phase 2s C.
         try {
             calculateYoYTermStructure();
-        } catch (final RuntimeException e) {
+        } catch ( final RuntimeException e ) {
             // yoy_ stays null; downstream callers handle that case.
         }
     }
@@ -238,56 +226,52 @@ public class InterpolatedYoYCapFloorTermPriceSurface<
 
         // Build maturity time grid
         cfMaturityTimes_ = new double[cfMaturities_.length];
-        for (int i = 0; i < cfMaturities_.length; i++) {
+        for ( int i = 0; i < cfMaturities_.length; i++ ) {
             cfMaturityTimes_[i] = timeFromReference(yoyOptionDateFromTenor(cfMaturities_[i]));
         }
 
         // 2D interpolations on raw cap/floor matrices
-        capPrice_ = interpolator2d_.interpolate(
-                new Array(cfMaturityTimes_),
-                new Array(cStrikes_),
-                cPrice_);
+        capPrice_ = interpolator2d_.interpolate(new Array(cfMaturityTimes_), new Array(cStrikes_), cPrice_);
         capPrice_.enableExtrapolation();
 
-        floorPrice_ = interpolator2d_.interpolate(
-                new Array(cfMaturityTimes_),
-                new Array(fStrikes_),
-                fPrice_);
+        floorPrice_ = interpolator2d_.interpolate(new Array(cfMaturityTimes_), new Array(fStrikes_), fPrice_);
         floorPrice_.enableExtrapolation();
 
         // Reset ATM YoY swap rate containers
-        final List<Date> atmDates = new ArrayList<>();
-        final List<Double> atmRatesD = new ArrayList<>();
-        final List<Double> atmTimes = new ArrayList<>();
-        final List<Double> atmRatesT = new ArrayList<>();
+        final List< Date > atmDates = new ArrayList<>();
+        final List< Double > atmRatesD = new ArrayList<>();
+        final List< Double > atmTimes = new ArrayList<>();
+        final List< Double > atmRatesT = new ArrayList<>();
 
         final Brent solver = new Brent();
         final double solverTolerance = 1e-7;
         final double[] minSwapRateIntersection = new double[cfMaturityTimes_.length];
         final double[] maxSwapRateIntersection = new double[cfMaturityTimes_.length];
-        final List<Double> tmpSwapMaturities = new ArrayList<>();
-        final List<Double> tmpSwapRates = new ArrayList<>();
+        final List< Double > tmpSwapMaturities = new ArrayList<>();
+        final List< Double > tmpSwapRates = new ArrayList<>();
 
-        for (int i = 0; i < cfMaturities_.length; i++) {
+        for ( int i = 0; i < cfMaturities_.length; i++ ) {
             final double t = cfMaturityTimes_[i];
             // sum of discount factors over each year up to maturity
             final long numYears = Math.round(t);
             double sumDiscount = 0.0;
-            for (long j = 0; j < numYears; ++j) {
+            for ( long j = 0; j < numYears; ++j ) {
                 sumDiscount += nominalTS_.currentLink().discount((double) (j + 1));
             }
             // arbitrage bounds for ATM swap rate
             double tmpMinSwap = -1.e10;
             double tmpMaxSwap = 1.e10;
-            for (int j = 0; j < fStrikes_.length; ++j) {
+            for ( int j = 0; j < fStrikes_.length; ++j ) {
                 final double price = floorPrice_.op(t, fStrikes_[j], true);
                 final double minSwapRate = fStrikes_[j] - price / (sumDiscount * 10000);
-                if (minSwapRate > tmpMinSwap) tmpMinSwap = minSwapRate;
+                if ( minSwapRate > tmpMinSwap )
+                    tmpMinSwap = minSwapRate;
             }
-            for (int j = 0; j < cStrikes_.length; ++j) {
+            for ( int j = 0; j < cStrikes_.length; ++j ) {
                 final double price = capPrice_.op(t, cStrikes_[j], true);
                 final double maxSwapRate = cStrikes_[j] + price / (sumDiscount * 10000);
-                if (maxSwapRate < tmpMaxSwap) tmpMaxSwap = maxSwapRate;
+                if ( maxSwapRate < tmpMaxSwap )
+                    tmpMaxSwap = maxSwapRate;
             }
             maxSwapRateIntersection[i] = tmpMaxSwap;
             minSwapRateIntersection[i] = tmpMinSwap;
@@ -296,19 +280,19 @@ public class InterpolatedYoYCapFloorTermPriceSurface<
             boolean trialsExceeded = false;
             final int numTrials = (int) (maxSearchRange / searchStep);
             double lo, hi;
-            if (floorPrice_.op(t, fStrikes_[fStrikes_.length - 1], true)
-                    > capPrice_.op(t, fStrikes_[fStrikes_.length - 1], true)) {
+            if ( floorPrice_.op(t, fStrikes_[fStrikes_.length - 1], true) > capPrice_.op(t,
+                    fStrikes_[fStrikes_.length - 1], true) ) {
                 int counter = 1;
                 boolean stop = false;
                 double strike = 0.0;
-                while (!stop) {
+                while ( !stop ) {
                     strike = fStrikes_[fStrikes_.length - 1] - counter * searchStep;
-                    if (floorPrice_.op(t, strike, true) < capPrice_.op(t, strike, true)) {
+                    if ( floorPrice_.op(t, strike, true) < capPrice_.op(t, strike, true) ) {
                         stop = true;
                     }
                     counter++;
-                    if (counter == numTrials + 1) {
-                        if (!stop) {
+                    if ( counter == numTrials + 1 ) {
+                        if ( !stop ) {
                             stop = true;
                             trialsExceeded = true;
                         }
@@ -320,14 +304,14 @@ public class InterpolatedYoYCapFloorTermPriceSurface<
                 int counter = 1;
                 boolean stop = false;
                 double strike = 0.0;
-                while (!stop) {
+                while ( !stop ) {
                     strike = fStrikes_[fStrikes_.length - 1] + counter * searchStep;
-                    if (floorPrice_.op(t, strike, true) > capPrice_.op(t, strike, true)) {
+                    if ( floorPrice_.op(t, strike, true) > capPrice_.op(t, strike, true) ) {
                         stop = true;
                     }
                     counter++;
-                    if (counter == numTrials + 1) {
-                        if (!stop) {
+                    if ( counter == numTrials + 1 ) {
+                        if ( !stop ) {
                             stop = true;
                             trialsExceeded = true;
                         }
@@ -340,20 +324,19 @@ public class InterpolatedYoYCapFloorTermPriceSurface<
             final double guess = (hi + lo) / 2.0;
             double kI = -999.999;
 
-            if (!trialsExceeded) {
+            if ( !trialsExceeded ) {
                 try {
-                    kI = solver.solve(new ObjectiveFunction(t, capPrice_, floorPrice_),
-                                      solverTolerance, guess, lo, hi);
-                } catch (final Exception e) {
-                    throw new LibraryException("cap/floor intersection finding failed at t = " + t
-                            + ", error msg: " + e.getMessage());
+                    kI = solver.solve(new ObjectiveFunction(t, capPrice_, floorPrice_), solverTolerance, guess, lo, hi);
+                } catch ( final Exception e ) {
+                    throw new LibraryException(
+                            "cap/floor intersection finding failed at t = " + t + ", error msg: " + e.getMessage());
                 }
                 // Sanity check
-                if (kI <= minSwapRateIntersection[i]) {
-                    if (t > maxExtrapolationMaturity) {
+                if ( kI <= minSwapRateIntersection[i] ) {
+                    if ( t > maxExtrapolationMaturity ) {
                         throw new LibraryException("cap/floor intersection finding failed at t = " + t
-                                + ", error msg: intersection value is below the arbitrage"
-                                + " free lower bound " + minSwapRateIntersection[i]);
+                                + ", error msg: intersection value is below the arbitrage" + " free lower bound "
+                                + minSwapRateIntersection[i]);
                     }
                 } else {
                     tmpSwapMaturities.add(t);
@@ -361,7 +344,7 @@ public class InterpolatedYoYCapFloorTermPriceSurface<
                     validMaturity[i] = true;
                 }
             } else {
-                if (t > maxExtrapolationMaturity) {
+                if ( t > maxExtrapolationMaturity ) {
                     throw new LibraryException("cap/floor intersection finding failed at t = " + t
                             + ", error msg: no intersection found inside the admissible range");
                 }
@@ -370,12 +353,12 @@ public class InterpolatedYoYCapFloorTermPriceSurface<
 
         // Extrapolation of swap rates if necessary; fill gaps via heuristic
         int counter = 0;
-        for (int i = 0; i < cfMaturities_.length; ++i) {
-            if (!validMaturity[i]) {
+        for ( int i = 0; i < cfMaturities_.length; ++i ) {
+            if ( !validMaturity[i] ) {
                 atmDates.add(referenceDate().add(cfMaturities_[i]));
                 atmTimes.add(timeFromReference(referenceDate().add(cfMaturities_[i])));
                 double newSwapRate = minSwapRateIntersection[i] + intrinsicValueAddOn;
-                if (newSwapRate > maxSwapRateIntersection[i]) {
+                if ( newSwapRate > maxSwapRateIntersection[i] ) {
                     newSwapRate = 0.5 * (minSwapRateIntersection[i] + maxSwapRateIntersection[i]);
                 }
                 atmRatesT.add(newSwapRate);
@@ -392,59 +375,50 @@ public class InterpolatedYoYCapFloorTermPriceSurface<
         atmYoYSwapTimeRates_ = new Pair<>(toArr(atmTimes), toArr(atmRatesT));
         atmYoYSwapDateRates_ = new Pair<>(atmDates.toArray(new Date[0]), toArr(atmRatesD));
 
-        atmYoYSwapRateCurve_ = interpolator1d_.interpolate(
-                new Array(toArr(atmTimes)),
-                new Array(toArr(atmRatesT)));
-    }
-
-    private static double[] toArr(final List<Double> xs) {
-        final double[] r = new double[xs.size()];
-        for (int i = 0; i < xs.size(); i++) r[i] = xs.get(i);
-        return r;
+        atmYoYSwapRateCurve_ = interpolator1d_.interpolate(new Array(toArr(atmTimes)), new Array(toArr(atmRatesT)));
     }
 
     /** Mirrors C++ {@code calculateYoYTermStructure()}. */
     private void calculateYoYTermStructure() {
         // Pick every year up to the latest maturity
-        final long nYears = Math.round(timeFromReference(
-                referenceDate().add(cfMaturities_[cfMaturities_.length - 1])));
+        final long nYears = Math.round(timeFromReference(referenceDate().add(cfMaturities_[cfMaturities_.length - 1])));
 
-        final List<YearOnYearInflationSwapHelper> yyHelpers = new ArrayList<>();
-        for (long i = 1; i <= nYears; i++) {
-            final Date maturity = nominalTS_.currentLink().referenceDate()
-                    .add(new Period((int) i, TimeUnit.Years));
+        final List< YearOnYearInflationSwapHelper > yyHelpers = new ArrayList<>();
+        for ( long i = 1; i <= nYears; i++ ) {
+            final Date maturity = nominalTS_.currentLink().referenceDate().add(new Period((int) i, TimeUnit.Years));
             final Quote sq = new SimpleQuote(atmYoYSwapRate(maturity, true));
-            final Handle<Quote> quote = new Handle<>(sq);
+            final Handle< Quote > quote = new Handle<>(sq);
             // Pass the surface's nominal yield handle to the helper so the
             // internal YYIIS discounts with the real InterpolatedZeroCurve
             // rather than the helper's FlatForward(0) fallback. Mirrors C++
             // yoycapfloortermpricesurface.hpp:540 — the helper ctor receives
             // nominalTS_ directly, ensuring fair-rate calibration uses
             // discount factors consistent with the rest of the surface.
-            final YearOnYearInflationSwapHelper helper = new YearOnYearInflationSwapHelper(
-                    quote, observationLag(), maturity,
-                    calendar(), bdc_, dayCounter(),
-                    yoyIndex_,
-                    indexIsInterpolated() ? CPI.InterpolationType.Linear
-                                          : CPI.InterpolationType.Flat,
-                    nominalTS_);
+            final YearOnYearInflationSwapHelper helper = new YearOnYearInflationSwapHelper(quote, observationLag(),
+                    maturity, calendar(), bdc_, dayCounter(), yoyIndex_,
+                    indexIsInterpolated() ? CPI.InterpolationType.Linear : CPI.InterpolationType.Flat, nominalTS_);
             yyHelpers.add(helper);
         }
 
         final Date baseDate = InflationTermStructure.inflationPeriod(
-                nominalTS_.currentLink().referenceDate().sub(observationLag()),
-                yoyIndex_.frequency()).first();
+                nominalTS_.currentLink().referenceDate().sub(observationLag()), yoyIndex_.frequency()).first();
 
         final double baseYoYRate = atmYoYSwapRate(referenceDate(), true);
 
-        final PiecewiseYoYInflationCurve<Linear> pYITS =
-                new PiecewiseYoYInflationCurve<>(Linear.class,
-                        nominalTS_.currentLink().referenceDate(),
-                        baseDate, baseYoYRate,
-                        yoyIndex_.frequency(), dayCounter(), yyHelpers);
+        final PiecewiseYoYInflationCurve< Linear > pYITS = new PiecewiseYoYInflationCurve<>(Linear.class,
+                nominalTS_.currentLink().referenceDate(), baseDate, baseYoYRate, yoyIndex_.frequency(), dayCounter(),
+                yyHelpers);
         // Force lazy bootstrap to run now (mirrors C++ pYITS->recalculate()).
         pYITS.maxDate();
         yoy_ = pYITS;
+    }
+
+    public Class< I2D > interpolator2dClass() {
+        return classI2D;
+    }
+
+    public Class< I1D > interpolator1dClass() {
+        return classI1D;
     }
 
     /** Mirrors C++ inner class {@code ObjectiveFunction}. */
@@ -463,13 +437,5 @@ public class InterpolatedYoYCapFloorTermPriceSurface<
         public double op(final double guess) {
             return a_.op(t_, guess, true) - b_.op(t_, guess, true);
         }
-    }
-
-    public Class<I2D> interpolator2dClass() {
-        return classI2D;
-    }
-
-    public Class<I1D> interpolator1dClass() {
-        return classI1D;
     }
 }

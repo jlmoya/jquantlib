@@ -47,25 +47,18 @@ import org.jquantlib.cashflow.FixedRateLeg;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.instruments.Bond;
 import org.jquantlib.lang.exceptions.LibraryException;
-import org.jquantlib.time.BusinessDayConvention;
-import org.jquantlib.time.Calendar;
-import org.jquantlib.time.Date;
-import org.jquantlib.time.DateGeneration;
-import org.jquantlib.time.Frequency;
-import org.jquantlib.time.Period;
-import org.jquantlib.time.Schedule;
+import org.jquantlib.time.*;
 
 /**
  * Fixed-rate bond
  *
+ * @author Ueli Hofstetter
  * @category instruments
  *
- * @author Ueli Hofstetter
- *
-*/
+ */
 public class FixedRateBond extends Bond {
 
-	protected Frequency frequency_;
+    protected Frequency frequency_;
     protected DayCounter dayCounter_;
 
     /**
@@ -76,52 +69,36 @@ public class FixedRateBond extends Bond {
      * @param coupons
      * @param accrualDayCounter
      * @param paymentConvention default: Following
-     * @param redemption default: 100
-     * @param issueDate default: new Date()
+     * @param redemption        default: 100
+     * @param issueDate         default: new Date()
      */
     public FixedRateBond(/*@Natural*/final int settlementDays,
-            /*@Real*/final double faceAmount,
-            final Schedule schedule,
-            final double[] coupons,
-            final DayCounter accrualDayCounter,
-            final BusinessDayConvention paymentConvention,
-            /*Real*/final double redemption,
-            final Date  issueDate){
-        this(settlementDays, faceAmount, schedule, coupons, accrualDayCounter,
-             paymentConvention, redemption, issueDate, null /* paymentCalendar */,
-             new Period(), null /* exCouponCalendar */,
-             BusinessDayConvention.Following, false);
+            /*@Real*/final double faceAmount, final Schedule schedule, final double[] coupons,
+            final DayCounter accrualDayCounter, final BusinessDayConvention paymentConvention,
+            /*Real*/final double redemption, final Date issueDate) {
+        this(settlementDays, faceAmount, schedule, coupons, accrualDayCounter, paymentConvention, redemption, issueDate,
+                null /* paymentCalendar */, new Period(), null /* exCouponCalendar */, BusinessDayConvention.Following,
+                false);
     }
 
     /**
-     * Mirror of C++ {@code FixedRateBond(settlementDays, faceAmount,
-     * schedule, coupons, accrualDayCounter, paymentConvention,
-     * redemption, issueDate, paymentCalendar, exCouponPeriod,
-     * exCouponCalendar, exCouponConvention, exCouponEndOfMonth,
+     * Mirror of C++
+     * {@code FixedRateBond(settlementDays, faceAmount, schedule, coupons, accrualDayCounter, paymentConvention,
+     * redemption, issueDate, paymentCalendar, exCouponPeriod, exCouponCalendar, exCouponConvention, exCouponEndOfMonth,
      * firstPeriodDayCounter)} (ql/instruments/bonds/fixedratebond.cpp:31-69).
      *
      * <p>Phase 5e.5b-CFC-d-93 — adds the ex-coupon parameter overload
-     * needed for UK Gilt / Australian AGB / South-African R2048 bond
-     * tests. {@code paymentCalendar == null} falls back to
-     * {@code schedule.calendar()}.
+     * needed for UK Gilt / Australian AGB / South-African R2048 bond tests. {@code paymentCalendar == null} falls back
+     * to {@code schedule.calendar()}.
      */
     public FixedRateBond(/*@Natural*/final int settlementDays,
-            /*@Real*/final double faceAmount,
-            final Schedule schedule,
-            final double[] coupons,
-            final DayCounter accrualDayCounter,
-            final BusinessDayConvention paymentConvention,
-            /*Real*/final double redemption,
-            final Date  issueDate,
-            final Calendar paymentCalendar,
-            final Period exCouponPeriod,
-            final Calendar exCouponCalendar,
-            final BusinessDayConvention exCouponConvention,
-            final boolean exCouponEndOfMonth){
+            /*@Real*/final double faceAmount, final Schedule schedule, final double[] coupons,
+            final DayCounter accrualDayCounter, final BusinessDayConvention paymentConvention,
+            /*Real*/final double redemption, final Date issueDate, final Calendar paymentCalendar,
+            final Period exCouponPeriod, final Calendar exCouponCalendar,
+            final BusinessDayConvention exCouponConvention, final boolean exCouponEndOfMonth) {
 
-        super(settlementDays,
-              (paymentCalendar == null) ? schedule.calendar() : paymentCalendar,
-              issueDate);
+        super(settlementDays, (paymentCalendar == null) ? schedule.calendar() : paymentCalendar, issueDate);
 
         // Mirrors C++ ql/instruments/bonds/fixedratebond.cpp:48 —
         // schedule.hasTenor() ? schedule.tenor().frequency() : NoFrequency.
@@ -131,92 +108,53 @@ public class FixedRateBond extends Bond {
         dayCounter_ = accrualDayCounter;
         maturityDate_ = schedule.endDate().clone();
 
-        final FixedRateLeg leg = new FixedRateLeg(schedule, accrualDayCounter)
-                .withNotionals(faceAmount)
-                .withCouponRates(coupons)
-                .withPaymentCalendar(calendar_)
-                .withPaymentAdjustment(paymentConvention);
-        if (exCouponPeriod != null && exCouponPeriod.length() != 0) {
-            leg.withExCouponPeriod(exCouponPeriod,
-                    (exCouponCalendar == null) ? new Calendar() : exCouponCalendar,
+        final FixedRateLeg leg = new FixedRateLeg(schedule, accrualDayCounter).withNotionals(faceAmount)
+                .withCouponRates(coupons).withPaymentCalendar(calendar_).withPaymentAdjustment(paymentConvention);
+        if ( exCouponPeriod != null && exCouponPeriod.length() != 0 ) {
+            leg.withExCouponPeriod(exCouponPeriod, (exCouponCalendar == null) ? new Calendar() : exCouponCalendar,
                     exCouponConvention, exCouponEndOfMonth);
         }
         cashflows_ = leg.Leg();
 
-        addRedemptionsToCashflows(new double[]{redemption});
+        addRedemptionsToCashflows(new double[] { redemption });
 
         QL.ensure(!cashflows().isEmpty(), "bond with no cashflows!");
         QL.ensure(redemptions_.size() == 1, "multiple redemptions created");
     }
 
     /**
-     * C'tor with default:
-     *  issueDate = new Date()
+     * C'tor with default: issueDate = new Date()
      */
     public FixedRateBond(/*@Natural*/final int settlementDays,
-            /*@Real*/final double faceAmount,
-            final Schedule schedule,
-            final double[] coupons,
-            final DayCounter accrualDayCounter,
-            final BusinessDayConvention paymentConvention,
-            /*Real*/final double redemption){
-    	
-    	this(settlementDays,
-             faceAmount,
-             schedule,
-             coupons,
-             accrualDayCounter,
-             paymentConvention,
-             redemption,
-             new Date());
-    }
+            /*@Real*/final double faceAmount, final Schedule schedule, final double[] coupons,
+            final DayCounter accrualDayCounter, final BusinessDayConvention paymentConvention,
+            /*Real*/final double redemption) {
 
-    /**
-     * C'tor with default:
-     *  redemption = 100
-     *  issueDate  = new Date()
-     */
-    public FixedRateBond(/*@Natural*/final int settlementDays,
-            /*@Real*/final double faceAmount,
-            final Schedule schedule,
-            final double[] coupons,
-            final DayCounter accrualDayCounter,
-            final BusinessDayConvention paymentConvention) {
-    	
-    	this(settlementDays,
-                faceAmount,
-                schedule,
-                coupons,
-                accrualDayCounter,
-                paymentConvention,
-                100.0,
+        this(settlementDays, faceAmount, schedule, coupons, accrualDayCounter, paymentConvention, redemption,
                 new Date());
     }
 
     /**
-     * C'tor with default:
-     *  paymentConvention = Following
-     *  redemption = 100
-     * 	issueDate  = new Date()
+     * C'tor with default: redemption = 100 issueDate  = new Date()
      */
     public FixedRateBond(/*@Natural*/final int settlementDays,
-            /*@Real*/final double faceAmount,
-            final Schedule schedule,
-            final double[] coupons,
+            /*@Real*/final double faceAmount, final Schedule schedule, final double[] coupons,
+            final DayCounter accrualDayCounter, final BusinessDayConvention paymentConvention) {
+
+        this(settlementDays, faceAmount, schedule, coupons, accrualDayCounter, paymentConvention, 100.0, new Date());
+    }
+
+    /**
+     * C'tor with default: paymentConvention = Following redemption = 100 issueDate  = new Date()
+     */
+    public FixedRateBond(/*@Natural*/final int settlementDays,
+            /*@Real*/final double faceAmount, final Schedule schedule, final double[] coupons,
             final DayCounter accrualDayCounter) {
-    	
-    	this(settlementDays,
-                faceAmount,
-                schedule,
-                coupons,
-                accrualDayCounter,
-                BusinessDayConvention.Following,
-                100.0,
+
+        this(settlementDays, faceAmount, schedule, coupons, accrualDayCounter, BusinessDayConvention.Following, 100.0,
                 new Date());
     }
 
-
-    
     /**
      *
      * @param settlementDays
@@ -229,37 +167,28 @@ public class FixedRateBond extends Bond {
      * @param accrualDayCounter
      * @param accrualConvention default: Following
      * @param paymentConvention default: Following
-     * @param redemption default: 100
-     * @param issueDate default: Date()
-     * @param stubDate default: Date()
-     * @param rule default: Backward
-     * @param endOfMonth default: false
+     * @param redemption        default: 100
+     * @param issueDate         default: Date()
+     * @param stubDate          default: Date()
+     * @param rule              default: Backward
+     * @param endOfMonth        default: false
      */
-    public FixedRateBond(/*@Natural*/final int settlementDays,
-            final Calendar  calendar,
-            /*@Real*/ final double faceAmount,
-            final Date  startDate,
-            final Date  maturityDate,
-            final Period  tenor,
-            final double[] coupons,
-            final DayCounter  accrualDayCounter,
-            final BusinessDayConvention accrualConvention,
+    public FixedRateBond(/*@Natural*/final int settlementDays, final Calendar calendar,
+            /*@Real*/ final double faceAmount, final Date startDate, final Date maturityDate, final Period tenor,
+            final double[] coupons, final DayCounter accrualDayCounter, final BusinessDayConvention accrualConvention,
             final BusinessDayConvention paymentConvention,
-            /*@Real*/ final double redemption,
-            final Date  issueDate ,
-            final Date  stubDate ,
-            final DateGeneration.Rule  rule  ,
-            final boolean endOfMonth){
+            /*@Real*/ final double redemption, final Date issueDate, final Date stubDate,
+            final DateGeneration.Rule rule, final boolean endOfMonth) {
 
-    	super(settlementDays, calendar, issueDate);
-        
-    	frequency_= tenor.frequency();
-        dayCounter_= accrualDayCounter;
+        super(settlementDays, calendar, issueDate);
+
+        frequency_ = tenor.frequency();
+        dayCounter_ = accrualDayCounter;
         maturityDate_ = maturityDate.clone();
 
         Date firstDate = new Date();
         Date nextToLastDate = new Date();
-        switch (rule) {
+        switch ( rule ) {
         case Backward:
             firstDate = new Date();
             nextToLastDate = stubDate.clone();
@@ -270,98 +199,52 @@ public class FixedRateBond extends Bond {
             break;
         case Zero:
         case ThirdWednesday:
-        case  Twentieth:
-        case  TwentiethIMM:
+        case Twentieth:
+        case TwentiethIMM:
             throw new LibraryException(reportFalseDateGenerationRule(stubDate, rule));
         default:
             throw new LibraryException("unknown DateGeneration.Rule"); // TODO: message
         }
 
-        final Schedule schedule = new Schedule(startDate, maturityDate_, tenor,
-                calendar_, accrualConvention, accrualConvention,
-                rule, endOfMonth,
-                firstDate, nextToLastDate);
+        final Schedule schedule = new Schedule(startDate, maturityDate_, tenor, calendar_, accrualConvention,
+                accrualConvention, rule, endOfMonth, firstDate, nextToLastDate);
 
-        cashflows_ = new FixedRateLeg(schedule, accrualDayCounter)
-        .withNotionals(faceAmount)
-        .withCouponRates(coupons)
-        .withPaymentAdjustment(paymentConvention);
+        cashflows_ = new FixedRateLeg(schedule, accrualDayCounter).withNotionals(faceAmount).withCouponRates(coupons)
+                .withPaymentAdjustment(paymentConvention);
 
-        addRedemptionsToCashflows(new double[]{redemption});
+        addRedemptionsToCashflows(new double[] { redemption });
 
         QL.ensure(!cashflows().isEmpty(), "bond with no cashflows!");
         QL.ensure(redemptions_.size() == 1, "multiple redemptions created");
     }
 
-
     /* C'tor with default:
      * endOfMonth = false
-    */
-    public FixedRateBond(/*@Natural*/final int settlementDays,
-            final Calendar  calendar,
-            /*@Real*/ final double faceAmount,
-            final Date  startDate,
-            final Date  maturityDate,
-            final Period  tenor,
-            final double[] coupons,
-            final DayCounter  accrualDayCounter,
-            final BusinessDayConvention accrualConvention,
+     */
+    public FixedRateBond(/*@Natural*/final int settlementDays, final Calendar calendar,
+            /*@Real*/ final double faceAmount, final Date startDate, final Date maturityDate, final Period tenor,
+            final double[] coupons, final DayCounter accrualDayCounter, final BusinessDayConvention accrualConvention,
             final BusinessDayConvention paymentConvention,
-            /*@Real*/ final double redemption,
-            final Date  issueDate ,
-            final Date  stubDate ,
-            final DateGeneration.Rule  rule) {
+            /*@Real*/ final double redemption, final Date issueDate, final Date stubDate,
+            final DateGeneration.Rule rule) {
 
-    	this(settlementDays,
-             calendar,
-             faceAmount,
-             startDate,
-             maturityDate,
-             tenor,
-             coupons,
-             accrualDayCounter,
-             accrualConvention,
-             paymentConvention,
-             redemption,
-             issueDate ,
-             stubDate ,
-             rule, 
-             false);
+        this(settlementDays, calendar, faceAmount, startDate, maturityDate, tenor, coupons, accrualDayCounter,
+                accrualConvention, paymentConvention, redemption, issueDate, stubDate, rule, false);
     }
     /* C'tor with default:
      * DateGeneration::Rule rule = DateGeneration::Backward,
      * endOfMonth = false
      */
 
-    public FixedRateBond(/*@Natural*/final int settlementDays,
-            final Calendar  calendar,
-            /*@Real*/ final double faceAmount,
-            final Date  startDate,
-            final Date  maturityDate,
-            final Period  tenor,
-            final double[] coupons,
-            final DayCounter  accrualDayCounter,
-            final BusinessDayConvention accrualConvention,
+    public FixedRateBond(/*@Natural*/final int settlementDays, final Calendar calendar,
+            /*@Real*/ final double faceAmount, final Date startDate, final Date maturityDate, final Period tenor,
+            final double[] coupons, final DayCounter accrualDayCounter, final BusinessDayConvention accrualConvention,
             final BusinessDayConvention paymentConvention,
-            /*@Real*/ final double redemption,
-            final Date  issueDate ,
-            final Date  stubDate) {
+            /*@Real*/ final double redemption, final Date issueDate, final Date stubDate) {
 
-    	this(settlementDays,
-             calendar,
-             faceAmount,
-             startDate,
-             maturityDate,
-             tenor,
-             coupons,
-             accrualDayCounter,
-             accrualConvention,
-             paymentConvention,
-             redemption,
-             issueDate ,
-             stubDate ,
-             DateGeneration.Rule.Backward, 
-             false);
+        this(settlementDays, calendar, faceAmount, startDate, maturityDate, tenor, coupons, accrualDayCounter,
+                accrualConvention, paymentConvention, redemption, issueDate, stubDate, DateGeneration.Rule.Backward,
+                false);
     }
 
     /* C'tor with default:
@@ -370,34 +253,15 @@ public class FixedRateBond extends Bond {
      * 	endOfMonth = false
      */
 
-    public FixedRateBond(/*@Natural*/final int settlementDays,
-            final Calendar  calendar,
-            /*@Real*/ final double faceAmount,
-            final Date  startDate,
-            final Date  maturityDate,
-            final Period  tenor,
-            final double[] coupons,
-            final DayCounter  accrualDayCounter,
-            final BusinessDayConvention accrualConvention,
+    public FixedRateBond(/*@Natural*/final int settlementDays, final Calendar calendar,
+            /*@Real*/ final double faceAmount, final Date startDate, final Date maturityDate, final Period tenor,
+            final double[] coupons, final DayCounter accrualDayCounter, final BusinessDayConvention accrualConvention,
             final BusinessDayConvention paymentConvention,
-            /*@Real*/ final double redemption,
-            final Date  issueDate) {
+            /*@Real*/ final double redemption, final Date issueDate) {
 
-    	this(settlementDays,
-             calendar,
-             faceAmount,
-             startDate,
-             maturityDate,
-             tenor,
-             coupons,
-             accrualDayCounter,
-             accrualConvention,
-             paymentConvention,
-             redemption,
-             issueDate ,
-             new Date(),
-             DateGeneration.Rule.Backward, 
-             false);
+        this(settlementDays, calendar, faceAmount, startDate, maturityDate, tenor, coupons, accrualDayCounter,
+                accrualConvention, paymentConvention, redemption, issueDate, new Date(), DateGeneration.Rule.Backward,
+                false);
     }
     /* C'tor with default:
      * 	issueDate = new Date()
@@ -406,69 +270,30 @@ public class FixedRateBond extends Bond {
      * 	endOfMonth = false
      */
 
-    public FixedRateBond(/*@Natural*/final int settlementDays,
-            final Calendar  calendar,
-            /*@Real*/ final double faceAmount,
-            final Date  startDate,
-            final Date  maturityDate,
-            final Period  tenor,
-            final double[] coupons,
-            final DayCounter  accrualDayCounter,
-            final BusinessDayConvention accrualConvention,
+    public FixedRateBond(/*@Natural*/final int settlementDays, final Calendar calendar,
+            /*@Real*/ final double faceAmount, final Date startDate, final Date maturityDate, final Period tenor,
+            final double[] coupons, final DayCounter accrualDayCounter, final BusinessDayConvention accrualConvention,
             final BusinessDayConvention paymentConvention,
             /*@Real*/ final double redemption) {
 
-    	this(settlementDays,
-             calendar,
-             faceAmount,
-             startDate,
-             maturityDate,
-             tenor,
-             coupons,
-             accrualDayCounter,
-             accrualConvention,
-             paymentConvention,
-             redemption,
-             new Date(),
-             new Date(),
-             DateGeneration.Rule.Backward, 
-             false);
+        this(settlementDays, calendar, faceAmount, startDate, maturityDate, tenor, coupons, accrualDayCounter,
+                accrualConvention, paymentConvention, redemption, new Date(), new Date(), DateGeneration.Rule.Backward,
+                false);
     }
-    
-    /** C'tor with default:
-     * 		redemption = 100.0,
-     * 		issueDate = new Date()
-     * 		stubDate = new Date()
-     * 		rule = DateGeneration.Rule.Backward,
-     * 		endOfMonth = false
+
+    /**
+     * C'tor with default: redemption = 100.0, issueDate = new Date() stubDate = new Date() rule =
+     * DateGeneration.Rule.Backward, endOfMonth = false
      */
 
-    public FixedRateBond(/*@Natural*/final int settlementDays,
-            final Calendar  calendar,
-            /*@Real*/ final double faceAmount,
-            final Date  startDate,
-            final Date  maturityDate,
-            final Period  tenor,
-            final double[] coupons,
-            final DayCounter  accrualDayCounter,
-            final BusinessDayConvention accrualConvention,
+    public FixedRateBond(/*@Natural*/final int settlementDays, final Calendar calendar,
+            /*@Real*/ final double faceAmount, final Date startDate, final Date maturityDate, final Period tenor,
+            final double[] coupons, final DayCounter accrualDayCounter, final BusinessDayConvention accrualConvention,
             final BusinessDayConvention paymentConvention) {
 
-    	this(settlementDays,
-             calendar,
-             faceAmount,
-             startDate,
-             maturityDate,
-             tenor,
-             coupons,
-             accrualDayCounter,
-             accrualConvention,
-             paymentConvention,
-             100.0,
-             new Date(),
-             new Date(),
-             DateGeneration.Rule.Backward, 
-             false);
+        this(settlementDays, calendar, faceAmount, startDate, maturityDate, tenor, coupons, accrualDayCounter,
+                accrualConvention, paymentConvention, 100.0, new Date(), new Date(), DateGeneration.Rule.Backward,
+                false);
     }
 
     /* C'tor with default:
@@ -480,31 +305,13 @@ public class FixedRateBond extends Bond {
      * 	endOfMonth = false
      */
 
-    public FixedRateBond(/*@Natural*/final int settlementDays,
-            final Calendar  calendar,
-            /*@Real*/ final double faceAmount,
-            final Date  startDate,
-            final Date  maturityDate,
-            final Period  tenor,
-            final double[] coupons,
-            final DayCounter  accrualDayCounter,
-            final BusinessDayConvention accrualConvention) {
+    public FixedRateBond(/*@Natural*/final int settlementDays, final Calendar calendar,
+            /*@Real*/ final double faceAmount, final Date startDate, final Date maturityDate, final Period tenor,
+            final double[] coupons, final DayCounter accrualDayCounter, final BusinessDayConvention accrualConvention) {
 
-    	this(settlementDays,
-             calendar,
-             faceAmount,
-             startDate,
-             maturityDate,
-             tenor,
-             coupons,
-             accrualDayCounter,
-             accrualConvention,
-             BusinessDayConvention.Following,
-             100.0,
-             new Date(),
-             new Date(),
-             DateGeneration.Rule.Backward, 
-             false);
+        this(settlementDays, calendar, faceAmount, startDate, maturityDate, tenor, coupons, accrualDayCounter,
+                accrualConvention, BusinessDayConvention.Following, 100.0, new Date(), new Date(),
+                DateGeneration.Rule.Backward, false);
     }
 
     /* C'tor with default:
@@ -517,44 +324,26 @@ public class FixedRateBond extends Bond {
      * 	endOfMonth = false
      */
 
-    public FixedRateBond(/*@Natural*/final int settlementDays,
-            final Calendar  calendar,
-            /*@Real*/ final double faceAmount,
-            final Date  startDate,
-            final Date  maturityDate,
-            final Period  tenor,
-            final double[] coupons,
-            final DayCounter  accrualDayCounter) {
+    public FixedRateBond(/*@Natural*/final int settlementDays, final Calendar calendar,
+            /*@Real*/ final double faceAmount, final Date startDate, final Date maturityDate, final Period tenor,
+            final double[] coupons, final DayCounter accrualDayCounter) {
 
-    	this(settlementDays,
-             calendar,
-             faceAmount,
-             startDate,
-             maturityDate,
-             tenor,
-             coupons,
-             accrualDayCounter,
-             BusinessDayConvention.Following,
-             BusinessDayConvention.Following,
-             100.0,
-             new Date(),
-             new Date(),
-             DateGeneration.Rule.Backward, 
-             false);
+        this(settlementDays, calendar, faceAmount, startDate, maturityDate, tenor, coupons, accrualDayCounter,
+                BusinessDayConvention.Following, BusinessDayConvention.Following, 100.0, new Date(), new Date(),
+                DateGeneration.Rule.Backward, false);
     }
 
-    public Frequency frequency(){
+    public Frequency frequency() {
         return frequency_;
     }
 
-    public DayCounter dayCounter(){
+    public DayCounter dayCounter() {
         return dayCounter_;
     }
 
     private String reportFalseDateGenerationRule(final Date stubDate, final DateGeneration.Rule rule) {
-        final StringBuilder sb = new StringBuilder();
-        sb.append("stub date (").append(stubDate).append(") not allowed with DateGeneration.Rule (").append(rule).append(")");
-        return sb.toString();
+        final String sb = "stub date (" + stubDate + ") not allowed with DateGeneration.Rule (" + rule + ")";
+        return sb;
     }
 
 }

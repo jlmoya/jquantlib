@@ -30,28 +30,24 @@ import org.jquantlib.math.Constants;
 import org.jquantlib.processes.StochasticProcess;
 
 /**
- * Longstaff-Schwartz Monte Carlo engine base for early-exercise basket
- * options.
+ * Longstaff-Schwartz Monte Carlo engine base for early-exercise basket options.
  *
  * <p>Phase 4i scaffold port of C++ QuantLib v1.42.1
- * {@code ql/experimental/mcbasket/mclongstaffschwartzpathengine.hpp}.
- * Pinned commit {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
+ * {@code ql/experimental/mcbasket/mclongstaffschwartzpathengine.hpp}. Pinned commit
+ * {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
  *
  * <p>The C++ class is templated on
- * {@code <GenericEngine, MC, RNG, S = Statistics>} and inherits from
- * {@code McSimulation<MC,RNG,S>}. The Java port collapses the {@code MC}
- * template parameter (only {@code MultiVariate} is used in v1.42.1) and
- * keeps the engine concrete on {@link PathMultiAssetOption.EngineImpl}.
+ * {@code <GenericEngine, MC, RNG, S = Statistics>} and inherits from {@code McSimulation<MC,RNG,S>}. The Java port
+ * collapses the {@code MC} template parameter (only {@code MultiVariate} is used in v1.42.1) and keeps the engine
+ * concrete on {@link PathMultiAssetOption.EngineImpl}.
  *
  * <h3>Phase 4i carry-forward (Phase 4i.5)</h3>
  *
  * <p>Subclasses must implement {@link #lsmPathPricer()}; the {@link #calculate()}
- * loop is a stub awaiting the multivariate {@code McSimulation},
- * {@code MultiPathGenerator}, and {@code MonteCarloModel<MultiVariate>}
- * dependencies.
+ * loop is a stub awaiting the multivariate {@code McSimulation}, {@code MultiPathGenerator}, and
+ * {@code MonteCarloModel<MultiVariate>} dependencies.
  */
-public abstract class MCLongstaffSchwartzPathEngine
-        extends PathMultiAssetOption.EngineImpl {
+public abstract class MCLongstaffSchwartzPathEngine extends PathMultiAssetOption.EngineImpl {
 
     private static final int DEFAULT_CALIBRATION_SAMPLES = 2048;
 
@@ -69,13 +65,10 @@ public abstract class MCLongstaffSchwartzPathEngine
 
     protected LongstaffSchwartzMultiPathPricer pathPricer_;
 
-    protected MCLongstaffSchwartzPathEngine(final StochasticProcess process,
-            final int timeSteps, final int timeStepsPerYear,
-            final boolean brownianBridge,
-            final boolean antitheticVariate, final boolean controlVariate,
-            final int requiredSamples, final double requiredTolerance,
-            final int maxSamples, final long seed,
-            final int nCalibrationSamples) {
+    protected MCLongstaffSchwartzPathEngine(final StochasticProcess process, final int timeSteps,
+            final int timeStepsPerYear, final boolean brownianBridge, final boolean antitheticVariate,
+            final boolean controlVariate, final int requiredSamples, final double requiredTolerance,
+            final int maxSamples, final long seed, final int nCalibrationSamples) {
         super();
         this.process_ = process;
         this.timeSteps_ = timeSteps;
@@ -88,26 +81,23 @@ public abstract class MCLongstaffSchwartzPathEngine
         this.maxSamples_ = maxSamples;
         this.seed_ = seed;
         this.nCalibrationSamples_ = (nCalibrationSamples == Constants.NULL_INTEGER)
-                ? DEFAULT_CALIBRATION_SAMPLES : nCalibrationSamples;
+                ? DEFAULT_CALIBRATION_SAMPLES
+                : nCalibrationSamples;
 
         QL.require(timeSteps != Constants.NULL_INTEGER || timeStepsPerYear != Constants.NULL_INTEGER,
                 "no time steps provided");
         QL.require(timeSteps == Constants.NULL_INTEGER || timeStepsPerYear == Constants.NULL_INTEGER,
                 "both time steps and time steps per year were provided");
-        QL.require(timeSteps != 0,
-                "timeSteps must be positive, " + timeSteps + " not allowed");
-        QL.require(timeStepsPerYear != 0,
-                "timeStepsPerYear must be positive, "
-                        + timeStepsPerYear + " not allowed");
+        QL.require(timeSteps != 0, "timeSteps must be positive, " + timeSteps + " not allowed");
+        QL.require(timeStepsPerYear != 0, "timeStepsPerYear must be positive, " + timeStepsPerYear + " not allowed");
 
-        if (process_ != null) {
+        if ( process_ != null ) {
             process_.addObserver(this);
         }
     }
 
     /**
-     * Subclass-supplied pricer factory. Mirrors C++ pure virtual
-     * {@code lsmPathPricer()}.
+     * Subclass-supplied pricer factory. Mirrors C++ pure virtual {@code lsmPathPricer()}.
      */
     protected abstract LongstaffSchwartzMultiPathPricer lsmPathPricer();
 
@@ -125,9 +115,7 @@ public abstract class MCLongstaffSchwartzPathEngine
         //   results_.value = model.sampleAccumulator().mean();
         //
         // See mclongstaffschwartzpathengine.hpp lines 132-154.
-        throw new UnsupportedOperationException(
-                "MCLongstaffSchwartzPathEngine.calculate pending Phase 4i.5 "
-              + "(McSimulation<MultiVariate>, MonteCarloModel<MultiVariate>, "
-              + "MultiPathGenerator)");
+        throw new UnsupportedOperationException("MCLongstaffSchwartzPathEngine.calculate pending Phase 4i.5 "
+                + "(McSimulation<MultiVariate>, MonteCarloModel<MultiVariate>, " + "MultiPathGenerator)");
     }
 }

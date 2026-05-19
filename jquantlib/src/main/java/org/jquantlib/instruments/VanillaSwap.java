@@ -40,17 +40,8 @@ When applicable, the original copyright notice follows this notice.
  */
 package org.jquantlib.instruments;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import org.jquantlib.QL;
-import org.jquantlib.cashflow.CashFlow;
-import org.jquantlib.cashflow.FixedRateCoupon;
-import org.jquantlib.cashflow.FixedRateLeg;
-import org.jquantlib.cashflow.IborCoupon;
-import org.jquantlib.cashflow.IborLeg;
-import org.jquantlib.cashflow.Leg;
+import org.jquantlib.cashflow.*;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.indexes.IborIndex;
 import org.jquantlib.lang.exceptions.LibraryException;
@@ -60,31 +51,31 @@ import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Schedule;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Plain-vanilla swap
  *
+ * @author Richard Gomes
  * @note if you define TodaysPayments like this
  * <pre>
  * new Settings().setTodaysPayments(true);
  * </pre>
- * payments occurring at the settlement date of
- * the swap are included in the NPV, and therefore
- * affect the fair-rate and fair-spread
- * calculation. This might not be what you want.
- *
+ * payments occurring at the settlement date of the swap are included in the NPV, and therefore affect the fair-rate and
+ * fair-spread calculation. This might not be what you want.
  * @category instruments
- *
- * @author Richard Gomes
  */
 // TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class VanillaSwap extends Swap {
 
-    static final /*@Spread*/ double  basisPoint = 1.0e-4;
+    static final /*@Spread*/ double basisPoint = 1.0e-4;
 
     private final Type type;
     private final /*@Real*/ double nominal;
     private final Schedule fixedSchedule;
-    private final /*@Rate*/ double  fixedRate;
+    private final /*@Rate*/ double fixedRate;
     private final DayCounter fixedDayCount;
     private final Schedule floatingSchedule;
     private final IborIndex iborIndex;
@@ -97,34 +88,19 @@ public class VanillaSwap extends Swap {
     private /*@Rate*/ double fairRate;
     private /*@Spread*/ double fairSpread;
 
-
-    public VanillaSwap(
-            final Type type,
-            final /*@Real*/ double nominal,
-            final Schedule fixedSchedule,
-            final /*@Rate*/ double fixedRate,
-            final DayCounter fixedDayCount,
-            final Schedule floatSchedule,
-            final IborIndex iborIndex,
-            final /*@Spread*/ double spread,
-            final DayCounter floatingDayCount) {
-        this(type, nominal, fixedSchedule, fixedRate, fixedDayCount, floatSchedule,
-                iborIndex, spread, floatingDayCount, BusinessDayConvention.Following);
+    public VanillaSwap(final Type type, final /*@Real*/ double nominal, final Schedule fixedSchedule,
+            final /*@Rate*/ double fixedRate, final DayCounter fixedDayCount, final Schedule floatSchedule,
+            final IborIndex iborIndex, final /*@Spread*/ double spread, final DayCounter floatingDayCount) {
+        this(type, nominal, fixedSchedule, fixedRate, fixedDayCount, floatSchedule, iborIndex, spread, floatingDayCount,
+                BusinessDayConvention.Following);
     }
 
     //FIXME: remove parameter "fixingDays"
-    public VanillaSwap(
-            final Type type,
-            final /*@Real*/ double nominal,
-            final Schedule fixedSchedule,
-            final /*@Rate*/ double fixedRate,
-            final DayCounter fixedDayCount,
-            final Schedule floatSchedule,
-            final IborIndex iborIndex,
-            final /*@Spread*/ double spread,
-            final DayCounter floatingDayCount,
+    public VanillaSwap(final Type type, final /*@Real*/ double nominal, final Schedule fixedSchedule,
+            final /*@Rate*/ double fixedRate, final DayCounter fixedDayCount, final Schedule floatSchedule,
+            final IborIndex iborIndex, final /*@Spread*/ double spread, final DayCounter floatingDayCount,
             final BusinessDayConvention paymentConvention
-    /*, final Array fixingDays*/) {
+            /*, final Array fixingDays*/) {
         super(2);
         this.type = type;
         this.nominal = nominal;
@@ -138,34 +114,29 @@ public class VanillaSwap extends Swap {
         this.paymentConvention = paymentConvention;
         //FIXME this.fixingDays = fixingDays;
 
-        final Leg fixedLeg = new FixedRateLeg(fixedSchedule, fixedDayCount)
-        .withNotionals(nominal)
-        .withCouponRates(fixedRate)
-        .withPaymentAdjustment(paymentConvention)
-        .Leg();
+        final Leg fixedLeg = new FixedRateLeg(fixedSchedule, fixedDayCount).withNotionals(nominal)
+                .withCouponRates(fixedRate).withPaymentAdjustment(paymentConvention).Leg();
 
         // JM where are gearings set they cannot be null for the floating leg.
-        final Leg floatingLeg = new IborLeg(floatingSchedule, iborIndex)
-        .withNotionals(nominal)
-        .withPaymentDayCounter(floatingDayCount)
-        .withPaymentAdjustment(paymentConvention)
+        final Leg floatingLeg = new IborLeg(floatingSchedule, iborIndex).withNotionals(nominal)
+                .withPaymentDayCounter(floatingDayCount).withPaymentAdjustment(paymentConvention)
 
-        //FIXME:: .withFixingDays (fixingDays) // FIXME: slight deviation from quantlib, need to expose fixing days up the stack
+                //FIXME:: .withFixingDays (fixingDays) // FIXME: slight deviation from quantlib, need to expose fixing days up the stack
 
-        .withSpreads(spread)
+                .withSpreads(spread)
 
-        // FIXME: JM quantlib does not assign this, it is currently required for construction
-        // .withGearings(1.0)
+                // FIXME: JM quantlib does not assign this, it is currently required for construction
+                // .withGearings(1.0)
 
-        .Leg();
+                .Leg();
 
-        for (final CashFlow item : floatingLeg) {
+        for ( final CashFlow item : floatingLeg ) {
             item.addObserver(this);
         }
 
         super.legs.add(fixedLeg);
         super.legs.add(floatingLeg);
-        if (type==Type.Payer) {
+        if ( type == Type.Payer ) {
             super.payer[0] = -1.0;
             super.payer[1] = +1.0;
         } else {
@@ -188,32 +159,28 @@ public class VanillaSwap extends Swap {
     }
 
     /**
-     * @return the fixed-leg day counter. Mirrors C++
-     * {@code FixedVsFloatingSwap::fixedDayCount()}.
+     * @return the fixed-leg day counter. Mirrors C++ {@code FixedVsFloatingSwap::fixedDayCount()}.
      */
     public DayCounter fixedDayCount() /* @ReadOnly */ {
         return fixedDayCount;
     }
 
     /**
-     * @return the floating-leg day counter. Mirrors C++
-     * {@code FixedVsFloatingSwap::floatingDayCount()}.
+     * @return the floating-leg day counter. Mirrors C++ {@code FixedVsFloatingSwap::floatingDayCount()}.
      */
     public DayCounter floatingDayCount() /* @ReadOnly */ {
         return floatingDayCount;
     }
 
     /**
-     * @return the floating-leg index. Mirrors C++
-     * {@code FixedVsFloatingSwap::iborIndex()}.
+     * @return the floating-leg index. Mirrors C++ {@code FixedVsFloatingSwap::iborIndex()}.
      */
     public IborIndex iborIndex() /* @ReadOnly */ {
         return iborIndex;
     }
 
     /**
-     * @return the payment business-day convention. Mirrors C++
-     * {@code FixedVsFloatingSwap::paymentConvention()}.
+     * @return the payment business-day convention. Mirrors C++ {@code FixedVsFloatingSwap::paymentConvention()}.
      */
     public BusinessDayConvention paymentConvention() /* @ReadOnly */ {
         return paymentConvention;
@@ -223,18 +190,17 @@ public class VanillaSwap extends Swap {
         return type;
     }
 
-    public /*@Rate*/ double  fairRate() /* @ReadOnly */ {
+    public /*@Rate*/ double fairRate() /* @ReadOnly */ {
         calculate();
-        QL.require(!Double.isNaN(fairRate) , "result not available"); // TODO: message
+        QL.require(!Double.isNaN(fairRate), "result not available"); // TODO: message
         return fairRate;
     }
 
     public /*@Spread*/ double fairSpread() /* @ReadOnly */ {
         calculate();
-        QL.require(!Double.isNaN(fairSpread) , "result not available"); // TODO: message
+        QL.require(!Double.isNaN(fairSpread), "result not available"); // TODO: message
         return fairSpread;
     }
-
 
     public final Leg fixedLeg() /* @ReadOnly */ {
         return legs.get(0);
@@ -272,28 +238,27 @@ public class VanillaSwap extends Swap {
         return spread;
     }
 
-
     public /*@Real*/ double fixedLegBPS() /* @ReadOnly */ {
         calculate();
-        QL.require(!Double.isNaN(legBPS[0]) , "result not available"); // TODO: message
+        QL.require(!Double.isNaN(legBPS[0]), "result not available"); // TODO: message
         return legBPS[0];
     }
 
     public /*@Real*/ double floatingLegBPS() /* @ReadOnly */ {
         calculate();
-        QL.require(!Double.isNaN(legBPS[1]) , "result not available");
+        QL.require(!Double.isNaN(legBPS[1]), "result not available");
         return legBPS[1];
     }
 
     public /*@Real*/ double fixedLegNPV() /* @ReadOnly */ {
         calculate();
-        QL.require(!Double.isNaN(legNPV[0]) , "result not available"); // TODO: message
+        QL.require(!Double.isNaN(legNPV[0]), "result not available"); // TODO: message
         return legNPV[0];
     }
 
     public /*@Real*/ double floatingLegNPV() /* @ReadOnly */ {
         calculate();
-        QL.require(!Double.isNaN(legNPV[1]) , "result not available"); // TODO: message
+        QL.require(!Double.isNaN(legNPV[1]), "result not available"); // TODO: message
         return legNPV[1];
     }
 
@@ -302,7 +267,7 @@ public class VanillaSwap extends Swap {
         super.setupExpired();
         legBPS[0] = 0.0;
         legBPS[1] = 0.0;
-        fairRate   = Constants.NULL_REAL;
+        fairRate = Constants.NULL_REAL;
         fairSpread = Constants.NULL_REAL;
     }
 
@@ -320,7 +285,7 @@ public class VanillaSwap extends Swap {
         // false for the common subclass case (e.g. SwaptionArgumentsImpl
         // extending VanillaSwap.ArgumentsImpl), so swaption engines never
         // saw populated swap args.
-        if (arguments instanceof VanillaSwap.Arguments) {
+        if ( arguments instanceof VanillaSwap.Arguments ) {
             final VanillaSwap.ArgumentsImpl a = (VanillaSwap.ArgumentsImpl) arguments;
 
             a.type = type;
@@ -335,11 +300,11 @@ public class VanillaSwap extends Swap {
             // new ArrayList<>(Collections.nCopies(size, null)) which yields
             // size() == n with null entries ready to be overwritten via .set().
             final int nFixed = fixedCoupons.size();
-            a.fixedResetDates = new ArrayList<Date>(Collections.nCopies(nFixed, (Date) null));
-            a.fixedPayDates = new ArrayList<Date>(Collections.nCopies(nFixed, (Date) null));
-            a.fixedCoupons = new ArrayList</*@Real*/ Double>(Collections.nCopies(nFixed, (Double) null));
+            a.fixedResetDates = new ArrayList< Date >(Collections.nCopies(nFixed, null));
+            a.fixedPayDates = new ArrayList< Date >(Collections.nCopies(nFixed, null));
+            a.fixedCoupons = new ArrayList</*@Real*/ Double >(Collections.nCopies(nFixed, null));
 
-            for (int i=0; i<nFixed; i++) {
+            for ( int i = 0; i < nFixed; i++ ) {
                 final FixedRateCoupon coupon = (FixedRateCoupon) fixedCoupons.get(i);
                 a.fixedPayDates.set(i, coupon.date());
                 a.fixedResetDates.set(i, coupon.accrualStartDate());
@@ -349,14 +314,14 @@ public class VanillaSwap extends Swap {
             final Leg floatingCoupons = floatingLeg();
 
             final int nFloat = floatingCoupons.size();
-            a.floatingResetDates = new ArrayList<Date>(Collections.nCopies(nFloat, (Date) null));
-            a.floatingPayDates = new ArrayList<Date>(Collections.nCopies(nFloat, (Date) null));
-            a.floatingFixingDates = new ArrayList<Date>(Collections.nCopies(nFloat, (Date) null));
+            a.floatingResetDates = new ArrayList< Date >(Collections.nCopies(nFloat, null));
+            a.floatingPayDates = new ArrayList< Date >(Collections.nCopies(nFloat, null));
+            a.floatingFixingDates = new ArrayList< Date >(Collections.nCopies(nFloat, null));
 
-            a.floatingAccrualTimes = new ArrayList</*@Time*/ Double>(Collections.nCopies(nFloat, (Double) null));
-            a.floatingSpreads = new ArrayList</*@Spread*/ Double>(Collections.nCopies(nFloat, (Double) null));
-            a.floatingCoupons = new ArrayList</*@Real*/ Double>(Collections.nCopies(nFloat, (Double) null));
-            for (int i=0; i<nFloat; ++i) {
+            a.floatingAccrualTimes = new ArrayList</*@Time*/ Double >(Collections.nCopies(nFloat, null));
+            a.floatingSpreads = new ArrayList</*@Spread*/ Double >(Collections.nCopies(nFloat, null));
+            a.floatingCoupons = new ArrayList</*@Real*/ Double >(Collections.nCopies(nFloat, null));
+            for ( int i = 0; i < nFloat; ++i ) {
                 final IborCoupon coupon = (IborCoupon) floatingCoupons.get(i);
 
                 a.floatingResetDates.set(i, coupon.accrualStartDate());
@@ -367,13 +332,12 @@ public class VanillaSwap extends Swap {
                 a.floatingSpreads.set(i, coupon.spread());
                 try {
                     a.floatingCoupons.set(i, coupon.amount());
-                } catch (final Exception e) {
+                } catch ( final Exception e ) {
                     a.floatingCoupons.set(i, Constants.NULL_REAL);
                 }
             }
         }
     }
-
 
     @Override
     public void fetchResults(final PricingEngine.Results results) /* @ReadOnly */ {
@@ -402,52 +366,49 @@ public class VanillaSwap extends Swap {
         // FixedVsFloatingSwap::results which DiscountingSwapEngine derives
         // from). Java's narrower hierarchy here means the fallback is the
         // common case and must work.
-        if (results instanceof VanillaSwap.Results) {
-            final VanillaSwap.ResultsImpl r = (VanillaSwap.ResultsImpl)results;
+        if ( results instanceof VanillaSwap.Results ) {
+            final VanillaSwap.ResultsImpl r = (VanillaSwap.ResultsImpl) results;
             fairRate = r.fairRate;
             fairSpread = r.fairSpread;
         } else {
-            fairRate   = Constants.NULL_REAL;
+            fairRate = Constants.NULL_REAL;
             fairSpread = Constants.NULL_REAL;
         }
 
-        if (fairRate == Constants.NULL_REAL || Double.isNaN(fairRate)) {
+        if ( fairRate == Constants.NULL_REAL || Double.isNaN(fairRate) ) {
             // calculate it from other results
-            if (legBPS[0] != Constants.NULL_REAL && !Double.isNaN(legBPS[0])) {
-                fairRate = fixedRate- NPV/(legBPS[0]/basisPoint);
+            if ( legBPS[0] != Constants.NULL_REAL && !Double.isNaN(legBPS[0]) ) {
+                fairRate = fixedRate - NPV / (legBPS[0] / basisPoint);
             }
         }
-        if (fairSpread == Constants.NULL_REAL || Double.isNaN(fairSpread)) {
+        if ( fairSpread == Constants.NULL_REAL || Double.isNaN(fairSpread) ) {
             // ditto
-            if (legBPS[1] != Constants.NULL_REAL && !Double.isNaN(legBPS[1])) {
-                fairSpread = spread - NPV/(legBPS[1]/basisPoint);
+            if ( legBPS[1] != Constants.NULL_REAL && !Double.isNaN(legBPS[1]) ) {
+                fairSpread = spread - NPV / (legBPS[1] / basisPoint);
             }
         }
     }
-
 
     @Override
     public String toString() {
         return type.toString();
     }
 
-
     //
     // inner public enums
     //
 
     public enum Type {
-        Receiver (-1),
-        Payer (1);
+        Receiver(-1), Payer(1);
 
         private final int enumValue;
 
-        private Type(final int frequency) {
+        Type(final int frequency) {
             this.enumValue = frequency;
         }
 
         static public Type valueOf(final int value) {
-            switch (value) {
+            switch ( value ) {
             case -1:
                 return Type.Receiver;
             case 1:
@@ -462,25 +423,19 @@ public class VanillaSwap extends Swap {
         }
     }
 
-
-
-
-
-
     //
     // inner interfaces
     //
 
-    public interface Arguments extends Swap.Arguments { /* marking interface */ }
+    public interface Arguments extends Swap.Arguments { /* marking interface */
+    }
 
-
-    public interface Results extends Swap.Results { /* marking interface */ }
-
+    public interface Results extends Swap.Results { /* marking interface */
+    }
 
     //
     // ???? inner classes
     //
-
 
     /**
      * Arguments for simple swap calculation
@@ -493,35 +448,38 @@ public class VanillaSwap extends Swap {
         public Type type;
         public /*@Real*/ double nominal;
 
-        public List<Date> fixedResetDates;
-        public List<Date> fixedPayDates;
-        public List</*@Time*/ Double> floatingAccrualTimes;
-        public List<Date> floatingResetDates;
-        public List<Date> floatingFixingDates;
-        public List<Date> floatingPayDates;
+        public List< Date > fixedResetDates;
+        public List< Date > fixedPayDates;
+        public List</*@Time*/ Double > floatingAccrualTimes;
+        public List< Date > floatingResetDates;
+        public List< Date > floatingFixingDates;
+        public List< Date > floatingPayDates;
 
-        public List</*@Real*/ Double> fixedCoupons;
-        public List</*@Spread*/ Double> floatingSpreads;
-        public List</*@Real*/ Double> floatingCoupons;
-
+        public List</*@Real*/ Double > fixedCoupons;
+        public List</*@Spread*/ Double > floatingSpreads;
+        public List</*@Real*/ Double > floatingCoupons;
 
         @Override
         public void validate() /* @ReadOnly */ {
             super.validate();
-            QL.require(!Double.isNaN(nominal) , "nominal null or not set"); // TODO: message
-            QL.require(fixedResetDates.size() == fixedPayDates.size() , "number of fixed start dates different from number of fixed payment dates");
-            QL.require(fixedPayDates.size() == fixedCoupons.size() , "number of fixed payment dates different from number of fixed coupon amounts");
-            QL.require(floatingResetDates.size() == floatingPayDates.size() , "number of floating start dates different from number of floating payment dates");
-            QL.require(floatingFixingDates.size() == floatingPayDates.size() , "number of floating fixing dates different from number of floating payment dates");
-            QL.require(floatingAccrualTimes.size() == floatingPayDates.size() , "number of floating accrual Times different from number of floating payment dates");
-            QL.require(floatingSpreads.size() == floatingPayDates.size() , "number of floating spreads different from number of floating payment dates");
-            QL.require(floatingPayDates.size() == floatingCoupons.size() , "number of floating payment dates different from number of floating coupon amounts");
+            QL.require(!Double.isNaN(nominal), "nominal null or not set"); // TODO: message
+            QL.require(fixedResetDates.size() == fixedPayDates.size(),
+                    "number of fixed start dates different from number of fixed payment dates");
+            QL.require(fixedPayDates.size() == fixedCoupons.size(),
+                    "number of fixed payment dates different from number of fixed coupon amounts");
+            QL.require(floatingResetDates.size() == floatingPayDates.size(),
+                    "number of floating start dates different from number of floating payment dates");
+            QL.require(floatingFixingDates.size() == floatingPayDates.size(),
+                    "number of floating fixing dates different from number of floating payment dates");
+            QL.require(floatingAccrualTimes.size() == floatingPayDates.size(),
+                    "number of floating accrual Times different from number of floating payment dates");
+            QL.require(floatingSpreads.size() == floatingPayDates.size(),
+                    "number of floating spreads different from number of floating payment dates");
+            QL.require(floatingPayDates.size() == floatingCoupons.size(),
+                    "number of floating payment dates different from number of floating coupon amounts");
         }
 
     }
-
-
-
 
     /**
      * Results from simple swap calculation
@@ -531,20 +489,16 @@ public class VanillaSwap extends Swap {
     // TODO: code review :: object model needs to be validated and eventually refactored
     public class ResultsImpl extends Swap.ResultsImpl implements VanillaSwap.Results {
 
-        public /*@Rate*/ double  fairRate;
-        public /*@Spread*/ double  fairSpread;
+        public /*@Rate*/ double fairRate;
+        public /*@Spread*/ double fairSpread;
 
         @Override
         public void reset() {
             super.reset();
-            fairRate   = Constants.NULL_REAL;
+            fairRate = Constants.NULL_REAL;
             fairSpread = Constants.NULL_REAL;
         }
 
-
     }
-
-
-
 
 }

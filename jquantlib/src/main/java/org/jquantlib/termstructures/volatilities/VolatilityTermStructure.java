@@ -32,51 +32,38 @@ public abstract class VolatilityTermStructure extends AbstractTermStructure {
     /**
      * 'default' constructor
      * <p>
-     * @warning term structures initialized by means of this
-     *          finalructor must manage their own reference date
-     *          by overriding the referenceDate() method.
+     *
+     * @warning term structures initialized by means of this finalructor must manage their own reference date by
+     * overriding the referenceDate() method.
      */
-    public VolatilityTermStructure(
-            final Calendar cal,
-            final BusinessDayConvention bdc) {
+    public VolatilityTermStructure(final Calendar cal, final BusinessDayConvention bdc) {
         this(cal, bdc, new DayCounter());
     }
-
 
     /**
      * 'default' constructor
      * <p>
-     * @warning term structures initialized by means of this
-     *          finalructor must manage their own reference date
-     *          by overriding the referenceDate() method.
+     *
+     * @warning term structures initialized by means of this finalructor must manage their own reference date by
+     * overriding the referenceDate() method.
      */
-    public VolatilityTermStructure(
-            final Calendar cal,
-            final BusinessDayConvention bdc,
-            final DayCounter dc) {
+    public VolatilityTermStructure(final Calendar cal, final BusinessDayConvention bdc, final DayCounter dc) {
         super(dc);
         this.bdc = bdc;
         this.calendar = cal;
     }
 
-
     /**
      * initialize with a fixed reference date
      */
-    public VolatilityTermStructure(
-            final Date referenceDate,
-            final Calendar cal,
-            final BusinessDayConvention bdc) {
+    public VolatilityTermStructure(final Date referenceDate, final Calendar cal, final BusinessDayConvention bdc) {
         this(referenceDate, cal, bdc, new DayCounter());
     }
 
     /**
      * initialize with a fixed reference date
      */
-    public VolatilityTermStructure(
-            final Date referenceDate,
-            final Calendar cal,
-            final BusinessDayConvention bdc,
+    public VolatilityTermStructure(final Date referenceDate, final Calendar cal, final BusinessDayConvention bdc,
             final DayCounter dc) {
         super(referenceDate, cal, dc);
         this.bdc = bdc;
@@ -86,9 +73,7 @@ public abstract class VolatilityTermStructure extends AbstractTermStructure {
      * calculate the reference date based on the global evaluation date
      */
     public VolatilityTermStructure(
-            /*@Natural*/ final int settlementDays,
-            final Calendar cal,
-            final BusinessDayConvention bdc) {
+            /*@Natural*/ final int settlementDays, final Calendar cal, final BusinessDayConvention bdc) {
         this(settlementDays, cal, bdc, new DayCounter());
     }
 
@@ -96,14 +81,11 @@ public abstract class VolatilityTermStructure extends AbstractTermStructure {
      * calculate the reference date based on the global evaluation date
      */
     public VolatilityTermStructure(
-            /*@Natural*/ final int settlementDays,
-            final Calendar cal,
-            final BusinessDayConvention bdc,
+            /*@Natural*/ final int settlementDays, final Calendar cal, final BusinessDayConvention bdc,
             final DayCounter dc) {
         super(settlementDays, cal, dc);
         this.bdc = bdc;
     }
-
 
     //
     // public methods
@@ -124,7 +106,6 @@ public abstract class VolatilityTermStructure extends AbstractTermStructure {
         return calendar().advance(referenceDate(), p, businessDayConvention());
     }
 
-
     //
     // public abstract methods
     //
@@ -139,7 +120,6 @@ public abstract class VolatilityTermStructure extends AbstractTermStructure {
      */
     public abstract /*@Rate*/ double maxStrike();
 
-
     //
     // protected methods
     //
@@ -147,7 +127,7 @@ public abstract class VolatilityTermStructure extends AbstractTermStructure {
     /**
      * Strike-range check
      */
-    protected void checkStrike(final /*@Rate*/ double  strike, final boolean extrapolate) /* @ReadOnly */ {
+    protected void checkStrike(final /*@Rate*/ double strike, final boolean extrapolate) /* @ReadOnly */ {
         QL.require(extrapolate || allowsExtrapolation() || (strike >= minStrike() && strike <= maxStrike()),
                 "strike is outside the curve domain");
     }

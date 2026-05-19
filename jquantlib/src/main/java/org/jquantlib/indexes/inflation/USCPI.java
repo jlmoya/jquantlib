@@ -42,18 +42,11 @@ import org.jquantlib.time.TimeUnit;
 public class USCPI extends ZeroInflationIndex {
 
     public USCPI(final boolean interpolated) {
-        this(interpolated, new Handle<ZeroInflationTermStructure>());
+        this(interpolated, new Handle< ZeroInflationTermStructure >());
     }
 
-    public USCPI(final boolean interpolated,
-                 final Handle<ZeroInflationTermStructure> termStructure) {
-        super("CPI",
-                new USRegion(),
-                false,
-                interpolated,
-                Frequency.Monthly,
-                new Period(1, TimeUnit.Months),
-                new USDCurrency(),
-                termStructure);
+    public USCPI(final boolean interpolated, final Handle< ZeroInflationTermStructure > termStructure) {
+        super("CPI", new USRegion(), false, interpolated, Frequency.Monthly, new Period(1, TimeUnit.Months),
+                new USDCurrency(), termStructure);
     }
 }

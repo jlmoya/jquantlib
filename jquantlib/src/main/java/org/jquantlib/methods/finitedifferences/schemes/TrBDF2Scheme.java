@@ -30,48 +30,21 @@ import org.jquantlib.methods.finitedifferences.utilities.FdmBoundaryConditionSet
 /**
  * Trapezoidal BDF2 (TR-BDF2) time-stepping scheme.
  * <p>
- * Java port of v1.42.1
- * {@code ql/methods/finitedifferences/schemes/trbdf2scheme.hpp}
- * (header-only template in C++; the Java port replaces template parameter
- * {@code TrapezoidalScheme} with the {@link TrapezoidalSubScheme} functional
- * adapter so callers can plug either {@link CrankNicolsonScheme} or
- * {@link CraigSneydScheme} as the predictor).
+ * Java port of v1.42.1 {@code ql/methods/finitedifferences/schemes/trbdf2scheme.hpp} (header-only template in C++; the
+ * Java port replaces template parameter {@code TrapezoidalScheme} with the {@link TrapezoidalSubScheme} functional
+ * adapter so callers can plug either {@link CrankNicolsonScheme} or {@link CraigSneydScheme} as the predictor).
  * <p>
- * The scheme runs a trapezoidal predictor step over {@code alpha * dt},
- * then a BDF2 corrector step over the remainder {@code (1 - alpha) * dt}
- * to remove the Crank-Nicolson oscillation in the Heston model and
- * similar problems.
+ * The scheme runs a trapezoidal predictor step over {@code alpha * dt}, then a BDF2 corrector step over the remainder
+ * {@code (1 - alpha) * dt} to remove the Crank-Nicolson oscillation in the Heston model and similar problems.
  *
  * <h2>Multi-dimensional path</h2>
- * The C++ template uses BiCGstab / GMRES for multi-dimensional operators
- * (map.size() != 1). Both solvers are now available from Phase 2l Track A.
- * The 1D fast path uses the tri-diagonal direct solve; higher dimensions
- * fall back to BiCGstab (default) or GMRES per the {@link SolverType}.
+ * The C++ template uses BiCGstab / GMRES for multi-dimensional operators (map.size() != 1). Both solvers are now
+ * available from Phase 2l Track A. The 1D fast path uses the tri-diagonal direct solve; higher dimensions fall back to
+ * BiCGstab (default) or GMRES per the {@link SolverType}.
  *
  * @author Phase 2l Track C.6 port
  */
 public class TrBDF2Scheme {
-
-    /** Solver type — kept for API parity; only 1D direct solve is active. */
-    public enum SolverType { BiCGstab, GMRES }
-
-    /**
-     * Trapezoidal sub-scheme adapter. Mirrors the {@code TrapezoidalScheme}
-     * template parameter on the C++ side. Either {@link CrankNicolsonScheme}
-     * or {@link CraigSneydScheme} satisfies this contract.
-     */
-    public interface TrapezoidalSubScheme {
-        /** Set the predictor step size. */
-        void setStep(double dt);
-        /** Advance {@code a} from time {@code t} to {@code t-dt}. */
-        void step(Array a, double t);
-    }
-
-    /** Time step (NaN until {@link #setStep} is called). */
-    protected double dt;
-
-    /** BDF2 corrector weight: {@code beta = (1 - alpha) / (2 - alpha) * dt}. */
-    protected double beta;
 
     private final double alpha;
     private final FdmLinearOpComposite map;
@@ -79,45 +52,35 @@ public class TrBDF2Scheme {
     private final BoundaryConditionSchemeHelper bcSet;
     private final double relTol;
     private final SolverType solverType;
-
+    /** Time step (NaN until {@link #setStep} is called). */
+    protected double dt;
+    /** BDF2 corrector weight: {@code beta = (1 - alpha) / (2 - alpha) * dt}. */
+    protected double beta;
     private int iterations;
-
     /** Constructor with empty BC set and BiCGstab solver type (mirrors C++ defaults). */
-    public TrBDF2Scheme(final double alpha,
-                        final FdmLinearOpComposite map,
-                        final CrankNicolsonScheme trapezoidalScheme) {
-        this(alpha, map, adapt(trapezoidalScheme),
-             new FdmBoundaryConditionSet(), 1e-8, SolverType.BiCGstab);
+    public TrBDF2Scheme(final double alpha, final FdmLinearOpComposite map,
+            final CrankNicolsonScheme trapezoidalScheme) {
+        this(alpha, map, adapt(trapezoidalScheme), new FdmBoundaryConditionSet(), 1e-8, SolverType.BiCGstab);
     }
 
-    public TrBDF2Scheme(final double alpha,
-                        final FdmLinearOpComposite map,
-                        final CrankNicolsonScheme trapezoidalScheme,
-                        final FdmBoundaryConditionSet bcSet) {
+    public TrBDF2Scheme(final double alpha, final FdmLinearOpComposite map, final CrankNicolsonScheme trapezoidalScheme,
+            final FdmBoundaryConditionSet bcSet) {
         this(alpha, map, adapt(trapezoidalScheme), bcSet, 1e-8, SolverType.BiCGstab);
     }
 
-    public TrBDF2Scheme(final double alpha,
-                        final FdmLinearOpComposite map,
-                        final CrankNicolsonScheme trapezoidalScheme,
-                        final FdmBoundaryConditionSet bcSet,
-                        final double relTol,
-                        final SolverType solverType) {
+    public TrBDF2Scheme(final double alpha, final FdmLinearOpComposite map, final CrankNicolsonScheme trapezoidalScheme,
+            final FdmBoundaryConditionSet bcSet, final double relTol, final SolverType solverType) {
         this(alpha, map, adapt(trapezoidalScheme), bcSet, relTol, solverType);
     }
 
     /**
-     * Constructor accepting a generic trapezoidal sub-scheme; mirrors
-     * the C++ template instantiation
-     * {@code TrBDF2Scheme<CraigSneydScheme>(alpha, map, csEvolver, bcSet, relTol)}
-     * used by {@code FdmBackwardSolver} for the {@code TrBDF2Type} branch.
+     * Constructor accepting a generic trapezoidal sub-scheme; mirrors the C++ template instantiation
+     * {@code TrBDF2Scheme<CraigSneydScheme>(alpha, map, csEvolver, bcSet, relTol)} used by {@code FdmBackwardSolver}
+     * for the {@code TrBDF2Type} branch.
      */
-    public TrBDF2Scheme(final double alpha,
-                        final FdmLinearOpComposite map,
-                        final TrapezoidalSubScheme trapezoidalScheme,
-                        final FdmBoundaryConditionSet bcSet,
-                        final double relTol,
-                        final SolverType solverType) {
+    public TrBDF2Scheme(final double alpha, final FdmLinearOpComposite map,
+            final TrapezoidalSubScheme trapezoidalScheme, final FdmBoundaryConditionSet bcSet, final double relTol,
+            final SolverType solverType) {
         this.dt = Double.NaN;
         this.beta = Double.NaN;
         this.alpha = alpha;
@@ -132,16 +95,30 @@ public class TrBDF2Scheme {
     /** Adapt a {@link CrankNicolsonScheme} to the {@link TrapezoidalSubScheme} contract. */
     private static TrapezoidalSubScheme adapt(final CrankNicolsonScheme cn) {
         return new TrapezoidalSubScheme() {
-            @Override public void setStep(final double dt) { cn.setStep(dt); }
-            @Override public void step(final Array a, final double t) { cn.step(a, t); }
+            @Override
+            public void setStep(final double dt) {
+                cn.setStep(dt);
+            }
+
+            @Override
+            public void step(final Array a, final double t) {
+                cn.step(a, t);
+            }
         };
     }
 
     /** Adapt a {@link CraigSneydScheme} to the {@link TrapezoidalSubScheme} contract. */
     public static TrapezoidalSubScheme adapt(final CraigSneydScheme cs) {
         return new TrapezoidalSubScheme() {
-            @Override public void setStep(final double dt) { cs.setStep(dt); }
-            @Override public void step(final Array a, final double t) { cs.step(a, t); }
+            @Override
+            public void setStep(final double dt) {
+                cs.setStep(dt);
+            }
+
+            @Override
+            public void step(final Array a, final double t) {
+                cs.step(a, t);
+            }
         };
     }
 
@@ -157,8 +134,7 @@ public class TrBDF2Scheme {
     }
 
     /**
-     * Apply {@code (I - beta * L)} to {@code r}.
-     * Used as the linear operator for the BDF2 corrector solve.
+     * Apply {@code (I - beta * L)} to {@code r}. Used as the linear operator for the BDF2 corrector solve.
      */
     private Array applyOp(final Array r) {
         return r.sub(map.apply(r).mulAssign(beta));
@@ -191,21 +167,19 @@ public class TrBDF2Scheme {
         final Array f = fStar.mul(c1).addAssign(fn.mul(c2)).mulAssign(1.0 / (2.0 - alpha));
 
         // Corrector solve: (I - beta * L) * fn_new = f
-        if (map.size() == 1) {
+        if ( map.size() == 1 ) {
             fn.fill(map.solveSplitting(0, f, -beta));
-        } else if (solverType == SolverType.BiCGstab) {
-            final BiCGStab.MatrixMult applyOp   = r -> applyOp(r);
-            final BiCGStab.MatrixMult precond    = r -> map.preconditioner(r, -beta);
-            final BiCGStab solver = new BiCGStab(applyOp,
-                    Math.max(10, fn.size()), relTol, precond);
+        } else if ( solverType == SolverType.BiCGstab ) {
+            final BiCGStab.MatrixMult applyOp = r -> applyOp(r);
+            final BiCGStab.MatrixMult precond = r -> map.preconditioner(r, -beta);
+            final BiCGStab solver = new BiCGStab(applyOp, Math.max(10, fn.size()), relTol, precond);
             final BiCGStab.Result result = solver.solve(f, f);
             iterations += result.iterations;
             fn.fill(result.x);
-        } else if (solverType == SolverType.GMRES) {
-            final GMRES.MatrixMult applyOp  = r -> applyOp(r);
-            final GMRES.MatrixMult precond  = r -> map.preconditioner(r, -beta);
-            final GMRES solver = new GMRES(applyOp,
-                    Math.max(10, fn.size() / 10), relTol, precond);
+        } else if ( solverType == SolverType.GMRES ) {
+            final GMRES.MatrixMult applyOp = r -> applyOp(r);
+            final GMRES.MatrixMult precond = r -> map.preconditioner(r, -beta);
+            final GMRES solver = new GMRES(applyOp, Math.max(10, fn.size() / 10), relTol, precond);
             final GMRES.Result result = solver.solve(f, f);
             iterations += result.errors.size();
             fn.fill(result.x);
@@ -214,5 +188,20 @@ public class TrBDF2Scheme {
         }
 
         bcSet.applyAfterSolving(fn);
+    }
+
+    /** Solver type — kept for API parity; only 1D direct solve is active. */
+    public enum SolverType {BiCGstab, GMRES}
+
+    /**
+     * Trapezoidal sub-scheme adapter. Mirrors the {@code TrapezoidalScheme} template parameter on the C++ side. Either
+     * {@link CrankNicolsonScheme} or {@link CraigSneydScheme} satisfies this contract.
+     */
+    public interface TrapezoidalSubScheme {
+        /** Set the predictor step size. */
+        void setStep(double dt);
+
+        /** Advance {@code a} from time {@code t} to {@code t-dt}. */
+        void step(Array a, double t);
     }
 }

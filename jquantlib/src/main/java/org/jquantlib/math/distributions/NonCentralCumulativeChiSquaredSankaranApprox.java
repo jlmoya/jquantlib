@@ -39,19 +39,15 @@ package org.jquantlib.math.distributions;
 import org.jquantlib.math.Ops;
 
 /**
- * Sankaran approximation for the non-central chi-squared cumulative
- * distribution function.
+ * Sankaran approximation for the non-central chi-squared cumulative distribution function.
  * <p>
- * Java port of {@code QuantLib::NonCentralCumulativeChiSquareSankaranApprox}
- * (v1.42.1, {@code ql/math/distributions/chisquaredistribution.{hpp,cpp}}).
- * Provides a closed-form normal-CDF based approximation to the non-central
- * chi-squared CDF, accurate to roughly 1e-2 for typical parameter ranges
- * (cf. C++ test {@code testSankaranApproximation} which targets a 0.01
- * tolerance vs. the exact AS-275 series).
+ * Java port of {@code QuantLib::NonCentralCumulativeChiSquareSankaranApprox} (v1.42.1,
+ * {@code ql/math/distributions/chisquaredistribution.{hpp,cpp}}). Provides a closed-form normal-CDF based approximation
+ * to the non-central chi-squared CDF, accurate to roughly 1e-2 for typical parameter ranges (cf. C++ test
+ * {@code testSankaranApproximation} which targets a 0.01 tolerance vs. the exact AS-275 series).
  * <p>
- * The class name uses the Java convention "ChiSquared" (rather than C++'s
- * "ChiSquare") to align with {@link NonCentralChiSquaredDistribution} and
- * {@link NonCentralCumulativeChiSquaredDistribution}.
+ * The class name uses the Java convention "ChiSquared" (rather than C++'s "ChiSquare") to align with
+ * {@link NonCentralChiSquaredDistribution} and {@link NonCentralCumulativeChiSquaredDistribution}.
  */
 public class NonCentralCumulativeChiSquaredSankaranApprox implements Ops.DoubleOp {
 
@@ -75,9 +71,9 @@ public class NonCentralCumulativeChiSquaredSankaranApprox implements Ops.DoubleO
         final double p = dfPlus2Ncp / (dfPlusNcp * dfPlusNcp);
         final double m = (h - 1.0) * (1.0 - 3.0 * h);
 
-        final double u = (Math.pow(x / dfPlusNcp, h)
-                - (1.0 + h * p * (h - 1.0 - 0.5 * (2.0 - h) * m * p)))
-                / (h * Math.sqrt(2.0 * p) * (1.0 + 0.5 * m * p));
+        final double u =
+                (Math.pow(x / dfPlusNcp, h) - (1.0 + h * p * (h - 1.0 - 0.5 * (2.0 - h) * m * p))) / (h * Math.sqrt(
+                        2.0 * p) * (1.0 + 0.5 * m * p));
 
         return new CumulativeNormalDistribution().op(u);
     }

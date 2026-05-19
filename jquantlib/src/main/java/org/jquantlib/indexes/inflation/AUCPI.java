@@ -37,29 +37,18 @@ import org.jquantlib.time.TimeUnit;
  * ({@code ql/indexes/inflation/aucpi.hpp:34-41}).
  *
  * <p>Frequency is configurable (Australia publishes quarterly headline CPI but
- * AUCPI may be used at other frequencies in some markets). Family name is
- * {@code "CPI"}, region is Australia, currency AUD, availability lag 2 months.
+ * AUCPI may be used at other frequencies in some markets). Family name is {@code "CPI"}, region is Australia, currency
+ * AUD, availability lag 2 months.
  */
 public class AUCPI extends ZeroInflationIndex {
 
-    public AUCPI(final Frequency frequency,
-                 final boolean revised,
-                 final boolean interpolated) {
-        this(frequency, revised, interpolated,
-                new Handle<ZeroInflationTermStructure>());
+    public AUCPI(final Frequency frequency, final boolean revised, final boolean interpolated) {
+        this(frequency, revised, interpolated, new Handle< ZeroInflationTermStructure >());
     }
 
-    public AUCPI(final Frequency frequency,
-                 final boolean revised,
-                 final boolean interpolated,
-                 final Handle<ZeroInflationTermStructure> termStructure) {
-        super("CPI",
-                new AustraliaRegion(),
-                revised,
-                interpolated,
-                frequency,
-                new Period(2, TimeUnit.Months),
-                new AUDCurrency(),
-                termStructure);
+    public AUCPI(final Frequency frequency, final boolean revised, final boolean interpolated,
+            final Handle< ZeroInflationTermStructure > termStructure) {
+        super("CPI", new AustraliaRegion(), revised, interpolated, frequency, new Period(2, TimeUnit.Months),
+                new AUDCurrency(), termStructure);
     }
 }

@@ -34,14 +34,12 @@ import org.jquantlib.processes.StochasticProcess;
 /**
  * Ornstein Uhlenbeck plus exponential jumps process (Kluge model).
  * <p>
- * Java port of v1.42.1
- * {@code ql/experimental/processes/extouwithjumpsprocess.{hpp,cpp}}.
+ * Java port of v1.42.1 {@code ql/experimental/processes/extouwithjumpsprocess.{hpp,cpp}}.
  * <p>
- * The process state is {@code (X, Y)} with {@code S = exp(X + Y)} where
- * {@code X} is the {@link ExtendedOrnsteinUhlenbeckProcess} component and
- * {@code Y} is a mean-reverting (rate {@code beta}) jump component with
- * Poisson arrivals (intensity {@code jumpIntensity}) and exponentially-
- * distributed jump sizes (rate {@code eta}).
+ * The process state is {@code (X, Y)} with {@code S = exp(X + Y)} where {@code X} is the
+ * {@link ExtendedOrnsteinUhlenbeckProcess} component and {@code Y} is a mean-reverting (rate {@code beta}) jump
+ * component with Poisson arrivals (intensity {@code jumpIntensity}) and exponentially- distributed jump sizes (rate
+ * {@code eta}).
  *
  * @author Phase 4n WI port
  */
@@ -54,12 +52,8 @@ public class ExtOUWithJumpsProcess extends StochasticProcess {
     private final ExtendedOrnsteinUhlenbeckProcess ouProcess_;
     private final CumulativeNormalDistribution cumNormalDist_;
 
-    public ExtOUWithJumpsProcess(
-            final ExtendedOrnsteinUhlenbeckProcess process,
-            final double Y0,
-            final double beta,
-            final double jumpIntensity,
-            final double eta) {
+    public ExtOUWithJumpsProcess(final ExtendedOrnsteinUhlenbeckProcess process, final double Y0, final double beta,
+            final double jumpIntensity, final double eta) {
         super();
         QL.require(process != null, "null Ornstein/Uhlenbeck process");
         this.Y0_ = Y0;
@@ -129,7 +123,7 @@ public class ExtOUWithJumpsProcess extends StochasticProcess {
                 Math.min(cumNormalDist_.op(dw.get(1)), 1.0 - Constants.QL_EPSILON));
 
         final double interarrival = -1.0 / jumpIntensity_ * Math.log(u1);
-        if (interarrival < dt) {
+        if ( interarrival < dt ) {
             final double u2 = Math.max(Constants.QL_EPSILON,
                     Math.min(cumNormalDist_.op(dw.get(2)), 1.0 - Constants.QL_EPSILON));
             final double jumpSize = -1.0 / eta_ * Math.log(u2);

@@ -23,13 +23,11 @@ package org.jquantlib.math.optimization;
 import org.jquantlib.math.matrixutilities.Array;
 
 /**
- * Projected constraint — wraps another {@link Constraint} so it operates on the
- * projected (free-only) parameter space.
+ * Projected constraint — wraps another {@link Constraint} so it operates on the projected (free-only) parameter space.
  *
  * <p>Faithful port of QuantLib C++ v1.42.1
- * {@code ql/math/optimization/projectedconstraint.hpp}. Used by
- * {@code CalibratedModel::calibrate} when a {@code fixParameters} mask (or a
- * {@code Projection}) is supplied to freeze some calibration parameters.
+ * {@code ql/math/optimization/projectedconstraint.hpp}. Used by {@code CalibratedModel::calibrate} when a
+ * {@code fixParameters} mask (or a {@code Projection}) is supplied to freeze some calibration parameters.
  */
 public class ProjectedConstraint extends Constraint {
 
@@ -37,9 +35,8 @@ public class ProjectedConstraint extends Constraint {
     //--                     const Array& parameterValues,
     //--                     const std::vector<bool>& fixParameters);
     //-- in ql/math/optimization/projectedconstraint.hpp:62
-    public ProjectedConstraint(final Constraint constraint,
-                               final Array parameterValues,
-                               final boolean[] fixParameters) {
+    public ProjectedConstraint(final Constraint constraint, final Array parameterValues,
+            final boolean[] fixParameters) {
         super.impl = new Impl(constraint, new Projection(parameterValues, fixParameters));
     }
 
@@ -49,7 +46,6 @@ public class ProjectedConstraint extends Constraint {
     public ProjectedConstraint(final Constraint constraint, final Projection projection) {
         super.impl = new Impl(constraint, projection);
     }
-
 
     //
     // private inner classes

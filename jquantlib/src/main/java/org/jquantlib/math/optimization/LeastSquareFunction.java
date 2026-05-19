@@ -23,15 +23,14 @@ import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.matrixutilities.Matrix;
 
 //-- class LeastSquareFunction; in ql/math/optimization/leastsquare.hpp:60
+
 /**
- * Cost function adapter for least-square problems — a port of QuantLib C++
- * v1.42.1 {@code LeastSquareFunction}. Wraps a {@link LeastSquareProblem}
- * and exposes it through the {@link CostFunction} interface so that the
- * generic optimization framework can minimize it.
+ * Cost function adapter for least-square problems — a port of QuantLib C++ v1.42.1 {@code LeastSquareFunction}. Wraps a
+ * {@link LeastSquareProblem} and exposes it through the {@link CostFunction} interface so that the generic optimization
+ * framework can minimize it.
  *
  * <p>Value is the squared L2 norm of the residual vector {@code target - f(x)};
- * gradient is {@code -2 * J^T * residual}, where J is the Jacobian of the
- * fit function.
+ * gradient is {@code -2 * J^T * residual}, where J is the Jacobian of the fit function.
  */
 public class LeastSquareFunction extends CostFunction {
 
@@ -42,6 +41,18 @@ public class LeastSquareFunction extends CostFunction {
     //-- in ql/math/optimization/leastsquare.hpp:63
     public LeastSquareFunction(final LeastSquareProblem lsp) {
         this.lsp_ = lsp;
+    }
+
+    /**
+     * Copy {@code src} element-wise into {@code dst}. Java lacks C++'s {@code Array operator=(Array)} semantic — the
+     * idiomatic Java way to convey "fill this array with those values" is an explicit loop.
+     */
+    private static void copyInto(final Array dst, final Array src) {
+        QL.require(dst.size() == src.size(),
+                "gradient destination size (" + dst.size() + ") != computed size (" + src.size() + ")");
+        for ( int i = 0; i < src.size(); i++ ) {
+            dst.set(i, src.get(i));
+        }
     }
 
     //-- Real LeastSquareFunction::value(const Array& x) const;
@@ -92,19 +103,5 @@ public class LeastSquareFunction extends CostFunction {
         final Array computed = grad_fct2fit.transpose().mul(diff).mul(-2.0);
         copyInto(grad_f, computed);
         return diff.dotProduct(diff);
-    }
-
-    /**
-     * Copy {@code src} element-wise into {@code dst}. Java lacks C++'s
-     * {@code Array operator=(Array)} semantic — the idiomatic Java way to
-     * convey "fill this array with those values" is an explicit loop.
-     */
-    private static void copyInto(final Array dst, final Array src) {
-        QL.require(dst.size() == src.size(),
-                "gradient destination size (" + dst.size()
-                        + ") != computed size (" + src.size() + ")");
-        for (int i = 0; i < src.size(); i++) {
-            dst.set(i, src.get(i));
-        }
     }
 }

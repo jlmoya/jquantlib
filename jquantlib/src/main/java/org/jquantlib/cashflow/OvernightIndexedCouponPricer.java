@@ -18,28 +18,26 @@
 
 package org.jquantlib.cashflow;
 
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.math.Constants;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.termstructures.volatilities.optionlet.OptionletVolatilityStructure;
 import org.jquantlib.time.Date;
 
+import java.util.List;
+
 /**
  * Base pricer for {@link OvernightIndexedCoupon}.
  * <p>
- * Port of C++ QuantLib v1.42.1
- * {@code ql/cashflows/overnightindexedcouponpricer.hpp/cpp}.
- *
- * @category cashflows
+ * Port of C++ QuantLib v1.42.1 {@code ql/cashflows/overnightindexedcouponpricer.hpp/cpp}.
  *
  * @author JQuantLib migration team
+ * @category cashflows
  */
 public abstract class OvernightIndexedCouponPricer extends FloatingRateCouponPricer {
 
     protected OvernightIndexedCoupon coupon_;
-    protected Handle<OptionletVolatilityStructure> capletVol_;
+    protected Handle< OptionletVolatilityStructure > capletVol_;
     protected boolean effectiveVolatilityInput_ = false;
     /** Set by Black-style pricers after each {@link #capletRate(double, boolean)} call. */
     protected double effectiveCapletVolatility_ = Constants.NULL_REAL;
@@ -47,28 +45,28 @@ public abstract class OvernightIndexedCouponPricer extends FloatingRateCouponPri
     protected double effectiveFloorletVolatility_ = Constants.NULL_REAL;
 
     protected OvernightIndexedCouponPricer() {
-        this(new Handle<OptionletVolatilityStructure>(), false);
+        this(new Handle< OptionletVolatilityStructure >(), false);
     }
 
-    protected OvernightIndexedCouponPricer(final Handle<OptionletVolatilityStructure> capletVol,
-                                           final boolean effectiveVolatilityInput) {
+    protected OvernightIndexedCouponPricer(final Handle< OptionletVolatilityStructure > capletVol,
+            final boolean effectiveVolatilityInput) {
         this.capletVol_ = capletVol;
         this.effectiveVolatilityInput_ = effectiveVolatilityInput;
-        if (capletVol_ != null) {
+        if ( capletVol_ != null ) {
             capletVol_.addObserver(this);
         }
     }
 
-    public Handle<OptionletVolatilityStructure> capletVolatility() {
+    public Handle< OptionletVolatilityStructure > capletVolatility() {
         return capletVol_;
     }
 
-    public void setCapletVolatility(final Handle<OptionletVolatilityStructure> v) {
-        if (capletVol_ != null) {
+    public void setCapletVolatility(final Handle< OptionletVolatilityStructure > v) {
+        if ( capletVol_ != null ) {
             capletVol_.deleteObserver(this);
         }
         capletVol_ = v;
-        if (capletVol_ != null) {
+        if ( capletVol_ != null ) {
             capletVol_.addObserver(this);
         }
         update();
@@ -89,13 +87,12 @@ public abstract class OvernightIndexedCouponPricer extends FloatingRateCouponPri
     @Override
     public void initialize(final FloatingRateCoupon coupon) {
         // C++ initialize() unwraps a CappedFlooredOvernightIndexedCoupon to its underlying.
-        if (coupon instanceof CappedFlooredOvernightIndexedCoupon) {
-            final OvernightIndexedCoupon underlying =
-                ((CappedFlooredOvernightIndexedCoupon) coupon).underlying();
+        if ( coupon instanceof CappedFlooredOvernightIndexedCoupon ) {
+            final OvernightIndexedCoupon underlying = ((CappedFlooredOvernightIndexedCoupon) coupon).underlying();
             QL.require(underlying != null,
-                "OvernightIndexedCouponPricer: CappedFlooredOvernightIndexedCoupon underlying coupon not defined");
+                    "OvernightIndexedCouponPricer: CappedFlooredOvernightIndexedCoupon underlying coupon not defined");
             coupon_ = underlying;
-        } else if (coupon instanceof OvernightIndexedCoupon) {
+        } else if ( coupon instanceof OvernightIndexedCoupon ) {
             coupon_ = (OvernightIndexedCoupon) coupon;
         } else {
             QL.require(false, "OvernightIndexedCouponPricer: unsupported coupon type");
@@ -105,9 +102,8 @@ public abstract class OvernightIndexedCouponPricer extends FloatingRateCouponPri
     public abstract /*Rate*/ double averageRate(Date date);
 
     /**
-     * Black-style cap pricer entry point with explicit daily/global selection.
-     * Default is to forward to {@link #capletRate(double)}; Black variants
-     * override.
+     * Black-style cap pricer entry point with explicit daily/global selection. Default is to forward to
+     * {@link #capletRate(double)}; Black variants override.
      */
     public double capletRate(final double effectiveCap, final boolean dailyCapFloor) {
         return capletRate(effectiveCap);
@@ -145,17 +141,16 @@ public abstract class OvernightIndexedCouponPricer extends FloatingRateCouponPri
     /**
      * Helper: determine number of fixings used up to {@code date}.
      */
-    protected int determineNumberOfFixings(final List<Date> interestDates,
-                                           final Date date,
-                                           final boolean applyObservationShift) {
+    protected int determineNumberOfFixings(final List< Date > interestDates, final Date date,
+            final boolean applyObservationShift) {
         int n = 0;
-        for (final Date d : interestDates) {
-            if (!d.lt(date)) {
+        for ( final Date d : interestDates ) {
+            if ( !d.lt(date) ) {
                 break;
             }
             ++n;
         }
-        if (n == interestDates.size() && applyObservationShift) {
+        if ( n == interestDates.size() && applyObservationShift ) {
             return n - 1;
         }
         return n;

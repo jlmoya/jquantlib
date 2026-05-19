@@ -38,23 +38,19 @@ import org.jquantlib.methods.montecarlo.PathPricer;
  * Path pricer for the European vanilla payoff.
  *
  * <p>Java port of the inline {@code EuropeanPathPricer} class declared
- * in {@code QuantLib v1.42.1 ql/pricingengines/vanilla/mceuropeanengine.hpp}
- * (Phase 5h.5-MC-INFRA WI-9).
+ * in {@code QuantLib v1.42.1 ql/pricingengines/vanilla/mceuropeanengine.hpp} (Phase 5h.5-MC-INFRA WI-9).
  *
  * <p>Mirrors C++ {@code Real EuropeanPathPricer::operator()(const Path&)}:
- * the payoff is evaluated at the path's terminal value and discounted
- * by the (precomputed) constant discount factor.
+ * the payoff is evaluated at the path's terminal value and discounted by the (precomputed) constant discount factor.
  *
  * @author JQuantLib
  */
-public final class EuropeanPathPricer extends PathPricer<Path> {
+public final class EuropeanPathPricer extends PathPricer< Path > {
 
     private final PlainVanillaPayoff payoff_;
     private final double discount_;
 
-    public EuropeanPathPricer(final Option.Type type,
-                              final double strike,
-                              final double discount) {
+    public EuropeanPathPricer(final Option.Type type, final double strike, final double discount) {
         QL.require(strike >= 0.0, "strike less than zero not allowed");
         this.payoff_ = new PlainVanillaPayoff(type, strike);
         this.discount_ = discount;

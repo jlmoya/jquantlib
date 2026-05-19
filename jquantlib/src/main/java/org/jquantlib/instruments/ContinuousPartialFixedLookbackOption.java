@@ -39,20 +39,16 @@ import org.jquantlib.time.Date;
  * Continuous-partial-fixed lookback option.
  *
  * <p>For a partial-time fixed-strike lookback option, the lookback period
- * starts at a predetermined date after the initialization date of the option.
- * Heynen-Kat (1994) analytic pricing.
+ * starts at a predetermined date after the initialization date of the option. Heynen-Kat (1994) analytic pricing.
  *
  * <p>Port of QuantLib v1.42.1
- * {@code QuantLib::ContinuousPartialFixedLookbackOption}
- * ({@code ql/instruments/lookbackoption.hpp}).
+ * {@code QuantLib::ContinuousPartialFixedLookbackOption} ({@code ql/instruments/lookbackoption.hpp}).
  */
 public class ContinuousPartialFixedLookbackOption extends ContinuousFixedLookbackOption {
 
     protected Date lookbackPeriodStart;
 
-    public ContinuousPartialFixedLookbackOption(
-            final Date lookbackPeriodStart,
-            final StrikedTypePayoff payoff,
+    public ContinuousPartialFixedLookbackOption(final Date lookbackPeriodStart, final StrikedTypePayoff payoff,
             final Exercise exercise) {
         super(0.0, payoff, exercise);
         this.lookbackPeriodStart = lookbackPeriodStart;
@@ -63,11 +59,9 @@ public class ContinuousPartialFixedLookbackOption extends ContinuousFixedLookbac
         super.setupArguments(arguments);
         QL.require(ContinuousPartialFixedLookbackOption.Arguments.class.isAssignableFrom(arguments.getClass()),
                 ReflectConstants.WRONG_ARGUMENT_TYPE);
-        final ContinuousPartialFixedLookbackOption.ArgumentsImpl a =
-                (ContinuousPartialFixedLookbackOption.ArgumentsImpl) arguments;
+        final ContinuousPartialFixedLookbackOption.ArgumentsImpl a = (ContinuousPartialFixedLookbackOption.ArgumentsImpl) arguments;
         a.lookbackPeriodStart = lookbackPeriodStart;
     }
-
 
     //
     // public inner classes
@@ -86,8 +80,7 @@ public class ContinuousPartialFixedLookbackOption extends ContinuousFixedLookbac
         public void validate() {
             super.validate();
 
-            QL.require(exercise instanceof EuropeanExercise,
-                    "European exercise required for partial-fixed lookback");
+            QL.require(exercise instanceof EuropeanExercise, "European exercise required for partial-fixed lookback");
             final EuropeanExercise euro = (EuropeanExercise) exercise;
             QL.require(lookbackPeriodStart.le(euro.lastDate()),
                     "lookback start date must be earlier than exercise date");
@@ -95,11 +88,11 @@ public class ContinuousPartialFixedLookbackOption extends ContinuousFixedLookbac
     }
 
     public static class ResultsImpl extends ContinuousFixedLookbackOption.ResultsImpl
-            implements ContinuousPartialFixedLookbackOption.Results { /* marking */ }
+            implements ContinuousPartialFixedLookbackOption.Results { /* marking */
+    }
 
-    public static abstract class EngineImpl
-            extends GenericEngine<ContinuousPartialFixedLookbackOption.ArgumentsImpl,
-                                  ContinuousPartialFixedLookbackOption.ResultsImpl> {
+    public static abstract class EngineImpl extends
+            GenericEngine< ContinuousPartialFixedLookbackOption.ArgumentsImpl, ContinuousPartialFixedLookbackOption.ResultsImpl > {
 
         protected EngineImpl() {
             super(new ArgumentsImpl(), new ResultsImpl());

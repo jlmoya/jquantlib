@@ -47,9 +47,8 @@ import org.jquantlib.time.Date;
  * <pre>
  *   NPV = +/- N_source * D_source(T,S) +/- N_target * D_target(T,S) / spotFx
  * </pre>
- * with the sign chosen by {@code paySourceCurrency}, where
- * {@code D_*(T,S) = D_*(T) / D_*(S)} is the forward discount factor from
- * settlement {@code S} to maturity {@code T}.
+ * with the sign chosen by {@code paySourceCurrency}, where {@code D_*(T,S) = D_*(T) / D_*(S)} is the forward discount
+ * factor from settlement {@code S} to maturity {@code T}.
  *
  * <p>The fair forward rate is:
  * <pre>
@@ -57,51 +56,49 @@ import org.jquantlib.time.Date;
  * </pre>
  *
  * <p>Phase 5e.5b-CFC-d-69 port of C++ v1.42.1
- * {@code ql/pricingengines/forward/discountingfxforwardengine.hpp}
- * and {@code discountingfxforwardengine.cpp} (Copyright 2026 Chirag Desai).
+ * {@code ql/pricingengines/forward/discountingfxforwardengine.hpp} and {@code discountingfxforwardengine.cpp}
+ * (Copyright 2026 Chirag Desai).
  */
 public class DiscountingFxForwardEngine extends FxForward.EngineImpl {
 
-    private final Handle<YieldTermStructure> sourceCurrencyDiscountCurve_;
-    private final Handle<YieldTermStructure> targetCurrencyDiscountCurve_;
-    private final Handle<? extends Quote>    spotFx_;
+    private final Handle< YieldTermStructure > sourceCurrencyDiscountCurve_;
+    private final Handle< YieldTermStructure > targetCurrencyDiscountCurve_;
+    private final Handle< ? extends Quote > spotFx_;
 
     /**
      * @param sourceCurrencyDiscountCurve discount curve for source currency
      * @param targetCurrencyDiscountCurve discount curve for target currency
-     * @param spotFx                      spot FX rate (target/source);
-     *                                    one unit of source currency equals
+     * @param spotFx                      spot FX rate (target/source); one unit of source currency equals
      *                                    {@code spotFx} units of target currency
      */
-    public DiscountingFxForwardEngine(
-            final Handle<YieldTermStructure> sourceCurrencyDiscountCurve,
-            final Handle<YieldTermStructure> targetCurrencyDiscountCurve,
-            final Handle<? extends Quote>    spotFx) {
+    public DiscountingFxForwardEngine(final Handle< YieldTermStructure > sourceCurrencyDiscountCurve,
+            final Handle< YieldTermStructure > targetCurrencyDiscountCurve, final Handle< ? extends Quote > spotFx) {
         super();
         this.sourceCurrencyDiscountCurve_ = sourceCurrencyDiscountCurve;
         this.targetCurrencyDiscountCurve_ = targetCurrencyDiscountCurve;
-        this.spotFx_                      = spotFx;
+        this.spotFx_ = spotFx;
 
-        if (sourceCurrencyDiscountCurve_ != null) sourceCurrencyDiscountCurve_.addObserver(this);
-        if (targetCurrencyDiscountCurve_ != null) targetCurrencyDiscountCurve_.addObserver(this);
-        if (spotFx_                      != null) spotFx_.addObserver(this);
+        if ( sourceCurrencyDiscountCurve_ != null )
+            sourceCurrencyDiscountCurve_.addObserver(this);
+        if ( targetCurrencyDiscountCurve_ != null )
+            targetCurrencyDiscountCurve_.addObserver(this);
+        if ( spotFx_ != null )
+            spotFx_.addObserver(this);
     }
-
 
     // ── inspectors ──────────────────────────────────────────────────────
 
-    public Handle<YieldTermStructure> sourceCurrencyDiscountCurve() {
+    public Handle< YieldTermStructure > sourceCurrencyDiscountCurve() {
         return sourceCurrencyDiscountCurve_;
     }
 
-    public Handle<YieldTermStructure> targetCurrencyDiscountCurve() {
+    public Handle< YieldTermStructure > targetCurrencyDiscountCurve() {
         return targetCurrencyDiscountCurve_;
     }
 
-    public Handle<? extends Quote> spotFx() {
+    public Handle< ? extends Quote > spotFx() {
         return spotFx_;
     }
-
 
     // ── calculate ───────────────────────────────────────────────────────
 
@@ -111,39 +108,32 @@ public class DiscountingFxForwardEngine extends FxForward.EngineImpl {
                 "source currency discount curve handle is empty");
         QL.require(targetCurrencyDiscountCurve_ != null && !targetCurrencyDiscountCurve_.empty(),
                 "target currency discount curve handle is empty");
-        QL.require(spotFx_ != null && !spotFx_.empty(),
-                "spot FX quote handle is empty");
+        QL.require(spotFx_ != null && !spotFx_.empty(), "spot FX quote handle is empty");
 
         final FxForward.ArgumentsImpl a = (FxForward.ArgumentsImpl) arguments_;
-        final FxForward.ResultsImpl   r = (FxForward.ResultsImpl)   results_;
+        final FxForward.ResultsImpl r = (FxForward.ResultsImpl) results_;
 
-        r.value         = 0.0;
+        r.value = 0.0;
         r.errorEstimate = Constants.NULL_REAL;
 
-        final Date maturityDate   = a.maturityDate;
+        final Date maturityDate = a.maturityDate;
         final Date settlementDate = a.settlementDate;
 
         final Date sourceRefDate = sourceCurrencyDiscountCurve_.currentLink().referenceDate();
         final Date targetRefDate = targetCurrencyDiscountCurve_.currentLink().referenceDate();
-        QL.require(sourceRefDate.le(settlementDate),
-                "source currency discount curve reference date ("
-                        + sourceRefDate + ") must be on or before settlement date ("
-                        + settlementDate + ")");
-        QL.require(targetRefDate.le(settlementDate),
-                "target currency discount curve reference date ("
-                        + targetRefDate + ") must be on or before settlement date ("
-                        + settlementDate + ")");
+        QL.require(sourceRefDate.le(settlementDate), "source currency discount curve reference date (" + sourceRefDate
+                + ") must be on or before settlement date (" + settlementDate + ")");
+        QL.require(targetRefDate.le(settlementDate), "target currency discount curve reference date (" + targetRefDate
+                + ") must be on or before settlement date (" + settlementDate + ")");
 
         final double spotFxRate = spotFx_.currentLink().value();
         QL.require(spotFxRate > 0.0, "spot FX rate must be positive");
 
         // Forward discount factors from settlement → maturity.
-        final double dfSource =
-                sourceCurrencyDiscountCurve_.currentLink().discount(maturityDate) /
-                sourceCurrencyDiscountCurve_.currentLink().discount(settlementDate);
-        final double dfTarget =
-                targetCurrencyDiscountCurve_.currentLink().discount(maturityDate) /
-                targetCurrencyDiscountCurve_.currentLink().discount(settlementDate);
+        final double dfSource = sourceCurrencyDiscountCurve_.currentLink().discount(maturityDate)
+                / sourceCurrencyDiscountCurve_.currentLink().discount(settlementDate);
+        final double dfTarget = targetCurrencyDiscountCurve_.currentLink().discount(maturityDate)
+                / targetCurrencyDiscountCurve_.currentLink().discount(settlementDate);
 
         // Fair forward rate: F = S * dfTarget / dfSource (target/source).
         r.fairForwardRate = spotFxRate * dfTarget / dfSource;
@@ -156,15 +146,15 @@ public class DiscountingFxForwardEngine extends FxForward.EngineImpl {
         final double pvTargetInSourceCurrency = pvTarget / spotFxRate;
 
         final double npvInSourceCurrency;
-        if (a.paySourceCurrency) {
+        if ( a.paySourceCurrency ) {
             // pay source, receive target
             npvInSourceCurrency = -pvSource + pvTargetInSourceCurrency;
         } else {
             // receive source, pay target
-            npvInSourceCurrency =  pvSource - pvTargetInSourceCurrency;
+            npvInSourceCurrency = pvSource - pvTargetInSourceCurrency;
         }
 
-        r.value             = npvInSourceCurrency;
+        r.value = npvInSourceCurrency;
         r.npvSourceCurrency = npvInSourceCurrency;
         r.npvTargetCurrency = npvInSourceCurrency * spotFxRate;
 

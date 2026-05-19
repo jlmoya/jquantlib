@@ -21,25 +21,24 @@
 
 package org.jquantlib.math.integrals;
 
+import org.jquantlib.QL;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 
-import org.jquantlib.QL;
-
 /**
  * Tensor-product multi-dimensional Gaussian quadrature.
  *
  * <p>Java port of {@code QuantLib::MultiDimGaussianIntegration} from
- * v1.42.1 {@code ql/math/integrals/gaussianquadratures.{hpp,cpp}}. Pinned
- * commit {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
+ * v1.42.1 {@code ql/math/integrals/gaussianquadratures.{hpp,cpp}}. Pinned commit
+ * {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
  *
  * <p>Given a list of per-dimension orders {@code ns[j]} and a factory
- * {@code genQuad(n)} that builds a 1-D {@link GaussianQuadrature} of that
- * order, the constructor builds the tensor-product weights and abscissae
- * laid out in column-major lexicographic order (matching the C++
- * {@code spacing} computation):
+ * {@code genQuad(n)} that builds a 1-D {@link GaussianQuadrature} of that order, the constructor builds the
+ * tensor-product weights and abscissae laid out in column-major lexicographic order (matching the C++ {@code spacing}
+ * computation):
  * <pre>
  *   spacing[0] = 1;  spacing[j] = ns[0] * ns[1] * ... * ns[j-1]
  *   for i in [0, N):
@@ -48,8 +47,8 @@ import org.jquantlib.QL;
  *       weights_[i] *= per_dim_w[j][nx]
  *       x_[i][j]     = per_dim_x[j][nx]
  * </pre>
- * Per-dimension quadratures are deduplicated by order via {@code n2x} /
- * {@code n2weights} caches, mirroring the C++ {@code std::map} usage.
+ * Per-dimension quadratures are deduplicated by order via {@code n2x} / {@code n2weights} caches, mirroring the C++
+ * {@code std::map} usage.
  */
 public class MultiDimGaussianIntegration {
 
@@ -60,39 +59,38 @@ public class MultiDimGaussianIntegration {
      * @param ns      per-dimension quadrature orders ({@code ns.length} = dimensions)
      * @param genQuad factory producing a 1-D {@link GaussianQuadrature} for an order
      */
-    public MultiDimGaussianIntegration(final int[] ns,
-                                       final IntFunction<GaussianQuadrature> genQuad) {
+    public MultiDimGaussianIntegration(final int[] ns, final IntFunction< GaussianQuadrature > genQuad) {
         QL.require(ns.length > 0, "MultiDimGaussianIntegration: at least one dimension required");
 
         final int m = ns.length;
         int n = 1;
-        for (int j = 0; j < m; ++j) {
+        for ( int j = 0; j < m; ++j ) {
             QL.require(ns[j] > 0, "MultiDimGaussianIntegration: order must be positive");
             n *= ns[j];
         }
 
         this.weights_ = new double[n];
         this.x_ = new double[n][m];
-        for (int i = 0; i < n; ++i) {
+        for ( int i = 0; i < n; ++i ) {
             weights_[i] = 1.0;
         }
 
         // spacing[0] = 1; spacing[j] = prod_{k<j} ns[k]
         final int[] spacing = new int[m];
         spacing[0] = 1;
-        for (int j = 1; j < m; ++j) {
+        for ( int j = 1; j < m; ++j ) {
             spacing[j] = spacing[j - 1] * ns[j - 1];
         }
 
         // Cache per-order abscissa / weight tables to avoid rebuilding identical quadratures.
-        final Map<Integer, double[]> n2x = new HashMap<>();
-        final Map<Integer, double[]> n2weights = new HashMap<>();
-        for (final int order : ns) {
-            if (!n2x.containsKey(order)) {
+        final Map< Integer, double[] > n2x = new HashMap<>();
+        final Map< Integer, double[] > n2weights = new HashMap<>();
+        for ( final int order : ns ) {
+            if ( !n2x.containsKey(order) ) {
                 final GaussianQuadrature quad = genQuad.apply(order);
                 final double[] xs = new double[quad.order()];
                 final double[] ws = new double[quad.order()];
-                for (int k = 0; k < quad.order(); ++k) {
+                for ( int k = 0; k < quad.order(); ++k ) {
                     xs[k] = quad.x(k);
                     ws[k] = quad.weight(k);
                 }
@@ -101,8 +99,8 @@ public class MultiDimGaussianIntegration {
             }
         }
 
-        for (int i = 0; i < n; ++i) {
-            for (int j = 0; j < m; ++j) {
+        for ( int i = 0; i < n; ++i ) {
+            for ( int j = 0; j < m; ++j ) {
                 final int order = ns[j];
                 final int nx = (i / spacing[j]) % ns[j];
                 weights_[i] *= n2weights.get(order)[nx];
@@ -116,9 +114,9 @@ public class MultiDimGaussianIntegration {
      *
      * <p>Summation order matches the C++ implementation (ascending sample index).
      */
-    public double op(final Function<double[], Double> f) {
+    public double op(final Function< double[], Double > f) {
         double s = 0.0;
-        for (int i = 0; i < x_.length; ++i) {
+        for ( int i = 0; i < x_.length; ++i ) {
             s += weights_[i] * f.apply(x_[i]);
         }
         return s;

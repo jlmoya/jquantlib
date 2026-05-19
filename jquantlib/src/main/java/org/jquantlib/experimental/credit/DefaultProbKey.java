@@ -25,13 +25,13 @@
 
 package org.jquantlib.experimental.credit;
 
+import org.jquantlib.QL;
+import org.jquantlib.currencies.Currency;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
-
-import org.jquantlib.QL;
-import org.jquantlib.currencies.Currency;
 
 /**
  * Used to index market-implied credit-curve probabilities.
@@ -40,16 +40,15 @@ import org.jquantlib.currencies.Currency;
  * ({@code ql/experimental/credit/defaultprobabilitykey.{hpp,cpp}}).
  *
  * <p>Acts as a proxy to the defaultable bond (or class of bonds) which
- * determines the credit-contract conditions. Aggregates atomic default
- * types in a group defining the contract conditions and indexes the
- * probability curves calibrated to the market.
+ * determines the credit-contract conditions. Aggregates atomic default types in a group defining the contract
+ * conditions and indexes the probability curves calibrated to the market.
  *
  * <p>Phase 4m foundation.
  */
 public class DefaultProbKey {
 
     /** Aggregation of event types for which the contract is sensitive. */
-    protected List<DefaultType> eventTypes;
+    protected List< DefaultType > eventTypes;
     /** Currency of the bond and protection-leg payment. */
     protected Currency obligationCurrency;
     /** Reference bond seniority. */
@@ -61,19 +60,16 @@ public class DefaultProbKey {
         this.seniorityField = Seniority.NoSeniority;
     }
 
-    public DefaultProbKey(final List<DefaultType> eventTypes,
-                          final Currency cur,
-                          final Seniority sen) {
+    public DefaultProbKey(final List< DefaultType > eventTypes, final Currency cur, final Seniority sen) {
         this.eventTypes = new ArrayList<>(eventTypes);
         this.obligationCurrency = cur;
         this.seniorityField = sen;
         // Forbid duplicated atomic types.
-        final EnumSet<AtomicDefault.Type> buffer = EnumSet.noneOf(AtomicDefault.Type.class);
-        for (final DefaultType t : this.eventTypes) {
+        final EnumSet< AtomicDefault.Type > buffer = EnumSet.noneOf(AtomicDefault.Type.class);
+        for ( final DefaultType t : this.eventTypes ) {
             buffer.add(t.defaultType());
         }
-        QL.require(buffer.size() == this.eventTypes.size(),
-                "Duplicated event type in contract definition");
+        QL.require(buffer.size() == this.eventTypes.size(), "Duplicated event type in contract definition");
     }
 
     public Currency currency() {
@@ -84,7 +80,7 @@ public class DefaultProbKey {
         return seniorityField;
     }
 
-    public List<DefaultType> eventTypes() {
+    public List< DefaultType > eventTypes() {
         return Collections.unmodifiableList(eventTypes);
     }
 
@@ -93,37 +89,37 @@ public class DefaultProbKey {
     }
 
     /**
-     * Mirrors C++ free {@code operator==(const DefaultProbKey&, const DefaultProbKey&)}.
-     * Equal iff seniority + currency + same set of event types.
+     * Mirrors C++ free {@code operator==(const DefaultProbKey&, const DefaultProbKey&)}. Equal iff seniority + currency
+     * + same set of event types.
      */
     @Override
     public boolean equals(final Object o) {
-        if (this == o) {
+        if ( this == o ) {
             return true;
         }
-        if (!(o instanceof DefaultProbKey)) {
+        if ( !(o instanceof DefaultProbKey) ) {
             return false;
         }
         final DefaultProbKey rhs = (DefaultProbKey) o;
-        if (this.seniorityField != rhs.seniorityField) {
+        if ( this.seniorityField != rhs.seniorityField ) {
             return false;
         }
-        if (!this.obligationCurrency.equals(rhs.obligationCurrency)) {
+        if ( !this.obligationCurrency.equals(rhs.obligationCurrency) ) {
             return false;
         }
-        if (this.eventTypes.size() != rhs.eventTypes.size()) {
+        if ( this.eventTypes.size() != rhs.eventTypes.size() ) {
             return false;
         }
         // Each rhs event must be findable in lhs (set equality).
-        for (final DefaultType rhEvent : rhs.eventTypes) {
+        for ( final DefaultType rhEvent : rhs.eventTypes ) {
             boolean found = false;
-            for (final DefaultType lhEvent : this.eventTypes) {
-                if (lhEvent.equals(rhEvent)) {
+            for ( final DefaultType lhEvent : this.eventTypes ) {
+                if ( lhEvent.equals(rhEvent) ) {
                     found = true;
                     break;
                 }
             }
-            if (!found) {
+            if ( !found ) {
                 return false;
             }
         }
@@ -136,7 +132,7 @@ public class DefaultProbKey {
         h = 31 * h + (obligationCurrency != null ? obligationCurrency.hashCode() : 0);
         // event-types: order-independent hash, mirroring set semantics.
         int eventsHash = 0;
-        for (final DefaultType t : eventTypes) {
+        for ( final DefaultType t : eventTypes ) {
             eventsHash += t.hashCode();
         }
         return 31 * h + eventsHash;

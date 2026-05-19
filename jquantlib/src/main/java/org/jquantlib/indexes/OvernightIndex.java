@@ -37,15 +37,12 @@ import org.jquantlib.time.TimeUnit;
 /**
  * Base class for overnight rate indexes (e.g. Eonia, Sonia, SOFR, Fed Funds).
  * <p>
- * Port of C++ QuantLib v1.42.1 {@code ql/indexes/iborindex.hpp/cpp}
- * {@code OvernightIndex}. An overnight index is a one-business-day-tenor
- * IborIndex with {@link BusinessDayConvention#Following} and
- * {@code endOfMonth=false}. It is the foundation of OIS swaps and overnight-
- * compounded coupons.
- *
- * @category indexes
+ * Port of C++ QuantLib v1.42.1 {@code ql/indexes/iborindex.hpp/cpp} {@code OvernightIndex}. An overnight index is a
+ * one-business-day-tenor IborIndex with {@link BusinessDayConvention#Following} and {@code endOfMonth=false}. It is the
+ * foundation of OIS swaps and overnight- compounded coupons.
  *
  * @author JQuantLib migration team
+ * @category indexes
  */
 public class OvernightIndex extends IborIndex {
 
@@ -59,44 +56,28 @@ public class OvernightIndex extends IborIndex {
      * @param dayCounter     day-count convention used for accrual
      * @param h              forecasting yield curve handle (may be empty)
      */
-    public OvernightIndex(
-            final String familyName,
-            final /*@Natural*/ int settlementDays,
-            final Currency currency,
-            final Calendar fixingCalendar,
-            final DayCounter dayCounter,
-            final Handle<YieldTermStructure> h) {
-        super(familyName, new Period(1, TimeUnit.Days), settlementDays, currency,
-              fixingCalendar, BusinessDayConvention.Following, false, dayCounter, h);
+    public OvernightIndex(final String familyName, final /*@Natural*/ int settlementDays, final Currency currency,
+            final Calendar fixingCalendar, final DayCounter dayCounter, final Handle< YieldTermStructure > h) {
+        super(familyName, new Period(1, TimeUnit.Days), settlementDays, currency, fixingCalendar,
+                BusinessDayConvention.Following, false, dayCounter, h);
     }
 
     /**
      * Constructs an overnight index without a forwarding curve.
      */
-    public OvernightIndex(
-            final String familyName,
-            final /*@Natural*/ int settlementDays,
-            final Currency currency,
-            final Calendar fixingCalendar,
-            final DayCounter dayCounter) {
-        this(familyName, settlementDays, currency, fixingCalendar, dayCounter,
-             new Handle<YieldTermStructure>());
+    public OvernightIndex(final String familyName, final /*@Natural*/ int settlementDays, final Currency currency,
+            final Calendar fixingCalendar, final DayCounter dayCounter) {
+        this(familyName, settlementDays, currency, fixingCalendar, dayCounter, new Handle< YieldTermStructure >());
     }
-
 
     //
     // Override IborIndex.clone() so the type stays OvernightIndex
     //
 
     @Override
-    public Handle<IborIndex> clone(final Handle<YieldTermStructure> h) {
-        final OvernightIndex clone = new OvernightIndex(
-                this.familyName(),
-                this.fixingDays(),
-                this.currency(),
-                this.fixingCalendar(),
-                this.dayCounter(),
-                h);
-        return new Handle<IborIndex>(clone);
+    public Handle< IborIndex > clone(final Handle< YieldTermStructure > h) {
+        final OvernightIndex clone = new OvernightIndex(this.familyName(), this.fixingDays(), this.currency(),
+                this.fixingCalendar(), this.dayCounter(), h);
+        return new Handle< IborIndex >(clone);
     }
 }

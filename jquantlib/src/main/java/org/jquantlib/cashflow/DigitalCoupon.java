@@ -82,6 +82,14 @@ public class DigitalCoupon extends FloatingRateCoupon {
 
     /** Underlying floating-rate coupon. */
     protected final FloatingRateCoupon underlying_;
+    /** Inclusion flag of the call payoff if the call option ends at-the-money. */
+    protected final boolean isCallATMIncluded_;
+    /** Inclusion flag of the put payoff if the put option ends at-the-money. */
+    protected final boolean isPutATMIncluded_;
+    /** Type of replication. */
+    protected final Replication.Type replicationType_;
+    /** Underlying excluded from the payoff. */
+    protected final boolean nakedOption_;
     /** Strike rate for the call option. */
     protected double callStrike_;
     /** Strike rate for the put option. */
@@ -90,10 +98,6 @@ public class DigitalCoupon extends FloatingRateCoupon {
     protected double callCsi_;
     /** Multiplicative factor of put payoff (+1 long, -1 short). */
     protected double putCsi_;
-    /** Inclusion flag of the call payoff if the call option ends at-the-money. */
-    protected final boolean isCallATMIncluded_;
-    /** Inclusion flag of the put payoff if the put option ends at-the-money. */
-    protected final boolean isPutATMIncluded_;
     /** Cash-or-nothing call (true) vs asset-or-nothing call (false). */
     protected boolean isCallCashOrNothing_;
     /** Cash-or-nothing put (true) vs asset-or-nothing put (false). */
@@ -108,14 +112,8 @@ public class DigitalCoupon extends FloatingRateCoupon {
     /** Left/right gaps applied in payoff replication for put. */
     protected double putLeftEps_;
     protected double putRightEps_;
-
     protected boolean hasPutStrike_;
     protected boolean hasCallStrike_;
-    /** Type of replication. */
-    protected final Replication.Type replicationType_;
-    /** Underlying excluded from the payoff. */
-    protected final boolean nakedOption_;
-
 
     //
     // public constructors
@@ -123,36 +121,19 @@ public class DigitalCoupon extends FloatingRateCoupon {
 
     /** Convenience constructor with all defaults (no call/put options). */
     public DigitalCoupon(final FloatingRateCoupon underlying) {
-        this(underlying,
-             Constants.NULL_REAL, Position.Long, false, Constants.NULL_REAL,
-             Constants.NULL_REAL, Position.Long, false, Constants.NULL_REAL,
-             null, false);
+        this(underlying, Constants.NULL_REAL, Position.Long, false, Constants.NULL_REAL, Constants.NULL_REAL,
+                Position.Long, false, Constants.NULL_REAL, null, false);
     }
 
     /** Full constructor matching C++ DigitalCoupon ctor. */
-    public DigitalCoupon(final FloatingRateCoupon underlying,
-                         final double callStrike,
-                         final Position callPosition,
-                         final boolean isCallATMIncluded,
-                         final double callDigitalPayoff,
-                         final double putStrike,
-                         final Position putPosition,
-                         final boolean isPutATMIncluded,
-                         final double putDigitalPayoff,
-                         final DigitalReplication replication,
-                         final boolean nakedOption) {
-        super(underlying.date(),
-              underlying.nominal(),
-              underlying.accrualStartDate(),
-              underlying.accrualEndDate(),
-              underlying.fixingDays(),
-              underlying.index(),
-              underlying.gearing(),
-              underlying.spread(),
-              underlying.referencePeriodStart(),
-              underlying.referencePeriodEnd(),
-              underlying.dayCounter(),
-              underlying.isInArrears());
+    public DigitalCoupon(final FloatingRateCoupon underlying, final double callStrike, final Position callPosition,
+            final boolean isCallATMIncluded, final double callDigitalPayoff, final double putStrike,
+            final Position putPosition, final boolean isPutATMIncluded, final double putDigitalPayoff,
+            final DigitalReplication replication, final boolean nakedOption) {
+        super(underlying.date(), underlying.nominal(), underlying.accrualStartDate(), underlying.accrualEndDate(),
+                underlying.fixingDays(), underlying.index(), underlying.gearing(), underlying.spread(),
+                underlying.referencePeriodStart(), underlying.referencePeriodEnd(), underlying.dayCounter(),
+                underlying.isInArrears());
         this.underlying_ = underlying;
         this.isCallATMIncluded_ = isCallATMIncluded;
         this.isPutATMIncluded_ = isPutATMIncluded;
@@ -167,122 +148,119 @@ public class DigitalCoupon extends FloatingRateCoupon {
         callLeftEps_ = callRightEps_ = putLeftEps_ = putRightEps_ = rep.gap() / 2.0;
         replicationType_ = rep.replicationType();
 
-        if (putStrike == Constants.NULL_REAL) {
-            QL.require(putDigitalPayoff == Constants.NULL_REAL,
-                    "Put Cash rate non allowed if put strike is null");
+        if ( putStrike == Constants.NULL_REAL ) {
+            QL.require(putDigitalPayoff == Constants.NULL_REAL, "Put Cash rate non allowed if put strike is null");
         }
-        if (callStrike == Constants.NULL_REAL) {
-            QL.require(callDigitalPayoff == Constants.NULL_REAL,
-                    "Call Cash rate non allowed if call strike is null");
+        if ( callStrike == Constants.NULL_REAL ) {
+            QL.require(callDigitalPayoff == Constants.NULL_REAL, "Call Cash rate non allowed if call strike is null");
         }
-        if (callStrike != Constants.NULL_REAL) {
+        if ( callStrike != Constants.NULL_REAL ) {
             hasCallStrike_ = true;
             callStrike_ = callStrike;
-            switch (callPosition) {
-                case Long:
-                    callCsi_ = 1.0;
-                    break;
-                case Short:
-                    callCsi_ = -1.0;
-                    break;
-                default:
-                    throw new LibraryException("unsupported position type");
+            switch ( callPosition ) {
+            case Long:
+                callCsi_ = 1.0;
+                break;
+            case Short:
+                callCsi_ = -1.0;
+                break;
+            default:
+                throw new LibraryException("unsupported position type");
             }
-            if (callDigitalPayoff != Constants.NULL_REAL) {
+            if ( callDigitalPayoff != Constants.NULL_REAL ) {
                 callDigitalPayoff_ = callDigitalPayoff;
                 isCallCashOrNothing_ = true;
             }
         }
-        if (putStrike != Constants.NULL_REAL) {
+        if ( putStrike != Constants.NULL_REAL ) {
             hasPutStrike_ = true;
             putStrike_ = putStrike;
-            switch (putPosition) {
-                case Long:
-                    putCsi_ = 1.0;
-                    break;
-                case Short:
-                    putCsi_ = -1.0;
-                    break;
-                default:
-                    throw new LibraryException("unsupported position type");
+            switch ( putPosition ) {
+            case Long:
+                putCsi_ = 1.0;
+                break;
+            case Short:
+                putCsi_ = -1.0;
+                break;
+            default:
+                throw new LibraryException("unsupported position type");
             }
-            if (putDigitalPayoff != Constants.NULL_REAL) {
+            if ( putDigitalPayoff != Constants.NULL_REAL ) {
                 putDigitalPayoff_ = putDigitalPayoff;
                 isPutCashOrNothing_ = true;
             }
         }
 
-        switch (replicationType_) {
-            case Central:
-                // no-op (gaps already set to gap/2)
-                break;
-            case Sub:
-                if (hasCallStrike_) {
-                    switch (callPosition) {
-                        case Long:
-                            callLeftEps_ = 0.0;
-                            callRightEps_ = rep.gap();
-                            break;
-                        case Short:
-                            callLeftEps_ = rep.gap();
-                            callRightEps_ = 0.0;
-                            break;
-                        default:
-                            throw new LibraryException("unsupported position type");
-                    }
+        switch ( replicationType_ ) {
+        case Central:
+            // no-op (gaps already set to gap/2)
+            break;
+        case Sub:
+            if ( hasCallStrike_ ) {
+                switch ( callPosition ) {
+                case Long:
+                    callLeftEps_ = 0.0;
+                    callRightEps_ = rep.gap();
+                    break;
+                case Short:
+                    callLeftEps_ = rep.gap();
+                    callRightEps_ = 0.0;
+                    break;
+                default:
+                    throw new LibraryException("unsupported position type");
                 }
-                if (hasPutStrike_) {
-                    switch (putPosition) {
-                        case Long:
-                            putLeftEps_ = rep.gap();
-                            putRightEps_ = 0.0;
-                            break;
-                        case Short:
-                            putLeftEps_ = 0.0;
-                            putRightEps_ = rep.gap();
-                            break;
-                        default:
-                            throw new LibraryException("unsupported position type");
-                    }
+            }
+            if ( hasPutStrike_ ) {
+                switch ( putPosition ) {
+                case Long:
+                    putLeftEps_ = rep.gap();
+                    putRightEps_ = 0.0;
+                    break;
+                case Short:
+                    putLeftEps_ = 0.0;
+                    putRightEps_ = rep.gap();
+                    break;
+                default:
+                    throw new LibraryException("unsupported position type");
                 }
-                break;
-            case Super:
-                if (hasCallStrike_) {
-                    switch (callPosition) {
-                        case Long:
-                            callLeftEps_ = rep.gap();
-                            callRightEps_ = 0.0;
-                            break;
-                        case Short:
-                            callLeftEps_ = 0.0;
-                            callRightEps_ = rep.gap();
-                            break;
-                        default:
-                            throw new LibraryException("unsupported position type");
-                    }
+            }
+            break;
+        case Super:
+            if ( hasCallStrike_ ) {
+                switch ( callPosition ) {
+                case Long:
+                    callLeftEps_ = rep.gap();
+                    callRightEps_ = 0.0;
+                    break;
+                case Short:
+                    callLeftEps_ = 0.0;
+                    callRightEps_ = rep.gap();
+                    break;
+                default:
+                    throw new LibraryException("unsupported position type");
                 }
-                if (hasPutStrike_) {
-                    switch (putPosition) {
-                        case Long:
-                            putLeftEps_ = 0.0;
-                            putRightEps_ = rep.gap();
-                            break;
-                        case Short:
-                            putLeftEps_ = rep.gap();
-                            putRightEps_ = 0.0;
-                            break;
-                        default:
-                            throw new LibraryException("unsupported position type");
-                    }
+            }
+            if ( hasPutStrike_ ) {
+                switch ( putPosition ) {
+                case Long:
+                    putLeftEps_ = 0.0;
+                    putRightEps_ = rep.gap();
+                    break;
+                case Short:
+                    putLeftEps_ = rep.gap();
+                    putRightEps_ = 0.0;
+                    break;
+                default:
+                    throw new LibraryException("unsupported position type");
                 }
-                break;
-            default:
-                throw new LibraryException("unsupported replication type");
+            }
+            break;
+        default:
+            throw new LibraryException("unsupported replication type");
         }
 
         this.underlying_.addObserver(this);
     }
-
 
     //
     // overrides FloatingRateCoupon
@@ -290,11 +268,11 @@ public class DigitalCoupon extends FloatingRateCoupon {
 
     @Override
     public void setPricer(final FloatingRateCouponPricer pricer) {
-        if (this.pricer_ != null) {
+        if ( this.pricer_ != null ) {
             this.pricer_.deleteObserver(this);
         }
         this.pricer_ = pricer;
-        if (this.pricer_ != null) {
+        if ( this.pricer_ != null ) {
             this.pricer_.addObserver(this);
         }
         update();
@@ -311,13 +289,12 @@ public class DigitalCoupon extends FloatingRateCoupon {
         final boolean enforceTodaysHistoricFixings = s.isEnforcesTodaysHistoricFixings();
         final double underlyingRate = nakedOption_ ? 0.0 : underlying_.rate();
 
-        if (fixingDate.lt(today)
-                || (fixingDate.equals(today) && enforceTodaysHistoricFixings)) {
+        if ( fixingDate.lt(today) || (fixingDate.equals(today) && enforceTodaysHistoricFixings) ) {
             // must have been fixed
             return underlyingRate + callCsi_ * callPayoff() + putCsi_ * putPayoff();
-        } else if (fixingDate.equals(today)) {
+        } else if ( fixingDate.equals(today) ) {
             // might have been fixed
-            if (hasHistoricalFixing(fixingDate)) {
+            if ( hasHistoricalFixing(fixingDate) ) {
                 return underlyingRate + callCsi_ * callPayoff() + putCsi_ * putPayoff();
             }
             return underlyingRate + callCsi_ * callOptionRate() + putCsi_ * putOptionRate();
@@ -330,7 +307,6 @@ public class DigitalCoupon extends FloatingRateCoupon {
     public double convexityAdjustment() {
         return underlying_.convexityAdjustment();
     }
-
 
     //
     // public inspectors
@@ -377,24 +353,22 @@ public class DigitalCoupon extends FloatingRateCoupon {
     }
 
     /**
-     * Call option rate. Multiplied by {@code nominal * accrualPeriod * discount}
-     * gives the NPV of the call option.
+     * Call option rate. Multiplied by {@code nominal * accrualPeriod * discount} gives the NPV of the call option.
      */
     public double callOptionRate() {
         double callOptionRate = 0.0;
-        if (hasCallStrike_) {
+        if ( hasCallStrike_ ) {
             // Step function
             callOptionRate = isCallCashOrNothing_ ? callDigitalPayoff_ : callStrike_;
-            final CappedFlooredCoupon next = new CappedFlooredCoupon(
-                    underlying_, callStrike_ + callRightEps_, Constants.NULL_REAL);
-            final CappedFlooredCoupon previous = new CappedFlooredCoupon(
-                    underlying_, callStrike_ - callLeftEps_, Constants.NULL_REAL);
-            callOptionRate *= (next.rate() - previous.rate())
-                    / (callLeftEps_ + callRightEps_);
-            if (!isCallCashOrNothing_) {
+            final CappedFlooredCoupon next = new CappedFlooredCoupon(underlying_, callStrike_ + callRightEps_,
+                    Constants.NULL_REAL);
+            final CappedFlooredCoupon previous = new CappedFlooredCoupon(underlying_, callStrike_ - callLeftEps_,
+                    Constants.NULL_REAL);
+            callOptionRate *= (next.rate() - previous.rate()) / (callLeftEps_ + callRightEps_);
+            if ( !isCallCashOrNothing_ ) {
                 // Asset-or-nothing call: add (underlying - cap-at-strike)
-                final CappedFlooredCoupon atStrike = new CappedFlooredCoupon(
-                        underlying_, callStrike_, Constants.NULL_REAL);
+                final CappedFlooredCoupon atStrike = new CappedFlooredCoupon(underlying_, callStrike_,
+                        Constants.NULL_REAL);
                 final double call = underlying_.rate() - atStrike.rate();
                 callOptionRate += call;
             }
@@ -403,31 +377,28 @@ public class DigitalCoupon extends FloatingRateCoupon {
     }
 
     /**
-     * Put option rate. Multiplied by {@code nominal * accrualPeriod * discount}
-     * gives the NPV of the put option.
+     * Put option rate. Multiplied by {@code nominal * accrualPeriod * discount} gives the NPV of the put option.
      */
     public double putOptionRate() {
         double putOptionRate = 0.0;
-        if (hasPutStrike_) {
+        if ( hasPutStrike_ ) {
             // Step function
             putOptionRate = isPutCashOrNothing_ ? putDigitalPayoff_ : putStrike_;
-            final CappedFlooredCoupon next = new CappedFlooredCoupon(
-                    underlying_, Constants.NULL_REAL, putStrike_ + putRightEps_);
-            final CappedFlooredCoupon previous = new CappedFlooredCoupon(
-                    underlying_, Constants.NULL_REAL, putStrike_ - putLeftEps_);
-            putOptionRate *= (next.rate() - previous.rate())
-                    / (putLeftEps_ + putRightEps_);
-            if (!isPutCashOrNothing_) {
+            final CappedFlooredCoupon next = new CappedFlooredCoupon(underlying_, Constants.NULL_REAL,
+                    putStrike_ + putRightEps_);
+            final CappedFlooredCoupon previous = new CappedFlooredCoupon(underlying_, Constants.NULL_REAL,
+                    putStrike_ - putLeftEps_);
+            putOptionRate *= (next.rate() - previous.rate()) / (putLeftEps_ + putRightEps_);
+            if ( !isPutCashOrNothing_ ) {
                 // Asset-or-nothing put: add (-underlying + floor-at-strike)
-                final CappedFlooredCoupon atStrike = new CappedFlooredCoupon(
-                        underlying_, Constants.NULL_REAL, putStrike_);
+                final CappedFlooredCoupon atStrike = new CappedFlooredCoupon(underlying_, Constants.NULL_REAL,
+                        putStrike_);
                 final double put = -underlying_.rate() + atStrike.rate();
                 putOptionRate -= put;
             }
         }
         return putOptionRate;
     }
-
 
     //
     // implements Observer
@@ -438,21 +409,19 @@ public class DigitalCoupon extends FloatingRateCoupon {
         notifyObservers();
     }
 
-
     //
     // implements PolymorphicVisitable
     //
 
     @Override
     public void accept(final PolymorphicVisitor pv) {
-        final Visitor<DigitalCoupon> v = (pv != null) ? pv.visitor(this.getClass()) : null;
-        if (v != null) {
+        final Visitor< DigitalCoupon > v = (pv != null) ? pv.visitor(this.getClass()) : null;
+        if ( v != null ) {
             v.visit(this);
         } else {
             super.accept(pv);
         }
     }
-
 
     //
     // private helpers
@@ -461,13 +430,13 @@ public class DigitalCoupon extends FloatingRateCoupon {
     /** Used only when the index has fixed (historic). */
     private double callPayoff() {
         double payoff = 0.0;
-        if (hasCallStrike_) {
+        if ( hasCallStrike_ ) {
             final double underlyingRate = underlying_.rate();
-            if ((underlyingRate - callStrike_) > 1.0e-16) {
+            if ( (underlyingRate - callStrike_) > 1.0e-16 ) {
                 payoff = isCallCashOrNothing_ ? callDigitalPayoff_ : underlyingRate;
             } else {
-                if (isCallATMIncluded_) {
-                    if (Math.abs(callStrike_ - underlyingRate) <= 1.0e-16) {
+                if ( isCallATMIncluded_ ) {
+                    if ( Math.abs(callStrike_ - underlyingRate) <= 1.0e-16 ) {
                         payoff = isCallCashOrNothing_ ? callDigitalPayoff_ : underlyingRate;
                     }
                 }
@@ -479,13 +448,13 @@ public class DigitalCoupon extends FloatingRateCoupon {
     /** Used only when the index has fixed (historic). */
     private double putPayoff() {
         double payoff = 0.0;
-        if (hasPutStrike_) {
+        if ( hasPutStrike_ ) {
             final double underlyingRate = underlying_.rate();
-            if ((putStrike_ - underlyingRate) > 1.0e-16) {
+            if ( (putStrike_ - underlyingRate) > 1.0e-16 ) {
                 payoff = isPutCashOrNothing_ ? putDigitalPayoff_ : underlyingRate;
             } else {
-                if (isPutATMIncluded_) {
-                    if (Math.abs(putStrike_ - underlyingRate) <= 1.0e-16) {
+                if ( isPutATMIncluded_ ) {
+                    if ( Math.abs(putStrike_ - underlyingRate) <= 1.0e-16 ) {
                         payoff = isPutCashOrNothing_ ? putDigitalPayoff_ : underlyingRate;
                     }
                 }
@@ -495,18 +464,15 @@ public class DigitalCoupon extends FloatingRateCoupon {
     }
 
     /**
-     * Returns true iff the underlying index has a historical fixing on the
-     * given date. Mirrors C++ {@code Index::hasHistoricalFixing(Date)}, which
-     * the Java port doesn't yet expose; we look up the IndexManager history
-     * directly.
+     * Returns true iff the underlying index has a historical fixing on the given date. Mirrors C++
+     * {@code Index::hasHistoricalFixing(Date)}, which the Java port doesn't yet expose; we look up the IndexManager
+     * history directly.
      */
     private boolean hasHistoricalFixing(final Date fixingDate) {
         try {
-            final Double v = IndexManager.getInstance()
-                    .getHistory(underlying_.index().name())
-                    .get(fixingDate);
+            final Double v = IndexManager.getInstance().getHistory(underlying_.index().name()).get(fixingDate);
             return v != null;
-        } catch (final Exception e) {
+        } catch ( final Exception e ) {
             return false;
         }
     }

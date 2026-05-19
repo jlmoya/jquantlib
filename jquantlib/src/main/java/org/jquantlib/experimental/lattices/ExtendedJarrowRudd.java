@@ -45,37 +45,32 @@ package org.jquantlib.experimental.lattices;
 import org.jquantlib.processes.StochasticProcess1D;
 
 /**
-* Cox-Ross-Rubinstein (multiplicative) equal jumps binomial tree
-*
-* @category lattices
-*
-* @author Richard Gomes
-*/
+ * Cox-Ross-Rubinstein (multiplicative) equal jumps binomial tree
+ *
+ * @author Richard Gomes
+ * @category lattices
+ */
 public class ExtendedJarrowRudd extends ExtendedEqualProbabilitiesBinomialTree /*<ExtendedCoxRossRubinstein> */ {
 
-   //
-   // public methods
-   //
+    //
+    // public methods
+    //
 
-   public ExtendedJarrowRudd(
-           final StochasticProcess1D process,
-           final /* @Time */ double end,
-           final int steps,
-           final double strike) {
+    public ExtendedJarrowRudd(final StochasticProcess1D process, final /* @Time */ double end, final int steps,
+            final double strike) {
 
-       super(process, end, steps);
-       // drift removed
-       this.up = process.stdDeviation(0.0, x0, dt);
-   }
+        super(process, end, steps);
+        // drift removed
+        this.up = process.stdDeviation(0.0, x0, dt);
+    }
 
+    //
+    // protected methods
+    //
 
-   //
-   // protected methods
-   //
-
-   @Override
-   protected double upStep(/* @Time */ final double stepTime) /* @ReadOnly */ {
-       return treeProcess.stdDeviation(stepTime, x0, dt);
-   }
+    @Override
+    protected double upStep(/* @Time */ final double stepTime) /* @ReadOnly */ {
+        return treeProcess.stdDeviation(stepTime, x0, dt);
+    }
 
 }

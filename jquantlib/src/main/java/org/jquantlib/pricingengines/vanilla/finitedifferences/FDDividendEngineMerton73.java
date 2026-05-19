@@ -45,13 +45,12 @@ import org.jquantlib.processes.GeneralizedBlackScholesProcess;
 /**
  * Finite-differences pricing engine for dividend options using escowed dividend model
  * <p>
- * The merton 73 engine is the classic engine described in most derivatives texts. However, Haug, Haug, and Lewis in "Back to
- * Basics: a new approach to the discrete dividend problem" argues that this scheme underprices call options. This is set as the
- * default engine, because it is consistent with the analytic version.
- *
- * @category vanillaengines
+ * The merton 73 engine is the classic engine described in most derivatives texts. However, Haug, Haug, and Lewis in
+ * "Back to Basics: a new approach to the discrete dividend problem" argues that this scheme underprices call options.
+ * This is set as the default engine, because it is consistent with the analytic version.
  *
  * @author Srinivas Hasti
+ * @category vanillaengines
  */
 public class FDDividendEngineMerton73 extends FDDividendEngineBase {
 
@@ -59,14 +58,10 @@ public class FDDividendEngineMerton73 extends FDDividendEngineBase {
     // public methods
     //
 
-    public FDDividendEngineMerton73(
-            final GeneralizedBlackScholesProcess process,
-            final int timeSteps,
-            final int gridPoints,
-            final boolean timeDependent) {
+    public FDDividendEngineMerton73(final GeneralizedBlackScholesProcess process, final int timeSteps,
+            final int gridPoints, final boolean timeDependent) {
         super(process, timeSteps, gridPoints, timeDependent);
     }
-
 
     //
     // protected methods
@@ -84,10 +79,10 @@ public class FDDividendEngineMerton73 extends FDDividendEngineBase {
     @Override
     protected void setGridLimits() /* @ReadOnly */ {
         double paidDividends = 0.0;
-        for (int i=0; i<events.size(); i++)
-            if (getDividendTime(i) >= 0.0)
+        for ( int i = 0; i < events.size(); i++ )
+            if ( getDividendTime(i) >= 0.0 )
                 paidDividends += getDiscountedDividend(i);
-        super.setGridLimits(process.stateVariable().currentLink().value()-paidDividends, getResidualTime());
+        super.setGridLimits(process.stateVariable().currentLink().value() - paidDividends, getResidualTime());
         ensureStrikeInGrid();
     }
 

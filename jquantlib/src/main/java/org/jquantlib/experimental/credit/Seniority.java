@@ -26,15 +26,13 @@
 package org.jquantlib.experimental.credit;
 
 /**
- * Seniority of a bond, also serving as ISDA tier/seniority used for CDS
- * conventional spreads.
+ * Seniority of a bond, also serving as ISDA tier/seniority used for CDS conventional spreads.
  *
  * <p>Java port of QuantLib v1.42.1 enum {@code QuantLib::Seniority}
- * ({@code ql/experimental/credit/defaulttype.hpp}). The C++ enum re-uses
- * underlying ordinal slots for synonyms (Markit parlance);
- * Java doesn't allow duplicate enum constants, so the Markit aliases are
- * exposed as {@code public static final} references to the canonical
- * constants. Use {@link #ordinal()} to recover the C++ integer code.
+ * ({@code ql/experimental/credit/defaulttype.hpp}). The C++ enum re-uses underlying ordinal slots for synonyms (Markit
+ * parlance); Java doesn't allow duplicate enum constants, so the Markit aliases are exposed as
+ * {@code public static final} references to the canonical constants. Use {@link #ordinal()} to recover the C++ integer
+ * code.
  *
  * <ul>
  *   <li>{@link #SecDom} = 0 (also {@link #SeniorSec})</li>
@@ -48,11 +46,7 @@ package org.jquantlib.experimental.credit;
  * <p>Phase 4m foundation.
  */
 public enum Seniority {
-    SecDom,
-    SnrFor,
-    SubLT2,
-    JrSubT2,
-    PrefT1,
+    SecDom, SnrFor, SubLT2, JrSubT2, PrefT1,
     /** Unassigned value, allows for default RR quote. */
     NoSeniority;
 

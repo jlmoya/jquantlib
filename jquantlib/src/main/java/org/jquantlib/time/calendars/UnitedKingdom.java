@@ -23,14 +23,6 @@
 
 package org.jquantlib.time.calendars;
 
-import static org.jquantlib.time.Month.August;
-import static org.jquantlib.time.Month.December;
-import static org.jquantlib.time.Month.January;
-import static org.jquantlib.time.Month.June;
-import static org.jquantlib.time.Month.May;
-import static org.jquantlib.time.Weekday.Monday;
-import static org.jquantlib.time.Weekday.Tuesday;
-
 import org.jquantlib.lang.annotation.QualityAssurance;
 import org.jquantlib.lang.annotation.QualityAssurance.Quality;
 import org.jquantlib.lang.annotation.QualityAssurance.Version;
@@ -39,6 +31,10 @@ import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Month;
 import org.jquantlib.time.Weekday;
+
+import static org.jquantlib.time.Month.January;
+import static org.jquantlib.time.Weekday.Monday;
+import static org.jquantlib.time.Weekday.Tuesday;
 
 /**
  *
@@ -84,21 +80,44 @@ import org.jquantlib.time.Weekday;
  * <li>Boxing Day, DECEMBER 26th (possibly moved to Monday or Tuesday)</li>
  * </ul>
  *
+ * @author Srinivas Hasti TODO add LIFFE
+ * @author Zahid Hussain
  * @category calendars
  * @TODO add LIFFE
  * @test the correctness of the returned results is tested against a list of known holidays.
- *
- * @author Srinivas Hasti TODO add LIFFE
- * @author Zahid Hussain
  */
 
-@QualityAssurance(quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Zahid Hussain" })
+@QualityAssurance( quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Zahid Hussain" } )
 public class UnitedKingdom extends Calendar {
+    public UnitedKingdom() {
+        this(Market.Settlement);
+    }
+
+    //
+    // public constructors
+    //
+
+    public UnitedKingdom(final Market market) {
+        switch ( market ) {
+        case Settlement:
+            impl = new SettlementImpl();
+            break;
+        case Exchange:
+            impl = new ExchangeImpl();
+            break;
+        case Metals:
+            impl = new MetalsImpl();
+            break;
+        default:
+            throw new LibraryException(UNKNOWN_MARKET);
+        }
+    }
+
     /**
      * UK calendars
      *
      */
-    public static enum Market {
+    public enum Market {
         /**
          * Generic settlement calendar
          */
@@ -113,30 +132,6 @@ public class UnitedKingdom extends Calendar {
          * London Metals Exchange calendar
          */
         Metals
-    };
-
-    //
-    // public constructors
-    //
-
-    public UnitedKingdom() {
-        this(Market.Settlement);
-    }
-
-    public UnitedKingdom(final Market market) {
-        switch (market) {
-        case Settlement:
-            impl = new SettlementImpl();
-            break;
-        case Exchange:
-            impl = new ExchangeImpl();
-            break;
-        case Metals:
-            impl = new MetalsImpl();
-            break;
-        default:
-            throw new LibraryException(UNKNOWN_MARKET);
-        }
     }
 
     //
@@ -157,35 +152,32 @@ public class UnitedKingdom extends Calendar {
             final Month m = date.month();
             final int y = date.year();
             final int em = easterMonday(y);
-            if (isWeekend(w)
-            // New Year's Day (possibly moved to Monday)
-                    || ((d == 1 || ((d == 2 || d == 3) && w == Monday)) && m == January)
+            return !isWeekend(w)
+                    // New Year's Day (possibly moved to Monday)
+                    && ((d != 1 && ((d != 2 && d != 3) || w != Monday)) || m != January)
                     // Good Friday
-                    || (dd == em - 3)
+                    && (dd != em - 3)
                     // Easter MONDAY
-                    || (dd == em)
+                    && (dd != em)
                     // first MONDAY of May (Early May Bank Holiday)
-                    || (d <= 7 && w == Monday && m == Month.May)
+                    && (d > 7 || w != Monday || m != Month.May)
                     // last MONDAY of MAY (Spring Bank Holiday)
-                    || (d >= 25 && w == Monday && m == Month.May && y != 2002)
+                    && (d < 25 || w != Monday || m != Month.May || y == 2002)
                     // last MONDAY of August (Summer Bank Holiday)
-                    || (d >= 25 && w == Monday && m == Month.August)
+                    && (d < 25 || w != Monday || m != Month.August)
                     // Christmas (possibly moved to MONDAY or Tuesday)
-                    || ((d == 25 || (d == 27 && (w == Monday || w == Tuesday))) && m == Month.December)
+                    && ((d != 25 && (d != 27 || (w != Monday && w != Tuesday))) || m != Month.December)
                     // Boxing Day (possibly moved to MONDAY or TUESDAY)
-                    || ((d == 26 || (d == 28 && (w == Monday || w == Tuesday))) && m == Month.December)
+                    && ((d != 26 && (d != 28 || (w != Monday && w != Tuesday))) || m != Month.December)
                     // June 3rd, 2002 only (Golden Jubilee Bank Holiday)
                     // June 4rd, 2002 only (special Spring Bank Holiday)
-                    || ((d == 3 || d == 4) && m == Month.June && y == 2002)
+                    && ((d != 3 && d != 4) || m != Month.June || y != 2002)
                     // June, 5th, 2012 only (Queens Diamond Jubilee)
-                    || (d == 5 && m == Month.June && y == 2012)
+                    && (d != 5 || m != Month.June || y != 2012)
                     // April, 29th, 2011 only (Royal Wedding)
-                    || (d == 29 && m == Month.April && y == 2011)
+                    && (d != 29 || m != Month.April || y != 2011)
                     // DECEMBER 31st, 1999 only
-                    || (d == 31 && m == Month.December && y == 1999)) {
-                return false;
-            }
-            return true;
+                    && (d != 31 || m != Month.December || y != 1999);
         }
     }
 
@@ -202,35 +194,32 @@ public class UnitedKingdom extends Calendar {
             final Month m = date.month();
             final int y = date.year();
             final int em = easterMonday(y);
-            if (isWeekend(w)
-            // New Year's Day (possibly moved to MONDAY)
-                    || ((d == 1 || ((d == 2 || d == 3) && w == Monday)) && m == January)
+            return !isWeekend(w)
+                    // New Year's Day (possibly moved to MONDAY)
+                    && ((d != 1 && ((d != 2 && d != 3) || w != Monday)) || m != January)
                     // Good Friday
-                    || (dd == em - 3)
+                    && (dd != em - 3)
                     // Easter MONDAY
-                    || (dd == em)
+                    && (dd != em)
                     // first MONDAY of MAY (Early MAY Bank Holiday)
-                    || (d <= 7 && w == Monday && m == Month.May)
+                    && (d > 7 || w != Monday || m != Month.May)
                     // last MONDAY of MAY (Spring Bank Holiday)
-                    || (d >= 25 && w == Monday && m == Month.May && y != 2002)
+                    && (d < 25 || w != Monday || m != Month.May || y == 2002)
                     // last MONDAY of AUGUST (Summer Bank Holiday)
-                    || (d >= 25 && w == Monday && m == Month.August)
+                    && (d < 25 || w != Monday || m != Month.August)
                     // Christmas (possibly moved to MONDAY or TUESDAY)
-                    || ((d == 25 || (d == 27 && (w == Monday || w == Tuesday))) && m == Month.December)
+                    && ((d != 25 && (d != 27 || (w != Monday && w != Tuesday))) || m != Month.December)
                     // Boxing Day (possibly moved to MONDAY or TUESDAY)
-                    || ((d == 26 || (d == 28 && (w == Monday || w == Tuesday))) && m == Month.December)
+                    && ((d != 26 && (d != 28 || (w != Monday && w != Tuesday))) || m != Month.December)
                     // JUNE 3rd, 2002 only (Golden Jubilee Bank Holiday)
                     // JUNE 4rd, 2002 only (special Spring Bank Holiday)
-                    || ((d == 3 || d == 4) && m == Month.June && y == 2002)
+                    && ((d != 3 && d != 4) || m != Month.June || y != 2002)
                     // June, 5th, 2012 only (Queens Diamond Jubilee)
-                    || (d == 5 && m == Month.June && y == 2012)
+                    && (d != 5 || m != Month.June || y != 2012)
                     // April, 29th, 2011 only (Royal Wedding)
-                    || (d == 29 && m == Month.April && y == 2011)
+                    && (d != 29 || m != Month.April || y != 2011)
                     // DECEMBER 31st, 1999 only
-                    || (d == 31 && m == Month.December && y == 1999)) {
-                return false;
-            }
-            return true;
+                    && (d != 31 || m != Month.December || y != 1999);
         }
     }
 
@@ -247,35 +236,32 @@ public class UnitedKingdom extends Calendar {
             final Month m = date.month();
             final int y = date.year();
             final int em = easterMonday(y);
-            if (isWeekend(w)
-            // New Year's Day (possibly moved to MONDAY)
-                    || ((d == 1 || ((d == 2 || d == 3) && w == Monday)) && m == January)
+            return !isWeekend(w)
+                    // New Year's Day (possibly moved to MONDAY)
+                    && ((d != 1 && ((d != 2 && d != 3) || w != Monday)) || m != January)
                     // Good Friday
-                    || (dd == em - 3)
+                    && (dd != em - 3)
                     // Easter MONDAY
-                    || (dd == em)
+                    && (dd != em)
                     // first MONDAY of MAY (Early MAY Bank Holiday)
-                    || (d <= 7 && w == Monday && m == Month.May)
+                    && (d > 7 || w != Monday || m != Month.May)
                     // last MONDAY of MAY (Spring Bank Holiday)
-                    || (d >= 25 && w == Monday && m == Month.May && y != 2002)
+                    && (d < 25 || w != Monday || m != Month.May || y == 2002)
                     // last MONDAY of AUGUST (Summer Bank Holiday)
-                    || (d >= 25 && w == Monday && m == Month.August)
+                    && (d < 25 || w != Monday || m != Month.August)
                     // Christmas (possibly moved to MONDAY or TUESDAY)
-                    || ((d == 25 || (d == 27 && (w == Monday || w == Tuesday))) && m == Month.December)
+                    && ((d != 25 && (d != 27 || (w != Monday && w != Tuesday))) || m != Month.December)
                     // Boxing Day (possibly moved to MONDAY or TUESDAY)
-                    || ((d == 26 || (d == 28 && (w == Monday || w == Tuesday))) && m == Month.December)
+                    && ((d != 26 && (d != 28 || (w != Monday && w != Tuesday))) || m != Month.December)
                     // JUNE 3rd, 2002 only (Golden Jubilee Bank Holiday)
                     // JUNE 4rd, 2002 only (special Spring Bank Holiday)
-                    || ((d == 3 || d == 4) && m == Month.June && y == 2002)
+                    && ((d != 3 && d != 4) || m != Month.June || y != 2002)
                     // June, 5th, 2012 only (Queens Diamond Jubilee)
-                    || (d == 5 && m == Month.June && y == 2012)
+                    && (d != 5 || m != Month.June || y != 2012)
                     // April, 29th, 2011 only (Royal Wedding)
-                    || (d == 29 && m == Month.April && y == 2011)
+                    && (d != 29 || m != Month.April || y != 2011)
                     // DECEMBER 31st, 1999 only
-                    || (d == 31 && m == Month.December && y == 1999)) {
-                return false;
-            }
-            return true;
+                    && (d != 31 || m != Month.December || y != 1999);
         }
     }
 }

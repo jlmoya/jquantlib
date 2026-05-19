@@ -21,32 +21,25 @@
  */
 package org.jquantlib.experimental.inflation;
 
-import java.util.List;
-
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.indexes.YoYInflationIndex;
 import org.jquantlib.termstructures.YoYInflationTermStructure;
-import org.jquantlib.time.BusinessDayConvention;
-import org.jquantlib.time.Calendar;
-import org.jquantlib.time.Date;
-import org.jquantlib.time.Frequency;
-import org.jquantlib.time.Period;
+import org.jquantlib.time.*;
+
+import java.util.List;
 
 /**
  * Forward-declared interface placeholder for {@code YoYCapFloorTermPriceSurface}.
  *
  * <p>The concrete C++ class
- * {@code ql/experimental/inflation/yoycapfloortermpricesurface.hpp} is
- * scheduled to land in Phase 2s Track C. Track B (this track) needs to
- * reference its API surface for {@link YoYOptionletStripper},
- * {@link InterpolatedYoYOptionletStripper}, and
- * {@link KInterpolatedYoYOptionletVolatilitySurface}.
+ * {@code ql/experimental/inflation/yoycapfloortermpricesurface.hpp} is scheduled to land in Phase 2s Track C. Track B
+ * (this track) needs to reference its API surface for {@link YoYOptionletStripper},
+ * {@link InterpolatedYoYOptionletStripper}, and {@link KInterpolatedYoYOptionletVolatilitySurface}.
  *
  * <p>Strategy 1 pattern: define the interface here, in the same package as
- * Track B, capturing exactly the methods Track B needs. When Track C lands,
- * its concrete {@code YoYCapFloorTermPriceSurface} implements this interface
- * (declaring {@code implements YoYCapFloorTermPriceSurfaceLike}). No further
- * refactoring is needed in Track B.
+ * Track B, capturing exactly the methods Track B needs. When Track C lands, its concrete
+ * {@code YoYCapFloorTermPriceSurface} implements this interface (declaring
+ * {@code implements YoYCapFloorTermPriceSurfaceLike}). No further refactoring is needed in Track B.
  *
  * <p>This mirrors the same pattern used in Phase 2r Track C for the
  * {@code YoYInflationCapFloorEngine} interface.
@@ -92,16 +85,16 @@ public interface YoYCapFloorTermPriceSurfaceLike {
     Date baseDate();
 
     /** Cap strikes (sorted ascending). */
-    List<Double> capStrikes();
+    List< Double > capStrikes();
 
     /** Floor strikes (sorted ascending). */
-    List<Double> floorStrikes();
+    List< Double > floorStrikes();
 
     /** All strikes (caps and floors merged + sorted). */
-    List<Double> strikes();
+    List< Double > strikes();
 
     /** Available cap/floor maturities (tenors). */
-    List<Period> maturities();
+    List< Period > maturities();
 
     /** Smallest maturity present in the surface. */
     Period minMaturity();

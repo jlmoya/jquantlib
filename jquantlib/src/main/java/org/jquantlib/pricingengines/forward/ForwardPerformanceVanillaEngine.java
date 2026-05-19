@@ -27,8 +27,8 @@ import org.jquantlib.time.Frequency;
  * Forward (strike-resetting) performance vanilla-option engine.
  *
  * <p>Phase 5i.5-MGR Java port of C++
- * {@code ForwardPerformanceVanillaEngine<AnalyticEuropeanEngine>}
- * (v1.42.1 ql/pricingengines/forward/forwardperformanceengine.hpp).
+ * {@code ForwardPerformanceVanillaEngine<AnalyticEuropeanEngine>} (v1.42.1
+ * ql/pricingengines/forward/forwardperformanceengine.hpp).
  *
  * <p>Performance variant: NPV is the inner discounted price scaled by
  * {@code 1 / S(0)}, paying off as a percentage performance.
@@ -41,15 +41,13 @@ public class ForwardPerformanceVanillaEngine extends ForwardVanillaEngine {
 
     @Override
     protected void getOriginalResults() {
-        final ForwardVanillaOption.ArgumentsImpl args =
-                (ForwardVanillaOption.ArgumentsImpl) arguments_;
-        final ForwardVanillaOption.ResultsImpl r =
-                (ForwardVanillaOption.ResultsImpl) results_;
+        final ForwardVanillaOption.ArgumentsImpl args = (ForwardVanillaOption.ArgumentsImpl) arguments_;
+        final ForwardVanillaOption.ResultsImpl r = (ForwardVanillaOption.ResultsImpl) results_;
         final org.jquantlib.instruments.Option.GreeksImpl rg = r.greeks();
 
         final DayCounter rfdc = process_.riskFreeRate().currentLink().dayCounter();
-        final double resetTime = rfdc.yearFraction(
-                process_.riskFreeRate().currentLink().referenceDate(), args.resetDate);
+        final double resetTime = rfdc.yearFraction(process_.riskFreeRate().currentLink().referenceDate(),
+                args.resetDate);
         double discR = process_.riskFreeRate().currentLink().discount(args.resetDate);
 
         // Performance option: divide by S(0) to make payoff a percentage.
@@ -61,8 +59,7 @@ public class ForwardPerformanceVanillaEngine extends ForwardVanillaEngine {
         rg.delta = 0.0;
         rg.gamma = 0.0;
         rg.theta = process_.riskFreeRate().currentLink()
-                .zeroRate(args.resetDate, rfdc, Compounding.Continuous, Frequency.NoFrequency)
-                .rate() * r.value;
+                .zeroRate(args.resetDate, rfdc, Compounding.Continuous, Frequency.NoFrequency).rate() * r.value;
         rg.vega = discR * ig.vega;
         rg.rho = -resetTime * r.value + discR * ig.rho;
         rg.dividendRho = discR * ig.dividendRho;

@@ -51,44 +51,35 @@ import org.jquantlib.time.Period;
 import org.jquantlib.time.calendars.Japan;
 
 /**
- * Tokyo Interbank Offered Rate
- * This is the rate fixed in Tokio by JBA. 
- * Use JPYLibor if you're interested in the London fixing by BBA.
- * 
+ * Tokyo Interbank Offered Rate This is the rate fixed in Tokio by JBA. Use JPYLibor if you're interested in the London
+ * fixing by BBA.
+ *
  * TODO check settlement days and end-of-month adjustment.
- 
  */
 public class Tibor extends IborIndex {
 
-	public Tibor(final Period tenor) {
-		this(tenor, new Handle<YieldTermStructure>(
-						new AbstractYieldTermStructure() {
-							@Override
-							protected double discountImpl(final double t) {
-								throw new UnsupportedOperationException();
-							}
-							@Override
-							public Date maxDate() {
-								throw new UnsupportedOperationException();
-							}
-						}
-				));
-	}
+    public Tibor(final Period tenor) {
+        this(tenor, new Handle< YieldTermStructure >(new AbstractYieldTermStructure() {
+            @Override
+            protected double discountImpl(final double t) {
+                throw new UnsupportedOperationException();
+            }
 
-	public Tibor(final Period tenor,
-			final Handle<YieldTermStructure> h) {
-		// align(indexes.ibor): match C++ v1.42.1 tibor.hpp settlementDays=2
-		// (was 0). Tokyo Interbank Offered Rate (TIBOR) is fixed by JBA with
-		// the standard 2-day Tokyo value-date convention; Java port's 0
-		// caused fixing/value/maturity-date misalignment of the same shape
-		// as the JPYLibor bug fixed in Phase Bug-Fix-4.
-		super("Tibor", tenor, 2,
-				new JPYCurrency(),
-				new Japan(),
-				BusinessDayConvention.ModifiedFollowing,
-				false,
-				new Actual365Fixed(),
-				h);
-	}
+            @Override
+            public Date maxDate() {
+                throw new UnsupportedOperationException();
+            }
+        }));
+    }
+
+    public Tibor(final Period tenor, final Handle< YieldTermStructure > h) {
+        // align(indexes.ibor): match C++ v1.42.1 tibor.hpp settlementDays=2
+        // (was 0). Tokyo Interbank Offered Rate (TIBOR) is fixed by JBA with
+        // the standard 2-day Tokyo value-date convention; Java port's 0
+        // caused fixing/value/maturity-date misalignment of the same shape
+        // as the JPYLibor bug fixed in Phase Bug-Fix-4.
+        super("Tibor", tenor, 2, new JPYCurrency(), new Japan(), BusinessDayConvention.ModifiedFollowing, false,
+                new Actual365Fixed(), h);
+    }
 
 }

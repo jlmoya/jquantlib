@@ -38,15 +38,12 @@ import org.jquantlib.processes.HestonProcess;
  * Partial integro finite-differences Bates vanilla option engine.
  *
  * <p>Java port of QuantLib v1.42.1
- * {@code ql/pricingengines/vanilla/fdbatesvanillaengine.{hpp,cpp}}
- * (Phase 5h.5-Bates-b).
+ * {@code ql/pricingengines/vanilla/fdbatesvanillaengine.{hpp,cpp}} (Phase 5h.5-Bates-b).
  *
  * <p>Solves the 2-factor Heston PDE on a {@code (log-spot, variance)}
- * grid with an additional jump-integro term (the
- * partial-integro-differential equation for Bates). Reuses
- * {@link FdHestonVanillaEngine#getSolverDesc} for meshing /
- * step-conditions / boundary set, then wires {@link FdmBatesOp}
- * (instead of {@code FdmHestonOp}) into a {@link Fdm2DimSolver}.
+ * grid with an additional jump-integro term (the partial-integro-differential equation for Bates). Reuses
+ * {@link FdHestonVanillaEngine#getSolverDesc} for meshing / step-conditions / boundary set, then wires
+ * {@link FdmBatesOp} (instead of {@code FdmHestonOp}) into a {@link Fdm2DimSolver}.
  *
  * <p>Limitations vs. C++ v1.42.1:
  * <ul>
@@ -61,15 +58,12 @@ import org.jquantlib.processes.HestonProcess;
  *       the JQuantLib FD pricing-engine layer).</li>
  * </ul>
  *
+ * @author JQuantLib
  * @see FdmBatesOp
  * @see FdHestonVanillaEngine
- *
- * @author JQuantLib
  */
 public class FdBatesVanillaEngine
-        extends GenericModelEngine<BatesModel,
-                                   OneAssetOption.Arguments,
-                                   OneAssetOption.Results> {
+        extends GenericModelEngine< BatesModel, OneAssetOption.Arguments, OneAssetOption.Results > {
 
     private final BatesProcess batesProcess;
     private final DividendSchedule dividends;
@@ -77,45 +71,30 @@ public class FdBatesVanillaEngine
     private final FdmSchemeDesc schemeDesc;
 
     /** Convenience constructor — all C++ defaults, no dividends. */
-    public FdBatesVanillaEngine(final BatesModel model,
-                                final BatesProcess process) {
-        this(model, process, null,
-                100, 100, 50, 0, FdmSchemeDesc.Hundsdorfer());
+    public FdBatesVanillaEngine(final BatesModel model, final BatesProcess process) {
+        this(model, process, null, 100, 100, 50, 0, FdmSchemeDesc.Hundsdorfer());
     }
 
     /** Convenience constructor — explicit grid + scheme, no dividends. */
-    public FdBatesVanillaEngine(final BatesModel model,
-                                final BatesProcess process,
-                                final int tGrid,
-                                final int xGrid,
-                                final int vGrid,
-                                final int dampingSteps,
-                                final FdmSchemeDesc schemeDesc) {
+    public FdBatesVanillaEngine(final BatesModel model, final BatesProcess process, final int tGrid, final int xGrid,
+            final int vGrid, final int dampingSteps, final FdmSchemeDesc schemeDesc) {
         this(model, process, null, tGrid, xGrid, vGrid, dampingSteps, schemeDesc);
     }
 
     /** Full constructor — explicit grid + dividends. */
-    public FdBatesVanillaEngine(final BatesModel model,
-                                final BatesProcess process,
-                                final DividendSchedule dividends,
-                                final int tGrid,
-                                final int xGrid,
-                                final int vGrid,
-                                final int dampingSteps,
-                                final FdmSchemeDesc schemeDesc) {
-        super(model,
-              new OneAssetOption.ArgumentsImpl(),
-              new OneAssetOption.ResultsImpl());
-        QL.require(model != null,    "null Bates model");
-        QL.require(process != null,  "null Bates process");
+    public FdBatesVanillaEngine(final BatesModel model, final BatesProcess process, final DividendSchedule dividends,
+            final int tGrid, final int xGrid, final int vGrid, final int dampingSteps, final FdmSchemeDesc schemeDesc) {
+        super(model, new OneAssetOption.ArgumentsImpl(), new OneAssetOption.ResultsImpl());
+        QL.require(model != null, "null Bates model");
+        QL.require(process != null, "null Bates process");
         QL.require(schemeDesc != null, "null scheme descriptor");
         this.batesProcess = process;
-        this.dividends    = (dividends != null) ? dividends : new DividendSchedule();
-        this.tGrid        = tGrid;
-        this.xGrid        = xGrid;
-        this.vGrid        = vGrid;
+        this.dividends = (dividends != null) ? dividends : new DividendSchedule();
+        this.tGrid = tGrid;
+        this.xGrid = xGrid;
+        this.vGrid = vGrid;
         this.dampingSteps = dampingSteps;
-        this.schemeDesc   = schemeDesc;
+        this.schemeDesc = schemeDesc;
     }
 
     @Override
@@ -131,9 +110,7 @@ public class FdBatesVanillaEngine
         final HestonProcess hestonView = batesProcess;
         final FdHestonVanillaEngine helperEngine = new FdHestonVanillaEngine(
                 /* hestonModel */  model,
-                /* hestonProcess */ hestonView,
-                dividends,
-                tGrid, xGrid, vGrid, dampingSteps,
+                /* hestonProcess */ hestonView, dividends, tGrid, xGrid, vGrid, dampingSteps,
                 schemeDesc, /* mixingFactor */ 1.0);
         // Mirror C++: copy the option arguments into the helper so its
         // getSolverDesc() picks up the right payoff / exercise.
@@ -141,12 +118,11 @@ public class FdBatesVanillaEngine
 
         final FdmSolverDesc solverDesc = helperEngine.getSolverDesc();
 
-        final FdmBatesOp op = new FdmBatesOp(
-                solverDesc.mesher, batesProcess, solverDesc.bcSet);
+        final FdmBatesOp op = new FdmBatesOp(solverDesc.mesher, batesProcess, solverDesc.bcSet);
         final Fdm2DimSolver solver = new Fdm2DimSolver(solverDesc, schemeDesc, op);
 
         final double spot = batesProcess.s0().currentLink().value();
-        final double v0   = batesProcess.v0().currentLink().value();
+        final double v0 = batesProcess.v0().currentLink().value();
 
         final OneAssetOption.ResultsImpl r = (OneAssetOption.ResultsImpl) results_;
         final double logSpot = JQuantMath.log(spot);
@@ -156,7 +132,7 @@ public class FdBatesVanillaEngine
         // conventions (1% spot bump for delta / gamma; analytic-theta via
         // Fdm2DimSolver.thetaAt in log-spot space).
         final double eps = spot * 0.01;
-        final double vUp   = solver.interpolateAt(JQuantMath.log(spot + eps), v0);
+        final double vUp = solver.interpolateAt(JQuantMath.log(spot + eps), v0);
         final double vDown = solver.interpolateAt(JQuantMath.log(spot - eps), v0);
         r.greeks().delta = (vUp - vDown) / (2.0 * eps);
         r.greeks().gamma = (vUp - 2.0 * r.value + vDown) / (eps * eps);
@@ -168,10 +144,8 @@ public class FdBatesVanillaEngine
      * {@code *dynamic_cast<VanillaOption::arguments*>(helperEngine.getArguments()) = arguments_}.
      */
     private void copyArgumentsTo(final FdHestonVanillaEngine helper) {
-        final OneAssetOption.ArgumentsImpl src =
-                (OneAssetOption.ArgumentsImpl) this.arguments_;
-        final OneAssetOption.ArgumentsImpl dst =
-                (OneAssetOption.ArgumentsImpl) helper.getArguments();
+        final OneAssetOption.ArgumentsImpl src = (OneAssetOption.ArgumentsImpl) this.arguments_;
+        final OneAssetOption.ArgumentsImpl dst = (OneAssetOption.ArgumentsImpl) helper.getArguments();
         dst.payoff = src.payoff;
         dst.exercise = src.exercise;
     }

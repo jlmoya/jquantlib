@@ -38,8 +38,6 @@
 */
 package org.jquantlib.instruments;
 
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.exercise.Exercise;
 import org.jquantlib.lang.exceptions.LibraryException;
@@ -48,13 +46,15 @@ import org.jquantlib.math.functions.FindIf;
 import org.jquantlib.math.functions.GreaterEqualPredicate;
 import org.jquantlib.math.matrixutilities.Array;
 
+import java.util.List;
+
 /**
  * Discretized option on a given asset
  * <p>
- * @warning it is advised that derived classes take care of creating and
- * initializing themselves an instance of the underlying.
  *
  * @author Srinivas Hasti
+ * @warning it is advised that derived classes take care of creating and initializing themselves an instance of the
+ * underlying.
  */
 public class DiscretizedOption extends DiscretizedAsset {
 
@@ -62,9 +62,7 @@ public class DiscretizedOption extends DiscretizedAsset {
     protected Array exerciseTimes;
     protected DiscretizedAsset underlying;
 
-    public DiscretizedOption(
-            final DiscretizedAsset underlying,
-            final Exercise.Type exerciseType,
+    public DiscretizedOption(final DiscretizedAsset underlying, final Exercise.Type exerciseType,
             final Array exerciseTimes) {
         this.underlying = underlying;
         this.exerciseType = exerciseType;
@@ -73,26 +71,26 @@ public class DiscretizedOption extends DiscretizedAsset {
 
     @Override
     public void reset(final int size) {
-        QL.require(method().equals(underlying.method()) , "option and underlying were initialized on different methods");
+        QL.require(method().equals(underlying.method()), "option and underlying were initialized on different methods");
         values_ = new Array(size);
         adjustValues();
     }
 
     @Override
-    public List</* @Time */Double> mandatoryTimes() {
-        final List</* @Time */Double> times = underlying.mandatoryTimes();
+    public List</* @Time */Double > mandatoryTimes() {
+        final List</* @Time */Double > times = underlying.mandatoryTimes();
 
         // discard negative times...
         final Array array = new FindIf(exerciseTimes, new Bind2ndPredicate(new GreaterEqualPredicate(), 0.0)).op();
         // and add the positive ones
-        for (int i=0; i< array.size(); i++) {
+        for ( int i = 0; i < array.size(); i++ ) {
             times.add(array.get(i));
         }
         return times;
     }
 
     protected void applyExerciseCondition() {
-        for (int i = 0; i < values_.size(); i++) {
+        for ( int i = 0; i < values_.size(); i++ ) {
             values_.set(i, Math.max(underlying.values().get(i), values_.get(i)));
         }
     }
@@ -108,17 +106,17 @@ public class DiscretizedOption extends DiscretizedAsset {
         underlying.partialRollback(time());
         underlying.preAdjustValues();
         int i;
-        switch (exerciseType) {
+        switch ( exerciseType ) {
         case American:
-            if (time >= exerciseTimes.get(0) && time <= exerciseTimes.get(1)) {
+            if ( time >= exerciseTimes.get(0) && time <= exerciseTimes.get(1) ) {
                 applyExerciseCondition();
             }
             break;
         case Bermudan:
         case European:
-            for (i = 0; i < exerciseTimes.size(); i++) {
+            for ( i = 0; i < exerciseTimes.size(); i++ ) {
                 final /* @Time */ double t = exerciseTimes.get(i);
-                if (t >= 0.0 && isOnTime(t)) {
+                if ( t >= 0.0 && isOnTime(t) ) {
                     applyExerciseCondition();
                 }
             }

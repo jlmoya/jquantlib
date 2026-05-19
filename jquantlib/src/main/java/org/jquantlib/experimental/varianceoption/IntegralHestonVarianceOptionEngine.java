@@ -64,21 +64,22 @@ import org.jquantlib.time.Date;
  * (v1.42.1 ql/experimental/varianceoption/integralhestonvarianceoptionengine.{hpp,cpp}).
  *
  * <p>The pricer evaluates the realised-variance option price via a
- * Bailey-Swarztrauber DFT-based oscillatory integral, as described in
- * Recchioni et al., "An explicitly solvable Heston model with stochastic interest
- * rate" (2008). The 1-D specialisation is used for plain-vanilla call payoffs;
- * a 2-D variant handles arbitrary payoff functions.
+ * Bailey-Swarztrauber DFT-based oscillatory integral, as described in Recchioni et al., "An explicitly solvable Heston
+ * model with stochastic interest rate" (2008). The 1-D specialisation is used for plain-vanilla call payoffs; a 2-D
+ * variant handles arbitrary payoff functions.
  *
  * <p>This is a structural port: complex arithmetic uses {@link Complex},
- * Java's bit-faithfulness caveat (within-1-ULP {@code Math.exp/sin/cos})
- * applies — see {@link Complex} javadoc. Smoke tests use loose tolerance.
+ * Java's bit-faithfulness caveat (within-1-ULP {@code Math.exp/sin/cos}) applies — see {@link Complex} javadoc. Smoke
+ * tests use loose tolerance.
  *
  * @category pricingengines
  */
 public class IntegralHestonVarianceOptionEngine extends VarianceOption.EngineImpl {
 
     private static final double PI = 3.14159265358979324;
-
+    // Suppress unused-import warning: Constants is imported via static field
+    @SuppressWarnings( "unused" )
+    private static final double SUPPRESS_UNUSED = Constants.NULL_REAL;
     private final HestonProcess process_;
 
     public IntegralHestonVarianceOptionEngine(final HestonProcess process) {
@@ -95,7 +96,7 @@ public class IntegralHestonVarianceOptionEngine extends VarianceOption.EngineImp
         // and rely on the caller to pass a flat-zero dividend curve when
         // matching the C++ engine's intended use.
 
-        final Handle<YieldTermStructure> riskFreeRate = process_.riskFreeRate();
+        final Handle< YieldTermStructure > riskFreeRate = process_.riskFreeRate();
         final DayCounter dc = riskFreeRate.currentLink().dayCounter();
 
         final double epsilon = process_.sigma().currentLink().value();
@@ -109,25 +110,22 @@ public class IntegralHestonVarianceOptionEngine extends VarianceOption.EngineImp
         final Date evalDate = new Settings().evaluationDate();
         final /*@Time*/ double tau = dc.yearFraction(evalDate, arguments_.maturityDate);
 
-        final double r = riskFreeRate.currentLink().zeroRate(
-                arguments_.maturityDate, dc, Compounding.Continuous).rate();
+        final double r = riskFreeRate.currentLink().zeroRate(arguments_.maturityDate, dc, Compounding.Continuous)
+                .rate();
 
         final Payoff payoff = arguments_.payoff;
-        if (payoff instanceof PlainVanillaPayoff) {
+        if ( payoff instanceof PlainVanillaPayoff ) {
             final PlainVanillaPayoff p = (PlainVanillaPayoff) payoff;
-            if (p.optionType() == Option.Type.Call) {
-                results_.value = ivopOneDim(epsilon, chi, theta, v0, p.strike(), tau, r)
-                        * arguments_.notional;
+            if ( p.optionType() == Option.Type.Call ) {
+                results_.value = ivopOneDim(epsilon, chi, theta, v0, p.strike(), tau, r) * arguments_.notional;
                 return;
             }
         }
-        results_.value = ivopTwoDim(epsilon, chi, theta, v0, tau, r, payoff)
-                * arguments_.notional;
+        results_.value = ivopTwoDim(epsilon, chi, theta, v0, tau, r, payoff) * arguments_.notional;
     }
 
     /**
-     * 1-D specialisation for plain-vanilla call payoffs (eq. (4) in the
-     * reference paper).
+     * 1-D specialisation for plain-vanilla call payoffs (eq. (4) in the reference paper).
      *
      * @param eps    Heston volatility-of-variance
      * @param chi    Heston mean-reversion speed (kappa)
@@ -138,10 +136,8 @@ public class IntegralHestonVarianceOptionEngine extends VarianceOption.EngineImp
      * @param rtax   continuously-compounded risk-free rate
      * @return call price (ex-notional)
      */
-    private double ivopOneDim(
-            final double eps, final double chi, final double theta,
-            final double v0, final double eprice,
-            final /*@Time*/ double tau, final double rtax) {
+    private double ivopOneDim(final double eps, final double chi, final double theta, final double v0,
+            final double eprice, final /*@Time*/ double tau, final double rtax) {
 
         final double pi2 = 2.0 * PI;
         final double s = 2.0 * chi * theta / (eps * eps) - 1.0;
@@ -155,14 +151,14 @@ public class IntegralHestonVarianceOptionEngine extends VarianceOption.EngineImp
         final double[] xiv = new double[mm + 1];
         final Complex[] ff = new Complex[mm];
 
-        for (int j = 0; j < mm; j++) {
+        for ( int j = 0; j < mm; j++ ) {
             xiv[j + 1] = (j - mm / 2.0) * nris;
         }
 
         final Complex ui = new Complex(0.0, 1.0);
         final double i0 = 0.0;
 
-        for (int j = 0; j < mm; j++) {
+        for ( int j = 0; j < mm; j++ ) {
             final Complex xi = new Complex(xiv[j + 1], 0.0);
 
             // caux = chi*chi
@@ -192,7 +188,7 @@ public class IntegralHestonVarianceOptionEngine extends VarianceOption.EngineImp
 
             Complex contrib;
             final double absxi = Math.hypot(xi.imag(), xi.real());
-            if (absxi > 1.0e-06) {
+            if ( absxi > 1.0e-06 ) {
                 // contrib = -eprice/(ui*xi) + (exp(ui*xi*eprice)-1)/((ui*xi)^2)
                 final Complex ux = ui.mul(xi);
                 contrib = ux.mul(-1.0).pow(1.0); // placeholder — overwritten below
@@ -207,7 +203,7 @@ public class IntegralHestonVarianceOptionEngine extends VarianceOption.EngineImp
         }
 
         Complex csum = Complex.ZERO;
-        for (int j = 0; j < mm; j++) {
+        for ( int j = 0; j < mm; j++ ) {
             // caux = pow(-1.0, j) (real ±1)
             final double sign = ((j & 1) == 0) ? 1.0 : -1.0;
             // caux2 = -2*pi*mm*j*0.5/mm = -pi*j (real)
@@ -218,7 +214,7 @@ public class IntegralHestonVarianceOptionEngine extends VarianceOption.EngineImp
         // csum *= sqrt(pow(-1, mm)) * nris/pi2
         final double mmSign = ((mm & 1) == 0) ? 1.0 : -1.0;
         Complex mmRoot;
-        if (mmSign >= 0.0) {
+        if ( mmSign >= 0.0 ) {
             mmRoot = new Complex(1.0, 0.0);
         } else {
             // sqrt(-1) = i in std::complex principal branch
@@ -227,25 +223,20 @@ public class IntegralHestonVarianceOptionEngine extends VarianceOption.EngineImp
         csum = csum.mul(mmRoot).mul(nris / pi2);
 
         // vero = i0 - eprice + theta*tau + (1 - exp(-chi*tau))*(v0 - theta)/chi
-        final double vero = i0 - eprice + theta * tau
-                + (1.0 - Math.exp(-chi * tau)) * (v0 - theta) / chi;
+        final double vero = i0 - eprice + theta * tau + (1.0 - Math.exp(-chi * tau)) * (v0 - theta) / chi;
         csum = csum.add(vero);
 
         final double option = Math.exp(-rtax * tau) * csum.real();
         final double impart = csum.imag();
-        QL.ensure(impart <= 1.0e-12,
-                "imaginary part option (must be zero) = " + impart);
+        QL.ensure(impart <= 1.0e-12, "imaginary part option (must be zero) = " + impart);
         return option;
     }
 
     /**
      * 2-D variant for arbitrary payoffs (eq. handling generic g(I_T)).
      */
-    private double ivopTwoDim(
-            final double eps, final double chi, final double theta,
-            final double v0,
-            final /*@Time*/ double tau, final double rtax,
-            final Payoff payoff) {
+    private double ivopTwoDim(final double eps, final double chi, final double theta, final double v0,
+            final /*@Time*/ double tau, final double rtax, final Payoff payoff) {
 
         final double pi2 = 2.0 * PI;
         final double s = 2.0 * chi * theta / (eps * eps) - 1.0;
@@ -260,7 +251,7 @@ public class IntegralHestonVarianceOptionEngine extends VarianceOption.EngineImp
         final double[] ivet = new double[mm + 1];
         final Complex[] ff = new Complex[mm];
 
-        for (int j = 0; j < mm; j++) {
+        for ( int j = 0; j < mm; j++ ) {
             xiv[j + 1] = (j - mm / 2.0) * nris;
             ivet[j + 1] = (j - mm / 2.0) * pi2 / (mm * nris);
         }
@@ -268,7 +259,7 @@ public class IntegralHestonVarianceOptionEngine extends VarianceOption.EngineImp
         final Complex ui = new Complex(0.0, 1.0);
         final double i0 = 0.0;
 
-        for (int j = 0; j < mm; j++) {
+        for ( int j = 0; j < mm; j++ ) {
             final Complex xi = new Complex(xiv[j + 1], 0.0);
             final Complex caux = new Complex(chi * chi, 0.0);
             final Complex caux1Step = xi.mul(2.0 * eps * eps).mul(ui);
@@ -287,13 +278,13 @@ public class IntegralHestonVarianceOptionEngine extends VarianceOption.EngineImp
         }
 
         double sumr = 0.0;
-        for (int k = 0; k < mm; k++) {
+        for ( int k = 0; k < mm; k++ ) {
             final double ip = i0 - ivet[k + 1];
             final double payoffval = payoff.get(ip);
 
             final Complex dxi = ui.mul(2.0 * PI * k / mm);
             Complex csum = Complex.ZERO;
-            for (int j = 0; j < mm; j++) {
+            for ( int j = 0; j < mm; j++ ) {
                 final Complex z = dxi.mul(-(double) j);
                 final double sign = ((j & 1) == 0) ? 1.0 : -1.0;
                 csum = csum.add(ff[j].mul(sign).mul(z.exp()));
@@ -307,8 +298,4 @@ public class IntegralHestonVarianceOptionEngine extends VarianceOption.EngineImp
 
         return Math.exp(-rtax * tau) * sumr;
     }
-
-    // Suppress unused-import warning: Constants is imported via static field
-    @SuppressWarnings("unused")
-    private static final double SUPPRESS_UNUSED = Constants.NULL_REAL;
 }

@@ -57,28 +57,26 @@ public abstract class Payoff implements PolymorphicVisitable {
     //
 
     /**
-	 * This protected constant is declared for convenience of extended classes
-	 */
+     * This protected constant is declared for convenience of extended classes
+     */
     protected static final String UNKNOWN_OPTION_TYPE = "unknown option type";
-
 
     //
     // public abstract methods
     //
 
     /**
-     * @warning This method is used for output and comparison between payoffs.
-     * It is <b>not</b> meant to be used for writing switch-on-type code.
+     * @warning This method is used for output and comparison between payoffs. It is <b>not</b> meant to be used for
+     * writing switch-on-type code.
      */
-    public abstract String name() /* @ReadOnly */ ;
+    public abstract String name() /* @ReadOnly */;
 
-    public abstract String description() /* @ReadOnly */ ;
+    public abstract String description() /* @ReadOnly */;
 
     /**
      * Returns the value of an {@link Instrument} at maturity under {@link Payoff} conditions
      */
     public abstract double get(double price) /* @ReadOnly */;
-
 
     //
     // overrides Object
@@ -89,19 +87,18 @@ public abstract class Payoff implements PolymorphicVisitable {
         return description();
     }
 
+    //
+    // implements PolymorphicVisitable
+    //
 
-	//
-	// implements PolymorphicVisitable
-	//
-
-	@Override
-	public void accept(final PolymorphicVisitor pv) {
-		final Visitor<Payoff> v = (pv!=null) ? pv.visitor(this.getClass()) : null;
-        if (v != null) {
+    @Override
+    public void accept(final PolymorphicVisitor pv) {
+        final Visitor< Payoff > v = (pv != null) ? pv.visitor(this.getClass()) : null;
+        if ( v != null ) {
             v.visit(this);
         } else {
             throw new LibraryException("null payoff visitor"); // TODO: message
         }
-	}
+    }
 
 }

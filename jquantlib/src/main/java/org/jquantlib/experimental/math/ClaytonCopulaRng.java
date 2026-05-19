@@ -53,15 +53,13 @@ public final class ClaytonCopulaRng {
     }
 
     /** Returns a 2-dim sample drawn from the Clayton copula. */
-    public Sample<double[]> next() {
-        final Sample<Double> v1 = uniformGenerator_.next();
-        final Sample<Double> v2 = uniformGenerator_.next();
+    public Sample< double[] > next() {
+        final Sample< Double > v1 = uniformGenerator_.next();
+        final Sample< Double > v2 = uniformGenerator_.next();
         final double u1 = v1.value();
         final double u2 = Math.pow(
-                Math.pow(v1.value(), -theta_)
-                        * (Math.pow(v2.value(), -theta_ / (theta_ + 1.0)) - 1.0)
-                        + 1.0,
+                Math.pow(v1.value(), -theta_) * (Math.pow(v2.value(), -theta_ / (theta_ + 1.0)) - 1.0) + 1.0,
                 -1.0 / theta_);
-        return new Sample<double[]>(new double[] { u1, u2 }, v1.weight() * v2.weight());
+        return new Sample< double[] >(new double[] { u1, u2 }, v1.weight() * v2.weight());
     }
 }

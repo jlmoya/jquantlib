@@ -38,8 +38,7 @@ import org.jquantlib.termstructures.Compounding;
 import org.jquantlib.time.Frequency;
 
 /**
- * Pricing engine for European continuous partial-time fixed-strike
- * lookback options.
+ * Pricing engine for European continuous partial-time fixed-strike lookback options.
  *
  * <p>Formula from "Option Pricing Formulas, Second Edition", E.G. Haug,
  * 2006, p.148 (Heynen-Kat 1994 partial-time fixed-strike lookback).
@@ -48,8 +47,7 @@ import org.jquantlib.time.Frequency;
  * {@code QuantLib::AnalyticContinuousPartialFixedLookbackEngine}
  * ({@code ql/pricingengines/lookback/analyticcontinuouspartialfixedlookback.{hpp,cpp}}).
  */
-public class AnalyticContinuousPartialFixedLookbackEngine
-        extends ContinuousPartialFixedLookbackOption.EngineImpl {
+public class AnalyticContinuousPartialFixedLookbackEngine extends ContinuousPartialFixedLookbackOption.EngineImpl {
 
     private static final String NON_PLAIN_PAYOFF_GIVEN = "Non-plain payoff given";
     private static final String NEGATIVE_OR_NULL_UNDERLYING = "negative or null underlying";
@@ -59,7 +57,7 @@ public class AnalyticContinuousPartialFixedLookbackEngine
     private final CumulativeNormalDistribution f;
 
     private final ContinuousPartialFixedLookbackOption.ArgumentsImpl a;
-    private final ContinuousPartialFixedLookbackOption.ResultsImpl   r;
+    private final ContinuousPartialFixedLookbackOption.ResultsImpl r;
 
     public AnalyticContinuousPartialFixedLookbackEngine(final GeneralizedBlackScholesProcess process) {
         this.process = process;
@@ -75,17 +73,17 @@ public class AnalyticContinuousPartialFixedLookbackEngine
         final PlainVanillaPayoff payoff = (PlainVanillaPayoff) a.payoff;
         QL.require(underlying() > 0.0, NEGATIVE_OR_NULL_UNDERLYING);
 
-        switch (payoff.optionType()) {
-            case Call:
-                QL.require(payoff.strike() >= 0.0, "Strike must be positive or null");
-                r.value = A(1);
-                break;
-            case Put:
-                QL.require(payoff.strike() > 0.0, "Strike must be positive");
-                r.value = A(-1);
-                break;
-            default:
-                throw new LibraryException(UNKNOWN_TYPE);
+        switch ( payoff.optionType() ) {
+        case Call:
+            QL.require(payoff.strike() >= 0.0, "Strike must be positive or null");
+            r.value = A(1);
+            break;
+        case Put:
+            QL.require(payoff.strike() > 0.0, "Strike must be positive");
+            r.value = A(-1);
+            break;
+        default:
+            throw new LibraryException(UNKNOWN_TYPE);
         }
     }
 
@@ -111,8 +109,8 @@ public class AnalyticContinuousPartialFixedLookbackEngine
     }
 
     private double riskFreeRate() {
-        return process.riskFreeRate().currentLink().zeroRate(
-                residualTime(), Compounding.Continuous, Frequency.NoFrequency, false).rate();
+        return process.riskFreeRate().currentLink()
+                .zeroRate(residualTime(), Compounding.Continuous, Frequency.NoFrequency, false).rate();
     }
 
     private double riskFreeDiscount() {
@@ -120,8 +118,8 @@ public class AnalyticContinuousPartialFixedLookbackEngine
     }
 
     private double dividendYield() {
-        return process.dividendYield().currentLink().zeroRate(
-                residualTime(), Compounding.Continuous, Frequency.NoFrequency, false).rate();
+        return process.dividendYield().currentLink()
+                .zeroRate(residualTime(), Compounding.Continuous, Frequency.NoFrequency, false).rate();
     }
 
     private double dividendDiscount() {
@@ -133,8 +131,7 @@ public class AnalyticContinuousPartialFixedLookbackEngine
     }
 
     /**
-     * Heynen-Kat partial-time fixed-strike formula. {@code eta = +1} for
-     * call, {@code -1} for put.
+     * Heynen-Kat partial-time fixed-strike formula. {@code eta = +1} for call, {@code -1} for put.
      */
     private double A(final double eta) {
         final boolean differentStartOfLookback = lookbackPeriodStartTime() != residualTime();
@@ -149,14 +146,14 @@ public class AnalyticContinuousPartialFixedLookbackEngine
         final double d2 = d1 - sd;
 
         double e1 = 0.0, e2 = 0.0;
-        if (differentStartOfLookback) {
+        if ( differentStartOfLookback ) {
             final double tau = residualTime() - lookbackPeriodStartTime();
             e1 = (carry + vol * vol / 2.0) * tau / (vol * Math.sqrt(tau));
             e2 = e1 - vol * Math.sqrt(tau);
         }
 
-        final double f1 = (ls + (carry + vol * vol / 2.0) * lookbackPeriodStartTime())
-                / (vol * Math.sqrt(lookbackPeriodStartTime()));
+        final double f1 = (ls + (carry + vol * vol / 2.0) * lookbackPeriodStartTime()) / (vol * Math.sqrt(
+                lookbackPeriodStartTime()));
         final double f2 = f1 - vol * Math.sqrt(lookbackPeriodStartTime());
 
         final double n1 = f.op(eta * d1);
@@ -165,14 +162,14 @@ public class AnalyticContinuousPartialFixedLookbackEngine
         BivariateNormalDistribution cnbn1 = new BivariateNormalDistribution(-1);
         BivariateNormalDistribution cnbn2 = new BivariateNormalDistribution(0);
         BivariateNormalDistribution cnbn3 = new BivariateNormalDistribution(0);
-        if (differentStartOfLookback) {
+        if ( differentStartOfLookback ) {
             cnbn1 = new BivariateNormalDistribution(-Math.sqrt(lookbackPeriodStartTime() / residualTime()));
             cnbn2 = new BivariateNormalDistribution(Math.sqrt(1 - lookbackPeriodStartTime() / residualTime()));
             cnbn3 = new BivariateNormalDistribution(-Math.sqrt(1 - lookbackPeriodStartTime() / residualTime()));
         }
 
         final double n3 = cnbn1.op(eta * (d1 - x * sd),
-                                   eta * (-f1 + 2.0 * carry * Math.sqrt(lookbackPeriodStartTime()) / vol));
+                eta * (-f1 + 2.0 * carry * Math.sqrt(lookbackPeriodStartTime()) / vol));
         final double n4 = cnbn2.op(eta * e1, eta * d1);
         final double n5 = cnbn3.op(-eta * e1, eta * d1);
         final double n6 = cnbn1.op(eta * f2, -eta * d2);
@@ -181,14 +178,9 @@ public class AnalyticContinuousPartialFixedLookbackEngine
 
         final double pow_s = Math.pow(s, -x);
         final double carryDiscount = Math.exp(-carry * (residualTime() - lookbackPeriodStartTime()));
-        return eta * (underlying() * dividendDiscount() * n1
-                      - strike() * riskFreeDiscount() * n2
-                      + underlying() * riskFreeDiscount() / x
-                      * (-pow_s * n3 + dividendDiscount() / riskFreeDiscount() * n4)
-                      - underlying() * dividendDiscount() * n5
-                      - strike() * riskFreeDiscount() * n6
-                      + carryDiscount * dividendDiscount()
-                      * (1 - 0.5 * vol * vol / carry) *
-                      underlying() * n7 * n8);
+        return eta * (underlying() * dividendDiscount() * n1 - strike() * riskFreeDiscount() * n2
+                + underlying() * riskFreeDiscount() / x * (-pow_s * n3 + dividendDiscount() / riskFreeDiscount() * n4)
+                - underlying() * dividendDiscount() * n5 - strike() * riskFreeDiscount() * n6
+                + carryDiscount * dividendDiscount() * (1 - 0.5 * vol * vol / carry) * underlying() * n7 * n8);
     }
 }

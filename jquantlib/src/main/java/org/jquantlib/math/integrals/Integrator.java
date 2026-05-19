@@ -42,34 +42,31 @@ public abstract class Integrator {
     private double absoluteError;
     private int numberOfEvaluations;
 
-
     //
     // public constructors
     //
 
     public Integrator(final double absoluteAccuracy, final int maxEvaluations) {
-        QL.require(absoluteAccuracy > Constants.QL_EPSILON , "required tolerance must be > epsilon"); // TODO: message
+        QL.require(absoluteAccuracy > Constants.QL_EPSILON, "required tolerance must be > epsilon"); // TODO: message
 
         this.absoluteAccuracy = absoluteAccuracy;
         this.maxEvaluations = maxEvaluations;
     }
 
-
     //
     // final public methods
     //
 
-    final public double op(final Ops.DoubleOp f, final double a, final double b) /* @ReadOnly */{
-        if (a == b) {
+    final public double op(final Ops.DoubleOp f, final double a, final double b) /* @ReadOnly */ {
+        if ( a == b ) {
             return 0.0;
         }
-        if (b > a) {
+        if ( b > a ) {
             return integrate(f, a, b);
         } else {
             return -integrate(f, b, a);
         }
     }
-
 
     //
     // public virtual methods
@@ -99,7 +96,6 @@ public abstract class Integrator {
         return absoluteError;
     }
 
-
     //
     // final protected methods
     //
@@ -116,23 +112,19 @@ public abstract class Integrator {
         this.numberOfEvaluations += increase;
     }
 
-
     //
     // public virtual methods (continued)
     //
 
     /**
-     * Number of function evaluations consumed by the most recent
-     * {@link #op(Ops.DoubleOp, double, double)} call. Promoted to
-     * {@code public} from {@code protected} so that
-     * {@link org.jquantlib.pricingengines.vanilla.AnalyticHestonEngine.Integration}
-     * (Phase 5e.5b-CFC-d-120) and other engine wrappers can mirror C++
-     * {@code Integrator::numberOfEvaluations()} accessor.
+     * Number of function evaluations consumed by the most recent {@link #op(Ops.DoubleOp, double, double)} call.
+     * Promoted to {@code public} from {@code protected} so that
+     * {@link org.jquantlib.pricingengines.vanilla.AnalyticHestonEngine.Integration} (Phase 5e.5b-CFC-d-120) and other
+     * engine wrappers can mirror C++ {@code Integrator::numberOfEvaluations()} accessor.
      */
     public int numberOfEvaluations() /* @ReadOnly */ {
         return this.numberOfEvaluations;
     }
-
 
     //
     // protected abstract methods

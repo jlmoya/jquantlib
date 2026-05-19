@@ -33,29 +33,23 @@ import org.jquantlib.methods.montecarlo.PathPricer;
  * Path pricer for discrete arithmetic-average-price Asian payoffs.
  *
  * <p>Java port of {@code QuantLib v1.42.1
- * ql/pricingengines/asian/mc_discr_arith_av_price.{hpp,cpp}}
- * {@code ArithmeticAPOPathPricer} (Phase 5e.5b-CFC-d-114).
+ * ql/pricingengines/asian/mc_discr_arith_av_price.{hpp,cpp}} {@code ArithmeticAPOPathPricer} (Phase 5e.5b-CFC-d-114).
  *
  * @author JQuantLib
  */
-public final class ArithmeticAPOPathPricer extends PathPricer<Path> {
+public final class ArithmeticAPOPathPricer extends PathPricer< Path > {
 
     private final PlainVanillaPayoff payoff_;
     private final double discount_;
     private final double runningSum_;
     private final int pastFixings_;
 
-    public ArithmeticAPOPathPricer(final Option.Type type,
-                                   final double strike,
-                                   final double discount) {
+    public ArithmeticAPOPathPricer(final Option.Type type, final double strike, final double discount) {
         this(type, strike, discount, 0.0, 0);
     }
 
-    public ArithmeticAPOPathPricer(final Option.Type type,
-                                   final double strike,
-                                   final double discount,
-                                   final double runningSum,
-                                   final int pastFixings) {
+    public ArithmeticAPOPathPricer(final Option.Type type, final double strike, final double discount,
+            final double runningSum, final int pastFixings) {
         QL.require(strike >= 0.0, "strike less than zero not allowed");
         this.payoff_ = new PlainVanillaPayoff(type, strike);
         this.discount_ = discount;
@@ -70,15 +64,15 @@ public final class ArithmeticAPOPathPricer extends PathPricer<Path> {
 
         double sum;
         int fixings;
-        if (path.timeGrid().mandatoryTimes().get(0) == 0.0) {
+        if ( path.timeGrid().mandatoryTimes().get(0) == 0.0 ) {
             sum = runningSum_;
-            for (int i = 0; i < n; i++) {
+            for ( int i = 0; i < n; i++ ) {
                 sum += path.get(i);
             }
             fixings = pastFixings_ + n;
         } else {
             sum = runningSum_;
-            for (int i = 1; i < n; i++) {
+            for ( int i = 1; i < n; i++ ) {
                 sum += path.get(i);
             }
             fixings = pastFixings_ + n - 1;

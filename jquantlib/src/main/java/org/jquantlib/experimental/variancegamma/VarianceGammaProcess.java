@@ -53,36 +53,28 @@ import org.jquantlib.termstructures.YieldTermStructure;
  * (v1.42.1 ql/experimental/variancegamma/variancegammaprocess.{hpp,cpp}).
  *
  * <p>This class describes the stochastic volatility process. With a
- * Brownian motion given by db = theta dt + sigma dW_t, then a Variance
- * Gamma process X is defined by evaluating this Brownian motion at
- * sample times driven by a Gamma process. If T is the value of a Gamma
- * process with mean 1 and variance rate nu then the Variance Gamma
- * process is given by X(t) = B(T).
+ * Brownian motion given by db = theta dt + sigma dW_t, then a Variance Gamma process X is defined by evaluating this
+ * Brownian motion at sample times driven by a Gamma process. If T is the value of a Gamma process with mean 1 and
+ * variance rate nu then the Variance Gamma process is given by X(t) = B(T).
  *
  * <p>Like the C++ original (v1.42.1), {@link #drift(double, double)} and
- * {@link #diffusion(double, double)} are not implemented in this class,
- * since the Variance Gamma process is not described by an Ito SDE in the
- * usual sense. Engines such as {@link VarianceGammaEngine} read the raw
- * parameters via {@link #sigma()}, {@link #nu()} and {@link #theta()}
- * and price options analytically.
+ * {@link #diffusion(double, double)} are not implemented in this class, since the Variance Gamma process is not
+ * described by an Ito SDE in the usual sense. Engines such as {@link VarianceGammaEngine} read the raw parameters via
+ * {@link #sigma()}, {@link #nu()} and {@link #theta()} and price options analytically.
  *
  * @category processes
  */
 public class VarianceGammaProcess extends StochasticProcess1D {
 
-    private final Handle<? extends Quote> s0_;
-    private final Handle<YieldTermStructure> dividendYield_;
-    private final Handle<YieldTermStructure> riskFreeRate_;
+    private final Handle< ? extends Quote > s0_;
+    private final Handle< YieldTermStructure > dividendYield_;
+    private final Handle< YieldTermStructure > riskFreeRate_;
     private final double sigma_;
     private final double nu_;
     private final double theta_;
 
-    public VarianceGammaProcess(
-            final Handle<? extends Quote> s0,
-            final Handle<YieldTermStructure> dividendYield,
-            final Handle<YieldTermStructure> riskFreeRate,
-            final /*@Real*/ double sigma,
-            final /*@Real*/ double nu,
+    public VarianceGammaProcess(final Handle< ? extends Quote > s0, final Handle< YieldTermStructure > dividendYield,
+            final Handle< YieldTermStructure > riskFreeRate, final /*@Real*/ double sigma, final /*@Real*/ double nu,
             final /*@Real*/ double theta) {
         super(new EulerDiscretization());
         this.s0_ = s0;
@@ -123,15 +115,15 @@ public class VarianceGammaProcess extends StochasticProcess1D {
         return theta_;
     }
 
-    public Handle<? extends Quote> s0() /*@ReadOnly*/ {
+    public Handle< ? extends Quote > s0() /*@ReadOnly*/ {
         return s0_;
     }
 
-    public Handle<YieldTermStructure> dividendYield() /*@ReadOnly*/ {
+    public Handle< YieldTermStructure > dividendYield() /*@ReadOnly*/ {
         return dividendYield_;
     }
 
-    public Handle<YieldTermStructure> riskFreeRate() /*@ReadOnly*/ {
+    public Handle< YieldTermStructure > riskFreeRate() /*@ReadOnly*/ {
         return riskFreeRate_;
     }
 }

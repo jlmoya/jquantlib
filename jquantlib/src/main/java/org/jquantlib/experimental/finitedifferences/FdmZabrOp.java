@@ -24,25 +24,20 @@
 
 package org.jquantlib.experimental.finitedifferences;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.matrixutilities.Matrix;
 import org.jquantlib.methods.finitedifferences.meshers.FdmMesher;
-import org.jquantlib.methods.finitedifferences.operators.FdmLinearOpComposite;
-import org.jquantlib.methods.finitedifferences.operators.NinePointLinearOp;
-import org.jquantlib.methods.finitedifferences.operators.SecondDerivativeOp;
-import org.jquantlib.methods.finitedifferences.operators.SecondOrderMixedDerivativeOp;
-import org.jquantlib.methods.finitedifferences.operators.TripleBandLinearOp;
+import org.jquantlib.methods.finitedifferences.operators.*;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Two-factor finite-difference operator for the ZABR model.
  * <p>
- * Java port of v1.42.1
- * {@code ql/experimental/finitedifferences/fdmzabrop.{hpp,cpp}}.
+ * Java port of v1.42.1 {@code ql/experimental/finitedifferences/fdmzabrop.{hpp,cpp}}.
  *
  * <p>The 2-D ZABR PDE under the {@code (f, alpha)} state has the form
  * <pre>
@@ -52,9 +47,8 @@ import org.jquantlib.methods.finitedifferences.operators.TripleBandLinearOp;
  * </pre>
  *
  * <p>The grid uses direction 0 for the forward {@code f} and direction 1 for
- * {@code alpha} (the stochastic volatility level). All three coefficient maps
- * are time-independent (no discount applied — pricing is done in forward
- * measure / undiscounted call payoff), so {@link #setTime} is a no-op.
+ * {@code alpha} (the stochastic volatility level). All three coefficient maps are time-independent (no discount applied
+ * — pricing is done in forward measure / undiscounted call payoff), so {@link #setTime} is a no-op.
  *
  * <p>The operator decomposes as:
  * <ul>
@@ -75,9 +69,7 @@ public class FdmZabrOp implements FdmLinearOpComposite {
     private final FdmZabrVolatilityPart dyMap_;
     private final NinePointLinearOp dxyMap_;
 
-    public FdmZabrOp(final FdmMesher mesher,
-                     final double beta, final double nu,
-                     final double rho, final double gamma) {
+    public FdmZabrOp(final FdmMesher mesher, final double beta, final double nu, final double rho, final double gamma) {
 
         // Locations along directions 0 (forward) and 1 (vol).
         final Array forwardValues = mesher.locations(0);
@@ -86,12 +78,10 @@ public class FdmZabrOp implements FdmLinearOpComposite {
         // Cross-derivative coefficient: nu * rho * |vol|^{gamma+1} * f^beta.
         final int n = mesher.layout().size();
         final Array corrCoeff = new Array(n);
-        for (int i = 0; i < n; ++i) {
+        for ( int i = 0; i < n; ++i ) {
             final double vol = volatilityValues.get(i);
             final double f = forwardValues.get(i);
-            corrCoeff.set(i, nu * rho
-                    * Math.pow(Math.abs(vol), gamma + 1.0)
-                    * Math.pow(f, beta));
+            corrCoeff.set(i, nu * rho * Math.pow(Math.abs(vol), gamma + 1.0) * Math.pow(f, beta));
         }
         this.dxyMap_ = new SecondOrderMixedDerivativeOp(0, 1, mesher).mult(corrCoeff);
 
@@ -114,9 +104,7 @@ public class FdmZabrOp implements FdmLinearOpComposite {
 
     @Override
     public Array apply(final Array u) {
-        return dyMap_.getMap().apply(u)
-                .add(dxMap_.getMap().apply(u))
-                .add(dxyMap_.apply(u));
+        return dyMap_.getMap().apply(u).add(dxMap_.getMap().apply(u)).add(dxyMap_.apply(u));
     }
 
     @Override
@@ -126,10 +114,10 @@ public class FdmZabrOp implements FdmLinearOpComposite {
 
     @Override
     public Array applyDirection(final int direction, final Array r) {
-        if (direction == 0) {
+        if ( direction == 0 ) {
             return dxMap_.getMap().apply(r);
         }
-        if (direction == 1) {
+        if ( direction == 1 ) {
             return dyMap_.getMap().apply(r);
         }
         QL.error("direction too large: " + direction);
@@ -138,10 +126,10 @@ public class FdmZabrOp implements FdmLinearOpComposite {
 
     @Override
     public Array solveSplitting(final int direction, final Array r, final double a) {
-        if (direction == 0) {
+        if ( direction == 0 ) {
             return dxMap_.getMap().solveSplitting(r, a, 1.0);
         }
-        if (direction == 1) {
+        if ( direction == 1 ) {
             return dyMap_.getMap().solveSplitting(r, a, 1.0);
         }
         QL.error("direction too large: " + direction);
@@ -155,14 +143,12 @@ public class FdmZabrOp implements FdmLinearOpComposite {
 
     @Override
     public Matrix toMatrix() {
-        return dxMap_.getMap().toMatrix()
-                .add(dyMap_.getMap().toMatrix())
-                .add(dxyMap_.toMatrix());
+        return dxMap_.getMap().toMatrix().add(dyMap_.getMap().toMatrix()).add(dxyMap_.toMatrix());
     }
 
     @Override
-    public List<Matrix> toMatrixDecomp() {
-        final List<Matrix> ret = new ArrayList<Matrix>(3);
+    public List< Matrix > toMatrixDecomp() {
+        final List< Matrix > ret = new ArrayList< Matrix >(3);
         ret.add(dxMap_.getMap().toMatrix());
         ret.add(dyMap_.getMap().toMatrix());
         ret.add(dxyMap_.toMatrix());
@@ -174,20 +160,19 @@ public class FdmZabrOp implements FdmLinearOpComposite {
     // ------------------------------------------------------------------
 
     /**
-     * Forward (f) direction part — mirrors C++ {@code FdmZabrUnderlyingPart}.
-     * Coefficient: {@code 0.5 * vol^2 * f^{2*beta}}.
+     * Forward (f) direction part — mirrors C++ {@code FdmZabrUnderlyingPart}. Coefficient:
+     * {@code 0.5 * vol^2 * f^{2*beta}}.
      */
     static final class FdmZabrUnderlyingPart {
         private final TripleBandLinearOp mapT_;
 
-        FdmZabrUnderlyingPart(final FdmMesher mesher,
-                              final double beta, final double nu,
-                              final double rho, final double gamma) {
+        FdmZabrUnderlyingPart(final FdmMesher mesher, final double beta, final double nu, final double rho,
+                final double gamma) {
             final Array forwardValues = mesher.locations(0);
             final Array volatilityValues = mesher.locations(1);
             final int n = mesher.layout().size();
             final Array coeff = new Array(n);
-            for (int i = 0; i < n; ++i) {
+            for ( int i = 0; i < n; ++i ) {
                 final double vol = volatilityValues.get(i);
                 final double f = forwardValues.get(i);
                 coeff.set(i, 0.5 * vol * vol * Math.pow(f, 2.0 * beta));
@@ -205,19 +190,18 @@ public class FdmZabrOp implements FdmLinearOpComposite {
     }
 
     /**
-     * Volatility (alpha) direction part — mirrors C++ {@code FdmZabrVolatilityPart}.
-     * Coefficient: {@code 0.5 * nu^2 * |vol|^{2*gamma}}.
+     * Volatility (alpha) direction part — mirrors C++ {@code FdmZabrVolatilityPart}. Coefficient:
+     * {@code 0.5 * nu^2 * |vol|^{2*gamma}}.
      */
     static final class FdmZabrVolatilityPart {
         private final TripleBandLinearOp mapT_;
 
-        FdmZabrVolatilityPart(final FdmMesher mesher,
-                              final double beta, final double nu,
-                              final double rho, final double gamma) {
+        FdmZabrVolatilityPart(final FdmMesher mesher, final double beta, final double nu, final double rho,
+                final double gamma) {
             final Array volatilityValues = mesher.locations(1);
             final int n = mesher.layout().size();
             final Array coeff = new Array(n);
-            for (int i = 0; i < n; ++i) {
+            for ( int i = 0; i < n; ++i ) {
                 final double vol = volatilityValues.get(i);
                 // C++ uses Pow(volatilityValues_, 2*gamma) — for the typical
                 // FullFD grid alpha ranges are positive, so this matches |vol|^{2*gamma}

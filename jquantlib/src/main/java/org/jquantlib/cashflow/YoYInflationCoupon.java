@@ -32,6 +32,7 @@ package org.jquantlib.cashflow;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.indexes.CPI;
 import org.jquantlib.indexes.YoYInflationIndex;
+import org.jquantlib.instruments.YearOnYearInflationSwap;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Period;
 import org.jquantlib.util.PolymorphicVisitor;
@@ -44,13 +45,12 @@ import org.jquantlib.util.Visitor;
  * ({@code ql/cashflows/yoyinflationcoupon.{hpp,cpp}}).
  *
  * <p>Argument order in the Java port follows the {@link InflationCoupon}
- * convention {@code (nominal, paymentDate, startDate, endDate, ...)} rather
- * than the C++ order, to keep parameter ordering consistent with
- * {@link Coupon} and the rest of the JQuantLib cashflow family.
+ * convention {@code (nominal, paymentDate, startDate, endDate, ...)} rather than the C++ order, to keep parameter
+ * ordering consistent with {@link Coupon} and the rest of the JQuantLib cashflow family.
  *
  * <p>The pricer for non-cap/floor swaplets is
- * {@link YoYInflationCouponPricer}; this is the standard inflation pricer
- * mirrored from C++ and used by {@link YearOnYearInflationSwap}'s YoY leg.
+ * {@link YoYInflationCouponPricer}; this is the standard inflation pricer mirrored from C++ and used by
+ * {@link YearOnYearInflationSwap}'s YoY leg.
  *
  * @author JQuantLib migration team (Phase 2q B)
  */
@@ -74,56 +74,31 @@ public class YoYInflationCoupon extends InflationCoupon {
     // public constructors
     //
 
-    public YoYInflationCoupon(final double nominal,
-                              final Date paymentDate,
-                              final Date startDate,
-                              final Date endDate,
-                              final int fixingDays,
-                              final YoYInflationIndex yoyIndex,
-                              final Period observationLag,
-                              final CPI.InterpolationType interpolation,
-                              final DayCounter dayCounter,
-                              final double gearing,
-                              final double spread,
-                              final Date refPeriodStart,
-                              final Date refPeriodEnd) {
-        super(nominal, paymentDate, startDate, endDate, fixingDays,
-              yoyIndex, observationLag, dayCounter,
-              refPeriodStart, refPeriodEnd);
+    public YoYInflationCoupon(final double nominal, final Date paymentDate, final Date startDate, final Date endDate,
+            final int fixingDays, final YoYInflationIndex yoyIndex, final Period observationLag,
+            final CPI.InterpolationType interpolation, final DayCounter dayCounter, final double gearing,
+            final double spread, final Date refPeriodStart, final Date refPeriodEnd) {
+        super(nominal, paymentDate, startDate, endDate, fixingDays, yoyIndex, observationLag, dayCounter,
+                refPeriodStart, refPeriodEnd);
         this.yoyIndex_ = yoyIndex;
         this.interpolation_ = interpolation;
         this.gearing_ = gearing;
         this.spread_ = spread;
     }
 
-    public YoYInflationCoupon(final double nominal,
-                              final Date paymentDate,
-                              final Date startDate,
-                              final Date endDate,
-                              final int fixingDays,
-                              final YoYInflationIndex yoyIndex,
-                              final Period observationLag,
-                              final CPI.InterpolationType interpolation,
-                              final DayCounter dayCounter,
-                              final double gearing,
-                              final double spread) {
-        this(nominal, paymentDate, startDate, endDate, fixingDays,
-             yoyIndex, observationLag, interpolation, dayCounter,
-             gearing, spread, new Date(), new Date());
+    public YoYInflationCoupon(final double nominal, final Date paymentDate, final Date startDate, final Date endDate,
+            final int fixingDays, final YoYInflationIndex yoyIndex, final Period observationLag,
+            final CPI.InterpolationType interpolation, final DayCounter dayCounter, final double gearing,
+            final double spread) {
+        this(nominal, paymentDate, startDate, endDate, fixingDays, yoyIndex, observationLag, interpolation, dayCounter,
+                gearing, spread, new Date(), new Date());
     }
 
-    public YoYInflationCoupon(final double nominal,
-                              final Date paymentDate,
-                              final Date startDate,
-                              final Date endDate,
-                              final int fixingDays,
-                              final YoYInflationIndex yoyIndex,
-                              final Period observationLag,
-                              final CPI.InterpolationType interpolation,
-                              final DayCounter dayCounter) {
-        this(nominal, paymentDate, startDate, endDate, fixingDays,
-             yoyIndex, observationLag, interpolation, dayCounter,
-             1.0, 0.0, new Date(), new Date());
+    public YoYInflationCoupon(final double nominal, final Date paymentDate, final Date startDate, final Date endDate,
+            final int fixingDays, final YoYInflationIndex yoyIndex, final Period observationLag,
+            final CPI.InterpolationType interpolation, final DayCounter dayCounter) {
+        this(nominal, paymentDate, startDate, endDate, fixingDays, yoyIndex, observationLag, interpolation, dayCounter,
+                1.0, 0.0, new Date(), new Date());
     }
 
     //
@@ -149,8 +124,8 @@ public class YoYInflationCoupon extends InflationCoupon {
     }
 
     /**
-     * Adjusted fixing — convenience inverse of the rate calculation:
-     * {@code (rate - spread) / gearing}. Mirrors C++ inline.
+     * Adjusted fixing — convenience inverse of the rate calculation: {@code (rate - spread) / gearing}. Mirrors C++
+     * inline.
      */
     public double adjustedFixing() {
         return (rate() - spread()) / gearing();
@@ -162,8 +137,8 @@ public class YoYInflationCoupon extends InflationCoupon {
 
     /**
      * Mirrors C++ {@code YoYInflationCoupon::indexFixing()} — delegates to
-     * {@link CPI#laggedYoYRate(YoYInflationIndex, Date, Period, CPI.InterpolationType)}
-     * with {@code accrualEndDate} as the unlagged date.
+     * {@link CPI#laggedYoYRate(YoYInflationIndex, Date, Period, CPI.InterpolationType)} with {@code accrualEndDate} as
+     * the unlagged date.
      */
     @Override
     public double indexFixing() {
@@ -181,8 +156,8 @@ public class YoYInflationCoupon extends InflationCoupon {
 
     @Override
     public void accept(final PolymorphicVisitor pv) {
-        final Visitor<YoYInflationCoupon> v = (pv != null) ? pv.visitor(this.getClass()) : null;
-        if (v != null) {
+        final Visitor< YoYInflationCoupon > v = (pv != null) ? pv.visitor(this.getClass()) : null;
+        if ( v != null ) {
             v.visit(this);
         } else {
             super.accept(pv);

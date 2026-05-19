@@ -33,7 +33,6 @@ package org.jquantlib.cashflow;
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.instruments.Option;
-import org.jquantlib.lang.annotation.Rate;
 import org.jquantlib.math.Constants;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.termstructures.YieldTermStructure;
@@ -43,17 +42,15 @@ import org.jquantlib.time.Date;
  * Base pricer for capped/floored CPI coupons.
  *
  * <p>This pricer can already do swaplets; to obtain volatility-dependent
- * coupons (caps/floors with Black/DD/Bachelier semantics) you would need to
- * implement a descendant that overrides {@link #optionletPriceImp}. The CPI
- * volatility surface ({@code QuantLib::CPIVolatilitySurface}) is part of
- * Phase 2r scope and is therefore not represented in this Java port — calls
- * that would require it raise {@link org.jquantlib.QL#error}.
+ * coupons (caps/floors with Black/DD/Bachelier semantics) you would need to implement a descendant that overrides
+ * {@link #optionletPriceImp}. The CPI volatility surface ({@code QuantLib::CPIVolatilitySurface}) is part of Phase 2r
+ * scope and is therefore not represented in this Java port — calls that would require it raise
+ * {@link org.jquantlib.QL#error}.
  *
  * <p>Mirrors C++ {@code QuantLib::CPICouponPricer} at v1.42.1
- * (cashflows/cpicouponpricer.{hpp,cpp}). The {@code capletVol_} handle is
- * intentionally omitted; if/when {@code CPIVolatilitySurface} is ported, add
- * the second-form constructor + {@code setCapletVolatility} accessor without
- * breaking the existing constructor or {@code initialize} signatures.
+ * (cashflows/cpicouponpricer.{hpp,cpp}). The {@code capletVol_} handle is intentionally omitted; if/when
+ * {@code CPIVolatilitySurface} is ported, add the second-form constructor + {@code setCapletVolatility} accessor
+ * without breaking the existing constructor or {@code initialize} signatures.
  *
  * @author JQuantLib migration team (Phase 2q C.1)
  */
@@ -63,7 +60,7 @@ public class CPICouponPricer extends InflationCouponPricer {
     // protected fields
     //
 
-    protected Handle<YieldTermStructure> nominalTermStructure_;
+    protected Handle< YieldTermStructure > nominalTermStructure_;
     protected CPICoupon coupon_;
     protected double gearing_;
     protected double discount_;
@@ -73,13 +70,13 @@ public class CPICouponPricer extends InflationCouponPricer {
     //
 
     public CPICouponPricer() {
-        this(new Handle<YieldTermStructure>());
+        this(new Handle< YieldTermStructure >());
     }
 
-    public CPICouponPricer(final Handle<YieldTermStructure> nominalTermStructure) {
+    public CPICouponPricer(final Handle< YieldTermStructure > nominalTermStructure) {
         this.nominalTermStructure_ = nominalTermStructure;
         // C++ registerWith(nominalTermStructure_)
-        if (nominalTermStructure_ != null) {
+        if ( nominalTermStructure_ != null ) {
             nominalTermStructure_.addObserver(this);
         }
     }
@@ -88,7 +85,7 @@ public class CPICouponPricer extends InflationCouponPricer {
     // public methods
     //
 
-    public Handle<YieldTermStructure> nominalTermStructure() {
+    public Handle< YieldTermStructure > nominalTermStructure() {
         return nominalTermStructure_;
     }
 
@@ -104,11 +101,11 @@ public class CPICouponPricer extends InflationCouponPricer {
         this.paymentDate_ = coupon_.date();
 
         // mirror C++: empty TS allows extracting rates but discount_ is invalid
-        if (nominalTermStructure_ == null || nominalTermStructure_.empty()) {
+        if ( nominalTermStructure_ == null || nominalTermStructure_.empty() ) {
             this.discount_ = Constants.NULL_REAL;
         } else {
             this.discount_ = 1.0;
-            if (paymentDate_.gt(nominalTermStructure_.currentLink().referenceDate())) {
+            if ( paymentDate_.gt(nominalTermStructure_.currentLink().referenceDate()) ) {
                 this.discount_ = nominalTermStructure_.currentLink().discount(paymentDate_);
             }
         }
@@ -146,9 +143,8 @@ public class CPICouponPricer extends InflationCouponPricer {
     }
 
     /**
-     * Mirrors C++ {@code CPICouponPricer::accruedRate(Date)}. The pricer must
-     * be initialized first; the InflationCoupon base class drives initialize
-     * from its {@code performCalculations}.
+     * Mirrors C++ {@code CPICouponPricer::accruedRate(Date)}. The pricer must be initialized first; the InflationCoupon
+     * base class drives initialize from its {@code performCalculations}.
      */
     public /*@Rate*/ double accruedRate(final Date settlementDate) {
         return gearing_ * coupon_.indexRatio(settlementDate);
@@ -160,16 +156,15 @@ public class CPICouponPricer extends InflationCouponPricer {
 
     protected double optionletPrice(final Option.Type optionType, final double effStrike) {
         QL.require(discount_ != Constants.NULL_REAL, "no nominal term structure provided");
-        return optionletRate(optionType, effStrike)
-                * coupon_.accrualPeriod() * discount_;
+        return optionletRate(optionType, effStrike) * coupon_.accrualPeriod() * discount_;
     }
 
     protected double optionletRate(final Option.Type optionType, final double effStrike) {
         final Date fixingDate = coupon_.fixingDate();
-        if (fixingDate.le(new Settings().evaluationDate())) {
+        if ( fixingDate.le(new Settings().evaluationDate()) ) {
             // amount is determined
             final double a, b;
-            if (optionType == Option.Type.Call) {
+            if ( optionType == Option.Type.Call ) {
                 a = coupon_.indexFixing();
                 b = effStrike;
             } else {
@@ -181,19 +176,17 @@ public class CPICouponPricer extends InflationCouponPricer {
         // not yet determined — would need volatility surface
         throw new org.jquantlib.lang.exceptions.LibraryException(
                 "missing optionlet volatility (CPIVolatilitySurface not yet ported; "
-                + "Phase 2r — port required for vol-dependent CPI rates)");
+                        + "Phase 2r — port required for vol-dependent CPI rates)");
     }
 
     /**
-     * Hook for derived classes to provide a vol-dependent price. The base
-     * implementation always errors — derived classes must override.
+     * Hook for derived classes to provide a vol-dependent price. The base implementation always errors — derived
+     * classes must override.
      *
      * <p>Mirrors C++ {@code CPICouponPricer::optionletPriceImp}.
      */
-    protected double optionletPriceImp(final Option.Type optionType,
-                                       final double strike,
-                                       final double forward,
-                                       final double stdDev) {
+    protected double optionletPriceImp(final Option.Type optionType, final double strike, final double forward,
+            final double stdDev) {
         throw new org.jquantlib.lang.exceptions.LibraryException(
                 "you must implement this to get a vol-dependent price");
     }

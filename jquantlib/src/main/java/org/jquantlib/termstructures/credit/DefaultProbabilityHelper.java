@@ -37,19 +37,17 @@ import org.jquantlib.termstructures.BootstrapHelper;
 import org.jquantlib.termstructures.DefaultProbabilityTermStructure;
 
 /**
- * Bootstrap helper for default-probability term structures — Java port of the
- * C++ v1.42.1 typedef
+ * Bootstrap helper for default-probability term structures — Java port of the C++ v1.42.1 typedef
  * {@code typedef BootstrapHelper<DefaultProbabilityTermStructure> DefaultProbabilityHelper}
  * ({@code ql/termstructures/credit/defaultprobabilityhelpers.hpp:42-43}).
  *
  * <p>Java subclasses (CDS-spread and CDS-upfront helpers) are deferred to
- * Phase 3b because they require {@code CreditDefaultSwap} and its pricing
- * engines, which are not yet ported. This abstract base nonetheless lets
- * {@link PiecewiseDefaultCurve} compile against a type-safe helper handle.
+ * Phase 3b because they require {@code CreditDefaultSwap} and its pricing engines, which are not yet ported. This
+ * abstract base nonetheless lets {@link PiecewiseDefaultCurve} compile against a type-safe helper handle.
  */
-public abstract class DefaultProbabilityHelper extends BootstrapHelper<DefaultProbabilityTermStructure> {
+public abstract class DefaultProbabilityHelper extends BootstrapHelper< DefaultProbabilityTermStructure > {
 
-    public DefaultProbabilityHelper(final Handle<Quote> quote) {
+    public DefaultProbabilityHelper(final Handle< Quote > quote) {
         super(quote);
     }
 

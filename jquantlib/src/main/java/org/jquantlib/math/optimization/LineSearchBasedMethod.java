@@ -21,23 +21,19 @@
  */
 package org.jquantlib.math.optimization;
 
-import org.jquantlib.QL;
-
-
-
 public abstract class LineSearchBasedMethod extends OptimizationMethod {
-    
+
     protected LineSearch lineSearch_;
-    
+
     protected LineSearchBasedMethod() {
     }
-    
-    public LineSearchBasedMethod(final LineSearch lineSearch){
+
+    public LineSearchBasedMethod(final LineSearch lineSearch) {
         lineSearch_ = lineSearch;
         //FIXME: is this correct
-        if(lineSearch_ == null){
+        if ( lineSearch_ == null ) {
             lineSearch_ = new ArmijoLineSearch();
         }
     }
-    
+
 }

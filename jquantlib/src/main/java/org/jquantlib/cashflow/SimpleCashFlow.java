@@ -60,18 +60,16 @@ public class SimpleCashFlow extends CashFlow {
     // public constructors
     //
 
-    public SimpleCashFlow(final double amount,
-            final Date paymentDate){
+    public SimpleCashFlow(final double amount, final Date paymentDate) {
         this.amount = amount;
         this.paymentDate = paymentDate;
     }
-
 
     //
     // public methods
     //
 
-    public double amount(){
+    public double amount() {
         return amount;
     }
 
@@ -84,15 +82,14 @@ public class SimpleCashFlow extends CashFlow {
         return paymentDate.clone();
     }
 
-
     //
     // implements PolymorphicVisitable
     //
 
     @Override
     public void accept(final PolymorphicVisitor pv) {
-        final Visitor<SimpleCashFlow> v = (pv!=null) ? pv.visitor(this.getClass()) : null;
-        if (v != null) {
+        final Visitor< SimpleCashFlow > v = (pv != null) ? pv.visitor(this.getClass()) : null;
+        if ( v != null ) {
             v.visit(this);
         } else {
             super.accept(pv);

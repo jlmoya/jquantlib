@@ -41,11 +41,9 @@ package org.jquantlib.instruments;
  * Base class for basket option payoffs.
  *
  * <p>A {@code BasketPayoff} wraps a base single-asset {@link Payoff} (typically
- * a {@link PlainVanillaPayoff}) and defines how the values of multiple
- * underlying assets are combined into a single scalar before being fed to the
- * base payoff. Concrete subclasses ({@link MinBasketPayoff},
- * {@link MaxBasketPayoff}, {@link AverageBasketPayoff},
- * {@link SpreadBasketPayoff}) implement {@link #accumulate(double[])}.</p>
+ * a {@link PlainVanillaPayoff}) and defines how the values of multiple underlying assets are combined into a single
+ * scalar before being fed to the base payoff. Concrete subclasses ({@link MinBasketPayoff}, {@link MaxBasketPayoff},
+ * {@link AverageBasketPayoff}, {@link SpreadBasketPayoff}) implement {@link #accumulate(double[])}.</p>
  *
  * <p>Ported from C++ QuantLib v1.42.1
  * {@code ql/instruments/basketoption.hpp::BasketPayoff}.</p>

@@ -33,8 +33,8 @@ import org.jquantlib.methods.finitedifferences.operators.FdmLinearOpIterator;
  * {@code ql/methods/finitedifferences/utilities/fdminnervaluecalculator.hpp::FdmZeroInnerValue}.
  *
  * <p>Used by engines whose terminal payoff is identically zero (e.g.,
- * {@code FdSimpleBSSwingEngine}, where the only contribution comes from
- * intermediate exercise step conditions, not a terminal payoff).
+ * {@code FdSimpleBSSwingEngine}, where the only contribution comes from intermediate exercise step conditions, not a
+ * terminal payoff).
  *
  * @author Phase 5e.5b-CFC-d-170 port
  */

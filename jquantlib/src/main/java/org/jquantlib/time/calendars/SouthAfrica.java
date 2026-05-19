@@ -21,7 +21,6 @@ When applicable, the original copyright notice follows this notice.
  */
 package org.jquantlib.time.calendars;
 
-
 import org.jquantlib.lang.annotation.QualityAssurance;
 import org.jquantlib.lang.annotation.QualityAssurance.Quality;
 import org.jquantlib.lang.annotation.QualityAssurance.Version;
@@ -53,14 +52,12 @@ import org.jquantlib.time.Weekday;
  *
  * Any holiday falling on a Sunday moves to the following Monday
  *
- * @category calendars
- *
- * @see <a href="http://en.wikipedia.org/wiki/Public_holidays_in_South_Africa">Hoidays in South Africa</a>
- *
  * @author Bernard Kruger
  * @author Richard Gomes
+ * @category calendars
+ * @see <a href="http://en.wikipedia.org/wiki/Public_holidays_in_South_Africa">Hoidays in South Africa</a>
  */
-@QualityAssurance(quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = {"no reviewers yet"})
+@QualityAssurance( quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "no reviewers yet" } )
 public class SouthAfrica extends Calendar {
 
     //
@@ -70,11 +67,11 @@ public class SouthAfrica extends Calendar {
         impl = new Impl();
 
         // once-off holidays
-        addHoliday(new Date(31,12,1999));   // Y2K changeover
-        addHoliday(new Date(2,1,2000));     // Y2K changeover
-        addHoliday(new Date(3,1,2000));     // Y2K changeover
-        addHoliday(new Date(2,5,2008));     // Human Rights Day and Good Friday was on same day in 2008
-        addHoliday(new Date(22,4,2009));    // 2009 election day
+        addHoliday(new Date(31, 12, 1999));   // Y2K changeover
+        addHoliday(new Date(2, 1, 2000));     // Y2K changeover
+        addHoliday(new Date(3, 1, 2000));     // Y2K changeover
+        addHoliday(new Date(2, 5, 2008));     // Human Rights Day and Good Friday was on same day in 2008
+        addHoliday(new Date(22, 4, 2009));    // 2009 election day
     }
 
     //
@@ -94,39 +91,36 @@ public class SouthAfrica extends Calendar {
             final Month m = date.month();
             final int y = date.year();
             final int em = easterMonday(y);
-            if (isWeekend(w)
+            return !isWeekend(w)
                     // New Year's Day, January 1
-                    || ((d == 1 || (d == 2 && w == Weekday.Monday)) && m == Month.January)
+                    && ((d != 1 && (d != 2 || w != Weekday.Monday)) || m != Month.January)
                     // Human Rights Day, March 21
-                    || ((d == 21 || (d == 22 && w == Weekday.Monday)) && m == Month.March)
+                    && ((d != 21 && (d != 22 || w != Weekday.Monday)) || m != Month.March)
                     // Good Friday
-                    || (dd == em-3)
+                    && (dd != em - 3)
                     // Easter Monday/Family Day
-                    || (dd == em)
+                    && (dd != em)
                     // Freedom Day, April 27
-                    || ((d == 27 || (d == 28 && w == Weekday.Monday)) && m == Month.April)
+                    && ((d != 27 && (d != 28 || w != Weekday.Monday)) || m != Month.April)
                     // Worker's Day, May 1
-                    || ((d == 1 || (d == 2 && w == Weekday.Monday)) && m == Month.May)
+                    && ((d != 1 && (d != 2 || w != Weekday.Monday)) || m != Month.May)
                     // Youth Day, June 16
-                    || ((d == 16 || (d == 17 && w == Weekday.Monday)) && m == Month.June)
+                    && ((d != 16 && (d != 17 || w != Weekday.Monday)) || m != Month.June)
                     // National Women's Day, August 9
-                    || ((d == 9 || (d == 10 && w == Weekday.Monday)) && m == Month.August)
+                    && ((d != 9 && (d != 10 || w != Weekday.Monday)) || m != Month.August)
                     // Heritage Day, September 24
-                    || ((d == 24 || (d == 25 && w == Weekday.Monday)) && m == Month.September)
+                    && ((d != 24 && (d != 25 || w != Weekday.Monday)) || m != Month.September)
                     // Day of Reconciliation, December 16
-                    || ((d == 16 || (d == 17 && w == Weekday.Monday)) && m == Month.December)
+                    && ((d != 16 && (d != 17 || w != Weekday.Monday)) || m != Month.December)
                     // Christmas Day, December 25
-                    || ((d == 25 || (d == 26 && w == Weekday.Monday)) && m == Month.December)
+                    && ((d != 25 && (d != 26 || w != Weekday.Monday)) || m != Month.December)
                     // Day of Goodwill, December 26
-                    || ((d == 26 || (d == 27 && w == Weekday.Monday)) && m == Month.December)) {
-                return false;
-            }
-            return true;
+                    && ((d != 26 && (d != 27 || w != Weekday.Monday)) || m != Month.December);
         }
     }
 }
 
-////2009
+/// /2009
 //        addHoliday(DateParser.parseISO((new LocalDate(2009,1,1)).toString()));
 //        addHoliday(DateParser.parseISO((new LocalDate(2009,4,10)).toString()));
 //        addHoliday(DateParser.parseISO((new LocalDate(2009,4,13)).toString()));

@@ -38,9 +38,8 @@ import org.jquantlib.util.Visitor;
  * Black at-the-money (no-smile) volatility curve.
  *
  * <p>Faithful port of QuantLib v1.42.1
- * {@code ql/experimental/volatility/blackatmvolcurve.{hpp,cpp}}. Abstract
- * base for ATM-only curves; concrete subclasses implement
- * {@link #atmVolImpl(double)} and {@link #atmVarianceImpl(double)}.
+ * {@code ql/experimental/volatility/blackatmvolcurve.{hpp,cpp}}. Abstract base for ATM-only curves; concrete subclasses
+ * implement {@link #atmVolImpl(double)} and {@link #atmVarianceImpl(double)}.
  *
  * <p>Volatilities are assumed to be expressed on an annual basis.
  */
@@ -52,14 +51,14 @@ public abstract class BlackAtmVolCurve extends VolatilityTermStructure {
     }
 
     /** Fixed reference date. */
-    public BlackAtmVolCurve(final Date referenceDate, final Calendar cal,
-            final BusinessDayConvention bdc, final DayCounter dc) {
+    public BlackAtmVolCurve(final Date referenceDate, final Calendar cal, final BusinessDayConvention bdc,
+            final DayCounter dc) {
         super(referenceDate, cal, bdc, dc);
     }
 
     /** Floating reference date based on settlement days from evaluation date. */
-    public BlackAtmVolCurve(final int settlementDays, final Calendar cal,
-            final BusinessDayConvention bdc, final DayCounter dc) {
+    public BlackAtmVolCurve(final int settlementDays, final Calendar cal, final BusinessDayConvention bdc,
+            final DayCounter dc) {
         super(settlementDays, cal, bdc, dc);
     }
 
@@ -107,8 +106,8 @@ public abstract class BlackAtmVolCurve extends VolatilityTermStructure {
      * Polymorphic visitor entry point. Mirrors C++ {@code accept(AcyclicVisitor&)}.
      */
     public void accept(final PolymorphicVisitor pv) {
-        final Visitor<BlackAtmVolCurve> v = (pv != null) ? pv.<BlackAtmVolCurve>visitor(this.getClass()) : null;
-        if (v != null) {
+        final Visitor< BlackAtmVolCurve > v = (pv != null) ? pv.visitor(this.getClass()) : null;
+        if ( v != null ) {
             v.visit(this);
         }
     }

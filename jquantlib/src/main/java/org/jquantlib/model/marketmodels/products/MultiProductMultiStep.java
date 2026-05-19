@@ -34,17 +34,15 @@ import org.jquantlib.model.marketmodels.MarketModelMultiProduct;
 /**
  * Multiple-step market-model product abstract base.
  * <p>
- * Mirrors C++ {@code class MultiProductMultiStep}
- * (ql/models/marketmodels/products/multiproductmultistep.{hpp,cpp} v1.42.1).
+ * Mirrors C++ {@code class MultiProductMultiStep} (ql/models/marketmodels/products/multiproductmultistep.{hpp,cpp}
+ * v1.42.1).
  * <p>
- * This is the abstract base class that encapsulates the notion of a
- * {@link MarketModelMultiProduct} which can be evaluated in more than one
- * step (aka Rebonato's long jump). Each evolution step corresponds to one
- * rate fixing time; the suggested numeraire is MoneyMarketPlus(1).
- *
- * @see "ql/models/marketmodels/products/multiproductmultistep.hpp" v1.42.1
+ * This is the abstract base class that encapsulates the notion of a {@link MarketModelMultiProduct} which can be
+ * evaluated in more than one step (aka Rebonato's long jump). Each evolution step corresponds to one rate fixing time;
+ * the suggested numeraire is MoneyMarketPlus(1).
  *
  * @author Jose Moya
+ * @see "ql/models/marketmodels/products/multiproductmultistep.hpp" v1.42.1
  */
 public abstract class MultiProductMultiStep extends MarketModelMultiProduct {
 
@@ -55,13 +53,12 @@ public abstract class MultiProductMultiStep extends MarketModelMultiProduct {
      * @param rateTimes the rate fixing times (must contain at least two values)
      */
     protected MultiProductMultiStep(final double[] rateTimes) {
-        QL.require(rateTimes != null && rateTimes.length > 1,
-                "Rate times must contain at least two values");
+        QL.require(rateTimes != null && rateTimes.length > 1, "Rate times must contain at least two values");
         this.rateTimes_ = rateTimes.clone();
         final int n = this.rateTimes_.length - 1;
         final double[] evolutionTimes = new double[n];
         final Range[] relevanceRates = new Range[n];
-        for (int i = 0; i < n; ++i) {
+        for ( int i = 0; i < n; ++i ) {
             evolutionTimes[i] = this.rateTimes_[i];
             relevanceRates[i] = new Range(i, i + 1);
         }
@@ -78,7 +75,7 @@ public abstract class MultiProductMultiStep extends MarketModelMultiProduct {
     public int[] suggestedNumeraires() {
         final int n = rateTimes_.length - 1;
         final int[] numeraires = new int[n];
-        for (int i = 0; i < n; ++i) {
+        for ( int i = 0; i < n; ++i ) {
             numeraires[i] = i + 1;
         }
         return numeraires;

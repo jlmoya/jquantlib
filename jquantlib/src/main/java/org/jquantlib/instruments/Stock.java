@@ -52,25 +52,22 @@ public class Stock extends Instrument {
 
     private static final String NULL_QUOTE = "null quote";
 
-
     //
     // private final fields
     //
 
-    private final Handle<Quote> quote;
-
+    private final Handle< Quote > quote;
 
     //
     // public constructors
     //
 
-    public Stock(final Handle<Quote> quote) {
-        QL.require(quote != null , NULL_QUOTE); // QA:[RG]::verified
+    public Stock(final Handle< Quote > quote) {
+        QL.require(quote != null, NULL_QUOTE); // QA:[RG]::verified
         this.quote = quote;
 
         this.quote.addObserver(this);
     }
-
 
     //
     // overrides Instrument
@@ -81,14 +78,13 @@ public class Stock extends Instrument {
         return false;
     }
 
-
     //
     // overrides LazyObject
     //
 
     @Override
     protected void performCalculations() /* @ReadOnly */ {
-        QL.require(!quote.empty() , NULL_QUOTE); // QA:[RG]::verified
+        QL.require(!quote.empty(), NULL_QUOTE); // QA:[RG]::verified
         NPV = quote.currentLink().value();
     }
 

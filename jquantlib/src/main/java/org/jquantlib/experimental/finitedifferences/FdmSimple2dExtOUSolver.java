@@ -32,16 +32,14 @@ import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.util.LazyObject;
 
 /**
- * Lazy 2D solver for the extended Ornstein-Uhlenbeck PDE built around
- * {@link FdmExtendedOrnsteinUhlenbeckOp} and a {@link Fdm2DimSolver}.
+ * Lazy 2D solver for the extended Ornstein-Uhlenbeck PDE built around {@link FdmExtendedOrnsteinUhlenbeckOp} and a
+ * {@link Fdm2DimSolver}.
  *
  * <p>Java port of v1.42.1
- * {@code ql/experimental/finitedifferences/fdmsimple2dextousolver.hpp}
- * (header-only in C++).</p>
+ * {@code ql/experimental/finitedifferences/fdmsimple2dextousolver.hpp} (header-only in C++).</p>
  *
  * <p>The C++ default scheme is {@link FdmSchemeDesc#Hundsdorfer()}; the
- * storage engine overrides this with {@link FdmSchemeDesc#Douglas()} via the
- * full constructor.</p>
+ * storage engine overrides this with {@link FdmSchemeDesc#Douglas()} via the full constructor.</p>
  *
  * @author Phase 5e.5b-CFC-d-215 port
  */
@@ -54,16 +52,13 @@ public class FdmSimple2dExtOUSolver extends LazyObject {
 
     private Fdm2DimSolver solver_;
 
-    public FdmSimple2dExtOUSolver(final ExtendedOrnsteinUhlenbeckProcess process,
-                                  final YieldTermStructure rTS,
-                                  final FdmSolverDesc solverDesc) {
+    public FdmSimple2dExtOUSolver(final ExtendedOrnsteinUhlenbeckProcess process, final YieldTermStructure rTS,
+            final FdmSolverDesc solverDesc) {
         this(process, rTS, solverDesc, FdmSchemeDesc.Hundsdorfer());
     }
 
-    public FdmSimple2dExtOUSolver(final ExtendedOrnsteinUhlenbeckProcess process,
-                                  final YieldTermStructure rTS,
-                                  final FdmSolverDesc solverDesc,
-                                  final FdmSchemeDesc schemeDesc) {
+    public FdmSimple2dExtOUSolver(final ExtendedOrnsteinUhlenbeckProcess process, final YieldTermStructure rTS,
+            final FdmSolverDesc solverDesc, final FdmSchemeDesc schemeDesc) {
         this.process_ = process;
         this.rTS_ = rTS;
         this.solverDesc_ = solverDesc;
@@ -75,9 +70,8 @@ public class FdmSimple2dExtOUSolver extends LazyObject {
 
     @Override
     protected void performCalculations() {
-        final FdmExtendedOrnsteinUhlenbeckOp op =
-                new FdmExtendedOrnsteinUhlenbeckOp(
-                        solverDesc_.mesher, process_, rTS_, solverDesc_.bcSet);
+        final FdmExtendedOrnsteinUhlenbeckOp op = new FdmExtendedOrnsteinUhlenbeckOp(solverDesc_.mesher, process_, rTS_,
+                solverDesc_.bcSet);
         solver_ = new Fdm2DimSolver(solverDesc_, schemeDesc_, op);
     }
 

@@ -25,10 +25,6 @@
 
 package org.jquantlib.experimental.credit;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.instruments.Claim;
@@ -36,61 +32,54 @@ import org.jquantlib.instruments.FaceValueClaim;
 import org.jquantlib.time.Date;
 import org.jquantlib.util.LazyObject;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 /**
- * Credit basket: a collection of credit names with associated notionals,
- * a {@link Pool} (issuers), and tranche information (attachment /
- * detachment ratios).
+ * Credit basket: a collection of credit names with associated notionals, a {@link Pool} (issuers), and tranche
+ * information (attachment / detachment ratios).
  *
  * <p>Java port of QuantLib v1.42.1 {@code QuantLib::Basket}
  * ({@code ql/experimental/credit/basket.{hpp,cpp}}).
  *
  * <p>The basket is the central data structure for CDO, NTD, and
- * CdsOption pricing. The {@link DefaultLossModel} attached via
- * {@link #setLossModel(DefaultLossModel)} provides loss-distribution
- * statistics; queries that delegate to the model fail loudly if no
- * model is attached.
+ * CdsOption pricing. The {@link DefaultLossModel} attached via {@link #setLossModel(DefaultLossModel)} provides
+ * loss-distribution statistics; queries that delegate to the model fail loudly if no model is attached.
  *
  * <p>Phase 4m.5 — central data structure for CDO/NTD.
  */
 public class Basket extends LazyObject {
 
-    private final List<Double> notionals;
+    private final List< Double > notionals;
     private final Pool pool;
     /** The claim is the same for all names. */
     private final Claim claim;
 
     private final double attachmentRatio;
     private final double detachmentRatio;
+    /** Basket inception date. */
+    private final Date refDate;
     private double basketNotional;
     /** Basket tranched inception attachment amount. */
     private double attachmentAmount;
     /** Basket tranched inception detachment amount. */
     private double detachmentAmount;
     /** Basket tranched notional amount. */
-    private double trancheNotional;
-
+    private final double trancheNotional;
     /* Caches. */
     private double evalDateSettledLoss;
     private double evalDateRemainingNot;
     private double evalDateAttachAmount;
     private double evalDateDetachAmount;
-    private List<Integer> evalDateLiveList = new ArrayList<>();
-    private List<Double> evalDateLiveNotionals = new ArrayList<>();
-    private List<String> evalDateLiveNames = new ArrayList<>();
-    private List<DefaultProbKey> evalDateLiveKeys = new ArrayList<>();
-
-    /** Basket inception date. */
-    private final Date refDate;
-
+    private List< Integer > evalDateLiveList = new ArrayList<>();
+    private List< Double > evalDateLiveNotionals = new ArrayList<>();
+    private List< String > evalDateLiveNames = new ArrayList<>();
+    private List< DefaultProbKey > evalDateLiveKeys = new ArrayList<>();
     private DefaultLossModel lossModel;
 
-    public Basket(final Date refDate,
-                  final List<String> names,
-                  final List<Double> notionals,
-                  final Pool pool,
-                  final double attachmentRatio,
-                  final double detachmentRatio,
-                  final Claim claim) {
+    public Basket(final Date refDate, final List< String > names, final List< Double > notionals, final Pool pool,
+            final double attachmentRatio, final double detachmentRatio, final Claim claim) {
         this.notionals = new ArrayList<>(notionals);
         this.pool = pool;
         this.claim = claim;
@@ -98,23 +87,20 @@ public class Basket extends LazyObject {
         this.detachmentRatio = detachmentRatio;
         this.refDate = refDate;
         QL.require(!this.notionals.isEmpty(), "notionals empty");
-        QL.require(attachmentRatio >= 0
-                && attachmentRatio <= detachmentRatio
-                && detachmentRatio <= 1,
+        QL.require(attachmentRatio >= 0 && attachmentRatio <= detachmentRatio && detachmentRatio <= 1,
                 "invalid attachment/detachment ratio");
         QL.require(pool != null, "Empty pool pointer.");
-        QL.require(this.notionals.size() == pool.size(),
-                "unmatched data entry sizes in basket");
+        QL.require(this.notionals.size() == pool.size(), "unmatched data entry sizes in basket");
 
         // observability — settings + claim
         new Settings().evaluationDate().addObserver(this);
-        if (claim != null) {
+        if ( claim != null ) {
             claim.addObserver(this);
         }
 
         computeBasket();
 
-        for (final double notional : this.notionals) {
+        for ( final double notional : this.notionals ) {
             basketNotional += notional;
             attachmentAmount += notional * attachmentRatio;
             detachmentAmount += notional * detachmentRatio;
@@ -122,19 +108,12 @@ public class Basket extends LazyObject {
         trancheNotional = detachmentAmount - attachmentAmount;
     }
 
-    public Basket(final Date refDate,
-                  final List<String> names,
-                  final List<Double> notionals,
-                  final Pool pool,
-                  final double attachmentRatio,
-                  final double detachmentRatio) {
+    public Basket(final Date refDate, final List< String > names, final List< Double > notionals, final Pool pool,
+            final double attachmentRatio, final double detachmentRatio) {
         this(refDate, names, notionals, pool, attachmentRatio, detachmentRatio, new FaceValueClaim());
     }
 
-    public Basket(final Date refDate,
-                  final List<String> names,
-                  final List<Double> notionals,
-                  final Pool pool) {
+    public Basket(final Date refDate, final List< String > names, final List< Double > notionals, final Pool pool) {
         this(refDate, names, notionals, pool, 0.0, 1.0, new FaceValueClaim());
     }
 
@@ -169,23 +148,23 @@ public class Basket extends LazyObject {
         return pool.size();
     }
 
-    public List<String> names() {
+    public List< String > names() {
         return pool.names();
     }
 
-    public List<Double> notionals() {
+    public List< Double > notionals() {
         return notionals;
     }
 
     public double notional() {
         double sum = 0.0;
-        for (final double n : notionals) {
+        for ( final double n : notionals ) {
             sum += n;
         }
         return sum;
     }
 
-    public List<DefaultProbKey> defaultKeys() {
+    public List< DefaultProbKey > defaultKeys() {
         return pool.defaultKeys();
     }
 
@@ -227,18 +206,18 @@ public class Basket extends LazyObject {
 
     /** Sum of inception notionals attributed to {@code name} (handles duplicates). */
     public double exposure(final String name, final Date d) {
-        final List<String> poolNames = pool.names();
+        final List< String > poolNames = pool.names();
         int found = -1;
-        for (int i = 0; i < poolNames.size(); i++) {
-            if (poolNames.get(i).equals(name)) {
+        for ( int i = 0; i < poolNames.size(); i++ ) {
+            if ( poolNames.get(i).equals(name) ) {
                 found = i;
                 break;
             }
         }
         QL.require(found >= 0, "Name not in basket.");
         double total = 0.0;
-        for (int i = found; i < poolNames.size(); i++) {
-            if (poolNames.get(i).equals(name)) {
+        for ( int i = found; i < poolNames.size(); i++ ) {
+            if ( poolNames.get(i).equals(name) ) {
                 total += notionals.get(i);
             }
         }
@@ -250,13 +229,12 @@ public class Basket extends LazyObject {
     }
 
     /** Cumulative default probability to date d for all issuers. */
-    public List<Double> probabilities(final Date d) {
-        final List<Double> prob = new ArrayList<>(size());
-        final List<DefaultProbKey> defKeys = defaultKeys();
-        for (int j = 0; j < size(); j++) {
-            prob.add(pool.get(pool.names().get(j))
-                    .defaultProbability(defKeys.get(j))
-                    .currentLink().defaultProbability(d));
+    public List< Double > probabilities(final Date d) {
+        final List< Double > prob = new ArrayList<>(size());
+        final List< DefaultProbKey > defKeys = defaultKeys();
+        for ( int j = 0; j < size(); j++ ) {
+            prob.add(pool.get(pool.names().get(j)).defaultProbability(defKeys.get(j)).currentLink()
+                    .defaultProbability(d));
         }
         return prob;
     }
@@ -266,17 +244,14 @@ public class Basket extends LazyObject {
     }
 
     public double cumulatedLoss(final Date endDate) {
-        QL.require(endDate.compareTo(refDate) >= 0,
-                "Target date lies before basket inception");
+        QL.require(endDate.compareTo(refDate) >= 0, "Target date lies before basket inception");
         double loss = 0.0;
-        for (int i = 0; i < size(); i++) {
+        for ( int i = 0; i < size(); i++ ) {
             final DefaultEvent credEvent = pool.get(pool.names().get(i))
                     .defaultedBetween(refDate, endDate, pool.defaultKeys().get(i));
-            if (credEvent != null && credEvent.hasSettled()) {
-                loss += claim.amount(credEvent.date(),
-                        exposure(pool.names().get(i), credEvent.date()),
-                        credEvent.settlement().recoveryRate(
-                                pool.defaultKeys().get(i).seniority()));
+            if ( credEvent != null && credEvent.hasSettled() ) {
+                loss += claim.amount(credEvent.date(), exposure(pool.names().get(i), credEvent.date()),
+                        credEvent.settlement().recoveryRate(pool.defaultKeys().get(i).seniority()));
             }
         }
         return loss;
@@ -287,17 +262,14 @@ public class Basket extends LazyObject {
     }
 
     public double settledLoss(final Date endDate) {
-        QL.require(endDate.compareTo(refDate) >= 0,
-                "Target date lies before basket inception");
+        QL.require(endDate.compareTo(refDate) >= 0, "Target date lies before basket inception");
         double loss = 0.0;
-        for (int i = 0; i < size(); i++) {
+        for ( int i = 0; i < size(); i++ ) {
             final DefaultEvent credEvent = pool.get(pool.names().get(i))
                     .defaultedBetween(refDate, endDate, pool.defaultKeys().get(i));
-            if (credEvent != null && credEvent.hasSettled()) {
-                loss += claim.amount(credEvent.date(),
-                        exposure(pool.names().get(i), credEvent.date()),
-                        credEvent.settlement().recoveryRate(
-                                pool.defaultKeys().get(i).seniority()));
+            if ( credEvent != null && credEvent.hasSettled() ) {
+                loss += claim.amount(credEvent.date(), exposure(pool.names().get(i), credEvent.date()),
+                        credEvent.settlement().recoveryRate(pool.defaultKeys().get(i).seniority()));
             }
         }
         return loss;
@@ -309,56 +281,52 @@ public class Basket extends LazyObject {
 
     public double remainingNotional(final Date endDate) {
         double notional = 0.0;
-        final List<DefaultProbKey> defKeys = defaultKeys();
-        for (int i = 0; i < size(); i++) {
-            if (pool.get(pool.names().get(i))
-                    .defaultedBetween(refDate, endDate, defKeys.get(i)) == null) {
+        final List< DefaultProbKey > defKeys = defaultKeys();
+        for ( int i = 0; i < size(); i++ ) {
+            if ( pool.get(pool.names().get(i)).defaultedBetween(refDate, endDate, defKeys.get(i)) == null ) {
                 notional += notionals.get(i);
             }
         }
         return notional;
     }
 
-    public List<Double> remainingNotionals() {
+    public List< Double > remainingNotionals() {
         return evalDateLiveNotionals;
     }
 
-    public List<Double> remainingNotionals(final Date endDate) {
-        QL.require(endDate.compareTo(refDate) >= 0,
-                "Target date lies before basket inception");
-        final List<Integer> alive = liveList(endDate);
-        final List<Double> result = new ArrayList<>(alive.size());
-        for (final int i : alive) {
+    public List< Double > remainingNotionals(final Date endDate) {
+        QL.require(endDate.compareTo(refDate) >= 0, "Target date lies before basket inception");
+        final List< Integer > alive = liveList(endDate);
+        final List< Double > result = new ArrayList<>(alive.size());
+        for ( final int i : alive ) {
             result.add(exposure(pool.names().get(i), endDate));
         }
         return result;
     }
 
-    public List<String> remainingNames() {
+    public List< String > remainingNames() {
         return evalDateLiveNames;
     }
 
-    public List<String> remainingNames(final Date endDate) {
-        QL.require(endDate.compareTo(refDate) >= 0,
-                "Target date lies before basket inception");
-        final List<Integer> alive = liveList(endDate);
-        final List<String> result = new ArrayList<>(alive.size());
-        for (final int i : alive) {
+    public List< String > remainingNames(final Date endDate) {
+        QL.require(endDate.compareTo(refDate) >= 0, "Target date lies before basket inception");
+        final List< Integer > alive = liveList(endDate);
+        final List< String > result = new ArrayList<>(alive.size());
+        for ( final int i : alive ) {
             result.add(pool.names().get(i));
         }
         return result;
     }
 
-    public List<DefaultProbKey> remainingDefaultKeys() {
+    public List< DefaultProbKey > remainingDefaultKeys() {
         return evalDateLiveKeys;
     }
 
-    public List<DefaultProbKey> remainingDefaultKeys(final Date endDate) {
-        QL.require(endDate.compareTo(refDate) >= 0,
-                "Target date lies before basket inception");
-        final List<Integer> alive = liveList(endDate);
-        final List<DefaultProbKey> result = new ArrayList<>(alive.size());
-        for (final int i : alive) {
+    public List< DefaultProbKey > remainingDefaultKeys(final Date endDate) {
+        QL.require(endDate.compareTo(refDate) >= 0, "Target date lies before basket inception");
+        final List< Integer > alive = liveList(endDate);
+        final List< DefaultProbKey > result = new ArrayList<>(alive.size());
+        for ( final int i : alive ) {
             result.add(pool.defaultKeys().get(i));
         }
         return result;
@@ -372,14 +340,13 @@ public class Basket extends LazyObject {
         return remainingDefaultKeys(d).size();
     }
 
-    public List<Double> remainingProbabilities(final Date d) {
+    public List< Double > remainingProbabilities(final Date d) {
         QL.require(d.compareTo(refDate) >= 0, "Target date lies before basket inception");
-        final List<Integer> alive = liveList();
-        final List<Double> prob = new ArrayList<>(alive.size());
-        for (final int i : alive) {
-            prob.add(pool.get(pool.names().get(i))
-                    .defaultProbability(pool.defaultKeys().get(i))
-                    .currentLink().defaultProbability(d, true));
+        final List< Integer > alive = liveList();
+        final List< Double > prob = new ArrayList<>(alive.size());
+        for ( final int i : alive ) {
+            prob.add(pool.get(pool.names().get(i)).defaultProbability(pool.defaultKeys().get(i)).currentLink()
+                    .defaultProbability(d, true));
         }
         return prob;
     }
@@ -389,11 +356,9 @@ public class Basket extends LazyObject {
     }
 
     public double remainingAttachmentAmount(final Date endDate) {
-        QL.require(endDate.compareTo(refDate) >= 0,
-                "Target date lies before basket inception");
+        QL.require(endDate.compareTo(refDate) >= 0, "Target date lies before basket inception");
         final double loss = settledLoss(endDate);
-        return Math.min(detachmentAmount,
-                attachmentAmount + Math.max(0.0, loss - attachmentAmount));
+        return Math.min(detachmentAmount, attachmentAmount + Math.max(0.0, loss - attachmentAmount));
     }
 
     public double remainingDetachmentAmount() {
@@ -401,8 +366,7 @@ public class Basket extends LazyObject {
     }
 
     public double remainingDetachmentAmount(final Date endDate) {
-        QL.require(endDate.compareTo(refDate) >= 0,
-                "Target date lies before basket inception");
+        QL.require(endDate.compareTo(refDate) >= 0, "Target date lies before basket inception");
         return detachmentAmount;
     }
 
@@ -416,15 +380,14 @@ public class Basket extends LazyObject {
         return remainingDetachmentAmount(endDate) - remainingAttachmentAmount(endDate);
     }
 
-    public List<Integer> liveList() {
+    public List< Integer > liveList() {
         return evalDateLiveList;
     }
 
-    public List<Integer> liveList(final Date endDate) {
-        final List<Integer> result = new ArrayList<>();
-        for (int i = 0; i < size(); i++) {
-            if (pool.get(pool.names().get(i))
-                    .defaultedBetween(refDate, endDate, pool.defaultKeys().get(i)) == null) {
+    public List< Integer > liveList(final Date endDate) {
+        final List< Integer > result = new ArrayList<>();
+        for ( int i = 0; i < size(); i++ ) {
+            if ( pool.get(pool.names().get(i)).defaultedBetween(refDate, endDate, pool.defaultKeys().get(i)) == null ) {
                 result.add(i);
             }
         }
@@ -433,11 +396,11 @@ public class Basket extends LazyObject {
 
     /** Assigns the default loss model to this basket. Resets calculations. */
     public void setLossModel(final DefaultLossModel lossModel) {
-        if (this.lossModel != null) {
+        if ( this.lossModel != null ) {
             this.lossModel.deleteObserver(this);
         }
         this.lossModel = lossModel;
-        if (this.lossModel != null) {
+        if ( this.lossModel != null ) {
             this.lossModel.addObserver(this);
         }
         // mark stale
@@ -455,14 +418,13 @@ public class Basket extends LazyObject {
 
     public double probOverLoss(final Date d, final double lossFraction) {
         calculate();
-        if (evalDateRemainingNot == 0.0) {
+        if ( evalDateRemainingNot == 0.0 ) {
             return 1.0;
         }
         // turn into live (remaining) tranche units
         final double xPtfl = attachmentAmount + (detachmentAmount - attachmentAmount) * lossFraction;
-        final double xPrim = (xPtfl - evalDateAttachAmount)
-                / (detachmentAmount - evalDateAttachAmount);
-        if (xPtfl < 0.0) {
+        final double xPrim = (xPtfl - evalDateAttachAmount) / (detachmentAmount - evalDateAttachAmount);
+        if ( xPtfl < 0.0 ) {
             return 1.0;
         }
         return lossModel.probOverLoss(d, xPrim);
@@ -478,12 +440,12 @@ public class Basket extends LazyObject {
         return lossModel.expectedShortfall(d, prob);
     }
 
-    public List<Double> splitVaRLevel(final Date d, final double loss) {
+    public List< Double > splitVaRLevel(final Date d, final double loss) {
         calculate();
         return lossModel.splitVaRLevel(d, loss);
     }
 
-    public Map<Double, Double> lossDistribution(final Date d) {
+    public Map< Double, Double > lossDistribution(final Date d) {
         calculate();
         return lossModel.lossDistribution(d);
     }
@@ -498,11 +460,11 @@ public class Basket extends LazyObject {
         return lossModel.defaultCorrelation(d, iName, jName);
     }
 
-    public List<Double> probsBeingNthEvent(final int n, final Date d) {
+    public List< Double > probsBeingNthEvent(final int n, final Date d) {
         final int alreadyDefaulted = pool.size() - remainingNames().size();
-        if (alreadyDefaulted >= n) {
-            final List<Double> zeros = new ArrayList<>(remainingNames().size());
-            for (int i = 0; i < remainingNames().size(); i++) {
+        if ( alreadyDefaulted >= n ) {
+            final List< Double > zeros = new ArrayList<>(remainingNames().size());
+            for ( int i = 0; i < remainingNames().size(); i++ ) {
                 zeros.add(0.0);
             }
             return zeros;

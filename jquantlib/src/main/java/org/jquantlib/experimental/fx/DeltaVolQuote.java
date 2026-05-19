@@ -39,10 +39,8 @@ import org.jquantlib.util.Observer;
  * Java port of QuantLib v1.42.1 {@code ql/quotes/deltavolquote.hpp}.
  *
  * <p>Includes the various delta quotation types in FX markets as well as ATM
- * types. The C++ class lives under {@code ql/quotes} in v1.42.1; JQuantLib
- * keeps it under {@code experimental.fx} (no behavioural difference — the
- * package path documents that the class is part of the experimental FX
- * tooling).
+ * types. The C++ class lives under {@code ql/quotes} in v1.42.1; JQuantLib keeps it under {@code experimental.fx} (no
+ * behavioural difference — the package path documents that the class is part of the experimental FX tooling).
  *
  * @see org.jquantlib.pricingengines.BlackDeltaCalculator
  */
@@ -52,45 +50,20 @@ public class DeltaVolQuote extends Quote implements Observer {
     // public static inner enums
     //
 
-    public enum DeltaType {
-        Spot,        // Spot Delta, e.g. usual Black Scholes delta
-        Fwd,         // Forward Delta
-        PaSpot,      // Premium Adjusted Spot Delta
-        PaFwd        // Premium Adjusted Forward Delta
-    }
-
-    public enum AtmType {
-        AtmNull,         // Default, if not an atm quote
-        AtmSpot,         // K=S_0
-        AtmFwd,          // K=F
-        AtmDeltaNeutral, // Call Delta = Put Delta
-        AtmVegaMax,      // K such that Vega is Maximum
-        AtmGammaMax,     // K such that Gamma is Maximum
-        AtmPutCall50     // K such that Call Delta=0.50 (only for Fwd Delta)
-    }
+    private final double delta;
+    private final Handle< Quote > vol;
 
     //
     // private fields
     //
-
-    private final double delta;
-    private final Handle<Quote> vol;
     private final DeltaType deltaType;
     private final double maturity;
     private final AtmType atmType;
-
-
-    //
-    // public constructors
-    //
-
     /**
      * Standard constructor delta vs vol.
      */
-    public DeltaVolQuote(final double delta,
-                         final Handle<Quote> vol,
-                         final double maturity,
-                         final DeltaType deltaType) {
+    public DeltaVolQuote(final double delta, final Handle< Quote > vol, final double maturity,
+            final DeltaType deltaType) {
         this.delta = delta;
         this.vol = vol;
         this.deltaType = deltaType;
@@ -99,14 +72,11 @@ public class DeltaVolQuote extends Quote implements Observer {
 
         this.vol.addObserver(this); // observe vol
     }
-
     /**
      * Additional constructor, if special atm quote is used.
      */
-    public DeltaVolQuote(final Handle<Quote> vol,
-                         final DeltaType deltaType,
-                         final double maturity,
-                         final AtmType atmType) {
+    public DeltaVolQuote(final Handle< Quote > vol, final DeltaType deltaType, final double maturity,
+            final AtmType atmType) {
         this.delta = 0.0; // not used when atmType != AtmNull
         this.vol = vol;
         this.deltaType = deltaType;
@@ -116,9 +86,8 @@ public class DeltaVolQuote extends Quote implements Observer {
         this.vol.addObserver(this);
     }
 
-
     //
-    // public methods
+    // public constructors
     //
 
     public double delta() {
@@ -129,6 +98,10 @@ public class DeltaVolQuote extends Quote implements Observer {
         return maturity;
     }
 
+    //
+    // public methods
+    //
+
     public AtmType atmType() {
         return atmType;
     }
@@ -136,11 +109,6 @@ public class DeltaVolQuote extends Quote implements Observer {
     public DeltaType deltaType() {
         return deltaType;
     }
-
-
-    //
-    // implements Quote
-    //
 
     @Override
     public double value() /* @ReadOnly */ {
@@ -153,13 +121,33 @@ public class DeltaVolQuote extends Quote implements Observer {
         return !vol.empty() && vol.currentLink().isValid();
     }
 
-
     //
-    // implements Observer
+    // implements Quote
     //
 
     @Override
     public void update() {
         notifyObservers(); // let observers know, that something has changed
+    }
+
+    public enum DeltaType {
+        Spot,        // Spot Delta, e.g. usual Black Scholes delta
+        Fwd,         // Forward Delta
+        PaSpot,      // Premium Adjusted Spot Delta
+        PaFwd        // Premium Adjusted Forward Delta
+    }
+
+    //
+    // implements Observer
+    //
+
+    public enum AtmType {
+        AtmNull,         // Default, if not an atm quote
+        AtmSpot,         // K=S_0
+        AtmFwd,          // K=F
+        AtmDeltaNeutral, // Call Delta = Put Delta
+        AtmVegaMax,      // K such that Vega is Maximum
+        AtmGammaMax,     // K such that Gamma is Maximum
+        AtmPutCall50     // K such that Call Delta=0.50 (only for Fwd Delta)
     }
 }

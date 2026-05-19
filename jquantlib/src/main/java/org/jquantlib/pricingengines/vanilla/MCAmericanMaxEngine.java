@@ -36,12 +36,7 @@ import org.jquantlib.math.randomnumbers.InverseCumulativeRsg;
 import org.jquantlib.math.randomnumbers.MersenneTwisterUniformRng;
 import org.jquantlib.math.randomnumbers.RandomSequenceGenerator;
 import org.jquantlib.math.statistics.Statistics;
-import org.jquantlib.methods.montecarlo.AmericanMaxPathPricer;
-import org.jquantlib.methods.montecarlo.LongstaffSchwartzMultiPathPricer;
-import org.jquantlib.methods.montecarlo.MonteCarloModel;
-import org.jquantlib.methods.montecarlo.MultiPath;
-import org.jquantlib.methods.montecarlo.MultiPathGenerator;
-import org.jquantlib.methods.montecarlo.PathPricer;
+import org.jquantlib.methods.montecarlo.*;
 import org.jquantlib.model.shortrate.StochasticProcessArray;
 import org.jquantlib.pricingengines.GenericEngine;
 import org.jquantlib.pricingengines.McSimulation;
@@ -50,41 +45,31 @@ import org.jquantlib.processes.StochasticProcess1D;
 import org.jquantlib.time.TimeGrid;
 
 /**
- * Monte-Carlo American max-of-N option pricing engine using
- * Longstaff-Schwartz regression.
+ * Monte-Carlo American max-of-N option pricing engine using Longstaff-Schwartz regression.
  *
  * <p>Java port of the test-suite-internal C++ class
- * {@code MCAmericanMaxEngine<RNG>} from
- * {@code QuantLib v1.42.1 test-suite/mclongstaffschwartzengine.cpp}
- * (Phase MC-extras WI-6). Pinned commit
- * {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
+ * {@code MCAmericanMaxEngine<RNG>} from {@code QuantLib v1.42.1 test-suite/mclongstaffschwartzengine.cpp} (Phase
+ * MC-extras WI-6). Pinned commit {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
  *
  * <p>The C++ template specialises
- * {@code MCLongstaffSchwartzEngine<VanillaOption::engine, MultiVariate, RNG>}
- * over the {@link AmericanMaxPathPricer} payoff. In Java, the
- * {@link org.jquantlib.pricingengines.MCLongstaffSchwartzEngine} parent is
- * hard-bound to single-asset {@link org.jquantlib.methods.montecarlo.Path};
- * we therefore implement the multi-asset analog stand-alone here, mirroring
- * the structural pattern of
- * {@link org.jquantlib.pricingengines.basket.MCEuropeanBasketEngine} (composition
- * around {@link McSimulation}{@code <MultiPath>}) plus the
- * calibration-then-pricing two-phase orchestration of
- * {@link org.jquantlib.pricingengines.MCLongstaffSchwartzEngine}.
+ * {@code MCLongstaffSchwartzEngine<VanillaOption::engine, MultiVariate, RNG>} over the {@link AmericanMaxPathPricer}
+ * payoff. In Java, the {@link org.jquantlib.pricingengines.MCLongstaffSchwartzEngine} parent is hard-bound to
+ * single-asset {@link org.jquantlib.methods.montecarlo.Path}; we therefore implement the multi-asset analog stand-alone
+ * here, mirroring the structural pattern of {@link org.jquantlib.pricingengines.basket.MCEuropeanBasketEngine}
+ * (composition around {@link McSimulation}{@code <MultiPath>}) plus the calibration-then-pricing two-phase
+ * orchestration of {@link org.jquantlib.pricingengines.MCLongstaffSchwartzEngine}.
  *
  * <p>Specialised to {@code RNG = PseudoRandom} (Mersenne-Twister); the
- * quasi-random and antithetic-quasi variants are deferred to
- * Phase MC-extras-b.
+ * quasi-random and antithetic-quasi variants are deferred to Phase MC-extras-b.
  *
  * <p>The option container is {@link org.jquantlib.instruments.VanillaOption}
- * (carries only payoff + exercise); the multi-asset processes live on the
- * engine itself (mirrors C++ where
+ * (carries only payoff + exercise); the multi-asset processes live on the engine itself (mirrors C++ where
  * {@code VanillaOption americanMaxOption(payoff, exercise)} is set with an
  * {@code MCAmericanMaxEngine<PseudoRandom>(processes, ...)}).
  *
  * @author JQuantLib
  */
-public class MCAmericanMaxEngine
-        extends GenericEngine<OneAssetOption.Arguments, OneAssetOption.Results>
+public class MCAmericanMaxEngine extends GenericEngine< OneAssetOption.Arguments, OneAssetOption.Results >
         implements OneAssetOption.Engine {
 
     //
@@ -104,38 +89,27 @@ public class MCAmericanMaxEngine
     protected final int nCalibrationSamples_;
 
     protected LongstaffSchwartzMultiPathPricer pathPricer_;
-    protected McSimulation<MultiPath> simulation_;
-
+    protected McSimulation< MultiPath > simulation_;
 
     //
     // constructor
     //
 
     /**
-     * Mirrors C++ {@code MCAmericanMaxEngine(processes, timeSteps,
-     * timeStepsPerYear, brownianBridge, antitheticVariate, controlVariate,
-     * requiredSamples, requiredTolerance, maxSamples, seed,
-     * nCalibrationSamples = Null<Size>())}.
+     * Mirrors C++
+     * {@code MCAmericanMaxEngine(processes, timeSteps, timeStepsPerYear, brownianBridge, antitheticVariate,
+     * controlVariate, requiredSamples, requiredTolerance, maxSamples, seed, nCalibrationSamples = Null<Size>())}.
      *
      * <p>{@code nCalibrationSamples == NULL_SAMPLES} → C++ default 2048.
      */
-    public MCAmericanMaxEngine(final StochasticProcessArray processes,
-                               final int timeSteps,
-                               final int timeStepsPerYear,
-                               final boolean brownianBridge,
-                               final boolean antitheticVariate,
-                               final boolean controlVariate,
-                               final int requiredSamples,
-                               final double requiredTolerance,
-                               final int maxSamples,
-                               final long seed,
-                               final int nCalibrationSamples) {
+    public MCAmericanMaxEngine(final StochasticProcessArray processes, final int timeSteps, final int timeStepsPerYear,
+            final boolean brownianBridge, final boolean antitheticVariate, final boolean controlVariate,
+            final int requiredSamples, final double requiredTolerance, final int maxSamples, final long seed,
+            final int nCalibrationSamples) {
         super(new OneAssetOption.ArgumentsImpl(), new OneAssetOption.ResultsImpl());
-        QL.require(timeSteps != McSimulation.NULL_SAMPLES
-                || timeStepsPerYear != McSimulation.NULL_SAMPLES,
+        QL.require(timeSteps != McSimulation.NULL_SAMPLES || timeStepsPerYear != McSimulation.NULL_SAMPLES,
                 "no time steps provided");
-        QL.require(timeSteps == McSimulation.NULL_SAMPLES
-                || timeStepsPerYear == McSimulation.NULL_SAMPLES,
+        QL.require(timeSteps == McSimulation.NULL_SAMPLES || timeStepsPerYear == McSimulation.NULL_SAMPLES,
                 "both time steps and time steps per year were provided");
 
         this.processes_ = processes;
@@ -148,11 +122,9 @@ public class MCAmericanMaxEngine
         this.requiredTolerance_ = requiredTolerance;
         this.maxSamples_ = maxSamples;
         this.seed_ = seed;
-        this.nCalibrationSamples_ = (nCalibrationSamples == McSimulation.NULL_SAMPLES)
-                ? 2048 : nCalibrationSamples;
+        this.nCalibrationSamples_ = (nCalibrationSamples == McSimulation.NULL_SAMPLES) ? 2048 : nCalibrationSamples;
         this.processes_.addObserver(this);
     }
-
 
     //
     // helpers
@@ -164,9 +136,9 @@ public class MCAmericanMaxEngine
         final Exercise exercise = a.exercise;
         QL.require(exercise instanceof EarlyExercise, "wrong exercise given");
         final double residualTime = processes_.time(exercise.lastDate());
-        if (timeSteps_ != McSimulation.NULL_SAMPLES) {
+        if ( timeSteps_ != McSimulation.NULL_SAMPLES ) {
             return new TimeGrid(residualTime, timeSteps_);
-        } else if (timeStepsPerYear_ != McSimulation.NULL_SAMPLES) {
+        } else if ( timeStepsPerYear_ != McSimulation.NULL_SAMPLES ) {
             final int steps = (int) (timeStepsPerYear_ * residualTime);
             return new TimeGrid(residualTime, Math.max(steps, 1));
         } else {
@@ -175,20 +147,15 @@ public class MCAmericanMaxEngine
     }
 
     /** Build a Gaussian-driven {@link MultiPathGenerator} for the underlying processes. */
-    protected MonteCarloModel.PathGeneratorAdapter<MultiPath> pathGenerator(final long seed) {
+    protected MonteCarloModel.PathGeneratorAdapter< MultiPath > pathGenerator(final long seed) {
         final TimeGrid grid = timeGrid();
         final int dimensions = processes_.factors() * (grid.size() - 1);
-        final RandomSequenceGenerator<MersenneTwisterUniformRng> uniformRsg =
-                new RandomSequenceGenerator<MersenneTwisterUniformRng>(
-                        MersenneTwisterUniformRng.class, dimensions, seed);
-        final InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                InverseCumulativeNormal> gsg =
-                new InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                        InverseCumulativeNormal>(uniformRsg, new InverseCumulativeNormal());
-        final MultiPathGenerator<InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                InverseCumulativeNormal>> gen =
-                new MultiPathGenerator<InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                        InverseCumulativeNormal>>(processes_, grid, gsg, brownianBridge_);
+        final RandomSequenceGenerator< MersenneTwisterUniformRng > uniformRsg = new RandomSequenceGenerator< MersenneTwisterUniformRng >(
+                MersenneTwisterUniformRng.class, dimensions, seed);
+        final InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal > gsg = new InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal >(
+                uniformRsg, new InverseCumulativeNormal());
+        final MultiPathGenerator< InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal > > gen = new MultiPathGenerator< InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal > >(
+                processes_, grid, gsg, brownianBridge_);
         return new MonteCarloModel.MultiPathGeneratorAdapterImpl(gen);
     }
 
@@ -197,26 +164,20 @@ public class MCAmericanMaxEngine
         final OneAssetOption.ArgumentsImpl a = (OneAssetOption.ArgumentsImpl) arguments_;
         // Resolve the risk-free curve from the first underlying process.
         final StochasticProcess1D first = processes_.process(0);
-        QL.require(first instanceof GeneralizedBlackScholesProcess,
-                "generalized Black-Scholes process required");
-        final GeneralizedBlackScholesProcess process =
-                (GeneralizedBlackScholesProcess) first;
+        QL.require(first instanceof GeneralizedBlackScholesProcess, "generalized Black-Scholes process required");
+        final GeneralizedBlackScholesProcess process = (GeneralizedBlackScholesProcess) first;
 
         final AmericanMaxPathPricer earlyPricer = new AmericanMaxPathPricer(a.payoff);
-        return new LongstaffSchwartzMultiPathPricer(
-                this.timeGrid(),
-                earlyPricer,
-                process.riskFreeRate().currentLink());
+        return new LongstaffSchwartzMultiPathPricer(this.timeGrid(), earlyPricer, process.riskFreeRate().currentLink());
     }
-
 
     //
     // PricingEngine
     //
 
     /**
-     * Mirrors C++ {@code MCLongstaffSchwartzEngine::calculate()}: build the
-     * pricer, run the calibration MC, calibrate, then run the pricing MC.
+     * Mirrors C++ {@code MCLongstaffSchwartzEngine::calculate()}: build the pricer, run the calibration MC, calibrate,
+     * then run the pricing MC.
      */
     @Override
     public void calculate() /* @ReadOnly */ {
@@ -226,28 +187,37 @@ public class MCAmericanMaxEngine
         //    drive it with N samples via a dedicated MC model.
         this.pathPricer_ = lsmPathPricer();
         final long seedCal = (seed_ == 0) ? 0 : seed_ + 1768237423L;
-        final MonteCarloModel<MultiPath> mcModelCalibration = new MonteCarloModel<MultiPath>(
-                pathGenerator(seedCal), this.pathPricer_, new Statistics(),
-                antitheticVariate_);
+        final MonteCarloModel< MultiPath > mcModelCalibration = new MonteCarloModel< MultiPath >(pathGenerator(seedCal),
+                this.pathPricer_, new Statistics(), antitheticVariate_);
         mcModelCalibration.addSamples(nCalibrationSamples_);
         this.pathPricer_.calibrate();
 
         // 2) pricing phase: standard McSimulation drives the now-calibrated
         //    pricer to produce mean + error.
-        final MonteCarloModel.PathGeneratorAdapter<MultiPath> pricingGen = pathGenerator(seed_);
+        final MonteCarloModel.PathGeneratorAdapter< MultiPath > pricingGen = pathGenerator(seed_);
         final LongstaffSchwartzMultiPathPricer pricer = this.pathPricer_;
-        this.simulation_ = new McSimulation<MultiPath>(antitheticVariate_, controlVariate_) {
-            @Override protected PathPricer<MultiPath> pathPricer() { return pricer; }
-            @Override protected MonteCarloModel.PathGeneratorAdapter<MultiPath> pathGenerator() {
+        this.simulation_ = new McSimulation< MultiPath >(antitheticVariate_, controlVariate_) {
+            @Override
+            protected PathPricer< MultiPath > pathPricer() {
+                return pricer;
+            }
+
+            @Override
+            protected MonteCarloModel.PathGeneratorAdapter< MultiPath > pathGenerator() {
                 return pricingGen;
             }
-            @Override protected TimeGrid timeGrid() { return MCAmericanMaxEngine.this.timeGrid(); }
+
+            @Override
+            protected TimeGrid timeGrid() {
+                return MCAmericanMaxEngine.this.timeGrid();
+            }
         };
         this.simulation_.calculate(requiredTolerance_, requiredSamples_, maxSamples_);
         r.value = this.simulation_.sampleAccumulator().mean();
         r.errorEstimate = this.simulation_.errorEstimate();
         // Suppress 'unused' warnings on Array import without changing
         // public API or intent.
-        @SuppressWarnings("unused") final Class<?> arrayClass = Array.class;
+        @SuppressWarnings( "unused" )
+        final Class< ? > arrayClass = Array.class;
     }
 }

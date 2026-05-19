@@ -45,24 +45,20 @@ import org.jquantlib.processes.GeneralizedBlackScholesProcess;
 /**
  * General class for one dimensional PDE's
  *
- * @author Srinivas Hasti
- *
  * @param <T>
+ * @author Srinivas Hasti
  */
-public abstract class PdeOperator<T extends PdeSecondOrderParabolic> extends TridiagonalOperator {
-	
-	private final Class<? extends PdeSecondOrderParabolic> classT;
-	
-	public PdeOperator(
-			final Class<? extends PdeSecondOrderParabolic> classT,
-			final Array grid, 
-			final GeneralizedBlackScholesProcess process, 
-			final double residualTime) {
-		super(grid.size());
-		this.classT = classT;
-		final PdeSecondOrderParabolic pde = PdeTypeUtil.getPdeInstance(classT, process);
-		timeSetter = new GenericTimeSetter<PdeSecondOrderParabolic>(grid, pde);
-		setTime(residualTime);
-	}
+public abstract class PdeOperator< T extends PdeSecondOrderParabolic > extends TridiagonalOperator {
+
+    private final Class< ? extends PdeSecondOrderParabolic > classT;
+
+    public PdeOperator(final Class< ? extends PdeSecondOrderParabolic > classT, final Array grid,
+            final GeneralizedBlackScholesProcess process, final double residualTime) {
+        super(grid.size());
+        this.classT = classT;
+        final PdeSecondOrderParabolic pde = PdeTypeUtil.getPdeInstance(classT, process);
+        timeSetter = new GenericTimeSetter< PdeSecondOrderParabolic >(grid, pde);
+        setTime(residualTime);
+    }
 
 }

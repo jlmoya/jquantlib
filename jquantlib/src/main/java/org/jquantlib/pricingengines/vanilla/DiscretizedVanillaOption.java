@@ -37,15 +37,15 @@
 
 package org.jquantlib.pricingengines.vanilla;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.instruments.DiscretizedAsset;
 import org.jquantlib.instruments.VanillaOption;
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.processes.StochasticProcess;
 import org.jquantlib.time.TimeGrid;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Discretized vanilla option
@@ -61,36 +61,30 @@ public class DiscretizedVanillaOption extends DiscretizedAsset {
     final private StochasticProcess process;
     final private VanillaOption.ArgumentsImpl a;
     // final private VanillaOption.ResultsImpl r;
-    private final List<Double> stoppingTimes;
-
+    private final List< Double > stoppingTimes;
 
     //
     // public constructors
     //
 
-    public DiscretizedVanillaOption(
-            final VanillaOption.Arguments arguments,
-            final StochasticProcess process) {
+    public DiscretizedVanillaOption(final VanillaOption.Arguments arguments, final StochasticProcess process) {
         this(arguments, process, new TimeGrid());
     }
 
-    public DiscretizedVanillaOption(
-            final VanillaOption.Arguments arguments,
-            final StochasticProcess process,
+    public DiscretizedVanillaOption(final VanillaOption.Arguments arguments, final StochasticProcess process,
             final TimeGrid grid) {
         this.a = (VanillaOption.ArgumentsImpl) arguments;
         this.process = process;
         final int size = a.exercise.size();
-        this.stoppingTimes = new ArrayList<Double>();
-        for (int i = 0; i < size; ++i) {
+        this.stoppingTimes = new ArrayList< Double >();
+        for ( int i = 0; i < size; ++i ) {
             stoppingTimes.add(i, process.time(a.exercise.date(i)));
-            if (!grid.empty()) {
+            if ( !grid.empty() ) {
                 // adjust to the given grid
                 stoppingTimes.add(i, grid.closestTime(stoppingTimes.get(i)));
             }
         }
     }
-
 
     //
     // private methods
@@ -98,11 +92,10 @@ public class DiscretizedVanillaOption extends DiscretizedAsset {
 
     private void applySpecificCondition() {
         final Array grid = method().grid(time());
-        for (int j = 0; j < values_.size(); j++) {
+        for ( int j = 0; j < values_.size(); j++ ) {
             values_.set(j, Math.max(values_.get(j), a.payoff.get(grid.get(j))));
         }
     }
-
 
     //
     // overrides DiscretizedAsset
@@ -115,27 +108,27 @@ public class DiscretizedVanillaOption extends DiscretizedAsset {
     }
 
     @Override
-    public List<Double> mandatoryTimes() /* @ReadOnly */ {
+    public List< Double > mandatoryTimes() /* @ReadOnly */ {
         return stoppingTimes;
     }
 
     @Override
     protected void postAdjustValuesImpl() {
         final double now = time();
-        switch (a.exercise.type()) {
+        switch ( a.exercise.type() ) {
         case American:
-            if (now <= stoppingTimes.get(1) && now >= stoppingTimes.get(0)) {
+            if ( now <= stoppingTimes.get(1) && now >= stoppingTimes.get(0) ) {
                 applySpecificCondition();
             }
             break;
         case European:
-            if (isOnTime(stoppingTimes.get(0))) {
+            if ( isOnTime(stoppingTimes.get(0)) ) {
                 applySpecificCondition();
             }
             break;
         case Bermudan:
-            for (int i = 0; i < stoppingTimes.size(); i++)
-                if (isOnTime(stoppingTimes.get(i))) {
+            for ( int i = 0; i < stoppingTimes.size(); i++ )
+                if ( isOnTime(stoppingTimes.get(i)) ) {
                     applySpecificCondition();
                 }
             break;

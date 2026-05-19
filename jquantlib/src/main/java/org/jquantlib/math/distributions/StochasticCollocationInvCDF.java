@@ -31,14 +31,13 @@ import org.jquantlib.math.interpolations.LagrangeInterpolation;
  * Stochastic collocation inverse cumulative distribution function.
  *
  * <p>Faithful Java port of QuantLib v1.42.1
- * {@code ql/math/randomnumbers/stochasticcollocationinvcdf.{hpp,cpp}}, pinned
- * commit {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
+ * {@code ql/math/randomnumbers/stochasticcollocationinvcdf.{hpp,cpp}}, pinned commit
+ * {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
  *
  * <p>The class builds a barycentric Lagrange interpolant of an expensive
- * inverse CDF on the Gauss–Hermite abscissae (rescaled by {@code √2}), with
- * an optional sigma rescaling so that the interpolation grid spans either
- * a user-supplied upper-tail quantile {@code pMax} or lower-tail quantile
- * {@code pMin}. Once constructed, evaluation is O(n) per call.
+ * inverse CDF on the Gauss–Hermite abscissae (rescaled by {@code √2}), with an optional sigma rescaling so that the
+ * interpolation grid spans either a user-supplied upper-tail quantile {@code pMax} or lower-tail quantile {@code pMin}.
+ * Once constructed, evaluation is O(n) per call.
  *
  * <p>References:
  * <ul>
@@ -69,15 +68,12 @@ public class StochasticCollocationInvCDF implements Ops.DoubleOp {
      * @param lagrangeOrder Gauss–Hermite order (number of nodes)
      * @param pMax          upper-tail probability (use {@code Double.NaN} for the default)
      */
-    public StochasticCollocationInvCDF(final Ops.DoubleOp invCDF,
-                                       final int lagrangeOrder,
-                                       final double pMax) {
+    public StochasticCollocationInvCDF(final Ops.DoubleOp invCDF, final int lagrangeOrder, final double pMax) {
         this(invCDF, lagrangeOrder, pMax, Double.NaN);
     }
 
     /**
-     * Construct rescaled by {@code pMax} (if not NaN), else by {@code pMin}
-     * (if not NaN), else sigma = 1.0.
+     * Construct rescaled by {@code pMax} (if not NaN), else by {@code pMin} (if not NaN), else sigma = 1.0.
      *
      * <p>Faithful transcription of the C++ constructor:
      * <pre>
@@ -89,15 +85,13 @@ public class StochasticCollocationInvCDF implements Ops.DoubleOp {
      *   interpl_ = LagrangeInterpolation(x_, y_)
      * </pre>
      */
-    public StochasticCollocationInvCDF(final Ops.DoubleOp invCDF,
-                                       final int lagrangeOrder,
-                                       final double pMax,
-                                       final double pMin) {
+    public StochasticCollocationInvCDF(final Ops.DoubleOp invCDF, final int lagrangeOrder, final double pMax,
+            final double pMin) {
         // x_ = sqrt(2) * GaussHermiteIntegration(n).x()
         final GaussHermiteIntegration gh = new GaussHermiteIntegration(lagrangeOrder);
         final int n = gh.order();
         this.x_ = new double[n];
-        for (int i = 0; i < n; ++i) {
+        for ( int i = 0; i < n; ++i ) {
             x_[i] = Constants.M_SQRT2 * gh.x(i);
         }
 
@@ -105,9 +99,9 @@ public class StochasticCollocationInvCDF implements Ops.DoubleOp {
         // C++ Array<.> nodes are stored in ascending order after the
         // tridiagonal QR; x_.back() = x_[n-1], x_.front() = x_[0].
         final InverseCumulativeNormal invNormal = new InverseCumulativeNormal();
-        if (!Double.isNaN(pMax)) {
+        if ( !Double.isNaN(pMax) ) {
             this.sigma_ = x_[n - 1] / invNormal.op(pMax);
-        } else if (!Double.isNaN(pMin)) {
+        } else if ( !Double.isNaN(pMin) ) {
             this.sigma_ = x_[0] / invNormal.op(pMin);
         } else {
             this.sigma_ = 1.0;
@@ -116,7 +110,7 @@ public class StochasticCollocationInvCDF implements Ops.DoubleOp {
         // y_[i] = invCDF( N( x_[i] / sigma_ ) )
         final CumulativeNormalDistribution normalCDF = new CumulativeNormalDistribution();
         this.y_ = new double[n];
-        for (int i = 0; i < n; ++i) {
+        for ( int i = 0; i < n; ++i ) {
             y_[i] = invCDF.op(normalCDF.op(x_[i] / sigma_));
         }
 
@@ -127,9 +121,8 @@ public class StochasticCollocationInvCDF implements Ops.DoubleOp {
      * Evaluate the collocation interpolant at a standard-normal x-coordinate.
      *
      * <p>Mirrors C++ {@code Real value(Real x) const}:
-     * {@code interpl_(x * sigma_, true)} — the trailing {@code true} requests
-     * extrapolation, which the Java {@link LagrangeInterpolation} already
-     * performs unconditionally via the barycentric formula.
+     * {@code interpl_(x * sigma_, true)} — the trailing {@code true} requests extrapolation, which the Java
+     * {@link LagrangeInterpolation} already performs unconditionally via the barycentric formula.
      */
     public double value(final double x) {
         return interpl_.op(x * sigma_, true);

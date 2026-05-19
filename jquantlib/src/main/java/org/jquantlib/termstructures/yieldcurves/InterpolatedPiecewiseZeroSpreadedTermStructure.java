@@ -52,23 +52,18 @@ import org.jquantlib.time.Date;
 import org.jquantlib.time.Frequency;
 
 /**
- * Yield curve with an added vector of spreads on the zero-yield rate,
- * interpolated across pillar dates.
+ * Yield curve with an added vector of spreads on the zero-yield rate, interpolated across pillar dates.
  * <p>
- * Java port of QuantLib v1.42.1
- * {@code ql/termstructures/yield/piecewisezerospreadedtermstructure.hpp}.
+ * Java port of QuantLib v1.42.1 {@code ql/termstructures/yield/piecewisezerospreadedtermstructure.hpp}.
  * <p>
- * The zero-yield spread at any given date is interpolated between the
- * input data via the supplied {@link Interpolator} factory. Behaviour
- * outside the pillar range is flat (left-most or right-most spread).
+ * The zero-yield spread at any given date is interpolated between the input data via the supplied {@link Interpolator}
+ * factory. Behaviour outside the pillar range is flat (left-most or right-most spread).
  * <p>
- * This term structure remains linked to the original structure — any
- * change in the latter will be reflected here as well via the observer
- * pattern (also any change in any of the spread quote handles).
- *
- * @see ZeroSpreadedTermStructure single-spread cousin
+ * This term structure remains linked to the original structure — any change in the latter will be reflected here as
+ * well via the observer pattern (also any change in any of the spread quote handles).
  *
  * @author JQuantLib migration contributors (Phase 5e.5b-CFC-d-55)
+ * @see ZeroSpreadedTermStructure single-spread cousin
  */
 public class InterpolatedPiecewiseZeroSpreadedTermStructure extends ZeroYieldStructure {
 
@@ -76,8 +71,8 @@ public class InterpolatedPiecewiseZeroSpreadedTermStructure extends ZeroYieldStr
     // private final fields
     //
 
-    private final Handle<YieldTermStructure> originalCurve;
-    private final Handle<Quote>[] spreads;
+    private final Handle< YieldTermStructure > originalCurve;
+    private final Handle< Quote >[] spreads;
     private final Date[] dates;
     private final double[] times;
     private final double[] spreadValues;
@@ -85,38 +80,30 @@ public class InterpolatedPiecewiseZeroSpreadedTermStructure extends ZeroYieldStr
     private final Frequency freq;
     private final Interpolator factory;
 
-
     //
     // private fields (refreshed on update())
     //
 
     private Interpolation interpolator;
 
-
     //
     // public constructors
     //
 
     /**
-     * Full constructor mirroring C++ v1.42.1 (with compounding, frequency and
-     * interpolator-factory parameters).
+     * Full constructor mirroring C++ v1.42.1 (with compounding, frequency and interpolator-factory parameters).
      */
-    @SuppressWarnings("unchecked")
-    public InterpolatedPiecewiseZeroSpreadedTermStructure(
-            final Handle<YieldTermStructure> h,
-            final Handle<Quote>[] spreads,
-            final Date[] dates,
-            final Compounding comp,
-            final Frequency freq,
+    @SuppressWarnings( "unchecked" )
+    public InterpolatedPiecewiseZeroSpreadedTermStructure(final Handle< YieldTermStructure > h,
+            final Handle< Quote >[] spreads, final Date[] dates, final Compounding comp, final Frequency freq,
             final Interpolator factory) {
         super();
         QL.require(spreads != null && spreads.length > 0, "no spreads given");
-        QL.require(spreads.length == dates.length,
-                "spread and date vector have different sizes");
+        QL.require(spreads.length == dates.length, "spread and date vector have different sizes");
         QL.require(factory != null, "null interpolation factory");
 
         this.originalCurve = h;
-        this.spreads = (Handle<Quote>[]) new Handle<?>[spreads.length];
+        this.spreads = (Handle< Quote >[]) new Handle< ? >[spreads.length];
         System.arraycopy(spreads, 0, this.spreads, 0, spreads.length);
         this.dates = new Date[dates.length];
         System.arraycopy(dates, 0, this.dates, 0, dates.length);
@@ -127,27 +114,22 @@ public class InterpolatedPiecewiseZeroSpreadedTermStructure extends ZeroYieldStr
         this.factory = factory;
 
         this.originalCurve.addObserver(this);
-        for (int i = 0; i < this.spreads.length; ++i) {
+        for ( int i = 0; i < this.spreads.length; ++i ) {
             this.spreads[i].addObserver(this);
         }
-        if (!this.originalCurve.empty()) {
+        if ( !this.originalCurve.empty() ) {
             updateInterpolation();
         }
     }
 
     /**
-     * Convenience constructor mirroring C++ defaults
-     * ({@code Compounding.Continuous}, {@code Frequency.NoFrequency},
+     * Convenience constructor mirroring C++ defaults ({@code Compounding.Continuous}, {@code Frequency.NoFrequency},
      * default-constructed interpolator factory).
      */
-    public InterpolatedPiecewiseZeroSpreadedTermStructure(
-            final Handle<YieldTermStructure> h,
-            final Handle<Quote>[] spreads,
-            final Date[] dates,
-            final Interpolator factory) {
+    public InterpolatedPiecewiseZeroSpreadedTermStructure(final Handle< YieldTermStructure > h,
+            final Handle< Quote >[] spreads, final Date[] dates, final Interpolator factory) {
         this(h, spreads, dates, Compounding.Continuous, Frequency.NoFrequency, factory);
     }
-
 
     //
     // overrides ZeroYieldStructure / AbstractYieldTermStructure
@@ -183,17 +165,11 @@ public class InterpolatedPiecewiseZeroSpreadedTermStructure extends ZeroYieldStr
     @Override
     protected double zeroYieldImpl(final double t) {
         final double spread = calcSpread(t);
-        final InterestRate zeroRate = originalCurve.currentLink()
-                .zeroRate(t, comp, freq, true);
-        final InterestRate spreadedRate = new InterestRate(
-                zeroRate.rate() + spread,
-                zeroRate.dayCounter(),
-                zeroRate.compounding(),
-                zeroRate.frequency());
-        return spreadedRate.equivalentRate(t, Compounding.Continuous, Frequency.NoFrequency)
-                .rate();
+        final InterestRate zeroRate = originalCurve.currentLink().zeroRate(t, comp, freq, true);
+        final InterestRate spreadedRate = new InterestRate(zeroRate.rate() + spread, zeroRate.dayCounter(),
+                zeroRate.compounding(), zeroRate.frequency());
+        return spreadedRate.equivalentRate(t, Compounding.Continuous, Frequency.NoFrequency).rate();
     }
-
 
     //
     // overrides AbstractTermStructure (observer)
@@ -201,7 +177,7 @@ public class InterpolatedPiecewiseZeroSpreadedTermStructure extends ZeroYieldStr
 
     @Override
     public void update() {
-        if (!originalCurve.empty()) {
+        if ( !originalCurve.empty() ) {
             updateInterpolation();
             // Mirror C++: ZeroYieldStructure::update() — Java's
             // ZeroYieldStructure has no override, so we forward to the
@@ -215,15 +191,14 @@ public class InterpolatedPiecewiseZeroSpreadedTermStructure extends ZeroYieldStr
         }
     }
 
-
     //
     // private helpers
     //
 
     private double calcSpread(final double t) {
-        if (t <= times[0]) {
+        if ( t <= times[0] ) {
             return spreads[0].currentLink().value();
-        } else if (t >= times[times.length - 1]) {
+        } else if ( t >= times[times.length - 1] ) {
             return spreads[spreads.length - 1].currentLink().value();
         } else {
             return interpolator.op(t, true);
@@ -231,7 +206,7 @@ public class InterpolatedPiecewiseZeroSpreadedTermStructure extends ZeroYieldStr
     }
 
     private void updateInterpolation() {
-        for (int i = 0; i < dates.length; ++i) {
+        for ( int i = 0; i < dates.length; ++i ) {
             times[i] = timeFromReference(dates[i]);
             spreadValues[i] = spreads[i].currentLink().value();
         }

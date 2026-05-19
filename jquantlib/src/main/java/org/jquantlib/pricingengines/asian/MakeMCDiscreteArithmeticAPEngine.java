@@ -47,45 +47,53 @@ public class MakeMCDiscreteArithmeticAPEngine {
         this.brownianBridge_ = b;
         return this;
     }
+
     public MakeMCDiscreteArithmeticAPEngine withBrownianBridge() {
         return withBrownianBridge(true);
     }
+
     public MakeMCDiscreteArithmeticAPEngine withAntitheticVariate(final boolean b) {
         this.antithetic_ = b;
         return this;
     }
+
     public MakeMCDiscreteArithmeticAPEngine withAntitheticVariate() {
         return withAntitheticVariate(true);
     }
+
     public MakeMCDiscreteArithmeticAPEngine withControlVariate(final boolean b) {
         this.controlVariate_ = b;
         return this;
     }
+
     public MakeMCDiscreteArithmeticAPEngine withControlVariate() {
         return withControlVariate(true);
     }
+
     public MakeMCDiscreteArithmeticAPEngine withSamples(final int samples) {
         QL.require(Double.isNaN(tolerance_), "tolerance already set");
         this.samples_ = samples;
         return this;
     }
+
     public MakeMCDiscreteArithmeticAPEngine withAbsoluteTolerance(final double tolerance) {
         QL.require(samples_ == McSimulation.NULL_SAMPLES, "number of samples already set");
         this.tolerance_ = tolerance;
         return this;
     }
+
     public MakeMCDiscreteArithmeticAPEngine withMaxSamples(final int samples) {
         this.maxSamples_ = samples;
         return this;
     }
+
     public MakeMCDiscreteArithmeticAPEngine withSeed(final long seed) {
         this.seed_ = seed;
         return this;
     }
 
     public PricingEngine value() {
-        return new MCDiscreteArithmeticAPEngine(
-                process_, brownianBridge_, antithetic_, controlVariate_,
-                samples_, tolerance_, maxSamples_, seed_);
+        return new MCDiscreteArithmeticAPEngine(process_, brownianBridge_, antithetic_, controlVariate_, samples_,
+                tolerance_, maxSamples_, seed_);
     }
 }

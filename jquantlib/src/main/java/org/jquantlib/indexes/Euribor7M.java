@@ -27,21 +27,21 @@ import org.jquantlib.time.Period;
 import org.jquantlib.time.TimeUnit;
 
 /**
- * 7-months Euribor index    
- * 
+ * 7-months Euribor index
+ *
  * @author Srinivas Hasti
  */
 public class Euribor7M extends Euribor {
-
 
     //
     // public constructors
     //
 
     public Euribor7M() {
-    	this(new Handle<YieldTermStructure>());
+        this(new Handle< YieldTermStructure >());
     }
-    public Euribor7M(final Handle<YieldTermStructure> h) {
+
+    public Euribor7M(final Handle< YieldTermStructure > h) {
         super(new Period(7, TimeUnit.Months), h);
     }
 

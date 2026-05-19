@@ -22,12 +22,11 @@ import org.jquantlib.math.distributions.GammaFunction;
 import org.jquantlib.math.transcendental.JQuantMath;
 
 /**
- * Generalized Gauss-Hermite polynomial with weight
- * {@code w(x;mu) = |x|^{2*mu} * exp(-x^2)}, {@code mu > -0.5}.
+ * Generalized Gauss-Hermite polynomial with weight {@code w(x;mu) = |x|^{2*mu} * exp(-x^2)}, {@code mu > -0.5}.
  *
  * <p>Phase 2j.5 Track C.1 port of {@code QuantLib::GaussHermitePolynomial}
- * (v1.42.1 ql/math/integrals/gaussianorthogonalpolynomial.{hpp,cpp}). Pinned
- * commit {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
+ * (v1.42.1 ql/math/integrals/gaussianorthogonalpolynomial.{hpp,cpp}). Pinned commit
+ * {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
  *
  * <p>Three-term recurrence coefficients:
  * <pre>
@@ -36,7 +35,7 @@ import org.jquantlib.math.transcendental.JQuantMath;
  *   mu_0     = Gamma(mu + 1/2)
  * </pre>
  *
- * <p>{@link #w(double)} uses {@link JQuantMath#pow(double,double)} (CORE-MATH cr_pow) and
+ * <p>{@link #w(double)} uses {@link JQuantMath#pow(double, double)} (CORE-MATH cr_pow) and
  * {@link JQuantMath#exp(double)} for the {@code exp(-x*x)} factor.
  */
 public final class GaussHermitePolynomial extends GaussianOrthogonalPolynomial {

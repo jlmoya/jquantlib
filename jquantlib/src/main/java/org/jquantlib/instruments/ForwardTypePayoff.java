@@ -41,7 +41,6 @@ package org.jquantlib.instruments;
 import org.jquantlib.QL;
 import org.jquantlib.lang.exceptions.LibraryException;
 
-
 /**
  * Class for forward type payoffs
  *
@@ -67,12 +66,12 @@ public class ForwardTypePayoff extends Payoff {
     /**
      * Constructs a typed {@link Payoff} with a fixed strike price
      *
-     * @param type is an {@link ForwardType}
+     * @param type   is an {@link ForwardType}
      * @param strike is the strike price
      */
-    public ForwardTypePayoff (final Position positionType, final/* @Price */double strike) {
-        super ();
-        QL.require (strike >= 0.0, "negative strike given"); // TODO: message
+    public ForwardTypePayoff(final Position positionType, final/* @Price */double strike) {
+        super();
+        QL.require(strike >= 0.0, "negative strike given"); // TODO: message
         this.strike = strike;
         this.type = positionType;
     }
@@ -84,7 +83,7 @@ public class ForwardTypePayoff extends Payoff {
     /**
      * @return the strike value
      */
-    public final/* @Strike */double strike () {
+    public final/* @Strike */double strike() {
         return strike;
     }
 
@@ -93,29 +92,26 @@ public class ForwardTypePayoff extends Payoff {
     //
 
     @Override
-    public String description () /* @ReadOnly */ {
-        final StringBuilder sb = new StringBuilder();
-        sb.append (name());
-        // Review, added this because it will be more helpful for debugging purposes.
-        sb.append (this.type.toString());
-        sb.append (" ");
-        sb.append (this.strike);
-        return sb.toString();
+    public String description() /* @ReadOnly */ {
+        final String sb = name()
+                // Review, added this because it will be more helpful for debugging purposes.
+                + this.type.toString() + " " + this.strike;
+        return sb;
     }
 
     @Override
-    public final double get (final double price) {
-        if (type == Position.Long)
+    public final double get(final double price) {
+        if ( type == Position.Long )
             return price - strike;
-        else if (type == Position.Short)
+        else if ( type == Position.Short )
             return strike - price;
         else
-            throw new LibraryException (" Unknown Forward Type ");
+            throw new LibraryException(" Unknown Forward Type ");
     }
 
     @Override
-    public String name () {
+    public String name() {
         return "Forward";
     }
-    
+
 }

@@ -19,10 +19,6 @@
  */
 package org.jquantlib.methods.finitedifferences.stepconditions;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.math.matrixutilities.Array;
@@ -32,23 +28,25 @@ import org.jquantlib.methods.finitedifferences.operators.FdmLinearOpIterator;
 import org.jquantlib.methods.finitedifferences.utilities.FdmInnerValueCalculator;
 import org.jquantlib.time.Date;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Bermudan exercise step condition for multi-dimensional FDM problems.
  * <p>
- * Java port of v1.42.1
- * {@code ql/methods/finitedifferences/stepconditions/fdmbermudanstepcondition.{hpp,cpp}}.
+ * Java port of v1.42.1 {@code ql/methods/finitedifferences/stepconditions/fdmbermudanstepcondition.{hpp,cpp}}.
  * <p>
- * Converts a list of {@link Date} exercise dates into continuous time fractions
- * (using the supplied day counter and reference date). At each time step the
- * condition checks whether the current time {@code t} matches one of those
- * exercise times; if so, it replaces each cell's value with the maximum of
- * the current value and the inner (intrinsic) value.
+ * Converts a list of {@link Date} exercise dates into continuous time fractions (using the supplied day counter and
+ * reference date). At each time step the condition checks whether the current time {@code t} matches one of those
+ * exercise times; if so, it replaces each cell's value with the maximum of the current value and the inner (intrinsic)
+ * value.
  *
  * @author Phase 2l Track B port
  */
-public class FdmBermudanStepCondition implements StepCondition<Array> {
+public class FdmBermudanStepCondition implements StepCondition< Array > {
 
-    private final List<Double> exerciseTimes_;
+    private final List< Double > exerciseTimes_;
     private final FdmMesher mesher_;
     private final FdmInnerValueCalculator calculator_;
 
@@ -59,17 +57,13 @@ public class FdmBermudanStepCondition implements StepCondition<Array> {
      * @param mesher        the FDM mesh
      * @param calculator    inner value (intrinsic payoff) calculator
      */
-    public FdmBermudanStepCondition(
-            final List<Date> exerciseDates,
-            final Date referenceDate,
-            final DayCounter dayCounter,
-            final FdmMesher mesher,
-            final FdmInnerValueCalculator calculator) {
+    public FdmBermudanStepCondition(final List< Date > exerciseDates, final Date referenceDate,
+            final DayCounter dayCounter, final FdmMesher mesher, final FdmInnerValueCalculator calculator) {
         this.mesher_ = mesher;
         this.calculator_ = calculator;
 
         exerciseTimes_ = new ArrayList<>(exerciseDates.size());
-        for (final Date d : exerciseDates) {
+        for ( final Date d : exerciseDates ) {
             exerciseTimes_.add(dayCounter.yearFraction(referenceDate, d));
         }
     }
@@ -77,29 +71,27 @@ public class FdmBermudanStepCondition implements StepCondition<Array> {
     /**
      * Returns the exercise times derived from the supplied exercise dates.
      */
-    public List<Double> exerciseTimes() {
+    public List< Double > exerciseTimes() {
         return Collections.unmodifiableList(exerciseTimes_);
     }
 
     /**
      * Apply the Bermudan exercise condition.
      * <p>
-     * If {@code t} is one of the exercise times, iterates over all mesh cells
-     * and replaces {@code a[i]} with {@code max(a[i], innerValue(i, t))}.
-     * Otherwise the array is left unchanged.
+     * If {@code t} is one of the exercise times, iterates over all mesh cells and replaces {@code a[i]} with
+     * {@code max(a[i], innerValue(i, t))}. Otherwise the array is left unchanged.
      */
     @Override
     public void applyTo(final Array a, final double t) {
-        if (!exerciseTimes_.contains(t)) {
+        if ( !exerciseTimes_.contains(t) ) {
             return;
         }
 
-        QL.require(mesher_.layout().size() == a.size(),
-                "inconsistent array dimensions");
+        QL.require(mesher_.layout().size() == a.size(), "inconsistent array dimensions");
 
-        for (final FdmLinearOpIterator iter : mesher_.layout()) {
+        for ( final FdmLinearOpIterator iter : mesher_.layout() ) {
             final double innerValue = calculator_.innerValue(iter, t);
-            if (innerValue > a.get(iter.index())) {
+            if ( innerValue > a.get(iter.index()) ) {
                 a.set(iter.index(), innerValue);
             }
         }

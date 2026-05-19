@@ -39,8 +39,8 @@ import org.jquantlib.model.marketmodels.products.MultiProductMultiStep;
  * (ql/models/marketmodels/products/multistep/multistepinversefloater.{hpp,cpp} v1.42.1).
  * <p>
  * Per step emits one cash flow:
- * {@code multiplier * (max(strike - mult*rate, 0)*fixedAccrual - (rate+spread)*floatAccrual)}
- * with the {@code payer} flag flipping sign convention.
+ * {@code multiplier * (max(strike - mult*rate, 0)*fixedAccrual - (rate+spread)*floatAccrual)} with the {@code payer}
+ * flag flipping sign convention.
  *
  * @author Jose Moya
  */
@@ -57,14 +57,9 @@ public class MultiStepInverseFloater extends MultiProductMultiStep {
     private final int lastIndex_;
     private int currentIndex_;
 
-    public MultiStepInverseFloater(final double[] rateTimes,
-                                   final double[] fixedAccruals,
-                                   final double[] floatingAccruals,
-                                   final double[] fixedStrikes,
-                                   final double[] fixedMultipliers,
-                                   final double[] floatingSpreads,
-                                   final double[] paymentTimes,
-                                   final boolean payer) {
+    public MultiStepInverseFloater(final double[] rateTimes, final double[] fixedAccruals,
+            final double[] floatingAccruals, final double[] fixedStrikes, final double[] fixedMultipliers,
+            final double[] floatingSpreads, final double[] paymentTimes, final boolean payer) {
         super(rateTimes);
         this.fixedAccruals_ = fixedAccruals.clone();
         this.floatingAccruals_ = floatingAccruals.clone();
@@ -76,53 +71,52 @@ public class MultiStepInverseFloater extends MultiProductMultiStep {
         this.multiplier_ = payer ? -1.0 : 1.0;
         this.lastIndex_ = rateTimes.length - 1;
         Utilities.checkIncreasingTimes(this.paymentTimes_);
-        QL.require(fixedAccruals_.length == lastIndex_,
-                "Incorrect number of fixedAccruals; expected " + lastIndex_);
+        QL.require(fixedAccruals_.length == lastIndex_, "Incorrect number of fixedAccruals; expected " + lastIndex_);
         QL.require(floatingAccruals_.length == lastIndex_,
                 "Incorrect number of floatingAccruals; expected " + lastIndex_);
-        QL.require(fixedStrikes_.length == lastIndex_,
-                "Incorrect number of fixedStrikes; expected " + lastIndex_);
+        QL.require(fixedStrikes_.length == lastIndex_, "Incorrect number of fixedStrikes; expected " + lastIndex_);
         QL.require(fixedMultipliers_.length == lastIndex_,
                 "Incorrect number of fixedMultipliers; expected " + lastIndex_);
         QL.require(floatingSpreads_.length == lastIndex_,
                 "Incorrect number of floatingSpreads; expected " + lastIndex_);
-        QL.require(paymentTimes_.length == lastIndex_,
-                "Incorrect number of paymentTimes; expected " + lastIndex_);
+        QL.require(paymentTimes_.length == lastIndex_, "Incorrect number of paymentTimes; expected " + lastIndex_);
     }
 
-    public MultiStepInverseFloater(final double[] rateTimes,
-                                   final double[] fixedAccruals,
-                                   final double[] floatingAccruals,
-                                   final double[] fixedStrikes,
-                                   final double[] fixedMultipliers,
-                                   final double[] floatingSpreads,
-                                   final double[] paymentTimes) {
-        this(rateTimes, fixedAccruals, floatingAccruals, fixedStrikes,
-                fixedMultipliers, floatingSpreads, paymentTimes, true);
+    public MultiStepInverseFloater(final double[] rateTimes, final double[] fixedAccruals,
+            final double[] floatingAccruals, final double[] fixedStrikes, final double[] fixedMultipliers,
+            final double[] floatingSpreads, final double[] paymentTimes) {
+        this(rateTimes, fixedAccruals, floatingAccruals, fixedStrikes, fixedMultipliers, floatingSpreads, paymentTimes,
+                true);
     }
 
     @Override
-    public double[] possibleCashFlowTimes() { return paymentTimes_; }
+    public double[] possibleCashFlowTimes() {
+        return paymentTimes_;
+    }
 
     @Override
-    public int numberOfProducts() { return 1; }
+    public int numberOfProducts() {
+        return 1;
+    }
 
     @Override
-    public int maxNumberOfCashFlowsPerProductPerStep() { return 1; }
+    public int maxNumberOfCashFlowsPerProductPerStep() {
+        return 1;
+    }
 
     @Override
-    public void reset() { currentIndex_ = 0; }
+    public void reset() {
+        currentIndex_ = 0;
+    }
 
     @Override
-    public boolean nextTimeStep(final CurveState currentState,
-                                final int[] numberCashFlowsThisStep,
-                                final MarketModelMultiProduct.CashFlow[][] genCashFlows) {
+    public boolean nextTimeStep(final CurveState currentState, final int[] numberCashFlowsThisStep,
+            final MarketModelMultiProduct.CashFlow[][] genCashFlows) {
         final double liborRate = currentState.forwardRate(currentIndex_);
         final double inverseFloatingCoupon =
                 Math.max(fixedStrikes_[currentIndex_] - fixedMultipliers_[currentIndex_] * liborRate, 0.0)
                         * fixedAccruals_[currentIndex_];
-        final double floatingCoupon =
-                (liborRate + floatingSpreads_[currentIndex_]) * floatingAccruals_[currentIndex_];
+        final double floatingCoupon = (liborRate + floatingSpreads_[currentIndex_]) * floatingAccruals_[currentIndex_];
 
         genCashFlows[0][0].timeIndex = currentIndex_;
         genCashFlows[0][0].amount = multiplier_ * (inverseFloatingCoupon - floatingCoupon);
@@ -134,7 +128,7 @@ public class MultiStepInverseFloater extends MultiProductMultiStep {
 
     @Override
     public MarketModelMultiProduct clone() {
-        return new MultiStepInverseFloater(rateTimes_, fixedAccruals_, floatingAccruals_,
-                fixedStrikes_, fixedMultipliers_, floatingSpreads_, paymentTimes_, payer_);
+        return new MultiStepInverseFloater(rateTimes_, fixedAccruals_, floatingAccruals_, fixedStrikes_,
+                fixedMultipliers_, floatingSpreads_, paymentTimes_, payer_);
     }
 }

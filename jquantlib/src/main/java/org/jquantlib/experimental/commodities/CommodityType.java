@@ -37,13 +37,12 @@ import java.util.Map;
  * <p>
  * Java port of QuantLib v1.42.1 {@code ql/experimental/commodities/commoditytype.hpp}.
  * <p>
- * Default-constructed instances have undefined behaviour and act only as
- * placeholders until reassigned.
+ * Default-constructed instances have undefined behaviour and act only as placeholders until reassigned.
  */
 public class CommodityType {
 
     /** Shared registry by code, mirroring the C++ static {@code commodityTypes_} map. */
-    private static final Map<String, Data> commodityTypes_ = new HashMap<>();
+    private static final Map< String, Data > commodityTypes_ = new HashMap<>();
 
     /** Pimpl-style data; null when this instance is empty. */
     protected Data data_;
@@ -62,7 +61,7 @@ public class CommodityType {
     public CommodityType(final String code, final String name) {
         // C++ keys by code (see commoditytype.cpp)
         final Data existing = commodityTypes_.get(code);
-        if (existing != null) {
+        if ( existing != null ) {
             this.data_ = existing;
         } else {
             this.data_ = new Data(name, code);
@@ -87,10 +86,13 @@ public class CommodityType {
 
     @Override
     public boolean equals(final Object obj) {
-        if (this == obj) return true;
-        if (!(obj instanceof CommodityType)) return false;
+        if ( this == obj )
+            return true;
+        if ( !(obj instanceof CommodityType) )
+            return false;
         final CommodityType other = (CommodityType) obj;
-        if (this.empty() || other.empty()) return this.empty() == other.empty();
+        if ( this.empty() || other.empty() )
+            return this.empty() == other.empty();
         return this.code().equals(other.code());
     }
 

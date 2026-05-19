@@ -81,24 +81,20 @@ import org.jquantlib.time.calendars.NullCalendar;
  */
 public class HestonBlackVolSurface extends BlackVolTermStructure {
 
-    private final Handle<HestonModel> hestonModel_;
+    private final Handle< HestonModel > hestonModel_;
 
     /**
-     * Construct from a {@link Handle} to a {@link HestonModel}. Uses the
-     * model's process for spot/discount/dividend access and reference
-     * date.
+     * Construct from a {@link Handle} to a {@link HestonModel}. Uses the model's process for spot/discount/dividend
+     * access and reference date.
      */
-    public HestonBlackVolSurface(final Handle<HestonModel> hestonModel) {
+    public HestonBlackVolSurface(final Handle< HestonModel > hestonModel) {
         // C++:
         //   BlackVolTermStructure(hestonModel->process()->riskFreeRate()->referenceDate(),
         //                         NullCalendar(), Following,
         //                         hestonModel->process()->riskFreeRate()->dayCounter())
-        super(hestonModel.currentLink().process().riskFreeRate().currentLink()
-                       .referenceDate(),
-              new NullCalendar(),
-              BusinessDayConvention.Following,
-              hestonModel.currentLink().process().riskFreeRate().currentLink()
-                       .dayCounter());
+        super(hestonModel.currentLink().process().riskFreeRate().currentLink().referenceDate(), new NullCalendar(),
+                BusinessDayConvention.Following,
+                hestonModel.currentLink().process().riskFreeRate().currentLink().dayCounter());
         this.hestonModel_ = hestonModel;
         // C++: registerWith(hestonModel_) — Java equivalent.
         this.hestonModel_.addObserver(this);
@@ -106,8 +102,7 @@ public class HestonBlackVolSurface extends BlackVolTermStructure {
 
     @Override
     public DayCounter dayCounter() {
-        return hestonModel_.currentLink().process().riskFreeRate()
-                .currentLink().dayCounter();
+        return hestonModel_.currentLink().process().riskFreeRate().currentLink().dayCounter();
     }
 
     @Override
@@ -126,16 +121,14 @@ public class HestonBlackVolSurface extends BlackVolTermStructure {
     }
 
     @Override
-    protected /*@Real*/ double blackVarianceImpl(final /*@Time*/ double t,
-                                                 final /*@Real*/ double strike) {
+    protected /*@Real*/ double blackVarianceImpl(final /*@Time*/ double t, final /*@Real*/ double strike) {
         // C++: return squared(blackVolImpl(t, strike)) * t
         final double v = blackVolImpl(t, strike);
         return v * v * t;
     }
 
     @Override
-    protected /*@Volatility*/ double blackVolImpl(final /*@Time*/ double t,
-                                                  final /*@Real*/ double strike) {
+    protected /*@Volatility*/ double blackVolImpl(final /*@Time*/ double t, final /*@Real*/ double strike) {
         final HestonModel model = hestonModel_.currentLink();
         final HestonProcess process = model.process();
 
@@ -145,12 +138,11 @@ public class HestonBlackVolSurface extends BlackVolTermStructure {
         // embedded quadrature table). C++ default is 160; the small order
         // gap accounts for the 1e-6 (not 1e-12) tolerance tier in the
         // cross-validation tests.
-        final AnalyticHestonEngine engine =
-                new AnalyticHestonEngine(model, process, 128);
+        final AnalyticHestonEngine engine = new AnalyticHestonEngine(model, process, 128);
 
-        final double df  = process.riskFreeRate().currentLink().discount(t, true);
-        final double fwd = process.s0().currentLink().value()
-                * process.dividendYield().currentLink().discount(t, true) / df;
+        final double df = process.riskFreeRate().currentLink().discount(t, true);
+        final double fwd =
+                process.s0().currentLink().value() * process.dividendYield().currentLink().discount(t, true) / df;
 
         // C++: pick OTM payoff — minimises the intrinsic-value contribution
         // and hence the Brent search instability near deep ITM/OTM points.
@@ -160,7 +152,7 @@ public class HestonBlackVolSurface extends BlackVolTermStructure {
         final double npv = engine.priceVanillaPayoff(payoff, t);
 
         final double theta = model.theta();
-        if (npv <= 0.0) {
+        if ( npv <= 0.0 ) {
             return Math.sqrt(theta);
         }
 
@@ -181,8 +173,7 @@ public class HestonBlackVolSurface extends BlackVolTermStructure {
             public double op(final double v) {
                 // blackValue(optionType, strike, fwd, t, v, df, npv) - npv
                 final double stddev = Math.max(0.0, v) * Math.sqrt(t);
-                return BlackFormula.blackFormula(optionType, strike, fwd,
-                        stddev, df) - npvFinal;
+                return BlackFormula.blackFormula(optionType, strike, fwd, stddev, df) - npvFinal;
             }
         };
 

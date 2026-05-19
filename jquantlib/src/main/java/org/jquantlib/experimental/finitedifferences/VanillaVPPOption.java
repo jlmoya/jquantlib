@@ -40,16 +40,13 @@ import org.jquantlib.pricingengines.PricingEngine;
  * {@code ql/experimental/finitedifferences/vanillavppoption.{hpp,cpp}}.</p>
  *
  * <p>A VPP option models the right (but not the obligation) to operate a
- * power generation asset at any of a discrete set of exercise times. The
- * payoff at each exercise is the spark spread
- * {@code max(P - heatRate * G, 0)}, optionally subject to constraints on
- * minimum up-time, minimum down-time, start-up fuel cost, total starts,
- * and total running hours.</p>
+ * power generation asset at any of a discrete set of exercise times. The payoff at each exercise is the spark spread
+ * {@code max(P - heatRate * G, 0)}, optionally subject to constraints on minimum up-time, minimum down-time, start-up
+ * fuel cost, total starts, and total running hours.</p>
  *
  * <p>The instrument inherits from {@link MultiAssetOption} (power and gas
- * are the two underlying assets) and uses an {@link AverageBasketPayoff}
- * whose weights are {@code (1, -heatRate)} so that the basket-payoff
- * accumulator computes the spark spread.</p>
+ * are the two underlying assets) and uses an {@link AverageBasketPayoff} whose weights are {@code (1, -heatRate)} so
+ * that the basket-payoff accumulator computes the spark spread.</p>
  *
  * @author Phase 5e.5b-CFC-d-164 port
  */
@@ -71,15 +68,9 @@ public class VanillaVPPOption extends MultiAssetOption {
     /**
      * Convenience constructor — no start or running-hour limits.
      */
-    public VanillaVPPOption(final double heatRate,
-                            final double pMin, final double pMax,
-                            final int tMinUp, final int tMinDown,
-                            final double startUpFuel,
-                            final double startUpFixCost,
-                            final SwingExercise exercise) {
-        this(heatRate, pMin, pMax, tMinUp, tMinDown,
-             startUpFuel, startUpFixCost, exercise,
-             NULL_INT, NULL_INT);
+    public VanillaVPPOption(final double heatRate, final double pMin, final double pMax, final int tMinUp,
+            final int tMinDown, final double startUpFuel, final double startUpFixCost, final SwingExercise exercise) {
+        this(heatRate, pMin, pMax, tMinUp, tMinDown, startUpFuel, startUpFixCost, exercise, NULL_INT, NULL_INT);
     }
 
     /**
@@ -93,46 +84,34 @@ public class VanillaVPPOption extends MultiAssetOption {
      * @param startUpFuel    fuel consumed on a single start-up event
      * @param startUpFixCost fixed cash cost of a single start-up event
      * @param exercise       swing-exercise schedule defining exercise opportunities
-     * @param nStarts        total number of starts allowed
-     *                       ({@link #NULL_INT} = unlimited)
-     * @param nRunningHours  total number of running hours allowed
-     *                       ({@link #NULL_INT} = unlimited)
+     * @param nStarts        total number of starts allowed ({@link #NULL_INT} = unlimited)
+     * @param nRunningHours  total number of running hours allowed ({@link #NULL_INT} = unlimited)
      */
-    public VanillaVPPOption(final double heatRate,
-                            final double pMin, final double pMax,
-                            final int tMinUp, final int tMinDown,
-                            final double startUpFuel,
-                            final double startUpFixCost,
-                            final SwingExercise exercise,
-                            final int nStarts,
-                            final int nRunningHours) {
+    public VanillaVPPOption(final double heatRate, final double pMin, final double pMax, final int tMinUp,
+            final int tMinDown, final double startUpFuel, final double startUpFixCost, final SwingExercise exercise,
+            final int nStarts, final int nRunningHours) {
         super(buildPayoff(heatRate), exercise);
-        this.heatRate_       = heatRate;
-        this.pMin_           = pMin;
-        this.pMax_           = pMax;
-        this.tMinUp_         = tMinUp;
-        this.tMinDown_       = tMinDown;
-        this.startUpFuel_    = startUpFuel;
+        this.heatRate_ = heatRate;
+        this.pMin_ = pMin;
+        this.pMax_ = pMax;
+        this.tMinUp_ = tMinUp;
+        this.tMinDown_ = tMinDown;
+        this.startUpFuel_ = startUpFuel;
         this.startUpFixCost_ = startUpFixCost;
-        this.nStarts_        = nStarts;
-        this.nRunningHours_  = nRunningHours;
+        this.nStarts_ = nStarts;
+        this.nRunningHours_ = nRunningHours;
     }
 
     /**
-     * Builds the {@link AverageBasketPayoff} with weights {@code (1,
-     * -heatRate)} on top of an {@link IdenticalPayoff} (the basket payoff
-     * directly returns the linear combination of underlyings, which is
-     * the spark spread).
+     * Builds the {@link AverageBasketPayoff} with weights {@code (1, -heatRate)} on top of an {@link IdenticalPayoff}
+     * (the basket payoff directly returns the linear combination of underlyings, which is the spark spread).
      *
      * <p>Java equivalent of the C++ constructor body that assigns
-     * {@code payoff_} after delegating to the {@code MultiAssetOption}
-     * base. Because the Java {@code Option.payoff} field is {@code
-     * final}, the payoff is constructed before the {@code super(...)}
-     * call.</p>
+     * {@code payoff_} after delegating to the {@code MultiAssetOption} base. Because the Java {@code Option.payoff}
+     * field is {@code final}, the payoff is constructed before the {@code super(...)} call.</p>
      */
     private static Payoff buildPayoff(final double heatRate) {
-        return new AverageBasketPayoff(new IdenticalPayoff(),
-                new double[] { 1.0, -heatRate });
+        return new AverageBasketPayoff(new IdenticalPayoff(), new double[] { 1.0, -heatRate });
     }
 
     @Override
@@ -146,31 +125,31 @@ public class VanillaVPPOption extends MultiAssetOption {
         QL.require(VanillaVPPOption.ArgumentsImpl.class.isAssignableFrom(args.getClass()),
                 ReflectConstants.WRONG_ARGUMENT_TYPE);
         final VanillaVPPOption.ArgumentsImpl a = (VanillaVPPOption.ArgumentsImpl) args;
-        a.heatRate       = heatRate_;
-        a.pMin           = pMin_;
-        a.pMax           = pMax_;
-        a.tMinUp         = tMinUp_;
-        a.tMinDown       = tMinDown_;
-        a.startUpFuel    = startUpFuel_;
+        a.heatRate = heatRate_;
+        a.pMin = pMin_;
+        a.pMax = pMax_;
+        a.tMinUp = tMinUp_;
+        a.tMinDown = tMinDown_;
+        a.startUpFuel = startUpFuel_;
         a.startUpFixCost = startUpFixCost_;
-        a.nStarts        = nStarts_;
-        a.nRunningHours  = nRunningHours_;
+        a.nStarts = nStarts_;
+        a.nRunningHours = nRunningHours_;
     }
 
     //
     // public inner interfaces / classes
     //
 
-    public interface Arguments extends MultiAssetOption.Arguments { /* marking */ }
+    public interface Arguments extends MultiAssetOption.Arguments { /* marking */
+    }
 
-    public interface Results extends MultiAssetOption.Results { /* marking */ }
+    public interface Results extends MultiAssetOption.Results { /* marking */
+    }
 
     /**
-     * VPP-option arguments. Mirrors C++
-     * {@code VanillaVPPOption::arguments}.
+     * VPP-option arguments. Mirrors C++ {@code VanillaVPPOption::arguments}.
      */
-    public static class ArgumentsImpl extends MultiAssetOption.ArgumentsImpl
-            implements VanillaVPPOption.Arguments {
+    public static class ArgumentsImpl extends MultiAssetOption.ArgumentsImpl implements VanillaVPPOption.Arguments {
 
         public double heatRate;
         public double pMin;
@@ -191,16 +170,15 @@ public class VanillaVPPOption extends MultiAssetOption {
     }
 
     /**
-     * VPP-option results. Same shape as {@link
-     * MultiAssetOption.ResultsImpl}.
+     * VPP-option results. Same shape as {@link MultiAssetOption.ResultsImpl}.
      */
     public static class ResultsImpl extends MultiAssetOption.ResultsImpl
-            implements VanillaVPPOption.Results { /* marking */ }
+            implements VanillaVPPOption.Results { /* marking */
+    }
 
     /**
-     * Trivial identity payoff: {@code op(price) == price}. Used by the
-     * VPP option so that the {@link AverageBasketPayoff} accumulator
-     * returns the spark spread directly without any further mapping.
+     * Trivial identity payoff: {@code op(price) == price}. Used by the VPP option so that the
+     * {@link AverageBasketPayoff} accumulator returns the spark spread directly without any further mapping.
      *
      * <p>Mirrors the unnamed {@code IdenticalPayoff} in the C++
      * translation unit.</p>

@@ -50,16 +50,14 @@ import org.jquantlib.math.matrixutilities.Array;
  *
  * @author Richard Gomes
  */
-@QualityAssurance(quality=Quality.Q3_DOCUMENTATION, version=Version.V097, reviewers="Richard Gomes")
+@QualityAssurance( quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = "Richard Gomes" )
 public abstract class Constraint {
-
 
     //
     // protected fields
     //
 
     protected Impl impl;
-
 
     //
     // public constructors
@@ -73,7 +71,6 @@ public abstract class Constraint {
         this.impl = impl;
     }
 
-
     //
     // public methods
     //
@@ -82,7 +79,7 @@ public abstract class Constraint {
         return impl == null;
     }
 
-    public boolean test(final Array  p) /* @ReadOnly */ {
+    public boolean test(final Array p) /* @ReadOnly */ {
         return impl.test(p);
     }
 
@@ -90,14 +87,12 @@ public abstract class Constraint {
      * Per-component upper bound for the constraint at the supplied parameter vector.
      *
      * <p>Mirrors C++ v1.42.1 {@code Constraint::upperBound(const Array&)}: delegates to
-     * {@link Constraint.Impl#upperBound(Array)} which defaults to {@code +QL_MAX_REAL}
-     * for unconstrained dimensions.
+     * {@link Constraint.Impl#upperBound(Array)} which defaults to {@code +QL_MAX_REAL} for unconstrained dimensions.
      */
     public Array upperBound(final Array params) /* @ReadOnly */ {
         final Array result = impl.upperBound(params);
         QL.require(params.size() == result.size(),
-                "upper bound size (" + result.size()
-                        + ") not equal to params size (" + params.size() + ")");
+                "upper bound size (" + result.size() + ") not equal to params size (" + params.size() + ")");
         return result;
     }
 
@@ -105,36 +100,33 @@ public abstract class Constraint {
      * Per-component lower bound for the constraint at the supplied parameter vector.
      *
      * <p>Mirrors C++ v1.42.1 {@code Constraint::lowerBound(const Array&)}: delegates to
-     * {@link Constraint.Impl#lowerBound(Array)} which defaults to {@code -QL_MAX_REAL}
-     * for unconstrained dimensions.
+     * {@link Constraint.Impl#lowerBound(Array)} which defaults to {@code -QL_MAX_REAL} for unconstrained dimensions.
      */
     public Array lowerBound(final Array params) /* @ReadOnly */ {
         final Array result = impl.lowerBound(params);
         QL.require(params.size() == result.size(),
-                "lower bound size (" + result.size()
-                        + ") not equal to params size (" + params.size() + ")");
+                "lower bound size (" + result.size() + ") not equal to params size (" + params.size() + ")");
         return result;
     }
 
-    public double update(final Array  params, final Array  direction, final double beta) {
+    public double update(final Array params, final Array direction, final double beta) {
         double diff = beta;
         Array newParams = params.add(direction.mul(diff));
         boolean valid = test(newParams);
 
         int icount = 0;
-        while (!valid) {
-            if (icount > 200) {
+        while ( !valid ) {
+            if ( icount > 200 ) {
                 throw new LibraryException("can't update parameter vector"); // TODO: message
             }
             diff *= 0.5;
-            icount ++;
+            icount++;
             newParams = params.add(direction.mul(diff));
             valid = test(newParams);
         }
         params.fill(newParams);
         return diff;
     }
-
 
     //
     // protected inner classes
@@ -152,27 +144,27 @@ public abstract class Constraint {
         /**
          * <p>Tests if params satisfy the constraint. </p>
          */
-        public abstract boolean test(final Array  params) /* @ReadOnly */;
+        public abstract boolean test(final Array params) /* @ReadOnly */;
 
         /**
-         * Per-component upper bound. Default: an array of size {@code params.size()}
-         * filled with {@code +QL_MAX_REAL}, matching C++ v1.42.1 default behavior.
+         * Per-component upper bound. Default: an array of size {@code params.size()} filled with {@code +QL_MAX_REAL},
+         * matching C++ v1.42.1 default behavior.
          */
         public Array upperBound(final Array params) /* @ReadOnly */ {
             final double[] data = new double[params.size()];
-            for (int i = 0; i < data.length; ++i) {
+            for ( int i = 0; i < data.length; ++i ) {
                 data[i] = Constants.QL_MAX_REAL;
             }
             return new Array(data);
         }
 
         /**
-         * Per-component lower bound. Default: an array of size {@code params.size()}
-         * filled with {@code -QL_MAX_REAL}, matching C++ v1.42.1 default behavior.
+         * Per-component lower bound. Default: an array of size {@code params.size()} filled with {@code -QL_MAX_REAL},
+         * matching C++ v1.42.1 default behavior.
          */
         public Array lowerBound(final Array params) /* @ReadOnly */ {
             final double[] data = new double[params.size()];
-            for (int i = 0; i < data.length; ++i) {
+            for ( int i = 0; i < data.length; ++i ) {
                 data[i] = -Constants.QL_MAX_REAL;
             }
             return new Array(data);

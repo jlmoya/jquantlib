@@ -46,7 +46,7 @@ import org.jquantlib.math.matrixutilities.Array;
 /**
  * Cost function abstract class for optimization problem.
  */
-@QualityAssurance(quality=Quality.Q3_DOCUMENTATION, version=Version.V097, reviewers="Richard Gomes")
+@QualityAssurance( quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = "Richard Gomes" )
 public abstract class CostFunction {
 
     //
@@ -54,14 +54,14 @@ public abstract class CostFunction {
     //
 
     /**
-     * Method to overload to compute gradient(f), the first derivative of
-     * the cost function with respect to {@latex$ x }
+     * Method to overload to compute gradient(f), the first derivative of the cost function with respect to
+     * {@latex$ x }
      */
-    public void gradient(final Array  grad, final Array  x) /* @ReadOnly */ {
+    public void gradient(final Array grad, final Array x) /* @ReadOnly */ {
         final double eps = finiteDifferenceEpsilon();
         double fp, fm;
         final Array xx = x.clone();
-        for (int i=0; i<x.size(); i++) {
+        for ( int i = 0; i < x.size(); i++ ) {
             // xx[i] += eps;
             xx.set(i, eps + xx.get(i));
             fp = value(xx);
@@ -76,10 +76,10 @@ public abstract class CostFunction {
     }
 
     /**
-     * Method to overload to compute gradient(f), the first derivative of
-     * the cost function with respect to {@latex$ x } and also the cost function
+     * Method to overload to compute gradient(f), the first derivative of the cost function with respect to {@latex$ x }
+     * and also the cost function
      */
-    public double valueAndGradient(final Array  grad, final Array  x) /* @ReadOnly */ {
+    public double valueAndGradient(final Array grad, final Array x) /* @ReadOnly */ {
         gradient(grad, x);
         return value(x);
     }
@@ -91,7 +91,6 @@ public abstract class CostFunction {
         return 1e-8;
     }
 
-
     //
     // public abstract methods
     //
@@ -99,11 +98,11 @@ public abstract class CostFunction {
     /**
      * Method to overload to compute the cost function value in {@latex$ x }
      */
-    public abstract double value(final Array  x) /* @ReadOnly */ ;
+    public abstract double value(final Array x) /* @ReadOnly */;
 
     /**
      * Method to overload to compute the cost function values in {@latex$ x }
      */
-    public abstract Array values(final Array  x) /* @ReadOnly */ ;
+    public abstract Array values(final Array x) /* @ReadOnly */;
 
 }

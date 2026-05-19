@@ -16,9 +16,6 @@
  */
 package org.jquantlib.termstructures.volatilities.optionlet;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.math.interpolations.CubicInterpolation;
 import org.jquantlib.math.interpolations.Interpolation;
@@ -30,9 +27,11 @@ import org.jquantlib.termstructures.volatilities.InterpolatedSmileSection;
 import org.jquantlib.termstructures.volatilities.SmileSection;
 import org.jquantlib.time.Date;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * Adapter class for turning a {@link StrippedOptionletBase} object into an
- * {@link OptionletVolatilityStructure}.
+ * Adapter class for turning a {@link StrippedOptionletBase} object into an {@link OptionletVolatilityStructure}.
  *
  * <p>Port of C++ QuantLib v1.42.1
  * {@code ql/termstructures/volatility/optionlet/strippedoptionletadapter.{hpp,cpp}}.
@@ -60,7 +59,7 @@ public class StrippedOptionletAdapter extends OptionletVolatilityStructure {
 
     private final StrippedOptionletBase optionletStripper_;
     private final int nInterpolations_;
-    private final List<Interpolation> strikeInterpolations_;
+    private final List< Interpolation > strikeInterpolations_;
 
     /** Lazy-calculation flag (mirrors C++ LazyObject). */
     protected boolean calculated_;
@@ -73,8 +72,8 @@ public class StrippedOptionletAdapter extends OptionletVolatilityStructure {
         super(s.settlementDays(), s.calendar(), s.businessDayConvention(), s.dayCounter());
         this.optionletStripper_ = s;
         this.nInterpolations_ = s.optionletMaturities();
-        this.strikeInterpolations_ = new ArrayList<Interpolation>(nInterpolations_);
-        for (int i = 0; i < nInterpolations_; ++i) {
+        this.strikeInterpolations_ = new ArrayList< Interpolation >(nInterpolations_);
+        for ( int i = 0; i < nInterpolations_; ++i ) {
             strikeInterpolations_.add(null);
         }
         s.addObserver(this);
@@ -86,7 +85,7 @@ public class StrippedOptionletAdapter extends OptionletVolatilityStructure {
 
     @Override
     public Date maxDate() {
-        final List<Date> d = optionletStripper_.optionletFixingDates();
+        final List< Date > d = optionletStripper_.optionletFixingDates();
         return d.get(d.size() - 1);
     }
 
@@ -98,7 +97,7 @@ public class StrippedOptionletAdapter extends OptionletVolatilityStructure {
 
     @Override
     public double maxStrike() {
-        final List<Double> s = optionletStripper_.optionletStrikes(0);
+        final List< Double > s = optionletStripper_.optionletStrikes(0);
         return s.get(s.size() - 1);
     }
 
@@ -113,8 +112,8 @@ public class StrippedOptionletAdapter extends OptionletVolatilityStructure {
     }
 
     /**
-     * Builds an {@link InterpolatedSmileSection} per query. Mirrors C++
-     * v1.42.1 {@code StrippedOptionletAdapter::smileSectionImpl}:
+     * Builds an {@link InterpolatedSmileSection} per query. Mirrors C++ v1.42.1
+     * {@code StrippedOptionletAdapter::smileSectionImpl}:
      * <pre>
      *   strikes = optionletStripper_.optionletStrikes(0)
      *   stddevs[i] = volatilityImpl(t, strikes[i]) * sqrt(t)
@@ -127,24 +126,20 @@ public class StrippedOptionletAdapter extends OptionletVolatilityStructure {
      */
     @Override
     protected SmileSection smileSectionImpl(final double optionTime) {
-        final List<Double> strikesList = optionletStripper_.optionletStrikes(0);
+        final List< Double > strikesList = optionletStripper_.optionletStrikes(0);
         final int n = strikesList.size();
         final double[] strikes = new double[n];
         final double[] stddevs = new double[n];
         final double sqrtT = Math.sqrt(optionTime);
-        for (int i = 0; i < n; ++i) {
+        for ( int i = 0; i < n; ++i ) {
             strikes[i] = strikesList.get(i);
             stddevs[i] = volatilityImpl(optionTime, strikes[i]) * sqrtT;
         }
-        final CubicInterpolation.BoundaryCondition bc =
-                (n >= 4) ? CubicInterpolation.BoundaryCondition.Lagrange
-                         : CubicInterpolation.BoundaryCondition.SecondDerivative;
-        final Cubic cubic = new Cubic(
-                CubicInterpolation.DerivativeApprox.Spline, false,
-                bc, 0.0, bc, 0.0);
-        return new InterpolatedSmileSection(
-                optionTime, strikes, stddevs, Double.NaN,
-                cubic, new Actual365Fixed(),
+        final CubicInterpolation.BoundaryCondition bc = (n >= 4)
+                ? CubicInterpolation.BoundaryCondition.Lagrange
+                : CubicInterpolation.BoundaryCondition.SecondDerivative;
+        final Cubic cubic = new Cubic(CubicInterpolation.DerivativeApprox.Spline, false, bc, 0.0, bc, 0.0);
+        return new InterpolatedSmileSection(optionTime, strikes, stddevs, Double.NaN, cubic, new Actual365Fixed(),
                 volatilityType(), displacement(), false);
     }
 
@@ -154,29 +149,27 @@ public class StrippedOptionletAdapter extends OptionletVolatilityStructure {
         // For each maturity i, evaluate the strike-axis interpolator at
         // the requested strike (with extrapolation), then linearly interpolate
         // those values along the time axis.
-        final List<Double> vol = new ArrayList<Double>(nInterpolations_);
-        for (int i = 0; i < nInterpolations_; ++i) {
+        final List< Double > vol = new ArrayList< Double >(nInterpolations_);
+        for ( int i = 0; i < nInterpolations_; ++i ) {
             vol.add(strikeInterpolations_.get(i).op(strike, true));
         }
-        final List<Double> times = optionletStripper_.optionletFixingTimes();
+        final List< Double > times = optionletStripper_.optionletFixingTimes();
         final double[] tArr = new double[nInterpolations_];
         final double[] vArr = new double[nInterpolations_];
-        for (int i = 0; i < nInterpolations_; ++i) {
+        for ( int i = 0; i < nInterpolations_; ++i ) {
             tArr[i] = times.get(i);
             vArr[i] = vol.get(i);
         }
-        final LinearInterpolation timeInterp = new LinearInterpolation(
-                new Array(tArr), new Array(vArr));
+        final LinearInterpolation timeInterp = new LinearInterpolation(new Array(tArr), new Array(vArr));
         return timeInterp.op(length, true);
     }
 
     /**
-     * Returns the underlying {@link OptionletStripper} if the wrapped base is
-     * one (mirrors C++ {@code dynamic_pointer_cast<OptionletStripper>}); else
-     * returns {@code null}.
+     * Returns the underlying {@link OptionletStripper} if the wrapped base is one (mirrors C++
+     * {@code dynamic_pointer_cast<OptionletStripper>}); else returns {@code null}.
      */
     public OptionletStripper optionletStripper() {
-        if (optionletStripper_ instanceof OptionletStripper) {
+        if ( optionletStripper_ instanceof OptionletStripper ) {
             return (OptionletStripper) optionletStripper_;
         }
         return null;
@@ -199,11 +192,11 @@ public class StrippedOptionletAdapter extends OptionletVolatilityStructure {
     //
 
     protected final void calculate() {
-        if (!calculated_) {
+        if ( !calculated_ ) {
             calculated_ = true;
             try {
                 performCalculations();
-            } catch (final RuntimeException e) {
+            } catch ( final RuntimeException e ) {
                 calculated_ = false;
                 throw e;
             }
@@ -211,22 +204,21 @@ public class StrippedOptionletAdapter extends OptionletVolatilityStructure {
     }
 
     /**
-     * Mirrors C++ performCalculations(): build a per-tenor LinearInterpolation
-     * across strikes. (C++ commented-out the SABR branch; we follow suit.)
+     * Mirrors C++ performCalculations(): build a per-tenor LinearInterpolation across strikes. (C++ commented-out the
+     * SABR branch; we follow suit.)
      */
     protected void performCalculations() {
-        for (int i = 0; i < nInterpolations_; ++i) {
-            final List<Double> strikes = optionletStripper_.optionletStrikes(i);
-            final List<Double> vols = optionletStripper_.optionletVolatilities(i);
+        for ( int i = 0; i < nInterpolations_; ++i ) {
+            final List< Double > strikes = optionletStripper_.optionletStrikes(i);
+            final List< Double > vols = optionletStripper_.optionletVolatilities(i);
             final int n = strikes.size();
             final double[] sx = new double[n];
             final double[] sy = new double[n];
-            for (int k = 0; k < n; ++k) {
+            for ( int k = 0; k < n; ++k ) {
                 sx[k] = strikes.get(k);
                 sy[k] = vols.get(k);
             }
-            strikeInterpolations_.set(i,
-                    new LinearInterpolation(new Array(sx), new Array(sy)));
+            strikeInterpolations_.set(i, new LinearInterpolation(new Array(sx), new Array(sy)));
         }
     }
 }

@@ -29,9 +29,6 @@
 
 package org.jquantlib.termstructures.inflation;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.lang.exceptions.LibraryException;
@@ -50,6 +47,9 @@ import org.jquantlib.time.TimeUnit;
 import org.jquantlib.time.calendars.NullCalendar;
 import org.jquantlib.util.Pair;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Inflation term structure based on the interpolation of year-on-year rates.
  *
@@ -58,82 +58,65 @@ import org.jquantlib.util.Pair;
  * ({@code ql/termstructures/inflation/interpolatedyoyinflationcurve.hpp}).
  *
  * <p>Sister class to
- * {@link InterpolatedZeroInflationCurve} — same architecture, same generic
- * shape (uses {@code Class<I>} for runtime interpolator factory access).
+ * {@link InterpolatedZeroInflationCurve} — same architecture, same generic shape (uses {@code Class<I>} for runtime
+ * interpolator factory access).
  *
  * <h3>Note on input rates</h3>
- * The provided rates are <strong>not</strong> YoY inflation-swap quotes — they
- * are direct YoY rates at each pillar date. Bootstrap from swap quotes is the
- * job of {@link PiecewiseYoYInflationCurve}.
+ * The provided rates are <strong>not</strong> YoY inflation-swap quotes — they are direct YoY rates at each pillar
+ * date. Bootstrap from swap quotes is the job of {@link PiecewiseYoYInflationCurve}.
  *
  * @param <I> Interpolator type (e.g. {@link Linear}).
  * @see PiecewiseYoYInflationCurve
  * @see YearOnYearInflationSwapHelper
  */
-public class InterpolatedYoYInflationCurve<I extends Interpolator>
-        extends YoYInflationTermStructure {
+public class InterpolatedYoYInflationCurve< I extends Interpolator > extends YoYInflationTermStructure {
 
     //
     // protected fields (mutable, accessible to subclasses for bootstrap)
     //
 
+    private final Class< I > classI;
+    private final Interpolator interpolator;
     protected Date[] dates;
     protected /*@Time*/ double[] times;
     protected double[] data;
-    protected Interpolation interpolation;
-    protected Date maxDateOverride;
 
     //
     // private final fields
     //
-
-    private final Class<I> classI;
-    private final Interpolator interpolator;
+    protected Interpolation interpolation;
+    protected Date maxDateOverride;
 
     //
     // public constructors
     //
 
     /**
-     * Primary constructor — equivalent to the C++ first-form template
-     * constructor. The first date in {@code dates} is the curve's base date.
+     * Primary constructor — equivalent to the C++ first-form template constructor. The first date in {@code dates} is
+     * the curve's base date.
      */
-    public InterpolatedYoYInflationCurve(
-            final Class<I> classI,
-            final Date referenceDate,
-            final Date[] dates,
-            final double[] rates,
-            final Frequency frequency,
-            final DayCounter dayCounter) {
-        this(classI, referenceDate, dates, rates, frequency, dayCounter,
-             constructInterpolator(classI));
+    public InterpolatedYoYInflationCurve(final Class< I > classI, final Date referenceDate, final Date[] dates,
+            final double[] rates, final Frequency frequency, final DayCounter dayCounter) {
+        this(classI, referenceDate, dates, rates, frequency, dayCounter, constructInterpolator(classI));
     }
 
-    public InterpolatedYoYInflationCurve(
-            final Class<I> classI,
-            final Date referenceDate,
-            final Date[] dates,
-            final double[] rates,
-            final Frequency frequency,
-            final DayCounter dayCounter,
+    public InterpolatedYoYInflationCurve(final Class< I > classI, final Date referenceDate, final Date[] dates,
+            final double[] rates, final Frequency frequency, final DayCounter dayCounter,
             final Interpolator interpolator) {
         super(referenceDate, new NullCalendar(), dayCounter,
-              new Period((int) referenceDate.sub(dates[0]), TimeUnit.Days),
-              frequency, rates[0], new Handle<YieldTermStructure>());
+                new Period((int) referenceDate.sub(dates[0]), TimeUnit.Days), frequency, rates[0],
+                new Handle< YieldTermStructure >());
         QL.require(classI != null, "Generic type for Interpolation is null");
-        QL.require(dates != null && dates.length > 1,
-                "too few dates: " + (dates == null ? 0 : dates.length));
+        QL.require(dates != null && dates.length > 1, "too few dates: " + (dates == null ? 0 : dates.length));
         QL.require(rates != null && rates.length == dates.length,
-                "indices/dates count mismatch: " +
-                (rates == null ? 0 : rates.length) + " vs " + dates.length);
-        for (int i = 1; i < dates.length; ++i) {
+                "indices/dates count mismatch: " + (rates == null ? 0 : rates.length) + " vs " + dates.length);
+        for ( int i = 1; i < dates.length; ++i ) {
             // YoY inflation data may be positive or negative but must be > -1.
             QL.require(rates[i] > -1.0, "year-on-year inflation data < -100 %");
         }
 
         this.classI = classI;
-        this.interpolator = interpolator == null
-                ? constructInterpolator(classI) : interpolator;
+        this.interpolator = interpolator == null ? constructInterpolator(classI) : interpolator;
 
         this.dates = dates.clone();
         this.data = rates.clone();
@@ -147,35 +130,23 @@ public class InterpolatedYoYInflationCurve<I extends Interpolator>
     //
 
     /**
-     * Protected constructor for bootstrap descendants who don't have
-     * dates/rates yet. Equivalent to C++ second-form template constructor.
+     * Protected constructor for bootstrap descendants who don't have dates/rates yet. Equivalent to C++ second-form
+     * template constructor.
      */
-    protected InterpolatedYoYInflationCurve(
-            final Class<I> classI,
-            final Date referenceDate,
-            final Date baseDate,
-            final double baseYoYRate,
-            final Frequency frequency,
-            final DayCounter dayCounter) {
-        this(classI, referenceDate, baseDate, baseYoYRate, frequency, dayCounter,
-             constructInterpolator(classI));
+    protected InterpolatedYoYInflationCurve(final Class< I > classI, final Date referenceDate, final Date baseDate,
+            final double baseYoYRate, final Frequency frequency, final DayCounter dayCounter) {
+        this(classI, referenceDate, baseDate, baseYoYRate, frequency, dayCounter, constructInterpolator(classI));
     }
 
-    protected InterpolatedYoYInflationCurve(
-            final Class<I> classI,
-            final Date referenceDate,
-            final Date baseDate,
-            final double baseYoYRate,
-            final Frequency frequency,
-            final DayCounter dayCounter,
+    protected InterpolatedYoYInflationCurve(final Class< I > classI, final Date referenceDate, final Date baseDate,
+            final double baseYoYRate, final Frequency frequency, final DayCounter dayCounter,
             final Interpolator interpolator) {
         super(referenceDate, new NullCalendar(), dayCounter,
-              new Period((int) referenceDate.sub(baseDate), TimeUnit.Days),
-              frequency, baseYoYRate, new Handle<YieldTermStructure>());
+                new Period((int) referenceDate.sub(baseDate), TimeUnit.Days), frequency, baseYoYRate,
+                new Handle< YieldTermStructure >());
         QL.require(classI != null, "Generic type for Interpolation is null");
         this.classI = classI;
-        this.interpolator = interpolator == null
-                ? constructInterpolator(classI) : interpolator;
+        this.interpolator = interpolator == null ? constructInterpolator(classI) : interpolator;
 
         // Store baseDate as the first node — bootstrap will append more nodes later.
         this.dates = new Date[] { baseDate };
@@ -187,16 +158,16 @@ public class InterpolatedYoYInflationCurve<I extends Interpolator>
     // factories
     //
 
-    static private Interpolator constructInterpolator(final Class<?> klass) {
-        if (klass == null) {
+    static private Interpolator constructInterpolator(final Class< ? > klass) {
+        if ( klass == null ) {
             throw new LibraryException("null interpolator");
         }
-        if (!Interpolator.class.isAssignableFrom(klass)) {
+        if ( !Interpolator.class.isAssignableFrom(klass) ) {
             throw new LibraryException(ReflectConstants.WRONG_ARGUMENT_TYPE);
         }
         try {
             return (Interpolator) klass.newInstance();
-        } catch (final Exception e) {
+        } catch ( final Exception e ) {
             throw new LibraryException("cannot create Interpolator", e);
         }
     }
@@ -206,8 +177,7 @@ public class InterpolatedYoYInflationCurve<I extends Interpolator>
     //
 
     /**
-     * Override the base-class default ({@code Date(0)}) to return the first
-     * node date — matches C++ semantics.
+     * Override the base-class default ({@code Date(0)}) to return the first node date — matches C++ semantics.
      */
     @Override
     public Date baseDate() {
@@ -216,7 +186,7 @@ public class InterpolatedYoYInflationCurve<I extends Interpolator>
 
     @Override
     public Date maxDate() {
-        if (maxDateOverride != null) {
+        if ( maxDateOverride != null ) {
             return maxDateOverride;
         }
         return dates[dates.length - 1];
@@ -228,10 +198,9 @@ public class InterpolatedYoYInflationCurve<I extends Interpolator>
     }
 
     /**
-     * Mirror C++ {@code YoYInflationTermStructure::yoyRate(date, false)} which
-     * snaps the date to its inflation-period start before sampling the curve,
-     * permitting dates {@code >= baseDate} (which can predate the reference
-     * date by the observation lag).
+     * Mirror C++ {@code YoYInflationTermStructure::yoyRate(date, false)} which snaps the date to its inflation-period
+     * start before sampling the curve, permitting dates {@code >= baseDate} (which can predate the reference date by
+     * the observation lag).
      *
      * <p>Phase 2q D.2: applies seasonality if installed, mirroring the C++
      * tail of {@code YoYInflationTermStructure::yoyRate}:
@@ -239,22 +208,20 @@ public class InterpolatedYoYInflationCurve<I extends Interpolator>
      *   if (hasSeasonality())
      *       yoyRate = seasonality()-&gt;correctYoYRate(d - useLag, yoyRate, *this);
      * </pre>
-     * with {@code useLag = 0} for this overload — same pattern Track C
-     * applied to {@link InterpolatedZeroInflationCurve#zeroRate}.
+     * with {@code useLag = 0} for this overload — same pattern Track C applied to
+     * {@link InterpolatedZeroInflationCurve#zeroRate}.
      */
     @Override
     public /*@Rate*/ double yoyRate(final Date d, final boolean extrapolate) {
-        final Pair<Date, Date> dd = org.jquantlib.termstructures.InflationTermStructure
-                .inflationPeriod(d, frequency());
-        QL.require(dd.first().ge(baseDate()),
-                "date " + dd.first() + " before base date " + baseDate());
-        if (!extrapolate && !allowsExtrapolation()) {
-            QL.require(dd.first().le(maxDate()),
-                    "date " + dd.first() + " past max curve date " + maxDate());
+        final Pair< Date, Date > dd = org.jquantlib.termstructures.InflationTermStructure.inflationPeriod(d,
+                frequency());
+        QL.require(dd.first().ge(baseDate()), "date " + dd.first() + " before base date " + baseDate());
+        if ( !extrapolate && !allowsExtrapolation() ) {
+            QL.require(dd.first().le(maxDate()), "date " + dd.first() + " past max curve date " + maxDate());
         }
         double rate = yoyRateImpl(timeFromReference(dd.first()));
         // Phase 2q L1 D.2: apply seasonality correction if installed.
-        if (hasSeasonality()) {
+        if ( hasSeasonality() ) {
             rate = seasonality().correctYoYRate(d, rate, this);
         }
         return rate;
@@ -285,9 +252,9 @@ public class InterpolatedYoYInflationCurve<I extends Interpolator>
         return data;
     }
 
-    public List<Pair<Date, Double>> nodes() {
-        final List<Pair<Date, Double>> result = new ArrayList<>(dates.length);
-        for (int i = 0; i < dates.length; ++i) {
+    public List< Pair< Date, Double > > nodes() {
+        final List< Pair< Date, Double > > result = new ArrayList<>(dates.length);
+        for ( int i = 0; i < dates.length; ++i ) {
             result.add(new Pair<>(dates[i], data[i]));
         }
         return result;
@@ -301,7 +268,7 @@ public class InterpolatedYoYInflationCurve<I extends Interpolator>
         return interpolation;
     }
 
-    public Class<I> interpolatorClass() {
+    public Class< I > interpolatorClass() {
         return classI;
     }
 
@@ -310,26 +277,22 @@ public class InterpolatedYoYInflationCurve<I extends Interpolator>
     //
 
     /**
-     * Mirrors C++ {@code InterpolatedCurve::setupTimes}: builds {@code times_}
-     * from the supplied dates against the given reference date and day counter.
+     * Mirrors C++ {@code InterpolatedCurve::setupTimes}: builds {@code times_} from the supplied dates against the
+     * given reference date and day counter.
      */
-    protected void setupTimes(final Date[] ds, final Date referenceDate,
-                              final DayCounter dc) {
+    protected void setupTimes(final Date[] ds, final Date referenceDate, final DayCounter dc) {
         this.times = new double[ds.length];
         this.times[0] = dc.yearFraction(referenceDate, ds[0]);
-        for (int i = 1; i < ds.length; ++i) {
-            QL.require(ds[i].gt(ds[i - 1]),
-                    "dates not sorted: " + ds[i] + " passed after " + ds[i - 1]);
+        for ( int i = 1; i < ds.length; ++i ) {
+            QL.require(ds[i].gt(ds[i - 1]), "dates not sorted: " + ds[i] + " passed after " + ds[i - 1]);
             this.times[i] = dc.yearFraction(referenceDate, ds[i]);
-            QL.require(this.times[i] != this.times[i - 1],
-                    "two passed dates correspond to the same time");
+            QL.require(this.times[i] != this.times[i - 1], "two passed dates correspond to the same time");
         }
     }
 
     /** Mirrors C++ {@code InterpolatedCurve::setupInterpolation}. */
     protected void setupInterpolation() {
-        this.interpolation = this.interpolator.interpolate(
-                new Array(times), new Array(data));
+        this.interpolation = this.interpolator.interpolate(new Array(times), new Array(data));
     }
 
     /** Setter used by the bootstrap loop to install bootstrapped data. */
@@ -358,9 +321,8 @@ public class InterpolatedYoYInflationCurve<I extends Interpolator>
     }
 
     /**
-     * Override the base-rate slot. Used during bootstrap when the first helper
-     * is solved (the curve's base value comes from the bootstrap, not from
-     * construction).
+     * Override the base-rate slot. Used during bootstrap when the first helper is solved (the curve's base value comes
+     * from the bootstrap, not from construction).
      */
     protected void overrideBaseRate(final double r) {
         this.setBaseRate(r);

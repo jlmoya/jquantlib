@@ -52,9 +52,7 @@ public class EverestOption extends MultiAssetOption {
     private final double guarantee_;
     private double yield_;
 
-    public EverestOption(final double notional,
-                         final double guarantee,
-                         final Exercise exercise) {
+    public EverestOption(final double notional, final double guarantee, final Exercise exercise) {
         super(new NullPayoff(), exercise);
         this.notional_ = notional;
         this.guarantee_ = guarantee;
@@ -74,7 +72,7 @@ public class EverestOption extends MultiAssetOption {
         QL.require(EverestOption.ArgumentsImpl.class.isAssignableFrom(args.getClass()),
                 ReflectConstants.WRONG_ARGUMENT_TYPE);
         final EverestOption.ArgumentsImpl arguments = (EverestOption.ArgumentsImpl) args;
-        arguments.notional  = notional_;
+        arguments.notional = notional_;
         arguments.guarantee = guarantee_;
     }
 
@@ -93,14 +91,13 @@ public class EverestOption extends MultiAssetOption {
     // public inner classes
     //
 
-    public static class ArgumentsImpl extends MultiAssetOption.ArgumentsImpl
-            implements MultiAssetOption.Arguments {
+    public static class ArgumentsImpl extends MultiAssetOption.ArgumentsImpl implements MultiAssetOption.Arguments {
 
         public double notional;
         public double guarantee;
 
         public ArgumentsImpl() {
-            this.notional  = Constants.NULL_REAL;
+            this.notional = Constants.NULL_REAL;
             this.guarantee = Constants.NULL_REAL;
         }
 
@@ -125,7 +122,7 @@ public class EverestOption extends MultiAssetOption {
     }
 
     public static abstract class EngineImpl
-            extends GenericEngine<EverestOption.ArgumentsImpl, EverestOption.ResultsImpl>
+            extends GenericEngine< EverestOption.ArgumentsImpl, EverestOption.ResultsImpl >
             implements MultiAssetOption.Engine {
 
         public EngineImpl() {

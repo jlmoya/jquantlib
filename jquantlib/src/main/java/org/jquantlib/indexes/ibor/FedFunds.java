@@ -32,29 +32,25 @@ import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.time.calendars.UnitedStates;
 
 /**
- * Federal Funds rate fixed by the FED (for balances held at the
- * Federal Reserve).
+ * Federal Funds rate fixed by the FED (for balances held at the Federal Reserve).
  * <p>
  * Port of C++ QuantLib v1.42.1 {@code ql/indexes/ibor/fedfunds.hpp/cpp}.
  * <p>
  * <b>Divergence note:</b> C++ v1.42.1 uses
- * {@code UnitedStates(UnitedStates::FederalReserve)}; this Java port uses
- * {@code Market.GOVERNMENTBOND} as the Java {@code UnitedStates} calendar
- * does not yet expose a FederalReserve-specific market enum value.
- *
- * @category indexes
+ * {@code UnitedStates(UnitedStates::FederalReserve)}; this Java port uses {@code Market.GOVERNMENTBOND} as the Java
+ * {@code UnitedStates} calendar does not yet expose a FederalReserve-specific market enum value.
  *
  * @author JQuantLib migration team
+ * @category indexes
  */
 public class FedFunds extends OvernightIndex {
 
-    public FedFunds(final Handle<YieldTermStructure> h) {
-        super("FedFunds", 0, new USDCurrency(),
-              new UnitedStates(UnitedStates.Market.GOVERNMENTBOND),
-              new Actual360(), h);
+    public FedFunds(final Handle< YieldTermStructure > h) {
+        super("FedFunds", 0, new USDCurrency(), new UnitedStates(UnitedStates.Market.GOVERNMENTBOND), new Actual360(),
+                h);
     }
 
     public FedFunds() {
-        this(new Handle<YieldTermStructure>());
+        this(new Handle< YieldTermStructure >());
     }
 }

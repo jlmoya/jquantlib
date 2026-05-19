@@ -57,24 +57,6 @@ import org.jquantlib.time.Date;
  */
 public class SabrSmileSection extends SmileSection {
 
-    /**
-     * SABR volatility approximation to use when evaluating
-     * {@link #volatilityImpl(double)} and {@link #varianceImpl(double)}.
-     *
-     * <p>Mirrors the {@code SabrSmileSection::Approximation} enum that C++
-     * QuantLib v1.42.1+ uses to switch between the classical Hagan
-     * (2002) closed-form and the Floc'h-Kennedy expansion
-     * (sabr.{hpp,cpp} {@code sabrFlochKennedyVolatility}). Floc'h-Kennedy
-     * is preferred at short expiries / near-ATM strikes where the Hagan
-     * formula develops a small kink.
-     */
-    public enum Approximation {
-        /** Hagan-Kumar-Lesniewski-Woodward 2002 closed-form (default). */
-        Hagan,
-        /** Floc'h-Kennedy explicit expansion (closed-form, short-expiry safe). */
-        FlochKennedy
-    }
-
     private final double alpha_;
     private final double beta_;
     private final double nu_;
@@ -84,37 +66,26 @@ public class SabrSmileSection extends SmileSection {
     private final double shift_;
     private final Approximation approximation_;
     private final Sabr sabr_ = new Sabr();
-
     /**
      * Time-to-expiry constructor — mirrors C++ first ctor (sabrsmilesection.cpp lines 27-36).
      *
-     * @param timeToExpiry  T (positive)
-     * @param forward       forward rate
+     * @param timeToExpiry   T (positive)
+     * @param forward        forward rate
      * @param sabrParameters length-4 array {alpha, beta, nu, rho}
-     * @param shift         displacement (default 0)
+     * @param shift          displacement (default 0)
      * @param volatilityType ShiftedLognormal or Normal (default ShiftedLognormal)
      */
-    public SabrSmileSection(
-            final double timeToExpiry,
-            final double forward,
-            final double[] sabrParameters,
-            final double shift,
-            final VolatilityType volatilityType) {
-        this(timeToExpiry, forward, sabrParameters, shift, volatilityType,
-                Approximation.Hagan);
+    public SabrSmileSection(final double timeToExpiry, final double forward, final double[] sabrParameters,
+            final double shift, final VolatilityType volatilityType) {
+        this(timeToExpiry, forward, sabrParameters, shift, volatilityType, Approximation.Hagan);
     }
 
     /**
-     * Full time-to-expiry constructor accepting an {@link Approximation}
-     * — mirrors C++ {@code SabrSmileSection(timeToExpiry, ..., approximation)}.
+     * Full time-to-expiry constructor accepting an {@link Approximation} — mirrors C++
+     * {@code SabrSmileSection(timeToExpiry, ..., approximation)}.
      */
-    public SabrSmileSection(
-            final double timeToExpiry,
-            final double forward,
-            final double[] sabrParameters,
-            final double shift,
-            final VolatilityType volatilityType,
-            final Approximation approximation) {
+    public SabrSmileSection(final double timeToExpiry, final double forward, final double[] sabrParameters,
+            final double shift, final VolatilityType volatilityType, final Approximation approximation) {
         super(timeToExpiry, null /* DayCounter() default */, volatilityType, shift);
         this.forward_ = forward;
         this.shift_ = shift;
@@ -122,20 +93,19 @@ public class SabrSmileSection extends SmileSection {
         QL.require(sabrParameters != null && sabrParameters.length == 4,
                 "sabrParameters must be length 4 (alpha, beta, nu, rho)");
         this.alpha_ = sabrParameters[0];
-        this.beta_  = sabrParameters[1];
-        this.nu_    = sabrParameters[2];
-        this.rho_   = sabrParameters[3];
+        this.beta_ = sabrParameters[1];
+        this.nu_ = sabrParameters[2];
+        this.rho_ = sabrParameters[3];
 
         QL.require(forward + shift > 0.0,
-                "at the money forward rate + shift must be positive: forward="
-                + forward + " shift=" + shift + " not allowed");
+                "at the money forward rate + shift must be positive: forward=" + forward + " shift=" + shift
+                        + " not allowed");
         sabr_.validateSabrParameters(alpha_, beta_, nu_, rho_);
-        if (this.approximation_ == Approximation.FlochKennedy) {
+        if ( this.approximation_ == Approximation.FlochKennedy ) {
             // Floc'h-Kennedy uses log(F/k) and pow(k, beta); the C++ formula
             // is undefined for non-positive forward / strike (no shift handling).
             QL.require(shift == 0.0,
-                    "FlochKennedy approximation does not support shifted SABR (shift must be 0): shift="
-                            + shift);
+                    "FlochKennedy approximation does not support shifted SABR (shift must be 0): shift=" + shift);
             QL.require(volatilityType != VolatilityType.Normal,
                     "FlochKennedy approximation only supports lognormal volatility");
         }
@@ -144,23 +114,16 @@ public class SabrSmileSection extends SmileSection {
     /**
      * Convenience overload: shift=0, ShiftedLognormal.
      */
-    public SabrSmileSection(
-            final double timeToExpiry,
-            final double forward,
-            final double[] sabrParameters) {
+    public SabrSmileSection(final double timeToExpiry, final double forward, final double[] sabrParameters) {
         this(timeToExpiry, forward, sabrParameters, 0.0, VolatilityType.ShiftedLognormal);
     }
 
     /**
      * Convenience overload: shift=0, ShiftedLognormal, explicit approximation.
      */
-    public SabrSmileSection(
-            final double timeToExpiry,
-            final double forward,
-            final double[] sabrParameters,
+    public SabrSmileSection(final double timeToExpiry, final double forward, final double[] sabrParameters,
             final Approximation approximation) {
-        this(timeToExpiry, forward, sabrParameters, 0.0,
-                VolatilityType.ShiftedLognormal, approximation);
+        this(timeToExpiry, forward, sabrParameters, 0.0, VolatilityType.ShiftedLognormal, approximation);
     }
 
     /**
@@ -174,33 +137,19 @@ public class SabrSmileSection extends SmileSection {
      * @param shift          displacement
      * @param volatilityType ShiftedLognormal or Normal
      */
-    public SabrSmileSection(
-            final Date d,
-            final double forward,
-            final double[] sabrParameters,
-            final Date referenceDate,
-            final DayCounter dc,
-            final double shift,
-            final VolatilityType volatilityType) {
-        this(d, forward, sabrParameters, referenceDate, dc, shift, volatilityType,
-                Approximation.Hagan);
+    public SabrSmileSection(final Date d, final double forward, final double[] sabrParameters, final Date referenceDate,
+            final DayCounter dc, final double shift, final VolatilityType volatilityType) {
+        this(d, forward, sabrParameters, referenceDate, dc, shift, volatilityType, Approximation.Hagan);
     }
 
     /**
-     * Full date-based constructor accepting an {@link Approximation} —
-     * mirrors C++ {@code SabrSmileSection(d, ..., approximation)}.
+     * Full date-based constructor accepting an {@link Approximation} — mirrors C++
+     * {@code SabrSmileSection(d, ..., approximation)}.
      */
-    public SabrSmileSection(
-            final Date d,
-            final double forward,
-            final double[] sabrParameters,
-            final Date referenceDate,
-            final DayCounter dc,
-            final double shift,
-            final VolatilityType volatilityType,
+    public SabrSmileSection(final Date d, final double forward, final double[] sabrParameters, final Date referenceDate,
+            final DayCounter dc, final double shift, final VolatilityType volatilityType,
             final Approximation approximation) {
-        super(d, dc == null ? new Actual365Fixed() : dc,
-                referenceDate == null ? new Date() : referenceDate,
+        super(d, dc == null ? new Actual365Fixed() : dc, referenceDate == null ? new Date() : referenceDate,
                 volatilityType, shift);
         this.forward_ = forward;
         this.shift_ = shift;
@@ -208,18 +157,17 @@ public class SabrSmileSection extends SmileSection {
         QL.require(sabrParameters != null && sabrParameters.length == 4,
                 "sabrParameters must be length 4 (alpha, beta, nu, rho)");
         this.alpha_ = sabrParameters[0];
-        this.beta_  = sabrParameters[1];
-        this.nu_    = sabrParameters[2];
-        this.rho_   = sabrParameters[3];
+        this.beta_ = sabrParameters[1];
+        this.nu_ = sabrParameters[2];
+        this.rho_ = sabrParameters[3];
 
         QL.require(forward + shift > 0.0,
-                "at the money forward rate + shift must be positive: forward="
-                + forward + " shift=" + shift + " not allowed");
+                "at the money forward rate + shift must be positive: forward=" + forward + " shift=" + shift
+                        + " not allowed");
         sabr_.validateSabrParameters(alpha_, beta_, nu_, rho_);
-        if (this.approximation_ == Approximation.FlochKennedy) {
+        if ( this.approximation_ == Approximation.FlochKennedy ) {
             QL.require(shift == 0.0,
-                    "FlochKennedy approximation does not support shifted SABR (shift must be 0): shift="
-                            + shift);
+                    "FlochKennedy approximation does not support shifted SABR (shift must be 0): shift=" + shift);
             QL.require(volatilityType != VolatilityType.Normal,
                     "FlochKennedy approximation only supports lognormal volatility");
         }
@@ -228,12 +176,8 @@ public class SabrSmileSection extends SmileSection {
     /**
      * Convenience overload: dc=Actual/365, shift=0, ShiftedLognormal.
      */
-    public SabrSmileSection(
-            final Date d,
-            final double forward,
-            final double[] sabrParameters) {
-        this(d, forward, sabrParameters, new Date(), new Actual365Fixed(),
-                0.0, VolatilityType.ShiftedLognormal);
+    public SabrSmileSection(final Date d, final double forward, final double[] sabrParameters) {
+        this(d, forward, sabrParameters, new Date(), new Actual365Fixed(), 0.0, VolatilityType.ShiftedLognormal);
     }
 
     @Override
@@ -251,38 +195,65 @@ public class SabrSmileSection extends SmileSection {
         return forward_;
     }
 
-    public double alpha() { return alpha_; }
-    public double beta()  { return beta_; }
-    public double nu()    { return nu_; }
-    public double rho()   { return rho_; }
+    public double alpha() {
+        return alpha_;
+    }
+
+    public double beta() {
+        return beta_;
+    }
+
+    public double nu() {
+        return nu_;
+    }
+
+    public double rho() {
+        return rho_;
+    }
 
     /** Returns the SABR approximation in use (Hagan or FlochKennedy). */
-    public Approximation approximation() { return approximation_; }
+    public Approximation approximation() {
+        return approximation_;
+    }
 
     @Override
     protected double volatilityImpl(final double strikeIn) {
         // Mirror C++: strike = max(0.00001 - shift, strike)
         final double strike = Math.max(0.00001 - shift(), strikeIn);
-        if (approximation_ == Approximation.FlochKennedy) {
+        if ( approximation_ == Approximation.FlochKennedy ) {
             // FlochKennedy is unshifted lognormal — guarded by ctor.
-            return sabr_.sabrFlochKennedyVolatility(strike, forward_, exerciseTime(),
-                    alpha_, beta_, nu_, rho_);
+            return sabr_.sabrFlochKennedyVolatility(strike, forward_, exerciseTime(), alpha_, beta_, nu_, rho_);
         }
-        return sabr_.unsafeShiftedSabrVolatility(strike, forward_, exerciseTime(),
-                alpha_, beta_, nu_, rho_, shift_, volatilityType());
+        return sabr_.unsafeShiftedSabrVolatility(strike, forward_, exerciseTime(), alpha_, beta_, nu_, rho_, shift_,
+                volatilityType());
     }
 
     @Override
     protected double varianceImpl(final double strikeIn) {
         final double strike = Math.max(0.00001 - shift(), strikeIn);
         final double vol;
-        if (approximation_ == Approximation.FlochKennedy) {
-            vol = sabr_.sabrFlochKennedyVolatility(strike, forward_, exerciseTime(),
-                    alpha_, beta_, nu_, rho_);
+        if ( approximation_ == Approximation.FlochKennedy ) {
+            vol = sabr_.sabrFlochKennedyVolatility(strike, forward_, exerciseTime(), alpha_, beta_, nu_, rho_);
         } else {
-            vol = sabr_.unsafeShiftedSabrVolatility(strike, forward_, exerciseTime(),
-                    alpha_, beta_, nu_, rho_, shift_, volatilityType());
+            vol = sabr_.unsafeShiftedSabrVolatility(strike, forward_, exerciseTime(), alpha_, beta_, nu_, rho_, shift_,
+                    volatilityType());
         }
         return vol * vol * exerciseTime();
+    }
+
+    /**
+     * SABR volatility approximation to use when evaluating {@link #volatilityImpl(double)} and
+     * {@link #varianceImpl(double)}.
+     *
+     * <p>Mirrors the {@code SabrSmileSection::Approximation} enum that C++
+     * QuantLib v1.42.1+ uses to switch between the classical Hagan (2002) closed-form and the Floc'h-Kennedy expansion
+     * (sabr.{hpp,cpp} {@code sabrFlochKennedyVolatility}). Floc'h-Kennedy is preferred at short expiries / near-ATM
+     * strikes where the Hagan formula develops a small kink.
+     */
+    public enum Approximation {
+        /** Hagan-Kumar-Lesniewski-Woodward 2002 closed-form (default). */
+        Hagan,
+        /** Floc'h-Kennedy explicit expansion (closed-form, short-expiry safe). */
+        FlochKennedy
     }
 }

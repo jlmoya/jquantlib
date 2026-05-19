@@ -40,13 +40,11 @@ import org.jquantlib.util.Visitor;
  * Cash flow dependent on an index ratio.
  *
  * <p>This cash flow is not a coupon, i.e., there's no accrual.  The amount is
- * either {@code i(T)/i(0)} or {@code i(T)/i(0) - 1}, depending on the
- * {@code growthOnly} parameter.
+ * either {@code i(T)/i(0)} or {@code i(T)/i(0) - 1}, depending on the {@code growthOnly} parameter.
  *
  * <p>We expect this to be used inside an instrument that does all the date
- * adjustment etc., so this takes just dates and does not change them.
- * {@code growthOnly = false} means {@code i(T)/i(0)}, which is a bond-type
- * setting. {@code growthOnly = true} means {@code i(T)/i(0) - 1}, which is a
+ * adjustment etc., so this takes just dates and does not change them. {@code growthOnly = false} means
+ * {@code i(T)/i(0)}, which is a bond-type setting. {@code growthOnly = true} means {@code i(T)/i(0) - 1}, which is a
  * swap-type setting.
  *
  * <p>Mirrors C++ {@code QuantLib::IndexedCashFlow} at v1.42.1
@@ -71,20 +69,13 @@ public class IndexedCashFlow extends CashFlow {
     // public constructors
     //
 
-    public IndexedCashFlow(final double notional,
-                           final Index index,
-                           final Date baseDate,
-                           final Date fixingDate,
-                           final Date paymentDate) {
+    public IndexedCashFlow(final double notional, final Index index, final Date baseDate, final Date fixingDate,
+            final Date paymentDate) {
         this(notional, index, baseDate, fixingDate, paymentDate, false);
     }
 
-    public IndexedCashFlow(final double notional,
-                           final Index index,
-                           final Date baseDate,
-                           final Date fixingDate,
-                           final Date paymentDate,
-                           final boolean growthOnly) {
+    public IndexedCashFlow(final double notional, final Index index, final Date baseDate, final Date fixingDate,
+            final Date paymentDate, final boolean growthOnly) {
         QL.require(index != null, "no index provided");
         this.notional_ = notional;
         this.index_ = index;
@@ -145,7 +136,7 @@ public class IndexedCashFlow extends CashFlow {
         // recomputing on demand (no LazyObject membership).
         final double i0 = baseFixing();
         final double i1 = indexFixing();
-        if (growthOnly_) {
+        if ( growthOnly_ ) {
             return notional() * (i1 / i0 - 1.0);
         }
         return notional() * (i1 / i0);
@@ -166,8 +157,8 @@ public class IndexedCashFlow extends CashFlow {
 
     @Override
     public void accept(final PolymorphicVisitor pv) {
-        final Visitor<IndexedCashFlow> v = (pv != null) ? pv.visitor(this.getClass()) : null;
-        if (v != null) {
+        final Visitor< IndexedCashFlow > v = (pv != null) ? pv.visitor(this.getClass()) : null;
+        if ( v != null ) {
             v.visit(this);
         } else {
             super.accept(pv);

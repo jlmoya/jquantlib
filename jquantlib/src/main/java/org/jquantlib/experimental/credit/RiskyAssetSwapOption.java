@@ -38,8 +38,7 @@ import org.jquantlib.time.Date;
  * ({@code ql/experimental/credit/riskyassetswapoption.{hpp,cpp}}).
  *
  * <p>Uses a normal Black-style formula on the asset-swap spread:
- * {@code NPV = A_0 sigma sqrt(T) (w d Phi(w d) + phi(d))} with
- * {@code d = (s - s_market) / (sigma sqrt(T))}.
+ * {@code NPV = A_0 sigma sqrt(T) (w d Phi(w d) + phi(d))} with {@code d = (s - s_market) / (sigma sqrt(T))}.
  *
  * <p>Phase 4m.5 work-item 12 (option half).
  */
@@ -50,10 +49,8 @@ public class RiskyAssetSwapOption extends Instrument {
     private final double marketSpread;
     private final double spreadVolatility;
 
-    public RiskyAssetSwapOption(final RiskyAssetSwap asw,
-                                final Date expiry,
-                                final double marketSpread,
-                                final double spreadVolatility) {
+    public RiskyAssetSwapOption(final RiskyAssetSwap asw, final Date expiry, final double marketSpread,
+            final double spreadVolatility) {
         this.asw = asw;
         this.expiry = expiry;
         this.marketSpread = marketSpread;
@@ -74,7 +71,6 @@ public class RiskyAssetSwapOption extends Instrument {
         final double stdDev = spreadVolatility * Math.sqrt(expiryTime);
         final double d = (asw.spread() - marketSpread) / stdDev;
         final double a0 = asw.nominal() * asw.floatAnnuity();
-        NPV = a0 * stdDev * (w * d * new CumulativeNormalDistribution().op(w * d)
-                + new NormalDistribution().op(d));
+        NPV = a0 * stdDev * (w * d * new CumulativeNormalDistribution().op(w * d) + new NormalDistribution().op(d));
     }
 }

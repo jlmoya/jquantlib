@@ -39,20 +39,18 @@
 
 package org.jquantlib.math.randomnumbers;
 
-import java.lang.reflect.Constructor;
-
-import org.jquantlib.QL;
 import org.jquantlib.lang.exceptions.LibraryException;
 
+import java.lang.reflect.Constructor;
 
 /**
  *
- * @author Richard Gomes
- * @param <T> represents the sample type
+ * @param <T>    represents the sample type
  * @param <URSG> represents the UniformRandomSequenceGenerator<T>
- * @param <IC> represents the InverseCumulative
+ * @param <IC>   represents the InverseCumulative
+ * @author Richard Gomes
  */
-public class GenericLowDiscrepancy<RSG extends UniformRandomSequenceGenerator, IC extends InverseCumulative> {
+public class GenericLowDiscrepancy< RSG extends UniformRandomSequenceGenerator, IC extends InverseCumulative > {
 
     //
     // static private fields
@@ -76,32 +74,25 @@ public class GenericLowDiscrepancy<RSG extends UniformRandomSequenceGenerator, I
     // This can change as soon as we find what's the trick with it.
     //
     static final private GenericLowDiscrepancy icInstance = null;
-    
-    
-    
-    
-    private Class<? extends UniformRandomSequenceGenerator>	classRSG;
-    private Class<? extends InverseCumulative>				classIC;
-    
 
+    private Class< ? extends UniformRandomSequenceGenerator > classRSG;
+    private Class< ? extends InverseCumulative > classIC;
 
-    protected InverseCumulativeRsg<RSG, IC> makeSequenceGenerator(
-    	    final Class<? extends UniformRandomSequenceGenerator>	classRSG,
-    	    final Class<? extends InverseCumulative>				classIC,
-            final /*@NonNegative*/ int dimension, 
+    protected InverseCumulativeRsg< RSG, IC > makeSequenceGenerator(
+            final Class< ? extends UniformRandomSequenceGenerator > classRSG,
+            final Class< ? extends InverseCumulative > classIC, final /*@NonNegative*/ int dimension,
             final /*@NonNegative*/ long seed) {
-
 
         this.classRSG = classRSG;
         this.classIC = classIC;
-        
+
         // instantiate a RandomSequenceGenerator given its generic type (first generic parameter)
         final RSG rsg;
         try {
             // obtain RSG Class from first generic parameter
-            final Constructor<RSG> c = (Constructor<RSG>) classRSG.getConstructor(int.class, long.class);
+            final Constructor< RSG > c = (Constructor< RSG >) classRSG.getConstructor(int.class, long.class);
             rsg = c.newInstance(dimension, seed);
-        } catch (final Exception e) {
+        } catch ( final Exception e ) {
             throw new LibraryException(e); // QA:[RG]::verified
         }
 
@@ -109,18 +100,18 @@ public class GenericLowDiscrepancy<RSG extends UniformRandomSequenceGenerator, I
         final IC ic;
         try {
             // obtain IC Class from second generic parameter
-            final Constructor<IC> c;
-            if (icInstance!=null) {
-                c = (Constructor<IC>) classIC.getConstructor(rsg.getClass(), classIC.getClass());
+            final Constructor< IC > c;
+            if ( icInstance != null ) {
+                c = (Constructor< IC >) classIC.getConstructor(rsg.getClass(), classIC.getClass());
                 ic = c.newInstance(rsg, icInstance);
             } else {
-                c = (Constructor<IC>) classIC.getConstructor(rsg.getClass());
+                c = (Constructor< IC >) classIC.getConstructor(rsg.getClass());
                 ic = c.newInstance(rsg);
             }
-        } catch (final Exception e) {
+        } catch ( final Exception e ) {
             throw new LibraryException(e); // QA:[RG]::verified
         }
-        return (InverseCumulativeRsg<RSG, IC>) ic;
+        return (InverseCumulativeRsg< RSG, IC >) ic;
     }
 
 }

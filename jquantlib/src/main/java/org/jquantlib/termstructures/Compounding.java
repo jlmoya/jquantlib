@@ -45,23 +45,23 @@ package org.jquantlib.termstructures;
  * @author Richard Gomes
  */
 public enum Compounding {
-	/**
-	 * {@latex$ 1+rt }
-	 */
-	Simple,
+    /**
+     * {@latex$ 1+rt }
+     */
+    Simple,
 
-	/**
-	 * {@latex$ (1+r)^t }
-	 */
-	Compounded,
+    /**
+     * {@latex$ (1 + r)^t }
+     */
+    Compounded,
 
-	/**
-	 * {@latex$ e^{rt} }
-	 */
-	Continuous,
+    /**
+     * {@latex$ e^{rt} }
+     */
+    Continuous,
 
-	/**
-	 * Simple up to the first period then Compounded
-	 */
-	SimpleThenCompounded;
+    /**
+     * Simple up to the first period then Compounded
+     */
+    SimpleThenCompounded
 }

@@ -39,19 +39,15 @@ import org.jquantlib.time.Date;
  * A transformation of an existing inflation swap rate.
  *
  * <p>This is an abstract class containing {@code correctXXXRate} methods that
- * return rates with the seasonality correction. Currently only the price
- * multiplicative version is implemented (see
- * {@link MultiplicativePriceSeasonality}); this covers stationary (1-year)
- * and non-stationary (multi-year) seasonality depending on how many years of
- * factors are given. Seasonality is piecewise constant, hence it works with
+ * return rates with the seasonality correction. Currently only the price multiplicative version is implemented (see
+ * {@link MultiplicativePriceSeasonality}); this covers stationary (1-year) and non-stationary (multi-year) seasonality
+ * depending on how many years of factors are given. Seasonality is piecewise constant, hence it works with
  * un-interpolated inflation indices.
  *
  * <p>A seasonality assumption can be used to fill in inflation swap curves
- * between maturities that are usually given in integer numbers of years
- * (e.g., 8, 9, 10, 15, 20). Historical seasonality may be observed in reported
- * CPI values, alternatively it may be affected by known future events
- * (e.g., announced changes in VAT rates). Thus seasonality may be stationary
- * or non-stationary.
+ * between maturities that are usually given in integer numbers of years (e.g., 8, 9, 10, 15, 20). Historical
+ * seasonality may be observed in reported CPI values, alternatively it may be affected by known future events (e.g.,
+ * announced changes in VAT rates). Thus seasonality may be stationary or non-stationary.
  *
  * <p>Mirrors C++ {@code QuantLib::Seasonality} at v1.42.1
  * (termstructures/inflation/seasonality.{hpp,cpp}).
@@ -61,20 +57,17 @@ import org.jquantlib.time.Date;
 public abstract class Seasonality {
 
     /** Apply the seasonality correction to a zero-coupon inflation rate. */
-    public abstract /*@Rate*/ double correctZeroRate(final Date d,
-                                                     final @Rate double r,
-                                                     final InflationTermStructure iTS);
+    public abstract /*@Rate*/ double correctZeroRate(final Date d, final @Rate double r,
+            final InflationTermStructure iTS);
 
     /** Apply the seasonality correction to a year-on-year inflation rate. */
-    public abstract /*@Rate*/ double correctYoYRate(final Date d,
-                                                    final @Rate double r,
-                                                    final InflationTermStructure iTS);
+    public abstract /*@Rate*/ double correctYoYRate(final Date d, final @Rate double r,
+            final InflationTermStructure iTS);
 
     /**
-     * Test whether multi-year seasonality is consistent with a given inflation
-     * term structure. The default implementation returns true; subclasses may
-     * override (e.g., {@link MultiplicativePriceSeasonality} which checks that
-     * factors at whole years from the curve base date are equal).
+     * Test whether multi-year seasonality is consistent with a given inflation term structure. The default
+     * implementation returns true; subclasses may override (e.g., {@link MultiplicativePriceSeasonality} which checks
+     * that factors at whole years from the curve base date are equal).
      *
      * <p>Mirrors C++ {@code Seasonality::isConsistent} default impl
      * (seasonality.cpp:29-31).

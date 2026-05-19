@@ -36,17 +36,16 @@ import org.jquantlib.time.calendars.Target;
  * <p>
  * Port of C++ QuantLib v1.42.1 {@code ql/indexes/ibor/eonia.hpp/cpp}.
  *
- * @category indexes
- *
  * @author JQuantLib migration team
+ * @category indexes
  */
 public class Eonia extends OvernightIndex {
 
-    public Eonia(final Handle<YieldTermStructure> h) {
+    public Eonia(final Handle< YieldTermStructure > h) {
         super("Eonia", 0, new EURCurrency(), new Target(), new Actual360(), h);
     }
 
     public Eonia() {
-        this(new Handle<YieldTermStructure>());
+        this(new Handle< YieldTermStructure >());
     }
 }

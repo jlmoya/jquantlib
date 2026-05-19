@@ -44,68 +44,55 @@ package org.jquantlib.time;
 /**
  * Business Day conventions
  *
- * These conventions specify the algorithm used to adjust a date in case
- * it is not a valid business day.
+ * These conventions specify the algorithm used to adjust a date in case it is not a valid business day.
  *
  * @author Richard Gomes
  */
 public enum BusinessDayConvention {
-	// ISDA
-	/**
-	 * Choose the first business day after the given holiday.
-	 */
-	Following,
+    // ISDA
+    /**
+     * Choose the first business day after the given holiday.
+     */
+    Following,
 
-	/**
-	 * Choose the first business day after
-	 * the given holiday unless it belongs
-	 * to a different month, in which case
-	 * choose the first business day before
-	 * the holiday.
-	 */
-	ModifiedFollowing,
+    /**
+     * Choose the first business day after the given holiday unless it belongs to a different month, in which case
+     * choose the first business day before the holiday.
+     */
+    ModifiedFollowing,
 
-	/**
-	 * Choose the first business day before
-	 * the given holiday.
-	 */
-	Preceding,
+    /**
+     * Choose the first business day before the given holiday.
+     */
+    Preceding,
 
-	// NON ISDA
-	/**
-	 * Choose the first business day before
-	 * the given holiday unless it belongs
-	 * to a different month, in which case
-	 * choose the first business day after
-	 * the holiday.
-	 */
-	ModifiedPreceding,
+    // NON ISDA
+    /**
+     * Choose the first business day before the given holiday unless it belongs to a different month, in which case
+     * choose the first business day after the holiday.
+     */
+    ModifiedPreceding,
 
-	/**
-	 * Do not adjust.
-	 */
-	Unadjusted,
+    /**
+     * Do not adjust.
+     */
+    Unadjusted,
 
-	/**
-	 * Choose the first business day after
-	 * the given holiday unless that day
-	 * crosses the mid-month (15th) or the
-	 * end of month, in which case choose
-	 * the first business day before the
-	 * holiday.
-	 *
-	 * <p>Phase 5e.5b-CFC-d-14: ported from C++ v1.42.1
-	 * ql/time/businessdayconvention.hpp:59-64.
-	 */
-	HalfMonthModifiedFollowing,
+    /**
+     * Choose the first business day after the given holiday unless that day crosses the mid-month (15th) or the end of
+     * month, in which case choose the first business day before the holiday.
+     *
+     * <p>Phase 5e.5b-CFC-d-14: ported from C++ v1.42.1
+     * ql/time/businessdayconvention.hpp:59-64.
+     */
+    HalfMonthModifiedFollowing,
 
-	/**
-	 * Choose the nearest business day to the given holiday.
-	 * If both the preceding and following business days are
-	 * equally far away, default to following business day.
-	 *
-	 * <p>Phase 5e.5b-CFC-d-14: ported from C++ v1.42.1
-	 * ql/time/businessdayconvention.hpp:65-69.
-	 */
-	Nearest;
+    /**
+     * Choose the nearest business day to the given holiday. If both the preceding and following business days are
+     * equally far away, default to following business day.
+     *
+     * <p>Phase 5e.5b-CFC-d-14: ported from C++ v1.42.1
+     * ql/time/businessdayconvention.hpp:65-69.
+     */
+    Nearest
 }

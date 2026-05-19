@@ -28,24 +28,22 @@ import org.jquantlib.quotes.Quote;
 import org.jquantlib.time.Date;
 
 /**
- * Bootstrap helper with date schedule relative to the global evaluation date,
- * specialised to default-probability term structures.
+ * Bootstrap helper with date schedule relative to the global evaluation date, specialised to default-probability term
+ * structures.
  *
  * <p>Java port of QuantLib v1.42.1 typedef
- * {@code typedef RelativeDateBootstrapHelper<DefaultProbabilityTermStructure>
- *           RelativeDateDefaultProbabilityHelper}
+ * {@code typedef RelativeDateBootstrapHelper<DefaultProbabilityTermStructure> RelativeDateDefaultProbabilityHelper}
  * ({@code ql/termstructures/credit/defaultprobabilityhelpers.hpp:44-45}).
  *
  * <p>Mirrors {@link org.jquantlib.termstructures.yieldcurves.RelativeDateRateHelper}
- * for the yield-curve case: rebuilds the helper's schedule when the evaluation
- * date changes. Subclasses (currently {@link CdsHelper} and its descendants)
- * implement {@link #initializeDates()}.
+ * for the yield-curve case: rebuilds the helper's schedule when the evaluation date changes. Subclasses (currently
+ * {@link CdsHelper} and its descendants) implement {@link #initializeDates()}.
  */
 public abstract class RelativeDateDefaultProbabilityHelper extends DefaultProbabilityHelper {
 
     protected Date evaluationDate_;
 
-    public RelativeDateDefaultProbabilityHelper(final Handle<Quote> quote) {
+    public RelativeDateDefaultProbabilityHelper(final Handle< Quote > quote) {
         super(quote);
         this.evaluationDate_ = new Settings().evaluationDate();
         this.evaluationDate_.addObserver(this);
@@ -57,14 +55,16 @@ public abstract class RelativeDateDefaultProbabilityHelper extends DefaultProbab
         this.evaluationDate_.addObserver(this);
     }
 
-    /** Subclasses populate {@code earliestDate} / {@code latestDate} (and
-     *  any internal schedule) from the current {@code evaluationDate_}. */
+    /**
+     * Subclasses populate {@code earliestDate} / {@code latestDate} (and any internal schedule) from the current
+     * {@code evaluationDate_}.
+     */
     protected abstract void initializeDates();
 
     @Override
     public void update() {
         final Date newEval = new Settings().evaluationDate();
-        if (!evaluationDate_.equals(newEval)) {
+        if ( !evaluationDate_.equals(newEval) ) {
             evaluationDate_ = newEval;
             initializeDates();
         }

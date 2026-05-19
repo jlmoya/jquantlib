@@ -37,15 +37,13 @@ import org.jquantlib.model.marketmodels.MarketModelMultiProduct;
  * (ql/models/marketmodels/callability/exercisevalue.hpp v1.42.1).
  *
  * <p>Encapsulates the exercise value of a callable instrument at each
- * evolution time. Used by {@link LongstaffSchwartzExerciseStrategy} as the
- * rebate component, and by {@code ExerciseAdapter} (Track A) to bridge to
- * {@link MarketModelMultiProduct}.
+ * evolution time. Used by {@link LongstaffSchwartzExerciseStrategy} as the rebate component, and by
+ * {@code ExerciseAdapter} (Track A) to bridge to {@link MarketModelMultiProduct}.
  *
  * <p>P3K-2: C++ {@code std::valarray<bool>} maps to Java {@code boolean[]}.
  *
- * @see "ql/models/marketmodels/callability/exercisevalue.hpp" v1.42.1
- *
  * @author Jose Moya
+ * @see "ql/models/marketmodels/callability/exercisevalue.hpp" v1.42.1
  */
 public interface MarketModelExerciseValue {
 
@@ -53,8 +51,8 @@ public interface MarketModelExerciseValue {
     int numberOfExercises();
 
     /**
-     * Returns the evolution description (rate times + evolution times,
-     * including any time at which state should be updated).
+     * Returns the evolution description (rate times + evolution times, including any time at which state should be
+     * updated).
      */
     EvolutionDescription evolution();
 
@@ -68,8 +66,8 @@ public interface MarketModelExerciseValue {
     void reset();
 
     /**
-     * Returns, for each evolution time, whether it is an exercise time.
-     * Mirrors C++ {@code std::valarray<bool> isExerciseTime() const}.
+     * Returns, for each evolution time, whether it is an exercise time. Mirrors C++
+     * {@code std::valarray<bool> isExerciseTime() const}.
      */
     boolean[] isExerciseTime();
 

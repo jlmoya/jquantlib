@@ -41,8 +41,8 @@ package org.jquantlib.pricingengines.vanilla;
 
 import org.jquantlib.QL;
 import org.jquantlib.instruments.CompoundOption;
-import org.jquantlib.instruments.Option;
 import org.jquantlib.instruments.OneAssetOption;
+import org.jquantlib.instruments.Option;
 import org.jquantlib.instruments.PlainVanillaPayoff;
 import org.jquantlib.math.Ops;
 import org.jquantlib.math.distributions.BivariateNormalDistribution;
@@ -58,8 +58,8 @@ import org.jquantlib.time.Frequency;
 /**
  * Pricing engine for compound options using analytical formulae.
  * <p>
- * The formulas are taken from "Foreign Exchange Risk", Uwe Wystup, Risk 2002,
- * where closed-form Greeks are also available (Value: p.84, Greeks: pp.94-95).
+ * The formulas are taken from "Foreign Exchange Risk", Uwe Wystup, Risk 2002, where closed-form Greeks are also
+ * available (Value: p.84, Greeks: pp.94-95).
  * <p>
  * Mirrors C++ QuantLib v1.42.1 {@code AnalyticCompoundOptionEngine} in
  * {@code ql/pricingengines/exotic/analyticcompoundoptionengine.{hpp,cpp}}.
@@ -93,8 +93,7 @@ public class AnalyticCompoundOptionEngine extends OneAssetOption.EngineImpl {
 
         // Solver setup ***************************************************
         final Date helpDate = process.riskFreeRate().currentLink().referenceDate();
-        final Date helpMaturity = helpDate.add(
-                (int) maturityDaughter().sub(maturityMother()));
+        final Date helpMaturity = helpDate.add((int) maturityDaughter().sub(maturityMother()));
         double vol = process.blackVolatility().currentLink().blackVol(helpMaturity, strikeDaughter());
 
         final double helpTimeToMat = process.time(helpMaturity);
@@ -103,15 +102,14 @@ public class AnalyticCompoundOptionEngine extends OneAssetOption.EngineImpl {
         final double dividendDiscount = process.dividendYield().currentLink().discount(helpMaturity);
         final double riskFreeDiscount = process.riskFreeRate().currentLink().discount(helpMaturity);
 
-        final ImpliedSpotHelper f = new ImpliedSpotHelper(
-                dividendDiscount, riskFreeDiscount, vol, payoffDaughter(), strikeMother());
+        final ImpliedSpotHelper f = new ImpliedSpotHelper(dividendDiscount, riskFreeDiscount, vol, payoffDaughter(),
+                strikeMother());
 
         final Brent solver = new Brent();
         solver.setMaxEvaluations(1000);
         final double accuracy = 1.0e-6;
 
-        final double sSolved = solver.solve(f, accuracy, strikeDaughter(),
-                                            1.0e-6, strikeDaughter() * 1000.0);
+        final double sSolved = solver.solve(f, accuracy, strikeDaughter(), 1.0e-6, strikeDaughter() * 1000.0);
         final double X = transformX(sSolved);
         // Solver setup finished *****************************************
 
@@ -150,19 +148,12 @@ public class AnalyticCompoundOptionEngine extends OneAssetOption.EngineImpl {
         final double invMTime = 1.0 / Math.sqrt(rTM);
         final double invDTime = 1.0 / Math.sqrt(rTD);
 
-        final double tempRes = phi * w * S * ddD * N2XmSM
-                - phi * w * strD * rdD * N2X
-                - w * strM * rdM * NX;
+        final double tempRes = phi * w * S * ddD * N2XmSM - phi * w * strD * rdD * N2X - w * strM * rdM * NX;
         final double tempDelta = phi * w * ddD * N2XmSM;
-        final double tempGamma = (ddD / (vD * S))
-                * (invMTime * nXm * NT12 + w * invDTime * ndP * NeX);
-        final double tempVega = ddD * S
-                * ((1.0 / invMTime) * nXm * NT12 + w * (1.0 / invDTime) * ndP * NeX);
-        double tempTheta = phi * w * dD * S * ddD * N2XmSM
-                - phi * w * rD * strD * rdD * N2X
-                - w * rD * strM * rdM * NX;
-        tempTheta -= 0.5 * vD * S * ddD
-                * (invMTime * nXm * NT12 + w * invDTime * ndP * NeX);
+        final double tempGamma = (ddD / (vD * S)) * (invMTime * nXm * NT12 + w * invDTime * ndP * NeX);
+        final double tempVega = ddD * S * ((1.0 / invMTime) * nXm * NT12 + w * (1.0 / invDTime) * ndP * NeX);
+        double tempTheta = phi * w * dD * S * ddD * N2XmSM - phi * w * rD * strD * rdD * N2X - w * rD * strM * rdM * NX;
+        tempTheta -= 0.5 * vD * S * ddD * (invMTime * nXm * NT12 + w * invDTime * ndP * NeX);
 
         r.value = tempRes;
         greeks.delta = tempDelta;
@@ -174,11 +165,11 @@ public class AnalyticCompoundOptionEngine extends OneAssetOption.EngineImpl {
     // ---- helper methods (mirroring C++ private methods) ----
 
     private double typeDaughter() {
-        return (double) payoffDaughter().optionType().toInteger();
+        return payoffDaughter().optionType().toInteger();
     }
 
     private double typeMother() {
-        return (double) payoffMother().optionType().toInteger();
+        return payoffMother().optionType().toInteger();
     }
 
     private Date maturityDaughter() {
@@ -280,13 +271,13 @@ public class AnalyticCompoundOptionEngine extends OneAssetOption.EngineImpl {
     }
 
     private double riskFreeRateDaughter() {
-        return process.riskFreeRate().currentLink().zeroRate(
-                residualTimeDaughter(), Compounding.Continuous, Frequency.NoFrequency, false).rate();
+        return process.riskFreeRate().currentLink()
+                .zeroRate(residualTimeDaughter(), Compounding.Continuous, Frequency.NoFrequency, false).rate();
     }
 
     private double dividendRateDaughter() {
-        return process.dividendYield().currentLink().zeroRate(
-                residualTimeDaughter(), Compounding.Continuous, Frequency.NoFrequency, false).rate();
+        return process.dividendYield().currentLink()
+                .zeroRate(residualTimeDaughter(), Compounding.Continuous, Frequency.NoFrequency, false).rate();
     }
 
     private double transformX(final double X) {
@@ -304,8 +295,7 @@ public class AnalyticCompoundOptionEngine extends OneAssetOption.EngineImpl {
     }
 
     /**
-     * Helper class needed to solve an implicit problem of finding a spot
-     * to a corresponding option price.
+     * Helper class needed to solve an implicit problem of finding a spot to a corresponding option price.
      */
     private static class ImpliedSpotHelper implements Ops.DoubleOp {
         private final double dividendDiscount;
@@ -314,9 +304,8 @@ public class AnalyticCompoundOptionEngine extends OneAssetOption.EngineImpl {
         private final double strike;
         private final PlainVanillaPayoff payoff;
 
-        ImpliedSpotHelper(final double dividendDiscount, final double riskFreeDiscount,
-                          final double standardDeviation, final PlainVanillaPayoff payoff,
-                          final double strike) {
+        ImpliedSpotHelper(final double dividendDiscount, final double riskFreeDiscount, final double standardDeviation,
+                final PlainVanillaPayoff payoff, final double strike) {
             this.dividendDiscount = dividendDiscount;
             this.riskFreeDiscount = riskFreeDiscount;
             this.standardDeviation = standardDeviation;
@@ -330,9 +319,8 @@ public class AnalyticCompoundOptionEngine extends OneAssetOption.EngineImpl {
             // Note: Java BlackFormula.blackFormula(payoff, strike, forward, stddev, discount)
             // ignores the strike parameter and uses payoff.strike() (line 194 of BlackFormula).
             // We pass through the type+strike+forward+stddev+discount overload for clarity.
-            final double value = BlackFormula.blackFormula(payoff.optionType(), payoff.strike(),
-                                                           forwardPrice, standardDeviation,
-                                                           riskFreeDiscount);
+            final double value = BlackFormula.blackFormula(payoff.optionType(), payoff.strike(), forwardPrice,
+                    standardDeviation, riskFreeDiscount);
             return value - strike;
         }
     }

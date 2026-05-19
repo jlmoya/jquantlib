@@ -29,19 +29,14 @@
 */
 package org.jquantlib.experimental.inflation;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.math.interpolations.Interpolation.Interpolator;
 import org.jquantlib.math.solvers1D.Brent;
-import org.jquantlib.termstructures.volatility.inflation.YoYOptionletVolatilitySurface;
-import org.jquantlib.time.BusinessDayConvention;
-import org.jquantlib.time.Calendar;
-import org.jquantlib.time.Date;
-import org.jquantlib.time.Frequency;
-import org.jquantlib.time.Period;
+import org.jquantlib.time.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Piecewise year-on-year inflation volatility term structure.
@@ -52,23 +47,19 @@ import org.jquantlib.time.Period;
  *
  * <p>Java port note: the C++ class is templated on {@code Interpolator},
  * {@code Bootstrap}, and {@code Traits}. We mirror the
- * {@code <Interpolator, IterativeBootstrap, YoYInflationVolatilityTraits>}
- * specialization (the only one actually used by Track B's
- * {@code InterpolatedYoYOptionletStripper}). The bootstrap loop is inlined
- * here because Java's existing {@code IterativeBootstrap} class is
- * yield-curve specialized.
+ * {@code <Interpolator, IterativeBootstrap, YoYInflationVolatilityTraits>} specialization (the only one actually used
+ * by Track B's {@code InterpolatedYoYOptionletStripper}). The bootstrap loop is inlined here because Java's existing
+ * {@code IterativeBootstrap} class is yield-curve specialized.
  *
  * <p>The curve uses a flat smile for bootstrapping at constant K. Most of the
- * work is done in the parent {@link InterpolatedYoYOptionletVolatilityCurve}.
- * Special attention is needed at the start where there is usually no data,
- * only assumptions (encoded by {@code baseYoYVolatility} = base level).
+ * work is done in the parent {@link InterpolatedYoYOptionletVolatilityCurve}. Special attention is needed at the start
+ * where there is usually no data, only assumptions (encoded by {@code baseYoYVolatility} = base level).
  *
  * @param <I> interpolator type (e.g. {@code Linear})
- *
  * @author JQuantLib migration team (Phase 2s Track B)
  */
-public class PiecewiseYoYOptionletVolatility<I extends Interpolator>
-        extends InterpolatedYoYOptionletVolatilityCurve<I> {
+public class PiecewiseYoYOptionletVolatility< I extends Interpolator >
+        extends InterpolatedYoYOptionletVolatilityCurve< I > {
 
     /** Default convergence accuracy (matches C++ default 1e-12). */
     public static final double DEFAULT_ACCURACY = 1.0e-12;
@@ -76,7 +67,7 @@ public class PiecewiseYoYOptionletVolatility<I extends Interpolator>
     /** Maximum bootstrap iterations (matches C++ {@code Traits::maxIterations} = 25). */
     private static final int MAX_ITERATIONS = 25;
 
-    private final List<YoYOptionletHelper> instruments_;
+    private final List< YoYOptionletHelper > instruments_;
     private final double accuracy_;
     private final double baseYoYVolatility_;
     private boolean calculated_;
@@ -87,29 +78,18 @@ public class PiecewiseYoYOptionletVolatility<I extends Interpolator>
 
     /**
      * Mirrors C++
-     * {@code PiecewiseYoYOptionletVolatilityCurve(Natural, Calendar, BDC, DayCounter, Period, Frequency, bool, Rate, Rate, Volatility, vector<Helper>, Real, Interpolator)}.
+     * {@code PiecewiseYoYOptionletVolatilityCurve(Natural, Calendar, BDC, DayCounter, Period, Frequency, bool, Rate,
+     * Rate, Volatility, vector<Helper>, Real, Interpolator)}.
      */
-    public PiecewiseYoYOptionletVolatility(
-            final Class<I> classI,
-            final int settlementDays,
-            final Calendar cal,
-            final BusinessDayConvention bdc,
-            final DayCounter dc,
-            final Period lag,
-            final Frequency frequency,
-            final boolean indexIsInterpolated,
-            final double minStrike,
-            final double maxStrike,
-            final double baseYoYVolatility,
-            final List<YoYOptionletHelper> instruments,
-            final double accuracy,
+    public PiecewiseYoYOptionletVolatility(final Class< I > classI, final int settlementDays, final Calendar cal,
+            final BusinessDayConvention bdc, final DayCounter dc, final Period lag, final Frequency frequency,
+            final boolean indexIsInterpolated, final double minStrike, final double maxStrike,
+            final double baseYoYVolatility, final List< YoYOptionletHelper > instruments, final double accuracy,
             final Interpolator interpolator) {
         // Bootstrap-only constructor: pillar arrays empty until calculate() runs.
-        super(classI, settlementDays, cal, bdc, dc, lag, frequency,
-                indexIsInterpolated, minStrike, maxStrike,
+        super(classI, settlementDays, cal, bdc, dc, lag, frequency, indexIsInterpolated, minStrike, maxStrike,
                 baseYoYVolatility, interpolator);
-        QL.require(instruments != null && !instruments.isEmpty(),
-                "instruments list cannot be empty");
+        QL.require(instruments != null && !instruments.isEmpty(), "instruments list cannot be empty");
         this.instruments_ = new ArrayList<>(instruments);
         this.accuracy_ = accuracy;
         this.baseYoYVolatility_ = baseYoYVolatility;
@@ -117,21 +97,11 @@ public class PiecewiseYoYOptionletVolatility<I extends Interpolator>
     }
 
     /** Convenience constructor with default accuracy and reflectively-built interpolator. */
-    public PiecewiseYoYOptionletVolatility(
-            final Class<I> classI,
-            final int settlementDays,
-            final Calendar cal,
-            final BusinessDayConvention bdc,
-            final DayCounter dc,
-            final Period lag,
-            final Frequency frequency,
-            final boolean indexIsInterpolated,
-            final double minStrike,
-            final double maxStrike,
-            final double baseYoYVolatility,
-            final List<YoYOptionletHelper> instruments) {
-        this(classI, settlementDays, cal, bdc, dc, lag, frequency,
-                indexIsInterpolated, minStrike, maxStrike,
+    public PiecewiseYoYOptionletVolatility(final Class< I > classI, final int settlementDays, final Calendar cal,
+            final BusinessDayConvention bdc, final DayCounter dc, final Period lag, final Frequency frequency,
+            final boolean indexIsInterpolated, final double minStrike, final double maxStrike,
+            final double baseYoYVolatility, final List< YoYOptionletHelper > instruments) {
+        this(classI, settlementDays, cal, bdc, dc, lag, frequency, indexIsInterpolated, minStrike, maxStrike,
                 baseYoYVolatility, instruments, DEFAULT_ACCURACY,
                 /* let parent build the default interpolator */ null);
     }
@@ -141,8 +111,7 @@ public class PiecewiseYoYOptionletVolatility<I extends Interpolator>
     //
 
     /**
-     * Forces a re-bootstrap on the next access. C++'s
-     * {@code recalculate()} (inherited from {@code LazyObject}) calls
+     * Forces a re-bootstrap on the next access. C++'s {@code recalculate()} (inherited from {@code LazyObject}) calls
      * {@code performCalculations()} eagerly.
      */
     public void recalculate() {
@@ -152,7 +121,7 @@ public class PiecewiseYoYOptionletVolatility<I extends Interpolator>
 
     /** Lazy-evaluation entry point. */
     public final void calculate() {
-        if (!calculated_) {
+        if ( !calculated_ ) {
             performCalculations();
             calculated_ = true;
         }
@@ -204,12 +173,11 @@ public class PiecewiseYoYOptionletVolatility<I extends Interpolator>
     //
 
     /**
-     * Mirrors C++ {@code performCalculations()} →
-     * {@code bootstrap_.calculate()}.
+     * Mirrors C++ {@code performCalculations()} → {@code bootstrap_.calculate()}.
      *
      * <p>Implements the same iteration as
-     * {@link org.jquantlib.termstructures.IterativeBootstrap#calculate}
-     * but with {@code YoYInflationVolatilityTraits} inlined:
+     * {@link org.jquantlib.termstructures.IterativeBootstrap#calculate} but with {@code YoYInflationVolatilityTraits}
+     * inlined:
      * <ul>
      *   <li>{@code initialDate}: {@link #baseDate()} (parent — empty pillars
      *       so we use the base date computed from observation lag, frequency,
@@ -227,20 +195,18 @@ public class PiecewiseYoYOptionletVolatility<I extends Interpolator>
         instruments_.sort((a, b) -> a.latestDate().compareTo(b.latestDate()));
 
         // Check for distinct maturities.
-        for (int i = 1; i < n; ++i) {
-            QL.require(!instruments_.get(i - 1).latestDate()
-                            .eq(instruments_.get(i).latestDate()),
+        for ( int i = 1; i < n; ++i ) {
+            QL.require(!instruments_.get(i - 1).latestDate().eq(instruments_.get(i).latestDate()),
                     "two instruments have the same maturity");
         }
 
         // Check valid quotes.
-        for (int i = 0; i < n; ++i) {
-            QL.require(instruments_.get(i).quoteIsValid(),
-                    "instrument " + i + " has an invalid quote");
+        for ( int i = 0; i < n; ++i ) {
+            QL.require(instruments_.get(i).quoteIsValid(), "instrument " + i + " has an invalid quote");
         }
 
         // Bind helpers to *this* curve.
-        for (int i = 0; i < n; ++i) {
+        for ( int i = 0; i < n; ++i ) {
             instruments_.get(i).setTermStructure(this);
         }
 
@@ -251,7 +217,7 @@ public class PiecewiseYoYOptionletVolatility<I extends Interpolator>
         // we must short-circuit our own override which would re-enter calculate()).
         datesArr[0] = parentBaseDate();
         timesArr[0] = timeFromReference(datesArr[0]);
-        for (int i = 0; i < n; ++i) {
+        for ( int i = 0; i < n; ++i ) {
             datesArr[i + 1] = instruments_.get(i).latestDate();
             timesArr[i + 1] = timeFromReference(datesArr[i + 1]);
         }
@@ -259,7 +225,7 @@ public class PiecewiseYoYOptionletVolatility<I extends Interpolator>
         // Initial data guess: data[0] = baseLevel; data[i>=1] = guess (0.005 for i=1, 0.002 thereafter).
         final double[] dataArr = new double[n + 1];
         dataArr[0] = baseYoYVolatility_;
-        for (int i = 1; i < n + 1; ++i) {
+        for ( int i = 1; i < n + 1; ++i ) {
             dataArr[i] = (i == 1) ? 0.005 : 0.002;
         }
 
@@ -271,54 +237,49 @@ public class PiecewiseYoYOptionletVolatility<I extends Interpolator>
 
         final Brent solver = new Brent();
 
-        for (int iteration = 0; iteration < MAX_ITERATIONS; ++iteration) {
+        for ( int iteration = 0; iteration < MAX_ITERATIONS; ++iteration ) {
             final double[] previousData = dataArr.clone();
 
-            for (int i = 1; i < n + 1; ++i) {
+            for ( int i = 1; i < n + 1; ++i ) {
                 final YoYOptionletHelper instrument = instruments_.get(i - 1);
 
                 // Guess: prior iteration's value if any, else traits guess.
                 double guess = dataArr[i];
-                if (iteration == 0 && i == 1) {
+                if ( iteration == 0 && i == 1 ) {
                     guess = 0.005;  // traits::guess for first pillar
-                } else if (iteration == 0 && i > 1) {
+                } else if ( iteration == 0 && i > 1 ) {
                     guess = 0.002;  // traits::guess fallback (no extrapolation here)
                 }
 
                 // Bracket: traits::minValueAfter / maxValueAfter.
                 final double min = Math.max(0.0, dataArr[i - 1] - 0.02);
                 final double max = dataArr[i - 1] + 0.02;
-                if (guess <= min || guess >= max) {
+                if ( guess <= min || guess >= max ) {
                     guess = (min + max) / 2.0;
                 }
 
                 final int idx = i;
                 try {
-                    final double r = solver.solve(
-                            new BootstrapErrorFn(instrument, idx),
-                            accuracy_, guess, min, max);
+                    final double r = solver.solve(new BootstrapErrorFn(instrument, idx), accuracy_, guess, min, max);
                     dataArr[i] = r;
                     // updateGuess: vols[i] = level
                     this.data_[i] = r;
                     setupInterpolation();
-                } catch (final RuntimeException re) {
-                    throw new RuntimeException(
-                            "could not bootstrap pillar " + i + ": "
-                                    + re.getMessage(), re);
+                } catch ( final RuntimeException re ) {
+                    throw new RuntimeException("could not bootstrap pillar " + i + ": " + re.getMessage(), re);
                 }
             }
 
             // Convergence check.
             double improvement = 0.0;
-            for (int i = 1; i < n + 1; ++i) {
+            for ( int i = 1; i < n + 1; ++i ) {
                 improvement = Math.max(improvement, Math.abs(dataArr[i] - previousData[i]));
             }
-            if (improvement <= accuracy_) {
+            if ( improvement <= accuracy_ ) {
                 break;
             }
             QL.require(iteration + 1 < MAX_ITERATIONS,
-                    "convergence not reached after " + (iteration + 1)
-                            + " iterations; last improvement " + improvement
+                    "convergence not reached after " + (iteration + 1) + " iterations; last improvement " + improvement
                             + ", required accuracy " + accuracy_);
         }
     }
@@ -328,36 +289,34 @@ public class PiecewiseYoYOptionletVolatility<I extends Interpolator>
     //
 
     /**
-     * Direct call to the parent {@code baseDate()} that doesn't go through
-     * our overridden version (which would recurse into calculate()).
+     * Direct call to the parent {@code baseDate()} that doesn't go through our overridden version (which would recurse
+     * into calculate()).
      */
     private Date parentBaseDate() {
         // Replicate parent's baseDate() logic without calling it (the cast
         // would still hit our override). The parent's baseDate() in
         // YoYOptionletVolatilitySurface uses observationLag + frequency +
         // indexIsInterpolated.
-        if (indexIsInterpolated_) {
+        if ( indexIsInterpolated_ ) {
             return referenceDate().sub(observationLag_);
         }
-        final org.jquantlib.util.Pair<Date, Date> p =
-                org.jquantlib.termstructures.InflationTermStructure.inflationPeriod(
-                        referenceDate().sub(observationLag_), frequency_);
+        final org.jquantlib.util.Pair< Date, Date > p = org.jquantlib.termstructures.InflationTermStructure.inflationPeriod(
+                referenceDate().sub(observationLag_), frequency_);
         return p.first();
     }
 
     /** Re-builds the parent interpolation from {@code times_/data_}. */
     @Override
     protected void setupInterpolation() {
-        if (this.times_ == null || this.times_.length < 2) {
+        if ( this.times_ == null || this.times_.length < 2 ) {
             return;
         }
         super.setupInterpolation();
     }
 
     /**
-     * Bootstrap error function: drops the i-th pillar value, sets it via
-     * {@code updateGuess}, recomputes the interpolation, and returns
-     * {@code instrument.quoteError() = quote - impliedQuote}.
+     * Bootstrap error function: drops the i-th pillar value, sets it via {@code updateGuess}, recomputes the
+     * interpolation, and returns {@code instrument.quoteError() = quote - impliedQuote}.
      *
      * <p>Mirrors C++ {@code BootstrapError<C>::operator()(Real guess) const}.
      */

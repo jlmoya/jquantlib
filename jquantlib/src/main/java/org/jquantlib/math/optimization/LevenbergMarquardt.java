@@ -27,18 +27,13 @@ import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.optimization.EndCriteria.Type;
 
 /**
- * Levenberg-Marquardt optimization method. Port of QuantLib v1.42.1
- * {@code QuantLib::LevenbergMarquardt}
- * (ql/math/optimization/levenbergmarquardt.{hpp,cpp}); delegates the
- * inner loop to {@link Minpack#lmdif}.
+ * Levenberg-Marquardt optimization method. Port of QuantLib v1.42.1 {@code QuantLib::LevenbergMarquardt}
+ * (ql/math/optimization/levenbergmarquardt.{hpp,cpp}); delegates the inner loop to {@link Minpack#lmdif}.
  * <p>
- * The analytic-Jacobian branch of the C++ original is not ported: the
- * Java {@link CostFunction#jacobian} uses a central-difference scheme
- * which is incompatible with the forward-difference contract MINPACK
- * expects, and the known callers of this class (Interpolation-LM,
- * SABR, OptimizerTest) all rely on the internal forward-difference
- * Jacobian. The flag can be revisited in a future pass if analytic
- * Jacobians become useful.
+ * The analytic-Jacobian branch of the C++ original is not ported: the Java {@link CostFunction#jacobian} uses a
+ * central-difference scheme which is incompatible with the forward-difference contract MINPACK expects, and the known
+ * callers of this class (Interpolation-LM, SABR, OptimizerTest) all rely on the internal forward-difference Jacobian.
+ * The flag can be revisited in a future pass if analytic Jacobians become useful.
  *
  * @see Minpack#lmdif
  */
@@ -78,7 +73,7 @@ public class LevenbergMarquardt extends OptimizationMethod {
         final int n = initX.size();
 
         final double[] xx = new double[n];
-        for (int i = 0; i < n; i++) {
+        for ( int i = 0; i < n; i++ ) {
             xx[i] = initX.get(i);
         }
 
@@ -104,53 +99,45 @@ public class LevenbergMarquardt extends OptimizationMethod {
         final double[] wa4 = new double[m];
 
         QL.require(n > 0, "no variables given");
-        QL.require(m >= n, "less functions (" + m
-                + ") than available variables (" + n + ")");
-        QL.require(endCriteria.functionEpsilon_ >= 0.0,
-                "negative f tolerance");
+        QL.require(m >= n, "less functions (" + m + ") than available variables (" + n + ")");
+        QL.require(endCriteria.functionEpsilon_ >= 0.0, "negative f tolerance");
         QL.require(xtol_ >= 0.0, "negative x tolerance");
         QL.require(gtol_ >= 0.0, "negative g tolerance");
         QL.require(maxfev > 0, "null number of evaluations");
 
-        final Minpack.LmdifCostFunction lmdifCostFunction =
-                (mm, nn, x, fv, iflag) -> this.fcn(mm, nn, x, fv);
+        final Minpack.LmdifCostFunction lmdifCostFunction = (mm, nn, x, fv, iflag) -> this.fcn(mm, nn, x, fv);
 
-        Minpack.lmdif(m, n, xx, fvec,
-                endCriteria.functionEpsilon_, xtol_, gtol_, maxfev, epsfcn_,
-                diag, mode, factor, nprint, info, nfev, fjac, ldfjac,
-                ipvt, qtf, wa1, wa2, wa3, wa4, lmdifCostFunction, null);
+        Minpack.lmdif(m, n, xx, fvec, endCriteria.functionEpsilon_, xtol_, gtol_, maxfev, epsfcn_, diag, mode, factor,
+                nprint, info, nfev, fjac, ldfjac, ipvt, qtf, wa1, wa2, wa3, wa4, lmdifCostFunction, null);
 
         info_ = info[0];
 
         // check requirements & endCriteria evaluation
         QL.require(info[0] != 0, "MINPACK: improper input parameters");
         QL.require(info[0] != 7,
-                "MINPACK: xtol is too small. no further improvement in the "
-                        + "approximate solution x is possible.");
-        QL.require(info[0] != 8,
-                "MINPACK: gtol is too small. fvec is orthogonal to the "
-                        + "columns of the jacobian to machine precision.");
+                "MINPACK: xtol is too small. no further improvement in the " + "approximate solution x is possible.");
+        QL.require(info[0] != 8, "MINPACK: gtol is too small. fvec is orthogonal to the "
+                + "columns of the jacobian to machine precision.");
 
         Type ecType;
-        switch (info[0]) {
-            case 1:
-            case 2:
-            case 3:
-            case 4:
-                // 2 and 3 would more precisely map to StationaryPoint, 4 to
-                // a gradient-related code, but levenbergmarquardt.cpp keeps
-                // StationaryFunctionValue for backwards compatibility.
-                ecType = Type.StationaryFunctionValue;
-                break;
-            case 5:
-                ecType = Type.MaxIterations;
-                break;
-            case 6:
-                ecType = Type.FunctionEpsilonTooSmall;
-                break;
-            default:
-                throw new IllegalStateException(
-                        "unknown MINPACK info result: " + info[0]);
+        switch ( info[0] ) {
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+            // 2 and 3 would more precisely map to StationaryPoint, 4 to
+            // a gradient-related code, but levenbergmarquardt.cpp keeps
+            // StationaryFunctionValue for backwards compatibility.
+            ecType = Type.StationaryFunctionValue;
+            break;
+        case 5:
+            ecType = Type.MaxIterations;
+            break;
+        case 6:
+            ecType = Type.FunctionEpsilonTooSmall;
+            break;
+        default:
+            throw new IllegalStateException("unknown MINPACK info result: " + info[0]);
         }
 
         final Array finalX = new Array(xx);
@@ -160,28 +147,26 @@ public class LevenbergMarquardt extends OptimizationMethod {
     }
 
     /**
-     * Residual evaluation callback invoked by MINPACK::lmdif. Returns the
-     * problem's cost vector at {@code x}, or a 1e10 penalty vector when
-     * the constraint is violated or the evaluation produces non-finite
-     * values. Mirrors {@code LevenbergMarquardt::fcn} in
-     * levenbergmarquardt.cpp.
+     * Residual evaluation callback invoked by MINPACK::lmdif. Returns the problem's cost vector at {@code x}, or a 1e10
+     * penalty vector when the constraint is violated or the evaluation produces non-finite values. Mirrors
+     * {@code LevenbergMarquardt::fcn} in levenbergmarquardt.cpp.
      */
     private void fcn(final int m, final int n, final double[] x, final double[] fvec) {
         final Array xt = new Array(n);
-        for (int i = 0; i < n; i++) {
+        for ( int i = 0; i < n; i++ ) {
             xt.set(i, x[i]);
         }
-        if (currentProblem_.constraint().test(xt)) {
+        if ( currentProblem_.constraint().test(xt) ) {
             final Array tmp = currentProblem_.values(xt);
             boolean valid = true;
-            for (int i = 0; i < tmp.size(); i++) {
-                if (!Double.isFinite(tmp.get(i))) {
+            for ( int i = 0; i < tmp.size(); i++ ) {
+                if ( !Double.isFinite(tmp.get(i)) ) {
                     valid = false;
                     break;
                 }
             }
-            if (valid) {
-                for (int i = 0; i < tmp.size(); i++) {
+            if ( valid ) {
+                for ( int i = 0; i < tmp.size(); i++ ) {
                     fvec[i] = tmp.get(i);
                 }
                 return;
@@ -190,7 +175,7 @@ public class LevenbergMarquardt extends OptimizationMethod {
         // Constraint violated or evaluation produced non-finite values.
         // Return a uniform large penalty so the optimizer steers away.
         final int len = initCostValues_.size();
-        for (int i = 0; i < len; i++) {
+        for ( int i = 0; i < len; i++ ) {
             fvec[i] = 1.0e10;
         }
     }

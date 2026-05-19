@@ -15,19 +15,52 @@ import org.jquantlib.util.Observer;
 // TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class DiscountingSwapEngine extends Swap.EngineImpl implements /* Swap.Engine, */ Observer {
 
-    private final Handle<YieldTermStructure> discountCurve;
+    private final Handle< YieldTermStructure > discountCurve;
 
-    public DiscountingSwapEngine(final Handle<YieldTermStructure> discountCurve) /* @ReadOnly */ {
+    public DiscountingSwapEngine(final Handle< YieldTermStructure > discountCurve) /* @ReadOnly */ {
         this.discountCurve = discountCurve;
         this.discountCurve.addObserver(this);
     }
 
+    /**
+     * Earliest leg date — uses {@code Coupon.accrualStartDate()} when the cashflow is a Coupon, otherwise the
+     * cashflow's own {@code date()}. Mirrors C++ {@code CashFlows::startDate} (cashflows.cpp:38-50) which always falls
+     * back to {@code i->date()} for non-Coupon cashflows.
+     *
+     * <p>Phase 2q L0 A.2: kept inline to this engine rather than exposed via
+     * {@link CashFlows#startDate(Leg)} because the existing Java method silently skips non-Coupon cashflows; fixing
+     * that more broadly is a separate align task.
+     */
+    private static Date legStartDate(final Leg leg) {
+        Date d = Date.maxDate();
+        for ( int i = 0; i < leg.size(); ++i ) {
+            final CashFlow cf = leg.get(i);
+            final Date candidate = (cf instanceof Coupon) ? ((Coupon) cf).accrualStartDate() : cf.date();
+            d = Date.min(d, candidate);
+        }
+        return d;
+    }
+
+    /**
+     * Latest leg date — uses {@code Coupon.accrualEndDate()} when the cashflow is a Coupon, otherwise the cashflow's
+     * own {@code date()}. Mirrors C++ {@code CashFlows::maturityDate} (cashflows.cpp:52-64).
+     */
+    private static Date legMaturityDate(final Leg leg) {
+        Date d = Date.minDate();
+        for ( int i = 0; i < leg.size(); ++i ) {
+            final CashFlow cf = leg.get(i);
+            final Date candidate = (cf instanceof Coupon) ? ((Coupon) cf).accrualEndDate() : cf.date();
+            d = Date.max(d, candidate);
+        }
+        return d;
+    }
+
     @Override
     public void calculate() /* @ReadOnly */ {
-        QL.require(!discountCurve.empty() , "no discounting term structure set"); // TODO: message
+        QL.require(!discountCurve.empty(), "no discounting term structure set"); // TODO: message
 
-        final Swap.ArgumentsImpl a = (Swap.ArgumentsImpl)arguments_;
-        final Swap.ResultsImpl   r = (Swap.ResultsImpl)results_;
+        final Swap.ArgumentsImpl a = (Swap.ArgumentsImpl) arguments_;
+        final Swap.ResultsImpl r = (Swap.ResultsImpl) results_;
         r.value = 0.0;
         r.errorEstimate = Constants.NULL_REAL;
 
@@ -43,7 +76,7 @@ public class DiscountingSwapEngine extends Swap.EngineImpl implements /* Swap.En
         final YieldTermStructure curve = discountCurve.currentLink();
         final Date refDate = curve.referenceDate();
 
-        for (int i = 0; i < n; ++i) {
+        for ( int i = 0; i < n; ++i ) {
             final Leg leg = a.legs.get(i);
             r.legNPV[i] = a.payer[i] * CashFlows.getInstance().npv(leg, discountCurve);
             r.legBPS[i] = a.payer[i] * CashFlows.getInstance().bps(leg, discountCurve);
@@ -61,15 +94,15 @@ public class DiscountingSwapEngine extends Swap.EngineImpl implements /* Swap.En
             // legs containing Coupons, so we mirror the C++ inline logic
             // here (use Coupon accrual dates if present, otherwise fall back
             // to the cashflow's own date()) without altering CashFlows itself.
-            if (leg != null && leg.size() > 0) {
+            if ( leg != null && leg.size() > 0 ) {
                 final Date d1 = legStartDate(leg);
-                if (d1.ge(refDate)) {
+                if ( d1.ge(refDate) ) {
                     r.startDiscounts[i] = curve.discount(d1);
                 } else {
                     r.startDiscounts[i] = Constants.NULL_REAL;
                 }
                 final Date d2 = legMaturityDate(leg);
-                if (d2.ge(refDate)) {
+                if ( d2.ge(refDate) ) {
                     r.endDiscounts[i] = curve.discount(d2);
                 } else {
                     r.endDiscounts[i] = Constants.NULL_REAL;
@@ -79,46 +112,6 @@ public class DiscountingSwapEngine extends Swap.EngineImpl implements /* Swap.En
                 r.endDiscounts[i] = Constants.NULL_REAL;
             }
         }
-    }
-
-    /**
-     * Earliest leg date — uses {@code Coupon.accrualStartDate()} when the
-     * cashflow is a Coupon, otherwise the cashflow's own {@code date()}.
-     * Mirrors C++ {@code CashFlows::startDate} (cashflows.cpp:38-50) which
-     * always falls back to {@code i->date()} for non-Coupon cashflows.
-     *
-     * <p>Phase 2q L0 A.2: kept inline to this engine rather than exposed via
-     * {@link CashFlows#startDate(Leg)} because the existing Java method
-     * silently skips non-Coupon cashflows; fixing that more broadly is a
-     * separate align task.
-     */
-    private static Date legStartDate(final Leg leg) {
-        Date d = Date.maxDate();
-        for (int i = 0; i < leg.size(); ++i) {
-            final CashFlow cf = leg.get(i);
-            final Date candidate = (cf instanceof Coupon)
-                    ? ((Coupon) cf).accrualStartDate()
-                    : cf.date();
-            d = Date.min(d, candidate);
-        }
-        return d;
-    }
-
-    /**
-     * Latest leg date — uses {@code Coupon.accrualEndDate()} when the cashflow
-     * is a Coupon, otherwise the cashflow's own {@code date()}. Mirrors C++
-     * {@code CashFlows::maturityDate} (cashflows.cpp:52-64).
-     */
-    private static Date legMaturityDate(final Leg leg) {
-        Date d = Date.minDate();
-        for (int i = 0; i < leg.size(); ++i) {
-            final CashFlow cf = leg.get(i);
-            final Date candidate = (cf instanceof Coupon)
-                    ? ((Coupon) cf).accrualEndDate()
-                    : cf.date();
-            d = Date.max(d, candidate);
-        }
-        return d;
     }
 
 }

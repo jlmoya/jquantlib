@@ -25,42 +25,44 @@
 
 package org.jquantlib.experimental.credit;
 
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.time.Date;
 import org.jquantlib.util.DefaultObservable;
 import org.jquantlib.util.Observable;
 import org.jquantlib.util.Observer;
 
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+
 /**
  * Default loss model interface.
  *
  * <p>Java port of QuantLib v1.42.1 {@code QuantLib::DefaultLossModel}
- * ({@code ql/experimental/credit/defaultlossmodel.hpp}). Concrete loss
- * models (Gaussian LHP, saddlepoint, binomial, etc.) extend this base and
- * override the statistics they support; unsupported queries throw a
- * {@link LibraryException}, mirroring the C++ {@code QL_FAIL} default
- * implementations.
+ * ({@code ql/experimental/credit/defaultlossmodel.hpp}). Concrete loss models (Gaussian LHP, saddlepoint, binomial,
+ * etc.) extend this base and override the statistics they support; unsupported queries throw a
+ * {@link LibraryException}, mirroring the C++ {@code QL_FAIL} default implementations.
  *
  * <p>The C++ class uses a {@code RelinkableHandle<Basket>} and the
- * {@link Basket} is friended so it can call {@link #setBasket(Basket)}.
- * The Java port keeps the basket reference package-private (effectively
- * the same access discipline) and exposes the protected query methods
- * publicly so {@link Basket} can call them across package boundaries
- * within the same package.
+ * {@link Basket} is friended so it can call {@link #setBasket(Basket)}. The Java port keeps the basket reference
+ * package-private (effectively the same access discipline) and exposes the protected query methods publicly so
+ * {@link Basket} can call them across package boundaries within the same package.
  *
  * <p>Phase 4m.5.
  */
 public abstract class DefaultLossModel implements Observable, Observer {
 
+    private final Observable delegatedObservable = new DefaultObservable(this);
     /** The basket this model is currently attached to. */
     protected Basket basket;
 
     protected DefaultLossModel() {
         // empty
+    }
+
+    /** Convenience helper used by tests / models requiring sorted results. */
+    protected static Map< Double, Double > sortedDistribution(final Map< Double, Double > in) {
+        return new TreeMap<>(in);
     }
 
     /** Default implementation using the {@link #expectedTrancheLoss(Date)} method. */
@@ -69,9 +71,8 @@ public abstract class DefaultLossModel implements Observable, Observer {
     }
 
     /**
-     * Probability of the tranche losing the same or more than the
-     * fractional amount given. The passed {@code lossFraction} is a
-     * fraction of losses over the tranche notional (not the portfolio).
+     * Probability of the tranche losing the same or more than the fractional amount given. The passed
+     * {@code lossFraction} is a fraction of losses over the tranche notional (not the portfolio).
      */
     public double probOverLoss(final Date d, final double lossFraction) {
         throw new LibraryException("probOverLoss not implemented for this model.");
@@ -88,17 +89,17 @@ public abstract class DefaultLossModel implements Observable, Observer {
     }
 
     /** Associated VaR fraction to each counterparty. */
-    public List<Double> splitVaRLevel(final Date d, final double loss) {
+    public List< Double > splitVaRLevel(final Date d, final double loss) {
         throw new LibraryException("splitVaRLevel not implemented for this model.");
     }
 
     /** Associated ESF fraction to each counterparty. */
-    public List<Double> splitESFLevel(final Date d, final double loss) {
+    public List< Double > splitESFLevel(final Date d, final double loss) {
         throw new LibraryException("splitESFLevel not implemented for this model.");
     }
 
     /** Full loss distribution (loss amount → cumulative probability). */
-    public Map<Double, Double> lossDistribution(final Date d) {
+    public Map< Double, Double > lossDistribution(final Date d) {
         throw new LibraryException("lossDistribution not implemented for this model.");
     }
 
@@ -108,11 +109,10 @@ public abstract class DefaultLossModel implements Observable, Observer {
     }
 
     /**
-     * Probabilities for each (remaining) basket element to have
-     * defaulted by time {@code d} and at the same time be the Nth
-     * defaulting name. Vector ordering matches pool ordering.
+     * Probabilities for each (remaining) basket element to have defaulted by time {@code d} and at the same time be the
+     * Nth defaulting name. Vector ordering matches pool ordering.
      */
-    public List<Double> probsBeingNthEvent(final int n, final Date d) {
+    public List< Double > probsBeingNthEvent(final int n, final Date d) {
         throw new LibraryException("probsBeingNthEvent not implemented for this model.");
     }
 
@@ -131,10 +131,13 @@ public abstract class DefaultLossModel implements Observable, Observer {
         throw new LibraryException("expectedRecovery not implemented for this model.");
     }
 
+    //
+    // implements Observable / Observer
+    //
+
     /**
-     * Helper used internally by {@link Basket#setLossModel(DefaultLossModel)}
-     * and {@link Basket#performCalculations()}. Concrete implementations
-     * propagate the assignment via {@link #resetModel()}.
+     * Helper used internally by {@link Basket#setLossModel(DefaultLossModel)} and {@link Basket#performCalculations()}.
+     * Concrete implementations propagate the assignment via {@link #resetModel()}.
      */
     void setBasket(final Basket basket) {
         this.basket = basket;
@@ -144,16 +147,10 @@ public abstract class DefaultLossModel implements Observable, Observer {
     /** Reset / re-initialise on basket reassignment. Sole caller is {@link #setBasket(Basket)}. */
     protected abstract void resetModel();
 
-    //
-    // implements Observable / Observer
-    //
-
     @Override
     public void update() {
         notifyObservers();
     }
-
-    private final Observable delegatedObservable = new DefaultObservable(this);
 
     @Override
     public final void addObserver(final Observer observer) {
@@ -186,12 +183,7 @@ public abstract class DefaultLossModel implements Observable, Observer {
     }
 
     @Override
-    public final List<Observer> getObservers() {
+    public final List< Observer > getObservers() {
         return delegatedObservable.getObservers();
-    }
-
-    /** Convenience helper used by tests / models requiring sorted results. */
-    protected static Map<Double, Double> sortedDistribution(final Map<Double, Double> in) {
-        return new TreeMap<>(in);
     }
 }

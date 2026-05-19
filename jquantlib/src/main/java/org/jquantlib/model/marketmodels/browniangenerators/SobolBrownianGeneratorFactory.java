@@ -31,12 +31,11 @@ import org.jquantlib.model.marketmodels.BrownianGenerator;
 import org.jquantlib.model.marketmodels.BrownianGeneratorFactory;
 
 /**
- * Factory producing {@link SobolBrownianGenerator} instances with stored
- * ordering, seed, and direction-integers configuration.
- *
- * @see "ql/models/marketmodels/browniangenerators/sobolbrowniangenerator.{hpp,cpp}" v1.42.1
+ * Factory producing {@link SobolBrownianGenerator} instances with stored ordering, seed, and direction-integers
+ * configuration.
  *
  * @author Jose Moya
+ * @see "ql/models/marketmodels/browniangenerators/sobolbrowniangenerator.{hpp,cpp}" v1.42.1
  */
 public class SobolBrownianGeneratorFactory extends BrownianGeneratorFactory {
 
@@ -48,14 +47,12 @@ public class SobolBrownianGeneratorFactory extends BrownianGeneratorFactory {
         this(ordering, 0L, SobolRsg.DirectionIntegers.Jaeckel);
     }
 
-    public SobolBrownianGeneratorFactory(final SobolBrownianGenerator.Ordering ordering,
-                                         final long seed) {
+    public SobolBrownianGeneratorFactory(final SobolBrownianGenerator.Ordering ordering, final long seed) {
         this(ordering, seed, SobolRsg.DirectionIntegers.Jaeckel);
     }
 
-    public SobolBrownianGeneratorFactory(final SobolBrownianGenerator.Ordering ordering,
-                                         final long seed,
-                                         final SobolRsg.DirectionIntegers integers) {
+    public SobolBrownianGeneratorFactory(final SobolBrownianGenerator.Ordering ordering, final long seed,
+            final SobolRsg.DirectionIntegers integers) {
         this.ordering_ = ordering;
         this.seed_ = seed;
         this.integers_ = integers;

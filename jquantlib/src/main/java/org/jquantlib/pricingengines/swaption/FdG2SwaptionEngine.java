@@ -28,11 +28,6 @@
  */
 package org.jquantlib.pricingengines.swaption;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.jquantlib.QL;
 import org.jquantlib.cashflow.CashFlow;
 import org.jquantlib.cashflow.Coupon;
@@ -64,15 +59,19 @@ import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.calendars.NullCalendar;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
  * Finite-difference G2++ two-factor swaption pricing engine.
  * <p>
- * Java port of QuantLib v1.42.1
- * {@code ql/pricingengines/swaption/fdg2swaptionengine.{hpp,cpp}}.
+ * Java port of QuantLib v1.42.1 {@code ql/pricingengines/swaption/fdg2swaptionengine.{hpp,cpp}}.
  *
  * <p>Builds a 2D non-uniform mesh from two {@link OrnsteinUhlenbeckProcess}
- * factors driving G2++, wires it into an {@link FdmG2Solver}, and reads off
- * the swaption value at the OU origin {@code (0, 0)}.
+ * factors driving G2++, wires it into an {@link FdmG2Solver}, and reads off the swaption value at the OU origin
+ * {@code (0, 0)}.
  *
  * <h3>Java port deviations from C++ v1.42.1</h3>
  * <ul>
@@ -111,11 +110,10 @@ import org.jquantlib.time.calendars.NullCalendar;
  * {@code dampingSteps = 0}, {@code invEps = 1e-5}, scheme =
  * {@code FdmSchemeDesc::Hundsdorfer()}.
  *
+ * @author Phase 2h WI-3 port
  * @see G2
  * @see FdmG2Solver
  * @see FdmAffineModelTermStructure
- *
- * @author Phase 2h WI-3 port
  */
 public class FdG2SwaptionEngine extends Swaption.EngineImpl {
 
@@ -127,48 +125,36 @@ public class FdG2SwaptionEngine extends Swaption.EngineImpl {
     private final double invEps_;
     private final FdmSchemeDesc schemeDesc_;
 
-    /** Convenience: defaults match C++ v1.42.1 (tGrid=100, xGrid=50, yGrid=50,
-     *  dampingSteps=0, invEps=1e-5, scheme=Hundsdorfer). */
+    /**
+     * Convenience: defaults match C++ v1.42.1 (tGrid=100, xGrid=50, yGrid=50, dampingSteps=0, invEps=1e-5,
+     * scheme=Hundsdorfer).
+     */
     public FdG2SwaptionEngine(final G2 model) {
         this(model, 100, 50, 50, 0, 1.0e-5, FdmSchemeDesc.Hundsdorfer());
     }
 
-    public FdG2SwaptionEngine(final G2 model,
-                              final int tGrid,
-                              final int xGrid,
-                              final int yGrid) {
+    public FdG2SwaptionEngine(final G2 model, final int tGrid, final int xGrid, final int yGrid) {
         this(model, tGrid, xGrid, yGrid, 0, 1.0e-5, FdmSchemeDesc.Hundsdorfer());
     }
 
-    public FdG2SwaptionEngine(final G2 model,
-                              final int tGrid,
-                              final int xGrid,
-                              final int yGrid,
-                              final int dampingSteps) {
-        this(model, tGrid, xGrid, yGrid, dampingSteps, 1.0e-5,
-                FdmSchemeDesc.Hundsdorfer());
+    public FdG2SwaptionEngine(final G2 model, final int tGrid, final int xGrid, final int yGrid,
+            final int dampingSteps) {
+        this(model, tGrid, xGrid, yGrid, dampingSteps, 1.0e-5, FdmSchemeDesc.Hundsdorfer());
     }
 
     /**
-     * Full constructor mirroring C++ v1.42.1
-     * {@code FdG2SwaptionEngine::FdG2SwaptionEngine}.
+     * Full constructor mirroring C++ v1.42.1 {@code FdG2SwaptionEngine::FdG2SwaptionEngine}.
      *
-     * @param model         G2++ short-rate model (non-null).
-     * @param tGrid         number of time steps in the rollback.
-     * @param xGrid         number of grid points along the x factor.
-     * @param yGrid         number of grid points along the y factor.
-     * @param dampingSteps  leading implicit-Euler damping steps.
-     * @param invEps        tail percentile for the
-     *                      {@link FdmSimpleProcess1dMesher} truncation.
-     * @param schemeDesc    finite-difference scheme descriptor.
+     * @param model        G2++ short-rate model (non-null).
+     * @param tGrid        number of time steps in the rollback.
+     * @param xGrid        number of grid points along the x factor.
+     * @param yGrid        number of grid points along the y factor.
+     * @param dampingSteps leading implicit-Euler damping steps.
+     * @param invEps       tail percentile for the {@link FdmSimpleProcess1dMesher} truncation.
+     * @param schemeDesc   finite-difference scheme descriptor.
      */
-    public FdG2SwaptionEngine(final G2 model,
-                              final int tGrid,
-                              final int xGrid,
-                              final int yGrid,
-                              final int dampingSteps,
-                              final double invEps,
-                              final FdmSchemeDesc schemeDesc) {
+    public FdG2SwaptionEngine(final G2 model, final int tGrid, final int xGrid, final int yGrid, final int dampingSteps,
+            final double invEps, final FdmSchemeDesc schemeDesc) {
         super();
         QL.require(model != null, "no model specified");
         this.model_ = model;
@@ -195,35 +181,28 @@ public class FdG2SwaptionEngine extends Swaption.EngineImpl {
         final Swaption.ResultsImpl results = (Swaption.ResultsImpl) results_;
 
         // 1. Term structure
-        final Handle<YieldTermStructure> ts = model_.termStructure();
-        QL.require(ts != null && !ts.empty(),
-                "G2 model has no term structure");
+        final Handle< YieldTermStructure > ts = model_.termStructure();
+        QL.require(ts != null && !ts.empty(), "G2 model has no term structure");
 
         final DayCounter dc = ts.currentLink().dayCounter();
         final Date referenceDate = ts.currentLink().referenceDate();
-        final double maturity = dc.yearFraction(referenceDate,
-                args.exercise.lastDate());
+        final double maturity = dc.yearFraction(referenceDate, args.exercise.lastDate());
 
         // 2. Mesher — 2D mesh built from the two OU factors driving G2++.
-        final OrnsteinUhlenbeckProcess process1 =
-                new OrnsteinUhlenbeckProcess(model_.a(), model_.sigma());
-        final OrnsteinUhlenbeckProcess process2 =
-                new OrnsteinUhlenbeckProcess(model_.b(), model_.eta());
+        final OrnsteinUhlenbeckProcess process1 = new OrnsteinUhlenbeckProcess(model_.a(), model_.sigma());
+        final OrnsteinUhlenbeckProcess process2 = new OrnsteinUhlenbeckProcess(model_.b(), model_.eta());
 
-        final Fdm1dMesher xMesher = new FdmSimpleProcess1dMesher(
-                xGrid_, process1, maturity, 1, invEps_, Double.NaN);
-        final Fdm1dMesher yMesher = new FdmSimpleProcess1dMesher(
-                yGrid_, process2, maturity, 1, invEps_, Double.NaN);
+        final Fdm1dMesher xMesher = new FdmSimpleProcess1dMesher(xGrid_, process1, maturity, 1, invEps_, Double.NaN);
+        final Fdm1dMesher yMesher = new FdmSimpleProcess1dMesher(yGrid_, process2, maturity, 1, invEps_, Double.NaN);
 
-        final FdmMesherComposite mesher = new FdmMesherComposite(
-                Arrays.asList(xMesher, yMesher));
+        final FdmMesherComposite mesher = new FdmMesherComposite(Arrays.asList(xMesher, yMesher));
 
         // 3. Inner-value calculator: build t -> exerciseDate map, then a
         //    swap-NPV calculator that prices the swap at each (t, x, y) on
         //    the 2D mesh using the affine-model implied term structure.
-        final List<Date> exerciseDates = args.exercise.dates();
-        final Map<Double, Date> t2d = new HashMap<>();
-        for (final Date exerciseDate : exerciseDates) {
+        final List< Date > exerciseDates = args.exercise.dates();
+        final Map< Double, Date > t2d = new HashMap<>();
+        for ( final Date exerciseDate : exerciseDates ) {
             final double t = dc.yearFraction(referenceDate, exerciseDate);
             QL.require(t >= 0, "exercise dates must not contain past date");
             t2d.put(t, exerciseDate);
@@ -235,23 +214,18 @@ public class FdG2SwaptionEngine extends Swaption.EngineImpl {
         // and reference-date parity, matching the C++ guards.
         final VanillaSwap swap = args.swap;
         final IborIndex iborIndex = swap.iborIndex();
-        final Handle<YieldTermStructure> fwdTs = iborIndex.termStructure();
-        QL.require(!fwdTs.empty(),
-                "ibor index has no forwarding term structure set");
-        QL.require(fwdTs.currentLink().dayCounter().equals(dc),
-                "day counter of forward and discount curve must match");
+        final Handle< YieldTermStructure > fwdTs = iborIndex.termStructure();
+        QL.require(!fwdTs.empty(), "ibor index has no forwarding term structure set");
+        QL.require(fwdTs.currentLink().dayCounter().equals(dc), "day counter of forward and discount curve must match");
         QL.require(fwdTs.currentLink().referenceDate().eq(referenceDate),
                 "reference date of forward and discount curve must match");
 
-        final FdmInnerValueCalculator calculator =
-                new G2SwapInnerValue(model_, mesher, swap, t2d);
+        final FdmInnerValueCalculator calculator = new G2SwapInnerValue(model_, mesher, swap, t2d);
 
         // 4. Step conditions (European with no dividends -> empty composite,
         //    matching C++ behaviour).
-        final FdmStepConditionComposite conditions =
-                FdmStepConditionComposite.vanillaComposite(
-                        new DividendSchedule(), args.exercise,
-                        mesher, calculator, referenceDate, dc);
+        final FdmStepConditionComposite conditions = FdmStepConditionComposite.vanillaComposite(new DividendSchedule(),
+                args.exercise, mesher, calculator, referenceDate, dc);
 
         // 5. Boundary conditions — empty (Dirichlet at outer mesh edges
         //    is implicit in the discrete operator).
@@ -259,72 +233,53 @@ public class FdG2SwaptionEngine extends Swaption.EngineImpl {
 
         // 6. Solver — wire the descriptor and read NPV at the OU origin
         //    (x0 = y0 = 0 in G2++).
-        final FdmSolverDesc solverDesc = new FdmSolverDesc(
-                mesher, boundaries, conditions, calculator, maturity,
-                tGrid_, dampingSteps_);
+        final FdmSolverDesc solverDesc = new FdmSolverDesc(mesher, boundaries, conditions, calculator, maturity, tGrid_,
+                dampingSteps_);
 
-        final FdmG2Solver solver = new FdmG2Solver(
-                new Handle<G2>(model_), solverDesc, schemeDesc_);
+        final FdmG2Solver solver = new FdmG2Solver(new Handle< G2 >(model_), solverDesc, schemeDesc_);
 
         results.value = solver.valueAt(0.0, 0.0);
     }
 
     /**
-     * G2-specialised inner-value calculator: at each mesh node
-     * {@code (t, x, y)} we set the affine factor vector to
-     * {@code [x, y]}, rebind a pair of {@link FdmAffineModelTermStructure}s
-     * (discount + forwarding) keyed at the corresponding exercise date,
-     * and compute the swap leg sum as
-     * {@code sum_j sign_j * sum_i amount_i * disTs.discount(payDate_i)}
-     * for {@code i} with {@code accrualStart_i >= exerciseDate}.
+     * G2-specialised inner-value calculator: at each mesh node {@code (t, x, y)} we set the affine factor vector to
+     * {@code [x, y]}, rebind a pair of {@link FdmAffineModelTermStructure}s (discount + forwarding) keyed at the
+     * corresponding exercise date, and compute the swap leg sum as
+     * {@code sum_j sign_j * sum_i amount_i * disTs.discount(payDate_i)} for {@code i} with
+     * {@code accrualStart_i >= exerciseDate}.
      * <p>
-     * Mirrors C++ v1.42.1
-     * {@code FdmAffineModelSwapInnerValue<G2>::innerValue} (template body
-     * in fdmaffinemodelswapinnervalue.hpp) plus the explicit
-     * {@code <G2>::getState} specialization in
-     * fdmaffinemodelswapinnervalue.cpp which uses
-     * {@code (mesher.location(iter,0), mesher.location(iter,1))}.
+     * Mirrors C++ v1.42.1 {@code FdmAffineModelSwapInnerValue<G2>::innerValue} (template body in
+     * fdmaffinemodelswapinnervalue.hpp) plus the explicit {@code <G2>::getState} specialization in
+     * fdmaffinemodelswapinnervalue.cpp which uses {@code (mesher.location(iter,0), mesher.location(iter,1))}.
      * <p>
-     * Bypasses the generic {@link
-     * org.jquantlib.methods.finitedifferences.utilities.FdmAffineModelSwapInnerValue}
-     * because the latter does not clone the swap with a re-linked
-     * {@code IborIndex}, so the floating-leg amounts are not reprojected
-     * through the model-implied curve at each grid node — yielding a
-     * dramatic NPV under-estimate on the WI-3 fixture (observed ~450x
-     * factor on the prior dispatch). Same workaround pattern as Phase 2h
-     * WI-2 {@code HullWhiteSwapInnerValue}.
+     * Bypasses the generic {@link org.jquantlib.methods.finitedifferences.utilities.FdmAffineModelSwapInnerValue}
+     * because the latter does not clone the swap with a re-linked {@code IborIndex}, so the floating-leg amounts are
+     * not reprojected through the model-implied curve at each grid node — yielding a dramatic NPV under-estimate on the
+     * WI-3 fixture (observed ~450x factor on the prior dispatch). Same workaround pattern as Phase 2h WI-2
+     * {@code HullWhiteSwapInnerValue}.
      */
-    private static final class G2SwapInnerValue
-            implements FdmInnerValueCalculator {
+    private static final class G2SwapInnerValue implements FdmInnerValueCalculator {
 
         private final G2 model_;
         private final FdmMesher mesher_;
         private final VanillaSwap swap_;
-        private final Map<Double, Date> exerciseDates_;
-        private final RelinkableHandle<YieldTermStructure> disTsHandle_ =
-                new RelinkableHandle<YieldTermStructure>();
-        private final RelinkableHandle<YieldTermStructure> fwdTsHandle_ =
-                new RelinkableHandle<YieldTermStructure>();
+        private final Map< Double, Date > exerciseDates_;
+        private final RelinkableHandle< YieldTermStructure > disTsHandle_ = new RelinkableHandle< YieldTermStructure >();
+        private final RelinkableHandle< YieldTermStructure > fwdTsHandle_ = new RelinkableHandle< YieldTermStructure >();
         private FdmAffineModelTermStructure disTs_;
         private FdmAffineModelTermStructure fwdTs_;
         private Date currentRefDate_;
 
-        G2SwapInnerValue(final G2 model,
-                         final FdmMesher mesher,
-                         final VanillaSwap swap,
-                         final Map<Double, Date> exerciseTimes) {
+        G2SwapInnerValue(final G2 model, final FdmMesher mesher, final VanillaSwap swap,
+                final Map< Double, Date > exerciseTimes) {
             this.model_ = model;
             this.mesher_ = mesher;
             // C++ clones the swap with iborIndex()->clone(fwdTs) so the
             // floating coupons reproject through the affine-model term
             // structure. Java port does the same.
-            final IborIndex clonedIndex =
-                    swap.iborIndex().clone(fwdTsHandle_).currentLink();
-            this.swap_ = new VanillaSwap(
-                    swap.type(), swap.nominal(),
-                    swap.fixedSchedule(), swap.fixedRate(), swap.fixedDayCount(),
-                    swap.floatingSchedule(), clonedIndex,
-                    swap.spread(), swap.floatingDayCount(),
+            final IborIndex clonedIndex = swap.iborIndex().clone(fwdTsHandle_).currentLink();
+            this.swap_ = new VanillaSwap(swap.type(), swap.nominal(), swap.fixedSchedule(), swap.fixedRate(),
+                    swap.fixedDayCount(), swap.floatingSchedule(), clonedIndex, swap.spread(), swap.floatingDayCount(),
                     swap.paymentConvention());
             this.exerciseDates_ = exerciseTimes;
         }
@@ -332,9 +287,8 @@ public class FdG2SwaptionEngine extends Swaption.EngineImpl {
         @Override
         public double innerValue(final FdmLinearOpIterator iter, final double t) {
             final Date iterExerciseDate = exerciseDates_.get(t);
-            if (iterExerciseDate == null) {
-                throw new org.jquantlib.lang.exceptions.LibraryException(
-                        "no exercise date found for grid time " + t);
+            if ( iterExerciseDate == null ) {
+                throw new org.jquantlib.lang.exceptions.LibraryException("no exercise date found for grid time " + t);
             }
 
             // G2 state at the mesh node: (x, y) — no dynamics shift.
@@ -346,17 +300,13 @@ public class FdG2SwaptionEngine extends Swaption.EngineImpl {
             factors.set(0, xLoc);
             factors.set(1, yLoc);
 
-            final Handle<YieldTermStructure> baseTs = model_.termStructure();
+            final Handle< YieldTermStructure > baseTs = model_.termStructure();
             final NullCalendar cal = new NullCalendar();
-            if (disTs_ == null || !iterExerciseDate.eq(currentRefDate_)) {
-                disTs_ = new FdmAffineModelTermStructure(
-                        factors, cal, baseTs.currentLink().dayCounter(),
-                        iterExerciseDate, baseTs.currentLink().referenceDate(),
-                        model_);
-                fwdTs_ = new FdmAffineModelTermStructure(
-                        factors, cal, baseTs.currentLink().dayCounter(),
-                        iterExerciseDate, baseTs.currentLink().referenceDate(),
-                        model_);
+            if ( disTs_ == null || !iterExerciseDate.eq(currentRefDate_) ) {
+                disTs_ = new FdmAffineModelTermStructure(factors, cal, baseTs.currentLink().dayCounter(),
+                        iterExerciseDate, baseTs.currentLink().referenceDate(), model_);
+                fwdTs_ = new FdmAffineModelTermStructure(factors, cal, baseTs.currentLink().dayCounter(),
+                        iterExerciseDate, baseTs.currentLink().referenceDate(), model_);
                 disTsHandle_.linkTo(disTs_);
                 fwdTsHandle_.linkTo(fwdTs_);
                 currentRefDate_ = iterExerciseDate;
@@ -370,24 +320,24 @@ public class FdG2SwaptionEngine extends Swaption.EngineImpl {
             // (now linked to fwdTs_), so cf.amount() is recomputed on each
             // call.
             double npv = 0.0;
-            for (int j = 0; j < 2; j++) {
+            for ( int j = 0; j < 2; j++ ) {
                 final Leg leg = (j == 0) ? swap_.fixedLeg() : swap_.floatingLeg();
                 double legNpv = 0.0;
-                for (final CashFlow cf : leg) {
-                    if (!(cf instanceof Coupon)) {
+                for ( final CashFlow cf : leg ) {
+                    if ( !(cf instanceof Coupon) ) {
                         continue;
                     }
                     final Coupon coupon = (Coupon) cf;
-                    if (coupon.accrualStartDate().ge(iterExerciseDate)) {
+                    if ( coupon.accrualStartDate().ge(iterExerciseDate) ) {
                         legNpv += cf.amount() * disTs_.discount(cf.date());
                     }
                 }
-                if (j == 0) {
+                if ( j == 0 ) {
                     legNpv = -legNpv;
                 }
                 npv += legNpv;
             }
-            if (swap_.type() == VanillaSwap.Type.Receiver) {
+            if ( swap_.type() == VanillaSwap.Type.Receiver ) {
                 npv = -npv;
             }
             return Math.max(0.0, npv);

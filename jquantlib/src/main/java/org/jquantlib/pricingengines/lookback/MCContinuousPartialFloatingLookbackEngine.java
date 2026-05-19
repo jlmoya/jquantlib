@@ -34,13 +34,12 @@ import org.jquantlib.processes.GeneralizedBlackScholesProcess;
 import org.jquantlib.time.TimeGrid;
 
 /**
- * Continuous partial-time floating-strike lookback option pricing engine
- * using Monte Carlo simulation.
+ * Continuous partial-time floating-strike lookback option pricing engine using Monte Carlo simulation.
  *
  * <p>Java port of {@code QuantLib v1.42.1
  * ql/pricingengines/lookback/mclookbackengine.hpp} instantiated with
- * {@code I = ContinuousPartialFloatingLookbackOption} (Phase
- * 5e.5b-CFC-d-183). Specialised for {@code RNG = PseudoRandom}.
+ * {@code I = ContinuousPartialFloatingLookbackOption} (Phase 5e.5b-CFC-d-183). Specialised for
+ * {@code RNG = PseudoRandom}.
  *
  * <p>Cross-validated against
  * {@link AnalyticContinuousPartialFloatingLookbackEngine}.
@@ -58,16 +57,9 @@ public final class MCContinuousPartialFloatingLookbackEngine
     private final double requiredTolerance_;
     private final long seed_;
 
-    public MCContinuousPartialFloatingLookbackEngine(
-            final GeneralizedBlackScholesProcess process,
-            final int timeSteps,
-            final int timeStepsPerYear,
-            final boolean brownianBridge,
-            final boolean antitheticVariate,
-            final int requiredSamples,
-            final double requiredTolerance,
-            final int maxSamples,
-            final long seed) {
+    public MCContinuousPartialFloatingLookbackEngine(final GeneralizedBlackScholesProcess process, final int timeSteps,
+            final int timeStepsPerYear, final boolean brownianBridge, final boolean antitheticVariate,
+            final int requiredSamples, final double requiredTolerance, final int maxSamples, final long seed) {
         super();
         MCLookbackHelper.validateTimeStepArgs(timeSteps, timeStepsPerYear);
         this.process_ = process;
@@ -88,20 +80,30 @@ public final class MCContinuousPartialFloatingLookbackEngine
         final ContinuousPartialFloatingLookbackOption.ArgumentsImpl a = arguments_;
         QL.require(a.payoff instanceof FloatingTypePayoff, "non-floating payoff given");
         final FloatingTypePayoff payoff = (FloatingTypePayoff) a.payoff;
-        final TimeGrid grid = MCLookbackHelper.timeGrid(
-                process_, a.exercise, timeSteps_, timeStepsPerYear_);
+        final TimeGrid grid = MCLookbackHelper.timeGrid(process_, a.exercise, timeSteps_, timeStepsPerYear_);
         final double discount = process_.riskFreeRate().currentLink().discount(grid.back());
         final double lookbackEnd = process_.time(a.lookbackPeriodEnd);
 
-        final PathPricer<Path> pp = new LookbackPathPricers.PartialFloating(
-                lookbackEnd, payoff.optionType(), discount);
-        final MonteCarloModel.PathGeneratorAdapter<Path> pg =
-                MCLookbackHelper.pathGenerator(process_, grid, brownianBridge_, seed_);
+        final PathPricer< Path > pp = new LookbackPathPricers.PartialFloating(lookbackEnd, payoff.optionType(),
+                discount);
+        final MonteCarloModel.PathGeneratorAdapter< Path > pg = MCLookbackHelper.pathGenerator(process_, grid,
+                brownianBridge_, seed_);
 
-        final McSimulation<Path> simulation = new McSimulation<Path>(antitheticVariate_, false) {
-            @Override protected PathPricer<Path> pathPricer() { return pp; }
-            @Override protected MonteCarloModel.PathGeneratorAdapter<Path> pathGenerator() { return pg; }
-            @Override protected TimeGrid timeGrid() { return grid; }
+        final McSimulation< Path > simulation = new McSimulation< Path >(antitheticVariate_, false) {
+            @Override
+            protected PathPricer< Path > pathPricer() {
+                return pp;
+            }
+
+            @Override
+            protected MonteCarloModel.PathGeneratorAdapter< Path > pathGenerator() {
+                return pg;
+            }
+
+            @Override
+            protected TimeGrid timeGrid() {
+                return grid;
+            }
         };
         simulation.calculate(requiredTolerance_, requiredSamples_, maxSamples_);
         results_.value = simulation.sampleAccumulator().mean();

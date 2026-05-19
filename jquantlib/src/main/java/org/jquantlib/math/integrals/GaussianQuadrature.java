@@ -24,24 +24,19 @@ import org.jquantlib.math.matrixutilities.TqrEigenDecomposition.EigenVectorCalcu
 import org.jquantlib.math.matrixutilities.TqrEigenDecomposition.ShiftStrategy;
 
 /**
- * 1-dimensional Gauss quadrature derived from the orthogonal polynomial
- * recurrence via the Golub–Welsch algorithm.
+ * 1-dimensional Gauss quadrature derived from the orthogonal polynomial recurrence via the Golub–Welsch algorithm.
  *
  * <p>Phase 2j.5 Track C.1 port of {@code QuantLib::GaussianQuadrature}
  * (v1.42.1 ql/math/integrals/gaussianquadratures.{hpp,cpp}). Pinned commit
  * {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
  *
  * <p>The constructor builds the symmetric tridiagonal Jacobi matrix of the
- * polynomial's recurrence coefficients and runs an implicit-shift QR
- * eigendecomposition (a transcription of QuantLib's
- * {@link org.jquantlib.math.matrixutilities.TqrEigenDecomposition}).
- * Eigenvalues become the abscissae;
- * the first row of the orthogonal eigenvector matrix gives the weights via
- * {@code w_i = mu_0 * v_{0,i}^2 / w(x_i)}.
+ * polynomial's recurrence coefficients and runs an implicit-shift QR eigendecomposition (a transcription of QuantLib's
+ * {@link org.jquantlib.math.matrixutilities.TqrEigenDecomposition}). Eigenvalues become the abscissae; the first row of
+ * the orthogonal eigenvector matrix gives the weights via {@code w_i = mu_0 * v_{0,i}^2 / w(x_i)}.
  *
  * <p>The summation order in {@link #op(Ops.DoubleOp)} matches C++
- * {@code GaussianQuadrature::operator()}: highest-index node first,
- * descending to index 0.
+ * {@code GaussianQuadrature::operator()}: highest-index node first, descending to index 0.
  *
  * <p>References:
  * <ul>
@@ -65,7 +60,7 @@ public class GaussianQuadrature {
         //   diag[i] = alpha(i)
         //   subdiag[i-1] = sqrt(beta(i))
         final double[] e = new double[n - 1];
-        for (int i = 1; i < n; ++i) {
+        for ( int i = 1; i < n; ++i ) {
             x_[i] = orthPoly.alpha(i);
             e[i - 1] = Math.sqrt(orthPoly.beta(i));
         }
@@ -74,8 +69,7 @@ public class GaussianQuadrature {
         // Implicit-shift tridiagonal QR with first-row eigenvector only,
         // overrelaxation shift strategy (matches C++).
         final TqrEigenDecomposition tqr = new TqrEigenDecomposition(x_, e,
-                EigenVectorCalculation.OnlyFirstRowEigenVector,
-                ShiftStrategy.Overrelaxation);
+                EigenVectorCalculation.OnlyFirstRowEigenVector, ShiftStrategy.Overrelaxation);
 
         // Eigenvalues become abscissae.
         System.arraycopy(tqr.d, 0, x_, 0, n);
@@ -83,7 +77,7 @@ public class GaussianQuadrature {
         // Weights from first row of eigenvector matrix:
         //   w_i = mu_0 * ev[0][i]^2 / w(x_i)
         final double mu0 = orthPoly.mu_0();
-        for (int i = 0; i < n; ++i) {
+        for ( int i = 0; i < n; ++i ) {
             final double v = tqr.ev[0][i];
             w_[i] = mu0 * v * v / orthPoly.w(x_[i]);
         }
@@ -105,12 +99,12 @@ public class GaussianQuadrature {
     }
 
     /**
-     * Compute {@code Σᵢ wᵢ · f(xᵢ)} iterating from highest index down to
-     * 0, matching C++ {@code GaussianQuadrature::operator()(const F& f)}.
+     * Compute {@code Σᵢ wᵢ · f(xᵢ)} iterating from highest index down to 0, matching C++
+     * {@code GaussianQuadrature::operator()(const F& f)}.
      */
     public double op(final Ops.DoubleOp f) {
         double sum = 0.0;
-        for (int i = x_.length - 1; i >= 0; --i) {
+        for ( int i = x_.length - 1; i >= 0; --i ) {
             sum += w_[i] * f.op(x_[i]);
         }
         return sum;

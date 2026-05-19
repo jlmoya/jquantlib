@@ -16,11 +16,11 @@
 
 package org.jquantlib.model.marketmodels.models;
 
+import org.jquantlib.QL;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import org.jquantlib.QL;
 
 /**
  * ABCD-form implementation of {@link VolatilityInterpolationSpecifier}.
@@ -37,20 +37,17 @@ public final class VolatilityInterpolationSpecifierAbcd implements VolatilityInt
     private final int noBigRates_;
     private final int noSmallRates_;
     private final double[] timesForSmallRates_;
-
+    private final List< PiecewiseConstantVariance > originalVariances_;
+    private final List< PiecewiseConstantAbcdVariance > originalABCDVariances_;
+    private final List< PiecewiseConstantAbcdVariance > originalABCDVariancesScaled_;
     // mutable
-    private List<PiecewiseConstantVariance> interpolatedVariances_;
-    private final List<PiecewiseConstantVariance> originalVariances_;
-    private final List<PiecewiseConstantAbcdVariance> originalABCDVariances_;
-    private final List<PiecewiseConstantAbcdVariance> originalABCDVariancesScaled_;
+    private final List< PiecewiseConstantVariance > interpolatedVariances_;
     private double lastCapletVol_;
     private double[] scalingFactors_;
 
-    public VolatilityInterpolationSpecifierAbcd(final int period,
-                                                final int offset,
-                                                final List<PiecewiseConstantAbcdVariance> originalVariances,
-                                                final double[] timesForSmallRates,
-                                                final double lastCapletVol) {
+    public VolatilityInterpolationSpecifierAbcd(final int period, final int offset,
+            final List< PiecewiseConstantAbcdVariance > originalVariances, final double[] timesForSmallRates,
+            final double lastCapletVol) {
         this.period_ = period;
         this.offset_ = offset;
         this.noBigRates_ = originalVariances.size();
@@ -58,7 +55,7 @@ public final class VolatilityInterpolationSpecifierAbcd implements VolatilityInt
         this.timesForSmallRates_ = timesForSmallRates.clone();
         this.originalABCDVariances_ = new ArrayList<>();
         this.originalABCDVariancesScaled_ = new ArrayList<>();
-        for (final PiecewiseConstantAbcdVariance v : originalVariances) {
+        for ( final PiecewiseConstantAbcdVariance v : originalVariances ) {
             this.originalABCDVariances_.add(new PiecewiseConstantAbcdVariance(v));
             this.originalABCDVariancesScaled_.add(new PiecewiseConstantAbcdVariance(v));
         }
@@ -68,8 +65,8 @@ public final class VolatilityInterpolationSpecifierAbcd implements VolatilityInt
         QL.require((noSmallRates_ - offset) / period == noBigRates_,
                 "size mismatch in VolatilityInterpolationSpecifierAbcd");
 
-        for (int i = 0; i < noBigRates_; ++i) {
-            for (int j = 0; j < originalVariances.get(i).rateTimes().length; ++j) {
+        for ( int i = 0; i < noBigRates_; ++i ) {
+            for ( int j = 0; j < originalVariances.get(i).rateTimes().length; ++j ) {
                 QL.require(originalVariances.get(i).rateTimes()[j] == timesForSmallRates[offset + j * period],
                         "rate times in variances passed in don't match small times");
             }
@@ -77,26 +74,23 @@ public final class VolatilityInterpolationSpecifierAbcd implements VolatilityInt
 
         // change type of array to PiecewiseConstantVariance for client
         this.originalVariances_ = new ArrayList<>();
-        for (int i = 0; i < noBigRates_; ++i) {
+        for ( int i = 0; i < noBigRates_; ++i ) {
             this.originalVariances_.add(new PiecewiseConstantAbcdVariance(originalVariances.get(i)));
         }
 
-        this.lastCapletVol_ = (lastCapletVol == 0.0)
-                ? originalVariances.get(noBigRates_ - 1).totalVolatility(noBigRates_ - 1)
-                : lastCapletVol;
+        this.lastCapletVol_ = (lastCapletVol == 0.0) ? originalVariances.get(noBigRates_ - 1)
+                .totalVolatility(noBigRates_ - 1) : lastCapletVol;
 
         this.interpolatedVariances_ = new ArrayList<>();
-        for (int i = 0; i < noSmallRates_; ++i) {
+        for ( int i = 0; i < noSmallRates_; ++i ) {
             this.interpolatedVariances_.add(null);
         }
         recompute();
     }
 
     /** Convenience overload — lastCapletVol = 0.0 → take from last original variance. */
-    public VolatilityInterpolationSpecifierAbcd(final int period,
-                                                final int offset,
-                                                final List<PiecewiseConstantAbcdVariance> originalVariances,
-                                                final double[] timesForSmallRates) {
+    public VolatilityInterpolationSpecifierAbcd(final int period, final int offset,
+            final List< PiecewiseConstantAbcdVariance > originalVariances, final double[] timesForSmallRates) {
         this(period, offset, originalVariances, timesForSmallRates, 0.0);
     }
 
@@ -114,38 +108,61 @@ public final class VolatilityInterpolationSpecifierAbcd implements VolatilityInt
         recompute();
     }
 
-    @Override public List<PiecewiseConstantVariance> interpolatedVariances() { return interpolatedVariances_; }
-    @Override public List<PiecewiseConstantVariance> originalVariances() { return originalVariances_; }
-    @Override public int getPeriod() { return period_; }
-    @Override public int getOffset() { return offset_; }
-    @Override public int getNoBigRates() { return noBigRates_; }
-    @Override public int getNoSmallRates() { return noSmallRates_; }
+    @Override
+    public List< PiecewiseConstantVariance > interpolatedVariances() {
+        return interpolatedVariances_;
+    }
+
+    @Override
+    public List< PiecewiseConstantVariance > originalVariances() {
+        return originalVariances_;
+    }
+
+    @Override
+    public int getPeriod() {
+        return period_;
+    }
+
+    @Override
+    public int getOffset() {
+        return offset_;
+    }
+
+    @Override
+    public int getNoBigRates() {
+        return noBigRates_;
+    }
+
+    @Override
+    public int getNoSmallRates() {
+        return noSmallRates_;
+    }
 
     private void recompute() {
         // First, scale each original ABCD variance by its scalingFactor
-        for (int i = 0; i < noBigRates_; ++i) {
+        for ( int i = 0; i < noBigRates_; ++i ) {
             final double[] abcd = new double[4];
             originalABCDVariances_.get(i).getABCD(abcd);
             final double s = scalingFactors_[i];
             // c is not scaled; a, b, d are
-            originalABCDVariancesScaled_.set(i, new PiecewiseConstantAbcdVariance(
-                    abcd[0] * s, abcd[1] * s, abcd[2], abcd[3] * s, i,
-                    originalABCDVariances_.get(i).rateTimes()));
+            originalABCDVariancesScaled_.set(i,
+                    new PiecewiseConstantAbcdVariance(abcd[0] * s, abcd[1] * s, abcd[2], abcd[3] * s, i,
+                            originalABCDVariances_.get(i).rateTimes()));
         }
 
         // before offset: use ABCD of first scaled
         {
             final double[] abcd0 = new double[4];
             originalABCDVariancesScaled_.get(0).getABCD(abcd0);
-            for (int i = 0; i < offset_; ++i) {
+            for ( int i = 0; i < offset_; ++i ) {
                 interpolatedVariances_.set(i,
-                        new PiecewiseConstantAbcdVariance(abcd0[0], abcd0[1], abcd0[2], abcd0[3],
-                                i, timesForSmallRates_));
+                        new PiecewiseConstantAbcdVariance(abcd0[0], abcd0[1], abcd0[2], abcd0[3], i,
+                                timesForSmallRates_));
             }
         }
 
         // in between rates: average of adjacent ABCD
-        for (int j = 0; j < noBigRates_ - 1; ++j) {
+        for ( int j = 0; j < noBigRates_ - 1; ++j ) {
             final double[] abcd0 = new double[4];
             final double[] abcd1 = new double[4];
             originalABCDVariancesScaled_.get(j).getABCD(abcd0);
@@ -154,10 +171,9 @@ public final class VolatilityInterpolationSpecifierAbcd implements VolatilityInt
             final double b = 0.5 * (abcd0[1] + abcd1[1]);
             final double c = 0.5 * (abcd0[2] + abcd1[2]);
             final double d = 0.5 * (abcd0[3] + abcd1[3]);
-            for (int i = 0; i < period_; ++i) {
+            for ( int i = 0; i < period_; ++i ) {
                 interpolatedVariances_.set(i + j * period_ + offset_,
-                        new PiecewiseConstantAbcdVariance(a, b, c, d,
-                                i + j * period_, timesForSmallRates_));
+                        new PiecewiseConstantAbcdVariance(a, b, c, d, i + j * period_, timesForSmallRates_));
             }
         }
 
@@ -166,9 +182,8 @@ public final class VolatilityInterpolationSpecifierAbcd implements VolatilityInt
             final double[] abcd = new double[4];
             originalABCDVariancesScaled_.get(noBigRates_ - 1).getABCD(abcd);
             double a = abcd[0], b = abcd[1], c = abcd[2], d = abcd[3];
-            for (int i = offset_ + (noBigRates_ - 1) * period_; i < noSmallRates_; ++i) {
-                interpolatedVariances_.set(i,
-                        new PiecewiseConstantAbcdVariance(a, b, c, d, i, timesForSmallRates_));
+            for ( int i = offset_ + (noBigRates_ - 1) * period_; i < noSmallRates_; ++i ) {
+                interpolatedVariances_.set(i, new PiecewiseConstantAbcdVariance(a, b, c, d, i, timesForSmallRates_));
             }
 
             // last rate: scale to match caplet vol

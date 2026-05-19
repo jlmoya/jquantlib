@@ -21,7 +21,6 @@
  */
 package org.jquantlib.currencies;
 
-
 import org.jquantlib.QL;
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.math.Closeness;
@@ -37,7 +36,7 @@ public class Money implements Cloneable {
     public static Currency baseCurrency;
 
     // class fields
-    private/* @Decimal */double value_;
+    private/* @Decimal */ double value_;
     private Currency currency_;
 
     // constructors
@@ -55,6 +54,14 @@ public class Money implements Cloneable {
         this.currency_ = (currency.clone());
     }
 
+    public static Money multiple(final Currency c, /* Decimal */final double value) {
+        return new Money(value, c);
+    }
+
+    public static Money multiple( /* Decimal */final double value, final Currency c) {
+        return new Money(value, c);
+    }
+
     @Override
     public Money clone() {
         final Money money = new Money();
@@ -68,6 +75,8 @@ public class Money implements Cloneable {
         return currency_;
     }
 
+    // class based operators
+
     public/* @Decimal */double value() {
         return value_;
     }
@@ -75,9 +84,6 @@ public class Money implements Cloneable {
     public Money rounded() {
         return new Money(currency_.rounding().operator(value_), currency_);
     }
-
-
-    // class based operators
 
     // +() //FIXME: this looks like a mistake in c++
     public Money positiveValue() {
@@ -147,16 +153,8 @@ public class Money implements Cloneable {
         return new Money(value, c);
     }
 
-    public static Money multiple(final Currency c, /* Decimal */final double value) {
-        return new Money(value, c);
-    }
-
-    public static Money multiple( /* Decimal */final double value, final Currency c) {
-        return new Money(value, c);
-    }
-
     public void convertTo(final Currency target) {
-        if (currency().ne(target)) {
+        if ( currency().ne(target) ) {
             final ExchangeRate rate = ExchangeRateManager.getInstance().lookup(currency(), target);
             // FIXME ... evt. Money should be modified in ExchangeRate directly
             final Money money = rate.exchange(this).rounded();
@@ -165,7 +163,6 @@ public class Money implements Cloneable {
         }
     }
 
-
     //
     //    Assignment operations
     //
@@ -173,7 +170,6 @@ public class Money implements Cloneable {
     //    ----- ---------- ------- -------- ------
     //    +=    addAssign  Money   Money   this
     //    -=    addAssign  Money   Money   this
-
 
     //
     //    Operations
@@ -184,30 +180,26 @@ public class Money implements Cloneable {
     //    ==    equals     Money   Money   boolean
 
     public void convertToBase() {
-        QL.require((!baseCurrency.empty()) , "no base currency set");  // TODO: message
+        QL.require((!baseCurrency.empty()), "no base currency set");  // TODO: message
         convertTo(baseCurrency);
     }
 
-
-
-
-
-
     /**
      * += Operator
+     *
      * @param money The money to be added.
      * @return This money instance increased by the specified amount.
      */
     public Money addAssign(final Money money) {
-        if (this.currency_.eq(money.currency_)) {
+        if ( this.currency_.eq(money.currency_) ) {
             this.value_ += money.value_;
-        } else if (conversionType == Money.ConversionType.BaseCurrencyConversion) {
+        } else if ( conversionType == Money.ConversionType.BaseCurrencyConversion ) {
             this.convertToBase();
             final Money tmp = money.clone();
             tmp.convertToBase();
             // recursive invocation
             this.addAssign(tmp);
-        } else if (conversionType == Money.ConversionType.AutomatedConversion) {
+        } else if ( conversionType == Money.ConversionType.AutomatedConversion ) {
             final Money tmp = money.clone();
             tmp.convertTo(currency_);
             // recursive invocation
@@ -219,19 +211,20 @@ public class Money implements Cloneable {
 
     /**
      * -= Operator
+     *
      * @param money The money to be subtracted.
      * @return This money instance decreased by the specified amount.
      */
     public Money subAssign(final Money money) {
-        if (currency_.eq(money.currency_)) {
+        if ( currency_.eq(money.currency_) ) {
             value_ -= money.value_;
-        } else if (conversionType == Money.ConversionType.BaseCurrencyConversion) {
+        } else if ( conversionType == Money.ConversionType.BaseCurrencyConversion ) {
             this.convertToBase();
             final Money tmp = money.clone();
             tmp.convertToBase();
             // recursive ...
             this.subAssign(tmp);
-        } else if (conversionType == Money.ConversionType.AutomatedConversion) {
+        } else if ( conversionType == Money.ConversionType.AutomatedConversion ) {
             final Money tmp = money.clone();
             tmp.convertTo(currency_);
             this.subAssign(tmp);
@@ -242,21 +235,22 @@ public class Money implements Cloneable {
 
     /**
      * Returns the the value of this instance divided by another instance.
-     * @note  This instance remains unchanged!
+     *
      * @param money The amount this instance should be divided to.
      * @return The amount of this divided by money.
+     * @note This instance remains unchanged!
      */
     public double div(final Money money) {
-        if (currency().eq(money.currency()))
+        if ( currency().eq(money.currency()) )
             return value_ / money.value();
-        else if (conversionType == Money.ConversionType.BaseCurrencyConversion) {
+        else if ( conversionType == Money.ConversionType.BaseCurrencyConversion ) {
             final Money tmp1 = this.clone();
             tmp1.convertToBase();
             final Money tmp2 = money.clone();
             tmp2.convertToBase();
             // recursive
             return this.div(tmp2);
-        } else if (conversionType == Money.ConversionType.AutomatedConversion) {
+        } else if ( conversionType == Money.ConversionType.AutomatedConversion ) {
             final Money tmp = money.clone();
             tmp.convertTo(money.currency());
             // recursive
@@ -267,20 +261,21 @@ public class Money implements Cloneable {
 
     /**
      * Operator ==
+     *
      * @param money The instance this instance should be compared to.
      * @return Whether this instance is equal to another instance
      */
     public boolean equals(final Money money) {
-        if (currency().eq(money.currency()))
+        if ( currency().eq(money.currency()) )
             return value() == money.value();
-        else if (conversionType == Money.ConversionType.BaseCurrencyConversion) {
+        else if ( conversionType == Money.ConversionType.BaseCurrencyConversion ) {
             final Money tmp1 = this.clone();
             tmp1.convertToBase();
             final Money tmp2 = money.clone();
             tmp2.convertToBase();
             // recursive...
             return tmp1.equals(tmp2);
-        } else if (conversionType == Money.ConversionType.AutomatedConversion) {
+        } else if ( conversionType == Money.ConversionType.AutomatedConversion ) {
             final Money tmp = money.clone();
             tmp.convertTo(this.currency());
             return this.equals(tmp);
@@ -289,15 +284,15 @@ public class Money implements Cloneable {
     }
 
     public boolean less(final Money money) {
-        if (this.currency().eq(money.currency()))
+        if ( this.currency().eq(money.currency()) )
             return value() < money.value();
-        else if (conversionType == Money.ConversionType.BaseCurrencyConversion) {
+        else if ( conversionType == Money.ConversionType.BaseCurrencyConversion ) {
             final Money tmp1 = this.clone();
             tmp1.convertToBase();
             final Money tmp2 = money;
             tmp2.convertToBase();
             return tmp1.less(tmp2);
-        } else if (conversionType == Money.ConversionType.AutomatedConversion) {
+        } else if ( conversionType == Money.ConversionType.AutomatedConversion ) {
             final Money tmp = money;
             tmp.convertTo(currency());
             return this.less(tmp);
@@ -306,17 +301,16 @@ public class Money implements Cloneable {
     }
 
     public boolean lessEquals(final Money money) {
-        if (currency().eq(money.currency()))
+        if ( currency().eq(money.currency()) )
             return value() <= money.value();
-        else if (conversionType == Money.ConversionType.BaseCurrencyConversion) {
+        else if ( conversionType == Money.ConversionType.BaseCurrencyConversion ) {
             final Money tmp1 = this.clone();
             tmp1.convertToBase();
             final Money tmp2 = money;
             tmp2.convertToBase();
             return tmp1.less(tmp2);
-        } else if (conversionType == Money.ConversionType.AutomatedConversion) {
+        } else if ( conversionType == Money.ConversionType.AutomatedConversion ) {
             final Money tmp = money.clone();
-            ;
             tmp.convertTo(this.currency());
             return this.less(tmp);
         } else
@@ -324,15 +318,15 @@ public class Money implements Cloneable {
     }
 
     public boolean close(final Money money, /* Size */final int n) {
-        if (currency().eq(money.currency()))
+        if ( currency().eq(money.currency()) )
             return Closeness.isClose(value(), money.value(), n);
-        else if (conversionType == Money.ConversionType.BaseCurrencyConversion) {
+        else if ( conversionType == Money.ConversionType.BaseCurrencyConversion ) {
             final Money tmp1 = this.clone();
             tmp1.convertToBase();
             final Money tmp2 = money.clone();
             tmp2.convertToBase();
             return tmp1.close(tmp2, n);
-        } else if (conversionType == Money.ConversionType.AutomatedConversion) {
+        } else if ( conversionType == Money.ConversionType.AutomatedConversion ) {
             final Money tmp = money.clone();
             tmp.convertTo(this.currency());
             return this.close(tmp, n);
@@ -341,22 +335,21 @@ public class Money implements Cloneable {
     }
 
     public boolean close_enough(final Money money, /* Size */final int n) {
-        if (currency().eq(money.currency()))
+        if ( currency().eq(money.currency()) )
             return Closeness.isCloseEnough(value(), money.value(), n);
-        else if (conversionType == Money.ConversionType.BaseCurrencyConversion) {
+        else if ( conversionType == Money.ConversionType.BaseCurrencyConversion ) {
             final Money tmp1 = this.clone();
             tmp1.convertToBase();
             final Money tmp2 = money;
             tmp2.convertToBase();
             return tmp1.close_enough(tmp2, n);
-        } else if (conversionType == Money.ConversionType.AutomatedConversion) {
+        } else if ( conversionType == Money.ConversionType.AutomatedConversion ) {
             final Money tmp = money;
             tmp.convertTo(currency());
             return this.close_enough(tmp, n);
         } else
             throw new LibraryException("currency mismatch and no conversion specified"); // TODO: message
     }
-
 
     //
     // Overrides Object
@@ -365,9 +358,8 @@ public class Money implements Cloneable {
     @Override
     public String toString() {
         final Currency currency = currency();
-        return String.format(currency.format(), rounded().value_, currency.code(), currency.symbol() );
+        return String.format(currency.format(), rounded().value_, currency.code(), currency.symbol());
     }
-
 
     //
     // inner public enums

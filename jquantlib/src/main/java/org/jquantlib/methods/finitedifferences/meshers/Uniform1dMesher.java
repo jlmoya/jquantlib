@@ -26,12 +26,10 @@ import org.jquantlib.QL;
 /**
  * One-dimensional simple uniform grid mesher.
  * <p>
- * Java port of v1.42.1
- * {@code ql/methods/finitedifferences/meshers/uniform1dmesher.hpp}.
+ * Java port of v1.42.1 {@code ql/methods/finitedifferences/meshers/uniform1dmesher.hpp}.
  * <p>
- * Creates a uniformly spaced grid of {@code size} points from {@code start}
- * to {@code end} (inclusive). The step size is {@code (end - start) / (size - 1)}.
- * The boundary cells have {@code dplus = NaN} (last) and {@code dminus = NaN}
+ * Creates a uniformly spaced grid of {@code size} points from {@code start} to {@code end} (inclusive). The step size
+ * is {@code (end - start) / (size - 1)}. The boundary cells have {@code dplus = NaN} (last) and {@code dminus = NaN}
  * (first) matching C++ {@code Null<Real>()}.
  *
  * @author Phase 2l Track B port
@@ -49,14 +47,14 @@ public class Uniform1dMesher extends Fdm1dMesher {
 
         final double dx = (end - start) / (size - 1);
 
-        for (int i = 0; i < size - 1; ++i) {
+        for ( int i = 0; i < size - 1; ++i ) {
             locations[i] = start + i * dx;
             dplus[i] = dx;
             dminus[i + 1] = dx;
         }
 
         locations[size - 1] = end;
-        dplus[size - 1]  = Double.NaN; // Null<Real>() — no forward step at last node
-        dminus[0]        = Double.NaN; // Null<Real>() — no backward step at first node
+        dplus[size - 1] = Double.NaN; // Null<Real>() — no forward step at last node
+        dminus[0] = Double.NaN; // Null<Real>() — no backward step at first node
     }
 }

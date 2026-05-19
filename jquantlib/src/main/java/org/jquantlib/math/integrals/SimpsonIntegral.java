@@ -49,26 +49,25 @@ import org.jquantlib.math.Ops;
  * @author Dominik Holenstein
  * @author Richard Gomes
  */
-public class SimpsonIntegral extends TrapezoidIntegral<TrapezoidIntegral.Default> {
+public class SimpsonIntegral extends TrapezoidIntegral< TrapezoidIntegral.Default > {
 
-	//
-	// public constructors
-	//
+    //
+    // public constructors
+    //
 
-	public SimpsonIntegral (final double accuracy, final int maxIterations) {
-		super(TrapezoidIntegral.Default.class, accuracy, maxIterations);
-	}
+    public SimpsonIntegral(final double accuracy, final int maxIterations) {
+        super(TrapezoidIntegral.Default.class, accuracy, maxIterations);
+    }
 
+    //
+    // protected virtual methods
+    //
 
-	//
-	// protected virtual methods
-	//
-
-	@Override
+    @Override
     protected double integrate(final Ops.DoubleOp f, final double a, final double b) {
         // start from the coarsest trapezoid...
         int N = 1;
-        double I = (f.op(a)+f.op(b))*(b-a)/2.0;
+        double I = (f.op(a) + f.op(b)) * (b - a) / 2.0;
         double adjI = I;
 
         double newI, newAdjI;
@@ -80,7 +79,7 @@ public class SimpsonIntegral extends TrapezoidIntegral<TrapezoidIntegral.Default
             newAdjI = (4.0 * newI - I) / 3.0;
 
             // good enough? Also, don't run away immediately
-            if (Math.abs(adjI - newAdjI) <= absoluteAccuracy() && i > 5) {
+            if ( Math.abs(adjI - newAdjI) <= absoluteAccuracy() && i > 5 ) {
                 // ok, exit
                 return newAdjI;
             }
@@ -89,7 +88,7 @@ public class SimpsonIntegral extends TrapezoidIntegral<TrapezoidIntegral.Default
             I = newI;
             adjI = newAdjI;
             i++;
-        } while (i < maxEvaluations());
+        } while ( i < maxEvaluations() );
         throw new ArithmeticException("max number of iterations reached");
     }
 

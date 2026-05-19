@@ -32,10 +32,9 @@ import org.jquantlib.methods.montecarlo.Sample;
  * {@code ql/experimental/math/polarstudenttrng.hpp}.
  *
  * <p>See "Polar Generation of Random Variates With the t-Distribution",
- * Ralph W. Bailey, April 1994, in Mathematics of Computation, Vol 62-206,
- * page 779. The variant implemented here is from "Random Number Generation
- * and Monte Carlo Methods", Springer, 2003, page 185, which uses a
- * uniform RNG remapped to {@code [-1,1]} to avoid the explicit sign call.
+ * Ralph W. Bailey, April 1994, in Mathematics of Computation, Vol 62-206, page 779. The variant implemented here is
+ * from "Random Number Generation and Monte Carlo Methods", Springer, 2003, page 185, which uses a uniform RNG remapped
+ * to {@code [-1,1]} to avoid the explicit sign call.
  *
  * <p>Warning: do not use with a low-discrepancy sequence generator.
  */
@@ -51,7 +50,7 @@ public class PolarStudentTRng {
     }
 
     /** Returns a Student-T sample with weight {@code 1.0}. */
-    public Sample<Double> next() {
+    public Sample< Double > next() {
         double u;
         double v;
         double rSqr;
@@ -60,11 +59,8 @@ public class PolarStudentTRng {
             v = 2.0 * uniformGenerator_.next().value() - 1.0;
             u = 2.0 * uniformGenerator_.next().value() - 1.0;
             rSqr = v * v + u * u;
-        } while (rSqr >= 1.0);
-        final double value = u
-                * Math.sqrt(degFreedom_
-                        * (Math.pow(rSqr, -2.0 / degFreedom_) - 1.0)
-                        / rSqr);
-        return new Sample<Double>(value, 1.0);
+        } while ( rSqr >= 1.0 );
+        final double value = u * Math.sqrt(degFreedom_ * (Math.pow(rSqr, -2.0 / degFreedom_) - 1.0) / rSqr);
+        return new Sample< Double >(value, 1.0);
     }
 }

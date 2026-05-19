@@ -33,16 +33,15 @@ import org.jquantlib.time.Date;
 import org.jquantlib.time.Period;
 
 /**
- * Abstract correlation term structure: like a volatility TS, but with
- * a known correlation range and no strike reference.
+ * Abstract correlation term structure: like a volatility TS, but with a known correlation range and no strike
+ * reference.
  *
  * <p>Java port of QuantLib v1.42.1 abstract {@code QuantLib::CorrelationTermStructure}
  * ({@code ql/experimental/credit/correlationstructure.{hpp,cpp}}).
  *
  * <p>Derived correlations TS may have elements with arbitrary
- * dimensions; this base class doesn't commit to a particular layout
- * (number, matrix). The {@link #correlationSize} is supplied by the
- * concrete subclass.
+ * dimensions; this base class doesn't commit to a particular layout (number, matrix). The {@link #correlationSize} is
+ * supplied by the concrete subclass.
  *
  * <p>Phase 4m foundation.
  */
@@ -50,27 +49,21 @@ public abstract class CorrelationTermStructure extends AbstractTermStructure {
 
     private final BusinessDayConvention bdc;
 
-    public CorrelationTermStructure(final Calendar cal,
-                                    final BusinessDayConvention bdc,
-                                    final DayCounter dc) {
+    public CorrelationTermStructure(final Calendar cal, final BusinessDayConvention bdc, final DayCounter dc) {
         super(dc);
         // Mirrors C++ TermStructure(dc) + assignment of calendar_ post-super.
         this.calendar = cal;
         this.bdc = bdc;
     }
 
-    public CorrelationTermStructure(final Date referenceDate,
-                                    final Calendar cal,
-                                    final BusinessDayConvention bdc,
-                                    final DayCounter dc) {
+    public CorrelationTermStructure(final Date referenceDate, final Calendar cal, final BusinessDayConvention bdc,
+            final DayCounter dc) {
         super(referenceDate, cal, dc);
         this.bdc = bdc;
     }
 
-    public CorrelationTermStructure(final @Natural int settlementDays,
-                                    final Calendar cal,
-                                    final BusinessDayConvention bdc,
-                                    final DayCounter dc) {
+    public CorrelationTermStructure(final @Natural int settlementDays, final Calendar cal,
+            final BusinessDayConvention bdc, final DayCounter dc) {
         super(settlementDays, cal, dc);
         this.bdc = bdc;
     }

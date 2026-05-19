@@ -31,18 +31,6 @@
 
 package org.jquantlib.time.calendars;
 
-import static org.jquantlib.time.Month.April;
-import static org.jquantlib.time.Month.August;
-import static org.jquantlib.time.Month.December;
-import static org.jquantlib.time.Month.February;
-import static org.jquantlib.time.Month.January;
-import static org.jquantlib.time.Month.May;
-import static org.jquantlib.time.Month.November;
-import static org.jquantlib.time.Month.October;
-import static org.jquantlib.time.Month.September;
-import static org.jquantlib.time.Weekday.Saturday;
-import static org.jquantlib.time.Weekday.Sunday;
-
 import org.jquantlib.lang.annotation.QualityAssurance;
 import org.jquantlib.lang.annotation.QualityAssurance.Quality;
 import org.jquantlib.lang.annotation.QualityAssurance.Version;
@@ -50,6 +38,10 @@ import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Month;
 import org.jquantlib.time.Weekday;
+
+import static org.jquantlib.time.Month.*;
+import static org.jquantlib.time.Weekday.Saturday;
+import static org.jquantlib.time.Weekday.Sunday;
 
 /**
  * Holidays for the National Stock Exchange
@@ -61,12 +53,12 @@ import org.jquantlib.time.Weekday;
  * <li>Local Holidays (Kurban, Ramadan; 2004 to 2009 only)</li>
  * </ul>
  *
- * @category Calendars
  * @author Renjith Nair
  * @author Zahid Hussain
+ * @category Calendars
  */
 
-@QualityAssurance(quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Zahid Hussain" })
+@QualityAssurance( quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Zahid Hussain" } )
 public class Turkey extends Calendar {
 
     //
@@ -100,8 +92,8 @@ public class Turkey extends Calendar {
             final Month m = date.month();
             final int y = date.year();
 
-            if (isWeekend(w)
-            // New Year's Day
+            if ( isWeekend(w)
+                    // New Year's Day
                     || (d == 1 && m == January)
                     // 23 nisan / National Holiday
                     || (d == 23 && m == April)
@@ -110,50 +102,40 @@ public class Turkey extends Calendar {
                     // 30 aug/ National Holiday
                     || (d == 30 && m == August)
                     // /29 ekim National Holiday
-                    || (d == 29 && m == October)) {
+                    || (d == 29 && m == October) ) {
                 return false;
             }
 
             // Local Holidays
-            if (y == 2004) {
+            if ( y == 2004 ) {
                 // kurban
-                if ((m == February && d <= 4)
-                // ramazan
-                        || (m == November && d >= 14 && d <= 16)) {
-                    return false;
-                }
-            } else if (y == 2005) {
+                return (m != February || d > 4)
+                        // ramazan
+                        && (m != November || d < 14 || d > 16);
+            } else if ( y == 2005 ) {
                 // kurban
-                if ((m == January && d >= 19 && d <= 21)
-                // ramazan
-                        || (m == November && d >= 2 && d <= 5)) {
-                    return false;
-                }
-            } else if (y == 2006) {
+                return (m != January || d < 19 || d > 21)
+                        // ramazan
+                        && (m != November || d < 2 || d > 5);
+            } else if ( y == 2006 ) {
                 // kurban
-                if ((m == January && d >= 9 && d <= 13)
-                // ramazan
-                        || (m == October && d >= 23 && d <= 25)
+                return (m != January || d < 9 || d > 13)
+                        // ramazan
+                        && (m != October || d < 23 || d > 25)
                         // kurban
-                        || (m == December && d >= 30)) {
-                    return false;
-                }
-            } else if (y == 2007) {
+                        && (m != December || d < 30);
+            } else if ( y == 2007 ) {
                 // kurban
-                if ((m == January && d <= 4)
-                // ramazan
-                        || (m == October && d >= 11 && d <= 14)
+                return (m != January || d > 4)
+                        // ramazan
+                        && (m != October || d < 11 || d > 14)
                         // kurban
-                        || (m == December && d >= 19 && d <= 23)) {
-                    return false;
-                }
-            } else if (y == 2008) {
+                        && (m != December || d < 19 || d > 23);
+            } else if ( y == 2008 ) {
                 // ramazan
-                if ((m == September && d >= 29) || (m == October && d <= 2)
-                // kurban
-                        || (m == December && d >= 7 && d <= 11)) {
-                    return false;
-                }
+                return (m != September || d < 29) && (m != October || d > 2)
+                        // kurban
+                        && (m != December || d < 7 || d > 11);
             }
             return true;
         }

@@ -45,38 +45,34 @@ package org.jquantlib.experimental.lattices;
 import org.jquantlib.processes.StochasticProcess1D;
 
 /**
-* Cox-Ross-Rubinstein (multiplicative) equal jumps binomial tree
-*
-* @category lattices
-*
-* @author Richard Gomes
-*/
-public class ExtendedAdditiveEQPBinomialTree extends ExtendedEqualProbabilitiesBinomialTree /*<ExtendedCoxRossRubinstein> */ {
+ * Cox-Ross-Rubinstein (multiplicative) equal jumps binomial tree
+ *
+ * @author Richard Gomes
+ * @category lattices
+ */
+public class ExtendedAdditiveEQPBinomialTree
+        extends ExtendedEqualProbabilitiesBinomialTree /*<ExtendedCoxRossRubinstein> */ {
 
-   //
-   // public methods
-   //
+    //
+    // public methods
+    //
 
-   public ExtendedAdditiveEQPBinomialTree(
-           final StochasticProcess1D process,
-           final /* @Time */ double end,
-           final int steps,
-           final double strike) {
+    public ExtendedAdditiveEQPBinomialTree(final StochasticProcess1D process, final /* @Time */ double end,
+            final int steps, final double strike) {
 
-       super(process, end, steps);
-       this.up = -0.5*driftStep(0.0) + 0.5*Math.sqrt(4.0*process.variance(0.0, x0, dt) - 3.0*driftStep(0.0)*driftStep(0.0));
-   }
+        super(process, end, steps);
+        this.up = -0.5 * driftStep(0.0) + 0.5 * Math.sqrt(
+                4.0 * process.variance(0.0, x0, dt) - 3.0 * driftStep(0.0) * driftStep(0.0));
+    }
 
+    //
+    // protected methods
+    //
 
-   //
-   // protected methods
-   //
-
-   @Override
-   protected double upStep(/* @Time */ final double stepTime) /* @ReadOnly */ {
-       return (-0.5*driftStep(stepTime)
-               + 0.5*Math.sqrt(4.0*treeProcess.variance(stepTime, x0, dt)
-               - 3.0*driftStep(stepTime)*driftStep(stepTime)));
-   }
+    @Override
+    protected double upStep(/* @Time */ final double stepTime) /* @ReadOnly */ {
+        return (-0.5 * driftStep(stepTime) + 0.5 * Math.sqrt(
+                4.0 * treeProcess.variance(stepTime, x0, dt) - 3.0 * driftStep(stepTime) * driftStep(stepTime)));
+    }
 
 }

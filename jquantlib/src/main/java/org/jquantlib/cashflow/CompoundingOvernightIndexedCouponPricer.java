@@ -16,8 +16,6 @@
 
 package org.jquantlib.cashflow;
 
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.indexes.OvernightIndex;
@@ -27,18 +25,17 @@ import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.termstructures.volatilities.optionlet.OptionletVolatilityStructure;
 import org.jquantlib.time.Date;
 
+import java.util.List;
+
 /**
  * Compounding overnight-indexed coupon pricer.
  * <p>
- * Port of C++ QuantLib v1.42.1
- * {@code ql/cashflows/overnightindexedcouponpricer.hpp/cpp}
- * {@code CompoundingOvernightIndexedCouponPricer::compute} —
- * lookback / lockout / observation-shift / daily-spread compounding all
- * supported (Phase 5e.5b-CFC-d-107).
- *
- * @category cashflows
+ * Port of C++ QuantLib v1.42.1 {@code ql/cashflows/overnightindexedcouponpricer.hpp/cpp}
+ * {@code CompoundingOvernightIndexedCouponPricer::compute} — lookback / lockout / observation-shift / daily-spread
+ * compounding all supported (Phase 5e.5b-CFC-d-107).
  *
  * @author JQuantLib migration team
+ * @category cashflows
  */
 public class CompoundingOvernightIndexedCouponPricer extends OvernightIndexedCouponPricer {
 
@@ -50,9 +47,25 @@ public class CompoundingOvernightIndexedCouponPricer extends OvernightIndexedCou
         super();
     }
 
-    public CompoundingOvernightIndexedCouponPricer(final Handle<OptionletVolatilityStructure> v,
-                                                   final boolean effectiveVolatilityInput) {
+    public CompoundingOvernightIndexedCouponPricer(final Handle< OptionletVolatilityStructure > v,
+            final boolean effectiveVolatilityInput) {
         super(v, effectiveVolatilityInput);
+    }
+
+    /**
+     * Single-fixing effective rate {@code span * (fixing + spreadToAdd)} — mirror of the C++ lambda in {@code compute}
+     * (overnightindexedcouponpricer.cpp:174-182). Returns a 1-element {@code double[]} so the caller code reads
+     * symmetrically.
+     */
+    private static double[] effectiveRate(final OvernightIndex index, final List< Date > fixingDates, final Date date,
+            final List< Date > interestDates, final double[] dt, final double couponSpread, final int position,
+            final boolean compoundSpreadDaily) {
+        final double fixing = index.fixing(fixingDates.get(position));
+        final double span = !date.lt(interestDates.get(position + 1))
+                ? dt[position]
+                : index.dayCounter().yearFraction(interestDates.get(position), date);
+        final double spreadToAdd = compoundSpreadDaily ? couponSpread : 0.0;
+        return new double[] { span * (fixing + spreadToAdd) };
     }
 
     @Override
@@ -80,8 +93,7 @@ public class CompoundingOvernightIndexedCouponPricer extends OvernightIndexedCou
     }
 
     /**
-     * Compute {@code (swapletRate, effectiveSpread, effectiveIndexFixing)}
-     * up to {@code date}.
+     * Compute {@code (swapletRate, effectiveSpread, effectiveIndexFixing)} up to {@code date}.
      * <p>
      * Mirror of C++ {@code CompoundingOvernightIndexedCouponPricer::compute}
      * (overnightindexedcouponpricer.cpp:108-259).
@@ -90,9 +102,9 @@ public class CompoundingOvernightIndexedCouponPricer extends OvernightIndexedCou
         final Date today = new Settings().evaluationDate();
         final OvernightIndex index = coupon_.overnightIndex();
 
-        final List<Date> fixingDates = coupon_.fixingDates();
-        final List<Date> valueDates = coupon_.valueDates();
-        final List<Date> interestDates = coupon_.interestDates();
+        final List< Date > fixingDates = coupon_.fixingDates();
+        final List< Date > valueDates = coupon_.valueDates();
+        final List< Date > interestDates = coupon_.interestDates();
         final double[] dt = coupon_.dt();
         final boolean applyObservationShift = coupon_.applyObservationShift();
         final boolean compoundSpreadDaily = coupon_.compoundSpreadDaily();
@@ -105,14 +117,13 @@ public class CompoundingOvernightIndexedCouponPricer extends OvernightIndexedCou
         double compoundFactorWithoutSpread = 1.0;
 
         // historical portion (fixing < today)
-        while (i < n && fixingDates.get(i).lt(today)) {
+        while ( i < n && fixingDates.get(i).lt(today) ) {
             double fixing = index.fixing(fixingDates.get(i));
-            QL.require(fixing != Constants.NULL_REAL,
-                "Missing " + index.name() + " fixing for " + fixingDates.get(i));
+            QL.require(fixing != Constants.NULL_REAL, "Missing " + index.name() + " fixing for " + fixingDates.get(i));
             final double span = !date.lt(interestDates.get(i + 1))
                     ? dt[i]
                     : index.dayCounter().yearFraction(interestDates.get(i), date);
-            if (compoundSpreadDaily) {
+            if ( compoundSpreadDaily ) {
                 compoundFactorWithoutSpread *= (1.0 + fixing * span);
                 fixing += couponSpread;
             }
@@ -121,40 +132,39 @@ public class CompoundingOvernightIndexedCouponPricer extends OvernightIndexedCou
         }
 
         // today: might or might not have been fixed
-        if (i < n && fixingDates.get(i).equals(today)) {
+        if ( i < n && fixingDates.get(i).equals(today) ) {
             try {
                 double fixing = index.fixing(fixingDates.get(i));
-                if (fixing != Constants.NULL_REAL) {
+                if ( fixing != Constants.NULL_REAL ) {
                     final double span = !date.lt(interestDates.get(i + 1))
                             ? dt[i]
                             : index.dayCounter().yearFraction(interestDates.get(i), date);
-                    if (compoundSpreadDaily) {
+                    if ( compoundSpreadDaily ) {
                         compoundFactorWithoutSpread *= (1.0 + fixing * span);
                         fixing += couponSpread;
                     }
                     compoundFactor *= (1.0 + fixing * span);
                     ++i;
                 }
-            } catch (final Exception e) {
+            } catch ( final Exception e ) {
                 // fall through and forecast
             }
         }
 
         // forward portion using telescopic formula where possible
-        if (i < n) {
-            final Handle<YieldTermStructure> curve = index.termStructure();
-            QL.require(!curve.empty(),
-                "null term structure set to this instance of " + index.name());
+        if ( i < n ) {
+            final Handle< YieldTermStructure > curve = index.termStructure();
+            QL.require(!curve.empty(), "null term structure set to this instance of " + index.name());
 
-            if (!coupon_.canApplyTelescopicFormula()) {
+            if ( !coupon_.canApplyTelescopicFormula() ) {
                 // With lookback applied (and not the special obs-shift +
                 // zero-fixing-delay case), telescopic cannot be used: project
                 // each fixing.
-                while (i < n) {
-                    final double[] er = effectiveRate(index, fixingDates, date,
-                            interestDates, dt, couponSpread, i, false);
-                    final double[] erWith = effectiveRate(index, fixingDates, date,
-                            interestDates, dt, couponSpread, i, compoundSpreadDaily);
+                while ( i < n ) {
+                    final double[] er = effectiveRate(index, fixingDates, date, interestDates, dt, couponSpread, i,
+                            false);
+                    final double[] erWith = effectiveRate(index, fixingDates, date, interestDates, dt, couponSpread, i,
+                            compoundSpreadDaily);
                     compoundFactorWithoutSpread *= (1.0 + er[0]);
                     compoundFactor *= (1.0 + erWith[0]);
                     ++i;
@@ -165,21 +175,19 @@ public class CompoundingOvernightIndexedCouponPricer extends OvernightIndexedCou
                 final int nLockout = n - coupon_.lockoutDays();
                 final boolean isLockoutApplied = coupon_.lockoutDays() > 0;
 
-                final double startDiscount = curve.currentLink().discount(
-                        valueDates.get(Math.min(nLockout, i)));
-                if (interestDates.get(n).equals(date) || isLockoutApplied) {
-                    final double endDiscount = curve.currentLink().discount(
-                            valueDates.get(Math.min(nLockout, n)));
+                final double startDiscount = curve.currentLink().discount(valueDates.get(Math.min(nLockout, i)));
+                if ( interestDates.get(n).equals(date) || isLockoutApplied ) {
+                    final double endDiscount = curve.currentLink().discount(valueDates.get(Math.min(nLockout, n)));
                     compoundFactor *= startDiscount / endDiscount;
                     compoundFactorWithoutSpread *= startDiscount / endDiscount;
                     // After the telescopic part, handle the locked-out tail
                     // fixing-by-fixing.
                     i = Math.max(nLockout, i);
-                    while (i < n) {
-                        final double[] er = effectiveRate(index, fixingDates, date,
-                                interestDates, dt, couponSpread, i, false);
-                        final double[] erWith = effectiveRate(index, fixingDates, date,
-                                interestDates, dt, couponSpread, i, compoundSpreadDaily);
+                    while ( i < n ) {
+                        final double[] er = effectiveRate(index, fixingDates, date, interestDates, dt, couponSpread, i,
+                                false);
+                        final double[] erWith = effectiveRate(index, fixingDates, date, interestDates, dt, couponSpread,
+                                i, compoundSpreadDaily);
                         compoundFactorWithoutSpread *= (1.0 + er[0]);
                         compoundFactor *= (1.0 + erWith[0]);
                         ++i;
@@ -190,10 +198,10 @@ public class CompoundingOvernightIndexedCouponPricer extends OvernightIndexedCou
                     final double endDiscount = curve.currentLink().discount(valueDates.get(n - 1));
                     compoundFactor *= startDiscount / endDiscount;
                     compoundFactorWithoutSpread *= startDiscount / endDiscount;
-                    final double[] erWith = effectiveRate(index, fixingDates, date,
-                            interestDates, dt, couponSpread, n - 1, compoundSpreadDaily);
-                    final double[] erWithout = effectiveRate(index, fixingDates, date,
-                            interestDates, dt, couponSpread, n - 1, false);
+                    final double[] erWith = effectiveRate(index, fixingDates, date, interestDates, dt, couponSpread,
+                            n - 1, compoundSpreadDaily);
+                    final double[] erWithout = effectiveRate(index, fixingDates, date, interestDates, dt, couponSpread,
+                            n - 1, false);
                     compoundFactor *= (1.0 + erWith[0]);
                     compoundFactorWithoutSpread *= (1.0 + erWithout[0]);
                 }
@@ -202,18 +210,15 @@ public class CompoundingOvernightIndexedCouponPricer extends OvernightIndexedCou
 
         // tau = day fraction over the full value-date span — used to back out
         // the effective spread when spread is compounded daily.
-        final double tau = index.dayCounter().yearFraction(
-                valueDates.get(0), valueDates.get(valueDates.size() - 1));
-        final double accruedPeriodToDate = coupon_.dayCounter().yearFraction(
-                coupon_.accrualStartDate(),
-                Date.min(date, coupon_.accrualEndDate()),
-                coupon_.referencePeriodStart(),
-                coupon_.referencePeriodEnd());
+        final double tau = index.dayCounter().yearFraction(valueDates.get(0), valueDates.get(valueDates.size() - 1));
+        final double accruedPeriodToDate = coupon_.dayCounter()
+                .yearFraction(coupon_.accrualStartDate(), Date.min(date, coupon_.accrualEndDate()),
+                        coupon_.referencePeriodStart(), coupon_.referencePeriodEnd());
         final double rate = (compoundFactor - 1.0) / accruedPeriodToDate;
         double swapletRate = coupon_.gearing() * rate;
         final double effectiveSpread;
         final double effectiveIndexFixing;
-        if (!compoundSpreadDaily) {
+        if ( !compoundSpreadDaily ) {
             swapletRate += couponSpread;
             effectiveSpread = couponSpread;
             effectiveIndexFixing = rate;
@@ -222,27 +227,5 @@ public class CompoundingOvernightIndexedCouponPricer extends OvernightIndexedCou
             effectiveIndexFixing = rate - effectiveSpread;
         }
         return new double[] { swapletRate, effectiveSpread, effectiveIndexFixing };
-    }
-
-    /**
-     * Single-fixing effective rate {@code span * (fixing + spreadToAdd)} —
-     * mirror of the C++ lambda in {@code compute}
-     * (overnightindexedcouponpricer.cpp:174-182). Returns a 1-element
-     * {@code double[]} so the caller code reads symmetrically.
-     */
-    private static double[] effectiveRate(final OvernightIndex index,
-                                          final List<Date> fixingDates,
-                                          final Date date,
-                                          final List<Date> interestDates,
-                                          final double[] dt,
-                                          final double couponSpread,
-                                          final int position,
-                                          final boolean compoundSpreadDaily) {
-        final double fixing = index.fixing(fixingDates.get(position));
-        final double span = !date.lt(interestDates.get(position + 1))
-                ? dt[position]
-                : index.dayCounter().yearFraction(interestDates.get(position), date);
-        final double spreadToAdd = compoundSpreadDaily ? couponSpread : 0.0;
-        return new double[] { span * (fixing + spreadToAdd) };
     }
 }

@@ -28,10 +28,6 @@
  */
 package org.jquantlib.pricingengines.swaption;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.jquantlib.QL;
 import org.jquantlib.cashflow.CashFlow;
 import org.jquantlib.cashflow.Coupon;
@@ -62,16 +58,17 @@ import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.calendars.NullCalendar;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
  * Finite-difference Hull-White swaption engine.
  * <p>
- * Java port of QuantLib v1.42.1
- * {@code ql/pricingengines/swaption/fdhullwhiteswaptionengine.{hpp,cpp}}.
- * Discretises the Hull-White short-rate PDE on a 1-D mesh in the
- * Ornstein-Uhlenbeck state variable {@code x = r - phi(t)} and rolls back the
- * intrinsic value of the underlying vanilla swap from the exercise date to
- * the evaluation date with an ADI scheme (default
- * {@link FdmSchemeDesc#Douglas()} matching C++).
+ * Java port of QuantLib v1.42.1 {@code ql/pricingengines/swaption/fdhullwhiteswaptionengine.{hpp,cpp}}. Discretises the
+ * Hull-White short-rate PDE on a 1-D mesh in the Ornstein-Uhlenbeck state variable {@code x = r - phi(t)} and rolls
+ * back the intrinsic value of the underlying vanilla swap from the exercise date to the evaluation date with an ADI
+ * scheme (default {@link FdmSchemeDesc#Douglas()} matching C++).
  *
  * <h3>Java port deviations from C++ v1.42.1</h3>
  * <ul>
@@ -114,11 +111,10 @@ import org.jquantlib.time.calendars.NullCalendar;
  * <p>{@code tGrid = 100}, {@code xGrid = 100}, {@code dampingSteps = 0},
  * {@code invEps = 1e-5}, scheme = {@code FdmSchemeDesc::Douglas()}.
  *
+ * @author Phase 2h WI-2 port
  * @see HullWhite
  * @see FdmHullWhiteSolver
  * @see FdmAffineModelTermStructure
- *
- * @author Phase 2h WI-2 port
  */
 public class FdHullWhiteSwaptionEngine extends Swaption.EngineImpl {
 
@@ -129,44 +125,33 @@ public class FdHullWhiteSwaptionEngine extends Swaption.EngineImpl {
     private final double invEps_;
     private final FdmSchemeDesc schemeDesc_;
 
-    /** Convenience: defaults match C++ v1.42.1 (tGrid=100, xGrid=100,
-     *  dampingSteps=0, invEps=1e-5, scheme=Douglas). */
+    /**
+     * Convenience: defaults match C++ v1.42.1 (tGrid=100, xGrid=100, dampingSteps=0, invEps=1e-5, scheme=Douglas).
+     */
     public FdHullWhiteSwaptionEngine(final HullWhite model) {
         this(model, 100, 100, 0, 1.0e-5, FdmSchemeDesc.Douglas());
     }
 
-    public FdHullWhiteSwaptionEngine(final HullWhite model,
-                                     final int tGrid,
-                                     final int xGrid) {
+    public FdHullWhiteSwaptionEngine(final HullWhite model, final int tGrid, final int xGrid) {
         this(model, tGrid, xGrid, 0, 1.0e-5, FdmSchemeDesc.Douglas());
     }
 
-    public FdHullWhiteSwaptionEngine(final HullWhite model,
-                                     final int tGrid,
-                                     final int xGrid,
-                                     final int dampingSteps) {
+    public FdHullWhiteSwaptionEngine(final HullWhite model, final int tGrid, final int xGrid, final int dampingSteps) {
         this(model, tGrid, xGrid, dampingSteps, 1.0e-5, FdmSchemeDesc.Douglas());
     }
 
     /**
-     * Full constructor mirroring C++ v1.42.1
-     * {@code FdHullWhiteSwaptionEngine::FdHullWhiteSwaptionEngine}.
+     * Full constructor mirroring C++ v1.42.1 {@code FdHullWhiteSwaptionEngine::FdHullWhiteSwaptionEngine}.
      *
-     * @param model         Hull-White short-rate model (non-null).
-     * @param tGrid         number of time steps in the rollback.
-     * @param xGrid         number of state-space grid points.
-     * @param dampingSteps  number of leading implicit-Euler damping
-     *                      steps applied before the main scheme.
-     * @param invEps        tail percentile for the
-     *                      {@link FdmSimpleProcess1dMesher} truncation.
-     * @param schemeDesc    finite-difference scheme descriptor.
+     * @param model        Hull-White short-rate model (non-null).
+     * @param tGrid        number of time steps in the rollback.
+     * @param xGrid        number of state-space grid points.
+     * @param dampingSteps number of leading implicit-Euler damping steps applied before the main scheme.
+     * @param invEps       tail percentile for the {@link FdmSimpleProcess1dMesher} truncation.
+     * @param schemeDesc   finite-difference scheme descriptor.
      */
-    public FdHullWhiteSwaptionEngine(final HullWhite model,
-                                     final int tGrid,
-                                     final int xGrid,
-                                     final int dampingSteps,
-                                     final double invEps,
-                                     final FdmSchemeDesc schemeDesc) {
+    public FdHullWhiteSwaptionEngine(final HullWhite model, final int tGrid, final int xGrid, final int dampingSteps,
+            final double invEps, final FdmSchemeDesc schemeDesc) {
         super();
         QL.require(model != null, "no model specified");
         this.model_ = model;
@@ -192,29 +177,25 @@ public class FdHullWhiteSwaptionEngine extends Swaption.EngineImpl {
         final Swaption.ResultsImpl results = (Swaption.ResultsImpl) results_;
 
         // 1. Term structure
-        final Handle<YieldTermStructure> ts = model_.termStructure();
-        QL.require(ts != null && !ts.empty(),
-                "Hull-White model has no term structure");
+        final Handle< YieldTermStructure > ts = model_.termStructure();
+        QL.require(ts != null && !ts.empty(), "Hull-White model has no term structure");
 
         final DayCounter dc = ts.currentLink().dayCounter();
         final Date referenceDate = ts.currentLink().referenceDate();
-        final double maturity = dc.yearFraction(referenceDate,
-                args.exercise.lastDate());
+        final double maturity = dc.yearFraction(referenceDate, args.exercise.lastDate());
 
         // 2. Mesher — 1-D OU mesher in x = r - phi(t).
-        final OrnsteinUhlenbeckProcess process =
-                new OrnsteinUhlenbeckProcess(model_.a(), model_.sigma());
-        final FdmSimpleProcess1dMesher shortRateMesher =
-                new FdmSimpleProcess1dMesher(xGrid_, process, maturity, 1, invEps_,
-                        Double.NaN);
+        final OrnsteinUhlenbeckProcess process = new OrnsteinUhlenbeckProcess(model_.a(), model_.sigma());
+        final FdmSimpleProcess1dMesher shortRateMesher = new FdmSimpleProcess1dMesher(xGrid_, process, maturity, 1,
+                invEps_, Double.NaN);
         final FdmMesherComposite mesher = new FdmMesherComposite(shortRateMesher);
 
         // 3. Inner-value calculator: build t -> exerciseDate map, then a
         //    swap-NPV calculator that prices the swap at each (t, x) on the
         //    mesh using the affine discountBond formula.
-        final List<Date> exerciseDates = args.exercise.dates();
-        final Map<Double, Date> t2d = new HashMap<>();
-        for (final Date exerciseDate : exerciseDates) {
+        final List< Date > exerciseDates = args.exercise.dates();
+        final Map< Double, Date > t2d = new HashMap<>();
+        for ( final Date exerciseDate : exerciseDates ) {
             final double t = dc.yearFraction(referenceDate, exerciseDate);
             QL.require(t >= 0, "exercise dates must not contain past date");
             t2d.put(t, exerciseDate);
@@ -225,26 +206,22 @@ public class FdHullWhiteSwaptionEngine extends Swaption.EngineImpl {
         // model (one curve) so the parity is structural — skip the runtime
         // check.
         final VanillaSwap swap = args.swap;
-        final FdmInnerValueCalculator calculator =
-                new HullWhiteSwapInnerValue(model_, mesher, swap, t2d);
+        final FdmInnerValueCalculator calculator = new HullWhiteSwapInnerValue(model_, mesher, swap, t2d);
 
         // 4. Step conditions (European with no dividends -> empty composite,
         //    matching C++ behaviour).
-        final FdmStepConditionComposite conditions =
-                FdmStepConditionComposite.vanillaComposite(
-                        new DividendSchedule(), args.exercise,
-                        mesher, calculator, referenceDate, dc);
+        final FdmStepConditionComposite conditions = FdmStepConditionComposite.vanillaComposite(new DividendSchedule(),
+                args.exercise, mesher, calculator, referenceDate, dc);
 
         // 5. Boundary conditions — C++ uses an empty FdmBoundaryConditionSet.
         final FdmBoundaryConditionSet boundaries = new FdmBoundaryConditionSet();
 
         // 6. Solver
-        final FdmSolverDesc solverDesc = new FdmSolverDesc(
-                mesher, boundaries, conditions, calculator, maturity,
-                tGrid_, dampingSteps_);
+        final FdmSolverDesc solverDesc = new FdmSolverDesc(mesher, boundaries, conditions, calculator, maturity, tGrid_,
+                dampingSteps_);
 
-        final FdmHullWhiteSolver solver = new FdmHullWhiteSolver(
-                new Handle<HullWhite>(model_), solverDesc, schemeDesc_);
+        final FdmHullWhiteSolver solver = new FdmHullWhiteSolver(new Handle< HullWhite >(model_), solverDesc,
+                schemeDesc_);
 
         // C++: results_.value = solver.valueAt(0.0)
         // The 1-D mesh state variable is x = r - phi(t); at t = 0 the OU
@@ -253,36 +230,28 @@ public class FdHullWhiteSwaptionEngine extends Swaption.EngineImpl {
     }
 
     /**
-     * HullWhite-specialised inner-value: at each mesh node {@code (t, x)}
-     * we set {@code r = dynamics().shortRate(t, x)}, rebind a pair of
-     * {@link FdmAffineModelTermStructure}s (discount + forwarding) keyed at
-     * the corresponding exercise date with factor {@code [r]}, and compute
-     * the swap leg sum as
-     * {@code sum_j sign_j * sum_i amount_i * disTs.discount(payDate_i)}
-     * for {@code i} with {@code accrualStart_i >= exerciseDate}.
+     * HullWhite-specialised inner-value: at each mesh node {@code (t, x)} we set
+     * {@code r = dynamics().shortRate(t, x)}, rebind a pair of {@link FdmAffineModelTermStructure}s (discount +
+     * forwarding) keyed at the corresponding exercise date with factor {@code [r]}, and compute the swap leg sum as
+     * {@code sum_j sign_j * sum_i amount_i * disTs.discount(payDate_i)} for {@code i} with
+     * {@code accrualStart_i >= exerciseDate}.
      * <p>
-     * Mirrors C++ v1.42.1
-     * {@code FdmAffineModelSwapInnerValue<HullWhite>::innerValue}.
+     * Mirrors C++ v1.42.1 {@code FdmAffineModelSwapInnerValue<HullWhite>::innerValue}.
      */
-    private static final class HullWhiteSwapInnerValue
-            implements FdmInnerValueCalculator {
+    private static final class HullWhiteSwapInnerValue implements FdmInnerValueCalculator {
 
         private final HullWhite model_;
         private final FdmMesher mesher_;
         private final VanillaSwap swap_;
-        private final Map<Double, Date> exerciseDates_;
-        private final RelinkableHandle<YieldTermStructure> disTsHandle_ =
-                new RelinkableHandle<YieldTermStructure>();
-        private final RelinkableHandle<YieldTermStructure> fwdTsHandle_ =
-                new RelinkableHandle<YieldTermStructure>();
+        private final Map< Double, Date > exerciseDates_;
+        private final RelinkableHandle< YieldTermStructure > disTsHandle_ = new RelinkableHandle< YieldTermStructure >();
+        private final RelinkableHandle< YieldTermStructure > fwdTsHandle_ = new RelinkableHandle< YieldTermStructure >();
         private FdmAffineModelTermStructure disTs_;
         private FdmAffineModelTermStructure fwdTs_;
         private Date currentRefDate_;
 
-        HullWhiteSwapInnerValue(final HullWhite model,
-                                final FdmMesher mesher,
-                                final VanillaSwap swap,
-                                final Map<Double, Date> exerciseTimes) {
+        HullWhiteSwapInnerValue(final HullWhite model, final FdmMesher mesher, final VanillaSwap swap,
+                final Map< Double, Date > exerciseTimes) {
             this.model_ = model;
             this.mesher_ = mesher;
             // C++ clones the swap with iborIndex()->clone(fwdTs) so the
@@ -291,13 +260,9 @@ public class FdHullWhiteSwaptionEngine extends Swaption.EngineImpl {
             // VanillaSwap whose IborIndex has its own forwarding handle
             // linked to {@code fwdTsHandle_}. The cloned swap's float
             // coupons therefore re-fix at every grid node.
-            final IborIndex clonedIndex =
-                    swap.iborIndex().clone(fwdTsHandle_).currentLink();
-            this.swap_ = new VanillaSwap(
-                    swap.type(), swap.nominal(),
-                    swap.fixedSchedule(), swap.fixedRate(), swap.fixedDayCount(),
-                    swap.floatingSchedule(), clonedIndex,
-                    swap.spread(), swap.floatingDayCount(),
+            final IborIndex clonedIndex = swap.iborIndex().clone(fwdTsHandle_).currentLink();
+            this.swap_ = new VanillaSwap(swap.type(), swap.nominal(), swap.fixedSchedule(), swap.fixedRate(),
+                    swap.fixedDayCount(), swap.floatingSchedule(), clonedIndex, swap.spread(), swap.floatingDayCount(),
                     swap.paymentConvention());
             this.exerciseDates_ = exerciseTimes;
         }
@@ -305,9 +270,8 @@ public class FdHullWhiteSwaptionEngine extends Swaption.EngineImpl {
         @Override
         public double innerValue(final FdmLinearOpIterator iter, final double t) {
             final Date iterExerciseDate = exerciseDates_.get(t);
-            if (iterExerciseDate == null) {
-                throw new org.jquantlib.lang.exceptions.LibraryException(
-                        "no exercise date found for grid time " + t);
+            if ( iterExerciseDate == null ) {
+                throw new org.jquantlib.lang.exceptions.LibraryException("no exercise date found for grid time " + t);
             }
 
             // OU state -> short rate via HW dynamics.
@@ -316,17 +280,13 @@ public class FdHullWhiteSwaptionEngine extends Swaption.EngineImpl {
             final Array factors = new Array(1);
             factors.set(0, r);
 
-            final Handle<YieldTermStructure> baseTs = model_.termStructure();
+            final Handle< YieldTermStructure > baseTs = model_.termStructure();
             final NullCalendar cal = new NullCalendar();
-            if (disTs_ == null || !iterExerciseDate.eq(currentRefDate_)) {
-                disTs_ = new FdmAffineModelTermStructure(
-                        factors, cal, baseTs.currentLink().dayCounter(),
-                        iterExerciseDate, baseTs.currentLink().referenceDate(),
-                        model_);
-                fwdTs_ = new FdmAffineModelTermStructure(
-                        factors, cal, baseTs.currentLink().dayCounter(),
-                        iterExerciseDate, baseTs.currentLink().referenceDate(),
-                        model_);
+            if ( disTs_ == null || !iterExerciseDate.eq(currentRefDate_) ) {
+                disTs_ = new FdmAffineModelTermStructure(factors, cal, baseTs.currentLink().dayCounter(),
+                        iterExerciseDate, baseTs.currentLink().referenceDate(), model_);
+                fwdTs_ = new FdmAffineModelTermStructure(factors, cal, baseTs.currentLink().dayCounter(),
+                        iterExerciseDate, baseTs.currentLink().referenceDate(), model_);
                 disTsHandle_.linkTo(disTs_);
                 fwdTsHandle_.linkTo(fwdTs_);
                 currentRefDate_ = iterExerciseDate;
@@ -338,24 +298,24 @@ public class FdHullWhiteSwaptionEngine extends Swaption.EngineImpl {
             // Sum legs: j=0 fixed (sign -1), j=1 floating (sign +1) for a
             // payer; receiver flips the final sign at the end.
             double npv = 0.0;
-            for (int j = 0; j < 2; j++) {
+            for ( int j = 0; j < 2; j++ ) {
                 final Leg leg = (j == 0) ? swap_.fixedLeg() : swap_.floatingLeg();
                 double legNpv = 0.0;
-                for (final CashFlow cf : leg) {
-                    if (!(cf instanceof Coupon)) {
+                for ( final CashFlow cf : leg ) {
+                    if ( !(cf instanceof Coupon) ) {
                         continue;
                     }
                     final Coupon coupon = (Coupon) cf;
-                    if (coupon.accrualStartDate().ge(iterExerciseDate)) {
+                    if ( coupon.accrualStartDate().ge(iterExerciseDate) ) {
                         legNpv += cf.amount() * disTs_.discount(cf.date());
                     }
                 }
-                if (j == 0) {
+                if ( j == 0 ) {
                     legNpv = -legNpv;
                 }
                 npv += legNpv;
             }
-            if (swap_.type() == VanillaSwap.Type.Receiver) {
+            if ( swap_.type() == VanillaSwap.Type.Receiver ) {
                 npv = -npv;
             }
             return Math.max(0.0, npv);

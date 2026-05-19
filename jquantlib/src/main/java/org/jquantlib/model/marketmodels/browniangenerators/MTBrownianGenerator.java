@@ -36,26 +36,23 @@ import org.jquantlib.model.marketmodels.BrownianGenerator;
 /**
  * Mersenne-twister Brownian generator for market-model simulations.
  * <p>
- * Incremental Brownian generator using a Mersenne-twister uniform generator
- * and inverse-cumulative Gaussian method.
+ * Incremental Brownian generator using a Mersenne-twister uniform generator and inverse-cumulative Gaussian method.
  * <p>
- * Note: At this time, generation of the underlying uniform sequence is eager,
- * while its transformation into Gaussian variates is lazy. Further optimization
- * might be possible by using the Mersenne twister directly instead of a
- * RandomSequenceGenerator; however, it is not clear how much of a difference
- * this would make when compared to the inverse-cumulative Gaussian calculation.
- *
- * @see "ql/models/marketmodels/browniangenerators/mtbrowniangenerator.{hpp,cpp}" v1.42.1
+ * Note: At this time, generation of the underlying uniform sequence is eager, while its transformation into Gaussian
+ * variates is lazy. Further optimization might be possible by using the Mersenne twister directly instead of a
+ * RandomSequenceGenerator; however, it is not clear how much of a difference this would make when compared to the
+ * inverse-cumulative Gaussian calculation.
  *
  * @author Jose Moya
+ * @see "ql/models/marketmodels/browniangenerators/mtbrowniangenerator.{hpp,cpp}" v1.42.1
  */
 public class MTBrownianGenerator extends BrownianGenerator {
 
     private final int factors_;
     private final int steps_;
-    private int lastStep_ = 0;
-    private final RandomSequenceGenerator<MersenneTwisterUniformRng> generator_;
+    private final RandomSequenceGenerator< MersenneTwisterUniformRng > generator_;
     private final InverseCumulativeNormal inverseCumulative_;
+    private int lastStep_ = 0;
 
     public MTBrownianGenerator(final int factors, final int steps) {
         this(factors, steps, 0L);
@@ -65,10 +62,8 @@ public class MTBrownianGenerator extends BrownianGenerator {
         this.factors_ = factors;
         this.steps_ = steps;
         // C++: generator_(factors * steps, MersenneTwisterUniformRng(seed))
-        this.generator_ = new RandomSequenceGenerator<MersenneTwisterUniformRng>(
-                MersenneTwisterUniformRng.class,
-                factors * steps,
-                new MersenneTwisterUniformRng(seed));
+        this.generator_ = new RandomSequenceGenerator< MersenneTwisterUniformRng >(MersenneTwisterUniformRng.class,
+                factors * steps, new MersenneTwisterUniformRng(seed));
         this.inverseCumulative_ = new InverseCumulativeNormal();
     }
 
@@ -79,7 +74,7 @@ public class MTBrownianGenerator extends BrownianGenerator {
         // no copying, just fetching a reference
         final double[] currentSequence = generator_.lastSequence().value();
         final int start = lastStep_ * factors_;
-        for (int i = 0; i < factors_; ++i) {
+        for ( int i = 0; i < factors_; ++i ) {
             output[i] = inverseCumulative_.op(currentSequence[start + i]);
         }
         ++lastStep_;
@@ -88,7 +83,7 @@ public class MTBrownianGenerator extends BrownianGenerator {
 
     @Override
     public double nextPath() {
-        final Sample<double[]> sample = generator_.nextSequence();
+        final Sample< double[] > sample = generator_.nextSequence();
         lastStep_ = 0;
         return sample.weight();
     }

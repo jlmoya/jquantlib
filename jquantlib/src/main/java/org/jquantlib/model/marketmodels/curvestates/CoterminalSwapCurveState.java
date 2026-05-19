@@ -28,10 +28,10 @@ When applicable, the original copyright notice follows this notice.
 
 package org.jquantlib.model.marketmodels.curvestates;
 
-import java.util.Arrays;
-
 import org.jquantlib.QL;
 import org.jquantlib.model.marketmodels.CurveState;
+
+import java.util.Arrays;
 
 /**
  * %Curve state for coterminal-swap market models.
@@ -44,12 +44,12 @@ import org.jquantlib.model.marketmodels.CurveState;
 public class CoterminalSwapCurveState extends CurveState {
 
     private int first_;
-    private double[] discRatios_;
-    private double[] forwardRates_;
-    private double[] cmSwapRates_;
-    private double[] cmSwapAnnuities_;
-    private double[] cotSwapRates_;
-    private double[] cotAnnuities_;
+    private final double[] discRatios_;
+    private final double[] forwardRates_;
+    private final double[] cmSwapRates_;
+    private final double[] cmSwapAnnuities_;
+    private final double[] cotSwapRates_;
+    private final double[] cotAnnuities_;
 
     public CoterminalSwapCurveState(final double[] rateTimes) {
         super(rateTimes);
@@ -84,15 +84,14 @@ public class CoterminalSwapCurveState extends CurveState {
         QL.require(rates.length == numberOfRates_,
                 "rates mismatch: " + numberOfRates_ + " required, " + rates.length + " provided");
         QL.require(firstValidIndex < numberOfRates_,
-                "first valid index must be less than " + numberOfRates_ + ": "
-                        + firstValidIndex + " not allowed");
+                "first valid index must be less than " + numberOfRates_ + ": " + firstValidIndex + " not allowed");
 
         first_ = firstValidIndex;
         System.arraycopy(rates, first_, cotSwapRates_, first_, numberOfRates_ - first_);
 
         // Reference: discRatios_[numberOfRates_] = P(n)/P(n) = 1.0 (set in ctor)
         cotAnnuities_[numberOfRates_ - 1] = rateTaus_[numberOfRates_ - 1];
-        for (int i = numberOfRates_ - 1; i > first_; --i) {
+        for ( int i = numberOfRates_ - 1; i > first_; --i ) {
             discRatios_[i] = 1.0 + cotSwapRates_[i] * cotAnnuities_[i];
             cotAnnuities_[i - 1] = cotAnnuities_[i] + rateTaus_[i - 1] * discRatios_[i];
         }
@@ -135,8 +134,8 @@ public class CoterminalSwapCurveState extends CurveState {
         QL.require(first_ < numberOfRates_, "curve state not initialized yet");
         QL.require(numeraire >= first_ && numeraire <= numberOfRates_, "invalid numeraire");
         QL.require(i >= first_ && i <= numberOfRates_, "invalid index");
-        constantMaturityFromDiscountRatios(spanningForwards, first_,
-                discRatios_, rateTaus_, cmSwapRates_, cmSwapAnnuities_);
+        constantMaturityFromDiscountRatios(spanningForwards, first_, discRatios_, rateTaus_, cmSwapRates_,
+                cmSwapAnnuities_);
         return cmSwapAnnuities_[i] / discRatios_[numeraire];
     }
 
@@ -144,8 +143,8 @@ public class CoterminalSwapCurveState extends CurveState {
     public double cmSwapRate(final int i, final int spanningForwards) {
         QL.require(first_ < numberOfRates_, "curve state not initialized yet");
         QL.require(i >= first_ && i <= numberOfRates_, "invalid index");
-        constantMaturityFromDiscountRatios(spanningForwards, first_,
-                discRatios_, rateTaus_, cmSwapRates_, cmSwapAnnuities_);
+        constantMaturityFromDiscountRatios(spanningForwards, first_, discRatios_, rateTaus_, cmSwapRates_,
+                cmSwapAnnuities_);
         return cmSwapRates_[i];
     }
 
@@ -165,8 +164,8 @@ public class CoterminalSwapCurveState extends CurveState {
     @Override
     public double[] cmSwapRates(final int spanningForwards) {
         QL.require(first_ < numberOfRates_, "curve state not initialized yet");
-        constantMaturityFromDiscountRatios(spanningForwards, first_,
-                discRatios_, rateTaus_, cmSwapRates_, cmSwapAnnuities_);
+        constantMaturityFromDiscountRatios(spanningForwards, first_, discRatios_, rateTaus_, cmSwapRates_,
+                cmSwapAnnuities_);
         return cmSwapRates_;
     }
 

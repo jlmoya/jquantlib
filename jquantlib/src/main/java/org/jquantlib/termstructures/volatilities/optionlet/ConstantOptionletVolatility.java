@@ -52,80 +52,73 @@ import org.jquantlib.time.Date;
 
 /**
  * Constant caplet volatility, no time-strike dependence
- * 
+ *
  * @author Zahid Hussain
  */
 public class ConstantOptionletVolatility extends OptionletVolatilityStructure {
 
-	private final Handle<Quote> volatility_;
+    private final Handle< Quote > volatility_;
 
-	/**
-	 * floating reference date, floating market data
-	 */
-	public ConstantOptionletVolatility(final int settlementDays,
-			final Calendar cal, final BusinessDayConvention bdc,
-			final Handle<Quote> vol, final DayCounter dc) {
-		super(settlementDays, cal, bdc, dc);
-		this.volatility_ = vol;
-		volatility_.addObserver(this);
-	}
+    /**
+     * floating reference date, floating market data
+     */
+    public ConstantOptionletVolatility(final int settlementDays, final Calendar cal, final BusinessDayConvention bdc,
+            final Handle< Quote > vol, final DayCounter dc) {
+        super(settlementDays, cal, bdc, dc);
+        this.volatility_ = vol;
+        volatility_.addObserver(this);
+    }
 
-	/**
-	 * fixed reference date, floating market data
-	 */
-	public ConstantOptionletVolatility(final Date referenceDate,
-			final Calendar cal, final BusinessDayConvention bdc,
-			final Handle<Quote> vol, final DayCounter dc) {
-		super(referenceDate, cal, bdc, dc);
-		this.volatility_ = vol;
-		volatility_.addObserver(this);
-	}
+    /**
+     * fixed reference date, floating market data
+     */
+    public ConstantOptionletVolatility(final Date referenceDate, final Calendar cal, final BusinessDayConvention bdc,
+            final Handle< Quote > vol, final DayCounter dc) {
+        super(referenceDate, cal, bdc, dc);
+        this.volatility_ = vol;
+        volatility_.addObserver(this);
+    }
 
-	/**
-	 * floating reference date, fixed market data
-	 */
-	public ConstantOptionletVolatility(final int settlementDays,
-			final Calendar cal, final BusinessDayConvention bdc,
-			final double vol, final DayCounter dc) {
-		super(settlementDays, cal, bdc, dc);
-		this.volatility_ = new Handle<Quote>(new SimpleQuote(vol));
-	}
+    /**
+     * floating reference date, fixed market data
+     */
+    public ConstantOptionletVolatility(final int settlementDays, final Calendar cal, final BusinessDayConvention bdc,
+            final double vol, final DayCounter dc) {
+        super(settlementDays, cal, bdc, dc);
+        this.volatility_ = new Handle< Quote >(new SimpleQuote(vol));
+    }
 
-	/**
-	 * fixed reference date, fixed market data
-	 */
-	public ConstantOptionletVolatility(final Date referenceDate,
-			final Calendar cal, final BusinessDayConvention bdc, final double vol,
-			final DayCounter dc) {
-		super(referenceDate, cal, bdc, dc);
-		volatility_ = new Handle<Quote>(new SimpleQuote(vol));
-	}
+    /**
+     * fixed reference date, fixed market data
+     */
+    public ConstantOptionletVolatility(final Date referenceDate, final Calendar cal, final BusinessDayConvention bdc,
+            final double vol, final DayCounter dc) {
+        super(referenceDate, cal, bdc, dc);
+        volatility_ = new Handle< Quote >(new SimpleQuote(vol));
+    }
 
+    //
+    // overrides TermStructure
+    //
 
-	//
-	// overrides TermStructure
-	//
-
-	@Override
+    @Override
     public Date maxDate() {
-		return Date.maxDate();
-	}
-
+        return Date.maxDate();
+    }
 
     //
     // overrides VolatilityTermStructure
     //
 
-	@Override
+    @Override
     public double minStrike() {
-		return Constants.QL_MIN_REAL;
-	}
+        return Constants.QL_MIN_REAL;
+    }
 
-	@Override
+    @Override
     public double maxStrike() {
-		return Constants.QL_MAX_REAL;
-	}
-
+        return Constants.QL_MAX_REAL;
+    }
 
     //
     // overrides OptionletVolatilityStructure
@@ -144,8 +137,8 @@ public class ConstantOptionletVolatility extends OptionletVolatilityStructure {
         return new FlatSmileSection(optionTime, atmVol, dayCounter());
     }
 
-	@Override
+    @Override
     protected double /* Volatility */volatilityImpl(final double time, final double rate) {
-		return volatility_.currentLink().value();
-	}
+        return volatility_.currentLink().value();
+    }
 }

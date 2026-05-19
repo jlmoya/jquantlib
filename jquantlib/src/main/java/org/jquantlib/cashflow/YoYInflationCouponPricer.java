@@ -41,26 +41,21 @@ import org.jquantlib.time.Period;
 import org.jquantlib.time.TimeUnit;
 
 /**
- * Base pricer for capped/floored YoY-inflation coupons (and ordinary
- * swaplets — capless/floorless YoY coupons use this pricer directly).
+ * Base pricer for capped/floored YoY-inflation coupons (and ordinary swaplets — capless/floorless YoY coupons use this
+ * pricer directly).
  *
  * <p>Java port of QuantLib v1.42.1 {@code YoYInflationCouponPricer}
  * ({@code ql/cashflows/inflationcouponpricer.{hpp,cpp}}).
  *
  * <p>Phase 2r C.3 fills out the optionlet path: {@link #optionletRate},
- * {@link #optionletPrice}, {@link #capletRate} / {@link #capletPrice} /
- * {@link #floorletRate} / {@link #floorletPrice}, plus the constructor
- * variant taking a {@link YoYOptionletVolatilitySurface} handle. Concrete
- * vol-dependent subclasses
- * ({@link BlackYoYInflationCouponPricer},
- *  {@link UnitDisplacedBlackYoYInflationCouponPricer},
- *  {@link BachelierYoYInflationCouponPricer}) supply
- * {@link #optionletPriceImp}.
+ * {@link #optionletPrice}, {@link #capletRate} / {@link #capletPrice} / {@link #floorletRate} / {@link #floorletPrice},
+ * plus the constructor variant taking a {@link YoYOptionletVolatilitySurface} handle. Concrete vol-dependent subclasses
+ * ({@link BlackYoYInflationCouponPricer}, {@link UnitDisplacedBlackYoYInflationCouponPricer},
+ * {@link BachelierYoYInflationCouponPricer}) supply {@link #optionletPriceImp}.
  *
  * <p>The {@link YoYOptionletVolatilitySurface} interface is forward-declared
- * in this package; Track B's full vol-surface family lives in
- * {@code org.jquantlib.termstructures.volatility.inflation} and implements
- * this interface (or an adapter is added when Track B lands).
+ * in this package; Track B's full vol-surface family lives in {@code org.jquantlib.termstructures.volatility.inflation}
+ * and implements this interface (or an adapter is added when Track B lands).
  *
  * @author JQuantLib migration team (Phase 2q B + 2r C.3)
  */
@@ -70,62 +65,56 @@ public class YoYInflationCouponPricer extends InflationCouponPricer {
     // protected state — populated by initialize()
     //
 
+    private final Handle< YieldTermStructure > nominalTermStructure_;
     protected YoYInflationCoupon coupon_;
     protected double gearing_;
     protected double spread_;
     protected double discount_;
-
     /** YoY optionlet vol surface (Phase 2r C.3) — may be {@code null}. */
-    protected Handle<YoYOptionletVolatilitySurface> capletVol_;
-    private final Handle<YieldTermStructure> nominalTermStructure_;
+    protected Handle< YoYOptionletVolatilitySurface > capletVol_;
 
     //
     // public constructors
     //
 
     /**
-     * Construct a pricer with no nominal term structure. {@link #swapletPrice}
-     * will be unable to discount and will mark {@code discount_} as
-     * {@link Constants#NULL_REAL}; {@link #swapletRate} still works.
+     * Construct a pricer with no nominal term structure. {@link #swapletPrice} will be unable to discount and will mark
+     * {@code discount_} as {@link Constants#NULL_REAL}; {@link #swapletRate} still works.
      */
     public YoYInflationCouponPricer() {
-        this(new Handle<YoYOptionletVolatilitySurface>(),
-                new Handle<YieldTermStructure>());
+        this(new Handle< YoYOptionletVolatilitySurface >(), new Handle< YieldTermStructure >());
     }
 
-    public YoYInflationCouponPricer(final Handle<YieldTermStructure> nominalTermStructure) {
-        this(new Handle<YoYOptionletVolatilitySurface>(), nominalTermStructure);
+    public YoYInflationCouponPricer(final Handle< YieldTermStructure > nominalTermStructure) {
+        this(new Handle< YoYOptionletVolatilitySurface >(), nominalTermStructure);
     }
 
-    public YoYInflationCouponPricer(
-            final Handle<YoYOptionletVolatilitySurface> capletVol,
-            final Handle<YieldTermStructure> nominalTermStructure) {
+    public YoYInflationCouponPricer(final Handle< YoYOptionletVolatilitySurface > capletVol,
+            final Handle< YieldTermStructure > nominalTermStructure) {
         this.capletVol_ = capletVol;
         this.nominalTermStructure_ = nominalTermStructure;
-        if (this.capletVol_ != null) {
+        if ( this.capletVol_ != null ) {
             this.capletVol_.addObserver(this);
         }
-        if (this.nominalTermStructure_ != null) {
+        if ( this.nominalTermStructure_ != null ) {
             this.nominalTermStructure_.addObserver(this);
         }
     }
 
-    public Handle<YieldTermStructure> nominalTermStructure() {
+    public Handle< YieldTermStructure > nominalTermStructure() {
         return nominalTermStructure_;
     }
 
-    public Handle<YoYOptionletVolatilitySurface> capletVolatility() {
+    public Handle< YoYOptionletVolatilitySurface > capletVolatility() {
         return capletVol_;
     }
 
     /**
-     * Replace the caplet volatility surface (mirrors C++
-     * {@code setCapletVolatility}). The supplied handle must be non-empty.
+     * Replace the caplet volatility surface (mirrors C++ {@code setCapletVolatility}). The supplied handle must be
+     * non-empty.
      */
-    public void setCapletVolatility(
-            final Handle<YoYOptionletVolatilitySurface> capletVol) {
-        QL.require(capletVol != null && !capletVol.empty(),
-                "empty capletVol handle");
+    public void setCapletVolatility(final Handle< YoYOptionletVolatilitySurface > capletVol) {
+        QL.require(capletVol != null && !capletVol.empty(), "empty capletVol handle");
         this.capletVol_ = capletVol;
         this.capletVol_.addObserver(this);
     }
@@ -136,20 +125,19 @@ public class YoYInflationCouponPricer extends InflationCouponPricer {
 
     @Override
     public void initialize(final InflationCoupon coupon) {
-        QL.require(coupon instanceof YoYInflationCoupon,
-                "year-on-year inflation coupon needed");
+        QL.require(coupon instanceof YoYInflationCoupon, "year-on-year inflation coupon needed");
         this.coupon_ = (YoYInflationCoupon) coupon;
         this.gearing_ = coupon_.gearing();
         this.spread_ = coupon_.spread();
         this.paymentDate_ = coupon_.date();
 
         this.discount_ = 1.0;
-        if (nominalTermStructure_ == null || nominalTermStructure_.empty()) {
+        if ( nominalTermStructure_ == null || nominalTermStructure_.empty() ) {
             // allow rate access but mark discount invalid for prices
             this.discount_ = Constants.NULL_REAL;
         } else {
             final YieldTermStructure curve = nominalTermStructure_.currentLink();
-            if (paymentDate_.gt(curve.referenceDate())) {
+            if ( paymentDate_.gt(curve.referenceDate()) ) {
                 this.discount_ = curve.discount(paymentDate_);
             }
         }
@@ -164,8 +152,7 @@ public class YoYInflationCouponPricer extends InflationCouponPricer {
 
     @Override
     public double swapletPrice() {
-        QL.require(discount_ != Constants.NULL_REAL,
-                "no nominal term structure provided");
+        QL.require(discount_ != Constants.NULL_REAL, "no nominal term structure provided");
         return swapletRate() * coupon_.accrualPeriod() * discount_;
     }
 
@@ -197,19 +184,16 @@ public class YoYInflationCouponPricer extends InflationCouponPricer {
     //
 
     protected double optionletPrice(final Option.Type optionType, final double effStrike) {
-        QL.require(discount_ != Constants.NULL_REAL,
-                "no nominal term structure provided");
-        return optionletRate(optionType, effStrike)
-                * coupon_.accrualPeriod() * discount_;
+        QL.require(discount_ != Constants.NULL_REAL, "no nominal term structure provided");
+        return optionletRate(optionType, effStrike) * coupon_.accrualPeriod() * discount_;
     }
 
     protected double optionletRate(final Option.Type optionType, final double effStrike) {
         final Date fixingDate = coupon_.fixingDate();
-        if (capletVol_ == null || capletVol_.empty()
-                || fixingDate.le(capletVol_.currentLink().baseDate())) {
+        if ( capletVol_ == null || capletVol_.empty() || fixingDate.le(capletVol_.currentLink().baseDate()) ) {
             // amount is determined; the surface need not be present.
             final double a, b;
-            if (optionType == Option.Type.Call) {
+            if ( optionType == Option.Type.Call ) {
                 a = coupon_.indexFixing();
                 b = effStrike;
             } else {
@@ -222,33 +206,26 @@ public class YoYInflationCouponPricer extends InflationCouponPricer {
         QL.require(!capletVol_.empty(), "missing optionlet volatility");
 
         final double stdDev = Math.sqrt(
-                capletVol_.currentLink().totalVariance(
-                        fixingDate, effStrike, new Period(0, TimeUnit.Days), false));
-        return optionletPriceImp(optionType, effStrike,
-                adjustedFixing(Double.NaN), stdDev);
+                capletVol_.currentLink().totalVariance(fixingDate, effStrike, new Period(0, TimeUnit.Days), false));
+        return optionletPriceImp(optionType, effStrike, adjustedFixing(Double.NaN), stdDev);
     }
 
     /**
-     * Hook for derived classes (Black/DD/Bachelier) to provide the
-     * vol-dependent rate. The base implementation always errors —
-     * subclasses must override.
+     * Hook for derived classes (Black/DD/Bachelier) to provide the vol-dependent rate. The base implementation always
+     * errors — subclasses must override.
      */
-    protected double optionletPriceImp(final Option.Type optionType,
-                                       final double strike,
-                                       final double forward,
-                                       final double stdDev) {
-        throw new LibraryException(
-                "you must implement this to get a vol-dependent price");
+    protected double optionletPriceImp(final Option.Type optionType, final double strike, final double forward,
+            final double stdDev) {
+        throw new LibraryException("you must implement this to get a vol-dependent price");
     }
 
     /**
-     * Adjusted fixing — returns the index fixing if {@code fixing} is
-     * {@code NaN} (Java sentinel for C++ {@code Null<Rate>()}), otherwise
-     * returns the supplied value. The base class applies no adjustment;
-     * subclasses can override.
+     * Adjusted fixing — returns the index fixing if {@code fixing} is {@code NaN} (Java sentinel for C++
+     * {@code Null<Rate>()}), otherwise returns the supplied value. The base class applies no adjustment; subclasses can
+     * override.
      */
     protected double adjustedFixing(final double fixing) {
-        if (Double.isNaN(fixing)) {
+        if ( Double.isNaN(fixing) ) {
             return coupon_.indexFixing();
         }
         return fixing;

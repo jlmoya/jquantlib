@@ -14,8 +14,7 @@ package org.jquantlib.experimental.catbonds;
 import org.jquantlib.time.Date;
 
 /**
- * Interface that maps a catastrophe event date to the date on which the
- * associated payment is made.
+ * Interface that maps a catastrophe event date to the date on which the associated payment is made.
  *
  * <p>Port of {@code ql/experimental/catbonds/riskynotional.hpp}
  * {@code EventPaymentOffset}.

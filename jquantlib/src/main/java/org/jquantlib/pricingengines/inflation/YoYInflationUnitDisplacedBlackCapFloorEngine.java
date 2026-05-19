@@ -44,24 +44,21 @@ import org.jquantlib.termstructures.volatility.inflation.YoYOptionletVolatilityS
  * ({@code ql/pricingengines/inflation/inflationcapfloorengines.{hpp,cpp}}).
  *
  * <p>Strike and forward are both shifted by 1.0 before the standard Black
- * formula. Mirrors the C++ explicit-shift form:
- * {@code blackFormula(type, strike+1.0, forward+1.0, stdDev, d)}.
+ * formula. Mirrors the C++ explicit-shift form: {@code blackFormula(type, strike+1.0, forward+1.0, stdDev, d)}.
  *
  * @author JQuantLib migration team (Phase 2r C.2)
  */
 public class YoYInflationUnitDisplacedBlackCapFloorEngine extends InflationCapFloorEngine {
 
-    public YoYInflationUnitDisplacedBlackCapFloorEngine(
-            final YoYInflationIndex index,
-            final Handle<YoYOptionletVolatilitySurface> volatility,
-            final Handle<YieldTermStructure> nominalTermStructure) {
+    public YoYInflationUnitDisplacedBlackCapFloorEngine(final YoYInflationIndex index,
+            final Handle< YoYOptionletVolatilitySurface > volatility,
+            final Handle< YieldTermStructure > nominalTermStructure) {
         super(index, volatility, nominalTermStructure);
     }
 
     @Override
-    protected double optionletImpl(final Option.Type type, final double strike,
-                                   final double forward, final double stdDev,
-                                   final double d) {
+    protected double optionletImpl(final Option.Type type, final double strike, final double forward,
+            final double stdDev, final double d) {
         return BlackFormula.blackFormula(type, strike + 1.0, forward + 1.0, stdDev, d);
     }
 }

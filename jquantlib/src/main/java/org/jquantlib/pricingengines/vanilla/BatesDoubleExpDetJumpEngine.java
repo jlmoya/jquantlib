@@ -25,21 +25,18 @@ import org.jquantlib.processes.BatesProcess;
  * BatesDoubleExpEngine variant with deterministic jump intensity.
  *
  * <p>Phase 5h.5-Bates port of QuantLib v1.42.1
- * {@code ql/pricingengines/vanilla/batesengine.{hpp,cpp}}
- * {@code BatesDoubleExpDetJumpEngine}.
+ * {@code ql/pricingengines/vanilla/batesengine.{hpp,cpp}} {@code BatesDoubleExpDetJumpEngine}.
  */
 public class BatesDoubleExpDetJumpEngine extends BatesDoubleExpEngine {
 
     private final BatesDoubleExpDetJumpModel detJumpModel_;
 
-    public BatesDoubleExpDetJumpEngine(final BatesDoubleExpDetJumpModel model,
-                                       final BatesProcess process) {
+    public BatesDoubleExpDetJumpEngine(final BatesDoubleExpDetJumpModel model, final BatesProcess process) {
         this(model, process, 144);
     }
 
-    public BatesDoubleExpDetJumpEngine(final BatesDoubleExpDetJumpModel model,
-                                       final BatesProcess process,
-                                       final int integrationOrder) {
+    public BatesDoubleExpDetJumpEngine(final BatesDoubleExpDetJumpModel model, final BatesProcess process,
+            final int integrationOrder) {
         super(model, process, integrationOrder);
         this.detJumpModel_ = model;
     }
@@ -48,13 +45,12 @@ public class BatesDoubleExpDetJumpEngine extends BatesDoubleExpEngine {
     protected Complex addOnTerm(final double phi, final double t, final int j) {
         final Complex l = super.addOnTerm(phi, t, j);
 
-        final double lambda      = detJumpModel_.lambda();
+        final double lambda = detJumpModel_.lambda();
         final double kappaLambda = detJumpModel_.kappaLambda();
         final double thetaLambda = detJumpModel_.thetaLambda();
 
         final double expNegKLt = Math.exp(-kappaLambda * t);
-        final double scaleA = (kappaLambda * t - 1.0 + expNegKLt) * thetaLambda
-                / (kappaLambda * t * lambda);
+        final double scaleA = (kappaLambda * t - 1.0 + expNegKLt) * thetaLambda / (kappaLambda * t * lambda);
         final double scaleB = (1.0 - expNegKLt) / (kappaLambda * t);
 
         return l.mul(scaleA).add(l.mul(scaleB));

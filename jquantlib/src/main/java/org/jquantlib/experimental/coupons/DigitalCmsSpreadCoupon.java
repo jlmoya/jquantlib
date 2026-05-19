@@ -39,14 +39,11 @@ import org.jquantlib.util.Visitor;
 /**
  * CMS-spread coupon with an embedded digital call/put option.
  * <p>
- * Composes a {@link CmsSpreadCoupon} with the
- * {@link org.jquantlib.cashflow.DigitalCoupon} replication framework. The
- * digital payoff (cash-or-nothing or asset-or-nothing) is replicated through
- * a tight call/put-spread around the strike, controlled by the
- * {@link DigitalReplication} parameters.
+ * Composes a {@link CmsSpreadCoupon} with the {@link org.jquantlib.cashflow.DigitalCoupon} replication framework. The
+ * digital payoff (cash-or-nothing or asset-or-nothing) is replicated through a tight call/put-spread around the strike,
+ * controlled by the {@link DigitalReplication} parameters.
  * <p>
- * Port of C++ QuantLib v1.42.1
- * {@code ql/experimental/coupons/digitalcmsspreadcoupon.hpp/cpp}.
+ * Port of C++ QuantLib v1.42.1 {@code ql/experimental/coupons/digitalcmsspreadcoupon.hpp/cpp}.
  *
  * @author Peter Caspers (C++ original)
  */
@@ -58,29 +55,18 @@ public class DigitalCmsSpreadCoupon extends DigitalCoupon {
 
     /** Convenience: no call/put options. */
     public DigitalCmsSpreadCoupon(final CmsSpreadCoupon underlying) {
-        this(underlying,
-                Constants.NULL_REAL, Position.Long, false, Constants.NULL_REAL,
-                Constants.NULL_REAL, Position.Long, false, Constants.NULL_REAL,
-                null, false);
+        this(underlying, Constants.NULL_REAL, Position.Long, false, Constants.NULL_REAL, Constants.NULL_REAL,
+                Position.Long, false, Constants.NULL_REAL, null, false);
     }
 
     /** Full ctor (matches C++ DigitalCmsSpreadCoupon ctor). */
-    public DigitalCmsSpreadCoupon(final CmsSpreadCoupon underlying,
-                                  final double callStrike,
-                                  final Position callPosition,
-                                  final boolean isCallATMIncluded,
-                                  final double callDigitalPayoff,
-                                  final double putStrike,
-                                  final Position putPosition,
-                                  final boolean isPutATMIncluded,
-                                  final double putDigitalPayoff,
-                                  final DigitalReplication replication,
-                                  final boolean nakedOption) {
-        super(underlying, callStrike, callPosition, isCallATMIncluded,
-                callDigitalPayoff, putStrike, putPosition, isPutATMIncluded,
-                putDigitalPayoff, replication, nakedOption);
+    public DigitalCmsSpreadCoupon(final CmsSpreadCoupon underlying, final double callStrike,
+            final Position callPosition, final boolean isCallATMIncluded, final double callDigitalPayoff,
+            final double putStrike, final Position putPosition, final boolean isPutATMIncluded,
+            final double putDigitalPayoff, final DigitalReplication replication, final boolean nakedOption) {
+        super(underlying, callStrike, callPosition, isCallATMIncluded, callDigitalPayoff, putStrike, putPosition,
+                isPutATMIncluded, putDigitalPayoff, replication, nakedOption);
     }
-
 
     //
     // implements PolymorphicVisitable
@@ -88,8 +74,8 @@ public class DigitalCmsSpreadCoupon extends DigitalCoupon {
 
     @Override
     public void accept(final PolymorphicVisitor pv) {
-        final Visitor<DigitalCmsSpreadCoupon> v = (pv != null) ? pv.visitor(this.getClass()) : null;
-        if (v != null) {
+        final Visitor< DigitalCmsSpreadCoupon > v = (pv != null) ? pv.visitor(this.getClass()) : null;
+        if ( v != null ) {
             v.visit(this);
         } else {
             super.accept(pv);

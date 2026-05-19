@@ -29,28 +29,26 @@
 
 package org.jquantlib.cashflow;
 
-import java.util.List;
-
 import org.jquantlib.time.Date;
 import org.jquantlib.util.DefaultObservable;
 import org.jquantlib.util.Observable;
 import org.jquantlib.util.Observer;
 
+import java.util.List;
+
 /**
  * Base inflation-coupon pricer.
  *
  * <p>The main reason we can't use {@link FloatingRateCouponPricer} as the base
- * is that it takes a {@link FloatingRateCoupon} which takes an
- * {@code InterestRateIndex} and we need an inflation index (these are lagged).
+ * is that it takes a {@link FloatingRateCoupon} which takes an {@code InterestRateIndex} and we need an inflation index
+ * (these are lagged).
  *
  * <p>The basic inflation-specific thing that the pricer has to do is deal with
- * different lags in the index and the option, e.g. the option could look 3
- * months back and the index 2.
+ * different lags in the index and the option, e.g. the option could look 3 months back and the index 2.
  *
  * <p>We add the requirement that pricers do inverseCap/Floor-lets. These are
- * cap/floor-lets as usually defined, i.e. pay out if underlying is above/below
- * a strike. The non-inverse (usual) versions are from a coupon point of view
- * (a capped coupon has a maximum at the strike).
+ * cap/floor-lets as usually defined, i.e. pay out if underlying is above/below a strike. The non-inverse (usual)
+ * versions are from a coupon point of view (a capped coupon has a maximum at the strike).
  *
  * <p>Mirrors C++ {@code QuantLib::InflationCouponPricer} at v1.42.1
  * (cashflows/inflationcouponpricer.{hpp,cpp}).
@@ -63,12 +61,11 @@ public abstract class InflationCouponPricer implements Observer, Observable {
     // protected fields
     //
 
-    /** Payment date of the coupon being priced (initialized in {@link #initialize}). */
-    protected Date paymentDate_;
-
     // Phase 2x A.4: WeakReferenceObservable to break cumulative
     // observer-list bleed across tests.
     private final DefaultObservable delegatedObservable = new org.jquantlib.util.WeakReferenceObservable(this);
+    /** Payment date of the coupon being priced (initialized in {@link #initialize}). */
+    protected Date paymentDate_;
 
     //
     // public abstract methods
@@ -122,7 +119,7 @@ public abstract class InflationCouponPricer implements Observer, Observable {
     }
 
     @Override
-    public List<Observer> getObservers() {
+    public List< Observer > getObservers() {
         return delegatedObservable.getObservers();
     }
 

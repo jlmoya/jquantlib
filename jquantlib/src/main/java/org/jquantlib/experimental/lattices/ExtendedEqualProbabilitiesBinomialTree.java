@@ -47,54 +47,48 @@ import org.jquantlib.processes.StochasticProcess1D;
 /**
  * Base class for equal probabilities binomial tree
  *
- * @category lattices
- *
  * @author Richard Gomes
+ * @category lattices
  */
 public abstract class ExtendedEqualProbabilitiesBinomialTree extends ExtendedBinomialTree /*<T>*/ {
 
+    //
+    // protected fields
+    //
 
-   //
-   // protected fields
-   //
+    protected double up;
 
-   protected double up;
+    //
+    // public methods
+    //
 
+    public ExtendedEqualProbabilitiesBinomialTree(final StochasticProcess1D process, final /* @Time */ double end,
+            final int steps) {
 
-   //
-   // public methods
-   //
+        super(process, end, steps);
+    }
 
-   public ExtendedEqualProbabilitiesBinomialTree(
-           final StochasticProcess1D process,
-           final /* @Time */ double end,
-           final int steps) {
+    @Override
+    public double underlying(final int i, final int index) /* @ReadOnly */ {
+        /*@Time*/
+        final double stepTime = i * dt;
+        final long j = 2L * index - i;
+        // exploiting the forward value tree centering
+        return x0 * Math.exp(i * driftStep(stepTime) + j * upStep(stepTime));
+    }
 
-       super(process, end, steps);
-   }
+    @Override
+    public double probability(final int i, final int ref, final int branch) /* @ReadOnly */ {
+        return 0.5;
+    }
 
-   @Override
-   public double underlying(final int i, final int index) /* @ReadOnly */ {
-       /*@Time*/ final double stepTime = i*dt;
-       final long j = 2*index - i;
-       // exploiting the forward value tree centering
-       return x0*Math.exp(i*driftStep(stepTime) + j*upStep(stepTime));
-   }
+    //
+    // protected abstract methods
+    //
 
-   @Override
-   public double probability(final int i, final int ref, final int branch) /* @ReadOnly */ {
-       return 0.5;
-   }
-
-
-
-   //
-   // protected abstract methods
-   //
-
-   /**
-    * The tree dependent up move term at time stepTime
-    */
-   protected abstract /*@Real*/ double upStep(/*@Time*/ double stepTime) /* @ReadOnly */;
+    /**
+     * The tree dependent up move term at time stepTime
+     */
+    protected abstract /*@Real*/ double upStep(/*@Time*/ double stepTime) /* @ReadOnly */;
 
 }

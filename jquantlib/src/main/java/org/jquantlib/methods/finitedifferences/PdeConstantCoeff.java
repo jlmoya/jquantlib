@@ -42,28 +42,23 @@ package org.jquantlib.methods.finitedifferences;
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.processes.GeneralizedBlackScholesProcess;
 
-
 /**
  * General class for one dimensional PDE's
  *
- * @author Srinivas Hasti
- *
  * @param <T>
+ * @author Srinivas Hasti
  */
-public class PdeConstantCoeff<T extends Pde> extends PdeSecondOrderParabolic {
+public class PdeConstantCoeff< T extends Pde > extends PdeSecondOrderParabolic {
     /* Real*/private final double diffusion;
     /* Real*/private final double drift;
     /* Real*/private final double discount;
-    
-    private final Class<? extends Pde> classT;
-    
 
-    public PdeConstantCoeff(
-    		final Class<? extends Pde> classT,
-    		final GeneralizedBlackScholesProcess process, 
-    		/*Time*/final double t, 
-    		/*Real*/final double x) {
-    	this.classT = classT;
+    private final Class< ? extends Pde > classT;
+
+    public PdeConstantCoeff(final Class< ? extends Pde > classT, final GeneralizedBlackScholesProcess process,
+            /*Time*/final double t,
+            /*Real*/final double x) {
+        this.classT = classT;
         final T pde = getInstance(classT, process);
         diffusion = pde.diffusion(t, x);
         drift = pde.drift(t, x);
@@ -85,12 +80,10 @@ public class PdeConstantCoeff<T extends Pde> extends PdeSecondOrderParabolic {
         return drift;
     }
 
-    protected T getInstance(
-    		final Class<? extends Pde> classT,
-    		final GeneralizedBlackScholesProcess process) {
+    protected T getInstance(final Class< ? extends Pde > classT, final GeneralizedBlackScholesProcess process) {
         try {
             return (T) classT.getConstructor(GeneralizedBlackScholesProcess.class).newInstance(process);
-        } catch (final Exception e) {
+        } catch ( final Exception e ) {
             throw new LibraryException(e); // QA:[RG]::verified
         }
     }

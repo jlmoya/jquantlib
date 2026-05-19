@@ -21,10 +21,10 @@
  */
 package org.jquantlib.math.functions;
 
-import java.util.List;
-
 import org.jquantlib.math.Ops;
 import org.jquantlib.math.Ops.DoubleOp;
+
+import java.util.List;
 
 /**
  * Processes a sequence of functions
@@ -33,23 +33,22 @@ import org.jquantlib.math.Ops.DoubleOp;
  */
 public class Expression implements Ops.DoubleOp {
 
-    private final List<DoubleOp> list;
+    private final List< DoubleOp > list;
 
-    public Expression(final List<DoubleOp> list) {
+    public Expression(final List< DoubleOp > list) {
         this.list = list;
     }
 
-
-	//
+    //
     // implements Ops.DoubleOp
     //
 
-	@Override
-	public double op(final double a) {
+    @Override
+    public double op(final double a) {
         double result = a;
-        for (int i = 0; i<list.size(); i++)
+        for ( int i = 0; i < list.size(); i++ )
             result = list.get(i).op(result);
         return result;
-	}
+    }
 
 }

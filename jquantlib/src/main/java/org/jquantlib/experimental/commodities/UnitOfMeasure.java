@@ -22,34 +22,22 @@
 
 package org.jquantlib.experimental.commodities;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.jquantlib.math.Rounding;
 
-
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Unit-of-measure specification.
  * <p>
  * Java port of QuantLib v1.42.1 {@code ql/experimental/commodities/unitofmeasure.hpp}.
  * <p>
- * Default-constructed instances have undefined behaviour and act only as
- * placeholders until reassigned.
+ * Default-constructed instances have undefined behaviour and act only as placeholders until reassigned.
  */
 public class UnitOfMeasure {
 
-    /** Quantitative type of the unit. */
-    public enum Type {
-        Mass,
-        Volume,
-        Energy,
-        Quantity
-    }
-
     /** Shared registry by name, mirroring the C++ static {@code unitsOfMeasure_} map. */
-    private static final Map<String, Data> unitsOfMeasure_ = new HashMap<>();
-
+    private static final Map< String, Data > unitsOfMeasure_ = new HashMap<>();
     /** Pimpl-style data; null when this instance is empty. */
     protected Data data_;
 
@@ -61,13 +49,13 @@ public class UnitOfMeasure {
     /**
      * Construct or look up a unit of measure by name.
      *
-     * @param name e.g. "Barrels"
-     * @param code e.g. "BBL"
+     * @param name     e.g. "Barrels"
+     * @param code     e.g. "BBL"
      * @param unitType physical category
      */
     public UnitOfMeasure(final String name, final String code, final Type unitType) {
         final Data existing = unitsOfMeasure_.get(name);
-        if (existing != null) {
+        if ( existing != null ) {
             this.data_ = existing;
         } else {
             this.data_ = new Data(name, code, unitType);
@@ -107,10 +95,13 @@ public class UnitOfMeasure {
 
     @Override
     public boolean equals(final Object obj) {
-        if (this == obj) return true;
-        if (!(obj instanceof UnitOfMeasure)) return false;
+        if ( this == obj )
+            return true;
+        if ( !(obj instanceof UnitOfMeasure) )
+            return false;
         final UnitOfMeasure other = (UnitOfMeasure) obj;
-        if (this.empty() || other.empty()) return this.empty() == other.empty();
+        if ( this.empty() || other.empty() )
+            return this.empty() == other.empty();
         return this.code().equals(other.code());
     }
 
@@ -124,6 +115,11 @@ public class UnitOfMeasure {
         return empty() ? "null unit of measure" : code();
     }
 
+    /** Quantitative type of the unit. */
+    public enum Type {
+        Mass, Volume, Energy, Quantity
+    }
+
     /** Pimpl data record. */
     protected static final class Data {
         public final String name;
@@ -132,24 +128,17 @@ public class UnitOfMeasure {
         public final UnitOfMeasure triangulationUnitOfMeasure;
         public final Rounding rounding;
 
-        public Data(final String name,
-                    final String code,
-                    final Type unitType) {
+        public Data(final String name, final String code, final Type unitType) {
             this(name, code, unitType, new UnitOfMeasure(), new Rounding());
         }
 
-        public Data(final String name,
-                    final String code,
-                    final Type unitType,
-                    final UnitOfMeasure triangulationUnitOfMeasure) {
+        public Data(final String name, final String code, final Type unitType,
+                final UnitOfMeasure triangulationUnitOfMeasure) {
             this(name, code, unitType, triangulationUnitOfMeasure, new Rounding());
         }
 
-        public Data(final String name,
-                    final String code,
-                    final Type unitType,
-                    final UnitOfMeasure triangulationUnitOfMeasure,
-                    final Rounding rounding) {
+        public Data(final String name, final String code, final Type unitType,
+                final UnitOfMeasure triangulationUnitOfMeasure, final Rounding rounding) {
             this.name = name;
             this.code = code;
             this.unitType = unitType;

@@ -24,11 +24,9 @@ import org.jquantlib.time.Date;
 /**
  * Daily position of an energy commodity instrument.
  * <p>
- * Java port of QuantLib v1.42.1 {@code EnergyDailyPosition} from
- * {@code energycommodity.hpp}.
+ * Java port of QuantLib v1.42.1 {@code EnergyDailyPosition} from {@code energycommodity.hpp}.
  * <p>
- * Public mutable fields preserve the C++ struct semantics (used by engines
- * to populate positions per evaluation date).
+ * Public mutable fields preserve the C++ struct semantics (used by engines to populate positions per evaluation date).
  */
 public class EnergyDailyPosition {
 
@@ -48,10 +46,8 @@ public class EnergyDailyPosition {
         this.unrealized = false;
     }
 
-    public EnergyDailyPosition(final Date date,
-                               final double payLegPrice,
-                               final double receiveLegPrice,
-                               final boolean unrealized) {
+    public EnergyDailyPosition(final Date date, final double payLegPrice, final double receiveLegPrice,
+            final boolean unrealized) {
         this.date = date;
         this.quantityAmount = 0.0;
         this.payLegPrice = payLegPrice;

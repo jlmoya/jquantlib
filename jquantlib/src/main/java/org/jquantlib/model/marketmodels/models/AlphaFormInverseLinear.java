@@ -20,8 +20,7 @@ package org.jquantlib.model.marketmodels.models;
  * Inverse-linear alpha form: {@code 1 / (1 + alpha * times[i])}.
  *
  * <p>Java port of {@code AlphaFormInverseLinear} from
- * {@code ql/models/marketmodels/models/alphaformconcrete.{hpp,cpp}}
- * (QuantLib v1.42.1).
+ * {@code ql/models/marketmodels/models/alphaformconcrete.{hpp,cpp}} (QuantLib v1.42.1).
  *
  * <p>Phase 3j B.1 (Track B).
  */

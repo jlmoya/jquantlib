@@ -23,22 +23,18 @@
 package org.jquantlib.util;
 
 /**
- * This interface is intended to provide more flexibility to complex object
- * models when multiple inheritance is needed.
+ * This interface is intended to provide more flexibility to complex object models when multiple inheritance is needed.
  *
  * <p>
- * This class is based on the work done by Martin Fischer, with only minor changes.
- * See references below.
- *
- * @see <a
- *      href="http://www.jroller.com/martin_fischer/entry/a_generic_java_observer_pattern">Martin
- *      Fischer: Observer and Observable interfaces</a>
- * @see <a href="http://jdj.sys-con.com/read/35878.htm">Improved
- *      Observer/Observable</a>
- * @see Observable
+ * This class is based on the work done by Martin Fischer, with only minor changes. See references below.
  *
  * @author Martin Fischer (original author)
  * @author Richard Gomes
+ * @see <a href="http://www.jroller.com/martin_fischer/entry/a_generic_java_observer_pattern">Martin Fischer: Observer
+ * and Observable interfaces</a>
+ * @see <a href="http://jdj.sys-con.com/read/35878.htm">Improved
+ * Observer/Observable</a>
+ * @see Observable
  */
 public interface Observer {
 
@@ -49,19 +45,16 @@ public interface Observer {
      * @param arg
      */
     //XXX::OBS public void update(Observable o, Object arg);
-    public void update();
+    void update();
 
     /**
-     * Explicitly update this instance and any nested observers. If
-     * notifications are disabled (see {@link ObservableSettings}), a call
-     * to this method still propagates updates to nested observers. The
-     * default implementation simply delegates to {@link #update()}.
+     * Explicitly update this instance and any nested observers. If notifications are disabled (see
+     * {@link ObservableSettings}), a call to this method still propagates updates to nested observers. The default
+     * implementation simply delegates to {@link #update()}.
      *
      * <p>Mirrors C++ {@code Observer::deepUpdate()} from
-     * {@code ql/patterns/observable.hpp}. Subclasses such as
-     * {@code StrippedOptionletAdapter} override this to first call
-     * {@code deepUpdate()} on each nested observable, then call
-     * {@link #update()} on themselves.
+     * {@code ql/patterns/observable.hpp}. Subclasses such as {@code StrippedOptionletAdapter} override this to first
+     * call {@code deepUpdate()} on each nested observable, then call {@link #update()} on themselves.
      */
     default void deepUpdate() {
         update();

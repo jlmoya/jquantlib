@@ -29,24 +29,18 @@ package org.jquantlib.model.marketmodels.evolvers;
 
 import org.jquantlib.QL;
 import org.jquantlib.math.matrixutilities.Matrix;
-import org.jquantlib.model.marketmodels.BrownianGenerator;
-import org.jquantlib.model.marketmodels.BrownianGeneratorFactory;
-import org.jquantlib.model.marketmodels.CurveState;
-import org.jquantlib.model.marketmodels.EvolutionDescription;
-import org.jquantlib.model.marketmodels.MarketModel;
-import org.jquantlib.model.marketmodels.MarketModelEvolver;
+import org.jquantlib.model.marketmodels.*;
 import org.jquantlib.model.marketmodels.curvestates.LMMCurveState;
 import org.jquantlib.model.marketmodels.driftcomputation.LMMDriftCalculator;
 
 /**
  * Euler-stepping log-normal forward-rate evolver.
  * <p>
- * Single-step Euler scheme: drift D1 evaluated at the start of the step,
- * Brownian-driven displacement applied without a corrector pass.
- *
- * @see "ql/models/marketmodels/evolvers/lognormalfwdrateeuler.{hpp,cpp}" v1.42.1
+ * Single-step Euler scheme: drift D1 evaluated at the start of the step, Brownian-driven displacement applied without a
+ * corrector pass.
  *
  * @author Jose Moya
+ * @see "ql/models/marketmodels/evolvers/lognormalfwdrateeuler.{hpp,cpp}" v1.42.1
  */
 public class LogNormalFwdRateEuler extends MarketModelEvolver {
 
@@ -61,7 +55,6 @@ public class LogNormalFwdRateEuler extends MarketModelEvolver {
     private final int numberOfRates_;
     private final int numberOfFactors_;
     private final LMMCurveState curveState_;
-    private int currentStep_;
     private final double[] forwards_;
     private final double[] displacements_;
     private final double[] logForwards_;
@@ -72,19 +65,15 @@ public class LogNormalFwdRateEuler extends MarketModelEvolver {
     private final int[] alive_;
     // helper classes
     private final LMMDriftCalculator[] calculators_;
+    private int currentStep_;
 
-    public LogNormalFwdRateEuler(
-            final MarketModel marketModel,
-            final BrownianGeneratorFactory factory,
+    public LogNormalFwdRateEuler(final MarketModel marketModel, final BrownianGeneratorFactory factory,
             final int[] numeraires) {
         this(marketModel, factory, numeraires, 0);
     }
 
-    public LogNormalFwdRateEuler(
-            final MarketModel marketModel,
-            final BrownianGeneratorFactory factory,
-            final int[] numeraires,
-            final int initialStep) {
+    public LogNormalFwdRateEuler(final MarketModel marketModel, final BrownianGeneratorFactory factory,
+            final int[] numeraires, final int initialStep) {
         this.marketModel_ = marketModel;
         this.numeraires_ = numeraires.clone();
         this.initialStep_ = initialStep;
@@ -110,14 +99,13 @@ public class LogNormalFwdRateEuler extends MarketModelEvolver {
 
         this.calculators_ = new LMMDriftCalculator[steps];
         this.fixedDrifts_ = new double[steps][numberOfRates_];
-        for (int j = 0; j < steps; ++j) {
+        for ( int j = 0; j < steps; ++j ) {
             final Matrix A = marketModel.pseudoRoot(j);
-            calculators_[j] = new LMMDriftCalculator(A, displacements_,
-                    marketModel.evolution().rateTaus(),
+            calculators_[j] = new LMMDriftCalculator(A, displacements_, marketModel.evolution().rateTaus(),
                     numeraires[j], alive_[j]);
-            for (int k = 0; k < numberOfRates_; ++k) {
+            for ( int k = 0; k < numberOfRates_; ++k ) {
                 double variance = 0.0;
-                for (int f = 0; f < numberOfFactors_; ++f) {
+                for ( int f = 0; f < numberOfFactors_; ++f ) {
                     final double a = A.get(k, f);
                     variance += a * a;
                 }
@@ -134,9 +122,8 @@ public class LogNormalFwdRateEuler extends MarketModelEvolver {
     }
 
     private void setForwards(final double[] forwards) {
-        QL.require(forwards.length == numberOfRates_,
-                "mismatch between forwards and rateTimes");
-        for (int i = 0; i < numberOfRates_; ++i) {
+        QL.require(forwards.length == numberOfRates_, "mismatch between forwards and rateTimes");
+        for ( int i = 0; i < numberOfRates_; ++i ) {
             initialLogForwards_[i] = Math.log(forwards[i] + displacements_[i]);
         }
         calculators_[initialStep_].compute(forwards, initialDrifts_);
@@ -159,7 +146,7 @@ public class LogNormalFwdRateEuler extends MarketModelEvolver {
         // we're going from T1 to T2
 
         // a) compute drifts D1 at T1
-        if (currentStep_ > initialStep_) {
+        if ( currentStep_ > initialStep_ ) {
             calculators_[currentStep_].compute(forwards_, drifts1_);
         } else {
             System.arraycopy(initialDrifts_, 0, drifts1_, 0, numberOfRates_);
@@ -171,10 +158,10 @@ public class LogNormalFwdRateEuler extends MarketModelEvolver {
         final double[] fixedDrift = fixedDrifts_[currentStep_];
 
         final int alive = alive_[currentStep_];
-        for (int i = alive; i < numberOfRates_; ++i) {
+        for ( int i = alive; i < numberOfRates_; ++i ) {
             logForwards_[i] += drifts1_[i] + fixedDrift[i];
             double inner = 0.0;
-            for (int f = 0; f < numberOfFactors_; ++f) {
+            for ( int f = 0; f < numberOfFactors_; ++f ) {
                 inner += A.get(i, f) * brownians_[f];
             }
             logForwards_[i] += inner;

@@ -24,51 +24,45 @@ package org.jquantlib.cashflow;
 
 import org.jquantlib.Settings;
 import org.jquantlib.time.Date;
-import org.jquantlib.util.PolymorphicVisitable;
 import org.jquantlib.util.PolymorphicVisitor;
 import org.jquantlib.util.Visitor;
-
 
 /**
  * @author Srinivas Hasti
  */
 // TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
-public abstract class CashFlow extends Event implements Comparable<CashFlow> {
+public abstract class CashFlow extends Event implements Comparable< CashFlow > {
 
     //
     // public abstract methods
     //
 
     /**
-	 * @return amount of the cash flow. The amount is not discounted, i.e., it is the actual amount paid at the cash flow date.
-	 */
-	public abstract double amount();
+     * @return amount of the cash flow. The amount is not discounted, i.e., it is the actual amount paid at the cash
+     * flow date.
+     */
+    public abstract double amount();
 
     /**
-     * Mirror of C++ {@code CashFlow::exCouponDate()}
-     * (ql/cashflow.hpp:66). Default implementation returns a null/default
-     * {@link Date}, meaning "the cashflow has no ex-coupon date".
-     * Subclasses such as {@link Coupon} override this. Phase 5e.5b-CFC-d-93.
+     * Mirror of C++ {@code CashFlow::exCouponDate()} (ql/cashflow.hpp:66). Default implementation returns a
+     * null/default {@link Date}, meaning "the cashflow has no ex-coupon date". Subclasses such as {@link Coupon}
+     * override this. Phase 5e.5b-CFC-d-93.
      */
     public Date exCouponDate() {
         return new Date();
     }
 
     /**
-     * Mirror of C++ {@code CashFlow::tradingExCoupon(refDate)}
-     * (ql/cashflow.cpp:51-61). Returns {@code true} iff the cashflow has
-     * a non-null ex-coupon date that is on or before {@code refDate}
-     * (or the {@link Settings#evaluationDate()} when {@code refDate} is
-     * null/default). Phase 5e.5b-CFC-d-93.
+     * Mirror of C++ {@code CashFlow::tradingExCoupon(refDate)} (ql/cashflow.cpp:51-61). Returns {@code true} iff the
+     * cashflow has a non-null ex-coupon date that is on or before {@code refDate} (or the
+     * {@link Settings#evaluationDate()} when {@code refDate} is null/default). Phase 5e.5b-CFC-d-93.
      */
     public boolean tradingExCoupon(final Date refDate) {
         final Date ecd = exCouponDate();
-        if (ecd == null || ecd.isNull()) {
+        if ( ecd == null || ecd.isNull() ) {
             return false;
         }
-        final Date ref = (refDate != null && !refDate.isNull())
-                ? refDate
-                : new Settings().evaluationDate();
+        final Date ref = (refDate != null && !refDate.isNull()) ? refDate : new Settings().evaluationDate();
         return ecd.le(ref);
     }
 
@@ -82,29 +76,28 @@ public abstract class CashFlow extends Event implements Comparable<CashFlow> {
     //
 
     /**
-     * Mirrors C++ {@code CashFlow::hasOccurred(refDate, includeRefDate)}
-     * (cashflow.cpp v1.42.1 lines 27-49). Adds the
-     * {@link Settings#includeTodaysCashFlows()} override to the base
-     * {@link Event#hasOccurred(Date, Boolean)} behavior.
+     * Mirrors C++ {@code CashFlow::hasOccurred(refDate, includeRefDate)} (cashflow.cpp v1.42.1 lines 27-49). Adds the
+     * {@link Settings#includeTodaysCashFlows()} override to the base {@link Event#hasOccurred(Date, Boolean)}
+     * behavior.
      *
      * <p>Boolean parameter mirrors C++ {@code ext::optional<bool>}:
      * {@code null} means "use {@link Settings#includeReferenceDateEvents()}".
      *
      * <p>If {@code refDate} equals the current evaluation date (or is
-     * null/default), the {@code includeTodaysCashFlows} setting (when
-     * non-null) overrides the {@code includeRefDate} parameter.
+     * null/default), the {@code includeTodaysCashFlows} setting (when non-null) overrides the {@code includeRefDate}
+     * parameter.
      */
     @Override
     public boolean hasOccurred(final Date refDate, Boolean includeRefDate) /* @ReadOnly */ {
         // Easy and quick handling of most cases (cashflow.cpp:30-37):
         // when refDate is set and unambiguously before/after the cash-flow
         // date, return without touching settings.
-        if (refDate != null && !refDate.isNull()) {
+        if ( refDate != null && !refDate.isNull() ) {
             final Date cf = date();
-            if (refDate.lt(cf)) {
+            if ( refDate.lt(cf) ) {
                 return false;
             }
-            if (cf.lt(refDate)) {
+            if ( cf.lt(refDate) ) {
                 return true;
             }
         }
@@ -112,11 +105,9 @@ public abstract class CashFlow extends Event implements Comparable<CashFlow> {
         // refDate equals (or is null/default-construed as) the evaluation
         // date — apply the includeTodaysCashFlows override (cashflow.cpp:39-47).
         final Settings settings = new Settings();
-        if (refDate == null
-                || refDate.isNull()
-                || refDate.equals(settings.evaluationDate())) {
+        if ( refDate == null || refDate.isNull() || refDate.equals(settings.evaluationDate()) ) {
             final Boolean includeToday = settings.includeTodaysCashFlows();
-            if (includeToday != null) {
+            if ( includeToday != null ) {
                 includeRefDate = includeToday;
             }
         }
@@ -126,7 +117,7 @@ public abstract class CashFlow extends Event implements Comparable<CashFlow> {
     /** Overload — delegates to the {@link Boolean}-typed C++-aligned form. */
     @Override
     public boolean hasOccurred(final Date refDate) /* @ReadOnly */ {
-        return hasOccurred(refDate, (Boolean) null);
+        return hasOccurred(refDate, null);
     }
 
     /** Overload — delegates to the {@link Boolean}-typed C++-aligned form. */
@@ -135,23 +126,22 @@ public abstract class CashFlow extends Event implements Comparable<CashFlow> {
         return hasOccurred(refDate, Boolean.valueOf(includeRefDate));
     }
 
-
     //
     // implements Comparable
     //
 
-	@Override
+    @Override
     public int compareTo(final CashFlow c2) {
-        if (date().lt(c2.date())) {
+        if ( date().lt(c2.date()) ) {
             return -1;
         }
 
-        if (date().equals(c2.date())) {
+        if ( date().equals(c2.date()) ) {
             try {
-                if (amount() < c2.amount()) {
+                if ( amount() < c2.amount() ) {
                     return -1;
                 }
-            } catch (final Exception e) {
+            } catch ( final Exception e ) {
                 return -1;
             }
             return 0;
@@ -160,19 +150,18 @@ public abstract class CashFlow extends Event implements Comparable<CashFlow> {
         return 1;
     }
 
+    //
+    // implements PolymorphicVisitable
+    //
 
-	//
-	// implements PolymorphicVisitable
-	//
-
-	@Override
-	public void accept(final PolymorphicVisitor pv) {
-		final Visitor<CashFlow> v = (pv!=null) ? pv.visitor(this.getClass()) : null;
-        if (v != null) {
+    @Override
+    public void accept(final PolymorphicVisitor pv) {
+        final Visitor< CashFlow > v = (pv != null) ? pv.visitor(this.getClass()) : null;
+        if ( v != null ) {
             v.visit(this);
         } else {
             super.accept(pv);
         }
-	}
+    }
 
 }

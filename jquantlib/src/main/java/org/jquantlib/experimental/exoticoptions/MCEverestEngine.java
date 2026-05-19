@@ -68,33 +68,22 @@ public class MCEverestEngine extends EverestOption.EngineImpl {
     protected final long seed_;
 
     /** Lazily-built delegate that owns the {@link MonteCarloModel}. */
-    protected McSimulation<MultiPath> simulation_;
-
+    protected McSimulation< MultiPath > simulation_;
 
     //
     // constructors
     //
 
-    public MCEverestEngine(final StochasticProcessArray processes,
-                           final int timeSteps,
-                           final int timeStepsPerYear,
-                           final boolean brownianBridge,
-                           final boolean antitheticVariate,
-                           final int requiredSamples,
-                           final double requiredTolerance,
-                           final int maxSamples,
-                           final long seed) {
+    public MCEverestEngine(final StochasticProcessArray processes, final int timeSteps, final int timeStepsPerYear,
+            final boolean brownianBridge, final boolean antitheticVariate, final int requiredSamples,
+            final double requiredTolerance, final int maxSamples, final long seed) {
         super();
-        QL.require(timeSteps != McSimulation.NULL_SAMPLES
-                || timeStepsPerYear != McSimulation.NULL_SAMPLES,
+        QL.require(timeSteps != McSimulation.NULL_SAMPLES || timeStepsPerYear != McSimulation.NULL_SAMPLES,
                 "no time steps provided");
-        QL.require(timeSteps == McSimulation.NULL_SAMPLES
-                || timeStepsPerYear == McSimulation.NULL_SAMPLES,
+        QL.require(timeSteps == McSimulation.NULL_SAMPLES || timeStepsPerYear == McSimulation.NULL_SAMPLES,
                 "both time steps and time steps per year were provided");
-        QL.require(timeSteps != 0,
-                "timeSteps must be positive, " + timeSteps + " not allowed");
-        QL.require(timeStepsPerYear != 0,
-                "timeStepsPerYear must be positive, " + timeStepsPerYear + " not allowed");
+        QL.require(timeSteps != 0, "timeSteps must be positive, " + timeSteps + " not allowed");
+        QL.require(timeStepsPerYear != 0, "timeStepsPerYear must be positive, " + timeStepsPerYear + " not allowed");
 
         this.processes_ = processes;
         this.timeSteps_ = timeSteps;
@@ -108,19 +97,18 @@ public class MCEverestEngine extends EverestOption.EngineImpl {
         this.processes_.addObserver(this);
     }
 
-
     //
     // McSimulation-shaped helpers
     //
 
     /**
-     * Mirrors C++ {@code endDiscount()}: discount factor at the option's
-     * exercise date, taken from the first asset's risk-free yield curve.
+     * Mirrors C++ {@code endDiscount()}: discount factor at the option's exercise date, taken from the first asset's
+     * risk-free yield curve.
      */
     protected double endDiscount() {
-        final EverestOption.ArgumentsImpl a = (EverestOption.ArgumentsImpl) arguments_;
+        final EverestOption.ArgumentsImpl a = arguments_;
         final StochasticProcess1D first = processes_.process(0);
-        if (!(first instanceof GeneralizedBlackScholesProcess)) {
+        if ( !(first instanceof GeneralizedBlackScholesProcess) ) {
             throw new RuntimeException("Black-Scholes process required");
         }
         final GeneralizedBlackScholesProcess process = (GeneralizedBlackScholesProcess) first;
@@ -128,11 +116,11 @@ public class MCEverestEngine extends EverestOption.EngineImpl {
     }
 
     protected TimeGrid timeGrid() {
-        final EverestOption.ArgumentsImpl a = (EverestOption.ArgumentsImpl) arguments_;
+        final EverestOption.ArgumentsImpl a = arguments_;
         final double residualTime = processes_.time(a.exercise.lastDate());
-        if (timeSteps_ != McSimulation.NULL_SAMPLES) {
+        if ( timeSteps_ != McSimulation.NULL_SAMPLES ) {
             return new TimeGrid(residualTime, timeSteps_);
-        } else if (timeStepsPerYear_ != McSimulation.NULL_SAMPLES) {
+        } else if ( timeStepsPerYear_ != McSimulation.NULL_SAMPLES ) {
             final int steps = (int) (timeStepsPerYear_ * residualTime);
             return new TimeGrid(residualTime, Math.max(steps, 1));
         } else {
@@ -140,29 +128,23 @@ public class MCEverestEngine extends EverestOption.EngineImpl {
         }
     }
 
-    protected MonteCarloModel.PathGeneratorAdapter<MultiPath> pathGenerator() {
+    protected MonteCarloModel.PathGeneratorAdapter< MultiPath > pathGenerator() {
         final int numAssets = processes_.size();
         final TimeGrid grid = timeGrid();
         final int dimensions = numAssets * (grid.size() - 1);
-        final RandomSequenceGenerator<MersenneTwisterUniformRng> uniformRsg =
-                new RandomSequenceGenerator<MersenneTwisterUniformRng>(
-                        MersenneTwisterUniformRng.class, dimensions, seed_);
-        final InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                InverseCumulativeNormal> gsg =
-                new InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                        InverseCumulativeNormal>(uniformRsg, new InverseCumulativeNormal());
-        final MultiPathGenerator<InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                InverseCumulativeNormal>> gen =
-                new MultiPathGenerator<InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                        InverseCumulativeNormal>>(processes_, grid, gsg, brownianBridge_);
+        final RandomSequenceGenerator< MersenneTwisterUniformRng > uniformRsg = new RandomSequenceGenerator< MersenneTwisterUniformRng >(
+                MersenneTwisterUniformRng.class, dimensions, seed_);
+        final InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal > gsg = new InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal >(
+                uniformRsg, new InverseCumulativeNormal());
+        final MultiPathGenerator< InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal > > gen = new MultiPathGenerator< InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal > >(
+                processes_, grid, gsg, brownianBridge_);
         return new MonteCarloModel.MultiPathGeneratorAdapterImpl(gen);
     }
 
-    protected PathPricer<MultiPath> pathPricer() {
-        final EverestOption.ArgumentsImpl a = (EverestOption.ArgumentsImpl) arguments_;
+    protected PathPricer< MultiPath > pathPricer() {
+        final EverestOption.ArgumentsImpl a = arguments_;
         return new EverestMultiPathPricer(a.notional, a.guarantee, endDiscount());
     }
-
 
     //
     // PricingEngine
@@ -170,17 +152,22 @@ public class MCEverestEngine extends EverestOption.EngineImpl {
 
     @Override
     public void calculate() /* @ReadOnly */ {
-        final EverestOption.ResultsImpl r = (EverestOption.ResultsImpl) results_;
-        final EverestOption.ArgumentsImpl a = (EverestOption.ArgumentsImpl) arguments_;
+        final EverestOption.ResultsImpl r = results_;
+        final EverestOption.ArgumentsImpl a = arguments_;
 
-        this.simulation_ = new McSimulation<MultiPath>(antitheticVariate_, /* controlVariate */ false) {
-            @Override protected PathPricer<MultiPath> pathPricer() {
+        this.simulation_ = new McSimulation< MultiPath >(antitheticVariate_, /* controlVariate */ false) {
+            @Override
+            protected PathPricer< MultiPath > pathPricer() {
                 return MCEverestEngine.this.pathPricer();
             }
-            @Override protected MonteCarloModel.PathGeneratorAdapter<MultiPath> pathGenerator() {
+
+            @Override
+            protected MonteCarloModel.PathGeneratorAdapter< MultiPath > pathGenerator() {
                 return MCEverestEngine.this.pathGenerator();
             }
-            @Override protected TimeGrid timeGrid() {
+
+            @Override
+            protected TimeGrid timeGrid() {
                 return MCEverestEngine.this.timeGrid();
             }
         };

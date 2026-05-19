@@ -37,25 +37,29 @@ import java.util.List;
  * <pre>
  *   m_n = (2*n*m_{n-1} - n*(n-1)*m_{n-2}) / (1 + u*u),  n &gt;= 2
  * </pre>
- * Concrete subclasses supply the closed-form initial values {@code m_0} and
- * {@code m_1}, plus the final {@code moment(n)} / {@code w(x)} normalisation
- * required by {@link MomentBasedGaussianPolynomial}.
+ * Concrete subclasses supply the closed-form initial values {@code m_0} and {@code m_1}, plus the final
+ * {@code moment(n)} / {@code w(x)} normalisation required by {@link MomentBasedGaussianPolynomial}.
  *
  * <p>The arbitrary-precision template parameter {@code mp_real} in C++ is not
- * needed in the Java port; {@code double} is used throughout. See
- * {@link MomentBasedGaussianPolynomial} for the precision rationale.
+ * needed in the Java port; {@code double} is used throughout. See {@link MomentBasedGaussianPolynomial} for the
+ * precision rationale.
  */
-public abstract class GaussLaguerreTrigonometricBase
-        extends MomentBasedGaussianPolynomial {
+public abstract class GaussLaguerreTrigonometricBase extends MomentBasedGaussianPolynomial {
 
     protected final double u_;
 
     // Lazily-grown caches for the auxiliary m_ and factorial f_ tables.
-    private final List<Double> m_ = new ArrayList<>();
-    private final List<Double> f_ = new ArrayList<>();
+    private final List< Double > m_ = new ArrayList<>();
+    private final List< Double > f_ = new ArrayList<>();
 
     protected GaussLaguerreTrigonometricBase(final double u) {
         this.u_ = u;
+    }
+
+    private static void ensureSize(final List< Double > list, final int size) {
+        while ( list.size() < size ) {
+            list.add(Double.NaN);
+        }
     }
 
     /** Initial moment value m_0 (concrete variant supplies the closed form). */
@@ -65,20 +69,19 @@ public abstract class GaussLaguerreTrigonometricBase
     protected abstract double m1();
 
     /**
-     * Auxiliary moment {@code m_n} via the second-order recursion shared by
-     * the Cosine and Sine specialisations. Memoised.
+     * Auxiliary moment {@code m_n} via the second-order recursion shared by the Cosine and Sine specialisations.
+     * Memoised.
      */
     protected double moment_(final int n) {
         ensureSize(m_, n + 1);
-        if (Double.isNaN(m_.get(n))) {
+        if ( Double.isNaN(m_.get(n)) ) {
             final double val;
-            if (n == 0) {
+            if ( n == 0 ) {
                 val = m0();
-            } else if (n == 1) {
+            } else if ( n == 1 ) {
                 val = m1();
             } else {
-                val = (2.0 * n * moment_(n - 1)
-                        - n * (n - 1) * moment_(n - 2)) / (1.0 + u_ * u_);
+                val = (2.0 * n * moment_(n - 1) - n * (n - 1) * moment_(n - 2)) / (1.0 + u_ * u_);
             }
             m_.set(n, val);
         }
@@ -90,16 +93,10 @@ public abstract class GaussLaguerreTrigonometricBase
      */
     protected double fact(final int n) {
         ensureSize(f_, n + 1);
-        if (Double.isNaN(f_.get(n))) {
+        if ( Double.isNaN(f_.get(n)) ) {
             final double val = (n == 0) ? 1.0 : n * fact(n - 1);
             f_.set(n, val);
         }
         return f_.get(n);
-    }
-
-    private static void ensureSize(final List<Double> list, final int size) {
-        while (list.size() < size) {
-            list.add(Double.NaN);
-        }
     }
 }

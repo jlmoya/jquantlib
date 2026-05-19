@@ -40,13 +40,13 @@
 
 package org.jquantlib.cashflow;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.indexes.IborIndex;
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.time.Date;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Base pricer for {@link MultipleResetsCoupon}.
@@ -59,7 +59,7 @@ import org.jquantlib.time.Date;
 public abstract class MultipleResetsPricer extends FloatingRateCouponPricer {
 
     protected MultipleResetsCoupon coupon_;
-    protected List<Double> subPeriodFixings_;
+    protected List< Double > subPeriodFixings_;
 
     @Override
     public void initialize(final FloatingRateCoupon coupon) {
@@ -71,10 +71,10 @@ public abstract class MultipleResetsPricer extends FloatingRateCouponPricer {
 
         QL.require(coupon_.accrualPeriod() != 0.0, "null accrual period");
 
-        final List<Date> fixingDates = coupon_.fixingDates();
+        final List< Date > fixingDates = coupon_.fixingDates();
         final int n = fixingDates.size();
-        subPeriodFixings_ = new ArrayList<Double>(n);
-        for (int i = 0; i < n; i++) {
+        subPeriodFixings_ = new ArrayList< Double >(n);
+        for ( int i = 0; i < n; i++ ) {
             subPeriodFixings_.add(index.fixing(fixingDates.get(i)) + coupon_.rateSpread());
         }
     }

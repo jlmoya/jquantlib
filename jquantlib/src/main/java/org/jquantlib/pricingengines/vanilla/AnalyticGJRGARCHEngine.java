@@ -43,26 +43,21 @@ import org.jquantlib.processes.GjrGarchProcess;
 import org.jquantlib.time.Date;
 
 /**
- * Analytic GJR-GARCH(1,1) Edgeworth-expansion engine for European vanilla
- * options.
+ * Analytic GJR-GARCH(1,1) Edgeworth-expansion engine for European vanilla options.
  *
  * <p>Faithful Java port of C++ QuantLib v1.42.1
  * {@code ql/pricingengines/vanilla/analyticgjrgarchengine.{hpp,cpp}}.
  *
  * <p>Reference: Jin-Chuan Duan, Genevieve Gauthier, Jean-Guy Simonato,
- * Caroline Sasseville (2006). <i>Approximating the GJR-GARCH and EGARCH
- * option pricing models analytically.</i> Journal of Computational
- * Finance, Volume 9, Number 3, Spring 2006.
+ * Caroline Sasseville (2006). <i>Approximating the GJR-GARCH and EGARCH option pricing models analytically.</i> Journal
+ * of Computational Finance, Volume 9, Number 3, Spring 2006.
  *
  * <p>Caches the intermediate constants ({@code m1, m2, m3, v1, v2, v3,
- * z1, z2, x1}) and the moment statistics ({@code ex, sigma, k3, k4})
- * between calls so that successive {@link #calculate()} invocations with
- * the same parameter set short-circuit the heavy triple-sum.
+ * z1, z2, x1}) and the moment statistics ({@code ex, sigma, k3, k4}) between calls so that successive
+ * {@link #calculate()} invocations with the same parameter set short-circuit the heavy triple-sum.
  */
 public class AnalyticGJRGARCHEngine
-        extends GenericModelEngine<GjrGarchModel,
-                                   OneAssetOption.Arguments,
-                                   OneAssetOption.Results> {
+        extends GenericModelEngine< GjrGarchModel, OneAssetOption.Arguments, OneAssetOption.Results > {
 
     // stored parameters (sentinels; updated on first calculate())
     private boolean init_ = false;
@@ -94,9 +89,7 @@ public class AnalyticGJRGARCHEngine
     private double k4_;
 
     public AnalyticGJRGARCHEngine(final GjrGarchModel model) {
-        super(model,
-              new OneAssetOption.ArgumentsImpl(),
-              new OneAssetOption.ResultsImpl());
+        super(model, new OneAssetOption.ArgumentsImpl(), new OneAssetOption.ResultsImpl());
         this.init_ = false;
     }
 
@@ -104,10 +97,8 @@ public class AnalyticGJRGARCHEngine
     public void calculate() {
         final OneAssetOption.ArgumentsImpl args = (OneAssetOption.ArgumentsImpl) arguments_;
 
-        QL.require(args.exercise.type() == Exercise.Type.European,
-                "not an European option");
-        QL.require(args.payoff instanceof StrikedTypePayoff,
-                "non-striked payoff given");
+        QL.require(args.exercise.type() == Exercise.Type.European, "not an European option");
+        QL.require(args.payoff instanceof StrikedTypePayoff, "non-striked payoff given");
 
         final StrikedTypePayoff payoff = (StrikedTypePayoff) args.payoff;
         final GjrGarchProcess process = model.process();
@@ -121,8 +112,7 @@ public class AnalyticGJRGARCHEngine
         final double strikePrice = payoff.strike();
         final double term = process.time(exerciseDate);
         final int T = (int) Math.round(process.daysPerYear() * term);
-        final double r = -Math.log(riskFreeDiscount / dividendDiscount)
-                / (process.daysPerYear() * term);
+        final double r = -Math.log(riskFreeDiscount / dividendDiscount) / (process.daysPerYear() * term);
         final double h1 = process.v0();
         final double b0 = process.omega();
         final double b2 = process.alpha();
@@ -145,54 +135,58 @@ public class AnalyticGJRGARCHEngine
 
         boolean constantsMatch = false;
 
-        if (!init_ || b1 != b1_ || b2 != b2_ || b3 != b3_ || la != la_) {
+        if ( !init_ || b1 != b1_ || b2 != b2_ || b3 != b3_ || la != la_ ) {
             // compute the useful coefficients
             m1 = b1 + (b2 + b3 * N) * (1.0 + la * la) + b3 * la * n;
-            m2 = b1 * b1 + b2 * b2 * (Math.pow(la, 4) + 6.0 * la * la + 3.0)
-                    + (b3 * b3 + 2.0 * b2 * b3) * (Math.pow(la, 4) * N
-                            + Math.pow(la, 3) * n + 6.0 * la * la * N + 5.0 * la * n + 3.0 * N)
-                    + 2.0 * b1 * b2 * (1.0 + la * la)
-                    + 2.0 * b3 * b1 * (la * la * N + la * n + N);
-            m3 = Math.pow(b1, 3)
-                    + (3.0 * b3 * b3 * b1 + 6.0 * b1 * b2 * b3)
-                            * (Math.pow(la, 3) * n + 5.0 * la * n + 3.0 * N
-                                    + Math.pow(la, 4) * N + 6.0 * la * la * N)
-                    + Math.pow(b2, 3) * (15.0 + Math.pow(la, 6) + 15.0 * Math.pow(la, 4) + 45.0 * la * la)
-                    + (Math.pow(b3, 3) + 3.0 * b2 * b2 * b3 + 3.0 * b3 * b3 * b2)
-                            * (Math.pow(la, 5) * n + 14.0 * Math.pow(la, 3) * n + 33.0 * la * n
-                                    + 15.0 * N + 15.0 * Math.pow(la, 4) * N + 45.0 * la * la * N
-                                    + Math.pow(la, 6) * N)
-                    + 3.0 * b1 * b1 * b2 * (1.0 + la * la)
-                    + 3.0 * b1 * b1 * b3 * (la * n + N + la * la * N)
-                    + 3.0 * b1 * b2 * b2 * (3.0 + Math.pow(la, 4) + 6.0 * la * la);
+            m2 = b1 * b1 + b2 * b2 * (Math.pow(la, 4) + 6.0 * la * la + 3.0) + (b3 * b3 + 2.0 * b2 * b3) * (
+                    Math.pow(la, 4) * N + Math.pow(la, 3) * n + 6.0 * la * la * N + 5.0 * la * n + 3.0 * N)
+                    + 2.0 * b1 * b2 * (1.0 + la * la) + 2.0 * b3 * b1 * (la * la * N + la * n + N);
+            m3 = Math.pow(b1, 3) + (3.0 * b3 * b3 * b1 + 6.0 * b1 * b2 * b3) * (Math.pow(la, 3) * n + 5.0 * la * n
+                    + 3.0 * N + Math.pow(la, 4) * N + 6.0 * la * la * N) + Math.pow(b2, 3) * (15.0 + Math.pow(la, 6)
+                    + 15.0 * Math.pow(la, 4) + 45.0 * la * la)
+                    + (Math.pow(b3, 3) + 3.0 * b2 * b2 * b3 + 3.0 * b3 * b3 * b2) * (Math.pow(la, 5) * n
+                    + 14.0 * Math.pow(la, 3) * n + 33.0 * la * n + 15.0 * N + 15.0 * Math.pow(la, 4) * N
+                    + 45.0 * la * la * N + Math.pow(la, 6) * N) + 3.0 * b1 * b1 * b2 * (1.0 + la * la)
+                    + 3.0 * b1 * b1 * b3 * (la * n + N + la * la * N) + 3.0 * b1 * b2 * b2 * (3.0 + Math.pow(la, 4)
+                    + 6.0 * la * la);
             v1 = -2.0 * b2 * la - 2.0 * b3 * (n + la * N);
-            v2 = -4.0 * b2 * b2 * (3.0 * la + Math.pow(la, 3))
-                    - (4.0 * b3 * b3 + 8.0 * b2 * b3)
-                            * (la * la * n + 2.0 * n + Math.pow(la, 3) * N + 3.0 * la * N)
-                    - 4.0 * b1 * b2 * la - 4.0 * b3 * b1 * (n + la * N);
-            final double v3 = -12.0 * b3 * b1 * (b3 + 2.0 * b2)
-                            * (la * la * n + 2.0 * n + Math.pow(la, 3) * N + 3.0 * la * N)
-                    - 6.0 * Math.pow(b2, 3) * la * (15.0 + Math.pow(la, 4) + 10.0 * la * la)
-                    - 6.0 * b3 * (b3 * b3 + 3.0 * b2 * b2 + 3.0 * b3 * b2)
-                            * (9.0 * la * la * n + 8.0 * n + 15.0 * la * N + Math.pow(la, 4) * n
-                                    + Math.pow(la, 5) * N + 10.0 * Math.pow(la, 3) * N)
-                    - 6.0 * b1 * b1 * b2 * la - 6.0 * b3 * b1 * b1 * (n + la * N)
-                    - 12.0 * b2 * b2 * b1 * (3.0 * la + Math.pow(la, 3));
+            v2 = -4.0 * b2 * b2 * (3.0 * la + Math.pow(la, 3)) - (4.0 * b3 * b3 + 8.0 * b2 * b3) * (la * la * n
+                    + 2.0 * n + Math.pow(la, 3) * N + 3.0 * la * N) - 4.0 * b1 * b2 * la - 4.0 * b3 * b1 * (n + la * N);
+            final double v3 =
+                    -12.0 * b3 * b1 * (b3 + 2.0 * b2) * (la * la * n + 2.0 * n + Math.pow(la, 3) * N + 3.0 * la * N)
+                            - 6.0 * Math.pow(b2, 3) * la * (15.0 + Math.pow(la, 4) + 10.0 * la * la) - 6.0 * b3 * (
+                            b3 * b3 + 3.0 * b2 * b2 + 3.0 * b3 * b2) * (9.0 * la * la * n + 8.0 * n + 15.0 * la * N
+                            + Math.pow(la, 4) * n + Math.pow(la, 5) * N + 10.0 * Math.pow(la, 3) * N)
+                            - 6.0 * b1 * b1 * b2 * la - 6.0 * b3 * b1 * b1 * (n + la * N) - 12.0 * b2 * b2 * b1 * (
+                            3.0 * la + Math.pow(la, 3));
             z1 = b1 + b2 * (3.0 + la * la) + b3 * (la * n + 3.0 * N + la * la * N);
-            final double z2 = b1 * b1 + b2 * b2 * (15.0 + Math.pow(la, 4) + 18.0 * la * la)
-                    + (b3 * b3 + 2.0 * b2 * b3)
-                            * (Math.pow(la, 3) * n + 17.0 * la * n + 15.0 * N
-                                    + Math.pow(la, 4) * N + 18.0 * la * la * N)
-                    + 2.0 * b1 * b2 * (3.0 + la * la)
-                    + 2.0 * b3 * b1 * (la * n + 3.0 * N + la * la * N);
+            final double z2 =
+                    b1 * b1 + b2 * b2 * (15.0 + Math.pow(la, 4) + 18.0 * la * la) + (b3 * b3 + 2.0 * b2 * b3) * (
+                            Math.pow(la, 3) * n + 17.0 * la * n + 15.0 * N + Math.pow(la, 4) * N + 18.0 * la * la * N)
+                            + 2.0 * b1 * b2 * (3.0 + la * la) + 2.0 * b3 * b1 * (la * n + 3.0 * N + la * la * N);
             x1 = -6.0 * b2 * la - 2.0 * b3 * (4.0 * n + 3.0 * la * N);
-            b1_ = b1; b2_ = b2; b3_ = b3; la_ = la;
-            m1_ = m1; m2_ = m2; m3_ = m3;
-            v1_ = v1; v2_ = v2; v3_ = v3; z1_ = z1; z2_ = z2; x1_ = x1;
+            b1_ = b1;
+            b2_ = b2;
+            b3_ = b3;
+            la_ = la;
+            m1_ = m1;
+            m2_ = m2;
+            m3_ = m3;
+            v1_ = v1;
+            v2_ = v2;
+            v3_ = v3;
+            z1_ = z1;
+            z2_ = z2;
+            x1_ = x1;
         } else {
             constantsMatch = true;
-            m1 = m1_; m2 = m2_; m3 = m3_;
-            v1 = v1_; v2 = v2_; z1 = z1_; x1 = x1_;
+            m1 = m1_;
+            m2 = m2_;
+            m3 = m3_;
+            v1 = v1_;
+            v2 = v2_;
+            z1 = z1_;
+            x1 = x1_;
         }
 
         double ex;
@@ -200,11 +194,16 @@ public class AnalyticGJRGARCHEngine
         double k3;
         double k4;
 
-        if (!init_ || !constantsMatch || b0 != b0_ || h1 != h1_ || T != T_) {
+        if ( !init_ || !constantsMatch || b0 != b0_ || h1 != h1_ || T != T_ ) {
             // these reassignments mirror the C++ guard: ensure m1/m2/m3 etc.
             // hold the current b1/b2/b3/la set whether we computed or cached.
-            m1 = m1_; m2 = m2_; m3 = m3_;
-            v1 = v1_; v2 = v2_; z1 = z1_; x1 = x1_;
+            m1 = m1_;
+            m2 = m2_;
+            m3 = m3_;
+            v1 = v1_;
+            v2 = v2_;
+            z1 = z1_;
+            x1 = x1_;
 
             final double[] m1ai = new double[T];
             final double[] m2ai = new double[T];
@@ -212,7 +211,7 @@ public class AnalyticGJRGARCHEngine
             m1ai[0] = 1.0;
             m2ai[0] = 1.0;
             m3ai[0] = 1.0;
-            for (int i = 1; i < T; ++i) {
+            for ( int i = 1; i < T; ++i ) {
                 m1ai[i] = m1ai[i - 1] * m1;
                 m2ai[i] = m2ai[i - 1] * m2;
                 m3ai[i] = m3ai[i - 1] * m3;
@@ -234,7 +233,7 @@ public class AnalyticGJRGARCHEngine
             double sEh1_2eh1_2eh = 0.0;
             double sEh3_2e3h = 0.0;
 
-            for (int i = 0; i < T; ++i) {
+            for ( int i = 0; i < T; ++i ) {
                 final double m1i = m1ai[i];
                 final double m2i = m2ai[i];
                 final double m3i = m3ai[i];
@@ -243,63 +242,50 @@ public class AnalyticGJRGARCHEngine
                 final double m1im3i = m1i - m3i;
                 final double m2im3i = m2i - m3i;
                 final double Eh = b0 * (1.0 - m1i) / (1.0 - m1) + m1i * h1;
-                final double Eh2 = b0 * b0 * ((1.0 + m1) * (1.0 - m2i) / (1.0 - m2)
-                        - 2.0 * m1 * m1im2i / (m1 - m2)) / (1.0 - m1)
-                        + 2.0 * b0 * m1 * m1im2i * h1 / (m1 - m2)
-                        + m2i * h1 * h1;
-                final double Eh3 = Math.pow(b0, 3) * (
-                        (1.0 - m3i) / (1.0 - m3)
+                final double Eh2 =
+                        b0 * b0 * ((1.0 + m1) * (1.0 - m2i) / (1.0 - m2) - 2.0 * m1 * m1im2i / (m1 - m2)) / (1.0 - m1)
+                                + 2.0 * b0 * m1 * m1im2i * h1 / (m1 - m2) + m2i * h1 * h1;
+                final double Eh3 = Math.pow(b0, 3) * ((1.0 - m3i) / (1.0 - m3)
                         + 3.0 * m2 * ((1.0 - m3i) / (1.0 - m3) - m2im3i / (m2 - m3)) / (1.0 - m2)
-                        + 3.0 * m1 * ((1.0 - m3i) / (1.0 - m3) - m1im3i / (m1 - m3)) / (1.0 - m1)
-                        + 6.0 * m1 * m2 * (
-                                ((1.0 - m3i) / (1.0 - m3) - m2im3i / (m2 - m3)) / (1.0 - m2)
-                                + (m2im3i / (m2 - m3) - m1im3i / (m1 - m3)) / (m1 - m2)
-                        ) / (1.0 - m1))
+                        + 3.0 * m1 * ((1.0 - m3i) / (1.0 - m3) - m1im3i / (m1 - m3)) / (1.0 - m1) +
+                        6.0 * m1 * m2 * (((1.0 - m3i) / (1.0 - m3) - m2im3i / (m2 - m3)) / (1.0 - m2)
+                                + (m2im3i / (m2 - m3) - m1im3i / (m1 - m3)) / (m1 - m2)) / (1.0 - m1))
                         + 3.0 * b0 * b0 * m1 * h1 * (m1im3i / (m1 - m3)
-                                + 2.0 * m2 * (m1im3i / (m1 - m3) - m2im3i / (m2 - m3)) / (m1 - m2))
-                        + 3.0 * b0 * m2 * h1 * h1 * m2im3i / (m2 - m3)
-                        + m3i * h1 * h1 * h1;
+                        + 2.0 * m2 * (m1im3i / (m1 - m3) - m2im3i / (m2 - m3)) / (m1 - m2))
+                        + 3.0 * b0 * m2 * h1 * h1 * m2im3i / (m2 - m3) + m3i * h1 * h1 * h1;
                 final double Eh3_2 = .375 * Math.pow(Eh, -0.5) * Eh2 + .625 * Math.pow(Eh, 1.5);
                 final double Eh5_2 = 1.875 * Math.pow(Eh, 0.5) * Eh2 - .875 * Math.pow(Eh, 2.5);
                 sEh += Eh;
                 sEh2 += Eh2;
                 sEh3 += Eh3;
-                for (int j = 0; j < T - i - 1; ++j) {
-                    final double Ehh = b0 * Eh * (1.0 - m1ai[j + 1]) / (1.0 - m1)
-                            + Eh2 * m1ai[j + 1];
+                for ( int j = 0; j < T - i - 1; ++j ) {
+                    final double Ehh = b0 * Eh * (1.0 - m1ai[j + 1]) / (1.0 - m1) + Eh2 * m1ai[j + 1];
                     final double Ehh2 = b0 * b0 * Eh * ((1.0 + m1) * (1.0 - m2ai[j + 1]) / (1.0 - m2)
                             - 2.0 * m1 * (m1ai[j + 1] - m2ai[j + 1]) / (m1 - m2)) / (1.0 - m1)
-                            + 2.0 * b0 * m1 * Eh2 * (m1ai[j + 1] - m2ai[j + 1]) / (m1 - m2)
-                            + m2ai[j + 1] * Eh3;
-                    final double Eh2h = b0 * Eh2 * (1.0 - m1ai[j + 1]) / (1.0 - m1)
-                            + m1ai[j + 1] * Eh3;
+                            + 2.0 * b0 * m1 * Eh2 * (m1ai[j + 1] - m2ai[j + 1]) / (m1 - m2) + m2ai[j + 1] * Eh3;
+                    final double Eh2h = b0 * Eh2 * (1.0 - m1ai[j + 1]) / (1.0 - m1) + m1ai[j + 1] * Eh3;
                     final double Eh1_2eh = v1 * m1ai[j] * Eh3_2;
-                    final double Eh1_2eh2 = 2.0 * b0 * v1 * (m1ai[j + 1] - m2ai[j + 1])
-                            * Eh3_2 / (m1 - m2)
-                            + v2 * m2ai[j] * Eh5_2;
-                    final double Ehij = b0 * (1.0 - m1ai[i + j + 1]) / (1.0 - m1)
-                            + m1ai[i + j + 1] * h1;
-                    final double Ehh3_2 = 0.375 * Ehh2 / Math.sqrt(Ehij)
-                            + 0.75 * Math.sqrt(Ehij) * Ehh
-                            - 0.125 * Math.pow(Ehij, 1.5) * Eh;
+                    final double Eh1_2eh2 =
+                            2.0 * b0 * v1 * (m1ai[j + 1] - m2ai[j + 1]) * Eh3_2 / (m1 - m2) + v2 * m2ai[j] * Eh5_2;
+                    final double Ehij = b0 * (1.0 - m1ai[i + j + 1]) / (1.0 - m1) + m1ai[i + j + 1] * h1;
+                    final double Ehh3_2 =
+                            0.375 * Ehh2 / Math.sqrt(Ehij) + 0.75 * Math.sqrt(Ehij) * Ehh - 0.125 * Math.pow(Ehij, 1.5)
+                                    * Eh;
                     final double Eh3_2eh = v1 * m1ai[j] * Eh5_2;
                     final double Eh3_2e3h = x1 * m1ai[j] * Eh5_2;
-                    final double Eh1_2eh3_2 = 0.375 * Eh1_2eh2 / Math.sqrt(Ehij)
-                            + 0.75 * Math.sqrt(Ehij) * Eh1_2eh;
+                    final double Eh1_2eh3_2 = 0.375 * Eh1_2eh2 / Math.sqrt(Ehij) + 0.75 * Math.sqrt(Ehij) * Eh1_2eh;
                     sEhh += Ehh;
                     sEh1_2eh += Eh1_2eh;
                     sEhh2 += Ehh2;
                     sEh2h += Eh2h;
                     sEh1_2eh2 += Eh1_2eh2;
                     sEh3_2eh += Eh3_2eh;
-                    sEhe2h += b0 * Eh * (1.0 - m1ai[j + 1]) / (1.0 - m1)
-                            + z1 * m1ai[j] * Eh2;
+                    sEhe2h += b0 * Eh * (1.0 - m1ai[j + 1]) / (1.0 - m1) + z1 * m1ai[j] * Eh2;
                     sEh3_2e3h += Eh3_2e3h;
-                    for (int k = 0; k < T - i - j - 2; ++k) {
-                        final double Ehhh = b0 * Ehh * (1.0 - m1ai[k + 1]) / (1.0 - m1)
-                                + m1ai[k + 1] * Ehh2;
-                        final double Eh1_2ehh = b0 * Eh1_2eh * (1.0 - m1ai[k + 1]) / (1.0 - m1)
-                                + m1ai[k + 1] * Eh1_2eh2;
+                    for ( int k = 0; k < T - i - j - 2; ++k ) {
+                        final double Ehhh = b0 * Ehh * (1.0 - m1ai[k + 1]) / (1.0 - m1) + m1ai[k + 1] * Ehh2;
+                        final double Eh1_2ehh =
+                                b0 * Eh1_2eh * (1.0 - m1ai[k + 1]) / (1.0 - m1) + m1ai[k + 1] * Eh1_2eh2;
                         sEhhh += Ehhh;
                         sEh1_2ehh += Eh1_2ehh;
                         sEhh1_2eh += v1 * m1ai[k] * Ehh3_2;
@@ -317,17 +303,16 @@ public class AnalyticGJRGARCHEngine
             final double ST2 = 3.0 * sEh1_2eh;
             final double ST3 = 2.0 * sEhh1_2eh + (2.0 * sEh1_2ehh + (2.0 * sEh3_2eh + sEh1_2eh2));
             final double ST4 = sEhe2h + (sEhh + (sEh2 + 2.0 * sEh1_2eh1_2eh));
-            final double ex3 = Math.pow(T * r, 3) - 1.5 * T * T * r * r * sEh
-                    + 3.0 * T * r * (SD1 / 4.0 + SD2 - SD3)
-                    + (ST2 - ST1 / 8.0 + 3.0 * ST3 / 4.0 - 3.0 * ST4 / 2.0);
+            final double ex3 =
+                    Math.pow(T * r, 3) - 1.5 * T * T * r * r * sEh + 3.0 * T * r * (SD1 / 4.0 + SD2 - SD3) + (
+                            ST2 - ST1 / 8.0 + 3.0 * ST3 / 4.0 - 3.0 * ST4 / 2.0);
             final double SQ2 = 6.0 * sEhe2h + (12.0 * sEh1_2eh1_2eh + 3.0 * sEh2);
             final double SQ4 = 2.0 * sEhhh + 2.0 * sEhh2;
-            final double SQ5 = 3.0 * sEhh1_2eh + 3.0 * sEh1_2ehh + 3.0 * sEh3_2eh
-                    + 3.0 * sEh1_2eh2 + sEh3_2e3h;
-            final double ex4 = Math.pow(T * r, 4) - 2.0 * Math.pow(T * r, 3) * sEh
-                    + 6.0 * T * T * r * r * (SD1 / 4.0 + SD2 - SD3)
-                    + T * r * (4.0 * ST2 - ST1 / 2.0 + 3.0 * ST3 - 6.0 * ST4)
-                    + (SQ2 + 3.0 * SQ4 / 2.0 - 2.0 * SQ5);
+            final double SQ5 = 3.0 * sEhh1_2eh + 3.0 * sEh1_2ehh + 3.0 * sEh3_2eh + 3.0 * sEh1_2eh2 + sEh3_2e3h;
+            final double ex4 =
+                    Math.pow(T * r, 4) - 2.0 * Math.pow(T * r, 3) * sEh + 6.0 * T * T * r * r * (SD1 / 4.0 + SD2 - SD3)
+                            + T * r * (4.0 * ST2 - ST1 / 2.0 + 3.0 * ST3 - 6.0 * ST4) + (SQ2 + 3.0 * SQ4 / 2.0
+                            - 2.0 * SQ5);
 
             // compute variance, skewness, kurtosis
             sigma = ex2 - ex * ex;
@@ -357,23 +342,22 @@ public class AnalyticGJRGARCHEngine
         final double del = (ex - r * T + sigma / 2.0) / stdev;
         final double d = (Math.log(s / x) + (r * T + sigma / 2.0)) / stdev;
         final double d_ = d + del;
-        final double C = s * Math.exp(del * stdev) * new CumulativeNormalDistribution().op(d_)
-                - x * Math.exp(-r * T) * new CumulativeNormalDistribution().op(d_ - stdev);
-        final double A3 = s * Math.exp(del * stdev) * stdev * ((2.0 * stdev - d_)
-                * Math.exp(-d_ * d_ / 2.0) / Math.sqrt(2.0 * Constants.M_PI)
-                + sigma * new CumulativeNormalDistribution().op(d_)) / 6.0;
+        final double C = s * Math.exp(del * stdev) * new CumulativeNormalDistribution().op(d_) - x * Math.exp(-r * T)
+                * new CumulativeNormalDistribution().op(d_ - stdev);
+        final double A3 = s * Math.exp(del * stdev) * stdev * (
+                (2.0 * stdev - d_) * Math.exp(-d_ * d_ / 2.0) / Math.sqrt(2.0 * Constants.M_PI)
+                        + sigma * new CumulativeNormalDistribution().op(d_)) / 6.0;
         final double A4 = s * Math.exp(del * stdev) * stdev * (
-                (d_ * d_ - 1.0 - 3.0 * stdev * (d_ - stdev))
-                        * Math.exp(-d_ * d_ / 2.0) / Math.sqrt(2.0 * Constants.M_PI)
-                - sigma * stdev * new CumulativeNormalDistribution().op(d_)) / 24.0;
+                (d_ * d_ - 1.0 - 3.0 * stdev * (d_ - stdev)) * Math.exp(-d_ * d_ / 2.0) / Math.sqrt(
+                        2.0 * Constants.M_PI) - sigma * stdev * new CumulativeNormalDistribution().op(d_)) / 24.0;
         final double Capp = C + k3 * A3 + (k4 - 3.0) * A4;
         init_ = true;
 
         final OneAssetOption.ResultsImpl results = (OneAssetOption.ResultsImpl) results_;
         final Option.Type type = payoff.optionType();
-        if (type == Option.Type.Call) {
+        if ( type == Option.Type.Call ) {
             results.value = Capp;
-        } else if (type == Option.Type.Put) {
+        } else if ( type == Option.Type.Put ) {
             // put-call parity in this engine's compounded discount convention
             results.value = Capp + strikePrice * riskFreeDiscount / dividendDiscount - spotPrice;
         } else {

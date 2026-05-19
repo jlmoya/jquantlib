@@ -26,30 +26,32 @@ import org.jquantlib.math.AbstractSolver1D;
 import org.jquantlib.math.Ops;
 import org.jquantlib.math.Ops.DoubleOp;
 
+import java.awt.print.Book;
 
 /**
  * Secant 1d solver.
  *
- * @see Book: <i>Press, Teukolsky, Vetterling, and Flannery, "Numerical Recipes in C", 2nd edition, Cambridge University Press</i>
- * 
  * @author Dominik Holenstein
+ * @see Book : <i>Press, Teukolsky, Vetterling, and Flannery, "Numerical Recipes in C", 2nd edition, Cambridge University
+ * Press</i>
  */
-public class Secant extends AbstractSolver1D<Ops.DoubleOp> {
+public class Secant extends AbstractSolver1D< Ops.DoubleOp > {
 
     /**
      * Computes the roots of a function by using the Secant method.
-     * @param f the function
+     *
+     * @param f         the function
      * @param xAccuracy the provided accuracy
      * @returns <code>root_</code>
      */
     @Override
-    protected double solveImpl(final DoubleOp f, final double xAccuracy)  {
+    protected double solveImpl(final DoubleOp f, final double xAccuracy) {
 
         double fl, froot, dx, xl;
 
         // Pick the bound with the smaller function value
         // as the most recent guess
-        if (Math.abs(fxMin) < Math.abs(fxMax)) {
+        if ( Math.abs(fxMin) < Math.abs(fxMax) ) {
             root = xMin;
             froot = fxMin;
             xl = xMax;
@@ -60,14 +62,14 @@ public class Secant extends AbstractSolver1D<Ops.DoubleOp> {
             xl = xMin;
             fl = fxMin;
         }
-        while (evaluationNumber <= getMaxEvaluations()) {
+        while ( evaluationNumber <= getMaxEvaluations() ) {
             dx = (xl - root) * froot / (froot - fl);
             xl = root;
             fl = froot;
             root += dx;
             froot = f.op(root);
             evaluationNumber++;
-            if (Math.abs(dx) < xAccuracy || froot == 0.0)
+            if ( Math.abs(dx) < xAccuracy || froot == 0.0 )
                 return root;
         }
         throw new ArithmeticException("maximum number of function evaluations exceeded"); // TODO: message

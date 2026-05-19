@@ -39,10 +39,8 @@ import org.jquantlib.time.Date;
  * {@code QuantLib::WeekendsOnly} ({@code ql/time/calendars/weekendsonly.{hpp,cpp}}).
  *
  * <p>This calendar has no bank holidays except for Saturdays and Sundays. It
- * is the default calendar used by {@code MakeCreditDefaultSwap} and shows up
- * in CDS schedule construction (Phase 3c L0 A.1) — the C++
- * {@code WeekendsOnly} treats every Saturday and Sunday as a holiday, with
- * no other exceptions.
+ * is the default calendar used by {@code MakeCreditDefaultSwap} and shows up in CDS schedule construction (Phase 3c L0
+ * A.1) — the C++ {@code WeekendsOnly} treats every Saturday and Sunday as a holiday, with no other exceptions.
  *
  * @category calendars
  */

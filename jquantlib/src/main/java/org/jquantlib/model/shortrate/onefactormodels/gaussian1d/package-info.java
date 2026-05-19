@@ -1,10 +1,10 @@
 /**
- * Gaussian1D family of one-factor short-rate models (Hull-White generalization
- * with arbitrary volatility term structures and smile-aware swaption pricing).
+ * Gaussian1D family of one-factor short-rate models (Hull-White generalization with arbitrary volatility term
+ * structures and smile-aware swaption pricing).
  *
  * <p>Ported from QuantLib v1.42.1 {@code ql/models/shortrate/onefactormodels/}
- * (commit {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}) per Phase 2j of
- * the JQuantLib migration. See {@code docs/migration/phase2j-design.md}.
+ * (commit {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}) per Phase 2j of the JQuantLib migration. See
+ * {@code docs/migration/phase2j-design.md}.
  *
  * <p>Classes (landed across Phase 2j sub-layers):
  * <ul>

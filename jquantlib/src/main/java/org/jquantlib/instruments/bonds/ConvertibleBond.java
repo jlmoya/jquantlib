@@ -21,8 +21,6 @@
  */
 package org.jquantlib.instruments.bonds;
 
-import java.util.List;
-
 import org.jquantlib.cashflow.Callability;
 import org.jquantlib.cashflow.Dividend;
 import org.jquantlib.daycounters.DayCounter;
@@ -35,6 +33,8 @@ import org.jquantlib.quotes.Quote;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Schedule;
 
+import java.util.List;
+
 /**
  * Base class for convertible bonds
  *
@@ -43,23 +43,14 @@ import org.jquantlib.time.Schedule;
 public class ConvertibleBond extends Bond {
 
     protected double conversionRatio;
-    protected List<Dividend> dividends;
-    protected List<Callability> callability;
-    protected Handle<Quote> creditSpread;
+    protected List< Dividend > dividends;
+    protected List< Callability > callability;
+    protected Handle< Quote > creditSpread;
     protected Option option;
 
-    
-    public ConvertibleBond(
-            final Exercise exercise,
-            final double conversionRatio,
-            final List<Dividend> dividends,
-            final List<Callability> callability,
-            final Handle<Quote> creditSpread,
-            final Date issueDate,
-            final int settlementDays,
-            final DayCounter dayCounter,
-            final Schedule schedule,
-            final double redemption) {
+    public ConvertibleBond(final Exercise exercise, final double conversionRatio, final List< Dividend > dividends,
+            final List< Callability > callability, final Handle< Quote > creditSpread, final Date issueDate,
+            final int settlementDays, final DayCounter dayCounter, final Schedule schedule, final double redemption) {
 
         super(settlementDays, schedule.calendar(), issueDate);
         this.conversionRatio = conversionRatio;
@@ -74,15 +65,15 @@ public class ConvertibleBond extends Bond {
         return conversionRatio;
     }
 
-    public List<Dividend> dividends() /* @ReadOnly */ {
+    public List< Dividend > dividends() /* @ReadOnly */ {
         return dividends;
     }
 
-    public List<Callability> callability() /* @ReadOnly */ {
+    public List< Callability > callability() /* @ReadOnly */ {
         return callability;
     }
 
-    public Handle<Quote> creditSpread() /* @ReadOnly */ {
+    public Handle< Quote > creditSpread() /* @ReadOnly */ {
         return creditSpread;
     }
 

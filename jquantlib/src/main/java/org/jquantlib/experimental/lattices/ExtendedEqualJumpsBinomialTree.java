@@ -47,12 +47,10 @@ import org.jquantlib.processes.StochasticProcess1D;
 /**
  * Base class for equal jumps binomial tree.
  *
- * @category lattices
- *
  * @author Richard Gomes
+ * @category lattices
  */
 public abstract class ExtendedEqualJumpsBinomialTree extends ExtendedBinomialTree /*<T>*/ {
-
 
     //
     // protected fields
@@ -62,14 +60,11 @@ public abstract class ExtendedEqualJumpsBinomialTree extends ExtendedBinomialTre
     protected double pu;
     protected double pd;
 
-
     //
     // public methods
     //
 
-    public ExtendedEqualJumpsBinomialTree(
-            final StochasticProcess1D process,
-            final /* @Time */ double end,
+    public ExtendedEqualJumpsBinomialTree(final StochasticProcess1D process, final /* @Time */ double end,
             final int steps) {
 
         super(process, end, steps);
@@ -77,31 +72,29 @@ public abstract class ExtendedEqualJumpsBinomialTree extends ExtendedBinomialTre
 
     @Override
     public double underlying(final int i, final int index) /* @ReadOnly */ {
-        final /*@Time*/ double stepTime = i*this.dt;
-        final long j = 2*index - i;
+        final /*@Time*/ double stepTime = i * this.dt;
+        final long j = 2L * index - i;
         // exploiting equal jump and the x0_ tree centering
-        return this.x0*Math.exp(j*dxStep(stepTime));
+        return this.x0 * Math.exp(j * dxStep(stepTime));
     }
 
     @Override
     public double probability(final int i, final int ref, final int branch) /* @ReadOnly */ {
-        final /*@Time*/ double stepTime = i*dt;
+        final /*@Time*/ double stepTime = i * dt;
         final /*@Real*/ double upProb = probUp(stepTime);
         final /*@Real*/ double downProb = 1 - upProb;
         return (branch == 1 ? upProb : downProb);
     }
 
-
-
     //
     // protected abstract methods
     //
 
-    protected abstract double probUp(/* @Time */ double stepTime) /* @ReadOnly */ ;
+    protected abstract double probUp(/* @Time */ double stepTime) /* @ReadOnly */;
 
     /**
      * time dependent term dx
      */
-    protected abstract double dxStep(/* @Time */ double stepTime) /* @ReadOnly */ ;
+    protected abstract double dxStep(/* @Time */ double stepTime) /* @ReadOnly */;
 
 }

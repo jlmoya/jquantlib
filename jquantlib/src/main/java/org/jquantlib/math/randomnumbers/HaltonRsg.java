@@ -29,37 +29,22 @@ import org.jquantlib.math.PrimeNumbers;
  * Halton low-discrepancy sequence generator.
  *
  * <p>Direct port of C++ v1.42.1 {@code ql/math/randomnumbers/haltonrsg.{hpp,cpp}}.
- * For algorithmic details see chapter 8, paragraph 2 of "Monte Carlo Methods in
- * Finance" by Peter J&auml;ckel.
+ * For algorithmic details see chapter 8, paragraph 2 of "Monte Carlo Methods in Finance" by Peter J&auml;ckel.
  *
  * <p>Each call to {@link #nextSequence()} returns a {@link Sample} whose
- * {@code value} array contains one van-der-Corput coordinate per dimension
- * (the i-th dimension uses base {@code PrimeNumbers.get(i)}). The optional
- * {@code randomStart} offsets the per-dimension counter by a uniform
- * 32-bit integer drawn from a Mersenne-Twister-seeded RSG; the optional
- * {@code randomShift} adds a uniform [0,1) shift modulo 1 (Cranley-Patterson
- * rotation).
+ * {@code value} array contains one van-der-Corput coordinate per dimension (the i-th dimension uses base
+ * {@code PrimeNumbers.get(i)}). The optional {@code randomStart} offsets the per-dimension counter by a uniform 32-bit
+ * integer drawn from a Mersenne-Twister-seeded RSG; the optional {@code randomShift} adds a uniform [0,1) shift modulo
+ * 1 (Cranley-Patterson rotation).
  */
 public class HaltonRsg {
 
-    /** Weighted Halton sample (value vector + scalar weight). */
-    public static final class Sample {
-        public final double[] value;
-        public double weight;
-
-        public Sample(final int dim) {
-            this.value = new double[dim];
-            this.weight = 1.0;
-        }
-    }
-
     private final int dimensionality_;
-    private long sequenceCounter_;
     private final Sample sequence_;
     private final long[] randomStart_;
     private final double[] randomShift_;
     private final PrimeNumbers primes_;
-
+    private long sequenceCounter_;
     /** Convenience overload mirroring the C++ default arguments. */
     public HaltonRsg(final int dimensionality) {
         this(dimensionality, 0L, true, false);
@@ -69,8 +54,7 @@ public class HaltonRsg {
         this(dimensionality, seed, true, false);
     }
 
-    public HaltonRsg(final int dimensionality, final long seed,
-                     final boolean randomStart, final boolean randomShift) {
+    public HaltonRsg(final int dimensionality, final long seed, final boolean randomStart, final boolean randomShift) {
         QL.require(dimensionality > 0, "dimensionality must be greater than 0");
         this.dimensionality_ = dimensionality;
         this.sequenceCounter_ = 0L;
@@ -80,11 +64,10 @@ public class HaltonRsg {
         this.primes_ = new PrimeNumbers();
 
         // Mirror C++ haltonrsg.cpp lines 46-53.
-        if (randomStart || randomShift) {
-            final RandomSequenceGenerator<MersenneTwisterUniformRng> uniformRsg =
-                    new RandomSequenceGenerator<MersenneTwisterUniformRng>(
-                            MersenneTwisterUniformRng.class, dimensionality, seed);
-            if (randomStart) {
+        if ( randomStart || randomShift ) {
+            final RandomSequenceGenerator< MersenneTwisterUniformRng > uniformRsg = new RandomSequenceGenerator< MersenneTwisterUniformRng >(
+                    MersenneTwisterUniformRng.class, dimensionality, seed);
+            if ( randomStart ) {
                 final long[] starts = uniformRsg.nextInt32Sequence();
                 // C++ stores randomStart_ as unsigned long (haltonrsg.hpp:59);
                 // Java's nextInt32() returns SIGNED long (sign-extended from
@@ -97,11 +80,11 @@ public class HaltonRsg {
                 // van der Corput loop and produces NEGATIVE Halton sample
                 // values (observed: SABR Halton restart at iteration 1 for
                 // free-alpha free-beta combos generated sample[1]=-0.308).
-                for (int i = 0; i < dimensionality; ++i) {
+                for ( int i = 0; i < dimensionality; ++i ) {
                     this.randomStart_[i] = starts[i] & 0xFFFFFFFFL;
                 }
             }
-            if (randomShift) {
+            if ( randomShift ) {
                 final double[] shifts = uniformRsg.nextSequence().value();
                 System.arraycopy(shifts, 0, this.randomShift_, 0, dimensionality);
             }
@@ -109,19 +92,18 @@ public class HaltonRsg {
     }
 
     /**
-     * Generate the next Halton sample. Mirrors C++ haltonrsg.cpp lines 56-72:
-     * van der Corput radical inverse in base {@code p_i = primes(i)} of the
-     * scalar counter (offset by the per-dimension {@code randomStart}), with
-     * an optional Cranley-Patterson shift modulo 1.
+     * Generate the next Halton sample. Mirrors C++ haltonrsg.cpp lines 56-72: van der Corput radical inverse in base
+     * {@code p_i = primes(i)} of the scalar counter (offset by the per-dimension {@code randomStart}), with an optional
+     * Cranley-Patterson shift modulo 1.
      */
     public Sample nextSequence() {
         ++sequenceCounter_;
-        for (int i = 0; i < dimensionality_; ++i) {
+        for ( int i = 0; i < dimensionality_; ++i ) {
             double h = 0.0;
             final long b = primes_.get(i);
             double f = 1.0;
             long k = sequenceCounter_ + randomStart_[i];
-            while (k != 0L) {
+            while ( k != 0L ) {
                 f /= b;
                 // Use fused multiply-add to match the reference C++ build,
                 // which compiles `h += (k%b)*f` to a hardware FMA under the
@@ -147,5 +129,16 @@ public class HaltonRsg {
 
     public int dimension() {
         return dimensionality_;
+    }
+
+    /** Weighted Halton sample (value vector + scalar weight). */
+    public static final class Sample {
+        public final double[] value;
+        public double weight;
+
+        public Sample(final int dim) {
+            this.value = new double[dim];
+            this.weight = 1.0;
+        }
     }
 }

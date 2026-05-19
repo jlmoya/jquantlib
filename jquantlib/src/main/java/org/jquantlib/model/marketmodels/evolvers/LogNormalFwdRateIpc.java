@@ -29,25 +29,18 @@ package org.jquantlib.model.marketmodels.evolvers;
 
 import org.jquantlib.QL;
 import org.jquantlib.math.matrixutilities.Matrix;
-import org.jquantlib.model.marketmodels.BrownianGenerator;
-import org.jquantlib.model.marketmodels.BrownianGeneratorFactory;
-import org.jquantlib.model.marketmodels.CurveState;
-import org.jquantlib.model.marketmodels.EvolutionDescription;
-import org.jquantlib.model.marketmodels.MarketModel;
-import org.jquantlib.model.marketmodels.MarketModelEvolver;
+import org.jquantlib.model.marketmodels.*;
 import org.jquantlib.model.marketmodels.curvestates.LMMCurveState;
 import org.jquantlib.model.marketmodels.driftcomputation.LMMDriftCalculator;
 
 /**
  * Iterative predictor-corrector log-normal forward-rate evolver.
  * <p>
- * Runs in terminal measure only (verified at construction). Uses an iterative
- * drift correction: walking from the longest forward backwards, drift D2_i is
- * computed from the running {@code g[]} values of subsequent forwards.
- *
- * @see "ql/models/marketmodels/evolvers/lognormalfwdrateipc.{hpp,cpp}" v1.42.1
+ * Runs in terminal measure only (verified at construction). Uses an iterative drift correction: walking from the
+ * longest forward backwards, drift D2_i is computed from the running {@code g[]} values of subsequent forwards.
  *
  * @author Jose Moya
+ * @see "ql/models/marketmodels/evolvers/lognormalfwdrateipc.{hpp,cpp}" v1.42.1
  */
 public class LogNormalFwdRateIpc extends MarketModelEvolver {
 
@@ -62,7 +55,6 @@ public class LogNormalFwdRateIpc extends MarketModelEvolver {
     private final int numberOfRates_;
     private final int numberOfFactors_;
     private final LMMCurveState curveState_;
-    private int currentStep_;
     private final double[] forwards_;
     private final double[] displacements_;
     private final double[] logForwards_;
@@ -75,19 +67,15 @@ public class LogNormalFwdRateIpc extends MarketModelEvolver {
     private final int[] alive_;
     // helper classes
     private final LMMDriftCalculator[] calculators_;
+    private int currentStep_;
 
-    public LogNormalFwdRateIpc(
-            final MarketModel marketModel,
-            final BrownianGeneratorFactory factory,
+    public LogNormalFwdRateIpc(final MarketModel marketModel, final BrownianGeneratorFactory factory,
             final int[] numeraires) {
         this(marketModel, factory, numeraires, 0);
     }
 
-    public LogNormalFwdRateIpc(
-            final MarketModel marketModel,
-            final BrownianGeneratorFactory factory,
-            final int[] numeraires,
-            final int initialStep) {
+    public LogNormalFwdRateIpc(final MarketModel marketModel, final BrownianGeneratorFactory factory,
+            final int[] numeraires, final int initialStep) {
         this.marketModel_ = marketModel;
         this.numeraires_ = numeraires.clone();
         this.initialStep_ = initialStep;
@@ -117,13 +105,12 @@ public class LogNormalFwdRateIpc extends MarketModelEvolver {
 
         this.calculators_ = new LMMDriftCalculator[steps];
         this.fixedDrifts_ = new double[steps][numberOfRates_];
-        for (int j = 0; j < steps; ++j) {
+        for ( int j = 0; j < steps; ++j ) {
             final Matrix A = marketModel.pseudoRoot(j);
-            calculators_[j] = new LMMDriftCalculator(A, displacements_,
-                    marketModel.evolution().rateTaus(),
+            calculators_[j] = new LMMDriftCalculator(A, displacements_, marketModel.evolution().rateTaus(),
                     numeraires[j], alive_[j]);
             final Matrix C = marketModel.covariance(j);
-            for (int k = 0; k < numberOfRates_; ++k) {
+            for ( int k = 0; k < numberOfRates_; ++k ) {
                 fixedDrifts_[j][k] = -0.5 * C.get(k, k);
             }
         }
@@ -137,9 +124,8 @@ public class LogNormalFwdRateIpc extends MarketModelEvolver {
     }
 
     private void setForwards(final double[] forwards) {
-        QL.require(forwards.length == numberOfRates_,
-                "mismatch between forwards and rateTimes");
-        for (int i = 0; i < numberOfRates_; ++i) {
+        QL.require(forwards.length == numberOfRates_, "mismatch between forwards and rateTimes");
+        for ( int i = 0; i < numberOfRates_; ++i ) {
             initialLogForwards_[i] = Math.log(forwards[i] + displacements_[i]);
         }
         calculators_[initialStep_].compute(forwards, initialDrifts_);
@@ -162,7 +148,7 @@ public class LogNormalFwdRateIpc extends MarketModelEvolver {
         // we're going from T1 to T2
 
         // a) compute drifts D1 at T1
-        if (currentStep_ > initialStep_) {
+        if ( currentStep_ > initialStep_ ) {
             calculators_[currentStep_].computePlain(forwards_, drifts1_);
         } else {
             System.arraycopy(initialDrifts_, 0, drifts1_, 0, numberOfRates_);
@@ -175,20 +161,19 @@ public class LogNormalFwdRateIpc extends MarketModelEvolver {
 
         final int alive = alive_[currentStep_];
         // walk from longest forward backwards; iterative drift correction via g_
-        for (int i = numberOfRates_ - 1; i >= alive; --i) {
+        for ( int i = numberOfRates_ - 1; i >= alive; --i ) {
             double drifts2 = 0.0;
-            for (int j = i + 1; j < numberOfRates_; ++j) {
+            for ( int j = i + 1; j < numberOfRates_; ++j ) {
                 drifts2 -= g_[j] * C.get(i, j);
             }
             logForwards_[i] += 0.5 * (drifts1_[i] + drifts2) + fixedDrift[i];
             double inner = 0.0;
-            for (int f = 0; f < numberOfFactors_; ++f) {
+            for ( int f = 0; f < numberOfFactors_; ++f ) {
                 inner += A.get(i, f) * brownians_[f];
             }
             logForwards_[i] += inner;
             forwards_[i] = Math.exp(logForwards_[i]) - displacements_[i];
-            g_[i] = rateTaus_[i] * (forwards_[i] + displacements_[i])
-                    / (1.0 + rateTaus_[i] * forwards_[i]);
+            g_[i] = rateTaus_[i] * (forwards_[i] + displacements_[i]) / (1.0 + rateTaus_[i] * forwards_[i]);
         }
 
         curveState_.setOnForwardRates(forwards_);

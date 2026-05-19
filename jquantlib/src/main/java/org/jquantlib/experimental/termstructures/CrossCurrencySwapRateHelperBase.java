@@ -44,13 +44,11 @@ import org.jquantlib.time.Period;
 /**
  * Abstract base for cross-currency swap rate helpers.
  * <p>
- * Port of C++ QuantLib v1.42.1
- * {@code ql/experimental/termstructures/crosscurrencyratehelpers.hpp}
+ * Port of C++ QuantLib v1.42.1 {@code ql/experimental/termstructures/crosscurrencyratehelpers.hpp}
  * {@code CrossCurrencySwapRateHelperBase}.
  * <p>
- * Provides the common fields (tenor, fixingDays, calendar, convention,
- * endOfMonth, paymentLag, collateral handle, relinkable term-structure handle)
- * and the {@link #setTermStructure} and {@link #initializeDatesFromLegs} helpers.
+ * Provides the common fields (tenor, fixingDays, calendar, convention, endOfMonth, paymentLag, collateral handle,
+ * relinkable term-structure handle) and the {@link #setTermStructure} and {@link #initializeDatesFromLegs} helpers.
  */
 public abstract class CrossCurrencySwapRateHelperBase extends RelativeDateRateHelper {
 
@@ -59,15 +57,14 @@ public abstract class CrossCurrencySwapRateHelperBase extends RelativeDateRateHe
     // -------------------------------------------------------------------------
 
     protected final Period tenor_;
-    protected final int    fixingDays_;
+    protected final int fixingDays_;
     protected final Calendar calendar_;
     protected final BusinessDayConvention convention_;
     protected final boolean endOfMonth_;
-    protected final int     paymentLag_;
+    protected final int paymentLag_;
 
-    protected final Handle<YieldTermStructure> collateralHandle_;
-    protected final RelinkableHandle<YieldTermStructure> termStructureHandle_ =
-            new RelinkableHandle<>(null);
+    protected final Handle< YieldTermStructure > collateralHandle_;
+    protected final RelinkableHandle< YieldTermStructure > termStructureHandle_ = new RelinkableHandle<>(null);
 
     /** Date of the initial notional exchange (may be offset by paymentLag). */
     protected Date initialNotionalExchangeDate_;
@@ -78,23 +75,17 @@ public abstract class CrossCurrencySwapRateHelperBase extends RelativeDateRateHe
     // Constructor
     // -------------------------------------------------------------------------
 
-    protected CrossCurrencySwapRateHelperBase(
-            final Handle<Quote> quote,
-            final Period tenor,
-            final int fixingDays,
-            final Calendar calendar,
-            final BusinessDayConvention convention,
-            final boolean endOfMonth,
-            final Handle<YieldTermStructure> collateralCurve,
-            final int paymentLag) {
+    protected CrossCurrencySwapRateHelperBase(final Handle< Quote > quote, final Period tenor, final int fixingDays,
+            final Calendar calendar, final BusinessDayConvention convention, final boolean endOfMonth,
+            final Handle< YieldTermStructure > collateralCurve, final int paymentLag) {
 
         super(quote);
-        tenor_           = tenor;
-        fixingDays_      = fixingDays;
-        calendar_        = calendar;
-        convention_      = convention;
-        endOfMonth_      = endOfMonth;
-        paymentLag_      = paymentLag;
+        tenor_ = tenor;
+        fixingDays_ = fixingDays;
+        calendar_ = calendar;
+        convention_ = convention;
+        endOfMonth_ = endOfMonth;
+        paymentLag_ = paymentLag;
         collateralHandle_ = collateralCurve;
 
         collateralHandle_.currentLink().addObserver(this);
@@ -105,29 +96,26 @@ public abstract class CrossCurrencySwapRateHelperBase extends RelativeDateRateHe
     // -------------------------------------------------------------------------
 
     /**
-     * Sets {@code earliestDate}, {@code latestDate}, and the notional exchange
-     * dates from the two legs of the swap.
+     * Sets {@code earliestDate}, {@code latestDate}, and the notional exchange dates from the two legs of the swap.
      * Mirrors C++ {@code CrossCurrencySwapRateHelperBase::initializeDatesFromLegs}.
      */
     protected void initializeDatesFromLegs(final Leg firstLeg, final Leg secondLeg) {
         final CashFlows cf = CashFlows.getInstance();
 
         earliestDate = Date.min(cf.startDate(firstLeg), cf.startDate(secondLeg));
-        latestDate   = Date.max(cf.maturityDate(firstLeg), cf.maturityDate(secondLeg));
+        latestDate = Date.max(cf.maturityDate(firstLeg), cf.maturityDate(secondLeg));
 
-        if (paymentLag_ == 0) {
+        if ( paymentLag_ == 0 ) {
             initialNotionalExchangeDate_ = earliestDate;
-            finalNotionalExchangeDate_   = latestDate;
+            finalNotionalExchangeDate_ = latestDate;
         } else {
-            initialNotionalExchangeDate_ = calendar_.advance(
-                    earliestDate, paymentLag_, org.jquantlib.time.TimeUnit.Days, convention_, false);
-            finalNotionalExchangeDate_   = calendar_.advance(
-                    latestDate,   paymentLag_, org.jquantlib.time.TimeUnit.Days, convention_, false);
+            initialNotionalExchangeDate_ = calendar_.advance(earliestDate, paymentLag_,
+                    org.jquantlib.time.TimeUnit.Days, convention_, false);
+            finalNotionalExchangeDate_ = calendar_.advance(latestDate, paymentLag_, org.jquantlib.time.TimeUnit.Days,
+                    convention_, false);
         }
 
-        final Date lastPaymentDate = Date.max(
-                firstLeg.last().date(),
-                secondLeg.last().date());
+        final Date lastPaymentDate = Date.max(firstLeg.last().date(), secondLeg.last().date());
 
         latestDate = Date.max(latestDate, lastPaymentDate);
     }

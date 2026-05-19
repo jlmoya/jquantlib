@@ -32,8 +32,7 @@ package org.jquantlib.cashflow;
 /**
  * Replication parameters for {@link DigitalCoupon}.
  * <p>
- * Port of C++ QuantLib v1.42.1 {@code ql/cashflows/replication.hpp}
- * (the {@code DigitalReplication} class).
+ * Port of C++ QuantLib v1.42.1 {@code ql/cashflows/replication.hpp} (the {@code DigitalReplication} class).
  *
  * @author Cristina Duminuco (C++ original)
  */
@@ -41,7 +40,6 @@ public class DigitalReplication {
 
     private final Replication.Type replicationType_;
     private final double gap_;
-
 
     //
     // public constructors
@@ -60,7 +58,6 @@ public class DigitalReplication {
         this.replicationType_ = t;
         this.gap_ = gap;
     }
-
 
     //
     // public inspectors

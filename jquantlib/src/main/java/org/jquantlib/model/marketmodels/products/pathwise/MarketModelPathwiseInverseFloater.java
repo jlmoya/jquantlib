@@ -33,22 +33,20 @@ import org.jquantlib.model.marketmodels.MarketModelPathwiseMultiProduct;
 import org.jquantlib.model.marketmodels.Utilities;
 
 /**
- * Pathwise inverse-floater swap product: at each step the inverse-floating
- * coupon equals {@code max(strike - multiplier * libor, 0) * accrual}, less
- * the conventional floating coupon {@code (libor + spread) * floatAccrual}.
+ * Pathwise inverse-floater swap product: at each step the inverse-floating coupon equals
+ * {@code max(strike - multiplier * libor, 0) * accrual}, less the conventional floating coupon
+ * {@code (libor + spread) * floatAccrual}.
  *
  * <p>Mirrors C++ {@code MarketModelPathwiseInverseFloater}
- * (ql/models/marketmodels/products/pathwise/pathwiseproductinversefloater.{hpp,cpp}
- * v1.42.1). Tested in {@code testInverseFloater}.
+ * (ql/models/marketmodels/products/pathwise/pathwiseproductinversefloater.{hpp,cpp} v1.42.1). Tested in
+ * {@code testInverseFloater}.
  *
  * <p>The path-wise derivative with respect to each forward rate is computed
- * piecewise-analytically: when the inverse-floating coupon is in the money the
- * derivative includes both the inverse-floating leg's contribution and the
- * floating leg's, otherwise only the floating leg's contribution.
- *
- * @see "ql/models/marketmodels/products/pathwise/pathwiseproductinversefloater" v1.42.1
+ * piecewise-analytically: when the inverse-floating coupon is in the money the derivative includes both the
+ * inverse-floating leg's contribution and the floating leg's, otherwise only the floating leg's contribution.
  *
  * @author Jose Moya
+ * @see "ql/models/marketmodels/products/pathwise/pathwiseproductinversefloater" v1.42.1
  */
 public class MarketModelPathwiseInverseFloater extends MarketModelPathwiseMultiProduct {
 
@@ -68,14 +66,9 @@ public class MarketModelPathwiseInverseFloater extends MarketModelPathwiseMultiP
     // path-varying state
     private int currentIndex_;
 
-    public MarketModelPathwiseInverseFloater(final double[] rateTimes,
-                                             final double[] fixedAccruals,
-                                             final double[] floatingAccruals,
-                                             final double[] fixedStrikes,
-                                             final double[] fixedMultipliers,
-                                             final double[] floatingSpreads,
-                                             final double[] paymentTimes,
-                                             final boolean payer) {
+    public MarketModelPathwiseInverseFloater(final double[] rateTimes, final double[] fixedAccruals,
+            final double[] floatingAccruals, final double[] fixedStrikes, final double[] fixedMultipliers,
+            final double[] floatingSpreads, final double[] paymentTimes, final boolean payer) {
         Utilities.checkIncreasingTimes(paymentTimes);
         this.rateTimes_ = rateTimes.clone();
         this.fixedAccruals_ = fixedAccruals.clone();
@@ -87,18 +80,12 @@ public class MarketModelPathwiseInverseFloater extends MarketModelPathwiseMultiP
         this.multiplier_ = payer ? -1.0 : 1.0;
         this.lastIndex_ = rateTimes.length - 1;
 
-        QL.require(fixedAccruals_.length == lastIndex_,
-                "Incorrect number of fixedAccruals given");
-        QL.require(floatingAccruals.length == lastIndex_,
-                "Incorrect number of floatingAccruals given");
-        QL.require(fixedStrikes.length == lastIndex_,
-                "Incorrect number of fixedStrikes given");
-        QL.require(fixedMultipliers.length == lastIndex_,
-                "Incorrect number of fixedMultipliers given");
-        QL.require(floatingSpreads.length == lastIndex_,
-                "Incorrect number of floatingSpreads given");
-        QL.require(paymentTimes.length == lastIndex_,
-                "Incorrect number of paymentTimes given");
+        QL.require(fixedAccruals_.length == lastIndex_, "Incorrect number of fixedAccruals given");
+        QL.require(floatingAccruals.length == lastIndex_, "Incorrect number of floatingAccruals given");
+        QL.require(fixedStrikes.length == lastIndex_, "Incorrect number of fixedStrikes given");
+        QL.require(fixedMultipliers.length == lastIndex_, "Incorrect number of fixedMultipliers given");
+        QL.require(floatingSpreads.length == lastIndex_, "Incorrect number of floatingSpreads given");
+        QL.require(paymentTimes.length == lastIndex_, "Incorrect number of paymentTimes given");
 
         final double[] evolTimes = new double[lastIndex_];
         System.arraycopy(rateTimes_, 0, evolTimes, 0, lastIndex_);
@@ -114,31 +101,28 @@ public class MarketModelPathwiseInverseFloater extends MarketModelPathwiseMultiP
     }
 
     @Override
-    public boolean nextTimeStep(final CurveState currentState,
-                                final int[] numberCashFlowsThisStep,
-                                final CashFlow[][] cashFlowsGenerated) {
+    public boolean nextTimeStep(final CurveState currentState, final int[] numberCashFlowsThisStep,
+            final CashFlow[][] cashFlowsGenerated) {
         numberCashFlowsThisStep[0] = 1;
-        for (int i = 1; i <= lastIndex_; ++i) {
+        for ( int i = 1; i <= lastIndex_; ++i ) {
             cashFlowsGenerated[0][0].amount[i] = 0.0;
         }
 
         final double liborRate = currentState.forwardRate(currentIndex_);
-        final double inverseFloatingCoupon = Math.max(
-                fixedStrikes_[currentIndex_] - fixedMultipliers_[currentIndex_] * liborRate, 0.0)
-                * fixedAccruals_[currentIndex_];
-        final double floatingCoupon =
-                (liborRate + floatingSpreads_[currentIndex_]) * floatingAccruals_[currentIndex_];
+        final double inverseFloatingCoupon =
+                Math.max(fixedStrikes_[currentIndex_] - fixedMultipliers_[currentIndex_] * liborRate, 0.0)
+                        * fixedAccruals_[currentIndex_];
+        final double floatingCoupon = (liborRate + floatingSpreads_[currentIndex_]) * floatingAccruals_[currentIndex_];
 
         cashFlowsGenerated[0][0].timeIndex = currentIndex_;
         cashFlowsGenerated[0][0].amount[0] = multiplier_ * (inverseFloatingCoupon - floatingCoupon);
 
-        if (inverseFloatingCoupon > 0.0) {
+        if ( inverseFloatingCoupon > 0.0 ) {
             cashFlowsGenerated[0][0].amount[currentIndex_ + 1] =
                     multiplier_ * (-fixedMultipliers_[currentIndex_] * fixedAccruals_[currentIndex_]
-                                    - floatingAccruals_[currentIndex_]);
+                            - floatingAccruals_[currentIndex_]);
         } else {
-            cashFlowsGenerated[0][0].amount[currentIndex_ + 1] =
-                    -multiplier_ * floatingAccruals_[currentIndex_];
+            cashFlowsGenerated[0][0].amount[currentIndex_ + 1] = -multiplier_ * floatingAccruals_[currentIndex_];
         }
 
         ++currentIndex_;
@@ -147,9 +131,9 @@ public class MarketModelPathwiseInverseFloater extends MarketModelPathwiseMultiP
 
     @Override
     public MarketModelPathwiseMultiProduct clone() {
-        final MarketModelPathwiseInverseFloater copy = new MarketModelPathwiseInverseFloater(
-                rateTimes_, fixedAccruals_, floatingAccruals_, fixedStrikes_,
-                fixedMultipliers_, floatingSpreads_, paymentTimes_, multiplier_ < 0.0);
+        final MarketModelPathwiseInverseFloater copy = new MarketModelPathwiseInverseFloater(rateTimes_, fixedAccruals_,
+                floatingAccruals_, fixedStrikes_, fixedMultipliers_, floatingSpreads_, paymentTimes_,
+                multiplier_ < 0.0);
         copy.currentIndex_ = this.currentIndex_;
         return copy;
     }
@@ -157,7 +141,7 @@ public class MarketModelPathwiseInverseFloater extends MarketModelPathwiseMultiP
     @Override
     public int[] suggestedNumeraires() {
         final int[] numeraires = new int[lastIndex_];
-        for (int i = 0; i < lastIndex_; ++i) {
+        for ( int i = 0; i < lastIndex_; ++i ) {
             numeraires[i] = i;
         }
         return numeraires;

@@ -49,48 +49,36 @@ import org.jquantlib.time.TimeGrid;
  * ql/pricingengines/vanilla/mcdigitalengine.hpp} (Phase 5e.5b-CFC-d-181).
  *
  * <p>Cash-at-hit path-dependent engine: detects whether the underlying
- * crosses the strike between two grid points using the Brownian-bridge
- * correction of Beaglehole-Dybvig-Zhou (1997) and El Babsiri-Noel (1998).
- * If a crossing is detected, the cash payoff is discounted either to the
- * exercise time (between grid points) or — when {@code payoffAtExpiry}
- * is set on the {@link AmericanExercise} — to the terminal date.
+ * crosses the strike between two grid points using the Brownian-bridge correction of Beaglehole-Dybvig-Zhou (1997) and
+ * El Babsiri-Noel (1998). If a crossing is detected, the cash payoff is discounted either to the exercise time (between
+ * grid points) or — when {@code payoffAtExpiry} is set on the {@link AmericanExercise} — to the terminal date.
  *
  * <p>Like {@link MCEuropeanEngine}, this is specialised to
- * {@code RNG = PseudoRandom} (Mersenne-Twister with the path generator's
- * seed). The C++ template's {@code LowDiscrepancy} specialisation is a
- * Phase 5h.5-MC-INFRA-b carry-forward.
+ * {@code RNG = PseudoRandom} (Mersenne-Twister with the path generator's seed). The C++ template's
+ * {@code LowDiscrepancy} specialisation is a Phase 5h.5-MC-INFRA-b carry-forward.
  *
  * <p>The Brownian-bridge correction draws a separate uniform sequence
- * with a fixed seed (76) per path, matching the C++ implementation
- * verbatim.
+ * with a fixed seed (76) per path, matching the C++ implementation verbatim.
  *
  * @author JQuantLib
  */
 public final class MCDigitalEngine extends MCVanillaEngine {
 
-    public MCDigitalEngine(final GeneralizedBlackScholesProcess process,
-                           final int timeSteps,
-                           final int timeStepsPerYear,
-                           final boolean brownianBridge,
-                           final boolean antitheticVariate,
-                           final int requiredSamples,
-                           final double requiredTolerance,
-                           final int maxSamples,
-                           final long seed) {
-        super(process, timeSteps, timeStepsPerYear,
-                brownianBridge, antitheticVariate,
-                /* controlVariate=*/ false,
-                requiredSamples, requiredTolerance, maxSamples, seed);
+    public MCDigitalEngine(final GeneralizedBlackScholesProcess process, final int timeSteps,
+            final int timeStepsPerYear, final boolean brownianBridge, final boolean antitheticVariate,
+            final int requiredSamples, final double requiredTolerance, final int maxSamples, final long seed) {
+        super(process, timeSteps, timeStepsPerYear, brownianBridge, antitheticVariate,
+                /* controlVariate=*/ false, requiredSamples, requiredTolerance, maxSamples, seed);
     }
 
     @Override
-    protected PathPricer<Path> pathPricer() {
+    protected PathPricer< Path > pathPricer() {
         final OneAssetOption.ArgumentsImpl a = (OneAssetOption.ArgumentsImpl) arguments_;
 
         final CashOrNothingPayoff payoff;
         try {
             payoff = (CashOrNothingPayoff) a.payoff;
-        } catch (final ClassCastException e) {
+        } catch ( final ClassCastException e ) {
             throw new RuntimeException("wrong payoff given");
         }
         QL.require(payoff != null, "wrong payoff given");
@@ -98,7 +86,7 @@ public final class MCDigitalEngine extends MCVanillaEngine {
         final AmericanExercise exercise;
         try {
             exercise = (AmericanExercise) a.exercise;
-        } catch (final ClassCastException e) {
+        } catch ( final ClassCastException e ) {
             throw new RuntimeException("wrong exercise given");
         }
         QL.require(exercise != null, "wrong exercise given");
@@ -109,34 +97,28 @@ public final class MCDigitalEngine extends MCVanillaEngine {
         // C++: PseudoRandom::ursg_type sequenceGen(grid.size()-1,
         //                                          PseudoRandom::urng_type(76));
         // Fixed seed 76 matches the C++ implementation verbatim.
-        final RandomSequenceGenerator<MersenneTwisterUniformRng> sequenceGen =
-                new RandomSequenceGenerator<MersenneTwisterUniformRng>(
-                        MersenneTwisterUniformRng.class, grid.size() - 1, 76L);
+        final RandomSequenceGenerator< MersenneTwisterUniformRng > sequenceGen = new RandomSequenceGenerator< MersenneTwisterUniformRng >(
+                MersenneTwisterUniformRng.class, grid.size() - 1, 76L);
 
-        return new DigitalPathPricer(payoff, exercise,
-                process_.riskFreeRate().currentLink(),
-                process_, sequenceGen);
+        return new DigitalPathPricer(payoff, exercise, process_.riskFreeRate().currentLink(), process_, sequenceGen);
     }
 
     /**
-     * Path pricer implementing the Brownian-bridge corrected cash-at-hit
-     * digital payoff. Java port of the inline {@code DigitalPathPricer}
-     * class declared in {@code mcdigitalengine.hpp} and defined in
+     * Path pricer implementing the Brownian-bridge corrected cash-at-hit digital payoff. Java port of the inline
+     * {@code DigitalPathPricer} class declared in {@code mcdigitalengine.hpp} and defined in
      * {@code mcdigitalengine.cpp}.
      */
-    static final class DigitalPathPricer extends PathPricer<Path> {
+    static final class DigitalPathPricer extends PathPricer< Path > {
 
         private final CashOrNothingPayoff payoff_;
         private final AmericanExercise exercise_;
         private final GeneralizedBlackScholesProcess diffProcess_;
-        private final RandomSequenceGenerator<MersenneTwisterUniformRng> sequenceGen_;
+        private final RandomSequenceGenerator< MersenneTwisterUniformRng > sequenceGen_;
         private final YieldTermStructure discountTS_;
 
-        DigitalPathPricer(final CashOrNothingPayoff payoff,
-                          final AmericanExercise exercise,
-                          final YieldTermStructure discountTS,
-                          final GeneralizedBlackScholesProcess diffProcess,
-                          final RandomSequenceGenerator<MersenneTwisterUniformRng> sequenceGen) {
+        DigitalPathPricer(final CashOrNothingPayoff payoff, final AmericanExercise exercise,
+                final YieldTermStructure discountTS, final GeneralizedBlackScholesProcess diffProcess,
+                final RandomSequenceGenerator< MersenneTwisterUniformRng > sequenceGen) {
             this.payoff_ = payoff;
             this.exercise_ = exercise;
             this.discountTS_ = discountTS;
@@ -155,44 +137,38 @@ public final class MCDigitalEngine extends MCVanillaEngine {
             final double log_strike = Math.log(payoff_.strike());
 
             final Option.Type type = payoff_.optionType();
-            if (type == Option.Type.Call) {
-                for (int i = 0; i < n - 1; i++) {
+            if ( type == Option.Type.Call ) {
+                for ( int i = 0; i < n - 1; i++ ) {
                     final double x = Math.log(path.get(i + 1) / path.get(i));
                     // terminal or initial vol? — C++ uses initial (timeGrid[i+1])
-                    final double vol = diffProcess_.diffusion(
-                            timeGrid.get(i + 1), Math.exp(log_asset_price));
+                    final double vol = diffProcess_.diffusion(timeGrid.get(i + 1), Math.exp(log_asset_price));
                     final double dt = timeGrid.dt(i);
-                    final double y = log_asset_price +
-                            0.5 * (x + Math.sqrt(x * x - 2 * vol * vol * dt * Math.log(1 - u[i])));
+                    final double y =
+                            log_asset_price + 0.5 * (x + Math.sqrt(x * x - 2 * vol * vol * dt * Math.log(1 - u[i])));
                     // cross the strike
-                    if (y >= log_strike) {
-                        if (exercise_.payoffAtExpiry()) {
-                            return payoff_.getCashPayoff()
-                                    * discountTS_.discount(path.timeGrid().back());
+                    if ( y >= log_strike ) {
+                        if ( exercise_.payoffAtExpiry() ) {
+                            return payoff_.getCashPayoff() * discountTS_.discount(path.timeGrid().back());
                         } else {
                             // discount at the exercise time between
                             // path.timeGrid()[i+1] and path.timeGrid()[i+2]
-                            return payoff_.getCashPayoff()
-                                    * discountTS_.discount(path.timeGrid().get(i + 1));
+                            return payoff_.getCashPayoff() * discountTS_.discount(path.timeGrid().get(i + 1));
                         }
                     }
                     log_asset_price += x;
                 }
-            } else if (type == Option.Type.Put) {
-                for (int i = 0; i < n - 1; i++) {
+            } else if ( type == Option.Type.Put ) {
+                for ( int i = 0; i < n - 1; i++ ) {
                     final double x = Math.log(path.get(i + 1) / path.get(i));
-                    final double vol = diffProcess_.diffusion(
-                            timeGrid.get(i + 1), Math.exp(log_asset_price));
+                    final double vol = diffProcess_.diffusion(timeGrid.get(i + 1), Math.exp(log_asset_price));
                     final double dt = timeGrid.dt(i);
-                    final double y = log_asset_price +
-                            0.5 * (x - Math.sqrt(x * x - 2 * vol * vol * dt * Math.log(u[i])));
-                    if (y <= log_strike) {
-                        if (exercise_.payoffAtExpiry()) {
-                            return payoff_.getCashPayoff()
-                                    * discountTS_.discount(path.timeGrid().back());
+                    final double y =
+                            log_asset_price + 0.5 * (x - Math.sqrt(x * x - 2 * vol * vol * dt * Math.log(u[i])));
+                    if ( y <= log_strike ) {
+                        if ( exercise_.payoffAtExpiry() ) {
+                            return payoff_.getCashPayoff() * discountTS_.discount(path.timeGrid().back());
                         } else {
-                            return payoff_.getCashPayoff()
-                                    * discountTS_.discount(path.timeGrid().get(i + 1));
+                            return payoff_.getCashPayoff() * discountTS_.discount(path.timeGrid().get(i + 1));
                         }
                     }
                     log_asset_price += x;

@@ -25,11 +25,9 @@ import org.jquantlib.time.Period;
 /**
  * Cap/floor term-volatility structure (purely abstract).
  * <p>
- * Port of C++ QuantLib v1.42.1
- * {@code ql/termstructures/volatility/capfloor/capfloortermvolatilitystructure.{hpp,cpp}}.
- * The class defines the public interface for any concrete cap/floor
- * term-volatility surface; concrete subclasses (curve / surface) implement
- * {@link #volatilityImpl(double, double)}.
+ * Port of C++ QuantLib v1.42.1 {@code ql/termstructures/volatility/capfloor/capfloortermvolatilitystructure.{hpp,cpp}}.
+ * The class defines the public interface for any concrete cap/floor term-volatility surface; concrete subclasses (curve
+ * / surface) implement {@link #volatilityImpl(double, double)}.
  */
 public abstract class CapFloorTermVolatilityStructure extends VolatilityTermStructure {
 
@@ -38,25 +36,19 @@ public abstract class CapFloorTermVolatilityStructure extends VolatilityTermStru
     //
 
     /** "Default" constructor — concrete subclass must override referenceDate(). */
-    public CapFloorTermVolatilityStructure(final Calendar cal,
-                                           final BusinessDayConvention bdc,
-                                           final DayCounter dc) {
+    public CapFloorTermVolatilityStructure(final Calendar cal, final BusinessDayConvention bdc, final DayCounter dc) {
         super(cal, bdc, dc);
     }
 
     /** Initialize with a fixed reference date. */
-    public CapFloorTermVolatilityStructure(final Date refDate,
-                                           final Calendar cal,
-                                           final BusinessDayConvention bdc,
-                                           final DayCounter dc) {
+    public CapFloorTermVolatilityStructure(final Date refDate, final Calendar cal, final BusinessDayConvention bdc,
+            final DayCounter dc) {
         super(refDate, cal, bdc, dc);
     }
 
     /** Calculate the reference date based on the global evaluation date. */
-    public CapFloorTermVolatilityStructure(final int settlementDays,
-                                           final Calendar cal,
-                                           final BusinessDayConvention bdc,
-                                           final DayCounter dc) {
+    public CapFloorTermVolatilityStructure(final int settlementDays, final Calendar cal,
+            final BusinessDayConvention bdc, final DayCounter dc) {
         super(settlementDays, cal, bdc, dc);
     }
 
@@ -76,20 +68,17 @@ public abstract class CapFloorTermVolatilityStructure extends VolatilityTermStru
         return volatility(t, strike, false);
     }
 
-    public double volatility(final Period length, final double strike,
-                             final boolean extrapolate) {
+    public double volatility(final Period length, final double strike, final boolean extrapolate) {
         final Date d = optionDateFromTenor(length);
         return volatility(d, strike, extrapolate);
     }
 
-    public double volatility(final Date end, final double strike,
-                             final boolean extrapolate) {
+    public double volatility(final Date end, final double strike, final boolean extrapolate) {
         super.checkRange(timeFromReference(end), extrapolate);
         return volatility(timeFromReference(end), strike, extrapolate);
     }
 
-    public double volatility(final double t, final double strike,
-                             final boolean extrapolate) {
+    public double volatility(final double t, final double strike, final boolean extrapolate) {
         super.checkRange(t, extrapolate);
         checkStrike(strike, extrapolate);
         return volatilityImpl(t, strike);

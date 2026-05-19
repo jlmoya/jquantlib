@@ -26,42 +26,42 @@ import org.jquantlib.math.matrixutilities.Array;
 
 /**
  * @author Srinivas Hasti
- * 
+ *
  */
-public interface BoundaryCondition<T extends Operator> {
-	
-	public static enum Side {
-		None, Upper, Lower;
-	}
+public interface BoundaryCondition< T extends Operator > {
 
-	/*
-	 * ! This method modifies an operator \f$ L \f$ before it is applied to an
-	 * array \f$ u \f$ so that \f$ v = Lu \f$ will satisfy the given condition.
-	 */
-	public void applyBeforeApplying(T operator);
+    /*
+     * ! This method modifies an operator \f$ L \f$ before it is applied to an
+     * array \f$ u \f$ so that \f$ v = Lu \f$ will satisfy the given condition.
+     */
+    void applyBeforeApplying(T operator);
 
-	/*
-	 * ! This method modifies an array \f$ u \f$ so that it satisfies the given
-	 * condition.
-	 */
-	public void applyAfterApplying(Array array);
+    /*
+     * ! This method modifies an array \f$ u \f$ so that it satisfies the given
+     * condition.
+     */
+    void applyAfterApplying(Array array);
 
-	/*
-	 * ! This method modifies an operator \f$ L \f$ before the linear system \f$
-	 * Lu' = u \f$ is solved so that \f$ u' \f$ will satisfy the given
-	 * condition.
-	 */
-	public void applyBeforeSolving(T operator, Array array);
+    /*
+     * ! This method modifies an operator \f$ L \f$ before the linear system \f$
+     * Lu' = u \f$ is solved so that \f$ u' \f$ will satisfy the given
+     * condition.
+     */
+    void applyBeforeSolving(T operator, Array array);
 
-	/*
-	 * ! This method modifies an array \f$ u \f$ so that it satisfies the given
-	 * condition.
-	 */
-	public void applyAfterSolving(Array array);
+    /*
+     * ! This method modifies an array \f$ u \f$ so that it satisfies the given
+     * condition.
+     */
+    void applyAfterSolving(Array array);
 
-	/*
-	 * ! This method sets the current time for time-dependent boundary
-	 * conditions.
-	 */
-	public void setTime(/*@Time*/double t);
+    /*
+     * ! This method sets the current time for time-dependent boundary
+     * conditions.
+     */
+    void setTime(/*@Time*/double t);
+
+    enum Side {
+        None, Upper, Lower
+    }
 }

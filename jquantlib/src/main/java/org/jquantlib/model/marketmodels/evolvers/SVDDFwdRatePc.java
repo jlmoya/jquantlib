@@ -28,31 +28,23 @@ package org.jquantlib.model.marketmodels.evolvers;
 
 import org.jquantlib.QL;
 import org.jquantlib.math.matrixutilities.Matrix;
-import org.jquantlib.model.marketmodels.BrownianGenerator;
-import org.jquantlib.model.marketmodels.BrownianGeneratorFactory;
-import org.jquantlib.model.marketmodels.CurveState;
-import org.jquantlib.model.marketmodels.EvolutionDescription;
-import org.jquantlib.model.marketmodels.MarketModel;
-import org.jquantlib.model.marketmodels.MarketModelEvolver;
+import org.jquantlib.model.marketmodels.*;
 import org.jquantlib.model.marketmodels.curvestates.LMMCurveState;
 import org.jquantlib.model.marketmodels.driftcomputation.LMMDriftCalculator;
 
 /**
- * Stochastic-volatility (Andersen-style) displaced-diffusion log-normal
- * forward-rate predictor-corrector evolver.
+ * Stochastic-volatility (Andersen-style) displaced-diffusion log-normal forward-rate predictor-corrector evolver.
  * <p>
- * Combines the LMM forward dynamics with an external uncorrelated vol process
- * (typically {@link org.jquantlib.model.marketmodels.evolvers.volprocesses.SquareRootAndersen}).
- * Brownian increments are split between vol-process variates and forward-rate
- * variates per the {@code firstVolatilityFactor} / {@code volatilityFactorStep}
- * spec; the vol process feeds an SD multiplier scaling the log-forward
- * drift and diffusion at each step.
+ * Combines the LMM forward dynamics with an external uncorrelated vol process (typically
+ * {@link org.jquantlib.model.marketmodels.evolvers.volprocesses.SquareRootAndersen}). Brownian increments are split
+ * between vol-process variates and forward-rate variates per the {@code firstVolatilityFactor} /
+ * {@code volatilityFactorStep} spec; the vol process feeds an SD multiplier scaling the log-forward drift and diffusion
+ * at each step.
  * <p>
  * Brace dubbed this "Shifted BGM with Heston vol" in <i>Engineering BGM</i>.
  *
- * @see "ql/models/marketmodels/evolvers/svddfwdratepc.{hpp,cpp}" v1.42.1
- *
  * @author Jose Moya
+ * @see "ql/models/marketmodels/evolvers/svddfwdratepc.{hpp,cpp}" v1.42.1
  */
 public class SVDDFwdRatePc extends MarketModelEvolver {
 
@@ -60,13 +52,9 @@ public class SVDDFwdRatePc extends MarketModelEvolver {
     private final MarketModel marketModel_;
     private final BrownianGenerator generator_;
     private final MarketModelVolProcess volProcess_;
-
-    private int firstVolatilityFactor_;
     private final int volFactorsPerStep_;
-
     private final int[] numeraires_;
     private final int initialStep_;
-
     // fixed variables
     private final double[][] fixedDrifts_;
     private final boolean[] isVolVariate_;
@@ -74,7 +62,6 @@ public class SVDDFwdRatePc extends MarketModelEvolver {
     private final int numberOfRates_;
     private final int numberOfFactors_;
     private final LMMCurveState curveState_;
-    private int currentStep_;
     private final double[] forwards_;
     private final double[] displacements_;
     private final double[] logForwards_;
@@ -88,26 +75,18 @@ public class SVDDFwdRatePc extends MarketModelEvolver {
     private final int[] alive_;
     // helper classes
     private final LMMDriftCalculator[] calculators_;
+    private int firstVolatilityFactor_;
+    private int currentStep_;
 
-    public SVDDFwdRatePc(
-            final MarketModel marketModel,
-            final BrownianGeneratorFactory factory,
-            final MarketModelVolProcess volProcess,
-            final int firstVolatilityFactor,
-            final int volatilityFactorStep,
+    public SVDDFwdRatePc(final MarketModel marketModel, final BrownianGeneratorFactory factory,
+            final MarketModelVolProcess volProcess, final int firstVolatilityFactor, final int volatilityFactorStep,
             final int[] numeraires) {
-        this(marketModel, factory, volProcess, firstVolatilityFactor,
-                volatilityFactorStep, numeraires, 0);
+        this(marketModel, factory, volProcess, firstVolatilityFactor, volatilityFactorStep, numeraires, 0);
     }
 
-    public SVDDFwdRatePc(
-            final MarketModel marketModel,
-            final BrownianGeneratorFactory factory,
-            final MarketModelVolProcess volProcess,
-            final int firstVolatilityFactor,
-            final int volatilityFactorStep,
-            final int[] numeraires,
-            final int initialStep) {
+    public SVDDFwdRatePc(final MarketModel marketModel, final BrownianGeneratorFactory factory,
+            final MarketModelVolProcess volProcess, final int firstVolatilityFactor, final int volatilityFactorStep,
+            final int[] numeraires, final int initialStep) {
         this.marketModel_ = marketModel;
         this.volProcess_ = volProcess;
         this.firstVolatilityFactor_ = firstVolatilityFactor;
@@ -141,14 +120,13 @@ public class SVDDFwdRatePc extends MarketModelEvolver {
 
         this.calculators_ = new LMMDriftCalculator[steps];
         this.fixedDrifts_ = new double[steps][numberOfRates_];
-        for (int j = 0; j < steps; ++j) {
+        for ( int j = 0; j < steps; ++j ) {
             final Matrix A = marketModel.pseudoRoot(j);
-            calculators_[j] = new LMMDriftCalculator(A, displacements_,
-                    marketModel.evolution().rateTaus(),
+            calculators_[j] = new LMMDriftCalculator(A, displacements_, marketModel.evolution().rateTaus(),
                     numeraires[j], alive_[j]);
-            for (int k = 0; k < numberOfRates_; ++k) {
+            for ( int k = 0; k < numberOfRates_; ++k ) {
                 double variance = 0.0;
-                for (int f = 0; f < numberOfFactors_; ++f) {
+                for ( int f = 0; f < numberOfFactors_; ++f ) {
                     final double a = A.get(k, f);
                     variance += a * a;
                 }
@@ -164,7 +142,7 @@ public class SVDDFwdRatePc extends MarketModelEvolver {
 
         final int volIncrement = (variatesPerStep - firstVolatilityFactor_) / volFactorsPerStep_;
 
-        for (int i = 0; i < volFactorsPerStep_; ++i) {
+        for ( int i = 0; i < volFactorsPerStep_; ++i ) {
             isVolVariate_[firstVolatilityFactor_ + i * volIncrement] = true;
         }
     }
@@ -175,9 +153,8 @@ public class SVDDFwdRatePc extends MarketModelEvolver {
     }
 
     private void setForwards(final double[] forwards) {
-        QL.require(forwards.length == numberOfRates_,
-                "mismatch between forwards and rateTimes");
-        for (int i = 0; i < numberOfRates_; ++i) {
+        QL.require(forwards.length == numberOfRates_, "mismatch between forwards and rateTimes");
+        for ( int i = 0; i < numberOfRates_; ++i ) {
             initialLogForwards_[i] = Math.log(forwards[i] + displacements_[i]);
         }
         calculators_[initialStep_].compute(forwards, initialDrifts_);
@@ -201,7 +178,7 @@ public class SVDDFwdRatePc extends MarketModelEvolver {
         // we're going from T1 to T2
 
         // a) compute drifts D1 at T1
-        if (currentStep_ > initialStep_) {
+        if ( currentStep_ > initialStep_ ) {
             calculators_[currentStep_].compute(forwards_, drifts1_);
         } else {
             System.arraycopy(initialDrifts_, 0, drifts1_, 0, numberOfRates_);
@@ -213,8 +190,8 @@ public class SVDDFwdRatePc extends MarketModelEvolver {
         // divide Brownians between vol process and forward process
         int j = 0;
         int k = 0;
-        for (int i = 0; i < allBrownians_.length; ++i) {
-            if (isVolVariate_[i]) {
+        for ( int i = 0; i < allBrownians_.length; ++i ) {
+            if ( isVolVariate_[i] ) {
                 volBrownians_[j] = allBrownians_[i];
                 ++j;
             } else {
@@ -232,10 +209,10 @@ public class SVDDFwdRatePc extends MarketModelEvolver {
         final double[] fixedDrift = fixedDrifts_[currentStep_];
 
         final int alive = alive_[currentStep_];
-        for (int i = alive; i < numberOfRates_; ++i) {
+        for ( int i = alive; i < numberOfRates_; ++i ) {
             logForwards_[i] += varianceMultiplier * (drifts1_[i] + fixedDrift[i]);
             double inner = 0.0;
-            for (int f = 0; f < numberOfFactors_; ++f) {
+            for ( int f = 0; f < numberOfFactors_; ++f ) {
                 inner += A.get(i, f) * brownians_[f];
             }
             logForwards_[i] += sdMultiplier * inner;
@@ -246,7 +223,7 @@ public class SVDDFwdRatePc extends MarketModelEvolver {
         calculators_[currentStep_].compute(forwards_, drifts2_);
 
         // d) correct forwards using both drifts
-        for (int i = alive; i < numberOfRates_; ++i) {
+        for ( int i = alive; i < numberOfRates_; ++i ) {
             logForwards_[i] += varianceMultiplier * (drifts2_[i] - drifts1_[i]) / 2.0;
             forwards_[i] = Math.exp(logForwards_[i]) - displacements_[i];
         }

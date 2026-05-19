@@ -27,22 +27,20 @@
 
 package org.jquantlib.model.marketmodels;
 
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.math.matrixutilities.Matrix;
+
+import java.util.List;
 
 /**
  * Piecewise-constant correlation structure for market-model simulations.
  * <p>
- * This is the abstract interface for correlation structures that are constant
- * on the intervals defined by {@link #times()}. The {@link #correlations()}
- * method returns one matrix per interval.
+ * This is the abstract interface for correlation structures that are constant on the intervals defined by
+ * {@link #times()}. The {@link #correlations()} method returns one matrix per interval.
  * <p>
  * Note: corrTimes must include all rateTimes but the last.
  *
  * @author Jose Moya
- *
  * @see "ql/models/marketmodels/piecewiseconstantcorrelation.hpp" v1.42.1
  */
 public abstract class PiecewiseConstantCorrelation {
@@ -50,27 +48,26 @@ public abstract class PiecewiseConstantCorrelation {
     /**
      * @return the partition times defining the piecewise constant correlation.
      */
-    public abstract List<Double> times();
+    public abstract List< Double > times();
 
     /**
      * @return the rate times of the underlying forward-rate set.
      */
-    public abstract List<Double> rateTimes();
+    public abstract List< Double > rateTimes();
 
     /**
      * @return the list of per-interval correlation matrices.
      */
-    public abstract List<Matrix> correlations();
+    public abstract List< Matrix > correlations();
 
     /**
      * @param i the interval index
      * @return the i-th correlation matrix.
      */
     public Matrix correlation(final int i) {
-        final List<Matrix> results = correlations();
+        final List< Matrix > results = correlations();
         QL.require(i < results.size(),
-                "index (" + i + ") must be less than correlations vector size ("
-                        + results.size() + ")");
+                "index (" + i + ") must be less than correlations vector size (" + results.size() + ")");
         return results.get(i);
     }
 

@@ -26,9 +26,6 @@
 
 package org.jquantlib.model.marketmodels.pathwisegreeks;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.instruments.Option;
 import org.jquantlib.math.Ops;
@@ -38,34 +35,30 @@ import org.jquantlib.model.marketmodels.MarketModel;
 import org.jquantlib.model.marketmodels.curvestates.LMMCurveState;
 import org.jquantlib.pricingengines.BlackFormula;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * Derivative of cap implied volatility with respect to changes in
- * pseudo-root elements. The relationship between cap implied vol and
- * caplet implied vols is non-trivial — handled here via a Brent solve on
- * {@link QuickCap}.
+ * Derivative of cap implied volatility with respect to changes in pseudo-root elements. The relationship between cap
+ * implied vol and caplet implied vols is non-trivial — handled here via a Brent solve on {@link QuickCap}.
  *
  * <p>Mirrors C++ {@code CapPseudoDerivative}
- * (ql/models/marketmodels/pathwisegreeks/swaptionpseudojacobian.{hpp,cpp}
- * v1.42.1).
+ * (ql/models/marketmodels/pathwisegreeks/swaptionpseudojacobian.{hpp,cpp} v1.42.1).
  *
  * @author Jose Moya
  */
 public class CapPseudoDerivative {
 
-    private final List<Matrix> volatilityDerivatives_;
-    private final List<Matrix> priceDerivatives_;
+    private final List< Matrix > volatilityDerivatives_;
+    private final List< Matrix > priceDerivatives_;
     private final double impliedVolatility_;
     private final double vega_;
     private final double firstDF_;
 
-    public CapPseudoDerivative(final MarketModel inputModel,
-                               final double strike,
-                               final int startIndex,
-                               final int endIndex,
-                               final double firstDF) {
+    public CapPseudoDerivative(final MarketModel inputModel, final double strike, final int startIndex,
+            final int endIndex, final double firstDF) {
         this.firstDF_ = firstDF;
-        QL.require(startIndex < endIndex,
-                "for a cap pseudo derivative the start of the cap must be before the end");
+        QL.require(startIndex < endIndex, "for a cap pseudo derivative the start of the cap must be before the end");
         QL.require(endIndex <= inputModel.numberOfRates(),
                 "for a cap pseudo derivative the end of the cap must before the end of the rates");
 
@@ -87,7 +80,7 @@ public class CapPseudoDerivative {
         double minVol = 1e10;
         double maxVol = 0.0;
 
-        for (int j = startIndex; j < endIndex; ++j) {
+        for ( int j = startIndex; j < endIndex; ++j ) {
             final int capletIndex = j - startIndex;
             final double resetTime = inputModel.evolution().rateTimes()[j];
             expiries[capletIndex] = resetTime;
@@ -98,8 +91,7 @@ public class CapPseudoDerivative {
             final double forward = inputModel.initialRates()[j];
             initialRates[capletIndex] = forward;
 
-            final double annuity = curve.discountRatio(j + 1, 0)
-                    * inputModel.evolution().rateTaus()[j] * firstDF_;
+            final double annuity = curve.discountRatio(j + 1, 0) * inputModel.evolution().rateTaus()[j] * firstDF_;
             annuities[capletIndex] = annuity;
 
             final double displacement = inputModel.displacements()[j];
@@ -108,8 +100,8 @@ public class CapPseudoDerivative {
             minVol = Math.min(minVol, displacedImpliedVols[capletIndex]);
             maxVol = Math.max(maxVol, displacedImpliedVols[capletIndex] * (forward + displacement) / forward);
 
-            final double capletPrice = BlackFormula.blackFormula(
-                    Option.Type.Call, strike, forward, sd, annuity, displacement);
+            final double capletPrice = BlackFormula.blackFormula(Option.Type.Call, strike, forward, sd, annuity,
+                    displacement);
 
             capPrice += capletPrice;
         }
@@ -118,20 +110,19 @@ public class CapPseudoDerivative {
 
         this.priceDerivatives_ = new ArrayList<>(inputModel.evolution().numberOfSteps());
 
-        for (int step = 0; step < inputModel.evolution().numberOfSteps(); ++step) {
+        for ( int step = 0; step < inputModel.evolution().numberOfSteps(); ++step ) {
             final Matrix thisDerivative = new Matrix(numberRates, factors);
 
-            for (int rate = Math.max(inputModel.evolution().firstAliveRate()[step], startIndex);
-                 rate < endIndex; ++rate) {
-                for (int f = 0; f < factors; ++f) {
+            for ( int rate = Math.max(inputModel.evolution().firstAliveRate()[step], startIndex);
+                    rate < endIndex; ++rate ) {
+                for ( int f = 0; f < factors; ++f ) {
                     final double expiry = inputModel.evolution().rateTimes()[rate];
-                    final double volDerivative = inputModel.pseudoRoot(step).get(rate, f)
-                            / (displacedImpliedVols[rate - startIndex] * expiry);
-                    final double capletVega = blackFormulaVolDerivative(
-                            strike, inputModel.initialRates()[rate],
-                            displacedImpliedVols[rate - startIndex] * Math.sqrt(expiry),
-                            expiry, annuities[rate - startIndex],
-                            inputModel.displacements()[rate]);
+                    final double volDerivative =
+                            inputModel.pseudoRoot(step).get(rate, f) / (displacedImpliedVols[rate - startIndex]
+                                    * expiry);
+                    final double capletVega = blackFormulaVolDerivative(strike, inputModel.initialRates()[rate],
+                            displacedImpliedVols[rate - startIndex] * Math.sqrt(expiry), expiry,
+                            annuities[rate - startIndex], inputModel.displacements()[rate]);
 
                     thisDerivative.set(rate, f, volDerivative * capletVega);
                 }
@@ -148,16 +139,26 @@ public class CapPseudoDerivative {
 
         this.volatilityDerivatives_ = new ArrayList<>(inputModel.evolution().numberOfSteps());
 
-        for (int step = 0; step < inputModel.evolution().numberOfSteps(); ++step) {
+        for ( int step = 0; step < inputModel.evolution().numberOfSteps(); ++step ) {
             final Matrix thisDerivative = new Matrix(numberRates, factors);
-            for (int rate = Math.max(inputModel.evolution().firstAliveRate()[step], startIndex);
-                 rate < endIndex; ++rate) {
-                for (int f = 0; f < factors; ++f) {
+            for ( int rate = Math.max(inputModel.evolution().firstAliveRate()[step], startIndex);
+                    rate < endIndex; ++rate ) {
+                for ( int f = 0; f < factors; ++f ) {
                     thisDerivative.set(rate, f, priceDerivatives_.get(step).get(rate, f) / vega_);
                 }
             }
             volatilityDerivatives_.add(thisDerivative);
         }
+    }
+
+    /**
+     * Black-formula vol derivative (vega): {@code blackFormulaStdDevDerivative * sqrt(expiry)}. Mirrors the C++ free
+     * function {@code blackFormulaVolDerivative} from {@code blackformula.hpp}.
+     */
+    private static double blackFormulaVolDerivative(final double strike, final double forward, final double stdDev,
+            final double expiry, final double discount, final double displacement) {
+        return BlackFormula.blackFormulaStdDevDerivative(strike, forward, stdDev, discount, displacement) * Math.sqrt(
+                expiry);
     }
 
     public Matrix priceDerivative(final int i) {
@@ -173,23 +174,8 @@ public class CapPseudoDerivative {
     }
 
     /**
-     * Black-formula vol derivative (vega): {@code blackFormulaStdDevDerivative * sqrt(expiry)}.
-     * Mirrors the C++ free function {@code blackFormulaVolDerivative} from
-     * {@code blackformula.hpp}.
-     */
-    private static double blackFormulaVolDerivative(final double strike,
-                                                    final double forward,
-                                                    final double stdDev,
-                                                    final double expiry,
-                                                    final double discount,
-                                                    final double displacement) {
-        return BlackFormula.blackFormulaStdDevDerivative(
-                strike, forward, stdDev, discount, displacement) * Math.sqrt(expiry);
-    }
-
-    /**
-     * Quick (allocation-free) cap pricer used as the function for the
-     * implied-vol Brent solve. Mirrors the anonymous-namespace C++ class.
+     * Quick (allocation-free) cap pricer used as the function for the implied-vol Brent solve. Mirrors the
+     * anonymous-namespace C++ class.
      */
     private static final class QuickCap implements Ops.DoubleOp {
         private final double strike_;
@@ -198,11 +184,8 @@ public class CapPseudoDerivative {
         private final double[] expiries_;
         private final double price_;
 
-        QuickCap(final double strike,
-                 final double[] annuities,
-                 final double[] currentRates,
-                 final double[] expiries,
-                 final double price) {
+        QuickCap(final double strike, final double[] annuities, final double[] currentRates, final double[] expiries,
+                final double price) {
             this.strike_ = strike;
             this.annuities_ = annuities;
             this.currentRates_ = currentRates;
@@ -213,22 +196,18 @@ public class CapPseudoDerivative {
         @Override
         public double op(final double volatility) {
             double price = 0.0;
-            for (int i = 0; i < annuities_.length; ++i) {
-                price += BlackFormula.blackFormula(Option.Type.Call,
-                        strike_, currentRates_[i],
-                        volatility * Math.sqrt(expiries_[i]),
-                        annuities_[i]);
+            for ( int i = 0; i < annuities_.length; ++i ) {
+                price += BlackFormula.blackFormula(Option.Type.Call, strike_, currentRates_[i],
+                        volatility * Math.sqrt(expiries_[i]), annuities_[i]);
             }
             return price - price_;
         }
 
         double vega(final double volatility) {
             double v = 0.0;
-            for (int i = 0; i < annuities_.length; ++i) {
+            for ( int i = 0; i < annuities_.length; ++i ) {
                 v += BlackFormula.blackFormulaStdDevDerivative(strike_, currentRates_[i],
-                        volatility * Math.sqrt(expiries_[i]),
-                        annuities_[i], 0.0)
-                        * Math.sqrt(expiries_[i]);
+                        volatility * Math.sqrt(expiries_[i]), annuities_[i], 0.0) * Math.sqrt(expiries_[i]);
             }
             return v;
         }

@@ -46,26 +46,20 @@ import org.jquantlib.lang.annotation.QualityAssurance.Version;
 import org.jquantlib.time.Date;
 
 /**
- * "Actual/365 (Fixed)" day count convention, also know as
- * "Act/365 (Fixed)", "A/365 (Fixed)", or "A/365F".
- *
- * @note According to ISDA, "Actual/365" (without "Fixed") is
- * an alias for "Actual/Actual (ISDA)"DayCounter (see
- * ActualActual.)  If Actual/365 is not explicitly
- * specified as fixed in an instrument specification,
- * you might want to double-check its meaning.
+ * "Actual/365 (Fixed)" day count convention, also know as "Act/365 (Fixed)", "A/365 (Fixed)", or "A/365F".
  *
  * @author Srinivas Hasti
  * @author Richard Gomes
+ * @note According to ISDA, "Actual/365" (without "Fixed") is an alias for "Actual/Actual (ISDA)"DayCounter (see
+ * ActualActual.)  If Actual/365 is not explicitly specified as fixed in an instrument specification, you might want to
+ * double-check its meaning.
  */
-@QualityAssurance(quality=Quality.Q4_UNIT, version=Version.V097, reviewers="Richard Gomes")
+@QualityAssurance( quality = Quality.Q4_UNIT, version = Version.V097, reviewers = "Richard Gomes" )
 public class Actual365Fixed extends DayCounter {
-
 
     public Actual365Fixed() {
         super.impl = new Impl();
     }
-
 
     //
     // private inner classes
@@ -78,17 +72,16 @@ public class Actual365Fixed extends DayCounter {
         //
 
         @Override
-        public final String name() /* @ReadOnly */{
+        public String name() /* @ReadOnly */ {
             // Phase 3d L1 — align to C++ ql/time/daycounters/actual365fixed.hpp
             // ("Actual/365 (Fixed)"); was lowercase "(fixed)" historically.
             return "Actual/365 (Fixed)";
         }
 
         @Override
-        public /*@Time*/ final double yearFraction(
-                final Date dateStart, final Date dateEnd,
-                final Date refPeriodStart, final Date refPeriodEnd) /* @ReadOnly */{
-            return /*@Time*/ dayCount(dateStart, dateEnd)/365.0;
+        public /*@Time*/ double yearFraction(final Date dateStart, final Date dateEnd, final Date refPeriodStart,
+                final Date refPeriodEnd) /* @ReadOnly */ {
+            return /*@Time*/ dayCount(dateStart, dateEnd) / 365.0;
         }
 
     }

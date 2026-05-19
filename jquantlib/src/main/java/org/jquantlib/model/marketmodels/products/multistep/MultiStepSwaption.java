@@ -33,11 +33,11 @@ import org.jquantlib.model.marketmodels.MarketModelMultiProduct;
 import org.jquantlib.model.marketmodels.products.MultiProductMultiStep;
 
 /**
- * Multi-step Swaption — single swaption over a contiguous subset of rates,
- * stepping through every rate up to the swap start.
+ * Multi-step Swaption — single swaption over a contiguous subset of rates, stepping through every rate up to the swap
+ * start.
  * <p>
- * Mirrors C++ {@code class MultiStepSwaption}
- * (ql/models/marketmodels/products/multistep/multistepswaption.{hpp,cpp} v1.42.1).
+ * Mirrors C++ {@code class MultiStepSwaption} (ql/models/marketmodels/products/multistep/multistepswaption.{hpp,cpp}
+ * v1.42.1).
  *
  * @author Jose Moya
  */
@@ -49,10 +49,8 @@ public class MultiStepSwaption extends MultiProductMultiStep {
     private final double[] paymentTimes_;
     private int currentIndex_;
 
-    public MultiStepSwaption(final double[] rateTimes,
-                             final int startIndex,
-                             final int endIndex,
-                             final StrikedTypePayoff payoff) {
+    public MultiStepSwaption(final double[] rateTimes, final int startIndex, final int endIndex,
+            final StrikedTypePayoff payoff) {
         super(rateTimes);
         QL.require(startIndex < endIndex, "start index must be before end index");
         QL.require(endIndex < rateTimes.length, "end index must be before the end of the rates.");
@@ -63,22 +61,29 @@ public class MultiStepSwaption extends MultiProductMultiStep {
     }
 
     @Override
-    public double[] possibleCashFlowTimes() { return paymentTimes_; }
+    public double[] possibleCashFlowTimes() {
+        return paymentTimes_;
+    }
 
     @Override
-    public int numberOfProducts() { return 1; }
+    public int numberOfProducts() {
+        return 1;
+    }
 
     @Override
-    public int maxNumberOfCashFlowsPerProductPerStep() { return 1; }
+    public int maxNumberOfCashFlowsPerProductPerStep() {
+        return 1;
+    }
 
     @Override
-    public void reset() { currentIndex_ = 0; }
+    public void reset() {
+        currentIndex_ = 0;
+    }
 
     @Override
-    public boolean nextTimeStep(final CurveState currentState,
-                                final int[] numberCashFlowsThisStep,
-                                final MarketModelMultiProduct.CashFlow[][] genCashFlows) {
-        if (currentIndex_ == startIndex_) {
+    public boolean nextTimeStep(final CurveState currentState, final int[] numberCashFlowsThisStep,
+            final MarketModelMultiProduct.CashFlow[][] genCashFlows) {
+        if ( currentIndex_ == startIndex_ ) {
             genCashFlows[0][0].timeIndex = 0;
             final double swapRate = currentState.cmSwapRate(startIndex_, endIndex_ - startIndex_);
             final double annuity = currentState.cmSwapAnnuity(startIndex_, startIndex_, endIndex_ - startIndex_);

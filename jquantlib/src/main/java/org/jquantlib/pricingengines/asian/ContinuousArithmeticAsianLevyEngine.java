@@ -59,9 +59,8 @@ import org.jquantlib.time.Frequency;
  * Levy engine for continuously averaged arithmetic Asian options.
  *
  * <p>Two-moment matching analytical pricing engine based on the formulas
- * given in Haug, "Option Pricing Formulas", Second Edition, p. 99-100.
- * Implements a closed-form approximation that matches the first two moments
- * of the arithmetic continuous average distribution against a lognormal.
+ * given in Haug, "Option Pricing Formulas", Second Edition, p. 99-100. Implements a closed-form approximation that
+ * matches the first two moments of the arithmetic continuous average distribution against a lognormal.
  *
  * <p>Port of {@code ql/pricingengines/asian/continuousarithmeticasianlevyengine.{hpp,cpp}}
  * from QuantLib v1.42.1.
@@ -70,51 +69,45 @@ import org.jquantlib.time.Frequency;
  */
 public class ContinuousArithmeticAsianLevyEngine extends ContinuousAveragingAsianOption.EngineImpl {
 
-    private static final String NOT_AN_ARITHMETIC_AVERAGE   = "not an Arithmetic average option";
-    private static final String NOT_AN_EUROPEAN_OPTION      = "not an European Option";
-    private static final String START_DATE_NOT_PROVIDED     = "start date not provided";
-    private static final String START_DATE_AFTER_REFERENCE  =
-            "start date must be earlier than or equal to reference date";
-    private static final String NON_PLAIN_PAYOFF            = "non-plain payoff given";
-    private static final String CURRENT_AVERAGE_REQUIRED    =
-            "current average required for seasoned option";
+    private static final String NOT_AN_ARITHMETIC_AVERAGE = "not an Arithmetic average option";
+    private static final String NOT_AN_EUROPEAN_OPTION = "not an European Option";
+    private static final String START_DATE_NOT_PROVIDED = "start date not provided";
+    private static final String START_DATE_AFTER_REFERENCE = "start date must be earlier than or equal to reference date";
+    private static final String NON_PLAIN_PAYOFF = "non-plain payoff given";
+    private static final String CURRENT_AVERAGE_REQUIRED = "current average required for seasoned option";
 
     private final GeneralizedBlackScholesProcess process_;
-    private final Handle<? extends Quote>        currentAverage_;
-    private final Date                           startDate_;
+    private final Handle< ? extends Quote > currentAverage_;
+    private final Date startDate_;
 
     /**
      * Primary constructor — start date is taken from the option arguments.
      *
-     * @param process         the underlying generalized Black-Scholes process
-     * @param currentAverage  current realized average (used only for
-     *                        seasoned options where averaging has already
-     *                        begun)
+     * @param process        the underlying generalized Black-Scholes process
+     * @param currentAverage current realized average (used only for seasoned options where averaging has already
+     *                       begun)
      */
     public ContinuousArithmeticAsianLevyEngine(final GeneralizedBlackScholesProcess process,
-                                               final Handle<? extends Quote> currentAverage) {
-        this.process_        = process;
+            final Handle< ? extends Quote > currentAverage) {
+        this.process_ = process;
         this.currentAverage_ = currentAverage;
-        this.startDate_      = null;
+        this.startDate_ = null;
         process_.addObserver(this);
         currentAverage_.addObserver(this);
     }
 
     /**
-     * Deprecated constructor — kept for backward compatibility with callers
-     * that supplied the start date to the engine rather than the option.
-     * Mirrors the C++ {@code [[deprecated]]} overload at v1.41.
+     * Deprecated constructor — kept for backward compatibility with callers that supplied the start date to the engine
+     * rather than the option. Mirrors the C++ {@code [[deprecated]]} overload at v1.41.
      *
-     * @deprecated use the constructor without a start date and pass the
-     *             start date to the option instead.
+     * @deprecated use the constructor without a start date and pass the start date to the option instead.
      */
     @Deprecated
     public ContinuousArithmeticAsianLevyEngine(final GeneralizedBlackScholesProcess process,
-                                               final Handle<? extends Quote> currentAverage,
-                                               final Date startDate) {
-        this.process_        = process;
+            final Handle< ? extends Quote > currentAverage, final Date startDate) {
+        this.process_ = process;
         this.currentAverage_ = currentAverage;
-        this.startDate_      = startDate;
+        this.startDate_ = startDate;
         process_.addObserver(this);
         currentAverage_.addObserver(this);
     }
@@ -134,10 +127,10 @@ public class ContinuousArithmeticAsianLevyEngine extends ContinuousAveragingAsia
         final Date refDate = process_.riskFreeRate().currentLink().referenceDate();
         QL.require(startDate.le(refDate), START_DATE_AFTER_REFERENCE);
 
-        final DayCounter rfdc  = process_.riskFreeRate().currentLink().dayCounter();
+        final DayCounter rfdc = process_.riskFreeRate().currentLink().dayCounter();
         final DayCounter divdc = process_.dividendYield().currentLink().dayCounter();
         // voldc kept for parity with C++ (unused in the Levy formula).
-        @SuppressWarnings("unused")
+        @SuppressWarnings( "unused" )
         final DayCounter voldc = process_.blackVolatility().currentLink().dayCounter();
         final double spot = process_.stateVariable().currentLink().value();
 
@@ -153,8 +146,7 @@ public class ContinuousArithmeticAsianLevyEngine extends ContinuousAveragingAsia
 
         final double strike = payoff.strike();
 
-        final double volatility =
-                process_.blackVolatility().currentLink().blackVol(maturity, strike);
+        final double volatility = process_.blackVolatility().currentLink().blackVol(maturity, strike);
 
         final CumulativeNormalDistribution N = new CumulativeNormalDistribution();
 
@@ -165,29 +157,24 @@ public class ContinuousArithmeticAsianLevyEngine extends ContinuousAveragingAsia
         final double b = riskFreeRate - dividendYield;
 
         final double Se;
-        if (Math.abs(b) > 1000.0 * Constants.QL_EPSILON) {
-            Se = (spot / (T * b)) *
-                    (Math.exp((b - riskFreeRate) * T2) - Math.exp(-riskFreeRate * T2));
+        if ( Math.abs(b) > 1000.0 * Constants.QL_EPSILON ) {
+            Se = (spot / (T * b)) * (Math.exp((b - riskFreeRate) * T2) - Math.exp(-riskFreeRate * T2));
         } else {
             Se = spot * T2 / T * Math.exp(-riskFreeRate * T2);
         }
 
         final double X;
-        if (T2 < T) {
-            QL.require(!currentAverage_.empty() && currentAverage_.currentLink().isValid(),
-                    CURRENT_AVERAGE_REQUIRED);
+        if ( T2 < T ) {
+            QL.require(!currentAverage_.empty() && currentAverage_.currentLink().isValid(), CURRENT_AVERAGE_REQUIRED);
             X = strike - ((T - T2) / T) * currentAverage_.currentLink().value();
         } else {
             X = strike;
         }
 
-        final double m = (Math.abs(b) > 1000.0 * Constants.QL_EPSILON)
-                ? ((Math.exp(b * T2) - 1.0) / b)
-                : T2;
+        final double m = (Math.abs(b) > 1000.0 * Constants.QL_EPSILON) ? ((Math.exp(b * T2) - 1.0) / b) : T2;
 
-        final double M = (2.0 * spot * spot / (b + volatility * volatility)) *
-                (((Math.exp((2.0 * b + volatility * volatility) * T2) - 1.0)
-                        / (2.0 * b + volatility * volatility)) - m);
+        final double M = (2.0 * spot * spot / (b + volatility * volatility)) * (
+                ((Math.exp((2.0 * b + volatility * volatility) * T2) - 1.0) / (2.0 * b + volatility * volatility)) - m);
 
         final double D = M / (T * T);
 
@@ -196,11 +183,11 @@ public class ContinuousArithmeticAsianLevyEngine extends ContinuousAveragingAsia
         final double d1 = (1.0 / Math.sqrt(V)) * ((Math.log(D) / 2.0) - Math.log(X));
         final double d2 = d1 - Math.sqrt(V);
 
-        if (payoff.optionType() == Option.Type.Call) {
+        if ( payoff.optionType() == Option.Type.Call ) {
             results_.value = Se * N.op(d1) - X * Math.exp(-riskFreeRate * T2) * N.op(d2);
         } else {
-            results_.value = Se * N.op(d1) - X * Math.exp(-riskFreeRate * T2) * N.op(d2)
-                    - Se + X * Math.exp(-riskFreeRate * T2);
+            results_.value =
+                    Se * N.op(d1) - X * Math.exp(-riskFreeRate * T2) * N.op(d2) - Se + X * Math.exp(-riskFreeRate * T2);
         }
     }
 }

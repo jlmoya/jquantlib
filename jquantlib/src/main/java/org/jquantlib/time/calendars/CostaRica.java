@@ -22,15 +22,6 @@
 
 package org.jquantlib.time.calendars;
 
-import static org.jquantlib.time.Month.December;
-import static org.jquantlib.time.Month.January;
-import static org.jquantlib.time.Month.April;
-import static org.jquantlib.time.Month.May;
-import static org.jquantlib.time.Month.July;
-import static org.jquantlib.time.Month.August;
-import static org.jquantlib.time.Month.September;
-import static org.jquantlib.time.Month.October;
-
 import org.jquantlib.lang.annotation.QualityAssurance;
 import org.jquantlib.lang.annotation.QualityAssurance.Quality;
 import org.jquantlib.lang.annotation.QualityAssurance.Version;
@@ -39,6 +30,8 @@ import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Month;
 import org.jquantlib.time.Weekday;
+
+import static org.jquantlib.time.Month.*;
 
 /**
  * Costa Rican calendar Holidays for the Costa Rican stock exchange (data from <http://www.bolsacr.com/>):
@@ -58,38 +51,38 @@ import org.jquantlib.time.Weekday;
  * <li>Christmas, December 25th</li>
  * </ul>
  *
+ * @author Jose Luis Moya Sobrado
  * @category calendars
  * @see <a href="http://www.bolsacr.com/">Bolsa Nacional de Valores</a>
- *
- * @author Jose Luis Moya Sobrado
  */
 
-@QualityAssurance(quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Jose Luis Moya Sobrado" })
+@QualityAssurance( quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = {
+        "Jose Luis Moya Sobrado" } )
 public class CostaRica extends Calendar {
-
-    public enum Market {
-        /**
-         * Costa Rican stock exchange
-         */
-        BNV
-    };
-
-    //
-    // public constructors
-    //
 
     public CostaRica() {
         this(Market.BNV);
     }
 
+    //
+    // public constructors
+    //
+
     public CostaRica(final Market m) {
-        switch (m) {
+        switch ( m ) {
         case BNV:
             impl = new BnvImpl();
             break;
         default:
             throw new LibraryException(UNKNOWN_MARKET);
         }
+    }
+
+    public enum Market {
+        /**
+         * Costa Rican stock exchange
+         */
+        BNV
     }
 
     //
@@ -110,32 +103,29 @@ public class CostaRica extends Calendar {
             final Month m = date.month();
             final int y = date.year();
             final int em = easterMonday(y);
-            if (isWeekend(w)
+            return !isWeekend(w)
                     // New Year's Day
-                    || (d == 1 && m == January)
+                    && (d != 1 || m != January)
                     // Rivas' Battle Day
-                    || (d == 11 && m == April)
+                    && (d != 11 || m != April)
                     // Holy Thursday
-                    || (dd == em - 4)
+                    && (dd != em - 4)
                     // Good Friday
-                    || (dd == em - 3)
+                    && (dd != em - 3)
                     // Labour Day
-                    || (d == 1 && m == May)
+                    && (d != 1 || m != May)
                     // Annexion of Guanacaste
-                    || (d == 25 && m == July)
+                    && (d != 25 || m != July)
                     // Virgin of the Angels Day
-                    || (d == 2 && m == August)
+                    && (d != 2 || m != August)
                     // Mother's Day
-                    || (d == 15 && m == August)
+                    && (d != 15 || m != August)
                     // Independence Day
-                    || (d == 15 && m == September)
+                    && (d != 15 || m != September)
                     // Cultures' Day (moved to next Monday)
-                    || ((d >= 12 && d <= 18) && w == Weekday.Monday && m == Month.October)
+                    && ((d < 12 || d > 18) || w != Weekday.Monday || m != Month.October)
                     // Christmas
-                    || (d == 25 && m == December)) {
-                return false;
-            }
-            return true;
+                    && (d != 25 || m != December);
         }
     }
 }

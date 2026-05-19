@@ -27,21 +27,19 @@
 package org.jquantlib.math.matrixutilities;
 
 /**
- * Given a collection of vectors w_i, find a collection of vectors x_i such
- * that x_i is orthogonal to w_j for i != j, and {@code <x_i, w_i> = <w_i, w_i>}.
+ * Given a collection of vectors w_i, find a collection of vectors x_i such that x_i is orthogonal to w_j for i != j,
+ * and {@code <x_i, w_i> = <w_i, w_i>}.
  *
  * <p>The algorithm performs Gram-Schmidt on all other vectors to build an
- * orthonormal basis excluding w_j, then projects w_j onto the orthogonal
- * complement to get x_j. If the resulting multiplier exceeds
- * {@code multiplierCutOff}, vector j is marked invalid.
+ * orthonormal basis excluding w_j, then projects w_j onto the orthogonal complement to get x_j. If the resulting
+ * multiplier exceeds {@code multiplierCutOff}, vector j is marked invalid.
  *
  * <p>Mirrors C++ {@code OrthogonalProjections} declared in
- * {@code ql/math/matrixutilities/basisincompleteordered.hpp} and implemented
- * in the corresponding .cpp (QuantLib v1.42.1).
+ * {@code ql/math/matrixutilities/basisincompleteordered.hpp} and implemented in the corresponding .cpp (QuantLib
+ * v1.42.1).
  *
  * <p>Tested in MatricesTest::testOrthogonalProjection() in the C++ suite;
- * the Java equivalent is in
- * {@link org.jquantlib.testsuite.math.matrixutilities.OrthogonalProjectionsTest}.
+ * the Java equivalent is in {@link org.jquantlib.testsuite.math.matrixutilities.OrthogonalProjectionsTest}.
  *
  * @author Jose Moya
  */
@@ -56,27 +54,24 @@ public class OrthogonalProjections {
     // ---- outputs ----
     private final boolean[] validVectors_;
     private final double[][] projectedVectors_;
-    private int numberValidVectors_;
-
     // ---- workspace ----
     private final Matrix orthoNormalizedVectors_;
+    private int numberValidVectors_;
 
     /**
      * Constructs the orthogonal-projection set.
      *
-     * @param originalVectors matrix with one input vector per row
+     * @param originalVectors  matrix with one input vector per row
      * @param multiplierCutOff if |sizeMultiplier| >= this, vector is discarded
-     * @param tolerance if the Gram-Schmidt residual norm < this, vector is discarded
+     * @param tolerance        if the Gram-Schmidt residual norm < this, vector is discarded
      */
-    public OrthogonalProjections(final Matrix originalVectors,
-                                 final double multiplierCutOff,
-                                 final double tolerance) {
+    public OrthogonalProjections(final Matrix originalVectors, final double multiplierCutOff, final double tolerance) {
         this.originalVectors_ = new Matrix(originalVectors);
         this.multiplierCutoff_ = multiplierCutOff;
         this.numberVectors_ = originalVectors.rows();
         this.dimension_ = originalVectors.cols();
         this.validVectors_ = new boolean[numberVectors_];
-        for (int i = 0; i < numberVectors_; ++i) {
+        for ( int i = 0; i < numberVectors_; ++i ) {
             validVectors_[i] = true;
         }
         this.projectedVectors_ = new double[numberVectors_][dimension_];
@@ -84,40 +79,38 @@ public class OrthogonalProjections {
 
         final double[] currentVector = new double[dimension_];
 
-        for (int j = 0; j < numberVectors_; ++j) {
-            if (validVectors_[j]) {
+        for ( int j = 0; j < numberVectors_; ++j ) {
+            if ( validVectors_[j] ) {
                 // Copy all rows into orthoNormalizedVectors_ as working copies
-                for (int k = 0; k < numberVectors_; ++k) {
-                    for (int m = 0; m < dimension_; ++m) {
+                for ( int k = 0; k < numberVectors_; ++k ) {
+                    for ( int m = 0; m < dimension_; ++m ) {
                         orthoNormalizedVectors_.set(k, m, originalVectors_.get(k, m));
                     }
                 }
 
                 // Gram-Schmidt: orthonormalize all rows except row j,
                 // skip invalid rows too.
-                for (int k = 0; k < numberVectors_; ++k) {
-                    if (k != j && validVectors_[k]) {
+                for ( int k = 0; k < numberVectors_; ++k ) {
+                    if ( k != j && validVectors_[k] ) {
                         // Subtract projections onto all already-orthonormalized valid rows l < k (l != j)
-                        for (int l = 0; l < k; ++l) {
-                            if (validVectors_[l] && l != j) {
+                        for ( int l = 0; l < k; ++l ) {
+                            if ( validVectors_[l] && l != j ) {
                                 final double dotProduct = innerProduct(orthoNormalizedVectors_, k,
-                                                                       orthoNormalizedVectors_, l);
-                                for (int n = 0; n < dimension_; ++n) {
-                                    orthoNormalizedVectors_.set(k, n,
-                                            orthoNormalizedVectors_.get(k, n)
-                                                    - dotProduct * orthoNormalizedVectors_.get(l, n));
+                                        orthoNormalizedVectors_, l);
+                                for ( int n = 0; n < dimension_; ++n ) {
+                                    orthoNormalizedVectors_.set(k, n, orthoNormalizedVectors_.get(k, n)
+                                            - dotProduct * orthoNormalizedVectors_.get(l, n));
                                 }
                             }
                         }
 
                         final double normBeforeScaling = norm(orthoNormalizedVectors_, k);
-                        if (normBeforeScaling < tolerance) {
+                        if ( normBeforeScaling < tolerance ) {
                             validVectors_[k] = false;
                         } else {
                             final double recip = 1.0 / normBeforeScaling;
-                            for (int m = 0; m < dimension_; ++m) {
-                                orthoNormalizedVectors_.set(k, m,
-                                        orthoNormalizedVectors_.get(k, m) * recip);
+                            for ( int m = 0; m < dimension_; ++m ) {
+                                orthoNormalizedVectors_.set(k, m, orthoNormalizedVectors_.get(k, m) * recip);
                             }
                         }
                     }
@@ -129,24 +122,22 @@ public class OrthogonalProjections {
 
                 // Project orthoNormalizedVectors_[j] onto the orthogonal complement of
                 // all valid r != j.
-                for (int r = 0; r < numberVectors_; ++r) {
-                    if (validVectors_[r] && r != j) {
-                        final double dotProduct = innerProduct(orthoNormalizedVectors_, j,
-                                                               orthoNormalizedVectors_, r);
-                        for (int s = 0; s < dimension_; ++s) {
+                for ( int r = 0; r < numberVectors_; ++r ) {
+                    if ( validVectors_[r] && r != j ) {
+                        final double dotProduct = innerProduct(orthoNormalizedVectors_, j, orthoNormalizedVectors_, r);
+                        for ( int s = 0; s < dimension_; ++s ) {
                             orthoNormalizedVectors_.set(j, s,
-                                    orthoNormalizedVectors_.get(j, s)
-                                            - dotProduct * orthoNormalizedVectors_.get(r, s));
+                                    orthoNormalizedVectors_.get(j, s) - dotProduct * orthoNormalizedVectors_.get(r, s));
                         }
                     }
                 }
 
-                final double projectionOnOriginalDirection =
-                        innerProduct(originalVectors_, j, orthoNormalizedVectors_, j);
+                final double projectionOnOriginalDirection = innerProduct(originalVectors_, j, orthoNormalizedVectors_,
+                        j);
                 final double sizeMultiplier = prevNormSquared / projectionOnOriginalDirection;
 
-                if (Math.abs(sizeMultiplier) < multiplierCutoff_) {
-                    for (int t = 0; t < dimension_; ++t) {
+                if ( Math.abs(sizeMultiplier) < multiplierCutoff_ ) {
+                    for ( int t = 0; t < dimension_; ++t ) {
                         currentVector[t] = orthoNormalizedVectors_.get(j, t) * sizeMultiplier;
                     }
                 } else {
@@ -159,36 +150,16 @@ public class OrthogonalProjections {
 
         // Count valid vectors
         numberValidVectors_ = 0;
-        for (int i = 0; i < numberVectors_; ++i) {
-            if (validVectors_[i]) {
+        for ( int i = 0; i < numberVectors_; ++i ) {
+            if ( validVectors_[i] ) {
                 ++numberValidVectors_;
             }
         }
     }
 
-    /** Returns the validity mask for the projected vectors. */
-    public boolean[] validVectors() {
-        return validVectors_;
-    }
-
-    /**
-     * Returns the projected vector at the given index.
-     * Only meaningful when {@code validVectors()[index] == true}.
-     */
-    public double[] getVector(final int index) {
-        return projectedVectors_[index];
-    }
-
-    /** Returns the number of valid (non-discarded) vectors. */
-    public int numberValidVectors() {
-        return numberValidVectors_;
-    }
-
-    // ---- private helpers ----
-
     private static double normSquared(final Matrix v, final int row) {
         double x = 0.0;
-        for (int i = 0; i < v.cols(); ++i) {
+        for ( int i = 0; i < v.cols(); ++i ) {
             final double e = v.get(row, i);
             x += e * e;
         }
@@ -199,12 +170,30 @@ public class OrthogonalProjections {
         return Math.sqrt(normSquared(v, row));
     }
 
-    private static double innerProduct(final Matrix v, final int row1,
-                                       final Matrix w, final int row2) {
+    private static double innerProduct(final Matrix v, final int row1, final Matrix w, final int row2) {
         double x = 0.0;
-        for (int i = 0; i < v.cols(); ++i) {
+        for ( int i = 0; i < v.cols(); ++i ) {
             x += v.get(row1, i) * w.get(row2, i);
         }
         return x;
+    }
+
+    // ---- private helpers ----
+
+    /** Returns the validity mask for the projected vectors. */
+    public boolean[] validVectors() {
+        return validVectors_;
+    }
+
+    /**
+     * Returns the projected vector at the given index. Only meaningful when {@code validVectors()[index] == true}.
+     */
+    public double[] getVector(final int index) {
+        return projectedVectors_[index];
+    }
+
+    /** Returns the number of valid (non-discarded) vectors. */
+    public int numberValidVectors() {
+        return numberValidVectors_;
     }
 }

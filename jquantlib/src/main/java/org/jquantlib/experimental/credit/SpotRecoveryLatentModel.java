@@ -20,22 +20,21 @@
  */
 package org.jquantlib.experimental.credit;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.experimental.math.CopulaPolicy;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.termstructures.DefaultProbabilityTermStructure;
 import org.jquantlib.time.Date;
 
+import java.util.List;
+
 /**
  * Random spot-recovery latent variable portfolio model.
  *
  * <p>Java port of QuantLib v1.42.1 template
- * {@code template <class copulaPolicy> class SpotRecoveryLatentModel}
- * (declared in {@code ql/experimental/credit/spotlosslatentmodel.hpp}). Pinned
- * commit {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
+ * {@code template <class copulaPolicy> class SpotRecoveryLatentModel} (declared in
+ * {@code ql/experimental/credit/spotlosslatentmodel.hpp}). Pinned commit
+ * {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
  *
  * <p>The model adds a stochastic-recovery layer on top of the default-only
  * Latent Model. References:
@@ -71,7 +70,7 @@ import org.jquantlib.time.Date;
  *
  * @param <P> the {@link CopulaPolicy} subtype controlling distributions
  */
-public class SpotRecoveryLatentModel<P extends CopulaPolicy> extends LatentModel<P> {
+public class SpotRecoveryLatentModel< P extends CopulaPolicy > extends LatentModel< P > {
 
     private final double[] recoveries_;
     private final double modelA_;
@@ -83,18 +82,15 @@ public class SpotRecoveryLatentModel<P extends CopulaPolicy> extends LatentModel
     private Basket basket_;
 
     /**
-     * @param factorWeights  size {@code 2 N x F} factor matrix (rows
-     *                       {@code [0,N)} default; rows {@code [N,2N)} recovery)
-     * @param recoveries     unconditional per-name recovery rates (length {@code N})
-     * @param modelA         model parameter "A" (eq. 42 in Li 2009)
-     * @param copula         copula-policy instance
-     * @param integralType   integration backend selection
+     * @param factorWeights size {@code 2 N x F} factor matrix (rows {@code [0,N)} default; rows {@code [N,2N)}
+     *                      recovery)
+     * @param recoveries    unconditional per-name recovery rates (length {@code N})
+     * @param modelA        model parameter "A" (eq. 42 in Li 2009)
+     * @param copula        copula-policy instance
+     * @param integralType  integration backend selection
      */
-    public SpotRecoveryLatentModel(final List<List<Double>> factorWeights,
-                                   final List<Double> recoveries,
-                                   final double modelA,
-                                   final P copula,
-                                   final IntegrationType integralType) {
+    public SpotRecoveryLatentModel(final List< List< Double > > factorWeights, final List< Double > recoveries,
+            final double modelA, final P copula, final IntegrationType integralType) {
         super(factorWeights, copula);
         QL.require(factorWeights.size() % 2 == 0,
                 "Number of RR variables must be equal to number of default variables");
@@ -102,22 +98,22 @@ public class SpotRecoveryLatentModel<P extends CopulaPolicy> extends LatentModel
         QL.require(recoveries.size() == numNames_,
                 "Number of recoveries does not match number of defaultable entities.");
         this.recoveries_ = new double[numNames_];
-        for (int i = 0; i < numNames_; ++i) recoveries_[i] = recoveries.get(i);
+        for ( int i = 0; i < numNames_; ++i )
+            recoveries_[i] = recoveries.get(i);
         this.modelA_ = modelA;
         this.crossIdiosyncFctrs_ = new double[numNames_];
-        for (int i = 0; i < numNames_; ++i) {
+        for ( int i = 0; i < numNames_; ++i ) {
             double cumul = 0.0;
-            final List<Double> rowI = factorWeights.get(i);
-            final List<Double> rowI_RR = factorWeights.get(i + numNames_);
-            for (int k = 0; k < rowI.size(); ++k) {
+            final List< Double > rowI = factorWeights.get(i);
+            final List< Double > rowI_RR = factorWeights.get(i + numNames_);
+            for ( int k = 0; k < rowI.size(); ++k ) {
                 final double a_ik = rowI.get(k);
                 final double a_NRk = rowI_RR.get(k);
                 cumul += a_ik * a_ik * a_NRk * a_NRk;
             }
             crossIdiosyncFctrs_[i] = cumul;
         }
-        this.integration_ = LatentModel.createLMIntegration(
-                factorWeights.get(0).size(), integralType);
+        this.integration_ = LatentModel.createLMIntegration(factorWeights.get(0).size(), integralType);
     }
 
     /** Number of names ({@code factorWeights.size() / 2}). */
@@ -141,12 +137,10 @@ public class SpotRecoveryLatentModel<P extends CopulaPolicy> extends LatentModel
     }
 
     /**
-     * Bind a basket (mirrors C++ {@code resetBasket}). The basket size
-     * must equal {@code numNames}.
+     * Bind a basket (mirrors C++ {@code resetBasket}). The basket size must equal {@code numNames}.
      */
     public void resetBasket(final Basket basket) {
-        QL.require(basket.size() == numNames_,
-                "Incompatible new basket and model sizes.");
+        QL.require(basket.size() == numNames_, "Incompatible new basket and model sizes.");
         this.basket_ = basket;
     }
 
@@ -156,46 +150,42 @@ public class SpotRecoveryLatentModel<P extends CopulaPolicy> extends LatentModel
     }
 
     /**
-     * Conditional default probability given an unconditional probability and
-     * a market-factor sample.
+     * Conditional default probability given an unconditional probability and a market-factor sample.
      *
      * <p>Mirrors C++ {@code conditionalDefaultProbability(prob, iName, mkt)}.
      */
-    public double conditionalDefaultProbability(final double prob, final int iName,
-                                                final double[] mktFactors) {
-        if (prob < 1.0e-10) return 0.0;
-        return conditionalDefaultProbabilityInvP(
-                inverseCumulativeY(prob, iName), iName, mktFactors);
+    public double conditionalDefaultProbability(final double prob, final int iName, final double[] mktFactors) {
+        if ( prob < 1.0e-10 )
+            return 0.0;
+        return conditionalDefaultProbabilityInvP(inverseCumulativeY(prob, iName), iName, mktFactors);
     }
 
     /**
      * Performance variant taking the inverse-cumulative directly. Mirrors C++
      * {@code conditionalDefaultProbabilityInvP(invCumYProb, iName, m)}.
      */
-    public double conditionalDefaultProbabilityInvP(final double invCumYProb, final int iName,
-                                                    final double[] m) {
-        final List<Double> w = factorWeights_.get(iName);
+    public double conditionalDefaultProbabilityInvP(final double invCumYProb, final int iName, final double[] m) {
+        final List< Double > w = factorWeights_.get(iName);
         double sumMs = 0.0;
-        for (int k = 0; k < w.size(); ++k) {
+        for ( int k = 0; k < w.size(); ++k ) {
             sumMs += w.get(k) * m[k];
         }
         return cumulativeZ((invCumYProb - sumMs) / idiosyncFctrs_[iName]);
     }
 
     /**
-     * Conditional default probability at date {@code d} given a market-factor
-     * sample. Mirrors C++ {@code conditionalDefaultProbability(date, iName, m)}.
+     * Conditional default probability at date {@code d} given a market-factor sample. Mirrors C++
+     * {@code conditionalDefaultProbability(date, iName, m)}.
      *
      * <p>Requires a basket to be bound via {@link #resetBasket(Basket)}.
      */
-    public double conditionalDefaultProbability(final Date date, final int iName,
-                                                 final double[] mktFactors) {
+    public double conditionalDefaultProbability(final Date date, final int iName, final double[] mktFactors) {
         QL.require(basket_ != null, "No portfolio basket set.");
         final Pool pool = basket_.pool();
-        final List<DefaultProbKey> dks = basket_.defaultKeys();
-        final List<String> names = basket_.names();
-        final Handle<DefaultProbabilityTermStructure> dts =
-                pool.get(names.get(iName)).defaultProbability(dks.get(iName));
+        final List< DefaultProbKey > dks = basket_.defaultKeys();
+        final List< String > names = basket_.names();
+        final Handle< DefaultProbabilityTermStructure > dts = pool.get(names.get(iName))
+                .defaultProbability(dks.get(iName));
         final double pDefUncond = dts.currentLink().defaultProbability(date);
         return conditionalDefaultProbability(pDefUncond, iName, mktFactors);
     }
@@ -204,42 +194,34 @@ public class SpotRecoveryLatentModel<P extends CopulaPolicy> extends LatentModel
      * Expected conditional spot recovery rate. Mirrors C++
      * {@code expCondRecoveryInvPinvRR(invUncondDefP, invUncondRR, iName, m)}.
      */
-    public double expCondRecoveryInvPinvRR(final double invUncondDefP,
-                                            final double invUncondRR,
-                                            final int iName,
-                                            final double[] mktFactors) {
-        final List<Double> w_def = factorWeights_.get(iName);
-        final List<Double> w_RR  = factorWeights_.get(iName + numNames_);
+    public double expCondRecoveryInvPinvRR(final double invUncondDefP, final double invUncondRR, final int iName,
+            final double[] mktFactors) {
+        final List< Double > w_def = factorWeights_.get(iName);
+        final List< Double > w_RR = factorWeights_.get(iName + numNames_);
         double sumMs = 0.0;
-        for (int k = 0; k < w_def.size(); ++k) {
+        for ( int k = 0; k < w_def.size(); ++k ) {
             sumMs += w_def.get(k) * mktFactors[k];
         }
         double sumBetaLoss = 0.0;
-        for (int k = 0; k < w_RR.size(); ++k) {
+        for ( int k = 0; k < w_RR.size(); ++k ) {
             final double v = w_RR.get(k);
             sumBetaLoss += v * v;
         }
         final double cross = crossIdiosyncFctrs_[iName];
         final double a2 = modelA_ * modelA_;
         final double numerator =
-                sumMs
-                + Math.sqrt(1.0 - cross) * Math.sqrt(1.0 + a2) * invUncondRR
-                - Math.sqrt(cross) * invUncondDefP;
+                sumMs + Math.sqrt(1.0 - cross) * Math.sqrt(1.0 + a2) * invUncondRR - Math.sqrt(cross) * invUncondDefP;
         final double denominator = Math.sqrt(1.0 - sumBetaLoss + a2 * (1.0 - cross));
         return cumulativeZ(numerator / denominator);
     }
 
     /**
-     * Convenience wrapper: takes an unconditional probability {@code uncondDefP}
-     * and recovers the inv-cumul before delegating to {@link #expCondRecoveryInvPinvRR}.
+     * Convenience wrapper: takes an unconditional probability {@code uncondDefP} and recovers the inv-cumul before
+     * delegating to {@link #expCondRecoveryInvPinvRR}.
      */
-    public double expCondRecoveryP(final double uncondDefP, final int iName,
-                                   final double[] mktFactors) {
-        return expCondRecoveryInvPinvRR(
-                inverseCumulativeY(uncondDefP, iName),
-                inverseCumulativeY(recoveries_[iName], iName + numNames_),
-                iName,
-                mktFactors);
+    public double expCondRecoveryP(final double uncondDefP, final int iName, final double[] mktFactors) {
+        return expCondRecoveryInvPinvRR(inverseCumulativeY(uncondDefP, iName),
+                inverseCumulativeY(recoveries_[iName], iName + numNames_), iName, mktFactors);
     }
 
     /**
@@ -250,45 +232,44 @@ public class SpotRecoveryLatentModel<P extends CopulaPolicy> extends LatentModel
     public double expCondRecovery(final Date d, final int iName, final double[] mktFactors) {
         QL.require(basket_ != null, "No portfolio basket set.");
         final Pool pool = basket_.pool();
-        final List<DefaultProbKey> dks = basket_.defaultKeys();
-        final List<String> names = basket_.names();
-        final Handle<DefaultProbabilityTermStructure> dts =
-                pool.get(names.get(iName)).defaultProbability(dks.get(iName));
+        final List< DefaultProbKey > dks = basket_.defaultKeys();
+        final List< String > names = basket_.names();
+        final Handle< DefaultProbabilityTermStructure > dts = pool.get(names.get(iName))
+                .defaultProbability(dks.get(iName));
         final double pDefUncond = dts.currentLink().defaultProbability(d);
         return expCondRecoveryP(pDefUncond, iName, mktFactors);
     }
 
     /**
-     * Implements eq. 42 on p.14 of Li 2009: the realised conditional recovery
-     * rate sample given a latent-variable sample and a date.
+     * Implements eq. 42 on p.14 of Li 2009: the realised conditional recovery rate sample given a latent-variable
+     * sample and a date.
      *
      * <p>Mirrors C++ {@code conditionalRecovery(latentVarSample, iName, d)}.
-     * Requires a basket bound. Designed to be called inside a Monte-Carlo
-     * loop only when the corresponding sample led to a default.
+     * Requires a basket bound. Designed to be called inside a Monte-Carlo loop only when the corresponding sample led
+     * to a default.
      */
-    public double conditionalRecovery(final double latentVarSample, final int iName,
-                                      final Date d) {
+    public double conditionalRecovery(final double latentVarSample, final int iName, final Date d) {
         QL.require(basket_ != null, "No portfolio basket set.");
         final Pool pool = basket_.pool();
-        final List<DefaultProbKey> dks = basket_.defaultKeys();
-        final List<String> names = basket_.names();
-        final Handle<DefaultProbabilityTermStructure> dts =
-                pool.get(names.get(iName)).defaultProbability(dks.get(iName));
+        final List< DefaultProbKey > dks = basket_.defaultKeys();
+        final List< String > names = basket_.names();
+        final Handle< DefaultProbabilityTermStructure > dts = pool.get(names.get(iName))
+                .defaultProbability(dks.get(iName));
         final double pdef = dts.currentLink().defaultProbability(d, true);
-        if (pdef < 1.0e-10) return 0.0;
+        if ( pdef < 1.0e-10 )
+            return 0.0;
         final int iRecovery = iName + numNames_;
         final double cross = crossIdiosyncFctrs_[iName];
-        final double term = (latentVarSample - Math.sqrt(cross) * inverseCumulativeY(pdef, iName))
-                / (modelA_ * Math.sqrt(1.0 - cross))
-                + Math.sqrt(1.0 + 1.0 / (modelA_ * modelA_))
-                * inverseCumulativeY(recoveries_[iName], iRecovery);
+        final double term =
+                (latentVarSample - Math.sqrt(cross) * inverseCumulativeY(pdef, iName)) / (modelA_ * Math.sqrt(
+                        1.0 - cross)) + Math.sqrt(1.0 + 1.0 / (modelA_ * modelA_)) * inverseCumulativeY(
+                        recoveries_[iName], iRecovery);
         return cumulativeY(term, iRecovery);
     }
 
     /**
-     * Returns the recovery sample for name {@code iName}. Mirrors C++
-     * {@code latentRRVarValue}. Convention: factor index {@code iName +
-     * numNames_} addresses the recovery latent variable.
+     * Returns the recovery sample for name {@code iName}. Mirrors C++ {@code latentRRVarValue}. Convention: factor
+     * index {@code iName + numNames_} addresses the recovery latent variable.
      */
     public double latentRRVarValue(final double[] allFactors, final int iName) {
         return latentVarValue(allFactors, iName + numNames_);
@@ -299,33 +280,28 @@ public class SpotRecoveryLatentModel<P extends CopulaPolicy> extends LatentModel
     // ------------------------------------------------------------------------
 
     /**
-     * Conditional expected loss for name {@code iName} given pre-inverted
-     * unconditional default probability and recovery rate. Mirrors C++
-     * {@code conditionalExpLossRRInv}, with {@code conditionalRecoveryInvPinvRR}
-     * resolved to {@link #expCondRecoveryInvPinvRR}.
+     * Conditional expected loss for name {@code iName} given pre-inverted unconditional default probability and
+     * recovery rate. Mirrors C++ {@code conditionalExpLossRRInv}, with {@code conditionalRecoveryInvPinvRR} resolved to
+     * {@link #expCondRecoveryInvPinvRR}.
      *
      * <p>Returns {@code pdef × (1 − E[RR | …])}.
      */
-    public double conditionalExpLossRRInv(final double invP,
-                                           final double invRR,
-                                           final int iName,
-                                           final double[] mktFactors) {
-        return conditionalDefaultProbabilityInvP(invP, iName, mktFactors)
-                * (1.0 - expCondRecoveryInvPinvRR(invP, invRR, iName, mktFactors));
+    public double conditionalExpLossRRInv(final double invP, final double invRR, final int iName,
+            final double[] mktFactors) {
+        return conditionalDefaultProbabilityInvP(invP, iName, mktFactors) * (1.0 - expCondRecoveryInvPinvRR(invP, invRR,
+                iName, mktFactors));
     }
 
     /**
-     * Date-driven conditional expected loss for name {@code iName}. Mirrors
-     * C++ {@code conditionalExpLossRR}.
+     * Date-driven conditional expected loss for name {@code iName}. Mirrors C++ {@code conditionalExpLossRR}.
      */
-    public double conditionalExpLossRR(final Date d, final int iName,
-                                        final double[] mktFactors) {
+    public double conditionalExpLossRR(final Date d, final int iName, final double[] mktFactors) {
         QL.require(basket_ != null, "No portfolio basket set.");
         final Pool pool = basket_.pool();
-        final List<DefaultProbKey> dks = basket_.defaultKeys();
-        final List<String> names = basket_.names();
-        final Handle<DefaultProbabilityTermStructure> dts =
-                pool.get(names.get(iName)).defaultProbability(dks.get(iName));
+        final List< DefaultProbKey > dks = basket_.defaultKeys();
+        final List< String > names = basket_.names();
+        final Handle< DefaultProbabilityTermStructure > dts = pool.get(names.get(iName))
+                .defaultProbability(dks.get(iName));
         final double pDefUncond = dts.currentLink().defaultProbability(d);
         final double invP = inverseCumulativeY(pDefUncond, iName);
         final double invRR = inverseCumulativeY(recoveries_[iName], iName + numNames_);
@@ -333,25 +309,22 @@ public class SpotRecoveryLatentModel<P extends CopulaPolicy> extends LatentModel
     }
 
     /**
-     * Single-name expected loss at date {@code d}. Mirrors C++
-     * {@code expectedLoss}: integrates {@link #conditionalExpLossRRInv} over
-     * the systemic-factor density. Used for testing model coherence —
-     * preserves the marginal loss {@code pdef × (1 − R̄)} of the input single-
-     * name CDS calibration.
+     * Single-name expected loss at date {@code d}. Mirrors C++ {@code expectedLoss}: integrates
+     * {@link #conditionalExpLossRRInv} over the systemic-factor density. Used for testing model coherence — preserves
+     * the marginal loss {@code pdef × (1 − R̄)} of the input single- name CDS calibration.
      *
      * <p>Requires a basket bound via {@link #resetBasket(Basket)}.
      */
     public double expectedLoss(final Date d, final int iName) {
         QL.require(basket_ != null, "No portfolio basket set.");
         final Pool pool = basket_.pool();
-        final List<DefaultProbKey> dks = basket_.defaultKeys();
-        final List<String> names = basket_.names();
-        final Handle<DefaultProbabilityTermStructure> dts =
-                pool.get(names.get(iName)).defaultProbability(dks.get(iName));
+        final List< DefaultProbKey > dks = basket_.defaultKeys();
+        final List< String > names = basket_.names();
+        final Handle< DefaultProbabilityTermStructure > dts = pool.get(names.get(iName))
+                .defaultProbability(dks.get(iName));
         final double pDefUncond = dts.currentLink().defaultProbability(d);
         final double invP = inverseCumulativeY(pDefUncond, iName);
         final double invRR = inverseCumulativeY(recoveries_[iName], iName + numNames_);
-        return integratedExpectedValue((double[] v) ->
-                conditionalExpLossRRInv(invP, invRR, iName, v));
+        return integratedExpectedValue((double[] v) -> conditionalExpLossRRInv(invP, invRR, iName, v));
     }
 }

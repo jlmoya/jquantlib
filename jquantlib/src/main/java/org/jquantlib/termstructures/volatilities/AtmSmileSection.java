@@ -24,9 +24,8 @@ package org.jquantlib.termstructures.volatilities;
  * Smile section that allows for explicit / alternate specification of the ATM level.
  *
  * <p>Thin wrapper around an arbitrary {@link SmileSection} that overrides
- * {@link #atmLevel()} with a caller-supplied value while delegating all
- * other queries ({@code volatility}, {@code variance}, {@code minStrike},
- * {@code maxStrike}, etc.) to the underlying source section.
+ * {@link #atmLevel()} with a caller-supplied value while delegating all other queries ({@code volatility},
+ * {@code variance}, {@code minStrike}, {@code maxStrike}, etc.) to the underlying source section.
  *
  * <p>Mirrors C++ QuantLib v1.42.1 {@code AtmSmileSection}
  * (atmsmilesection.hpp/.cpp).  Used by {@code MarkovFunctional::updateSmiles()}.
@@ -49,8 +48,7 @@ public class AtmSmileSection extends SmileSection {
     // ------------------------------------------------------------------
 
     /**
-     * Wraps {@code source}; uses source's own {@link SmileSection#atmLevel()}
-     * as the effective ATM.
+     * Wraps {@code source}; uses source's own {@link SmileSection#atmLevel()} as the effective ATM.
      *
      * <p>Mirrors {@code AtmSmileSection(source, Null<Real>())}.
      *
@@ -61,9 +59,8 @@ public class AtmSmileSection extends SmileSection {
     }
 
     /**
-     * Wraps {@code source}; uses {@code atm} as the effective ATM level when
-     * it is not {@link Double#NaN}, otherwise falls back to
-     * {@code source.atmLevel()}.
+     * Wraps {@code source}; uses {@code atm} as the effective ATM level when it is not {@link Double#NaN}, otherwise
+     * falls back to {@code source.atmLevel()}.
      *
      * <p>Mirrors {@code AtmSmileSection(source, atm)} where {@code Null<Real>()}
      * maps to {@code Double.NaN} in Java.
@@ -74,10 +71,7 @@ public class AtmSmileSection extends SmileSection {
     public AtmSmileSection(final SmileSection source, final double atm) {
         // Initialise base class from source's time-based fields.
         // C++: SmileSection(*source) — copies exerciseTime, dayCounter, type, shift.
-        super(source.exerciseTime(),
-              source.dayCounter(),
-              source.volatilityType(),
-              source.shift());
+        super(source.exerciseTime(), source.dayCounter(), source.volatilityType(), source.shift());
 
         source_ = source;
         f_ = Double.isNaN(atm) ? source_.atmLevel() : atm;
@@ -109,10 +103,9 @@ public class AtmSmileSection extends SmileSection {
      * Delegates to source.
      *
      * <p>C++: {@code volatilityImpl(strike)} calls {@code source_->volatility(strike)},
-     * which (unlike {@code volatilityImpl}) handles {@code Null<Real>()} by substituting
-     * {@code atmLevel()}.  In Java, {@link SmileSection#volatility(double)} does the same
-     * substitution before calling {@link #volatilityImpl(double)}, so mirroring via
-     * {@code source_.volatility(strike)} is correct.
+     * which (unlike {@code volatilityImpl}) handles {@code Null<Real>()} by substituting {@code atmLevel()}.  In Java,
+     * {@link SmileSection#volatility(double)} does the same substitution before calling
+     * {@link #volatilityImpl(double)}, so mirroring via {@code source_.volatility(strike)} is correct.
      */
     @Override
     protected double volatilityImpl(final double strike) {

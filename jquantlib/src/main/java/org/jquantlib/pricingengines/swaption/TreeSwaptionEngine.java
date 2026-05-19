@@ -14,9 +14,6 @@
  */
 package org.jquantlib.pricingengines.swaption;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.instruments.Settlement;
@@ -29,11 +26,13 @@ import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.TimeGrid;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Numerical lattice engine for swaptions.
  * <p>
- * Port of C++ v1.42.1
- * {@code ql/pricingengines/swaption/treeswaptionengine.{hpp,cpp}}.
+ * Port of C++ v1.42.1 {@code ql/pricingengines/swaption/treeswaptionengine.{hpp,cpp}}.
  *
  * <h3>Java port deviations from C++ v1.42.1</h3>
  * <ul>
@@ -54,44 +53,43 @@ public class TreeSwaptionEngine extends Swaption.EngineImpl {
     private final TimeGrid timeGrid_;
     private final int timeSteps_;
     private final Lattice lattice_;
-    private final Handle<YieldTermStructure> termStructure_;
+    private final Handle< YieldTermStructure > termStructure_;
 
     /**
-     * Build with a step count. The grid is constructed lazily from the
-     * swaption's mandatory times in {@link #calculate()}.
+     * Build with a step count. The grid is constructed lazily from the swaption's mandatory times in
+     * {@link #calculate()}.
      */
     public TreeSwaptionEngine(final ShortRateModel model, final int timeSteps,
-            final Handle<YieldTermStructure> termStructure) {
+            final Handle< YieldTermStructure > termStructure) {
         super();
         this.model_ = model;
         this.timeSteps_ = timeSteps;
         this.timeGrid_ = null;
         this.lattice_ = null;
         this.termStructure_ = termStructure;
-        if (this.model_ != null) {
+        if ( this.model_ != null ) {
             this.model_.addObserver(this);
         }
-        if (this.termStructure_ != null) {
+        if ( this.termStructure_ != null ) {
             this.termStructure_.addObserver(this);
         }
     }
 
     /**
-     * Build with an explicit time grid; the model's tree is built on this
-     * grid up-front.
+     * Build with an explicit time grid; the model's tree is built on this grid up-front.
      */
     public TreeSwaptionEngine(final ShortRateModel model, final TimeGrid grid,
-            final Handle<YieldTermStructure> termStructure) {
+            final Handle< YieldTermStructure > termStructure) {
         super();
         this.model_ = model;
         this.timeGrid_ = grid;
         this.timeSteps_ = 0;
         this.lattice_ = (model != null) ? model.tree(grid) : null;
         this.termStructure_ = termStructure;
-        if (this.model_ != null) {
+        if ( this.model_ != null ) {
             this.model_.addObserver(this);
         }
-        if (this.termStructure_ != null) {
+        if ( this.termStructure_ != null ) {
             this.termStructure_.addObserver(this);
         }
     }
@@ -107,31 +105,29 @@ public class TreeSwaptionEngine extends Swaption.EngineImpl {
 
         final Date referenceDate;
         final DayCounter dayCounter;
-        if (model_ instanceof TermStructureConsistentModel) {
+        if ( model_ instanceof TermStructureConsistentModel ) {
             final TermStructureConsistentModel tsm = (TermStructureConsistentModel) model_;
             referenceDate = tsm.termStructure().currentLink().referenceDate();
             dayCounter = tsm.termStructure().currentLink().dayCounter();
         } else {
-            QL.require(termStructure_ != null && !termStructure_.empty(),
-                    "no term structure available");
+            QL.require(termStructure_ != null && !termStructure_.empty(), "no term structure available");
             referenceDate = termStructure_.currentLink().referenceDate();
             dayCounter = termStructure_.currentLink().dayCounter();
         }
 
-        final DiscretizedSwaption swaption = new DiscretizedSwaption(
-                args, referenceDate, dayCounter);
+        final DiscretizedSwaption swaption = new DiscretizedSwaption(args, referenceDate, dayCounter);
 
         final Lattice lattice;
-        if (lattice_ != null) {
+        if ( lattice_ != null ) {
             lattice = lattice_;
         } else {
-            final List<Double> mandatory = swaption.mandatoryTimes();
+            final List< Double > mandatory = swaption.mandatoryTimes();
             final TimeGrid grid = new TimeGrid(mandatory, timeSteps_);
             lattice = model_.tree(grid);
         }
 
-        final List<Double> stoppingTimes = new ArrayList<Double>(args.exercise.dates().size());
-        for (int i = 0; i < args.exercise.dates().size(); i++) {
+        final List< Double > stoppingTimes = new ArrayList< Double >(args.exercise.dates().size());
+        for ( int i = 0; i < args.exercise.dates().size(); i++ ) {
             stoppingTimes.add(dayCounter.yearFraction(referenceDate, args.exercise.date(i)));
         }
 
@@ -140,8 +136,8 @@ public class TreeSwaptionEngine extends Swaption.EngineImpl {
 
         // First non-negative stopping time — mirrors C++ find_if(t >= 0.0).
         double nextExercise = stoppingTimes.get(0);
-        for (final double t : stoppingTimes) {
-            if (t >= 0.0) {
+        for ( final double t : stoppingTimes ) {
+            if ( t >= 0.0 ) {
                 nextExercise = t;
                 break;
             }

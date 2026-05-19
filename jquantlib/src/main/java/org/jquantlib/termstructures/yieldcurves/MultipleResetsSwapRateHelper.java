@@ -36,14 +36,12 @@ import org.jquantlib.util.Visitor;
 /**
  * Rate helper for bootstrapping over multiple-resets swap quotes.
  * <p>
- * Port of C++ QuantLib v1.42.1
- * {@code ql/termstructures/yield/multipleresetsswaphelper.hpp/cpp}
+ * Port of C++ QuantLib v1.42.1 {@code ql/termstructures/yield/multipleresetsswaphelper.hpp/cpp}
  * {@code MultipleResetsSwapRateHelper}.
  *
  * <p>The helper builds an internal {@link MultipleResetsSwap} via
- * {@link MakeMultipleResetsSwap} and exposes the swap's fair fixed rate as
- * the implied quote — the bootstrap iterates on the term structure until
- * the quoted rate matches.
+ * {@link MakeMultipleResetsSwap} and exposes the swap's fair fixed rate as the implied quote — the bootstrap iterates
+ * on the term structure until the quoted rate matches.
  *
  * <p>Mirrors the C++ contract:
  * <ul>
@@ -62,9 +60,8 @@ import org.jquantlib.util.Visitor;
  *
  * <p>Phase 5e.5b-CFC-d-186 port.
  *
- * @category termstructures
- *
  * @author JQuantLib migration team
+ * @category termstructures
  */
 public class MultipleResetsSwapRateHelper extends RelativeDateRateHelper {
 
@@ -78,54 +75,36 @@ public class MultipleResetsSwapRateHelper extends RelativeDateRateHelper {
     protected final Frequency fixedFrequency_;
     protected final DayCounter fixedDayCount_;
     protected final BusinessDayConvention fixedConvention_;
-    protected final Handle<YieldTermStructure> discountHandle_;
-
+    protected final Handle< YieldTermStructure > discountHandle_;
+    protected final RelinkableHandle< YieldTermStructure > termStructureHandle_ = new RelinkableHandle< YieldTermStructure >(
+            null);
+    protected final RelinkableHandle< YieldTermStructure > discountRelinkableHandle_ = new RelinkableHandle< YieldTermStructure >(
+            null);
     protected MultipleResetsSwap swap_;
-    protected final RelinkableHandle<YieldTermStructure> termStructureHandle_ =
-            new RelinkableHandle<YieldTermStructure>(null);
-    protected final RelinkableHandle<YieldTermStructure> discountRelinkableHandle_ =
-            new RelinkableHandle<YieldTermStructure>(null);
 
     /**
-     * Most-common-case constructor (defaults: empty discountingCurve so the
-     * bootstrap curve is also the discount curve; Compound averaging; zero
-     * spread; default fixed frequency derived from
-     * {@code resetsPerCoupon * iborIndex.tenor()}; fixed day count from the
-     * index; ModifiedFollowing fixed convention).
+     * Most-common-case constructor (defaults: empty discountingCurve so the bootstrap curve is also the discount curve;
+     * Compound averaging; zero spread; default fixed frequency derived from
+     * {@code resetsPerCoupon * iborIndex.tenor()}; fixed day count from the index; ModifiedFollowing fixed
+     * convention).
      */
-    public MultipleResetsSwapRateHelper(
-            final int settlementDays,
-            final Period tenor,
-            final Handle<Quote> fixedRate,
-            final IborIndex iborIndex,
-            final int resetsPerCoupon) {
-        this(settlementDays, tenor, fixedRate, iborIndex, resetsPerCoupon,
-             new Handle<YieldTermStructure>(),
-             RateAveraging.Type.Compound,
-             0.0,
-             Frequency.NoFrequency,
-             null /* fixedDayCount -> defaults to iborIndex.dayCounter() */,
-             BusinessDayConvention.ModifiedFollowing);
+    public MultipleResetsSwapRateHelper(final int settlementDays, final Period tenor, final Handle< Quote > fixedRate,
+            final IborIndex iborIndex, final int resetsPerCoupon) {
+        this(settlementDays, tenor, fixedRate, iborIndex, resetsPerCoupon, new Handle< YieldTermStructure >(),
+                RateAveraging.Type.Compound, 0.0, Frequency.NoFrequency,
+                null /* fixedDayCount -> defaults to iborIndex.dayCounter() */,
+                BusinessDayConvention.ModifiedFollowing);
     }
 
     /**
      * Full constructor mirroring C++ ctor signature.
      *
-     * @param fixedDayCount may be {@code null} (or empty) to default to
-     *                      {@code iborIndex.dayCounter()}.
+     * @param fixedDayCount may be {@code null} (or empty) to default to {@code iborIndex.dayCounter()}.
      */
-    public MultipleResetsSwapRateHelper(
-            final int settlementDays,
-            final Period tenor,
-            final Handle<Quote> fixedRate,
-            final IborIndex iborIndex,
-            final int resetsPerCoupon,
-            final Handle<YieldTermStructure> discountingCurve,
-            final RateAveraging.Type averagingMethod,
-            final double spread,
-            final Frequency fixedFrequency,
-            final DayCounter fixedDayCount,
-            final BusinessDayConvention fixedConvention) {
+    public MultipleResetsSwapRateHelper(final int settlementDays, final Period tenor, final Handle< Quote > fixedRate,
+            final IborIndex iborIndex, final int resetsPerCoupon, final Handle< YieldTermStructure > discountingCurve,
+            final RateAveraging.Type averagingMethod, final double spread, final Frequency fixedFrequency,
+            final DayCounter fixedDayCount, final BusinessDayConvention fixedConvention) {
         super(fixedRate);
         this.settlementDays_ = settlementDays;
         this.tenor_ = tenor;
@@ -134,7 +113,8 @@ public class MultipleResetsSwapRateHelper extends RelativeDateRateHelper {
         this.spread_ = spread;
         this.fixedFrequency_ = fixedFrequency;
         this.fixedDayCount_ = (fixedDayCount != null && !fixedDayCount.empty())
-                ? fixedDayCount : iborIndex.dayCounter();
+                ? fixedDayCount
+                : iborIndex.dayCounter();
         this.fixedConvention_ = fixedConvention;
         this.discountHandle_ = discountingCurve;
 
@@ -150,7 +130,7 @@ public class MultipleResetsSwapRateHelper extends RelativeDateRateHelper {
         this.iborIndex_ = iborIndex.clone(termStructureHandle_).currentLink();
 
         this.iborIndex_.addObserver(this);
-        if (!discountHandle_.empty()) {
+        if ( !discountHandle_.empty() ) {
             discountHandle_.currentLink().addObserver(this);
         }
         initializeDates();
@@ -160,16 +140,11 @@ public class MultipleResetsSwapRateHelper extends RelativeDateRateHelper {
     protected void initializeDates() {
         // Delegate swap construction to MakeMultipleResetsSwap to mirror C++
         // exactly. Port of C++ multipleresetsswaphelper.cpp:57-65.
-        final MakeMultipleResetsSwap make =
-                new MakeMultipleResetsSwap(tenor_, iborIndex_, resetsPerCoupon_)
-                        .withFixedRate(0.0)
-                        .withSettlementDays(settlementDays_)
-                        .withFixedLegFrequency(fixedFrequency_)
-                        .withFixedLegDayCount(fixedDayCount_)
-                        .withFixedLegConvention(fixedConvention_)
-                        .withFloatingLegSpread(spread_)
-                        .withAveragingMethod(averagingMethod_)
-                        .withDiscountingTermStructure(discountRelinkableHandle_);
+        final MakeMultipleResetsSwap make = new MakeMultipleResetsSwap(tenor_, iborIndex_,
+                resetsPerCoupon_).withFixedRate(0.0).withSettlementDays(settlementDays_)
+                .withFixedLegFrequency(fixedFrequency_).withFixedLegDayCount(fixedDayCount_)
+                .withFixedLegConvention(fixedConvention_).withFloatingLegSpread(spread_)
+                .withAveragingMethod(averagingMethod_).withDiscountingTermStructure(discountRelinkableHandle_);
         swap_ = make.value();
 
         // Discounting: exogenous if provided, otherwise use the bootstrap
@@ -181,7 +156,7 @@ public class MultipleResetsSwapRateHelper extends RelativeDateRateHelper {
         // creation may be a no-op when discountRelinkableHandle_ is not yet
         // linked at construction time. Re-applying the engine here keeps
         // the helper robust against that interaction.
-        if (discountHandle_.empty()) {
+        if ( discountHandle_.empty() ) {
             swap_.setPricingEngine(new DiscountingSwapEngine(termStructureHandle_));
         } else {
             swap_.setPricingEngine(new DiscountingSwapEngine(discountHandle_));
@@ -205,7 +180,7 @@ public class MultipleResetsSwapRateHelper extends RelativeDateRateHelper {
         // Do not register as observer — bootstrap drives recalculation.
         // Mirrors C++ multipleresetsswaphelper.cpp:74-83.
         termStructureHandle_.linkTo(t, false);
-        if (discountHandle_.empty()) {
+        if ( discountHandle_.empty() ) {
             discountRelinkableHandle_.linkTo(t, false);
         } else {
             discountRelinkableHandle_.linkTo(discountHandle_.currentLink(), false);
@@ -227,9 +202,8 @@ public class MultipleResetsSwapRateHelper extends RelativeDateRateHelper {
 
     @Override
     public void accept(final PolymorphicVisitor pv) {
-        final Visitor<MultipleResetsSwapRateHelper> v =
-                (pv != null) ? pv.visitor(this.getClass()) : null;
-        if (v != null) {
+        final Visitor< MultipleResetsSwapRateHelper > v = (pv != null) ? pv.visitor(this.getClass()) : null;
+        if ( v != null ) {
             v.visit(this);
         } else {
             super.accept(pv);

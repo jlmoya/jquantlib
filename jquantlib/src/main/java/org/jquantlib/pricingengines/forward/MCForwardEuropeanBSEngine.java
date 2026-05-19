@@ -21,9 +21,6 @@
  */
 package org.jquantlib.pricingengines.forward;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.instruments.ForwardVanillaOption;
 import org.jquantlib.instruments.PlainVanillaPayoff;
@@ -40,37 +37,33 @@ import org.jquantlib.processes.GeneralizedBlackScholesProcess;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.TimeGrid;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * Monte Carlo forward-starting (strike-resetting) European option engine
- * driven by a {@link GeneralizedBlackScholesProcess}.
+ * Monte Carlo forward-starting (strike-resetting) European option engine driven by a
+ * {@link GeneralizedBlackScholesProcess}.
  *
  * <p>Java port of QuantLib v1.42.1
- * {@code ql/pricingengines/forward/mcforwardeuropeanbsengine.{hpp,cpp}}
- * (Phase 5e.5b-CFC-d-119). Pinned commit
+ * {@code ql/pricingengines/forward/mcforwardeuropeanbsengine.{hpp,cpp}} (Phase 5e.5b-CFC-d-119). Pinned commit
  * {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
  *
  * <p>The C++ class is a template
- * {@code MCForwardEuropeanBSEngine<RNG=PseudoRandom, S=Statistics>}
- * inheriting from {@code MCForwardVanillaEngine<SingleVariate,RNG,S>}
- * which itself extends both
- * {@code GenericEngine<ForwardOptionArguments<VanillaOption::arguments>,
- * VanillaOption::results>} and {@code McSimulation<SingleVariate,RNG,S>}.
- * Java single-inheritance forces a choice; this port follows the
- * {@link org.jquantlib.pricingengines.vanilla.MCEuropeanHestonEngine}
- * pattern: extend {@link ForwardVanillaOption.EngineImpl} (so the
- * arguments_ / results_ / Observable wiring stays intact) and embed a
+ * {@code MCForwardEuropeanBSEngine<RNG=PseudoRandom, S=Statistics>} inheriting from
+ * {@code MCForwardVanillaEngine<SingleVariate,RNG,S>} which itself extends both
+ * {@code GenericEngine<ForwardOptionArguments<VanillaOption::arguments>, VanillaOption::results>} and
+ * {@code McSimulation<SingleVariate,RNG,S>}. Java single-inheritance forces a choice; this port follows the
+ * {@link org.jquantlib.pricingengines.vanilla.MCEuropeanHestonEngine} pattern: extend
+ * {@link ForwardVanillaOption.EngineImpl} (so the arguments_ / results_ / Observable wiring stays intact) and embed a
  * delegate {@link McSimulation McSimulation&lt;Path&gt;}.
  *
  * <p>Specialised for {@code RNG = PseudoRandom} (Mersenne-Twister +
- * {@code InverseCumulativeNormal}) — quasi-random / low-discrepancy
- * variants are deferred. Cross-validates against
- * {@link ForwardVanillaEngine}: convergence to the analytic forward-
- * starting BS price as N → ∞.
- *
- * @see ForwardVanillaEngine
- * @see ForwardEuropeanBSPathPricer
+ * {@code InverseCumulativeNormal}) — quasi-random / low-discrepancy variants are deferred. Cross-validates against
+ * {@link ForwardVanillaEngine}: convergence to the analytic forward- starting BS price as N → ∞.
  *
  * @author JQuantLib
+ * @see ForwardVanillaEngine
+ * @see ForwardEuropeanBSPathPricer
  */
 public class MCForwardEuropeanBSEngine extends ForwardVanillaOption.EngineImpl {
 
@@ -90,43 +83,31 @@ public class MCForwardEuropeanBSEngine extends ForwardVanillaOption.EngineImpl {
     protected final long seed_;
 
     /** Lazily-built delegate that owns the {@link MonteCarloModel}. */
-    protected McSimulation<Path> simulation_;
-
+    protected McSimulation< Path > simulation_;
 
     //
     // constructors
     //
 
     /**
-     * Mirrors C++ {@code MCForwardEuropeanBSEngine(process, timeSteps,
-     * timeStepsPerYear, brownianBridge, antitheticVariate, requiredSamples,
-     * requiredTolerance, maxSamples, seed)}.
+     * Mirrors C++
+     * {@code MCForwardEuropeanBSEngine(process, timeSteps, timeStepsPerYear, brownianBridge, antitheticVariate,
+     * requiredSamples, requiredTolerance, maxSamples, seed)}.
      *
      * <p>Pass {@link McSimulation#NULL_SAMPLES} ({@code Integer.MAX_VALUE})
-     * or {@link McSimulation#NULL_TOLERANCE} ({@code NaN}) for "not
-     * specified".
+     * or {@link McSimulation#NULL_TOLERANCE} ({@code NaN}) for "not specified".
      */
-    public MCForwardEuropeanBSEngine(final GeneralizedBlackScholesProcess process,
-                                     final int timeSteps,
-                                     final int timeStepsPerYear,
-                                     final boolean brownianBridge,
-                                     final boolean antitheticVariate,
-                                     final int requiredSamples,
-                                     final double requiredTolerance,
-                                     final int maxSamples,
-                                     final long seed) {
+    public MCForwardEuropeanBSEngine(final GeneralizedBlackScholesProcess process, final int timeSteps,
+            final int timeStepsPerYear, final boolean brownianBridge, final boolean antitheticVariate,
+            final int requiredSamples, final double requiredTolerance, final int maxSamples, final long seed) {
         super();
         QL.require(process != null, "null Black-Scholes process");
-        QL.require(timeSteps != McSimulation.NULL_SAMPLES
-                || timeStepsPerYear != McSimulation.NULL_SAMPLES,
+        QL.require(timeSteps != McSimulation.NULL_SAMPLES || timeStepsPerYear != McSimulation.NULL_SAMPLES,
                 "no time steps provided");
-        QL.require(timeSteps == McSimulation.NULL_SAMPLES
-                || timeStepsPerYear == McSimulation.NULL_SAMPLES,
+        QL.require(timeSteps == McSimulation.NULL_SAMPLES || timeStepsPerYear == McSimulation.NULL_SAMPLES,
                 "both time steps and time steps per year were provided");
-        QL.require(timeSteps != 0,
-                "timeSteps must be positive, " + timeSteps + " not allowed");
-        QL.require(timeStepsPerYear != 0,
-                "timeStepsPerYear must be positive, " + timeStepsPerYear + " not allowed");
+        QL.require(timeSteps != 0, "timeSteps must be positive, " + timeSteps + " not allowed");
+        QL.require(timeStepsPerYear != 0, "timeStepsPerYear must be positive, " + timeStepsPerYear + " not allowed");
 
         this.process_ = process;
         this.timeSteps_ = timeSteps;
@@ -140,20 +121,17 @@ public class MCForwardEuropeanBSEngine extends ForwardVanillaOption.EngineImpl {
         this.process_.addObserver(this);
     }
 
-
     //
     // McSimulation-shaped helpers
     //
 
     /**
-     * Mirrors C++ {@code MCForwardVanillaEngine::timeGrid()}: build a
-     * mandatory-point grid that includes both the reset date {@code t1}
-     * and the exercise date {@code t2}, then pad with evenly-spaced
-     * inner points to reach the requested total step count.
+     * Mirrors C++ {@code MCForwardVanillaEngine::timeGrid()}: build a mandatory-point grid that includes both the reset
+     * date {@code t1} and the exercise date {@code t2}, then pad with evenly-spaced inner points to reach the requested
+     * total step count.
      */
     protected TimeGrid timeGrid() {
-        final ForwardVanillaOption.ArgumentsImpl a =
-                (ForwardVanillaOption.ArgumentsImpl) arguments_;
+        final ForwardVanillaOption.ArgumentsImpl a = (ForwardVanillaOption.ArgumentsImpl) arguments_;
         final Date resetDate = a.resetDate;
         final Date lastExerciseDate = a.exercise.lastDate();
 
@@ -161,52 +139,43 @@ public class MCForwardEuropeanBSEngine extends ForwardVanillaOption.EngineImpl {
         final double t2 = process_.time(lastExerciseDate);
 
         int totalSteps;
-        if (timeSteps_ != McSimulation.NULL_SAMPLES) {
+        if ( timeSteps_ != McSimulation.NULL_SAMPLES ) {
             totalSteps = timeSteps_;
-        } else if (timeStepsPerYear_ != McSimulation.NULL_SAMPLES) {
+        } else if ( timeStepsPerYear_ != McSimulation.NULL_SAMPLES ) {
             totalSteps = (int) (timeStepsPerYear_ * t2);
         } else {
             throw new RuntimeException("time steps not specified");
         }
 
-        final List<Double> mandatory = new ArrayList<Double>();
+        final List< Double > mandatory = new ArrayList< Double >();
         mandatory.add(t1);
         mandatory.add(t2);
         return new TimeGrid(mandatory, totalSteps);
     }
 
     /**
-     * Builds a Gaussian-driven {@link PathGenerator} for the underlying
-     * {@link GeneralizedBlackScholesProcess}. Mirrors C++
-     * {@code MCForwardVanillaEngine::pathGenerator()} specialised to
+     * Builds a Gaussian-driven {@link PathGenerator} for the underlying {@link GeneralizedBlackScholesProcess}. Mirrors
+     * C++ {@code MCForwardVanillaEngine::pathGenerator()} specialised to
      * {@code MC = SingleVariate, RNG = PseudoRandom}.
      */
-    protected MonteCarloModel.PathGeneratorAdapter<Path> pathGenerator() {
+    protected MonteCarloModel.PathGeneratorAdapter< Path > pathGenerator() {
         final TimeGrid grid = timeGrid();
         final int dimensions = process_.factors() * (grid.size() - 1);
-        final RandomSequenceGenerator<MersenneTwisterUniformRng> uniformRsg =
-                new RandomSequenceGenerator<MersenneTwisterUniformRng>(
-                        MersenneTwisterUniformRng.class, dimensions, seed_);
-        final InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                InverseCumulativeNormal> gsg =
-                new InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                        InverseCumulativeNormal>(uniformRsg, new InverseCumulativeNormal());
-        final PathGenerator<InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                InverseCumulativeNormal>> gen =
-                new PathGenerator<InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                        InverseCumulativeNormal>>(process_, grid, gsg, brownianBridge_);
+        final RandomSequenceGenerator< MersenneTwisterUniformRng > uniformRsg = new RandomSequenceGenerator< MersenneTwisterUniformRng >(
+                MersenneTwisterUniformRng.class, dimensions, seed_);
+        final InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal > gsg = new InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal >(
+                uniformRsg, new InverseCumulativeNormal());
+        final PathGenerator< InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal > > gen = new PathGenerator< InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal > >(
+                process_, grid, gsg, brownianBridge_);
         return new MonteCarloModel.PathGeneratorAdapterImpl(gen);
     }
 
     /**
-     * Mirrors C++ {@code MCForwardEuropeanBSEngine::pathPricer()}:
-     * locate the reset-time grid index, then build a
-     * {@link ForwardEuropeanBSPathPricer} that strikes off the
-     * (moneyness * S_reset) sample on each path.
+     * Mirrors C++ {@code MCForwardEuropeanBSEngine::pathPricer()}: locate the reset-time grid index, then build a
+     * {@link ForwardEuropeanBSPathPricer} that strikes off the (moneyness * S_reset) sample on each path.
      */
-    protected PathPricer<Path> pathPricer() {
-        final ForwardVanillaOption.ArgumentsImpl a =
-                (ForwardVanillaOption.ArgumentsImpl) arguments_;
+    protected PathPricer< Path > pathPricer() {
+        final ForwardVanillaOption.ArgumentsImpl a = (ForwardVanillaOption.ArgumentsImpl) arguments_;
         final TimeGrid grid = timeGrid();
 
         final double resetTime = process_.time(a.resetDate);
@@ -215,41 +184,40 @@ public class MCForwardEuropeanBSEngine extends ForwardVanillaOption.EngineImpl {
         final PlainVanillaPayoff payoff;
         try {
             payoff = (PlainVanillaPayoff) a.payoff;
-        } catch (final ClassCastException e) {
+        } catch ( final ClassCastException e ) {
             throw new RuntimeException("non-plain payoff given");
         }
         QL.require(payoff != null, "non-plain payoff given");
 
-        final double discount = process_.riskFreeRate().currentLink()
-                .discount(grid.back());
-        return new ForwardEuropeanBSPathPricer(payoff.optionType(),
-                a.moneyness, resetIndex, discount);
+        final double discount = process_.riskFreeRate().currentLink().discount(grid.back());
+        return new ForwardEuropeanBSPathPricer(payoff.optionType(), a.moneyness, resetIndex, discount);
     }
-
 
     //
     // PricingEngine
     //
 
     /**
-     * Mirrors C++ {@code MCForwardVanillaEngine::calculate()}: drives the
-     * embedded {@link McSimulation} with the engine's stored tolerance /
-     * sample budget, then writes the mean (and error estimate) to the
-     * results.
+     * Mirrors C++ {@code MCForwardVanillaEngine::calculate()}: drives the embedded {@link McSimulation} with the
+     * engine's stored tolerance / sample budget, then writes the mean (and error estimate) to the results.
      */
     @Override
     public void calculate() /* @ReadOnly */ {
-        final ForwardVanillaOption.ResultsImpl r =
-                (ForwardVanillaOption.ResultsImpl) results_;
+        final ForwardVanillaOption.ResultsImpl r = (ForwardVanillaOption.ResultsImpl) results_;
 
-        this.simulation_ = new McSimulation<Path>(antitheticVariate_, /* controlVariate */ false) {
-            @Override protected PathPricer<Path> pathPricer() {
+        this.simulation_ = new McSimulation< Path >(antitheticVariate_, /* controlVariate */ false) {
+            @Override
+            protected PathPricer< Path > pathPricer() {
                 return MCForwardEuropeanBSEngine.this.pathPricer();
             }
-            @Override protected MonteCarloModel.PathGeneratorAdapter<Path> pathGenerator() {
+
+            @Override
+            protected MonteCarloModel.PathGeneratorAdapter< Path > pathGenerator() {
                 return MCForwardEuropeanBSEngine.this.pathGenerator();
             }
-            @Override protected TimeGrid timeGrid() {
+
+            @Override
+            protected TimeGrid timeGrid() {
                 return MCForwardEuropeanBSEngine.this.timeGrid();
             }
         };
@@ -258,28 +226,24 @@ public class MCForwardEuropeanBSEngine extends ForwardVanillaOption.EngineImpl {
         r.errorEstimate = this.simulation_.errorEstimate();
     }
 
-
     //
     // PathPricer
     //
 
     /**
-     * Java port of C++ {@code ForwardEuropeanBSPathPricer}: evaluates the
-     * plain-vanilla payoff at the terminal asset price with the
-     * forward-set strike {@code S(resetIndex) * moneyness}, discounted
-     * by the constant pre-computed factor.
+     * Java port of C++ {@code ForwardEuropeanBSPathPricer}: evaluates the plain-vanilla payoff at the terminal asset
+     * price with the forward-set strike {@code S(resetIndex) * moneyness}, discounted by the constant pre-computed
+     * factor.
      */
-    public static final class ForwardEuropeanBSPathPricer extends PathPricer<Path> {
+    public static final class ForwardEuropeanBSPathPricer extends PathPricer< Path > {
 
         private final org.jquantlib.instruments.Option.Type type_;
         private final double moneyness_;
         private final int resetIndex_;
         private final double discount_;
 
-        public ForwardEuropeanBSPathPricer(final org.jquantlib.instruments.Option.Type type,
-                                           final double moneyness,
-                                           final int resetIndex,
-                                           final double discount) {
+        public ForwardEuropeanBSPathPricer(final org.jquantlib.instruments.Option.Type type, final double moneyness,
+                final int resetIndex, final double discount) {
             QL.require(moneyness >= 0.0, "moneyness less than zero not allowed");
             this.type_ = type;
             this.moneyness_ = moneyness;

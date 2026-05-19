@@ -32,12 +32,7 @@
 package org.jquantlib.instruments;
 
 import org.jquantlib.QL;
-import org.jquantlib.cashflow.CashFlow;
-import org.jquantlib.cashflow.Coupon;
-import org.jquantlib.cashflow.FixedRateCoupon;
-import org.jquantlib.cashflow.FixedRateLeg;
-import org.jquantlib.cashflow.Leg;
-import org.jquantlib.cashflow.SimpleCashFlow;
+import org.jquantlib.cashflow.*;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.math.Constants;
 import org.jquantlib.math.Ops;
@@ -61,8 +56,7 @@ import org.jquantlib.time.calendars.NullCalendar;
  * Credit default swap.
  *
  * <p>Java port of QuantLib v1.42.1 {@code QuantLib::CreditDefaultSwap}
- * ({@code ql/instruments/creditdefaultswap.{hpp,cpp}}, 874 LOC). Mirrors the
- * C++ class structure verbatim:
+ * ({@code ql/instruments/creditdefaultswap.{hpp,cpp}}, 874 LOC). Mirrors the C++ class structure verbatim:
  * <ul>
  *   <li>extends {@link Instrument};</li>
  *   <li>two constructor overloads (running-spread only, upfront + running);</li>
@@ -101,35 +95,28 @@ import org.jquantlib.time.calendars.NullCalendar;
  */
 public class CreditDefaultSwap extends Instrument {
 
-    /** Pricing-model selector for the {@link #impliedHazardRate} and
-     *  {@link #conventionalSpread} helpers. Mirrors C++
-     *  {@code CreditDefaultSwap::PricingModel}. */
-    public enum PricingModel {
-        Midpoint,
-        ISDA
-    }
+    private final Protection.Side side_;
 
     //
     // data members — mirror C++ creditdefaultswap.hpp:282-302
     //
-
-    private final Protection.Side side_;
     private final double notional_;
-    /** May be {@code null} when the CDS is constructed without an upfront
-     *  payment. Mirrors C++ {@code ext::optional<Rate>}. */
+    /**
+     * May be {@code null} when the CDS is constructed without an upfront payment. Mirrors C++
+     * {@code ext::optional<Rate>}.
+     */
     private final Double upfront_;
     private final double runningSpread_;
     private final boolean settlesAccrual_;
     private final boolean paysAtDefaultTime_;
+    private final Date protectionStart_;
+    private final int cashSettlementDays_;
     private Claim claim_;
     private Leg leg_;
     private SimpleCashFlow upfrontPayment_;
     private SimpleCashFlow accrualRebate_;
-    private final Date protectionStart_;
     private Date tradeDate_;
-    private final int cashSettlementDays_;
     private Date maturity_;
-
     // results (populated by the engine and copied in fetchResults)
     private double fairUpfront_;
     private double fairSpread_;
@@ -139,31 +126,14 @@ public class CreditDefaultSwap extends Instrument {
     private double upfrontNPV_;
     private double defaultLegNPV_;
     private double accrualRebateNPV_;
-
-
-    //
-    // public constructors
-    //
-
     /**
-     * CDS quoted as running-spread only. Mirrors C++ overload at
-     * {@code creditdefaultswap.hpp:99-112}.
+     * CDS quoted as running-spread only. Mirrors C++ overload at {@code creditdefaultswap.hpp:99-112}.
      */
-    public CreditDefaultSwap(
-            final Protection.Side side,
-            final double notional,
-            final double spread,
-            final Schedule schedule,
-            final BusinessDayConvention paymentConvention,
-            final DayCounter dayCounter,
-            final boolean settlesAccrual,
-            final boolean paysAtDefaultTime,
-            final Date protectionStart,
-            final Claim claim,
-            final DayCounter lastPeriodDayCounter,
-            final boolean rebatesAccrual,
-            final Date tradeDate,
-            final int cashSettlementDays) {
+    public CreditDefaultSwap(final Protection.Side side, final double notional, final double spread,
+            final Schedule schedule, final BusinessDayConvention paymentConvention, final DayCounter dayCounter,
+            final boolean settlesAccrual, final boolean paysAtDefaultTime, final Date protectionStart,
+            final Claim claim, final DayCounter lastPeriodDayCounter, final boolean rebatesAccrual,
+            final Date tradeDate, final int cashSettlementDays) {
 
         this.side_ = side;
         this.notional_ = notional;
@@ -173,64 +143,44 @@ public class CreditDefaultSwap extends Instrument {
         this.paysAtDefaultTime_ = paysAtDefaultTime;
         this.claim_ = claim;
         this.protectionStart_ = (protectionStart == null || protectionStart.isNull())
-                ? schedule.date(0) : protectionStart;
+                ? schedule.date(0)
+                : protectionStart;
         this.tradeDate_ = tradeDate;
         this.cashSettlementDays_ = cashSettlementDays;
 
         init(schedule, paymentConvention, dayCounter, lastPeriodDayCounter, rebatesAccrual, null);
     }
 
-    /** Convenience overload defaulting to claim=null, lastPeriodDayCounter=null,
-     *  rebatesAccrual=true, tradeDate=null, cashSettlementDays=3 — matches the
-     *  most common C++ default-argument call site. */
-    public CreditDefaultSwap(
-            final Protection.Side side,
-            final double notional,
-            final double spread,
-            final Schedule schedule,
-            final BusinessDayConvention paymentConvention,
-            final DayCounter dayCounter,
-            final boolean settlesAccrual,
-            final boolean paysAtDefaultTime,
-            final Date protectionStart) {
-        this(side, notional, spread, schedule, paymentConvention, dayCounter,
-             settlesAccrual, paysAtDefaultTime, protectionStart,
-             null, null, true, null, 3);
+    //
+    // public constructors
+    //
+
+    /**
+     * Convenience overload defaulting to claim=null, lastPeriodDayCounter=null, rebatesAccrual=true, tradeDate=null,
+     * cashSettlementDays=3 — matches the most common C++ default-argument call site.
+     */
+    public CreditDefaultSwap(final Protection.Side side, final double notional, final double spread,
+            final Schedule schedule, final BusinessDayConvention paymentConvention, final DayCounter dayCounter,
+            final boolean settlesAccrual, final boolean paysAtDefaultTime, final Date protectionStart) {
+        this(side, notional, spread, schedule, paymentConvention, dayCounter, settlesAccrual, paysAtDefaultTime,
+                protectionStart, null, null, true, null, 3);
     }
 
     /** Convenience overload — minimal C++ signature. */
-    public CreditDefaultSwap(
-            final Protection.Side side,
-            final double notional,
-            final double spread,
-            final Schedule schedule,
-            final BusinessDayConvention paymentConvention,
-            final DayCounter dayCounter) {
-        this(side, notional, spread, schedule, paymentConvention, dayCounter,
-             true, true, null, null, null, true, null, 3);
+    public CreditDefaultSwap(final Protection.Side side, final double notional, final double spread,
+            final Schedule schedule, final BusinessDayConvention paymentConvention, final DayCounter dayCounter) {
+        this(side, notional, spread, schedule, paymentConvention, dayCounter, true, true, null, null, null, true, null,
+                3);
     }
 
-
     /**
-     * CDS quoted as upfront and running spread. Mirrors C++ overload at
-     * {@code creditdefaultswap.hpp:151-166}.
+     * CDS quoted as upfront and running spread. Mirrors C++ overload at {@code creditdefaultswap.hpp:151-166}.
      */
-    public CreditDefaultSwap(
-            final Protection.Side side,
-            final double notional,
-            final double upfront,
-            final double runningSpread,
-            final Schedule schedule,
-            final BusinessDayConvention paymentConvention,
-            final DayCounter dayCounter,
-            final boolean settlesAccrual,
-            final boolean paysAtDefaultTime,
-            final Date protectionStart,
-            final Date upfrontDate,
-            final Claim claim,
-            final DayCounter lastPeriodDayCounter,
-            final boolean rebatesAccrual,
-            final Date tradeDate,
+    public CreditDefaultSwap(final Protection.Side side, final double notional, final double upfront,
+            final double runningSpread, final Schedule schedule, final BusinessDayConvention paymentConvention,
+            final DayCounter dayCounter, final boolean settlesAccrual, final boolean paysAtDefaultTime,
+            final Date protectionStart, final Date upfrontDate, final Claim claim,
+            final DayCounter lastPeriodDayCounter, final boolean rebatesAccrual, final Date tradeDate,
             final int cashSettlementDays) {
 
         this.side_ = side;
@@ -241,7 +191,8 @@ public class CreditDefaultSwap extends Instrument {
         this.paysAtDefaultTime_ = paysAtDefaultTime;
         this.claim_ = claim;
         this.protectionStart_ = (protectionStart == null || protectionStart.isNull())
-                ? schedule.date(0) : protectionStart;
+                ? schedule.date(0)
+                : protectionStart;
         this.tradeDate_ = tradeDate;
         this.cashSettlementDays_ = cashSettlementDays;
 
@@ -249,34 +200,63 @@ public class CreditDefaultSwap extends Instrument {
     }
 
     /** Convenience overload: upfront + spread, default tail params. */
-    public CreditDefaultSwap(
-            final Protection.Side side,
-            final double notional,
-            final double upfront,
-            final double runningSpread,
-            final Schedule schedule,
-            final BusinessDayConvention paymentConvention,
-            final DayCounter dayCounter,
-            final boolean settlesAccrual,
-            final boolean paysAtDefaultTime,
-            final Date protectionStart,
-            final Date upfrontDate) {
-        this(side, notional, upfront, runningSpread, schedule, paymentConvention, dayCounter,
-             settlesAccrual, paysAtDefaultTime, protectionStart, upfrontDate,
-             null, null, true, null, 3);
+    public CreditDefaultSwap(final Protection.Side side, final double notional, final double upfront,
+            final double runningSpread, final Schedule schedule, final BusinessDayConvention paymentConvention,
+            final DayCounter dayCounter, final boolean settlesAccrual, final boolean paysAtDefaultTime,
+            final Date protectionStart, final Date upfrontDate) {
+        this(side, notional, upfront, runningSpread, schedule, paymentConvention, dayCounter, settlesAccrual,
+                paysAtDefaultTime, protectionStart, upfrontDate, null, null, true, null, 3);
     }
 
+    /**
+     * Returns the standard CDS maturity for a given trade date and tenor under the
+     * {@link org.jquantlib.time.DateGeneration.Rule#CDS}, {@link org.jquantlib.time.DateGeneration.Rule#CDS2015}, or
+     * {@link org.jquantlib.time.DateGeneration.Rule#OldCDS} convention.
+     *
+     * <p>Mirrors C++ {@code QuantLib::cdsMaturity(Date, Period, DateGeneration::Rule)}
+     * declared in {@code ql/instruments/creditdefaultswap.hpp:361}. The maturity is the previous-twentieth of the trade
+     * date plus tenor plus three months, with a special case for CDS2015 anchor dates that fall on June 20 or December
+     * 20.
+     */
+    public static Date cdsMaturity(final Date tradeDate, final org.jquantlib.time.Period tenor,
+            final org.jquantlib.time.DateGeneration.Rule rule) {
+        QL.require(rule == org.jquantlib.time.DateGeneration.Rule.CDS2015
+                        || rule == org.jquantlib.time.DateGeneration.Rule.CDS
+                        || rule == org.jquantlib.time.DateGeneration.Rule.OldCDS,
+                "cdsMaturity should only be used with date generation rule CDS2015, CDS or OldCDS");
+
+        QL.require(tenor.units() == org.jquantlib.time.TimeUnit.Years || (
+                        tenor.units() == org.jquantlib.time.TimeUnit.Months && tenor.length() % 3 == 0),
+                "cdsMaturity expects a tenor that is a multiple of 3 months.");
+
+        if ( rule == org.jquantlib.time.DateGeneration.Rule.OldCDS ) {
+            QL.require(tenor.length() != 0, "A tenor of 0M is not supported for OldCDS.");
+        }
+
+        Date anchorDate = org.jquantlib.time.Schedule.previousTwentieth(tradeDate, rule);
+        if ( rule == org.jquantlib.time.DateGeneration.Rule.CDS2015 && (
+                anchorDate.eq(new Date(20, org.jquantlib.time.Month.December, anchorDate.year())) || anchorDate.eq(
+                        new Date(20, org.jquantlib.time.Month.June, anchorDate.year()))) ) {
+            if ( tenor.length() == 0 ) {
+                return new Date();
+            }
+            anchorDate = anchorDate.sub(new org.jquantlib.time.Period(3, org.jquantlib.time.TimeUnit.Months));
+        }
+
+        final Date maturity = anchorDate.add(tenor)
+                .add(new org.jquantlib.time.Period(3, org.jquantlib.time.TimeUnit.Months));
+        QL.require(maturity.gt(tradeDate),
+                "error calculating CDS maturity. Tenor is " + tenor + ", trade date is " + tradeDate
+                        + " generating a maturity of " + maturity + " <= trade date.");
+        return maturity;
+    }
 
     //
     // shared initialisation — mirrors C++ creditdefaultswap.cpp:87-176
     //
 
-    private void init(
-            final Schedule schedule,
-            final BusinessDayConvention paymentConvention,
-            final DayCounter dayCounter,
-            final DayCounter lastPeriodDayCounter,
-            final boolean rebatesAccrual,
+    private void init(final Schedule schedule, final BusinessDayConvention paymentConvention,
+            final DayCounter dayCounter, final DayCounter lastPeriodDayCounter, final boolean rebatesAccrual,
             final Date upfrontDate) {
 
         QL.require(!schedule.empty(), "CreditDefaultSwap needs a non-empty schedule.");
@@ -289,17 +269,16 @@ public class CreditDefaultSwap extends Instrument {
         boolean postBigBang = false;
         try {
             final org.jquantlib.time.DateGeneration.Rule r = schedule.rule();
-            if (r == org.jquantlib.time.DateGeneration.Rule.CDS
-                    || r == org.jquantlib.time.DateGeneration.Rule.CDS2015) {
+            if ( r == org.jquantlib.time.DateGeneration.Rule.CDS
+                    || r == org.jquantlib.time.DateGeneration.Rule.CDS2015 ) {
                 postBigBang = true;
             }
-        } catch (final RuntimeException ignored) {
+        } catch ( final RuntimeException ignored ) {
             // schedule has no rule — leave postBigBang = false.
         }
 
-        if (!postBigBang) {
-            QL.require(protectionStart_.le(schedule.date(0)),
-                    "protection can not start after accrual");
+        if ( !postBigBang ) {
+            QL.require(protectionStart_.le(schedule.date(0)), "protection can not start after accrual");
         }
 
         // Build the fixed-rate (premium) leg. Mirrors C++ FixedRateLeg(schedule)
@@ -308,18 +287,16 @@ public class CreditDefaultSwap extends Instrument {
         // .withLastPeriodDayCounter(lastPeriodDayCounter).
         // Phase 3d L0 A.2 — withLastPeriodDayCounter is now wired through
         // FixedRateLeg (was previously accepted but ignored).
-        final FixedRateLeg builder = new FixedRateLeg(schedule, dayCounter)
-                .withNotionals(notional_)
-                .withCouponRates(runningSpread_)
-                .withPaymentAdjustment(paymentConvention);
-        if (lastPeriodDayCounter != null) {
+        final FixedRateLeg builder = new FixedRateLeg(schedule, dayCounter).withNotionals(notional_)
+                .withCouponRates(runningSpread_).withPaymentAdjustment(paymentConvention);
+        if ( lastPeriodDayCounter != null ) {
             builder.withLastPeriodDayCounter(lastPeriodDayCounter);
         }
         leg_ = builder.Leg();
 
         // Deduce trade date if not given. C++ creditdefaultswap.cpp:110-116.
-        if (tradeDate_ == null || tradeDate_.isNull()) {
-            if (postBigBang) {
+        if ( tradeDate_ == null || tradeDate_.isNull() ) {
+            if ( postBigBang ) {
                 tradeDate_ = protectionStart_.clone();
             } else {
                 tradeDate_ = protectionStart_.sub(1);
@@ -328,17 +305,16 @@ public class CreditDefaultSwap extends Instrument {
 
         // Deduce cash settlement date. C++ creditdefaultswap.cpp:118-125.
         Date effectiveUpfrontDate = upfrontDate;
-        if (effectiveUpfrontDate == null || effectiveUpfrontDate.isNull()) {
-            effectiveUpfrontDate = schedule.calendar().advance(
-                    tradeDate_, cashSettlementDays_, TimeUnit.Days,
-                    paymentConvention, false);
+        if ( effectiveUpfrontDate == null || effectiveUpfrontDate.isNull() ) {
+            effectiveUpfrontDate = schedule.calendar()
+                    .advance(tradeDate_, cashSettlementDays_, TimeUnit.Days, paymentConvention, false);
         }
         QL.require(effectiveUpfrontDate.ge(protectionStart_),
                 "The cash settlement date must not be before the protection start date.");
 
         // Create the upfront payment cash flow. C++ creditdefaultswap.cpp:127-131.
         double upfrontAmount = 0.0;
-        if (upfront_ != null) {
+        if ( upfront_ != null ) {
             upfrontAmount = upfront_.doubleValue() * notional_;
         }
         upfrontPayment_ = new SimpleCashFlow(upfrontAmount, effectiveUpfrontDate);
@@ -347,31 +323,29 @@ public class CreditDefaultSwap extends Instrument {
         maturity_ = schedule.dates().get(schedule.dates().size() - 1);
 
         // Accrual rebate. C++ creditdefaultswap.cpp:138-171.
-        if (rebatesAccrual) {
+        if ( rebatesAccrual ) {
             double rebateAmount = 0.0;
             final Date refDate = tradeDate_.add(1);
 
-            if (tradeDate_.ge(schedule.dates().get(0))) {
-                for (int i = 0; i < leg_.size(); ++i) {
+            if ( tradeDate_.ge(schedule.dates().get(0)) ) {
+                for ( int i = 0; i < leg_.size(); ++i ) {
                     final CashFlow cf = leg_.get(i);
-                    if (refDate.gt(cf.date())) {
+                    if ( refDate.gt(cf.date()) ) {
                         // Past coupon; check next.
                         continue;
-                    } else if (refDate.eq(cf.date())) {
+                    } else if ( refDate.eq(cf.date()) ) {
                         // Coupon pays at refDate. If it's the last coupon, rebate
                         // is the full amount; otherwise zero.
-                        if (i < leg_.size() - 1) {
+                        if ( i < leg_.size() - 1 ) {
                             rebateAmount = 0.0;
                         } else {
-                            QL.require(cf instanceof FixedRateCoupon,
-                                    "expected FixedRateCoupon in CDS premium leg");
-                            rebateAmount = ((FixedRateCoupon) cf).amount();
+                            QL.require(cf instanceof FixedRateCoupon, "expected FixedRateCoupon in CDS premium leg");
+                            rebateAmount = cf.amount();
                         }
                         break;
                     } else {
                         // Future coupon; first one to do so. Compute accrual.
-                        QL.require(cf instanceof FixedRateCoupon,
-                                "expected FixedRateCoupon in CDS premium leg");
+                        QL.require(cf instanceof FixedRateCoupon, "expected FixedRateCoupon in CDS premium leg");
                         rebateAmount = ((FixedRateCoupon) cf).accruedAmount(refDate);
                         break;
                     }
@@ -382,42 +356,86 @@ public class CreditDefaultSwap extends Instrument {
         }
 
         // Default to FaceValueClaim if none provided. C++ creditdefaultswap.cpp:173-175.
-        if (claim_ == null) {
+        if ( claim_ == null ) {
             claim_ = new FaceValueClaim();
         }
         claim_.addObserver(this);
     }
 
-
     //
     // Inspectors — mirror C++ creditdefaultswap.hpp:174-191
     //
 
-    public Protection.Side side()             { return side_; }
-    public double notional()                  { return notional_; }
-    public double runningSpread()             { return runningSpread_; }
-    /** Mirrors C++ {@code ext::optional<Rate> upfront()}. Returns {@code null}
-     *  when the CDS was constructed without an upfront. */
-    public Double upfront()                   { return upfront_; }
-    public boolean settlesAccrual()           { return settlesAccrual_; }
-    public boolean paysAtDefaultTime()        { return paysAtDefaultTime_; }
-    public Leg coupons()                      { return leg_; }
-    public Leg couponSchedule()               { return leg_; } // alias used in some call sites
-    public Date protectionStartDate()         { return protectionStart_; }
+    public Protection.Side side() {
+        return side_;
+    }
+
+    public double notional() {
+        return notional_;
+    }
+
+    public double runningSpread() {
+        return runningSpread_;
+    }
+
+    /**
+     * Mirrors C++ {@code ext::optional<Rate> upfront()}. Returns {@code null} when the CDS was constructed without an
+     * upfront.
+     */
+    public Double upfront() {
+        return upfront_;
+    }
+
+    public boolean settlesAccrual() {
+        return settlesAccrual_;
+    }
+
+    public boolean paysAtDefaultTime() {
+        return paysAtDefaultTime_;
+    }
+
+    public Leg coupons() {
+        return leg_;
+    }
+
+    public Leg couponSchedule() {
+        return leg_;
+    } // alias used in some call sites
+
+    public Date protectionStartDate() {
+        return protectionStart_;
+    }
+
     public Date protectionEndDate() {
         QL.require(leg_ != null && !leg_.isEmpty(), "premium leg has no coupons");
         final CashFlow last = leg_.get(leg_.size() - 1);
-        QL.require(last instanceof Coupon,
-                "expected Coupon for last entry of CDS premium leg");
+        QL.require(last instanceof Coupon, "expected Coupon for last entry of CDS premium leg");
         return ((Coupon) last).accrualEndDate();
     }
-    public boolean rebatesAccrual()           { return accrualRebate_ != null; }
-    public SimpleCashFlow upfrontPayment()    { return upfrontPayment_; }
-    public SimpleCashFlow accrualRebate()     { return accrualRebate_; }
-    public Date tradeDate()                   { return tradeDate_; }
-    public int cashSettlementDays()           { return cashSettlementDays_; }
-    public Claim claim()                      { return claim_; }
 
+    public boolean rebatesAccrual() {
+        return accrualRebate_ != null;
+    }
+
+    public SimpleCashFlow upfrontPayment() {
+        return upfrontPayment_;
+    }
+
+    public SimpleCashFlow accrualRebate() {
+        return accrualRebate_;
+    }
+
+    public Date tradeDate() {
+        return tradeDate_;
+    }
+
+    public int cashSettlementDays() {
+        return cashSettlementDays_;
+    }
+
+    public Claim claim() {
+        return claim_;
+    }
 
     //
     // Result accessors — mirror C++ creditdefaultswap.cpp:259-313
@@ -471,7 +489,6 @@ public class CreditDefaultSwap extends Instrument {
         return accrualRebateNPV_;
     }
 
-
     //
     // Helper calculations — Phase 3b Track B will fill these in once
     // MidPointCdsEngine lands; Phase 3c adds the ISDA branch.
@@ -482,47 +499,36 @@ public class CreditDefaultSwap extends Instrument {
      * ({@code creditdefaultswap.cpp:340-381}).
      *
      * <p>Builds a transient flat-hazard-rate term structure backed by a
-     * {@link SimpleQuote}, attaches a {@link MidPointCdsEngine} to it, and
-     * uses {@link Brent} to solve for the hazard rate that makes the
-     * engine's NPV equal {@code targetNPV}. The {@link PricingModel#ISDA}
-     * branch is Phase 3c.
+     * {@link SimpleQuote}, attaches a {@link MidPointCdsEngine} to it, and uses {@link Brent} to solve for the hazard
+     * rate that makes the engine's NPV equal {@code targetNPV}. The {@link PricingModel#ISDA} branch is Phase 3c.
      */
-    public double impliedHazardRate(
-            final double targetNPV,
-            final Handle<YieldTermStructure> discountCurve,
-            final DayCounter dayCounter,
-            final double recoveryRate,
-            final double accuracy,
-            final PricingModel model) {
+    public double impliedHazardRate(final double targetNPV, final Handle< YieldTermStructure > discountCurve,
+            final DayCounter dayCounter, final double recoveryRate, final double accuracy, final PricingModel model) {
 
         final SimpleQuote flatRate = new SimpleQuote(0.0);
 
-        final Handle<DefaultProbabilityTermStructure> probability =
-                new Handle<DefaultProbabilityTermStructure>(
-                        new FlatHazardRate(0, new NullCalendar(),
-                                new Handle<Quote>(flatRate), dayCounter));
+        final Handle< DefaultProbabilityTermStructure > probability = new Handle< DefaultProbabilityTermStructure >(
+                new FlatHazardRate(0, new NullCalendar(), new Handle< Quote >(flatRate), dayCounter));
 
         final PricingEngine engine;
-        switch (model) {
-          case Midpoint:
+        switch ( model ) {
+        case Midpoint:
             engine = new MidPointCdsEngine(probability, recoveryRate, discountCurve);
             break;
-          case ISDA:
+        case ISDA:
             // Phase 3d L1: wire IsdaCdsEngine with C++ defaults (Taylor /
             // HalfDayBias / Piecewise, includeSettlementDateFlows=false).
-            engine = new org.jquantlib.pricingengines.credit.IsdaCdsEngine(
-                    probability, recoveryRate, discountCurve, Boolean.FALSE,
-                    org.jquantlib.pricingengines.credit.IsdaCdsEngine.NumericalFix.Taylor,
+            engine = new org.jquantlib.pricingengines.credit.IsdaCdsEngine(probability, recoveryRate, discountCurve,
+                    Boolean.FALSE, org.jquantlib.pricingengines.credit.IsdaCdsEngine.NumericalFix.Taylor,
                     org.jquantlib.pricingengines.credit.IsdaCdsEngine.AccrualBias.HalfDayBias,
                     org.jquantlib.pricingengines.credit.IsdaCdsEngine.ForwardsInCouponPeriod.Piecewise);
             break;
-          default:
+        default:
             throw new IllegalArgumentException("unknown CDS pricing model: " + model);
         }
 
         setupArguments(engine.getArguments());
-        final CreditDefaultSwap.ResultsImpl res =
-                (CreditDefaultSwap.ResultsImpl) engine.getResults();
+        final CreditDefaultSwap.ResultsImpl res = (CreditDefaultSwap.ResultsImpl) engine.getResults();
 
         final Ops.DoubleOp f = new Ops.DoubleOp() {
             @Override
@@ -539,56 +545,45 @@ public class CreditDefaultSwap extends Instrument {
         return new Brent().solve(f, accuracy, guess, step);
     }
 
-    /** Convenience overload defaulting to recoveryRate=0.4, accuracy=1e-8,
-     *  model=Midpoint — matches the C++ default arguments. */
-    public double impliedHazardRate(
-            final double targetNPV,
-            final Handle<YieldTermStructure> discountCurve,
+    /**
+     * Convenience overload defaulting to recoveryRate=0.4, accuracy=1e-8, model=Midpoint — matches the C++ default
+     * arguments.
+     */
+    public double impliedHazardRate(final double targetNPV, final Handle< YieldTermStructure > discountCurve,
             final DayCounter dayCounter) {
-        return impliedHazardRate(targetNPV, discountCurve, dayCounter,
-                                 0.4, 1.0e-8, PricingModel.Midpoint);
+        return impliedHazardRate(targetNPV, discountCurve, dayCounter, 0.4, 1.0e-8, PricingModel.Midpoint);
     }
 
     /**
-     * Conventional / standard upfront-to-spread conversion. Mirrors C++
-     * {@code CreditDefaultSwap::conventionalSpread}
-     * ({@code creditdefaultswap.cpp:383-423}). The {@link PricingModel#ISDA}
-     * branch is Phase 3c.
+     * Conventional / standard upfront-to-spread conversion. Mirrors C++ {@code CreditDefaultSwap::conventionalSpread}
+     * ({@code creditdefaultswap.cpp:383-423}). The {@link PricingModel#ISDA} branch is Phase 3c.
      */
-    public double conventionalSpread(
-            final double conventionalRecovery,
-            final Handle<YieldTermStructure> discountCurve,
-            final DayCounter dayCounter,
-            final PricingModel model) {
+    public double conventionalSpread(final double conventionalRecovery,
+            final Handle< YieldTermStructure > discountCurve, final DayCounter dayCounter, final PricingModel model) {
 
         final SimpleQuote flatRate = new SimpleQuote(0.0);
 
-        final Handle<DefaultProbabilityTermStructure> probability =
-                new Handle<DefaultProbabilityTermStructure>(
-                        new FlatHazardRate(0, new NullCalendar(),
-                                new Handle<Quote>(flatRate), dayCounter));
+        final Handle< DefaultProbabilityTermStructure > probability = new Handle< DefaultProbabilityTermStructure >(
+                new FlatHazardRate(0, new NullCalendar(), new Handle< Quote >(flatRate), dayCounter));
 
         final PricingEngine engine;
-        switch (model) {
-          case Midpoint:
-            engine = new MidPointCdsEngine(
-                    probability, conventionalRecovery, discountCurve);
+        switch ( model ) {
+        case Midpoint:
+            engine = new MidPointCdsEngine(probability, conventionalRecovery, discountCurve);
             break;
-          case ISDA:
+        case ISDA:
             // Phase 3d L1: wire IsdaCdsEngine with C++ defaults.
-            engine = new org.jquantlib.pricingengines.credit.IsdaCdsEngine(
-                    probability, conventionalRecovery, discountCurve, Boolean.FALSE,
-                    org.jquantlib.pricingengines.credit.IsdaCdsEngine.NumericalFix.Taylor,
+            engine = new org.jquantlib.pricingengines.credit.IsdaCdsEngine(probability, conventionalRecovery,
+                    discountCurve, Boolean.FALSE, org.jquantlib.pricingengines.credit.IsdaCdsEngine.NumericalFix.Taylor,
                     org.jquantlib.pricingengines.credit.IsdaCdsEngine.AccrualBias.HalfDayBias,
                     org.jquantlib.pricingengines.credit.IsdaCdsEngine.ForwardsInCouponPeriod.Piecewise);
             break;
-          default:
+        default:
             throw new IllegalArgumentException("unknown CDS pricing model: " + model);
         }
 
         setupArguments(engine.getArguments());
-        final CreditDefaultSwap.ResultsImpl res =
-                (CreditDefaultSwap.ResultsImpl) engine.getResults();
+        final CreditDefaultSwap.ResultsImpl res = (CreditDefaultSwap.ResultsImpl) engine.getResults();
 
         final Ops.DoubleOp f = new Ops.DoubleOp() {
             @Override
@@ -605,14 +600,10 @@ public class CreditDefaultSwap extends Instrument {
     }
 
     /** Convenience overload defaulting to model=Midpoint. */
-    public double conventionalSpread(
-            final double conventionalRecovery,
-            final Handle<YieldTermStructure> discountCurve,
-            final DayCounter dayCounter) {
-        return conventionalSpread(conventionalRecovery, discountCurve, dayCounter,
-                                  PricingModel.Midpoint);
+    public double conventionalSpread(final double conventionalRecovery,
+            final Handle< YieldTermStructure > discountCurve, final DayCounter dayCounter) {
+        return conventionalSpread(conventionalRecovery, discountCurve, dayCounter, PricingModel.Midpoint);
     }
-
 
     //
     // Instrument interface — mirrors C++ creditdefaultswap.cpp:207-257
@@ -623,8 +614,8 @@ public class CreditDefaultSwap extends Instrument {
         // Iterate from the back of the leg as in C++: the last coupon is the
         // most likely candidate for "still pending".
         final Date today = new org.jquantlib.Settings().evaluationDate();
-        for (int i = leg_.size() - 1; i >= 0; --i) {
-            if (!leg_.get(i).hasOccurred(today)) {
+        for ( int i = leg_.size() - 1; i >= 0; --i ) {
+            if ( !leg_.get(i).hasOccurred(today) ) {
                 return false;
             }
         }
@@ -674,33 +665,40 @@ public class CreditDefaultSwap extends Instrument {
                 "wrong result type — expected CreditDefaultSwap.Results");
         final CreditDefaultSwap.ResultsImpl res = (CreditDefaultSwap.ResultsImpl) r;
 
-        fairSpread_       = res.fairSpread;
-        fairUpfront_      = res.fairUpfront;
-        couponLegBPS_     = res.couponLegBPS;
-        couponLegNPV_     = res.couponLegNPV;
-        defaultLegNPV_    = res.defaultLegNPV;
-        upfrontBPS_       = res.upfrontBPS;
-        upfrontNPV_       = res.upfrontNPV;
+        fairSpread_ = res.fairSpread;
+        fairUpfront_ = res.fairUpfront;
+        couponLegBPS_ = res.couponLegBPS;
+        couponLegNPV_ = res.couponLegNPV;
+        defaultLegNPV_ = res.defaultLegNPV;
+        upfrontBPS_ = res.upfrontBPS;
+        upfrontNPV_ = res.upfrontNPV;
         accrualRebateNPV_ = res.accrualRebateNPV;
     }
-
 
     //
     // public inner interfaces and classes —
     // mirror C++ CreditDefaultSwap::arguments / results / engine
     //
 
+    /**
+     * Pricing-model selector for the {@link #impliedHazardRate} and {@link #conventionalSpread} helpers. Mirrors C++
+     * {@code CreditDefaultSwap::PricingModel}.
+     */
+    public enum PricingModel {
+        Midpoint, ISDA
+    }
+
     /** Marking interface; mirrors C++ {@code CreditDefaultSwap::arguments} base. */
-    public interface Arguments extends Instrument.Arguments { /* marker */ }
+    public interface Arguments extends Instrument.Arguments { /* marker */
+    }
 
     /** Marking interface; mirrors C++ {@code CreditDefaultSwap::results} base. */
-    public interface Results extends Instrument.Results { /* marker */ }
+    public interface Results extends Instrument.Results { /* marker */
+    }
 
     /**
-     * Concrete arguments DTO populated by {@link #setupArguments} and
-     * consumed by {@link Engine#calculate}. Mirrors C++
-     * {@code CreditDefaultSwap::arguments} fields verbatim
-     * ({@code creditdefaultswap.hpp:311-329}).
+     * Concrete arguments DTO populated by {@link #setupArguments} and consumed by {@link Engine#calculate}. Mirrors C++
+     * {@code CreditDefaultSwap::arguments} fields verbatim ({@code creditdefaultswap.hpp:311-329}).
      */
     static public class ArgumentsImpl implements CreditDefaultSwap.Arguments {
         public Protection.Side side;
@@ -733,18 +731,16 @@ public class CreditDefaultSwap extends Instrument {
             QL.require(leg != null && !leg.isEmpty(), "coupons not set");
             QL.require(upfrontPayment != null, "upfront payment not set");
             QL.require(claim != null, "claim not set");
-            QL.require(protectionStart != null && !protectionStart.isNull(),
-                    "protection start date not set");
+            QL.require(protectionStart != null && !protectionStart.isNull(), "protection start date not set");
             QL.require(maturity != null && !maturity.isNull(), "maturity date not set");
         }
     }
 
     /**
-     * Concrete results DTO. Mirrors C++ {@code CreditDefaultSwap::results}
-     * fields ({@code creditdefaultswap.hpp:331-342}).
+     * Concrete results DTO. Mirrors C++ {@code CreditDefaultSwap::results} fields
+     * ({@code creditdefaultswap.hpp:331-342}).
      */
-    static public class ResultsImpl extends Instrument.ResultsImpl
-            implements CreditDefaultSwap.Results {
+    static public class ResultsImpl extends Instrument.ResultsImpl implements CreditDefaultSwap.Results {
 
         public double fairSpread;
         public double fairUpfront;
@@ -758,30 +754,14 @@ public class CreditDefaultSwap extends Instrument {
         @Override
         public void reset() {
             super.reset();
-            fairSpread       = Constants.NULL_RATE;
-            fairUpfront      = Constants.NULL_RATE;
-            couponLegBPS     = Constants.NULL_REAL;
-            couponLegNPV     = Constants.NULL_REAL;
-            defaultLegNPV    = Constants.NULL_REAL;
-            upfrontBPS       = Constants.NULL_REAL;
-            upfrontNPV       = Constants.NULL_REAL;
+            fairSpread = Constants.NULL_RATE;
+            fairUpfront = Constants.NULL_RATE;
+            couponLegBPS = Constants.NULL_REAL;
+            couponLegNPV = Constants.NULL_REAL;
+            defaultLegNPV = Constants.NULL_REAL;
+            upfrontBPS = Constants.NULL_REAL;
+            upfrontNPV = Constants.NULL_REAL;
             accrualRebateNPV = Constants.NULL_REAL;
-        }
-    }
-
-    /**
-     * Base class for CDS pricing engines. Mirrors C++
-     * {@code CreditDefaultSwap::engine
-     *  = GenericEngine<arguments, results>}.
-     *
-     * <p>Concrete engines (Phase 3b Track B
-     * {@code MidPointCdsEngine}; Phase 3c {@code IsdaCdsEngine},
-     * {@code IntegralCdsEngine}) extend this class.
-     */
-    static public abstract class Engine
-            extends GenericEngine<CreditDefaultSwap.Arguments, CreditDefaultSwap.Results> {
-        protected Engine() {
-            super(new CreditDefaultSwap.ArgumentsImpl(), new CreditDefaultSwap.ResultsImpl());
         }
     }
 
@@ -791,53 +771,16 @@ public class CreditDefaultSwap extends Instrument {
     //
 
     /**
-     * Returns the standard CDS maturity for a given trade date and tenor under
-     * the {@link org.jquantlib.time.DateGeneration.Rule#CDS},
-     * {@link org.jquantlib.time.DateGeneration.Rule#CDS2015}, or
-     * {@link org.jquantlib.time.DateGeneration.Rule#OldCDS} convention.
+     * Base class for CDS pricing engines. Mirrors C++
+     * {@code CreditDefaultSwap::engine = GenericEngine<arguments, results>}.
      *
-     * <p>Mirrors C++ {@code QuantLib::cdsMaturity(Date, Period, DateGeneration::Rule)}
-     * declared in {@code ql/instruments/creditdefaultswap.hpp:361}. The maturity
-     * is the previous-twentieth of the trade date plus tenor plus three months,
-     * with a special case for CDS2015 anchor dates that fall on June 20 or
-     * December 20.
+     * <p>Concrete engines (Phase 3b Track B
+     * {@code MidPointCdsEngine}; Phase 3c {@code IsdaCdsEngine}, {@code IntegralCdsEngine}) extend this class.
      */
-    public static Date cdsMaturity(final Date tradeDate,
-                                   final org.jquantlib.time.Period tenor,
-                                   final org.jquantlib.time.DateGeneration.Rule rule) {
-        QL.require(rule == org.jquantlib.time.DateGeneration.Rule.CDS2015
-                || rule == org.jquantlib.time.DateGeneration.Rule.CDS
-                || rule == org.jquantlib.time.DateGeneration.Rule.OldCDS,
-                "cdsMaturity should only be used with date generation rule CDS2015, CDS or OldCDS");
-
-        QL.require(tenor.units() == org.jquantlib.time.TimeUnit.Years
-                || (tenor.units() == org.jquantlib.time.TimeUnit.Months
-                        && tenor.length() % 3 == 0),
-                "cdsMaturity expects a tenor that is a multiple of 3 months.");
-
-        if (rule == org.jquantlib.time.DateGeneration.Rule.OldCDS) {
-            QL.require(tenor.length() != 0,
-                    "A tenor of 0M is not supported for OldCDS.");
+    static public abstract class Engine
+            extends GenericEngine< CreditDefaultSwap.Arguments, CreditDefaultSwap.Results > {
+        protected Engine() {
+            super(new CreditDefaultSwap.ArgumentsImpl(), new CreditDefaultSwap.ResultsImpl());
         }
-
-        Date anchorDate = org.jquantlib.time.Schedule.previousTwentieth(tradeDate, rule);
-        if (rule == org.jquantlib.time.DateGeneration.Rule.CDS2015
-                && (anchorDate.eq(new Date(20, org.jquantlib.time.Month.December, anchorDate.year()))
-                        || anchorDate.eq(new Date(20, org.jquantlib.time.Month.June, anchorDate.year())))) {
-            if (tenor.length() == 0) {
-                return new Date();
-            }
-            anchorDate = anchorDate.sub(new org.jquantlib.time.Period(
-                    3, org.jquantlib.time.TimeUnit.Months));
-        }
-
-        final Date maturity = anchorDate.add(tenor).add(
-                new org.jquantlib.time.Period(3, org.jquantlib.time.TimeUnit.Months));
-        QL.require(maturity.gt(tradeDate),
-                "error calculating CDS maturity. Tenor is " + tenor
-                        + ", trade date is " + tradeDate
-                        + " generating a maturity of " + maturity
-                        + " <= trade date.");
-        return maturity;
     }
 }

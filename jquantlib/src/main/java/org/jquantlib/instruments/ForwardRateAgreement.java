@@ -52,45 +52,29 @@ import org.jquantlib.time.TimeUnit;
 /**
  * Forward rate agreement (FRA) class
  * <p>
- *  1. Unlike the forward contract conventions on carryable
- *     financial assets (stocks, bonds, commodities), the
- *     valueDate for a FRA is taken to be the day when the forward
- *     loan or deposit begins and when full settlement takes place
- *     (based on the NPV of the contract on that date).
- *     maturityDate is the date when the forward loan or deposit
- *     ends. In fact, the FRA settles and expires on the
- *     valueDate, not on the (later) maturityDate. It follows that
- *     (maturityDate - valueDate) is the tenor/term of the
- *     underlying loan or deposit
+ * 1. Unlike the forward contract conventions on carryable financial assets (stocks, bonds, commodities), the valueDate
+ * for a FRA is taken to be the day when the forward loan or deposit begins and when full settlement takes place (based
+ * on the NPV of the contract on that date). maturityDate is the date when the forward loan or deposit ends. In fact,
+ * the FRA settles and expires on the valueDate, not on the (later) maturityDate. It follows that (maturityDate -
+ * valueDate) is the tenor/term of the underlying loan or deposit
  * <p>
- *  2. Choose position type = Long for an "FRA purchase" (future
- *     long loan, short deposit [borrower])
+ * 2. Choose position type = Long for an "FRA purchase" (future long loan, short deposit [borrower])
  * <p>
- *  3. Choose position type = Short for an "FRA sale" (future short
- *     loan, long deposit [lender])
+ * 3. Choose position type = Short for an "FRA sale" (future short loan, long deposit [lender])
  * <p>
- *  4. If strike is given in the constructor, can calculate the NPV
- *     of the contract via NPV().
+ * 4. If strike is given in the constructor, can calculate the NPV of the contract via NPV().
  * <p>
- *  5. If forward rate is desired/unknown, it can be obtained via
- *     forwardRate(). In this case, the strike variable in the
- *     constructor is irrelevant and will be ignored.
- *
- *  @todo Add preconditions and tests
- *
- *  @todo Should put an instance of ForwardRateAgreement in the
- *        FraRateHelper to ensure consistency with the piecewise
- *        yield curve.
- *
- *  @todo Differentiate between BBA (British)/AFB (French)
- *        [assumed here] and ABA (Australian) banker conventions
- *        in the calculations.
- *
- *  @warning This class still needs to be rigorously tested
- *
- *  @category instruments
+ * 5. If forward rate is desired/unknown, it can be obtained via forwardRate(). In this case, the strike variable in the
+ * constructor is irrelevant and will be ignored.
  *
  * @author John Martin
+ * @todo Add preconditions and tests
+ * @todo Should put an instance of ForwardRateAgreement in the FraRateHelper to ensure consistency with the piecewise
+ * yield curve.
+ * @todo Differentiate between BBA (British)/AFB (French) [assumed here] and ABA (Australian) banker conventions in the
+ * calculations.
+ * @warning This class still needs to be rigorously tested
+ * @category instruments
  */
 public class ForwardRateAgreement extends Forward {
 
@@ -100,32 +84,21 @@ public class ForwardRateAgreement extends Forward {
     protected double notional;
     protected IborIndex index;
 
-
     //
     // public constructors
     //
 
-    public ForwardRateAgreement(
-            final Date valueDate,
-            final Date maturityDate,
-            final Position type,
-            final double strikeForwardRate,
-            final double notionalAmount,
-            final IborIndex index) {
-        this (valueDate, maturityDate, type, strikeForwardRate, notionalAmount, index, new Handle<YieldTermStructure>());
+    public ForwardRateAgreement(final Date valueDate, final Date maturityDate, final Position type,
+            final double strikeForwardRate, final double notionalAmount, final IborIndex index) {
+        this(valueDate, maturityDate, type, strikeForwardRate, notionalAmount, index,
+                new Handle< YieldTermStructure >());
     }
 
-
-    public ForwardRateAgreement(
-            final Date valueDate,
-            final Date maturityDate,
-            final Position type,
-            final double strikeForwardRate,
-            final double notionalAmount,
-            final IborIndex index,
-            final Handle<YieldTermStructure> discountCurve) {
-        super(index.dayCounter(), index.fixingCalendar(), index.businessDayConvention(), index.fixingDays(),
-                null, valueDate, maturityDate, discountCurve);
+    public ForwardRateAgreement(final Date valueDate, final Date maturityDate, final Position type,
+            final double strikeForwardRate, final double notionalAmount, final IborIndex index,
+            final Handle< YieldTermStructure > discountCurve) {
+        super(index.dayCounter(), index.fixingCalendar(), index.businessDayConvention(), index.fixingDays(), null,
+                valueDate, maturityDate, discountCurve);
         this.fraType = type;
         this.notional = notionalAmount;
         this.index = index;
@@ -135,7 +108,8 @@ public class ForwardRateAgreement extends Forward {
         // dereference the discount/forecasting curve, so that an FRA can be
         // constructed before its curve handle is linked (see
         // test-suite/forwardrateagreement.cpp::testConstructionWithoutACurve).
-        this.strikeForwardRate = new InterestRate(strikeForwardRate, index.dayCounter(), Compounding.Simple, Frequency.Once);
+        this.strikeForwardRate = new InterestRate(strikeForwardRate, index.dayCounter(), Compounding.Simple,
+                Frequency.Once);
         final double strike = notional * this.strikeForwardRate.compoundFactor(valueDate, maturityDate);
         payoff = new ForwardTypePayoff(fraType, strike);
 
@@ -143,25 +117,19 @@ public class ForwardRateAgreement extends Forward {
         incomeDiscountCurve = discountCurve;
         underlyingIncome = 0.0;
 
-        index.addObserver (this);
+        index.addObserver(this);
     }
-
 
     /**
      * Curve-less / maturity-from-index constructor.
      * <p>
-     * Mirrors the C++ v1.42.1 {@code ForwardRateAgreement(index, valueDate,
-     * type, strike, notional, discountCurve)} overload — maturity date is
-     * inferred from {@code index.maturityDate(valueDate)}.
+     * Mirrors the C++ v1.42.1 {@code ForwardRateAgreement(index, valueDate, type, strike, notional, discountCurve)}
+     * overload — maturity date is inferred from {@code index.maturityDate(valueDate)}.
      */
-    public ForwardRateAgreement(
-            final IborIndex index,
-            final Date valueDate,
-            final Position type,
-            final double strikeForwardRate,
-            final double notionalAmount,
-            final Handle<YieldTermStructure> discountCurve) {
-        this (valueDate, index.maturityDate(valueDate), type, strikeForwardRate, notionalAmount, index, discountCurve);
+    public ForwardRateAgreement(final IborIndex index, final Date valueDate, final Position type,
+            final double strikeForwardRate, final double notionalAmount,
+            final Handle< YieldTermStructure > discountCurve) {
+        this(valueDate, index.maturityDate(valueDate), type, strikeForwardRate, notionalAmount, index, discountCurve);
     }
 
     /**
@@ -169,30 +137,22 @@ public class ForwardRateAgreement extends Forward {
      * <p>
      * Mirrors the C++ v1.42.1 default-argument form (empty discount curve).
      */
-    public ForwardRateAgreement(
-            final IborIndex index,
-            final Date valueDate,
-            final Position type,
-            final double strikeForwardRate,
-            final double notionalAmount) {
-        this (valueDate, index.maturityDate(valueDate), type, strikeForwardRate, notionalAmount, index, new Handle<YieldTermStructure>());
+    public ForwardRateAgreement(final IborIndex index, final Date valueDate, final Position type,
+            final double strikeForwardRate, final double notionalAmount) {
+        this(valueDate, index.maturityDate(valueDate), type, strikeForwardRate, notionalAmount, index,
+                new Handle< YieldTermStructure >());
     }
 
     /**
      * Curve-less constructor with explicit maturity date.
      * <p>
-     * Mirrors the C++ v1.42.1 {@code ForwardRateAgreement(index, valueDate,
-     * maturityDate, type, strike, notional, discountCurve)} overload.
+     * Mirrors the C++ v1.42.1
+     * {@code ForwardRateAgreement(index, valueDate, maturityDate, type, strike, notional, discountCurve)} overload.
      */
-    public ForwardRateAgreement(
-            final IborIndex index,
-            final Date valueDate,
-            final Date maturityDate,
-            final Position type,
-            final double strikeForwardRate,
-            final double notionalAmount,
-            final Handle<YieldTermStructure> discountCurve) {
-        this (valueDate, maturityDate, type, strikeForwardRate, notionalAmount, index, discountCurve);
+    public ForwardRateAgreement(final IborIndex index, final Date valueDate, final Date maturityDate,
+            final Position type, final double strikeForwardRate, final double notionalAmount,
+            final Handle< YieldTermStructure > discountCurve) {
+        this(valueDate, maturityDate, type, strikeForwardRate, notionalAmount, index, discountCurve);
     }
 
     @Override
@@ -202,14 +162,14 @@ public class ForwardRateAgreement extends Forward {
 
     @Override
     public boolean isExpired() {
-        if (new Settings().isTodaysPayments()) {
+        if ( new Settings().isTodaysPayments() ) {
             return valueDate.lt(settlementDate());
         }
         return valueDate.le(settlementDate());
     }
 
     @Override
-    public double spotIncome(final Handle<YieldTermStructure> incomeDiscountCurve) {
+    public double spotIncome(final Handle< YieldTermStructure > incomeDiscountCurve) {
         // irrelevant for FRA
         return 0;
     }
@@ -237,7 +197,8 @@ public class ForwardRateAgreement extends Forward {
     @Override
     public void performCalculations() {
         final Date fixingDate = calendar.advance(valueDate, -1 * settlementDays, TimeUnit.Days);
-        forwardRate = new InterestRate(index.fixing(fixingDate), index.dayCounter(), Compounding.Simple, Frequency.Once);
+        forwardRate = new InterestRate(index.fixing(fixingDate), index.dayCounter(), Compounding.Simple,
+                Frequency.Once);
         underlyingSpotValue = spotValue();
         underlyingIncome = 0.0;
         super.performCalculations();

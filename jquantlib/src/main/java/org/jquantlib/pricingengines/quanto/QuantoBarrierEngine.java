@@ -27,7 +27,6 @@ package org.jquantlib.pricingengines.quanto;
 
 import org.jquantlib.QL;
 import org.jquantlib.instruments.BarrierOption;
-import org.jquantlib.instruments.OneAssetOption;
 import org.jquantlib.instruments.QuantoBarrierOption;
 import org.jquantlib.instruments.StrikedTypePayoff;
 import org.jquantlib.math.Constants;
@@ -43,11 +42,9 @@ import org.jquantlib.termstructures.yieldcurves.QuantoTermStructure;
  * Quanto engine for barrier options.
  *
  * <p>Phase 5e.5b-CFC-d-102 Java specialisation of C++
- * {@code QuantoEngine<BarrierOption, AnalyticBarrierEngine>}
- * (v1.42.1 ql/pricingengines/quanto/quantoengine.hpp). Mirrors the
- * {@link QuantoVanillaEngine} pattern but builds an inner
- * {@link AnalyticBarrierEngine} bound to a synthetic
- * {@link BarrierOption} that carries the barrier-specific arguments.
+ * {@code QuantoEngine<BarrierOption, AnalyticBarrierEngine>} (v1.42.1 ql/pricingengines/quanto/quantoengine.hpp).
+ * Mirrors the {@link QuantoVanillaEngine} pattern but builds an inner {@link AnalyticBarrierEngine} bound to a
+ * synthetic {@link BarrierOption} that carries the barrier-specific arguments.
  *
  * <p>Warning: as in the C++ source, only simple Black-Scholes
  * processes are supported (no Merton).
@@ -55,20 +52,18 @@ import org.jquantlib.termstructures.yieldcurves.QuantoTermStructure;
 public class QuantoBarrierEngine extends QuantoBarrierOption.EngineImpl {
 
     private final GeneralizedBlackScholesProcess process_;
-    private final Handle<YieldTermStructure> foreignRiskFreeRate_;
-    private final Handle<BlackVolTermStructure> exchangeRateVolatility_;
-    private final Handle<? extends Quote> correlation_;
+    private final Handle< YieldTermStructure > foreignRiskFreeRate_;
+    private final Handle< BlackVolTermStructure > exchangeRateVolatility_;
+    private final Handle< ? extends Quote > correlation_;
 
-    public QuantoBarrierEngine(
-            final GeneralizedBlackScholesProcess process,
-            final Handle<YieldTermStructure> foreignRiskFreeRate,
-            final Handle<BlackVolTermStructure> exchangeRateVolatility,
-            final Handle<? extends Quote> correlation) {
+    public QuantoBarrierEngine(final GeneralizedBlackScholesProcess process,
+            final Handle< YieldTermStructure > foreignRiskFreeRate,
+            final Handle< BlackVolTermStructure > exchangeRateVolatility, final Handle< ? extends Quote > correlation) {
         super();
-        this.process_                = process;
-        this.foreignRiskFreeRate_    = foreignRiskFreeRate;
+        this.process_ = process;
+        this.foreignRiskFreeRate_ = foreignRiskFreeRate;
         this.exchangeRateVolatility_ = exchangeRateVolatility;
-        this.correlation_            = correlation;
+        this.correlation_ = correlation;
         this.process_.addObserver(this);
         this.foreignRiskFreeRate_.addObserver(this);
         this.exchangeRateVolatility_.addObserver(this);
@@ -87,34 +82,28 @@ public class QuantoBarrierEngine extends QuantoBarrierOption.EngineImpl {
         final StrikedTypePayoff payoff = (StrikedTypePayoff) a.payoff;
         final double strike = payoff.strike();
 
-        final Handle<? extends Quote> spot = process_.stateVariable();
+        final Handle< ? extends Quote > spot = process_.stateVariable();
         QL.require(spot.currentLink().value() > 0.0, "negative or null underlying");
 
-        final Handle<YieldTermStructure> riskFreeRate = process_.riskFreeRate();
+        final Handle< YieldTermStructure > riskFreeRate = process_.riskFreeRate();
         // Quanto-adjusted dividend term structure
-        final QuantoTermStructure quantoTS = new QuantoTermStructure(
-                process_.dividendYield(), process_.riskFreeRate(),
-                foreignRiskFreeRate_, process_.blackVolatility(),
-                strike, exchangeRateVolatility_,
-                exchangeRateATMlevel, correlation_.currentLink().value());
-        final Handle<YieldTermStructure> dividendYield =
-                new Handle<YieldTermStructure>(quantoTS);
-        final Handle<BlackVolTermStructure> blackVol = process_.blackVolatility();
+        final QuantoTermStructure quantoTS = new QuantoTermStructure(process_.dividendYield(), process_.riskFreeRate(),
+                foreignRiskFreeRate_, process_.blackVolatility(), strike, exchangeRateVolatility_, exchangeRateATMlevel,
+                correlation_.currentLink().value());
+        final Handle< YieldTermStructure > dividendYield = new Handle< YieldTermStructure >(quantoTS);
+        final Handle< BlackVolTermStructure > blackVol = process_.blackVolatility();
 
-        final GeneralizedBlackScholesProcess quantoProcess =
-                new GeneralizedBlackScholesProcess(spot, dividendYield,
-                        riskFreeRate, blackVol);
+        final GeneralizedBlackScholesProcess quantoProcess = new GeneralizedBlackScholesProcess(spot, dividendYield,
+                riskFreeRate, blackVol);
 
         // Construct an inner AnalyticBarrierEngine and a synthetic
         // BarrierOption bound to it; let it calculate, then read back results.
         final AnalyticBarrierEngine inner = new AnalyticBarrierEngine(quantoProcess);
-        final BarrierOption opt = new BarrierOption(
-                a.barrierType, a.barrier, a.rebate, payoff, a.exercise);
+        final BarrierOption opt = new BarrierOption(a.barrierType, a.barrier, a.rebate, payoff, a.exercise);
         opt.setPricingEngine(inner);
         opt.NPV();   // forces calculate
 
-        final BarrierOption.ResultsImpl ir =
-                (BarrierOption.ResultsImpl) inner.getResults();
+        final BarrierOption.ResultsImpl ir = (BarrierOption.ResultsImpl) inner.getResults();
         final org.jquantlib.instruments.Option.GreeksImpl ig = ir.greeks();
         final org.jquantlib.instruments.Option.MoreGreeksImpl im = ir.moreGreeks();
 
@@ -125,9 +114,9 @@ public class QuantoBarrierEngine extends QuantoBarrierOption.EngineImpl {
         rg.delta = ig.delta;
         rg.gamma = ig.gamma;
         rg.theta = ig.theta;
-        rg.vega  = ig.vega;
-        if (ig.rho != Constants.NULL_REAL && !Double.isNaN(ig.rho)
-                && ig.dividendRho != Constants.NULL_REAL && !Double.isNaN(ig.dividendRho)) {
+        rg.vega = ig.vega;
+        if ( ig.rho != Constants.NULL_REAL && !Double.isNaN(ig.rho) && ig.dividendRho != Constants.NULL_REAL
+                && !Double.isNaN(ig.dividendRho) ) {
             rg.rho = ig.rho + ig.dividendRho;
             rg.dividendRho = ig.dividendRho;
         } else {
@@ -137,30 +126,27 @@ public class QuantoBarrierEngine extends QuantoBarrierOption.EngineImpl {
 
         // MoreGreeks pass-through
         final org.jquantlib.instruments.Option.MoreGreeksImpl rm = r.moreGreeks();
-        rm.deltaForward       = im.deltaForward;
-        rm.elasticity         = im.elasticity;
-        rm.thetaPerDay        = im.thetaPerDay;
-        rm.strikeSensitivity  = im.strikeSensitivity;
+        rm.deltaForward = im.deltaForward;
+        rm.elasticity = im.elasticity;
+        rm.thetaPerDay = im.thetaPerDay;
+        rm.strikeSensitivity = im.strikeSensitivity;
         rm.itmCashProbability = im.itmCashProbability;
 
         final double exchangeRateFlatVol = exchangeRateVolatility_.currentLink()
                 .blackVol(a.exercise.lastDate(), exchangeRateATMlevel);
 
-        if (ig.vega != Constants.NULL_REAL && !Double.isNaN(ig.vega)
-                && ig.dividendRho != Constants.NULL_REAL && !Double.isNaN(ig.dividendRho)) {
-            rg.vega = ig.vega + correlation_.currentLink().value()
-                    * exchangeRateFlatVol * ig.dividendRho;
+        if ( ig.vega != Constants.NULL_REAL && !Double.isNaN(ig.vega) && ig.dividendRho != Constants.NULL_REAL
+                && !Double.isNaN(ig.dividendRho) ) {
+            rg.vega = ig.vega + correlation_.currentLink().value() * exchangeRateFlatVol * ig.dividendRho;
         } else {
             rg.vega = Constants.NULL_REAL;
         }
 
-        if (ig.dividendRho != Constants.NULL_REAL && !Double.isNaN(ig.dividendRho)) {
+        if ( ig.dividendRho != Constants.NULL_REAL && !Double.isNaN(ig.dividendRho) ) {
             final double volatility = process_.blackVolatility().currentLink()
-                    .blackVol(a.exercise.lastDate(),
-                              process_.stateVariable().currentLink().value());
-            r.qvega = correlation_.currentLink().value()
-                    * volatility * ig.dividendRho;
-            r.qrho  = -ig.dividendRho;
+                    .blackVol(a.exercise.lastDate(), process_.stateVariable().currentLink().value());
+            r.qvega = correlation_.currentLink().value() * volatility * ig.dividendRho;
+            r.qrho = -ig.dividendRho;
             r.qlambda = exchangeRateFlatVol * volatility * ig.dividendRho;
         } else {
             r.qvega = Constants.NULL_REAL;

@@ -22,10 +22,6 @@
  */
 package org.jquantlib.methods.finitedifferences.operators;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.matrixutilities.Matrix;
 import org.jquantlib.math.transcendental.JQuantMath;
@@ -34,9 +30,13 @@ import org.jquantlib.termstructures.Compounding;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.time.Frequency;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 /**
- * 1-D finite-difference operator for the constant elasticity of variance
- * (CEV) process with absorbing boundary at {@code f = 0}:
+ * 1-D finite-difference operator for the constant elasticity of variance (CEV) process with absorbing boundary at
+ * {@code f = 0}:
  *
  * <pre>  df_t = alpha * f_t^beta * dW_t</pre>
  *
@@ -56,13 +56,9 @@ public class FdmCEVOp implements FdmLinearOpComposite {
     private final TripleBandLinearOp dxxMap_;
     private final TripleBandLinearOp mapT_;
 
-    public FdmCEVOp(final FdmMesher mesher,
-                    final YieldTermStructure rTS,
-                    final double f0,
-                    final double alpha,
-                    final double beta,
-                    final int direction) {
-        this.rTS_       = rTS;
+    public FdmCEVOp(final FdmMesher mesher, final YieldTermStructure rTS, final double f0, final double alpha,
+            final double beta, final int direction) {
+        this.rTS_ = rTS;
         this.direction_ = direction;
 
         // C++: dxxMap_ = SecondDerivativeOp(0, mesher)
@@ -76,27 +72,28 @@ public class FdmCEVOp implements FdmLinearOpComposite {
         final int n = mesher.layout().size();
         final Array coeff = new Array(n);
         final double half_a2 = 0.5 * alpha * alpha;
-        for (int i = 0; i < n; ++i) {
+        for ( int i = 0; i < n; ++i ) {
             coeff.set(i, half_a2 * JQuantMath.pow(locs.get(i), 2.0 * beta));
         }
         this.dxxMap_ = new SecondDerivativeOp(0, mesher).mult(coeff);
-        this.mapT_   = new TripleBandLinearOp(direction, mesher);
+        this.mapT_ = new TripleBandLinearOp(direction, mesher);
 
         // f0 is part of the C++ signature for API symmetry but is not used
         // by the operator itself (the engine uses it to build the mesher).
-        @SuppressWarnings("unused")
+        @SuppressWarnings( "unused" )
         final double unused = f0;
     }
 
     @Override
-    public int size() { return 1; }
+    public int size() {
+        return 1;
+    }
 
     @Override
     public void setTime(final double t1, final double t2) {
         // C++: r = rTS_->forwardRate(t1, t2, Continuous).rate();
         //      mapT_.axpyb(Array(), dxxMap_, dxxMap_, Array(1, -r));
-        final double r = rTS_.forwardRate(
-                t1, t2, Compounding.Continuous, Frequency.NoFrequency, true).rate();
+        final double r = rTS_.forwardRate(t1, t2, Compounding.Continuous, Frequency.NoFrequency, true).rate();
         mapT_.axpyb(new Array(0), dxxMap_, dxxMap_, new Array(1).fill(-r));
     }
 
@@ -112,7 +109,7 @@ public class FdmCEVOp implements FdmLinearOpComposite {
 
     @Override
     public Array applyDirection(final int direction, final Array r) {
-        if (direction == direction_) {
+        if ( direction == direction_ ) {
             return mapT_.apply(r);
         }
         return new Array(r.size()).fill(0.0);
@@ -120,7 +117,7 @@ public class FdmCEVOp implements FdmLinearOpComposite {
 
     @Override
     public Array solveSplitting(final int direction, final Array r, final double a) {
-        if (direction == direction_) {
+        if ( direction == direction_ ) {
             return mapT_.solveSplitting(r, a, 1.0);
         }
         return new Array(r.size()).fill(0.0);
@@ -137,8 +134,8 @@ public class FdmCEVOp implements FdmLinearOpComposite {
     }
 
     @Override
-    public List<Matrix> toMatrixDecomp() {
-        final List<Matrix> ret = new ArrayList<>(1);
+    public List< Matrix > toMatrixDecomp() {
+        final List< Matrix > ret = new ArrayList<>(1);
         ret.add(mapT_.toMatrix());
         return Collections.unmodifiableList(ret);
     }

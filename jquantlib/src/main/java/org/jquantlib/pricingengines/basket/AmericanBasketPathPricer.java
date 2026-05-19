@@ -27,9 +27,6 @@
 
 package org.jquantlib.pricingengines.basket;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.instruments.BasketPayoff;
 import org.jquantlib.instruments.Payoff;
@@ -40,14 +37,15 @@ import org.jquantlib.methods.montecarlo.EarlyExercisePathPricer;
 import org.jquantlib.methods.montecarlo.LsmBasisSystem;
 import org.jquantlib.methods.montecarlo.MultiPath;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * Multi-asset early-exercise path pricer for American basket options
- * driven by the Longstaff-Schwartz Monte Carlo regression.
+ * Multi-asset early-exercise path pricer for American basket options driven by the Longstaff-Schwartz Monte Carlo
+ * regression.
  *
  * <p>Java port of C++ class {@code AmericanBasketPathPricer} from
- * {@code QuantLib v1.42.1
- * ql/pricingengines/basket/mcamericanbasketengine.{hpp,cpp}}
- * (Phase 4i.5b WI-1). Pinned commit
+ * {@code QuantLib v1.42.1 ql/pricingengines/basket/mcamericanbasketengine.{hpp,cpp}} (Phase 4i.5b WI-1). Pinned commit
  * {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
  *
  * <p>The C++ class extends {@code EarlyExercisePathPricer<MultiPath>} and
@@ -80,8 +78,7 @@ import org.jquantlib.methods.montecarlo.MultiPath;
  *
  * @author JQuantLib
  */
-public class AmericanBasketPathPricer
-        implements EarlyExercisePathPricer<MultiPath, Array> {
+public class AmericanBasketPathPricer implements EarlyExercisePathPricer< MultiPath, Array > {
 
     //
     // protected fields (mirror C++ exactly)
@@ -89,52 +86,44 @@ public class AmericanBasketPathPricer
 
     protected final int assetNumber_;
     protected final Payoff payoff_;
-
+    protected final List< Ops.Op< Array, Double > > v_;
     /**
-     * Reciprocal of the strike when the basket wraps a
-     * {@link StrikedTypePayoff}; otherwise 1.0. Mirrors C++
+     * Reciprocal of the strike when the basket wraps a {@link StrikedTypePayoff}; otherwise 1.0. Mirrors C++
      * {@code Real scalingValue_ = 1.0; ... scalingValue_/=strikePayoff->strike();}.
      */
     protected double scalingValue_ = 1.0;
-
-    protected final List<Ops.Op<Array, Double>> v_;
-
 
     //
     // public constructors
     //
 
     /**
-     * Default-arity constructor matching C++ default arguments
-     * ({@code polynomialOrder = 2}, {@code polynomialType = Monomial}).
+     * Default-arity constructor matching C++ default arguments ({@code polynomialOrder = 2},
+     * {@code polynomialType = Monomial}).
      */
     public AmericanBasketPathPricer(final int assetNumber, final Payoff payoff) {
         this(assetNumber, payoff, 2, LsmBasisSystem.PolynomialType.Monomial);
     }
 
     /**
-     * Mirrors C++ {@code AmericanBasketPathPricer(Size assetNumber,
-     * shared_ptr<Payoff> payoff, Size polynomialOrder = 2,
+     * Mirrors C++
+     * {@code AmericanBasketPathPricer(Size assetNumber, shared_ptr<Payoff> payoff, Size polynomialOrder = 2,
      * LsmBasisSystem::PolynomialType polynomialType = Monomial)}.
      *
      * @param assetNumber     number of underlying assets in the basket.
      * @param payoff          base payoff — must be a {@link BasketPayoff}.
      * @param polynomialOrder regression-basis total-degree cap.
-     * @param polynomialType  polynomial family (Monomial/Laguerre/Hermite/
-     *                        Hyperbolic/Chebyshev2nd).
+     * @param polynomialType  polynomial family (Monomial/Laguerre/Hermite/ Hyperbolic/Chebyshev2nd).
      */
-    public AmericanBasketPathPricer(final int assetNumber,
-                                    final Payoff payoff,
-                                    final int polynomialOrder,
-                                    final LsmBasisSystem.PolynomialType polynomialType) {
+    public AmericanBasketPathPricer(final int assetNumber, final Payoff payoff, final int polynomialOrder,
+            final LsmBasisSystem.PolynomialType polynomialType) {
         QL.require(polynomialType == LsmBasisSystem.PolynomialType.Monomial
                 || polynomialType == LsmBasisSystem.PolynomialType.Laguerre
                 || polynomialType == LsmBasisSystem.PolynomialType.Hermite
                 || polynomialType == LsmBasisSystem.PolynomialType.Hyperbolic
-                || polynomialType == LsmBasisSystem.PolynomialType.Chebyshev2nd,
-                "insufficient polynomial type");
+                || polynomialType == LsmBasisSystem.PolynomialType.Chebyshev2nd, "insufficient polynomial type");
 
-        if (!(payoff instanceof BasketPayoff)) {
+        if ( !(payoff instanceof BasketPayoff) ) {
             throw new RuntimeException("payoff not a basket payoff");
         }
         final BasketPayoff basketPayoff = (BasketPayoff) payoff;
@@ -143,53 +132,57 @@ public class AmericanBasketPathPricer
         this.payoff_ = payoff;
 
         // base multi-variate basis system: dim=assetNumber, total-degree<=order
-        final List<Ops.ObjectToDouble<Array>> raw =
-                LsmBasisSystem.multiPathBasisSystem(assetNumber_, polynomialOrder, polynomialType);
-        this.v_ = new ArrayList<Ops.Op<Array, Double>>(raw.size() + 1);
-        for (final Ops.ObjectToDouble<Array> b : raw) {
-            v_.add(new Ops.Op<Array, Double>() {
-                @Override public Double op(final Array a) { return b.op(a); }
+        final List< Ops.ObjectToDouble< Array > > raw = LsmBasisSystem.multiPathBasisSystem(assetNumber_,
+                polynomialOrder, polynomialType);
+        this.v_ = new ArrayList< Ops.Op< Array, Double > >(raw.size() + 1);
+        for ( final Ops.ObjectToDouble< Array > b : raw ) {
+            v_.add(new Ops.Op< Array, Double >() {
+                @Override
+                public Double op(final Array a) {
+                    return b.op(a);
+                }
             });
         }
 
         // scaling — mirror C++ {@code if (strikePayoff != nullptr) scalingValue_ /= strikePayoff->strike();}
         final Payoff base = basketPayoff.basePayoff();
-        if (base instanceof StrikedTypePayoff) {
+        if ( base instanceof StrikedTypePayoff ) {
             this.scalingValue_ /= ((StrikedTypePayoff) base).strike();
         }
 
         // last basis function = the (scaled-state) payoff itself.
         // Mirrors C++ {@code v_.emplace_back([&](const Array& state){ return this->payoff(state); });}
-        v_.add(new Ops.Op<Array, Double>() {
-            @Override public Double op(final Array a) { return AmericanBasketPathPricer.this.payoff(a); }
+        v_.add(new Ops.Op< Array, Double >() {
+            @Override
+            public Double op(final Array a) {
+                return AmericanBasketPathPricer.this.payoff(a);
+            }
         });
     }
-
 
     //
     // EarlyExercisePathPricer<MultiPath, Array>
     //
 
     /**
-     * Mirrors C++ {@code Array state(const MultiPath& path, Size t)}.
-     * Returns {@code Array{S_1[t]*scaling, ..., S_n[t]*scaling}}.
+     * Mirrors C++ {@code Array state(const MultiPath& path, Size t)}. Returns
+     * {@code Array{S_1[t]*scaling, ..., S_n[t]*scaling}}.
      */
     @Override
     public Array state(final MultiPath path, final int t) {
-        if (path.assetNumber() != assetNumber_) {
+        if ( path.assetNumber() != assetNumber_ ) {
             throw new RuntimeException("invalid multipath");
         }
         final double[] tmp = new double[assetNumber_];
-        for (int i = 0; i < assetNumber_; ++i) {
+        for ( int i = 0; i < assetNumber_; ++i ) {
             tmp[i] = path.get(i).get(t) * scalingValue_;
         }
         return new Array(tmp);
     }
 
     /**
-     * Mirrors C++ {@code Real operator()(const MultiPath& path, Size t)}.
-     * Returns {@code payoff(state(path,t))} — the unscaled basket payoff at
-     * time step {@code t}.
+     * Mirrors C++ {@code Real operator()(const MultiPath& path, Size t)}. Returns {@code payoff(state(path,t))} — the
+     * unscaled basket payoff at time step {@code t}.
      */
     @Override
     public double operator(final MultiPath path, final int t) {
@@ -200,25 +193,23 @@ public class AmericanBasketPathPricer
      * Mirrors C++ {@code std::vector<std::function<Real(Array)>> basisSystem()}.
      */
     @Override
-    public List<? extends Ops.Op<Array, Double>> basisSystem() {
+    public List< ? extends Ops.Op< Array, Double > > basisSystem() {
         return v_;
     }
-
 
     //
     // protected
     //
 
     /**
-     * Mirrors C++ private/protected
-     * {@code Real payoff(const Array& state)}: undoes the scaling and
-     * applies the base payoff to {@code basketPayoff.accumulate(state)/scaling}.
+     * Mirrors C++ private/protected {@code Real payoff(const Array& state)}: undoes the scaling and applies the base
+     * payoff to {@code basketPayoff.accumulate(state)/scaling}.
      */
     protected double payoff(final Array state) {
         final BasketPayoff basketPayoff = (BasketPayoff) payoff_;
         // Convert Array -> double[] for the BasketPayoff.accumulate API.
         final double[] s = new double[state.size()];
-        for (int i = 0; i < s.length; ++i) {
+        for ( int i = 0; i < s.length; ++i ) {
             s[i] = state.get(i);
         }
         final double value = basketPayoff.accumulate(s);

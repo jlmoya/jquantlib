@@ -34,19 +34,15 @@ import org.jquantlib.math.matrixutilities.Matrix;
 /**
  * Base class for market models.
  * <p>
- * For each time step, generates the pseudo-square root of the covariance
- * matrix for that time step. Derived classes must implement
- * {@link #initialRates()}, {@link #displacements()}, {@link #evolution()},
- * {@link #numberOfRates()}, {@link #numberOfFactors()},
- * {@link #numberOfSteps()}, and {@link #pseudoRoot(int)}.
+ * For each time step, generates the pseudo-square root of the covariance matrix for that time step. Derived classes
+ * must implement {@link #initialRates()}, {@link #displacements()}, {@link #evolution()}, {@link #numberOfRates()},
+ * {@link #numberOfFactors()}, {@link #numberOfSteps()}, and {@link #pseudoRoot(int)}.
  * <p>
- * The {@link #covariance(int)} and {@link #totalCovariance(int)} methods are
- * computed lazily from the pseudo-roots; subclasses may override to provide
- * a more efficient implementation.
- *
- * @see "ql/models/marketmodels/marketmodel.{hpp,cpp}" v1.42.1
+ * The {@link #covariance(int)} and {@link #totalCovariance(int)} methods are computed lazily from the pseudo-roots;
+ * subclasses may override to provide a more efficient implementation.
  *
  * @author Jose Moya
+ * @see "ql/models/marketmodels/marketmodel.{hpp,cpp}" v1.42.1
  */
 public abstract class MarketModel {
 
@@ -68,13 +64,12 @@ public abstract class MarketModel {
     public abstract Matrix pseudoRoot(int i);
 
     /**
-     * Returns the covariance matrix at step {@code i}, computed as
-     * {@code pseudoRoot(i) * pseudoRoot(i)^T}.
+     * Returns the covariance matrix at step {@code i}, computed as {@code pseudoRoot(i) * pseudoRoot(i)^T}.
      */
     public Matrix covariance(final int i) {
-        if (covariance_ == null) {
+        if ( covariance_ == null ) {
             covariance_ = new Matrix[numberOfSteps()];
-            for (int j = 0; j < numberOfSteps(); ++j) {
+            for ( int j = 0; j < numberOfSteps(); ++j ) {
                 final Matrix root = pseudoRoot(j);
                 covariance_[j] = root.mul(root.transpose());
             }
@@ -88,11 +83,11 @@ public abstract class MarketModel {
      * Returns the cumulative covariance matrix from step 0 through {@code endIndex} inclusive.
      */
     public Matrix totalCovariance(final int endIndex) {
-        if (totalCovariance_ == null) {
+        if ( totalCovariance_ == null ) {
             totalCovariance_ = new Matrix[numberOfSteps()];
             // call to covariance(0) triggers calculation, if necessary
             totalCovariance_[0] = new Matrix(covariance(0));
-            for (int j = 1; j < numberOfSteps(); ++j) {
+            for ( int j = 1; j < numberOfSteps(); ++j ) {
                 totalCovariance_[j] = totalCovariance_[j - 1].add(covariance_[j]);
             }
         }
@@ -102,18 +97,16 @@ public abstract class MarketModel {
     }
 
     /**
-     * Returns the volatility (sqrt(variance/tau)) over each evolution step
-     * for forward-rate index {@code i}.
+     * Returns the volatility (sqrt(variance/tau)) over each evolution step for forward-rate index {@code i}.
      */
     public double[] timeDependentVolatility(final int i) {
-        QL.require(i < numberOfRates(),
-                "index (" + i + ") must less than number of rates (" + numberOfRates() + ")");
+        QL.require(i < numberOfRates(), "index (" + i + ") must less than number of rates (" + numberOfRates() + ")");
 
         final double[] result = new double[numberOfSteps()];
         final double[] evolutionTime = evolution().evolutionTimes();
 
         double lastTime = 0.0;
-        for (int j = 0; j < numberOfSteps(); ++j) {
+        for ( int j = 0; j < numberOfSteps(); ++j ) {
             final double tau = evolutionTime[j] - lastTime;
             final double thisVariance = covariance(j).get(i, i);
             final double thisVol = Math.sqrt(thisVariance / tau);

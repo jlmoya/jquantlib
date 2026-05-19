@@ -34,16 +34,9 @@
  */
 package org.jquantlib.instruments;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
-import org.jquantlib.cashflow.CashFlows;
-import org.jquantlib.cashflow.CmsCouponPricer;
-import org.jquantlib.cashflow.CmsLeg;
-import org.jquantlib.cashflow.IborLeg;
-import org.jquantlib.cashflow.Leg;
+import org.jquantlib.cashflow.*;
 import org.jquantlib.daycounters.Actual360;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.indexes.IborIndex;
@@ -53,24 +46,18 @@ import org.jquantlib.pricingengines.PricingEngine;
 import org.jquantlib.pricingengines.swap.DiscountingSwapEngine;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.termstructures.YieldTermStructure;
-import org.jquantlib.time.BusinessDayConvention;
-import org.jquantlib.time.Calendar;
-import org.jquantlib.time.Date;
-import org.jquantlib.time.DateGeneration;
-import org.jquantlib.time.Period;
-import org.jquantlib.time.Schedule;
-import org.jquantlib.time.TimeUnit;
+import org.jquantlib.time.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Helper class for instantiating standard market constant-maturity swaps (CMS).
  * <p>
- * Java port of C++ QuantLib v1.42.1 {@code MakeCms} in
- * {@code ql/instruments/makecms.{hpp,cpp}}. Two-leg helper: a CMS leg
- * (built via {@link CmsLeg}) referenced against a {@link SwapIndex}, and a
- * floating Ibor leg (built via {@link IborLeg}) referenced against an
- * {@link IborIndex}. The pay-direction defaults to "pay CMS", and the
- * pricing engine defaults to {@link DiscountingSwapEngine} on the swap
- * index's forwarding term structure.
+ * Java port of C++ QuantLib v1.42.1 {@code MakeCms} in {@code ql/instruments/makecms.{hpp,cpp}}. Two-leg helper: a CMS
+ * leg (built via {@link CmsLeg}) referenced against a {@link SwapIndex}, and a floating Ibor leg (built via
+ * {@link IborLeg}) referenced against an {@link IborIndex}. The pay-direction defaults to "pay CMS", and the pricing
+ * engine defaults to {@link DiscountingSwapEngine} on the swap index's forwarding term structure.
  *
  * <p>Use {@link #value()} (parallel to C++ {@code operator Swap()}/
  * {@code operator ext::shared_ptr<Swap>()}) to build the {@link Swap}.
@@ -83,13 +70,12 @@ public class MakeCms {
     private final SwapIndex swapIndex_;
     private final IborIndex iborIndex_;
     private final double iborSpread_;
-    private boolean useAtmSpread_;
     private final Period forwardStart_;
-
-    private double cmsSpread_;
-    private double cmsGearing_;
-    private double cmsCap_;
-    private double cmsFloor_;
+    private boolean useAtmSpread_;
+    private final double cmsSpread_;
+    private final double cmsGearing_;
+    private final double cmsCap_;
+    private final double cmsFloor_;
 
     private Date effectiveDate_;
     private Calendar cmsCalendar_;
@@ -118,20 +104,14 @@ public class MakeCms {
     private CmsCouponPricer couponPricer_;
 
     /**
-     * Convenience overload — mirrors C++ default
-     * {@code iborSpread = 0, forwardStart = 0*Days}.
+     * Convenience overload — mirrors C++ default {@code iborSpread = 0, forwardStart = 0*Days}.
      */
-    public MakeCms(final Period swapTenor,
-                   final SwapIndex swapIndex,
-                   final IborIndex iborIndex) {
+    public MakeCms(final Period swapTenor, final SwapIndex swapIndex, final IborIndex iborIndex) {
         this(swapTenor, swapIndex, iborIndex, 0.0, new Period(0, TimeUnit.Days));
     }
 
-    public MakeCms(final Period swapTenor,
-                   final SwapIndex swapIndex,
-                   final IborIndex iborIndex,
-                   final /*Spread*/ double iborSpread,
-                   final Period forwardStart) {
+    public MakeCms(final Period swapTenor, final SwapIndex swapIndex, final IborIndex iborIndex,
+            final /*Spread*/ double iborSpread, final Period forwardStart) {
         this.swapTenor_ = swapTenor;
         this.swapIndex_ = swapIndex;
         this.iborIndex_ = iborIndex;
@@ -176,19 +156,15 @@ public class MakeCms {
     }
 
     /**
-     * Convenience overload — mirrors C++ second ctor that derives
-     * {@code iborIndex} from {@code swapIndex->iborIndex()}.
+     * Convenience overload — mirrors C++ second ctor that derives {@code iborIndex} from
+     * {@code swapIndex->iborIndex()}.
      */
-    public MakeCms(final Period swapTenor,
-                   final SwapIndex swapIndex) {
-        this(swapTenor, swapIndex, swapIndex.iborIndex(),
-                0.0, new Period(0, TimeUnit.Days));
+    public MakeCms(final Period swapTenor, final SwapIndex swapIndex) {
+        this(swapTenor, swapIndex, swapIndex.iborIndex(), 0.0, new Period(0, TimeUnit.Days));
     }
 
-    public MakeCms(final Period swapTenor,
-                   final SwapIndex swapIndex,
-                   final /*Spread*/ double iborSpread,
-                   final Period forwardStart) {
+    public MakeCms(final Period swapTenor, final SwapIndex swapIndex, final /*Spread*/ double iborSpread,
+            final Period forwardStart) {
         this(swapTenor, swapIndex, swapIndex.iborIndex(), iborSpread, forwardStart);
     }
 
@@ -197,7 +173,7 @@ public class MakeCms {
      */
     public Swap value() /* @ReadOnly */ {
         final Date startDate;
-        if (!effectiveDate_.isNull()) {
+        if ( !effectiveDate_.isNull() ) {
             startDate = effectiveDate_;
         } else {
             final int fixingDays = iborIndex_.fixingDays();
@@ -210,48 +186,33 @@ public class MakeCms {
 
         final Date terminationDate = startDate.add(swapTenor_);
 
-        final Schedule cmsSchedule = new Schedule(startDate, terminationDate,
-                cmsTenor_, cmsCalendar_,
-                cmsConvention_,
-                cmsTerminationDateConvention_,
-                cmsRule_, cmsEndOfMonth_,
-                cmsFirstDate_, cmsNextToLastDate_);
+        final Schedule cmsSchedule = new Schedule(startDate, terminationDate, cmsTenor_, cmsCalendar_, cmsConvention_,
+                cmsTerminationDateConvention_, cmsRule_, cmsEndOfMonth_, cmsFirstDate_, cmsNextToLastDate_);
 
-        final Schedule floatSchedule = new Schedule(startDate, terminationDate,
-                floatTenor_, floatCalendar_,
-                floatConvention_,
-                floatTerminationDateConvention_,
-                floatRule_, floatEndOfMonth_,
-                floatFirstDate_, floatNextToLastDate_);
+        final Schedule floatSchedule = new Schedule(startDate, terminationDate, floatTenor_, floatCalendar_,
+                floatConvention_, floatTerminationDateConvention_, floatRule_, floatEndOfMonth_, floatFirstDate_,
+                floatNextToLastDate_);
 
-        final CmsLeg cmsLegBuilder = new CmsLeg(cmsSchedule, swapIndex_)
-                .withNotionals(nominal_)
-                .withPaymentDayCounter(cmsDayCount_)
-                .withPaymentAdjustment(cmsConvention_)
-                .withFixingDays(swapIndex_.fixingDays())
-                .withGearings(cmsGearing_)
-                .withSpreads(cmsSpread_)
-                .withCaps(cmsCap_)
-                .withFloors(cmsFloor_);
+        final CmsLeg cmsLegBuilder = new CmsLeg(cmsSchedule, swapIndex_).withNotionals(nominal_)
+                .withPaymentDayCounter(cmsDayCount_).withPaymentAdjustment(cmsConvention_)
+                .withFixingDays(swapIndex_.fixingDays()).withGearings(cmsGearing_).withSpreads(cmsSpread_)
+                .withCaps(cmsCap_).withFloors(cmsFloor_);
         final Leg cmsLeg = cmsLegBuilder.Leg();
-        if (couponPricer_ != null) {
+        if ( couponPricer_ != null ) {
             CashFlows.setCouponPricer(cmsLeg, couponPricer_);
         }
 
         double usedSpread = iborSpread_;
-        if (useAtmSpread_) {
+        if ( useAtmSpread_ ) {
             QL.require(!iborIndex_.termStructure().empty(),
                     "null term structure set to this instance of " + iborIndex_.name());
             QL.require(!swapIndex_.termStructure().empty(),
                     "null term structure set to this instance of " + swapIndex_.name());
             QL.require(couponPricer_ != null, "no CmsCouponPricer set (yet)");
 
-            final Leg floatLegAtm = new IborLeg(floatSchedule, iborIndex_)
-                    .withNotionals(nominal_)
-                    .withPaymentDayCounter(floatDayCount_)
-                    .withPaymentAdjustment(floatConvention_)
-                    .withFixingDays(iborIndex_.fixingDays())
-                    .Leg();
+            final Leg floatLegAtm = new IborLeg(floatSchedule, iborIndex_).withNotionals(nominal_)
+                    .withPaymentDayCounter(floatDayCount_).withPaymentAdjustment(floatConvention_)
+                    .withFixingDays(iborIndex_.fixingDays()).Leg();
 
             final Swap temp = new Swap(cmsLeg, floatLegAtm);
             temp.setPricingEngine(engine_);
@@ -262,17 +223,13 @@ public class MakeCms {
             QL.require(!Double.isNaN(usedSpread), "null spread set");
         }
 
-        final Leg floatLeg = new IborLeg(floatSchedule, iborIndex_)
-                .withNotionals(nominal_)
-                .withPaymentDayCounter(floatDayCount_)
-                .withPaymentAdjustment(floatConvention_)
-                .withFixingDays(iborIndex_.fixingDays())
-                .withSpreads(usedSpread)
-                .Leg();
+        final Leg floatLeg = new IborLeg(floatSchedule, iborIndex_).withNotionals(nominal_)
+                .withPaymentDayCounter(floatDayCount_).withPaymentAdjustment(floatConvention_)
+                .withFixingDays(iborIndex_.fixingDays()).withSpreads(usedSpread).Leg();
 
-        final List<Leg> legs = new ArrayList<Leg>(2);
+        final List< Leg > legs = new ArrayList< Leg >(2);
         final boolean[] payer = new boolean[2];
-        if (payCms_) {
+        if ( payCms_ ) {
             legs.add(cmsLeg);
             legs.add(floatLeg);
             payer[0] = true;
@@ -307,7 +264,7 @@ public class MakeCms {
         return this;
     }
 
-    public MakeCms withDiscountingTermStructure(final Handle<YieldTermStructure> discountingTermStructure) {
+    public MakeCms withDiscountingTermStructure(final Handle< YieldTermStructure > discountingTermStructure) {
         this.engine_ = new DiscountingSwapEngine(discountingTermStructure);
         return this;
     }

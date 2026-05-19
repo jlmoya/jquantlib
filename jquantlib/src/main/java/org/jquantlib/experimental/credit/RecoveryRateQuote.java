@@ -24,12 +24,12 @@
 
 package org.jquantlib.experimental.credit;
 
-import java.util.EnumMap;
-import java.util.Map;
-
 import org.jquantlib.QL;
 import org.jquantlib.math.Constants;
 import org.jquantlib.quotes.Quote;
+
+import java.util.EnumMap;
+import java.util.Map;
 
 /**
  * Stores a recovery-rate market quote and the associated seniority.
@@ -52,12 +52,11 @@ import org.jquantlib.quotes.Quote;
 public class RecoveryRateQuote extends Quote {
 
     /** Conventional recoveries for ISDA seniorities (matches C++ static array). */
-    public static final double[] ISDA_CONV_RECOVERIES = {
-        0.65, // SECDOM
-        0.40, // SNRFOR
-        0.20, // SUBLT2
-        0.20, // JRSUBUT2
-        0.15  // PREFT1
+    public static final double[] ISDA_CONV_RECOVERIES = { 0.65, // SECDOM
+            0.40, // SNRFOR
+            0.20, // SUBLT2
+            0.20, // JRSUBUT2
+            0.15  // PREFT1
     };
 
     private Seniority seniority;
@@ -75,14 +74,31 @@ public class RecoveryRateQuote extends Quote {
         this.seniority = seniority;
         this.recoveryRate = value;
         // C++: value == Null<Real>() OR value in [0,1]. NULL_REAL == Double.MAX_VALUE.
-        QL.require(value == Constants.NULL_REAL || Double.isNaN(value)
-                        || (value >= 0.0 && value <= 1.0),
+        QL.require(value == Constants.NULL_REAL || Double.isNaN(value) || (value >= 0.0 && value <= 1.0),
                 "Recovery value must be a fractional unit.");
     }
 
     /** Returns the ISDA conventional recovery rate for {@code sen}. */
     public static double conventionalRecovery(final Seniority sen) {
         return ISDA_CONV_RECOVERIES[sen.ordinal()];
+    }
+
+    /**
+     * Helper: turn a set of recoveries into a seniority-recovery map. Mirrors the C++ template
+     * {@code makeIsdaMap<Size N>(const Real (&)[N])}.
+     */
+    public static Map< Seniority, Double > makeIsdaMap(final double[] arrayIsdaRR) {
+        final Map< Seniority, Double > isdaMap = new EnumMap<>(Seniority.class);
+        final Seniority[] values = Seniority.values();
+        for ( int i = 0; i < arrayIsdaRR.length && i < values.length; i++ ) {
+            isdaMap.put(values[i], arrayIsdaRR[i]);
+        }
+        return isdaMap;
+    }
+
+    /** Helper for ISDA conventional recoveries. */
+    public static Map< Seniority, Double > makeIsdaConvMap() {
+        return makeIsdaMap(ISDA_CONV_RECOVERIES);
     }
 
     public Seniority seniority() {
@@ -105,7 +121,7 @@ public class RecoveryRateQuote extends Quote {
     /** Returns the difference between the new value and the old value. */
     public double setValue(final double value) {
         final double diff = value - recoveryRate;
-        if (diff != 0.0) {
+        if ( diff != 0.0 ) {
             recoveryRate = value;
             notifyObservers();
         }
@@ -119,23 +135,5 @@ public class RecoveryRateQuote extends Quote {
     public void reset() {
         setValue(Constants.NULL_REAL);
         seniority = Seniority.NoSeniority;
-    }
-
-    /**
-     * Helper: turn a set of recoveries into a seniority-recovery map. Mirrors
-     * the C++ template {@code makeIsdaMap<Size N>(const Real (&)[N])}.
-     */
-    public static Map<Seniority, Double> makeIsdaMap(final double[] arrayIsdaRR) {
-        final Map<Seniority, Double> isdaMap = new EnumMap<>(Seniority.class);
-        final Seniority[] values = Seniority.values();
-        for (int i = 0; i < arrayIsdaRR.length && i < values.length; i++) {
-            isdaMap.put(values[i], arrayIsdaRR[i]);
-        }
-        return isdaMap;
-    }
-
-    /** Helper for ISDA conventional recoveries. */
-    public static Map<Seniority, Double> makeIsdaConvMap() {
-        return makeIsdaMap(ISDA_CONV_RECOVERIES);
     }
 }

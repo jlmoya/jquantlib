@@ -105,33 +105,25 @@ public class AnalyticHolderExtensibleOptionEngine extends OneAssetOption.EngineI
         final double y1 = y1(payoff.optionType());
         final double y2 = y2(payoff.optionType());
 
-        if (payoff.optionType() == Option.Type.Call) {
+        if ( payoff.optionType() == Option.Type.Call ) {
             // Instantiate payoff function for a call
             final PlainVanillaPayoff vanillaCallPayoff = new PlainVanillaPayoff(Option.Type.Call, X1);
-            final double bsm = new BlackScholesCalculator(vanillaCallPayoff, S, growth,
-                                                          vol * Math.sqrt(t1), discount).value();
-            result = bsm
-                    + S * Math.exp((b - r0) * T2) * M2(y1, y2, minusInf, z1, rho)
-                    - X2 * Math.exp(-r0 * T2) * M2(y1 - vol * Math.sqrt(t1),
-                                                   y2 - vol * Math.sqrt(t1),
-                                                   minusInf,
-                                                   z1 - vol * Math.sqrt(T2), rho)
-                    - S * Math.exp((b - r0) * t1) * N2(y1, z2)
-                    + X1 * Math.exp(-r0 * t1) * N2(y1 - vol * Math.sqrt(t1), z2 - vol * Math.sqrt(t1))
-                    - A * Math.exp(-r0 * t1) * N2(y1 - vol * Math.sqrt(t1), y2 - vol * Math.sqrt(t1));
+            final double bsm = new BlackScholesCalculator(vanillaCallPayoff, S, growth, vol * Math.sqrt(t1),
+                    discount).value();
+            result = bsm + S * Math.exp((b - r0) * T2) * M2(y1, y2, minusInf, z1, rho) - X2 * Math.exp(-r0 * T2) * M2(
+                    y1 - vol * Math.sqrt(t1), y2 - vol * Math.sqrt(t1), minusInf, z1 - vol * Math.sqrt(T2), rho)
+                    - S * Math.exp((b - r0) * t1) * N2(y1, z2) + X1 * Math.exp(-r0 * t1) * N2(y1 - vol * Math.sqrt(t1),
+                    z2 - vol * Math.sqrt(t1)) - A * Math.exp(-r0 * t1) * N2(y1 - vol * Math.sqrt(t1),
+                    y2 - vol * Math.sqrt(t1));
         } else {
             // Instantiate payoff function for a put
             final PlainVanillaPayoff vanillaPutPayoff = new PlainVanillaPayoff(Option.Type.Put, X1);
-            result = new BlackScholesCalculator(vanillaPutPayoff, S, growth,
-                                                vol * Math.sqrt(t1), discount).value()
-                    - S * Math.exp((b - r0) * T2) * M2(y1, y2, minusInf, -z1, rho)
-                    + X2 * Math.exp(-r0 * T2) * M2(y1 - vol * Math.sqrt(t1),
-                                                   y2 - vol * Math.sqrt(t1),
-                                                   minusInf,
-                                                   -z1 + vol * Math.sqrt(T2), rho)
-                    + S * Math.exp((b - r0) * t1) * N2(z2, y2)
-                    - X1 * Math.exp(-r0 * t1) * N2(z2 - vol * Math.sqrt(t1), y2 - vol * Math.sqrt(t1))
-                    - A * Math.exp(-r0 * t1) * N2(y1 - vol * Math.sqrt(t1), y2 - vol * Math.sqrt(t1));
+            result = new BlackScholesCalculator(vanillaPutPayoff, S, growth, vol * Math.sqrt(t1), discount).value()
+                    - S * Math.exp((b - r0) * T2) * M2(y1, y2, minusInf, -z1, rho) + X2 * Math.exp(-r0 * T2) * M2(
+                    y1 - vol * Math.sqrt(t1), y2 - vol * Math.sqrt(t1), minusInf, -z1 + vol * Math.sqrt(T2), rho)
+                    + S * Math.exp((b - r0) * t1) * N2(z2, y2) - X1 * Math.exp(-r0 * t1) * N2(z2 - vol * Math.sqrt(t1),
+                    y2 - vol * Math.sqrt(t1)) - A * Math.exp(-r0 * t1) * N2(y1 - vol * Math.sqrt(t1),
+                    y2 - vol * Math.sqrt(t1));
         }
         r.value = result;
     }
@@ -139,7 +131,7 @@ public class AnalyticHolderExtensibleOptionEngine extends OneAssetOption.EngineI
     private double I1Call() {
         double sv = process.stateVariable().currentLink().value();
         final double A = a.premium;
-        if (A == 0.0) {
+        if ( A == 0.0 ) {
             return 0.0;
         }
         BlackScholesCalculator bs = bsCalculator(sv, Option.Type.Call);
@@ -152,7 +144,7 @@ public class AnalyticHolderExtensibleOptionEngine extends OneAssetOption.EngineI
         final double epsilon = 0.001;
 
         // Newton-Raphson process
-        while (Math.abs(yi) > epsilon) {
+        while ( Math.abs(yi) > epsilon ) {
             sv = sv - yi / di;
 
             bs = bsCalculator(sv, Option.Type.Call);
@@ -175,7 +167,7 @@ public class AnalyticHolderExtensibleOptionEngine extends OneAssetOption.EngineI
         final double r0 = riskFreeRate();
 
         final double val = X1 - X2 * Math.exp(-r0 * (T2 - t1));
-        if (A < val) {
+        if ( A < val ) {
             return Double.POSITIVE_INFINITY;
         }
         BlackScholesCalculator bs = bsCalculator(sv, Option.Type.Call);
@@ -188,7 +180,7 @@ public class AnalyticHolderExtensibleOptionEngine extends OneAssetOption.EngineI
         final double epsilon = 0.001;
 
         // Newton-Raphson process
-        while (Math.abs(yi) > epsilon) {
+        while ( Math.abs(yi) > epsilon ) {
             sv = sv - yi / di;
 
             bs = bsCalculator(sv, Option.Type.Call);
@@ -218,7 +210,7 @@ public class AnalyticHolderExtensibleOptionEngine extends OneAssetOption.EngineI
         final double epsilon = 0.001;
 
         // Newton-Raphson process
-        while (Math.abs(yi) > epsilon) {
+        while ( Math.abs(yi) > epsilon ) {
             sv = sv - yi / di;
 
             bs = bsCalculator(sv, Option.Type.Put);
@@ -234,7 +226,7 @@ public class AnalyticHolderExtensibleOptionEngine extends OneAssetOption.EngineI
     private double I2Put() {
         double sv = process.stateVariable().currentLink().value();
         final double A = a.premium;
-        if (A == 0.0) {
+        if ( A == 0.0 ) {
             return Double.POSITIVE_INFINITY;
         }
         BlackScholesCalculator bs = bsCalculator(sv, Option.Type.Put);
@@ -247,7 +239,7 @@ public class AnalyticHolderExtensibleOptionEngine extends OneAssetOption.EngineI
         final double epsilon = 0.001;
 
         // Newton-Raphson process
-        while (Math.abs(yi) > epsilon) {
+        while ( Math.abs(yi) > epsilon ) {
             sv = sv - yi / di;
 
             bs = bsCalculator(sv, Option.Type.Put);
@@ -280,10 +272,9 @@ public class AnalyticHolderExtensibleOptionEngine extends OneAssetOption.EngineI
     }
 
     private double M2(final double a, final double b, final double c, final double d, final double rho) {
-        final BivariateCumulativeNormalDistributionDr78 cmlNormDist =
-                new BivariateCumulativeNormalDistributionDr78(rho);
-        return cmlNormDist.op(b, d) - cmlNormDist.op(a, d)
-                - cmlNormDist.op(b, c) + cmlNormDist.op(a, c);
+        final BivariateCumulativeNormalDistributionDr78 cmlNormDist = new BivariateCumulativeNormalDistributionDr78(
+                rho);
+        return cmlNormDist.op(b, d) - cmlNormDist.op(a, d) - cmlNormDist.op(b, c) + cmlNormDist.op(a, c);
     }
 
     private double N2(final double a, final double b) {
@@ -310,17 +301,15 @@ public class AnalyticHolderExtensibleOptionEngine extends OneAssetOption.EngineI
     }
 
     private double riskFreeRate() {
-        return process.riskFreeRate().currentLink().zeroRate(
-                a.exercise.lastDate(),
-                process.riskFreeRate().currentLink().dayCounter(),
-                Compounding.Continuous, Frequency.NoFrequency).rate();
+        return process.riskFreeRate().currentLink()
+                .zeroRate(a.exercise.lastDate(), process.riskFreeRate().currentLink().dayCounter(),
+                        Compounding.Continuous, Frequency.NoFrequency).rate();
     }
 
     private double dividendYield() {
-        return process.dividendYield().currentLink().zeroRate(
-                a.exercise.lastDate(),
-                process.dividendYield().currentLink().dayCounter(),
-                Compounding.Continuous, Frequency.NoFrequency).rate();
+        return process.dividendYield().currentLink()
+                .zeroRate(a.exercise.lastDate(), process.dividendYield().currentLink().dayCounter(),
+                        Compounding.Continuous, Frequency.NoFrequency).rate();
     }
 
     private double dividendDiscount(final double t) {

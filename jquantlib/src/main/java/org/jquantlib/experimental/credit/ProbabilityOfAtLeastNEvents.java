@@ -32,8 +32,12 @@ import java.util.List;
  */
 public class ProbabilityOfAtLeastNEvents {
     private final int n_;
-    public ProbabilityOfAtLeastNEvents(final int n) { this.n_ = n; }
-    public double op(final List<Double> p) {
+
+    public ProbabilityOfAtLeastNEvents(final int n) {
+        this.n_ = n;
+    }
+
+    public double op(final List< Double > p) {
         return LossDist.probabilityOfAtLeastNEvents(n_, p);
     }
 }

@@ -22,10 +22,10 @@ import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.matrixutilities.Matrix;
 
 //-- class LeastSquareProblem; in ql/math/optimization/leastsquare.hpp:38
+
 /**
- * Abstract base class for least-square problems — a port of QuantLib C++
- * v1.42.1 {@code LeastSquareProblem}. Subclasses supply the target vector
- * and the model function (optionally with its Jacobian) for fitting.
+ * Abstract base class for least-square problems — a port of QuantLib C++ v1.42.1 {@code LeastSquareProblem}. Subclasses
+ * supply the target vector and the model function (optionally with its Jacobian) for fitting.
  */
 public abstract class LeastSquareProblem {
 
@@ -36,11 +36,8 @@ public abstract class LeastSquareProblem {
     public abstract void targetAndValue(Array x, Array target, Array fct2fit);
 
     /**
-     * Compute the target vector, the values of the function to fit, and the
-     * matrix of derivatives (Jacobian) of the fit function.
+     * Compute the target vector, the values of the function to fit, and the matrix of derivatives (Jacobian) of the fit
+     * function.
      */
-    public abstract void targetValueAndGradient(Array x,
-                                                Matrix grad_fct2fit,
-                                                Array target,
-                                                Array fct2fit);
+    public abstract void targetValueAndGradient(Array x, Matrix grad_fct2fit, Array target, Array fct2fit);
 }

@@ -23,31 +23,17 @@ package org.jquantlib.pricingengines.vanilla;
 
 import org.jquantlib.QL;
 import org.jquantlib.daycounters.DayCounter;
-import org.jquantlib.instruments.DividendSchedule;
-import org.jquantlib.instruments.Instrument;
-import org.jquantlib.instruments.Option;
-import org.jquantlib.instruments.StrikedTypePayoff;
-import org.jquantlib.instruments.VanillaOption;
+import org.jquantlib.instruments.*;
 import org.jquantlib.math.distributions.InverseCumulativeNormal;
-import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.transcendental.JQuantMath;
-import org.jquantlib.methods.finitedifferences.meshers.Concentrating1dMesher;
-import org.jquantlib.methods.finitedifferences.meshers.Fdm1dMesher;
-import org.jquantlib.methods.finitedifferences.meshers.FdmCEV1dMesher;
-import org.jquantlib.methods.finitedifferences.meshers.FdmMesher;
-import org.jquantlib.methods.finitedifferences.meshers.FdmMesherComposite;
+import org.jquantlib.methods.finitedifferences.meshers.*;
 import org.jquantlib.methods.finitedifferences.operators.FdmLinearOpComposite;
 import org.jquantlib.methods.finitedifferences.operators.FdmSabrOp;
 import org.jquantlib.methods.finitedifferences.schemes.FdmSchemeDesc;
 import org.jquantlib.methods.finitedifferences.solvers.Fdm2DimSolver;
 import org.jquantlib.methods.finitedifferences.solvers.FdmSolverDesc;
 import org.jquantlib.methods.finitedifferences.stepconditions.FdmStepConditionComposite;
-import org.jquantlib.methods.finitedifferences.utilities.BoundaryCondition;
-import org.jquantlib.methods.finitedifferences.utilities.FdmBoundaryConditionSet;
-import org.jquantlib.methods.finitedifferences.utilities.FdmCellAveragingInnerValue;
-import org.jquantlib.methods.finitedifferences.utilities.FdmDiscountDirichletBoundary;
-import org.jquantlib.methods.finitedifferences.utilities.FdmInnerValueCalculator;
-import org.jquantlib.methods.finitedifferences.operators.FdmLinearOp;
+import org.jquantlib.methods.finitedifferences.utilities.*;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.termstructures.volatilities.Sabr;
@@ -64,8 +50,8 @@ import org.jquantlib.time.Date;
  * </pre>
  *
  * <p>The 2D grid uses direction 0 for {@code f} (built by
- * {@link FdmCEV1dMesher}) and direction 1 for {@code x = log(alpha)}
- * (built by {@link Concentrating1dMesher} around {@code log(alpha)}).
+ * {@link FdmCEV1dMesher}) and direction 1 for {@code x = log(alpha)} (built by {@link Concentrating1dMesher} around
+ * {@code log(alpha)}).
  *
  * <p>Java port of v1.42.1
  * {@code ql/pricingengines/vanilla/fdsabrvanillaengine.{hpp,cpp}}.
@@ -79,7 +65,7 @@ public class FdSabrVanillaEngine extends VanillaOption.EngineImpl {
     private final double beta_;
     private final double nu_;
     private final double rho_;
-    private final Handle<YieldTermStructure> rTS_;
+    private final Handle< YieldTermStructure > rTS_;
     private final int tGrid_;
     private final int fGrid_;
     private final int xGrid_;
@@ -109,122 +95,84 @@ public class FdSabrVanillaEngine extends VanillaOption.EngineImpl {
      * @param eps           tail probability cutoff for mesher bounds
      * @param schemeDesc    FD scheme (default {@link FdmSchemeDesc#Hundsdorfer()})
      */
-    public FdSabrVanillaEngine(
-            final double f0,
-            final double alpha,
-            final double beta,
-            final double nu,
-            final double rho,
-            final Handle<YieldTermStructure> rTS,
-            final int tGrid,
-            final int fGrid,
-            final int xGrid,
-            final int dampingSteps,
-            final double scalingFactor,
-            final double eps,
-            final FdmSchemeDesc schemeDesc) {
+    public FdSabrVanillaEngine(final double f0, final double alpha, final double beta, final double nu,
+            final double rho, final Handle< YieldTermStructure > rTS, final int tGrid, final int fGrid, final int xGrid,
+            final int dampingSteps, final double scalingFactor, final double eps, final FdmSchemeDesc schemeDesc) {
 
         // Validate parameters (mirrors C++ validateSabrParameters then beta check)
         new Sabr().validateSabrParameters(alpha, 0.5 /* dummy beta */, nu, rho);
-        QL.require(beta < 1.0,
-                "beta must be smaller than 1.0: " + beta + " not allowed");
+        QL.require(beta < 1.0, "beta must be smaller than 1.0: " + beta + " not allowed");
 
-        this.f0_           = f0;
-        this.alpha_        = alpha;
-        this.beta_         = beta;
-        this.nu_           = nu;
-        this.rho_          = rho;
-        this.rTS_          = rTS;
-        this.tGrid_        = tGrid;
-        this.fGrid_        = fGrid;
-        this.xGrid_        = xGrid;
+        this.f0_ = f0;
+        this.alpha_ = alpha;
+        this.beta_ = beta;
+        this.nu_ = nu;
+        this.rho_ = rho;
+        this.rTS_ = rTS;
+        this.tGrid_ = tGrid;
+        this.fGrid_ = fGrid;
+        this.xGrid_ = xGrid;
         this.dampingSteps_ = dampingSteps;
         this.scalingFactor_ = scalingFactor;
-        this.eps_          = eps;
-        this.schemeDesc_   = schemeDesc;
+        this.eps_ = eps;
+        this.schemeDesc_ = schemeDesc;
 
         this.arguments = (Option.ArgumentsImpl) arguments_;
-        this.results   = (Instrument.ResultsImpl) results_;
+        this.results = (Instrument.ResultsImpl) results_;
     }
 
     /** Constructor with default scheme (Hundsdorfer). */
-    public FdSabrVanillaEngine(
-            final double f0,
-            final double alpha,
-            final double beta,
-            final double nu,
-            final double rho,
-            final Handle<YieldTermStructure> rTS,
-            final int tGrid,
-            final int fGrid,
+    public FdSabrVanillaEngine(final double f0, final double alpha, final double beta, final double nu,
+            final double rho, final Handle< YieldTermStructure > rTS, final int tGrid, final int fGrid,
             final int xGrid) {
-        this(f0, alpha, beta, nu, rho, rTS,
-                tGrid, fGrid, xGrid, 0, 1.0, 1e-4,
-                FdmSchemeDesc.Hundsdorfer());
+        this(f0, alpha, beta, nu, rho, rTS, tGrid, fGrid, xGrid, 0, 1.0, 1e-4, FdmSchemeDesc.Hundsdorfer());
     }
 
     /** Constructor with defaults for all grid parameters. */
-    public FdSabrVanillaEngine(
-            final double f0,
-            final double alpha,
-            final double beta,
-            final double nu,
-            final double rho,
-            final Handle<YieldTermStructure> rTS) {
-        this(f0, alpha, beta, nu, rho, rTS,
-                50, 400, 50, 0, 1.0, 1e-4,
-                FdmSchemeDesc.Hundsdorfer());
+    public FdSabrVanillaEngine(final double f0, final double alpha, final double beta, final double nu,
+            final double rho, final Handle< YieldTermStructure > rTS) {
+        this(f0, alpha, beta, nu, rho, rTS, 50, 400, 50, 0, 1.0, 1e-4, FdmSchemeDesc.Hundsdorfer());
     }
 
     @Override
     public void calculate() {
         // 1. Extract payoff and maturity
-        QL.require(arguments.payoff instanceof StrikedTypePayoff,
-                "non-striked payoff given");
+        QL.require(arguments.payoff instanceof StrikedTypePayoff, "non-striked payoff given");
         final StrikedTypePayoff payoff = (StrikedTypePayoff) arguments.payoff;
 
         final YieldTermStructure rts = rTS_.currentLink();
-        final DayCounter dc          = rts.dayCounter();
-        final Date refDate           = rts.referenceDate();
-        final Date maturityDate      = arguments.exercise.lastDate();
-        final double maturityTime    = dc.yearFraction(refDate, maturityDate);
+        final DayCounter dc = rts.dayCounter();
+        final Date refDate = rts.referenceDate();
+        final Date maturityDate = arguments.exercise.lastDate();
+        final double maturityTime = dc.yearFraction(refDate, maturityDate);
 
         // 2. Build the 2D mesh
 
         // direction 0: f (forward) using CEV-calibrated mesher
-        final double upperAlpha = alpha_
-                * JQuantMath.exp(nu_ * Math.sqrt(maturityTime)
-                        * new InverseCumulativeNormal().op(0.75));
+        final double upperAlpha =
+                alpha_ * JQuantMath.exp(nu_ * Math.sqrt(maturityTime) * new InverseCumulativeNormal().op(0.75));
 
-        final Fdm1dMesher cevMesher = new FdmCEV1dMesher(
-                fGrid_, f0_, upperAlpha, beta_,
-                maturityTime, eps_, scalingFactor_,
-                payoff.strike(), 0.025);
+        final Fdm1dMesher cevMesher = new FdmCEV1dMesher(fGrid_, f0_, upperAlpha, beta_, maturityTime, eps_,
+                scalingFactor_, payoff.strike(), 0.025);
 
         // direction 1: x = log(alpha) using a concentrating mesher
         final double normInvEps = new InverseCumulativeNormal().op(1.0 - eps_);
-        final double logDrift   = -0.5 * nu_ * nu_ * maturityTime;
-        final double volRange   = nu_ * Math.sqrt(maturityTime)
-                * normInvEps * scalingFactor_;
+        final double logDrift = -0.5 * nu_ * nu_ * maturityTime;
+        final double volRange = nu_ * Math.sqrt(maturityTime) * normInvEps * scalingFactor_;
 
         final double xMin = JQuantMath.log(alpha_) + logDrift - volRange;
         final double xMax = JQuantMath.log(alpha_) + logDrift + volRange;
 
-        final Fdm1dMesher xMesher = new Concentrating1dMesher(
-                xMin, xMax, xGrid_,
-                JQuantMath.log(alpha_), 0.1, false);
+        final Fdm1dMesher xMesher = new Concentrating1dMesher(xMin, xMax, xGrid_, JQuantMath.log(alpha_), 0.1, false);
 
         final FdmMesher mesher = new FdmMesherComposite(cevMesher, xMesher);
 
         // 3. Inner-value calculator
-        final FdmInnerValueCalculator calculator =
-                new FdmCellAveragingInnerValue(payoff, mesher, 0);
+        final FdmInnerValueCalculator calculator = new FdmCellAveragingInnerValue(payoff, mesher, 0);
 
         // 4. Step conditions (European: just the vanilla composite with no dividends)
-        final FdmStepConditionComposite conditions =
-                FdmStepConditionComposite.vanillaComposite(
-                        new DividendSchedule(), arguments.exercise,
-                        mesher, calculator, refDate, dc);
+        final FdmStepConditionComposite conditions = FdmStepConditionComposite.vanillaComposite(new DividendSchedule(),
+                arguments.exercise, mesher, calculator, refDate, dc);
 
         // 5. Boundary conditions along direction 0 (f-axis)
         final FdmBoundaryConditionSet boundaries = new FdmBoundaryConditionSet();
@@ -232,26 +180,19 @@ public class FdSabrVanillaEngine extends VanillaOption.EngineImpl {
         final double lowerBound = cevMesher.location(0);
         final double upperBound = cevMesher.location(fGrid_ - 1);
 
-        boundaries.add(new FdmDiscountDirichletBoundary(
-                mesher, rts, maturityTime,
-                payoff.get(upperBound),
-                0, BoundaryCondition.Side.Upper));
+        boundaries.add(new FdmDiscountDirichletBoundary(mesher, rts, maturityTime, payoff.get(upperBound), 0,
+                BoundaryCondition.Side.Upper));
 
-        boundaries.add(new FdmDiscountDirichletBoundary(
-                mesher, rts, maturityTime,
-                payoff.get(lowerBound),
-                0, BoundaryCondition.Side.Lower));
+        boundaries.add(new FdmDiscountDirichletBoundary(mesher, rts, maturityTime, payoff.get(lowerBound), 0,
+                BoundaryCondition.Side.Lower));
 
         // 6. Solver
-        final FdmSolverDesc solverDesc = new FdmSolverDesc(
-                mesher, boundaries, conditions,
-                calculator, maturityTime, tGrid_, dampingSteps_);
+        final FdmSolverDesc solverDesc = new FdmSolverDesc(mesher, boundaries, conditions, calculator, maturityTime,
+                tGrid_, dampingSteps_);
 
-        final FdmLinearOpComposite op = new FdmSabrOp(
-                mesher, rts, f0_, alpha_, beta_, nu_, rho_);
+        final FdmLinearOpComposite op = new FdmSabrOp(mesher, rts, f0_, alpha_, beta_, nu_, rho_);
 
-        final Fdm2DimSolver solver = new Fdm2DimSolver(
-                solverDesc, schemeDesc_, op);
+        final Fdm2DimSolver solver = new Fdm2DimSolver(solverDesc, schemeDesc_, op);
 
         // 7. Read off value at initial point (f0, log(alpha))
         results.value = solver.interpolateAt(f0_, JQuantMath.log(alpha_));

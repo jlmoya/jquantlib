@@ -35,18 +35,17 @@ import org.jquantlib.lang.annotation.Rate;
 import org.jquantlib.lang.annotation.Time;
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.math.transcendental.JQuantMath;
+import org.jquantlib.termstructures.InflationTermStructure;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Frequency;
 import org.jquantlib.time.Period;
 import org.jquantlib.time.TimeUnit;
 import org.jquantlib.util.Pair;
-import org.jquantlib.termstructures.InflationTermStructure;
 
 /**
- * Kerkhof multiplicative seasonality on monthly factors. The {@code i}-th
- * factor multiplies into the cumulative product as the date crosses month
- * boundaries; rates are corrected by raising this product to the inverse of
- * the time-from-curve-base.
+ * Kerkhof multiplicative seasonality on monthly factors. The {@code i}-th factor multiplies into the cumulative product
+ * as the date crosses month boundaries; rates are corrected by raising this product to the inverse of the
+ * time-from-curve-base.
  *
  * <p>Mirrors C++ {@code QuantLib::KerkhofSeasonality} at v1.42.1
  * (termstructures/inflation/seasonality.{hpp,cpp}).
@@ -55,8 +54,7 @@ import org.jquantlib.termstructures.InflationTermStructure;
  */
 public class KerkhofSeasonality extends MultiplicativePriceSeasonality {
 
-    public KerkhofSeasonality(final Date seasonalityBaseDate,
-                              final double[] seasonalityFactors) {
+    public KerkhofSeasonality(final Date seasonalityBaseDate, final double[] seasonalityFactors) {
         super(seasonalityBaseDate, Frequency.Monthly, seasonalityFactors);
     }
 
@@ -69,7 +67,7 @@ public class KerkhofSeasonality extends MultiplicativePriceSeasonality {
 
         final Period factorPeriod = new Period(frequency());
 
-        if (toMonth < fromMonth) {
+        if ( toMonth < fromMonth ) {
             final int dummy = fromMonth;
             fromMonth = toMonth;
             toMonth = dummy;
@@ -77,38 +75,32 @@ public class KerkhofSeasonality extends MultiplicativePriceSeasonality {
         }
 
         QL.require(seasonalityFactors().length == 12 && factorPeriod.units() == TimeUnit.Months,
-                "12 monthly seasonal factors needed for Kerkhof Seasonality: got "
-                + seasonalityFactors().length);
+                "12 monthly seasonal factors needed for Kerkhof Seasonality: got " + seasonalityFactors().length);
 
         double seasonalCorrection = 1.0;
         final double[] factors = seasonalityFactors();
-        for (int i = fromMonth; i < toMonth; ++i) {
+        for ( int i = fromMonth; i < toMonth; ++i ) {
             seasonalCorrection *= factors[i];
         }
 
-        if (dir == 0) {
+        if ( dir == 0 ) {
             seasonalCorrection = 1.0 / seasonalCorrection;
         }
         return seasonalCorrection;
     }
 
     @Override
-    protected /*@Rate*/ double seasonalityCorrection(final @Rate double rate,
-                                                     final Date atDate,
-                                                     final DayCounter dc,
-                                                     final Date curveBaseDate,
-                                                     final boolean isZeroRate) {
+    protected /*@Rate*/ double seasonalityCorrection(final @Rate double rate, final Date atDate, final DayCounter dc,
+            final Date curveBaseDate, final boolean isZeroRate) {
         final double indexFactor = seasonalityFactor(atDate);
 
         final double f;
-        if (isZeroRate) {
-            final Pair<Date, Date> lim = InflationTermStructure.inflationPeriod(
-                    curveBaseDate, Frequency.Monthly);
+        if ( isZeroRate ) {
+            final Pair< Date, Date > lim = InflationTermStructure.inflationPeriod(curveBaseDate, Frequency.Monthly);
             final @Time double timeFromCurveBase = dc.yearFraction(lim.first(), atDate);
             f = JQuantMath.pow(indexFactor, 1.0 / timeFromCurveBase);
         } else {
-            throw new LibraryException(
-                    "Seasonal Kerkhof model is not defined on YoY rates");
+            throw new LibraryException("Seasonal Kerkhof model is not defined on YoY rates");
         }
         return (rate + 1.0) * f - 1.0;
     }

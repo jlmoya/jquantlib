@@ -27,11 +27,9 @@ import org.jquantlib.methods.finitedifferences.utilities.FdmInnerValueCalculator
 /**
  * Plain-old descriptor bundling the parameters of an FDM rollback problem.
  * <p>
- * Java port of v1.42.1
- * {@code ql/methods/finitedifferences/solvers/fdmsolverdesc.hpp} —
- * a {@code struct} on the C++ side. Fields are deliberately public and final;
- * instances are immutable POD passed into solver constructors. Mirrors the
- * C++ struct field-by-field with no behavioural changes.
+ * Java port of v1.42.1 {@code ql/methods/finitedifferences/solvers/fdmsolverdesc.hpp} — a {@code struct} on the C++
+ * side. Fields are deliberately public and final; instances are immutable POD passed into solver constructors. Mirrors
+ * the C++ struct field-by-field with no behavioural changes.
  *
  * @author Phase 2h WI-1 port
  */
@@ -52,13 +50,9 @@ public final class FdmSolverDesc {
     /** Number of leading implicit-Euler damping steps. */
     public final int dampingSteps;
 
-    public FdmSolverDesc(final FdmMesher mesher,
-                         final FdmBoundaryConditionSet bcSet,
-                         final FdmStepConditionComposite condition,
-                         final FdmInnerValueCalculator calculator,
-                         final double maturity,
-                         final int timeSteps,
-                         final int dampingSteps) {
+    public FdmSolverDesc(final FdmMesher mesher, final FdmBoundaryConditionSet bcSet,
+            final FdmStepConditionComposite condition, final FdmInnerValueCalculator calculator, final double maturity,
+            final int timeSteps, final int dampingSteps) {
         this.mesher = mesher;
         this.bcSet = bcSet;
         this.condition = condition;

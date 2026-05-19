@@ -39,19 +39,16 @@ import org.jquantlib.processes.GeneralizedBlackScholesProcess;
 import org.jquantlib.time.TimeGrid;
 
 /**
- * Continuously-monitored double-barrier option pricing engine using Monte
- * Carlo simulation.
+ * Continuously-monitored double-barrier option pricing engine using Monte Carlo simulation.
  *
  * <p>Java port of {@code QuantLib v1.42.1
- * ql/experimental/barrieroption/mcdoublebarrierengine.hpp} (Phase
- * 5e.5b-CFC-d-278). Specialised for {@code MC = SingleVariate, RNG =
- * PseudoRandom} (Mersenne-Twister + InverseCumulativeNormal) and {@code S
- * = Statistics}; lifting that specialisation is a follow-up.
+ * ql/experimental/barrieroption/mcdoublebarrierengine.hpp} (Phase 5e.5b-CFC-d-278). Specialised for
+ * {@code MC = SingleVariate, RNG = PseudoRandom} (Mersenne-Twister + InverseCumulativeNormal) and
+ * {@code S = Statistics}; lifting that specialisation is a follow-up.
  *
  * <p>Cross-validated against
- * {@link org.jquantlib.pricingengines.barrier.AnalyticDoubleBarrierEngine}
- * (Ikeda/Kunitomo) on the C++ {@code testMonteCarloDoubleBarrierWithAnalytical}
- * suite.
+ * {@link org.jquantlib.pricingengines.barrier.AnalyticDoubleBarrierEngine} (Ikeda/Kunitomo) on the C++
+ * {@code testMonteCarloDoubleBarrierWithAnalytical} suite.
  */
 public final class MCDoubleBarrierEngine extends DoubleBarrierOption.EngineImpl {
 
@@ -65,27 +62,16 @@ public final class MCDoubleBarrierEngine extends DoubleBarrierOption.EngineImpl 
     private final double requiredTolerance_;
     private final long seed_;
 
-    public MCDoubleBarrierEngine(
-            final GeneralizedBlackScholesProcess process,
-            final int timeSteps,
-            final int timeStepsPerYear,
-            final boolean brownianBridge,
-            final boolean antitheticVariate,
-            final int requiredSamples,
-            final double requiredTolerance,
-            final int maxSamples,
-            final long seed) {
+    public MCDoubleBarrierEngine(final GeneralizedBlackScholesProcess process, final int timeSteps,
+            final int timeStepsPerYear, final boolean brownianBridge, final boolean antitheticVariate,
+            final int requiredSamples, final double requiredTolerance, final int maxSamples, final long seed) {
         super();
-        QL.require(timeSteps != McSimulation.NULL_SAMPLES
-                || timeStepsPerYear != McSimulation.NULL_SAMPLES,
+        QL.require(timeSteps != McSimulation.NULL_SAMPLES || timeStepsPerYear != McSimulation.NULL_SAMPLES,
                 "no time steps provided");
-        QL.require(timeSteps == McSimulation.NULL_SAMPLES
-                || timeStepsPerYear == McSimulation.NULL_SAMPLES,
+        QL.require(timeSteps == McSimulation.NULL_SAMPLES || timeStepsPerYear == McSimulation.NULL_SAMPLES,
                 "both time steps and time steps per year were provided");
-        QL.require(timeSteps != 0,
-                "timeSteps must be positive, " + timeSteps + " not allowed");
-        QL.require(timeStepsPerYear != 0,
-                "timeStepsPerYear must be positive, " + timeStepsPerYear + " not allowed");
+        QL.require(timeSteps != 0, "timeSteps must be positive, " + timeSteps + " not allowed");
+        QL.require(timeStepsPerYear != 0, "timeStepsPerYear must be positive, " + timeStepsPerYear + " not allowed");
         this.process_ = process;
         this.timeSteps_ = timeSteps;
         this.timeStepsPerYear_ = timeStepsPerYear;
@@ -110,24 +96,29 @@ public final class MCDoubleBarrierEngine extends DoubleBarrierOption.EngineImpl 
 
         final TimeGrid grid = timeGrid();
         final double[] discounts = new double[grid.size()];
-        for (int i = 0; i < grid.size(); i++) {
+        for ( int i = 0; i < grid.size(); i++ ) {
             discounts[i] = process_.riskFreeRate().currentLink().discount(grid.get(i));
         }
 
-        final PathPricer<Path> pp = new DoubleBarrierPathPricer(
-                a.barrierType,
-                a.barrier_lo,
-                a.barrier_hi,
-                a.rebate,
-                payoff.optionType(),
-                payoff.strike(),
-                discounts);
-        final MonteCarloModel.PathGeneratorAdapter<Path> pg = pathGenerator(grid);
+        final PathPricer< Path > pp = new DoubleBarrierPathPricer(a.barrierType, a.barrier_lo, a.barrier_hi, a.rebate,
+                payoff.optionType(), payoff.strike(), discounts);
+        final MonteCarloModel.PathGeneratorAdapter< Path > pg = pathGenerator(grid);
 
-        final McSimulation<Path> simulation = new McSimulation<Path>(antitheticVariate_, false) {
-            @Override protected PathPricer<Path> pathPricer() { return pp; }
-            @Override protected MonteCarloModel.PathGeneratorAdapter<Path> pathGenerator() { return pg; }
-            @Override protected TimeGrid timeGrid() { return grid; }
+        final McSimulation< Path > simulation = new McSimulation< Path >(antitheticVariate_, false) {
+            @Override
+            protected PathPricer< Path > pathPricer() {
+                return pp;
+            }
+
+            @Override
+            protected MonteCarloModel.PathGeneratorAdapter< Path > pathGenerator() {
+                return pg;
+            }
+
+            @Override
+            protected TimeGrid timeGrid() {
+                return grid;
+            }
         };
         simulation.calculate(requiredTolerance_, requiredSamples_, maxSamples_);
 
@@ -138,9 +129,9 @@ public final class MCDoubleBarrierEngine extends DoubleBarrierOption.EngineImpl 
 
     private TimeGrid timeGrid() {
         final double residualTime = process_.time(args().exercise.lastDate());
-        if (timeSteps_ != McSimulation.NULL_SAMPLES) {
+        if ( timeSteps_ != McSimulation.NULL_SAMPLES ) {
             return new TimeGrid(residualTime, timeSteps_);
-        } else if (timeStepsPerYear_ != McSimulation.NULL_SAMPLES) {
+        } else if ( timeStepsPerYear_ != McSimulation.NULL_SAMPLES ) {
             final int steps = (int) (timeStepsPerYear_ * residualTime);
             return new TimeGrid(residualTime, Math.max(steps, 1));
         } else {
@@ -148,19 +139,14 @@ public final class MCDoubleBarrierEngine extends DoubleBarrierOption.EngineImpl 
         }
     }
 
-    private MonteCarloModel.PathGeneratorAdapter<Path> pathGenerator(final TimeGrid grid) {
+    private MonteCarloModel.PathGeneratorAdapter< Path > pathGenerator(final TimeGrid grid) {
         final int dimensions = process_.factors() * (grid.size() - 1);
-        final RandomSequenceGenerator<MersenneTwisterUniformRng> uniformRsg =
-                new RandomSequenceGenerator<MersenneTwisterUniformRng>(
-                        MersenneTwisterUniformRng.class, dimensions, seed_);
-        final InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                InverseCumulativeNormal> gsg =
-                new InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                        InverseCumulativeNormal>(uniformRsg, new InverseCumulativeNormal());
-        final PathGenerator<InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                InverseCumulativeNormal>> gen =
-                new PathGenerator<InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                        InverseCumulativeNormal>>(process_, grid, gsg, brownianBridge_);
+        final RandomSequenceGenerator< MersenneTwisterUniformRng > uniformRsg = new RandomSequenceGenerator< MersenneTwisterUniformRng >(
+                MersenneTwisterUniformRng.class, dimensions, seed_);
+        final InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal > gsg = new InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal >(
+                uniformRsg, new InverseCumulativeNormal());
+        final PathGenerator< InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal > > gen = new PathGenerator< InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal > >(
+                process_, grid, gsg, brownianBridge_);
         return new MonteCarloModel.PathGeneratorAdapterImpl(gen);
     }
 }

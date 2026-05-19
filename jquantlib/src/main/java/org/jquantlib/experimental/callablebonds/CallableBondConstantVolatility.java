@@ -28,24 +28,23 @@ import org.jquantlib.time.TimeUnit;
 /**
  * Constant callable-bond volatility, no time-strike dependence.
  * <p>
- * Port of C++ v1.42.1
- * {@code ql/experimental/callablebonds/callablebondconstantvol.{hpp,cpp}}.
+ * Port of C++ v1.42.1 {@code ql/experimental/callablebonds/callablebondconstantvol.{hpp,cpp}}.
  */
 public class CallableBondConstantVolatility extends CallableBondVolatilityStructure {
 
-    private final Handle<Quote> volatility_;
+    private final Handle< Quote > volatility_;
     private final DayCounter dayCounter_;
     private final Period maxBondTenor_;
 
     public CallableBondConstantVolatility(final Date referenceDate, final double volatility,
             final DayCounter dayCounter) {
         super(referenceDate);
-        this.volatility_ = new Handle<Quote>(new SimpleQuote(volatility));
+        this.volatility_ = new Handle< Quote >(new SimpleQuote(volatility));
         this.dayCounter_ = dayCounter;
         this.maxBondTenor_ = new Period(100, TimeUnit.Years);
     }
 
-    public CallableBondConstantVolatility(final Date referenceDate, final Handle<Quote> volatility,
+    public CallableBondConstantVolatility(final Date referenceDate, final Handle< Quote > volatility,
             final DayCounter dayCounter) {
         super(referenceDate);
         this.volatility_ = volatility;
@@ -54,16 +53,16 @@ public class CallableBondConstantVolatility extends CallableBondVolatilityStruct
         this.volatility_.addObserver(this);
     }
 
-    public CallableBondConstantVolatility(final int settlementDays, final Calendar calendar,
-            final double volatility, final DayCounter dayCounter) {
+    public CallableBondConstantVolatility(final int settlementDays, final Calendar calendar, final double volatility,
+            final DayCounter dayCounter) {
         super(settlementDays, calendar, dayCounter);
-        this.volatility_ = new Handle<Quote>(new SimpleQuote(volatility));
+        this.volatility_ = new Handle< Quote >(new SimpleQuote(volatility));
         this.dayCounter_ = dayCounter;
         this.maxBondTenor_ = new Period(100, TimeUnit.Years);
     }
 
     public CallableBondConstantVolatility(final int settlementDays, final Calendar calendar,
-            final Handle<Quote> volatility, final DayCounter dayCounter) {
+            final Handle< Quote > volatility, final DayCounter dayCounter) {
         super(settlementDays, calendar, dayCounter);
         this.volatility_ = volatility;
         this.dayCounter_ = dayCounter;
@@ -107,8 +106,7 @@ public class CallableBondConstantVolatility extends CallableBondVolatilityStruct
     }
 
     @Override
-    protected double volatilityImpl(final Date optionDate, final Period bondTenor,
-            final double strike) {
+    protected double volatilityImpl(final Date optionDate, final Period bondTenor, final double strike) {
         return volatility_.currentLink().value();
     }
 

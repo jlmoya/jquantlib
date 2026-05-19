@@ -19,31 +19,28 @@
  */
 package org.jquantlib.methods.finitedifferences.utilities;
 
+import org.jquantlib.methods.finitedifferences.operators.FdmLinearOp;
+
 import java.util.ArrayList;
 import java.util.Collection;
-
-import org.jquantlib.methods.finitedifferences.operators.FdmLinearOp;
 
 /**
  * Typed list of boundary conditions for the Fdm framework.
  * <p>
- * Java port of v1.42.1
- * ql/methods/finitedifferences/utilities/fdmboundaryconditionset.hpp
- * which on the C++ side is just the typedef
+ * Java port of v1.42.1 ql/methods/finitedifferences/utilities/fdmboundaryconditionset.hpp which on the C++ side is just
+ * the typedef
  * <pre>
  * typedef OperatorTraits&lt;FdmLinearOp&gt;::bc_set FdmBoundaryConditionSet;
  * </pre>
  * i.e. {@code std::vector<ext::shared_ptr<BoundaryCondition<FdmLinearOp>>>}.
  * <p>
- * Java does not have type aliases, so we materialize this as a thin
- * subclass of {@link ArrayList} with the right element type. The schemes
- * (sub-layer 1.4) accept this type directly; sub-layer 1.3 will populate
- * it with concrete {@link BoundaryCondition} implementations.
+ * Java does not have type aliases, so we materialize this as a thin subclass of {@link ArrayList} with the right
+ * element type. The schemes (sub-layer 1.4) accept this type directly; sub-layer 1.3 will populate it with concrete
+ * {@link BoundaryCondition} implementations.
  *
  * @author Phase 2h WI-1 port
  */
-public final class FdmBoundaryConditionSet
-        extends ArrayList<BoundaryCondition<FdmLinearOp>> {
+public final class FdmBoundaryConditionSet extends ArrayList< BoundaryCondition< FdmLinearOp > > {
 
     private static final long serialVersionUID = 1L;
 
@@ -53,8 +50,7 @@ public final class FdmBoundaryConditionSet
     }
 
     /** Pre-populated boundary condition set. */
-    public FdmBoundaryConditionSet(
-            final Collection<? extends BoundaryCondition<FdmLinearOp>> initial) {
+    public FdmBoundaryConditionSet(final Collection< ? extends BoundaryCondition< FdmLinearOp > > initial) {
         super(initial);
     }
 }

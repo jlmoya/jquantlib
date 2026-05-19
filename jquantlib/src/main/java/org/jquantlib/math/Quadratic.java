@@ -20,8 +20,7 @@ package org.jquantlib.math;
  * Quadratic-formula utility.
  *
  * <p>Java port of {@code ql/math/quadratic.{hpp,cpp}} (QuantLib v1.42.1; class
- * named {@code quadratic} lower-case in C++; renamed {@code Quadratic} per
- * Java naming conventions).
+ * named {@code quadratic} lower-case in C++; renamed {@code Quadratic} per Java naming conventions).
  *
  * <p>Phase 3j L0.3.
  */
@@ -58,16 +57,15 @@ public final class Quadratic {
     }
 
     /**
-     * If real roots exist puts them in {@code out[0]} (smaller), {@code out[1]}
-     * (larger) and returns true. Otherwise puts the turning point in both
-     * positions and returns false.
+     * If real roots exist puts them in {@code out[0]} (smaller), {@code out[1]} (larger) and returns true. Otherwise
+     * puts the turning point in both positions and returns false.
      *
      * @param out length-2 array; mutated.
      * @return true iff roots are real.
      */
     public boolean roots(final double[] out) {
         double d = discriminant();
-        if (d < 0.0) {
+        if ( d < 0.0 ) {
             final double tp = turningPoint();
             out[0] = tp;
             out[1] = tp;

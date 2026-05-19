@@ -41,46 +41,44 @@ package org.jquantlib.methods.montecarlo;
 import org.jquantlib.math.randomnumbers.InverseCumulative;
 import org.jquantlib.math.randomnumbers.RandomNumberGenerator;
 
-
 /**
  * Default Monte Carlo traits for single-variate models
- * 
+ *
  * @author Richard Gomes
  */
-public class SingleVariate<T, RNG extends RandomNumberGenerator, IC extends InverseCumulative> implements Variate {
-    
-	public SingleVariate() {
-	}
-	
-	// FIXME: should not expose fields
-// FIXME: adhere to standards
-  public RNG rng_traits;
-  // public Path path_type;
-  //public PathPricer<Path> path_pricer_type;
-  //public InverseCumulativeRsg<T, RNG, IC> rsg_type;
+public class SingleVariate< T, RNG extends RandomNumberGenerator, IC extends InverseCumulative > implements Variate {
 
-  //TODO: code review
-  //public PathGenerator<T> path_generator_type;
+    // FIXME: should not expose fields
+    // FIXME: adhere to standards
+    public RNG rng_traits;
 
-//  public class PathGenerator<Double, Sample<Double> RNG extends RandomNumberGenerator<Path>, GSG extends RandomSequenceGenerator<Path, RNG>> { // should be GaussianSequenceGenerator ?
+    public SingleVariate() {
+    }
+    // public Path path_type;
+    //public PathPricer<Path> path_pricer_type;
+    //public InverseCumulativeRsg<T, RNG, IC> rsg_type;
 
-//
-// hints for reference  
-//  
-//  InverseCumulativeRsg<SobolRsg,InverseCumulativeNormal> 
-//  
-//  
-//  public PathGenerator<InverseCumulativeRsg<T, RandomSequenceGenerator<T, RNG>, IC>> path_generator_type;
-//
-//  public class InverseCumulativeRsg<T, USG extends UniformSequenceGenerator<Sample<T>>, IC extends InverseCumulative> 
-//  implements UniformSequenceGenerator<Sample<List<Double>>> {
-//
-//  
-  
-  //  enum { allowsErrorEstimate = RNG::allowsErrorEstimate };
+    //TODO: code review
+    //public PathGenerator<T> path_generator_type;
+
+    //  public class PathGenerator<Double, Sample<Double> RNG extends RandomNumberGenerator<Path>, GSG extends RandomSequenceGenerator<Path, RNG>> { // should be GaussianSequenceGenerator ?
+
+    //
+    // hints for reference
+    //
+    //  InverseCumulativeRsg<SobolRsg,InverseCumulativeNormal>
+    //
+    //
+    //  public PathGenerator<InverseCumulativeRsg<T, RandomSequenceGenerator<T, RNG>, IC>> path_generator_type;
+    //
+    //  public class InverseCumulativeRsg<T, USG extends UniformSequenceGenerator<Sample<T>>, IC extends InverseCumulative>
+    //  implements UniformSequenceGenerator<Sample<List<Double>>> {
+    //
+    //
+
+    //  enum { allowsErrorEstimate = RNG::allowsErrorEstimate };
 
 }
-
 
 //template <class RNG = PseudoRandom>
 //struct SingleVariate {

@@ -33,32 +33,27 @@ package org.jquantlib.model.marketmodels.callability;
  * (ql/models/marketmodels/callability/marketmodelbasissystem.hpp v1.42.1).
  *
  * <p>A basis system supplies, at each exercise opportunity, a vector of
- * regression-basis function values evaluated at the current curve state. The
- * regression of cumulated cash flows onto these basis functions yields the
- * continuation-value coefficients used by
- * {@link LongstaffSchwartzExerciseStrategy}.
+ * regression-basis function values evaluated at the current curve state. The regression of cumulated cash flows onto
+ * these basis functions yields the continuation-value coefficients used by {@link LongstaffSchwartzExerciseStrategy}.
  *
  * <p>Java port note: Java does not support multiple inheritance, so
  * {@link MarketModelBasisSystem} is declared as an interface that
  * <em>extends</em> {@link MarketModelNodeDataProvider}; concrete subclasses
- * (e.g. {@link SwapBasisSystem}) implement both, with
- * {@link #numberOfData()} returning {@link #numberOfFunctions()}.
- *
- * @see "ql/models/marketmodels/callability/marketmodelbasissystem.hpp" v1.42.1
+ * (e.g. {@link SwapBasisSystem}) implement both, with {@link #numberOfData()} returning {@link #numberOfFunctions()}.
  *
  * @author Jose Moya
+ * @see "ql/models/marketmodels/callability/marketmodelbasissystem.hpp" v1.42.1
  */
 public interface MarketModelBasisSystem extends MarketModelNodeDataProvider {
 
     /**
-     * Returns the number of basis functions per exercise opportunity.
-     * Possibly different for each exercise.
+     * Returns the number of basis functions per exercise opportunity. Possibly different for each exercise.
      */
     int[] numberOfFunctions();
 
     /**
-     * Returns a newly-allocated copy of this basis system.
-     * Mirrors C++ {@code std::unique_ptr<MarketModelBasisSystem> clone()}.
+     * Returns a newly-allocated copy of this basis system. Mirrors C++
+     * {@code std::unique_ptr<MarketModelBasisSystem> clone()}.
      */
     MarketModelBasisSystem clone();
 

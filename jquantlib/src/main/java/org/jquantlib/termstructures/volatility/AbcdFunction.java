@@ -34,21 +34,20 @@ import org.jquantlib.QL;
  * Abcd functional form for instantaneous volatility (Rebonato's form).
  *
  * <p>Java port of {@code ql/termstructures/volatility/abcd.{hpp,cpp}}
- * (QuantLib v1.42.1). Combines {@code AbcdFunction} and the part of its
- * {@code AbcdMathFunction} base class used by Phase 3j calibration.
+ * (QuantLib v1.42.1). Combines {@code AbcdFunction} and the part of its {@code AbcdMathFunction} base class used by
+ * Phase 3j calibration.
  *
  * <p>Form: {@code f(t) = (a + b*t) * exp(-c*t) + d}
  *
  * <p>Phase 3j L0.2 — Track B forward-declared port. Track A may extend or
  * supplement this class; the present surface is sufficient for
- * {@link org.jquantlib.model.marketmodels.models.PiecewiseConstantAbcdVariance}
- * and the calibration framework.
+ * {@link org.jquantlib.model.marketmodels.models.PiecewiseConstantAbcdVariance} and the calibration framework.
  */
 public class AbcdFunction {
 
     private final double a_, b_, c_, d_;
     // derivative coefficients
-    @SuppressWarnings("unused")
+    @SuppressWarnings( "unused" )
     private final double da_, db_;
     // primitive coefficients
     private final double pa_, pb_, K_;
@@ -74,21 +73,32 @@ public class AbcdFunction {
         this(-0.06, 0.17, 0.54, 0.17);
     }
 
-    public double a() { return a_; }
-    public double b() { return b_; }
-    public double c() { return c_; }
-    public double d() { return d_; }
-
     /** Validation per C++ {@code AbcdMathFunction::validate}. */
     public static void validate(final double a, final double b, final double c, final double d) {
         QL.require(c >= 0, "c (" + c + ") must be non negative");
         QL.require(d >= 0, "d (" + d + ") must be non negative");
         QL.require(a + d >= 0, "a+d (" + (a + d) + ") must be non negative");
-        if (b >= 0.0) {
+        if ( b >= 0.0 ) {
             return;
         }
         // the condition a+d >= -b/c, equivalently a+d+b/c >= 0
         QL.require(a + d + b / c >= 0, "a+d+b/c (" + (a + d + b / c) + ") must be non negative");
+    }
+
+    public double a() {
+        return a_;
+    }
+
+    public double b() {
+        return b_;
+    }
+
+    public double c() {
+        return c_;
+    }
+
+    public double d() {
+        return d_;
     }
 
     /** {@code f(t) = (a + b*t) * exp(-c*t) + d}; returns 0 for t &lt; 0. */
@@ -102,10 +112,14 @@ public class AbcdFunction {
     }
 
     /** Long-term value: {@code lim_{t->inf} f(t) = d}. */
-    public double longTermValue() { return d_; }
+    public double longTermValue() {
+        return d_;
+    }
 
     /** {@code f(0)}. */
-    public double shortTermVolatility() { return apply(0.0); }
+    public double shortTermVolatility() {
+        return apply(0.0);
+    }
 
     // ---- AbcdFunction surface used by calibration ----
 
@@ -122,7 +136,7 @@ public class AbcdFunction {
     public double covariance(final double t1, final double t2, final double T, final double S) {
         QL.require(t1 <= t2, "integration bounds (" + t1 + "," + t2 + ") are in reverse order");
         double cutOff = Math.min(S, T);
-        if (t1 >= cutOff) {
+        if ( t1 >= cutOff ) {
             return 0.0;
         }
         cutOff = Math.min(t2, cutOff);
@@ -136,7 +150,7 @@ public class AbcdFunction {
 
     /** Average volatility in [tMin, tMax] of T-fixing rate. */
     public double volatility(final double tMin, final double tMax, final double T) {
-        if (tMax == tMin) {
+        if ( tMax == tMin ) {
             return Math.sqrt(covariance(tMax, T, T));
         }
         QL.require(tMax > tMin, "tMax must be > tMin");
@@ -145,13 +159,13 @@ public class AbcdFunction {
 
     /** Indefinite integral of {@code f(T-t) * f(S-t)} at time t. Mirrors C++ {@code AbcdFunction::primitive}. */
     private double primitiveOfProduct(final double t, final double T, final double S) {
-        if (T < t || S < t) return 0.0;
+        if ( T < t || S < t )
+            return 0.0;
 
         // close(c_, 0.0) — match C++ tolerance
-        if (Math.abs(c_) < 1e-15) {
+        if ( Math.abs(c_) < 1e-15 ) {
             final double v = a_ + d_;
-            return t * (v * v + v * b_ * S + v * b_ * T - v * b_ * t
-                    + b_ * b_ * S * T - 0.5 * b_ * b_ * t * (S + T)
+            return t * (v * v + v * b_ * S + v * b_ * T - v * b_ * t + b_ * b_ * S * T - 0.5 * b_ * b_ * t * (S + T)
                     + b_ * b_ * t * t / 3.0);
         }
 
@@ -159,15 +173,11 @@ public class AbcdFunction {
         final double k2 = Math.exp(c_ * S);
         final double k3 = Math.exp(c_ * T);
 
-        return (b_ * b_ * (-1 - 2 * c_ * c_ * S * T - c_ * (S + T)
-                        + k1 * k1 * (1 + c_ * (S + T - 2 * t) + 2 * c_ * c_ * (S - t) * (T - t)))
-                + 2 * c_ * c_ * (2 * d_ * a_ * (k2 + k3) * (k1 - 1)
-                              + a_ * a_ * (k1 * k1 - 1) + 2 * c_ * d_ * d_ * k2 * k3 * t)
-                + 2 * b_ * c_ * (a_ * (-1 - c_ * (S + T) + k1 * k1 * (1 + c_ * (S + T - 2 * t)))
-                              - 2 * d_ * (k3 * (1 + c_ * S) + k2 * (1 + c_ * T)
-                                       - k1 * k3 * (1 + c_ * (S - t))
-                                       - k1 * k2 * (1 + c_ * (T - t)))
-                              )
-               ) / (4 * c_ * c_ * c_ * k2 * k3);
+        return (b_ * b_ * (-1 - 2 * c_ * c_ * S * T - c_ * (S + T) + k1 * k1 * (1 + c_ * (S + T - 2 * t)
+                + 2 * c_ * c_ * (S - t) * (T - t))) + 2 * c_ * c_ * (2 * d_ * a_ * (k2 + k3) * (k1 - 1) + a_ * a_ * (
+                k1 * k1 - 1) + 2 * c_ * d_ * d_ * k2 * k3 * t) + 2 * b_ * c_ * (
+                a_ * (-1 - c_ * (S + T) + k1 * k1 * (1 + c_ * (S + T - 2 * t))) - 2 * d_ * (
+                        k3 * (1 + c_ * S) + k2 * (1 + c_ * T) - k1 * k3 * (1 + c_ * (S - t)) - k1 * k2 * (1 + c_ * (T
+                                - t))))) / (4 * c_ * c_ * c_ * k2 * k3);
     }
 }

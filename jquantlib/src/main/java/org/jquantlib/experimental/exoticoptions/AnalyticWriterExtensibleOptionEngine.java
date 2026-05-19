@@ -95,43 +95,40 @@ public class AnalyticWriterExtensibleOptionEngine extends OneAssetOption.EngineI
 
         // For the B&S formulae:
         final DayCounter dividendDC = process.dividendYield().currentLink().dayCounter();
-        final double dividend = process.dividendYield().currentLink().zeroRate(
-                exercise1.lastDate(), dividendDC, Compounding.Continuous, Frequency.NoFrequency).rate();
+        final double dividend = process.dividendYield().currentLink()
+                .zeroRate(exercise1.lastDate(), dividendDC, Compounding.Continuous, Frequency.NoFrequency).rate();
 
         final DayCounter riskFreeDC = process.riskFreeRate().currentLink().dayCounter();
-        final double riskFree = process.riskFreeRate().currentLink().zeroRate(
-                exercise1.lastDate(), riskFreeDC, Compounding.Continuous, Frequency.NoFrequency).rate();
+        final double riskFree = process.riskFreeRate().currentLink()
+                .zeroRate(exercise1.lastDate(), riskFreeDC, Compounding.Continuous, Frequency.NoFrequency).rate();
 
         // Time to maturity
-        final double t1 = riskFreeDC.yearFraction(
-                process.riskFreeRate().currentLink().referenceDate(), exercise1.lastDate());
-        final double t2 = riskFreeDC.yearFraction(
-                process.riskFreeRate().currentLink().referenceDate(), exercise2.lastDate());
+        final double t1 = riskFreeDC.yearFraction(process.riskFreeRate().currentLink().referenceDate(),
+                exercise1.lastDate());
+        final double t2 = riskFreeDC.yearFraction(process.riskFreeRate().currentLink().referenceDate(),
+                exercise2.lastDate());
 
         // b = r-q
         final double b = riskFree - dividend;
 
         final double forwardPrice = spot * Math.exp(b * t1);
 
-        final double volatility = process.blackVolatility().currentLink().blackVol(
-                exercise1.lastDate(), payoff1.strike());
+        final double volatility = process.blackVolatility().currentLink()
+                .blackVol(exercise1.lastDate(), payoff1.strike());
 
         final double stdDev = volatility * Math.sqrt(t1);
 
         final double discount = Math.exp(-riskFree * t1);
 
         // Call the B&S method
-        final double black = BlackFormula.blackFormula(type, payoff1.strike(),
-                                                       forwardPrice, stdDev, discount);
+        final double black = BlackFormula.blackFormula(type, payoff1.strike(), forwardPrice, stdDev, discount);
 
         // STEP 2 — Standard bivariate normal distribution
         final double ro = Math.sqrt(t1 / t2);
-        final double z1 = (Math.log(spot / payoff2.strike())
-                + (b + Math.pow(volatility, 2) / 2.0) * t2)
-                / (volatility * Math.sqrt(t2));
-        final double z2 = (Math.log(spot / payoff1.strike())
-                + (b + Math.pow(volatility, 2) / 2.0) * t1)
-                / (volatility * Math.sqrt(t1));
+        final double z1 = (Math.log(spot / payoff2.strike()) + (b + Math.pow(volatility, 2) / 2.0) * t2) / (volatility
+                * Math.sqrt(t2));
+        final double z2 = (Math.log(spot / payoff1.strike()) + (b + Math.pow(volatility, 2) / 2.0) * t1) / (volatility
+                * Math.sqrt(t1));
 
         final BivariateNormalDistribution biv = new BivariateNormalDistribution(-ro);
 
@@ -140,18 +137,16 @@ public class AnalyticWriterExtensibleOptionEngine extends OneAssetOption.EngineI
         final double bivariate2;
         final double result;
 
-        if (type == Option.Type.Call) {
+        if ( type == Option.Type.Call ) {
             bivariate1 = biv.op(z1, -z2);
-            bivariate2 = biv.op(z1 - volatility * Math.sqrt(t2),
-                                -z2 + volatility * Math.sqrt(t1));
-            result = black + spot * Math.exp((b - riskFree) * t2) * bivariate1
-                    - payoff2.strike() * Math.exp(-riskFree * t2) * bivariate2;
+            bivariate2 = biv.op(z1 - volatility * Math.sqrt(t2), -z2 + volatility * Math.sqrt(t1));
+            result = black + spot * Math.exp((b - riskFree) * t2) * bivariate1 - payoff2.strike() * Math.exp(
+                    -riskFree * t2) * bivariate2;
         } else {
             bivariate1 = biv.op(-z1, z2);
-            bivariate2 = biv.op(-z1 + volatility * Math.sqrt(t2),
-                                z2 - volatility * Math.sqrt(t1));
-            result = black - spot * Math.exp((b - riskFree) * t2) * bivariate1
-                    + payoff2.strike() * Math.exp(-riskFree * t2) * bivariate2;
+            bivariate2 = biv.op(-z1 + volatility * Math.sqrt(t2), z2 - volatility * Math.sqrt(t1));
+            result = black - spot * Math.exp((b - riskFree) * t2) * bivariate1 + payoff2.strike() * Math.exp(
+                    -riskFree * t2) * bivariate2;
         }
 
         r.value = result;

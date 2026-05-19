@@ -52,23 +52,18 @@ public class BachelierYoYInflationCouponPricer extends YoYInflationCouponPricer 
         super();
     }
 
-    public BachelierYoYInflationCouponPricer(
-            final Handle<YieldTermStructure> nominalTermStructure) {
+    public BachelierYoYInflationCouponPricer(final Handle< YieldTermStructure > nominalTermStructure) {
         super(nominalTermStructure);
     }
 
-    public BachelierYoYInflationCouponPricer(
-            final Handle<YoYOptionletVolatilitySurface> capletVol,
-            final Handle<YieldTermStructure> nominalTermStructure) {
+    public BachelierYoYInflationCouponPricer(final Handle< YoYOptionletVolatilitySurface > capletVol,
+            final Handle< YieldTermStructure > nominalTermStructure) {
         super(capletVol, nominalTermStructure);
     }
 
     @Override
-    protected double optionletPriceImp(final Option.Type optionType,
-                                       final double effStrike,
-                                       final double forward,
-                                       final double stdDev) {
-        return BlackFormula.bachelierBlackFormula(optionType,
-                effStrike, forward, stdDev);
+    protected double optionletPriceImp(final Option.Type optionType, final double effStrike, final double forward,
+            final double stdDev) {
+        return BlackFormula.bachelierBlackFormula(optionType, effStrike, forward, stdDev);
     }
 }

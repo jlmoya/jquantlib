@@ -27,9 +27,6 @@
 
 package org.jquantlib.model.marketmodels.models;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.math.interpolations.LinearInterpolation;
 import org.jquantlib.math.matrixutilities.Array;
@@ -47,6 +44,9 @@ import org.jquantlib.util.DefaultObservable;
 import org.jquantlib.util.Observable;
 import org.jquantlib.util.Observer;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Factory that builds {@link FlatVol} models from market data.
  *
@@ -54,9 +54,8 @@ import org.jquantlib.util.Observer;
  * {@code ql/models/marketmodels/models/flatvol.{hpp,cpp}} (QuantLib v1.42.1).
  *
  * <p>C++ {@code FlatVolFactory} extends {@code MarketModelFactory} (which itself
- * extends {@code Observable}) and {@code Observer}; in this Java port we
- * compose a {@link DefaultObservable} delegate and implement {@link Observer}
- * directly.
+ * extends {@code Observable}) and {@code Observer}; in this Java port we compose a {@link DefaultObservable} delegate
+ * and implement {@link Observer} directly.
  *
  * @author Jose Moya
  */
@@ -67,7 +66,7 @@ public class FlatVolFactory implements MarketModelFactory, Observable, Observer 
     private final double[] times_;
     private final double[] vols_;
     private final LinearInterpolation volatility_;
-    private final Handle<? extends YieldTermStructure> yieldCurve_;
+    private final Handle< ? extends YieldTermStructure > yieldCurve_;
     private final double displacement_;
     private final DefaultObservable obs_ = new DefaultObservable(this);
 
@@ -81,12 +80,8 @@ public class FlatVolFactory implements MarketModelFactory, Observable, Observer 
      * @param yieldCurve          handle to the yield term structure for forward rates
      * @param displacement        displacement applied to all rates
      */
-    public FlatVolFactory(final double longTermCorrelation,
-                          final double beta,
-                          final double[] times,
-                          final double[] vols,
-                          final Handle<? extends YieldTermStructure> yieldCurve,
-                          final double displacement) {
+    public FlatVolFactory(final double longTermCorrelation, final double beta, final double[] times,
+            final double[] vols, final Handle< ? extends YieldTermStructure > yieldCurve, final double displacement) {
         this.longTermCorrelation_ = longTermCorrelation;
         this.beta_ = beta;
         this.times_ = times.clone();
@@ -94,14 +89,13 @@ public class FlatVolFactory implements MarketModelFactory, Observable, Observer 
         this.yieldCurve_ = yieldCurve;
         this.displacement_ = displacement;
         this.volatility_ = new LinearInterpolation(new Array(this.times_), new Array(this.vols_));
-        if (yieldCurve != null) {
+        if ( yieldCurve != null ) {
             yieldCurve.addObserver(this);
         }
     }
 
     @Override
-    public MarketModel create(final EvolutionDescription evolution,
-                              final int numberOfFactors) {
+    public MarketModel create(final EvolutionDescription evolution, final int numberOfFactors) {
         final double[] rateTimes = evolution.rateTimes();
         final int numberOfRates = rateTimes.length - 1;
 
@@ -110,34 +104,30 @@ public class FlatVolFactory implements MarketModelFactory, Observable, Observer 
         QL.require(yieldCurve_ != null && !yieldCurve_.empty(),
                 "yield curve handle must be non-empty for FlatVolFactory.create");
         final YieldTermStructure yc = yieldCurve_.currentLink();
-        for (int i = 0; i < numberOfRates; ++i) {
-            initialRates[i] = yc.forwardRate(rateTimes[i], rateTimes[i + 1],
-                    Compounding.Simple).rate();
+        for ( int i = 0; i < numberOfRates; ++i ) {
+            initialRates[i] = yc.forwardRate(rateTimes[i], rateTimes[i + 1], Compounding.Simple).rate();
         }
 
         // displaced volatilities: vol(rateTimes[i]) * f / (f + displacement)
         final double[] displacedVolatilities = new double[numberOfRates];
-        for (int i = 0; i < numberOfRates; ++i) {
+        for ( int i = 0; i < numberOfRates; ++i ) {
             final double vol = volatility_.op(rateTimes[i], true);
-            displacedVolatilities[i] =
-                    initialRates[i] * vol / (initialRates[i] + displacement_);
+            displacedVolatilities[i] = initialRates[i] * vol / (initialRates[i] + displacement_);
         }
 
         final double[] displacements = new double[numberOfRates];
         java.util.Arrays.fill(displacements, displacement_);
 
         // exponential correlations + time-homogeneous evolution
-        final List<Double> rateTimesList = new ArrayList<>(rateTimes.length);
-        for (final double t : rateTimes) {
+        final List< Double > rateTimesList = new ArrayList<>(rateTimes.length);
+        for ( final double t : rateTimes ) {
             rateTimesList.add(t);
         }
-        final Matrix correlations = ExponentialForwardCorrelation.exponentialCorrelations(
-                rateTimesList, longTermCorrelation_, beta_, 1.0, 0.0);
-        final PiecewiseConstantCorrelation corr = new TimeHomogeneousForwardCorrelation(
-                correlations, rateTimesList);
+        final Matrix correlations = ExponentialForwardCorrelation.exponentialCorrelations(rateTimesList,
+                longTermCorrelation_, beta_, 1.0, 0.0);
+        final PiecewiseConstantCorrelation corr = new TimeHomogeneousForwardCorrelation(correlations, rateTimesList);
 
-        return new FlatVol(displacedVolatilities, corr, evolution,
-                numberOfFactors, initialRates, displacements);
+        return new FlatVol(displacedVolatilities, corr, evolution, numberOfFactors, initialRates, displacements);
     }
 
     @Override
@@ -147,11 +137,38 @@ public class FlatVolFactory implements MarketModelFactory, Observable, Observer 
 
     // -- Observable plumbing --
 
-    @Override public void addObserver(final Observer observer) { obs_.addObserver(observer); }
-    @Override public int countObservers() { return obs_.countObservers(); }
-    @Override public List<Observer> getObservers() { return obs_.getObservers(); }
-    @Override public void deleteObserver(final Observer observer) { obs_.deleteObserver(observer); }
-    @Override public void deleteObservers() { obs_.deleteObservers(); }
-    @Override public void notifyObservers() { obs_.notifyObservers(); }
-    @Override public void notifyObservers(final Object arg) { obs_.notifyObservers(arg); }
+    @Override
+    public void addObserver(final Observer observer) {
+        obs_.addObserver(observer);
+    }
+
+    @Override
+    public int countObservers() {
+        return obs_.countObservers();
+    }
+
+    @Override
+    public List< Observer > getObservers() {
+        return obs_.getObservers();
+    }
+
+    @Override
+    public void deleteObserver(final Observer observer) {
+        obs_.deleteObserver(observer);
+    }
+
+    @Override
+    public void deleteObservers() {
+        obs_.deleteObservers();
+    }
+
+    @Override
+    public void notifyObservers() {
+        obs_.notifyObservers();
+    }
+
+    @Override
+    public void notifyObservers(final Object arg) {
+        obs_.notifyObservers(arg);
+    }
 }

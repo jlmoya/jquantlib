@@ -45,13 +45,12 @@ import org.jquantlib.time.Schedule;
 /**
  * Helper class building a sequence of digital CMS-spread coupons.
  * <p>
- * Mirrors C++ QuantLib v1.42.1 {@code DigitalCmsSpreadLeg}
- * (digitalcmsspreadcoupon.hpp lines 57-105 and digitalcmsspreadcoupon.cpp
- * lines 52-202).
+ * Mirrors C++ QuantLib v1.42.1 {@code DigitalCmsSpreadLeg} (digitalcmsspreadcoupon.hpp lines 57-105 and
+ * digitalcmsspreadcoupon.cpp lines 52-202).
  *
  * <p>Java port note: like {@link CmsSpreadLeg}, this avoids the reflection-
- * based {@code FloatingDigitalLeg} infrastructure (which doesn't exist in the
- * Java port today) and constructs the digital coupons directly.
+ * based {@code FloatingDigitalLeg} infrastructure (which doesn't exist in the Java port today) and constructs the
+ * digital coupons directly.
  *
  * @author Peter Caspers (C++ original)
  */
@@ -77,7 +76,6 @@ public class DigitalCmsSpreadLeg {
     private DigitalReplication replication_;
     private boolean nakedOption_ = false;
 
-
     //
     // public constructor
     //
@@ -87,10 +85,19 @@ public class DigitalCmsSpreadLeg {
         this.index_ = index;
     }
 
-
     //
     // builder methods
     //
+
+    private static double get(final Array v, final int i, final double defaultValue) {
+        if ( v == null || v.empty() ) {
+            return defaultValue;
+        }
+        if ( i < v.size() ) {
+            return v.get(i);
+        }
+        return v.get(v.size() - 1);
+    }
 
     public DigitalCmsSpreadLeg withNotionals(final double notional) {
         notionals_ = new Array(1).fill(notional);
@@ -212,21 +219,24 @@ public class DigitalCmsSpreadLeg {
         return this;
     }
 
+    //
+    // build the leg
+    //
+
     public DigitalCmsSpreadLeg withNakedOption(final boolean nakedOption) {
         nakedOption_ = nakedOption;
         return this;
     }
 
-
     //
-    // build the leg
+    // helpers
     //
 
     /**
      * Materialise the leg.
      * <p>
-     * Mirrors C++ {@code DigitalCmsSpreadLeg::operator Leg()}, which dispatches
-     * to {@code FloatingDigitalLeg<SwapSpreadIndex, CmsSpreadCoupon, DigitalCmsSpreadCoupon>}.
+     * Mirrors C++ {@code DigitalCmsSpreadLeg::operator Leg()}, which dispatches to
+     * {@code FloatingDigitalLeg<SwapSpreadIndex, CmsSpreadCoupon, DigitalCmsSpreadCoupon>}.
      */
     public Leg Leg() {
         final int n = schedule_.size() - 1;
@@ -245,71 +255,37 @@ public class DigitalCmsSpreadLeg {
         final Calendar calendar = schedule_.calendar();
         final Date lastPaymentDate = calendar.adjust(schedule_.date(n), paymentAdjustment_);
 
-        for (int i = 0; i < n; ++i) {
+        for ( int i = 0; i < n; ++i ) {
             Date refStart = schedule_.date(i);
             Date start = refStart;
             Date refEnd = schedule_.date(i + 1);
             Date end = refEnd;
             final Date paymentDate = calendar.adjust(end, paymentAdjustment_);
-            if (i == 0 && !schedule_.isRegular(i + 1)) {
+            if ( i == 0 && !schedule_.isRegular(i + 1) ) {
                 final BusinessDayConvention bdc = schedule_.businessDayConvention();
                 refStart = calendar.adjust(end.sub(schedule_.tenor()), bdc);
             }
-            if (i == n - 1 && !schedule_.isRegular(i + 1)) {
+            if ( i == n - 1 && !schedule_.isRegular(i + 1) ) {
                 final BusinessDayConvention bdc = schedule_.businessDayConvention();
                 refEnd = calendar.adjust(start.add(schedule_.tenor()), bdc);
             }
 
             final double gearing = get(gearings_, i, 1.0);
-            if (gearing == 0.0) {
+            if ( gearing == 0.0 ) {
                 // fixed coupon
-                leg.add(new FixedRateCoupon(get(notionals_, i, 1.0),
-                        paymentDate,
-                        get(spreads_, i, 0.0),
-                        paymentDayCounter_,
-                        start, end, refStart, refEnd));
+                leg.add(new FixedRateCoupon(get(notionals_, i, 1.0), paymentDate, get(spreads_, i, 0.0),
+                        paymentDayCounter_, start, end, refStart, refEnd));
             } else {
-                final CmsSpreadCoupon underlying = new CmsSpreadCoupon(
-                        paymentDate,
-                        get(notionals_, i, 1.0),
-                        start, end,
-                        (int) get(fixingDays_, i, index_.fixingDays()),
-                        index_,
-                        gearing,
-                        get(spreads_, i, 0.0),
-                        refStart, refEnd,
-                        paymentDayCounter_,
-                        inArrears_);
+                final CmsSpreadCoupon underlying = new CmsSpreadCoupon(paymentDate, get(notionals_, i, 1.0), start, end,
+                        (int) get(fixingDays_, i, index_.fixingDays()), index_, gearing, get(spreads_, i, 0.0),
+                        refStart, refEnd, paymentDayCounter_, inArrears_);
 
-                leg.add(new DigitalCmsSpreadCoupon(
-                        underlying,
-                        get(callStrikes_, i, Constants.NULL_REAL),
-                        longCallOption_,
-                        callATM_,
-                        get(callPayoffs_, i, Constants.NULL_REAL),
-                        get(putStrikes_, i, Constants.NULL_REAL),
-                        longPutOption_,
-                        putATM_,
-                        get(putPayoffs_, i, Constants.NULL_REAL),
-                        replication_,
-                        nakedOption_));
+                leg.add(new DigitalCmsSpreadCoupon(underlying, get(callStrikes_, i, Constants.NULL_REAL),
+                        longCallOption_, callATM_, get(callPayoffs_, i, Constants.NULL_REAL),
+                        get(putStrikes_, i, Constants.NULL_REAL), longPutOption_, putATM_,
+                        get(putPayoffs_, i, Constants.NULL_REAL), replication_, nakedOption_));
             }
         }
         return leg;
-    }
-
-
-    //
-    // helpers
-    //
-
-    private static double get(final Array v, final int i, final double defaultValue) {
-        if (v == null || v.empty()) {
-            return defaultValue;
-        }
-        if (i < v.size()) {
-            return v.get(i);
-        }
-        return v.get(v.size() - 1);
     }
 }

@@ -46,42 +46,28 @@ import org.jquantlib.quotes.Handle;
 import org.jquantlib.termstructures.Compounding;
 import org.jquantlib.termstructures.InterestRate;
 import org.jquantlib.termstructures.YieldTermStructure;
-import org.jquantlib.time.BusinessDayConvention;
-import org.jquantlib.time.Calendar;
-import org.jquantlib.time.Date;
-import org.jquantlib.time.Period;
-import org.jquantlib.time.TimeUnit;
+import org.jquantlib.time.*;
 
 /**
  * Abstract base forward class
  * <p>
- * Derived classes must implement the virtual functions
- * spotValue() (NPV or spot price) and spotIncome() associated
- * with the specific relevant underlying (e.g. bond, stock,
- * commodity, loan/deposit). These functions must be used to set the
- * protected member variables underlyingSpotValue_ and
- * underlyingIncome_ within performCalculations() in the derived
+ * Derived classes must implement the virtual functions spotValue() (NPV or spot price) and spotIncome() associated with
+ * the specific relevant underlying (e.g. bond, stock, commodity, loan/deposit). These functions must be used to set the
+ * protected member variables underlyingSpotValue_ and underlyingIncome_ within performCalculations() in the derived
  * class before the base-class implementation is called.
  * <p>
- * spotIncome() refers generically to the present value of
- * coupons, dividends or storage costs.
+ * spotIncome() refers generically to the present value of coupons, dividends or storage costs.
  * <p>
- * discountCurve_ is the curve used to discount forward contract
- * cash flows back to the evaluation day, as well as to obtain
- * forward values for spot values/prices.
+ * discountCurve_ is the curve used to discount forward contract cash flows back to the evaluation day, as well as to
+ * obtain forward values for spot values/prices.
  * <p>
- * incomeDiscountCurve_, which for generality is not
- * automatically set to the discountCurve_, is the curve used to
- * discount future income/dividends/storage-costs etc back to the
- * evaluation date.
- *
- * @todo Add preconditions and tests
- *
- * @warning This class still needs to be rigorously tested
- *
- * @category instruments
+ * incomeDiscountCurve_, which for generality is not automatically set to the discountCurve_, is the curve used to
+ * discount future income/dividends/storage-costs etc back to the evaluation date.
  *
  * @author John Martin
+ * @todo Add preconditions and tests
+ * @warning This class still needs to be rigorously tested
+ * @category instruments
  */
 public abstract class Forward extends Instrument {
 
@@ -95,42 +81,30 @@ public abstract class Forward extends Instrument {
     protected Calendar calendar;
     protected DayCounter dayCounter;
     protected BusinessDayConvention businessDayConvention;
-    protected Handle <YieldTermStructure> discountCurve;
-    protected Handle <YieldTermStructure> incomeDiscountCurve;
+    protected Handle< YieldTermStructure > discountCurve;
+    protected Handle< YieldTermStructure > incomeDiscountCurve;
     protected ForwardTypePayoff payoff;
     protected double underlyingSpotValue;
     protected double underlyingIncome;
-
 
     //
     // protected constructors
     //
 
-    protected Forward(
-            final DayCounter dc,
-            final Calendar cal,
-            final BusinessDayConvention bdc,
-            final int /* @Natural */settlementDays,
-            final Payoff payoff,
-            final Date valueDate,
+    protected Forward(final DayCounter dc, final Calendar cal, final BusinessDayConvention bdc,
+            final int /* @Natural */settlementDays, final Payoff payoff, final Date valueDate,
             final Date maturityDate) {
-        this (dc, cal, bdc, settlementDays, payoff, valueDate, maturityDate, new Handle <YieldTermStructure>());
+        this(dc, cal, bdc, settlementDays, payoff, valueDate, maturityDate, new Handle< YieldTermStructure >());
     }
 
-    protected Forward(
-            final DayCounter dc,
-            final Calendar cal,
-            final BusinessDayConvention bdc,
-            final int /* @Natural */settlementDays,
-            final Payoff payoff,
-            final Date valueDate,
-            final Date maturityDate,
-            final Handle <YieldTermStructure> discountCurve) {
+    protected Forward(final DayCounter dc, final Calendar cal, final BusinessDayConvention bdc,
+            final int /* @Natural */settlementDays, final Payoff payoff, final Date valueDate, final Date maturityDate,
+            final Handle< YieldTermStructure > discountCurve) {
         this.dayCounter = dc;
         this.calendar = cal;
         this.businessDayConvention = bdc;
         this.settlementDays = settlementDays;
-        this.maturityDate = calendar.adjust (maturityDate, businessDayConvention);
+        this.maturityDate = calendar.adjust(maturityDate, businessDayConvention);
         this.discountCurve = discountCurve;
         this.payoff = (ForwardTypePayoff) payoff;
         this.valueDate = valueDate;
@@ -143,49 +117,40 @@ public abstract class Forward extends Instrument {
         discountCurve.addObserver(this);
     }
 
-
     //
     // public abstract methods
     //
 
-    public abstract double spotValue ();
+    public abstract double spotValue();
 
-    public abstract double spotIncome (Handle <YieldTermStructure> incomeDiscountCurve);
-
+    public abstract double spotIncome(Handle< YieldTermStructure > incomeDiscountCurve);
 
     //
     // public methods
     //
 
-    public double forwardValue () {
-        calculate ();
+    public double forwardValue() {
+        calculate();
 
-        return (underlyingSpotValue - underlyingIncome)
-                / (discountCurve.currentLink ().discount (maturityDate));
+        return (underlyingSpotValue - underlyingIncome) / (discountCurve.currentLink().discount(maturityDate));
     }
 
     /**
-     * Simple yield calculation based on underlying spot and
-     * forward values, taking into account underlying income.
+     * Simple yield calculation based on underlying spot and forward values, taking into account underlying income.
      * <p>
      * When \f$ t>0 \f$, call with:
      * <pre>
      * underlyingSpotValue=spotValue(t);
      * forwardValue=strikePrice;
      * </pre>
-     * to get current yield.
-     * For a repo, if {@latex$ t=0 }, impliedYield should reproduce the spot repo rate.
-     * For FRA's, this should reproduce the relevant zero rate at the FRA's maturity date;
+     * to get current yield. For a repo, if {@latex$ t=0 }, impliedYield should reproduce the spot repo rate. For FRA's,
+     * this should reproduce the relevant zero rate at the FRA's maturity date;
      */
-    public InterestRate impliedYield(
-            final double underlyingSpotValue,
-            final double forwardValue,
-            final Date settlementDate,
-            final Compounding compoundingConvention,
-            final DayCounter dayCounter) {
-        final double tenor = dayCounter.yearFraction (settlementDate, maturityDate);
-        final double compoundingFactor = forwardValue / (underlyingSpotValue - spotIncome (incomeDiscountCurve));
-        return InterestRate.impliedRate (compoundingFactor, tenor, dayCounter, compoundingConvention);
+    public InterestRate impliedYield(final double underlyingSpotValue, final double forwardValue,
+            final Date settlementDate, final Compounding compoundingConvention, final DayCounter dayCounter) {
+        final double tenor = dayCounter.yearFraction(settlementDate, maturityDate);
+        final double compoundingFactor = forwardValue / (underlyingSpotValue - spotIncome(incomeDiscountCurve));
+        return InterestRate.impliedRate(compoundingFactor, tenor, dayCounter, compoundingConvention);
     }
 
     public BusinessDayConvention businessDayConvention() {
@@ -197,9 +162,9 @@ public abstract class Forward extends Instrument {
     }
 
     public Date settlementDate() {
-        final Period advance = new Period (settlementDays, TimeUnit.Days);
-        final Date settle = calendar.advance (new Settings ().evaluationDate (), advance);
-        if (settle.gt (valueDate)) {
+        final Period advance = new Period(settlementDays, TimeUnit.Days);
+        final Date settle = calendar.advance(new Settings().evaluationDate(), advance);
+        if ( settle.gt(valueDate) ) {
             return settle;
         }
         return valueDate;
@@ -209,28 +174,27 @@ public abstract class Forward extends Instrument {
         return this.dayCounter;
     }
 
-    public Handle <YieldTermStructure> discountCurve() {
+    public Handle< YieldTermStructure > discountCurve() {
         return this.discountCurve;
     }
 
-    public Handle <YieldTermStructure> incomeDiscountCurve() {
+    public Handle< YieldTermStructure > incomeDiscountCurve() {
         return this.incomeDiscountCurve;
     }
-
 
     //
     // overrides Instrument
     //
 
     @Override
-    public void performCalculations () {
-        QL.require (discountCurve != null, " Discount Curve must be set for Forward");
-        NPV = payoff.get (forwardValue ()) * discountCurve.currentLink ().discount (maturityDate);
+    public void performCalculations() {
+        QL.require(discountCurve != null, " Discount Curve must be set for Forward");
+        NPV = payoff.get(forwardValue()) * discountCurve.currentLink().discount(maturityDate);
     }
 
     @Override
     public boolean isExpired() {
-        return valueDate.gt (maturityDate);
+        return valueDate.gt(maturityDate);
     }
 
 }

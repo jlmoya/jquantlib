@@ -46,25 +46,21 @@ import org.jquantlib.lang.annotation.Rate;
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.termstructures.inflation.Seasonality;
-import org.jquantlib.time.Calendar;
-import org.jquantlib.time.Date;
-import org.jquantlib.time.Frequency;
-import org.jquantlib.time.Month;
-import org.jquantlib.time.Period;
+import org.jquantlib.time.*;
 import org.jquantlib.time.calendars.NullCalendar;
 import org.jquantlib.util.Pair;
 
 /**
- * 
+ *
  * Base Class for inflation term structures
- * 
+ *
  * @author Tim Blackler
  *
  */
 
 public abstract class InflationTermStructure extends AbstractTermStructure {
-	
-    protected Handle<YieldTermStructure> nominalTermStructure;
+
+    protected Handle< YieldTermStructure > nominalTermStructure;
 
     // connection with base index:
     //  lag to base date
@@ -73,111 +69,127 @@ public abstract class InflationTermStructure extends AbstractTermStructure {
     //  (don't if you have no index set up)
     protected Period lag;
     protected Frequency frequency;
-    protected @Rate double  baseRate;
+    protected @Rate double baseRate;
 
     /**
-     * Optional seasonality correction. When non-null, derived classes
-     * (Zero/YoY) apply it in their {@code zeroRate}/{@code yoyRate} accessor
-     * after computing the raw rate. Mirrors C++ v1.42.1
+     * Optional seasonality correction. When non-null, derived classes (Zero/YoY) apply it in their
+     * {@code zeroRate}/{@code yoyRate} accessor after computing the raw rate. Mirrors C++ v1.42.1
      * {@code InflationTermStructure::seasonality_}.
      *
      * <p>Phase 2q L1 Track C addition.
      */
     protected Seasonality seasonality_;
-    
-    public InflationTermStructure(final Period lag,
-    							  final Frequency frequency,
-    							  final @Rate double baseRate,
-    							  final Handle<YieldTermStructure> yTS) {
 
-    	this(lag, frequency, baseRate, yTS, new Actual365Fixed());
- 	
-    }
+    public InflationTermStructure(final Period lag, final Frequency frequency, final @Rate double baseRate,
+            final Handle< YieldTermStructure > yTS) {
 
-    public InflationTermStructure(final Period lag,
-			  final Frequency frequency,
-			  final @Rate double baseRate,
-			  final Handle<YieldTermStructure> yTS,
-			  final DayCounter dayCounter) {
-    	
-    	super(dayCounter);
-    	this.nominalTermStructure = yTS;
-    	this.lag = lag;
-    	this.frequency = frequency;
-    	this.baseRate = baseRate;
-    	
-    	this.nominalTermStructure.addObserver(this); 	
-    }
-
-    public InflationTermStructure(final Date referenceDate,
-    		  final Period lag,
-			  final Frequency frequency,
-			  final @Rate double baseRate,
-			  final Handle<YieldTermStructure> yTS) {
-
-    	this(referenceDate, lag, frequency, baseRate, yTS, new NullCalendar() ,new Actual365Fixed());
-    }
-
-    public InflationTermStructure(final Date referenceDate,
-  		  	  final Period lag,
-			  final Frequency frequency,
-			  final @Rate double baseRate,
-			  final Handle<YieldTermStructure> yTS,
-			  final Calendar calendar,
-			  final DayCounter dayCounter) {
-
-    	super(referenceDate, calendar, dayCounter);
-    	this.nominalTermStructure = yTS;
-    	this.lag = lag;
-    	this.frequency = frequency;
-    	this.baseRate = baseRate;
-    	
-    	this.nominalTermStructure.addObserver(this);
-    }
-
-    public InflationTermStructure( final @Natural int settlementDays,
-			  final Calendar calendar,
-			  final Period lag,
-			  final Frequency frequency,
-			  final @Rate double baseRate,
-			  final Handle<YieldTermStructure> yTS) {
-
-    	this(settlementDays, calendar, lag, frequency, baseRate, yTS, new Actual365Fixed());
+        this(lag, frequency, baseRate, yTS, new Actual365Fixed());
 
     }
 
-    
-    public InflationTermStructure( final @Natural int settlementDays,
-    							   final Calendar calendar,
-    							   final Period lag,
-    							   final Frequency frequency,
-    							   final @Rate double baseRate,
-    							   final Handle<YieldTermStructure> yTS,
-    							   final DayCounter dayCounter) {
+    public InflationTermStructure(final Period lag, final Frequency frequency, final @Rate double baseRate,
+            final Handle< YieldTermStructure > yTS, final DayCounter dayCounter) {
 
-    	super(settlementDays, calendar, dayCounter);
-    	this.nominalTermStructure = yTS;
-    	this.lag = lag;
-    	this.frequency = frequency;
-    	this.baseRate = baseRate;
-    	
-    	this.nominalTermStructure.addObserver(this);
+        super(dayCounter);
+        this.nominalTermStructure = yTS;
+        this.lag = lag;
+        this.frequency = frequency;
+        this.baseRate = baseRate;
+
+        this.nominalTermStructure.addObserver(this);
+    }
+
+    public InflationTermStructure(final Date referenceDate, final Period lag, final Frequency frequency,
+            final @Rate double baseRate, final Handle< YieldTermStructure > yTS) {
+
+        this(referenceDate, lag, frequency, baseRate, yTS, new NullCalendar(), new Actual365Fixed());
+    }
+
+    public InflationTermStructure(final Date referenceDate, final Period lag, final Frequency frequency,
+            final @Rate double baseRate, final Handle< YieldTermStructure > yTS, final Calendar calendar,
+            final DayCounter dayCounter) {
+
+        super(referenceDate, calendar, dayCounter);
+        this.nominalTermStructure = yTS;
+        this.lag = lag;
+        this.frequency = frequency;
+        this.baseRate = baseRate;
+
+        this.nominalTermStructure.addObserver(this);
+    }
+
+    public InflationTermStructure(final @Natural int settlementDays, final Calendar calendar, final Period lag,
+            final Frequency frequency, final @Rate double baseRate, final Handle< YieldTermStructure > yTS) {
+
+        this(settlementDays, calendar, lag, frequency, baseRate, yTS, new Actual365Fixed());
+
+    }
+
+    public InflationTermStructure(final @Natural int settlementDays, final Calendar calendar, final Period lag,
+            final Frequency frequency, final @Rate double baseRate, final Handle< YieldTermStructure > yTS,
+            final DayCounter dayCounter) {
+
+        super(settlementDays, calendar, dayCounter);
+        this.nominalTermStructure = yTS;
+        this.lag = lag;
+        this.frequency = frequency;
+        this.baseRate = baseRate;
+
+        this.nominalTermStructure.addObserver(this);
+    }
+
+    /**
+     * Mirrors C++ v1.42.1 {@code inflationPeriod(const Date&, Frequency)}
+     * ({@code termstructures/inflationtermstructure.cpp:163-188}).
+     *
+     * <p>For sub-annual frequencies the C++ formula is
+     * {@code startMonth = month - (month - 1) % nMonths} where {@code nMonths = 12 / frequency}. The earlier Java
+     * formula ({@code 6*(month-1)/6 + 1} / {@code 3*(month-1)/3 + 1}) was wrong: for February under Quarterly it yields
+     * {@code Feb..Apr}, but the inflation period must be the calendar quarter {@code Jan..Mar}. Phase 2t aligns to C++
+     * (testPeriod regression).
+     */
+    public static Pair< Date, Date > inflationPeriod(final Date date, final Frequency frequency) {
+
+        Month month = date.month();
+        int year = date.year();
+
+        Month startMonth, endMonth;
+        switch ( frequency ) {
+        case Annual:
+        case Semiannual:
+        case EveryFourthMonth:
+        case Quarterly:
+        case Bimonthly: {
+            final int nMonths = 12 / frequency.toInteger();
+            final int startMonthValue = month.value() - (month.value() - 1) % nMonths;
+            startMonth = Month.valueOf(startMonthValue);
+            endMonth = Month.valueOf(startMonthValue + nMonths - 1);
+            break;
+        }
+        case Monthly:
+            startMonth = endMonth = month;
+            break;
+        default:
+            throw new LibraryException("Frequency not handled: " + frequency);
+
+        }
+
+        Date startDate = new Date(1, startMonth, year);
+        Date endDate = Date.endOfMonth(new Date(1, endMonth, year));
+
+        return new Pair< Date, Date >(startDate, endDate);
     }
 
     public Period lag() {
-    	return lag;
+        return lag;
     }
 
     public Frequency frequency() {
-    	return frequency;
+        return frequency;
     }
 
-    public Handle<YieldTermStructure> nominalTermStructure() {
-    	return nominalTermStructure;
-    }
-
-    public /*@Rate*/ double baseRate() {
-    	return baseRate;
+    public Handle< YieldTermStructure > nominalTermStructure() {
+        return nominalTermStructure;
     }
 
     //
@@ -185,15 +197,17 @@ public abstract class InflationTermStructure extends AbstractTermStructure {
     // InflationTermStructure::{setSeasonality, seasonality, hasSeasonality}.
     //
 
+    public /*@Rate*/ double baseRate() {
+        return baseRate;
+    }
+
     /**
-     * Install/clear the seasonality correction. Pass {@code null} to clear.
-     * Triggers an observer notification.
+     * Install/clear the seasonality correction. Pass {@code null} to clear. Triggers an observer notification.
      */
     public void setSeasonality(final Seasonality seasonality) {
         this.seasonality_ = seasonality;
-        if (seasonality_ != null) {
-            QL.require(seasonality_.isConsistent(this),
-                    "Seasonality inconsistent with inflation term structure");
+        if ( seasonality_ != null ) {
+            QL.require(seasonality_.isConsistent(this), "Seasonality inconsistent with inflation term structure");
         }
         update();
     }
@@ -205,75 +219,30 @@ public abstract class InflationTermStructure extends AbstractTermStructure {
     public boolean hasSeasonality() {
         return seasonality_ != null;
     }
-    
+
     //! minimum (base) date
     /*! Important in inflation since it starts before nominal
         reference date.
     */
     public Date baseDate() {
-    	return new Date(0);
+        return new Date(0);
     }
 
     @Override
     public Date maxDate() {
-    	return new Date(0);
+        return new Date(0);
     }
-    
-	// This next part is required for piecewise- constructors
-	// because, for inflation, they need more than just the
-	// instruments to build the term structure, since the rate at
-	// time 0-lag is non-zero, since we deal (effectively) with
-	// "forwards".
-    protected void setBaseRate (final @Rate double r) {
-    	baseRate = r;
-    
-    }
- 
+
     //! utility function giving the inflation period for a given date
-    /**
-     * Mirrors C++ v1.42.1 {@code inflationPeriod(const Date&, Frequency)}
-     * ({@code termstructures/inflationtermstructure.cpp:163-188}).
-     *
-     * <p>For sub-annual frequencies the C++ formula is
-     * {@code startMonth = month - (month - 1) % nMonths} where
-     * {@code nMonths = 12 / frequency}. The earlier Java formula
-     * ({@code 6*(month-1)/6 + 1} / {@code 3*(month-1)/3 + 1}) was
-     * wrong: for February under Quarterly it yields {@code Feb..Apr},
-     * but the inflation period must be the calendar quarter
-     * {@code Jan..Mar}. Phase 2t aligns to C++ (testPeriod regression).
-     */
-    public static Pair<Date,Date> inflationPeriod(final Date date,
-    									   final Frequency frequency) {
 
-        Month month = date.month();
-        int year = date.year();
+    // This next part is required for piecewise- constructors
+    // because, for inflation, they need more than just the
+    // instruments to build the term structure, since the rate at
+    // time 0-lag is non-zero, since we deal (effectively) with
+    // "forwards".
+    protected void setBaseRate(final @Rate double r) {
+        baseRate = r;
 
-        Month startMonth, endMonth;
-        switch (frequency) {
-          case Annual:
-          case Semiannual:
-          case EveryFourthMonth:
-          case Quarterly:
-          case Bimonthly: {
-            final int nMonths = 12 / frequency.toInteger();
-            final int startMonthValue = month.value() - (month.value() - 1) % nMonths;
-            startMonth = Month.valueOf(startMonthValue);
-            endMonth = Month.valueOf(startMonthValue + nMonths - 1);
-            break;
-          }
-          case Monthly:
-            startMonth = endMonth = month;
-            break;
-          default:
-        	  throw new LibraryException("Frequency not handled: " + frequency);
-
-        };
-
-        Date startDate = new Date(1, startMonth, year);
-        Date endDate = Date.endOfMonth(new Date(1, endMonth, year));
-
-        return new Pair<Date,Date>(startDate, endDate);
     }
-    
 
 }

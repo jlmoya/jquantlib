@@ -36,26 +36,22 @@ public enum BarrierType {
         public String toString() {
             return "Down & In";
         }
-    },
-    UpIn {
+    }, UpIn {
         @Override
         public String toString() {
             return "Up & In";
         }
-    },
-    DownOut {
+    }, DownOut {
         @Override
         public String toString() {
             return "Down & Out";
         }
-    },
-    UpOut {
+    }, UpOut {
         @Override
         public String toString() {
             return "Up & Out";
         }
-    },
-    Unknown {
+    }, Unknown {
         @Override
         public String toString() {
             return "Unknown";

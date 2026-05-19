@@ -26,15 +26,11 @@
 
 package org.jquantlib.model.marketmodels.callability;
 
+import org.jquantlib.methods.montecarlo.ExerciseStrategy;
+import org.jquantlib.model.marketmodels.*;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import org.jquantlib.methods.montecarlo.ExerciseStrategy;
-import org.jquantlib.model.marketmodels.CurveState;
-import org.jquantlib.model.marketmodels.EvolutionDescription;
-import org.jquantlib.model.marketmodels.MarketModelDiscounter;
-import org.jquantlib.model.marketmodels.MarketModelMultiProduct;
-import org.jquantlib.model.marketmodels.Utilities;
 
 /**
  * Longstaff-Schwartz exercise strategy for callable market-model products.
@@ -43,8 +39,7 @@ import org.jquantlib.model.marketmodels.Utilities;
  * (ql/models/marketmodels/callability/lsstrategy.{hpp,cpp} v1.42.1).
  *
  * <p>Online phase only: regression coefficients are computed offline (e.g. via
- * {@link CollectNodeData} + a regression) and supplied at construction. During
- * simulation, this strategy:
+ * {@link CollectNodeData} + a regression) and supplied at construction. During simulation, this strategy:
  * <ol>
  *   <li>computes the deflated exercise value via {@code rebate.value()}
  *       discounted by a {@link MarketModelDiscounter} into the current
@@ -58,44 +53,39 @@ import org.jquantlib.model.marketmodels.Utilities;
  * {@code principalInNumerairePortfolio} via the
  * {@link CurveState#discountRatio(int, int)} between consecutive numeraires.
  *
- * @see "ql/models/marketmodels/callability/lsstrategy.hpp" v1.42.1
- *
  * @author Jose Moya
+ * @see "ql/models/marketmodels/callability/lsstrategy.hpp" v1.42.1
  */
 public class LongstaffSchwartzExerciseStrategy implements ExerciseStrategy {
 
     private final MarketModelBasisSystem basisSystem_;
-    private final List<double[]> basisCoefficients_;
+    private final List< double[] > basisCoefficients_;
     private final MarketModelExerciseValue exercise_;
     private final MarketModelExerciseValue control_;
     private final int[] numeraires_;
-    // work variable
-    private int currentIndex_;
-    private double principalInNumerairePortfolio_;
-    private double newPrincipal_;
     private final double[] exerciseTimes_;
     private final double[] relevantTimes_;
     private final boolean[] isBasisTime_;
     private final boolean[] isRebateTime_;
     private final boolean[] isControlTime_;
     private final boolean[] isExerciseTime_;
-    private final List<MarketModelDiscounter> rebateDiscounters_;
-    private final List<MarketModelDiscounter> controlDiscounters_;
-    private final List<double[]> basisValues_; // per-exercise scratch
+    private final List< MarketModelDiscounter > rebateDiscounters_;
+    private final List< MarketModelDiscounter > controlDiscounters_;
+    private final List< double[] > basisValues_; // per-exercise scratch
     private final int[] exerciseIndex_;
+    // work variable
+    private int currentIndex_;
+    private double principalInNumerairePortfolio_;
+    private double newPrincipal_;
 
-    public LongstaffSchwartzExerciseStrategy(
-            final MarketModelBasisSystem basisSystem,
-            final List<double[]> basisCoefficients,
-            final EvolutionDescription evolution,
-            final int[] numeraires,
-            final MarketModelExerciseValue exercise,
-            final MarketModelExerciseValue control) {
+    public LongstaffSchwartzExerciseStrategy(final MarketModelBasisSystem basisSystem,
+            final List< double[] > basisCoefficients, final EvolutionDescription evolution, final int[] numeraires,
+            final MarketModelExerciseValue exercise, final MarketModelExerciseValue control) {
 
         this.basisSystem_ = basisSystem.clone();
         // Defensive copy of coefficients
         this.basisCoefficients_ = new ArrayList<>(basisCoefficients.size());
-        for (final double[] c : basisCoefficients) {
+        for ( final double[] c : basisCoefficients ) {
             this.basisCoefficients_.add(c.clone());
         }
         this.exercise_ = exercise.clone();
@@ -105,12 +95,9 @@ public class LongstaffSchwartzExerciseStrategy implements ExerciseStrategy {
         EvolutionDescription.checkCompatibility(evolution, numeraires);
         this.relevantTimes_ = evolution.evolutionTimes().clone();
 
-        this.isBasisTime_ = Utilities.isInSubset(relevantTimes_,
-                basisSystem_.evolution().evolutionTimes());
-        this.isRebateTime_ = Utilities.isInSubset(relevantTimes_,
-                exercise_.evolution().evolutionTimes());
-        this.isControlTime_ = Utilities.isInSubset(relevantTimes_,
-                control_.evolution().evolutionTimes());
+        this.isBasisTime_ = Utilities.isInSubset(relevantTimes_, basisSystem_.evolution().evolutionTimes());
+        this.isRebateTime_ = Utilities.isInSubset(relevantTimes_, exercise_.evolution().evolutionTimes());
+        this.isControlTime_ = Utilities.isInSubset(relevantTimes_, control_.evolution().evolutionTimes());
 
         this.exerciseIndex_ = new int[relevantTimes_.length];
         this.isExerciseTime_ = new boolean[relevantTimes_.length];
@@ -118,38 +105,38 @@ public class LongstaffSchwartzExerciseStrategy implements ExerciseStrategy {
         int exercises = 0;
         int idx = 0;
         // First pass: build exerciseIndex_ + isExerciseTime_, count exerciseTimes
-        final List<Double> exTimes = new ArrayList<>();
-        for (int i = 0; i < relevantTimes_.length; ++i) {
+        final List< Double > exTimes = new ArrayList<>();
+        for ( int i = 0; i < relevantTimes_.length; ++i ) {
             exerciseIndex_[i] = exercises;
-            if (isRebateTime_[i]) {
+            if ( isRebateTime_[i] ) {
                 isExerciseTime_[i] = v[idx++];
-                if (isExerciseTime_[i]) {
+                if ( isExerciseTime_[i] ) {
                     exTimes.add(relevantTimes_[i]);
                     ++exercises;
                 }
             }
         }
         this.exerciseTimes_ = new double[exTimes.size()];
-        for (int i = 0; i < exTimes.size(); i++) {
+        for ( int i = 0; i < exTimes.size(); i++ ) {
             this.exerciseTimes_[i] = exTimes.get(i);
         }
 
         final double[] rateTimes = evolution.rateTimes();
         final double[] rebateTimes = exercise_.possibleCashFlowTimes();
         this.rebateDiscounters_ = new ArrayList<>(rebateTimes.length);
-        for (final double t : rebateTimes) {
+        for ( final double t : rebateTimes ) {
             this.rebateDiscounters_.add(new MarketModelDiscounter(t, rateTimes));
         }
 
         final double[] controlTimes = control_.possibleCashFlowTimes();
         this.controlDiscounters_ = new ArrayList<>(controlTimes.length);
-        for (final double t : controlTimes) {
+        for ( final double t : controlTimes ) {
             this.controlDiscounters_.add(new MarketModelDiscounter(t, rateTimes));
         }
 
         final int[] basisSizes = basisSystem_.numberOfFunctions();
         this.basisValues_ = new ArrayList<>(basisSystem_.numberOfExercises());
-        for (int i = 0; i < basisSystem_.numberOfExercises(); i++) {
+        for ( int i = 0; i < basisSystem_.numberOfExercises(); i++ ) {
             this.basisValues_.add(new double[basisSizes[i]]);
         }
     }
@@ -158,7 +145,7 @@ public class LongstaffSchwartzExerciseStrategy implements ExerciseStrategy {
     private LongstaffSchwartzExerciseStrategy(final LongstaffSchwartzExerciseStrategy other) {
         this.basisSystem_ = other.basisSystem_.clone();
         this.basisCoefficients_ = new ArrayList<>(other.basisCoefficients_.size());
-        for (final double[] c : other.basisCoefficients_) {
+        for ( final double[] c : other.basisCoefficients_ ) {
             this.basisCoefficients_.add(c.clone());
         }
         this.exercise_ = other.exercise_.clone();
@@ -177,17 +164,24 @@ public class LongstaffSchwartzExerciseStrategy implements ExerciseStrategy {
         this.rebateDiscounters_ = new ArrayList<>(other.rebateDiscounters_);
         this.controlDiscounters_ = new ArrayList<>(other.controlDiscounters_);
         this.basisValues_ = new ArrayList<>(other.basisValues_.size());
-        for (final double[] b : other.basisValues_) {
+        for ( final double[] b : other.basisValues_ ) {
             this.basisValues_.add(b.clone());
         }
         this.exerciseIndex_ = other.exerciseIndex_.clone();
     }
 
-    @Override public double[] exerciseTimes() { return exerciseTimes_; }
+    @Override
+    public double[] exerciseTimes() {
+        return exerciseTimes_;
+    }
 
-    @Override public double[] relevantTimes() { return relevantTimes_; }
+    @Override
+    public double[] relevantTimes() {
+        return relevantTimes_;
+    }
 
-    @Override public void reset() {
+    @Override
+    public void reset() {
         exercise_.reset();
         control_.reset();
         basisSystem_.reset();
@@ -195,20 +189,17 @@ public class LongstaffSchwartzExerciseStrategy implements ExerciseStrategy {
         principalInNumerairePortfolio_ = newPrincipal_ = 1.0;
     }
 
-    @Override public boolean exercise(final CurveState currentState) {
+    @Override
+    public boolean exercise(final CurveState currentState) {
         final int exerciseIndex = exerciseIndex_[currentIndex_ - 1];
 
         final MarketModelMultiProduct.CashFlow exerciseCF = exercise_.value(currentState);
-        final double exerciseValue = exerciseCF.amount
-                * rebateDiscounters_.get(exerciseCF.timeIndex)
-                        .numeraireBonds(currentState, numeraires_[currentIndex_ - 1])
-                / principalInNumerairePortfolio_;
+        final double exerciseValue = exerciseCF.amount * rebateDiscounters_.get(exerciseCF.timeIndex)
+                .numeraireBonds(currentState, numeraires_[currentIndex_ - 1]) / principalInNumerairePortfolio_;
 
         final MarketModelMultiProduct.CashFlow controlCF = control_.value(currentState);
-        final double controlValue = controlCF.amount
-                * controlDiscounters_.get(controlCF.timeIndex)
-                        .numeraireBonds(currentState, numeraires_[currentIndex_ - 1])
-                / principalInNumerairePortfolio_;
+        final double controlValue = controlCF.amount * controlDiscounters_.get(controlCF.timeIndex)
+                .numeraireBonds(currentState, numeraires_[currentIndex_ - 1]) / principalInNumerairePortfolio_;
 
         final double[] basis = basisValues_.get(exerciseIndex);
         basisSystem_.values(currentState, basis);
@@ -218,27 +209,28 @@ public class LongstaffSchwartzExerciseStrategy implements ExerciseStrategy {
         // Mirrors C++ std::inner_product(alphas.begin(), alphas.end(),
         //                               basis.begin(), controlValue).
         double continuationValue = controlValue;
-        for (int k = 0; k < alphas.length; k++) {
+        for ( int k = 0; k < alphas.length; k++ ) {
             continuationValue += alphas[k] * basis[k];
         }
 
         return exerciseValue >= continuationValue;
     }
 
-    @Override public void nextStep(final CurveState currentState) {
+    @Override
+    public void nextStep(final CurveState currentState) {
         principalInNumerairePortfolio_ = newPrincipal_;
 
-        if (isRebateTime_[currentIndex_]) {
+        if ( isRebateTime_[currentIndex_] ) {
             exercise_.nextStep(currentState);
         }
-        if (isControlTime_[currentIndex_]) {
+        if ( isControlTime_[currentIndex_] ) {
             control_.nextStep(currentState);
         }
-        if (isBasisTime_[currentIndex_]) {
+        if ( isBasisTime_[currentIndex_] ) {
             basisSystem_.nextStep(currentState);
         }
 
-        if (currentIndex_ < numeraires_.length - 1) {
+        if ( currentIndex_ < numeraires_.length - 1 ) {
             final int numeraire = numeraires_[currentIndex_];
             final int nextNumeraire = numeraires_[currentIndex_ + 1];
             newPrincipal_ *= currentState.discountRatio(numeraire, nextNumeraire);
@@ -247,7 +239,8 @@ public class LongstaffSchwartzExerciseStrategy implements ExerciseStrategy {
         ++currentIndex_;
     }
 
-    @Override public LongstaffSchwartzExerciseStrategy clone() {
+    @Override
+    public LongstaffSchwartzExerciseStrategy clone() {
         return new LongstaffSchwartzExerciseStrategy(this);
     }
 }

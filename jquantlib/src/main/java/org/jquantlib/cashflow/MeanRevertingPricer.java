@@ -27,8 +27,7 @@ import org.jquantlib.quotes.Quote;
 /**
  * Mix-in for CMS coupon pricers parameterised by a mean-reversion quote.
  * <p>
- * Mirrors C++ QuantLib v1.42.1 {@code MeanRevertingPricer} in
- * {@code ql/cashflows/couponpricer.hpp}:
+ * Mirrors C++ QuantLib v1.42.1 {@code MeanRevertingPricer} in {@code ql/cashflows/couponpricer.hpp}:
  * <pre>{@code
  * class MeanRevertingPricer {
  *   public:
@@ -38,10 +37,8 @@ import org.jquantlib.quotes.Quote;
  * };
  * }</pre>
  * <p>
- * Implemented by Hagan-style CMS pricers (e.g.
- * {@code AnalyticHaganPricer}, {@code NumericHaganPricer},
- * {@code LinearTsrPricer}) that calibrate to CMS market quotes via a
- * mean-reversion parameter.
+ * Implemented by Hagan-style CMS pricers (e.g. {@code AnalyticHaganPricer}, {@code NumericHaganPricer},
+ * {@code LinearTsrPricer}) that calibrate to CMS market quotes via a mean-reversion parameter.
  */
 public interface MeanRevertingPricer {
 
@@ -49,5 +46,5 @@ public interface MeanRevertingPricer {
     double meanReversion();
 
     /** Replace the mean-reversion quote handle. */
-    void setMeanReversion(Handle<Quote> meanReversion);
+    void setMeanReversion(Handle< Quote > meanReversion);
 }

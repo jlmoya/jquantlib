@@ -22,9 +22,6 @@
 
 package org.jquantlib.experimental.exoticoptions;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.math.distributions.InverseCumulativeNormal;
 import org.jquantlib.math.randomnumbers.InverseCumulativeRsg;
@@ -40,6 +37,9 @@ import org.jquantlib.processes.GeneralizedBlackScholesProcess;
 import org.jquantlib.processes.StochasticProcess1D;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.TimeGrid;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Monte Carlo engine for Pagoda options.
@@ -67,20 +67,15 @@ public class MCPagodaEngine extends PagodaOption.EngineImpl {
     protected final long seed_;
 
     /** Lazily-built delegate that owns the {@link MonteCarloModel}. */
-    protected McSimulation<MultiPath> simulation_;
-
+    protected McSimulation< MultiPath > simulation_;
 
     //
     // constructors
     //
 
-    public MCPagodaEngine(final StochasticProcessArray processes,
-                          final boolean brownianBridge,
-                          final boolean antitheticVariate,
-                          final int requiredSamples,
-                          final double requiredTolerance,
-                          final int maxSamples,
-                          final long seed) {
+    public MCPagodaEngine(final StochasticProcessArray processes, final boolean brownianBridge,
+            final boolean antitheticVariate, final int requiredSamples, final double requiredTolerance,
+            final int maxSamples, final long seed) {
         super();
         this.processes_ = processes;
         this.brownianBridge_ = brownianBridge;
@@ -92,24 +87,22 @@ public class MCPagodaEngine extends PagodaOption.EngineImpl {
         this.processes_.addObserver(this);
     }
 
-
     //
     // McSimulation-shaped helpers
     //
 
     /**
-     * Mirrors C++ {@code TimeGrid timeGrid()}: builds a non-uniform
-     * time grid from the option's fixing dates.
+     * Mirrors C++ {@code TimeGrid timeGrid()}: builds a non-uniform time grid from the option's fixing dates.
      */
     protected TimeGrid timeGrid() {
-        final PagodaOption.ArgumentsImpl a = (PagodaOption.ArgumentsImpl) arguments_;
-        final List<Double> fixingTimes = new ArrayList<Double>(a.fixingDates.size());
+        final PagodaOption.ArgumentsImpl a = arguments_;
+        final List< Double > fixingTimes = new ArrayList< Double >(a.fixingDates.size());
         double prev = -1.0;
-        for (int i = 0; i < a.fixingDates.size(); i++) {
+        for ( int i = 0; i < a.fixingDates.size(); i++ ) {
             final Date d = a.fixingDates.get(i);
             final double t = processes_.time(d);
             QL.require(t >= 0.0, "seasoned options are not handled");
-            if (i > 0) {
+            if ( i > 0 ) {
                 QL.require(t > prev, "fixing dates not sorted");
             }
             fixingTimes.add(t);
@@ -118,36 +111,29 @@ public class MCPagodaEngine extends PagodaOption.EngineImpl {
         return new TimeGrid(fixingTimes);
     }
 
-    protected MonteCarloModel.PathGeneratorAdapter<MultiPath> pathGenerator() {
+    protected MonteCarloModel.PathGeneratorAdapter< MultiPath > pathGenerator() {
         final int numAssets = processes_.size();
         final TimeGrid grid = timeGrid();
         final int dimensions = numAssets * (grid.size() - 1);
-        final RandomSequenceGenerator<MersenneTwisterUniformRng> uniformRsg =
-                new RandomSequenceGenerator<MersenneTwisterUniformRng>(
-                        MersenneTwisterUniformRng.class, dimensions, seed_);
-        final InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                InverseCumulativeNormal> gsg =
-                new InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                        InverseCumulativeNormal>(uniformRsg, new InverseCumulativeNormal());
-        final MultiPathGenerator<InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                InverseCumulativeNormal>> gen =
-                new MultiPathGenerator<InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                        InverseCumulativeNormal>>(processes_, grid, gsg, brownianBridge_);
+        final RandomSequenceGenerator< MersenneTwisterUniformRng > uniformRsg = new RandomSequenceGenerator< MersenneTwisterUniformRng >(
+                MersenneTwisterUniformRng.class, dimensions, seed_);
+        final InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal > gsg = new InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal >(
+                uniformRsg, new InverseCumulativeNormal());
+        final MultiPathGenerator< InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal > > gen = new MultiPathGenerator< InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal > >(
+                processes_, grid, gsg, brownianBridge_);
         return new MonteCarloModel.MultiPathGeneratorAdapterImpl(gen);
     }
 
-    protected PathPricer<MultiPath> pathPricer() {
-        final PagodaOption.ArgumentsImpl a = (PagodaOption.ArgumentsImpl) arguments_;
+    protected PathPricer< MultiPath > pathPricer() {
+        final PagodaOption.ArgumentsImpl a = arguments_;
         final StochasticProcess1D first = processes_.process(0);
-        if (!(first instanceof GeneralizedBlackScholesProcess)) {
+        if ( !(first instanceof GeneralizedBlackScholesProcess) ) {
             throw new RuntimeException("Black-Scholes process required");
         }
         final GeneralizedBlackScholesProcess process = (GeneralizedBlackScholesProcess) first;
-        final double discount = process.riskFreeRate().currentLink()
-                .discount(a.exercise.lastDate());
+        final double discount = process.riskFreeRate().currentLink().discount(a.exercise.lastDate());
         return new PagodaMultiPathPricer(a.roof, a.fraction, discount);
     }
-
 
     //
     // PricingEngine
@@ -155,16 +141,21 @@ public class MCPagodaEngine extends PagodaOption.EngineImpl {
 
     @Override
     public void calculate() /* @ReadOnly */ {
-        final PagodaOption.ResultsImpl r = (PagodaOption.ResultsImpl) results_;
+        final PagodaOption.ResultsImpl r = results_;
 
-        this.simulation_ = new McSimulation<MultiPath>(antitheticVariate_, /* controlVariate */ false) {
-            @Override protected PathPricer<MultiPath> pathPricer() {
+        this.simulation_ = new McSimulation< MultiPath >(antitheticVariate_, /* controlVariate */ false) {
+            @Override
+            protected PathPricer< MultiPath > pathPricer() {
                 return MCPagodaEngine.this.pathPricer();
             }
-            @Override protected MonteCarloModel.PathGeneratorAdapter<MultiPath> pathGenerator() {
+
+            @Override
+            protected MonteCarloModel.PathGeneratorAdapter< MultiPath > pathGenerator() {
                 return MCPagodaEngine.this.pathGenerator();
             }
-            @Override protected TimeGrid timeGrid() {
+
+            @Override
+            protected TimeGrid timeGrid() {
                 return MCPagodaEngine.this.timeGrid();
             }
         };

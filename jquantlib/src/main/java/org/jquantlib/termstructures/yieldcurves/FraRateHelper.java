@@ -30,18 +30,13 @@ import org.jquantlib.indexes.IborIndex;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.RelinkableHandle;
-import org.jquantlib.termstructures.BootstrapHelper;
 import org.jquantlib.termstructures.YieldTermStructure;
-import org.jquantlib.time.BusinessDayConvention;
-import org.jquantlib.time.Calendar;
-import org.jquantlib.time.Date;
-import org.jquantlib.time.Period;
-import org.jquantlib.time.TimeUnit;
+import org.jquantlib.time.*;
 import org.jquantlib.util.PolymorphicVisitor;
 import org.jquantlib.util.Visitor;
 
 /**
- *  Rate helper for bootstrapping over IborIndex futures prices
+ * Rate helper for bootstrapping over IborIndex futures prices
  *
  * @author Srinivas Hasti
  * @author Neel Sheyal
@@ -49,199 +44,137 @@ import org.jquantlib.util.Visitor;
 
 public class FraRateHelper extends RelativeDateRateHelper {
 
-	
-	//
-	// private fields
-	//
-	private Date fixingDate;
-	private final Period periodToStart;
-	private final IborIndex iborIndex;
-	private final RelinkableHandle<YieldTermStructure> termStructureHandle = new RelinkableHandle<YieldTermStructure>(null);
+    private final Period periodToStart;
+    private final IborIndex iborIndex;
+    private final RelinkableHandle< YieldTermStructure > termStructureHandle = new RelinkableHandle< YieldTermStructure >(
+            null);
+    //
+    // private fields
+    //
+    private Date fixingDate;
 
-	
-	//
-	// public constructors
-	//
+    //
+    // public constructors
+    //
 
-	public FraRateHelper(
-			final Handle<Quote> rate,
-			final/* @Natural */int monthsToStart,
-			final/* @Natural */int monthsToEnd,
-			final/* @Natural */int fixingDays, 
-			final Calendar calendar,
-			final BusinessDayConvention convention, 
-			final boolean endOfMonth,
-			final DayCounter dayCounter) {
+    public FraRateHelper(final Handle< Quote > rate, final/* @Natural */int monthsToStart,
+            final/* @Natural */int monthsToEnd, final/* @Natural */int fixingDays, final Calendar calendar,
+            final BusinessDayConvention convention, final boolean endOfMonth, final DayCounter dayCounter) {
 
-		super(rate);
-		this.periodToStart = new Period(monthsToStart, TimeUnit.Months);
-		
-		QL.require(monthsToEnd > monthsToStart,
-				"monthsToEnd must be greater than monthsToStart");
-	
-		this.iborIndex = new IborIndex(
-				"no-fix", // never take fixing into account
-				new Period(monthsToEnd - monthsToStart, TimeUnit.Months),
-				fixingDays, new Currency(), calendar, convention, endOfMonth,
-				dayCounter, this.termStructureHandle);
+        super(rate);
+        this.periodToStart = new Period(monthsToStart, TimeUnit.Months);
 
-		initializeDates();
-	}
+        QL.require(monthsToEnd > monthsToStart, "monthsToEnd must be greater than monthsToStart");
 
-	public FraRateHelper(
-			final/* @Rate */double rate,
-			final/* @Natural */int monthsToStart,
-			final/* @Natural */int monthsToEnd,
-			final/* @Natural */int fixingDays, 
-			final Calendar calendar,
-			final BusinessDayConvention convention, 
-			final boolean endOfMonth,
-			final DayCounter dayCounter) {
-		
-		super(rate);
-		this.periodToStart = new Period(monthsToStart, TimeUnit.Months);
-		
-		QL.require(monthsToEnd > monthsToStart,
-				"monthsToEnd must be greater than monthsToStart");
+        this.iborIndex = new IborIndex("no-fix", // never take fixing into account
+                new Period(monthsToEnd - monthsToStart, TimeUnit.Months), fixingDays, new Currency(), calendar,
+                convention, endOfMonth, dayCounter, this.termStructureHandle);
 
-		iborIndex = new IborIndex(
-				"no-fix", // never take fixing into account
-				new Period(monthsToEnd - monthsToStart, TimeUnit.Months),
-				fixingDays, new Currency(), calendar, convention, endOfMonth,
-				dayCounter, this.termStructureHandle);
+        initializeDates();
+    }
 
-		initializeDates();
-	}
+    public FraRateHelper(final/* @Rate */double rate, final/* @Natural */int monthsToStart,
+            final/* @Natural */int monthsToEnd, final/* @Natural */int fixingDays, final Calendar calendar,
+            final BusinessDayConvention convention, final boolean endOfMonth, final DayCounter dayCounter) {
 
-	public FraRateHelper(
-			final Handle<Quote> rate,
-			final/* @Natural */int monthsToStart, 
-			final IborIndex i) {
-		
-		super(rate);
-		this.periodToStart = new Period(monthsToStart, TimeUnit.Months);
+        super(rate);
+        this.periodToStart = new Period(monthsToStart, TimeUnit.Months);
 
-		
-		iborIndex = new IborIndex(
-				"no-fix", // never take fixing into account
-				i.tenor(), i.fixingDays(), new Currency(), i.fixingCalendar(),
-				i.businessDayConvention(), i.endOfMonth(), i.dayCounter(),
-				this.termStructureHandle);
+        QL.require(monthsToEnd > monthsToStart, "monthsToEnd must be greater than monthsToStart");
 
-		initializeDates();
-	}
+        iborIndex = new IborIndex("no-fix", // never take fixing into account
+                new Period(monthsToEnd - monthsToStart, TimeUnit.Months), fixingDays, new Currency(), calendar,
+                convention, endOfMonth, dayCounter, this.termStructureHandle);
 
-	public FraRateHelper(
-			final/* @Rate */double rate,
-			final/* @Natural */int monthsToStart, 
-			final IborIndex i) {
+        initializeDates();
+    }
 
-		super(rate);
-		this.periodToStart = new Period(monthsToStart, TimeUnit.Months);
+    public FraRateHelper(final Handle< Quote > rate, final/* @Natural */int monthsToStart, final IborIndex i) {
 
-		
-		iborIndex = new IborIndex(
-				"no-fix", // never take fixing into account
-				i.tenor(), i.fixingDays(), new Currency(), i.fixingCalendar(),
-				i.businessDayConvention(), i.endOfMonth(), i.dayCounter(),
-				this.termStructureHandle);
+        super(rate);
+        this.periodToStart = new Period(monthsToStart, TimeUnit.Months);
 
-		initializeDates();
-	}
+        iborIndex = new IborIndex("no-fix", // never take fixing into account
+                i.tenor(), i.fixingDays(), new Currency(), i.fixingCalendar(), i.businessDayConvention(),
+                i.endOfMonth(), i.dayCounter(), this.termStructureHandle);
 
-	public FraRateHelper(
-			final Handle<Quote> rate, 
-			final Period periodToStart,
-			final/* @Natural */int lengthInMonths,
-			final/* @Natural */int fixingDays, 
-			final Calendar calendar,
-			final BusinessDayConvention convention, 
-			final boolean endOfMonth,
-			final DayCounter dayCounter) {
+        initializeDates();
+    }
 
-		super(rate);
-		this.periodToStart = periodToStart;
-	
+    public FraRateHelper(final/* @Rate */double rate, final/* @Natural */int monthsToStart, final IborIndex i) {
 
-		iborIndex = new IborIndex(
-				"no-fix", // never take fixing into account
-				new Period(lengthInMonths, TimeUnit.Months), fixingDays,
-				new Currency(), calendar, convention, endOfMonth, dayCounter,
-				this.termStructureHandle);
+        super(rate);
+        this.periodToStart = new Period(monthsToStart, TimeUnit.Months);
 
-		initializeDates();
+        iborIndex = new IborIndex("no-fix", // never take fixing into account
+                i.tenor(), i.fixingDays(), new Currency(), i.fixingCalendar(), i.businessDayConvention(),
+                i.endOfMonth(), i.dayCounter(), this.termStructureHandle);
 
-	}
+        initializeDates();
+    }
 
-	public FraRateHelper(
-			final/* @Rate */double rate, 
-			final Period periodToStart,
-			final/* @Natural */int lengthInMonths,
-			final/* @Natural */int fixingDays, 
-			final Calendar calendar,
-			final BusinessDayConvention convention, 
-			final boolean endOfMonth,
-			final DayCounter dayCounter) {
+    public FraRateHelper(final Handle< Quote > rate, final Period periodToStart, final/* @Natural */int lengthInMonths,
+            final/* @Natural */int fixingDays, final Calendar calendar, final BusinessDayConvention convention,
+            final boolean endOfMonth, final DayCounter dayCounter) {
 
-		super(rate);
-		this.periodToStart = periodToStart;
-		
+        super(rate);
+        this.periodToStart = periodToStart;
 
-		iborIndex = new IborIndex(
-				"no-fix", // never take fixing into account
-				new Period(lengthInMonths, TimeUnit.Months), fixingDays,
-				new Currency(), calendar, convention, endOfMonth, dayCounter,
-				this.termStructureHandle);
-		initializeDates();
+        iborIndex = new IborIndex("no-fix", // never take fixing into account
+                new Period(lengthInMonths, TimeUnit.Months), fixingDays, new Currency(), calendar, convention,
+                endOfMonth, dayCounter, this.termStructureHandle);
 
-	}
+        initializeDates();
 
-	public FraRateHelper(
-			final Handle<Quote> rate, 
-			final Period periodToStart,
-			final IborIndex i) {
-		
-		super(rate);
-		this.periodToStart = periodToStart;
-		
+    }
 
-		iborIndex = new IborIndex(
-				"no-fix",// never take fixing into account
-				i.tenor(), i.fixingDays(), new Currency(), i.fixingCalendar(),
-				i.businessDayConvention(), i.endOfMonth(), i.dayCounter(),
-				this.termStructureHandle);
+    public FraRateHelper(final/* @Rate */double rate, final Period periodToStart, final/* @Natural */int lengthInMonths,
+            final/* @Natural */int fixingDays, final Calendar calendar, final BusinessDayConvention convention,
+            final boolean endOfMonth, final DayCounter dayCounter) {
 
-		initializeDates();
+        super(rate);
+        this.periodToStart = periodToStart;
 
-	}
+        iborIndex = new IborIndex("no-fix", // never take fixing into account
+                new Period(lengthInMonths, TimeUnit.Months), fixingDays, new Currency(), calendar, convention,
+                endOfMonth, dayCounter, this.termStructureHandle);
+        initializeDates();
 
-	public FraRateHelper(
-			final/* @Rate */double rate, 
-			final Period periodToStart,
-			final IborIndex i) {
+    }
 
-		super(rate);
-		this.periodToStart = periodToStart;
-		
+    public FraRateHelper(final Handle< Quote > rate, final Period periodToStart, final IborIndex i) {
 
-		iborIndex = new IborIndex(
-				"no-fix",// never take fixing into account
-				i.tenor(), i.fixingDays(), new Currency(), i.fixingCalendar(),
-				i.businessDayConvention(), i.endOfMonth(), i.dayCounter(),
-				this.termStructureHandle);
+        super(rate);
+        this.periodToStart = periodToStart;
 
-		initializeDates();
+        iborIndex = new IborIndex("no-fix",// never take fixing into account
+                i.tenor(), i.fixingDays(), new Currency(), i.fixingCalendar(), i.businessDayConvention(),
+                i.endOfMonth(), i.dayCounter(), this.termStructureHandle);
 
-	}
+        initializeDates();
 
-    
+    }
+
+    public FraRateHelper(final/* @Rate */double rate, final Period periodToStart, final IborIndex i) {
+
+        super(rate);
+        this.periodToStart = periodToStart;
+
+        iborIndex = new IborIndex("no-fix",// never take fixing into account
+                i.tenor(), i.fixingDays(), new Currency(), i.fixingCalendar(), i.businessDayConvention(),
+                i.endOfMonth(), i.dayCounter(), this.termStructureHandle);
+
+        initializeDates();
+
+    }
+
     //
     // implements BootstrapHelper
     //
 
     @Override
-    public double impliedQuote()  {
-        QL.require(termStructure != null , "term structure not set");
+    public double impliedQuote() {
+        QL.require(termStructure != null, "term structure not set");
         return iborIndex.fixing(this.fixingDate, true);
     }
 
@@ -259,19 +192,15 @@ public class FraRateHelper extends RelativeDateRateHelper {
     @Override
     protected void initializeDates() {
 
-		final Date settlement = iborIndex.fixingCalendar().advance(this.evaluationDate,
-				                                                  new Period(iborIndex.fixingDays(), TimeUnit.Days));
-			                                                  
+        final Date settlement = iborIndex.fixingCalendar()
+                .advance(this.evaluationDate, new Period(iborIndex.fixingDays(), TimeUnit.Days));
 
-		this.earliestDate = iborIndex.fixingCalendar().advance( settlement,
-				                                                this.periodToStart,
-				                                                iborIndex.businessDayConvention(), 
-				                                                iborIndex.endOfMonth());
-		
-		this.latestDate = iborIndex.maturityDate(this.earliestDate);
-		this.fixingDate = iborIndex.fixingDate(this.earliestDate);
+        this.earliestDate = iborIndex.fixingCalendar()
+                .advance(settlement, this.periodToStart, iborIndex.businessDayConvention(), iborIndex.endOfMonth());
+
+        this.latestDate = iborIndex.maturityDate(this.earliestDate);
+        this.fixingDate = iborIndex.fixingDate(this.earliestDate);
     }
-
 
     //
     // implements PolymorphicVisitable
@@ -279,8 +208,8 @@ public class FraRateHelper extends RelativeDateRateHelper {
 
     @Override
     public void accept(final PolymorphicVisitor pv) {
-        final Visitor<FraRateHelper> v = (pv!=null) ? pv.visitor(this.getClass()) : null;
-        if (v != null) {
+        final Visitor< FraRateHelper > v = (pv != null) ? pv.visitor(this.getClass()) : null;
+        if ( v != null ) {
             v.visit(this);
         } else {
             super.accept(pv);

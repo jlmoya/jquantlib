@@ -54,11 +54,11 @@ import org.jquantlib.util.Pair;
  */
 public class InterpolatingCPICapFloorEngine extends CPICapFloor.Engine {
 
-    protected Handle<CPICapFloorTermPriceSurface> priceSurf_;
+    protected Handle< CPICapFloorTermPriceSurface > priceSurf_;
 
-    public InterpolatingCPICapFloorEngine(final Handle<CPICapFloorTermPriceSurface> priceSurf) {
+    public InterpolatingCPICapFloorEngine(final Handle< CPICapFloorTermPriceSurface > priceSurf) {
         this.priceSurf_ = priceSurf;
-        if (priceSurf_ != null) {
+        if ( priceSurf_ != null ) {
             priceSurf_.addObserver(this);
         }
     }
@@ -69,10 +69,8 @@ public class InterpolatingCPICapFloorEngine extends CPICapFloor.Engine {
 
     @Override
     public void calculate() {
-        final CPICapFloor.ArgumentsImpl arguments =
-                (CPICapFloor.ArgumentsImpl) arguments_;
-        final CPICapFloor.ResultsImpl results =
-                (CPICapFloor.ResultsImpl) results_;
+        final CPICapFloor.ArgumentsImpl arguments = (CPICapFloor.ArgumentsImpl) arguments_;
+        final CPICapFloor.ResultsImpl results = (CPICapFloor.ResultsImpl) results_;
 
         double npv = 0.0;
 
@@ -84,29 +82,29 @@ public class InterpolatingCPICapFloorEngine extends CPICapFloor.Engine {
         // Effective maturity
         final Date effectiveMaturity = arguments.payDate.sub(lagDiff);
 
-        if (arguments.observationInterpolation == CPI.InterpolationType.AsIndex) {
-            if (arguments.type == Option.Type.Call) {
+        if ( arguments.observationInterpolation == CPI.InterpolationType.AsIndex ) {
+            if ( arguments.type == Option.Type.Call ) {
                 npv = priceSurf_.currentLink().capPrice(effectiveMaturity, arguments.strike);
             } else {
                 npv = priceSurf_.currentLink().floorPrice(effectiveMaturity, arguments.strike);
             }
         } else {
-            final Pair<Date, Date> dd = InflationTermStructure.inflationPeriod(
-                    effectiveMaturity, arguments.index.frequency());
+            final Pair< Date, Date > dd = InflationTermStructure.inflationPeriod(effectiveMaturity,
+                    arguments.index.frequency());
             double priceStart;
-            if (arguments.type == Option.Type.Call) {
+            if ( arguments.type == Option.Type.Call ) {
                 priceStart = priceSurf_.currentLink().capPrice(dd.first(), arguments.strike);
             } else {
                 priceStart = priceSurf_.currentLink().floorPrice(dd.first(), arguments.strike);
             }
 
-            if (arguments.observationInterpolation == CPI.InterpolationType.Flat) {
+            if ( arguments.observationInterpolation == CPI.InterpolationType.Flat ) {
                 npv = priceStart;
             } else {
                 // Linear interpolation
                 final Date oneDayAfterEnd = dd.second().add(new Period(1, TimeUnit.Days));
                 double priceEnd;
-                if (arguments.type == Option.Type.Call) {
+                if ( arguments.type == Option.Type.Call ) {
                     priceEnd = priceSurf_.currentLink().capPrice(oneDayAfterEnd, arguments.strike);
                 } else {
                     priceEnd = priceSurf_.currentLink().floorPrice(oneDayAfterEnd, arguments.strike);

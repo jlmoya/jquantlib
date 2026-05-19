@@ -47,11 +47,9 @@ import org.jquantlib.time.TimeGrid;
  * <p>The path includes the initial asset value as its first point.
  *
  * <p>Java port of {@code QuantLib v1.42.1 ql/methods/montecarlo/path.hpp}
- * (Phase 5h.5-MC-INFRA). The legacy {@code getValues_()} accessors are
- * retained for backward source compatibility with the few in-tree
- * call-sites; new code must use the C++-aligned API ({@code get},
- * {@code at}, {@code value}, {@code front}, {@code back}, {@code set},
- * {@code timeGrid}).
+ * (Phase 5h.5-MC-INFRA). The legacy {@code getValues_()} accessors are retained for backward source compatibility with
+ * the few in-tree call-sites; new code must use the C++-aligned API ({@code get}, {@code at}, {@code value},
+ * {@code front}, {@code back}, {@code set}, {@code timeGrid}).
  *
  * @author Richard Gomes
  */
@@ -64,7 +62,6 @@ public class Path {
     private TimeGrid timeGrid_;
     private double[] values_;
 
-
     //
     // public constructors
     //
@@ -75,19 +72,17 @@ public class Path {
 
     public Path(final TimeGrid timeGrid, final double[] values) {
         this.timeGrid_ = timeGrid;
-        if (values == null || values.length == 0) {
+        if ( values == null || values.length == 0 ) {
             this.values_ = new double[timeGrid_.size()];
         } else {
             this.values_ = values;
         }
-        if (this.values_.length != timeGrid_.size()) {
+        if ( this.values_.length != timeGrid_.size() ) {
             throw new IllegalArgumentException(
-                    "different number of times and asset values"
-                            + " (timeGrid.size=" + timeGrid_.size()
+                    "different number of times and asset values" + " (timeGrid.size=" + timeGrid_.size()
                             + ", values.length=" + this.values_.length + ")");
         }
     }
-
 
     //
     // legacy accessors (kept for source compat with existing call-sites)
@@ -97,26 +92,25 @@ public class Path {
         return timeGrid_;
     }
 
-    public double[] getValues_() {
-        return values_;
-    }
-
-    public double getValues_(final int i) {
-        return values_[i];
-    }
-
     /*@PackagePrivate*/ void setTimeGrid_(final TimeGrid timeGrid_) {
         this.timeGrid_ = timeGrid_;
+    }
+
+    public double[] getValues_() {
+        return values_;
     }
 
     /*@PackagePrivate*/ void setValues_(final double[] values) {
         this.values_ = values;
     }
 
+    public double getValues_(final int i) {
+        return values_[i];
+    }
+
     /*@PackagePrivate*/ void setValues_(final int i, final double value) {
         this.values_[i] = value;
     }
-
 
     //
     // C++-aligned inspectors (Phase 5h.5-MC-INFRA)
@@ -137,28 +131,24 @@ public class Path {
     }
 
     /**
-     * Asset value at the i-th point (mirrors C++ {@code operator[](Size)}
-     * and {@code value(Size)} const).
+     * Asset value at the i-th point (mirrors C++ {@code operator[](Size)} and {@code value(Size)} const).
      */
     public /* @Real */ double get(final /* @NonNegative */ int i) /* @ReadOnly */ {
         return values_[i];
     }
 
     /**
-     * Bounds-checked asset value at the i-th point (mirrors C++
-     * {@code Path::at(Size)}; throws on out-of-range).
+     * Bounds-checked asset value at the i-th point (mirrors C++ {@code Path::at(Size)}; throws on out-of-range).
      */
     public /* @Real */ double at(final /* @NonNegative */ int i) /* @ReadOnly */ {
-        if (i < 0 || i >= values_.length) {
-            throw new IndexOutOfBoundsException("Path.at: index " + i
-                    + " out of range [0," + values_.length + ")");
+        if ( i < 0 || i >= values_.length ) {
+            throw new IndexOutOfBoundsException("Path.at: index " + i + " out of range [0," + values_.length + ")");
         }
         return values_[i];
     }
 
     /**
-     * Alias of {@link #get(int)} for parity with the C++ {@code value()}
-     * accessor.
+     * Alias of {@link #get(int)} for parity with the C++ {@code value()} accessor.
      */
     public /* @Real */ double value(final /* @NonNegative */ int i) /* @ReadOnly */ {
         return values_[i];
@@ -179,24 +169,21 @@ public class Path {
     }
 
     /**
-     * Mirrors {@code Path::operator[](Size)} non-const and
-     * {@code Path::value(Size)} non-const: write-access setter.
+     * Mirrors {@code Path::operator[](Size)} non-const and {@code Path::value(Size)} non-const: write-access setter.
      */
     public void set(final /* @NonNegative */ int i, final /* @Real */ double value) {
         values_[i] = value;
     }
 
     /**
-     * Sets the initial asset value (mirrors {@code Path::front()}
-     * non-const reference returned by C++).
+     * Sets the initial asset value (mirrors {@code Path::front()} non-const reference returned by C++).
      */
     public void setFront(final /* @Real */ double value) {
         values_[0] = value;
     }
 
     /**
-     * Sets the final asset value (mirrors {@code Path::back()}
-     * non-const reference returned by C++).
+     * Sets the final asset value (mirrors {@code Path::back()} non-const reference returned by C++).
      */
     public void setBack(final /* @Real */ double value) {
         values_[values_.length - 1] = value;
@@ -210,17 +197,15 @@ public class Path {
     }
 
     /**
-     * Mirrors {@code Path::timeGrid()}: read-only access to the
-     * underlying time grid.
+     * Mirrors {@code Path::timeGrid()}: read-only access to the underlying time grid.
      */
     public TimeGrid timeGrid() /* @ReadOnly */ {
         return timeGrid_;
     }
 
     /**
-     * Returns the underlying values array. Caller must not retain or
-     * mutate this array between successive {@link PathGenerator#next()}
-     * calls — the path generator reuses the array for each draw.
+     * Returns the underlying values array. Caller must not retain or mutate this array between successive
+     * {@link PathGenerator#next()} calls — the path generator reuses the array for each draw.
      */
     public double[] values() /* @ReadOnly */ {
         return values_;

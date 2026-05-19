@@ -58,30 +58,22 @@ import org.jquantlib.time.Schedule;
  *
  * swap paying Libor against BMA coupons
  *
- * @category instruments
- *
  * @author Tim Blackler
+ * @category instruments
  */
 // TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class BMASwap extends Swap {
 
-    static final /*@Spread*/ double  basisPoint = 1.0e-4;
+    static final /*@Spread*/ double basisPoint = 1.0e-4;
 
     private final Type type;
     private final /*@Real*/ double nominal;
     private final /*@Rate*/ double liborFraction;
     private final /*@Rate*/ double liborSpread;
 
-    public BMASwap(
-            final Type type,
-            final /*@Real*/ double nominal,
-            final Schedule liborSchedule,
-            final /*@Rate*/ double liborFraction,
-            final /*@Rate*/ double liborSpread, 
-            final IborIndex liborIndex,
-            final DayCounter liborDayCount,
-            final Schedule bmaSchedule,
-            final BMAIndex bmaIndex,
+    public BMASwap(final Type type, final /*@Real*/ double nominal, final Schedule liborSchedule,
+            final /*@Rate*/ double liborFraction, final /*@Rate*/ double liborSpread, final IborIndex liborIndex,
+            final DayCounter liborDayCount, final Schedule bmaSchedule, final BMAIndex bmaIndex,
             final DayCounter bmaDayCount) {
         super(2);
         this.type = type;
@@ -90,126 +82,115 @@ public class BMASwap extends Swap {
         this.liborSpread = liborSpread;
 
         final BusinessDayConvention convention = liborSchedule.businessDayConvention();
-        
-        final Leg iborLeg = new IborLeg(liborSchedule, liborIndex)
-							        .withNotionals(nominal)
-							        .withPaymentDayCounter(liborDayCount)
-							        .withPaymentAdjustment(convention)
-							        .withFixingDays(liborIndex.fixingDays())
-							        .withGearings(liborFraction)
-							        .withSpreads(liborSpread)
-							        .Leg();
+
+        final Leg iborLeg = new IborLeg(liborSchedule, liborIndex).withNotionals(nominal)
+                .withPaymentDayCounter(liborDayCount).withPaymentAdjustment(convention)
+                .withFixingDays(liborIndex.fixingDays()).withGearings(liborFraction).withSpreads(liborSpread).Leg();
         this.legs.add(iborLeg);
 
-        final Leg bmaLeg = new AverageBMALeg(bmaSchedule, bmaIndex)
-							        .withNotionals(nominal)
-							        .withPaymentDayCounter(bmaDayCount)
-							        .withPaymentAdjustment(bmaSchedule.businessDayConvention())
-							        .Leg();
-        
-        this.legs.add(bmaLeg);        
-        
-        for (final Leg leg : this.legs) {
-        	for (final CashFlow item : leg) {
-        		item.addObserver(this);
-        	}
+        final Leg bmaLeg = new AverageBMALeg(bmaSchedule, bmaIndex).withNotionals(nominal)
+                .withPaymentDayCounter(bmaDayCount).withPaymentAdjustment(bmaSchedule.businessDayConvention()).Leg();
+
+        this.legs.add(bmaLeg);
+
+        for ( final Leg leg : this.legs ) {
+            for ( final CashFlow item : leg ) {
+                item.addObserver(this);
+            }
         }
-        
-        switch (type) {
+
+        switch ( type ) {
         case Payer:
-        	payer[0] = +1.0;
-        	payer[1] = -1.0;
-        	break;
+            payer[0] = +1.0;
+            payer[1] = -1.0;
+            break;
         case Receiver:
-        	payer[0] = -1.0;
-        	payer[1] = +1.0;
-        	break;
+            payer[0] = -1.0;
+            payer[1] = +1.0;
+            break;
         default:
-        	throw new LibraryException("Unknown BMA-swap type");
+            throw new LibraryException("Unknown BMA-swap type");
         }
-        							
+
     }
 
-    public /*@Rate*/ double  liborFraction() /* @ReadOnly */ {
-    	 return liborFraction;
+    public /*@Rate*/ double liborFraction() /* @ReadOnly */ {
+        return liborFraction;
     }
 
-    public /*@Spread*/ double  liborSpread() /* @ReadOnly */ {
-   	 return liborSpread;
+    public /*@Spread*/ double liborSpread() /* @ReadOnly */ {
+        return liborSpread;
     }
-    
-    public /*@Real*/ double  nominal() /* @ReadOnly */ {
-      	 return nominal;
-      }
-    
+
+    public /*@Real*/ double nominal() /* @ReadOnly */ {
+        return nominal;
+    }
+
     public Type type() /* @ReadOnly */ {
-     	 return type;
-     }
+        return type;
+    }
 
     public Leg liborLeg() /* @ReadOnly */ {
-    	 return legs.get(0);
+        return legs.get(0);
     }
 
     public Leg bmaLeg() /* @ReadOnly */ {
-   	 return legs.get(1);
-   }
+        return legs.get(1);
+    }
 
     public /*@Real*/ double liborLegBPS() /* @ReadOnly */ {
-    	calculate();
-    	QL.require(!Double.isNaN(legBPS[0]) , "result not available");
-    	return legBPS[0];
+        calculate();
+        QL.require(!Double.isNaN(legBPS[0]), "result not available");
+        return legBPS[0];
     }
-    
-    
-	public /*@Real*/ double liborLegNPV() /* @ReadOnly */ {
-		calculate();
-		QL.require(!Double.isNaN(legNPV[0]) , "result not available");
-		return legNPV[0];
-	}
-    
-      
-	public /*@Real*/ double  fairLiborFraction() /* @ReadOnly */ {
-	
-		@Real
-		final double spreadNPV = (liborSpread/basisPoint)*liborLegBPS();
-		@Real
-		final double pureLiborNPV = liborLegNPV() - spreadNPV;
-		
-		return -liborFraction * (bmaLegNPV() + spreadNPV) / pureLiborNPV;
-	}   
-    
-    public /*@Spread*/ double  fairLiborSpread() /* @ReadOnly */ {
-      	 return liborSpread - NPV()/(liborLegBPS()/basisPoint);
-    }   
+
+    public /*@Real*/ double liborLegNPV() /* @ReadOnly */ {
+        calculate();
+        QL.require(!Double.isNaN(legNPV[0]), "result not available");
+        return legNPV[0];
+    }
+
+    public /*@Real*/ double fairLiborFraction() /* @ReadOnly */ {
+
+        @Real
+        final double spreadNPV = (liborSpread / basisPoint) * liborLegBPS();
+        @Real
+        final double pureLiborNPV = liborLegNPV() - spreadNPV;
+
+        return -liborFraction * (bmaLegNPV() + spreadNPV) / pureLiborNPV;
+    }
+
+    public /*@Spread*/ double fairLiborSpread() /* @ReadOnly */ {
+        return liborSpread - NPV() / (liborLegBPS() / basisPoint);
+    }
 
     public /*@Real*/ double bmaLegBPS() /* @ReadOnly */ {
-    	calculate();
-    	QL.require(!Double.isNaN(legBPS[1]) , "result not available");
-    	return legBPS[1];
+        calculate();
+        QL.require(!Double.isNaN(legBPS[1]), "result not available");
+        return legBPS[1];
     }
-    
+
     public /*@Real*/ double bmaLegNPV() /* @ReadOnly */ {
-    	calculate();
-    	QL.require(!Double.isNaN(legNPV[1]) , "result not available");
-    	return legNPV[1];
+        calculate();
+        QL.require(!Double.isNaN(legNPV[1]), "result not available");
+        return legNPV[1];
     }
 
     //
     // inner public enums
     //
 
-    public static enum Type {
-        Receiver (-1),
-        Payer (1);
+    public enum Type {
+        Receiver(-1), Payer(1);
 
         private final int enumValue;
 
-        private Type(final int frequency) {
+        Type(final int frequency) {
             this.enumValue = frequency;
         }
 
         static public Type valueOf(final int value) {
-            switch (value) {
+            switch ( value ) {
             case -1:
                 return Type.Receiver;
             case 1:
@@ -223,5 +204,5 @@ public class BMASwap extends Swap {
             return this.enumValue;
         }
     }
-    
+
 }

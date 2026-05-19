@@ -34,13 +34,10 @@ import org.jquantlib.model.marketmodels.products.MultiProductMultiStep;
 /**
  * Multi-step Target Accrual Redemption Note (TARN).
  * <p>
- * Mirrors C++ {@code class MultiStepTarn}
- * (ql/models/marketmodels/products/multistep/multisteptarn.{hpp,cpp} v1.42.1).
+ * Mirrors C++ {@code class MultiStepTarn} (ql/models/marketmodels/products/multistep/multisteptarn.{hpp,cpp} v1.42.1).
  * <p>
- * Pays a floating coupon and an inverse-floating coupon each step until
- * accumulated inverse-floating coupons reach the target {@code totalCoupon};
- * the final payment is truncated to ensure exactly {@code totalCoupon} has
- * been paid.
+ * Pays a floating coupon and an inverse-floating coupon each step until accumulated inverse-floating coupons reach the
+ * target {@code totalCoupon}; the final payment is truncated to ensure exactly {@code totalCoupon} has been paid.
  *
  * @author Jose Moya
  */
@@ -60,20 +57,15 @@ public class MultiStepTarn extends MultiProductMultiStep {
     private double couponPaid_;
     private int currentIndex_;
 
-    public MultiStepTarn(final double[] rateTimes,
-                         final double[] accruals,
-                         final double[] accrualsFloating,
-                         final double[] paymentTimes,
-                         final double[] paymentTimesFloating,
-                         final double totalCoupon,
-                         final double[] strikes,
-                         final double[] multipliers,
-                         final double[] floatingSpreads) {
+    public MultiStepTarn(final double[] rateTimes, final double[] accruals, final double[] accrualsFloating,
+            final double[] paymentTimes, final double[] paymentTimesFloating, final double totalCoupon,
+            final double[] strikes, final double[] multipliers, final double[] floatingSpreads) {
         super(rateTimes);
         QL.require(accruals.length + 1 == rateTimes.length, "missized accruals in MultiStepTARN");
         QL.require(accrualsFloating.length + 1 == rateTimes.length, "missized accrualsFloating in MultiStepTARN");
         QL.require(paymentTimes.length + 1 == rateTimes.length, "missized paymentTimes in MultiStepTARN");
-        QL.require(paymentTimesFloating.length + 1 == rateTimes.length, "missized paymentTimesFloating in MultiStepTARN");
+        QL.require(paymentTimesFloating.length + 1 == rateTimes.length,
+                "missized paymentTimesFloating in MultiStepTARN");
         QL.require(strikes.length + 1 == rateTimes.length, "missized strikes in MultiStepTARN");
         QL.require(floatingSpreads.length + 1 == rateTimes.length, "missized floatingSpreads in MultiStepTARN");
 
@@ -94,19 +86,23 @@ public class MultiStepTarn extends MultiProductMultiStep {
         final int extra = paymentTimesFloating.length;
         this.allPaymentTimes_ = new double[paymentTimes.length + extra];
         System.arraycopy(paymentTimes, 0, allPaymentTimes_, 0, paymentTimes.length);
-        for (int i = 0; i < extra; ++i) {
-            allPaymentTimes_[paymentTimes.length + i] = paymentTimes[i];
-        }
+        System.arraycopy(paymentTimes, 0, allPaymentTimes_, paymentTimes.length + 0, extra);
     }
 
     @Override
-    public double[] possibleCashFlowTimes() { return allPaymentTimes_; }
+    public double[] possibleCashFlowTimes() {
+        return allPaymentTimes_;
+    }
 
     @Override
-    public int numberOfProducts() { return 1; }
+    public int numberOfProducts() {
+        return 1;
+    }
 
     @Override
-    public int maxNumberOfCashFlowsPerProductPerStep() { return 2; }
+    public int maxNumberOfCashFlowsPerProductPerStep() {
+        return 2;
+    }
 
     @Override
     public void reset() {
@@ -115,27 +111,24 @@ public class MultiStepTarn extends MultiProductMultiStep {
     }
 
     @Override
-    public boolean nextTimeStep(final CurveState currentState,
-                                final int[] numberCashFlowsThisStep,
-                                final MarketModelMultiProduct.CashFlow[][] genCashFlows) {
+    public boolean nextTimeStep(final CurveState currentState, final int[] numberCashFlowsThisStep,
+            final MarketModelMultiProduct.CashFlow[][] genCashFlows) {
         final double liborRate = currentState.forwardRate(currentIndex_);
 
         numberCashFlowsThisStep[0] = 2;
 
-        genCashFlows[0][0].amount =
-                (liborRate + floatingSpreads_[currentIndex_]) * accrualsFloating_[currentIndex_];
+        genCashFlows[0][0].amount = (liborRate + floatingSpreads_[currentIndex_]) * accrualsFloating_[currentIndex_];
         genCashFlows[0][0].timeIndex = lastIndex_ + currentIndex_;
 
         genCashFlows[0][1].timeIndex = currentIndex_;
 
-        final double obviousCoupon =
-                Math.max(strikes_[currentIndex_] - multipliers_[currentIndex_] * liborRate, 0.0)
-                        * accruals_[currentIndex_];
+        final double obviousCoupon = Math.max(strikes_[currentIndex_] - multipliers_[currentIndex_] * liborRate, 0.0)
+                * accruals_[currentIndex_];
 
         couponPaid_ += obviousCoupon;
         ++currentIndex_;
 
-        if (couponPaid_ < totalCoupon_ && currentIndex_ < lastIndex_) {
+        if ( couponPaid_ < totalCoupon_ && currentIndex_ < lastIndex_ ) {
             genCashFlows[0][1].amount = -obviousCoupon;
             return false;
         }
@@ -148,7 +141,7 @@ public class MultiStepTarn extends MultiProductMultiStep {
 
     @Override
     public MarketModelMultiProduct clone() {
-        return new MultiStepTarn(rateTimes_, accruals_, accrualsFloating_, paymentTimes_,
-                paymentTimesFloating_, totalCoupon_, strikes_, multipliers_, floatingSpreads_);
+        return new MultiStepTarn(rateTimes_, accruals_, accrualsFloating_, paymentTimes_, paymentTimesFloating_,
+                totalCoupon_, strikes_, multipliers_, floatingSpreads_);
     }
 }

@@ -56,11 +56,8 @@ public class SMMDriftCalculator {
     private final Matrix wkpj_;        // < W(k) | P(j)/P(n) >
     private final Matrix wkajshifted_;
 
-    public SMMDriftCalculator(final Matrix pseudo,
-                              final double[] displacements,
-                              final double[] taus,
-                              final int numeraire,
-                              final int alive) {
+    public SMMDriftCalculator(final Matrix pseudo, final double[] displacements, final double[] taus,
+            final int numeraire, final int alive) {
         this.numberOfRates_ = taus.length;
         this.numberOfFactors_ = pseudo.columns();
         this.numeraire_ = numeraire;
@@ -77,17 +74,15 @@ public class SMMDriftCalculator {
         this.wkajshifted_ = new Matrix(pseudo_.columns(), pseudo_.rows());
 
         QL.require(numberOfRates_ > 0, "Dim out of range");
-        QL.require(displacements.length == numberOfRates_,
-                "Displacements out of range");
-        QL.require(pseudo.rows() == numberOfRates_,
-                "pseudo.rows() not consistent with dim");
+        QL.require(displacements.length == numberOfRates_, "Displacements out of range");
+        QL.require(pseudo.rows() == numberOfRates_, "pseudo.rows() not consistent with dim");
         QL.require(pseudo.columns() > 0 && pseudo.columns() <= numberOfRates_,
                 "pseudo.rows() not consistent with pseudo.columns()");
         QL.require(alive < numberOfRates_, "Alive out of bounds");
         QL.require(numeraire_ <= numberOfRates_, "Numeraire larger than dim");
         QL.require(numeraire_ >= alive, "Numeraire smaller than alive");
 
-        for (int i = 0; i < taus.length; ++i) {
+        for ( int i = 0; i < taus.length; ++i ) {
             oneOverTaus_[i] = 1.0 / taus[i];
         }
         this.C_ = pseudo_.mul(pseudo_.transpose());
@@ -99,18 +94,19 @@ public class SMMDriftCalculator {
         final double[] SR = cs.coterminalSwapRates();
         final double[] taus = cs.rateTaus();
         final double[] annuities = new double[numberOfRates_];
-        for (int j = 0; j < numberOfRates_; ++j) {
+        for ( int j = 0; j < numberOfRates_; ++j ) {
             annuities[j] = cs.coterminalSwapAnnuity(numberOfRates_, j);
         }
 
-        for (int k = 0; k < numberOfFactors_; ++k) {
-            for (int j = numberOfRates_ - 2; j >= alive_ - 1; --j) {
+        for ( int k = 0; k < numberOfFactors_; ++k ) {
+            for ( int j = numberOfRates_ - 2; j >= alive_ - 1; --j ) {
                 final double annuity = annuities[j + 1];
                 final double pseudoJp1K = pseudo_.get(j + 1, k);
-                final double wkpj = SR[j + 1] * (pseudoJp1K * annuity + wkaj_.get(k, j + 1))
-                        + pseudoJp1K * displacements_[j + 1] * annuity;
+                final double wkpj =
+                        SR[j + 1] * (pseudoJp1K * annuity + wkaj_.get(k, j + 1)) + pseudoJp1K * displacements_[j + 1]
+                                * annuity;
                 wkpj_.set(k, j + 1, wkpj);
-                if (j >= alive_) {
+                if ( j >= alive_ ) {
                     final double w = wkpj * taus[j] + wkaj_.get(k, j + 1);
                     wkaj_.set(k, j, w);
                 }
@@ -119,18 +115,17 @@ public class SMMDriftCalculator {
 
         final double numeraireRatio = cs.discountRatio(numberOfRates_, numeraire_);
 
-        for (int k = 0; k < numberOfFactors_; ++k) {
-            for (int j = alive_; j < numberOfRates_; ++j) {
-                final double v = -wkaj_.get(k, j) / annuities[j]
-                        + wkpj_.get(k, numeraire_) * numeraireRatio;
+        for ( int k = 0; k < numberOfFactors_; ++k ) {
+            for ( int j = alive_; j < numberOfRates_; ++j ) {
+                final double v = -wkaj_.get(k, j) / annuities[j] + wkpj_.get(k, numeraire_) * numeraireRatio;
                 wkajshifted_.set(k, j, v);
             }
         }
 
         // eq 5.3 (in log coordinates)
-        for (int j = alive_; j < numberOfRates_; ++j) {
+        for ( int j = alive_; j < numberOfRates_; ++j ) {
             double d = 0.0;
-            for (int k = 0; k < numberOfFactors_; ++k) {
+            for ( int k = 0; k < numberOfFactors_; ++k ) {
                 d += wkajshifted_.get(k, j) * pseudo_.get(j, k);
             }
             drifts[j] = d;

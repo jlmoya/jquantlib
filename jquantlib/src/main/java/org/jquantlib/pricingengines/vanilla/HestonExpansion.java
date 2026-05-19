@@ -30,18 +30,16 @@ package org.jquantlib.pricingengines.vanilla;
  * Interface representing a Heston-implied-volatility expansion formula.
  *
  * <p>Phase 5h.5 port of {@code QuantLib::HestonExpansion}
- * (v1.42.1 ql/pricingengines/vanilla/hestonexpansionengine.{hpp,cpp}). Pinned
- * commit {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
+ * (v1.42.1 ql/pricingengines/vanilla/hestonexpansionengine.{hpp,cpp}). Pinned commit
+ * {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
  *
  * <p>During calibration, an instance is initialized once per implied-volatility
- * surface slice (i.e., per expiry), then queried for each strike via
- * {@link #impliedVolatility(double, double)}.
+ * surface slice (i.e., per expiry), then queried for each strike via {@link #impliedVolatility(double, double)}.
  */
 public interface HestonExpansion {
 
     /**
-     * Compute the Heston-model implied volatility at the supplied strike,
-     * given the forward.
+     * Compute the Heston-model implied volatility at the supplied strike, given the forward.
      *
      * @param strike  strike price
      * @param forward forward price (= spot * dividendDiscount / riskFreeDiscount)

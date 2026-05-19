@@ -21,10 +21,6 @@
  */
 package org.jquantlib.methods.finitedifferences.operators;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.matrixutilities.Matrix;
 import org.jquantlib.methods.finitedifferences.meshers.FdmMesher;
@@ -32,6 +28,10 @@ import org.jquantlib.quotes.Quote;
 import org.jquantlib.termstructures.Compounding;
 import org.jquantlib.termstructures.LocalVolTermStructure;
 import org.jquantlib.termstructures.YieldTermStructure;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Local-volatility linear operator for the Fokker-Planck forward equation.
@@ -43,16 +43,15 @@ import org.jquantlib.termstructures.YieldTermStructure;
  * <pre>
  *   dp/dt = - d/dx [(r - q - 0.5 sigma^2(t,S)) p] + 0.5 d^2/dx^2 [sigma^2(t,S) p]
  * </pre>
- * on a 1D log-spot mesh ({@code x = log(S)}) using a TripleBandLinearOp
- * formulation that matches C++:
+ * on a 1D log-spot mesh ({@code x = log(S)}) using a TripleBandLinearOp formulation that matches C++:
  * <pre>
  *   mapT = dxMap.multR(- r + q + 0.5 v) + dxxMap.multR(0.5 v)
  * </pre>
  * where {@code v[i] = sigma^2(0.5*(t1+t2), exp(x[i]))}.
  *
  * <p>Used by {@link
- * org.jquantlib.methods.finitedifferences.utilities.LocalVolRNDCalculator}
- * and the (deferred to Phase 5h.5-SLV) HestonSLVFDMModel.
+ * org.jquantlib.methods.finitedifferences.utilities.LocalVolRNDCalculator} and the (deferred to Phase 5h.5-SLV)
+ * HestonSLVFDMModel.
  *
  * @author Phase 5h.5-RND-b port
  */
@@ -68,12 +67,9 @@ public final class FdmLocalVolFwdOp implements FdmLinearOpComposite {
     private final TripleBandLinearOp mapT;
     private final int direction;
 
-    public FdmLocalVolFwdOp(final FdmMesher mesher,
-                            @SuppressWarnings("unused") final Quote spot,
-                            final YieldTermStructure rTS,
-                            final YieldTermStructure qTS,
-                            final LocalVolTermStructure localVol,
-                            final int direction) {
+    public FdmLocalVolFwdOp(final FdmMesher mesher, @SuppressWarnings( "unused" ) final Quote spot,
+            final YieldTermStructure rTS, final YieldTermStructure qTS, final LocalVolTermStructure localVol,
+            final int direction) {
         this.mesher = mesher;
         this.rTS = rTS;
         this.qTS = qTS;
@@ -85,22 +81,21 @@ public final class FdmLocalVolFwdOp implements FdmLinearOpComposite {
         // op (not used in production). We always require localVol here.
         this.x = mesher.locations(direction).exp();
 
-        this.dxMap  = new FirstDerivativeOp(direction, mesher);
+        this.dxMap = new FirstDerivativeOp(direction, mesher);
         this.dxxMap = new SecondDerivativeOp(direction, mesher);
-        this.mapT   = new TripleBandLinearOp(direction, mesher);
+        this.mapT = new TripleBandLinearOp(direction, mesher);
     }
 
     /** Convenience constructor matching C++ default {@code direction = 0}. */
-    public FdmLocalVolFwdOp(final FdmMesher mesher,
-                            final Quote spot,
-                            final YieldTermStructure rTS,
-                            final YieldTermStructure qTS,
-                            final LocalVolTermStructure localVol) {
+    public FdmLocalVolFwdOp(final FdmMesher mesher, final Quote spot, final YieldTermStructure rTS,
+            final YieldTermStructure qTS, final LocalVolTermStructure localVol) {
         this(mesher, spot, rTS, qTS, localVol, 0);
     }
 
     @Override
-    public int size() { return 1; }
+    public int size() {
+        return 1;
+    }
 
     @Override
     public void setTime(final double t1, final double t2) {
@@ -112,7 +107,7 @@ public final class FdmLocalVolFwdOp implements FdmLinearOpComposite {
         final int n = mesher.layout().size();
         final Array v = new Array(n);
         final double tmid = 0.5 * (t1 + t2);
-        for (final FdmLinearOpIterator iter : mesher.layout()) {
+        for ( final FdmLinearOpIterator iter : mesher.layout() ) {
             final int i = iter.index();
             final double sig = localVol.localVol(tmid, x.get(i), true);
             v.set(i, sig * sig);
@@ -126,16 +121,16 @@ public final class FdmLocalVolFwdOp implements FdmLinearOpComposite {
         //   diag = y.diag + 1.0 * x.diag + 0.0  (per cell)
         // Java implementation handles size-1 a/b via the broadcast `binc`/`ainc` flags.
         final Array convCoef = new Array(n);
-        for (int i = 0; i < n; ++i) {
+        for ( int i = 0; i < n; ++i ) {
             convCoef.set(i, -r + q + 0.5 * v.get(i));
         }
         final Array diffCoef = v.mul(0.5);
 
-        final TripleBandLinearOp dx  = dxMap.multR(convCoef);
+        final TripleBandLinearOp dx = dxMap.multR(convCoef);
         final TripleBandLinearOp dxx = dxxMap.multR(diffCoef);
 
         // Use scalar-array shapes matching C++ Array(1, c).
-        final Array aOne  = new Array(1).fill(1.0);
+        final Array aOne = new Array(1).fill(1.0);
         final Array bZero = new Array(1).fill(0.0);
         mapT.axpyb(aOne, dx, dxx, bZero);
     }
@@ -147,7 +142,7 @@ public final class FdmLocalVolFwdOp implements FdmLinearOpComposite {
 
     @Override
     public Array applyDirection(final int direction, final Array r) {
-        if (direction == this.direction) {
+        if ( direction == this.direction ) {
             return mapT.apply(r);
         }
         return new Array(r.size()).fill(0.0);
@@ -160,7 +155,7 @@ public final class FdmLocalVolFwdOp implements FdmLinearOpComposite {
 
     @Override
     public Array solveSplitting(final int direction, final Array r, final double dt) {
-        if (direction == this.direction) {
+        if ( direction == this.direction ) {
             return mapT.solveSplitting(r, dt, 1.0);
         }
         // C++ returns r unchanged for the inactive direction here; mirror that.
@@ -178,8 +173,8 @@ public final class FdmLocalVolFwdOp implements FdmLinearOpComposite {
     }
 
     @Override
-    public List<Matrix> toMatrixDecomp() {
-        final List<Matrix> ret = new ArrayList<Matrix>(1);
+    public List< Matrix > toMatrixDecomp() {
+        final List< Matrix > ret = new ArrayList< Matrix >(1);
         ret.add(mapT.toMatrix());
         return Collections.unmodifiableList(ret);
     }

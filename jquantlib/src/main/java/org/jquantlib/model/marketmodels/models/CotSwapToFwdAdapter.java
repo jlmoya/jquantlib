@@ -52,19 +52,22 @@ public final class CotSwapToFwdAdapter extends MarketModel {
 
         // require all displacements equal
         final double[] displacements = coterminalModel.displacements();
-        for (int i = 1; i < displacements.length; ++i) {
+        for ( int i = 1; i < displacements.length; ++i ) {
             QL.require(displacements[i] == displacements[0],
-                    (i + 1) + "-th displacement (" + displacements[i]
-                            + ") not equal to the previous ones (" + displacements[0] + ")");
+                    (i + 1) + "-th displacement (" + displacements[i] + ") not equal to the previous ones ("
+                            + displacements[0] + ")");
         }
 
         final double[] rateTimes = coterminalModel.evolution().rateTimes();
         // ensure we step through all rateTimes
         final double[] evolutionTimes = coterminalModel.evolution().evolutionTimes();
-        for (int i = 0; i < rateTimes.length && rateTimes[i] <= evolutionTimes[evolutionTimes.length - 1]; ++i) {
+        for ( int i = 0; i < rateTimes.length && rateTimes[i] <= evolutionTimes[evolutionTimes.length - 1]; ++i ) {
             boolean found = false;
-            for (final double t : evolutionTimes) {
-                if (t == rateTimes[i]) { found = true; break; }
+            for ( final double t : evolutionTimes ) {
+                if ( t == rateTimes[i] ) {
+                    found = true;
+                    break;
+                }
             }
             QL.require(found, "skipping " + (i + 1) + "-th rate time");
         }
@@ -77,22 +80,49 @@ public final class CotSwapToFwdAdapter extends MarketModel {
         final Matrix invertedZedMatrix = zedMatrix.inverse();
 
         final int[] alive = coterminalModel.evolution().firstAliveRate();
-        for (int k = 0; k < numberOfSteps_; ++k) {
+        for ( int k = 0; k < numberOfSteps_; ++k ) {
             pseudoRoots_[k] = invertedZedMatrix.mul(coterminalModel.pseudoRoot(k));
             // zero the rows for "dead" rates
-            for (int i = 0; i < alive[k]; ++i) {
-                for (int j = 0; j < pseudoRoots_[k].columns(); ++j) {
+            for ( int i = 0; i < alive[k]; ++i ) {
+                for ( int j = 0; j < pseudoRoots_[k].columns(); ++j ) {
                     pseudoRoots_[k].set(i, j, 0.0);
                 }
             }
         }
     }
 
-    @Override public double[] initialRates() { return initialRates_; }
-    @Override public double[] displacements() { return coterminalModel_.displacements(); }
-    @Override public EvolutionDescription evolution() { return coterminalModel_.evolution(); }
-    @Override public int numberOfRates() { return numberOfRates_; }
-    @Override public int numberOfFactors() { return numberOfFactors_; }
-    @Override public int numberOfSteps() { return numberOfSteps_; }
-    @Override public Matrix pseudoRoot(final int i) { return pseudoRoots_[i]; }
+    @Override
+    public double[] initialRates() {
+        return initialRates_;
+    }
+
+    @Override
+    public double[] displacements() {
+        return coterminalModel_.displacements();
+    }
+
+    @Override
+    public EvolutionDescription evolution() {
+        return coterminalModel_.evolution();
+    }
+
+    @Override
+    public int numberOfRates() {
+        return numberOfRates_;
+    }
+
+    @Override
+    public int numberOfFactors() {
+        return numberOfFactors_;
+    }
+
+    @Override
+    public int numberOfSteps() {
+        return numberOfSteps_;
+    }
+
+    @Override
+    public Matrix pseudoRoot(final int i) {
+        return pseudoRoots_[i];
+    }
 }

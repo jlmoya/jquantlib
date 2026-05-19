@@ -30,21 +30,18 @@ import org.jquantlib.processes.GeneralizedBlackScholesProcess;
 import org.jquantlib.util.LazyObject;
 
 /**
- * Two-dimensional finite-differences Black-Scholes solver wrapping a
- * single-asset {@link FdmBlackScholesOp} on a 2D mesh — used by engines
- * (e.g. {@code FdSimpleBSSwingEngine}) whose second axis represents a
- * discrete control variable (number of exercise rights used) rather than
- * a stochastic state, so the PDE operator only depends on the first
- * (spot) axis.
+ * Two-dimensional finite-differences Black-Scholes solver wrapping a single-asset {@link FdmBlackScholesOp} on a 2D
+ * mesh — used by engines (e.g. {@code FdSimpleBSSwingEngine}) whose second axis represents a discrete control variable
+ * (number of exercise rights used) rather than a stochastic state, so the PDE operator only depends on the first (spot)
+ * axis.
  *
  * <p>Java port of v1.42.1
  * {@code ql/methods/finitedifferences/solvers/fdmsimple2dbssolver.{hpp,cpp}}.
  *
  * <p>{@code valueAt(s, a)} interpolates the rolled-back grid at
- * {@code (ln s, ln a)}; {@code deltaAt} and {@code gammaAt} are central
- * finite-difference approximations along the spot axis at fixed
- * {@code a}. {@code thetaAt(s, a)} delegates to
- * {@link Fdm2DimSolver#thetaAt(double, double)} (snapshot-based theta).
+ * {@code (ln s, ln a)}; {@code deltaAt} and {@code gammaAt} are central finite-difference approximations along the spot
+ * axis at fixed {@code a}. {@code thetaAt(s, a)} delegates to {@link Fdm2DimSolver#thetaAt(double, double)}
+ * (snapshot-based theta).
  *
  * @author Phase 5e.5b-CFC-d-170 port
  */
@@ -57,12 +54,10 @@ public class FdmSimple2dBSSolver extends LazyObject {
 
     private Fdm2DimSolver solver_;
 
-    public FdmSimple2dBSSolver(final GeneralizedBlackScholesProcess process,
-                               final double strike,
-                               final FdmSolverDesc solverDesc,
-                               final FdmSchemeDesc schemeDesc) {
-        this.process_    = process;
-        this.strike_     = strike;
+    public FdmSimple2dBSSolver(final GeneralizedBlackScholesProcess process, final double strike,
+            final FdmSolverDesc solverDesc, final FdmSchemeDesc schemeDesc) {
+        this.process_ = process;
+        this.strike_ = strike;
         this.solverDesc_ = solverDesc;
         this.schemeDesc_ = schemeDesc;
 
@@ -74,8 +69,7 @@ public class FdmSimple2dBSSolver extends LazyObject {
     @Override
     protected void performCalculations() {
         // FdmBlackScholesOp(mesher, process, strike, direction=0)
-        final FdmBlackScholesOp op =
-                new FdmBlackScholesOp(solverDesc_.mesher, process_, strike_, 0);
+        final FdmBlackScholesOp op = new FdmBlackScholesOp(solverDesc_.mesher, process_, strike_, 0);
         solver_ = new Fdm2DimSolver(solverDesc_, schemeDesc_, op);
     }
 
@@ -89,8 +83,7 @@ public class FdmSimple2dBSSolver extends LazyObject {
     }
 
     public double gammaAt(final double s, final double a, final double eps) {
-        return (valueAt(s + eps, a) + valueAt(s - eps, a) - 2.0 * valueAt(s, a))
-               / (eps * eps);
+        return (valueAt(s + eps, a) + valueAt(s - eps, a) - 2.0 * valueAt(s, a)) / (eps * eps);
     }
 
     public double thetaAt(final double s, final double a) {

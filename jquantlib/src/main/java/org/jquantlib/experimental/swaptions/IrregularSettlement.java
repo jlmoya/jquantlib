@@ -24,19 +24,20 @@ import org.jquantlib.lang.exceptions.LibraryException;
  * Irregular swaption settlement type.
  *
  * <p>Phase 4i port of C++ QuantLib v1.42.1
- * {@code ql/experimental/swaptions/irregularswaption.hpp::IrregularSettlement}.
- * Mirrors the C++ struct holding a {@code Type} enum (Physical / Cash).
+ * {@code ql/experimental/swaptions/irregularswaption.hpp::IrregularSettlement}. Mirrors the C++ struct holding a
+ * {@code Type} enum (Physical / Cash).
  */
 public final class IrregularSettlement {
 
-    private IrregularSettlement() { }
+    private IrregularSettlement() {
+    }
 
     public enum Type {
         Physical, Cash;
 
         @Override
         public String toString() {
-            switch (this) {
+            switch ( this ) {
             case Physical:
                 return "Delivery";
             case Cash:

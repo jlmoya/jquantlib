@@ -27,30 +27,20 @@ import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.indexes.IborIndex;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.termstructures.YieldTermStructure;
-import org.jquantlib.time.BusinessDayConvention;
-import org.jquantlib.time.Calendar;
-import org.jquantlib.time.Date;
-import org.jquantlib.time.Frequency;
-import org.jquantlib.time.Period;
-import org.jquantlib.time.Schedule;
-import org.jquantlib.time.TimeUnit;
+import org.jquantlib.time.*;
 import org.jquantlib.util.PolymorphicVisitor;
 import org.jquantlib.util.Visitor;
 
 /**
- * Rate helper for bootstrapping over constant-notional fixed-vs-floating
- * cross-currency par swaps.
+ * Rate helper for bootstrapping over constant-notional fixed-vs-floating cross-currency par swaps.
  * <p>
- * Port of C++ QuantLib v1.42.1
- * {@code ql/experimental/termstructures/crosscurrencyratehelpers.hpp}
+ * Port of C++ QuantLib v1.42.1 {@code ql/experimental/termstructures/crosscurrencyratehelpers.hpp}
  * {@code ConstNotionalCrossCurrencySwapRateHelper}.
  * <p>
- * Represents a par cross-currency swap exchanging a fixed-rate leg against a
- * floating-rate leg in a different currency. Since the swap is quoted at par,
- * the FX spot cancels out and is not required.
+ * Represents a par cross-currency swap exchanging a fixed-rate leg against a floating-rate leg in a different currency.
+ * Since the swap is quoted at par, the FX spot cancels out and is not required.
  */
-public class ConstNotionalCrossCurrencySwapRateHelper
-        extends CrossCurrencySwapRateHelperBase {
+public class ConstNotionalCrossCurrencySwapRateHelper extends CrossCurrencySwapRateHelperBase {
 
     /** Sample fixed rate used when building the fixed leg (see C++ source). */
     private static final double SAMPLE_FIXED_RATE = 0.01;
@@ -85,28 +75,19 @@ public class ConstNotionalCrossCurrencySwapRateHelper
      * @param collateralOnFixedLeg if true, collateral curve discounts the fixed leg
      * @param paymentLag           payment lag in days (typically 0)
      */
-    public ConstNotionalCrossCurrencySwapRateHelper(
-            final Handle<org.jquantlib.quotes.Quote> fixedRate,
-            final Period tenor,
-            final int fixingDays,
-            final Calendar calendar,
-            final BusinessDayConvention convention,
-            final boolean endOfMonth,
-            final Frequency fixedFrequency,
-            final DayCounter fixedDayCount,
-            final IborIndex floatIndex,
-            final Handle<YieldTermStructure> collateralCurve,
-            final boolean collateralOnFixedLeg,
-            final int paymentLag) {
+    public ConstNotionalCrossCurrencySwapRateHelper(final Handle< org.jquantlib.quotes.Quote > fixedRate,
+            final Period tenor, final int fixingDays, final Calendar calendar, final BusinessDayConvention convention,
+            final boolean endOfMonth, final Frequency fixedFrequency, final DayCounter fixedDayCount,
+            final IborIndex floatIndex, final Handle< YieldTermStructure > collateralCurve,
+            final boolean collateralOnFixedLeg, final int paymentLag) {
 
-        super(fixedRate, tenor, fixingDays, calendar, convention, endOfMonth,
-              collateralCurve, paymentLag);
+        super(fixedRate, tenor, fixingDays, calendar, convention, endOfMonth, collateralCurve, paymentLag);
 
         QL.require(floatIndex != null, "floating index required");
 
-        fixedFrequency_    = fixedFrequency;
-        fixedDayCount_     = fixedDayCount;
-        floatIndex_        = floatIndex;
+        fixedFrequency_ = fixedFrequency;
+        fixedDayCount_ = fixedDayCount;
+        floatIndex_ = floatIndex;
         collateralOnFixedLeg_ = collateralOnFixedLeg;
 
         floatIndex_.addObserver(this);
@@ -117,78 +98,55 @@ public class ConstNotionalCrossCurrencySwapRateHelper
     /**
      * Constructor with zero payment lag.
      */
-    public ConstNotionalCrossCurrencySwapRateHelper(
-            final Handle<org.jquantlib.quotes.Quote> fixedRate,
-            final Period tenor,
-            final int fixingDays,
-            final Calendar calendar,
-            final BusinessDayConvention convention,
-            final boolean endOfMonth,
-            final Frequency fixedFrequency,
-            final DayCounter fixedDayCount,
-            final IborIndex floatIndex,
-            final Handle<YieldTermStructure> collateralCurve,
+    public ConstNotionalCrossCurrencySwapRateHelper(final Handle< org.jquantlib.quotes.Quote > fixedRate,
+            final Period tenor, final int fixingDays, final Calendar calendar, final BusinessDayConvention convention,
+            final boolean endOfMonth, final Frequency fixedFrequency, final DayCounter fixedDayCount,
+            final IborIndex floatIndex, final Handle< YieldTermStructure > collateralCurve,
             final boolean collateralOnFixedLeg) {
 
-        this(fixedRate, tenor, fixingDays, calendar, convention, endOfMonth,
-             fixedFrequency, fixedDayCount, floatIndex, collateralCurve,
-             collateralOnFixedLeg, 0);
+        this(fixedRate, tenor, fixingDays, calendar, convention, endOfMonth, fixedFrequency, fixedDayCount, floatIndex,
+                collateralCurve, collateralOnFixedLeg, 0);
     }
 
     // -------------------------------------------------------------------------
     // RelativeDateRateHelper interface
     // -------------------------------------------------------------------------
 
-    @Override
-    protected void initializeDates() {
-        final Date evaluationDate = new Settings().evaluationDate();
+    private static Leg buildFixedLeg(final Date evaluationDate, final Period tenor, final int fixingDays,
+            final Calendar calendar, final BusinessDayConvention convention, final boolean endOfMonth,
+            final Frequency fixedFrequency, final DayCounter dayCount, final int paymentLag) {
 
-        fixedLeg_ = buildFixedLeg(evaluationDate, tenor_, fixingDays_, calendar_,
-                convention_, endOfMonth_, fixedFrequency_, fixedDayCount_, paymentLag_);
+        final Period freqPeriod = new Period(fixedFrequency);
+        final Schedule sch = CrossCurrencyBasisSwapRateHelperBase.legSchedule(evaluationDate, tenor, freqPeriod,
+                fixingDays, calendar, convention, endOfMonth);
 
-        floatLeg_ = CrossCurrencyBasisSwapRateHelperBase.buildFloatingLeg(
-                evaluationDate, tenor_, fixingDays_,
-                floatIndex_.fixingCalendar(),
-                floatIndex_.businessDayConvention(),
-                endOfMonth_,
-                floatIndex_,
-                floatIndex_.tenor().frequency(),
-                paymentLag_);
-
-        initializeDatesFromLegs(fixedLeg_, floatLeg_);
+        return new FixedRateLeg(sch, dayCount).withNotionals(1.0).withCouponRates(SAMPLE_FIXED_RATE).Leg();
     }
 
     // -------------------------------------------------------------------------
     // Protected helpers
     // -------------------------------------------------------------------------
 
-    protected Handle<YieldTermStructure> fixedLegDiscountHandle() {
+    @Override
+    protected void initializeDates() {
+        final Date evaluationDate = new Settings().evaluationDate();
+
+        fixedLeg_ = buildFixedLeg(evaluationDate, tenor_, fixingDays_, calendar_, convention_, endOfMonth_,
+                fixedFrequency_, fixedDayCount_, paymentLag_);
+
+        floatLeg_ = CrossCurrencyBasisSwapRateHelperBase.buildFloatingLeg(evaluationDate, tenor_, fixingDays_,
+                floatIndex_.fixingCalendar(), floatIndex_.businessDayConvention(), endOfMonth_, floatIndex_,
+                floatIndex_.tenor().frequency(), paymentLag_);
+
+        initializeDatesFromLegs(fixedLeg_, floatLeg_);
+    }
+
+    protected Handle< YieldTermStructure > fixedLegDiscountHandle() {
         return collateralOnFixedLeg_ ? collateralHandle_ : termStructureHandle_;
     }
 
-    protected Handle<YieldTermStructure> floatingLegDiscountHandle() {
+    protected Handle< YieldTermStructure > floatingLegDiscountHandle() {
         return collateralOnFixedLeg_ ? termStructureHandle_ : collateralHandle_;
-    }
-
-    private static Leg buildFixedLeg(
-            final Date evaluationDate,
-            final Period tenor,
-            final int fixingDays,
-            final Calendar calendar,
-            final BusinessDayConvention convention,
-            final boolean endOfMonth,
-            final Frequency fixedFrequency,
-            final DayCounter dayCount,
-            final int paymentLag) {
-
-        final Period freqPeriod = new Period(fixedFrequency);
-        final Schedule sch = CrossCurrencyBasisSwapRateHelperBase.legSchedule(
-                evaluationDate, tenor, freqPeriod, fixingDays, calendar, convention, endOfMonth);
-
-        return new FixedRateLeg(sch, dayCount)
-                .withNotionals(1.0)
-                .withCouponRates(SAMPLE_FIXED_RATE)
-                .Leg();
     }
 
     // -------------------------------------------------------------------------
@@ -200,17 +158,11 @@ public class ConstNotionalCrossCurrencySwapRateHelper
         QL.require(termStructure != null, "term structure not set");
         QL.require(!collateralHandle_.empty(), "collateral term structure not set");
 
-        final double[] fixedResult = CrossCurrencyBasisSwapRateHelperBase.npvbpsConstNotionalLeg(
-                fixedLeg_,
-                initialNotionalExchangeDate_,
-                finalNotionalExchangeDate_,
-                fixedLegDiscountHandle());
+        final double[] fixedResult = CrossCurrencyBasisSwapRateHelperBase.npvbpsConstNotionalLeg(fixedLeg_,
+                initialNotionalExchangeDate_, finalNotionalExchangeDate_, fixedLegDiscountHandle());
 
-        final double[] floatResult = CrossCurrencyBasisSwapRateHelperBase.npvbpsConstNotionalLeg(
-                floatLeg_,
-                initialNotionalExchangeDate_,
-                finalNotionalExchangeDate_,
-                floatingLegDiscountHandle());
+        final double[] floatResult = CrossCurrencyBasisSwapRateHelperBase.npvbpsConstNotionalLeg(floatLeg_,
+                initialNotionalExchangeDate_, finalNotionalExchangeDate_, floatingLegDiscountHandle());
 
         final double fixedNpv = fixedResult[0];
         final double fixedBps = fixedResult[1];
@@ -227,9 +179,8 @@ public class ConstNotionalCrossCurrencySwapRateHelper
 
     @Override
     public void accept(final PolymorphicVisitor pv) {
-        final Visitor<ConstNotionalCrossCurrencySwapRateHelper> v =
-                (pv != null) ? pv.visitor(this.getClass()) : null;
-        if (v != null) {
+        final Visitor< ConstNotionalCrossCurrencySwapRateHelper > v = (pv != null) ? pv.visitor(this.getClass()) : null;
+        if ( v != null ) {
             v.visit(this);
         } else {
             super.accept(pv);

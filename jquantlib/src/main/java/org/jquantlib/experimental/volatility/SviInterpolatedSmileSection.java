@@ -37,9 +37,8 @@ import org.jquantlib.time.Date;
  * SVI-interpolated smile section.
  *
  * <p>Mirrors C++ QuantLib v1.42.1
- * {@code ql/experimental/volatility/sviinterpolatedsmilesection.{hpp,cpp}}.
- * Calibrates an {@link SviInterpolation} to a set of market strike/volatility
- * pairs and exposes the calibrated surface as a {@link SmileSection}.
+ * {@code ql/experimental/volatility/sviinterpolatedsmilesection.{hpp,cpp}}. Calibrates an {@link SviInterpolation} to a
+ * set of market strike/volatility pairs and exposes the calibrated surface as a {@link SmileSection}.
  *
  * <p>Java single-inheritance precludes the C++ double-inheritance from
  * {@code SmileSection} and {@code LazyObject}; same dirty-flag pattern as
@@ -85,27 +84,16 @@ public class SviInterpolatedSmileSection extends SmileSection {
     /**
      * Plain-values constructor — mirrors C++ second ctor (no Handle&lt;Quote&gt;).
      */
-    public SviInterpolatedSmileSection(
-            final Date optionDate,
-            final double forward,
-            final double[] strikes,
-            final boolean hasFloatingStrikes,
-            final double atmVolatility,
-            final double[] vols,
-            final double a, final double b, final double sigma,
-            final double rho, final double m,
-            final boolean isAFixed, final boolean isBFixed,
-            final boolean isSigmaFixed, final boolean isRhoFixed,
-            final boolean isMFixed,
-            final boolean vegaWeighted,
-            final EndCriteria endCriteria,
-            final OptimizationMethod method,
+    public SviInterpolatedSmileSection(final Date optionDate, final double forward, final double[] strikes,
+            final boolean hasFloatingStrikes, final double atmVolatility, final double[] vols, final double a,
+            final double b, final double sigma, final double rho, final double m, final boolean isAFixed,
+            final boolean isBFixed, final boolean isSigmaFixed, final boolean isRhoFixed, final boolean isMFixed,
+            final boolean vegaWeighted, final EndCriteria endCriteria, final OptimizationMethod method,
             final DayCounter dc) {
         super(optionDate, dc == null ? new Actual365Fixed() : dc, new Date());
 
         QL.require(strikes != null && vols != null, "strikes and vols must not be null");
-        QL.require(strikes.length == vols.length,
-                "strikes (%d) and vols (%d) must have the same length",
+        QL.require(strikes.length == vols.length, "strikes (%d) and vols (%d) must have the same length",
                 strikes.length, vols.length);
         QL.require(strikes.length >= 1, "at least one strike/vol pair is required");
 
@@ -113,32 +101,37 @@ public class SviInterpolatedSmileSection extends SmileSection {
         this.atmVolatility_ = atmVolatility;
         this.hasFloatingStrikes_ = hasFloatingStrikes;
         this.strikes_ = strikes.clone();
-        this.a0_ = a;     this.b0_ = b;     this.sigma0_ = sigma;
-        this.rho0_ = rho; this.m0_ = m;
-        this.isAFixed_ = isAFixed; this.isBFixed_ = isBFixed;
-        this.isSigmaFixed_ = isSigmaFixed; this.isRhoFixed_ = isRhoFixed;
+        this.a0_ = a;
+        this.b0_ = b;
+        this.sigma0_ = sigma;
+        this.rho0_ = rho;
+        this.m0_ = m;
+        this.isAFixed_ = isAFixed;
+        this.isBFixed_ = isBFixed;
+        this.isSigmaFixed_ = isSigmaFixed;
+        this.isRhoFixed_ = isRhoFixed;
         this.isMFixed_ = isMFixed;
         this.vegaWeighted_ = vegaWeighted;
         this.endCriteria_ = endCriteria;
         this.method_ = method;
 
-        if (hasFloatingStrikes) {
+        if ( hasFloatingStrikes ) {
             final double[] aStrikes = new double[vols.length];
-            final double[] aVols    = new double[vols.length];
-            for (int i = 0; i < vols.length; i++) {
+            final double[] aVols = new double[vols.length];
+            for ( int i = 0; i < vols.length; i++ ) {
                 aStrikes[i] = forward + strikes[i];
-                aVols[i]    = atmVolatility + vols[i];
+                aVols[i] = atmVolatility + vols[i];
             }
             this.actualStrikes_ = aStrikes;
-            this.vols_          = aVols;
+            this.vols_ = aVols;
         } else {
             this.actualStrikes_ = strikes.clone();
-            this.vols_          = vols.clone();
+            this.vols_ = vols.clone();
         }
     }
 
     private void ensureCalculated() {
-        if (dirty_) {
+        if ( dirty_ ) {
             performCalculations();
             dirty_ = false;
         }
@@ -152,11 +145,8 @@ public class SviInterpolatedSmileSection extends SmileSection {
     private void createInterpolation() {
         final Array vx = new Array(actualStrikes_);
         final Array vy = new Array(vols_);
-        sviInterpolation_ = new SviInterpolation(
-                vx, vy, exerciseTime(), forwardValue_,
-                a0_, b0_, sigma0_, rho0_, m0_,
-                isAFixed_, isBFixed_, isSigmaFixed_, isRhoFixed_, isMFixed_,
-                vegaWeighted_, endCriteria_, method_);
+        sviInterpolation_ = new SviInterpolation(vx, vy, exerciseTime(), forwardValue_, a0_, b0_, sigma0_, rho0_, m0_,
+                isAFixed_, isBFixed_, isSigmaFixed_, isRhoFixed_, isMFixed_, vegaWeighted_, endCriteria_, method_);
     }
 
     @Override
@@ -172,7 +162,9 @@ public class SviInterpolatedSmileSection extends SmileSection {
     }
 
     @Override
-    public double atmLevel() { return forwardValue_; }
+    public double atmLevel() {
+        return forwardValue_;
+    }
 
     @Override
     protected double volatilityImpl(final double strike) {
@@ -187,13 +179,40 @@ public class SviInterpolatedSmileSection extends SmileSection {
         return v * v * exerciseTime();
     }
 
-    public double a()        { ensureCalculated(); return sviInterpolation_.a(); }
-    public double b()        { ensureCalculated(); return sviInterpolation_.b(); }
-    public double sigma()    { ensureCalculated(); return sviInterpolation_.sigma(); }
-    public double rho()      { ensureCalculated(); return sviInterpolation_.rho(); }
-    public double m()        { ensureCalculated(); return sviInterpolation_.m(); }
-    public double rmsError() { ensureCalculated(); return sviInterpolation_.rmsError(); }
-    public double maxError() { ensureCalculated(); return sviInterpolation_.maxError(); }
+    public double a() {
+        ensureCalculated();
+        return sviInterpolation_.a();
+    }
+
+    public double b() {
+        ensureCalculated();
+        return sviInterpolation_.b();
+    }
+
+    public double sigma() {
+        ensureCalculated();
+        return sviInterpolation_.sigma();
+    }
+
+    public double rho() {
+        ensureCalculated();
+        return sviInterpolation_.rho();
+    }
+
+    public double m() {
+        ensureCalculated();
+        return sviInterpolation_.m();
+    }
+
+    public double rmsError() {
+        ensureCalculated();
+        return sviInterpolation_.rmsError();
+    }
+
+    public double maxError() {
+        ensureCalculated();
+        return sviInterpolation_.maxError();
+    }
 
     public EndCriteria.Type endCriteria() {
         ensureCalculated();

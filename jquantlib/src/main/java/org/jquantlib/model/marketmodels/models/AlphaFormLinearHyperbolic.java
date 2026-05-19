@@ -24,8 +24,7 @@ package org.jquantlib.model.marketmodels.models;
  * </pre>
  *
  * <p>Java port of {@code AlphaFormLinearHyperbolic} from
- * {@code ql/models/marketmodels/models/alphaformconcrete.{hpp,cpp}}
- * (QuantLib v1.42.1).
+ * {@code ql/models/marketmodels/models/alphaformconcrete.{hpp,cpp}} (QuantLib v1.42.1).
  *
  * <p>Phase 3j B.1 (Track B).
  */

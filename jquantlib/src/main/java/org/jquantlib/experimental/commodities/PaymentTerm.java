@@ -19,28 +19,21 @@
 
 package org.jquantlib.experimental.commodities;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
- * Payment term: an offset (in days, on a calendar) past either trade date
- * or pricing date.
+ * Payment term: an offset (in days, on a calendar) past either trade date or pricing date.
  * <p>
  * Java port of QuantLib v1.42.1 {@code paymentterm.{hpp,cpp}}.
  */
 public class PaymentTerm {
 
-    public enum EventType {
-        TradeDate,
-        PricingDate
-    }
-
     /** Shared registry by name, mirroring the C++ static map. */
-    private static final Map<String, Data> paymentTerms_ = new HashMap<>();
-
+    private static final Map< String, Data > paymentTerms_ = new HashMap<>();
     /** Pimpl-style data; null when this instance is empty. */
     protected Data data_;
 
@@ -48,12 +41,9 @@ public class PaymentTerm {
         // empty
     }
 
-    public PaymentTerm(final String name,
-                       final EventType eventType,
-                       final int offsetDays,
-                       final Calendar calendar) {
+    public PaymentTerm(final String name, final EventType eventType, final int offsetDays, final Calendar calendar) {
         final Data existing = paymentTerms_.get(name);
-        if (existing != null) {
+        if ( existing != null ) {
             this.data_ = existing;
         } else {
             this.data_ = new Data(name, eventType, offsetDays, calendar);
@@ -87,10 +77,13 @@ public class PaymentTerm {
 
     @Override
     public boolean equals(final Object obj) {
-        if (this == obj) return true;
-        if (!(obj instanceof PaymentTerm)) return false;
+        if ( this == obj )
+            return true;
+        if ( !(obj instanceof PaymentTerm) )
+            return false;
         final PaymentTerm other = (PaymentTerm) obj;
-        if (this.empty() || other.empty()) return this.empty() == other.empty();
+        if ( this.empty() || other.empty() )
+            return this.empty() == other.empty();
         return this.name().equals(other.name());
     }
 
@@ -104,6 +97,10 @@ public class PaymentTerm {
         return empty() ? "null payment term type" : name();
     }
 
+    public enum EventType {
+        TradeDate, PricingDate
+    }
+
     /** Pimpl data record. */
     protected static final class Data {
         final String name;
@@ -111,10 +108,7 @@ public class PaymentTerm {
         final int offsetDays;
         final Calendar calendar;
 
-        Data(final String name,
-             final EventType eventType,
-             final int offsetDays,
-             final Calendar calendar) {
+        Data(final String name, final EventType eventType, final int offsetDays, final Calendar calendar) {
             this.name = name;
             this.eventType = eventType;
             this.offsetDays = offsetDays;

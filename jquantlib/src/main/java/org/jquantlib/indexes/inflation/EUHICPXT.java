@@ -31,32 +31,23 @@ import org.jquantlib.time.Period;
 import org.jquantlib.time.TimeUnit;
 
 /**
- * EU HICPXT (Harmonised Index of Consumer Prices, eXcluding Tobacco)
- * zero-inflation index.
+ * EU HICPXT (Harmonised Index of Consumer Prices, eXcluding Tobacco) zero-inflation index.
  *
  * <p>Mirrors C++ v1.42.1 {@code QuantLib::EUHICPXT}
  * ({@code ql/indexes/inflation/euhicp.hpp:48-58}).
  *
  * <p>Family name is {@code "HICPXT"}, region EU, currency EUR, frequency
- * Monthly, availability lag 1 month, {@code revised = false}. Sibling to
- * {@link EUHICP}; the difference is the {@code "HICP"} vs {@code "HICPXT"}
- * family-name suffix and the underlying basket excludes tobacco.
+ * Monthly, availability lag 1 month, {@code revised = false}. Sibling to {@link EUHICP}; the difference is the
+ * {@code "HICP"} vs {@code "HICPXT"} family-name suffix and the underlying basket excludes tobacco.
  */
 public class EUHICPXT extends ZeroInflationIndex {
 
     public EUHICPXT(final boolean interpolated) {
-        this(interpolated, new Handle<ZeroInflationTermStructure>());
+        this(interpolated, new Handle< ZeroInflationTermStructure >());
     }
 
-    public EUHICPXT(final boolean interpolated,
-                    final Handle<ZeroInflationTermStructure> termStructure) {
-        super("HICPXT",
-                new EURegion(),
-                false,
-                interpolated,
-                Frequency.Monthly,
-                new Period(1, TimeUnit.Months),
-                new EURCurrency(),
-                termStructure);
+    public EUHICPXT(final boolean interpolated, final Handle< ZeroInflationTermStructure > termStructure) {
+        super("HICPXT", new EURegion(), false, interpolated, Frequency.Monthly, new Period(1, TimeUnit.Months),
+                new EURCurrency(), termStructure);
     }
 }

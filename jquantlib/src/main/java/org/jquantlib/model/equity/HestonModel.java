@@ -33,7 +33,6 @@ import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.RelinkableHandle;
 import org.jquantlib.quotes.SimpleQuote;
 
-
 //! Heston model for the stochastic volatility of an asset
 /*! References:
 
@@ -49,13 +48,12 @@ import org.jquantlib.quotes.SimpleQuote;
  * Implementation of the Heston Model, see http://en.wikipedia.org/wiki/Heston_model
  */
 
-
 // TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class HestonModel extends CalibratedModel {
 
-    protected RelinkableHandle<Quote> v0_, kappa_, theta_, sigma_, rho_;;
     /** Calibration target — needed by SLV calibrators (Phase 5h.5-SLV-b). */
     private final HestonProcess process_;
+    protected RelinkableHandle< Quote > v0_, kappa_, theta_, sigma_, rho_;
 
     public HestonModel(final HestonProcess process) {
         super(5);
@@ -68,15 +66,15 @@ public class HestonModel extends CalibratedModel {
         arguments_.set(0, new ConstantParameter(process.theta().currentLink().value(), new PositiveConstraint()));
         arguments_.set(1, new ConstantParameter(process.kappa().currentLink().value(), new PositiveConstraint()));
         arguments_.set(2, new ConstantParameter(process.sigma().currentLink().value(), new PositiveConstraint()));
-        arguments_.set(3, new ConstantParameter(process.rho().currentLink().value(), new BoundaryConstraint(-1.0, 1.0)));
+        arguments_.set(3,
+                new ConstantParameter(process.rho().currentLink().value(), new BoundaryConstraint(-1.0, 1.0)));
         arguments_.set(4, new ConstantParameter(process.v0().currentLink().value(), new PositiveConstraint()));
 
     }
 
     /**
-     * Returns the underlying {@link HestonProcess} held by this calibrated
-     * model. Mirrors the C++ {@code HestonModel::process()} accessor.
-     * Required by Heston SLV calibrators (Phase 5h.5-SLV-b).
+     * Returns the underlying {@link HestonProcess} held by this calibrated model. Mirrors the C++
+     * {@code HestonModel::process()} accessor. Required by Heston SLV calibrators (Phase 5h.5-SLV-b).
      */
     public HestonProcess process() {
         return process_;
@@ -116,15 +114,14 @@ public class HestonModel extends CalibratedModel {
         return arguments_.get(4).get(0.0);
     }
 
-
     //
     // private inner classes
     //
 
     private class VolatilityConstraint extends Constraint {
 
-        public VolatilityConstraint(){
-            if(true) {
+        public VolatilityConstraint() {
+            if ( true ) {
                 throw new UnsupportedOperationException("Work in progress. Todo: check class hierarchy");
             }
         }
@@ -134,7 +131,7 @@ public class HestonModel extends CalibratedModel {
             final double theta = p.get(0);
             final double kappa = p.get(1);
             final double sigma = p.get(2);
-            return (sigma >= 0.0 && sigma*sigma < 2.0*kappa*theta);
+            return (sigma >= 0.0 && sigma * sigma < 2.0 * kappa * theta);
         }
 
     }

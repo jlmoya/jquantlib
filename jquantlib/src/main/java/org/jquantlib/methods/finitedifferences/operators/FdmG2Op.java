@@ -19,23 +19,22 @@
  */
 package org.jquantlib.methods.finitedifferences.operators;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.matrixutilities.Matrix;
 import org.jquantlib.methods.finitedifferences.meshers.FdmMesher;
 import org.jquantlib.model.shortrate.twofactormodels.G2;
 import org.jquantlib.model.shortrate.twofactormodels.TwoFactorModel;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Finite-difference operator for the G2++ two-factor short-rate dynamics
  * <p>
  * {@code dx = -a*x*dt + sigma dW1, dy = -b*y*dt + eta dW2, dW1 dW2 = rho dt}.
  * <p>
- * Java port of v1.42.1
- * ql/methods/finitedifferences/operators/fdmg2op.{hpp,cpp}.
+ * Java port of v1.42.1 ql/methods/finitedifferences/operators/fdmg2op.{hpp,cpp}.
  *
  * @author Phase 2h WI-1 port
  */
@@ -52,9 +51,7 @@ public final class FdmG2Op implements FdmLinearOpComposite {
     private final TripleBandLinearOp mapY;
     private final G2 model;
 
-    public FdmG2Op(final FdmMesher mesher,
-                   final G2 model,
-                   final int direction1, final int direction2) {
+    public FdmG2Op(final FdmMesher mesher, final G2 model, final int direction1, final int direction2) {
         this.direction1 = direction1;
         this.direction2 = direction2;
         this.x = mesher.locations(direction1);
@@ -68,16 +65,14 @@ public final class FdmG2Op implements FdmLinearOpComposite {
         final SecondDerivativeOp secondDerivX = new SecondDerivativeOp(direction1, mesher);
         final Array minusXTimesA = x.mul(-model.a());
         final double halfSigmaSq = 0.5 * model.sigma() * model.sigma();
-        this.dxMap = firstDerivX.mult(minusXTimesA).add(
-                secondDerivX.mult(new Array(size).fill(halfSigmaSq)));
+        this.dxMap = firstDerivX.mult(minusXTimesA).add(secondDerivX.mult(new Array(size).fill(halfSigmaSq)));
 
         // dyMap = -b*y * d/dy + 0.5 * eta^2 * d^2/dy^2
         final FirstDerivativeOp firstDerivY = new FirstDerivativeOp(direction2, mesher);
         final SecondDerivativeOp secondDerivY = new SecondDerivativeOp(direction2, mesher);
         final Array minusYTimesB = y.mul(-model.b());
         final double halfEtaSq = 0.5 * model.eta() * model.eta();
-        this.dyMap = firstDerivY.mult(minusYTimesB).add(
-                secondDerivY.mult(new Array(size).fill(halfEtaSq)));
+        this.dyMap = firstDerivY.mult(minusYTimesB).add(secondDerivY.mult(new Array(size).fill(halfEtaSq)));
 
         // corrMap = rho * sigma * eta * ∂²/∂x∂y
         // Java port mirrors C++ field type: NinePointLinearOp (not the
@@ -85,8 +80,8 @@ public final class FdmG2Op implements FdmLinearOpComposite {
         // NinePointLinearOp with the same index layout but scaled coefficients,
         // matching the C++ value-semantics return of `mult` on the base type.
         final double corrCoeff = model.rho() * model.sigma() * model.eta();
-        this.corrMap = new SecondOrderMixedDerivativeOp(direction1, direction2, mesher)
-                .mult(new Array(size).fill(corrCoeff));
+        this.corrMap = new SecondOrderMixedDerivativeOp(direction1, direction2, mesher).mult(
+                new Array(size).fill(corrCoeff));
 
         this.mapX = new TripleBandLinearOp(direction1, mesher);
         this.mapY = new TripleBandLinearOp(direction2, mesher);
@@ -121,10 +116,10 @@ public final class FdmG2Op implements FdmLinearOpComposite {
 
     @Override
     public Array applyDirection(final int direction, final Array r) {
-        if (direction == direction1) {
+        if ( direction == direction1 ) {
             return mapX.apply(r);
         }
-        if (direction == direction2) {
+        if ( direction == direction2 ) {
             return mapY.apply(r);
         }
         return new Array(r.size()).fill(0.0);
@@ -132,10 +127,10 @@ public final class FdmG2Op implements FdmLinearOpComposite {
 
     @Override
     public Array solveSplitting(final int direction, final Array r, final double s) {
-        if (direction == direction1) {
+        if ( direction == direction1 ) {
             return mapX.solveSplitting(r, s, 1.0);
         }
-        if (direction == direction2) {
+        if ( direction == direction2 ) {
             return mapY.solveSplitting(r, s, 1.0);
         }
         return new Array(r.size()).fill(0.0);
@@ -153,8 +148,8 @@ public final class FdmG2Op implements FdmLinearOpComposite {
     }
 
     @Override
-    public List<Matrix> toMatrixDecomp() {
-        final List<Matrix> ret = new ArrayList<Matrix>(3);
+    public List< Matrix > toMatrixDecomp() {
+        final List< Matrix > ret = new ArrayList< Matrix >(3);
         ret.add(mapX.toMatrix());
         ret.add(mapY.toMatrix());
         ret.add(corrMap.toMatrix());

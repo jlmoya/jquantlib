@@ -29,33 +29,96 @@ package org.jquantlib.model.marketmodels;
 /**
  * Abstract base for pathwise (adjoint-Greeks) market-model multi-products.
  * <p>
- * Mirrors C++ {@code class MarketModelPathwiseMultiProduct}
- * (ql/models/marketmodels/pathwisemultiproduct.hpp v1.42.1).
+ * Mirrors C++ {@code class MarketModelPathwiseMultiProduct} (ql/models/marketmodels/pathwisemultiproduct.hpp v1.42.1).
  * <p>
- * This class differs from {@link MarketModelMultiProduct} in that each cash
- * flow carries a vector of amounts rather than a scalar — one amount per
- * LIBOR rate — encoding both the payoff value (amount[0] by convention in
- * the pathwise products) and the path-wise derivative of the payoff with
- * respect to each forward rate (for Giles-Glasserman adjoint Delta).
+ * This class differs from {@link MarketModelMultiProduct} in that each cash flow carries a vector of amounts rather
+ * than a scalar — one amount per LIBOR rate — encoding both the payoff value (amount[0] by convention in the pathwise
+ * products) and the path-wise derivative of the payoff with respect to each forward rate (for Giles-Glasserman adjoint
+ * Delta).
  * <p>
- * The inner {@link CashFlow} struct here uses {@code double[] amount}
- * (vector), distinguishing it from the scalar {@code double amount} in
- * {@link MarketModelMultiProduct.CashFlow}.
- *
- * @see MarketModelMultiProduct
- * @see "ql/models/marketmodels/pathwisemultiproduct.hpp" v1.42.1
+ * The inner {@link CashFlow} struct here uses {@code double[] amount} (vector), distinguishing it from the scalar
+ * {@code double amount} in {@link MarketModelMultiProduct.CashFlow}.
  *
  * @author Jose Moya
+ * @see MarketModelMultiProduct
+ * @see "ql/models/marketmodels/pathwisemultiproduct.hpp" v1.42.1
  */
 public abstract class MarketModelPathwiseMultiProduct {
+
+    /**
+     * Returns suggested numeraire indices (one per evolution step). Mirrors C++
+     * {@code std::vector<Size> suggestedNumeraires() const}.
+     */
+    public abstract int[] suggestedNumeraires();
+
+    // -------------------------------------------------------------------------
+    // Abstract interface — mirrors C++ pure virtual functions
+    // -------------------------------------------------------------------------
+
+    /**
+     * Returns the evolution description (rate times, step structure). Mirrors C++
+     * {@code const EvolutionDescription& evolution() const}.
+     */
+    public abstract EvolutionDescription evolution();
+
+    /**
+     * Returns the sorted list of times at which cash flows can occur. Mirrors C++
+     * {@code std::vector<Time> possibleCashFlowTimes() const}.
+     */
+    public abstract double[] possibleCashFlowTimes();
+
+    /**
+     * Returns the number of simultaneous products (sub-payoffs). Mirrors C++ {@code Size numberOfProducts() const}.
+     */
+    public abstract int numberOfProducts();
+
+    /**
+     * Returns the maximum number of cash flows per product per time step. Mirrors C++
+     * {@code Size maxNumberOfCashFlowsPerProductPerStep() const}.
+     */
+    public abstract int maxNumberOfCashFlowsPerProductPerStep();
+
+    /**
+     * Returns {@code true} if the cash flows produced by this product have already been deflated by the numeraire;
+     * {@code false} if the accounting engine must deflate them. Mirrors C++ {@code bool alreadyDeflated() const}.
+     */
+    public abstract boolean alreadyDeflated();
+
+    /**
+     * Resets the product to the start of a new simulation path. Mirrors C++ {@code void reset()}.
+     */
+    public abstract void reset();
+
+    /**
+     * Evolves one simulation step. Fills {@code numberCashFlowsThisStep[i]} and {@code cashFlowsGenerated[i][0..nCF-1]}
+     * for each product {@code i}.
+     * <p>
+     * Mirrors C++
+     * {@code bool nextTimeStep(const CurveState&, std::vector<Size>&, std::vector<std::vector<CashFlow>>&)}.
+     *
+     * @param currentState            current yield-curve state
+     * @param numberCashFlowsThisStep output: number of cash flows emitted per product this step; length =
+     *                                numberOfProducts()
+     * @param cashFlowsGenerated      output: cash flows per product; outer dimension = numberOfProducts(), inner
+     *                                dimension ≥ maxNumberOfCashFlowsPerProductPerStep()
+     * @return {@code true} when the simulation path has finished
+     */
+    public abstract boolean nextTimeStep(CurveState currentState, int[] numberCashFlowsThisStep,
+            CashFlow[][] cashFlowsGenerated);
+
+    /**
+     * Returns a newly-allocated deep copy of itself. Mirrors C++
+     * {@code std::unique_ptr<MarketModelPathwiseMultiProduct> clone() const}.
+     */
+    public abstract MarketModelPathwiseMultiProduct clone();
 
     /**
      * A pathwise cash flow occurring at a discrete time index.
      * <p>
      * Mirrors C++ {@code struct MarketModelPathwiseMultiProduct::CashFlow}.
      * <p>
-     * Unlike {@link MarketModelMultiProduct.CashFlow}, the {@code amount}
-     * field is a {@code double[]} with one entry per forward rate:
+     * Unlike {@link MarketModelMultiProduct.CashFlow}, the {@code amount} field is a {@code double[]} with one entry
+     * per forward rate:
      * <ul>
      *   <li>{@code amount[0]} — the cash-flow amount itself (payoff value)</li>
      *   <li>{@code amount[i]} for {@code i > 0} — partial derivative of the
@@ -70,8 +133,7 @@ public abstract class MarketModelPathwiseMultiProduct {
         public int timeIndex;
 
         /**
-         * Per-rate amount vector: {@code amount[0]} is the payoff;
-         * {@code amount[i]} (i ≥ 1) is ∂payoff/∂rate_{i-1}.
+         * Per-rate amount vector: {@code amount[0]} is the payoff; {@code amount[i]} (i ≥ 1) is ∂payoff/∂rate_{i-1}.
          * Mirrors C++ {@code std::vector<Real> amount}.
          */
         public double[] amount;
@@ -93,78 +155,4 @@ public abstract class MarketModelPathwiseMultiProduct {
             this.amount = amount;
         }
     }
-
-    // -------------------------------------------------------------------------
-    // Abstract interface — mirrors C++ pure virtual functions
-    // -------------------------------------------------------------------------
-
-    /**
-     * Returns suggested numeraire indices (one per evolution step).
-     * Mirrors C++ {@code std::vector<Size> suggestedNumeraires() const}.
-     */
-    public abstract int[] suggestedNumeraires();
-
-    /**
-     * Returns the evolution description (rate times, step structure).
-     * Mirrors C++ {@code const EvolutionDescription& evolution() const}.
-     */
-    public abstract EvolutionDescription evolution();
-
-    /**
-     * Returns the sorted list of times at which cash flows can occur.
-     * Mirrors C++ {@code std::vector<Time> possibleCashFlowTimes() const}.
-     */
-    public abstract double[] possibleCashFlowTimes();
-
-    /**
-     * Returns the number of simultaneous products (sub-payoffs).
-     * Mirrors C++ {@code Size numberOfProducts() const}.
-     */
-    public abstract int numberOfProducts();
-
-    /**
-     * Returns the maximum number of cash flows per product per time step.
-     * Mirrors C++ {@code Size maxNumberOfCashFlowsPerProductPerStep() const}.
-     */
-    public abstract int maxNumberOfCashFlowsPerProductPerStep();
-
-    /**
-     * Returns {@code true} if the cash flows produced by this product have
-     * already been deflated by the numeraire; {@code false} if the accounting
-     * engine must deflate them.
-     * Mirrors C++ {@code bool alreadyDeflated() const}.
-     */
-    public abstract boolean alreadyDeflated();
-
-    /**
-     * Resets the product to the start of a new simulation path.
-     * Mirrors C++ {@code void reset()}.
-     */
-    public abstract void reset();
-
-    /**
-     * Evolves one simulation step. Fills {@code numberCashFlowsThisStep[i]}
-     * and {@code cashFlowsGenerated[i][0..nCF-1]} for each product {@code i}.
-     * <p>
-     * Mirrors C++ {@code bool nextTimeStep(const CurveState&,
-     * std::vector<Size>&, std::vector<std::vector<CashFlow>>&)}.
-     *
-     * @param currentState              current yield-curve state
-     * @param numberCashFlowsThisStep   output: number of cash flows emitted per
-     *                                  product this step; length = numberOfProducts()
-     * @param cashFlowsGenerated        output: cash flows per product; outer
-     *                                  dimension = numberOfProducts(), inner
-     *                                  dimension ≥ maxNumberOfCashFlowsPerProductPerStep()
-     * @return {@code true} when the simulation path has finished
-     */
-    public abstract boolean nextTimeStep(
-            CurveState currentState,
-            int[] numberCashFlowsThisStep,
-            CashFlow[][] cashFlowsGenerated);
-
-    /**
-     * Returns a newly-allocated deep copy of itself.
-     * Mirrors C++ {@code std::unique_ptr<MarketModelPathwiseMultiProduct> clone() const}.
-     */
-    public abstract MarketModelPathwiseMultiProduct clone();
 }

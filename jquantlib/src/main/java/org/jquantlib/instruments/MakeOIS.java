@@ -26,43 +26,30 @@ import org.jquantlib.pricingengines.PricingEngine;
 import org.jquantlib.pricingengines.swap.DiscountingSwapEngine;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.termstructures.YieldTermStructure;
-import org.jquantlib.time.BusinessDayConvention;
-import org.jquantlib.time.Calendar;
-import org.jquantlib.time.Date;
-import org.jquantlib.time.DateGeneration;
-import org.jquantlib.time.Frequency;
-import org.jquantlib.time.Period;
-import org.jquantlib.time.Schedule;
-import org.jquantlib.time.TimeUnit;
+import org.jquantlib.time.*;
 
 /**
- * Helper class to instantiate {@link OvernightIndexedSwap} more comfortably,
- * mirroring C++ {@code MakeOIS}.
+ * Helper class to instantiate {@link OvernightIndexedSwap} more comfortably, mirroring C++ {@code MakeOIS}.
  * <p>
- * Port of C++ QuantLib v1.42.1
- * {@code ql/instruments/makeois.hpp/cpp} {@code MakeOIS}.
+ * Port of C++ QuantLib v1.42.1 {@code ql/instruments/makeois.hpp/cpp} {@code MakeOIS}.
  * <p>
  * <b>Phase 5e.5b-CFC-d-107:</b> lookback / lockout / observation-shift
- * builder knobs added (matched to C++ MakeOIS). Separate fixed/overnight
- * schedule rules deferred.
+ * builder knobs added (matched to C++ MakeOIS). Separate fixed/overnight schedule rules deferred.
  * <p>
  * <b>Phase 5e.5b-CFC-d-116:</b> lookback / lockout / observation-shift
- * now flowed through to the {@link OvernightIndexedSwap} ctor; the
- * {@code withSettlementDays} / {@code withEffectiveDate} mutual-exclusion
- * guard is enforced (mirror of C++
+ * now flowed through to the {@link OvernightIndexedSwap} ctor; the {@code withSettlementDays} /
+ * {@code withEffectiveDate} mutual-exclusion guard is enforced (mirror of C++
  * {@code testSettlementDaysEffectiveDateConflict}).
  *
- * @category instruments
- *
  * @author JQuantLib migration team
+ * @category instruments
  */
 public class MakeOIS {
 
     private final Period swapTenor_;
     private final OvernightIndex overnightIndex_;
-    private double fixedRate_;
     private final Period forwardStart_;
-
+    private final double fixedRate_;
     private int settlementDays_ = Constants.NULL_NATURAL;
     private Date effectiveDate_ = new Date();
     private Date terminationDate_ = new Date();
@@ -89,20 +76,19 @@ public class MakeOIS {
     private boolean isDefaultEOM_ = true;
     private boolean conflictRequested_ = false;
 
-    private Handle<YieldTermStructure> discountingTermStructure_ = new Handle<YieldTermStructure>();
+    private Handle< YieldTermStructure > discountingTermStructure_ = new Handle< YieldTermStructure >();
     private PricingEngine engine_ = null;
 
     public MakeOIS(final Period swapTenor, final OvernightIndex overnightIndex) {
         this(swapTenor, overnightIndex, Constants.NULL_REAL, new Period(0, TimeUnit.Days));
     }
 
-    public MakeOIS(final Period swapTenor, final OvernightIndex overnightIndex,
-                   final double fixedRate) {
+    public MakeOIS(final Period swapTenor, final OvernightIndex overnightIndex, final double fixedRate) {
         this(swapTenor, overnightIndex, fixedRate, new Period(0, TimeUnit.Days));
     }
 
-    public MakeOIS(final Period swapTenor, final OvernightIndex overnightIndex,
-                   final double fixedRate, final Period fwdStart) {
+    public MakeOIS(final Period swapTenor, final OvernightIndex overnightIndex, final double fixedRate,
+            final Period fwdStart) {
         this.swapTenor_ = swapTenor;
         this.overnightIndex_ = overnightIndex;
         this.fixedRate_ = fixedRate;
@@ -131,14 +117,13 @@ public class MakeOIS {
     }
 
     /**
-     * Setter pair {@code withSettlementDays}/{@code withEffectiveDate}: only
-     * one can be active at build time; calling both (in either order) flips
-     * an immutable conflict flag that {@link #value()} rejects, mirroring
-     * C++ {@code MakeOIS::withSettlementDays} / {@code withEffectiveDate}
-     * guard (overnightindexedswap.cpp testSettlementDaysEffectiveDateConflict).
+     * Setter pair {@code withSettlementDays}/{@code withEffectiveDate}: only one can be active at build time; calling
+     * both (in either order) flips an immutable conflict flag that {@link #value()} rejects, mirroring C++
+     * {@code MakeOIS::withSettlementDays} / {@code withEffectiveDate} guard (overnightindexedswap.cpp
+     * testSettlementDaysEffectiveDateConflict).
      */
     public MakeOIS withSettlementDays(final int settlementDays) {
-        if (!effectiveDate_.isNull()) {
+        if ( !effectiveDate_.isNull() ) {
             this.conflictRequested_ = true;
         }
         this.settlementDays_ = settlementDays;
@@ -146,7 +131,7 @@ public class MakeOIS {
     }
 
     public MakeOIS withEffectiveDate(final Date d) {
-        if (settlementDays_ != Constants.NULL_NATURAL) {
+        if ( settlementDays_ != Constants.NULL_NATURAL ) {
             this.conflictRequested_ = true;
         }
         this.effectiveDate_ = d;
@@ -215,9 +200,8 @@ public class MakeOIS {
     }
 
     /**
-     * Mirror of C++ {@code MakeOIS::withLookbackDays} — value is propagated
-     * to the {@link OvernightIndexedSwap} ctor (and thence the underlying
-     * {@link org.jquantlib.cashflow.OvernightLeg}).
+     * Mirror of C++ {@code MakeOIS::withLookbackDays} — value is propagated to the {@link OvernightIndexedSwap} ctor
+     * (and thence the underlying {@link org.jquantlib.cashflow.OvernightLeg}).
      */
     public MakeOIS withLookbackDays(final int lookbackDays) {
         this.lookbackDays_ = lookbackDays;
@@ -236,7 +220,7 @@ public class MakeOIS {
         return this;
     }
 
-    public MakeOIS withDiscountingTermStructure(final Handle<YieldTermStructure> ts) {
+    public MakeOIS withDiscountingTermStructure(final Handle< YieldTermStructure > ts) {
         this.discountingTermStructure_ = ts;
         return this;
     }
@@ -251,16 +235,15 @@ public class MakeOIS {
      */
     public OvernightIndexedSwap value() {
         QL.require(!conflictRequested_,
-            "cannot set both an explicit effective date and settlement days; "
-            + "use one or the other");
+                "cannot set both an explicit effective date and settlement days; " + "use one or the other");
 
         Date startDate;
-        if (!effectiveDate_.isNull()) {
+        if ( !effectiveDate_.isNull() ) {
             startDate = effectiveDate_;
         } else {
             int settlementDays = settlementDays_;
-            if (settlementDays == Constants.NULL_NATURAL) {
-                if (overnightIndex_ instanceof Sonia) {
+            if ( settlementDays == Constants.NULL_NATURAL ) {
+                if ( overnightIndex_ instanceof Sonia ) {
                     settlementDays = 0;
                 } else {
                     settlementDays = 2;
@@ -268,47 +251,35 @@ public class MakeOIS {
             }
             Date refDate = new Settings().evaluationDate();
             refDate = calendar_.adjust(refDate);
-            Date spotDate = calendar_.advance(refDate,
-                                              new Period(settlementDays, TimeUnit.Days),
-                                              BusinessDayConvention.Following);
+            Date spotDate = calendar_.advance(refDate, new Period(settlementDays, TimeUnit.Days),
+                    BusinessDayConvention.Following);
             startDate = spotDate.add(forwardStart_);
             startDate = calendar_.adjust(startDate,
-                forwardStart_.length() < 0
-                    ? BusinessDayConvention.Preceding
-                    : BusinessDayConvention.Following);
+                    forwardStart_.length() < 0 ? BusinessDayConvention.Preceding : BusinessDayConvention.Following);
         }
 
-        boolean useEOM = isDefaultEOM_
-                ? calendar_.isEndOfMonth(startDate)
-                : endOfMonth_;
+        boolean useEOM = isDefaultEOM_ ? calendar_.isEndOfMonth(startDate) : endOfMonth_;
 
         Date endDate = terminationDate_;
-        if (endDate.isNull()) {
+        if ( endDate.isNull() ) {
             endDate = startDate.add(swapTenor_);
         }
 
-        final Schedule schedule = new Schedule(
-                startDate, endDate, new Period(paymentFrequency_),
-                calendar_, paymentAdjustment_, paymentAdjustment_,
-                rule_, useEOM, new Date(), new Date());
+        final Schedule schedule = new Schedule(startDate, endDate, new Period(paymentFrequency_), calendar_,
+                paymentAdjustment_, paymentAdjustment_, rule_, useEOM, new Date(), new Date());
 
         double usedFixedRate = fixedRate_;
-        if (fixedRate_ == Constants.NULL_REAL) {
+        if ( fixedRate_ == Constants.NULL_REAL ) {
             // bootstrap fair rate
-            final OvernightIndexedSwap temp = new OvernightIndexedSwap(
-                    type_, nominal_, schedule, 0.0, fixedDayCount_,
-                    schedule, overnightIndex_, overnightSpread_,
-                    paymentLag_, paymentAdjustment_,
-                    paymentCalendar_ != null ? paymentCalendar_ : calendar_,
-                    telescopicValueDates_, averagingMethod_,
+            final OvernightIndexedSwap temp = new OvernightIndexedSwap(type_, nominal_, schedule, 0.0, fixedDayCount_,
+                    schedule, overnightIndex_, overnightSpread_, paymentLag_, paymentAdjustment_,
+                    paymentCalendar_ != null ? paymentCalendar_ : calendar_, telescopicValueDates_, averagingMethod_,
                     lookbackDays_, lockoutDays_, applyObservationShift_);
-            if (engine_ == null) {
-                final Handle<YieldTermStructure> disc =
-                    discountingTermStructure_.empty()
+            if ( engine_ == null ) {
+                final Handle< YieldTermStructure > disc = discountingTermStructure_.empty()
                         ? overnightIndex_.termStructure()
                         : discountingTermStructure_;
-                QL.require(!disc.empty(),
-                    "null term structure set to this instance of " + overnightIndex_.name());
+                QL.require(!disc.empty(), "null term structure set to this instance of " + overnightIndex_.name());
                 temp.setPricingEngine(new DiscountingSwapEngine(disc));
             } else {
                 temp.setPricingEngine(engine_);
@@ -316,17 +287,14 @@ public class MakeOIS {
             usedFixedRate = temp.fairRate();
         }
 
-        final OvernightIndexedSwap ois = new OvernightIndexedSwap(
-                type_, nominal_, schedule, usedFixedRate, fixedDayCount_,
-                schedule, overnightIndex_, overnightSpread_,
-                paymentLag_, paymentAdjustment_,
-                paymentCalendar_ != null ? paymentCalendar_ : calendar_,
-                telescopicValueDates_, averagingMethod_,
+        final OvernightIndexedSwap ois = new OvernightIndexedSwap(type_, nominal_, schedule, usedFixedRate,
+                fixedDayCount_, schedule, overnightIndex_, overnightSpread_, paymentLag_, paymentAdjustment_,
+                paymentCalendar_ != null ? paymentCalendar_ : calendar_, telescopicValueDates_, averagingMethod_,
                 lookbackDays_, lockoutDays_, applyObservationShift_);
 
-        if (engine_ == null && !discountingTermStructure_.empty()) {
+        if ( engine_ == null && !discountingTermStructure_.empty() ) {
             ois.setPricingEngine(new DiscountingSwapEngine(discountingTermStructure_));
-        } else if (engine_ != null) {
+        } else if ( engine_ != null ) {
             ois.setPricingEngine(engine_);
         }
         return ois;

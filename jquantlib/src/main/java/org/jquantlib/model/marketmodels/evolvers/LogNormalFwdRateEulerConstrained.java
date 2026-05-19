@@ -30,56 +30,37 @@ package org.jquantlib.model.marketmodels.evolvers;
 import org.jquantlib.QL;
 import org.jquantlib.math.distributions.CumulativeNormalDistribution;
 import org.jquantlib.math.matrixutilities.Matrix;
-import org.jquantlib.model.marketmodels.BrownianGenerator;
-import org.jquantlib.model.marketmodels.BrownianGeneratorFactory;
-import org.jquantlib.model.marketmodels.ConstrainedEvolver;
-import org.jquantlib.model.marketmodels.CurveState;
-import org.jquantlib.model.marketmodels.EvolutionDescription;
-import org.jquantlib.model.marketmodels.MarketModel;
+import org.jquantlib.model.marketmodels.*;
 import org.jquantlib.model.marketmodels.curvestates.LMMCurveState;
 import org.jquantlib.model.marketmodels.driftcomputation.LMMDriftCalculator;
 
 /**
  * Constrained Euler log-normal forward-rate evolver.
  * <p>
- * Adds a Fries-Joshi importance-sampling shift to {@link LogNormalFwdRateEuler}
- * so a chosen forward rate at a chosen step can be pinned to a constraint
- * value. The shift is applied along the constrained rate's row of the
- * pseudoroot, with the path weight adjusted by the ratio of densities (shifted
- * vs. original Gaussian).
+ * Adds a Fries-Joshi importance-sampling shift to {@link LogNormalFwdRateEuler} so a chosen forward rate at a chosen
+ * step can be pinned to a constraint value. The shift is applied along the constrained rate's row of the pseudoroot,
+ * with the path weight adjusted by the ratio of densities (shifted vs. original Gaussian).
  * <p>
- * Currently implemented only for forward-rate constraints (i.e.
- * endIndex == startIndex+1 in {@link #setConstraintType}).
- *
- * @see "ql/models/marketmodels/evolvers/lognormalfwdrateeulerconstrained.{hpp,cpp}" v1.42.1
+ * Currently implemented only for forward-rate constraints (i.e. endIndex == startIndex+1 in
+ * {@link #setConstraintType}).
  *
  * @author Jose Moya
+ * @see "ql/models/marketmodels/evolvers/lognormalfwdrateeulerconstrained.{hpp,cpp}" v1.42.1
  */
 public class LogNormalFwdRateEulerConstrained extends ConstrainedEvolver {
 
+    private static final CumulativeNormalDistribution PHI = new CumulativeNormalDistribution();
     // inputs
     private final MarketModel marketModel_;
     private final int[] numeraires_;
     private final int initialStep_;
     private final BrownianGenerator generator_;
-
-    private int[] startIndexOfSwapRate_;
-    private int[] endIndexOfSwapRate_;
-
-    // often-changing inputs
-    private double[] rateConstraints_;
-    private boolean[] isConstraintActive_;
-
     // fixed variables
     private final double[][] fixedDrifts_;
     private final double[][] variances_;
-
-    // working variables
-    private double[][] covariances_; // covariance of constrained rate vs other rates per step
     private final int numberOfRates_;
     private final int numberOfFactors_;
     private final LMMCurveState curveState_;
-    private int currentStep_;
     private final double[] forwards_;
     private final double[] displacements_;
     private final double[] logForwards_;
@@ -90,21 +71,22 @@ public class LogNormalFwdRateEulerConstrained extends ConstrainedEvolver {
     private final int[] alive_;
     // helper classes
     private final LMMDriftCalculator[] calculators_;
+    private int[] startIndexOfSwapRate_;
+    private int[] endIndexOfSwapRate_;
+    // often-changing inputs
+    private double[] rateConstraints_;
+    private boolean[] isConstraintActive_;
+    // working variables
+    private double[][] covariances_; // covariance of constrained rate vs other rates per step
+    private int currentStep_;
 
-    private static final CumulativeNormalDistribution PHI = new CumulativeNormalDistribution();
-
-    public LogNormalFwdRateEulerConstrained(
-            final MarketModel marketModel,
-            final BrownianGeneratorFactory factory,
+    public LogNormalFwdRateEulerConstrained(final MarketModel marketModel, final BrownianGeneratorFactory factory,
             final int[] numeraires) {
         this(marketModel, factory, numeraires, 0);
     }
 
-    public LogNormalFwdRateEulerConstrained(
-            final MarketModel marketModel,
-            final BrownianGeneratorFactory factory,
-            final int[] numeraires,
-            final int initialStep) {
+    public LogNormalFwdRateEulerConstrained(final MarketModel marketModel, final BrownianGeneratorFactory factory,
+            final int[] numeraires, final int initialStep) {
         this.marketModel_ = marketModel;
         this.numeraires_ = numeraires.clone();
         this.initialStep_ = initialStep;
@@ -130,14 +112,13 @@ public class LogNormalFwdRateEulerConstrained extends ConstrainedEvolver {
         this.calculators_ = new LMMDriftCalculator[steps];
         this.variances_ = new double[steps][numberOfRates_];
         this.fixedDrifts_ = new double[steps][numberOfRates_];
-        for (int j = 0; j < steps; ++j) {
+        for ( int j = 0; j < steps; ++j ) {
             final Matrix A = marketModel.pseudoRoot(j);
-            calculators_[j] = new LMMDriftCalculator(A, displacements_,
-                    marketModel.evolution().rateTaus(),
+            calculators_[j] = new LMMDriftCalculator(A, displacements_, marketModel.evolution().rateTaus(),
                     numeraires[j], alive_[j]);
-            for (int k = 0; k < numberOfRates_; ++k) {
+            for ( int k = 0; k < numberOfRates_; ++k ) {
                 double variance = 0.0;
-                for (int f = 0; f < numberOfFactors_; ++f) {
+                for ( int f = 0; f < numberOfFactors_; ++f ) {
                     final double a = A.get(k, f);
                     variance += a * a;
                 }
@@ -155,9 +136,8 @@ public class LogNormalFwdRateEulerConstrained extends ConstrainedEvolver {
     }
 
     private void setForwards(final double[] forwards) {
-        QL.require(forwards.length == numberOfRates_,
-                "mismatch between forwards and rateTimes");
-        for (int i = 0; i < numberOfRates_; ++i) {
+        QL.require(forwards.length == numberOfRates_, "mismatch between forwards and rateTimes");
+        for ( int i = 0; i < numberOfRates_; ++i ) {
             initialLogForwards_[i] = Math.log(forwards[i] + displacements_[i]);
         }
         calculators_[initialStep_].compute(forwards, initialDrifts_);
@@ -170,25 +150,23 @@ public class LogNormalFwdRateEulerConstrained extends ConstrainedEvolver {
 
     @Override
     public void setConstraintType(final int[] startIndexOfSwapRate, final int[] endIndexOfSwapRate) {
-        QL.require(startIndexOfSwapRate.length == numeraires_.length,
-                "Size mismatch in constraint specification.");
-        QL.require(endIndexOfSwapRate.length == numeraires_.length,
-                "Size mismatch in constraint specification.");
+        QL.require(startIndexOfSwapRate.length == numeraires_.length, "Size mismatch in constraint specification.");
+        QL.require(endIndexOfSwapRate.length == numeraires_.length, "Size mismatch in constraint specification.");
 
         this.startIndexOfSwapRate_ = startIndexOfSwapRate.clone();
         this.endIndexOfSwapRate_ = endIndexOfSwapRate.clone();
 
         this.covariances_ = new double[startIndexOfSwapRate_.length][numberOfRates_];
 
-        for (int i = 0; i < startIndexOfSwapRate_.length; ++i) {
+        for ( int i = 0; i < startIndexOfSwapRate_.length; ++i ) {
             QL.require(startIndexOfSwapRate_[i] + 1 == endIndexOfSwapRate_[i],
                     "constrained euler currently only implemented for forward rates");
 
             final Matrix A = marketModel_.pseudoRoot(currentStep_);
 
-            for (int j = 0; j < numberOfRates_; ++j) {
+            for ( int j = 0; j < numberOfRates_; ++j ) {
                 double cov = 0.0;
-                for (int k = 0; k < numberOfFactors_; ++k) {
+                for ( int k = 0; k < numberOfFactors_; ++k ) {
                     cov += A.get(startIndexOfSwapRate_[i], k) * A.get(j, k);
                 }
                 covariances_[i][j] = cov;
@@ -198,15 +176,13 @@ public class LogNormalFwdRateEulerConstrained extends ConstrainedEvolver {
 
     @Override
     public void setThisConstraint(final double[] rateConstraints, final boolean[] isConstraintActive) {
-        QL.require(rateConstraints.length == numeraires_.length,
-                "wrong number of constraints specified");
-        QL.require(isConstraintActive.length == numeraires_.length,
-                "wrong number of isConstraintActive specified");
+        QL.require(rateConstraints.length == numeraires_.length, "wrong number of constraints specified");
+        QL.require(isConstraintActive.length == numeraires_.length, "wrong number of isConstraintActive specified");
 
         this.rateConstraints_ = rateConstraints.clone();
         this.isConstraintActive_ = isConstraintActive.clone();
 
-        for (int i = 0; i < rateConstraints_.length; i++) {
+        for ( int i = 0; i < rateConstraints_.length; i++ ) {
             rateConstraints_[i] = Math.log(rateConstraints_[i] + displacements_[i]);
         }
     }
@@ -223,7 +199,7 @@ public class LogNormalFwdRateEulerConstrained extends ConstrainedEvolver {
         // we're going from T1 to T2
 
         // a) compute drifts D1 at T1
-        if (currentStep_ > initialStep_) {
+        if ( currentStep_ > initialStep_ ) {
             calculators_[currentStep_].compute(forwards_, drifts1_);
         } else {
             System.arraycopy(initialDrifts_, 0, drifts1_, 0, numberOfRates_);
@@ -235,17 +211,17 @@ public class LogNormalFwdRateEulerConstrained extends ConstrainedEvolver {
         final double[] fixedDrift = fixedDrifts_[currentStep_];
 
         final int alive = alive_[currentStep_];
-        for (int i = alive; i < numberOfRates_; i++) {
+        for ( int i = alive; i < numberOfRates_; i++ ) {
             logForwards_[i] += drifts1_[i] + fixedDrift[i];
             double inner = 0.0;
-            for (int f = 0; f < numberOfFactors_; ++f) {
+            for ( int f = 0; f < numberOfFactors_; ++f ) {
                 inner += A.get(i, f) * brownians_[f];
             }
             logForwards_[i] += inner;
         }
 
         // check constraint active
-        if (isConstraintActive_ != null && isConstraintActive_[currentStep_]) {
+        if ( isConstraintActive_ != null && isConstraintActive_[currentStep_] ) {
             final int index = startIndexOfSwapRate_[currentStep_];
 
             // compute error
@@ -253,13 +229,13 @@ public class LogNormalFwdRateEulerConstrained extends ConstrainedEvolver {
             final double multiplier = requiredShift / variances_[currentStep_][index];
 
             // shift each rate by multiplier * weighting of index rate across the step
-            for (int i = alive; i < numberOfRates_; i++) {
+            for ( int i = alive; i < numberOfRates_; i++ ) {
                 logForwards_[i] += multiplier * covariances_[currentStep_][i];
             }
 
             // density correction: divide original density by density of shifted normal
             double weightsEffect = 1.0;
-            for (int k = 0; k < numberOfFactors_; k++) {
+            for ( int k = 0; k < numberOfFactors_; k++ ) {
                 final double shift = multiplier * A.get(index, k);
                 final double originalDensity = PHI.derivative(brownians_[k] + shift);
                 final double newDensity = PHI.derivative(brownians_[k]);
@@ -269,7 +245,7 @@ public class LogNormalFwdRateEulerConstrained extends ConstrainedEvolver {
             weight *= weightsEffect;
         }
 
-        for (int i = alive; i < numberOfRates_; i++) {
+        for ( int i = alive; i < numberOfRates_; i++ ) {
             forwards_[i] = Math.exp(logForwards_[i]) - displacements_[i];
         }
 

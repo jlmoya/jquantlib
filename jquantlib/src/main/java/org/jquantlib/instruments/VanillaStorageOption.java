@@ -35,14 +35,13 @@ import org.jquantlib.pricingengines.PricingEngine;
  * <p>Java port of v1.42.1 {@code ql/instruments/vanillastorageoption.hpp}.</p>
  *
  * <p>A storage option is a Bermudan-exercise instrument over a working-gas
- * storage facility. At each exercise date the holder may inject (buy) or
- * withdraw (sell) gas subject to a {@code capacity} ceiling and a per-step
- * {@code changeRate} cap; the {@code load} field gives the starting working
+ * storage facility. At each exercise date the holder may inject (buy) or withdraw (sell) gas subject to a
+ * {@code capacity} ceiling and a per-step {@code changeRate} cap; the {@code load} field gives the starting working
  * volume at the engine reference date.</p>
  *
  * <p>The payoff is a {@link NullPayoff} sentinel because the cash-flow logic
- * lives entirely inside the engine's step condition; the instrument carries
- * only the contract envelope (Bermudan dates + capacity/load/changeRate).</p>
+ * lives entirely inside the engine's step condition; the instrument carries only the contract envelope (Bermudan dates
+ * + capacity/load/changeRate).</p>
  *
  * @author Phase 5e.5b-CFC-d-215 port
  */
@@ -52,10 +51,8 @@ public class VanillaStorageOption extends OneAssetOption {
     private final double load_;
     private final double changeRate_;
 
-    public VanillaStorageOption(final BermudanExercise ex,
-                                final double capacity,
-                                final double load,
-                                final double changeRate) {
+    public VanillaStorageOption(final BermudanExercise ex, final double capacity, final double load,
+            final double changeRate) {
         super(new NullPayoff(), ex);
         this.capacity_ = capacity;
         this.load_ = load;
@@ -72,32 +69,34 @@ public class VanillaStorageOption extends OneAssetOption {
 
     @Override
     protected void setupArguments(final PricingEngine.Arguments args) {
-        QL.require(args instanceof VanillaStorageOption.ArgumentsImpl,
-                "wrong argument type");
-        final VanillaStorageOption.ArgumentsImpl a =
-                (VanillaStorageOption.ArgumentsImpl) args;
-        a.payoff     = this.payoff;     // NullPayoff
-        a.exercise   = this.exercise;   // BermudanExercise
-        a.capacity   = capacity_;
-        a.load       = load_;
+        QL.require(args instanceof VanillaStorageOption.ArgumentsImpl, "wrong argument type");
+        final VanillaStorageOption.ArgumentsImpl a = (VanillaStorageOption.ArgumentsImpl) args;
+        a.payoff = this.payoff;     // NullPayoff
+        a.exercise = this.exercise;   // BermudanExercise
+        a.capacity = capacity_;
+        a.load = load_;
         a.changeRate = changeRate_;
     }
 
     /** Returns the working-gas capacity (volume ceiling). */
-    public double capacity() { return capacity_; }
+    public double capacity() {
+        return capacity_;
+    }
 
     /** Returns the initial working-gas load. */
-    public double load() { return load_; }
+    public double load() {
+        return load_;
+    }
 
     /** Returns the per-step injection/withdrawal cap. */
-    public double changeRate() { return changeRate_; }
+    public double changeRate() {
+        return changeRate_;
+    }
 
     /**
-     * Vanilla-storage engine arguments. Mirrors C++
-     * {@code VanillaStorageOption::arguments}.
+     * Vanilla-storage engine arguments. Mirrors C++ {@code VanillaStorageOption::arguments}.
      */
-    public static class ArgumentsImpl extends OneAssetOption.ArgumentsImpl
-            implements OneAssetOption.Arguments {
+    public static class ArgumentsImpl extends OneAssetOption.ArgumentsImpl implements OneAssetOption.Arguments {
 
         public double capacity;
         public double load;
@@ -109,8 +108,7 @@ public class VanillaStorageOption extends OneAssetOption {
             QL.require(exercise != null, "no exercise given");
             QL.require(capacity > 0.0 && changeRate > 0.0 && load >= 0.0,
                     "positive capacity, load and change rate required");
-            QL.require(load <= capacity && changeRate <= capacity,
-                    "illegal values load of changeRate");
+            QL.require(load <= capacity && changeRate <= capacity, "illegal values load of changeRate");
         }
     }
 }

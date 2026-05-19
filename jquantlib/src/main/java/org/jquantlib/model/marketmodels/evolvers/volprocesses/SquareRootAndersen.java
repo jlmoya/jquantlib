@@ -33,58 +33,40 @@ import org.jquantlib.model.marketmodels.evolvers.MarketModelVolProcess;
 /**
  * Andersen-style square-root vol process.
  * <p>
- * Implements Andersen's QE / TG hybrid scheme for evolving an instantaneous
- * variance under the CIR/Heston dynamics. Used as the {@code volProcess_}
- * input of {@link org.jquantlib.model.marketmodels.evolvers.SVDDFwdRatePc}.
- *
- * @see "ql/models/marketmodels/evolvers/volprocesses/squarerootandersen.{hpp,cpp}" v1.42.1
+ * Implements Andersen's QE / TG hybrid scheme for evolving an instantaneous variance under the CIR/Heston dynamics.
+ * Used as the {@code volProcess_} input of {@link org.jquantlib.model.marketmodels.evolvers.SVDDFwdRatePc}.
  *
  * @author Jose Moya
+ * @see "ql/models/marketmodels/evolvers/volprocesses/squarerootandersen.{hpp,cpp}" v1.42.1
  */
 public class SquareRootAndersen extends MarketModelVolProcess {
 
+    private static final CumulativeNormalDistribution PHI = new CumulativeNormalDistribution();
     private final double theta_;       // mean level
     private final double k_;           // reversion speed
     private final double epsilon_;     // volvar
     private final double v0_;          // initial variance
     private final int numberSubSteps_; // sub steps per evolution time
-
     private final double[] dt_;        // time step lengths
     private final double[] eMinuskDt_; // exp(-k*dt)
-
     private final double w1_;          // variance weights across step
     private final double w2_;
     private final double psiC_;        // cut-off between two evolution regimes
-
+    private final double[] vPath_;
+    private final double[] state_;
     // evolving values
     private double v_;
     private int currentStep_;
     private int subStep_;
-    private final double[] vPath_;
-    private final double[] state_;
 
-    private static final CumulativeNormalDistribution PHI = new CumulativeNormalDistribution();
-
-    public SquareRootAndersen(final double meanLevel,
-                              final double reversionSpeed,
-                              final double volVar,
-                              final double v0,
-                              final double[] evolutionTimes,
-                              final int numberSubSteps,
-                              final double w1,
-                              final double w2) {
+    public SquareRootAndersen(final double meanLevel, final double reversionSpeed, final double volVar, final double v0,
+            final double[] evolutionTimes, final int numberSubSteps, final double w1, final double w2) {
         this(meanLevel, reversionSpeed, volVar, v0, evolutionTimes, numberSubSteps, w1, w2, 1.5);
     }
 
-    public SquareRootAndersen(final double meanLevel,
-                              final double reversionSpeed,
-                              final double volVar,
-                              final double v0,
-                              final double[] evolutionTimes,
-                              final int numberSubSteps,
-                              final double w1,
-                              final double w2,
-                              final double cutPoint) {
+    public SquareRootAndersen(final double meanLevel, final double reversionSpeed, final double volVar, final double v0,
+            final double[] evolutionTimes, final int numberSubSteps, final double w1, final double w2,
+            final double cutPoint) {
         this.theta_ = meanLevel;
         this.k_ = reversionSpeed;
         this.epsilon_ = volVar;
@@ -99,16 +81,16 @@ public class SquareRootAndersen extends MarketModelVolProcess {
         this.state_ = new double[1];
 
         int j = 0;
-        for (; j < numberSubSteps_; ++j) {
+        for ( ; j < numberSubSteps_; ++j ) {
             dt_[j] = evolutionTimes[0] / numberSubSteps_;
         }
 
-        for (int i = 1; i < evolutionTimes.length; ++i) {
+        for ( int i = 1; i < evolutionTimes.length; ++i ) {
             final double dt = (evolutionTimes[i] - evolutionTimes[i - 1]) / numberSubSteps_;
             final double ekdt = Math.exp(-k_ * dt);
             QL.require(dt > 0.0, "Steps must be of positive size.");
 
-            for (int kk = 0; kk < numberSubSteps_; ++kk) {
+            for ( int kk = 0; kk < numberSubSteps_; ++kk ) {
                 dt_[j] = dt;
                 eMinuskDt_[j] = ekdt;
                 ++j;
@@ -142,7 +124,7 @@ public class SquareRootAndersen extends MarketModelVolProcess {
                 + theta_ * epsilon_ * epsilon_ * (1 - eminuskT) * (1 - eminuskT) / (2 * k_);
         final double s = Math.sqrt(s2);
         final double psi = s * s / (m * m);
-        if (psi <= psiC_) {
+        if ( psi <= psiC_ ) {
             final double psiinv = 1.0 / psi;
             final double b2 = 2.0 * psiinv - 1 + Math.sqrt(2 * psiinv * (2 * psiinv - 1.0));
             final double b = Math.sqrt(b2);
@@ -153,7 +135,7 @@ public class SquareRootAndersen extends MarketModelVolProcess {
             final double beta = (1.0 - p) / m;
             final double u = PHI.op(z);
 
-            if (u < p) {
+            if ( u < p ) {
                 vt = 0.0;
                 return vt;
             }
@@ -165,7 +147,7 @@ public class SquareRootAndersen extends MarketModelVolProcess {
 
     @Override
     public double nextstep(final double[] variates) {
-        for (int j = 0; j < numberSubSteps_; ++j) {
+        for ( int j = 0; j < numberSubSteps_; ++j ) {
             v_ = doOneSubStep(v_, variates[j], subStep_);
             ++subStep_;
             vPath_[subStep_] = v_;
@@ -181,7 +163,7 @@ public class SquareRootAndersen extends MarketModelVolProcess {
         QL.require(currentStep_ > 0, "nextStep must be called before stepSd");
         double stepVariance = 0.0;
         final int lastStepStart = (currentStep_ - 1) * numberSubSteps_;
-        for (int kk = 0; kk < numberSubSteps_; ++kk) {
+        for ( int kk = 0; kk < numberSubSteps_; ++kk ) {
             stepVariance += w1_ * vPath_[kk + lastStepStart] + w2_ * vPath_[kk + lastStepStart + 1];
         }
 

@@ -29,16 +29,14 @@ import org.jquantlib.model.shortrate.onefactormodels.HullWhite;
 import org.jquantlib.processes.HestonProcess;
 
 /**
- * Analytic Heston-Hull-White engine based on the H1-HW (Grzelak-Oosterlee)
- * approximation.
+ * Analytic Heston-Hull-White engine based on the H1-HW (Grzelak-Oosterlee) approximation.
  *
  * <p>Phase 5h.5-HHW WI-4 port of {@code QuantLib::AnalyticH1HWEngine}
- * (v1.42.1 ql/pricingengines/vanilla/analytich1hwengine.{hpp,cpp}).
- * Pinned commit {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
+ * (v1.42.1 ql/pricingengines/vanilla/analytich1hwengine.{hpp,cpp}). Pinned commit
+ * {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
  *
  * <p>Prices a European option on the joint dynamics where the equity rate
- * correlation is non-zero (extending the basic Heston-HW engine which
- * assumes that correlation is zero):
+ * correlation is non-zero (extending the basic Heston-HW engine which assumes that correlation is zero):
  * <pre>
  *   dS = (r - d) S dt + sqrt(v) S dW1
  *   dv = kappa (theta - v) dt + sigma sqrt(v) dW2
@@ -50,10 +48,8 @@ import org.jquantlib.processes.HestonProcess;
  * </pre>
  *
  * <p>Engine extends {@link AnalyticHestonHullWhiteEngine} and overrides
- * {@link #addOnTerm} to add a Grzelak-Oosterlee {@code I4} expansion
- * term computed by the inner {@link FjHelper}. The Fj helper uses
- * {@link GammaFunction#logValue} for the {@code Lambda} infinite-series
- * approximation.
+ * {@link #addOnTerm} to add a Grzelak-Oosterlee {@code I4} expansion term computed by the inner {@link FjHelper}. The
+ * Fj helper uses {@link GammaFunction#logValue} for the {@code Lambda} infinite-series approximation.
  *
  * <p>References:
  * <ul>
@@ -69,22 +65,16 @@ public class AnalyticH1HWEngine extends AnalyticHestonHullWhiteEngine {
 
     private final double rhoSr_;
 
-    public AnalyticH1HWEngine(final HestonModel model,
-                              final HestonProcess hestonProcess,
-                              final HullWhite hullWhiteModel,
-                              final double rhoSr) {
+    public AnalyticH1HWEngine(final HestonModel model, final HestonProcess hestonProcess,
+            final HullWhite hullWhiteModel, final double rhoSr) {
         this(model, hestonProcess, hullWhiteModel, rhoSr, 128);
     }
 
-    public AnalyticH1HWEngine(final HestonModel model,
-                              final HestonProcess hestonProcess,
-                              final HullWhite hullWhiteModel,
-                              final double rhoSr,
-                              final int integrationOrder) {
+    public AnalyticH1HWEngine(final HestonModel model, final HestonProcess hestonProcess,
+            final HullWhite hullWhiteModel, final double rhoSr, final int integrationOrder) {
         super(model, hestonProcess, hullWhiteModel, integrationOrder);
         QL.require(rhoSr >= 0.0,
-                "Fourier integration is not stable if "
-                + "the equity interest rate correlation is negative");
+                "Fourier integration is not stable if " + "the equity interest rate correlation is negative");
         this.rhoSr_ = rhoSr;
     }
 
@@ -98,11 +88,13 @@ public class AnalyticH1HWEngine extends AnalyticHestonHullWhiteEngine {
     }
 
     /** Helper accessor for unit tests. */
-    protected double rhoSr() { return rhoSr_; }
+    protected double rhoSr() {
+        return rhoSr_;
+    }
 
     /**
-     * Inner integration helper for the Grzelak-Oosterlee H1-HW expansion.
-     * Mirrors C++ {@code AnalyticH1HWEngine::Fj_Helper}.
+     * Inner integration helper for the Grzelak-Oosterlee H1-HW expansion. Mirrors C++
+     * {@code AnalyticH1HWEngine::Fj_Helper}.
      */
     private static final class FjHelper {
 
@@ -116,41 +108,35 @@ public class AnalyticH1HWEngine extends AnalyticHestonHullWhiteEngine {
         private final double rhoSr_;
         private final double term_;
 
-        FjHelper(final AnalyticH1HWEngine engine,
-                 final double rhoSr,
-                 final double term,
-                 @SuppressWarnings("unused") final double strike,
-                 final int j) {
+        FjHelper(final AnalyticH1HWEngine engine, final double rhoSr, final double term,
+                @SuppressWarnings( "unused" ) final double strike, final int j) {
             this.j_ = j;
             // Use the cached HW parameters from the parent engine.
             this.lambda_ = engine.aHW();
-            this.eta_    = engine.sigmaHW();
+            this.eta_ = engine.sigmaHW();
             // Heston model accessors are direct scalars.
-            this.v0_     = ((HestonModel) engine.model).v0();
-            this.kappa_  = ((HestonModel) engine.model).kappa();
-            this.theta_  = ((HestonModel) engine.model).theta();
-            this.gamma_  = ((HestonModel) engine.model).sigma();
-            this.d_      = 4.0 * kappa_ * theta_ / (gamma_ * gamma_);
-            this.rhoSr_  = rhoSr;
-            this.term_   = term;
+            this.v0_ = engine.model.v0();
+            this.kappa_ = engine.model.kappa();
+            this.theta_ = engine.model.theta();
+            this.gamma_ = engine.model.sigma();
+            this.d_ = 4.0 * kappa_ * theta_ / (gamma_ * gamma_);
+            this.rhoSr_ = rhoSr;
+            this.term_ = term;
         }
 
         /** {@code c(t) = gamma^2/(4 kappa) * (1 - exp(-kappa*t))}. */
         private double c(final double t) {
-            return gamma_ * gamma_ / (4.0 * kappa_)
-                    * (1.0 - Math.exp(-kappa_ * t));
+            return gamma_ * gamma_ / (4.0 * kappa_) * (1.0 - Math.exp(-kappa_ * t));
         }
 
         /** {@code lambda(t) = 4 kappa v0 exp(-kappa t) / (gamma^2 (1 - exp(-kappa t)))}. */
         private double lambda(final double t) {
-            return 4.0 * kappa_ * v0_ * Math.exp(-kappa_ * t)
-                    / (gamma_ * gamma_ * (1.0 - Math.exp(-kappa_ * t)));
+            return 4.0 * kappa_ * v0_ * Math.exp(-kappa_ * t) / (gamma_ * gamma_ * (1.0 - Math.exp(-kappa_ * t)));
         }
 
         /** Closed-form approximation to {@code Lambda(t)}. */
         private double lambdaApprox(final double t) {
-            return Math.sqrt(c(t) * (lambda(t) - 1.0)
-                    + c(t) * d_ * (1.0 + 1.0 / (2.0 * (d_ + lambda(t)))));
+            return Math.sqrt(c(t) * (lambda(t) - 1.0) + c(t) * d_ * (1.0 + 1.0 / (2.0 * (d_ + lambda(t)))));
         }
 
         /** Series expansion of {@code Lambda(t)} via the GammaFunction. */
@@ -161,13 +147,12 @@ public class AnalyticH1HWEngine extends AnalyticHestonHullWhiteEngine {
             double s;
             do {
                 final double k = i;
-                s = Math.exp(k * Math.log(0.5 * lambdaT)
-                        + GAMMA.logValue(0.5 * (1.0 + d_) + k)
-                        - GAMMA.logValue(k + 1.0)
-                        - GAMMA.logValue(0.5 * d_ + k));
+                s = Math.exp(
+                        k * Math.log(0.5 * lambdaT) + GAMMA.logValue(0.5 * (1.0 + d_) + k) - GAMMA.logValue(k + 1.0)
+                                - GAMMA.logValue(0.5 * d_ + k));
                 retVal += s;
                 ++i;
-            } while (s > Math.ulp(1.0f) && i < MAX_ITER);
+            } while ( s > Math.ulp(1.0f) && i < MAX_ITER );
 
             QL.require(i < MAX_ITER, "can not calculate Lambda");
             retVal *= Math.sqrt(2.0 * c(t)) * Math.exp(-0.5 * lambdaT);
@@ -179,14 +164,13 @@ public class AnalyticH1HWEngine extends AnalyticHestonHullWhiteEngine {
             final double gamma2 = gamma_ * gamma_;
             final double a, b, c;
 
-            if (8.0 * kappa_ * theta_ / gamma2 > 1.0) {
+            if ( 8.0 * kappa_ * theta_ / gamma2 > 1.0 ) {
                 a = Math.sqrt(theta_ - gamma2 / (8.0 * kappa_));
                 b = Math.sqrt(v0_) - a;
                 c = -Math.log((lambdaApprox(1.0) - a) / b);
             } else {
-                a = Math.sqrt(gamma2 / (2.0 * kappa_))
-                        * Math.exp(GAMMA.logValue(0.5 * (d_ + 1.0))
-                                - GAMMA.logValue(0.5 * d_));
+                a = Math.sqrt(gamma2 / (2.0 * kappa_)) * Math.exp(
+                        GAMMA.logValue(0.5 * (d_ + 1.0)) - GAMMA.logValue(0.5 * d_));
                 final double t1 = 0.0;
                 final double t2 = 1.0 / kappa_;
                 final double lambdaT1 = Math.sqrt(v0_);
@@ -203,11 +187,8 @@ public class AnalyticH1HWEngine extends AnalyticHestonHullWhiteEngine {
             final Complex coeff = new Complex(u * u, imagPart);
 
             final double bracket =
-                    b / c * (1.0 - Math.exp(-c * term_))
-                    + a * term_
-                    + a / lambda_ * (Math.exp(-lambda_ * term_) - 1.0)
-                    + b / (c - lambda_) * Math.exp(-c * term_)
-                            * (1.0 - Math.exp(-term_ * (lambda_ - c)));
+                    b / c * (1.0 - Math.exp(-c * term_)) + a * term_ + a / lambda_ * (Math.exp(-lambda_ * term_) - 1.0)
+                            + b / (c - lambda_) * Math.exp(-c * term_) * (1.0 - Math.exp(-term_ * (lambda_ - c)));
 
             final Complex i4 = coeff.mul(-1.0 / lambda_).mul(bracket);
             return i4.mul(eta_ * rhoSr_);

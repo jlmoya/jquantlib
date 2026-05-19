@@ -32,69 +32,48 @@ import org.jquantlib.model.marketmodels.EvolutionDescription;
 import org.jquantlib.model.marketmodels.MarketModelPathwiseMultiProduct;
 
 /**
- * Pathwise multi-deflated-cap product: aggregates several deflated caplet
- * cash flows into "caps" — each cap defined by a {@code [start, end)}
- * caplet-index range. Useful for testing pathwise market vegas.
+ * Pathwise multi-deflated-cap product: aggregates several deflated caplet cash flows into "caps" — each cap defined by
+ * a {@code [start, end)} caplet-index range. Useful for testing pathwise market vegas.
  *
  * <p>Mirrors C++ {@code MarketModelPathwiseMultiDeflatedCap}
- * (ql/models/marketmodels/products/pathwise/pathwiseproductcaplet.{hpp,cpp}
- * v1.42.1).
+ * (ql/models/marketmodels/products/pathwise/pathwiseproductcaplet.{hpp,cpp} v1.42.1).
  *
  * @author Jose Moya
  */
 public class MarketModelPathwiseMultiDeflatedCap extends MarketModelPathwiseMultiProduct {
-
-    /** Inclusive-exclusive range of underlying caplet indices [first, second). */
-    public static final class StartAndEnd {
-        public final int first;
-        public final int second;
-        public StartAndEnd(final int first, final int second) {
-            this.first = first;
-            this.second = second;
-        }
-    }
 
     // construction parameters preserved for clone()
     private final double[] origRateTimes_;
     private final double[] origAccruals_;
     private final double[] origPaymentTimes_;
     private final double origStrike_;
-
     private final MarketModelPathwiseMultiDeflatedCaplet underlyingCaplets_;
     private final int numberRates_;
     private final StartAndEnd[] startsAndEnds_;
-
     // workspace
     private final int[] innerCashFlowSizes_;
     private final CashFlow[][] innerCashFlowsGenerated_;
-
-    public MarketModelPathwiseMultiDeflatedCap(final double[] rateTimes,
-                                               final double[] accruals,
-                                               final double[] paymentTimes,
-                                               final double strike,
-                                               final StartAndEnd[] startsAndEnds) {
+    public MarketModelPathwiseMultiDeflatedCap(final double[] rateTimes, final double[] accruals,
+            final double[] paymentTimes, final double strike, final StartAndEnd[] startsAndEnds) {
         this.origRateTimes_ = rateTimes.clone();
         this.origAccruals_ = accruals.clone();
         this.origPaymentTimes_ = paymentTimes.clone();
         this.origStrike_ = strike;
 
-        this.underlyingCaplets_ = new MarketModelPathwiseMultiDeflatedCaplet(
-                rateTimes, accruals, paymentTimes, strike);
+        this.underlyingCaplets_ = new MarketModelPathwiseMultiDeflatedCaplet(rateTimes, accruals, paymentTimes, strike);
         this.numberRates_ = accruals.length;
         this.startsAndEnds_ = startsAndEnds.clone();
 
-        for (int j = 0; j < startsAndEnds_.length; ++j) {
-            QL.require(startsAndEnds_[j].first < startsAndEnds_[j].second,
-                    "a cap must start before it ends: " + j);
+        for ( int j = 0; j < startsAndEnds_.length; ++j ) {
+            QL.require(startsAndEnds_[j].first < startsAndEnds_[j].second, "a cap must start before it ends: " + j);
             QL.require(startsAndEnds_[j].second <= accruals.length,
                     "a cap must end within the underlying caplets: " + j);
         }
 
         this.innerCashFlowSizes_ = new int[accruals.length];
-        this.innerCashFlowsGenerated_ =
-                new CashFlow[accruals.length][underlyingCaplets_.maxNumberOfCashFlowsPerProductPerStep()];
-        for (int i = 0; i < accruals.length; ++i) {
-            for (int j = 0; j < underlyingCaplets_.maxNumberOfCashFlowsPerProductPerStep(); ++j) {
+        this.innerCashFlowsGenerated_ = new CashFlow[accruals.length][underlyingCaplets_.maxNumberOfCashFlowsPerProductPerStep()];
+        for ( int i = 0; i < accruals.length; ++i ) {
+            for ( int j = 0; j < underlyingCaplets_.maxNumberOfCashFlowsPerProductPerStep(); ++j ) {
                 innerCashFlowsGenerated_[i][j] = new CashFlow(0, new double[accruals.length + 1]);
             }
         }
@@ -136,23 +115,21 @@ public class MarketModelPathwiseMultiDeflatedCap extends MarketModelPathwiseMult
     }
 
     @Override
-    public boolean nextTimeStep(final CurveState currentState,
-                                final int[] numberCashFlowsThisStep,
-                                final CashFlow[][] cashFlowsGenerated) {
-        final boolean done = underlyingCaplets_.nextTimeStep(
-                currentState, innerCashFlowSizes_, innerCashFlowsGenerated_);
+    public boolean nextTimeStep(final CurveState currentState, final int[] numberCashFlowsThisStep,
+            final CashFlow[][] cashFlowsGenerated) {
+        final boolean done = underlyingCaplets_.nextTimeStep(currentState, innerCashFlowSizes_,
+                innerCashFlowsGenerated_);
 
-        for (int k = 0; k < startsAndEnds_.length; ++k) {
+        for ( int k = 0; k < startsAndEnds_.length; ++k ) {
             numberCashFlowsThisStep[k] = 0;
         }
 
-        for (int j = 0; j < numberRates_; ++j) {
-            if (innerCashFlowSizes_[j] > 0) {
-                for (int k = 0; k < startsAndEnds_.length; ++k) {
-                    if (startsAndEnds_[k].first <= j && j < startsAndEnds_[k].second) {
-                        for (int l = 0; l < innerCashFlowSizes_[j]; ++l) {
-                            cashFlowsGenerated[k][numberCashFlowsThisStep[k]++] =
-                                    innerCashFlowsGenerated_[j][l];
+        for ( int j = 0; j < numberRates_; ++j ) {
+            if ( innerCashFlowSizes_[j] > 0 ) {
+                for ( int k = 0; k < startsAndEnds_.length; ++k ) {
+                    if ( startsAndEnds_[k].first <= j && j < startsAndEnds_[k].second ) {
+                        for ( int l = 0; l < innerCashFlowSizes_[j]; ++l ) {
+                            cashFlowsGenerated[k][numberCashFlowsThisStep[k]++] = innerCashFlowsGenerated_[j][l];
                         }
                     }
                 }
@@ -163,7 +140,18 @@ public class MarketModelPathwiseMultiDeflatedCap extends MarketModelPathwiseMult
 
     @Override
     public MarketModelPathwiseMultiProduct clone() {
-        return new MarketModelPathwiseMultiDeflatedCap(
-                origRateTimes_, origAccruals_, origPaymentTimes_, origStrike_, startsAndEnds_);
+        return new MarketModelPathwiseMultiDeflatedCap(origRateTimes_, origAccruals_, origPaymentTimes_, origStrike_,
+                startsAndEnds_);
+    }
+
+    /** Inclusive-exclusive range of underlying caplet indices [first, second). */
+    public static final class StartAndEnd {
+        public final int first;
+        public final int second;
+
+        public StartAndEnd(final int first, final int second) {
+            this.first = first;
+            this.second = second;
+        }
     }
 }

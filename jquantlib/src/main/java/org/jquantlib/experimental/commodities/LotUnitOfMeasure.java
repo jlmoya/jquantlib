@@ -22,8 +22,7 @@ package org.jquantlib.experimental.commodities;
 /**
  * Generic lot unit of measure.
  * <p>
- * Java port of QuantLib v1.42.1 {@code LotUnitOfMeasure} from
- * {@code unitofmeasure.hpp}.
+ * Java port of QuantLib v1.42.1 {@code LotUnitOfMeasure} from {@code unitofmeasure.hpp}.
  */
 public class LotUnitOfMeasure extends UnitOfMeasure {
 

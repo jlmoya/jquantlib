@@ -42,7 +42,6 @@ package org.jquantlib.termstructures.volatilities;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.termstructures.LocalVolTermStructure;
-import org.jquantlib.termstructures.TermStructure;
 import org.jquantlib.time.Date;
 import org.jquantlib.util.PolymorphicVisitor;
 import org.jquantlib.util.Visitor;
@@ -56,14 +55,12 @@ public class LocalVolCurve extends LocalVolTermStructure {
 
     private final BlackVarianceCurve blackVarianceCurve;
 
-    public LocalVolCurve(final Handle<BlackVarianceCurve> curve) {
-        super(curve.currentLink().calendar(),
-              curve.currentLink().businessDayConvention(),
-              curve.currentLink().dayCounter());
+    public LocalVolCurve(final Handle< BlackVarianceCurve > curve) {
+        super(curve.currentLink().calendar(), curve.currentLink().businessDayConvention(),
+                curve.currentLink().dayCounter());
         blackVarianceCurve = curve.currentLink();
         this.blackVarianceCurve.addObserver(this);
     }
-
 
     //
     // Overrides TermStructure
@@ -84,7 +81,6 @@ public class LocalVolCurve extends LocalVolTermStructure {
         return blackVarianceCurve.maxDate();
     }
 
-
     //
     // Overrides LocalVolTermStructure
     //
@@ -100,29 +96,26 @@ public class LocalVolCurve extends LocalVolTermStructure {
     }
 
     /**
-     * The relation
-     * {@latex[ \int_0^T \sigma_L^2(t)dt = \sigma_B^2 T }
-     * holds, where
-     * {@latex$ \sigma_L(t) }
-     * is the local volatility at time {@latex$ t } and {@latex$ \sigma_B(T) }
-     * is the Black volatility for maturity {@latex$ T }.
+     * The relation {@latex[ \int_0^T \sigma_L^2(t)dt = \sigma_B^2 T } holds, where {@latex$ \sigma_L(t) } is the local
+     * volatility at time {@latex$ t } and {@latex$ \sigma_B(T) } is the Black volatility for maturity {@latex$ T }.
      * <p>
-     * From the above, the formula
-     * {@latex[ \sigma_L(t) = \sqrt{\frac{\mathrm{d}}{\mathrm{d}t}\sigma_B^2(t)t} }
-     * can be deduced which is here implemented.
+     * From the above, the formula {@latex[ \sigma_L(t) = \sqrt{\frac{\mathrm{d}}{\mathrm{d}t}\sigma_B^2(t)t} } can be
+     * deduced which is here implemented.
      */
     @Override
-    protected final /*@Volatility*/ double localVolImpl(
-            final /*@Time*/ double maturity,
+    protected final /*@Volatility*/ double localVolImpl(final /*@Time*/ double maturity,
             final /*@Real*/ double strike) {
-        /*@Time*/ final double m = maturity;
-        /*@Time*/ final double dt = 1.0 / 365.0;
-        /*@Variance*/ final double var1 = blackVarianceCurve.blackVariance(/*@Time*/ maturity, strike, true);
-        /*@Variance*/ final double var2 = blackVarianceCurve.blackVariance(/*@Time*/ m + dt, strike, true);
+        /*@Time*/
+        final double m = maturity;
+        /*@Time*/
+        final double dt = 1.0 / 365.0;
+        /*@Variance*/
+        final double var1 = blackVarianceCurve.blackVariance(/*@Time*/ maturity, strike, true);
+        /*@Variance*/
+        final double var2 = blackVarianceCurve.blackVariance(/*@Time*/ m + dt, strike, true);
         final double derivative = (var2 - var1) / dt;
         return Math.sqrt(derivative);
     }
-
 
     //
     // implements PolymorphicVisitable
@@ -130,8 +123,8 @@ public class LocalVolCurve extends LocalVolTermStructure {
 
     @Override
     public void accept(final PolymorphicVisitor pv) {
-        final Visitor<LocalVolCurve> v = (pv!=null) ? pv.visitor(this.getClass()) : null;
-        if (v != null) {
+        final Visitor< LocalVolCurve > v = (pv != null) ? pv.visitor(this.getClass()) : null;
+        if ( v != null ) {
             v.visit(this);
         } else {
             super.accept(pv);

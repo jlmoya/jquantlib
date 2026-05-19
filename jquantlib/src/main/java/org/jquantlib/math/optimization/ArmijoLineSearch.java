@@ -20,7 +20,7 @@
  When applicable, the original copyright notice follows this notice.
  */
 
-    //! Armijo line search.
+//! Armijo line search.
     /*! Let \f$ \alpha \f$ and \f$ \beta \f$ be 2 scalars in \f$ [0,1]
         \f$.  Let \f$ x \f$ be the current value of the unknown, \f$ d
         \f$ the search direction and \f$ t \f$ the step. Let \f$ f \f$
@@ -40,14 +40,16 @@ package org.jquantlib.math.optimization;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.optimization.EndCriteria.Type;
 
-
 public class ArmijoLineSearch extends LineSearch {
 
-    public ArmijoLineSearch(){
+    private final double alpha_;
+    private final double beta_;
+
+    public ArmijoLineSearch() {
         this(1e-8, 0.05, 0.65);
     }
 
-    public ArmijoLineSearch(final double eps, final double alpha, final double beta){
+    public ArmijoLineSearch(final double eps, final double alpha, final double beta) {
         super(eps);
         alpha_ = alpha;
         beta_ = beta;
@@ -67,7 +69,7 @@ public class ArmijoLineSearch extends LineSearch {
         final double qpO = P.gradientNormValue();
 
         qt_ = q0;
-        qpt_ = (gradient_.empty()? qpO : - gradient_.dotProduct(searchDirection_));
+        qpt_ = (gradient_.empty() ? qpO : -gradient_.dotProduct(searchDirection_));
 
         // Initialize gradient
         gradient_ = new Array(P.currentValue().size());
@@ -78,8 +80,8 @@ public class ArmijoLineSearch extends LineSearch {
         qt_ = P.value(xtd_);
 
         //Enter in the loop if the criterion is not satisfied
-        if((qt_ - q0) > -alpha_*t*qpt_){
-            do{
+        if ( (qt_ - q0) > -alpha_ * t * qpt_ ) {
+            do {
                 loopNumber++;
                 // Decrease the step
                 t *= beta_;
@@ -94,13 +96,11 @@ public class ArmijoLineSearch extends LineSearch {
                 P.gradient(gradient_, xtd_);
                 // and it squared norm
                 maxIter = endCriteria.checkMaxIterations(loopNumber, ecType);
-            }
-            while((((qt_ - q0) > (-alpha_ * t * qpt_)) ||
-                   ((qtold - q0) <= (-alpha_ * t * qpt_ / beta_))) &&
-                   (!maxIter));
+            } while ( (((qt_ - q0) > (-alpha_ * t * qpt_)) || ((qtold - q0) <= (-alpha_ * t * qpt_ / beta_)))
+                    && (!maxIter) );
         }
 
-        if(maxIter){
+        if ( maxIter ) {
             succeed_ = false;
         }
 
@@ -112,7 +112,4 @@ public class ArmijoLineSearch extends LineSearch {
         // Return new step value
         return t;
     }
-
-    private final double alpha_;
-    private final double beta_;
 }

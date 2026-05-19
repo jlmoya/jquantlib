@@ -46,8 +46,8 @@ import org.jquantlib.time.TimeSeries;
  */
 public interface VolatilityCompositor {
 
-	public void calibrate(final TimeSeries<Double> timeSeries);
+    void calibrate(final TimeSeries< Double > timeSeries);
 
-	public TimeSeries<Double> calculate(final TimeSeries<Double> volatilitySeries);
+    TimeSeries< Double > calculate(final TimeSeries< Double > volatilitySeries);
 
 }

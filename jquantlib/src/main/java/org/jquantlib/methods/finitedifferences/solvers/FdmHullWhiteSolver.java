@@ -28,29 +28,26 @@ import org.jquantlib.util.LazyObject;
 /**
  * Hull-White short-rate FDM solver.
  * <p>
- * Java port of v1.42.1
- * {@code ql/methods/finitedifferences/solvers/fdmhullwhitesolver.{hpp,cpp}}.
- * Wires {@link FdmHullWhiteOp} into a {@link Fdm1DimSolver}.
+ * Java port of v1.42.1 {@code ql/methods/finitedifferences/solvers/fdmhullwhitesolver.{hpp,cpp}}. Wires
+ * {@link FdmHullWhiteOp} into a {@link Fdm1DimSolver}.
  *
  * @author Phase 2h WI-1 port
  */
 public class FdmHullWhiteSolver extends LazyObject {
 
-    private final Handle<HullWhite> model;
+    private final Handle< HullWhite > model;
     private final FdmSolverDesc solverDesc;
     private final FdmSchemeDesc schemeDesc;
 
     private Fdm1DimSolver solver;
 
     /** Convenience overload matching C++ default {@code FdmSchemeDesc::Hundsdorfer()}. */
-    public FdmHullWhiteSolver(final Handle<HullWhite> model,
-                              final FdmSolverDesc solverDesc) {
+    public FdmHullWhiteSolver(final Handle< HullWhite > model, final FdmSolverDesc solverDesc) {
         this(model, solverDesc, FdmSchemeDesc.Hundsdorfer());
     }
 
-    public FdmHullWhiteSolver(final Handle<HullWhite> model,
-                              final FdmSolverDesc solverDesc,
-                              final FdmSchemeDesc schemeDesc) {
+    public FdmHullWhiteSolver(final Handle< HullWhite > model, final FdmSolverDesc solverDesc,
+            final FdmSchemeDesc schemeDesc) {
         this.model = model;
         this.solverDesc = solverDesc;
         this.schemeDesc = schemeDesc;
@@ -61,8 +58,7 @@ public class FdmHullWhiteSolver extends LazyObject {
 
     @Override
     protected void performCalculations() {
-        final FdmHullWhiteOp op = new FdmHullWhiteOp(
-                solverDesc.mesher, model.currentLink(), 0);
+        final FdmHullWhiteOp op = new FdmHullWhiteOp(solverDesc.mesher, model.currentLink(), 0);
         solver = new Fdm1DimSolver(solverDesc, schemeDesc, op);
     }
 

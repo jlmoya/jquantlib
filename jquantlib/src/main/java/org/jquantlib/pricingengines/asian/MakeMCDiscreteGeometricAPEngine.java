@@ -27,9 +27,8 @@ import org.jquantlib.processes.GeneralizedBlackScholesProcess;
  * Fluent builder for {@link MCDiscreteGeometricAPEngine}.
  *
  * <p>Java port of {@code QuantLib v1.42.1
- * ql/pricingengines/asian/mc_discr_geom_av_price.hpp}
- * {@code MakeMCDiscreteGeometricAPEngine<RNG,S>} factory
- * (Phase 5e.5b-CFC-d-114).
+ * ql/pricingengines/asian/mc_discr_geom_av_price.hpp} {@code MakeMCDiscreteGeometricAPEngine<RNG,S>} factory (Phase
+ * 5e.5b-CFC-d-114).
  *
  * @author JQuantLib
  */
@@ -51,38 +50,44 @@ public class MakeMCDiscreteGeometricAPEngine {
         this.brownianBridge_ = b;
         return this;
     }
+
     public MakeMCDiscreteGeometricAPEngine withBrownianBridge() {
         return withBrownianBridge(true);
     }
+
     public MakeMCDiscreteGeometricAPEngine withAntitheticVariate(final boolean b) {
         this.antithetic_ = b;
         return this;
     }
+
     public MakeMCDiscreteGeometricAPEngine withAntitheticVariate() {
         return withAntitheticVariate(true);
     }
+
     public MakeMCDiscreteGeometricAPEngine withSamples(final int samples) {
         QL.require(Double.isNaN(tolerance_), "tolerance already set");
         this.samples_ = samples;
         return this;
     }
+
     public MakeMCDiscreteGeometricAPEngine withAbsoluteTolerance(final double tolerance) {
         QL.require(samples_ == McSimulation.NULL_SAMPLES, "number of samples already set");
         this.tolerance_ = tolerance;
         return this;
     }
+
     public MakeMCDiscreteGeometricAPEngine withMaxSamples(final int samples) {
         this.maxSamples_ = samples;
         return this;
     }
+
     public MakeMCDiscreteGeometricAPEngine withSeed(final long seed) {
         this.seed_ = seed;
         return this;
     }
 
     public PricingEngine value() {
-        return new MCDiscreteGeometricAPEngine(
-                process_, brownianBridge_, antithetic_,
-                samples_, tolerance_, maxSamples_, seed_);
+        return new MCDiscreteGeometricAPEngine(process_, brownianBridge_, antithetic_, samples_, tolerance_,
+                maxSamples_, seed_);
     }
 }

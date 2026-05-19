@@ -47,7 +47,7 @@ import org.jquantlib.math.matrixutilities.Array;
  *
  * @author Richard Gomes
  */
-@QualityAssurance(quality=Quality.Q3_DOCUMENTATION, version=Version.V097, reviewers="Richard Gomes")
+@QualityAssurance( quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = "Richard Gomes" )
 public class BoundaryConstraint extends Constraint {
 
     //
@@ -57,7 +57,6 @@ public class BoundaryConstraint extends Constraint {
     public BoundaryConstraint(final double low, final double high) {
         super.impl = new Impl(low, high);
     }
-
 
     //
     // private inner classes
@@ -74,16 +73,14 @@ public class BoundaryConstraint extends Constraint {
 
         private final double low, high;
 
-
         //
         // private constructors
         //
 
         private Impl(final double low, final double high) {
-            this.low  = low;
+            this.low = low;
             this.high = high;
         }
-
 
         //
         // public abstract methods
@@ -93,9 +90,9 @@ public class BoundaryConstraint extends Constraint {
          * Tests if params satisfy the constraint.
          */
         @Override
-        public boolean test(final Array  params) /* @ReadOnly */ {
-            for (int i=0; i<params.size(); i++) {
-                if ((params.get(i) < low) || (params.get(i) > high)) {
+        public boolean test(final Array params) /* @ReadOnly */ {
+            for ( int i = 0; i < params.size(); i++ ) {
+                if ( (params.get(i) < low) || (params.get(i) > high) ) {
                     return false;
                 }
             }
@@ -105,7 +102,7 @@ public class BoundaryConstraint extends Constraint {
         @Override
         public Array upperBound(final Array params) /* @ReadOnly */ {
             final double[] data = new double[params.size()];
-            for (int i = 0; i < data.length; ++i) {
+            for ( int i = 0; i < data.length; ++i ) {
                 data[i] = high;
             }
             return new Array(data);
@@ -114,7 +111,7 @@ public class BoundaryConstraint extends Constraint {
         @Override
         public Array lowerBound(final Array params) /* @ReadOnly */ {
             final double[] data = new double[params.size()];
-            for (int i = 0; i < data.length; ++i) {
+            for ( int i = 0; i < data.length; ++i ) {
                 data[i] = low;
             }
             return new Array(data);

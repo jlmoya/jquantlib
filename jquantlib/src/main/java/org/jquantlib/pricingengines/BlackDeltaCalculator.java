@@ -43,10 +43,9 @@ import org.jquantlib.math.solvers1D.Brent;
  * Java port of QuantLib v1.42.1 {@code ql/pricingengines/blackdeltacalculator.{hpp,cpp}}.
  *
  * <p>The class includes many operations needed for different applications in
- * FX markets, which have special quotation mechanisms, since every price can
- * be expressed in both numeraires. It supports the four delta types from
- * {@link DeltaVolQuote.DeltaType} (Spot, Fwd, PaSpot, PaFwd) and the ATM
- * conventions from {@link DeltaVolQuote.AtmType}.
+ * FX markets, which have special quotation mechanisms, since every price can be expressed in both numeraires. It
+ * supports the four delta types from {@link DeltaVolQuote.DeltaType} (Spot, Fwd, PaSpot, PaFwd) and the ATM conventions
+ * from {@link DeltaVolQuote.AtmType}.
  *
  * <p>The constructor takes a {@code stdDev} parameter, NOT a volatility.
  * {@code stdDev = volatility * sqrt(timeToMaturity)}.
@@ -57,17 +56,16 @@ public class BlackDeltaCalculator {
     // private fields
     //
 
-    private DeltaVolQuote.DeltaType dt;
-    private Option.Type ot;
     private final double dDiscount;
     private final double fDiscount;
     private final double stdDev;
     private final double spot;
     private final double forward;
-    private int phi;
     private final double fExpPos;
     private final double fExpNeg;
-
+    private DeltaVolQuote.DeltaType dt;
+    private Option.Type ot;
+    private int phi;
 
     //
     // public constructors
@@ -76,19 +74,15 @@ public class BlackDeltaCalculator {
     /**
      * Constructs a BlackDeltaCalculator object.
      *
-     * @param ot         Option type (call or put)
-     * @param dt         Delta type (spot, forward, premium-adjusted, etc.)
-     * @param spot       Spot FX rate
-     * @param dDiscount  Domestic discount factor
-     * @param fDiscount  Foreign discount factor
-     * @param stdDev     Standard deviation of the underlying, i.e. {@code volatility*sqrt(timeToMaturity)}
+     * @param ot        Option type (call or put)
+     * @param dt        Delta type (spot, forward, premium-adjusted, etc.)
+     * @param spot      Spot FX rate
+     * @param dDiscount Domestic discount factor
+     * @param fDiscount Foreign discount factor
+     * @param stdDev    Standard deviation of the underlying, i.e. {@code volatility*sqrt(timeToMaturity)}
      */
-    public BlackDeltaCalculator(final Option.Type ot,
-                                final DeltaVolQuote.DeltaType dt,
-                                final double spot,
-                                final double dDiscount,
-                                final double fDiscount,
-                                final double stdDev) {
+    public BlackDeltaCalculator(final Option.Type ot, final DeltaVolQuote.DeltaType dt, final double spot,
+            final double dDiscount, final double fDiscount, final double stdDev) {
         this.dt = dt;
         this.ot = ot;
         this.dDiscount = dDiscount;
@@ -98,19 +92,14 @@ public class BlackDeltaCalculator {
         this.forward = spot * fDiscount / dDiscount;
         this.phi = ot.toInteger();
 
-        QL.require(spot > 0.0,
-                "positive spot value required: " + spot + " not allowed");
-        QL.require(dDiscount > 0.0,
-                "positive domestic discount factor required: " + dDiscount + " not allowed");
-        QL.require(fDiscount > 0.0,
-                "positive foreign discount factor required: " + fDiscount + " not allowed");
-        QL.require(stdDev >= 0.0,
-                "non-negative standard deviation required: " + stdDev + " not allowed");
+        QL.require(spot > 0.0, "positive spot value required: " + spot + " not allowed");
+        QL.require(dDiscount > 0.0, "positive domestic discount factor required: " + dDiscount + " not allowed");
+        QL.require(fDiscount > 0.0, "positive foreign discount factor required: " + fDiscount + " not allowed");
+        QL.require(stdDev >= 0.0, "non-negative standard deviation required: " + stdDev + " not allowed");
 
         this.fExpPos = forward * Math.exp(0.5 * stdDev * stdDev);
         this.fExpNeg = forward * Math.exp(-0.5 * stdDev * stdDev);
     }
-
 
     //
     // public methods
@@ -121,12 +110,11 @@ public class BlackDeltaCalculator {
      */
     public double deltaFromStrike(final double strike) {
 
-        QL.require(strike >= 0.0,
-                "positive strike value required: " + strike + " not allowed");
+        QL.require(strike >= 0.0, "positive strike value required: " + strike + " not allowed");
 
         double res = 0.0;
 
-        switch (dt) {
+        switch ( dt ) {
         case Spot:
             res = phi * fDiscount * cumD1(strike);
             break;
@@ -159,12 +147,12 @@ public class BlackDeltaCalculator {
 
         double res = 0.0;
 
-        switch (atmT) {
+        switch ( atmT ) {
         case AtmSpot:
             res = spot;
             break;
         case AtmDeltaNeutral:
-            if (dt == DeltaVolQuote.DeltaType.Spot || dt == DeltaVolQuote.DeltaType.Fwd) {
+            if ( dt == DeltaVolQuote.DeltaType.Spot || dt == DeltaVolQuote.DeltaType.Fwd ) {
                 res = fExpPos;
             } else {
                 res = fExpNeg;
@@ -178,8 +166,7 @@ public class BlackDeltaCalculator {
             res = fExpPos;
             break;
         case AtmPutCall50:
-            QL.require(dt == DeltaVolQuote.DeltaType.Fwd,
-                    "|PutDelta|=CallDelta=0.50 only possible for forward delta.");
+            QL.require(dt == DeltaVolQuote.DeltaType.Fwd, "|PutDelta|=CallDelta=0.50 only possible for forward delta.");
             res = fExpPos;
             break;
         default:
@@ -203,7 +190,6 @@ public class BlackDeltaCalculator {
         this.phi = ot.toInteger();
     }
 
-
     //
     // package-private deprecated-internal accessors (C++ marks them deprecated;
     // kept package-private for the same role they play in C++).
@@ -217,22 +203,22 @@ public class BlackDeltaCalculator {
 
         final CumulativeNormalDistribution f = new CumulativeNormalDistribution();
 
-        if (stdDev >= Constants.QL_EPSILON) {
-            if (strike > 0) {
+        if ( stdDev >= Constants.QL_EPSILON ) {
+            if ( strike > 0 ) {
                 final double d1 = Math.log(forward / strike) / stdDev + 0.5 * stdDev;
                 return f.op(phi * d1);
             }
         } else {
-            if (forward < strike) {
+            if ( forward < strike ) {
                 cumD1Pos = 0.0;
                 cumD1Neg = 1.0;
-            } else if (forward == strike) {
+            } else if ( forward == strike ) {
                 final double d1 = 0.5 * stdDev;
                 return f.op(phi * d1);
             }
         }
 
-        if (phi > 0) { // if Call
+        if ( phi > 0 ) { // if Call
             return cumD1Pos;
         }
         return cumD1Neg;
@@ -246,22 +232,22 @@ public class BlackDeltaCalculator {
 
         final CumulativeNormalDistribution f = new CumulativeNormalDistribution();
 
-        if (stdDev >= Constants.QL_EPSILON) {
-            if (strike > 0) {
+        if ( stdDev >= Constants.QL_EPSILON ) {
+            if ( strike > 0 ) {
                 final double d2 = Math.log(forward / strike) / stdDev - 0.5 * stdDev;
                 return f.op(phi * d2);
             }
         } else {
-            if (forward < strike) {
+            if ( forward < strike ) {
                 cumD2Pos = 0.0;
                 cumD2Neg = 1.0;
-            } else if (forward == strike) {
+            } else if ( forward == strike ) {
                 final double d2 = -0.5 * stdDev;
                 return f.op(phi * d2);
             }
         }
 
-        if (phi > 0) { // if Call
+        if ( phi > 0 ) { // if Call
             return cumD2Pos;
         }
         return cumD2Neg;
@@ -272,8 +258,8 @@ public class BlackDeltaCalculator {
 
         double nD1 = 0.0;
 
-        if (stdDev >= Constants.QL_EPSILON) {
-            if (strike > 0) {
+        if ( stdDev >= Constants.QL_EPSILON ) {
+            if ( strike > 0 ) {
                 final double d1 = Math.log(forward / strike) / stdDev + 0.5 * stdDev;
                 final CumulativeNormalDistribution f = new CumulativeNormalDistribution();
                 nD1 = f.derivative(d1);
@@ -287,8 +273,8 @@ public class BlackDeltaCalculator {
 
         double nD2 = 0.0;
 
-        if (stdDev >= Constants.QL_EPSILON) {
-            if (strike > 0) {
+        if ( stdDev >= Constants.QL_EPSILON ) {
+            if ( strike > 0 ) {
                 final double d2 = Math.log(forward / strike) / stdDev - 0.5 * stdDev;
                 final CumulativeNormalDistribution f = new CumulativeNormalDistribution();
                 nD2 = f.derivative(d2);
@@ -296,7 +282,6 @@ public class BlackDeltaCalculator {
         }
         return nD2;
     }
-
 
     //
     // private methods
@@ -312,7 +297,7 @@ public class BlackDeltaCalculator {
 
         QL.require(delta * phi >= 0.0, "Option type and delta are incoherent.");
 
-        switch (dtArg) {
+        switch ( dtArg ) {
         case Spot:
             QL.require(Math.abs(delta) <= fDiscount, "Spot delta out of range.");
             arg = -phi * invNorm.op(phi * delta / fDiscount) * stdDev + 0.5 * stdDev * stdDev;
@@ -352,13 +337,13 @@ public class BlackDeltaCalculator {
             double leftLimit = 0.0;
 
             // Strike of non-premium-adjusted is always to the right of premium-adjusted
-            if (dtArg == DeltaVolQuote.DeltaType.PaSpot) {
+            if ( dtArg == DeltaVolQuote.DeltaType.PaSpot ) {
                 rightLimit = strikeFromDelta(delta, DeltaVolQuote.DeltaType.Spot);
             } else {
                 rightLimit = strikeFromDelta(delta, DeltaVolQuote.DeltaType.Fwd);
             }
 
-            if (phi < 0) { // if put
+            if ( phi < 0 ) { // if put
                 res = solver.solve(f, accuracy, rightLimit, 0.0, spot * 100.0);
                 break;
             } else {

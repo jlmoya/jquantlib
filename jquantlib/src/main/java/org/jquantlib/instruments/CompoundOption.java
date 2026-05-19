@@ -48,18 +48,15 @@ import org.jquantlib.pricingengines.PricingEngine;
  * <p>
  * The mother option is the compound option; the daughter option is its underlying.
  * <p>
- * Mirrors C++ QuantLib v1.42.1 {@code CompoundOption} in
- * {@code ql/instruments/compoundoption.{hpp,cpp}}.
+ * Mirrors C++ QuantLib v1.42.1 {@code CompoundOption} in {@code ql/instruments/compoundoption.{hpp,cpp}}.
  */
 public class CompoundOption extends OneAssetOption {
 
     private final StrikedTypePayoff daughterPayoff;
     private final Exercise daughterExercise;
 
-    public CompoundOption(final StrikedTypePayoff motherPayoff,
-                          final Exercise motherExercise,
-                          final StrikedTypePayoff daughterPayoff,
-                          final Exercise daughterExercise) {
+    public CompoundOption(final StrikedTypePayoff motherPayoff, final Exercise motherExercise,
+            final StrikedTypePayoff daughterPayoff, final Exercise daughterExercise) {
         super(motherPayoff, motherExercise);
         this.daughterPayoff = daughterPayoff;
         this.daughterExercise = daughterExercise;
@@ -79,8 +76,7 @@ public class CompoundOption extends OneAssetOption {
      * <p>
      * Mirrors C++ QuantLib v1.42.1 {@code CompoundOption::arguments}.
      */
-    public static class ArgumentsImpl extends OneAssetOption.ArgumentsImpl
-            implements OneAssetOption.Arguments {
+    public static class ArgumentsImpl extends OneAssetOption.ArgumentsImpl implements OneAssetOption.Arguments {
 
         public StrikedTypePayoff daughterPayoff;
         public Exercise daughterExercise;
@@ -91,7 +87,7 @@ public class CompoundOption extends OneAssetOption {
             QL.require(daughterPayoff != null, "no payoff given for underlying option");
             QL.require(daughterExercise != null, "no exercise given for underlying option");
             QL.require(exercise.lastDate().le(daughterExercise.lastDate()),
-                       "maturity of compound option exceeds maturity of underlying option");
+                    "maturity of compound option exceeds maturity of underlying option");
         }
     }
 }

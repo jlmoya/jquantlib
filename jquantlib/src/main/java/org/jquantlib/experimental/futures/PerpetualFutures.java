@@ -44,11 +44,10 @@ import org.jquantlib.time.calendars.NullCalendar;
 /**
  * Perpetual Futures.
  * <p>
- * Mirrors C++ QuantLib v1.42.1 {@code PerpetualFutures} in
- * {@code ql/instruments/perpetualfutures.{hpp,cpp}}.
+ * Mirrors C++ QuantLib v1.42.1 {@code PerpetualFutures} in {@code ql/instruments/perpetualfutures.{hpp,cpp}}.
  * <p>
- * Futures with no termination date, mainly used for cryptocurrencies. The
- * funding-cashflow convention varies by exchange.
+ * Futures with no termination date, mainly used for cryptocurrencies. The funding-cashflow convention varies by
+ * exchange.
  * <p>
  * {@code PayoffType}:
  * <ul>
@@ -84,42 +83,25 @@ public class PerpetualFutures extends Instrument {
     // public enums
     //
 
-    public enum PayoffType { Linear, Inverse, Quanto }
-
-    public enum FundingType { FundingWithPreviousSpot, FundingWithCurrentSpot }
-
+    private final PayoffType payoffType;
+    private final FundingType fundingType;
 
     //
     // private fields
     //
-
-    private final PayoffType payoffType;
-    private final FundingType fundingType;
     private final Period fundingFrequency;
     private final Calendar cal;
     private final DayCounter dc;
-
-
-    //
-    // public constructors
-    //
-
     /**
-     * Constructs a perpetual futures with default Java-supported parameters
-     * (FundingWithCurrentSpot, Period(2, Months), NullCalendar,
-     * ActualActual(ISDA)).
+     * Constructs a perpetual futures with default Java-supported parameters (FundingWithCurrentSpot, Period(2, Months),
+     * NullCalendar, ActualActual(ISDA)).
      */
     public PerpetualFutures(final PayoffType payoffType) {
-        this(payoffType, FundingType.FundingWithCurrentSpot,
-                new Period(2, TimeUnit.Months),
-                new NullCalendar(), new ActualActual(ActualActual.Convention.ISDA));
+        this(payoffType, FundingType.FundingWithCurrentSpot, new Period(2, TimeUnit.Months), new NullCalendar(),
+                new ActualActual(ActualActual.Convention.ISDA));
     }
-
-    public PerpetualFutures(final PayoffType payoffType,
-                            final FundingType fundingType,
-                            final Period fundingFrequency,
-                            final Calendar cal,
-                            final DayCounter dc) {
+    public PerpetualFutures(final PayoffType payoffType, final FundingType fundingType, final Period fundingFrequency,
+            final Calendar cal, final DayCounter dc) {
         this.payoffType = payoffType;
         this.fundingType = fundingType;
         this.fundingFrequency = fundingFrequency;
@@ -127,9 +109,8 @@ public class PerpetualFutures extends Instrument {
         this.dc = dc;
     }
 
-
     //
-    // overrides Instrument
+    // public constructors
     //
 
     @Override
@@ -149,6 +130,13 @@ public class PerpetualFutures extends Instrument {
         a.dc = dc;
     }
 
+    //
+    // overrides Instrument
+    //
+
+    public enum PayoffType {Linear, Inverse, Quanto}
+
+    public enum FundingType {FundingWithPreviousSpot, FundingWithCurrentSpot}
 
     //
     // public inner classes
@@ -176,21 +164,21 @@ public class PerpetualFutures extends Instrument {
         @Override
         public void validate() {
             QL.require(payoffType != null, "unknown payoff type");
-            switch (payoffType) {
-                case Linear:
-                case Inverse:
-                case Quanto:
-                    break;
-                default:
-                    QL.error("unknown payoff type");
+            switch ( payoffType ) {
+            case Linear:
+            case Inverse:
+            case Quanto:
+                break;
+            default:
+                QL.error("unknown payoff type");
             }
             QL.require(fundingType != null, "unknown funding type");
-            switch (fundingType) {
-                case FundingWithPreviousSpot:
-                case FundingWithCurrentSpot:
-                    break;
-                default:
-                    QL.error("unknown funding type");
+            switch ( fundingType ) {
+            case FundingWithPreviousSpot:
+            case FundingWithCurrentSpot:
+                break;
+            default:
+                QL.error("unknown funding type");
             }
         }
     }
@@ -199,7 +187,7 @@ public class PerpetualFutures extends Instrument {
      * Base class for perpetual futures pricing engines.
      */
     public abstract static class EngineImpl
-            extends GenericEngine<PerpetualFutures.ArgumentsImpl, Instrument.ResultsImpl> {
+            extends GenericEngine< PerpetualFutures.ArgumentsImpl, Instrument.ResultsImpl > {
 
         protected EngineImpl() {
             super(new ArgumentsImpl(), new Instrument.ResultsImpl());

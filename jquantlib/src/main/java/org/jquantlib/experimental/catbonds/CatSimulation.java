@@ -11,8 +11,9 @@
 
 package org.jquantlib.experimental.catbonds;
 
-import java.util.List;
 import org.jquantlib.time.Date;
+
+import java.util.List;
 
 /**
  * Abstract base class for catastrophe simulations.
@@ -30,9 +31,8 @@ public abstract class CatSimulation {
     }
 
     /**
-     * Fills {@code path} with the next simulated catastrophe event sequence
-     * and returns {@code true}, or returns {@code false} when no more paths
-     * are available.
+     * Fills {@code path} with the next simulated catastrophe event sequence and returns {@code true}, or returns
+     * {@code false} when no more paths are available.
      */
-    public abstract boolean nextPath(List<DateRealPair> path);
+    public abstract boolean nextPath(List< DateRealPair > path);
 }

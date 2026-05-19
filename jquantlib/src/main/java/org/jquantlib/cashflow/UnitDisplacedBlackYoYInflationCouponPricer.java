@@ -36,16 +36,13 @@ import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.termstructures.volatility.inflation.YoYOptionletVolatilitySurface;
 
 /**
- * Unit-displaced-Black-formula pricer for capped/floored YoY inflation
- * coupons.
+ * Unit-displaced-Black-formula pricer for capped/floored YoY inflation coupons.
  *
  * <p>Mirrors C++ v1.42.1
- * {@code QuantLib::UnitDisplacedBlackYoYInflationCouponPricer}
- * ({@code ql/cashflows/inflationcouponpricer.{hpp,cpp}}).
+ * {@code QuantLib::UnitDisplacedBlackYoYInflationCouponPricer} ({@code ql/cashflows/inflationcouponpricer.{hpp,cpp}}).
  *
  * <p>Both strike and forward are shifted by 1.0 before applying the standard
- * Black formula, which is the canonical Unit-Displaced-Diffusion form for
- * inflation rates that may be near zero.
+ * Black formula, which is the canonical Unit-Displaced-Diffusion form for inflation rates that may be near zero.
  *
  * @author JQuantLib migration team (Phase 2r C.3)
  */
@@ -55,26 +52,21 @@ public class UnitDisplacedBlackYoYInflationCouponPricer extends YoYInflationCoup
         super();
     }
 
-    public UnitDisplacedBlackYoYInflationCouponPricer(
-            final Handle<YieldTermStructure> nominalTermStructure) {
+    public UnitDisplacedBlackYoYInflationCouponPricer(final Handle< YieldTermStructure > nominalTermStructure) {
         super(nominalTermStructure);
     }
 
-    public UnitDisplacedBlackYoYInflationCouponPricer(
-            final Handle<YoYOptionletVolatilitySurface> capletVol,
-            final Handle<YieldTermStructure> nominalTermStructure) {
+    public UnitDisplacedBlackYoYInflationCouponPricer(final Handle< YoYOptionletVolatilitySurface > capletVol,
+            final Handle< YieldTermStructure > nominalTermStructure) {
         super(capletVol, nominalTermStructure);
     }
 
     @Override
-    protected double optionletPriceImp(final Option.Type optionType,
-                                       final double effStrike,
-                                       final double forward,
-                                       final double stdDev) {
+    protected double optionletPriceImp(final Option.Type optionType, final double effStrike, final double forward,
+            final double stdDev) {
         // C++ uses blackFormula(optionType, strike+1.0, forward+1.0, stdDev).
         // Could equivalently use blackFormula with displacement=1.0; mirror the
         // explicit shift here for clarity.
-        return BlackFormula.blackFormula(optionType,
-                effStrike + 1.0, forward + 1.0, stdDev);
+        return BlackFormula.blackFormula(optionType, effStrike + 1.0, forward + 1.0, stdDev);
     }
 }

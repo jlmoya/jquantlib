@@ -45,26 +45,27 @@ import org.jquantlib.math.interpolations.Interpolation;
 import org.jquantlib.math.interpolations.LinearInterpolation;
 import org.jquantlib.math.matrixutilities.Array;
 
-
 /**
  * This class provides linear interpolation factory and traits
  *
- * @see LinearInterpolation
- *
  * @author Dominik Holenstein
  * @author Richard Gomes
+ * @see LinearInterpolation
  */
 public class Linear implements Interpolation.Interpolator {
 
     @Override
-    public final boolean global()     { return false; }
+    public final boolean global() {
+        return false;
+    }
 
     @Override
-    public final int requiredPoints() { return 2; }
+    public final int requiredPoints() {
+        return 2;
+    }
 
     @Override
-    public Interpolation interpolate(final Array vx, final Array vy) /* @ReadOnly */{
+    public Interpolation interpolate(final Array vx, final Array vy) /* @ReadOnly */ {
         return new LinearInterpolation(vx, vy);
     }
 }
-

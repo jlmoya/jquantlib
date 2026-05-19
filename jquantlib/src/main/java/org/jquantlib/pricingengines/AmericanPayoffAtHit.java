@@ -24,8 +24,8 @@ import org.jquantlib.QL;
 import org.jquantlib.instruments.AssetOrNothingPayoff;
 import org.jquantlib.instruments.CashOrNothingPayoff;
 import org.jquantlib.instruments.Option;
-import org.jquantlib.instruments.StrikedTypePayoff;
 import org.jquantlib.instruments.Option.Type;
+import org.jquantlib.instruments.StrikedTypePayoff;
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.math.Constants;
 import org.jquantlib.math.distributions.CumulativeNormalDistribution;
@@ -37,10 +37,8 @@ import org.jquantlib.math.transcendental.JQuantMath;
  * <p>Java port of QuantLib v1.42.1 {@code AmericanPayoffAtHit}.
  *
  * <p>Phase 5e.5b-CFC-d-53: fix legacy bug — the 2009 port used
- * {@code variance >= Math.E} (Euler's number ~2.718) which made any
- * realistic variance fall through to the untested else branch with
- * {@code cum_d1 = cum_d2 = 0}.  The C++ reference uses {@code QL_EPSILON}
- * (machine epsilon) here.
+ * {@code variance >= Math.E} (Euler's number ~2.718) which made any realistic variance fall through to the untested
+ * else branch with {@code cum_d1 = cum_d2 = 0}.  The C++ reference uses {@code QL_EPSILON} (machine epsilon) here.
  *
  * @author Jose Coll (original 2009 port)
  * @author JQuantLib migration (epsilon fix, 2026)
@@ -56,13 +54,12 @@ public class AmericanPayoffAtHit {
     private final double cum_d1, cum_d2, n_d1, n_d2;
     private final boolean inTheMoney;
 
-    private transient double X, K;
+    private final transient double X;
+    private transient double K;
     private transient double D1, D2;
 
-    public AmericanPayoffAtHit(
-            final double spot, final double discount,
-            final double dividendDiscount, final double variance,
-            final StrikedTypePayoff strikedTypePayoff) {
+    public AmericanPayoffAtHit(final double spot, final double discount, final double dividendDiscount,
+            final double variance, final StrikedTypePayoff strikedTypePayoff) {
         QL.require(spot > 0.0, "positive spot value required");
         QL.require(discount > 0.0, "positive discount required");
         QL.require(dividendDiscount > 0.0, "positive dividend discount required");
@@ -77,11 +74,11 @@ public class AmericanPayoffAtHit {
         final Option.Type optionType = strikedTypePayoff.optionType();
 
         // Phase 5e.5b-CFC-d-53: was Math.E (legacy bug); C++ uses QL_EPSILON.
-        if (variance >= Constants.QL_EPSILON) {
-            if (discount == 0.0 && dividendDiscount == 0.0) {
+        if ( variance >= Constants.QL_EPSILON ) {
+            if ( discount == 0.0 && dividendDiscount == 0.0 ) {
                 mu = -0.5;
                 lambda = 0.5;
-            } else if (discount == 0.0) {
+            } else if ( discount == 0.0 ) {
                 throw new LibraryException("null discount not handled yet");
             } else {
                 mu = Math.log(dividendDiscount / discount) / variance - 0.5;
@@ -97,7 +94,7 @@ public class AmericanPayoffAtHit {
         } else {
             mu = Math.log(dividendDiscount / discount) / variance - 0.5;
             lambda = Math.sqrt(mu * mu - 2.0 * Math.log(discount) / variance);
-            if (log_H_S > 0) {
+            if ( log_H_S > 0 ) {
                 cum_d1 = 1.0;
                 cum_d2 = 1.0;
             } else {
@@ -108,8 +105,8 @@ public class AmericanPayoffAtHit {
             n_d2 = 0.0;
         }
 
-        if (optionType.equals(Type.Call)) {
-            if (strike > spot) {
+        if ( optionType.equals(Type.Call) ) {
+            if ( strike > spot ) {
                 alpha = 1.0 - cum_d1;
                 DalphaDd1 = -n_d1;
                 beta = 1.0 - cum_d2;
@@ -120,8 +117,8 @@ public class AmericanPayoffAtHit {
                 beta = 0.5;
                 DbetaDd2 = 0.0;
             }
-        } else if (optionType.equals(Type.Put)) {
-            if (strike < spot) {
+        } else if ( optionType.equals(Type.Put) ) {
+            if ( strike < spot ) {
                 alpha = cum_d1;
                 DalphaDd1 = n_d1;
                 beta = cum_d2;
@@ -138,10 +135,9 @@ public class AmericanPayoffAtHit {
 
         muPlusLambda = mu + lambda;
         muMinusLambda = mu - lambda;
-        inTheMoney = (optionType.equals(Type.Call) && strike < spot)
-                || (optionType.equals(Type.Put) && strike > spot);
+        inTheMoney = (optionType.equals(Type.Call) && strike < spot) || (optionType.equals(Type.Put) && strike > spot);
 
-        if (inTheMoney) {
+        if ( inTheMoney ) {
             forward = 1.0;
             X = 1.0;
         } else {
@@ -149,13 +145,13 @@ public class AmericanPayoffAtHit {
             X = JQuantMath.pow(strike / spot, muMinusLambda);
         }
 
-        if (strikedTypePayoff instanceof CashOrNothingPayoff) {
+        if ( strikedTypePayoff instanceof CashOrNothingPayoff ) {
             K = ((CashOrNothingPayoff) strikedTypePayoff).getCashPayoff();
         }
 
-        if (strikedTypePayoff instanceof AssetOrNothingPayoff) {
+        if ( strikedTypePayoff instanceof AssetOrNothingPayoff ) {
             final AssetOrNothingPayoff aoo = (AssetOrNothingPayoff) strikedTypePayoff;
-            if (inTheMoney) {
+            if ( inTheMoney ) {
                 K = spot;
             } else {
                 K = aoo.strike();
@@ -173,7 +169,7 @@ public class AmericanPayoffAtHit {
         final double DbetaDs = DbetaDd2 / tempDelta;
 
         final double DforwardDs, DXDs;
-        if (inTheMoney) {
+        if ( inTheMoney ) {
             DforwardDs = 0.0;
             DXDs = 0.0;
         } else {
@@ -181,8 +177,7 @@ public class AmericanPayoffAtHit {
             DXDs = -muMinusLambda * X / spot;
         }
 
-        return K * (DalphaDs * forward + alpha * DforwardDs
-                + DbetaDs * X + beta * DXDs);
+        return K * (DalphaDs * forward + alpha * DforwardDs + DbetaDs * X + beta * DXDs);
     }
 
     public double gamma() {
@@ -193,7 +188,7 @@ public class AmericanPayoffAtHit {
         final double D2betaDs2 = -DbetaDs / spot * (1 - D2 / stdDev);
 
         final double DforwardDs, DXDs, D2forwardDs2, D2XDs2;
-        if (inTheMoney) {
+        if ( inTheMoney ) {
             DforwardDs = 0.0;
             DXDs = 0.0;
             D2forwardDs2 = 0.0;
@@ -205,10 +200,8 @@ public class AmericanPayoffAtHit {
             D2XDs2 = muMinusLambda * X / (spot * spot) * (1 + muMinusLambda);
         }
 
-        return K * (D2alphaDs2 * forward + DalphaDs * DforwardDs
-                + DalphaDs * DforwardDs + alpha * D2forwardDs2
-                + D2betaDs2 * X + DbetaDs * DXDs
-                + DbetaDs * DXDs + beta * D2XDs2);
+        return K * (D2alphaDs2 * forward + DalphaDs * DforwardDs + DalphaDs * DforwardDs + alpha * D2forwardDs2
+                + D2betaDs2 * X + DbetaDs * DXDs + DbetaDs * DXDs + beta * D2XDs2);
     }
 
     public double rho(final double maturity) {
@@ -216,7 +209,7 @@ public class AmericanPayoffAtHit {
         final double DalphaDr = -DalphaDd1 / (lambda * stdDev) * (1.0 + mu);
         final double DbetaDr = DbetaDd2 / (lambda * stdDev) * (1.0 + mu);
         final double DforwardDr, DXDr;
-        if (inTheMoney) {
+        if ( inTheMoney ) {
             DforwardDr = 0.0;
             DXDr = 0.0;
         } else {
@@ -224,8 +217,7 @@ public class AmericanPayoffAtHit {
             DXDr = X * (1.0 - (1.0 + mu) / lambda) * log_H_S / variance;
         }
 
-        return maturity * K * (DalphaDr * forward + alpha * DforwardDr
-                + DbetaDr * X + beta * DXDr);
+        return maturity * K * (DalphaDr * forward + alpha * DforwardDr + DbetaDr * X + beta * DXDr);
     }
 
 }

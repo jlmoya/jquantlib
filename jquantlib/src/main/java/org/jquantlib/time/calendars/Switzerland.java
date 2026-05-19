@@ -23,11 +23,6 @@
 
 package org.jquantlib.time.calendars;
 
-import static org.jquantlib.time.Month.August;
-import static org.jquantlib.time.Month.December;
-import static org.jquantlib.time.Month.January;
-import static org.jquantlib.time.Month.May;
-
 import org.jquantlib.lang.annotation.QualityAssurance;
 import org.jquantlib.lang.annotation.QualityAssurance.Quality;
 import org.jquantlib.lang.annotation.QualityAssurance.Version;
@@ -35,6 +30,8 @@ import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Month;
 import org.jquantlib.time.Weekday;
+
+import static org.jquantlib.time.Month.*;
 
 /**
  * Swiss calendar Holidays:
@@ -53,14 +50,13 @@ import org.jquantlib.time.Weekday;
  * <li>St. Stephen's Day, December 26th</li>
  * </ul>
  *
- * @category calendars
- *
  * @author Srinivas Hasti
  * @author Dominik Holenstein
  * @author Zahid Hussain
+ * @category calendars
  */
 
-@QualityAssurance(quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Zahid Hussain" })
+@QualityAssurance( quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Zahid Hussain" } )
 public class Switzerland extends Calendar {
 
     //
@@ -88,30 +84,27 @@ public class Switzerland extends Calendar {
             final Month m = date.month();
             final int y = date.year();
             final int em = easterMonday(y);
-            if (isWeekend(w)
+            return !isWeekend(w)
                     // New Year's Day
-                    || (d == 1 && m == January)
+                    && (d != 1 || m != January)
                     // Berchtoldstag
-                    || (d == 2 && m == January)
+                    && (d != 2 || m != January)
                     // Good Friday
-                    || (dd == em - 3)
+                    && (dd != em - 3)
                     // Easter Monday
-                    || (dd == em)
+                    && (dd != em)
                     // Ascension Day
-                    || (dd == em + 38)
+                    && (dd != em + 38)
                     // Whit Monday
-                    || (dd == em + 49)
+                    && (dd != em + 49)
                     // Labour Day
-                    || (d == 1 && m == May)
+                    && (d != 1 || m != May)
                     // National Day
-                    || (d == 1 && m == August)
+                    && (d != 1 || m != August)
                     // Christmas
-                    || (d == 25 && m == December)
+                    && (d != 25 || m != December)
                     // St. Stephen's Day
-                    || (d == 26 && m == December)) {
-                return false;
-            }
-            return true;
+                    && (d != 26 || m != December);
         }
 
     }

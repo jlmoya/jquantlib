@@ -39,8 +39,6 @@
 
 package org.jquantlib.termstructures;
 
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.daycounters.Actual365Fixed;
@@ -55,7 +53,7 @@ import org.jquantlib.util.DefaultObservable;
 import org.jquantlib.util.Observable;
 import org.jquantlib.util.Observer;
 
-
+import java.util.List;
 
 /**
  * Basic term-structure functionality.
@@ -68,17 +66,14 @@ import org.jquantlib.util.Observer;
  * <li>such date is based on the reference date of some other structure.</li>
  *
  * <p>Case 1: The constructor taking a date is to be used.
- * The default implementation of {@link TermStructure#referenceDate()} will
- * then return such date.
+ * The default implementation of {@link TermStructure#referenceDate()} will then return such date.
  *
  * <p>Case 2: The constructor taking a number of days and a calendar is to be used
- * so that {@link TermStructure#referenceDate()} will return a date calculated based on the
- * current evaluation date and the term structure and observers will be notified when the
- * evaluation date changes.
+ * so that {@link TermStructure#referenceDate()} will return a date calculated based on the current evaluation date and
+ * the term structure and observers will be notified when the evaluation date changes.
  *
  * <p>Case 3: The {@link TermStructure#referenceDate()} method must
- * be overridden in derived classes so that it fetches and
- * return the appropriate date.
+ * be overridden in derived classes so that it fetches and return the appropriate date.
  *
  * @author Richard Gomes
  */
@@ -86,92 +81,95 @@ public abstract class AbstractTermStructure implements TermStructure {
 
     static private final String THIS_METHOD_MUST_BE_OVERRIDDEN = "This method must be overridden";
 
-
     //
     // private fields
     //
-
     /**
-     * <p>Case 1: The constructor taking a date is to be used.
-     * The default implementation of {@link TermStructure#referenceDate()} will
-     * then return such date.
-     *
-     * <p>Case 2: The constructor taking a number of days and a calendar is to be used
-     * so that {@link TermStructure#referenceDate()} will return a date calculated based on the
-     * current evaluation date and the term structure and observers will be notified when the
-     * evaluation date changes.
-     *
-     * <p>Case 3: The {@link TermStructure#referenceDate()} method must
-     * be overridden in derived classes so that it fetches and
-     * return the appropriate date.
-     */
-    private Date referenceDate;
-
-    /**
-     * Beware that this variable must always be accessed via {@link #dayCounter()} method.
-     * Extended classes have the option to redefine semantics of a day counter by keeping their own private
-     * dayCounter variable and providing their own version of {@link #dayCounter()} method. When extended
-     * classes fail to provide their version of {@link #dayCounter()} method, <i><b>this</b>.getDayCounter</i>
-     * must throw an {@link IllegalStateException} because the private variable dayCounter was never initialised.
+     * Beware that this variable must always be accessed via {@link #dayCounter()} method. Extended classes have the
+     * option to redefine semantics of a day counter by keeping their own private dayCounter variable and providing
+     * their own version of {@link #dayCounter()} method. When extended classes fail to provide their version of
+     * {@link #dayCounter()} method, <i><b>this</b>.getDayCounter</i> must throw an {@link IllegalStateException}
+     * because the private variable dayCounter was never initialised.
      *
      * @see #getDayCounter
      */
     private final DayCounter dayCounter;
-
-    /**
-     * This variable must be <i>false</i> when Case 2; <i>true</i> otherwise
-     */
-    private boolean updated;
-
-    /**
-     * Re-entrancy guard for {@link #update()} — mirrors C++ LazyObject
-     * {@code updating_} flag (ql/patterns/lazyobject.hpp).
-     *
-     * <p>Set {@code true} during {@link #update()} execution to break
-     * observer-cycles that would otherwise cause a {@link StackOverflowError}.
-     * Most notably, inflation curve bootstrap creates:
-     * {@code pZITS → hz.Link → ii → helpers → pZITS} — without this guard
-     * the recursive notification chain never terminates.
-     */
-    private boolean updating_ = false;
-
-
-    //
-    // private final fields
-    //
-
     private final int settlementDays;
-
     /**
      * This variable must be <i>true</i> when Case 2; <i>false</i> otherwise
      */
     private final boolean moving;
-
-
-    //
-    // protected fields
-    //
-
     /**
-     * Beware that this variable must always be accessed via {@link #calendar()} method.
-     * Extended classes have the option to redefine semantics of a calendar by keeping their own private
-     * calendar variable and providing their own version of {@link #calendar()} method. When extended
-     * classes fail to provide their version of {@link #calendar()} method, <i><b>this</b>.getCalendar</i>
-     * must throw an {@link IllegalStateException} because the private variable calendar was never initialised.
+     * Implements multiple inheritance via delegate pattern to a inner class
+     *
+     * @see Extrapolator
+     */
+    private final DefaultExtrapolator delegatedExtrapolator = new DefaultExtrapolator();
+
+    //
+    // private final fields
+    //
+    /**
+     * Implements multiple inheritance via delegate pattern to an inner class.
+     *
+     * <p>Phase 2x A.4: switched to {@link
+     * org.jquantlib.util.WeakReferenceObservable} — engines / coupons / other observers from completed tests would
+     * otherwise pile up on the term structure's observer list (strong refs) and cascade on every
+     * {@code Settings.setEvaluationDate} call.
+     *
+     * @see Observable
+     * @see DefaultObservable
+     */
+    private final Observable delegatedObservable = new org.jquantlib.util.WeakReferenceObservable(this);
+    /**
+     * Beware that this variable must always be accessed via {@link #calendar()} method. Extended classes have the
+     * option to redefine semantics of a calendar by keeping their own private calendar variable and providing their own
+     * version of {@link #calendar()} method. When extended classes fail to provide their version of {@link #calendar()}
+     * method, <i><b>this</b>.getCalendar</i> must throw an {@link IllegalStateException} because the private variable
+     * calendar was never initialised.
      *
      * @see #calendar
      */
     protected Calendar calendar;
 
+    //
+    // protected fields
+    //
+    /**
+     * <p>Case 1: The constructor taking a date is to be used.
+     * The default implementation of {@link TermStructure#referenceDate()} will then return such date.
+     *
+     * <p>Case 2: The constructor taking a number of days and a calendar is to be used
+     * so that {@link TermStructure#referenceDate()} will return a date calculated based on the current evaluation date
+     * and the term structure and observers will be notified when the evaluation date changes.
+     *
+     * <p>Case 3: The {@link TermStructure#referenceDate()} method must
+     * be overridden in derived classes so that it fetches and return the appropriate date.
+     */
+    private Date referenceDate;
 
     //
     // public constructors
     //
+    /**
+     * This variable must be <i>false</i> when Case 2; <i>true</i> otherwise
+     */
+    private boolean updated;
+    /**
+     * Re-entrancy guard for {@link #update()} — mirrors C++ LazyObject {@code updating_} flag
+     * (ql/patterns/lazyobject.hpp).
+     *
+     * <p>Set {@code true} during {@link #update()} execution to break
+     * observer-cycles that would otherwise cause a {@link StackOverflowError}. Most notably, inflation curve bootstrap
+     * creates: {@code pZITS → hz.Link → ii → helpers → pZITS} — without this guard the recursive notification chain
+     * never terminates.
+     */
+    private boolean updating_ = false;
 
     /**
      * <p>This constructor requires an override of method {@link TermStructure#referenceDate()} in
-     * derived classes so that it fetches and return the appropriate reference date.
-     * This is the <i>Case 3</i> described on the top of this class.
+     * derived classes so that it fetches and return the appropriate reference date. This is the <i>Case 3</i> described
+     * on the top of this class.
      *
      * @see TermStructure documentation for more details about constructors.
      */
@@ -181,14 +179,14 @@ public abstract class AbstractTermStructure implements TermStructure {
 
     /**
      * <p>This constructor requires an override of method {@link TermStructure#referenceDate()} in
-     * derived classes so that it fetches and return the appropriate reference date.
-     * This is the <i>Case 3</i> described on the top of this class.
+     * derived classes so that it fetches and return the appropriate reference date. This is the <i>Case 3</i> described
+     * on the top of this class.
      *
      * @see TermStructure documentation for more details about constructors.
      */
     //TODO : What's the calendar in this case?
     public AbstractTermStructure(final DayCounter dc) {
-        QL.require(dc!=null , "day counter must be informed"); // TODO: message
+        QL.require(dc != null, "day counter must be informed"); // TODO: message
         this.calendar = null;
         this.settlementDays = 0;
         this.dayCounter = dc;
@@ -205,9 +203,8 @@ public abstract class AbstractTermStructure implements TermStructure {
      * Initialize with a fixed reference date
      *
      * <p>This constructor takes a date to be used.
-     * The default implementation of {@link TermStructure#referenceDate()} will
-     * then return such date.
-     * This is the <i>Case 1</i> described on the top of this class.
+     * The default implementation of {@link TermStructure#referenceDate()} will then return such date. This is the
+     * <i>Case 1</i> described on the top of this class.
      *
      * @see TermStructure documentation for more details about constructors.
      */
@@ -219,16 +216,15 @@ public abstract class AbstractTermStructure implements TermStructure {
      * Initialize with a fixed reference date
      *
      * <p>This constructor takes a date to be used.
-     * The default implementation of {@link TermStructure#referenceDate()} will
-     * then return such date.
-     * This is the <i>Case 1</i> described on the top of this class.
+     * The default implementation of {@link TermStructure#referenceDate()} will then return such date. This is the
+     * <i>Case 1</i> described on the top of this class.
      *
      * @see TermStructure documentation for more details about constructors.
      */
     public AbstractTermStructure(final Date referenceDate, final Calendar calendar, final DayCounter dc) {
-        QL.require(referenceDate!=null , "reference date must be informed"); // TODO: message
-        QL.require(calendar!=null , "calendar must be informed"); // TODO: message
-        QL.require(dc!=null , "day counter must be informed"); // TODO: message
+        QL.require(referenceDate != null, "reference date must be informed"); // TODO: message
+        QL.require(calendar != null, "calendar must be informed"); // TODO: message
+        QL.require(dc != null, "day counter must be informed"); // TODO: message
 
         this.settlementDays = 0;
         this.calendar = calendar;
@@ -242,14 +238,17 @@ public abstract class AbstractTermStructure implements TermStructure {
         this.referenceDate = referenceDate;
     }
 
+    //
+    // protected methods
+    //
+
     /**
      * Calculate the reference date based on the global evaluation date
      *
      * <p>This constructor takes a number of days and a calendar to be used
-     * so that {@link TermStructure#referenceDate()} will return a date calculated based on the
-     * current evaluation date and the term structure. This class will be notified when the
-     * evaluation date changes.
-     * This is the <i>Case 2</i> described on the top of this class.
+     * so that {@link TermStructure#referenceDate()} will return a date calculated based on the current evaluation date
+     * and the term structure. This class will be notified when the evaluation date changes. This is the <i>Case 2</i>
+     * described on the top of this class.
      *
      * @see TermStructure documentation for more details about constructors.
      */
@@ -257,15 +256,13 @@ public abstract class AbstractTermStructure implements TermStructure {
         this(settlementDays, calendar, new Actual365Fixed());
     }
 
-
     /**
      * Calculate the reference date based on the global evaluation date
      *
      * <p>This constructor takes a number of days and a calendar to be used
-     * so that {@link TermStructure#referenceDate()} will return a date calculated based on the
-     * current evaluation date and the term structure. This class will be notified when the
-     * evaluation date changes.
-     * This is the <i>Case 2</i> described on the top of this class.
+     * so that {@link TermStructure#referenceDate()} will return a date calculated based on the current evaluation date
+     * and the term structure. This class will be notified when the evaluation date changes. This is the <i>Case 2</i>
+     * described on the top of this class.
      *
      * @see TermStructure documentation for more details about constructors.
      */
@@ -285,38 +282,33 @@ public abstract class AbstractTermStructure implements TermStructure {
         this.referenceDate = calendar.advance(today, settlementDays, TimeUnit.Days);
     }
 
-
     //
-    // protected methods
+    // implements TermStructure
     //
 
     /**
      * This method performs date-range check
      */
     protected void checkRange(final Date d, final boolean extrapolate) /* @ReadOnly */ {
-        QL.require(d.ge(referenceDate()) , "date before reference date"); // TODO: message
-        QL.require(extrapolate || allowsExtrapolation() || d.le(maxDate()) , "date is past max curve"); // TODO: message
+        QL.require(d.ge(referenceDate()), "date before reference date"); // TODO: message
+        QL.require(extrapolate || allowsExtrapolation() || d.le(maxDate()), "date is past max curve"); // TODO: message
     }
 
     /**
      * This method performs date-range check
      */
     protected void checkRange(/*@Time*/ final double t, final boolean extrapolate) /* @ReadOnly */ {
-        QL.require(t >= 0.0 , "negative time given"); // TODO: message
-        QL.require(extrapolate||allowsExtrapolation()||t<=maxTime()||Closeness.isCloseEnough(t, maxTime()) , "time is past max curve"); // TODO: message
+        QL.require(t >= 0.0, "negative time given"); // TODO: message
+        QL.require(extrapolate || allowsExtrapolation() || t <= maxTime() || Closeness.isCloseEnough(t, maxTime()),
+                "time is past max curve"); // TODO: message
     }
-
-
-    //
-    // implements TermStructure
-    //
 
     /* (non-Javadoc)
      * @see org.jquantlib.termstructures.TermStructure#calendar()
      */
     @Override
     public Calendar calendar() /* @ReadOnly */ {
-        QL.require(this.calendar != null , THIS_METHOD_MUST_BE_OVERRIDDEN); // TODO: message
+        QL.require(this.calendar != null, THIS_METHOD_MUST_BE_OVERRIDDEN); // TODO: message
         return calendar;
     }
 
@@ -340,9 +332,13 @@ public abstract class AbstractTermStructure implements TermStructure {
      */
     @Override
     public DayCounter dayCounter() /* @ReadOnly */ {
-        QL.require(this.dayCounter != null , THIS_METHOD_MUST_BE_OVERRIDDEN); // TODO: message
+        QL.require(this.dayCounter != null, THIS_METHOD_MUST_BE_OVERRIDDEN); // TODO: message
         return dayCounter;
     }
+
+    //
+    // implements Extrapolator
+    //
 
     /* (non-Javadoc)
      * @see org.jquantlib.termstructures.TermStructure#maxTime()
@@ -357,25 +353,13 @@ public abstract class AbstractTermStructure implements TermStructure {
      */
     @Override
     public Date referenceDate() /* @ReadOnly */ {
-        if (!updated) {
-        	final Date today = new Settings().evaluationDate();
-        	referenceDate = calendar().advance(today, settlementDays, TimeUnit.Days);
+        if ( !updated ) {
+            final Date today = new Settings().evaluationDate();
+            referenceDate = calendar().advance(today, settlementDays, TimeUnit.Days);
             updated = true;
         }
         return referenceDate;
     }
-
-
-    //
-    // implements Extrapolator
-    //
-
-    /**
-     * Implements multiple inheritance via delegate pattern to a inner class
-     *
-     * @see Extrapolator
-     */
-    private final DefaultExtrapolator delegatedExtrapolator = new DefaultExtrapolator();
 
     /**
      * @return
@@ -389,12 +373,6 @@ public abstract class AbstractTermStructure implements TermStructure {
     public void disableExtrapolation() {
         delegatedExtrapolator.disableExtrapolation();
     }
-
-    @Override
-    public void enableExtrapolation() {
-        delegatedExtrapolator.enableExtrapolation();
-    }
-
 
     //
     // implements Observer
@@ -412,17 +390,26 @@ public abstract class AbstractTermStructure implements TermStructure {
     //    }
 
     @Override
+    public void enableExtrapolation() {
+        delegatedExtrapolator.enableExtrapolation();
+    }
+
+    //
+    // implements Observable
+    //
+
+    @Override
     //XXX::OBS public void update(final Observable o, final Object arg) {
     public void update() {
         // Re-entrancy guard — mirrors C++ LazyObject::update() updating_ flag.
         // Breaks circular observer chains created during inflation bootstrap:
         //   pZITS → hz.Link → ii → helpers → pZITS
-        if (updating_) {
+        if ( updating_ ) {
             return;
         }
         updating_ = true;
         try {
-            if (moving) {
+            if ( moving ) {
                 updated = false;
             }
             notifyObservers();
@@ -430,25 +417,6 @@ public abstract class AbstractTermStructure implements TermStructure {
             updating_ = false;
         }
     }
-
-
-    //
-    // implements Observable
-    //
-
-    /**
-     * Implements multiple inheritance via delegate pattern to an inner class.
-     *
-     * <p>Phase 2x A.4: switched to {@link
-     * org.jquantlib.util.WeakReferenceObservable} — engines / coupons /
-     * other observers from completed tests would otherwise pile up on
-     * the term structure's observer list (strong refs) and cascade on
-     * every {@code Settings.setEvaluationDate} call.
-     *
-     * @see Observable
-     * @see DefaultObservable
-     */
-    private final Observable delegatedObservable = new org.jquantlib.util.WeakReferenceObservable(this);
 
     @Override
     public void addObserver(final Observer observer) {
@@ -481,7 +449,7 @@ public abstract class AbstractTermStructure implements TermStructure {
     }
 
     @Override
-    public List<Observer> getObservers() {
+    public List< Observer > getObservers() {
         return delegatedObservable.getObservers();
     }
 

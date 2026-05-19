@@ -37,10 +37,9 @@ import org.jquantlib.util.Visitor;
  * Equity / FX volatility (smile) surface.
  *
  * <p>Faithful port of QuantLib v1.42.1
- * {@code ql/experimental/volatility/equityfxvolsurface.{hpp,cpp}}.
- * Concrete classes provide the actual smile-section implementation;
- * this base layer adds the forward (at-the-money) volatility and variance
- * accessors used in delta-strike conventions.
+ * {@code ql/experimental/volatility/equityfxvolsurface.{hpp,cpp}}. Concrete classes provide the actual smile-section
+ * implementation; this base layer adds the forward (at-the-money) volatility and variance accessors used in
+ * delta-strike conventions.
  *
  * <p>It's only in absence of smile that the concept of (at-the-money)
  * forward volatility makes sense.
@@ -51,19 +50,18 @@ public abstract class EquityFXVolSurface extends BlackVolSurface {
         super(bdc, dc);
     }
 
-    public EquityFXVolSurface(final Date referenceDate, final Calendar cal,
-            final BusinessDayConvention bdc, final DayCounter dc) {
+    public EquityFXVolSurface(final Date referenceDate, final Calendar cal, final BusinessDayConvention bdc,
+            final DayCounter dc) {
         super(referenceDate, cal, bdc, dc);
     }
 
-    public EquityFXVolSurface(final int settlementDays, final Calendar cal,
-            final BusinessDayConvention bdc, final DayCounter dc) {
+    public EquityFXVolSurface(final int settlementDays, final Calendar cal, final BusinessDayConvention bdc,
+            final DayCounter dc) {
         super(settlementDays, cal, bdc, dc);
     }
 
     /** Forward (at-the-money) volatility from {@code date1} to {@code date2}. */
-    public double atmForwardVol(final Date date1, final Date date2,
-            final boolean extrapolate) {
+    public double atmForwardVol(final Date date1, final Date date2, final boolean extrapolate) {
         QL.require(date1.lt(date2), "wrong dates");
         final double t1 = timeFromReference(date1);
         final double t2 = timeFromReference(date2);
@@ -71,16 +69,14 @@ public abstract class EquityFXVolSurface extends BlackVolSurface {
     }
 
     /** Forward (at-the-money) volatility from {@code time1} to {@code time2}. */
-    public double atmForwardVol(final double time1, final double time2,
-            final boolean extrapolate) {
+    public double atmForwardVol(final double time1, final double time2, final boolean extrapolate) {
         final double fwdVariance = atmForwardVariance(time1, time2, extrapolate);
         final double t = time2 - time1;
         return Math.sqrt(fwdVariance / t);
     }
 
     /** Forward (at-the-money) variance between two dates. */
-    public double atmForwardVariance(final Date date1, final Date date2,
-            final boolean extrapolate) {
+    public double atmForwardVariance(final Date date1, final Date date2, final boolean extrapolate) {
         QL.require(date1.lt(date2), "wrong dates");
         final double t1 = timeFromReference(date1);
         final double t2 = timeFromReference(date2);
@@ -88,8 +84,7 @@ public abstract class EquityFXVolSurface extends BlackVolSurface {
     }
 
     /** Forward (at-the-money) variance between two times. */
-    public double atmForwardVariance(final double time1, final double time2,
-            final boolean extrapolate) {
+    public double atmForwardVariance(final double time1, final double time2, final boolean extrapolate) {
         QL.require(time1 < time2, "wrong times");
         final double var1 = atmVariance(time1, extrapolate);
         final double var2 = atmVariance(time2, extrapolate);
@@ -99,8 +94,8 @@ public abstract class EquityFXVolSurface extends BlackVolSurface {
 
     @Override
     public void accept(final PolymorphicVisitor pv) {
-        final Visitor<EquityFXVolSurface> v = (pv != null) ? pv.<EquityFXVolSurface>visitor(this.getClass()) : null;
-        if (v != null) {
+        final Visitor< EquityFXVolSurface > v = (pv != null) ? pv.visitor(this.getClass()) : null;
+        if ( v != null ) {
             v.visit(this);
         } else {
             super.accept(pv);

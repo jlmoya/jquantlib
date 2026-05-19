@@ -44,10 +44,10 @@ import org.jquantlib.math.matrixutilities.Array;
 
 /**
  * Constraint enforcing both given sub-constraints
- * 
+ *
  * @author Richard Gomes
  */
-@QualityAssurance(quality=Quality.Q3_DOCUMENTATION, version=Version.V097, reviewers="Richard Gomes")
+@QualityAssurance( quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = "Richard Gomes" )
 public class CompositeConstraint extends Constraint {
 
     //
@@ -57,7 +57,6 @@ public class CompositeConstraint extends Constraint {
     public CompositeConstraint(final Constraint c1, final Constraint c2) {
         super.impl = new Impl(c1, c2);
     }
-
 
     //
     // private inner classes
@@ -74,7 +73,6 @@ public class CompositeConstraint extends Constraint {
 
         private final Constraint c1, c2;
 
-
         //
         // private constructors
         //
@@ -84,7 +82,6 @@ public class CompositeConstraint extends Constraint {
             this.c2 = c2;
         }
 
-
         //
         // public abstract methods
         //
@@ -93,7 +90,7 @@ public class CompositeConstraint extends Constraint {
          * Tests if params satisfy the constraint.
          */
         @Override
-        public boolean test(final Array  params) /* @ReadOnly */ {
+        public boolean test(final Array params) /* @ReadOnly */ {
             return c1.test(params) && c2.test(params);
         }
 

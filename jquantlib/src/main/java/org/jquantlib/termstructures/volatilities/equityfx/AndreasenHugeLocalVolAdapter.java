@@ -34,16 +34,13 @@ public class AndreasenHugeLocalVolAdapter extends LocalVolTermStructure {
 
     private final AndreasenHugeVolatilityInterpl localVol_;
 
-    public AndreasenHugeLocalVolAdapter(
-            final AndreasenHugeVolatilityInterpl localVol) {
+    public AndreasenHugeLocalVolAdapter(final AndreasenHugeVolatilityInterpl localVol) {
         this.localVol_ = localVol;
     }
 
     @Override
     protected double localVolImpl(final double t, final double strike) {
-        return localVol_.localVol(t,
-                Math.min(localVol_.maxStrike(),
-                         Math.max(localVol_.minStrike(), strike)));
+        return localVol_.localVol(t, Math.min(localVol_.maxStrike(), Math.max(localVol_.minStrike(), strike)));
     }
 
     @Override

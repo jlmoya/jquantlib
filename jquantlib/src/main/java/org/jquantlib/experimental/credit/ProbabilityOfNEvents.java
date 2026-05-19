@@ -32,8 +32,12 @@ import java.util.List;
  */
 public class ProbabilityOfNEvents {
     private final int n_;
-    public ProbabilityOfNEvents(final int n) { this.n_ = n; }
-    public double op(final List<Double> p) {
+
+    public ProbabilityOfNEvents(final int n) {
+        this.n_ = n;
+    }
+
+    public double op(final List< Double > p) {
         return LossDist.probabilityOfNEvents(n_, p);
     }
 }

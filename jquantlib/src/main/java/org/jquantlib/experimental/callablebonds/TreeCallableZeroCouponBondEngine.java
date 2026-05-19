@@ -22,22 +22,21 @@ import org.jquantlib.time.TimeGrid;
 /**
  * Numerical lattice engine for callable zero-coupon bonds.
  * <p>
- * Port of C++ v1.42.1
- * {@code ql/experimental/callablebonds/treecallablebondengine.{hpp,cpp}}
- * (the {@code TreeCallableZeroCouponBondEngine} portion).
+ * Port of C++ v1.42.1 {@code ql/experimental/callablebonds/treecallablebondengine.{hpp,cpp}} (the
+ * {@code TreeCallableZeroCouponBondEngine} portion).
  * <p>
- * Behaviorally identical to {@link TreeCallableFixedRateBondEngine}; exists as
- * a separate class for source-level parity with the C++ API.
+ * Behaviorally identical to {@link TreeCallableFixedRateBondEngine}; exists as a separate class for source-level parity
+ * with the C++ API.
  */
 public class TreeCallableZeroCouponBondEngine extends TreeCallableFixedRateBondEngine {
 
     public TreeCallableZeroCouponBondEngine(final ShortRateModel model, final int timeSteps,
-            final Handle<YieldTermStructure> termStructure) {
+            final Handle< YieldTermStructure > termStructure) {
         super(model, timeSteps, termStructure);
     }
 
     public TreeCallableZeroCouponBondEngine(final ShortRateModel model, final TimeGrid timeGrid,
-            final Handle<YieldTermStructure> termStructure) {
+            final Handle< YieldTermStructure > termStructure) {
         super(model, timeGrid, termStructure);
     }
 }

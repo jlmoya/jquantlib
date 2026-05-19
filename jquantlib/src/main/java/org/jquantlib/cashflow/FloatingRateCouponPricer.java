@@ -21,11 +21,11 @@
  */
 package org.jquantlib.cashflow;
 
-import java.util.List;
-
 import org.jquantlib.util.DefaultObservable;
 import org.jquantlib.util.Observable;
 import org.jquantlib.util.Observer;
+
+import java.util.List;
 
 public abstract class FloatingRateCouponPricer implements Observer, Observable {
 
@@ -34,13 +34,18 @@ public abstract class FloatingRateCouponPricer implements Observer, Observable {
     private final DefaultObservable delegatedObservable = new org.jquantlib.util.WeakReferenceObservable(this);
 
     public abstract double swapletPrice();
-    public abstract double swapletRate();
-    public abstract double capletPrice(double effectiveCap);
-    public abstract double capletRate(double effectiveCap);
-    public abstract double floorletPrice(double effectiveFloor);
-    public abstract double floorletRate(double effectiveFloor);
-    public abstract void initialize(FloatingRateCoupon coupon);
 
+    public abstract double swapletRate();
+
+    public abstract double capletPrice(double effectiveCap);
+
+    public abstract double capletRate(double effectiveCap);
+
+    public abstract double floorletPrice(double effectiveFloor);
+
+    public abstract double floorletRate(double effectiveFloor);
+
+    public abstract void initialize(FloatingRateCoupon coupon);
 
     //
     // implements Observer
@@ -61,7 +66,6 @@ public abstract class FloatingRateCouponPricer implements Observer, Observable {
     public void update() {
         notifyObservers();
     }
-
 
     //
     // implements Observable
@@ -88,7 +92,7 @@ public abstract class FloatingRateCouponPricer implements Observer, Observable {
     }
 
     @Override
-    public List<Observer> getObservers() {
+    public List< Observer > getObservers() {
         return delegatedObservable.getObservers();
     }
 

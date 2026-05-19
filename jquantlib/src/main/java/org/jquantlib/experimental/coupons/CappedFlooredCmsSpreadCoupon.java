@@ -39,8 +39,7 @@ import org.jquantlib.util.Visitor;
 /**
  * Capped and/or floored CMS-spread coupon.
  * <p>
- * Port of C++ QuantLib v1.42.1
- * {@code ql/experimental/coupons/cmsspreadcoupon.hpp} (the
+ * Port of C++ QuantLib v1.42.1 {@code ql/experimental/coupons/cmsspreadcoupon.hpp} (the
  * {@code CappedFlooredCmsSpreadCoupon} class lines 71-103).
  *
  * @author Peter Caspers (C++ original)
@@ -52,38 +51,20 @@ public class CappedFlooredCmsSpreadCoupon extends CappedFlooredCoupon {
     //
 
     /** Convenience: gearing=1, spread=0, no cap/floor, ref=now, dc=empty, isInArrears=false. */
-    public CappedFlooredCmsSpreadCoupon(final Date paymentDate,
-                                        final double nominal,
-                                        final Date startDate,
-                                        final Date endDate,
-                                        final int fixingDays,
-                                        final SwapSpreadIndex index) {
-        this(paymentDate, nominal, startDate, endDate, fixingDays, index,
-                1.0, 0.0, Constants.NULL_REAL, Constants.NULL_REAL,
-                new Date(), new Date(), new DayCounter(), false);
+    public CappedFlooredCmsSpreadCoupon(final Date paymentDate, final double nominal, final Date startDate,
+            final Date endDate, final int fixingDays, final SwapSpreadIndex index) {
+        this(paymentDate, nominal, startDate, endDate, fixingDays, index, 1.0, 0.0, Constants.NULL_REAL,
+                Constants.NULL_REAL, new Date(), new Date(), new DayCounter(), false);
     }
 
     /** Full ctor (matches C++ CappedFlooredCmsSpreadCoupon constructor). */
-    public CappedFlooredCmsSpreadCoupon(final Date paymentDate,
-                                        final double nominal,
-                                        final Date startDate,
-                                        final Date endDate,
-                                        final int fixingDays,
-                                        final SwapSpreadIndex index,
-                                        final double gearing,
-                                        final double spread,
-                                        final double cap,
-                                        final double floor,
-                                        final Date refPeriodStart,
-                                        final Date refPeriodEnd,
-                                        final DayCounter dayCounter,
-                                        final boolean isInArrears) {
-        super(new CmsSpreadCoupon(paymentDate, nominal, startDate, endDate,
-                fixingDays, index, gearing, spread,
-                refPeriodStart, refPeriodEnd, dayCounter, isInArrears),
-              cap, floor);
+    public CappedFlooredCmsSpreadCoupon(final Date paymentDate, final double nominal, final Date startDate,
+            final Date endDate, final int fixingDays, final SwapSpreadIndex index, final double gearing,
+            final double spread, final double cap, final double floor, final Date refPeriodStart,
+            final Date refPeriodEnd, final DayCounter dayCounter, final boolean isInArrears) {
+        super(new CmsSpreadCoupon(paymentDate, nominal, startDate, endDate, fixingDays, index, gearing, spread,
+                refPeriodStart, refPeriodEnd, dayCounter, isInArrears), cap, floor);
     }
-
 
     //
     // implements PolymorphicVisitable
@@ -91,9 +72,8 @@ public class CappedFlooredCmsSpreadCoupon extends CappedFlooredCoupon {
 
     @Override
     public void accept(final PolymorphicVisitor pv) {
-        final Visitor<CappedFlooredCmsSpreadCoupon> v =
-                (pv != null) ? pv.visitor(this.getClass()) : null;
-        if (v != null) {
+        final Visitor< CappedFlooredCmsSpreadCoupon > v = (pv != null) ? pv.visitor(this.getClass()) : null;
+        if ( v != null ) {
             v.visit(this);
         } else {
             super.accept(pv);

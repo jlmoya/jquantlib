@@ -31,24 +31,21 @@ import org.jquantlib.methods.montecarlo.PathPricer;
  * Himalaya multi-path pricer.
  *
  * <p>Java port of {@code QuantLib v1.42.1
- * ql/experimental/exoticoptions/mchimalayaengine.{hpp,cpp}}::{@code
- * HimalayaMultiPathPricer} (Phase 4i.5 WI-3).
+ * ql/experimental/exoticoptions/mchimalayaengine.{hpp,cpp}}::{@code HimalayaMultiPathPricer} (Phase 4i.5 WI-3).
  *
  * <p>At each fixing date, the asset with the highest yield (relative
- * to its initial value) is selected, its price is added to the
- * running average, and that asset is removed from the basket. After
- * all fixing dates have been processed the average is fed into the
- * vanilla payoff and discounted to today.
+ * to its initial value) is selected, its price is added to the running average, and that asset is removed from the
+ * basket. After all fixing dates have been processed the average is fed into the vanilla payoff and discounted to
+ * today.
  *
  * @author JQuantLib
  */
-public class HimalayaMultiPathPricer extends PathPricer<MultiPath> {
+public class HimalayaMultiPathPricer extends PathPricer< MultiPath > {
 
     private final Payoff payoff_;
     private final /* @DiscountFactor */ double discount_;
 
-    public HimalayaMultiPathPricer(final Payoff payoff,
-                                   final double discount) {
+    public HimalayaMultiPathPricer(final Payoff payoff, final double discount) {
         this.payoff_ = payoff;
         this.discount_ = discount;
     }
@@ -60,20 +57,20 @@ public class HimalayaMultiPathPricer extends PathPricer<MultiPath> {
         QL.require(numAssets > 0, "no asset given");
 
         final boolean[] remainingAssets = new boolean[numAssets];
-        for (int j = 0; j < numAssets; ++j) {
+        for ( int j = 0; j < numAssets; ++j ) {
             remainingAssets[j] = true;
         }
         double averagePrice = 0.0;
         final int fixings = numNodes - 1;
-        for (int i = 1; i < numNodes; i++) {
+        for ( int i = 1; i < numNodes; i++ ) {
             double bestPrice = 0.0;
             double bestYield = -Double.MAX_VALUE; // mirrors C++ QL_MIN_REAL
             int removeAsset = 0;
-            for (int j = 0; j < numAssets; j++) {
-                if (remainingAssets[j]) {
+            for ( int j = 0; j < numAssets; j++ ) {
+                if ( remainingAssets[j] ) {
                     final double price = multiPath.get(j).get(i);
                     final double yield = price / multiPath.get(j).front();
-                    if (yield >= bestYield) {
+                    if ( yield >= bestYield ) {
                         bestPrice = price;
                         bestYield = yield;
                         removeAsset = j;

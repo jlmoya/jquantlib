@@ -22,11 +22,10 @@
 
 package org.jquantlib.methods.finitedifferences;
 
-
 /**
  * @author Srinivas Hasti
- * 
+ *
  */
-public interface StepCondition<T> {
-	public void applyTo(T a, double/* @Time */t);
+public interface StepCondition< T > {
+    void applyTo(T a, double/* @Time */t);
 }

@@ -49,14 +49,14 @@ import org.jquantlib.math.IntervalPrice;
  */
 public class GarmanKlassSimpleSigma extends GarmanKlassAbstract {
 
-	public GarmanKlassSimpleSigma(final double y) {
-		super(y);
-	}
+    public GarmanKlassSimpleSigma(final double y) {
+        super(y);
+    }
 
-	@Override
-	protected double calculatePoint(final IntervalPrice p) {
-		final double c = Math.log(p.close() / p.open());
-		return c * c;
-	}
+    @Override
+    protected double calculatePoint(final IntervalPrice p) {
+        final double c = Math.log(p.close() / p.open());
+        return c * c;
+    }
 
 }

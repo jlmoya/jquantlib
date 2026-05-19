@@ -32,8 +32,7 @@ import org.jquantlib.model.marketmodels.CurveState;
 import org.jquantlib.model.marketmodels.Utilities;
 
 /**
- * Naif callable exercise strategy: exercise when the coterminal swap rate
- * exceeds a per-exercise trigger.
+ * Naif callable exercise strategy: exercise when the coterminal swap rate exceeds a per-exercise trigger.
  *
  * <p>Java port of {@code SwapRateTrigger}
  * (ql/models/marketmodels/callability/swapratetrigger.{hpp,cpp} v1.42.1).
@@ -41,9 +40,8 @@ import org.jquantlib.model.marketmodels.Utilities;
  * <p>Used by {@code testCallableSwapNaif} as a simple alternative to a
  * Longstaff-Schwartz strategy.
  *
- * @see "ql/models/marketmodels/callability/swapratetrigger.hpp" v1.42.1
- *
  * @author Jose Moya
+ * @see "ql/models/marketmodels/callability/swapratetrigger.hpp" v1.42.1
  */
 public class SwapRateTrigger implements ExerciseStrategy {
 
@@ -55,16 +53,12 @@ public class SwapRateTrigger implements ExerciseStrategy {
     // sets it to 0 before use.
     private int currentIndex_ = 0;
 
-    public SwapRateTrigger(final double[] rateTimes,
-                           final double[] swapTriggers,
-                           final double[] exerciseTimes) {
+    public SwapRateTrigger(final double[] rateTimes, final double[] swapTriggers, final double[] exerciseTimes) {
         Utilities.checkIncreasingTimes(rateTimes);
-        QL.require(rateTimes.length > 1,
-                "Rate times must contain at least two values");
+        QL.require(rateTimes.length > 1, "Rate times must contain at least two values");
         Utilities.checkIncreasingTimes(exerciseTimes);
         QL.require(swapTriggers.length == exerciseTimes.length,
-                "swapTriggers/exerciseTimes mismatch: " + swapTriggers.length
-                        + " != " + exerciseTimes.length);
+                "swapTriggers/exerciseTimes mismatch: " + swapTriggers.length + " != " + exerciseTimes.length);
 
         this.rateTimes_ = rateTimes.clone();
         this.swapTriggers_ = swapTriggers.clone();
@@ -72,8 +66,8 @@ public class SwapRateTrigger implements ExerciseStrategy {
         this.rateIndex_ = new int[exerciseTimes.length];
 
         int j = 0;
-        for (int i = 0; i < exerciseTimes.length; ++i) {
-            while (j < rateTimes.length && rateTimes[j] < exerciseTimes[i]) {
+        for ( int i = 0; i < exerciseTimes.length; ++i ) {
+            while ( j < rateTimes.length && rateTimes[j] < exerciseTimes[i] ) {
                 ++j;
             }
             this.rateIndex_[i] = j;
@@ -88,19 +82,35 @@ public class SwapRateTrigger implements ExerciseStrategy {
         this.currentIndex_ = other.currentIndex_;
     }
 
-    @Override public double[] exerciseTimes() { return exerciseTimes_; }
+    @Override
+    public double[] exerciseTimes() {
+        return exerciseTimes_;
+    }
 
-    @Override public double[] relevantTimes() { return exerciseTimes_; }
+    @Override
+    public double[] relevantTimes() {
+        return exerciseTimes_;
+    }
 
-    @Override public void reset() { currentIndex_ = 0; }
+    @Override
+    public void reset() {
+        currentIndex_ = 0;
+    }
 
-    @Override public boolean exercise(final CurveState currentState) {
+    @Override
+    public boolean exercise(final CurveState currentState) {
         final int rateIndex = rateIndex_[currentIndex_ - 1];
         final double currentSwapRate = currentState.coterminalSwapRate(rateIndex);
         return swapTriggers_[currentIndex_ - 1] < currentSwapRate;
     }
 
-    @Override public void nextStep(final CurveState currentState) { ++currentIndex_; }
+    @Override
+    public void nextStep(final CurveState currentState) {
+        ++currentIndex_;
+    }
 
-    @Override public SwapRateTrigger clone() { return new SwapRateTrigger(this); }
+    @Override
+    public SwapRateTrigger clone() {
+        return new SwapRateTrigger(this);
+    }
 }

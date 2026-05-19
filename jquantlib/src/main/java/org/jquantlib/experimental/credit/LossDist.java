@@ -21,11 +21,11 @@
 
 package org.jquantlib.experimental.credit;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.math.distributions.BinomialDistribution;
 import org.jquantlib.math.distributions.CumulativeBinomialDistribution;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Probability formulas and algorithms for portfolio loss distributions.
@@ -37,20 +37,14 @@ import org.jquantlib.math.distributions.CumulativeBinomialDistribution;
  */
 public abstract class LossDist {
 
-    public abstract Distribution op(List<Double> volumes, List<Double> probabilities);
-
-    public abstract int buckets();
-
-    public abstract double maximum();
-
     /** Binomial probability of n defaults using {@code p[0]}. */
-    public static double binomialProbabilityOfNEvents(final int n, final List<Double> p) {
+    public static double binomialProbabilityOfNEvents(final int n, final List< Double > p) {
         final BinomialDistribution binomial = new BinomialDistribution(p.get(0), p.size());
         return binomial.op(n);
     }
 
     /** Binomial probability of at least n defaults using {@code p[0]}. */
-    public static double binomialProbabilityOfAtLeastNEvents(final int n, final List<Double> p) {
+    public static double binomialProbabilityOfAtLeastNEvents(final int n, final List< Double > p) {
         final CumulativeBinomialDistribution binomial = new CumulativeBinomialDistribution(p.get(0), p.size());
         return 1.0 - binomial.op(n - 1);
     }
@@ -61,17 +55,17 @@ public abstract class LossDist {
      * <p>Reference: Xiaofong Ma, "Numerical Methods for the Valuation of Synthetic
      * Collateralized Debt Obligations", PhD Thesis, University of Toronto, 2007.
      */
-    public static List<Double> probabilityOfNEvents(final List<Double> p) {
+    public static List< Double > probabilityOfNEvents(final List< Double > p) {
         final int n = p.size();
-        final List<Double> probability = new ArrayList<>(n + 1);
-        for (int k = 0; k <= n; ++k) {
+        final List< Double > probability = new ArrayList<>(n + 1);
+        for ( int k = 0; k <= n; ++k ) {
             probability.add(0.0);
         }
         probability.set(0, 1.0);
-        for (int j = 0; j < n; ++j) {
-            final List<Double> prev = new ArrayList<>(probability);
+        for ( int j = 0; j < n; ++j ) {
+            final List< Double > prev = new ArrayList<>(probability);
             probability.set(0, prev.get(0) * (1.0 - p.get(j)));
-            for (int i = 1; i <= j; ++i) {
+            for ( int i = 1; i <= j; ++i ) {
                 probability.set(i, prev.get(i - 1) * p.get(j) + prev.get(i) * (1.0 - p.get(j)));
             }
             probability.set(j + 1, prev.get(j) * p.get(j));
@@ -80,17 +74,23 @@ public abstract class LossDist {
     }
 
     /** Probability of exactly k default events. */
-    public static double probabilityOfNEvents(final int k, final List<Double> p) {
+    public static double probabilityOfNEvents(final int k, final List< Double > p) {
         return probabilityOfNEvents(p).get(k);
     }
 
     /** Probability of at least k defaults. */
-    public static double probabilityOfAtLeastNEvents(final int k, final List<Double> p) {
-        final List<Double> probability = probabilityOfNEvents(p);
+    public static double probabilityOfAtLeastNEvents(final int k, final List< Double > p) {
+        final List< Double > probability = probabilityOfNEvents(p);
         double sum = 1.0;
-        for (int j = 0; j < k; ++j) {
+        for ( int j = 0; j < k; ++j ) {
             sum -= probability.get(j);
         }
         return sum;
     }
+
+    public abstract Distribution op(List< Double > volumes, List< Double > probabilities);
+
+    public abstract int buckets();
+
+    public abstract double maximum();
 }

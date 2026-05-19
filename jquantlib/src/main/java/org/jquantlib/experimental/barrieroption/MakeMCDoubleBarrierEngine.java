@@ -32,10 +32,9 @@ import org.jquantlib.processes.GeneralizedBlackScholesProcess;
  * Fluent builder for {@link MCDoubleBarrierEngine}.
  *
  * <p>Java port of {@code QuantLib v1.42.1
- * ql/experimental/barrieroption/mcdoublebarrierengine.hpp}
- * {@code MakeMCDoubleBarrierEngine<RNG,S>} factory (Phase
- * 5e.5b-CFC-d-278). Specialised for {@code RNG = PseudoRandom} — see
- * {@link MCDoubleBarrierEngine} for that limitation.
+ * ql/experimental/barrieroption/mcdoublebarrierengine.hpp} {@code MakeMCDoubleBarrierEngine<RNG,S>} factory (Phase
+ * 5e.5b-CFC-d-278). Specialised for {@code RNG = PseudoRandom} — see {@link MCDoubleBarrierEngine} for that
+ * limitation.
  */
 public final class MakeMCDoubleBarrierEngine {
 
@@ -108,8 +107,7 @@ public final class MakeMCDoubleBarrierEngine {
                 "number of steps not given");
         QL.require(steps_ == McSimulation.NULL_SAMPLES || stepsPerYear_ == McSimulation.NULL_SAMPLES,
                 "number of steps overspecified");
-        return new MCDoubleBarrierEngine(
-                process_, steps_, stepsPerYear_, brownianBridge_, antithetic_,
-                samples_, tolerance_, maxSamples_, seed_);
+        return new MCDoubleBarrierEngine(process_, steps_, stepsPerYear_, brownianBridge_, antithetic_, samples_,
+                tolerance_, maxSamples_, seed_);
     }
 }

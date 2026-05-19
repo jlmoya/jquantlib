@@ -15,9 +15,6 @@
  */
 package org.jquantlib.model.shortrate.calibrationhelpers;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.exercise.EuropeanExercise;
@@ -39,14 +36,11 @@ import org.jquantlib.quotes.SimpleQuote;
 import org.jquantlib.termstructures.SwaptionVolatilityStructure;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.termstructures.volatilities.swaption.ConstantSwaptionVolatility;
-import org.jquantlib.time.BusinessDayConvention;
-import org.jquantlib.time.Calendar;
-import org.jquantlib.time.Date;
-import org.jquantlib.time.DateGeneration;
-import org.jquantlib.time.Period;
-import org.jquantlib.time.Schedule;
-import org.jquantlib.time.TimeUnit;
+import org.jquantlib.time.*;
 import org.jquantlib.time.calendars.NullCalendar;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Swaption calibration helper.
@@ -75,18 +69,17 @@ import org.jquantlib.time.calendars.NullCalendar;
  */
 public class SwaptionHelper extends BlackCalibrationHelper {
 
-    private Date exerciseDate_;
-    private Date endDate_;
     private final Period maturity_;
     private final Period length_;
     private final Period fixedLegTenor_;
     private final IborIndex index_;
-    private final Handle<YieldTermStructure> termStructure_;
+    private final Handle< YieldTermStructure > termStructure_;
     private final DayCounter fixedLegDayCounter_;
     private final DayCounter floatingLegDayCounter_;
     private final double strike_;
     private final double nominal_;
-
+    private final Date exerciseDate_;
+    private final Date endDate_;
     /** Result of performCalculations(). Nullable until calculate() runs. */
     private VanillaSwap swap_;
     private Swaption swaption_;
@@ -96,13 +89,10 @@ public class SwaptionHelper extends BlackCalibrationHelper {
     /**
      * Period-based ctor: maturity + length. Mirrors the first C++ ctor.
      */
-    public SwaptionHelper(final Period maturity, final Period length,
-            final Handle<Quote> volatility, final IborIndex index,
-            final Period fixedLegTenor, final DayCounter fixedLegDayCounter,
-            final DayCounter floatingLegDayCounter,
-            final Handle<YieldTermStructure> termStructure,
-            final CalibrationErrorType errorType,
-            final double strike, final double nominal,
+    public SwaptionHelper(final Period maturity, final Period length, final Handle< Quote > volatility,
+            final IborIndex index, final Period fixedLegTenor, final DayCounter fixedLegDayCounter,
+            final DayCounter floatingLegDayCounter, final Handle< YieldTermStructure > termStructure,
+            final CalibrationErrorType errorType, final double strike, final double nominal,
             final VolatilityType volType, final double shift) {
         super(volatility, errorType, volType, shift);
         this.maturity_ = maturity;
@@ -117,40 +107,32 @@ public class SwaptionHelper extends BlackCalibrationHelper {
         this.exerciseDate_ = null;
         this.endDate_ = null;
 
-        if (this.index_ != null) {
+        if ( this.index_ != null ) {
             this.index_.addObserver(this);
         }
-        if (this.termStructure_ != null) {
+        if ( this.termStructure_ != null ) {
             this.termStructure_.addObserver(this);
         }
     }
 
     /**
-     * Convenience ctor with sensible defaults (RelativePriceError,
-     * ShiftedLognormal, no strike, nominal 1.0, shift 0).
+     * Convenience ctor with sensible defaults (RelativePriceError, ShiftedLognormal, no strike, nominal 1.0, shift 0).
      */
-    public SwaptionHelper(final Period maturity, final Period length,
-            final Handle<Quote> volatility, final IborIndex index,
-            final Period fixedLegTenor, final DayCounter fixedLegDayCounter,
-            final DayCounter floatingLegDayCounter,
-            final Handle<YieldTermStructure> termStructure) {
-        this(maturity, length, volatility, index, fixedLegTenor,
-                fixedLegDayCounter, floatingLegDayCounter, termStructure,
-                CalibrationErrorType.RelativePriceError,
-                Constants.NULL_REAL, 1.0,
+    public SwaptionHelper(final Period maturity, final Period length, final Handle< Quote > volatility,
+            final IborIndex index, final Period fixedLegTenor, final DayCounter fixedLegDayCounter,
+            final DayCounter floatingLegDayCounter, final Handle< YieldTermStructure > termStructure) {
+        this(maturity, length, volatility, index, fixedLegTenor, fixedLegDayCounter, floatingLegDayCounter,
+                termStructure, CalibrationErrorType.RelativePriceError, Constants.NULL_REAL, 1.0,
                 VolatilityType.ShiftedLognormal, 0.0);
     }
 
     /**
      * Date-based ctor (exerciseDate + length). Mirrors the second C++ ctor.
      */
-    public SwaptionHelper(final Date exerciseDate, final Period length,
-            final Handle<Quote> volatility, final IborIndex index,
-            final Period fixedLegTenor, final DayCounter fixedLegDayCounter,
-            final DayCounter floatingLegDayCounter,
-            final Handle<YieldTermStructure> termStructure,
-            final CalibrationErrorType errorType,
-            final double strike, final double nominal,
+    public SwaptionHelper(final Date exerciseDate, final Period length, final Handle< Quote > volatility,
+            final IborIndex index, final Period fixedLegTenor, final DayCounter fixedLegDayCounter,
+            final DayCounter floatingLegDayCounter, final Handle< YieldTermStructure > termStructure,
+            final CalibrationErrorType errorType, final double strike, final double nominal,
             final VolatilityType volType, final double shift) {
         super(volatility, errorType, volType, shift);
         this.maturity_ = new Period(0, TimeUnit.Days);
@@ -165,10 +147,10 @@ public class SwaptionHelper extends BlackCalibrationHelper {
         this.exerciseDate_ = exerciseDate;
         this.endDate_ = null;
 
-        if (this.index_ != null) {
+        if ( this.index_ != null ) {
             this.index_.addObserver(this);
         }
-        if (this.termStructure_ != null) {
+        if ( this.termStructure_ != null ) {
             this.termStructure_.addObserver(this);
         }
     }
@@ -176,13 +158,10 @@ public class SwaptionHelper extends BlackCalibrationHelper {
     /**
      * Date-based ctor (exerciseDate + endDate). Mirrors the third C++ ctor.
      */
-    public SwaptionHelper(final Date exerciseDate, final Date endDate,
-            final Handle<Quote> volatility, final IborIndex index,
-            final Period fixedLegTenor, final DayCounter fixedLegDayCounter,
-            final DayCounter floatingLegDayCounter,
-            final Handle<YieldTermStructure> termStructure,
-            final CalibrationErrorType errorType,
-            final double strike, final double nominal,
+    public SwaptionHelper(final Date exerciseDate, final Date endDate, final Handle< Quote > volatility,
+            final IborIndex index, final Period fixedLegTenor, final DayCounter fixedLegDayCounter,
+            final DayCounter floatingLegDayCounter, final Handle< YieldTermStructure > termStructure,
+            final CalibrationErrorType errorType, final double strike, final double nominal,
             final VolatilityType volType, final double shift) {
         super(volatility, errorType, volType, shift);
         this.maturity_ = new Period(0, TimeUnit.Days);
@@ -197,10 +176,10 @@ public class SwaptionHelper extends BlackCalibrationHelper {
         this.exerciseDate_ = exerciseDate;
         this.endDate_ = endDate;
 
-        if (this.index_ != null) {
+        if ( this.index_ != null ) {
             this.index_.addObserver(this);
         }
-        if (this.termStructure_ != null) {
+        if ( this.termStructure_ != null ) {
             this.termStructure_.addObserver(this);
         }
     }
@@ -227,9 +206,9 @@ public class SwaptionHelper extends BlackCalibrationHelper {
     protected void performCalculations() {
         final Calendar calendar = index_.fixingCalendar();
         Date exerciseDate = exerciseDate_;
-        if (exerciseDate == null) {
-            exerciseDate = calendar.advance(termStructure_.currentLink().referenceDate(),
-                    maturity_, index_.businessDayConvention());
+        if ( exerciseDate == null ) {
+            exerciseDate = calendar.advance(termStructure_.currentLink().referenceDate(), maturity_,
+                    index_.businessDayConvention());
         }
         // C++ uses settlementDays_ (Null<Size>() default → fall through to
         // index.valueDate(...)). Java doesn't expose a settlement-days override
@@ -238,30 +217,22 @@ public class SwaptionHelper extends BlackCalibrationHelper {
                 index_.fixingCalendar().adjust(exerciseDate, BusinessDayConvention.Following));
 
         Date endDate = endDate_;
-        if (endDate == null) {
-            endDate = calendar.advance(startDate, length_,
-                    index_.businessDayConvention());
+        if ( endDate == null ) {
+            endDate = calendar.advance(startDate, length_, index_.businessDayConvention());
         }
-        final Schedule fixedSchedule = new Schedule(startDate, endDate,
-                fixedLegTenor_, calendar,
-                index_.businessDayConvention(),
-                index_.businessDayConvention(),
-                DateGeneration.Rule.Forward, false);
-        final Schedule floatSchedule = new Schedule(startDate, endDate,
-                index_.tenor(), calendar,
-                index_.businessDayConvention(),
-                index_.businessDayConvention(),
-                DateGeneration.Rule.Forward, false);
+        final Schedule fixedSchedule = new Schedule(startDate, endDate, fixedLegTenor_, calendar,
+                index_.businessDayConvention(), index_.businessDayConvention(), DateGeneration.Rule.Forward, false);
+        final Schedule floatSchedule = new Schedule(startDate, endDate, index_.tenor(), calendar,
+                index_.businessDayConvention(), index_.businessDayConvention(), DateGeneration.Rule.Forward, false);
 
         final DiscountingSwapEngine swapEngine = new DiscountingSwapEngine(termStructure_);
         // Default to Receiver (mirrors C++).
         VanillaSwap.Type type = VanillaSwap.Type.Receiver;
         final Exercise exercise = new EuropeanExercise(exerciseDate);
-        final VanillaSwap temp = makeSwap(fixedSchedule, floatSchedule, 0.0,
-                VanillaSwap.Type.Receiver);
+        final VanillaSwap temp = makeSwap(fixedSchedule, floatSchedule, 0.0, VanillaSwap.Type.Receiver);
         temp.setPricingEngine(swapEngine);
         final double forward = temp.fairRate();
-        if (strike_ == Constants.NULL_REAL) {
+        if ( strike_ == Constants.NULL_REAL ) {
             this.exerciseRate_ = forward;
         } else {
             this.exerciseRate_ = strike_;
@@ -277,7 +248,7 @@ public class SwaptionHelper extends BlackCalibrationHelper {
     }
 
     @Override
-    public void addTimesTo(final ArrayList<Time> times) {
+    public void addTimesTo(final ArrayList< Time > times) {
         calculate();
         // Compute mandatory times for parity with C++ (validates
         // DiscretizedSwaption construction); we don't push the doubles into
@@ -294,8 +265,7 @@ public class SwaptionHelper extends BlackCalibrationHelper {
         args.exercise = exercise_;
         args.settlementType = swaption_.settlementType();
         args.settlementMethod = swaption_.settlementMethod();
-        final List<Double> swTimes = new DiscretizedSwaption(args,
-                termStructure_.currentLink().referenceDate(),
+        final List< Double > swTimes = new DiscretizedSwaption(args, termStructure_.currentLink().referenceDate(),
                 termStructure_.currentLink().dayCounter()).mandatoryTimes();
         assert swTimes != null;
     }
@@ -310,7 +280,7 @@ public class SwaptionHelper extends BlackCalibrationHelper {
     @Override
     public double blackPrice(final double sigma) {
         calculate();
-        final Handle<Quote> vol = new Handle<Quote>(new SimpleQuote(sigma));
+        final Handle< Quote > vol = new Handle< Quote >(new SimpleQuote(sigma));
         // Phase 2f WI-2: Java collapses Black76 and Bachelier into a single
         // BlackSwaptionEngine that branches on vol.volatilityType(). The
         // helper builds a ConstantSwaptionVolatility carrying the right
@@ -318,30 +288,26 @@ public class SwaptionHelper extends BlackCalibrationHelper {
         // {@code SwaptionHelper::blackPrice} which constructs either a
         // BlackSwaptionEngine or a BachelierSwaptionEngine depending on the
         // helper's volatilityType_.
-        final Handle<SwaptionVolatilityStructure> volSurface;
-        switch (volatilityType_) {
-            case ShiftedLognormal:
-                volSurface = new Handle<SwaptionVolatilityStructure>(
-                        new ConstantSwaptionVolatility(0, new NullCalendar(),
-                                BusinessDayConvention.Following, vol,
-                                new Actual365Fixed(),
-                                VolatilityType.ShiftedLognormal, shift_));
-                break;
-            case Normal:
-                volSurface = new Handle<SwaptionVolatilityStructure>(
-                        new ConstantSwaptionVolatility(0, new NullCalendar(),
-                                BusinessDayConvention.Following, vol,
-                                new Actual365Fixed(),
-                                VolatilityType.Normal, 0.0));
-                break;
-            default:
-                throw new IllegalStateException("unknown volatility type");
+        final Handle< SwaptionVolatilityStructure > volSurface;
+        switch ( volatilityType_ ) {
+        case ShiftedLognormal:
+            volSurface = new Handle< SwaptionVolatilityStructure >(
+                    new ConstantSwaptionVolatility(0, new NullCalendar(), BusinessDayConvention.Following, vol,
+                            new Actual365Fixed(), VolatilityType.ShiftedLognormal, shift_));
+            break;
+        case Normal:
+            volSurface = new Handle< SwaptionVolatilityStructure >(
+                    new ConstantSwaptionVolatility(0, new NullCalendar(), BusinessDayConvention.Following, vol,
+                            new Actual365Fixed(), VolatilityType.Normal, 0.0));
+            break;
+        default:
+            throw new IllegalStateException("unknown volatility type");
         }
         final PricingEngine engine = new BlackSwaptionEngine(termStructure_, volSurface);
         swaption_.setPricingEngine(engine);
         final double value = swaption_.NPV();
         // Restore the model-based engine.
-        if (engine_ != null) {
+        if ( engine_ != null ) {
             swaption_.setPricingEngine(engine_);
         }
         return value;
@@ -351,11 +317,9 @@ public class SwaptionHelper extends BlackCalibrationHelper {
     // private helpers
     //
 
-    private VanillaSwap makeSwap(final Schedule fixedSchedule,
-            final Schedule floatSchedule, final double exerciseRate,
+    private VanillaSwap makeSwap(final Schedule fixedSchedule, final Schedule floatSchedule, final double exerciseRate,
             final VanillaSwap.Type type) {
-        return new VanillaSwap(type, nominal_, fixedSchedule, exerciseRate,
-                fixedLegDayCounter_, floatSchedule, index_, 0.0,
-                floatingLegDayCounter_);
+        return new VanillaSwap(type, nominal_, fixedSchedule, exerciseRate, fixedLegDayCounter_, floatSchedule, index_,
+                0.0, floatingLegDayCounter_);
     }
 }

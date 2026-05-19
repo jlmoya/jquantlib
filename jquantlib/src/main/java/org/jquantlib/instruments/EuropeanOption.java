@@ -47,14 +47,13 @@ import org.jquantlib.lang.annotation.QualityAssurance.Version;
 /**
  * European option on a single asset
  *
- * @category instruments
- *
  * @author Richard Gomes
+ * @category instruments
  */
-@QualityAssurance(quality=Quality.Q3_DOCUMENTATION, version=Version.V097, reviewers="Richard Gomes")
+@QualityAssurance( quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = "Richard Gomes" )
 public class EuropeanOption extends VanillaOption {
 
-	public EuropeanOption(final Payoff payoff, final Exercise exercise) {
-		super(payoff, exercise);
-	}
+    public EuropeanOption(final Payoff payoff, final Exercise exercise) {
+        super(payoff, exercise);
+    }
 }

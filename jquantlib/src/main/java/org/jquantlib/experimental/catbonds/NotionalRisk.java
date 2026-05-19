@@ -14,8 +14,7 @@ package org.jquantlib.experimental.catbonds;
 import java.util.List;
 
 /**
- * Abstract base for notional-risk models that translate a catastrophe-event path
- * into a notional-reduction path.
+ * Abstract base for notional-risk models that translate a catastrophe-event path into a notional-reduction path.
  *
  * <p>Port of {@code ql/experimental/catbonds/riskynotional.hpp}
  * {@code NotionalRisk}.
@@ -29,8 +28,7 @@ public abstract class NotionalRisk {
     }
 
     /**
-     * Updates {@code path} to reflect the notional reductions induced by the
-     * given catastrophe events.
+     * Updates {@code path} to reflect the notional reductions induced by the given catastrophe events.
      */
-    public abstract void updatePath(List<DateRealPair> events, NotionalPath path);
+    public abstract void updatePath(List< DateRealPair > events, NotionalPath path);
 }

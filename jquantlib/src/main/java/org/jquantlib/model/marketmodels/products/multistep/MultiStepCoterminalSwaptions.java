@@ -33,8 +33,7 @@ import org.jquantlib.model.marketmodels.Utilities;
 import org.jquantlib.model.marketmodels.products.MultiProductMultiStep;
 
 /**
- * Multi-step Co-terminal Swaptions — one swaption per rate, each ending at
- * the last rate.
+ * Multi-step Co-terminal Swaptions — one swaption per rate, each ending at the last rate.
  * <p>
  * Mirrors C++ {@code class MultiStepCoterminalSwaptions}
  * (ql/models/marketmodels/products/multistep/multistepcoterminalswaptions.{hpp,cpp} v1.42.1).
@@ -48,9 +47,8 @@ public class MultiStepCoterminalSwaptions extends MultiProductMultiStep {
     private final int lastIndex_;
     private int currentIndex_;
 
-    public MultiStepCoterminalSwaptions(final double[] rateTimes,
-                                        final double[] paymentTimes,
-                                        final StrikedTypePayoff[] payoffs) {
+    public MultiStepCoterminalSwaptions(final double[] rateTimes, final double[] paymentTimes,
+            final StrikedTypePayoff[] payoffs) {
         super(rateTimes);
         this.paymentTimes_ = paymentTimes.clone();
         this.payoffs_ = payoffs.clone();
@@ -59,26 +57,33 @@ public class MultiStepCoterminalSwaptions extends MultiProductMultiStep {
     }
 
     @Override
-    public double[] possibleCashFlowTimes() { return paymentTimes_; }
+    public double[] possibleCashFlowTimes() {
+        return paymentTimes_;
+    }
 
     @Override
-    public int numberOfProducts() { return lastIndex_; }
+    public int numberOfProducts() {
+        return lastIndex_;
+    }
 
     @Override
-    public int maxNumberOfCashFlowsPerProductPerStep() { return 1; }
+    public int maxNumberOfCashFlowsPerProductPerStep() {
+        return 1;
+    }
 
     @Override
-    public void reset() { currentIndex_ = 0; }
+    public void reset() {
+        currentIndex_ = 0;
+    }
 
     @Override
-    public boolean nextTimeStep(final CurveState currentState,
-                                final int[] numberCashFlowsThisStep,
-                                final MarketModelMultiProduct.CashFlow[][] genCashFlows) {
+    public boolean nextTimeStep(final CurveState currentState, final int[] numberCashFlowsThisStep,
+            final MarketModelMultiProduct.CashFlow[][] genCashFlows) {
         genCashFlows[currentIndex_][0].timeIndex = currentIndex_;
         final double swapRate = currentState.coterminalSwapRate(currentIndex_);
         final double annuity = currentState.coterminalSwapAnnuity(currentIndex_, currentIndex_);
         genCashFlows[currentIndex_][0].amount = payoffs_[currentIndex_].get(swapRate) * annuity;
-        for (int i = 0; i < numberCashFlowsThisStep.length; ++i) {
+        for ( int i = 0; i < numberCashFlowsThisStep.length; ++i ) {
             numberCashFlowsThisStep[i] = 0;
         }
         numberCashFlowsThisStep[currentIndex_] = 1;

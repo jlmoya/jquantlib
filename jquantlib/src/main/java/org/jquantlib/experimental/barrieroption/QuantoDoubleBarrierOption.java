@@ -37,18 +37,14 @@ import org.jquantlib.pricingengines.PricingEngine;
  * {@code ql/experimental/barrieroption/quantodoublebarrieroption.hpp} (v1.42.1).
  *
  * <p>The C++ class declares
- * {@code typedef QuantoOptionResults<DoubleBarrierOption::results> results;}
- * which uses a class template not modelled in JQuantLib (no
- * {@code QuantoVanillaOption} either). We therefore inline the three
- * quanto sensitivities directly into a {@link QuantoResults} marker
- * interface; engines wishing to populate them must provide a results
- * object implementing {@link QuantoResults}. This matches the C++
- * fetchResults dynamic_cast pattern.
+ * {@code typedef QuantoOptionResults<DoubleBarrierOption::results> results;} which uses a class template not modelled
+ * in JQuantLib (no {@code QuantoVanillaOption} either). We therefore inline the three quanto sensitivities directly
+ * into a {@link QuantoResults} marker interface; engines wishing to populate them must provide a results object
+ * implementing {@link QuantoResults}. This matches the C++ fetchResults dynamic_cast pattern.
  *
  * <p>No engine is shipped in this commit — Phase 4e ships only the
- * instrument layer for parity with the experimental barrieroption
- * directory. A QuantoEngine could be ported when the wider Quanto*
- * family lands (Phase 4e.5 carry-forward).
+ * instrument layer for parity with the experimental barrieroption directory. A QuantoEngine could be ported when the
+ * wider Quanto* family lands (Phase 4e.5 carry-forward).
  *
  * @author JQuantLib migration
  */
@@ -61,17 +57,10 @@ public class QuantoDoubleBarrierOption extends DoubleBarrierOption {
     private double qrho_;
     private double qlambda_;
 
-
-    public QuantoDoubleBarrierOption(
-            final DoubleBarrierType barrierType,
-            final double barrier_lo,
-            final double barrier_hi,
-            final double rebate,
-            final StrikedTypePayoff payoff,
-            final Exercise exercise) {
+    public QuantoDoubleBarrierOption(final DoubleBarrierType barrierType, final double barrier_lo,
+            final double barrier_hi, final double rebate, final StrikedTypePayoff payoff, final Exercise exercise) {
         super(barrierType, barrier_lo, barrier_hi, rebate, payoff, exercise);
     }
-
 
     //
     // Quanto greeks
@@ -95,7 +84,6 @@ public class QuantoDoubleBarrierOption extends DoubleBarrierOption {
         return qlambda_;
     }
 
-
     //
     // overrides
     //
@@ -118,17 +106,17 @@ public class QuantoDoubleBarrierOption extends DoubleBarrierOption {
         qlambda_ = q.qlambda();
     }
 
-
     /**
-     * Marker interface that mirrors the public fields of the C++
-     * {@code QuantoOptionResults<ResultsType>} template, restricted to the
-     * quanto-specific sensitivities. A pricing-engine results object that
-     * implements this interface unlocks {@link #qvega()}, {@link #qrho()}
-     * and {@link #qlambda()} on a {@code QuantoDoubleBarrierOption} instance.
+     * Marker interface that mirrors the public fields of the C++ {@code QuantoOptionResults<ResultsType>} template,
+     * restricted to the quanto-specific sensitivities. A pricing-engine results object that implements this interface
+     * unlocks {@link #qvega()}, {@link #qrho()} and {@link #qlambda()} on a {@code QuantoDoubleBarrierOption}
+     * instance.
      */
     public interface QuantoResults {
         double qvega();
+
         double qrho();
+
         double qlambda();
     }
 }

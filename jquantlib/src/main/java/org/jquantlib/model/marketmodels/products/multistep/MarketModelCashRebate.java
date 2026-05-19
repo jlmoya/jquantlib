@@ -36,17 +36,16 @@ import org.jquantlib.model.marketmodels.Utilities;
 //
 
 /**
- * Cash-rebate market-model product — pays a fixed schedule of cash amounts
- * once. Useful as a rebate received when another product is cancelled.
+ * Cash-rebate market-model product — pays a fixed schedule of cash amounts once. Useful as a rebate received when
+ * another product is cancelled.
  * <p>
- * Mirrors C++ {@code class MarketModelCashRebate}
- * (ql/models/marketmodels/products/multistep/cashrebate.{hpp,cpp} v1.42.1).
+ * Mirrors C++ {@code class MarketModelCashRebate} (ql/models/marketmodels/products/multistep/cashrebate.{hpp,cpp}
+ * v1.42.1).
  * <p>
- * Note: this class extends {@link MarketModelMultiProduct} <b>directly</b>
- * (not {@link org.jquantlib.model.marketmodels.products.MultiProductMultiStep})
- * because it uses an explicitly-supplied {@link EvolutionDescription} and
- * its {@code suggestedNumeraires()} is unimplemented in C++ — matching the
- * C++ {@code QL_FAIL("not implemented (yet?)")}.
+ * Note: this class extends {@link MarketModelMultiProduct} <b>directly</b> (not
+ * {@link org.jquantlib.model.marketmodels.products.MultiProductMultiStep}) because it uses an explicitly-supplied
+ * {@link EvolutionDescription} and its {@code suggestedNumeraires()} is unimplemented in C++ — matching the C++
+ * {@code QL_FAIL("not implemented (yet?)")}.
  *
  * @author Jose Moya
  */
@@ -58,10 +57,8 @@ public class MarketModelCashRebate extends MarketModelMultiProduct {
     private final int numberOfProducts_;
     private int currentIndex_;
 
-    public MarketModelCashRebate(final EvolutionDescription evolution,
-                                 final double[] paymentTimes,
-                                 final Matrix amounts,
-                                 final int numberOfProducts) {
+    public MarketModelCashRebate(final EvolutionDescription evolution, final double[] paymentTimes,
+            final Matrix amounts, final int numberOfProducts) {
         this.evolution_ = evolution;
         this.paymentTimes_ = paymentTimes.clone();
         this.amounts_ = amounts;
@@ -81,25 +78,34 @@ public class MarketModelCashRebate extends MarketModelMultiProduct {
     }
 
     @Override
-    public EvolutionDescription evolution() { return evolution_; }
+    public EvolutionDescription evolution() {
+        return evolution_;
+    }
 
     @Override
-    public double[] possibleCashFlowTimes() { return paymentTimes_; }
+    public double[] possibleCashFlowTimes() {
+        return paymentTimes_;
+    }
 
     @Override
-    public int numberOfProducts() { return numberOfProducts_; }
+    public int numberOfProducts() {
+        return numberOfProducts_;
+    }
 
     @Override
-    public int maxNumberOfCashFlowsPerProductPerStep() { return 1; }
+    public int maxNumberOfCashFlowsPerProductPerStep() {
+        return 1;
+    }
 
     @Override
-    public void reset() { currentIndex_ = 0; }
+    public void reset() {
+        currentIndex_ = 0;
+    }
 
     @Override
-    public boolean nextTimeStep(final CurveState currentState,
-                                final int[] numberCashFlowsThisStep,
-                                final MarketModelMultiProduct.CashFlow[][] genCashFlows) {
-        for (int i = 0; i < numberOfProducts_; ++i) {
+    public boolean nextTimeStep(final CurveState currentState, final int[] numberCashFlowsThisStep,
+            final MarketModelMultiProduct.CashFlow[][] genCashFlows) {
+        for ( int i = 0; i < numberOfProducts_; ++i ) {
             numberCashFlowsThisStep[i] = 1;
             genCashFlows[i][0].timeIndex = currentIndex_;
             genCashFlows[i][0].amount = amounts_.get(i, currentIndex_);

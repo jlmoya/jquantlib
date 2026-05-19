@@ -33,22 +33,16 @@ import org.jquantlib.processes.StochasticProcess1D;
 /**
  * Extended Ornstein-Uhlenbeck process.
  * <p>
- * Java port of v1.42.1
- * {@code ql/experimental/processes/extendedornsteinuhlenbeckprocess.{hpp,cpp}}.
+ * Java port of v1.42.1 {@code ql/experimental/processes/extendedornsteinuhlenbeckprocess.{hpp,cpp}}.
  * <p>
- * Models {@code dx = a (b(t) - x_t) dt + sigma dW_t} where {@code b(t)} is a
- * deterministic time-dependent level. The expectation discretization is
- * selectable: {@link Discretization#MidPoint} (default in C++),
- * {@link Discretization#Trapezodial} (note: misspelling preserved from C++ to
- * keep the API identical), or {@link Discretization#GaussLobatto} which
- * integrates {@code b(s) exp(-a s)} over {@code [t0, t0+dt]} adaptively.
+ * Models {@code dx = a (b(t) - x_t) dt + sigma dW_t} where {@code b(t)} is a deterministic time-dependent level. The
+ * expectation discretization is selectable: {@link Discretization#MidPoint} (default in C++),
+ * {@link Discretization#Trapezodial} (note: misspelling preserved from C++ to keep the API identical), or
+ * {@link Discretization#GaussLobatto} which integrates {@code b(s) exp(-a s)} over {@code [t0, t0+dt]} adaptively.
  *
  * @author Phase 4n WI port
  */
 public class ExtendedOrnsteinUhlenbeckProcess extends StochasticProcess1D {
-
-    /** Discretization scheme for the expectation; matches C++ enum. */
-    public enum Discretization { MidPoint, Trapezodial, GaussLobatto }
 
     private final double speed_;
     private final double vol_;
@@ -56,22 +50,13 @@ public class ExtendedOrnsteinUhlenbeckProcess extends StochasticProcess1D {
     private final double intEps_;
     private final OrnsteinUhlenbeckProcess ouProcess_;
     private final Discretization discretization_;
-
-    public ExtendedOrnsteinUhlenbeckProcess(
-            final double speed,
-            final double vol,
-            final double x0,
+    public ExtendedOrnsteinUhlenbeckProcess(final double speed, final double vol, final double x0,
             final Ops.DoubleOp b) {
         this(speed, vol, x0, b, Discretization.MidPoint, 1e-4);
     }
 
-    public ExtendedOrnsteinUhlenbeckProcess(
-            final double speed,
-            final double vol,
-            final double x0,
-            final Ops.DoubleOp b,
-            final Discretization discretization,
-            final double intEps) {
+    public ExtendedOrnsteinUhlenbeckProcess(final double speed, final double vol, final double x0, final Ops.DoubleOp b,
+            final Discretization discretization, final double intEps) {
         super();
         this.speed_ = speed;
         this.vol_ = vol;
@@ -118,18 +103,16 @@ public class ExtendedOrnsteinUhlenbeckProcess extends StochasticProcess1D {
 
     @Override
     public double expectation(final double t0, final double x0, final double dt) {
-        switch (discretization_) {
+        switch ( discretization_ ) {
         case MidPoint:
-            return ouProcess_.expectation(t0, x0, dt)
-                    + b_.op(t0 + 0.5 * dt) * (1.0 - Math.exp(-speed_ * dt));
+            return ouProcess_.expectation(t0, x0, dt) + b_.op(t0 + 0.5 * dt) * (1.0 - Math.exp(-speed_ * dt));
         case Trapezodial: {
             final double t = t0 + dt;
             final double u = t0;
             final double bt = b_.op(t);
             final double bu = b_.op(u);
             final double ex = Math.exp(-speed_ * dt);
-            return ouProcess_.expectation(t0, x0, dt)
-                    + bt - ex * bu - (bt - bu) / (speed_ * dt) * (1 - ex);
+            return ouProcess_.expectation(t0, x0, dt) + bt - ex * bu - (bt - bu) / (speed_ * dt) * (1 - ex);
         }
         case GaussLobatto: {
             final Ops.DoubleOp integrand = new Ops.DoubleOp() {
@@ -138,13 +121,14 @@ public class ExtendedOrnsteinUhlenbeckProcess extends StochasticProcess1D {
                     return b_.op(s) * Math.exp(speed_ * s);
                 }
             };
-            return ouProcess_.expectation(t0, x0, dt)
-                    + speed_ * Math.exp(-speed_ * (t0 + dt))
-                            * new GaussLobattoIntegral(100000, intEps_)
-                                    .op(integrand, t0, t0 + dt);
+            return ouProcess_.expectation(t0, x0, dt) + speed_ * Math.exp(-speed_ * (t0 + dt))
+                    * new GaussLobattoIntegral(100000, intEps_).op(integrand, t0, t0 + dt);
         }
         default:
             throw new IllegalStateException("unknown discretization scheme");
         }
     }
+
+    /** Discretization scheme for the expectation; matches C++ enum. */
+    public enum Discretization {MidPoint, Trapezodial, GaussLobatto}
 }

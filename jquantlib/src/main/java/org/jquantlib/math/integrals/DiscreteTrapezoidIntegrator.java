@@ -28,18 +28,16 @@ import org.jquantlib.math.Ops;
  * Fixed-grid trapezoidal-rule integrator on a uniform grid.
  *
  * <p>Java port of v1.42.1
- * {@code ql/math/integrals/discreteintegrals.{hpp,cpp} ::
- * DiscreteTrapezoidIntegrator}. Samples the integrand at
- * {@code n = maxEvaluations - 1} equally-spaced sub-intervals between {@code a}
- * and {@code b}, then applies the composite trapezoidal rule
+ * {@code ql/math/integrals/discreteintegrals.{hpp,cpp} :: DiscreteTrapezoidIntegrator}. Samples the integrand at
+ * {@code n = maxEvaluations - 1} equally-spaced sub-intervals between {@code a} and {@code b}, then applies the
+ * composite trapezoidal rule
  * <pre>
  *   d * ( 0.5*f(a) + f(a+d) + f(a+2d) + ... + f(a+(n-1)d) + 0.5*f(b) )
  * </pre>
  * where {@code d = (b - a)/n}.
  *
  * <p>Unlike {@link TrapezoidIntegral} this is a fixed-budget integrator: it
- * always consumes exactly {@code maxEvaluations} integrand evaluations,
- * regardless of {@code absoluteAccuracy}. Used by
+ * always consumes exactly {@code maxEvaluations} integrand evaluations, regardless of {@code absoluteAccuracy}. Used by
  * {@code AnalyticHestonEngine.Integration.discreteTrapezoid(n)} to mirror C++.
  *
  * <p>Reference: Levy, D. <i>Numerical Integration</i>
@@ -50,8 +48,7 @@ import org.jquantlib.math.Ops;
 public class DiscreteTrapezoidIntegrator extends Integrator {
 
     /**
-     * @param evaluations  number of integrand samples (equals
-     *                     {@link #maxEvaluations()}); must be {@code >= 2}.
+     * @param evaluations number of integrand samples (equals {@link #maxEvaluations()}); must be {@code >= 2}.
      */
     public DiscreteTrapezoidIntegrator(final int evaluations) {
         // C++ passes Null<Real>() as absoluteAccuracy. The Java Integrator
@@ -70,7 +67,7 @@ public class DiscreteTrapezoidIntegrator extends Integrator {
 
         double sum = f.op(a) * 0.5;
 
-        for (int i = 0; i < n - 1; ++i) {
+        for ( int i = 0; i < n - 1; ++i ) {
             a += d;
             sum += f.op(a);
         }

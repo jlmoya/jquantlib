@@ -40,8 +40,7 @@ import org.jquantlib.termstructures.Compounding;
 import org.jquantlib.time.Frequency;
 
 /**
- * Analytic engine for complex chooser option (Rubinstein 1991 closed-form,
- * from Haug "Option Pricing Formulas").
+ * Analytic engine for complex chooser option (Rubinstein 1991 closed-form, from Haug "Option Pricing Formulas").
  * <p>
  * Mirrors C++ QuantLib v1.42.1 {@code AnalyticComplexChooserEngine} in
  * {@code ql/pricingengines/exotic/analyticcomplexchooserengine.{hpp,cpp}}.
@@ -96,25 +95,22 @@ public class AnalyticComplexChooserEngine extends OneAssetOption.EngineImpl {
         // NOTE: mirrors C++ reference exactly - C++ reuses the last-assigned `v`
         // (volatility(Tp)) for both Bivar(rho1)(d2, y1 - v*sqrt(Tc)) and
         // Bivar(rho2)(-d2, -y2 + v*sqrt(Tp)). Replicated here for parity.
-        double complexChooser = S * Math.exp((b - r1) * Tc)
-                * new BivariateCumulativeNormalDistributionDr78(rho1).op(d1, y1)
-                - Xc * Math.exp(-r1 * Tc)
-                * new BivariateCumulativeNormalDistributionDr78(rho1)
-                        .op(d2, y1 - v * Math.sqrt(Tc));
+        double complexChooser =
+                S * Math.exp((b - r1) * Tc) * new BivariateCumulativeNormalDistributionDr78(rho1).op(d1, y1)
+                        - Xc * Math.exp(-r1 * Tc) * new BivariateCumulativeNormalDistributionDr78(rho1).op(d2,
+                        y1 - v * Math.sqrt(Tc));
 
         b = riskFreeRate(T + Tp) - dividendYield(T + Tp);
         r1 = riskFreeRate(T + Tp);
-        complexChooser -= S * Math.exp((b - r1) * Tp)
-                * new BivariateCumulativeNormalDistributionDr78(rho2).op(-d1, -y2);
-        complexChooser += Xp * Math.exp(-r1 * Tp)
-                * new BivariateCumulativeNormalDistributionDr78(rho2)
-                        .op(-d2, -y2 + v * Math.sqrt(Tp));
+        complexChooser -=
+                S * Math.exp((b - r1) * Tp) * new BivariateCumulativeNormalDistributionDr78(rho2).op(-d1, -y2);
+        complexChooser += Xp * Math.exp(-r1 * Tp) * new BivariateCumulativeNormalDistributionDr78(rho2).op(-d2,
+                -y2 + v * Math.sqrt(Tp));
 
         r.value = complexChooser;
     }
 
-    private BlackScholesCalculator bsCalculator(final double spot,
-                                                final Option.Type optionType) {
+    private BlackScholesCalculator bsCalculator(final double spot, final Option.Type optionType) {
         final double vol;
         final double growth;
         final double discount;
@@ -122,7 +118,7 @@ public class AnalyticComplexChooserEngine extends OneAssetOption.EngineImpl {
         final double t;
         final PlainVanillaPayoff vanillaPayoff;
 
-        if (optionType == Option.Type.Call) {
+        if ( optionType == Option.Type.Call ) {
             t = callMaturity() - 2.0 * T;
             vanillaPayoff = new PlainVanillaPayoff(Option.Type.Call, strike(Option.Type.Call));
         } else {
@@ -153,7 +149,7 @@ public class AnalyticComplexChooserEngine extends OneAssetOption.EngineImpl {
         final double epsilon = 0.001;
 
         // Newton-Raphson process
-        while (Math.abs(yi) > epsilon) {
+        while ( Math.abs(yi) > epsilon ) {
             Sv = Sv - yi / di;
 
             bs = bsCalculator(Sv, Option.Type.Call);
@@ -171,7 +167,7 @@ public class AnalyticComplexChooserEngine extends OneAssetOption.EngineImpl {
     }
 
     private double strike(final Option.Type optionType) {
-        if (optionType == Option.Type.Call) {
+        if ( optionType == Option.Type.Call ) {
             return a.strikeCall;
         }
         return a.strikePut;
@@ -194,8 +190,8 @@ public class AnalyticComplexChooserEngine extends OneAssetOption.EngineImpl {
     }
 
     private double dividendYield(final double t) {
-        return process.dividendYield().currentLink()
-                .zeroRate(t, Compounding.Continuous, Frequency.NoFrequency, false).rate();
+        return process.dividendYield().currentLink().zeroRate(t, Compounding.Continuous, Frequency.NoFrequency, false)
+                .rate();
     }
 
     private double dividendDiscount(final double t) {
@@ -203,8 +199,8 @@ public class AnalyticComplexChooserEngine extends OneAssetOption.EngineImpl {
     }
 
     private double riskFreeRate(final double t) {
-        return process.riskFreeRate().currentLink()
-                .zeroRate(t, Compounding.Continuous, Frequency.NoFrequency, false).rate();
+        return process.riskFreeRate().currentLink().zeroRate(t, Compounding.Continuous, Frequency.NoFrequency, false)
+                .rate();
     }
 
     private double riskFreeDiscount(final double t) {

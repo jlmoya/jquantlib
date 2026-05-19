@@ -69,51 +69,37 @@ import org.jquantlib.time.Frequency;
  */
 public class HybridHestonHullWhiteProcess extends StochasticProcess {
 
-    public enum Discretization {
-        Euler,
-        BSMHullWhite
-    }
-
     private final HestonProcess hestonProcess_;
     private final HullWhiteForwardProcess hullWhiteProcess_;
     /** model is used to calculate P(t,T) in the numeraire. */
     private final HullWhite hullWhiteModel_;
-
     private final double corrEquityShortRate_;
     private final Discretization discretization_;
     private final double maxRho_;
     private final double T_;
     private double endDiscount_;
-
-    public HybridHestonHullWhiteProcess(
-            final HestonProcess hestonProcess,
-            final HullWhiteForwardProcess hullWhiteProcess,
-            final double corrEquityShortRate) {
+    public HybridHestonHullWhiteProcess(final HestonProcess hestonProcess,
+            final HullWhiteForwardProcess hullWhiteProcess, final double corrEquityShortRate) {
         this(hestonProcess, hullWhiteProcess, corrEquityShortRate, Discretization.BSMHullWhite);
     }
 
-    public HybridHestonHullWhiteProcess(
-            final HestonProcess hestonProcess,
-            final HullWhiteForwardProcess hullWhiteProcess,
-            final double corrEquityShortRate,
+    public HybridHestonHullWhiteProcess(final HestonProcess hestonProcess,
+            final HullWhiteForwardProcess hullWhiteProcess, final double corrEquityShortRate,
             final Discretization discretization) {
-        this.hestonProcess_      = hestonProcess;
-        this.hullWhiteProcess_   = hullWhiteProcess;
-        this.hullWhiteModel_     = new HullWhite(hestonProcess.riskFreeRate(),
-                                                  hullWhiteProcess.a(),
-                                                  hullWhiteProcess.sigma());
+        this.hestonProcess_ = hestonProcess;
+        this.hullWhiteProcess_ = hullWhiteProcess;
+        this.hullWhiteModel_ = new HullWhite(hestonProcess.riskFreeRate(), hullWhiteProcess.a(),
+                hullWhiteProcess.sigma());
         this.corrEquityShortRate_ = corrEquityShortRate;
-        this.discretization_     = discretization;
+        this.discretization_ = discretization;
         final double rho = hestonProcess.rho().currentLink().value();
-        this.maxRho_             = Math.sqrt(1.0 - rho * rho)
-                                    - Math.sqrt(Constants.QL_EPSILON);
-        this.T_                  = hullWhiteProcess.getForwardMeasureTime();
-        this.endDiscount_        = hestonProcess.riskFreeRate().currentLink().discount(T_);
+        this.maxRho_ = Math.sqrt(1.0 - rho * rho) - Math.sqrt(Constants.QL_EPSILON);
+        this.T_ = hullWhiteProcess.getForwardMeasureTime();
+        this.endDiscount_ = hestonProcess.riskFreeRate().currentLink().discount(T_);
 
         QL.require(corrEquityShortRate * corrEquityShortRate + rho * rho <= 1.0,
                 "correlation matrix is not positive definite");
-        QL.require(hullWhiteProcess.sigma() > 0.0,
-                "positive vol of Hull White process is required");
+        QL.require(hullWhiteProcess.sigma() > 0.0, "positive vol of Hull White process is required");
     }
 
     @Override
@@ -128,22 +114,16 @@ public class HybridHestonHullWhiteProcess extends StochasticProcess {
 
     @Override
     public Array initialValues() {
-        return new Array(new double[] {
-                hestonProcess_.s0().currentLink().value(),
-                hestonProcess_.v0().currentLink().value(),
-                hullWhiteProcess_.x0()
-        });
+        return new Array(
+                new double[] { hestonProcess_.s0().currentLink().value(), hestonProcess_.v0().currentLink().value(),
+                        hullWhiteProcess_.x0() });
     }
 
     @Override
     public Array drift(final double t, final Array x) {
         final Array x0 = new Array(new double[] { x.get(0), x.get(1) });
         final Array y0 = hestonProcess_.drift(t, x0);
-        return new Array(new double[] {
-                y0.get(0),
-                y0.get(1),
-                hullWhiteProcess_.drift(t, x.get(2))
-        });
+        return new Array(new double[] { y0.get(0), y0.get(1), hullWhiteProcess_.drift(t, x.get(2)) });
     }
 
     @Override
@@ -151,11 +131,7 @@ public class HybridHestonHullWhiteProcess extends StochasticProcess {
         final Array xt = new Array(new double[] { x0.get(0), x0.get(1) });
         final Array dxt = new Array(new double[] { dx.get(0), dx.get(1) });
         final Array yt = hestonProcess_.apply(xt, dxt);
-        return new Array(new double[] {
-                yt.get(0),
-                yt.get(1),
-                hullWhiteProcess_.apply(x0.get(2), dx.get(2))
-        });
+        return new Array(new double[] { yt.get(0), yt.get(1), hullWhiteProcess_.apply(x0.get(2), dx.get(2)) });
     }
 
     @Override
@@ -163,35 +139,38 @@ public class HybridHestonHullWhiteProcess extends StochasticProcess {
         final Matrix retVal = new Matrix(3, 3);
         final Array xt = new Array(new double[] { x.get(0), x.get(1) });
         final Matrix m = hestonProcess_.diffusion(t, xt);
-        retVal.set(0, 0, m.get(0, 0)); retVal.set(0, 1, 0.0);          retVal.set(0, 2, 0.0);
-        retVal.set(1, 0, m.get(1, 0)); retVal.set(1, 1, m.get(1, 1));  retVal.set(1, 2, 0.0);
+        retVal.set(0, 0, m.get(0, 0));
+        retVal.set(0, 1, 0.0);
+        retVal.set(0, 2, 0.0);
+        retVal.set(1, 0, m.get(1, 0));
+        retVal.set(1, 1, m.get(1, 1));
+        retVal.set(1, 2, 0.0);
 
         final double sigma = hullWhiteProcess_.sigma();
         retVal.set(2, 0, corrEquityShortRate_ * sigma);
         retVal.set(2, 1, -retVal.get(2, 0) * retVal.get(1, 0) / retVal.get(1, 1));
-        retVal.set(2, 2, Math.sqrt(sigma * sigma
-                - retVal.get(2, 1) * retVal.get(2, 1)
-                - retVal.get(2, 0) * retVal.get(2, 0)));
+        retVal.set(2, 2,
+                Math.sqrt(sigma * sigma - retVal.get(2, 1) * retVal.get(2, 1) - retVal.get(2, 0) * retVal.get(2, 0)));
         return retVal;
     }
 
     @Override
     public Array evolve(final double t0, final Array x0, final double dt, final Array dw) {
-        final double r        = x0.get(2);
-        final double a        = hullWhiteProcess_.a();
-        final double sigma    = hullWhiteProcess_.sigma();
-        final double rho      = corrEquityShortRate_;
-        final double xi       = hestonProcess_.rho().currentLink().value();
-        final double eta      = (x0.get(1) > 0.0) ? Math.sqrt(x0.get(1)) : 0.0;
-        final double s        = t0;
-        final double t        = t0 + dt;
-        final double T        = T_;
+        final double r = x0.get(2);
+        final double a = hullWhiteProcess_.a();
+        final double sigma = hullWhiteProcess_.sigma();
+        final double rho = corrEquityShortRate_;
+        final double xi = hestonProcess_.rho().currentLink().value();
+        final double eta = (x0.get(1) > 0.0) ? Math.sqrt(x0.get(1)) : 0.0;
+        final double s = t0;
+        final double t = t0 + dt;
+        final double T = T_;
         final double dy = hestonProcess_.dividendYield().currentLink()
                 .forwardRate(s, t, Compounding.Continuous, Frequency.NoFrequency).rate();
 
         final double df = Math.log(
-                hestonProcess_.riskFreeRate().currentLink().discount(t)
-                / hestonProcess_.riskFreeRate().currentLink().discount(s));
+                hestonProcess_.riskFreeRate().currentLink().discount(t) / hestonProcess_.riskFreeRate().currentLink()
+                        .discount(s));
 
         final double eaT = Math.exp(-a * T);
         final double eat = Math.exp(-a * t);
@@ -202,12 +181,11 @@ public class HybridHestonHullWhiteProcess extends StochasticProcess {
         final double m1 = -(dy + 0.5 * eta * eta) * dt - df;
         final double m2 = -rho * sigma * eta / a * (dt - 1.0 / a * eaT * (iat - ias));
         final double m3 = (r - hullWhiteProcess_.alpha(s)) * hullWhiteProcess_.B(s, t);
-        final double m4 = sigma * sigma / (2.0 * a * a)
-                * (dt + 2.0 / a * (eat - eas)
-                        - 1.0 / (2.0 * a) * (eat * eat - eas * eas));
-        final double m5 = -sigma * sigma / (a * a)
-                * (dt - 1.0 / a * (1.0 - eat * ias)
-                        - 1.0 / (2.0 * a) * eaT * (iat - 2.0 * ias + eat * ias * ias));
+        final double m4 = sigma * sigma / (2.0 * a * a) * (dt + 2.0 / a * (eat - eas) - 1.0 / (2.0 * a) * (eat * eat
+                - eas * eas));
+        final double m5 =
+                -sigma * sigma / (a * a) * (dt - 1.0 / a * (1.0 - eat * ias) - 1.0 / (2.0 * a) * eaT * (iat - 2.0 * ias
+                        + eat * ias * ias));
 
         final double mu = m1 + m2 + m3 + m4 + m5;
 
@@ -218,43 +196,34 @@ public class HybridHestonHullWhiteProcess extends StochasticProcess {
         final double theta = hestonProcess_.theta().currentLink().value();
         final double nu = kappa * (theta - eta * eta);
 
-        retVal.set(1, x0.get(1) + nu * dt
-                + eta2 * Math.sqrt(dt)
-                * (xi * dw.get(0) + Math.sqrt(1.0 - xi * xi) * dw.get(1)));
+        retVal.set(1,
+                x0.get(1) + nu * dt + eta2 * Math.sqrt(dt) * (xi * dw.get(0) + Math.sqrt(1.0 - xi * xi) * dw.get(1)));
 
-        if (discretization_ == Discretization.BSMHullWhite) {
-            final double v1 = eta * eta * dt
-                    + sigma * sigma / (a * a)
-                    * (dt - 2.0 / a * (1.0 - eat * ias)
-                            + 1.0 / (2.0 * a) * (1.0 - eat * eat * ias * ias))
-                    + 2.0 * sigma * eta / a * rho
-                    * (dt - 1.0 / a * (1.0 - eat * ias));
+        if ( discretization_ == Discretization.BSMHullWhite ) {
+            final double v1 =
+                    eta * eta * dt + sigma * sigma / (a * a) * (dt - 2.0 / a * (1.0 - eat * ias) + 1.0 / (2.0 * a) * (
+                            1.0 - eat * eat * ias * ias)) + 2.0 * sigma * eta / a * rho * (dt - 1.0 / a * (1.0
+                            - eat * ias));
             final double v2 = hullWhiteProcess_.variance(t0, r, dt);
-            final double v12 = (1.0 - eat * ias)
-                    * (sigma * eta / a * rho + sigma * sigma / (a * a))
-                    - sigma * sigma / (2.0 * a * a)
-                    * (1.0 - eat * eat * ias * ias);
+            final double v12 = (1.0 - eat * ias) * (sigma * eta / a * rho + sigma * sigma / (a * a))
+                    - sigma * sigma / (2.0 * a * a) * (1.0 - eat * eat * ias * ias);
 
             QL.require(v1 > 0.0 && v2 > 0.0, "zero or negative variance given");
 
             // terminal rho must be between -maxRho and +maxRho
-            final double rhoT = Math.min(maxRho_,
-                    Math.max(-maxRho_, v12 / Math.sqrt(v1 * v2)));
-            QL.require(rhoT <= 1.0 && rhoT >= -1.0
-                    && 1.0 - rhoT * rhoT / (1.0 - xi * xi) >= 0.0,
+            final double rhoT = Math.min(maxRho_, Math.max(-maxRho_, v12 / Math.sqrt(v1 * v2)));
+            QL.require(rhoT <= 1.0 && rhoT >= -1.0 && 1.0 - rhoT * rhoT / (1.0 - xi * xi) >= 0.0,
                     "invalid terminal correlation");
 
             final double dw0 = dw.get(0);
-            final double dw2 = rhoT * dw.get(0)
-                    - rhoT * xi / Math.sqrt(1.0 - xi * xi) * dw.get(1)
+            final double dw2 = rhoT * dw.get(0) - rhoT * xi / Math.sqrt(1.0 - xi * xi) * dw.get(1)
                     + Math.sqrt(1.0 - rhoT * rhoT / (1.0 - xi * xi)) * dw.get(2);
 
             retVal.set(2, hullWhiteProcess_.evolve(t0, r, dt, dw2));
             final double vol = Math.sqrt(v1) * dw0;
             retVal.set(0, x0.get(0) * Math.exp(mu + vol));
-        } else if (discretization_ == Discretization.Euler) {
-            final double dw2 = rho * dw.get(0)
-                    - rho * xi / Math.sqrt(1.0 - xi * xi) * dw.get(1)
+        } else if ( discretization_ == Discretization.Euler ) {
+            final double dw2 = rho * dw.get(0) - rho * xi / Math.sqrt(1.0 - xi * xi) * dw.get(1)
                     + Math.sqrt(1.0 - rho * rho / (1.0 - xi * xi)) * dw.get(2);
 
             retVal.set(2, hullWhiteProcess_.evolve(t0, r, dt, dw2));
@@ -268,9 +237,8 @@ public class HybridHestonHullWhiteProcess extends StochasticProcess {
     }
 
     /**
-     * Numeraire ratio P(t,T,r)/P(0,T): hybrid-process pricers divide
-     * payoff by this factor to discount under the {@code T}-forward
-     * measure.
+     * Numeraire ratio P(t,T,r)/P(0,T): hybrid-process pricers divide payoff by this factor to discount under the
+     * {@code T}-forward measure.
      */
     public double numeraire(final double t, final Array x) {
         return hullWhiteModel_.discountBond(t, T_, x.get(2)) / endDiscount_;
@@ -301,5 +269,9 @@ public class HybridHestonHullWhiteProcess extends StochasticProcess {
     public void update() {
         endDiscount_ = hestonProcess_.riskFreeRate().currentLink().discount(T_);
         super.update();
+    }
+
+    public enum Discretization {
+        Euler, BSMHullWhite
     }
 }

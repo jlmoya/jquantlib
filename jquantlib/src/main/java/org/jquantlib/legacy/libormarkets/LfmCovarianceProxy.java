@@ -17,8 +17,7 @@ import org.jquantlib.math.matrixutilities.Matrix;
 import org.jquantlib.processes.LfmCovarianceParameterization;
 
 /**
- * Covariance proxy that combines an {@link LmVolatilityModel} and an
- * {@link LmCorrelationModel} into a single
+ * Covariance proxy that combines an {@link LmVolatilityModel} and an {@link LmCorrelationModel} into a single
  * {@link LfmCovarianceParameterization}.
  *
  * <p>Java port of QuantLib v1.42.1
@@ -31,8 +30,7 @@ public class LfmCovarianceProxy extends LfmCovarianceParameterization {
 
     public LfmCovarianceProxy(final LmVolatilityModel volaModel, final LmCorrelationModel corrModel) {
         super(corrModel.size(), corrModel.factors());
-        QL.require(volaModel.size() == corrModel.size(),
-                "different size for the volatility and correlation models");
+        QL.require(volaModel.size() == corrModel.size(), "different size for the volatility and correlation models");
         this.volaModel_ = volaModel;
         this.corrModel_ = corrModel;
     }
@@ -50,7 +48,7 @@ public class LfmCovarianceProxy extends LfmCovarianceParameterization {
         final Matrix pca = corrModel_.pseudoSqrt(t, x);
         final Array vol = volaModel_.volatility(t, x);
         // Multiply each row i by vol[i] in place; rangeRow returns a view.
-        for (int i = 0; i < size_; ++i) {
+        for ( int i = 0; i < size_; ++i ) {
             pca.rangeRow(i).mulAssign(vol.get(i));
         }
         return pca;
@@ -62,8 +60,8 @@ public class LfmCovarianceProxy extends LfmCovarianceParameterization {
         final Matrix correlation = corrModel_.correlation(t, x);
 
         final Matrix tmp = new Matrix(size_, size_);
-        for (int i = 0; i < size_; ++i) {
-            for (int j = 0; j < size_; ++j) {
+        for ( int i = 0; i < size_; ++i ) {
+            for ( int j = 0; j < size_; ++j ) {
                 tmp.set(i, j, volatility.get(i) * correlation.get(i, j) * volatility.get(j));
             }
         }
@@ -71,12 +69,11 @@ public class LfmCovarianceProxy extends LfmCovarianceParameterization {
     }
 
     public double integratedCovariance(final int i, final int j, final double t, final Array x) {
-        if (corrModel_.isTimeIndependent()) {
+        if ( corrModel_.isTimeIndependent() ) {
             try {
                 // if all objects support these methods, that's by far the fastest way
-                return corrModel_.correlation(i, j, 0.0, x)
-                        * volaModel_.integratedVariance(j, i, t, x);
-            } catch (final Exception ex) {
+                return corrModel_.correlation(i, j, 0.0, x) * volaModel_.integratedVariance(j, i, t, x);
+            } catch ( final Exception ex ) {
                 // fall through to numerical integration
             }
         }
@@ -91,7 +88,7 @@ public class LfmCovarianceProxy extends LfmCovarianceParameterization {
         // the 64 chunks. The previous single-instance reuse made the
         // 10000-eval budget exhaust on the LFM cap-pricing path which
         // requires up to 9 fixings × 64 sub-intervals × ~30 evals each.
-        for (int k = 0; k < 64; ++k) {
+        for ( int k = 0; k < 64; ++k ) {
             final GaussKronrodAdaptive integrator = new GaussKronrodAdaptive(1e-10, 10000);
             tmp += integrator.op(helper, k * t / 64.0, (k + 1) * t / 64.0);
         }
@@ -118,7 +115,7 @@ public class LfmCovarianceProxy extends LfmCovarianceParameterization {
         public double op(final double t) {
             final double v1;
             final double v2;
-            if (i_ == j_) {
+            if ( i_ == j_ ) {
                 v1 = v2 = volaModel_.volatility(i_, t);
             } else {
                 v1 = volaModel_.volatility(i_, t);

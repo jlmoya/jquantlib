@@ -40,44 +40,48 @@ When applicable, the original copyright notice follows this notice.
 
 package org.jquantlib.termstructures;
 
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.SimpleQuote;
 import org.jquantlib.time.Date;
-import org.jquantlib.util.DefaultObservable;
-import org.jquantlib.util.Observable;
-import org.jquantlib.util.Observer;
-import org.jquantlib.util.PolymorphicVisitable;
-import org.jquantlib.util.PolymorphicVisitor;
-import org.jquantlib.util.Visitor;
+import org.jquantlib.util.*;
+
+import java.util.List;
 
 /**
  * Base helper class for bootstrapping
  * <p>
  * This class provides an abstraction for the instruments used to bootstrap a term structure.
  * <p>
- * It is advised that a bootstrap helper for an instrument contains an instance of the actual
- * instrument class to ensure consistancy between the algorithms used during bootstrapping and later
- * instrument pricing. This is not yet fully enforced in the available rate helpers.
+ * It is advised that a bootstrap helper for an instrument contains an instance of the actual instrument class to ensure
+ * consistancy between the algorithms used during bootstrapping and later instrument pricing. This is not yet fully
+ * enforced in the available rate helpers.
  */
-public abstract class BootstrapHelper <TS extends TermStructure> implements Observer, Observable, PolymorphicVisitable {
+public abstract class BootstrapHelper< TS extends TermStructure >
+        implements Observer, Observable, PolymorphicVisitable {
 
-    protected Handle <Quote> quote;
+    /**
+     * Implements multiple inheritance via delegate pattern to an inner class
+     *
+     * @see Observable
+     */
+    // Phase 2x A.4: WeakReferenceObservable to break cumulative
+    // observer-list bleed across tests.
+    private final Observable delegatedObservable = new org.jquantlib.util.WeakReferenceObservable(this);
+    protected Handle< Quote > quote;
     protected TS termStructure;
     protected Date earliestDate;
     protected Date latestDate;
 
-    public BootstrapHelper(final Handle<Quote> quote) {
+    public BootstrapHelper(final Handle< Quote > quote) {
         this.quote = quote;
         this.quote.addObserver(this);
     }
 
     public BootstrapHelper(final double quote) {
-        this.quote = new Handle<Quote>(new SimpleQuote(quote));
+        this.quote = new Handle< Quote >(new SimpleQuote(quote));
     }
 
     public abstract double impliedQuote();
@@ -99,32 +103,21 @@ public abstract class BootstrapHelper <TS extends TermStructure> implements Obse
         return this.earliestDate;
     }
 
-    public Date latestDate() {
-        return this.latestDate;
-    }
-
-
     //
     // implements Observer
     //
 
-    public void update() {
-        this.notifyObservers();
+    public Date latestDate() {
+        return this.latestDate;
     }
-
 
     //
     // implements Observable
     //
 
-    /**
-     * Implements multiple inheritance via delegate pattern to an inner class
-     *
-     * @see Observable
-     */
-    // Phase 2x A.4: WeakReferenceObservable to break cumulative
-    // observer-list bleed across tests.
-    private final Observable delegatedObservable = new org.jquantlib.util.WeakReferenceObservable(this);
+    public void update() {
+        this.notifyObservers();
+    }
 
     @Override
     public final void addObserver(final Observer observer) {
@@ -157,10 +150,9 @@ public abstract class BootstrapHelper <TS extends TermStructure> implements Obse
     }
 
     @Override
-    public final List<Observer> getObservers() {
+    public final List< Observer > getObservers() {
         return delegatedObservable.getObservers();
     }
-
 
     //
     // implements PolymorphicVisitable
@@ -168,8 +160,8 @@ public abstract class BootstrapHelper <TS extends TermStructure> implements Obse
 
     @Override
     public void accept(final PolymorphicVisitor pv) {
-        final Visitor<BootstrapHelper> v = (pv!=null) ? pv.visitor(this.getClass()) : null;
-        if (v != null) {
+        final Visitor< BootstrapHelper > v = (pv != null) ? pv.visitor(this.getClass()) : null;
+        if ( v != null ) {
             v.visit(this);
         } else {
             throw new LibraryException("not a bootstrap helper visitor");//TODO: message

@@ -35,8 +35,8 @@ import org.jquantlib.pricingengines.PricingEngine;
  *
  * <p>Phase 5e.5b-CFC-d-102 Java port of v1.42.1
  * {@code ql/instruments/quantobarrieroption.{hpp,cpp}}. The C++ template
- * {@code QuantoOptionResults<BarrierOption::results>} is collapsed to a
- * concrete Java class extending {@link BarrierOption.ResultsImpl}.
+ * {@code QuantoOptionResults<BarrierOption::results>} is collapsed to a concrete Java class extending
+ * {@link BarrierOption.ResultsImpl}.
  *
  * <p>Provides three extra quanto Greeks on top of the standard barrier
  * sensitivities: {@link #qvega()}, {@link #qrho()}, {@link #qlambda()}.
@@ -49,12 +49,8 @@ public class QuantoBarrierOption extends BarrierOption {
     private double qrho_;
     private double qlambda_;
 
-    public QuantoBarrierOption(
-            final BarrierType barrierType,
-            final double barrier,
-            final double rebate,
-            final StrikedTypePayoff payoff,
-            final Exercise exercise) {
+    public QuantoBarrierOption(final BarrierType barrierType, final double barrier, final double rebate,
+            final StrikedTypePayoff payoff, final Exercise exercise) {
         super(barrierType, barrier, rebate, payoff, exercise);
     }
 
@@ -88,8 +84,8 @@ public class QuantoBarrierOption extends BarrierOption {
         QL.require(r instanceof QuantoBarrierOption.ResultsImpl,
                 "no quanto barrier results returned from pricing engine");
         final QuantoBarrierOption.ResultsImpl qr = (QuantoBarrierOption.ResultsImpl) r;
-        qrho_    = qr.qrho;
-        qvega_   = qr.qvega;
+        qrho_ = qr.qrho;
+        qvega_ = qr.qvega;
         qlambda_ = qr.qlambda;
     }
 
@@ -98,17 +94,17 @@ public class QuantoBarrierOption extends BarrierOption {
     //
 
     /** Marker interface — extra fields in {@link ResultsImpl}. */
-    public interface Results extends BarrierOption.Results { /* marker */ }
+    public interface Results extends BarrierOption.Results { /* marker */
+    }
 
     /**
-     * Quanto-augmented barrier results: extends BarrierOption.ResultsImpl
-     * with qvega / qrho / qlambda quanto-specific Greeks.
+     * Quanto-augmented barrier results: extends BarrierOption.ResultsImpl with qvega / qrho / qlambda quanto-specific
+     * Greeks.
      */
-    public static class ResultsImpl extends BarrierOption.ResultsImpl
-            implements QuantoBarrierOption.Results {
+    public static class ResultsImpl extends BarrierOption.ResultsImpl implements QuantoBarrierOption.Results {
 
-        public double qvega   = Constants.NULL_REAL;
-        public double qrho    = Constants.NULL_REAL;
+        public double qvega = Constants.NULL_REAL;
+        public double qrho = Constants.NULL_REAL;
         public double qlambda = Constants.NULL_REAL;
 
         @Override
@@ -120,15 +116,13 @@ public class QuantoBarrierOption extends BarrierOption {
 
     /**
      * Engine base class for Quanto barrier options. Mirrors C++
-     * {@code GenericEngine<QuantoBarrierOption::arguments,
-     *                       QuantoBarrierOption::results>}.
+     * {@code GenericEngine<QuantoBarrierOption::arguments, QuantoBarrierOption::results>}.
      */
     public abstract static class EngineImpl
-            extends GenericEngine<BarrierOption.Arguments, QuantoBarrierOption.Results> {
+            extends GenericEngine< BarrierOption.Arguments, QuantoBarrierOption.Results > {
 
         public EngineImpl() {
-            super(new BarrierOption.ArgumentsImpl(),
-                  new QuantoBarrierOption.ResultsImpl());
+            super(new BarrierOption.ArgumentsImpl(), new QuantoBarrierOption.ResultsImpl());
         }
     }
 }

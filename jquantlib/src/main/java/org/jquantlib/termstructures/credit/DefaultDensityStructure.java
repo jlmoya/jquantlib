@@ -30,8 +30,6 @@
 
 package org.jquantlib.termstructures.credit;
 
-import java.util.List;
-
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.lang.annotation.Natural;
 import org.jquantlib.lang.annotation.Time;
@@ -42,21 +40,19 @@ import org.jquantlib.termstructures.DefaultProbabilityTermStructure;
 import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
 
+import java.util.List;
+
 /**
- * Default-density term structure — Java port of QuantLib v1.42.1
- * {@code DefaultDensityStructure}
+ * Default-density term structure — Java port of QuantLib v1.42.1 {@code DefaultDensityStructure}
  * ({@code ql/termstructures/credit/defaultdensitystructure.{hpp,cpp}}).
  *
  * <p>Abstract adapter on {@link DefaultProbabilityTermStructure}; subclasses
- * implement {@link #defaultDensityImpl(double)} and survival probability /
- * default density are derived.
+ * implement {@link #defaultDensityImpl(double)} and survival probability / default density are derived.
  *
  * <p>The C++ default {@code survivalProbabilityImpl(Time)} uses
- * Gauss-Chebyshev quadrature
- * {@code S(t) = max(1 - integral_{0}^{t} p(tau) dtau, 0)}; the JQuantLib
- * port currently throws on the non-overridden numerical-fallback path —
- * the ported subclasses (e.g. {@code InterpolatedDefaultDensityCurve})
- * supply closed-form overrides.
+ * Gauss-Chebyshev quadrature {@code S(t) = max(1 - integral_{0}^{t} p(tau) dtau, 0)}; the JQuantLib port currently
+ * throws on the non-overridden numerical-fallback path — the ported subclasses (e.g.
+ * {@code InterpolatedDefaultDensityCurve}) supply closed-form overrides.
  */
 public abstract class DefaultDensityStructure extends DefaultProbabilityTermStructure {
 
@@ -64,42 +60,26 @@ public abstract class DefaultDensityStructure extends DefaultProbabilityTermStru
         super(dayCounter);
     }
 
-    public DefaultDensityStructure(
-            final DayCounter dayCounter,
-            final List<Handle<Quote>> jumps,
-            final List<Date> jumpDates) {
+    public DefaultDensityStructure(final DayCounter dayCounter, final List< Handle< Quote > > jumps,
+            final List< Date > jumpDates) {
         super(dayCounter, jumps, jumpDates);
     }
 
-    public DefaultDensityStructure(
-            final Date referenceDate,
-            final Calendar cal,
-            final DayCounter dayCounter) {
+    public DefaultDensityStructure(final Date referenceDate, final Calendar cal, final DayCounter dayCounter) {
         super(referenceDate, cal, dayCounter);
     }
 
-    public DefaultDensityStructure(
-            final Date referenceDate,
-            final Calendar cal,
-            final DayCounter dayCounter,
-            final List<Handle<Quote>> jumps,
-            final List<Date> jumpDates) {
+    public DefaultDensityStructure(final Date referenceDate, final Calendar cal, final DayCounter dayCounter,
+            final List< Handle< Quote > > jumps, final List< Date > jumpDates) {
         super(referenceDate, cal, dayCounter, jumps, jumpDates);
     }
 
-    public DefaultDensityStructure(
-            final @Natural int settlementDays,
-            final Calendar cal,
-            final DayCounter dayCounter) {
+    public DefaultDensityStructure(final @Natural int settlementDays, final Calendar cal, final DayCounter dayCounter) {
         super(settlementDays, cal, dayCounter);
     }
 
-    public DefaultDensityStructure(
-            final @Natural int settlementDays,
-            final Calendar cal,
-            final DayCounter dayCounter,
-            final List<Handle<Quote>> jumps,
-            final List<Date> jumpDates) {
+    public DefaultDensityStructure(final @Natural int settlementDays, final Calendar cal, final DayCounter dayCounter,
+            final List< Handle< Quote > > jumps, final List< Date > jumpDates) {
         super(settlementDays, cal, dayCounter, jumps, jumpDates);
     }
 
@@ -113,14 +93,12 @@ public abstract class DefaultDensityStructure extends DefaultProbabilityTermStru
     }
 
     /**
-     * Default implementation: Gauss-Chebyshev quadrature in C++. The
-     * JQuantLib port requires subclasses to override; numerical fallback
-     * deferred until needed.
+     * Default implementation: Gauss-Chebyshev quadrature in C++. The JQuantLib port requires subclasses to override;
+     * numerical fallback deferred until needed.
      */
     @Override
     protected double survivalProbabilityImpl(final @Time double t) {
-        throw new LibraryException(
-                "default numerical survivalProbabilityImpl(Time) not yet ported; " +
-                "derived class must override (Gauss-Chebyshev fallback deferred)");
+        throw new LibraryException("default numerical survivalProbabilityImpl(Time) not yet ported; "
+                + "derived class must override (Gauss-Chebyshev fallback deferred)");
     }
 }

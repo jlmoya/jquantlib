@@ -19,13 +19,13 @@
 
 package org.jquantlib.experimental.commodities;
 
-import java.util.Map;
-
 import org.jquantlib.Settings;
 import org.jquantlib.currencies.Currency;
 import org.jquantlib.currencies.Money;
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.time.Date;
+
+import java.util.Map;
 
 /**
  * Energy futures contract.
@@ -39,12 +39,8 @@ public class EnergyFuture extends EnergyCommodity {
     private final CommodityUnitCost tradePrice_;
     private final CommodityIndex index_;
 
-    public EnergyFuture(final int buySell,
-                        final Quantity quantity,
-                        final CommodityUnitCost tradePrice,
-                        final CommodityIndex index,
-                        final CommodityType commodityType,
-                        final SecondaryCosts secondaryCosts) {
+    public EnergyFuture(final int buySell, final Quantity quantity, final CommodityUnitCost tradePrice,
+            final CommodityIndex index, final CommodityType commodityType, final SecondaryCosts secondaryCosts) {
         super(commodityType, secondaryCosts);
         this.buySell_ = buySell;
         this.quantity_ = quantity;
@@ -88,62 +84,49 @@ public class EnergyFuture extends EnergyCommodity {
 
         final Date evaluationDate = new Settings().evaluationDate();
         final Currency baseCurrency = CommoditySettings.getInstance().currency();
-        final UnitOfMeasure baseUnitOfMeasure =
-                CommoditySettings.getInstance().unitOfMeasure();
+        final UnitOfMeasure baseUnitOfMeasure = CommoditySettings.getInstance().unitOfMeasure();
 
         final double quantityUomConversionFactor =
-                calculateUomConversionFactor(quantity_.commodityType(),
-                        baseUnitOfMeasure, quantity_.unitOfMeasure())
+                calculateUomConversionFactor(quantity_.commodityType(), baseUnitOfMeasure, quantity_.unitOfMeasure())
                         * index_.lotQuantity();
-        final double indexUomConversionFactor =
-                calculateUomConversionFactor(index_.commodityType(),
-                        index_.unitOfMeasure(), baseUnitOfMeasure);
-        final double tradePriceUomConversionFactor =
-                calculateUomConversionFactor(quantity_.commodityType(),
-                        tradePrice_.unitOfMeasure(), baseUnitOfMeasure);
+        final double indexUomConversionFactor = calculateUomConversionFactor(index_.commodityType(),
+                index_.unitOfMeasure(), baseUnitOfMeasure);
+        final double tradePriceUomConversionFactor = calculateUomConversionFactor(quantity_.commodityType(),
+                tradePrice_.unitOfMeasure(), baseUnitOfMeasure);
 
-        final double tradePriceFxConversionFactor =
-                calculateFxConversionFactor(tradePrice_.amount().currency(),
-                        baseCurrency, evaluationDate);
-        final double indexPriceFxConversionFactor =
-                calculateFxConversionFactor(index_.currency(),
-                        baseCurrency, evaluationDate);
+        final double tradePriceFxConversionFactor = calculateFxConversionFactor(tradePrice_.amount().currency(),
+                baseCurrency, evaluationDate);
+        final double indexPriceFxConversionFactor = calculateFxConversionFactor(index_.currency(), baseCurrency,
+                evaluationDate);
 
         // Read the index quote (or fall back to forward price if quotes are stale).
         double quoteValue;
         final Date lastQuoteDate = index_.lastQuoteDate();
-        if (lastQuoteDate.ge(evaluationDate.sub(1))) {
+        if ( lastQuoteDate.ge(evaluationDate.sub(1)) ) {
             quoteValue = index_.fixing(evaluationDate, false);
         } else {
             quoteValue = index_.forwardPrice(evaluationDate);
             addPricingError(PricingError.Level.Warning,
-                    "curve [" + index_.name() + "] has stale quotes; "
-                            + "using forward price from ["
-                            + (index_.forwardCurve() != null
-                                    ? index_.forwardCurve().name() : "<no forward curve>")
-                            + "]");
+                    "curve [" + index_.name() + "] has stale quotes; " + "using forward price from [" + (
+                            index_.forwardCurve() != null ? index_.forwardCurve().name() : "<no forward curve>") + "]");
         }
-        if (Double.isNaN(quoteValue)) {
+        if ( Double.isNaN(quoteValue) ) {
             throw new LibraryException("missing quote for [" + index_.name() + "]");
         }
 
         final double tradePriceValue =
-                tradePrice_.amount().value() * tradePriceUomConversionFactor
-                        * tradePriceFxConversionFactor;
-        final double quotePriceValue =
-                quoteValue * indexUomConversionFactor * indexPriceFxConversionFactor;
+                tradePrice_.amount().value() * tradePriceUomConversionFactor * tradePriceFxConversionFactor;
+        final double quotePriceValue = quoteValue * indexUomConversionFactor * indexPriceFxConversionFactor;
 
         final double quantityAmount = quantity_.amount() * quantityUomConversionFactor;
 
-        final double delta = (((quotePriceValue - tradePriceValue) * quantityAmount)
-                * index_.lotQuantity()) * buySell_;
+        final double delta = (((quotePriceValue - tradePriceValue) * quantityAmount) * index_.lotQuantity()) * buySell_;
 
         this.NPV = delta;
 
         // Subtract secondary costs (cf. EnergyCommodity::calculateSecondaryCostAmounts).
-        calculateSecondaryCostAmounts(quantity_.commodityType(),
-                quantity_.amount(), evaluationDate);
-        for (final Map.Entry<String, Money> entry : secondaryCostAmounts_.entrySet()) {
+        calculateSecondaryCostAmounts(quantity_.commodityType(), quantity_.amount(), evaluationDate);
+        for ( final Map.Entry< String, Money > entry : secondaryCostAmounts_.entrySet() ) {
             this.NPV -= entry.getValue().value();
         }
     }

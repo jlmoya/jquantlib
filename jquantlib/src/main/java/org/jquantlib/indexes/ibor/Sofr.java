@@ -37,27 +37,22 @@ import org.jquantlib.time.calendars.UnitedStates;
  * Port of C++ QuantLib v1.42.1 {@code ql/indexes/ibor/sofr.hpp/cpp}.
  * <p>
  * <b>Divergence note:</b> C++ v1.42.1 uses
- * {@code UnitedStates(UnitedStates::SOFR)}; this Java port uses
- * {@code Market.GOVERNMENTBOND}. The SOFR market enum + {@code SofrImpl}
- * are also available in Java (Phase 5e.5b-CFC-d) but kept off the Sofr
- * index for now: GovernmentBond's Good Friday rule (full closure) matches
- * SOFR's behavior on the date set tested in v1.42.1's overnight pricing
- * test fixtures, and switching to SOFR exposes the missing NFP-carve-out
- * difference in GovernmentBond which would itself need closing first.
- *
- * @category indexes
+ * {@code UnitedStates(UnitedStates::SOFR)}; this Java port uses {@code Market.GOVERNMENTBOND}. The SOFR market enum +
+ * {@code SofrImpl} are also available in Java (Phase 5e.5b-CFC-d) but kept off the Sofr index for now: GovernmentBond's
+ * Good Friday rule (full closure) matches SOFR's behavior on the date set tested in v1.42.1's overnight pricing test
+ * fixtures, and switching to SOFR exposes the missing NFP-carve-out difference in GovernmentBond which would itself
+ * need closing first.
  *
  * @author JQuantLib migration team
+ * @category indexes
  */
 public class Sofr extends OvernightIndex {
 
-    public Sofr(final Handle<YieldTermStructure> h) {
-        super("SOFR", 0, new USDCurrency(),
-              new UnitedStates(UnitedStates.Market.GOVERNMENTBOND),
-              new Actual360(), h);
+    public Sofr(final Handle< YieldTermStructure > h) {
+        super("SOFR", 0, new USDCurrency(), new UnitedStates(UnitedStates.Market.GOVERNMENTBOND), new Actual360(), h);
     }
 
     public Sofr() {
-        this(new Handle<YieldTermStructure>());
+        this(new Handle< YieldTermStructure >());
     }
 }

@@ -33,12 +33,10 @@
 package org.jquantlib.termstructures.credit;
 
 /**
- * Bootstrap traits for default-probability curves — Java port of QuantLib
- * v1.42.1 {@code probabilitytraits.hpp}.
+ * Bootstrap traits for default-probability curves — Java port of QuantLib v1.42.1 {@code probabilitytraits.hpp}.
  *
  * <p>Three traits implementations mirror the three C++ structs
- * {@code SurvivalProbability}, {@code HazardRate}, {@code DefaultDensity}.
- * Each encodes:
+ * {@code SurvivalProbability}, {@code HazardRate}, {@code DefaultDensity}. Each encodes:
  * <ul>
  *   <li>initial-value seeding for the curve's first node,
  *   <li>per-iteration {@code guess(i)},
@@ -70,24 +68,48 @@ public final class ProbabilityTraits {
     // Survival-Probability traits — mirrors C++ struct SurvivalProbability.
     //
 
+    /**
+     * Common interface implemented by the three trait classes above. Mirrors the C++ template static-method shape,
+     * recast as Java instance methods.
+     */
+    public interface Traits {
+        double initialValue();
+
+        double guess(int i, double[] data, boolean validData, double[] times);
+
+        double minValueAfter(int i, double[] data, boolean validData, double[] times);
+
+        double maxValueAfter(int i, double[] data, boolean validData, double[] times);
+
+        void updateGuess(double[] data, double x, int i);
+
+        int maxIterations();
+    }
+
+    //
+    // Hazard-Rate traits — mirrors C++ struct HazardRate.
+    //
+
     public static final class SurvivalProbability implements Traits {
 
         @Override
-        public double initialValue() { return 1.0; }
+        public double initialValue() {
+            return 1.0;
+        }
 
         @Override
-        public double guess(final int i, final double[] data, final boolean validData,
-                            final double[] times) {
-            if (validData) return data[i];
-            if (i == 1) return 1.0 / (1.0 + AVG_HAZARD_RATE * 0.25);
+        public double guess(final int i, final double[] data, final boolean validData, final double[] times) {
+            if ( validData )
+                return data[i];
+            if ( i == 1 )
+                return 1.0 / (1.0 + AVG_HAZARD_RATE * 0.25);
             // Best fallback: use previous node's value (curve must monotone-decrease).
             return data[i - 1];
         }
 
         @Override
-        public double minValueAfter(final int i, final double[] data, final boolean validData,
-                                    final double[] times) {
-            if (validData) {
+        public double minValueAfter(final int i, final double[] data, final boolean validData, final double[] times) {
+            if ( validData ) {
                 return data[data.length - 1] / 2.0;
             }
             final double dt = times[i] - times[i - 1];
@@ -95,8 +117,7 @@ public final class ProbabilityTraits {
         }
 
         @Override
-        public double maxValueAfter(final int i, final double[] data, final boolean validData,
-                                    final double[] times) {
+        public double maxValueAfter(final int i, final double[] data, final boolean validData, final double[] times) {
             return data[i - 1];
         }
 
@@ -106,33 +127,38 @@ public final class ProbabilityTraits {
         }
 
         @Override
-        public int maxIterations() { return 50; }
+        public int maxIterations() {
+            return 50;
+        }
     }
 
     //
-    // Hazard-Rate traits — mirrors C++ struct HazardRate.
+    // Default-Density traits — mirrors C++ struct DefaultDensity.
     //
 
     public static final class HazardRate implements Traits {
 
         @Override
-        public double initialValue() { return AVG_HAZARD_RATE; }
+        public double initialValue() {
+            return AVG_HAZARD_RATE;
+        }
 
         @Override
-        public double guess(final int i, final double[] data, final boolean validData,
-                            final double[] times) {
-            if (validData) return data[i];
-            if (i == 1) return AVG_HAZARD_RATE;
+        public double guess(final int i, final double[] data, final boolean validData, final double[] times) {
+            if ( validData )
+                return data[i];
+            if ( i == 1 )
+                return AVG_HAZARD_RATE;
             return data[i - 1];
         }
 
         @Override
-        public double minValueAfter(final int i, final double[] data, final boolean validData,
-                                    final double[] times) {
-            if (validData) {
+        public double minValueAfter(final int i, final double[] data, final boolean validData, final double[] times) {
+            if ( validData ) {
                 double r = data[0];
-                for (int k = 1; k < data.length; ++k) {
-                    if (data[k] < r) r = data[k];
+                for ( int k = 1; k < data.length; ++k ) {
+                    if ( data[k] < r )
+                        r = data[k];
                 }
                 return r / 2.0;
             }
@@ -140,12 +166,12 @@ public final class ProbabilityTraits {
         }
 
         @Override
-        public double maxValueAfter(final int i, final double[] data, final boolean validData,
-                                    final double[] times) {
-            if (validData) {
+        public double maxValueAfter(final int i, final double[] data, final boolean validData, final double[] times) {
+            if ( validData ) {
                 double r = data[0];
-                for (int k = 1; k < data.length; ++k) {
-                    if (data[k] > r) r = data[k];
+                for ( int k = 1; k < data.length; ++k ) {
+                    if ( data[k] > r )
+                        r = data[k];
                 }
                 return r * 2.0;
             }
@@ -155,37 +181,39 @@ public final class ProbabilityTraits {
         @Override
         public void updateGuess(final double[] data, final double rate, final int i) {
             data[i] = rate;
-            if (i == 1) data[0] = rate;
+            if ( i == 1 )
+                data[0] = rate;
         }
 
         @Override
-        public int maxIterations() { return 30; }
+        public int maxIterations() {
+            return 30;
+        }
     }
-
-    //
-    // Default-Density traits — mirrors C++ struct DefaultDensity.
-    //
 
     public static final class DefaultDensity implements Traits {
 
         @Override
-        public double initialValue() { return AVG_HAZARD_RATE; }
+        public double initialValue() {
+            return AVG_HAZARD_RATE;
+        }
 
         @Override
-        public double guess(final int i, final double[] data, final boolean validData,
-                            final double[] times) {
-            if (validData) return data[i];
-            if (i == 1) return AVG_HAZARD_RATE;
+        public double guess(final int i, final double[] data, final boolean validData, final double[] times) {
+            if ( validData )
+                return data[i];
+            if ( i == 1 )
+                return AVG_HAZARD_RATE;
             return data[i - 1];
         }
 
         @Override
-        public double minValueAfter(final int i, final double[] data, final boolean validData,
-                                    final double[] times) {
-            if (validData) {
+        public double minValueAfter(final int i, final double[] data, final boolean validData, final double[] times) {
+            if ( validData ) {
                 double r = data[0];
-                for (int k = 1; k < data.length; ++k) {
-                    if (data[k] < r) r = data[k];
+                for ( int k = 1; k < data.length; ++k ) {
+                    if ( data[k] < r )
+                        r = data[k];
                 }
                 return r / 2.0;
             }
@@ -193,12 +221,12 @@ public final class ProbabilityTraits {
         }
 
         @Override
-        public double maxValueAfter(final int i, final double[] data, final boolean validData,
-                                    final double[] times) {
-            if (validData) {
+        public double maxValueAfter(final int i, final double[] data, final boolean validData, final double[] times) {
+            if ( validData ) {
                 double r = data[0];
-                for (int k = 1; k < data.length; ++k) {
-                    if (data[k] > r) r = data[k];
+                for ( int k = 1; k < data.length; ++k ) {
+                    if ( data[k] > r )
+                        r = data[k];
                 }
                 return r * 2.0;
             }
@@ -208,23 +236,13 @@ public final class ProbabilityTraits {
         @Override
         public void updateGuess(final double[] data, final double density, final int i) {
             data[i] = density;
-            if (i == 1) data[0] = density;
+            if ( i == 1 )
+                data[0] = density;
         }
 
         @Override
-        public int maxIterations() { return 30; }
-    }
-
-    /**
-     * Common interface implemented by the three trait classes above. Mirrors
-     * the C++ template static-method shape, recast as Java instance methods.
-     */
-    public interface Traits {
-        double initialValue();
-        double guess(int i, double[] data, boolean validData, double[] times);
-        double minValueAfter(int i, double[] data, boolean validData, double[] times);
-        double maxValueAfter(int i, double[] data, boolean validData, double[] times);
-        void updateGuess(double[] data, double x, int i);
-        int maxIterations();
+        public int maxIterations() {
+            return 30;
+        }
     }
 }

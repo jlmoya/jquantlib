@@ -23,8 +23,9 @@ package org.jquantlib.math.randomnumbers;
 import org.jquantlib.methods.montecarlo.Sample;
 
 /**
- * This interface defines the behaviour of all RandomSequenceGenerators, making it easy to pass them as generic parameters.
- * 
+ * This interface defines the behaviour of all RandomSequenceGenerators, making it easy to pass them as generic
+ * parameters.
+ *
  * @author Richard Gomes
  */
 @Deprecated
@@ -33,26 +34,25 @@ import org.jquantlib.methods.montecarlo.Sample;
 // This code is a work in progress and needs code review. [Richard Gomes]
 public interface RandomSequenceGeneratorIntf {
 
-    public Sample<double[]> nextSequence() /*@ReadOnly*/;
+    Sample< double[] > nextSequence() /*@ReadOnly*/;
 
-    public Sample<double[]> lastSequence() /*@ReadOnly*/;
+    Sample< double[] > lastSequence() /*@ReadOnly*/;
 
     /**
-     * Once JVM does not support unsigned fixed arithmetic, we use 64bit variables as containers for 32bit values in order to reduce
-     * the complexity and performance overhead of certain fixed arithmetic operations.
+     * Once JVM does not support unsigned fixed arithmetic, we use 64bit variables as containers for 32bit values in
+     * order to reduce the complexity and performance overhead of certain fixed arithmetic operations.
      * <p>
-     * From the user's perspective, it's easier to understand that a certain <code>long</code> variable contains 
-     * values from 0 to 2^32 than understand that a certain <code>int</code> variable contains negative values that should be 
+     * From the user's perspective, it's easier to understand that a certain <code>long</code> variable contains values
+     * from 0 to 2^32 than understand that a certain <code>int</code> variable contains negative values that should be
      * converted to it's two's complement and extended to a <code>long</code> variable before use.
-     * 
+     *
+     * @return an array of unsigned 32bit wide numbers encapsulated in a 64bit containers
      * @see <a href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4504839">Bug 4504839</a>
      * @see <a href="http://darksleep.com/player/JavaAndUnsignedTypes.html">Java and Unsigned Types</a>
      * @see <a href="http://en.wikipedia.org/wiki/Two%27s_complement">Two's complement</a>
-     * 
-     * @return an array of unsigned 32bit wide numbers encapsulated in a 64bit containers
      */
-    public /*@UnsignedInt*/ long[] nextInt32Sequence() /*@ReadOnly*/;
+    /*@UnsignedInt*/ long[] nextInt32Sequence() /*@ReadOnly*/;
 
-    public /*@NonNegative*/ int dimension() /* @ReadOnly */;
+    /*@NonNegative*/ int dimension() /* @ReadOnly */;
 
 }

@@ -45,8 +45,8 @@ import java.lang.annotation.Target;
 /**
  * @author Richard Gomes
  */
-@Retention(RetentionPolicy.SOURCE)
-@Target(ElementType.ANNOTATION_TYPE)
+@Retention( RetentionPolicy.SOURCE )
+@Target( ElementType.ANNOTATION_TYPE )
 public @interface Typedef {
-	// Tags other annotations as 'typedefs'
+    // Tags other annotations as 'typedefs'
 }

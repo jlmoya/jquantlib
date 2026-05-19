@@ -38,16 +38,13 @@ import org.jquantlib.util.Visitor;
 /**
  * CMS-spread coupon.
  * <p>
- * Coupon paying {@latex$ g_1 R_1 + g_2 R_2 } where {@latex$ R_1, R_2 } are
- * the swap-rate fixings of the two underlying CMS indices (referenced via
- * {@link SwapSpreadIndex}).
+ * Coupon paying {@latex$ g_1 R_1 + g_2 R_2 } where {@latex$ R_1, R_2 } are the swap-rate fixings of the two underlying
+ * CMS indices (referenced via {@link SwapSpreadIndex}).
  * <p>
- * Port of C++ QuantLib v1.42.1
- * {@code ql/experimental/coupons/cmsspreadcoupon.hpp/cpp}.
+ * Port of C++ QuantLib v1.42.1 {@code ql/experimental/coupons/cmsspreadcoupon.hpp/cpp}.
  *
  * <p><b>Warning:</b> this class does not perform any date adjustment, i.e.,
- * the start and end date passed upon construction should be already rolled
- * to a business day.
+ * the start and end date passed upon construction should be already rolled to a business day.
  *
  * @author Peter Caspers (C++ original)
  */
@@ -55,41 +52,26 @@ public class CmsSpreadCoupon extends FloatingRateCoupon {
 
     private final SwapSpreadIndex index_;
 
-
     //
     // public constructors
     //
 
     /** Convenience: gearing=1, spread=0, ref=now, dc=empty, isInArrears=false. */
-    public CmsSpreadCoupon(final Date paymentDate,
-                           final double nominal,
-                           final Date startDate,
-                           final Date endDate,
-                           final int fixingDays,
-                           final SwapSpreadIndex index) {
-        this(paymentDate, nominal, startDate, endDate, fixingDays, index,
-                1.0, 0.0, new Date(), new Date(), new DayCounter(), false);
+    public CmsSpreadCoupon(final Date paymentDate, final double nominal, final Date startDate, final Date endDate,
+            final int fixingDays, final SwapSpreadIndex index) {
+        this(paymentDate, nominal, startDate, endDate, fixingDays, index, 1.0, 0.0, new Date(), new Date(),
+                new DayCounter(), false);
     }
 
     /** Full ctor (matches C++ CmsSpreadCoupon constructor signature). */
-    public CmsSpreadCoupon(final Date paymentDate,
-                           final double nominal,
-                           final Date startDate,
-                           final Date endDate,
-                           final int fixingDays,
-                           final SwapSpreadIndex index,
-                           final double gearing,
-                           final double spread,
-                           final Date refPeriodStart,
-                           final Date refPeriodEnd,
-                           final DayCounter dayCounter,
-                           final boolean isInArrears) {
-        super(paymentDate, nominal, startDate, endDate, fixingDays,
-              index, gearing, spread, refPeriodStart, refPeriodEnd,
-              dayCounter, isInArrears);
+    public CmsSpreadCoupon(final Date paymentDate, final double nominal, final Date startDate, final Date endDate,
+            final int fixingDays, final SwapSpreadIndex index, final double gearing, final double spread,
+            final Date refPeriodStart, final Date refPeriodEnd, final DayCounter dayCounter,
+            final boolean isInArrears) {
+        super(paymentDate, nominal, startDate, endDate, fixingDays, index, gearing, spread, refPeriodStart,
+                refPeriodEnd, dayCounter, isInArrears);
         this.index_ = index;
     }
-
 
     //
     // public inspectors
@@ -99,15 +81,14 @@ public class CmsSpreadCoupon extends FloatingRateCoupon {
         return index_;
     }
 
-
     //
     // implements PolymorphicVisitable
     //
 
     @Override
     public void accept(final PolymorphicVisitor pv) {
-        final Visitor<CmsSpreadCoupon> v = (pv != null) ? pv.visitor(this.getClass()) : null;
-        if (v != null) {
+        final Visitor< CmsSpreadCoupon > v = (pv != null) ? pv.visitor(this.getClass()) : null;
+        if ( v != null ) {
             v.visit(this);
         } else {
             super.accept(pv);

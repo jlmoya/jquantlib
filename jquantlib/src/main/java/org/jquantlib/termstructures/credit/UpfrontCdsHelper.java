@@ -41,13 +41,7 @@ import org.jquantlib.pricingengines.credit.MidPointCdsEngine;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.termstructures.YieldTermStructure;
-import org.jquantlib.time.BusinessDayConvention;
-import org.jquantlib.time.Calendar;
-import org.jquantlib.time.Date;
-import org.jquantlib.time.DateGeneration;
-import org.jquantlib.time.Frequency;
-import org.jquantlib.time.Period;
-import org.jquantlib.time.TimeUnit;
+import org.jquantlib.time.*;
 
 /**
  * Upfront-quoted CDS hazard-rate bootstrap helper.
@@ -57,106 +51,63 @@ import org.jquantlib.time.TimeUnit;
  * {@code defaultprobabilityhelpers.cpp:159-224}).
  *
  * <p>The implied quote is the CDS's fair (par) upfront fraction under the
- * currently-bound default-probability term structure. The C++ class
- * temporarily sets {@code Settings::includeTodaysCashFlows() = true} during
- * {@code impliedQuote} so the upfront cash flow is always seen by the
- * engine; the Java port mirrors that with try/finally on
- * {@link Settings#setTodaysPayments(boolean)}.
+ * currently-bound default-probability term structure. The C++ class temporarily sets
+ * {@code Settings::includeTodaysCashFlows() = true} during {@code impliedQuote} so the upfront cash flow is always seen
+ * by the engine; the Java port mirrors that with try/finally on {@link Settings#setTodaysPayments(boolean)}.
  *
  * @category termstructures.credit
  */
 public class UpfrontCdsHelper extends CdsHelper {
 
     private final int upfrontSettlementDays_;
-    private Date upfrontDate_;
     private final double runningSpread_;
+    private Date upfrontDate_;
 
-    public UpfrontCdsHelper(
-            final Handle<Quote> upfront,
-            final double runningSpread,
-            final Period tenor,
-            final int settlementDays,
-            final Calendar calendar,
-            final Frequency frequency,
-            final BusinessDayConvention paymentConvention,
-            final DateGeneration.Rule rule,
-            final DayCounter dayCounter,
-            final double recoveryRate,
-            final Handle<YieldTermStructure> discountCurve,
-            final int upfrontSettlementDays,
-            final boolean settlesAccrual,
-            final boolean paysAtDefaultTime,
-            final Date startDate,
-            final DayCounter lastPeriodDayCounter,
-            final boolean rebatesAccrual,
+    public UpfrontCdsHelper(final Handle< Quote > upfront, final double runningSpread, final Period tenor,
+            final int settlementDays, final Calendar calendar, final Frequency frequency,
+            final BusinessDayConvention paymentConvention, final DateGeneration.Rule rule, final DayCounter dayCounter,
+            final double recoveryRate, final Handle< YieldTermStructure > discountCurve,
+            final int upfrontSettlementDays, final boolean settlesAccrual, final boolean paysAtDefaultTime,
+            final Date startDate, final DayCounter lastPeriodDayCounter, final boolean rebatesAccrual,
             final PricingModel model) {
-        super(upfront, tenor, settlementDays, calendar,
-              frequency, paymentConvention, rule, dayCounter,
-              recoveryRate, discountCurve, settlesAccrual, paysAtDefaultTime,
-              startDate, lastPeriodDayCounter, rebatesAccrual, model);
+        super(upfront, tenor, settlementDays, calendar, frequency, paymentConvention, rule, dayCounter, recoveryRate,
+                discountCurve, settlesAccrual, paysAtDefaultTime, startDate, lastPeriodDayCounter, rebatesAccrual,
+                model);
         this.upfrontSettlementDays_ = upfrontSettlementDays;
         this.runningSpread_ = runningSpread;
         this.upfrontDate_ = computeUpfrontDate();
     }
 
     /** Upfront-as-double overload. */
-    public UpfrontCdsHelper(
-            final double upfront,
-            final double runningSpread,
-            final Period tenor,
-            final int settlementDays,
-            final Calendar calendar,
-            final Frequency frequency,
-            final BusinessDayConvention paymentConvention,
-            final DateGeneration.Rule rule,
-            final DayCounter dayCounter,
-            final double recoveryRate,
-            final Handle<YieldTermStructure> discountCurve,
-            final int upfrontSettlementDays,
-            final boolean settlesAccrual,
-            final boolean paysAtDefaultTime,
-            final Date startDate,
-            final DayCounter lastPeriodDayCounter,
-            final boolean rebatesAccrual,
+    public UpfrontCdsHelper(final double upfront, final double runningSpread, final Period tenor,
+            final int settlementDays, final Calendar calendar, final Frequency frequency,
+            final BusinessDayConvention paymentConvention, final DateGeneration.Rule rule, final DayCounter dayCounter,
+            final double recoveryRate, final Handle< YieldTermStructure > discountCurve,
+            final int upfrontSettlementDays, final boolean settlesAccrual, final boolean paysAtDefaultTime,
+            final Date startDate, final DayCounter lastPeriodDayCounter, final boolean rebatesAccrual,
             final PricingModel model) {
-        super(upfront, tenor, settlementDays, calendar,
-              frequency, paymentConvention, rule, dayCounter,
-              recoveryRate, discountCurve, settlesAccrual, paysAtDefaultTime,
-              startDate, lastPeriodDayCounter, rebatesAccrual, model);
+        super(upfront, tenor, settlementDays, calendar, frequency, paymentConvention, rule, dayCounter, recoveryRate,
+                discountCurve, settlesAccrual, paysAtDefaultTime, startDate, lastPeriodDayCounter, rebatesAccrual,
+                model);
         this.upfrontSettlementDays_ = upfrontSettlementDays;
         this.runningSpread_ = runningSpread;
         this.upfrontDate_ = computeUpfrontDate();
     }
 
-    /** Convenience overload mirroring C++ default arguments
-     *  ({@code upfrontSettlementDays=3}, settlesAccrual=true,
-     *  paysAtDefaultTime=true, startDate=null, lastPeriodDayCounter=null,
-     *  rebatesAccrual=true, model=Midpoint). */
-    public UpfrontCdsHelper(
-            final double upfront,
-            final double runningSpread,
-            final Period tenor,
-            final int settlementDays,
-            final Calendar calendar,
-            final Frequency frequency,
-            final BusinessDayConvention paymentConvention,
-            final DateGeneration.Rule rule,
-            final DayCounter dayCounter,
-            final double recoveryRate,
-            final Handle<YieldTermStructure> discountCurve) {
-        this(upfront, runningSpread, tenor, settlementDays, calendar,
-             frequency, paymentConvention, rule, dayCounter, recoveryRate,
-             discountCurve, 3, true, true, null, null, true,
-             PricingModel.Midpoint);
+    /**
+     * Convenience overload mirroring C++ default arguments ({@code upfrontSettlementDays=3}, settlesAccrual=true,
+     * paysAtDefaultTime=true, startDate=null, lastPeriodDayCounter=null, rebatesAccrual=true, model=Midpoint).
+     */
+    public UpfrontCdsHelper(final double upfront, final double runningSpread, final Period tenor,
+            final int settlementDays, final Calendar calendar, final Frequency frequency,
+            final BusinessDayConvention paymentConvention, final DateGeneration.Rule rule, final DayCounter dayCounter,
+            final double recoveryRate, final Handle< YieldTermStructure > discountCurve) {
+        this(upfront, runningSpread, tenor, settlementDays, calendar, frequency, paymentConvention, rule, dayCounter,
+                recoveryRate, discountCurve, 3, true, true, null, null, true, PricingModel.Midpoint);
     }
 
     private Date computeUpfrontDate() {
-        return calendar_.advance(
-                evaluationDate_,
-                upfrontSettlementDays_,
-                TimeUnit.Days,
-                paymentConvention_,
-                false);
+        return calendar_.advance(evaluationDate_, upfrontSettlementDays_, TimeUnit.Days, paymentConvention_, false);
     }
 
     @Override
@@ -166,10 +117,10 @@ public class UpfrontCdsHelper extends CdsHelper {
         // during the constructor after super(...) finishes (see ctor body).
         // initializeDates() runs from the super-ctor before our subclass
         // fields are set; guard for that.
-        if (upfrontSettlementDays_ != 0 || calendar_ != null) {
+        if ( upfrontSettlementDays_ != 0 || calendar_ != null ) {
             try {
                 this.upfrontDate_ = computeUpfrontDate();
-            } catch (final NullPointerException npe) {
+            } catch ( final NullPointerException npe ) {
                 // first call from super-ctor: subclass-only fields aren't
                 // initialised yet; ignore — ctor body fills upfrontDate_.
             }
@@ -196,44 +147,27 @@ public class UpfrontCdsHelper extends CdsHelper {
     protected void resetEngine() {
         // C++: notional 100.0, upfront 0.01 (placeholder solved by engine),
         // running spread is the helper's runningSpread_.
-        swap_ = new CreditDefaultSwap(
-                Protection.Side.Buyer,
-                100.0,
-                0.01,                  // upfront placeholder
-                runningSpread_,
-                schedule_,
-                paymentConvention_,
-                dayCounter_,
-                settlesAccrual_,
-                paysAtDefaultTime_,
-                protectionStart_,
-                upfrontDate_,
-                null,                  // claim
-                lastPeriodDC_,
-                rebatesAccrual_,
-                evaluationDate_,
-                3);
+        swap_ = new CreditDefaultSwap(Protection.Side.Buyer, 100.0, 0.01,                  // upfront placeholder
+                runningSpread_, schedule_, paymentConvention_, dayCounter_, settlesAccrual_, paysAtDefaultTime_,
+                protectionStart_, upfrontDate_, null,                  // claim
+                lastPeriodDC_, rebatesAccrual_, evaluationDate_, 3);
 
-        switch (model_) {
-          case Midpoint:
+        switch ( model_ ) {
+        case Midpoint:
             // C++ passes includeSettlementDateFlows=true here so the upfront
             // cash flow on settlement date counts in the engine NPV.
-            swap_.setPricingEngine(new MidPointCdsEngine(
-                    probability_, recoveryRate_, discountCurve_,
-                    Boolean.TRUE));
+            swap_.setPricingEngine(new MidPointCdsEngine(probability_, recoveryRate_, discountCurve_, Boolean.TRUE));
             break;
-          case ISDA:
+        case ISDA:
             // Phase 3d L1: wire IsdaCdsEngine with C++ defaults (Taylor / HalfDayBias /
             // Piecewise, includeSettlementDateFlows=false).
             swap_.setPricingEngine(
-                    new org.jquantlib.pricingengines.credit.IsdaCdsEngine(
-                            probability_, recoveryRate_, discountCurve_,
-                            Boolean.FALSE,
-                            org.jquantlib.pricingengines.credit.IsdaCdsEngine.NumericalFix.Taylor,
+                    new org.jquantlib.pricingengines.credit.IsdaCdsEngine(probability_, recoveryRate_, discountCurve_,
+                            Boolean.FALSE, org.jquantlib.pricingengines.credit.IsdaCdsEngine.NumericalFix.Taylor,
                             org.jquantlib.pricingengines.credit.IsdaCdsEngine.AccrualBias.HalfDayBias,
                             org.jquantlib.pricingengines.credit.IsdaCdsEngine.ForwardsInCouponPeriod.Piecewise));
             break;
-          default:
+        default:
             throw new IllegalArgumentException("unknown CDS pricing model: " + model_);
         }
     }

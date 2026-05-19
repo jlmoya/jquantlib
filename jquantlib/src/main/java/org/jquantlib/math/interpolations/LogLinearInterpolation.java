@@ -44,7 +44,6 @@ package org.jquantlib.math.interpolations;
 import org.jquantlib.math.interpolations.factories.Linear;
 import org.jquantlib.math.matrixutilities.Array;
 
-
 /**
  * log-linear interpolation between discrete points
  *

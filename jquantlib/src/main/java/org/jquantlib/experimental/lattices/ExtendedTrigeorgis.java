@@ -46,48 +46,42 @@ import org.jquantlib.QL;
 import org.jquantlib.processes.StochasticProcess1D;
 
 /**
-* Trigeorgis (additive equal jumps) binomial tree
-*
-* @category lattices
-*
-* @author Richard Gomes
-*/
+ * Trigeorgis (additive equal jumps) binomial tree
+ *
+ * @author Richard Gomes
+ * @category lattices
+ */
 public class ExtendedTrigeorgis extends ExtendedEqualJumpsBinomialTree /*<ExtendedCoxRossRubinstein> */ {
 
-   //
-   // public methods
-   //
+    //
+    // public methods
+    //
 
-   public ExtendedTrigeorgis(
-           final StochasticProcess1D process,
-           final /* @Time */ double end,
-           final int steps,
-           final double strike) {
+    public ExtendedTrigeorgis(final StochasticProcess1D process, final /* @Time */ double end, final int steps,
+            final double strike) {
 
+        super(process, end, steps);
 
-       super(process, end, steps);
+        this.dx = Math.sqrt(process.variance(0.0, x0, dt) + driftStep(0.0) * driftStep(0.0));
+        this.pu = 0.5 + 0.5 * driftStep(0.0) / dxStep(0.0);
+        this.pd = 1.0 - this.pu;
 
-       this.dx = Math.sqrt(process.variance(0.0, x0, dt) + driftStep(0.0)*driftStep(0.0));
-       this.pu = 0.5 + 0.5*driftStep(0.0)/dxStep(0.0);
-       this.pd = 1.0 - this.pu;
+        QL.require(pu <= 1.0, NEGATIVE_PROBABILITY);
+        QL.require(pu >= 0.0, NEGATIVE_PROBABILITY);
+    }
 
-       QL.require(pu<=1.0, NEGATIVE_PROBABILITY);
-       QL.require(pu>=0.0, NEGATIVE_PROBABILITY);
-   }
+    //
+    // protected methods
+    //
 
+    @Override
+    protected double dxStep(/* @Time */ final double stepTime) /* @ReadOnly */ {
+        return Math.sqrt(treeProcess.variance(stepTime, x0, dt) + driftStep(stepTime) * driftStep(stepTime));
+    }
 
-   //
-   // protected methods
-   //
-
-   @Override
-   protected double dxStep(/* @Time */ final double stepTime) /* @ReadOnly */ {
-       return Math.sqrt(treeProcess.variance(stepTime, x0, dt)+driftStep(stepTime)*driftStep(stepTime));
-   }
-
-   @Override
-   protected double probUp(/* @Time */ final double stepTime) /* @ReadOnly */ {
-       return 0.5 + 0.5*driftStep(stepTime)/dxStep(stepTime);
-   }
+    @Override
+    protected double probUp(/* @Time */ final double stepTime) /* @ReadOnly */ {
+        return 0.5 + 0.5 * driftStep(stepTime) / dxStep(stepTime);
+    }
 
 }

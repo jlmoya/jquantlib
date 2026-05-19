@@ -38,9 +38,8 @@ import org.jquantlib.model.marketmodels.curvestates.LMMCurveState;
  * (QuantLib v1.42.1).
  *
  * <p>Same structure as {@link LMMDriftCalculator} but for the normal (additive)
- * forward-rate dynamic — no displacement, and the precomputed "tmp_" factor
- * is {@code 1/(oneOverTau + forward)} instead of
- * {@code (forward+displacement)/(oneOverTau+forward)}.
+ * forward-rate dynamic — no displacement, and the precomputed "tmp_" factor is {@code 1/(oneOverTau + forward)} instead
+ * of {@code (forward+displacement)/(oneOverTau+forward)}.
  */
 public class LMMNormalDriftCalculator {
 
@@ -57,10 +56,7 @@ public class LMMNormalDriftCalculator {
     private final int[] downs_;
     private final int[] ups_;
 
-    public LMMNormalDriftCalculator(final Matrix pseudo,
-                                    final double[] taus,
-                                    final int numeraire,
-                                    final int alive) {
+    public LMMNormalDriftCalculator(final Matrix pseudo, final double[] taus, final int numeraire, final int alive) {
         this.numberOfRates_ = taus.length;
         this.numberOfFactors_ = pseudo.columns();
         this.isFullFactor_ = (numberOfFactors_ == numberOfRates_);
@@ -74,21 +70,20 @@ public class LMMNormalDriftCalculator {
         this.ups_ = new int[taus.length];
 
         QL.require(numberOfRates_ > 0, "Dim out of range");
-        QL.require(pseudo.rows() == numberOfRates_,
-                "pseudo.rows() not consistent with dim");
+        QL.require(pseudo.rows() == numberOfRates_, "pseudo.rows() not consistent with dim");
         QL.require(pseudo.columns() > 0 && pseudo.columns() <= numberOfRates_,
                 "pseudo.rows() not consistent with pseudo.columns()");
         QL.require(alive < numberOfRates_, "Alive out of bounds");
         QL.require(numeraire_ <= numberOfRates_, "Numeraire larger than dim");
         QL.require(numeraire_ >= alive, "Numeraire smaller than alive");
 
-        for (int i = 0; i < taus.length; ++i) {
+        for ( int i = 0; i < taus.length; ++i ) {
             oneOverTaus_[i] = 1.0 / taus[i];
         }
 
         this.C_ = pseudo_.mul(pseudo_.transpose());
 
-        for (int i = alive_; i < numberOfRates_; ++i) {
+        for ( int i = alive_; i < numberOfRates_; ++i ) {
             downs_[i] = Math.min(i + 1, numeraire_);
             ups_[i] = Math.max(i + 1, numeraire_);
         }
@@ -99,7 +94,7 @@ public class LMMNormalDriftCalculator {
     }
 
     public void compute(final double[] fwds, final double[] drifts) {
-        if (isFullFactor_) {
+        if ( isFullFactor_ ) {
             computePlain(fwds, drifts);
         } else {
             computeReduced(fwds, drifts);
@@ -111,12 +106,12 @@ public class LMMNormalDriftCalculator {
     }
 
     public void computePlain(final double[] forwards, final double[] drifts) {
-        for (int i = alive_; i < numberOfRates_; ++i) {
+        for ( int i = alive_; i < numberOfRates_; ++i ) {
             tmp_[i] = 1.0 / (oneOverTaus_[i] + forwards[i]);
         }
-        for (int i = alive_; i < numberOfRates_; ++i) {
+        for ( int i = alive_; i < numberOfRates_; ++i ) {
             double sum = 0.0;
-            for (int k = downs_[i]; k < ups_[i]; ++k) {
+            for ( int k = downs_[i]; k < ups_[i]; ++k ) {
                 sum += tmp_[k] * C_.get(i, k);
             }
             drifts[i] = (numeraire_ > i + 1) ? -sum : sum;
@@ -128,22 +123,22 @@ public class LMMNormalDriftCalculator {
     }
 
     public void computeReduced(final double[] forwards, final double[] drifts) {
-        for (int i = alive_; i < numberOfRates_; ++i) {
+        for ( int i = alive_; i < numberOfRates_; ++i ) {
             tmp_[i] = 1.0 / (oneOverTaus_[i] + forwards[i]);
         }
 
         final int initCol = Math.max(0, numeraire_ - 1);
-        for (int r = 0; r < numberOfFactors_; ++r) {
+        for ( int r = 0; r < numberOfFactors_; ++r ) {
             e_.set(r, initCol, 0.0);
         }
 
-        if (numeraire_ > 0) {
+        if ( numeraire_ > 0 ) {
             drifts[numeraire_ - 1] = 0.0;
         }
 
-        for (int i = numeraire_ - 2; i >= alive_; --i) {
+        for ( int i = numeraire_ - 2; i >= alive_; --i ) {
             drifts[i] = 0.0;
-            for (int r = 0; r < numberOfFactors_; ++r) {
+            for ( int r = 0; r < numberOfFactors_; ++r ) {
                 final double e_next = e_.get(r, i + 1);
                 final double e_i = e_next + tmp_[i + 1] * pseudo_.get(i + 1, r);
                 e_.set(r, i, e_i);
@@ -151,12 +146,12 @@ public class LMMNormalDriftCalculator {
             }
         }
 
-        for (int i = numeraire_; i < numberOfRates_; ++i) {
+        for ( int i = numeraire_; i < numberOfRates_; ++i ) {
             drifts[i] = 0.0;
-            for (int r = 0; r < numberOfFactors_; ++r) {
+            for ( int r = 0; r < numberOfFactors_; ++r ) {
                 final double pseudoIR = pseudo_.get(i, r);
                 final double e_i;
-                if (i == 0) {
+                if ( i == 0 ) {
                     e_i = tmp_[i] * pseudoIR;
                 } else {
                     e_i = e_.get(r, i - 1) + tmp_[i] * pseudoIR;

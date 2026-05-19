@@ -43,14 +43,13 @@ package org.jquantlib.termstructures;
 import java.io.Serializable;
 import java.util.Comparator;
 
-
-public class BootstrapHelperSorter<Helper extends BootstrapHelper> implements Comparator<Helper>, Serializable {
+public class BootstrapHelperSorter< Helper extends BootstrapHelper > implements Comparator< Helper >, Serializable {
 
     @Override
     public int compare(final Helper h1, final Helper h2) {
-        if (h1.latestDate().lt(h2.latestDate()))
+        if ( h1.latestDate().lt(h2.latestDate()) )
             return -1;
-        if (h1.latestDate().equals(h2.latestDate()))
+        if ( h1.latestDate().equals(h2.latestDate()) )
             return 0;
         return 1;
     }

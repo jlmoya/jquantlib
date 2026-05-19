@@ -33,8 +33,7 @@ import org.jquantlib.math.Ops;
  * Safe (bracketed) Newton 1-D solver with finite-difference derivatives.
  *
  * <p>Direct Java port of C++ v1.42.1
- * {@code QuantLib::FiniteDifferenceNewtonSafe} in
- * {@code ql/math/solvers1d/finitedifferencenewtonsafe.hpp}.
+ * {@code QuantLib::FiniteDifferenceNewtonSafe} in {@code ql/math/solvers1d/finitedifferencenewtonsafe.hpp}.
  *
  * <p>The algorithm is a hybrid bisection / Newton method:
  * <ul>
@@ -53,11 +52,10 @@ import org.jquantlib.math.Ops;
  * @see org.jquantlib.math.AbstractSolver1D
  * @see <a href="https://quantlib.org">QuantLib v1.42.1</a>
  */
-public class FiniteDifferenceNewtonSafe extends AbstractSolver1D<Ops.DoubleOp> {
+public class FiniteDifferenceNewtonSafe extends AbstractSolver1D< Ops.DoubleOp > {
 
     /**
-     * Computes the root of function {@code f} using the bracketed
-     * Newton-with-finite-differences algorithm.
+     * Computes the root of function {@code f} using the bracketed Newton-with-finite-differences algorithm.
      *
      * <p>Pre-conditions (verified by {@link AbstractSolver1D#solve} before
      * calling this method):
@@ -67,16 +65,16 @@ public class FiniteDifferenceNewtonSafe extends AbstractSolver1D<Ops.DoubleOp> {
      *   <li>{@code xMin < root < xMax} (initial guess is inside bracket)</li>
      * </ul>
      *
-     * @param f          the function whose root is sought
-     * @param xAccuracy  the required accuracy on {@code x}
-     * @return           the estimated root
+     * @param f         the function whose root is sought
+     * @param xAccuracy the required accuracy on {@code x}
+     * @return the estimated root
      */
     @Override
     protected double solveImpl(final Ops.DoubleOp f, final double xAccuracy) {
 
         // Orient the search so that f(xl) < 0.
         double xh, xl;
-        if (fxMin < 0.0) {
+        if ( fxMin < 0.0 ) {
             xl = xMin;
             xh = xMax;
         } else {
@@ -90,24 +88,21 @@ public class FiniteDifferenceNewtonSafe extends AbstractSolver1D<Ops.DoubleOp> {
         // First-order finite-difference derivative:
         // pick the closer bracket endpoint to minimise extrapolation error.
         // (xMax - xMin > 0 guaranteed by AbstractSolver1D).
-        double dfroot = (xMax - root < root - xMin)
-                ? (fxMax - froot) / (xMax - root)
-                : (fxMin - froot) / (xMin - root);
+        double dfroot = (xMax - root < root - xMin) ? (fxMax - froot) / (xMax - root) : (fxMin - froot) / (xMin - root);
 
         double dx = xMax - xMin;
 
-        while (evaluationNumber <= getMaxEvaluations()) {
+        while ( evaluationNumber <= getMaxEvaluations() ) {
             // Snapshot start-of-iteration values (C++: frootold, rootold, dxold).
             double frootold = froot;
-            double rootold  = root;
+            double rootold = root;
             final double dxold = dx;
 
             // Bisect if the Newton step is out-of-range or not decreasing fast enough.
-            if ((((root - xh) * dfroot - froot)
-                    * ((root - xl) * dfroot - froot) > 0.0)
-                    || (Math.abs(2.0 * froot) > Math.abs(dxold * dfroot))) {
+            if ( (((root - xh) * dfroot - froot) * ((root - xl) * dfroot - froot) > 0.0) || (Math.abs(2.0 * froot)
+                    > Math.abs(dxold * dfroot)) ) {
 
-                dx   = (xh - xl) / 2.0;
+                dx = (xh - xl) / 2.0;
                 root = xl + dx;
 
                 // C++ comment: "if the root estimate just computed is close to the
@@ -115,20 +110,21 @@ public class FiniteDifferenceNewtonSafe extends AbstractSolver1D<Ops.DoubleOp> {
                 // root and rootold (xl instead of xh would be just as good)".
                 // When close, overwrite rootold/frootold with xh/f(xh) so the
                 // secant formula at the end uses (f(xh)-f(root))/(xh-root).
-                if (Closeness.isClose(root, rootold, 2500)) {
-                    rootold  = xh;
+                if ( Closeness.isClose(root, rootold, 2500) ) {
+                    rootold = xh;
                     frootold = f.op(xh);
                     evaluationNumber++;
                 }
 
             } else {
                 // Newton step: dx = f/f'  →  root -= dx.
-                dx    = froot / dfroot;
+                dx = froot / dfroot;
                 root -= dx;
             }
 
             // Convergence criterion.
-            if (Math.abs(dx) < xAccuracy) return root;
+            if ( Math.abs(dx) < xAccuracy )
+                return root;
 
             froot = f.op(root);
             evaluationNumber++;
@@ -136,11 +132,12 @@ public class FiniteDifferenceNewtonSafe extends AbstractSolver1D<Ops.DoubleOp> {
             dfroot = (frootold - froot) / (rootold - root);
 
             // Update bracket.
-            if (froot < 0.0) xl = root; else xh = root;
+            if ( froot < 0.0 )
+                xl = root;
+            else
+                xh = root;
         }
 
-        throw new ArithmeticException(
-                "maximum number of function evaluations ("
-                        + getMaxEvaluations() + ") exceeded");
+        throw new ArithmeticException("maximum number of function evaluations (" + getMaxEvaluations() + ") exceeded");
     }
 }

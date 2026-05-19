@@ -41,9 +41,8 @@ import org.jquantlib.pricingengines.PricingEngine;
 /**
  * Two-asset correlation option (Zhang 1995).
  * <p>
- * Pays a payoff based on the value at exercise of the second asset and
- * its corresponding strike, but only if the first instrument is also
- * in the money with respect to its own strike; if not, the payoff is 0.
+ * Pays a payoff based on the value at exercise of the second asset and its corresponding strike, but only if the first
+ * instrument is also in the money with respect to its own strike; if not, the payoff is 0.
  * <p>
  * Mirrors C++ QuantLib v1.42.1 {@code TwoAssetCorrelationOption} in
  * {@code ql/instruments/twoassetcorrelationoption.{hpp,cpp}}.
@@ -54,10 +53,8 @@ public class TwoAssetCorrelationOption extends MultiAssetOption {
 
     protected final double X2;
 
-    public TwoAssetCorrelationOption(final Option.Type type,
-                                     final double strike1,
-                                     final double strike2,
-                                     final Exercise exercise) {
+    public TwoAssetCorrelationOption(final Option.Type type, final double strike1, final double strike2,
+            final Exercise exercise) {
         super(new PlainVanillaPayoff(type, strike1), exercise);
         this.X2 = strike2;
     }
@@ -67,8 +64,7 @@ public class TwoAssetCorrelationOption extends MultiAssetOption {
         super.setupArguments(args);
         QL.require(TwoAssetCorrelationOption.ArgumentsImpl.class.isAssignableFrom(args.getClass()),
                 ReflectConstants.WRONG_ARGUMENT_TYPE);
-        final TwoAssetCorrelationOption.ArgumentsImpl moreArgs =
-                (TwoAssetCorrelationOption.ArgumentsImpl) args;
+        final TwoAssetCorrelationOption.ArgumentsImpl moreArgs = (TwoAssetCorrelationOption.ArgumentsImpl) args;
         moreArgs.X2 = X2;
     }
 
@@ -77,8 +73,7 @@ public class TwoAssetCorrelationOption extends MultiAssetOption {
      * <p>
      * Mirrors C++ QuantLib v1.42.1 {@code TwoAssetCorrelationOption::arguments}.
      */
-    public static class ArgumentsImpl extends MultiAssetOption.ArgumentsImpl
-            implements MultiAssetOption.Arguments {
+    public static class ArgumentsImpl extends MultiAssetOption.ArgumentsImpl implements MultiAssetOption.Arguments {
 
         public double X2;
 

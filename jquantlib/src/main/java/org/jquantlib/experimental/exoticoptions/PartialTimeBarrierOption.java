@@ -40,12 +40,11 @@ import org.jquantlib.util.Observer;
 /**
  * Partial-time barrier option on a single asset.
  * <p>
- * A particular type of barrier option in which the barrier is only monitored for a part of
- * the option's lifetime; either from start to a so-called cover event, or from the cover event
- * to the exercise date.
+ * A particular type of barrier option in which the barrier is only monitored for a part of the option's lifetime;
+ * either from start to a so-called cover event, or from the cover event to the exercise date.
  * <p>
- * Mirrors {@code QuantLib::PartialTimeBarrierOption} from
- * {@code ql/instruments/partialtimebarrieroption.hpp} (v1.42.1).
+ * Mirrors {@code QuantLib::PartialTimeBarrierOption} from {@code ql/instruments/partialtimebarrieroption.hpp}
+ * (v1.42.1).
  *
  * @author JQuantLib migration
  */
@@ -61,18 +60,12 @@ public class PartialTimeBarrierOption extends OneAssetOption {
     protected double rebate;
     protected Date coverEventDate;
 
-
     //
     // public constructors
     //
 
-    public PartialTimeBarrierOption(
-            final BarrierType barrierType,
-            final PartialBarrier barrierRange,
-            final double barrier,
-            final double rebate,
-            final Date coverEventDate,
-            final StrikedTypePayoff payoff,
+    public PartialTimeBarrierOption(final BarrierType barrierType, final PartialBarrier barrierRange,
+            final double barrier, final double rebate, final Date coverEventDate, final StrikedTypePayoff payoff,
             final Exercise exercise) {
         super(payoff, exercise);
         this.barrierType = barrierType;
@@ -81,7 +74,6 @@ public class PartialTimeBarrierOption extends OneAssetOption {
         this.rebate = rebate;
         this.coverEventDate = coverEventDate;
     }
-
 
     //
     // overrides OneAssetOption
@@ -100,17 +92,18 @@ public class PartialTimeBarrierOption extends OneAssetOption {
         a.coverEventDate = coverEventDate;
     }
 
-
     //
     // inner interfaces / classes
     //
 
-    public interface Arguments extends OneAssetOption.Arguments { /* marking interface */ }
+    public interface Arguments extends OneAssetOption.Arguments { /* marking interface */
+    }
 
-    public interface Results extends OneAssetOption.Results { /* marking interface */ }
+    public interface Results extends OneAssetOption.Results { /* marking interface */
+    }
 
-    public interface Engine extends PricingEngine, Observer { /* marking interface */ }
-
+    public interface Engine extends PricingEngine, Observer { /* marking interface */
+    }
 
     /**
      * Arguments for partial-time barrier option calculation.
@@ -139,31 +132,29 @@ public class PartialTimeBarrierOption extends OneAssetOption {
             QL.require(!Double.isNaN(barrier), "no barrier given");
             QL.require(!Double.isNaN(rebate), "no rebate given");
             QL.require(coverEventDate != null, "no cover event date given");
-            QL.require(coverEventDate.lt(exercise.lastDate()),
-                    "cover event date equal or later than exercise date");
+            QL.require(coverEventDate.lt(exercise.lastDate()), "cover event date equal or later than exercise date");
 
-            switch (barrierType) {
-              case DownIn:
-              case UpIn:
-              case DownOut:
-              case UpOut:
+            switch ( barrierType ) {
+            case DownIn:
+            case UpIn:
+            case DownOut:
+            case UpOut:
                 break;
-              default:
+            default:
                 throw new LibraryException("unknown barrier type");
             }
         }
     }
 
-
     public static class ResultsImpl extends OneAssetOption.ResultsImpl
-            implements PartialTimeBarrierOption.Results { /* marking class */ }
-
+            implements PartialTimeBarrierOption.Results { /* marking class */
+    }
 
     /**
      * Partial-time barrier-option engine base class.
      */
     public abstract static class EngineImpl
-            extends GenericEngine<PartialTimeBarrierOption.Arguments, OneAssetOption.Results> {
+            extends GenericEngine< PartialTimeBarrierOption.Arguments, OneAssetOption.Results > {
 
         protected EngineImpl() {
             super(new ArgumentsImpl(), new ResultsImpl());

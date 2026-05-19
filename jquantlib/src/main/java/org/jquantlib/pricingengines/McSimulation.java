@@ -40,21 +40,16 @@ import org.jquantlib.time.TimeGrid;
  * ql/pricingengines/mcsimulation.hpp} (Phase 5h.5-MC-INFRA WI-6).
  *
  * <p>Deriving from {@code McSimulation} gives an easy way to write a
- * Monte Carlo engine: subclasses provide {@link #pathGenerator()},
- * {@link #pathPricer()} and {@link #timeGrid()}, and the base class
- * supplies {@code calculate}, {@code value}, {@code valueWithSamples},
- * and {@code errorEstimate}.
+ * Monte Carlo engine: subclasses provide {@link #pathGenerator()}, {@link #pathPricer()} and {@link #timeGrid()}, and
+ * the base class supplies {@code calculate}, {@code value}, {@code valueWithSamples}, and {@code errorEstimate}.
  *
  * <p>The C++ template parameters {@code MC} and {@code RNG} are erased
- * here (the path/pricer types are carried by the {@code PathType}
- * generic parameter).
+ * here (the path/pricer types are carried by the {@code PathType} generic parameter).
  *
- * @param <PathType> {@code Path} for single-asset MC, {@code MultiPath}
- *                   for multi-asset MC.
- *
+ * @param <PathType> {@code Path} for single-asset MC, {@code MultiPath} for multi-asset MC.
  * @author JQuantLib
  */
-public abstract class McSimulation<PathType> {
+public abstract class McSimulation< PathType > {
 
     //
     // sentinel values matching C++'s Null<Real>() / Null<Size>()
@@ -63,44 +58,39 @@ public abstract class McSimulation<PathType> {
     public static final double NULL_TOLERANCE = Double.NaN;
     public static final int NULL_SAMPLES = Integer.MAX_VALUE;
 
-
     //
     // protected fields
     //
-
-    protected MonteCarloModel<PathType> mcModel_;
     protected final boolean antitheticVariate_;
     protected final boolean controlVariate_;
-
+    protected MonteCarloModel< PathType > mcModel_;
 
     //
     // constructors
     //
 
-    protected McSimulation(final boolean antitheticVariate,
-                           final boolean controlVariate) {
+    protected McSimulation(final boolean antitheticVariate, final boolean controlVariate) {
         this.antitheticVariate_ = antitheticVariate;
         this.controlVariate_ = controlVariate;
     }
-
 
     //
     // hooks for subclasses
     //
 
-    protected abstract PathPricer<PathType> pathPricer();
+    protected abstract PathPricer< PathType > pathPricer();
 
-    protected abstract MonteCarloModel.PathGeneratorAdapter<PathType> pathGenerator();
+    protected abstract MonteCarloModel.PathGeneratorAdapter< PathType > pathGenerator();
 
     protected abstract TimeGrid timeGrid();
 
     /** Override in subclasses that supply a control-variate pricer. */
-    protected PathPricer<PathType> controlPathPricer() {
+    protected PathPricer< PathType > controlPathPricer() {
         return null;
     }
 
     /** Override in subclasses that supply a separate CV path generator. */
-    protected MonteCarloModel.PathGeneratorAdapter<PathType> controlPathGenerator() {
+    protected MonteCarloModel.PathGeneratorAdapter< PathType > controlPathGenerator() {
         return null;
     }
 
@@ -114,36 +104,31 @@ public abstract class McSimulation<PathType> {
         return Double.NaN;
     }
 
-
     //
     // public API
     //
 
     /**
-     * Mirrors C++ {@code McSimulation::value(tolerance, maxSamples,
-     * minSamples)}: add samples until the required absolute tolerance
-     * is reached.
+     * Mirrors C++ {@code McSimulation::value(tolerance, maxSamples, minSamples)}: add samples until the required
+     * absolute tolerance is reached.
      */
     public double value(final double tolerance, final int maxSamples, final int minSamples) {
         int sampleNumber = mcModel_.sampleAccumulator().samples();
-        if (sampleNumber < minSamples) {
+        if ( sampleNumber < minSamples ) {
             mcModel_.addSamples(minSamples - sampleNumber);
             sampleNumber = mcModel_.sampleAccumulator().samples();
         }
 
         double error = mcModel_.sampleAccumulator().errorEstimate();
-        while (error > tolerance) {
-            if (sampleNumber >= maxSamples) {
-                throw new RuntimeException(
-                        "max number of samples (" + maxSamples
-                                + ") reached, while error (" + error
-                                + ") is still above tolerance (" + tolerance + ")");
+        while ( error > tolerance ) {
+            if ( sampleNumber >= maxSamples ) {
+                throw new RuntimeException("max number of samples (" + maxSamples + ") reached, while error (" + error
+                        + ") is still above tolerance (" + tolerance + ")");
             }
 
             // Conservative estimate of how many additional samples are needed.
             final double order = (error * error) / (tolerance * tolerance);
-            int nextBatch = (int) Math.max(
-                    sampleNumber * order * 0.8 - sampleNumber, minSamples);
+            int nextBatch = (int) Math.max(sampleNumber * order * 0.8 - sampleNumber, minSamples);
             nextBatch = Math.min(nextBatch, maxSamples - sampleNumber);
             sampleNumber += nextBatch;
             mcModel_.addSamples(nextBatch);
@@ -165,10 +150,10 @@ public abstract class McSimulation<PathType> {
      */
     public double valueWithSamples(final int samples) {
         final int sampleNumber = mcModel_.sampleAccumulator().samples();
-        if (samples < sampleNumber) {
+        if ( samples < sampleNumber ) {
             throw new IllegalArgumentException(
-                    "number of already simulated samples (" + sampleNumber
-                            + ") greater than requested samples (" + samples + ")");
+                    "number of already simulated samples (" + sampleNumber + ") greater than requested samples ("
+                            + samples + ")");
         }
         mcModel_.addSamples(samples - sampleNumber);
         return mcModel_.sampleAccumulator().mean();
@@ -183,41 +168,36 @@ public abstract class McSimulation<PathType> {
     }
 
     /**
-     * Basic calculate method provided to inherited pricing engines.
-     * Mirrors C++ {@code McSimulation::calculate(requiredTolerance,
-     * requiredSamples, maxSamples)}.
+     * Basic calculate method provided to inherited pricing engines. Mirrors C++
+     * {@code McSimulation::calculate(requiredTolerance, requiredSamples, maxSamples)}.
      *
      * <p>Pass {@link #NULL_TOLERANCE} (NaN) or {@link #NULL_SAMPLES}
      * to indicate "not specified".
      */
-    public void calculate(final double requiredTolerance,
-                          final int requiredSamples,
-                          final int maxSamples) {
-        if (Double.isNaN(requiredTolerance) && requiredSamples == NULL_SAMPLES) {
+    public void calculate(final double requiredTolerance, final int requiredSamples, final int maxSamples) {
+        if ( Double.isNaN(requiredTolerance) && requiredSamples == NULL_SAMPLES ) {
             throw new IllegalArgumentException("neither tolerance nor number of samples set");
         }
 
-        if (controlVariate_) {
+        if ( controlVariate_ ) {
             final double cvValue = controlVariateValue();
-            if (Double.isNaN(cvValue)) {
+            if ( Double.isNaN(cvValue) ) {
                 throw new RuntimeException("engine does not provide control-variation price");
             }
-            final PathPricer<PathType> controlPP = controlPathPricer();
-            if (controlPP == null) {
+            final PathPricer< PathType > controlPP = controlPathPricer();
+            if ( controlPP == null ) {
                 throw new RuntimeException("engine does not provide control-variation path pricer");
             }
-            final MonteCarloModel.PathGeneratorAdapter<PathType> controlPG = controlPathGenerator();
-            this.mcModel_ = new MonteCarloModel<PathType>(
-                    pathGenerator(), pathPricer(), new Statistics(),
+            final MonteCarloModel.PathGeneratorAdapter< PathType > controlPG = controlPathGenerator();
+            this.mcModel_ = new MonteCarloModel< PathType >(pathGenerator(), pathPricer(), new Statistics(),
                     antitheticVariate_, controlPP, cvValue, controlPG);
         } else {
-            this.mcModel_ = new MonteCarloModel<PathType>(
-                    pathGenerator(), pathPricer(), new Statistics(),
+            this.mcModel_ = new MonteCarloModel< PathType >(pathGenerator(), pathPricer(), new Statistics(),
                     antitheticVariate_);
         }
 
-        if (!Double.isNaN(requiredTolerance)) {
-            if (maxSamples != NULL_SAMPLES) {
+        if ( !Double.isNaN(requiredTolerance) ) {
+            if ( maxSamples != NULL_SAMPLES ) {
                 value(requiredTolerance, maxSamples);
             } else {
                 value(requiredTolerance);

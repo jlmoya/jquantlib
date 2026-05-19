@@ -22,10 +22,8 @@
 package org.jquantlib.model;
 
 /**
- * Volatility type — port of C++ QuantLib v1.42.1
- * ql/termstructures/volatility/volatilitytype.hpp.
+ * Volatility type — port of C++ QuantLib v1.42.1 ql/termstructures/volatility/volatilitytype.hpp.
  */
 public enum VolatilityType {
-    ShiftedLognormal,
-    Normal
+    ShiftedLognormal, Normal
 }

@@ -33,8 +33,12 @@ import java.util.List;
  */
 public class BinomialProbabilityOfAtLeastNEvents {
     private final int n_;
-    public BinomialProbabilityOfAtLeastNEvents(final int n) { this.n_ = n; }
-    public double op(final List<Double> p) {
+
+    public BinomialProbabilityOfAtLeastNEvents(final int n) {
+        this.n_ = n;
+    }
+
+    public double op(final List< Double > p) {
         return LossDist.binomialProbabilityOfAtLeastNEvents(n_, p);
     }
 }

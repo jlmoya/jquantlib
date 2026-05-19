@@ -37,23 +37,20 @@ public final class FarlieGumbelMorgensternCopulaRng {
     private final RandomNumberGenerator uniformGenerator_;
     private final double theta_;
 
-    public FarlieGumbelMorgensternCopulaRng(final RandomNumberGenerator uniformGenerator,
-                                            final double theta) {
-        QL.require(theta >= -1.0 && theta <= 1.0,
-                "theta (" + theta + ") must be in [-1,1]");
+    public FarlieGumbelMorgensternCopulaRng(final RandomNumberGenerator uniformGenerator, final double theta) {
+        QL.require(theta >= -1.0 && theta <= 1.0, "theta (" + theta + ") must be in [-1,1]");
         this.uniformGenerator_ = uniformGenerator;
         this.theta_ = theta;
     }
 
     /** Returns a 2-dim sample drawn from the FGM copula. */
-    public Sample<double[]> next() {
-        final Sample<Double> v1 = uniformGenerator_.next();
-        final Sample<Double> v2 = uniformGenerator_.next();
+    public Sample< double[] > next() {
+        final Sample< Double > v1 = uniformGenerator_.next();
+        final Sample< Double > v2 = uniformGenerator_.next();
         final double u1 = v1.value();
         final double a = theta_ * (2.0 * u1 - 1.0);
-        final double b = Math.pow(1.0 - theta_ * (2.0 * u1 - 1.0), 2.0)
-                + 4.0 * theta_ * v2.value() * (2.0 * u1 - 1.0);
+        final double b = Math.pow(1.0 - theta_ * (2.0 * u1 - 1.0), 2.0) + 4.0 * theta_ * v2.value() * (2.0 * u1 - 1.0);
         final double u2 = (2.0 * v2.value()) / (Math.sqrt(b) - a);
-        return new Sample<double[]>(new double[] { u1, u2 }, v1.weight() * v2.weight());
+        return new Sample< double[] >(new double[] { u1, u2 }, v1.weight() * v2.weight());
     }
 }

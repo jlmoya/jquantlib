@@ -45,10 +45,8 @@ import org.jquantlib.time.Schedule;
  * ({@code ql/experimental/credit/nthtodefault.{hpp,cpp}}).
  *
  * <p>An NTD instrument exchanges protection against the n-th default in
- * a basket of underlying credits for premium payments based on the
- * protected notional amount. Pricing follows the Hull-White (2004)
- * algorithm; default correlation is modelled via a one-factor Gaussian
- * copula.
+ * a basket of underlying credits for premium payments based on the protected notional amount. Pricing follows the
+ * Hull-White (2004) algorithm; default correlation is modelled via a one-factor Gaussian copula.
  *
  * <p>Phase 4m.5 work-item 4.
  */
@@ -74,15 +72,9 @@ public class NthToDefault extends Instrument {
     /** Pricing engine's per-instrument error estimate (mirrors C++ {@code errorEstimate_}). */
     private double ntdErrorEstimate = Constants.NULL_REAL;
 
-    public NthToDefault(final Basket basket,
-                        final int n,
-                        final Protection.Side side,
-                        final Schedule premiumSchedule,
-                        final double upfrontRate,
-                        final double premiumRate,
-                        final DayCounter dayCounter,
-                        final double nominal,
-                        final boolean settlePremiumAccrual) {
+    public NthToDefault(final Basket basket, final int n, final Protection.Side side, final Schedule premiumSchedule,
+            final double upfrontRate, final double premiumRate, final DayCounter dayCounter, final double nominal,
+            final boolean settlePremiumAccrual) {
         this.basket = basket;
         this.n = n;
         this.side = side;
@@ -93,16 +85,12 @@ public class NthToDefault extends Instrument {
         this.dayCounter = dayCounter;
         this.settlePremiumAccrual = settlePremiumAccrual;
 
-        QL.require(n <= basket.size(),
-                "NTD order provided is larger than the basket size.");
+        QL.require(n <= basket.size(), "NTD order provided is larger than the basket size.");
         QL.require(basket.refDate().compareTo(premiumSchedule.startDate()) <= 0,
                 "Basket did not exist before contract start.");
 
-        this.premiumLeg = new FixedRateLeg(premiumSchedule, dayCounter)
-                .withNotionals(nominal)
-                .withCouponRates(premiumRate)
-                .withPaymentAdjustment(BusinessDayConvention.Unadjusted)
-                .Leg();
+        this.premiumLeg = new FixedRateLeg(premiumSchedule, dayCounter).withNotionals(nominal)
+                .withCouponRates(premiumRate).withPaymentAdjustment(BusinessDayConvention.Unadjusted).Leg();
 
         basket.addObserver(this);
     }
@@ -141,8 +129,7 @@ public class NthToDefault extends Instrument {
 
     @Override
     public boolean isExpired() {
-        return premiumLeg.last().date()
-                .compareTo(new Settings().evaluationDate()) <= 0;
+        return premiumLeg.last().date().compareTo(new Settings().evaluationDate()) <= 0;
     }
 
     public double fairPremium() {
@@ -165,13 +152,12 @@ public class NthToDefault extends Instrument {
     }
 
     /**
-     * Per-instrument error estimate (e.g. Monte-Carlo standard error)
-     * mirrors C++ {@code NthToDefault::errorEstimate()}.
+     * Per-instrument error estimate (e.g. Monte-Carlo standard error) mirrors C++
+     * {@code NthToDefault::errorEstimate()}.
      *
      * <p>Note: {@link Instrument#errorEstimate()} is already declared
-     * {@code final} in the JQuantLib base, so this getter is named
-     * {@link #ntdErrorEstimate()}. Engines that propagate per-instrument
-     * uncertainty should set the corresponding field on the results.
+     * {@code final} in the JQuantLib base, so this getter is named {@link #ntdErrorEstimate()}. Engines that propagate
+     * per-instrument uncertainty should set the corresponding field on the results.
      */
     public double ntdErrorEstimate() {
         calculate();
@@ -191,8 +177,7 @@ public class NthToDefault extends Instrument {
 
     @Override
     protected void setupArguments(final PricingEngine.Arguments args) {
-        QL.require(args instanceof NthToDefault.ArgumentsImpl,
-                ReflectConstants.WRONG_ARGUMENT_TYPE);
+        QL.require(args instanceof NthToDefault.ArgumentsImpl, ReflectConstants.WRONG_ARGUMENT_TYPE);
         final NthToDefault.ArgumentsImpl a = (NthToDefault.ArgumentsImpl) args;
         a.basket = basket;
         a.side = side;
@@ -207,8 +192,7 @@ public class NthToDefault extends Instrument {
     @Override
     protected void fetchResults(final PricingEngine.Results r) {
         super.fetchResults(r);
-        QL.require(r instanceof NthToDefault.ResultsImpl,
-                ReflectConstants.WRONG_ARGUMENT_TYPE);
+        QL.require(r instanceof NthToDefault.ResultsImpl, ReflectConstants.WRONG_ARGUMENT_TYPE);
         final NthToDefault.ResultsImpl res = (NthToDefault.ResultsImpl) r;
         premiumValue = res.premiumValue;
         protectionValue = res.protectionValue;

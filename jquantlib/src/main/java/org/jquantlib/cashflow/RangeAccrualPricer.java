@@ -33,9 +33,6 @@
 
 package org.jquantlib.cashflow;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.indexes.IborIndex;
 import org.jquantlib.lang.exceptions.LibraryException;
@@ -45,6 +42,9 @@ import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.TimeUnit;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Abstract base for {@link RangeAccrualFloatersCoupon} pricers.
  *
@@ -52,8 +52,8 @@ import org.jquantlib.time.TimeUnit;
  * defined in {@code ql/cashflows/rangeaccrual.hpp}.</p>
  *
  * <p>{@link #initialize(FloatingRateCoupon)} caches all the per-coupon
- * inputs (start/end times, observation times, initial Libor fixings,
- * discount factor, accrual). Subclasses implement {@link #swapletPrice()}.</p>
+ * inputs (start/end times, observation times, initial Libor fixings, discount factor, accrual). Subclasses implement
+ * {@link #swapletPrice()}.</p>
  *
  * @author JQuantLib Phase 5e.7 port
  */
@@ -63,9 +63,9 @@ public abstract class RangeAccrualPricer extends FloatingRateCouponPricer {
     protected double startTime_;                    // S
     protected double endTime_;                      // T
     protected double accrualFactor_;                // T-S
-    protected List<Double> observationTimeLags_;    // d
-    protected List<Double> observationTimes_;       // U
-    protected List<Double> initialValues_;
+    protected List< Double > observationTimeLags_;    // d
+    protected List< Double > observationTimes_;       // U
+    protected List< Double > initialValues_;
     protected int observationsNo_;
     protected double lowerTrigger_;
     protected double upperTrigger_;
@@ -76,18 +76,16 @@ public abstract class RangeAccrualPricer extends FloatingRateCouponPricer {
 
     @Override
     public void initialize(final FloatingRateCoupon coupon) {
-        QL.require(coupon instanceof RangeAccrualFloatersCoupon,
-                   "range-accrual coupon required");
+        QL.require(coupon instanceof RangeAccrualFloatersCoupon, "range-accrual coupon required");
         coupon_ = (RangeAccrualFloatersCoupon) coupon;
         gearing_ = coupon_.gearing();
         spread_ = coupon_.spread();
 
         final Date paymentDate = coupon_.date();
 
-        QL.require(coupon_.index() instanceof IborIndex,
-                   "IborIndex required for range-accrual pricer");
+        QL.require(coupon_.index() instanceof IborIndex, "IborIndex required for range-accrual pricer");
         final IborIndex index = (IborIndex) coupon_.index();
-        final Handle<YieldTermStructure> rateCurve = index.termStructure();
+        final Handle< YieldTermStructure > rateCurve = index.termStructure();
         discount_ = rateCurve.currentLink().discount(paymentDate);
         accrualFactor_ = coupon_.accrualPeriod();
         spreadLegValue_ = spread_ * accrualFactor_ * discount_;
@@ -99,17 +97,13 @@ public abstract class RangeAccrualPricer extends FloatingRateCouponPricer {
         upperTrigger_ = coupon_.upperTrigger();
         observationsNo_ = coupon_.observationsNo();
 
-        final List<Date> observationDates = coupon_.observationSchedule().dates();
-        QL.require(observationDates.size() == observationsNo_ + 2,
-                   "incompatible size of initialValues vector");
+        final List< Date > observationDates = coupon_.observationSchedule().dates();
+        QL.require(observationDates.size() == observationsNo_ + 2, "incompatible size of initialValues vector");
 
-        initialValues_ = new ArrayList<Double>(observationDates.size());
+        initialValues_ = new ArrayList< Double >(observationDates.size());
         final Calendar calendar = index.fixingCalendar();
-        for (int i = 0; i < observationDates.size(); ++i) {
-            final Date fixingDate = calendar.advance(
-                observationDates.get(i),
-                -coupon_.fixingDays(),
-                TimeUnit.Days);
+        for ( int i = 0; i < observationDates.size(); ++i ) {
+            final Date fixingDate = calendar.advance(observationDates.get(i), -coupon_.fixingDays(), TimeUnit.Days);
             initialValues_.add(index.fixing(fixingDate));
         }
     }

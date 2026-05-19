@@ -43,12 +43,10 @@ import org.jquantlib.time.TimeGrid;
  * <p>
  * This class implements the Cox-Ingersoll-Ross model defined by
  * <p>{@latex[ dr_t = k(\theta - r_t)dt + \sqrt{r_t}\sigma dW_t}
- * 
- * @bug this class was not tested enough to guarantee its functionality.
- * 
- * @category shortrate
- * 
+ *
  * @author Praneet Tiwari
+ * @bug this class was not tested enough to guarantee its functionality.
+ * @category shortrate
  */
 // TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class CoxIngersollRoss extends OneFactorAffineModel {
@@ -58,28 +56,40 @@ public class CoxIngersollRoss extends OneFactorAffineModel {
     private static final String strike_must_be_positive = "strike must be positive";
     private static final String unsupported_option_type = "unsupported option type";
 
-    // Internal Parameter accessors (Phase 2b WI-3 indirection — replaces
-    // the C++ Parameter& reference binding `theta_(arguments_[0]), ...`
-    // in coxingersollross.cpp).
-    protected Parameter thetaParam()  { return arguments_.get(0); }
-    protected Parameter kParam()      { return arguments_.get(1); }
-    protected Parameter sigmaParam()  { return arguments_.get(2); }
-    protected Parameter r0Param()     { return arguments_.get(3); }
-
     public CoxIngersollRoss() {
         this(0.05, 0.1, 0.1, 0.1);
     }
 
-    public CoxIngersollRoss(final double /* @Rate */r0, final double /* @Real */theta, final double /* @Real */k, final double /* @Real */sigma) {
+    public CoxIngersollRoss(final double /* @Rate */r0, final double /* @Real */theta, final double /* @Real */k,
+            final double /* @Real */sigma) {
         super(4);
         // Matches v1.42.1 default (withFellerConstraint=false): all four
         // arguments use PositiveConstraint. The previous Java code used
         // VolatilityConstraint(k,theta) for sigma unconditionally, which
         // diverges from the C++ default-arg branch.
         arguments_.set(0, new ConstantParameter(theta, new PositiveConstraint()));
-        arguments_.set(1, new ConstantParameter(k,     new PositiveConstraint()));
+        arguments_.set(1, new ConstantParameter(k, new PositiveConstraint()));
         arguments_.set(2, new ConstantParameter(sigma, new PositiveConstraint()));
-        arguments_.set(3, new ConstantParameter(r0,    new PositiveConstraint()));
+        arguments_.set(3, new ConstantParameter(r0, new PositiveConstraint()));
+    }
+
+    // Internal Parameter accessors (Phase 2b WI-3 indirection — replaces
+    // the C++ Parameter& reference binding `theta_(arguments_[0]), ...`
+    // in coxingersollross.cpp).
+    protected Parameter thetaParam() {
+        return arguments_.get(0);
+    }
+
+    protected Parameter kParam() {
+        return arguments_.get(1);
+    }
+
+    protected Parameter sigmaParam() {
+        return arguments_.get(2);
+    }
+
+    protected Parameter r0Param() {
+        return arguments_.get(3);
     }
 
     protected double /* @Real */theta() {
@@ -98,7 +108,6 @@ public class CoxIngersollRoss extends OneFactorAffineModel {
         return r0Param().get(0.0);
     }
 
-
     //
     // overrides OneFactorModel
     //
@@ -109,23 +118,20 @@ public class CoxIngersollRoss extends OneFactorAffineModel {
     }
 
     @Override
-    public double /* @Real */discountBondOption(
-            final Option.Type type,
-            final double /* @Real */strike,
-            final double /* @Time */t,
-            final double /* @Time */s) {
-        QL.require(strike > 0.0 , strike_must_be_positive); // TODO: message
+    public double /* @Real */discountBondOption(final Option.Type type, final double /* @Real */strike,
+            final double /* @Time */t, final double /* @Time */s) {
+        QL.require(strike > 0.0, strike_must_be_positive); // TODO: message
         final double /* @DiscountFactor */discountT = discountBond(0.0, t, x0());
         final double /* @DiscountFactor */discountS = discountBond(0.0, s, x0());
 
-        if (t < Constants.QL_EPSILON) {
-            switch(type) {
-                case Call:
-                    return Math.max(discountS - strike, 0.0);
-                case Put:
-                    return Math.max(strike - discountS, 0.0);
-                default:
-                    throw new LibraryException(unsupported_option_type); // QA:[RG]::verified
+        if ( t < Constants.QL_EPSILON ) {
+            switch ( type ) {
+            case Call:
+                return Math.max(discountS - strike, 0.0);
+            case Put:
+                return Math.max(strike - discountS, 0.0);
+            default:
+                throw new LibraryException(unsupported_option_type); // QA:[RG]::verified
             }
         }
 
@@ -144,12 +150,12 @@ public class CoxIngersollRoss extends OneFactorAffineModel {
         final NonCentralChiSquaredDistribution chit = new NonCentralChiSquaredDistribution(df, ncpt);
 
         final double /* @Real */z = Math.log(A(t, s) / strike) / b;
-        final double /*@Real*/ call = discountS*chis.op(2.0*z*(rho+psi+b)) -
-        strike*discountT*chit.op(2.0*z*(rho+psi));
+        final double /*@Real*/ call =
+                discountS * chis.op(2.0 * z * (rho + psi + b)) - strike * discountT * chit.op(2.0 * z * (rho + psi));
 
         // Mirrors v1.42.1 coxingersollross.cpp:119-122 — put-call parity
         // gives the Put leg directly from the Call leg.
-        if (type == Option.Type.Call) {
+        if ( type == Option.Type.Call ) {
             return call;
         } else {
             return call - discountS + strike * discountT;
@@ -182,7 +188,6 @@ public class CoxIngersollRoss extends OneFactorAffineModel {
         return value;
     }
 
-
     //
     // protected inner classes
     //
@@ -190,13 +195,15 @@ public class CoxIngersollRoss extends OneFactorAffineModel {
     /**
      * Dynamics of the short-rate under the Cox-Ingersoll-Ross model
      * <p>
-     * The state variable {@latex$ y_t } will here be the square-root of the short-rate.
-     * It satisfies the following stochastic equation
-     * {@latex[dy_t = \left[ (\frac{k\theta }{2}+\frac{\sigma^2}{8})\frac{1}{y_t}-\frac{k}{2}y_t \right]d_t+\frac{\sigma}{2}dW_{t}}.
+     * The state variable {@latex$ y_t } will here be the square-root of the short-rate. It satisfies the following
+     * stochastic equation
+     * {@latex[dy_t = \left[ (\frac{k\theta }{2}+\frac{\sigma^2}{8})\frac{1}{y_t}-\frac{k}{2}y_t
+     * \right]d_t+\frac{\sigma}{2}dW_{t}}.
      */
     protected class Dynamics extends ShortRateDynamics {
 
-        public Dynamics(final double /* @Real */theta, final double /* @Real */k, final double /* @Real */sigma, final double /* @Real */x0) {
+        public Dynamics(final double /* @Real */theta, final double /* @Real */k, final double /* @Real */sigma,
+                final double /* @Real */x0) {
             super(new HelperProcess(theta, k, sigma, Math.sqrt(x0)));
         }
 
@@ -210,7 +217,6 @@ public class CoxIngersollRoss extends OneFactorAffineModel {
             return y * y;
         }
     }
-
 
     //
     // private inner classes
@@ -228,19 +234,19 @@ public class CoxIngersollRoss extends OneFactorAffineModel {
         @Override
         public boolean test(final Array array) /*@ReadOnly*/ {
             final double sigma = array.first();
-            if (sigma <= 0.0) {
+            if ( sigma <= 0.0 ) {
                 return false;
             }
-            if (sigma * sigma >= 2.0 * k * theta) {
-                return false;
-            }
-            return true;
+            return !(sigma * sigma >= 2.0 * k * theta);
         }
     }
 
     private class HelperProcess extends StochasticProcess1D {
 
-        public HelperProcess(final double /* @Real */theta, final double /* @Real */k, final double /* @Real */sigma, final double /* @Real */y0) {
+        private final double /* @Real */y0_, theta_, k_, sigma_;
+
+        public HelperProcess(final double /* @Real */theta, final double /* @Real */k, final double /* @Real */sigma,
+                final double /* @Real */y0) {
             this.y0_ = y0;
             this.theta_ = theta;
             this.k_ = k;
@@ -261,8 +267,6 @@ public class CoxIngersollRoss extends OneFactorAffineModel {
         public double /* @Real */diffusion(final double /* @Time */t, final double /* @Real */y) {
             return 0.5 * sigma_;
         }
-
-        private final double /* @Real */y0_, theta_, k_, sigma_;
     }
 
 }

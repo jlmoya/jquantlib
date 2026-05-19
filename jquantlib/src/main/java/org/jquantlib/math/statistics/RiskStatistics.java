@@ -45,14 +45,14 @@ import org.jquantlib.lang.annotation.QualityAssurance.Version;
 
 /**
  * This class is simply an equivalence to GenericRiskStatistics
- * 
+ *
  * @author Richard Gomes
  */
-@QualityAssurance(quality = Quality.Q4_UNIT, reviewers = { "Richard Gomes" }, version = Version.V097)
+@QualityAssurance( quality = Quality.Q4_UNIT, reviewers = { "Richard Gomes" }, version = Version.V097 )
 public class RiskStatistics extends GenericRiskStatistics {
 
-	public RiskStatistics() {
-		super();
-	}
+    public RiskStatistics() {
+        super();
+    }
 
 }

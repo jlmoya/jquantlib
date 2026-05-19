@@ -39,36 +39,20 @@
 
 package org.jquantlib.currencies;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.currencies.America.PEHCurrency;
 import org.jquantlib.currencies.America.PEICurrency;
 import org.jquantlib.currencies.America.PENCurrency;
-import org.jquantlib.currencies.Europe.ATSCurrency;
-import org.jquantlib.currencies.Europe.BEFCurrency;
-import org.jquantlib.currencies.Europe.DEMCurrency;
-import org.jquantlib.currencies.Europe.ESPCurrency;
-import org.jquantlib.currencies.Europe.EURCurrency;
-import org.jquantlib.currencies.Europe.FIMCurrency;
-import org.jquantlib.currencies.Europe.FRFCurrency;
-import org.jquantlib.currencies.Europe.GRDCurrency;
-import org.jquantlib.currencies.Europe.IEPCurrency;
-import org.jquantlib.currencies.Europe.ITLCurrency;
-import org.jquantlib.currencies.Europe.LUFCurrency;
-import org.jquantlib.currencies.Europe.NLGCurrency;
-import org.jquantlib.currencies.Europe.PTECurrency;
-import org.jquantlib.currencies.Europe.ROLCurrency;
-import org.jquantlib.currencies.Europe.RONCurrency;
-import org.jquantlib.currencies.Europe.TRLCurrency;
-import org.jquantlib.currencies.Europe.TRYCurrency;
+import org.jquantlib.currencies.Europe.*;
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.lang.iterators.Iterables;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Month;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 /**
  * Exchange rate Repository.
@@ -78,7 +62,18 @@ public class ExchangeRateManager {
     /** Singleton instance of the ExchangeRateManager. */
     private static volatile ExchangeRateManager instance = null;
     /** The HashMape containing all ExchangeRates. */
-    protected final HashMap<Object, List<Entry>> data_ = new HashMap<Object, List<Entry>>();
+    protected final HashMap< Object, List< Entry > > data_ = new HashMap< Object, List< Entry > >();
+
+    /**
+     * Constructs a new ExchangeRateManager and initialises the most used rates. Note: private; should only be accessed
+     * by getInstance().
+     */
+    //-- ExchangeRateManager(); in ql/currencies/exchangeratemanager.cpp:41
+    protected ExchangeRateManager() {
+        addKnownRates();
+    }
+
+    // FIXME: check whether this should be derived from some kind of (generic function)
 
     /**
      * Returns a singleton of the ExchangeRateManager.
@@ -87,9 +82,9 @@ public class ExchangeRateManager {
      */
     //FIXME: remove singleton pattern
     public static ExchangeRateManager getInstance() {
-        if (instance == null) {
-            synchronized (ExchangeRateManager.class) {
-                if (instance == null) {
+        if ( instance == null ) {
+            synchronized ( ExchangeRateManager.class ) {
+                if ( instance == null ) {
                     instance = new ExchangeRateManager();
                 }
             }
@@ -97,80 +92,32 @@ public class ExchangeRateManager {
         return instance;
     }
 
-    // FIXME: check whether this should be derived from some kind of (generic function)
-    /**
-     * Helper class to decide whether or a date is in the range of a specific entry.
-     */
-    public static class Valid_at /* implements Ops.DoublePredicate */{
-        Date d;
-
-        public Valid_at(final Date d) {
-            this.d = d;
-        }
-
-        public boolean operator(final Entry e) {
-            return d.ge(e.startDate) && d.le(e.endDate);
-        }
-        // @Override
-        // public boolean op(double a) {
-        // // TODO Auto-generated method stub
-        // return false;
-        // }
-
-    }
-
-    /**
-     * Entity to be stored in the repository.
-     */
-    public static class Entry {
-        /** The ExchangeRate of this Entry. */
-        public ExchangeRate rate;
-        /** Start and end date for this currency (note: they can be present multiple times in the repository) */
-        public Date startDate, endDate;
-
-        /**
-         * Constructs a new Entry
-         *
-         * @param rate The ExchangeRate
-         * @param start The start date of the period this ExchangeRate should be used (ie. when it should be used)
-         * @param end The end date of the period this ExchangeRate should be used (ie. when it should be used)
-         */
-        public Entry(final ExchangeRate rate, final Date start, final Date end) {
-            this.rate = (rate);
-            this.startDate = (start);
-            this.endDate = (end);
-        };
-    }
-
-    /**
-     * Constructs a new ExchangeRateManager and initialises the most used rates. Note: private; should only be accessed by
-     * getInstance().
-     */
-    //-- ExchangeRateManager(); in ql/currencies/exchangeratemanager.cpp:41
-    protected ExchangeRateManager() {
-        addKnownRates();
+    protected static void setInstance(ExchangeRateManager _instance) {
+        instance = _instance;
     }
 
     /**
      * Adds an exchange rate. The given rate is valid between the given dates.
      *
-     * Note: If two rates are given between the same currencies and with overlapping date ranges, the latest one added takes
-     * precedence during lookup.
+     * Note: If two rates are given between the same currencies and with overlapping date ranges, the latest one added
+     * takes precedence during lookup.
      *
-     * @param rate The ExchangeRate to be added
+     * @param rate      The ExchangeRate to be added
      * @param startDate The start date of the period for which the above Exchange rate should be valid.
-     * @param endDate The end date of the period for which the above Exchange rate should be valid.
+     * @param endDate   The end date of the period for which the above Exchange rate should be valid.
      */
     public void add(final ExchangeRate rate, final Date startDate, final Date endDate) {
-        /* @Key */final int k = hash(rate.source(), rate.target());
-        if (data_.get(k) == null) {
-            data_.put(k, new ArrayList<Entry>());
+        /* @Key */
+        final int k = hash(rate.source(), rate.target());
+        if ( data_.get(k) == null ) {
+            data_.put(k, new ArrayList< Entry >());
         }
         data_.get(k).add(0, new Entry(rate, startDate, endDate));
     }
 
     /**
-     * Adds an exchange rate to the repository. The given rate is valid between min and max Date (implementation dependend).
+     * Adds an exchange rate to the repository. The given rate is valid between min and max Date (implementation
+     * dependend).
      *
      * @param rate
      */
@@ -194,37 +141,38 @@ public class ExchangeRateManager {
     }
 
     /**
-     * Lookup the exchange rate between two currencies at a given date. If the given type is Direct, only direct exchange rates will
-     * be returned if available; if Derived, direct rates are still preferred but derived rates are allowed.
+     * Lookup the exchange rate between two currencies at a given date. If the given type is Direct, only direct
+     * exchange rates will be returned if available; if Derived, direct rates are still preferred but derived rates are
+     * allowed.
      *
-     * Warning: if two or more exchange-rate chains are possible which allow to specify a requested rate, it is unspecified which
-     * one is returned.
+     * Warning: if two or more exchange-rate chains are possible which allow to specify a requested rate, it is
+     * unspecified which one is returned.
      *
      * @param source The source currency of the exchange rate to be found. Currency
      * @param target The target currency of the exchange rate to be found. Currency
-     * @param date The date when this exchange rate should be valid. Date
-     * @param type The type of the exchange rate. ExchangeRate.Type
+     * @param date   The date when this exchange rate should be valid. Date
+     * @param type   The type of the exchange rate. ExchangeRate.Type
      * @return The exchange rate fulfilling all these properties. ExchangeRate
      */
     public ExchangeRate lookup(final Currency source, final Currency target, Date date, final ExchangeRate.Type type) {
-        if (source.eq(target))
+        if ( source.eq(target) )
             return new ExchangeRate(source, target, 1.0);
 
-        if (date.isToday()) {
+        if ( date.isToday() ) {
             date = new Settings().evaluationDate();
         }
 
-        if (type == ExchangeRate.Type.Direct)
+        if ( type == ExchangeRate.Type.Direct )
             return directLookup(source, target, date);
-        else if (!source.triangulationCurrency().empty()) {
+        else if ( !source.triangulationCurrency().empty() ) {
             final Currency link = source.triangulationCurrency();
-            if (link.eq(target))
+            if ( link.eq(target) )
                 return directLookup(source, link, date);
             else
                 return ExchangeRate.chain(directLookup(source, link, date), lookup(link, target, date));
-        } else if (!target.triangulationCurrency().empty()) {
+        } else if ( !target.triangulationCurrency().empty() ) {
             final Currency link = target.triangulationCurrency();
-            if (source.eq(link))
+            if ( source.eq(link) )
                 return directLookup(link, target, date);
             else
                 return ExchangeRate.chain(lookup(source, link, date), directLookup(link, target, date));
@@ -269,87 +217,25 @@ public class ExchangeRateManager {
     protected void addKnownRates() {
         final Date maxDate = Date.maxDate();
         // currencies obsoleted by Euro
-        add(new ExchangeRate(
-                new EURCurrency(),
-                new ATSCurrency(), 13.7603),
-                new Date(1, Month.January,1999),
+        add(new ExchangeRate(new EURCurrency(), new ATSCurrency(), 13.7603), new Date(1, Month.January, 1999), maxDate);
+        add(new ExchangeRate(new EURCurrency(), new BEFCurrency(), 40.3399), new Date(1, Month.January, 1999), maxDate);
+        add(new ExchangeRate(new EURCurrency(), new DEMCurrency(), 1.95583), new Date(1, Month.January, 1999), maxDate);
+        add(new ExchangeRate(new EURCurrency(), new ESPCurrency(), 166.386), new Date(1, Month.January, 1999), maxDate);
+        add(new ExchangeRate(new EURCurrency(), new FIMCurrency(), 5.94573), new Date(1, Month.January, 1999), maxDate);
+        add(new ExchangeRate(new EURCurrency(), new FRFCurrency(), 6.55957), new Date(1, Month.January, 1999), maxDate);
+        add(new ExchangeRate(new EURCurrency(), new GRDCurrency(), 340.750), new Date(1, Month.January, 2001), maxDate);
+        add(new ExchangeRate(new EURCurrency(), new IEPCurrency(), 0.787564), new Date(1, Month.January, 1999),
                 maxDate);
-        add(new ExchangeRate(
-                new EURCurrency(),
-                new BEFCurrency(), 40.3399),
-                new Date(1, Month.January, 1999),
-                maxDate);
-        add(new ExchangeRate(
-                new EURCurrency(),
-                new DEMCurrency(), 1.95583),
-                new Date(1, Month.January, 1999),
-                maxDate);
-        add(new ExchangeRate(
-                new EURCurrency(),
-                new ESPCurrency(), 166.386),
-                new Date(1, Month.January, 1999),
-                maxDate);
-        add(new ExchangeRate(
-                new EURCurrency(),
-                new FIMCurrency(), 5.94573),
-                new Date(1, Month.January, 1999),
-                maxDate);
-        add(new ExchangeRate(
-                new EURCurrency(),
-                new FRFCurrency(), 6.55957),
-                new Date(1, Month.January, 1999),
-                maxDate);
-        add(new ExchangeRate(
-                new EURCurrency(),
-                new GRDCurrency(), 340.750),
-                new Date(1, Month.January, 2001),
-                maxDate);
-        add(new ExchangeRate(
-                new EURCurrency(),
-                new IEPCurrency(), 0.787564),
-                new Date(1, Month.January, 1999),
-                maxDate);
-        add(new ExchangeRate(
-                new EURCurrency(),
-                new ITLCurrency(), 1936.27),
-                new Date(1, Month.January, 1999),
-                maxDate);
-        add(new ExchangeRate(
-                new EURCurrency(),
-                new LUFCurrency(), 40.3399),
-                new Date(1, Month.January, 1999),
-                maxDate);
-        add(new ExchangeRate(
-                new EURCurrency(),
-                new NLGCurrency(), 2.20371),
-                new Date(1, Month.January, 1999),
-                maxDate);
-        add(new ExchangeRate(
-                new EURCurrency(),
-                new PTECurrency(), 200.482),
-                new Date(1, Month.January, 1999),
-                maxDate);
+        add(new ExchangeRate(new EURCurrency(), new ITLCurrency(), 1936.27), new Date(1, Month.January, 1999), maxDate);
+        add(new ExchangeRate(new EURCurrency(), new LUFCurrency(), 40.3399), new Date(1, Month.January, 1999), maxDate);
+        add(new ExchangeRate(new EURCurrency(), new NLGCurrency(), 2.20371), new Date(1, Month.January, 1999), maxDate);
+        add(new ExchangeRate(new EURCurrency(), new PTECurrency(), 200.482), new Date(1, Month.January, 1999), maxDate);
         // other obsoleted currencies
-        add(new ExchangeRate(
-                new TRYCurrency(),
-                new TRLCurrency(), 1000000.0),
-                new Date(1, Month.January, 2005),
+        add(new ExchangeRate(new TRYCurrency(), new TRLCurrency(), 1000000.0), new Date(1, Month.January, 2005),
                 maxDate);
-        add(new ExchangeRate(
-                new RONCurrency(),
-                new ROLCurrency(), 10000.0),
-                new Date(1, Month.July, 2005),
-                maxDate);
-        add(new ExchangeRate(
-                new PENCurrency(),
-                new PEICurrency(), 1000000.0),
-                new Date(1, Month.July, 1991),
-                maxDate);
-        add(new ExchangeRate(
-                new PEICurrency(),
-                new PEHCurrency(), 1000.0),
-                new Date(1, Month.February, 1985),
-                maxDate);
+        add(new ExchangeRate(new RONCurrency(), new ROLCurrency(), 10000.0), new Date(1, Month.July, 2005), maxDate);
+        add(new ExchangeRate(new PENCurrency(), new PEICurrency(), 1000000.0), new Date(1, Month.July, 1991), maxDate);
+        add(new ExchangeRate(new PEICurrency(), new PEHCurrency(), 1000.0), new Date(1, Month.February, 1985), maxDate);
     }
 
     /**
@@ -357,7 +243,7 @@ public class ExchangeRateManager {
      *
      * @param source The source currency of the exchange rate. Currency
      * @param target The target currency of the exchange rate. Currency
-     * @param date The date the exchange rate should be valid at. Date
+     * @param date   The date the exchange rate should be valid at. Date
      * @return The found exchange rate. ExchangeRate
      */
     //-- ExchangeRate directLookup(const Currency&, const Currency&, const Date&) const;
@@ -365,8 +251,7 @@ public class ExchangeRateManager {
     protected ExchangeRate directLookup(final Currency source, final Currency target, final Date date) {
         final ExchangeRate rate = fetch(source, target, date);
         QL.require(rate != null,
-                "no direct conversion available from " + source.code()
-                        + " to " + target.code() + " for " + date);
+                "no direct conversion available from " + source.code() + " to " + target.code() + " for " + date);
         return rate;
     }
 
@@ -380,59 +265,58 @@ public class ExchangeRateManager {
     /**
      * Looks up an exchange rate in the repository
      *
-     * @param source The source currency of the exchange rate.
-     * @param target The target currency of the exchange rate.
-     * @param date The date when the exchange rate should be valid.
+     * @param source    The source currency of the exchange rate.
+     * @param target    The target currency of the exchange rate.
+     * @param date      The date when the exchange rate should be valid.
      * @param forbidden The index array of forbidden source currencies.
      * @return The found ExchangeRate
      */
     protected ExchangeRate smartLookup(final Currency source, final Currency target, final Date date, int[] forbidden) {
         // direct exchange rates are preferred.
         final ExchangeRate direct = fetch(source, target, date);
-        if (direct != null)
+        if ( direct != null )
             return direct;
 
         // if none is found, turn to smart lookup. The source currency
         // is forbidden to subsequent lookups in order to avoid cycles.
-        final int temp[] = forbidden.clone();
+        final int[] temp = forbidden.clone();
         forbidden = new int[temp.length + 1];
         System.arraycopy(temp, 0, forbidden, 0, temp.length);
         forbidden[forbidden.length - 1] = (source.numericCode());
 
-        for (final Object key : Iterables.unmodifiableIterable(data_.keySet())) {
+        for ( final Object key : Iterables.unmodifiableIterable(data_.keySet()) ) {
             // we look for exchange-rate data which involve our source
             // currency...
-            if (hashes((Integer) key, source) && !(data_.get(key).isEmpty())) {
+            if ( hashes((Integer) key, source) && !(data_.get(key).isEmpty()) ) {
                 // ...whose other currency is not forbidden...
                 final Entry e = data_.get(key).get(0);
                 // C++ uses operator== on Currency (name-based); Java
                 // must use .eq() — `==` is reference identity which
                 // never holds for currencies cloned through Money/ExchangeRate.
                 final Currency other =
-                    // if
-                    (source.eq(e.rate.source())) ?
-                            // then
-                            e.rate.target()
-                            :
+                        // if
+                        (source.eq(e.rate.source())) ?
+                                // then
+                                e.rate.target() :
                                 // else
                                 e.rate.source();
-                            // C++ checks `std::find(...) == forbidden.end()`
-                            // i.e. "not found". Java's match() returns -1 on
-                            // not-found, so the correct condition is == -1.
-                            if (match(forbidden, other.numericCode()) == -1) {
-                                // ...and which carries information for the requested date.
-                                final ExchangeRate head = fetch(source, other, date);
-                                try {
-                                    if (head != null) {
-                                        final ExchangeRate tail = smartLookup(other, target, date, forbidden);
-                                        // ..we're done.
-                                        return ExchangeRate.chain(head, tail);
-                                    }
-                                } catch (final Exception ex) {
-                                    // fall through...
-                                    // otherwise, we just discard this rate.
-                                }
-                            }
+                // C++ checks `std::find(...) == forbidden.end()`
+                // i.e. "not found". Java's match() returns -1 on
+                // not-found, so the correct condition is == -1.
+                if ( match(forbidden, other.numericCode()) == -1 ) {
+                    // ...and which carries information for the requested date.
+                    final ExchangeRate head = fetch(source, other, date);
+                    try {
+                        if ( head != null ) {
+                            final ExchangeRate tail = smartLookup(other, target, date, forbidden);
+                            // ..we're done.
+                            return ExchangeRate.chain(head, tail);
+                        }
+                    } catch ( final Exception ex ) {
+                        // fall through...
+                        // otherwise, we just discard this rate.
+                    }
+                }
             }
         }
 
@@ -445,14 +329,14 @@ public class ExchangeRateManager {
      *
      * @param source The source currency of the exchange rate.
      * @param target The target currency of the exchange rate.
-     * @param date The date when the exchange rate should be valid.
+     * @param date   The date when the exchange rate should be valid.
      * @return The found ExchangeRate.
      */
     //-- const ExchangeRate* fetch(const Currency&, const Currency&, const Date&) const;
     //-- in ql/currencies/exchangeratemanager.cpp:194
     public ExchangeRate fetch(final Currency source, final Currency target, final Date date) {
-        final List<Entry> rates = data_.get(hash(source, target));
-        if (rates == null) {
+        final List< Entry > rates = data_.get(hash(source, target));
+        if ( rates == null ) {
             return null;  // C++ std::map::operator[] auto-inserts; Java HashMap.get returns null.
         }
         final int i = matchValidateAt(rates, date);
@@ -462,13 +346,13 @@ public class ExchangeRateManager {
     /**
      * Returns the index of the first element equals to a specific value-
      *
-     * @param list The int array to be examined. int[]
+     * @param list  The int array to be examined. int[]
      * @param value The value to be looked for. int
      * @return The first index value is found. int
      */
     protected int match(final int[] list, final int value) {
-        for (int i = 0; i < list.length; i++) {
-            if (value == list[i])
+        for ( int i = 0; i < list.length; i++ ) {
+            if ( value == list[i] )
                 return i;
         }
         return -1;
@@ -478,19 +362,60 @@ public class ExchangeRateManager {
      * Returns the index of the first valid element.
      *
      * @param rates The rates to be checked. List<Entry>
-     * @param date The date the rate has to be valid at. Date
+     * @param date  The date the rate has to be valid at. Date
      * @return The index of the first valid entry. int
      */
-    protected int matchValidateAt(final List<Entry> rates, final Date date) {
+    protected int matchValidateAt(final List< Entry > rates, final Date date) {
         final Valid_at va = new Valid_at(date);
-        for (int i = 0; i < rates.size(); i++) {
-            if (va.operator(rates.get(i)))
+        for ( int i = 0; i < rates.size(); i++ ) {
+            if ( va.operator(rates.get(i)) )
                 return i;
         }
         return -1;
     }
-    
-    protected static void setInstance(ExchangeRateManager _instance) {
-    	instance = _instance;
+
+    /**
+     * Helper class to decide whether or a date is in the range of a specific entry.
+     */
+    public static class Valid_at /* implements Ops.DoublePredicate */ {
+        Date d;
+
+        public Valid_at(final Date d) {
+            this.d = d;
+        }
+
+        public boolean operator(final Entry e) {
+            return d.ge(e.startDate) && d.le(e.endDate);
+        }
+        // @Override
+        // public boolean op(double a) {
+        // // TODO Auto-generated method stub
+        // return false;
+        // }
+
+    }
+
+    /**
+     * Entity to be stored in the repository.
+     */
+    public static class Entry {
+        /** The ExchangeRate of this Entry. */
+        public ExchangeRate rate;
+        /** Start and end date for this currency (note: they can be present multiple times in the repository) */
+        public Date startDate, endDate;
+
+        /**
+         * Constructs a new Entry
+         *
+         * @param rate  The ExchangeRate
+         * @param start The start date of the period this ExchangeRate should be used (ie. when it should be used)
+         * @param end   The end date of the period this ExchangeRate should be used (ie. when it should be used)
+         */
+        public Entry(final ExchangeRate rate, final Date start, final Date end) {
+            this.rate = (rate);
+            this.startDate = (start);
+            this.endDate = (end);
+        }
+
     }
 }

@@ -26,13 +26,11 @@ package org.jquantlib.math.distributions;
  * Functor that exposes both first and second derivatives.
  *
  * <p>Java port of the implicit C++ requirement on functors used by
- * {@code QuantLib v1.42.1 ql/math/solvers1d/halley.hpp}: the functor
- * must implement {@code Real operator()(Real)},
+ * {@code QuantLib v1.42.1 ql/math/solvers1d/halley.hpp}: the functor must implement {@code Real operator()(Real)},
  * {@code Real derivative(Real)}, and {@code Real secondDerivative(Real)}.
  *
  * <p>Mirrors {@link Derivative} (which adds {@code derivative(double)} on top
- * of {@link org.jquantlib.math.Ops.DoubleOp}) and adds the second-derivative
- * accessor needed by Halley's method.
+ * of {@link org.jquantlib.math.Ops.DoubleOp}) and adds the second-derivative accessor needed by Halley's method.
  *
  * @author JQuantLib
  */
@@ -44,5 +42,5 @@ public interface SecondDerivative extends Derivative {
      * @param x evaluation point
      * @return f''(x)
      */
-    public double secondDerivative(final double x) /* ReadOnly */;
+    double secondDerivative(final double x) /* ReadOnly */;
 }

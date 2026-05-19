@@ -49,77 +49,83 @@ import org.jquantlib.processes.StochasticProcess1D;
 /**
  * Tian tree: third moment matching, multiplicative approach
  *
- * @category lattices
- *
  * @author Richard Gomes
+ * @category lattices
  */
 public class ExtendedTian extends ExtendedBinomialTree /*<T>*/ {
 
+    //
+    // protected fields
+    //
 
-   //
-   // protected fields
-   //
+    private final double up_;
+    private final double down_;
+    private final double pu_;
+    private final double pd_;
 
-   private final double up_;
-   private final double down_;
-   private final double pu_;
-   private final double pd_;
+    //
+    // public methods
+    //
 
+    public ExtendedTian(final StochasticProcess1D process, final /* @Time */ double end, final int steps,
+            final double strike) {
 
-   //
-   // public methods
-   //
+        super(process, end, steps);
+        final /*@Real*/ double q = Math.exp(process.variance(0.0, x0, dt));
+        final /*@Real*/ double r = Math.exp(driftStep(0.0)) * Math.sqrt(q);
 
-   public ExtendedTian(
-           final StochasticProcess1D process,
-           final /* @Time */ double end,
-           final int steps,
-           final double strike) {
+        this.up_ = 0.5 * r * q * (q + 1 + Math.sqrt(q * q + 2 * q - 3));
+        this.down_ = 0.5 * r * q * (q + 1 - Math.sqrt(q * q + 2 * q - 3));
 
-       super(process, end, steps);
-       final /*@Real*/ double q = Math.exp(process.variance(0.0, x0, dt));
-       final /*@Real*/ double r = Math.exp(driftStep(0.0))*Math.sqrt(q);
+        this.pu_ = (r - down_) / (up_ - down_);
+        this.pd_ = 1.0 - pu_;
 
-       this.up_ = 0.5 * r * q * (q + 1 + Math.sqrt(q * q + 2 * q - 3));
-       this.down_ = 0.5 * r * q * (q + 1 - Math.sqrt(q * q + 2 * q - 3));
+        // ::::: This comment came from QuantLib/C++ :::::
+        // doesn't work
+        //            treeCentering_ = (up_+down_)/2.0;
+        //            up_ = up_-treeCentering_;
 
-       this.pu_ = (r - down_) / (up_ - down_);
-       this.pd_ = 1.0 - pu_;
+        QL.require(pu_ <= 1.0, NEGATIVE_PROBABILITY);
+        QL.require(pu_ >= 0.0, NEGATIVE_PROBABILITY);
+    }
 
-       // ::::: This comment came from QuantLib/C++ :::::
-       // doesn't work
-       //            treeCentering_ = (up_+down_)/2.0;
-       //            up_ = up_-treeCentering_;
+    @Override
+    public double underlying(final int i, final int index) /* @ReadOnly */ {
+        /*@Time*/
+        final double stepTime = i * dt;
+        /*@Real*/
+        final double q = Math.exp(treeProcess.variance(stepTime, x0, dt));
+        /*@Real*/
+        final double r = Math.exp(driftStep(stepTime)) * Math.sqrt(q);
 
-       QL.require(pu_<=1.0, NEGATIVE_PROBABILITY);
-       QL.require(pu_>=0.0, NEGATIVE_PROBABILITY);
-   }
+        /*@Real*/
+        final double up = 0.5 * r * q * (q + 1 + Math.sqrt(q * q + 2 * q - 3));
+        /*@Real*/
+        final double down = 0.5 * r * q * (q + 1 - Math.sqrt(q * q + 2 * q - 3));
 
-   @Override
-   public double underlying(final int i, final int index) /* @ReadOnly */ {
-       /*@Time*/ final double stepTime = i*dt;
-       /*@Real*/ final double q = Math.exp(treeProcess.variance(stepTime, x0, dt));
-       /*@Real*/ final double r = Math.exp(driftStep(stepTime))*Math.sqrt(q);
+        return x0 * JQuantMath.pow(down, i - index) * JQuantMath.pow(up, index);
+    }
 
-       /*@Real*/ final double up = 0.5 * r * q * (q + 1 + Math.sqrt(q * q + 2 * q - 3));
-       /*@Real*/ final double down = 0.5 * r * q * (q + 1 - Math.sqrt(q * q + 2 * q - 3));
+    @Override
+    public double probability(final int i, final int ref, final int branch) /* @ReadOnly */ {
+        /*@Time*/
+        final double stepTime = i * dt;
+        /*@Real*/
+        final double q = Math.exp(treeProcess.variance(stepTime, x0, dt));
+        /*@Real*/
+        final double r = Math.exp(driftStep(stepTime)) * Math.sqrt(q);
 
-       return x0 * JQuantMath.pow(down, i-index) * JQuantMath.pow(up, index);
-   }
+        /*@Real*/
+        final double up = 0.5 * r * q * (q + 1 + Math.sqrt(q * q + 2 * q - 3));
+        /*@Real*/
+        final double down = 0.5 * r * q * (q + 1 - Math.sqrt(q * q + 2 * q - 3));
 
-   @Override
-   public double probability(final int i, final int ref, final int branch) /* @ReadOnly */ {
-       /*@Time*/ final double stepTime = i*dt;
-       /*@Real*/ final double q = Math.exp(treeProcess.variance(stepTime, x0, dt));
-       /*@Real*/ final double r = Math.exp(driftStep(stepTime))*Math.sqrt(q);
+        /*@Real*/
+        final double pu = (r - down) / (up - down);
+        /*@Real*/
+        final double pd = 1.0 - pu;
 
-       /*@Real*/ final double up = 0.5 * r * q * (q + 1 + Math.sqrt(q * q + 2 * q - 3));
-       /*@Real*/ final double down = 0.5 * r * q * (q + 1 - Math.sqrt(q * q + 2 * q - 3));
-
-       /*@Real*/ final double pu = (r - down) / (up - down);
-       /*@Real*/ final double pd = 1.0 - pu;
-
-       return (branch == 1 ? pu : pd);
-   }
+        return (branch == 1 ? pu : pd);
+    }
 
 }

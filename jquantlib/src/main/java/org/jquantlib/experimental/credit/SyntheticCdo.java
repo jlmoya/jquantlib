@@ -24,9 +24,6 @@
 
 package org.jquantlib.experimental.credit;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.cashflow.FixedRateCoupon;
@@ -42,6 +39,9 @@ import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Schedule;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Synthetic Collateralized Debt Obligation.
  *
@@ -49,16 +49,14 @@ import org.jquantlib.time.Schedule;
  * ({@code ql/experimental/credit/syntheticcdo.{hpp,cpp}}).
  *
  * <p>Prices a mezzanine CDO tranche between attachment {@code D_1} and
- * detachment {@code D_2}. Construction uses the probability-bucketing
- * algorithm from Hull-White (2004), implemented in pricing engines
- * (MidPoint / Integral) that pull the loss distribution from the
- * basket's attached {@link DefaultLossModel}.
+ * detachment {@code D_2}. Construction uses the probability-bucketing algorithm from Hull-White (2004), implemented in
+ * pricing engines (MidPoint / Integral) that pull the loss distribution from the basket's attached
+ * {@link DefaultLossModel}.
  *
  * <p><b>Phase 4m.5 scope</b>: instrument plus arguments/results DTOs.
- * The {@code implicitCorrelation} helper is deferred — it depends on
- * {@code GaussianLHPLossModel} and {@code MidPointCDOEngine}, which are
- * scheduled for a follow-up commit (the model is in 4m.5 priority list
- * item 8 / engine in item 6).
+ * The {@code implicitCorrelation} helper is deferred — it depends on {@code GaussianLHPLossModel} and
+ * {@code MidPointCDOEngine}, which are scheduled for a follow-up commit (the model is in 4m.5 priority list item 8 /
+ * engine in item 6).
  */
 public class SyntheticCdo extends Instrument {
 
@@ -76,26 +74,20 @@ public class SyntheticCdo extends Instrument {
     private double upfrontPremiumValue = Constants.NULL_REAL;
     private double remainingNotional = Constants.NULL_REAL;
     private int error;
-    private List<Double> expectedTrancheLoss = new ArrayList<>();
+    private List< Double > expectedTrancheLoss = new ArrayList<>();
 
     /**
-     * Creates a synthetic CDO. If {@code notional} is {@code null} the
-     * leverage factor is 1 (mirrors C++ {@code ext::optional<Real>}).
+     * Creates a synthetic CDO. If {@code notional} is {@code null} the leverage factor is 1 (mirrors C++
+     * {@code ext::optional<Real>}).
      */
-    public SyntheticCdo(final Basket basket,
-                        final Protection.Side side,
-                        final Schedule schedule,
-                        final double upfrontRate,
-                        final double runningRate,
-                        final DayCounter dayCounter,
-                        final BusinessDayConvention paymentConvention,
-                        final Double notional) {
+    public SyntheticCdo(final Basket basket, final Protection.Side side, final Schedule schedule,
+            final double upfrontRate, final double runningRate, final DayCounter dayCounter,
+            final BusinessDayConvention paymentConvention, final Double notional) {
         this.basket = basket;
         this.side = side;
         this.upfrontRate = upfrontRate;
         this.runningRate = runningRate;
-        this.leverageFactor = (notional != null)
-                ? notional / basket.trancheNotional() : 1.0;
+        this.leverageFactor = (notional != null) ? notional / basket.trancheNotional() : 1.0;
         this.dayCounter = dayCounter;
         this.paymentConvention = paymentConvention;
 
@@ -103,30 +95,22 @@ public class SyntheticCdo extends Instrument {
         QL.require(basket.refDate().compareTo(schedule.startDate()) <= 0,
                 "Basket did not exist before contract start.");
 
-        this.normalizedLeg = new FixedRateLeg(schedule, dayCounter)
-                .withNotionals(basket.trancheNotional() * leverageFactor)
-                .withCouponRates(runningRate)
-                .withPaymentAdjustment(paymentConvention)
-                .Leg();
+        this.normalizedLeg = new FixedRateLeg(schedule, dayCounter).withNotionals(
+                        basket.trancheNotional() * leverageFactor).withCouponRates(runningRate)
+                .withPaymentAdjustment(paymentConvention).Leg();
 
         // register with each issuer's default-prob curve
-        for (int i = 0; i < basket.names().size(); i++) {
-            basket.pool().get(basket.names().get(i))
-                    .defaultProbability(basket.pool().defaultKeys().get(i))
+        for ( int i = 0; i < basket.names().size(); i++ ) {
+            basket.pool().get(basket.names().get(i)).defaultProbability(basket.pool().defaultKeys().get(i))
                     .addObserver(this);
         }
         basket.addObserver(this);
     }
 
-    public SyntheticCdo(final Basket basket,
-                        final Protection.Side side,
-                        final Schedule schedule,
-                        final double upfrontRate,
-                        final double runningRate,
-                        final DayCounter dayCounter,
-                        final BusinessDayConvention paymentConvention) {
-        this(basket, side, schedule, upfrontRate, runningRate, dayCounter,
-                paymentConvention, null);
+    public SyntheticCdo(final Basket basket, final Protection.Side side, final Schedule schedule,
+            final double upfrontRate, final double runningRate, final DayCounter dayCounter,
+            final BusinessDayConvention paymentConvention) {
+        this(basket, side, schedule, upfrontRate, runningRate, dayCounter, paymentConvention, null);
     }
 
     public Basket basket() {
@@ -135,8 +119,7 @@ public class SyntheticCdo extends Instrument {
 
     @Override
     public boolean isExpired() {
-        return normalizedLeg.last().date()
-                .compareTo(new Settings().evaluationDate()) <= 0;
+        return normalizedLeg.last().date().compareTo(new Settings().evaluationDate()) <= 0;
     }
 
     public double premiumValue() {
@@ -161,8 +144,7 @@ public class SyntheticCdo extends Instrument {
 
     public double fairPremium() {
         calculate();
-        QL.require(premiumValue != 0,
-                "Attempted divide by zero while calculating syntheticCDO premium.");
+        QL.require(premiumValue != 0, "Attempted divide by zero while calculating syntheticCDO premium.");
         return runningRate * (protectionValue - upfrontPremiumValue) / premiumValue;
     }
 
@@ -171,7 +153,7 @@ public class SyntheticCdo extends Instrument {
         return (protectionValue - premiumValue) / remainingNotional;
     }
 
-    public List<Double> expectedTrancheLoss() {
+    public List< Double > expectedTrancheLoss() {
         calculate();
         return expectedTrancheLoss;
     }
@@ -207,8 +189,7 @@ public class SyntheticCdo extends Instrument {
 
     @Override
     protected void setupArguments(final PricingEngine.Arguments args) {
-        QL.require(args instanceof SyntheticCdo.ArgumentsImpl,
-                ReflectConstants.WRONG_ARGUMENT_TYPE);
+        QL.require(args instanceof SyntheticCdo.ArgumentsImpl, ReflectConstants.WRONG_ARGUMENT_TYPE);
         final SyntheticCdo.ArgumentsImpl a = (SyntheticCdo.ArgumentsImpl) args;
         a.basket = basket;
         a.side = side;
@@ -223,8 +204,7 @@ public class SyntheticCdo extends Instrument {
     @Override
     protected void fetchResults(final PricingEngine.Results r) {
         super.fetchResults(r);
-        QL.require(r instanceof SyntheticCdo.ResultsImpl,
-                ReflectConstants.WRONG_ARGUMENT_TYPE);
+        QL.require(r instanceof SyntheticCdo.ResultsImpl, ReflectConstants.WRONG_ARGUMENT_TYPE);
         final SyntheticCdo.ResultsImpl res = (SyntheticCdo.ResultsImpl) r;
         premiumValue = res.premiumValue;
         protectionValue = res.protectionValue;
@@ -262,7 +242,7 @@ public class SyntheticCdo extends Instrument {
         public double xMin;
         public double xMax;
         public int error;
-        public List<Double> expectedTrancheLoss = new ArrayList<>();
+        public List< Double > expectedTrancheLoss = new ArrayList<>();
 
         @Override
         public void reset() {

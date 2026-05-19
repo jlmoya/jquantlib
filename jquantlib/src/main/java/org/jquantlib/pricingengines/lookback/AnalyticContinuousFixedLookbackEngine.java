@@ -47,8 +47,7 @@ import org.jquantlib.time.Frequency;
  * {@code QuantLib::AnalyticContinuousFixedLookbackEngine}
  * ({@code ql/pricingengines/lookback/analyticcontinuousfixedlookback.{hpp,cpp}}).
  */
-public class AnalyticContinuousFixedLookbackEngine
-        extends ContinuousFixedLookbackOption.EngineImpl {
+public class AnalyticContinuousFixedLookbackEngine extends ContinuousFixedLookbackOption.EngineImpl {
 
     private static final String NON_PLAIN_PAYOFF_GIVEN = "Non-plain payoff given";
     private static final String NEGATIVE_OR_NULL_UNDERLYING = "negative or null underlying";
@@ -58,7 +57,7 @@ public class AnalyticContinuousFixedLookbackEngine
     private final CumulativeNormalDistribution f;
 
     private final ContinuousFixedLookbackOption.ArgumentsImpl a;
-    private final ContinuousFixedLookbackOption.ResultsImpl   r;
+    private final ContinuousFixedLookbackOption.ResultsImpl r;
 
     public AnalyticContinuousFixedLookbackEngine(final GeneralizedBlackScholesProcess process) {
         this.process = process;
@@ -76,25 +75,25 @@ public class AnalyticContinuousFixedLookbackEngine
 
         final double strike = payoff.strike();
 
-        switch (payoff.optionType()) {
-            case Call:
-                QL.require(strike >= 0.0, "Strike must be positive or null");
-                if (strike <= minmax()) {
-                    r.value = A(1) + C(1);
-                } else {
-                    r.value = B(1);
-                }
-                break;
-            case Put:
-                QL.require(strike > 0.0, "Strike must be positive");
-                if (strike >= minmax()) {
-                    r.value = A(-1) + C(-1);
-                } else {
-                    r.value = B(-1);
-                }
-                break;
-            default:
-                throw new LibraryException(UNKNOWN_TYPE);
+        switch ( payoff.optionType() ) {
+        case Call:
+            QL.require(strike >= 0.0, "Strike must be positive or null");
+            if ( strike <= minmax() ) {
+                r.value = A(1) + C(1);
+            } else {
+                r.value = B(1);
+            }
+            break;
+        case Put:
+            QL.require(strike > 0.0, "Strike must be positive");
+            if ( strike >= minmax() ) {
+                r.value = A(-1) + C(-1);
+            } else {
+                r.value = B(-1);
+            }
+            break;
+        default:
+            throw new LibraryException(UNKNOWN_TYPE);
         }
     }
 
@@ -120,8 +119,8 @@ public class AnalyticContinuousFixedLookbackEngine
     }
 
     private double riskFreeRate() {
-        return process.riskFreeRate().currentLink().zeroRate(
-                residualTime(), Compounding.Continuous, Frequency.NoFrequency, false).rate();
+        return process.riskFreeRate().currentLink()
+                .zeroRate(residualTime(), Compounding.Continuous, Frequency.NoFrequency, false).rate();
     }
 
     private double riskFreeDiscount() {
@@ -129,8 +128,8 @@ public class AnalyticContinuousFixedLookbackEngine
     }
 
     private double dividendYield() {
-        return process.dividendYield().currentLink().zeroRate(
-                residualTime(), Compounding.Continuous, Frequency.NoFrequency, false).rate();
+        return process.dividendYield().currentLink()
+                .zeroRate(residualTime(), Compounding.Continuous, Frequency.NoFrequency, false).rate();
     }
 
     private double dividendDiscount() {
@@ -142,8 +141,7 @@ public class AnalyticContinuousFixedLookbackEngine
     }
 
     /**
-     * Conze-Viswanathan {@code A} term: applies when strike is on the right
-     * side of the running min/max.
+     * Conze-Viswanathan {@code A} term: applies when strike is on the right side of the running min/max.
      */
     private double A(final double eta) {
         final double vol = volatility();
@@ -156,11 +154,9 @@ public class AnalyticContinuousFixedLookbackEngine
         final double n3 = f.op(eta * (d1 - lambda * sd));
         final double n4 = f.op(eta * d1);
         final double powss = Math.pow(ss, -lambda);
-        return eta * (underlying() * dividendDiscount() * n1 -
-                      minmax() * riskFreeDiscount() * n2 -
-                      underlying() * riskFreeDiscount() *
-                      (powss * n3 - dividendDiscount() * n4 / riskFreeDiscount()) /
-                      lambda);
+        return eta * (underlying() * dividendDiscount() * n1 - minmax() * riskFreeDiscount() * n2
+                - underlying() * riskFreeDiscount() * (powss * n3 - dividendDiscount() * n4 / riskFreeDiscount())
+                / lambda);
     }
 
     /**
@@ -177,16 +173,13 @@ public class AnalyticContinuousFixedLookbackEngine
         final double n3 = f.op(eta * (d1 - lambda * sd));
         final double n4 = f.op(eta * d1);
         final double powss = Math.pow(ss, -lambda);
-        return eta * (underlying() * dividendDiscount() * n1 -
-                      strike() * riskFreeDiscount() * n2 -
-                      underlying() * riskFreeDiscount() *
-                      (powss * n3 - dividendDiscount() * n4 / riskFreeDiscount()) /
-                      lambda);
+        return eta * (underlying() * dividendDiscount() * n1 - strike() * riskFreeDiscount() * n2
+                - underlying() * riskFreeDiscount() * (powss * n3 - dividendDiscount() * n4 / riskFreeDiscount())
+                / lambda);
     }
 
     /**
-     * Conze-Viswanathan {@code C} term — discounted intrinsic of the
-     * recorded extremum.
+     * Conze-Viswanathan {@code C} term — discounted intrinsic of the recorded extremum.
      */
     private double C(final double eta) {
         return eta * (riskFreeDiscount() * (minmax() - strike()));

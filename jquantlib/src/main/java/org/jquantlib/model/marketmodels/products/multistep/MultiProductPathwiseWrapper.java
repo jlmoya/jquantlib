@@ -32,9 +32,8 @@ import org.jquantlib.model.marketmodels.MarketModelMultiProduct;
 import org.jquantlib.model.marketmodels.MarketModelPathwiseMultiProduct;
 
 /**
- * Adapts a {@link MarketModelPathwiseMultiProduct} to the
- * {@link MarketModelMultiProduct} interface — drops the per-rate vectors
- * and exposes only the scalar payoff (amount[0]).
+ * Adapts a {@link MarketModelPathwiseMultiProduct} to the {@link MarketModelMultiProduct} interface — drops the
+ * per-rate vectors and exposes only the scalar payoff (amount[0]).
  * <p>
  * Mirrors C++ {@code class MultiProductPathwiseWrapper}
  * (ql/models/marketmodels/products/multistep/multisteppathwisewrapper.{hpp,cpp} v1.42.1).
@@ -53,8 +52,8 @@ public class MultiProductPathwiseWrapper extends MarketModelMultiProduct {
         final int n = innerProduct.maxNumberOfCashFlowsPerProductPerStep();
         final int rateCount = 1 + innerProduct.evolution().numberOfRates();
         this.cashFlowsGenerated_ = new MarketModelPathwiseMultiProduct.CashFlow[numberOfProducts_][n];
-        for (int i = 0; i < numberOfProducts_; ++i) {
-            for (int j = 0; j < n; ++j) {
+        for ( int i = 0; i < numberOfProducts_; ++i ) {
+            for ( int j = 0; j < n; ++j ) {
                 cashFlowsGenerated_[i][j] = new MarketModelPathwiseMultiProduct.CashFlow();
                 cashFlowsGenerated_[i][j].amount = new double[rateCount];
             }
@@ -62,10 +61,14 @@ public class MultiProductPathwiseWrapper extends MarketModelMultiProduct {
     }
 
     @Override
-    public double[] possibleCashFlowTimes() { return innerProduct_.possibleCashFlowTimes(); }
+    public double[] possibleCashFlowTimes() {
+        return innerProduct_.possibleCashFlowTimes();
+    }
 
     @Override
-    public int numberOfProducts() { return innerProduct_.numberOfProducts(); }
+    public int numberOfProducts() {
+        return innerProduct_.numberOfProducts();
+    }
 
     @Override
     public int maxNumberOfCashFlowsPerProductPerStep() {
@@ -73,17 +76,18 @@ public class MultiProductPathwiseWrapper extends MarketModelMultiProduct {
     }
 
     @Override
-    public void reset() { innerProduct_.reset(); }
+    public void reset() {
+        innerProduct_.reset();
+    }
 
     @Override
-    public boolean nextTimeStep(final CurveState currentState,
-                                final int[] numberCashFlowsThisStep,
-                                final MarketModelMultiProduct.CashFlow[][] cashFlowsGenerated) {
+    public boolean nextTimeStep(final CurveState currentState, final int[] numberCashFlowsThisStep,
+            final MarketModelMultiProduct.CashFlow[][] cashFlowsGenerated) {
         final boolean done = innerProduct_.nextTimeStep(currentState, numberCashFlowsThisStep, cashFlowsGenerated_);
 
         // transform the data: pull out amount[0] (the payoff scalar)
-        for (int i = 0; i < numberOfProducts_; ++i) {
-            for (int j = 0; j < numberCashFlowsThisStep[i]; ++j) {
+        for ( int i = 0; i < numberOfProducts_; ++i ) {
+            for ( int j = 0; j < numberCashFlowsThisStep[i]; ++j ) {
                 cashFlowsGenerated[i][j].timeIndex = cashFlowsGenerated_[i][j].timeIndex;
                 cashFlowsGenerated[i][j].amount = cashFlowsGenerated_[i][j].amount[0];
             }
@@ -92,10 +96,14 @@ public class MultiProductPathwiseWrapper extends MarketModelMultiProduct {
     }
 
     @Override
-    public int[] suggestedNumeraires() { return innerProduct_.suggestedNumeraires(); }
+    public int[] suggestedNumeraires() {
+        return innerProduct_.suggestedNumeraires();
+    }
 
     @Override
-    public EvolutionDescription evolution() { return innerProduct_.evolution(); }
+    public EvolutionDescription evolution() {
+        return innerProduct_.evolution();
+    }
 
     @Override
     public MarketModelMultiProduct clone() {

@@ -33,8 +33,7 @@ import org.jquantlib.quotes.Quote;
  * One-factor Gaussian-Student t-copula.
  *
  * <p>Java port of QuantLib v1.42.1
- * {@code QuantLib::OneFactorGaussianStudentCopula}
- * ({@code ql/experimental/credit/onefactorstudentcopula.{hpp,cpp}}).
+ * {@code QuantLib::OneFactorGaussianStudentCopula} ({@code ql/experimental/credit/onefactorstudentcopula.{hpp,cpp}}).
  *
  * <p>{@code Z} follows a Student-T with {@code nz} dof; {@code M} is
  * Gaussian. {@code Z} is rescaled to unit variance.
@@ -48,10 +47,8 @@ public class OneFactorGaussianStudentCopula extends OneFactorCopula {
     private final int nz_;
     private final double scaleZ_;
 
-    public OneFactorGaussianStudentCopula(final Handle<Quote> correlation,
-                                           final int nz,
-                                           final double maximum,
-                                           final int integrationSteps) {
+    public OneFactorGaussianStudentCopula(final Handle< Quote > correlation, final int nz, final double maximum,
+            final int integrationSteps) {
         super(correlation, maximum, integrationSteps, -maximum);
         QL.require(nz > 2, "degrees of freedom must be > 2");
         this.density_ = new NormalDistribution();
@@ -61,8 +58,7 @@ public class OneFactorGaussianStudentCopula extends OneFactorCopula {
         calculate();
     }
 
-    public OneFactorGaussianStudentCopula(final Handle<Quote> correlation,
-                                           final int nz) {
+    public OneFactorGaussianStudentCopula(final Handle< Quote > correlation, final int nz) {
         this(correlation, nz, 10.0, 200);
     }
 
@@ -84,7 +80,7 @@ public class OneFactorGaussianStudentCopula extends OneFactorCopula {
         final double ymin = -10.0;
         final double ymax = 10.0;
         final int steps = 200;
-        for (int i = 0; i <= steps; ++i) {
+        for ( int i = 0; i <= steps; ++i ) {
             final double yv = ymin + (ymax - ymin) * i / steps;
             final double c = cumulativeYintegral(yv);
             y.add(yv);
@@ -95,10 +91,10 @@ public class OneFactorGaussianStudentCopula extends OneFactorCopula {
     private double cumulativeYintegral(final double yv) {
         final double c = correlation.currentLink().value();
 
-        if (c == 0.0) {
+        if ( c == 0.0 ) {
             return new CumulativeStudentDistribution(nz_).op(yv / scaleZ_);
         }
-        if (c == 1.0) {
+        if ( c == 1.0 ) {
             return new CumulativeNormalDistribution().op(yv);
         }
 
@@ -111,17 +107,17 @@ public class OneFactorGaussianStudentCopula extends OneFactorCopula {
         final double delta = (maximum - minimum) / steps;
         double cumulated = 0.0;
 
-        if (c < 0.5) {
-            for (double m = minimum + delta / 2; m < maximum; m += delta) {
+        if ( c < 0.5 ) {
+            for ( double m = minimum + delta / 2; m < maximum; m += delta ) {
                 final double zMax = (yv - Math.sqrt(c) * m) / Math.sqrt(1.0 - c);
-                for (double z = minimum + delta / 2; z < zMax; z += delta) {
+                for ( double z = minimum + delta / 2; z < zMax; z += delta ) {
                     cumulated += dm.op(m) * dz.op(z / scaleZ_) / scaleZ_;
                 }
             }
         } else {
-            for (double z = minimum + delta / 2; z < maximum; z += delta) {
+            for ( double z = minimum + delta / 2; z < maximum; z += delta ) {
                 final double mMax = (yv - Math.sqrt(1.0 - c) * z) / Math.sqrt(c);
-                for (double m = minimum + delta / 2; m < mMax; m += delta) {
+                for ( double m = minimum + delta / 2; m < mMax; m += delta ) {
                     cumulated += dm.op(m) * dz.op(z / scaleZ_) / scaleZ_;
                 }
             }

@@ -48,37 +48,31 @@ import org.jquantlib.time.Date;
 /**
  * Actual/360 day count convention, also known as "Act/360", or "A/360".
  *
- * @see <a href="http://en.wikipedia.org/wiki/Day_count_convention">Day count Convention</a>
- *
- * @category daycounters
- *
  * @author Richard Gomes
  * @author Srinivas Hasti
+ * @category daycounters
+ * @see <a href="http://en.wikipedia.org/wiki/Day_count_convention">Day count Convention</a>
  */
-@QualityAssurance(quality=Quality.Q4_UNIT, version=Version.V097, reviewers="Richard Gomes")
+@QualityAssurance( quality = Quality.Q4_UNIT, version = Version.V097, reviewers = "Richard Gomes" )
 public class Actual360 extends DayCounter {
-
 
     public Actual360() {
         super.impl = new Impl(false);
     }
 
     /**
-     * Actual360 with optional inclusion of the last day in the day count
-     * — mirror of C++ {@code Actual360(bool includeLastDay)}
-     * (ql/time/daycounters/actual360.hpp:60-62).
+     * Actual360 with optional inclusion of the last day in the day count — mirror of C++
+     * {@code Actual360(bool includeLastDay)} (ql/time/daycounters/actual360.hpp:60-62).
      *
      * <p>When {@code includeLastDay = true} the {@code dayCount} formula
-     * adds 1 to the actual difference and {@code yearFraction} divides
-     * {@code (daysBetween + 1) / 360.0}; this is the ISDA-CDS-engine-compatible
-     * variant flagged as "Actual/360 (inc)".
+     * adds 1 to the actual difference and {@code yearFraction} divides {@code (daysBetween + 1) / 360.0}; this is the
+     * ISDA-CDS-engine-compatible variant flagged as "Actual/360 (inc)".
      *
      * @since Phase 3d L0 A.2
      */
     public Actual360(final boolean includeLastDay) {
         super.impl = new Impl(includeLastDay);
     }
-
 
     //
     // private inner classes
@@ -97,23 +91,21 @@ public class Actual360 extends DayCounter {
         //
 
         @Override
-        public final String name() /* @ReadOnly */{
+        public String name() /* @ReadOnly */ {
             return includeLastDay ? "Actual/360 (inc)" : "Actual/360";
         }
 
         @Override
-        public final long dayCount(final Date d1, final Date d2) /* @ReadOnly */{
+        public long dayCount(final Date d1, final Date d2) /* @ReadOnly */ {
             return super.dayCount(d1, d2) + (includeLastDay ? 1L : 0L);
         }
 
         @Override
-        public /*@Time*/ final double yearFraction(
-                final Date dateStart, final Date dateEnd,
-                final Date refPeriodStart, final Date refPeriodEnd) /* @ReadOnly */{
+        public /*@Time*/ double yearFraction(final Date dateStart, final Date dateEnd, final Date refPeriodStart,
+                final Date refPeriodEnd) /* @ReadOnly */ {
             return /*@Time*/ dayCount(dateStart, dateEnd) / 360.0;
         }
 
     }
-
 
 }

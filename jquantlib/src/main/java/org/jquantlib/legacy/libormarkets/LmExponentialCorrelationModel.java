@@ -24,8 +24,7 @@ import org.jquantlib.model.ConstantParameter;
  * {@code legacy/libormarketmodels/lmexpcorrmodel.{hpp,cpp}}.
  *
  * <p>References: Brigo, Mercurio, Morini (2003) "Different Covariance
- * Parameterizations of Libor Market Model and Joint Caps/Swaptions
- * Calibration".
+ * Parameterizations of Libor Market Model and Joint Caps/Swaptions Calibration".
  */
 public class LmExponentialCorrelationModel extends LmCorrelationModel {
 
@@ -64,8 +63,8 @@ public class LmExponentialCorrelationModel extends LmCorrelationModel {
     protected void generateArguments() {
         final double rho = arguments_.get(0).get(0.0);
 
-        for (int i = 0; i < size_; ++i) {
-            for (int j = i; j < size_; ++j) {
+        for ( int i = 0; i < size_; ++i ) {
+            for ( int j = i; j < size_; ++j ) {
                 final double value = Math.exp(-rho * Math.abs(i - j));
                 corrMatrix_.set(i, j, value);
                 corrMatrix_.set(j, i, value);

@@ -27,38 +27,36 @@ import org.jquantlib.QL;
 import org.jquantlib.math.matrixutilities.Array;
 
 /**
- * Parameter projection — splits a full parameter vector into "fixed" and
- * "free" slots and provides the plumbing to round-trip between the full and
- * projected views.
+ * Parameter projection — splits a full parameter vector into "fixed" and "free" slots and provides the plumbing to
+ * round-trip between the full and projected views.
  *
  * <p>Faithful port of QuantLib C++ v1.42.1
- * {@code ql/math/optimization/projection.hpp|cpp}. In C++, {@code ProjectedCostFunction}
- * multiply-inherits from both {@code CostFunction} and {@code Projection}. Java lacks
- * multiple inheritance, so {@link ProjectedCostFunction} composes a {@code Projection}
- * instance and delegates the public projection API.
+ * {@code ql/math/optimization/projection.hpp|cpp}. In C++, {@code ProjectedCostFunction} multiply-inherits from both
+ * {@code CostFunction} and {@code Projection}. Java lacks multiple inheritance, so {@link ProjectedCostFunction}
+ * composes a {@code Projection} instance and delegates the public projection API.
  */
 public class Projection {
 
-    protected int numberOfFreeParameters_ = 0;
     protected final Array fixedParameters_;
     protected final Array actualParameters_;
     protected final boolean[] fixParameters_;
+    protected int numberOfFreeParameters_ = 0;
 
     //-- Projection(const Array& parameterValues,
     //--            std::vector<bool> fixParameters = std::vector<bool>());
     //-- in ql/math/optimization/projection.cpp:27
+
     /**
      * @param parameterValues initial values for all parameters.
-     * @param fixParameters   same length as {@code parameterValues}; {@code true}
-     *                        marks that slot as fixed, {@code false} as free. May be
-     *                        {@code null} or empty to default all slots to "free".
+     * @param fixParameters   same length as {@code parameterValues}; {@code true} marks that slot as fixed,
+     *                        {@code false} as free. May be {@code null} or empty to default all slots to "free".
      */
     public Projection(final Array parameterValues, final boolean[] fixParameters) {
         this.fixedParameters_ = parameterValues.clone();
         this.actualParameters_ = parameterValues.clone();
         // C++ default: empty fixParameters vector expands to all-false of size parameterValues.size()
         final boolean[] fixArg;
-        if (fixParameters == null || fixParameters.length == 0) {
+        if ( fixParameters == null || fixParameters.length == 0 ) {
             fixArg = new boolean[parameterValues.size()];  // Java bool default is false → all free
         } else {
             fixArg = fixParameters.clone();
@@ -67,8 +65,8 @@ public class Projection {
 
         QL.require(fixedParameters_.size() == fixParameters_.length,
                 "fixedParameters_.size()!=parametersFreedoms_.size()");
-        for (int i = 0; i < fixParameters_.length; i++) {
-            if (!fixParameters_[i]) {
+        for ( int i = 0; i < fixParameters_.length; i++ ) {
+            if ( !fixParameters_[i] ) {
                 numberOfFreeParameters_++;
             }
         }
@@ -87,11 +85,10 @@ public class Projection {
     // member. Java mirrors that by making it a regular instance method that updates
     // the (non-final-referenced) array contents.
     protected void mapFreeParameters(final Array parameterValues) {
-        QL.require(parameterValues.size() == numberOfFreeParameters_,
-                "parameterValues.size()!=numberOfFreeParameters");
+        QL.require(parameterValues.size() == numberOfFreeParameters_, "parameterValues.size()!=numberOfFreeParameters");
         int i = 0;
-        for (int j = 0; j < actualParameters_.size(); j++) {
-            if (!fixParameters_[j]) {
+        for ( int j = 0; j < actualParameters_.size(); j++ ) {
+            if ( !fixParameters_[j] ) {
                 actualParameters_.set(j, parameterValues.get(i++));
             }
         }
@@ -100,12 +97,11 @@ public class Projection {
     //-- virtual Array project(const Array& parameters) const;
     //-- in ql/math/optimization/projection.cpp:54
     public Array project(final Array parameters) {
-        QL.require(parameters.size() == fixParameters_.length,
-                "parameters.size()!=parametersFreedoms_.size()");
+        QL.require(parameters.size() == fixParameters_.length, "parameters.size()!=parametersFreedoms_.size()");
         final Array projectedParameters = new Array(numberOfFreeParameters_);
         int i = 0;
-        for (int j = 0; j < fixParameters_.length; j++) {
-            if (!fixParameters_[j]) {
+        for ( int j = 0; j < fixParameters_.length; j++ ) {
+            if ( !fixParameters_[j] ) {
                 projectedParameters.set(i++, parameters.get(j));
             }
         }
@@ -119,8 +115,8 @@ public class Projection {
                 "projectedParameters.size()!=numberOfFreeParameters");
         final Array y = fixedParameters_.clone();
         int i = 0;
-        for (int j = 0; j < y.size(); j++) {
-            if (!fixParameters_[j]) {
+        for ( int j = 0; j < y.size(); j++ ) {
+            if ( !fixParameters_[j] ) {
                 y.set(j, projectedParameters.get(i++));
             }
         }

@@ -30,23 +30,20 @@ import org.jquantlib.methods.montecarlo.PathPricer;
  * Everest multi-path pricer.
  *
  * <p>Java port of {@code QuantLib v1.42.1
- * ql/experimental/exoticoptions/mceverestengine.{hpp,cpp}}::{@code
- * EverestMultiPathPricer} (Phase 4i.5 WI-4).
+ * ql/experimental/exoticoptions/mceverestengine.{hpp,cpp}}::{@code EverestMultiPathPricer} (Phase 4i.5 WI-4).
  *
  * <p>The Everest payoff is {@code (1 + min(yield) + guarantee) * notional},
  * where {@code yield_j = S_j(T)/S_j(0) - 1.0} for each asset {@code j}.
  *
  * @author JQuantLib
  */
-public class EverestMultiPathPricer extends PathPricer<MultiPath> {
+public class EverestMultiPathPricer extends PathPricer< MultiPath > {
 
     private final double notional_;
     private final /* @Rate */ double guarantee_;
     private final /* @DiscountFactor */ double discount_;
 
-    public EverestMultiPathPricer(final double notional,
-                                  final double guarantee,
-                                  final double discount) {
+    public EverestMultiPathPricer(final double notional, final double guarantee, final double discount) {
         this.notional_ = notional;
         this.guarantee_ = guarantee;
         this.discount_ = discount;
@@ -62,7 +59,7 @@ public class EverestMultiPathPricer extends PathPricer<MultiPath> {
 
         // Search the yield min
         double minYield = multiPath.get(0).back() / multiPath.get(0).front() - 1.0;
-        for (int j = 1; j < numAssets; ++j) {
+        for ( int j = 1; j < numAssets; ++j ) {
             final double yield = multiPath.get(j).back() / multiPath.get(j).front() - 1.0;
             minYield = Math.min(minYield, yield);
         }

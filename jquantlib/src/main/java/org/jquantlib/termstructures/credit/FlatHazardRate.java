@@ -45,47 +45,38 @@ import org.jquantlib.time.calendars.NullCalendar;
  * ({@code ql/termstructures/credit/flathazardrate.{hpp,cpp}}).
  *
  * <p>Concrete {@link HazardRateStructure} with a single, time-invariant hazard
- * rate {@code h}. Survival probability is the closed form
- * {@code S(t) = exp(-h t)}.
+ * rate {@code h}. Survival probability is the closed form {@code S(t) = exp(-h t)}.
  */
 public class FlatHazardRate extends HazardRateStructure {
 
-    private final Handle<Quote> hazardRate;
+    private final Handle< Quote > hazardRate;
 
     //
     // public constructors
     //
 
-    public FlatHazardRate(final Date referenceDate,
-                          final Handle<Quote> hazardRate,
-                          final DayCounter dayCounter) {
+    public FlatHazardRate(final Date referenceDate, final Handle< Quote > hazardRate, final DayCounter dayCounter) {
         super(referenceDate, new NullCalendar(), dayCounter);
         this.hazardRate = hazardRate;
         this.hazardRate.addObserver(this);
     }
 
-    public FlatHazardRate(final Date referenceDate,
-                          final @Rate double hazardRate,
-                          final DayCounter dayCounter) {
+    public FlatHazardRate(final Date referenceDate, final @Rate double hazardRate, final DayCounter dayCounter) {
         super(referenceDate, new NullCalendar(), dayCounter);
-        this.hazardRate = new Handle<Quote>(new SimpleQuote(hazardRate));
+        this.hazardRate = new Handle< Quote >(new SimpleQuote(hazardRate));
     }
 
-    public FlatHazardRate(final @Natural int settlementDays,
-                          final Calendar calendar,
-                          final Handle<Quote> hazardRate,
-                          final DayCounter dayCounter) {
+    public FlatHazardRate(final @Natural int settlementDays, final Calendar calendar, final Handle< Quote > hazardRate,
+            final DayCounter dayCounter) {
         super(settlementDays, calendar, dayCounter);
         this.hazardRate = hazardRate;
         this.hazardRate.addObserver(this);
     }
 
-    public FlatHazardRate(final @Natural int settlementDays,
-                          final Calendar calendar,
-                          final @Rate double hazardRate,
-                          final DayCounter dayCounter) {
+    public FlatHazardRate(final @Natural int settlementDays, final Calendar calendar, final @Rate double hazardRate,
+            final DayCounter dayCounter) {
         super(settlementDays, calendar, dayCounter);
-        this.hazardRate = new Handle<Quote>(new SimpleQuote(hazardRate));
+        this.hazardRate = new Handle< Quote >(new SimpleQuote(hazardRate));
     }
 
     //

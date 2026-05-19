@@ -40,37 +40,45 @@
 
 package org.jquantlib.math.interpolations;
 
-import static org.jquantlib.math.Closeness.isClose;
-
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.matrixutilities.Matrix;
 
+import static org.jquantlib.math.Closeness.isClose;
+
 /**
  * Base class for 2-D interpolations.
  * <p>
- * Classes derived from this class will provide interpolated
- * values from two sequences of length {@latex$ N } and {@latex$ M },
- * representing the discretized values of the {@latex$ x } and {@latex$ y}
- * variables, and a {@latex$ N \times M } matrix representing
- * the tabulated function values.
+ * Classes derived from this class will provide interpolated values from two sequences of length {@latex$ N } and
+ * {@latex$ M }, representing the discretized values of the {@latex$ x } and {@latex$ y} variables, and a
+ * {@latex$ N \times M } matrix representing the tabulated function values.
  *
  * @author Richard Gomes
  */
 public class AbstractInterpolation2D implements Interpolation2D {
 
+    /**
+     * Implements multiple inheritance via delegate pattern to an inner class
+     *
+     * @see Extrapolator
+     */
+    private final DefaultExtrapolator delegatedExtrapolator = new DefaultExtrapolator();
     protected Impl impl_;
 
     @Override
-    public boolean empty() /* @ReadOnly */ { return impl_==null; }
+    public boolean empty() /* @ReadOnly */ {
+        return impl_ == null;
+    }
 
     @Override
     public /*@Real*/ double op(final /*@Real*/ double x, final /*@Real*/ double y) /* @ReadOnly */ {
         return op(x, y, false);
     }
+
     @Override
-    public /*@Real*/ double op(final /*@Real*/ double x, final /*@Real*/ double y, final boolean allowExtrapolation) /* @ReadOnly */ {
+    public /*@Real*/ double op(final /*@Real*/ double x, final /*@Real*/ double y,
+            final boolean allowExtrapolation) /* @ReadOnly */ {
         checkRange(x, y, allowExtrapolation);
         return impl_.op(x, y);
     }
@@ -110,14 +118,17 @@ public class AbstractInterpolation2D implements Interpolation2D {
         return impl_.isInRange(x, y);
     }
 
+    //
+    // protected methods
+    //
+
     @Override
     public void update() {
         impl_.calculate();
     }
 
-
     //
-    // protected methods
+    // implements Extrapolator
     //
 
     /**
@@ -127,34 +138,16 @@ public class AbstractInterpolation2D implements Interpolation2D {
      *
      * @param x
      * @param extrapolate
-     *
-     * @throws IllegalStateException if extrapolation is not enabled.
+     * @throws IllegalStateException    if extrapolation is not enabled.
      * @throws IllegalArgumentException if <i>x</i> is out of range
      */
-    protected final void checkRange(final double x, final double y, final boolean extrapolate) /* @ReadOnly */{
-        if (!(extrapolate || allowsExtrapolation() || isInRange(x, y))) {
-            final StringBuilder sb = new StringBuilder();
-            sb.append("interpolation range is [");
-            sb.append(xMin()).append(", ").append(xMax());
-            sb.append("] x [");
-            sb.append(yMin()).append(", ").append(yMax());
-            sb.append("]: extrapolation at (");
-            sb.append(x).append(",").append(y);
-            sb.append(") not allowed");
-            throw new IllegalArgumentException(sb.toString());
+    protected final void checkRange(final double x, final double y, final boolean extrapolate) /* @ReadOnly */ {
+        if ( !(extrapolate || allowsExtrapolation() || isInRange(x, y)) ) {
+            final String sb = "interpolation range is [" + xMin() + ", " + xMax() + "] x [" + yMin() + ", " + yMax()
+                    + "]: extrapolation at (" + x + "," + y + ") not allowed";
+            throw new IllegalArgumentException(sb);
         }
     }
-
-    //
-    // implements Extrapolator
-    //
-
-    /**
-     * Implements multiple inheritance via delegate pattern to an inner class
-     *
-     * @see Extrapolator
-     */
-    private final DefaultExtrapolator delegatedExtrapolator = new DefaultExtrapolator();
 
     @Override
     public final boolean allowsExtrapolation() {
@@ -170,7 +163,6 @@ public class AbstractInterpolation2D implements Interpolation2D {
     public void enableExtrapolation() {
         delegatedExtrapolator.enableExtrapolation();
     }
-
 
     //
     // protected inner classes
@@ -193,7 +185,6 @@ public class AbstractInterpolation2D implements Interpolation2D {
          */
         protected Matrix mz;
 
-
         //
         // protected constructors
         //
@@ -213,10 +204,10 @@ public class AbstractInterpolation2D implements Interpolation2D {
             // sizes (e.g., FdSabrVanillaEngine uses a 400-point f-mesh and a
             // 50-point x-mesh). Port mirrors C++ which validates x and y
             // arrays separately.
-            for (int i = 0; i < vx.size() - 1; i++) {
+            for ( int i = 0; i < vx.size() - 1; i++ ) {
                 QL.require(vx.get(i) <= vx.get(i + 1), "unsorted values on array X"); // TODO: message
             }
-            for (int i = 0; i < vy.size() - 1; i++) {
+            for ( int i = 0; i < vy.size() - 1; i++ ) {
                 QL.require(vy.get(i) <= vy.get(i + 1), "unsorted values on array Y"); // TODO: message
             }
         }
@@ -226,7 +217,7 @@ public class AbstractInterpolation2D implements Interpolation2D {
         //
 
         public double xMin() /* @ReadOnly */ {
-            return  vx.first();
+            return vx.first();
         }
 
         public double xMax() /* @ReadOnly */ {
@@ -234,7 +225,7 @@ public class AbstractInterpolation2D implements Interpolation2D {
         }
 
         public double yMin() /* @ReadOnly */ {
-            return  vy.first();
+            return vy.first();
         }
 
         public double yMax() /* @ReadOnly */ {
@@ -250,7 +241,7 @@ public class AbstractInterpolation2D implements Interpolation2D {
             QL.require(extraSafetyChecksX(), "unsorted values on array X"); // TODO: message
             final double x1 = xMin(), x2 = xMax();
             final boolean xIsInrange = (x >= x1 && x <= x2) || isClose(x, x1) || isClose(x, x2);
-            if (!xIsInrange)
+            if ( !xIsInrange )
                 return false;
 
             QL.require(extraSafetyChecksY(), "unsorted values on array Y"); // TODO: message
@@ -258,20 +249,19 @@ public class AbstractInterpolation2D implements Interpolation2D {
             return (y >= y1 && y <= y2) || isClose(y, y1) || isClose(y, y2);
         }
 
-
         //
         // virtual public methods
         //
 
         public abstract double op(final double x, final double y) /* @ReadOnly */;
-        public abstract void calculate();
 
+        public abstract void calculate();
 
         //
         // protected methods
         //
 
-        protected int locateX(final double x) /* @ReadOnly */{
+        protected int locateX(final double x) /* @ReadOnly */ {
             QL.require(extraSafetyChecksX(), "unsorted values on array X"); // TODO: message
             // Mirror C++ v1.42.1 ql/math/interpolations/interpolation2d.hpp:
             //   else if (x > *(xEnd_-1))
@@ -283,33 +273,32 @@ public class AbstractInterpolation2D implements Interpolation2D {
             // Array.upperBound searches the whole range and returns size for
             // that case, leading to size-1 here; the off-by-one access in
             // BilinearInterpolation.op then trips the matrix bounds.
-            if (x <= vx.first())
+            if ( x <= vx.first() )
                 return 0;
-            else if (x >= vx.last())
+            else if ( x >= vx.last() )
                 return vx.size() - 2;
             else
                 return vx.upperBound(x) - 1;
         }
 
-        protected int locateY(final double y) /* @ReadOnly */{
+        protected int locateY(final double y) /* @ReadOnly */ {
             QL.require(extraSafetyChecksY(), "unsorted values on array Y"); // TODO: message
-            if (y <= vy.first())
+            if ( y <= vy.first() )
                 return 0;
-            else if (y >= vy.last())
+            else if ( y >= vy.last() )
                 return vy.size() - 2;
             else
                 return vy.upperBound(y) - 1;
         }
-
 
         //
         // private methods
         //
 
         private boolean extraSafetyChecksX() {
-            if (new Settings().isExtraSafetyChecks()) {
-                for (int i = 0; i < vx.size() - 1; i++) {
-                    if (vx.get(i) > vx.get(i + 1))
+            if ( new Settings().isExtraSafetyChecks() ) {
+                for ( int i = 0; i < vx.size() - 1; i++ ) {
+                    if ( vx.get(i) > vx.get(i + 1) )
                         return false;
                 }
             }
@@ -317,9 +306,9 @@ public class AbstractInterpolation2D implements Interpolation2D {
         }
 
         private boolean extraSafetyChecksY() {
-            if (new Settings().isExtraSafetyChecks()) {
-                for (int i = 0; i < vy.size() - 1; i++) {
-                    if (vy.get(i) > vy.get(i + 1))
+            if ( new Settings().isExtraSafetyChecks() ) {
+                for ( int i = 0; i < vy.size() - 1; i++ ) {
+                    if ( vy.get(i) > vy.get(i + 1) )
                         return false;
                 }
             }

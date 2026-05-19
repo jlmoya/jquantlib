@@ -41,16 +41,14 @@ import org.jquantlib.math.Ops;
 /**
  * Bivariate cumulative Student t distribution.
  * <p>
- * Java port of {@code QuantLib::BivariateCumulativeStudentDistribution}
- * (v1.42.1, {@code ql/math/distributions/bivariatestudenttdistribution.{hpp,cpp}}).
- * Implemented following the formulas from Dunnett, C.W. and Sobel, M. (1954).
- * "A bivariate generalization of Student t-distribution with tables for certain
+ * Java port of {@code QuantLib::BivariateCumulativeStudentDistribution} (v1.42.1,
+ * {@code ql/math/distributions/bivariatestudenttdistribution.{hpp,cpp}}). Implemented following the formulas from
+ * Dunnett, C.W. and Sobel, M. (1954). "A bivariate generalization of Student t-distribution with tables for certain
  * special cases." Biometrika 41, 153-169.
  * <p>
- * Constructed with degrees of freedom {@code n} (positive integer) and
- * correlation {@code rho} in {@code [-1, 1]}; evaluating at a pair
- * {@code (x, y)} returns {@code P(X <= x, Y <= y)} for the bivariate
- * t-distribution with the given parameters.
+ * Constructed with degrees of freedom {@code n} (positive integer) and correlation {@code rho} in {@code [-1, 1]};
+ * evaluating at a pair {@code (x, y)} returns {@code P(X <= x, Y <= y)} for the bivariate t-distribution with the given
+ * parameters.
  */
 public class BivariateCumulativeStudentDistribution implements Ops.BinaryDoubleOp {
 
@@ -68,14 +66,9 @@ public class BivariateCumulativeStudentDistribution implements Ops.BinaryDoubleO
         this.rho_ = rho;
     }
 
-    @Override
-    public double op(final double x, final double y) {
-        return pN(x, y, n_, rho_);
-    }
-
     // sign function returning -1 / 0 / +1
     private static double sign(final double val) {
-        if (val == 0.0) {
+        if ( val == 0.0 ) {
             return 0.0;
         }
         return val < 0.0 ? -1.0 : 1.0;
@@ -95,7 +88,7 @@ public class BivariateCumulativeStudentDistribution implements Ops.BinaryDoubleO
         final double unCor = 1.0 - rho * rho;
         final double sub = (h - rho * k) * (h - rho * k);
         final double denom = sub + unCor * (m + k * k);
-        if (denom < EPSILON) {
+        if ( denom < EPSILON ) {
             return 0.0; // limit case for rho = +/-1.0
         }
         return sub / (sub + unCor * (m + k * k));
@@ -113,7 +106,7 @@ public class BivariateCumulativeStudentDistribution implements Ops.BinaryDoubleO
         final double sgnHK = sign(h - rho * k);
         final double sgnKH = sign(k - rho * h);
 
-        if (n % 2 == 0) {
+        if ( n % 2 == 0 ) {
             // n even, equation (10)
 
             // first line of (10)
@@ -126,14 +119,14 @@ public class BivariateCumulativeStudentDistribution implements Ops.BinaryDoubleO
             double fJ = Math.sqrt(Constants.M_PI / divK);
             double gJ = 1.0 + gjM * arctan(Math.sqrt(xHK), Math.sqrt(1.0 - xHK));
             double sum = fJ * gJ;
-            if (n >= 4) {
+            if ( n >= 4 ) {
                 // different formulas for j = 2:
                 fJ *= 0.5 / divK; // (2 - 1.5) / (j - 1) / divK
                 double dgj = gjM * Math.sqrt(xHK * (1.0 - xHK));
                 gJ += dgj;
                 sum += fJ * gJ;
                 // and then the loop for the rest of the j's:
-                for (int j = 3; j <= n / 2; ++j) {
+                for ( int j = 3; j <= n / 2; ++j ) {
                     fJ *= (j - 1.5) / (j - 1) / divK;
                     dgj *= ((double) (j - 2)) / (2 * j - 3) * dgM;
                     gJ += dgj;
@@ -148,12 +141,12 @@ public class BivariateCumulativeStudentDistribution implements Ops.BinaryDoubleO
             fJ = Math.sqrt(Constants.M_PI / divH);
             gJ = 1.0 + gjM * arctan(Math.sqrt(xKH), Math.sqrt(1.0 - xKH));
             sum = fJ * gJ;
-            if (n >= 4) {
+            if ( n >= 4 ) {
                 fJ *= 0.5 / divH;
                 double dgj = gjM * Math.sqrt(xKH * (1.0 - xKH));
                 gJ += dgj;
                 sum += fJ * gJ;
-                for (int j = 3; j <= n / 2; ++j) {
+                for ( int j = 3; j <= n / 2; ++j ) {
                     fJ *= (j - 1.5) / (j - 1) / divH;
                     dgj *= ((double) (j - 2)) / (2 * j - 3) * dgM;
                     gJ += dgj;
@@ -170,17 +163,17 @@ public class BivariateCumulativeStudentDistribution implements Ops.BinaryDoubleO
             final double hk = h * k;
             final double hkcn = hk + rho * n;
             final double sqrtExpr = Math.sqrt(h * h - 2.0 * rho * hk + k * k + n * unCor);
-            double res = arctan(Math.sqrt((double) n) * (-(h + k) * hkcn - (hk - n) * sqrtExpr),
-                                (hk - n) * hkcn - n * (h + k) * sqrtExpr) / Constants.M_TWOPI;
+            double res = arctan(Math.sqrt(n) * (-(h + k) * hkcn - (hk - n) * sqrtExpr),
+                    (hk - n) * hkcn - n * (h + k) * sqrtExpr) / Constants.M_TWOPI;
 
-            if (n > 1) {
+            if ( n > 1 ) {
                 // second line of (11): contribution involving k / div
                 double mult = (1.0 - xHK) / 2.0;
                 double fJ = 2.0 / Math.sqrt(Constants.M_PI) / divK;
                 double dgj = sgnHK * Math.sqrt(xHK);
                 double gJ = 1.0 + dgj;
                 double sum = fJ * gJ;
-                for (int j = 2; j <= (n - 1) / 2; ++j) {
+                for ( int j = 2; j <= (n - 1) / 2; ++j ) {
                     fJ *= ((double) (j - 1)) / (j - 0.5) / divK;
                     dgj *= ((double) (2 * j - 3)) / (j - 1) * mult;
                     gJ += dgj;
@@ -194,7 +187,7 @@ public class BivariateCumulativeStudentDistribution implements Ops.BinaryDoubleO
                 dgj = sgnKH * Math.sqrt(xKH);
                 gJ = 1.0 + dgj;
                 sum = fJ * gJ;
-                for (int j = 2; j <= (n - 1) / 2; ++j) {
+                for ( int j = 2; j <= (n - 1) / 2; ++j ) {
                     fJ *= ((double) (j - 1)) / (j - 0.5) / divH;
                     dgj *= ((double) (2 * j - 3)) / (j - 1) * mult;
                     gJ += dgj;
@@ -204,5 +197,10 @@ public class BivariateCumulativeStudentDistribution implements Ops.BinaryDoubleO
             }
             return res;
         }
+    }
+
+    @Override
+    public double op(final double x, final double y) {
+        return pN(x, y, n_, rho_);
     }
 }

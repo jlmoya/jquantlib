@@ -24,13 +24,11 @@ package org.jquantlib.time;
 
 import org.jquantlib.QL;
 
-
 /**
  * Helper class to parse Strings to Date
  *
  * @author Srinivas Hasti
  * @author Zahid Hussain
- *
  * @Changes: Sep 2009: Used correct method to parse date and format strings in parse method.
  *
  */
@@ -44,7 +42,8 @@ public class DateParser {
      * @return Date
      */
     public static Date parseISO(final String str) {
-        QL.require(str.length() == 10 && str.charAt(4) == '-' && str.charAt(7) == '-', "invalid format"); // TODO: message
+        QL.require(str.length() == 10 && str.charAt(4) == '-' && str.charAt(7) == '-',
+                "invalid format"); // TODO: message
 
         final int year = Integer.parseInt(str.substring(0, 4));
         final int month = Integer.parseInt(str.substring(5, 7));
@@ -74,18 +73,18 @@ public class DateParser {
 
         Date date;
 
-        if (slist.length != flist.length) {
+        if ( slist.length != flist.length ) {
             date = new Date();
         } else {
-            for (int i = 0; i < flist.length; i++) {
+            for ( int i = 0; i < flist.length; i++ ) {
                 final String sub = flist[i];
-                if (sub.equalsIgnoreCase("dd")) {
+                if ( sub.equalsIgnoreCase("dd") ) {
                     d = Integer.parseInt(slist[i]);
-                } else if (sub.equalsIgnoreCase("mm")) {
+                } else if ( sub.equalsIgnoreCase("mm") ) {
                     m = Integer.parseInt(slist[i]);
-                } else if (sub.equalsIgnoreCase("yyyy")) {
+                } else if ( sub.equalsIgnoreCase("yyyy") ) {
                     y = Integer.parseInt(slist[i]);
-                    if (y < 100) {
+                    if ( y < 100 ) {
                         y += 2000;
                     }
                 }

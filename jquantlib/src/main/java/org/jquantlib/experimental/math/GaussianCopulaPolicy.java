@@ -21,12 +21,12 @@
 
 package org.jquantlib.experimental.math;
 
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.math.distributions.CumulativeNormalDistribution;
 import org.jquantlib.math.distributions.InverseCumulativeNormal;
 import org.jquantlib.math.distributions.NormalDistribution;
+
+import java.util.List;
 
 /**
  * Gaussian Latent Model's copula policy.
@@ -39,36 +39,25 @@ import org.jquantlib.math.distributions.NormalDistribution;
  */
 public class GaussianCopulaPolicy implements CopulaPolicy {
 
-    /**
-     * Initialisation traits placeholder. The Gaussian copula policy does not
-     * carry any extra parameters beyond the factor weights, but a placeholder
-     * keeps the API symmetric with {@link TCopulaPolicy}.
-     */
-    public static final class InitTraits {
-        public InitTraits() {}
-    }
-
     private static final NormalDistribution DENSITY = new NormalDistribution();
     private static final CumulativeNormalDistribution CUMULATIVE = new CumulativeNormalDistribution();
     private static final InverseCumulativeNormal INV_CUMULATIVE = new InverseCumulativeNormal();
-
     private final int numFactors_;
 
     public GaussianCopulaPolicy() {
         this.numFactors_ = 0;
     }
 
-    public GaussianCopulaPolicy(final List<List<Double>> factorWeights) {
+    public GaussianCopulaPolicy(final List< List< Double > > factorWeights) {
         this(factorWeights, new InitTraits());
     }
 
-    public GaussianCopulaPolicy(final List<List<Double>> factorWeights, final InitTraits dummy) {
-        QL.require(factorWeights != null && !factorWeights.isEmpty(),
-                "factorWeights must contain at least one row");
+    public GaussianCopulaPolicy(final List< List< Double > > factorWeights, final InitTraits dummy) {
+        QL.require(factorWeights != null && !factorWeights.isEmpty(), "factorWeights must contain at least one row");
         // Check factors are normalised: inner product < 1
-        for (final List<Double> row : factorWeights) {
+        for ( final List< Double > row : factorWeights ) {
             double norm = 0.0;
-            for (final Double v : row) {
+            for ( final Double v : row ) {
                 norm += v * v;
             }
             QL.require(norm < 1.0, "Non normal random factor combination.");
@@ -89,7 +78,7 @@ public class GaussianCopulaPolicy implements CopulaPolicy {
     /**
      * Cumulative probability of a given latent variable.
      *
-     * @param val      argument
+     * @param val       argument
      * @param iVariable index of the requested variable (ignored for Gaussian)
      */
     public double cumulativeY(final double val, final int iVariable) {
@@ -102,13 +91,12 @@ public class GaussianCopulaPolicy implements CopulaPolicy {
     }
 
     /**
-     * Probability density of a given realisation of values of the systemic
-     * factors. In the Gaussian case all factors share the same law so this is
-     * a trivial product.
+     * Probability density of a given realisation of values of the systemic factors. In the Gaussian case all factors
+     * share the same law so this is a trivial product.
      */
-    public double density(final List<Double> m) {
+    public double density(final List< Double > m) {
         double prod = 1.0;
-        for (final Double v : m) {
+        for ( final Double v : m ) {
             prod *= DENSITY.op(v);
         }
         return prod;
@@ -130,15 +118,23 @@ public class GaussianCopulaPolicy implements CopulaPolicy {
     }
 
     /**
-     * Maps a vector of uniform variates to the underlying factor distribution
-     * via inverse-cumulative transformation. To use this version the generator
-     * must be a uniform one.
+     * Maps a vector of uniform variates to the underlying factor distribution via inverse-cumulative transformation. To
+     * use this version the generator must be a uniform one.
      */
     public double[] allFactorCumulInverter(final double[] probs) {
         final double[] result = new double[probs.length];
-        for (int i = 0; i < probs.length; ++i) {
+        for ( int i = 0; i < probs.length; ++i ) {
             result[i] = INV_CUMULATIVE.op(probs[i]);
         }
         return result;
+    }
+
+    /**
+     * Initialisation traits placeholder. The Gaussian copula policy does not carry any extra parameters beyond the
+     * factor weights, but a placeholder keeps the API symmetric with {@link TCopulaPolicy}.
+     */
+    public static final class InitTraits {
+        public InitTraits() {
+        }
     }
 }

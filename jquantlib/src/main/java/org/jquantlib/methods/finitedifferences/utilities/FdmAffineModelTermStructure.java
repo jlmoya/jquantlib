@@ -27,39 +27,30 @@ import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
 
 /**
- * Yield term structure implied by an affine short-rate model at a given
- * mesh state vector.
+ * Yield term structure implied by an affine short-rate model at a given mesh state vector.
  * <p>
- * Java port of QuantLib v1.42.1
- * {@code ql/methods/finitedifferences/utilities/fdmaffinemodeltermstructure.{hpp,cpp}}.
+ * Java port of QuantLib v1.42.1 {@code ql/methods/finitedifferences/utilities/fdmaffinemodeltermstructure.{hpp,cpp}}.
  *
  * <p>The structure pins a fixed evaluation time {@code t} (year-fraction
- * from the model's reference date to this term-structure's reference date)
- * and computes the discount factor at relative time {@code T} as
- * {@code model.discountBond(t, t + T, r)}, where {@code r} is the affine
- * factor vector. The factor vector is mutable via {@link #setVariable}; the
- * Fdm framework rebinds it on every grid node before re-pricing the
+ * from the model's reference date to this term-structure's reference date) and computes the discount factor at relative
+ * time {@code T} as {@code model.discountBond(t, t + T, r)}, where {@code r} is the affine factor vector. The factor
+ * vector is mutable via {@link #setVariable}; the Fdm framework rebinds it on every grid node before re-pricing the
  * underlying instrument.
  *
  * <p><strong>Java-port note.</strong> The C++ class registers as an
- * {@code Observer} of the model so any model recalibration triggers an
- * observer notification. The Java port mirrors this via
- * {@link #addObserver}.
+ * {@code Observer} of the model so any model recalibration triggers an observer notification. The Java port mirrors
+ * this via {@link #addObserver}.
  *
  * @author Phase 2h WI-2 port
  */
 public class FdmAffineModelTermStructure extends AbstractYieldTermStructure {
 
-    private Array r_;
     private final double t_;
     private final AffineModel model_;
+    private Array r_;
 
-    public FdmAffineModelTermStructure(final Array r,
-                                       final Calendar cal,
-                                       final DayCounter dayCounter,
-                                       final Date referenceDate,
-                                       final Date modelReferenceDate,
-                                       final AffineModel model) {
+    public FdmAffineModelTermStructure(final Array r, final Calendar cal, final DayCounter dayCounter,
+            final Date referenceDate, final Date modelReferenceDate, final AffineModel model) {
         super(referenceDate, cal, dayCounter);
         this.r_ = r;
         this.t_ = dayCounter.yearFraction(modelReferenceDate, referenceDate);

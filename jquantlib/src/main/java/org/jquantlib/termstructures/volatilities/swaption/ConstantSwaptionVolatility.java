@@ -38,17 +38,12 @@ import org.jquantlib.quotes.SimpleQuote;
 import org.jquantlib.termstructures.SwaptionVolatilityStructure;
 import org.jquantlib.termstructures.volatilities.FlatSmileSection;
 import org.jquantlib.termstructures.volatilities.SmileSection;
-import org.jquantlib.time.BusinessDayConvention;
-import org.jquantlib.time.Calendar;
-import org.jquantlib.time.Date;
-import org.jquantlib.time.Period;
-import org.jquantlib.time.TimeUnit;
+import org.jquantlib.time.*;
 
 /**
  * Constant swaption volatility, no time-strike dependence.
  * <p>
- * Port of C++ QuantLib v1.42.1
- * {@code ql/termstructures/volatility/swaption/swaptionconstantvol.hpp}.
+ * Port of C++ QuantLib v1.42.1 {@code ql/termstructures/volatility/swaption/swaptionconstantvol.hpp}.
  *
  * <h3>Java port deviations from C++ v1.42.1</h3>
  * <ul>
@@ -69,7 +64,7 @@ import org.jquantlib.time.TimeUnit;
  */
 public class ConstantSwaptionVolatility extends SwaptionVolatilityStructure {
 
-    private final Handle<? extends Quote> volatility_;
+    private final Handle< ? extends Quote > volatility_;
     private final Period maxSwapTenor_;
     private final VolatilityType volatilityType_;
     private final double shift_;
@@ -79,22 +74,14 @@ public class ConstantSwaptionVolatility extends SwaptionVolatilityStructure {
     //
 
     /** Floating reference date, floating market data. Defaults to ShiftedLognormal/0. */
-    public ConstantSwaptionVolatility(final int settlementDays,
-                                      final Calendar cal,
-                                      final BusinessDayConvention bdc,
-                                      final Handle<? extends Quote> vol,
-                                      final DayCounter dc) {
+    public ConstantSwaptionVolatility(final int settlementDays, final Calendar cal, final BusinessDayConvention bdc,
+            final Handle< ? extends Quote > vol, final DayCounter dc) {
         this(settlementDays, cal, bdc, vol, dc, VolatilityType.ShiftedLognormal, 0.0);
     }
 
     /** Floating reference date, floating market data, explicit type / shift. */
-    public ConstantSwaptionVolatility(final int settlementDays,
-                                      final Calendar cal,
-                                      final BusinessDayConvention bdc,
-                                      final Handle<? extends Quote> vol,
-                                      final DayCounter dc,
-                                      final VolatilityType type,
-                                      final double shift) {
+    public ConstantSwaptionVolatility(final int settlementDays, final Calendar cal, final BusinessDayConvention bdc,
+            final Handle< ? extends Quote > vol, final DayCounter dc, final VolatilityType type, final double shift) {
         super(settlementDays, cal, dc, bdc);
         this.volatility_ = vol;
         this.maxSwapTenor_ = new Period(100, TimeUnit.Years);
@@ -104,22 +91,14 @@ public class ConstantSwaptionVolatility extends SwaptionVolatilityStructure {
     }
 
     /** Fixed reference date, floating market data. Defaults to ShiftedLognormal/0. */
-    public ConstantSwaptionVolatility(final Date referenceDate,
-                                      final Calendar cal,
-                                      final BusinessDayConvention bdc,
-                                      final Handle<? extends Quote> vol,
-                                      final DayCounter dc) {
+    public ConstantSwaptionVolatility(final Date referenceDate, final Calendar cal, final BusinessDayConvention bdc,
+            final Handle< ? extends Quote > vol, final DayCounter dc) {
         this(referenceDate, cal, bdc, vol, dc, VolatilityType.ShiftedLognormal, 0.0);
     }
 
     /** Fixed reference date, floating market data, explicit type / shift. */
-    public ConstantSwaptionVolatility(final Date referenceDate,
-                                      final Calendar cal,
-                                      final BusinessDayConvention bdc,
-                                      final Handle<? extends Quote> vol,
-                                      final DayCounter dc,
-                                      final VolatilityType type,
-                                      final double shift) {
+    public ConstantSwaptionVolatility(final Date referenceDate, final Calendar cal, final BusinessDayConvention bdc,
+            final Handle< ? extends Quote > vol, final DayCounter dc, final VolatilityType type, final double shift) {
         super(referenceDate, cal, dc, bdc);
         this.volatility_ = vol;
         this.maxSwapTenor_ = new Period(100, TimeUnit.Years);
@@ -129,21 +108,15 @@ public class ConstantSwaptionVolatility extends SwaptionVolatilityStructure {
     }
 
     /** Floating reference date, fixed market data. */
-    public ConstantSwaptionVolatility(final int settlementDays,
-                                      final Calendar cal,
-                                      final BusinessDayConvention bdc,
-                                      final double vol,
-                                      final DayCounter dc) {
-        this(settlementDays, cal, bdc, new Handle<Quote>(new SimpleQuote(vol)), dc);
+    public ConstantSwaptionVolatility(final int settlementDays, final Calendar cal, final BusinessDayConvention bdc,
+            final double vol, final DayCounter dc) {
+        this(settlementDays, cal, bdc, new Handle< Quote >(new SimpleQuote(vol)), dc);
     }
 
     /** Fixed reference date, fixed market data. */
-    public ConstantSwaptionVolatility(final Date referenceDate,
-                                      final Calendar cal,
-                                      final BusinessDayConvention bdc,
-                                      final double vol,
-                                      final DayCounter dc) {
-        this(referenceDate, cal, bdc, new Handle<Quote>(new SimpleQuote(vol)), dc);
+    public ConstantSwaptionVolatility(final Date referenceDate, final Calendar cal, final BusinessDayConvention bdc,
+            final double vol, final DayCounter dc) {
+        this(referenceDate, cal, bdc, new Handle< Quote >(new SimpleQuote(vol)), dc);
     }
 
     //
@@ -156,8 +129,8 @@ public class ConstantSwaptionVolatility extends SwaptionVolatilityStructure {
     }
 
     @Override
-    public double blackVariance(final double optionTime, final double swapLength,
-            final double strike, final boolean extrapolate) {
+    public double blackVariance(final double optionTime, final double swapLength, final double strike,
+            final boolean extrapolate) {
         // Mirrors base class: variance = vol^2 * optionTime, but we override
         // because base class' override calls volatilityImpl after
         // checkRange — this avoids the redundant checkRange when callers
@@ -198,13 +171,8 @@ public class ConstantSwaptionVolatility extends SwaptionVolatilityStructure {
         // Mirrors C++ ConstantSwaptionVolatility::smileSectionImpl
         // (swaptionconstantvol.cpp): a flat smile section at the constant vol.
         // No atm level (caller wraps with AtmSmileSection if needed).
-        return new FlatSmileSection(
-                optionTime,
-                volatility_.currentLink().value(),
-                dayCounter(),
-                org.jquantlib.math.Constants.NULL_REAL,
-                volatilityType_,
-                shift_);
+        return new FlatSmileSection(optionTime, volatility_.currentLink().value(), dayCounter(),
+                org.jquantlib.math.Constants.NULL_REAL, volatilityType_, shift_);
     }
 
     @Override

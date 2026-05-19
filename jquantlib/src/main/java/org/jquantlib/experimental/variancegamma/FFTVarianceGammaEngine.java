@@ -47,13 +47,11 @@ import org.jquantlib.time.Date;
  * FFT engine for vanilla options under a Variance Gamma process.
  *
  * <p>Phase 5e.5b-CFC-d-230 port of
- * {@code QuantLib::FFTVarianceGammaEngine}
- * (v1.42.1 ql/experimental/variancegamma/fftvariancegammaengine.{hpp,cpp}).
+ * {@code QuantLib::FFTVarianceGammaEngine} (v1.42.1 ql/experimental/variancegamma/fftvariancegammaengine.{hpp,cpp}).
  *
  * <p>Implements the Carr-Madan characteristic function of the Variance
- * Gamma process and plugs it into {@link FFTEngine}. The correctness of
- * the returned values is tested by comparison with known good values and
- * with the analytic {@link VarianceGammaEngine}.
+ * Gamma process and plugs it into {@link FFTEngine}. The correctness of the returned values is tested by comparison
+ * with known good values and with the analytic {@link VarianceGammaEngine}.
  *
  * @see FFTEngine
  * @see VarianceGammaEngine
@@ -74,8 +72,7 @@ public class FFTVarianceGammaEngine extends FFTEngine {
         this(process, 0.001);
     }
 
-    public FFTVarianceGammaEngine(final VarianceGammaProcess process,
-                                  final double logStrikeSpacing) {
+    public FFTVarianceGammaEngine(final VarianceGammaProcess process, final double logStrikeSpacing) {
         super(process, logStrikeSpacing);
         this.vgProcess_ = process;
     }
@@ -90,8 +87,7 @@ public class FFTVarianceGammaEngine extends FFTEngine {
         dividendDiscount_ = vgProcess_.dividendYield().currentLink().discount(d);
         riskFreeDiscount_ = vgProcess_.riskFreeRate().currentLink().discount(d);
         final DayCounter rfdc = vgProcess_.riskFreeRate().currentLink().dayCounter();
-        t_ = rfdc.yearFraction(
-                vgProcess_.riskFreeRate().currentLink().referenceDate(), d);
+        t_ = rfdc.yearFraction(vgProcess_.riskFreeRate().currentLink().referenceDate(), d);
         sigma_ = vgProcess_.sigma();
         nu_ = vgProcess_.nu();
         theta_ = vgProcess_.theta();
@@ -113,9 +109,7 @@ public class FFTVarianceGammaEngine extends FFTEngine {
         phi = phi.mul(Complex.real(dividendDiscount_ / riskFreeDiscount_).pow(iu));
 
         final Complex uSq = u.mul(u);
-        final Complex term = Complex.ONE
-                .sub(i1.mul(theta_ * nu_).mul(u))
-                .add(uSq.mul(sigma_ * sigma_ * nu_ / 2.0));
+        final Complex term = Complex.ONE.sub(i1.mul(theta_ * nu_).mul(u)).add(uSq.mul(sigma_ * sigma_ * nu_ / 2.0));
         phi = phi.mul(term.pow(-t_ / nu_));
 
         return phi;

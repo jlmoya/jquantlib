@@ -14,8 +14,7 @@ package org.jquantlib.experimental.catbonds;
 import java.util.List;
 
 /**
- * Notional risk model that sets the notional to zero whenever a loss event
- * exceeds a threshold.
+ * Notional risk model that sets the notional to zero whenever a loss event exceeds a threshold.
  *
  * <p>Port of {@code ql/experimental/catbonds/riskynotional.hpp}
  * {@code DigitalNotionalRisk}.
@@ -30,10 +29,10 @@ public class DigitalNotionalRisk extends NotionalRisk {
     }
 
     @Override
-    public void updatePath(final List<DateRealPair> events, final NotionalPath path) {
+    public void updatePath(final List< DateRealPair > events, final NotionalPath path) {
         path.reset();
-        for (final DateRealPair event : events) {
-            if (event.value >= threshold_) {
+        for ( final DateRealPair event : events ) {
+            if ( event.value >= threshold_ ) {
                 path.addReduction(paymentOffset_.paymentDate(event.date), 0.0);
             }
         }

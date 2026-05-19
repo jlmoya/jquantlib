@@ -27,7 +27,6 @@
 
 package org.jquantlib.math.distributions;
 
-
 import org.jquantlib.QL;
 import org.jquantlib.math.Beta;
 import org.jquantlib.math.Ops;
@@ -65,11 +64,12 @@ public class CumulativeBinomialDistribution implements Ops.IntToDouble {
 
     /**
      * This constructor initializes p and n
+     *
      * @param p is the probability of success of a single trial
      * @param n is the total number of trials
      */
-    public CumulativeBinomialDistribution(final double p, final int n){
-        QL.require(p >= 0.0 && p <= 1.0 , INVALID_PROBABILITY); // TODO: message
+    public CumulativeBinomialDistribution(final double p, final int n) {
+        QL.require(p >= 0.0 && p <= 1.0, INVALID_PROBABILITY); // TODO: message
         this.n = n; // total number of trials
         this.p = p; // probability of success on a single trial
     }
@@ -88,7 +88,7 @@ public class CumulativeBinomialDistribution implements Ops.IntToDouble {
      */
     @Override
     public double op(final int k) {
-        if (k >= n)
+        if ( k >= n )
             return 1.0;
         else
             return 1.0 - Beta.incompleteBetaFunction(k + 1, n - k, p, accuracy, maxIteration);

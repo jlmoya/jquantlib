@@ -52,35 +52,32 @@ import org.jquantlib.time.calendars.UnitedStates;
  * <p>
  * LIBOR fixed by BBA.
  *
- * @see <a href="http://www.bba.org.uk/bba/jsp/polopoly.jsp?d=225&a=1414">http://www.bba.org.uk/bba/jsp/polopoly.jsp?d=225&a=1414</a>
+ * @see <a
+ * href="http://www.bba.org.uk/bba/jsp/polopoly.jsp?d=225&a=1414">http://www.bba.org.uk/bba/jsp/polopoly.jsp?d=225&a=1414</a>
  */
 public class DailyTenorUSDLibor extends DailyTenorLibor {
 
-	public DailyTenorUSDLibor(final int settlementDays) {
-		this(settlementDays, new Handle<YieldTermStructure>(
-						new AbstractYieldTermStructure() {
-							@Override
-							protected double discountImpl(final double t) {
-								throw new UnsupportedOperationException();
-							}
-							@Override
-							public Date maxDate() {
-								throw new UnsupportedOperationException();
-							}
-						}
-				));
-	}
+    public DailyTenorUSDLibor(final int settlementDays) {
+        this(settlementDays, new Handle< YieldTermStructure >(new AbstractYieldTermStructure() {
+            @Override
+            protected double discountImpl(final double t) {
+                throw new UnsupportedOperationException();
+            }
 
-	public DailyTenorUSDLibor(final int settlementDays,
-			final Handle<YieldTermStructure> h) {
-		// align(indexes.ibor): match C++ v1.42.1 usdlibor.hpp
-		// (DailyTenorUSDLibor) fixingCalendar=UnitedStates(LiborImpact)
-		// (was SETTLEMENT). Same correction as the term-tenor USDLibor —
-		// USDLiborON inherits this through DailyTenorUSDLibor.
-		super("USDLibor", settlementDays,
-				new USDCurrency(),
-				new UnitedStates(UnitedStates.Market.LiborImpact),
-				new Actual360(), h);
-	}
+            @Override
+            public Date maxDate() {
+                throw new UnsupportedOperationException();
+            }
+        }));
+    }
+
+    public DailyTenorUSDLibor(final int settlementDays, final Handle< YieldTermStructure > h) {
+        // align(indexes.ibor): match C++ v1.42.1 usdlibor.hpp
+        // (DailyTenorUSDLibor) fixingCalendar=UnitedStates(LiborImpact)
+        // (was SETTLEMENT). Same correction as the term-tenor USDLibor —
+        // USDLiborON inherits this through DailyTenorUSDLibor.
+        super("USDLibor", settlementDays, new USDCurrency(), new UnitedStates(UnitedStates.Market.LiborImpact),
+                new Actual360(), h);
+    }
 
 }

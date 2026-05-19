@@ -36,19 +36,16 @@ import org.jquantlib.time.calendars.UnitedKingdom;
  * <p>
  * Port of C++ QuantLib v1.42.1 {@code ql/indexes/ibor/sonia.hpp/cpp}.
  *
- * @category indexes
- *
  * @author JQuantLib migration team
+ * @category indexes
  */
 public class Sonia extends OvernightIndex {
 
-    public Sonia(final Handle<YieldTermStructure> h) {
-        super("Sonia", 0, new GBPCurrency(),
-              new UnitedKingdom(UnitedKingdom.Market.Exchange),
-              new Actual365Fixed(), h);
+    public Sonia(final Handle< YieldTermStructure > h) {
+        super("Sonia", 0, new GBPCurrency(), new UnitedKingdom(UnitedKingdom.Market.Exchange), new Actual365Fixed(), h);
     }
 
     public Sonia() {
-        this(new Handle<YieldTermStructure>());
+        this(new Handle< YieldTermStructure >());
     }
 }

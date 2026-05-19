@@ -22,13 +22,11 @@ package org.jquantlib.experimental.commodities;
 /**
  * US gallon unit of measure (GAL).
  * <p>
- * Java port of QuantLib v1.42.1 {@code GallonUnitOfMeasure} from
- * {@code petroleumunitsofmeasure.hpp}.
+ * Java port of QuantLib v1.42.1 {@code GallonUnitOfMeasure} from {@code petroleumunitsofmeasure.hpp}.
  */
 public class GallonUnitOfMeasure extends UnitOfMeasure {
 
-    private static final Data SHARED =
-            new Data("US Gallons", "GAL", Type.Volume, new BarrelUnitOfMeasure());
+    private static final Data SHARED = new Data("US Gallons", "GAL", Type.Volume, new BarrelUnitOfMeasure());
 
     public GallonUnitOfMeasure() {
         super();

@@ -20,17 +20,16 @@
  */
 package org.jquantlib.experimental.credit;
 
-import java.util.function.Function;
-
 import org.jquantlib.math.integrals.GaussianQuadMultidimIntegrator;
+
+import java.util.function.Function;
 
 /**
  * {@link LMIntegration} backed by N-dimensional Gauss-Hermite quadrature.
  *
  * <p>Java port of QuantLib v1.42.1 specialisation
  * {@code IntegrationBase<GaussianQuadMultidimIntegrator>} (declared inline in
- * {@code ql/experimental/math/latentmodel.hpp}). Pinned commit
- * {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
+ * {@code ql/experimental/math/latentmodel.hpp}). Pinned commit {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
  *
  * <p>The C++ specialisation participates in a CRTP-style hierarchy via
  * multiple inheritance; Java composes the underlying integrator instead.
@@ -48,12 +47,12 @@ public final class GaussianQuadLMIntegration implements LMIntegration {
     }
 
     @Override
-    public double integrate(final Function<double[], Double> f) {
+    public double integrate(final Function< double[], Double > f) {
         return integrator_.integrate(f);
     }
 
     @Override
-    public double[] integrateV(final Function<double[], double[]> f) {
+    public double[] integrateV(final Function< double[], double[] > f) {
         return integrator_.integrateV(f);
     }
 }

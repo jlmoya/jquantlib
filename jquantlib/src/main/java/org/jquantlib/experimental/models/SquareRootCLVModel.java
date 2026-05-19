@@ -22,13 +22,13 @@
 package org.jquantlib.experimental.models;
 
 import org.jquantlib.QL;
+import org.jquantlib.experimental.math.GaussNonCentralChiSquaredPolynomial;
 import org.jquantlib.math.Constants;
 import org.jquantlib.math.distributions.InverseNonCentralCumulativeChiSquaredDistribution;
 import org.jquantlib.math.distributions.NonCentralCumulativeChiSquaredDistribution;
 import org.jquantlib.math.integrals.GaussianQuadrature;
 import org.jquantlib.math.interpolations.LagrangeInterpolation;
 import org.jquantlib.methods.finitedifferences.utilities.GBSMRNDCalculator;
-import org.jquantlib.experimental.math.GaussNonCentralChiSquaredPolynomial;
 import org.jquantlib.processes.GeneralizedBlackScholesProcess;
 import org.jquantlib.processes.SquareRootProcess;
 import org.jquantlib.time.Date;
@@ -39,8 +39,7 @@ import java.util.TreeMap;
 import java.util.function.BiFunction;
 
 /**
- * CLV (Collocation Local Volatility) model with a square-root (CIR-type)
- * kernel process.
+ * CLV (Collocation Local Volatility) model with a square-root (CIR-type) kernel process.
  *
  * <p>Java port of QuantLib v1.42.1
  * {@code ql/experimental/models/squarerootclvmodel.{hpp,cpp}}.
@@ -61,27 +60,23 @@ public class SquareRootCLVModel extends LazyObject {
     private final GBSMRNDCalculator rndCalculator_;
 
     // populated in performCalculations
-    private volatile BiFunction<Double, Double, Double> g_;
+    private volatile BiFunction< Double, Double, Double > g_;
 
     /**
      * @param bsProcess     Generalized Black-Scholes process
      * @param sqrtProcess   CIR-type square root kernel process
      * @param maturityDates collocation dates (need not be pre-sorted)
      * @param lagrangeOrder number of non-central chi-squared quadrature points
-     * @param pMax          upper quantile for collocation node clipping
-     *                      (pass {@link Double#NaN} or {@link Constants#QL_NULL_REAL} for none)
+     * @param pMax          upper quantile for collocation node clipping (pass {@link Double#NaN} or
+     *                      {@link Constants#QL_NULL_REAL} for none)
      * @param pMin          lower quantile (pass {@link Double#NaN} for none)
      */
-    public SquareRootCLVModel(final GeneralizedBlackScholesProcess bsProcess,
-                              final SquareRootProcess sqrtProcess,
-                              final Date[] maturityDates,
-                              final int lagrangeOrder,
-                              final double pMax,
-                              final double pMin) {
-        this.pMax_         = pMax;
-        this.pMin_         = pMin;
-        this.bsProcess_    = bsProcess;
-        this.sqrtProcess_  = sqrtProcess;
+    public SquareRootCLVModel(final GeneralizedBlackScholesProcess bsProcess, final SquareRootProcess sqrtProcess,
+            final Date[] maturityDates, final int lagrangeOrder, final double pMax, final double pMin) {
+        this.pMax_ = pMax;
+        this.pMin_ = pMin;
+        this.bsProcess_ = bsProcess;
+        this.sqrtProcess_ = sqrtProcess;
         this.maturityDates_ = maturityDates.clone();
         this.lagrangeOrder_ = lagrangeOrder;
         this.rndCalculator_ = new GBSMRNDCalculator(bsProcess);
@@ -91,17 +86,17 @@ public class SquareRootCLVModel extends LazyObject {
     }
 
     /** Construct with no quantile clipping. */
-    public SquareRootCLVModel(final GeneralizedBlackScholesProcess bsProcess,
-                              final SquareRootProcess sqrtProcess,
-                              final Date[] maturityDates,
-                              final int lagrangeOrder) {
-        this(bsProcess, sqrtProcess, maturityDates, lagrangeOrder,
-                Double.NaN, Double.NaN);
+    public SquareRootCLVModel(final GeneralizedBlackScholesProcess bsProcess, final SquareRootProcess sqrtProcess,
+            final Date[] maturityDates, final int lagrangeOrder) {
+        this(bsProcess, sqrtProcess, maturityDates, lagrangeOrder, Double.NaN, Double.NaN);
+    }
+
+    private static boolean isNull(final double v) {
+        return Double.isNaN(v) || v == Constants.NULL_REAL;
     }
 
     /**
-     * Cumulative distribution function of the BS process at date {@code d}
-     * and spot {@code k}.
+     * Cumulative distribution function of the BS process at date {@code d} and spot {@code k}.
      */
     public double cdf(final Date d, final double k) {
         return rndCalculator_.cdf(k, bsProcess_.time(d));
@@ -115,57 +110,53 @@ public class SquareRootCLVModel extends LazyObject {
     }
 
     /**
-     * Collocation points of the square-root process at date {@code d}
-     * (in chi-squared space).
+     * Collocation points of the square-root process at date {@code d} (in chi-squared space).
      */
     public double[] collocationPointsX(final Date d) {
         final double[] p = nonCentralChiSquaredParams(d);
-        final double df  = p[0];
+        final double df = p[0];
         final double ncp = p[1];
 
         // Gauss quadrature over nc-chi2 distribution
-        final GaussianQuadrature gq = new GaussianQuadrature(
-                lagrangeOrder_, new GaussNonCentralChiSquaredPolynomial(df, ncp));
+        final GaussianQuadrature gq = new GaussianQuadrature(lagrangeOrder_,
+                new GaussNonCentralChiSquaredPolynomial(df, ncp));
 
         final double[] x = new double[lagrangeOrder_];
-        for (int i = 0; i < lagrangeOrder_; ++i) {
+        for ( int i = 0; i < lagrangeOrder_; ++i ) {
             x[i] = gq.x(i);
         }
         Arrays.sort(x);
 
         // Compute quantile bounds
-        final NonCentralCumulativeChiSquaredDistribution dist =
-                new NonCentralCumulativeChiSquaredDistribution(df, ncp);
-        final InverseNonCentralCumulativeChiSquaredDistribution invDist =
-                new InverseNonCentralCumulativeChiSquaredDistribution(df, ncp, 100, 1e-8);
+        final NonCentralCumulativeChiSquaredDistribution dist = new NonCentralCumulativeChiSquaredDistribution(df, ncp);
+        final InverseNonCentralCumulativeChiSquaredDistribution invDist = new InverseNonCentralCumulativeChiSquaredDistribution(
+                df, ncp, 100, 1e-8);
 
-        final double xMin = Math.max(x[0],
-                isNull(pMin_) ? 0.0 : invDist.op(pMin_));
-        final double xMax = Math.min(x[lagrangeOrder_ - 1],
-                isNull(pMax_) ? Double.MAX_VALUE : invDist.op(pMax_));
+        final double xMin = Math.max(x[0], isNull(pMin_) ? 0.0 : invDist.op(pMin_));
+        final double xMax = Math.min(x[lagrangeOrder_ - 1], isNull(pMax_) ? Double.MAX_VALUE : invDist.op(pMax_));
 
         // Affine map x_i -> [xMin, xMax]
         final double b = xMin - x[0];
         final double a = (xMax - xMin) / (x[lagrangeOrder_ - 1] - x[0]);
 
-        for (int i = 0; i < lagrangeOrder_; ++i) {
+        for ( int i = 0; i < lagrangeOrder_; ++i ) {
             x[i] = a * x[i] + b;
         }
         return x;
     }
 
     /**
-     * Collocation points for the underlying S_T at date {@code d}
-     * (in BS-space, mapped via the invCDF of the chi-squared distribution).
+     * Collocation points for the underlying S_T at date {@code d} (in BS-space, mapped via the invCDF of the
+     * chi-squared distribution).
      */
     public double[] collocationPointsY(final Date d) {
         final double[] xPts = collocationPointsX(d);
-        final double[] p    = nonCentralChiSquaredParams(d);
-        final NonCentralCumulativeChiSquaredDistribution dist =
-                new NonCentralCumulativeChiSquaredDistribution(p[0], p[1]);
+        final double[] p = nonCentralChiSquaredParams(d);
+        final NonCentralCumulativeChiSquaredDistribution dist = new NonCentralCumulativeChiSquaredDistribution(p[0],
+                p[1]);
 
         final double[] s = new double[xPts.length];
-        for (int i = 0; i < s.length; ++i) {
+        for ( int i = 0; i < s.length; ++i ) {
             final double q = dist.op(xPts[i]);
             s[i] = invCDF(d, q);
         }
@@ -175,49 +166,44 @@ public class SquareRootCLVModel extends LazyObject {
     /**
      * Returns the CLV mapping function {@code g(t, x)}.
      */
-    public BiFunction<Double, Double, Double> g() {
+    public BiFunction< Double, Double, Double > g() {
         calculate();
         return g_;
     }
+
+    // --- helpers ---
 
     @Override
     protected void performCalculations() {
         g_ = new MappingFunction(this);
     }
 
-    // --- helpers ---
-
     /**
-     * Returns [df, ncp] for the non-central chi-squared distribution of
-     * the square-root process at date {@code d}.
+     * Returns [df, ncp] for the non-central chi-squared distribution of the square-root process at date {@code d}.
      */
     private double[] nonCentralChiSquaredParams(final Date d) {
-        final double t     = bsProcess_.time(d);
+        final double t = bsProcess_.time(d);
         final double kappa = sqrtProcess_.a();
         final double theta = sqrtProcess_.b();
         final double sigma = sqrtProcess_.sigma();
 
-        final double df  = 4.0 * theta * kappa / (sigma * sigma);
-        final double ncp = 4.0 * kappa * Math.exp(-kappa * t)
-                / (sigma * sigma * (1.0 - Math.exp(-kappa * t))) * sqrtProcess_.x0();
+        final double df = 4.0 * theta * kappa / (sigma * sigma);
+        final double ncp =
+                4.0 * kappa * Math.exp(-kappa * t) / (sigma * sigma * (1.0 - Math.exp(-kappa * t))) * sqrtProcess_.x0();
 
-        return new double[]{df, ncp};
-    }
-
-    private static boolean isNull(final double v) {
-        return Double.isNaN(v) || v == Constants.NULL_REAL;
+        return new double[] { df, ncp };
     }
 
     // --- inner class ---
 
     /**
-     * The CLV mapping function built from Lagrange interpolation over sorted
-     * maturity dates with linear time interpolation between adjacent dates.
+     * The CLV mapping function built from Lagrange interpolation over sorted maturity dates with linear time
+     * interpolation between adjacent dates.
      */
-    private static class MappingFunction implements BiFunction<Double, Double, Double> {
+    private static class MappingFunction implements BiFunction< Double, Double, Double > {
 
         // Per-maturity Lagrange interpolations: maturityTime -> interpolation
-        private final TreeMap<Double, LagrangeInterpolation> interpl_ = new TreeMap<>();
+        private final TreeMap< Double, LagrangeInterpolation > interpl_ = new TreeMap<>();
         // store x/s arrays to keep alive for LagrangeInterpolation (which holds references)
         private final double[][] xData_;
         private final double[][] sData_;
@@ -231,7 +217,7 @@ public class SquareRootCLVModel extends LazyObject {
             xData_ = new double[nMat][nPts];
             sData_ = new double[nMat][nPts];
 
-            for (int i = 0; i < nMat; ++i) {
+            for ( int i = 0; i < nMat; ++i ) {
                 final double[] xPts = model.collocationPointsX(maturities[i]);
                 final double[] yPts = model.collocationPointsY(maturities[i]);
                 System.arraycopy(xPts, 0, xData_[i], 0, nPts);
@@ -246,22 +232,18 @@ public class SquareRootCLVModel extends LazyObject {
         @Override
         public Double apply(final Double t, final Double x) {
             // Find ge = first entry with key >= t
-            final java.util.Map.Entry<Double, LagrangeInterpolation> ge =
-                    interpl_.ceilingEntry(t);
+            final java.util.Map.Entry< Double, LagrangeInterpolation > ge = interpl_.ceilingEntry(t);
 
-            QL.require(ge != null,
-                    "SquareRootCLVModel: extrapolation for t=" + t + " beyond last maturity");
+            QL.require(ge != null, "SquareRootCLVModel: extrapolation for t=" + t + " beyond last maturity");
 
             // Close to a node
-            if (Math.abs(ge.getKey() - t) < 1e-14) {
+            if ( Math.abs(ge.getKey() - t) < 1e-14 ) {
                 return ge.getValue().op(x, true);
             }
 
-            final java.util.Map.Entry<Double, LagrangeInterpolation> lt =
-                    interpl_.lowerEntry(t);
+            final java.util.Map.Entry< Double, LagrangeInterpolation > lt = interpl_.lowerEntry(t);
 
-            QL.require(lt != null,
-                    "SquareRootCLVModel: extrapolation before first maturity t=" + t);
+            QL.require(lt != null, "SquareRootCLVModel: extrapolation before first maturity t=" + t);
 
             final double t1 = ge.getKey();
             final double y1 = ge.getValue().op(x, true);

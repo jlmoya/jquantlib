@@ -54,7 +54,6 @@ public class NullParameter extends Parameter {
         super(0, new Impl(), new NoConstraint());
     }
 
-
     //
     // protected inner classes
     //

@@ -45,35 +45,34 @@ import org.jquantlib.util.Observable;
 /**
  * Relinkable handle to an observable
  * <p>
- * An instance of this class can be relinked so that it points to another
- * observable. The change will be propagated to all handles that were created as
- * copies of such instance.
+ * An instance of this class can be relinked so that it points to another observable. The change will be propagated to
+ * all handles that were created as copies of such instance.
  *
  * @author Richard Gomes
  */
 //FIXME:
-public class RelinkableHandle<T extends Observable> extends Handle<T> {
+public class RelinkableHandle< T extends Observable > extends Handle< T > {
 
     public RelinkableHandle() {
         super();
     }
 
-	public RelinkableHandle(final T observable) {
-    	this(observable, true);
+    public RelinkableHandle(final T observable) {
+        this(observable, true);
     }
 
     public RelinkableHandle(final T observable, final boolean isObserver) {
-    	super(observable, isObserver);
+        super(observable, isObserver);
     }
 
     @Override
     public final void linkTo(final T observable) {
-    	super.internalLinkTo(observable, true);
+        super.internalLinkTo(observable, true);
     }
 
     @Override
     public final void linkTo(final T observable, final boolean isObserver) {
-    	super.internalLinkTo(observable, isObserver);
+        super.internalLinkTo(observable, isObserver);
     }
 
 }

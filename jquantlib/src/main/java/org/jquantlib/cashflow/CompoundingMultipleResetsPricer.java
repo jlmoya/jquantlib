@@ -62,9 +62,9 @@ public class CompoundingMultipleResetsPricer extends MultipleResetsPricer {
     public double swapletRate() {
         // past or future fixing is managed in InterestRateIndex::fixing()
         double compoundFactor = 1.0;
-        final List<Double> subPeriodFractions = coupon_.dt();
+        final List< Double > subPeriodFractions = coupon_.dt();
         final int nCount = subPeriodFixings_.size();
-        for (int i = 0; i < nCount; i++) {
+        for ( int i = 0; i < nCount; i++ ) {
             compoundFactor *= (1.0 + subPeriodFixings_.get(i) * subPeriodFractions.get(i));
         }
 

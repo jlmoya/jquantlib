@@ -37,8 +37,8 @@ package org.jquantlib.instruments;
 import org.jquantlib.QL;
 
 /**
- * Weighted-average basket payoff: applies the base payoff to a weighted sum
- * of the underlying asset values at exercise.
+ * Weighted-average basket payoff: applies the base payoff to a weighted sum of the underlying asset values at
+ * exercise.
  *
  * <p>Ported from C++ QuantLib v1.42.1
  * {@code ql/instruments/basketoption.hpp::AverageBasketPayoff}.</p>
@@ -66,7 +66,7 @@ public class AverageBasketPayoff extends BasketPayoff {
         QL.require(n > 0, "n must be > 0");
         this.weights = new double[n];
         final double w = 1.0 / n;
-        for (int i = 0; i < n; ++i) {
+        for ( int i = 0; i < n; ++i ) {
             this.weights[i] = w;
         }
     }
@@ -78,10 +78,9 @@ public class AverageBasketPayoff extends BasketPayoff {
     @Override
     public double accumulate(final double[] a) {
         QL.require(a != null, "null underlying array");
-        QL.require(a.length == weights.length,
-                "underlying array size does not match weights");
+        QL.require(a.length == weights.length, "underlying array size does not match weights");
         double s = 0.0;
-        for (int i = 0; i < a.length; ++i) {
+        for ( int i = 0; i < a.length; ++i ) {
             s += weights[i] * a[i];
         }
         return s;

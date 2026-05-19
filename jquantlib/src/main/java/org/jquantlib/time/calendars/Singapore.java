@@ -22,15 +22,6 @@
 
 package org.jquantlib.time.calendars;
 
-import static org.jquantlib.time.Month.August;
-import static org.jquantlib.time.Month.December;
-import static org.jquantlib.time.Month.February;
-import static org.jquantlib.time.Month.January;
-import static org.jquantlib.time.Month.June;
-import static org.jquantlib.time.Month.May;
-import static org.jquantlib.time.Month.November;
-import static org.jquantlib.time.Month.October;
-
 import org.jquantlib.lang.annotation.QualityAssurance;
 import org.jquantlib.lang.annotation.QualityAssurance.Quality;
 import org.jquantlib.lang.annotation.QualityAssurance.Version;
@@ -38,6 +29,8 @@ import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Month;
 import org.jquantlib.time.Weekday;
+
+import static org.jquantlib.time.Month.*;
 
 /**
  * Singaporean calendar
@@ -63,33 +56,31 @@ import org.jquantlib.time.Weekday;
  * <li>Hari Raya Puasa</li>
  * </ul>
  *
- * @category calendars
- *
- * @see <a href="http://www.ses.com.sg/">Stock Exchange of Singapore</a>
- *
  * @author Joon Tiang
+ * @category calendars
+ * @see <a href="http://www.ses.com.sg/">Stock Exchange of Singapore</a>
  */
 
-@QualityAssurance(quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Zahid Hussain" })
+@QualityAssurance( quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Zahid Hussain" } )
 
 public class Singapore extends Calendar {
-    public enum Market {
-        /**
-         * Singapore Exchange
-         */
-        SGX
-    };
+    public Singapore() {
+        this(Market.SGX);
+    }
 
     //
     // public constructors
     //
 
-    public Singapore(){
-    	this(Market.SGX);
+    public Singapore(final Market m) {
+        impl = new SgxImpl();
     }
 
-    public Singapore(final Market m){
-    	impl = new SgxImpl();
+    public enum Market {
+        /**
+         * Singapore Exchange
+         */
+        SGX
     }
 
     //
@@ -97,71 +88,57 @@ public class Singapore extends Calendar {
     //
 
     private final class SgxImpl extends WesternImpl {
-    	@Override
-    	public String name() { return "Singapore exchange"; }
+        @Override
+        public String name() {
+            return "Singapore exchange";
+        }
 
-    	@Override
-    	public boolean isBusinessDay(final Date date) {
-              final Weekday w = date.weekday();
-              final int d = date.dayOfMonth(), dd = date.dayOfYear();
-              final Month m = date.month();
-              final int y = date.year();
-              final int em = easterMonday(y);
+        @Override
+        public boolean isBusinessDay(final Date date) {
+            final Weekday w = date.weekday();
+            final int d = date.dayOfMonth(), dd = date.dayOfYear();
+            final Month m = date.month();
+            final int y = date.year();
+            final int em = easterMonday(y);
 
-              if (isWeekend(w)
-                  // New Year's Day
-                  || (d == 1 && m == January)
-                  // Good Friday
-                  || (dd == em-3)
-                  // Labor Day
-                  || (d == 1 && m == May)
-                  // National Day
-                  || (d == 9 && m == August)
-                  // Christmas Day
-                  || (d == 25 && m == December)
+            return !isWeekend(w)
+                    // New Year's Day
+                    && (d != 1 || m != January)
+                    // Good Friday
+                    && (dd != em - 3)
+                    // Labor Day
+                    && (d != 1 || m != May)
+                    // National Day
+                    && (d != 9 || m != August)
+                    // Christmas Day
+                    && (d != 25 || m != December)
 
-                  // Chinese New Year
-                  || ((d == 22 || d == 23) && m == January && y == 2004)
-                  || ((d == 9 || d == 10) && m == February && y == 2005)
-                  || ((d == 30 || d == 31) && m == January && y == 2006)
-                  || ((d == 19 || d == 20) && m == February && y == 2007)
-                  || ((d == 7 || d == 8) && m == February && y == 2008)
-                  || ((d == 26 || d == 27) && m == January && y == 2009) //Zahid
+                    // Chinese New Year
+                    && ((d != 22 && d != 23) || m != January || y != 2004) && ((d != 9 && d != 10) || m != February
+                    || y != 2005) && ((d != 30 && d != 31) || m != January || y != 2006) && ((d != 19 && d != 20)
+                    || m != February || y != 2007) && ((d != 7 && d != 8) || m != February || y != 2008) && (
+                    (d != 26 && d != 27) || m != January || y != 2009) //Zahid
 
-                  // Hari Raya Haji
-                  || ((d == 1 || d == 2) && m == February && y == 2004)
-                  || (d == 21 && m == January && y == 2005)
-                  || (d == 10 && m == January && y == 2006)
-                  || (d == 2 && m == January && y == 2007)
-                  || (d == 20 && m == December && y == 2007)
-                  || (d == 8 && m == December && y == 2008)
+                    // Hari Raya Haji
+                    && ((d != 1 && d != 2) || m != February || y != 2004) && (d != 21 || m != January || y != 2005) && (
+                    d != 10 || m != January || y != 2006) && (d != 2 || m != January || y != 2007) && (d != 20
+                    || m != December || y != 2007) && (d != 8 || m != December || y != 2008)
 
-                  // Vesak Poya Day
-                  || (d == 2 && m == June && y == 2004)
-                  || (d == 22 && m == May && y == 2005)
-                  || (d == 12 && m == May && y == 2006)
-                  || (d == 31 && m == May && y == 2007)
-                  || (d == 18 && m == May && y == 2008)
+                    // Vesak Poya Day
+                    && (d != 2 || m != June || y != 2004) && (d != 22 || m != May || y != 2005) && (d != 12 || m != May
+                    || y != 2006) && (d != 31 || m != May || y != 2007) && (d != 18 || m != May || y != 2008)
 
-                  // Deepavali
-                  || (d == 11 && m == November && y == 2004)
-                  || (d == 8 && m == November && y == 2007)
-                  || (d == 28 && m == October && y == 2008)
-                  || (d == 27 && m == November && y == 2009) //Zahid
+                    // Deepavali
+                    && (d != 11 || m != November || y != 2004) && (d != 8 || m != November || y != 2007) && (d != 28
+                    || m != October || y != 2008) && (d != 27 || m != November || y != 2009) //Zahid
 
-                  // Diwali
-                  || (d == 1 && m == November && y == 2005)
+                    // Diwali
+                    && (d != 1 || m != November || y != 2005)
 
-                  // Hari Raya Puasa
-                  || ((d == 14 || d == 15) && m == November && y == 2004)
-                  || (d == 3 && m == November && y == 2005)
-                  || (d == 24 && m == October && y == 2006)
-                  || (d == 13 && m == October && y == 2007)
-                  || (d == 1 && m == October && y == 2008)
-                  ) {
-                return false;
-            }
-              return true;
-          }
+                    // Hari Raya Puasa
+                    && ((d != 14 && d != 15) || m != November || y != 2004) && (d != 3 || m != November || y != 2005)
+                    && (d != 24 || m != October || y != 2006) && (d != 13 || m != October || y != 2007) && (d != 1
+                    || m != October || y != 2008);
+        }
     }
 }

@@ -33,16 +33,13 @@ import org.jquantlib.time.Date;
 /**
  * Closed-form Hagan CMS-coupon pricer (eq. 3.5b/3.5c, 3.4c).
  * <p>
- * Mirrors C++ QuantLib v1.42.1 {@code AnalyticHaganPricer} in
- * {@code ql/cashflows/conundrumpricer.{hpp,cpp}}. Implements the
- * second-order static-replication formulas using only G' at the
- * forward swap rate.
+ * Mirrors C++ QuantLib v1.42.1 {@code AnalyticHaganPricer} in {@code ql/cashflows/conundrumpricer.{hpp,cpp}}.
+ * Implements the second-order static-replication formulas using only G' at the forward swap rate.
  */
 public class AnalyticHaganPricer extends HaganPricer {
 
-    public AnalyticHaganPricer(final Handle<SwaptionVolatilityStructure> swaptionVol,
-                               final GFunctionFactory.YieldCurveModel modelOfYieldCurve,
-                               final Handle<Quote> meanReversion) {
+    public AnalyticHaganPricer(final Handle< SwaptionVolatilityStructure > swaptionVol,
+            final GFunctionFactory.YieldCurveModel modelOfYieldCurve, final Handle< Quote > meanReversion) {
         super(swaptionVol, modelOfYieldCurve, meanReversion);
     }
 
@@ -57,7 +54,7 @@ public class AnalyticHaganPricer extends HaganPricer {
         final double CK = vanillaOptionPricer_.evaluate(strike, optionType, annuity_);
         price += (discount_ / annuity_) * CK;
 
-        if (swaptionVolatility().currentLink().volatilityType() == VolatilityType.ShiftedLognormal) {
+        if ( swaptionVolatility().currentLink().volatilityType() == VolatilityType.ShiftedLognormal ) {
             final double sqrtSigma2T = Math.sqrt(variance);
             final double lnRoverK = Math.log(swapRateValue_ / strike);
             final double d32 = (lnRoverK + 1.5 * variance) / sqrtSigma2T;
@@ -70,10 +67,8 @@ public class AnalyticHaganPricer extends HaganPricer {
             final double N12 = cumulativeOfNormal.op(sign * d12);
             final double Nminus12 = cumulativeOfNormal.op(sign * dminus12);
 
-            price += sign * firstDerivativeOfGAtForwardValue * annuity_ * swapRateValue_
-                     * (swapRateValue_ * Math.exp(variance) * N32
-                        - (swapRateValue_ + strike) * N12
-                        + strike * Nminus12);
+            price += sign * firstDerivativeOfGAtForwardValue * annuity_ * swapRateValue_ * (
+                    swapRateValue_ * Math.exp(variance) * N32 - (swapRateValue_ + strike) * N12 + strike * Nminus12);
         } else {
             final double sqrtSigma2T = Math.sqrt(variance);
             final double d = (swapRateValue_ - strike) / sqrtSigma2T;
@@ -92,7 +87,7 @@ public class AnalyticHaganPricer extends HaganPricer {
     @Override
     public double swapletPrice() {
         final Date today = new Settings().evaluationDate();
-        if (fixingDate_.le(today)) {
+        if ( fixingDate_.le(today) ) {
             // the fixing is determined
             final double Rs = coupon_.swapIndex().fixing(fixingDate_);
             return (gearing_ * Rs + spread_) * (coupon_.accrualPeriod() * discount_);
@@ -103,9 +98,9 @@ public class AnalyticHaganPricer extends HaganPricer {
         final double firstDerivativeOfGAtForwardValue = gFunction_.firstDerivative(swapRateValue_);
         double price = 0.0;
         price += discount_ * swapRateValue_;
-        if (swaptionVolatility().currentLink().volatilityType() == VolatilityType.ShiftedLognormal) {
-            price += firstDerivativeOfGAtForwardValue * annuity_ * swapRateValue_
-                     * swapRateValue_ * (Math.exp(variance) - 1.0);
+        if ( swaptionVolatility().currentLink().volatilityType() == VolatilityType.ShiftedLognormal ) {
+            price += firstDerivativeOfGAtForwardValue * annuity_ * swapRateValue_ * swapRateValue_ * (Math.exp(variance)
+                    - 1.0);
         } else {
             price += firstDerivativeOfGAtForwardValue * annuity_ * variance;
         }

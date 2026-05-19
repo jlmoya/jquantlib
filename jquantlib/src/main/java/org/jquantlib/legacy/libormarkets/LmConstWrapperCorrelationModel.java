@@ -15,8 +15,7 @@ import org.jquantlib.math.matrixutilities.Matrix;
  * Const-wrapper correlation model.
  *
  * <p>Forwards every call to a held {@link LmCorrelationModel}; its own
- * {@code arguments_} list is empty so it does not participate in
- * calibration.
+ * {@code arguments_} list is empty so it does not participate in calibration.
  *
  * <p>Java port of QuantLib v1.42.1
  * {@code legacy/libormarketmodels/lmconstwrappercorrmodel.hpp}.

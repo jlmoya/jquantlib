@@ -28,16 +28,16 @@ import java.util.List;
  * @author Srinivas Hasti
  *
  */
-public class ZeroCondition implements StepCondition<List<Double>> {
+public class ZeroCondition implements StepCondition< List< Double > > {
 
-	/* (non-Javadoc)
-	 * @see org.jquantlib.methods.finitedifferences.StepConditon#applyTo(java.lang.Object, double)
-	 */
-	@Override
-	public void applyTo(List<Double> a, double t) {
-		for (int i = 0; i < a.size(); i++) {
-			a.set(i,Math.max(a.get(i), 0.0));
-		}
-	}
+    /* (non-Javadoc)
+     * @see org.jquantlib.methods.finitedifferences.StepConditon#applyTo(java.lang.Object, double)
+     */
+    @Override
+    public void applyTo(List< Double > a, double t) {
+        for ( int i = 0; i < a.size(); i++ ) {
+            a.set(i, Math.max(a.get(i), 0.0));
+        }
+    }
 
 }

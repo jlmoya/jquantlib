@@ -34,9 +34,8 @@ import org.jquantlib.time.Date;
  * Stochastic Volatility Inspired (SVI) smile section.
  *
  * <p>Faithful port of QuantLib C++ v1.42.1
- * {@code ql/experimental/volatility/svismilesection.{hpp,cpp}}. The smile is
- * fully described by 5 parameters {@code (a, b, sigma, rho, m)} and the
- * forward.
+ * {@code ql/experimental/volatility/svismilesection.{hpp,cpp}}. The smile is fully described by 5 parameters
+ * {@code (a, b, sigma, rho, m)} and the forward.
  *
  * <p>Volatility for strike {@code K}:
  * <pre>
@@ -53,12 +52,11 @@ public class SviSmileSection extends SmileSection {
     /**
      * Time-to-expiry constructor (sviinterpolation.hpp / svismilesection.cpp lines 26-29).
      *
-     * @param timeToExpiry strictly positive time to expiry
-     * @param forward      forward at expiry
+     * @param timeToExpiry  strictly positive time to expiry
+     * @param forward       forward at expiry
      * @param sviParameters length-5 vector {@code (a, b, sigma, rho, m)}
      */
-    public SviSmileSection(final double timeToExpiry, final double forward,
-            final double[] sviParameters) {
+    public SviSmileSection(final double timeToExpiry, final double forward, final double[] sviParameters) {
         super(timeToExpiry, new DayCounter());
         this.forward_ = forward;
         this.params_ = sviParameters.clone();
@@ -66,11 +64,9 @@ public class SviSmileSection extends SmileSection {
     }
 
     /**
-     * Date constructor (svismilesection.cpp lines 31-37). Day counter defaults
-     * to {@link Actual365Fixed}.
+     * Date constructor (svismilesection.cpp lines 31-37). Day counter defaults to {@link Actual365Fixed}.
      */
-    public SviSmileSection(final Date d, final double forward,
-            final double[] sviParameters, final DayCounter dc) {
+    public SviSmileSection(final Date d, final double forward, final double[] sviParameters, final DayCounter dc) {
         super(d, dc, new Date());
         this.forward_ = forward;
         this.params_ = sviParameters.clone();
@@ -85,25 +81,30 @@ public class SviSmileSection extends SmileSection {
         QL.require(exerciseTime() > 0.0, "svi expects a strictly positive expiry time");
         QL.require(params_.length == 5,
                 "svi expects 5 parameters (a,b,sigma,rho,m) but (" + params_.length + ") given");
-        SviInterpolation.checkSviParameters(params_[0], params_[1], params_[2],
-                params_[3], params_[4], exerciseTime());
+        SviInterpolation.checkSviParameters(params_[0], params_[1], params_[2], params_[3], params_[4], exerciseTime());
     }
 
     @Override
-    public double minStrike() { return 0.0; }
+    public double minStrike() {
+        return 0.0;
+    }
 
     @Override
-    public double maxStrike() { return Double.MAX_VALUE; }
+    public double maxStrike() {
+        return Double.MAX_VALUE;
+    }
 
     @Override
-    public double atmLevel() { return forward_; }
+    public double atmLevel() {
+        return forward_;
+    }
 
     @Override
     protected double volatilityImpl(final double strike) {
         // svismilesection.cpp lines 48-55.
         final double k = Math.log(Math.max(strike, 1.0e-6) / forward_);
-        final double w = SviInterpolation.sviTotalVariance(params_[0], params_[1],
-                params_[2], params_[3], params_[4], k);
+        final double w = SviInterpolation.sviTotalVariance(params_[0], params_[1], params_[2], params_[3], params_[4],
+                k);
         return Math.sqrt(Math.max(0.0, w / exerciseTime()));
     }
 }

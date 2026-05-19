@@ -47,30 +47,19 @@ import org.jquantlib.time.Frequency;
 /**
  * Hull-White stochastic processes
  *
- * @category processes
- *
  * @author Richard Gomes
+ * @category processes
  */
 public class HullWhiteProcess extends StochasticProcess1D {
 
-    protected OrnsteinUhlenbeckProcess   process;
-    protected Handle<YieldTermStructure> h;
-    protected double                     a;
-    protected double                     sigma;
+    protected OrnsteinUhlenbeckProcess process;
+    protected Handle< YieldTermStructure > h;
+    protected double a;
+    protected double sigma;
 
-    public HullWhiteProcess(
-            final Handle<YieldTermStructure> h,
-            final double a,
-            final double sigma) {
-        this.process = new OrnsteinUhlenbeckProcess(
-                a,
-                sigma,
-                h.currentLink()
-                    .forwardRate(
-                            0.0,
-                            0.0,
-                            Compounding.Continuous, Frequency.NoFrequency)
-                    .rate());
+    public HullWhiteProcess(final Handle< YieldTermStructure > h, final double a, final double sigma) {
+        this.process = new OrnsteinUhlenbeckProcess(a, sigma,
+                h.currentLink().forwardRate(0.0, 0.0, Compounding.Continuous, Frequency.NoFrequency).rate());
         this.h = h;
         this.a = a;
         this.sigma = sigma;
@@ -80,15 +69,15 @@ public class HullWhiteProcess extends StochasticProcess1D {
     // public methods
     //
 
-    public double a() /* @ReadOnly */{
+    public double a() /* @ReadOnly */ {
         return a;
     }
 
-    public double sigma() /* @ReadOnly */{
+    public double sigma() /* @ReadOnly */ {
         return sigma;
     }
 
-    public double alpha(final /* @Time */ double t) /* @ReadOnly */{
+    public double alpha(final /* @Time */ double t) /* @ReadOnly */ {
         double alfa = a > Constants.QL_EPSILON ? (sigma / a) * (1 - Math.exp(-a * t)) : sigma * t;
         alfa *= 0.5 * alfa;
         alfa += h.currentLink().forwardRate(t, t, Compounding.Continuous, Frequency.NoFrequency).rate();
@@ -100,51 +89,41 @@ public class HullWhiteProcess extends StochasticProcess1D {
     //
 
     @Override
-    public double x0() /* @ReadOnly */{
+    public double x0() /* @ReadOnly */ {
         return process.x0();
     }
 
     @Override
-    public double drift(
-            final /* @Time */ double t,
-            final double x) /* @ReadOnly */{
+    public double drift(final /* @Time */ double t, final double x) /* @ReadOnly */ {
         double alpha_drift = sigma * sigma / (2 * a) * (1 - Math.exp(-2 * a * t));
         final double shift = 0.0001;
         final double f = h.currentLink().forwardRate(t, t, Compounding.Continuous, Frequency.NoFrequency).rate();
-        final double fup = h.currentLink().forwardRate(t + shift, t + shift, Compounding.Continuous, Frequency.NoFrequency).rate();
+        final double fup = h.currentLink()
+                .forwardRate(t + shift, t + shift, Compounding.Continuous, Frequency.NoFrequency).rate();
         final double f_prime = (fup - f) / shift;
         alpha_drift += a * f + f_prime;
         return process.drift(t, x) + alpha_drift;
     }
 
     @Override
-    public double diffusion(
-            final /* @Time */ double t,
-            final double x) /* @ReadOnly */{
+    public double diffusion(final /* @Time */ double t, final double x) /* @ReadOnly */ {
         return process.diffusion(t, x);
     }
 
     @Override
-    public double expectation(
-            final /* @Time */ double t0,
-            final double x0,
-            final /* @Time */ double dt) /* @ReadOnly */{
+    public double expectation(final /* @Time */ double t0, final double x0,
+            final /* @Time */ double dt) /* @ReadOnly */ {
         return process.expectation(t0, x0, dt) + alpha(t0 + dt) - alpha(t0) * Math.exp(-a * dt);
     }
 
     @Override
-    public double stdDeviation(
-            final /* @Time */ double t0,
-            final double x0,
-            final /* @Time */ double dt) /* @ReadOnly */{
+    public double stdDeviation(final /* @Time */ double t0, final double x0,
+            final /* @Time */ double dt) /* @ReadOnly */ {
         return process.stdDeviation(t0, x0, dt);
     }
 
     @Override
-    public double variance(
-            final /* @Time */double t0,
-            final double x0,
-            final /* @Time */ double dt) /* @ReadOnly */{
+    public double variance(final /* @Time */double t0, final double x0, final /* @Time */ double dt) /* @ReadOnly */ {
         return process.variance(t0, x0, dt);
     }
 

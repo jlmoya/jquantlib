@@ -47,10 +47,9 @@ import org.jquantlib.math.matrixutilities.Array;
 /**
  * Forward-flat interpolation between discrete points
  *
- * @see ForwardFlat
- *
  * @author Anand Mani
  * @author Richard Gomes
+ * @see ForwardFlat
  */
 public class ForwardFlatInterpolation extends AbstractInterpolation {
 
@@ -62,7 +61,6 @@ public class ForwardFlatInterpolation extends AbstractInterpolation {
         super.impl = new ForwardFlatInterpolationImpl(vx, vy);
         super.impl.update();
     }
-
 
     //
     // protected inner classes
@@ -77,17 +75,15 @@ public class ForwardFlatInterpolation extends AbstractInterpolation {
         private final Array vp;
         private final int n;
 
-
         //
         // protected constructors
         //
 
         protected ForwardFlatInterpolationImpl(final Array vx, final Array vy) {
             super(vx, vy);
-            this.n  = vx.size();
+            this.n = vx.size();
             this.vp = new Array(n);
         }
-
 
         //
         // overrides AbstractInterpolation.Impl
@@ -96,16 +92,16 @@ public class ForwardFlatInterpolation extends AbstractInterpolation {
         @Override
         public void update() {
             vp.set(0, 0.0);
-            for (int i=1; i<vx.size(); i++) {
-                final double dx = vx.get(i) - vx.get(i-1);
-                vp.set(i, vp.get(i-1) + dx * vy.get(i-1));
+            for ( int i = 1; i < vx.size(); i++ ) {
+                final double dx = vx.get(i) - vx.get(i - 1);
+                vp.set(i, vp.get(i - 1) + dx * vy.get(i - 1));
             }
         }
 
         @Override
         public double op(final double x) {
-            if (x >= vx.get(n-1)) {
-                return vy.get(n-1);
+            if ( x >= vx.get(n - 1) ) {
+                return vy.get(n - 1);
             }
             final int i = locate(x);
             return vy.get(i);

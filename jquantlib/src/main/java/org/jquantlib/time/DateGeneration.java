@@ -32,68 +32,65 @@ import org.jquantlib.lang.exceptions.LibraryException;
  * @author Srinivas Hasti
  * @author Zahid Hussain
  */
-@QualityAssurance(quality=Quality.Q3_DOCUMENTATION, version=Version.V097, reviewers="Richard Gomes")
+@QualityAssurance( quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = "Richard Gomes" )
 public class DateGeneration {
 
-    public static enum Rule {
+    public enum Rule {
         /**
          * Backward from termination date to effective date.
          */
-        Backward   (1),
+        Backward(1),
 
         /**
          * Forward from effective date to termination date.
          */
-        Forward   (2),
+        Forward(2),
 
         /**
          * No intermediate dates between effective date and termination date.
          */
-        Zero   (3),
+        Zero(3),
 
         /**
-         * All dates but effective date and termination date are taken to be on the third wednesday of their month (with forward
-         * calculation.)
+         * All dates but effective date and termination date are taken to be on the third wednesday of their month (with
+         * forward calculation.)
          */
-        ThirdWednesday   (4),
+        ThirdWednesday(4),
 
         /**
-         * All dates including effective date and termination date are taken to be on the third wednesday
-         * of their month (with forward calculation).
-         * Mirrors C++ {@code DateGeneration::ThirdWednesdayInclusive}.
+         * All dates including effective date and termination date are taken to be on the third wednesday of their month
+         * (with forward calculation). Mirrors C++ {@code DateGeneration::ThirdWednesdayInclusive}.
          */
-        ThirdWednesdayInclusive   (10),
+        ThirdWednesdayInclusive(10),
 
         /**
-         * All dates but the effective date are taken to be the twentieth of their month (used for CDS schedules in emerging
-         * markets.) The termination date is also modified.
+         * All dates but the effective date are taken to be the twentieth of their month (used for CDS schedules in
+         * emerging markets.) The termination date is also modified.
          */
-        Twentieth   (5),
+        Twentieth(5),
 
         /**
-         * All dates but the effective date are taken to be the twentieth of an IMM month (used for CDS schedules.) The termination
-         * date is also modified.
+         * All dates but the effective date are taken to be the twentieth of an IMM month (used for CDS schedules.) The
+         * termination date is also modified.
          */
-        TwentiethIMM   (6),
+        TwentiethIMM(6),
 
         /**
-         * Same as {@link #TwentiethIMM} with unrestricted date ends and long/short stub coupon period (old CDS convention).
-         * Mirrors C++ {@code DateGeneration::OldCDS}.
+         * Same as {@link #TwentiethIMM} with unrestricted date ends and long/short stub coupon period (old CDS
+         * convention). Mirrors C++ {@code DateGeneration::OldCDS}.
          */
-        OldCDS   (7),
+        OldCDS(7),
 
         /**
-         * Credit derivatives standard rule since the 'Big Bang' changes in 2009.
-         * Mirrors C++ {@code DateGeneration::CDS}.
+         * Credit derivatives standard rule since the 'Big Bang' changes in 2009. Mirrors C++
+         * {@code DateGeneration::CDS}.
          */
-        CDS   (8),
+        CDS(8),
 
         /**
-         * Credit derivatives standard rule since December 20th, 2015.
-         * Mirrors C++ {@code DateGeneration::CDS2015}.
+         * Credit derivatives standard rule since December 20th, 2015. Mirrors C++ {@code DateGeneration::CDS2015}.
          */
-        CDS2015   (9);
-
+        CDS2015(9);
 
         //
         // private static fields
@@ -101,22 +98,19 @@ public class DateGeneration {
 
         private static final String UNKNOWN_DATE_GENERATION_RULE = "unknown date generation rule";
 
-
         //
         // private fields
         //
 
         private final int rule;
 
-
         //
         // private constructors
         //
 
-        private Rule(final int rule) {
+        Rule(final int rule) {
             this.rule = rule;
         }
-
 
         //
         // overrides Object
@@ -124,7 +118,7 @@ public class DateGeneration {
 
         @Override
         public String toString() {
-            switch (rule) {
+            switch ( rule ) {
             case 1:
                 return "Backward";
             case 2:

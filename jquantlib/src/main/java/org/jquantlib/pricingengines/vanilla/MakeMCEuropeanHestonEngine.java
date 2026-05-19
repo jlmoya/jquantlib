@@ -32,16 +32,12 @@ import org.jquantlib.processes.StochasticProcess;
  * Fluent builder for {@link MCEuropeanHestonEngine}.
  *
  * <p>Java port of QuantLib v1.42.1 {@code MakeMCEuropeanHestonEngine}
- * (ql/pricingengines/vanilla/mceuropeanhestonengine.hpp). The C++ class
- * is a template parameterised by an {@code RNG} traits type (PseudoRandom
- * or LowDiscrepancy), a {@code Statistics} accumulator, and a process
- * type {@code P} (default {@code HestonProcess}). The underlying
- * Java {@link MCEuropeanHestonEngine} is specialised for the
- * Mersenne-Twister + InverseCumulativeNormal Pseudo-Random combination
- * only (see {@code MCEuropeanHestonEngine} JavaDoc for the rationale);
- * the {@code P} axis is exposed via overloaded constructors and accepts
- * {@link HestonProcess} (or subclass, e.g. {@code BatesProcess}) or
- * {@link HestonStochasticLocalVolProcess}.
+ * (ql/pricingengines/vanilla/mceuropeanhestonengine.hpp). The C++ class is a template parameterised by an {@code RNG}
+ * traits type (PseudoRandom or LowDiscrepancy), a {@code Statistics} accumulator, and a process type {@code P} (default
+ * {@code HestonProcess}). The underlying Java {@link MCEuropeanHestonEngine} is specialised for the Mersenne-Twister +
+ * InverseCumulativeNormal Pseudo-Random combination only (see {@code MCEuropeanHestonEngine} JavaDoc for the
+ * rationale); the {@code P} axis is exposed via overloaded constructors and accepts {@link HestonProcess} (or subclass,
+ * e.g. {@code BatesProcess}) or {@link HestonStochasticLocalVolProcess}.
  *
  * <p>Phase 5e.5b-CFC-d-129 port; HestonSLVProcess overload added in
  * Phase 5e.5b-CFC-d-235.
@@ -65,8 +61,7 @@ public class MakeMCEuropeanHestonEngine {
     }
 
     /**
-     * SLV overload — mirrors C++
-     * {@code MakeMCEuropeanHestonEngine<..., P=HestonSLVProcess>}
+     * SLV overload — mirrors C++ {@code MakeMCEuropeanHestonEngine<..., P=HestonSLVProcess>}
      * (test-suite/hestonslvmodel.cpp::testMonteCarloVsFdmPricing).
      */
     public MakeMCEuropeanHestonEngine(final HestonStochasticLocalVolProcess process) {
@@ -75,15 +70,13 @@ public class MakeMCEuropeanHestonEngine {
     }
 
     public MakeMCEuropeanHestonEngine withSteps(final int steps) {
-        QL.require(stepsPerYear_ == McSimulation.NULL_SAMPLES,
-                "number of steps per year already set");
+        QL.require(stepsPerYear_ == McSimulation.NULL_SAMPLES, "number of steps per year already set");
         this.steps_ = steps;
         return this;
     }
 
     public MakeMCEuropeanHestonEngine withStepsPerYear(final int steps) {
-        QL.require(steps_ == McSimulation.NULL_SAMPLES,
-                "number of steps already set");
+        QL.require(steps_ == McSimulation.NULL_SAMPLES, "number of steps already set");
         this.stepsPerYear_ = steps;
         return this;
     }
@@ -98,8 +91,7 @@ public class MakeMCEuropeanHestonEngine {
     }
 
     public MakeMCEuropeanHestonEngine withSamples(final int samples) {
-        QL.require(Double.isNaN(tolerance_),
-                "number of samples and absolute tolerance are mutually exclusive");
+        QL.require(Double.isNaN(tolerance_), "number of samples and absolute tolerance are mutually exclusive");
         this.samples_ = samples;
         return this;
     }
@@ -122,27 +114,20 @@ public class MakeMCEuropeanHestonEngine {
     }
 
     /**
-     * Build the configured {@link MCEuropeanHestonEngine}. At least one of
-     * {@link #withSteps(int)} / {@link #withStepsPerYear(int)} must have
-     * been called.
+     * Build the configured {@link MCEuropeanHestonEngine}. At least one of {@link #withSteps(int)} /
+     * {@link #withStepsPerYear(int)} must have been called.
      */
     public PricingEngine value() {
-        QL.require(steps_ != McSimulation.NULL_SAMPLES
-                || stepsPerYear_ != McSimulation.NULL_SAMPLES,
+        QL.require(steps_ != McSimulation.NULL_SAMPLES || stepsPerYear_ != McSimulation.NULL_SAMPLES,
                 "no time steps provided");
-        if (process_ instanceof HestonProcess) {
-            return new MCEuropeanHestonEngine(
-                    (HestonProcess) process_,
-                    steps_, stepsPerYear_, antithetic_,
-                    samples_, tolerance_, maxSamples_, seed_);
+        if ( process_ instanceof HestonProcess ) {
+            return new MCEuropeanHestonEngine((HestonProcess) process_, steps_, stepsPerYear_, antithetic_, samples_,
+                    tolerance_, maxSamples_, seed_);
         }
-        if (process_ instanceof HestonStochasticLocalVolProcess) {
-            return new MCEuropeanHestonEngine(
-                    (HestonStochasticLocalVolProcess) process_,
-                    steps_, stepsPerYear_, antithetic_,
-                    samples_, tolerance_, maxSamples_, seed_);
+        if ( process_ instanceof HestonStochasticLocalVolProcess ) {
+            return new MCEuropeanHestonEngine((HestonStochasticLocalVolProcess) process_, steps_, stepsPerYear_,
+                    antithetic_, samples_, tolerance_, maxSamples_, seed_);
         }
-        throw new IllegalStateException(
-                "unsupported process type: " + process_.getClass().getName());
+        throw new IllegalStateException("unsupported process type: " + process_.getClass().getName());
     }
 }

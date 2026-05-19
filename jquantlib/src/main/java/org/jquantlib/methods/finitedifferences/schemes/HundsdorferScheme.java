@@ -29,37 +29,29 @@ import org.jquantlib.methods.finitedifferences.utilities.FdmBoundaryConditionSet
 /**
  * Hundsdorfer-Verwer ADI operator-splitting scheme.
  * <p>
- * Java port of v1.42.1 ql/methods/finitedifferences/schemes/hundsdorferscheme.hpp
- * + .cpp.
+ * Java port of v1.42.1 ql/methods/finitedifferences/schemes/hundsdorferscheme.hpp + .cpp.
  * <p>
- * The algorithm is a predictor-corrector ADI: an explicit Euler predictor
- * followed by an implicit per-direction sweep, then an explicit corrector
- * using {@code mu} and a second per-direction sweep.
+ * The algorithm is a predictor-corrector ADI: an explicit Euler predictor followed by an implicit per-direction sweep,
+ * then an explicit corrector using {@code mu} and a second per-direction sweep.
  *
  * @author Phase 2h WI-1 port
  */
 public class HundsdorferScheme {
 
+    protected final double theta;
+    protected final double mu;
+    protected final FdmLinearOpComposite map;
+    protected final BoundaryConditionSchemeHelper bcSet;
     /** Time step (set by {@link #setStep}). NaN until first {@code setStep}. */
     protected double dt;
 
-    protected final double theta;
-    protected final double mu;
-
-    protected final FdmLinearOpComposite map;
-    protected final BoundaryConditionSchemeHelper bcSet;
-
     /** Constructor with empty boundary-condition set (mirrors C++ default arg). */
-    public HundsdorferScheme(final double theta,
-                             final double mu,
-                             final FdmLinearOpComposite map) {
+    public HundsdorferScheme(final double theta, final double mu, final FdmLinearOpComposite map) {
         this(theta, mu, map, new FdmBoundaryConditionSet());
     }
 
-    public HundsdorferScheme(final double theta,
-                             final double mu,
-                             final FdmLinearOpComposite map,
-                             final FdmBoundaryConditionSet bcSet) {
+    public HundsdorferScheme(final double theta, final double mu, final FdmLinearOpComposite map,
+            final FdmBoundaryConditionSet bcSet) {
         this.dt = Double.NaN;
         this.theta = theta;
         this.mu = mu;
@@ -73,8 +65,7 @@ public class HundsdorferScheme {
     }
 
     /**
-     * Advance {@code a} from time {@code t} to {@code t-dt} in-place.
-     * Mirrors C++ {@code HundsdorferScheme::step}.
+     * Advance {@code a} from time {@code t} to {@code t-dt} in-place. Mirrors C++ {@code HundsdorferScheme::step}.
      */
     public void step(final Array a, final double t) {
         QL.require(t - dt > -1e-8, "a step towards negative time given");
@@ -91,7 +82,7 @@ public class HundsdorferScheme {
         final Array y0 = y.clone();
 
         // Implicit per-direction sweep on the predictor
-        for (int i = 0; i < map.size(); ++i) {
+        for ( int i = 0; i < map.size(); ++i ) {
             final Array rhs = y.sub(map.applyDirection(i, a).mulAssign(theta * dt));
             y = map.solveSplitting(i, rhs, -theta * dt);
         }
@@ -102,7 +93,7 @@ public class HundsdorferScheme {
         bcSet.applyAfterApplying(yt);
 
         // Implicit per-direction sweep on the corrector
-        for (int i = 0; i < map.size(); ++i) {
+        for ( int i = 0; i < map.size(); ++i ) {
             final Array rhs = yt.sub(map.applyDirection(i, y).mulAssign(theta * dt));
             yt = map.solveSplitting(i, rhs, -theta * dt);
         }

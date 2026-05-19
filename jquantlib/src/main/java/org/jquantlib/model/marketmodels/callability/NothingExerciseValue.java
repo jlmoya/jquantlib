@@ -26,13 +26,13 @@
 
 package org.jquantlib.model.marketmodels.callability;
 
-import java.util.Arrays;
-
 import org.jquantlib.QL;
 import org.jquantlib.model.marketmodels.CurveState;
 import org.jquantlib.model.marketmodels.EvolutionDescription;
 import org.jquantlib.model.marketmodels.MarketModelMultiProduct;
 import org.jquantlib.model.marketmodels.Utilities;
+
+import java.util.Arrays;
 
 /**
  * Trivial exercise value provider that always returns zero.
@@ -43,9 +43,8 @@ import org.jquantlib.model.marketmodels.Utilities;
  * <p>Used as a "null" rebate in callable products where the holder simply
  * loses all future cash flows on exercise (no terminal payoff).
  *
- * @see "ql/models/marketmodels/callability/nothingexercisevalue.hpp" v1.42.1
- *
  * @author Jose Moya
+ * @see "ql/models/marketmodels/callability/nothingexercisevalue.hpp" v1.42.1
  */
 public class NothingExerciseValue implements MarketModelExerciseValue {
 
@@ -53,9 +52,9 @@ public class NothingExerciseValue implements MarketModelExerciseValue {
     private final double[] rateTimes_;
     private final boolean[] isExerciseTime_;
     private final EvolutionDescription evolution_;
+    private final MarketModelMultiProduct.CashFlow cf_ = new MarketModelMultiProduct.CashFlow();
     // evolving state
     private int currentIndex_ = 0;
-    private final MarketModelMultiProduct.CashFlow cf_ = new MarketModelMultiProduct.CashFlow();
 
     /** Convenience constructor with all-true exercise flags. */
     public NothingExerciseValue(final double[] rateTimes) {
@@ -64,8 +63,7 @@ public class NothingExerciseValue implements MarketModelExerciseValue {
 
     public NothingExerciseValue(final double[] rateTimes, final boolean[] isExerciseTime) {
         Utilities.checkIncreasingTimes(rateTimes);
-        QL.require(rateTimes.length >= 2,
-                "Rate times must contain at least two values");
+        QL.require(rateTimes.length >= 2, "Rate times must contain at least two values");
         this.rateTimes_ = rateTimes.clone();
         this.cf_.amount = 0.0;
         // evolutionTimes = rateTimes minus the last entry
@@ -73,18 +71,19 @@ public class NothingExerciseValue implements MarketModelExerciseValue {
         this.evolution_ = new EvolutionDescription(this.rateTimes_, evolutionTimes);
 
         final int n = rateTimes.length - 1;
-        if (isExerciseTime == null || isExerciseTime.length == 0) {
+        if ( isExerciseTime == null || isExerciseTime.length == 0 ) {
             this.isExerciseTime_ = new boolean[n];
             Arrays.fill(this.isExerciseTime_, true);
         } else {
             QL.require(isExerciseTime.length == n,
-                    "isExerciseTime (" + isExerciseTime.length
-                            + ") must have same size as rateTimes minus 1 (" + n + ")");
+                    "isExerciseTime (" + isExerciseTime.length + ") must have same size as rateTimes minus 1 (" + n
+                            + ")");
             this.isExerciseTime_ = isExerciseTime.clone();
         }
         int count = 0;
-        for (final boolean b : this.isExerciseTime_) {
-            if (b) ++count;
+        for ( final boolean b : this.isExerciseTime_ ) {
+            if ( b )
+                ++count;
         }
         this.numberOfExercises_ = count;
     }
@@ -100,26 +99,44 @@ public class NothingExerciseValue implements MarketModelExerciseValue {
         this.cf_.amount = other.cf_.amount;
     }
 
-    @Override public int numberOfExercises() { return numberOfExercises_; }
+    @Override
+    public int numberOfExercises() {
+        return numberOfExercises_;
+    }
 
-    @Override public EvolutionDescription evolution() { return evolution_; }
+    @Override
+    public EvolutionDescription evolution() {
+        return evolution_;
+    }
 
-    @Override public double[] possibleCashFlowTimes() { return rateTimes_; }
+    @Override
+    public double[] possibleCashFlowTimes() {
+        return rateTimes_;
+    }
 
-    @Override public void reset() { currentIndex_ = 0; }
+    @Override
+    public void reset() {
+        currentIndex_ = 0;
+    }
 
-    @Override public void nextStep(final CurveState currentState) {
+    @Override
+    public void nextStep(final CurveState currentState) {
         cf_.timeIndex = currentIndex_;
         ++currentIndex_;
     }
 
-    @Override public boolean[] isExerciseTime() { return isExerciseTime_; }
+    @Override
+    public boolean[] isExerciseTime() {
+        return isExerciseTime_;
+    }
 
-    @Override public MarketModelMultiProduct.CashFlow value(final CurveState currentState) {
+    @Override
+    public MarketModelMultiProduct.CashFlow value(final CurveState currentState) {
         return cf_;
     }
 
-    @Override public NothingExerciseValue clone() {
+    @Override
+    public NothingExerciseValue clone() {
         return new NothingExerciseValue(this);
     }
 }

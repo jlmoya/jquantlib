@@ -37,11 +37,10 @@ import org.jquantlib.time.calendars.NullCalendar;
 /**
  * Black-formula callable fixed-rate bond engine.
  * <p>
- * Port of C++ v1.42.1
- * {@code ql/experimental/callablebonds/blackcallablebondengine.{hpp,cpp}}.
+ * Port of C++ v1.42.1 {@code ql/experimental/callablebonds/blackcallablebondengine.{hpp,cpp}}.
  * <p>
- * The embedded (European) option follows the Black "European bond option"
- * treatment in Hull, Fourth Edition, Chapter 20.
+ * The embedded (European) option follows the Black "European bond option" treatment in Hull, Fourth Edition, Chapter
+ * 20.
  *
  * <h3>Java port deviations from C++ v1.42.1</h3>
  * <ul>
@@ -56,45 +55,30 @@ import org.jquantlib.time.calendars.NullCalendar;
  */
 public class BlackCallableFixedRateBondEngine extends CallableBondEngineImpl {
 
-    protected final Handle<CallableBondVolatilityStructure> volatility_;
-    protected final Handle<YieldTermStructure> discountCurve_;
+    protected final Handle< CallableBondVolatilityStructure > volatility_;
+    protected final Handle< YieldTermStructure > discountCurve_;
 
     /**
-     * Convenience ctor wrapping a {@link Quote} handle with a
-     * {@link CallableBondConstantVolatility} on the fly. Mirrors the C++
-     * {@code BlackCallableFixedRateBondEngine(Handle<Quote>, Handle<YieldTermStructure>)}.
+     * Convenience ctor wrapping a {@link Quote} handle with a {@link CallableBondConstantVolatility} on the fly.
+     * Mirrors the C++ {@code BlackCallableFixedRateBondEngine(Handle<Quote>, Handle<YieldTermStructure>)}.
      */
-    public BlackCallableFixedRateBondEngine(final Handle<Quote> fwdYieldVol,
-            final Handle<YieldTermStructure> discountCurve) {
+    public BlackCallableFixedRateBondEngine(final Handle< Quote > fwdYieldVol,
+            final Handle< YieldTermStructure > discountCurve) {
         super();
-        final CallableBondVolatilityStructure vol = new CallableBondConstantVolatility(
-                0, new NullCalendar(), fwdYieldVol, new Actual365Fixed());
-        this.volatility_ = new Handle<CallableBondVolatilityStructure>(vol);
+        final CallableBondVolatilityStructure vol = new CallableBondConstantVolatility(0, new NullCalendar(),
+                fwdYieldVol, new Actual365Fixed());
+        this.volatility_ = new Handle< CallableBondVolatilityStructure >(vol);
         this.discountCurve_ = discountCurve;
         this.volatility_.addObserver(this);
         this.discountCurve_.addObserver(this);
     }
 
     /**
-     * Java port: factory matching C++
-     * {@code BlackCallableFixedRateBondEngine(Handle<CallableBondVolatilityStructure>,
-     * Handle<YieldTermStructure>)} expressed as a static method because Java
-     * type erasure forbids two ctors differing only in the {@link Handle} type
-     * parameter.
+     * Visible to subclasses (e.g. {@link BlackCallableZeroCouponBondEngine}) so they can wire their own static factory
+     * through this path.
      */
-    public static BlackCallableFixedRateBondEngine fromVolStructure(
-            final Handle<CallableBondVolatilityStructure> yieldVolStructure,
-            final Handle<YieldTermStructure> discountCurve) {
-        return new BlackCallableFixedRateBondEngine(yieldVolStructure, discountCurve, true);
-    }
-
-    /**
-     * Visible to subclasses (e.g. {@link BlackCallableZeroCouponBondEngine})
-     * so they can wire their own static factory through this path.
-     */
-    protected BlackCallableFixedRateBondEngine(
-            final Handle<CallableBondVolatilityStructure> yieldVolStructure,
-            final Handle<YieldTermStructure> discountCurve, final boolean marker) {
+    protected BlackCallableFixedRateBondEngine(final Handle< CallableBondVolatilityStructure > yieldVolStructure,
+            final Handle< YieldTermStructure > discountCurve, final boolean marker) {
         super();
         this.volatility_ = yieldVolStructure;
         this.discountCurve_ = discountCurve;
@@ -102,13 +86,24 @@ public class BlackCallableFixedRateBondEngine extends CallableBondEngineImpl {
         this.discountCurve_.addObserver(this);
     }
 
+    /**
+     * Java port: factory matching C++
+     * {@code BlackCallableFixedRateBondEngine(Handle<CallableBondVolatilityStructure>, Handle<YieldTermStructure>)}
+     * expressed as a static method because Java type erasure forbids two ctors differing only in the {@link Handle}
+     * type parameter.
+     */
+    public static BlackCallableFixedRateBondEngine fromVolStructure(
+            final Handle< CallableBondVolatilityStructure > yieldVolStructure,
+            final Handle< YieldTermStructure > discountCurve) {
+        return new BlackCallableFixedRateBondEngine(yieldVolStructure, discountCurve, true);
+    }
+
     @Override
     public void calculate() {
         final CallableBondArgumentsImpl args = (CallableBondArgumentsImpl) arguments_;
         final CallableBondResultsImpl results = (CallableBondResultsImpl) results_;
 
-        QL.require(args.putCallSchedule.size() == 1,
-                "Must have exactly one call/put date to use Black Engine");
+        QL.require(args.putCallSchedule.size() == 1, "Must have exactly one call/put date to use Black Engine");
 
         final Date settle = args.settlementDate;
         final Date exerciseDate = args.callabilityDates.get(0);
@@ -125,8 +120,7 @@ public class BlackCallableFixedRateBondEngine extends CallableBondEngineImpl {
         // is wrong whenever settle != referenceDate. Explicitly pass the
         // settlement as the npvDate so the division is performed.
         final double value = CashFlows.npv(fixedLeg, ts, false, settle, settle);
-        final double npv = CashFlows.npv(fixedLeg, ts, false, ts.referenceDate(),
-                ts.referenceDate());
+        final double npv = CashFlows.npv(fixedLeg, ts, false, ts.referenceDate(), ts.referenceDate());
 
         final double fwdCashPrice = (value - spotIncome()) / ts.discount(exerciseDate);
         final double cashStrike = args.callabilityPrices.get(0) * args.faceAmount / 100.0;
@@ -137,8 +131,8 @@ public class BlackCallableFixedRateBondEngine extends CallableBondEngineImpl {
 
         final double priceVol = forwardPriceVolatility();
 
-        final double exerciseTime = volatility_.currentLink().dayCounter().yearFraction(
-                volatility_.currentLink().referenceDate(), exerciseDate);
+        final double exerciseTime = volatility_.currentLink().dayCounter()
+                .yearFraction(volatility_.currentLink().referenceDate(), exerciseDate);
 
         final double discount = ts.discount(exerciseDate);
         final double discountToSettlement = discount / ts.discount(settle);
@@ -146,7 +140,7 @@ public class BlackCallableFixedRateBondEngine extends CallableBondEngineImpl {
         final double embeddedOptionValue = BlackFormula.blackFormula(type, cashStrike, fwdCashPrice,
                 priceVol * Math.sqrt(exerciseTime));
 
-        if (type == Option.Type.Call) {
+        if ( type == Option.Type.Call ) {
             results.value = npv - embeddedOptionValue * discount;
             results.settlementValue = value - embeddedOptionValue * discountToSettlement;
         } else {
@@ -173,10 +167,10 @@ public class BlackCallableFixedRateBondEngine extends CallableBondEngineImpl {
            by trailing position.
         */
         double income = 0.0;
-        for (int i = 0; i < cf.size(); i++) {
+        for ( int i = 0; i < cf.size(); i++ ) {
             final CashFlow c = cf.get(i);
-            if (!c.hasOccurred(settlement, false)) {
-                if (c.hasOccurred(optionMaturity, false)) {
+            if ( !c.hasOccurred(settlement, false) ) {
+                if ( c.hasOccurred(optionMaturity, false) ) {
                     income += c.amount() * ts.discount(c.date());
                 } else {
                     break;
@@ -206,30 +200,28 @@ public class BlackCallableFixedRateBondEngine extends CallableBondEngineImpl {
         Frequency frequency = args.frequency;
 
         // adjust if zero-coupon bond
-        if (frequency == Frequency.NoFrequency || frequency == Frequency.Once) {
+        if ( frequency == Frequency.NoFrequency || frequency == Frequency.Once ) {
             frequency = Frequency.Annual;
         }
 
         // C++ uses static CashFlows::yield(leg, npv, dc, comp, freq, false, exerciseDate);
         // Java's CashFlows.irr does the equivalent IRR root-find via Brent.
         final CashFlows cashflows = CashFlows.getInstance();
-        final double fwdYtm = cashflows.irr(fixedLeg, fwdNpv, dayCounter, Compounding.Compounded,
-                frequency, exerciseDate, 1.0e-10, 100, 0.05);
+        final double fwdYtm = cashflows.irr(fixedLeg, fwdNpv, dayCounter, Compounding.Compounded, frequency,
+                exerciseDate, 1.0e-10, 100, 0.05);
 
-        final InterestRate fwdRate = new InterestRate(fwdYtm, dayCounter, Compounding.Compounded,
-                frequency);
+        final InterestRate fwdRate = new InterestRate(fwdYtm, dayCounter, Compounding.Compounded, frequency);
 
         // C++: CashFlows::duration(leg, fwdRate, Duration.Modified, false, exerciseDate)
-        final double fwdDur = cashflows.duration(fixedLeg, fwdRate, CashFlows.Duration.Modified,
-                exerciseDate);
+        final double fwdDur = cashflows.duration(fixedLeg, fwdRate, CashFlows.Duration.Modified, exerciseDate);
 
         final double cashStrike = args.callabilityPrices.get(0) * args.faceAmount / 100.0;
         final DayCounter volDc = volatility_.currentLink().dayCounter();
         final Date referenceDate = volatility_.currentLink().referenceDate();
         final double exerciseTime = volDc.yearFraction(referenceDate, exerciseDate);
         final double maturityTime = volDc.yearFraction(referenceDate, bondMaturity);
-        final double yieldVol = volatility_.currentLink().volatility(exerciseTime,
-                maturityTime - exerciseTime, cashStrike);
+        final double yieldVol = volatility_.currentLink()
+                .volatility(exerciseTime, maturityTime - exerciseTime, cashStrike);
         return yieldVol * fwdDur * fwdYtm;
     }
 }

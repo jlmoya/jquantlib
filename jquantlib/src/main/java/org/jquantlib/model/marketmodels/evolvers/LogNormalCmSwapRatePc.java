@@ -29,25 +29,18 @@ package org.jquantlib.model.marketmodels.evolvers;
 
 import org.jquantlib.QL;
 import org.jquantlib.math.matrixutilities.Matrix;
-import org.jquantlib.model.marketmodels.BrownianGenerator;
-import org.jquantlib.model.marketmodels.BrownianGeneratorFactory;
-import org.jquantlib.model.marketmodels.CurveState;
-import org.jquantlib.model.marketmodels.EvolutionDescription;
-import org.jquantlib.model.marketmodels.MarketModel;
-import org.jquantlib.model.marketmodels.MarketModelEvolver;
+import org.jquantlib.model.marketmodels.*;
 import org.jquantlib.model.marketmodels.curvestates.CMSwapCurveState;
 import org.jquantlib.model.marketmodels.driftcomputation.CMSMMDriftCalculator;
 
 /**
  * Predictor-corrector log-normal constant-maturity swap-rate evolver.
  * <p>
- * Operates on CMS (constant-maturity swap) rates spanning {@code spanningForwards}
- * forward periods. Two-pass scheme: D1 at T1 advances rates, D2 at predicted
- * T2 corrects via average ((D1+D2)/2).
- *
- * @see "ql/models/marketmodels/evolvers/lognormalcmswapratepc.{hpp,cpp}" v1.42.1
+ * Operates on CMS (constant-maturity swap) rates spanning {@code spanningForwards} forward periods. Two-pass scheme: D1
+ * at T1 advances rates, D2 at predicted T2 corrects via average ((D1+D2)/2).
  *
  * @author Jose Moya
+ * @see "ql/models/marketmodels/evolvers/lognormalcmswapratepc.{hpp,cpp}" v1.42.1
  */
 public class LogNormalCmSwapRatePc extends MarketModelEvolver {
 
@@ -63,7 +56,6 @@ public class LogNormalCmSwapRatePc extends MarketModelEvolver {
     private final int numberOfRates_;
     private final int numberOfFactors_;
     private final CMSwapCurveState curveState_;
-    private int currentStep_;
     private final double[] swapRates_;
     private final double[] displacements_;
     private final double[] logSwapRates_;
@@ -75,21 +67,15 @@ public class LogNormalCmSwapRatePc extends MarketModelEvolver {
     private final int[] alive_;
     // helper classes
     private final CMSMMDriftCalculator[] calculators_;
+    private int currentStep_;
 
-    public LogNormalCmSwapRatePc(
-            final int spanningForwards,
-            final MarketModel marketModel,
-            final BrownianGeneratorFactory factory,
-            final int[] numeraires) {
+    public LogNormalCmSwapRatePc(final int spanningForwards, final MarketModel marketModel,
+            final BrownianGeneratorFactory factory, final int[] numeraires) {
         this(spanningForwards, marketModel, factory, numeraires, 0);
     }
 
-    public LogNormalCmSwapRatePc(
-            final int spanningForwards,
-            final MarketModel marketModel,
-            final BrownianGeneratorFactory factory,
-            final int[] numeraires,
-            final int initialStep) {
+    public LogNormalCmSwapRatePc(final int spanningForwards, final MarketModel marketModel,
+            final BrownianGeneratorFactory factory, final int[] numeraires, final int initialStep) {
         this.spanningForwards_ = spanningForwards;
         this.marketModel_ = marketModel;
         this.numeraires_ = numeraires.clone();
@@ -117,14 +103,13 @@ public class LogNormalCmSwapRatePc extends MarketModelEvolver {
 
         this.calculators_ = new CMSMMDriftCalculator[steps];
         this.fixedDrifts_ = new double[steps][numberOfRates_];
-        for (int j = 0; j < steps; ++j) {
+        for ( int j = 0; j < steps; ++j ) {
             final Matrix A = marketModel.pseudoRoot(j);
-            calculators_[j] = new CMSMMDriftCalculator(A, displacements_,
-                    marketModel.evolution().rateTaus(),
+            calculators_[j] = new CMSMMDriftCalculator(A, displacements_, marketModel.evolution().rateTaus(),
                     numeraires[j], alive_[j], spanningForwards);
-            for (int k = 0; k < numberOfRates_; ++k) {
+            for ( int k = 0; k < numberOfRates_; ++k ) {
                 double variance = 0.0;
-                for (int f = 0; f < numberOfFactors_; ++f) {
+                for ( int f = 0; f < numberOfFactors_; ++f ) {
                     final double a = A.get(k, f);
                     variance += a * a;
                 }
@@ -141,9 +126,8 @@ public class LogNormalCmSwapRatePc extends MarketModelEvolver {
     }
 
     private void setCMSwapRates(final double[] swapRates) {
-        QL.require(swapRates.length == numberOfRates_,
-                "mismatch between swapRates and rateTimes");
-        for (int i = 0; i < numberOfRates_; ++i) {
+        QL.require(swapRates.length == numberOfRates_, "mismatch between swapRates and rateTimes");
+        for ( int i = 0; i < numberOfRates_; ++i ) {
             initialLogSwapRates_[i] = Math.log(swapRates[i] + displacements_[i]);
         }
         curveState_.setOnCMSwapRates(swapRates);
@@ -152,7 +136,7 @@ public class LogNormalCmSwapRatePc extends MarketModelEvolver {
 
     @Override
     public void setInitialState(final CurveState cs) {
-        if (!(cs instanceof CMSwapCurveState)) {
+        if ( !(cs instanceof CMSwapCurveState) ) {
             throw new ClassCastException("expected CMSwapCurveState");
         }
         final CMSwapCurveState cmcs = (CMSwapCurveState) cs;
@@ -171,7 +155,7 @@ public class LogNormalCmSwapRatePc extends MarketModelEvolver {
         // we're going from T1 to T2
 
         // a) compute drifts D1 at T1
-        if (currentStep_ > initialStep_) {
+        if ( currentStep_ > initialStep_ ) {
             calculators_[currentStep_].compute(curveState_, drifts1_);
         } else {
             System.arraycopy(initialDrifts_, 0, drifts1_, 0, numberOfRates_);
@@ -183,10 +167,10 @@ public class LogNormalCmSwapRatePc extends MarketModelEvolver {
         final double[] fixedDrift = fixedDrifts_[currentStep_];
 
         final int alive = alive_[currentStep_];
-        for (int i = alive; i < numberOfRates_; ++i) {
+        for ( int i = alive; i < numberOfRates_; ++i ) {
             logSwapRates_[i] += drifts1_[i] + fixedDrift[i];
             double inner = 0.0;
-            for (int f = 0; f < numberOfFactors_; ++f) {
+            for ( int f = 0; f < numberOfFactors_; ++f ) {
                 inner += A.get(i, f) * brownians_[f];
             }
             logSwapRates_[i] += inner;
@@ -200,7 +184,7 @@ public class LogNormalCmSwapRatePc extends MarketModelEvolver {
         calculators_[currentStep_].compute(curveState_, drifts2_);
 
         // d) correct rates using both drifts
-        for (int i = alive; i < numberOfRates_; ++i) {
+        for ( int i = alive; i < numberOfRates_; ++i ) {
             logSwapRates_[i] += (drifts2_[i] - drifts1_[i]) / 2.0;
             swapRates_[i] = Math.exp(logSwapRates_[i]) - displacements_[i];
         }

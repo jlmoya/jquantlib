@@ -42,22 +42,20 @@ package org.jquantlib.methods.montecarlo;
 
 import org.jquantlib.math.Ops;
 
-
 /**
  * Base class for path pricers
  * <p>
  * Returns the value of an option on a given path.
- * 
- * @category mcarlo
- * 
+ *
  * @author Richard Gomes
+ * @category mcarlo
  */
 //FIXME: study how to solve warning on usage of type Double
-public abstract class PathPricer<PathType> implements Ops.Op<PathType, Double> {
+public abstract class PathPricer< PathType > implements Ops.Op< PathType, Double > {
 
-	public PathPricer() {
-	}
-	
-	public abstract Double op(final PathType path);
+    public PathPricer() {
+    }
+
+    public abstract Double op(final PathType path);
 
 }

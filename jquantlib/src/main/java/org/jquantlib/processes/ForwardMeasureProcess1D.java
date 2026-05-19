@@ -46,11 +46,10 @@ import org.jquantlib.lang.annotation.QualityAssurance.Version;
  * <p>
  * 1-D stochastic process whose dynamics are expressed in the forward measure.
  *
- * @category processes
- *
  * @author Ueli Hofstetter
+ * @category processes
  */
-@QualityAssurance(quality=Quality.Q2_RESEMBLANCE, version=Version.V097, reviewers="Richard Gomes")
+@QualityAssurance( quality = Quality.Q2_RESEMBLANCE, version = Version.V097, reviewers = "Richard Gomes" )
 public abstract class ForwardMeasureProcess1D extends StochasticProcess1D {
 
     protected double T_;

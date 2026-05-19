@@ -38,23 +38,19 @@ import org.jquantlib.processes.GeneralizedBlackScholesProcess;
 import org.jquantlib.time.TimeGrid;
 
 /**
- * Variance-swap pricing engine using Monte Carlo simulation, as
- * described in Demeterfi, Derman, Kamal &amp; Zou,
+ * Variance-swap pricing engine using Monte Carlo simulation, as described in Demeterfi, Derman, Kamal &amp; Zou,
  * <em>A Guide to Volatility and Variance Swaps</em> (1999).
  *
  * <p>Java port of {@code QuantLib v1.42.1
- * ql/pricingengines/forward/mcvarianceswapengine.hpp}
- * (Phase 5e.5b-CFC-d-180).
+ * ql/pricingengines/forward/mcvarianceswapengine.hpp} (Phase 5e.5b-CFC-d-180).
  *
  * <p>The C++ template uses multiple inheritance ({@code VarianceSwap::engine}
- * + {@code McSimulation<SingleVariate,RNG,S>}). Java single-inheritance
- * forces composition: this engine extends {@link VarianceSwap.EngineImpl}
- * and embeds a delegate {@link McSimulation} built lazily in
- * {@link #calculate()}, mirroring {@code MCVanillaEngine}.
+ * + {@code McSimulation<SingleVariate,RNG,S>}). Java single-inheritance forces composition: this engine extends
+ * {@link VarianceSwap.EngineImpl} and embeds a delegate {@link McSimulation} built lazily in {@link #calculate()},
+ * mirroring {@code MCVanillaEngine}.
  *
  * <p>Specialised for {@code RNG = PseudoRandom} (Mersenne-Twister
- * +InverseCumulativeNormal) — quasi-random / low-discrepancy variants
- * are deferred.
+ * +InverseCumulativeNormal) — quasi-random / low-discrepancy variants are deferred.
  */
 public class MCVarianceSwapEngine extends VarianceSwap.EngineImpl {
 
@@ -73,42 +69,30 @@ public class MCVarianceSwapEngine extends VarianceSwap.EngineImpl {
     protected final long seed_;
 
     /** Lazily-built delegate that owns the {@link MonteCarloModel}. */
-    protected McSimulation<Path> simulation_;
-
+    protected McSimulation< Path > simulation_;
 
     //
     // constructors
     //
 
     /**
-     * Mirrors C++ {@code MCVarianceSwapEngine(process, timeSteps,
-     * timeStepsPerYear, brownianBridge, antitheticVariate, requiredSamples,
-     * requiredTolerance, maxSamples, seed)}.
+     * Mirrors C++
+     * {@code MCVarianceSwapEngine(process, timeSteps, timeStepsPerYear, brownianBridge, antitheticVariate,
+     * requiredSamples, requiredTolerance, maxSamples, seed)}.
      *
      * <p>Pass {@link McSimulation#NULL_SAMPLES} (Integer.MAX_VALUE) /
      * {@link McSimulation#NULL_TOLERANCE} (NaN) for "not specified".
      */
-    public MCVarianceSwapEngine(final GeneralizedBlackScholesProcess process,
-                                final int timeSteps,
-                                final int timeStepsPerYear,
-                                final boolean brownianBridge,
-                                final boolean antitheticVariate,
-                                final int requiredSamples,
-                                final double requiredTolerance,
-                                final int maxSamples,
-                                final long seed) {
+    public MCVarianceSwapEngine(final GeneralizedBlackScholesProcess process, final int timeSteps,
+            final int timeStepsPerYear, final boolean brownianBridge, final boolean antitheticVariate,
+            final int requiredSamples, final double requiredTolerance, final int maxSamples, final long seed) {
         super();
-        QL.require(timeSteps != McSimulation.NULL_SAMPLES
-                || timeStepsPerYear != McSimulation.NULL_SAMPLES,
+        QL.require(timeSteps != McSimulation.NULL_SAMPLES || timeStepsPerYear != McSimulation.NULL_SAMPLES,
                 "no time steps provided");
-        QL.require(timeSteps == McSimulation.NULL_SAMPLES
-                || timeStepsPerYear == McSimulation.NULL_SAMPLES,
+        QL.require(timeSteps == McSimulation.NULL_SAMPLES || timeStepsPerYear == McSimulation.NULL_SAMPLES,
                 "both time steps and time steps per year were provided");
-        QL.require(timeSteps != 0,
-                "timeSteps must be positive, " + timeSteps + " not allowed");
-        QL.require(timeStepsPerYear != 0,
-                "timeStepsPerYear must be positive, " + timeStepsPerYear
-                        + " not allowed");
+        QL.require(timeSteps != 0, "timeSteps must be positive, " + timeSteps + " not allowed");
+        QL.require(timeStepsPerYear != 0, "timeStepsPerYear must be positive, " + timeStepsPerYear + " not allowed");
 
         this.process_ = process;
         this.timeSteps_ = timeSteps;
@@ -122,21 +106,20 @@ public class MCVarianceSwapEngine extends VarianceSwap.EngineImpl {
         this.process_.addObserver(this);
     }
 
-
     //
     // McSimulation-shaped helpers
     //
 
     /**
-     * Mirrors C++ {@code TimeGrid timeGrid()}: returns a uniform time
-     * grid whose terminal date matches the swap's maturity.
+     * Mirrors C++ {@code TimeGrid timeGrid()}: returns a uniform time grid whose terminal date matches the swap's
+     * maturity.
      */
     protected TimeGrid timeGrid() {
         final VarianceSwap.ArgumentsImpl a = (VarianceSwap.ArgumentsImpl) arguments_;
         final double t = process_.time(a.maturityDate);
-        if (timeSteps_ != McSimulation.NULL_SAMPLES) {
+        if ( timeSteps_ != McSimulation.NULL_SAMPLES ) {
             return new TimeGrid(t, timeSteps_);
-        } else if (timeStepsPerYear_ != McSimulation.NULL_SAMPLES) {
+        } else if ( timeStepsPerYear_ != McSimulation.NULL_SAMPLES ) {
             final int steps = (int) (timeStepsPerYear_ * t);
             return new TimeGrid(t, Math.max(steps, 1));
         } else {
@@ -145,32 +128,25 @@ public class MCVarianceSwapEngine extends VarianceSwap.EngineImpl {
     }
 
     /**
-     * Builds a Gaussian-driven {@link PathGenerator} for the underlying
-     * GBS process. Mirrors C++ {@code MCVarianceSwapEngine::pathGenerator()}
-     * specialised to {@code RNG = PseudoRandom}.
+     * Builds a Gaussian-driven {@link PathGenerator} for the underlying GBS process. Mirrors C++
+     * {@code MCVarianceSwapEngine::pathGenerator()} specialised to {@code RNG = PseudoRandom}.
      */
-    protected MonteCarloModel.PathGeneratorAdapter<Path> pathGenerator() {
+    protected MonteCarloModel.PathGeneratorAdapter< Path > pathGenerator() {
         final TimeGrid grid = timeGrid();
         final int dimensions = process_.factors() * (grid.size() - 1);
-        final RandomSequenceGenerator<MersenneTwisterUniformRng> uniformRsg =
-                new RandomSequenceGenerator<MersenneTwisterUniformRng>(
-                        MersenneTwisterUniformRng.class, dimensions, seed_);
-        final InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                InverseCumulativeNormal> gsg =
-                new InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                        InverseCumulativeNormal>(uniformRsg, new InverseCumulativeNormal());
-        final PathGenerator<InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                InverseCumulativeNormal>> gen =
-                new PathGenerator<InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
-                        InverseCumulativeNormal>>(process_, grid, gsg, brownianBridge_);
+        final RandomSequenceGenerator< MersenneTwisterUniformRng > uniformRsg = new RandomSequenceGenerator< MersenneTwisterUniformRng >(
+                MersenneTwisterUniformRng.class, dimensions, seed_);
+        final InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal > gsg = new InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal >(
+                uniformRsg, new InverseCumulativeNormal());
+        final PathGenerator< InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal > > gen = new PathGenerator< InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal > >(
+                process_, grid, gsg, brownianBridge_);
         return new MonteCarloModel.PathGeneratorAdapterImpl(gen);
     }
 
     /** Build the per-path pricer (realised average variance via segment integral). */
-    protected PathPricer<Path> pathPricer() {
+    protected PathPricer< Path > pathPricer() {
         return new VariancePathPricer(process_);
     }
-
 
     //
     // PricingEngine
@@ -181,14 +157,19 @@ public class MCVarianceSwapEngine extends VarianceSwap.EngineImpl {
         final VarianceSwap.ArgumentsImpl a = (VarianceSwap.ArgumentsImpl) arguments_;
         final VarianceSwap.ResultsImpl r = (VarianceSwap.ResultsImpl) results_;
 
-        this.simulation_ = new McSimulation<Path>(antitheticVariate_, false) {
-            @Override protected PathPricer<Path> pathPricer() {
+        this.simulation_ = new McSimulation< Path >(antitheticVariate_, false) {
+            @Override
+            protected PathPricer< Path > pathPricer() {
                 return MCVarianceSwapEngine.this.pathPricer();
             }
-            @Override protected MonteCarloModel.PathGeneratorAdapter<Path> pathGenerator() {
+
+            @Override
+            protected MonteCarloModel.PathGeneratorAdapter< Path > pathGenerator() {
                 return MCVarianceSwapEngine.this.pathGenerator();
             }
-            @Override protected TimeGrid timeGrid() {
+
+            @Override
+            protected TimeGrid timeGrid() {
                 return MCVarianceSwapEngine.this.timeGrid();
             }
         };
@@ -196,13 +177,17 @@ public class MCVarianceSwapEngine extends VarianceSwap.EngineImpl {
 
         r.variance = this.simulation_.sampleAccumulator().mean();
 
-        final double riskFreeDiscount =
-                process_.riskFreeRate().currentLink().discount(a.maturityDate);
+        final double riskFreeDiscount = process_.riskFreeRate().currentLink().discount(a.maturityDate);
         final double multiplier;
-        switch (a.position) {
-            case Long:  multiplier = +1.0; break;
-            case Short: multiplier = -1.0; break;
-            default: throw new RuntimeException("Unknown position");
+        switch ( a.position ) {
+        case Long:
+            multiplier = +1.0;
+            break;
+        case Short:
+            multiplier = -1.0;
+            break;
+        default:
+            throw new RuntimeException("Unknown position");
         }
         final double m = multiplier * riskFreeDiscount * a.notional;
 
@@ -213,17 +198,15 @@ public class MCVarianceSwapEngine extends VarianceSwap.EngineImpl {
         r.errorEstimate = m * varianceError;
     }
 
-
     //
     // path-pricer (mirrors C++ VariancePathPricer)
     //
 
     /**
-     * Computes the realised average variance along the path via a
-     * trapezoidal {@link SegmentIntegral} of {@code sigma(t, S(t))^2}.
-     * Mirrors C++ {@code VariancePathPricer::operator()(const Path&)}.
+     * Computes the realised average variance along the path via a trapezoidal {@link SegmentIntegral} of
+     * {@code sigma(t, S(t))^2}. Mirrors C++ {@code VariancePathPricer::operator()(const Path&)}.
      */
-    public static final class VariancePathPricer extends PathPricer<Path> {
+    public static final class VariancePathPricer extends PathPricer< Path > {
 
         private final GeneralizedBlackScholesProcess process_;
 
@@ -235,7 +218,7 @@ public class MCVarianceSwapEngine extends VarianceSwap.EngineImpl {
         public Double op(final Path path) {
             QL.require(!path.empty(), "the path cannot be empty");
             final double t0 = path.timeGrid().front();
-            final double t  = path.timeGrid().back();
+            final double t = path.timeGrid().back();
             final double dt = path.timeGrid().dt(0);
             final SegmentIntegral integrator = new SegmentIntegral((int) (t / dt));
             final Integrand f = new Integrand(path, process_, dt);
@@ -249,9 +232,7 @@ public class MCVarianceSwapEngine extends VarianceSwap.EngineImpl {
         private final GeneralizedBlackScholesProcess process_;
         private final double dt_;
 
-        Integrand(final Path path,
-                  final GeneralizedBlackScholesProcess process,
-                  final double dt) {
+        Integrand(final Path path, final GeneralizedBlackScholesProcess process, final double dt) {
             this.path_ = path;
             this.process_ = process;
             this.dt_ = dt;
@@ -260,12 +241,13 @@ public class MCVarianceSwapEngine extends VarianceSwap.EngineImpl {
         @Override
         public double op(final double t) {
             int i = (int) (t / dt_);
-            if (i >= path_.length()) { i = path_.length() - 1; }
+            if ( i >= path_.length() ) {
+                i = path_.length() - 1;
+            }
             final double sigma = process_.diffusion(t, path_.get(i));
             return sigma * sigma;
         }
     }
-
 
     //
     // builder (mirrors C++ MakeMCVarianceSwapEngine)
@@ -275,8 +257,8 @@ public class MCVarianceSwapEngine extends VarianceSwap.EngineImpl {
      * Fluent builder for {@link MCVarianceSwapEngine}.
      *
      * <p>Java port of {@code QuantLib v1.42.1 MakeMCVarianceSwapEngine}.
-     * The C++ template is parameterised by an RNG traits type; the Java
-     * port is specialised to PseudoRandom (MT + InverseCumulativeNormal).
+     * The C++ template is parameterised by an RNG traits type; the Java port is specialised to PseudoRandom (MT +
+     * InverseCumulativeNormal).
      */
     public static class MakeMCVarianceSwapEngine {
 
@@ -312,8 +294,7 @@ public class MCVarianceSwapEngine extends VarianceSwap.EngineImpl {
         }
 
         public MakeMCVarianceSwapEngine withAbsoluteTolerance(final double tolerance) {
-            QL.require(samples_ == McSimulation.NULL_SAMPLES,
-                    "number of samples already set");
+            QL.require(samples_ == McSimulation.NULL_SAMPLES, "number of samples already set");
             this.tolerance_ = tolerance;
             return this;
         }
@@ -347,22 +328,12 @@ public class MCVarianceSwapEngine extends VarianceSwap.EngineImpl {
         }
 
         public MCVarianceSwapEngine value() {
-            QL.require(steps_ != McSimulation.NULL_SAMPLES
-                    || stepsPerYear_ != McSimulation.NULL_SAMPLES,
+            QL.require(steps_ != McSimulation.NULL_SAMPLES || stepsPerYear_ != McSimulation.NULL_SAMPLES,
                     "number of steps not given");
-            QL.require(steps_ == McSimulation.NULL_SAMPLES
-                    || stepsPerYear_ == McSimulation.NULL_SAMPLES,
+            QL.require(steps_ == McSimulation.NULL_SAMPLES || stepsPerYear_ == McSimulation.NULL_SAMPLES,
                     "number of steps overspecified");
-            return new MCVarianceSwapEngine(
-                    process_,
-                    steps_,
-                    stepsPerYear_,
-                    brownianBridge_,
-                    antithetic_,
-                    samples_,
-                    tolerance_,
-                    maxSamples_,
-                    seed_);
+            return new MCVarianceSwapEngine(process_, steps_, stepsPerYear_, brownianBridge_, antithetic_, samples_,
+                    tolerance_, maxSamples_, seed_);
         }
     }
 }

@@ -32,15 +32,15 @@ import org.jquantlib.math.Ops;
  * <p>
  * The implementation of the algorithm was inspired by <br/>
  * <i>Press, Teukolsky, Vetterling, and Flannery, "Numerical Recipes in C", 2nd Edition, Cambridge University Press</i>
- *	
+ *
  * @author Richard Gomes
  **/
-public class Brent extends AbstractSolver1D<Ops.DoubleOp> {
+public class Brent extends AbstractSolver1D< Ops.DoubleOp > {
 
     /**
      * Computes the roots of a function by using the Brent method.
-     * 
-     * @param f the function
+     *
+     * @param f         the function
      * @param xAccuracy the provided accuracy
      * @returns <code>root</code>
      */
@@ -57,7 +57,7 @@ public class Brent extends AbstractSolver1D<Ops.DoubleOp> {
         // pivot selection to match C++.
         froot = f.op(root);
         evaluationNumber++;
-        if (froot * fxMin < 0) {
+        if ( froot * fxMin < 0 ) {
             xMax = xMin;
             fxMax = fxMin;
         } else {
@@ -67,15 +67,15 @@ public class Brent extends AbstractSolver1D<Ops.DoubleOp> {
         double d = root - xMax;
         double e = d;
 
-        while (evaluationNumber <= getMaxEvaluations()) {
-            if ((froot > 0.0 && fxMax > 0.0) || (froot < 0.0 && fxMax < 0.0)) {
+        while ( evaluationNumber <= getMaxEvaluations() ) {
+            if ( (froot > 0.0 && fxMax > 0.0) || (froot < 0.0 && fxMax < 0.0) ) {
                 // Rename xMin, root, xMax and adjust bounds
                 xMax = xMin;
                 fxMax = fxMin;
                 e = d = root - xMin;
             }
 
-            if (Math.abs(fxMax) < Math.abs(froot)) {
+            if ( Math.abs(fxMax) < Math.abs(froot) ) {
                 xMin = root;
                 root = xMax;
                 xMax = xMin;
@@ -87,7 +87,7 @@ public class Brent extends AbstractSolver1D<Ops.DoubleOp> {
             // Convergence check
             xAcc1 = 2.0 * Constants.QL_EPSILON * Math.abs(root) + 0.5 * xAccuracy;
             xMid = (xMax - root) / 2.0;
-            if (Math.abs(xMid) <= xAcc1 || Closeness.isClose(froot, 0.0)) {
+            if ( Math.abs(xMid) <= xAcc1 || Closeness.isClose(froot, 0.0) ) {
                 // Phase 2g WI-1: C++ brent.hpp evaluates f(root_) once more
                 // before returning, matching final-evaluation-count semantics.
                 f.op(root);
@@ -95,11 +95,11 @@ public class Brent extends AbstractSolver1D<Ops.DoubleOp> {
                 return root;
             }
 
-            if (Math.abs(e) >= xAcc1 && Math.abs(fxMin) > Math.abs(froot)) {
+            if ( Math.abs(e) >= xAcc1 && Math.abs(fxMin) > Math.abs(froot) ) {
                 // Attempt inverse quadratic interpolation
                 s = froot / fxMin;
 
-                if (Closeness.isClose(xMin, xMax)) {
+                if ( Closeness.isClose(xMin, xMax) ) {
                     p = 2.0 * xMid * s;
                     q = 1.0 - s;
                 } else {
@@ -108,12 +108,12 @@ public class Brent extends AbstractSolver1D<Ops.DoubleOp> {
                     p = s * (2.0 * xMid * q * (q - r) - (root - xMin) * (r - 1.0));
                     q = (q - 1.0) * (r - 1.0) * (s - 1.0);
                 }
-                if (p > 0.0)
+                if ( p > 0.0 )
                     q = -q; // Check whether in bounds
                 p = Math.abs(p);
                 min1 = 3.0 * xMid * q - Math.abs(xAcc1 * q);
                 min2 = Math.abs(e * q);
-                if (2.0 * p < (min1 < min2 ? min1 : min2)) {
+                if ( 2.0 * p < (min1 < min2 ? min1 : min2) ) {
                     e = d; // Accept interpolation
                     d = p / q;
                 } else {
@@ -127,7 +127,7 @@ public class Brent extends AbstractSolver1D<Ops.DoubleOp> {
 
             xMin = root;
             fxMin = froot;
-            if (Math.abs(d) > xAcc1)
+            if ( Math.abs(d) > xAcc1 )
                 root += d;
             else
                 root += sign(xAcc1, xMid);

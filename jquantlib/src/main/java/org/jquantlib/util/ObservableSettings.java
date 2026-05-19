@@ -37,10 +37,8 @@ import java.util.Set;
  * Global repository for run-time observable settings.
  *
  * <p>Java port of C++ QuantLib {@code ObservableSettings}
- * (ql/patterns/observable.hpp). Mirrors the non-thread-safe branch
- * ({@code QL_ENABLE_THREAD_SAFE_OBSERVER_PATTERN} undefined); the
- * thread-safe variant is not needed in Java because the JVM provides
- * its own GC + memory model.
+ * (ql/patterns/observable.hpp). Mirrors the non-thread-safe branch ({@code QL_ENABLE_THREAD_SAFE_OBSERVER_PATTERN}
+ * undefined); the thread-safe variant is not needed in Java because the JVM provides its own GC + memory model.
  *
  * <p>Two-state toggle:
  * <ul>
@@ -59,34 +57,30 @@ import java.util.Set;
 public final class ObservableSettings {
 
     private static final ObservableSettings INSTANCE = new ObservableSettings();
+    /**
+     * Linked-set preserves insertion order so deferred updates fire in registration order — matches the C++ map
+     * iteration order for the test {@code testObservableSettings}.
+     */
+    private final Set< Observer > deferredObservers = new LinkedHashSet< Observer >();
+    private boolean updatesEnabled = true;
+    private boolean updatesDeferred = false;
+    private boolean runningDeferredUpdates = false;
+
+    private ObservableSettings() {
+        // singleton
+    }
 
     /** Returns the global singleton instance. */
     public static ObservableSettings instance() {
         return INSTANCE;
     }
 
-    private boolean updatesEnabled = true;
-    private boolean updatesDeferred = false;
-    private boolean runningDeferredUpdates = false;
-
-    /**
-     * Linked-set preserves insertion order so deferred updates fire in
-     * registration order — matches the C++ map iteration order for the
-     * test {@code testObservableSettings}.
-     */
-    private final Set<Observer> deferredObservers = new LinkedHashSet<Observer>();
-
-    private ObservableSettings() {
-        // singleton
-    }
-
     /**
      * Disable notification dispatch.
      *
-     * @param deferred when {@code true}, observers that would have been
-     *        notified are added to a deferred queue and dispatched once,
-     *        in registration order, when {@link #enableUpdates()} is
-     *        called. When {@code false}, notifications are dropped.
+     * @param deferred when {@code true}, observers that would have been notified are added to a deferred queue and
+     *                 dispatched once, in registration order, when {@link #enableUpdates()} is called. When
+     *                 {@code false}, notifications are dropped.
      */
     public void disableUpdates(final boolean deferred) {
         this.updatesEnabled = false;
@@ -99,15 +93,14 @@ public final class ObservableSettings {
     }
 
     /**
-     * Re-enable notification dispatch. If updates were deferred and any
-     * observers accumulated, fire each accumulated observer exactly
-     * once (deduplicated by identity), in insertion order.
+     * Re-enable notification dispatch. If updates were deferred and any observers accumulated, fire each accumulated
+     * observer exactly once (deduplicated by identity), in insertion order.
      */
     public void enableUpdates() {
         this.updatesEnabled = true;
         this.updatesDeferred = false;
 
-        if (deferredObservers.isEmpty()) {
+        if ( deferredObservers.isEmpty() ) {
             return;
         }
 
@@ -119,18 +112,20 @@ public final class ObservableSettings {
         runningDeferredUpdates = true;
         RuntimeException firstException = null;
         try {
-            for (final Observer obs : snapshot) {
-                if (obs == null) continue;
+            for ( final Observer obs : snapshot ) {
+                if ( obs == null )
+                    continue;
                 try {
                     obs.update();
-                } catch (final RuntimeException e) {
-                    if (firstException == null) firstException = e;
+                } catch ( final RuntimeException e ) {
+                    if ( firstException == null )
+                        firstException = e;
                 }
             }
         } finally {
             runningDeferredUpdates = false;
         }
-        if (firstException != null) {
+        if ( firstException != null ) {
             throw firstException;
         }
     }
@@ -148,22 +143,20 @@ public final class ObservableSettings {
     }
 
     /**
-     * Package-private hook used by {@code DefaultObservable.notifyObservers}
-     * to record an observer that would have been notified while updates
-     * are deferred. No-op when not in deferred mode.
+     * Package-private hook used by {@code DefaultObservable.notifyObservers} to record an observer that would have been
+     * notified while updates are deferred. No-op when not in deferred mode.
      */
     void registerDeferredObserver(final Observer observer) {
-        if (updatesDeferred && observer != null) {
+        if ( updatesDeferred && observer != null ) {
             deferredObservers.add(observer);
         }
     }
 
     /**
-     * Package-private hook used by observables that drop an observer
-     * while it sits in the deferred queue.
+     * Package-private hook used by observables that drop an observer while it sits in the deferred queue.
      */
     void unregisterDeferredObserver(final Observer observer) {
-        if (observer != null) {
+        if ( observer != null ) {
             deferredObservers.remove(observer);
         }
     }

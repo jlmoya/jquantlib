@@ -23,18 +23,15 @@ import org.jquantlib.time.Frequency;
 /**
  * Callable / puttable zero-coupon bond.
  * <p>
- * Port of C++ v1.42.1
- * {@code ql/experimental/callablebonds/callablebond.{hpp,cpp}}
- * (the {@code CallableZeroCouponBond} portion).
+ * Port of C++ v1.42.1 {@code ql/experimental/callablebonds/callablebond.{hpp,cpp}} (the {@code CallableZeroCouponBond}
+ * portion).
  */
 public class CallableZeroCouponBond extends CallableBond {
 
-    public CallableZeroCouponBond(final int settlementDays, final double faceAmount,
-            final Calendar calendar, final Date maturityDate, final DayCounter dayCounter,
-            final BusinessDayConvention paymentConvention, final double redemption,
-            final Date issueDate, final CallabilitySchedule putCallSchedule) {
-        super(settlementDays, maturityDate, calendar, dayCounter, faceAmount, issueDate,
-                putCallSchedule);
+    public CallableZeroCouponBond(final int settlementDays, final double faceAmount, final Calendar calendar,
+            final Date maturityDate, final DayCounter dayCounter, final BusinessDayConvention paymentConvention,
+            final double redemption, final Date issueDate, final CallabilitySchedule putCallSchedule) {
+        super(settlementDays, maturityDate, calendar, dayCounter, faceAmount, issueDate, putCallSchedule);
 
         frequency_ = Frequency.Once;
 

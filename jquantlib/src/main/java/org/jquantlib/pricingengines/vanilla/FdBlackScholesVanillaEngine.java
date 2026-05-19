@@ -57,17 +57,12 @@ import org.jquantlib.time.Date;
 /**
  * Finite-differences Black-Scholes vanilla option engine.
  * <p>
- * Java port of v1.42.1
- * {@code ql/pricingengines/vanilla/fdblackscholesvanillaengine.{hpp,cpp}}.
- * Supports European and American exercises. Spot cash-dividend model
- * (discrete dividends absorbed into the grid). Local-vol and the Escrowed
- * dividend model are deferred to Phase 2m.5; the Quanto-helper hook is
- * supported via an analytic-equivalent process re-write (the helper's
- * continuous drift adjustment {@code r_d - r_f + corr * sigma_eq * sigma_fx}
- * is folded into the dividend yield through
- * {@link org.jquantlib.termstructures.yieldcurves.QuantoTermStructure},
- * which gives the same forward-rate drift as the C++ FdmBlackScholesOp
- * quanto branch for non-localVol pricing).
+ * Java port of v1.42.1 {@code ql/pricingengines/vanilla/fdblackscholesvanillaengine.{hpp,cpp}}. Supports European and
+ * American exercises. Spot cash-dividend model (discrete dividends absorbed into the grid). Local-vol and the Escrowed
+ * dividend model are deferred to Phase 2m.5; the Quanto-helper hook is supported via an analytic-equivalent process
+ * re-write (the helper's continuous drift adjustment {@code r_d - r_f + corr * sigma_eq * sigma_fx} is folded into the
+ * dividend yield through {@link org.jquantlib.termstructures.yieldcurves.QuantoTermStructure}, which gives the same
+ * forward-rate drift as the C++ FdmBlackScholesOp quanto branch for non-localVol pricing).
  *
  * <h3>Constructor variants</h3>
  * <ul>
@@ -91,25 +86,11 @@ public class FdBlackScholesVanillaEngine extends OneAssetOption.EngineImpl {
     // Cash-dividend model enum (mirrors C++ inner enum)
     // --------------------------------------------------------------------
 
-    /** Cash-dividend model for discrete dividends. */
-    public enum CashDividendModel {
-        /**
-         * Spot model: dividends are deducted from the spot at payment time.
-         * Grid nodes shift at each dividend date.
-         */
-        Spot,
-        /**
-         * Escrowed model: PV of future dividends is subtracted from spot.
-         * Deferred to Phase 2m.5.
-         */
-        Escrowed
-    }
+    private final GeneralizedBlackScholesProcess process;
 
     // --------------------------------------------------------------------
     // fields
     // --------------------------------------------------------------------
-
-    private final GeneralizedBlackScholesProcess process;
     private final DividendSchedule dividends;
     private final int tGrid;
     private final int xGrid;
@@ -119,177 +100,134 @@ public class FdBlackScholesVanillaEngine extends OneAssetOption.EngineImpl {
     private final FdmQuantoHelper quantoHelper;
     private final boolean localVol;
     private final double illegalLocalVolOverwrite;
-
     private final OneAssetOption.ArgumentsImpl a;
-    private final OneAssetOption.ResultsImpl   r;
-    private final Option.GreeksImpl            greeks;
+    private final OneAssetOption.ResultsImpl r;
+    private final Option.GreeksImpl greeks;
+    /**
+     * Convenience — all C++ defaults (tGrid=100, xGrid=100, dampingSteps=0, scheme=Douglas, no dividends, Spot model).
+     */
+    public FdBlackScholesVanillaEngine(final GeneralizedBlackScholesProcess process) {
+        this(process, null, null, 100, 100, 0, FdmSchemeDesc.Douglas(), CashDividendModel.Spot, false, Double.NaN);
+    }
 
     // --------------------------------------------------------------------
     // constructors
     // --------------------------------------------------------------------
 
     /**
-     * Convenience — all C++ defaults (tGrid=100, xGrid=100, dampingSteps=0,
-     * scheme=Douglas, no dividends, Spot model).
-     */
-    public FdBlackScholesVanillaEngine(final GeneralizedBlackScholesProcess process) {
-        this(process, null, null, 100, 100, 0, FdmSchemeDesc.Douglas(),
-                CashDividendModel.Spot, false, Double.NaN);
-    }
-
-    /**
      * Grid parameters only (no dividends, Spot model).
      */
-    public FdBlackScholesVanillaEngine(final GeneralizedBlackScholesProcess process,
-                                       final int tGrid,
-                                       final int xGrid,
-                                       final int dampingSteps,
-                                       final FdmSchemeDesc schemeDesc) {
-        this(process, null, null, tGrid, xGrid, dampingSteps, schemeDesc,
-                CashDividendModel.Spot, false, Double.NaN);
+    public FdBlackScholesVanillaEngine(final GeneralizedBlackScholesProcess process, final int tGrid, final int xGrid,
+            final int dampingSteps, final FdmSchemeDesc schemeDesc) {
+        this(process, null, null, tGrid, xGrid, dampingSteps, schemeDesc, CashDividendModel.Spot, false, Double.NaN);
     }
 
     /**
      * Local-vol-aware overload mirroring the C++ ctor
-     * {@code FdBlackScholesVanillaEngine(process, tGrid, xGrid, dampingSteps,
-     * schemeDesc, localVol, illegalLocalVolOverwrite)}.
+     * {@code FdBlackScholesVanillaEngine(process, tGrid, xGrid, dampingSteps, schemeDesc, localVol,
+     * illegalLocalVolOverwrite)}.
      *
      * @param illegalLocalVolOverwrite fallback {@code sigma} substituted when
-     *        {@code process.localVolatility().localVol(t, S)} throws; pass
-     *        {@link Double#NaN} (or any negative value) to disable the fallback,
-     *        mirroring C++'s {@code -Null<Real>::value} sentinel.
+     *                                 {@code process.localVolatility().localVol(t, S)} throws; pass {@link Double#NaN}
+     *                                 (or any negative value) to disable the fallback, mirroring C++'s
+     *                                 {@code -Null<Real>::value} sentinel.
      */
-    public FdBlackScholesVanillaEngine(final GeneralizedBlackScholesProcess process,
-                                       final int tGrid,
-                                       final int xGrid,
-                                       final int dampingSteps,
-                                       final FdmSchemeDesc schemeDesc,
-                                       final boolean localVol,
-                                       final double illegalLocalVolOverwrite) {
-        this(process, null, null, tGrid, xGrid, dampingSteps, schemeDesc,
-                CashDividendModel.Spot, localVol, illegalLocalVolOverwrite);
+    public FdBlackScholesVanillaEngine(final GeneralizedBlackScholesProcess process, final int tGrid, final int xGrid,
+            final int dampingSteps, final FdmSchemeDesc schemeDesc, final boolean localVol,
+            final double illegalLocalVolOverwrite) {
+        this(process, null, null, tGrid, xGrid, dampingSteps, schemeDesc, CashDividendModel.Spot, localVol,
+                illegalLocalVolOverwrite);
     }
 
     /**
      * With discrete dividends (Spot model).
      */
-    public FdBlackScholesVanillaEngine(final GeneralizedBlackScholesProcess process,
-                                       final DividendSchedule dividends,
-                                       final int tGrid,
-                                       final int xGrid,
-                                       final int dampingSteps,
-                                       final FdmSchemeDesc schemeDesc) {
-        this(process, dividends, null, tGrid, xGrid, dampingSteps, schemeDesc,
-                CashDividendModel.Spot, false, Double.NaN);
+    public FdBlackScholesVanillaEngine(final GeneralizedBlackScholesProcess process, final DividendSchedule dividends,
+            final int tGrid, final int xGrid, final int dampingSteps, final FdmSchemeDesc schemeDesc) {
+        this(process, dividends, null, tGrid, xGrid, dampingSteps, schemeDesc, CashDividendModel.Spot, false,
+                Double.NaN);
     }
 
     /**
-     * Quanto overload — adds an {@link FdmQuantoHelper} hook (matches the C++
-     * v1.42.1 constructor {@code (process, quantoHelper, tGrid, xGrid, damping)}).
-     * No discrete dividends; Spot model; Douglas scheme.
+     * Quanto overload — adds an {@link FdmQuantoHelper} hook (matches the C++ v1.42.1 constructor
+     * {@code (process, quantoHelper, tGrid, xGrid, damping)}). No discrete dividends; Spot model; Douglas scheme.
      */
-    public FdBlackScholesVanillaEngine(final GeneralizedBlackScholesProcess process,
-                                       final FdmQuantoHelper quantoHelper,
-                                       final int tGrid,
-                                       final int xGrid,
-                                       final int dampingSteps) {
-        this(process, null, quantoHelper, tGrid, xGrid, dampingSteps,
-                FdmSchemeDesc.Douglas(), CashDividendModel.Spot, false, Double.NaN);
+    public FdBlackScholesVanillaEngine(final GeneralizedBlackScholesProcess process, final FdmQuantoHelper quantoHelper,
+            final int tGrid, final int xGrid, final int dampingSteps) {
+        this(process, null, quantoHelper, tGrid, xGrid, dampingSteps, FdmSchemeDesc.Douglas(), CashDividendModel.Spot,
+                false, Double.NaN);
     }
 
     /**
      * Quanto overload with custom scheme.
      */
-    public FdBlackScholesVanillaEngine(final GeneralizedBlackScholesProcess process,
-                                       final FdmQuantoHelper quantoHelper,
-                                       final int tGrid,
-                                       final int xGrid,
-                                       final int dampingSteps,
-                                       final FdmSchemeDesc schemeDesc) {
-        this(process, null, quantoHelper, tGrid, xGrid, dampingSteps,
-                schemeDesc, CashDividendModel.Spot, false, Double.NaN);
+    public FdBlackScholesVanillaEngine(final GeneralizedBlackScholesProcess process, final FdmQuantoHelper quantoHelper,
+            final int tGrid, final int xGrid, final int dampingSteps, final FdmSchemeDesc schemeDesc) {
+        this(process, null, quantoHelper, tGrid, xGrid, dampingSteps, schemeDesc, CashDividendModel.Spot, false,
+                Double.NaN);
     }
 
     /**
      * Quanto + discrete dividends overload.
      */
-    public FdBlackScholesVanillaEngine(final GeneralizedBlackScholesProcess process,
-                                       final DividendSchedule dividends,
-                                       final FdmQuantoHelper quantoHelper,
-                                       final int tGrid,
-                                       final int xGrid,
-                                       final int dampingSteps) {
-        this(process, dividends, quantoHelper, tGrid, xGrid, dampingSteps,
-                FdmSchemeDesc.Douglas(), CashDividendModel.Spot, false, Double.NaN);
+    public FdBlackScholesVanillaEngine(final GeneralizedBlackScholesProcess process, final DividendSchedule dividends,
+            final FdmQuantoHelper quantoHelper, final int tGrid, final int xGrid, final int dampingSteps) {
+        this(process, dividends, quantoHelper, tGrid, xGrid, dampingSteps, FdmSchemeDesc.Douglas(),
+                CashDividendModel.Spot, false, Double.NaN);
     }
 
     /**
-     * Back-compat full constructor (no quanto helper) mirroring the previous
-     * signature; delegates to the quanto-aware full constructor.
+     * Back-compat full constructor (no quanto helper) mirroring the previous signature; delegates to the quanto-aware
+     * full constructor.
      */
-    public FdBlackScholesVanillaEngine(final GeneralizedBlackScholesProcess process,
-                                       final DividendSchedule dividends,
-                                       final int tGrid,
-                                       final int xGrid,
-                                       final int dampingSteps,
-                                       final FdmSchemeDesc schemeDesc,
-                                       final CashDividendModel cashDividendModel) {
-        this(process, dividends, null, tGrid, xGrid, dampingSteps, schemeDesc,
-                cashDividendModel, false, Double.NaN);
+    public FdBlackScholesVanillaEngine(final GeneralizedBlackScholesProcess process, final DividendSchedule dividends,
+            final int tGrid, final int xGrid, final int dampingSteps, final FdmSchemeDesc schemeDesc,
+            final CashDividendModel cashDividendModel) {
+        this(process, dividends, null, tGrid, xGrid, dampingSteps, schemeDesc, cashDividendModel, false, Double.NaN);
     }
 
     /**
      * Full constructor mirroring C++ v1.42.1.
      *
-     * @param process                   GBS process
-     * @param dividends                 discrete cash dividends (null / empty = none)
-     * @param quantoHelper              optional FDM quanto helper (null = no quanto)
-     * @param tGrid                     number of time steps
-     * @param xGrid                     number of log-space grid points
-     * @param dampingSteps              number of leading implicit-Euler damping steps
-     * @param schemeDesc                FDM scheme descriptor
-     * @param cashDividendModel         dividend model (only Spot supported currently)
-     * @param localVol                  when {@code true} the FDM operator uses
-     *                                  {@code process.localVolatility()} instead
-     *                                  of the constant-vol forward-variance lookup
-     * @param illegalLocalVolOverwrite  fallback {@code sigma} when local-vol
-     *                                  evaluation throws; {@link Double#NaN}
-     *                                  (or any negative value) disables it
+     * @param process                  GBS process
+     * @param dividends                discrete cash dividends (null / empty = none)
+     * @param quantoHelper             optional FDM quanto helper (null = no quanto)
+     * @param tGrid                    number of time steps
+     * @param xGrid                    number of log-space grid points
+     * @param dampingSteps             number of leading implicit-Euler damping steps
+     * @param schemeDesc               FDM scheme descriptor
+     * @param cashDividendModel        dividend model (only Spot supported currently)
+     * @param localVol                 when {@code true} the FDM operator uses {@code process.localVolatility()} instead
+     *                                 of the constant-vol forward-variance lookup
+     * @param illegalLocalVolOverwrite fallback {@code sigma} when local-vol evaluation throws; {@link Double#NaN} (or
+     *                                 any negative value) disables it
      */
-    public FdBlackScholesVanillaEngine(final GeneralizedBlackScholesProcess process,
-                                       final DividendSchedule dividends,
-                                       final FdmQuantoHelper quantoHelper,
-                                       final int tGrid,
-                                       final int xGrid,
-                                       final int dampingSteps,
-                                       final FdmSchemeDesc schemeDesc,
-                                       final CashDividendModel cashDividendModel,
-                                       final boolean localVol,
-                                       final double illegalLocalVolOverwrite) {
+    public FdBlackScholesVanillaEngine(final GeneralizedBlackScholesProcess process, final DividendSchedule dividends,
+            final FdmQuantoHelper quantoHelper, final int tGrid, final int xGrid, final int dampingSteps,
+            final FdmSchemeDesc schemeDesc, final CashDividendModel cashDividendModel, final boolean localVol,
+            final double illegalLocalVolOverwrite) {
         super();
         QL.require(process != null, "null GBS process");
-        QL.require(cashDividendModel == CashDividendModel.Spot,
-                "Escrowed dividend model is not yet supported");
-        QL.require(!(localVol && quantoHelper != null),
-                "localVol + quantoHelper combination is not yet supported");
+        QL.require(cashDividendModel == CashDividendModel.Spot, "Escrowed dividend model is not yet supported");
+        QL.require(!(localVol && quantoHelper != null), "localVol + quantoHelper combination is not yet supported");
 
-        this.process          = process;
-        this.dividends        = (dividends != null) ? dividends : new DividendSchedule();
-        this.tGrid            = tGrid;
-        this.xGrid            = xGrid;
-        this.dampingSteps     = dampingSteps;
-        this.schemeDesc       = schemeDesc;
+        this.process = process;
+        this.dividends = (dividends != null) ? dividends : new DividendSchedule();
+        this.tGrid = tGrid;
+        this.xGrid = xGrid;
+        this.dampingSteps = dampingSteps;
+        this.schemeDesc = schemeDesc;
         this.cashDividendModel = cashDividendModel;
-        this.quantoHelper     = quantoHelper;
-        this.localVol         = localVol;
+        this.quantoHelper = quantoHelper;
+        this.localVol = localVol;
         this.illegalLocalVolOverwrite = illegalLocalVolOverwrite;
 
-        this.a      = (OneAssetOption.ArgumentsImpl) arguments_;
-        this.r      = (OneAssetOption.ResultsImpl)   results_;
+        this.a = (OneAssetOption.ArgumentsImpl) arguments_;
+        this.r = (OneAssetOption.ResultsImpl) results_;
         this.greeks = r.greeks();
 
         process.addObserver(this);
-        if (quantoHelper != null) {
+        if ( quantoHelper != null ) {
             quantoHelper.addObserver(this);
         }
     }
@@ -297,21 +235,12 @@ public class FdBlackScholesVanillaEngine extends OneAssetOption.EngineImpl {
     /**
      * Back-compat full constructor pre-dating the {@code localVol} parameters.
      */
-    public FdBlackScholesVanillaEngine(final GeneralizedBlackScholesProcess process,
-                                       final DividendSchedule dividends,
-                                       final FdmQuantoHelper quantoHelper,
-                                       final int tGrid,
-                                       final int xGrid,
-                                       final int dampingSteps,
-                                       final FdmSchemeDesc schemeDesc,
-                                       final CashDividendModel cashDividendModel) {
-        this(process, dividends, quantoHelper, tGrid, xGrid, dampingSteps,
-                schemeDesc, cashDividendModel, false, Double.NaN);
+    public FdBlackScholesVanillaEngine(final GeneralizedBlackScholesProcess process, final DividendSchedule dividends,
+            final FdmQuantoHelper quantoHelper, final int tGrid, final int xGrid, final int dampingSteps,
+            final FdmSchemeDesc schemeDesc, final CashDividendModel cashDividendModel) {
+        this(process, dividends, quantoHelper, tGrid, xGrid, dampingSteps, schemeDesc, cashDividendModel, false,
+                Double.NaN);
     }
-
-    // --------------------------------------------------------------------
-    // PricingEngine implementation
-    // --------------------------------------------------------------------
 
     /**
      * {@inheritDoc}
@@ -345,79 +274,80 @@ public class FdBlackScholesVanillaEngine extends OneAssetOption.EngineImpl {
 
         // Effective process: when a quanto helper is provided, fold the
         // continuous quanto drift adjustment into the dividend yield.
-        final GeneralizedBlackScholesProcess effectiveProcess =
-                (quantoHelper != null) ? buildQuantoProcess(payoff.strike()) : process;
+        final GeneralizedBlackScholesProcess effectiveProcess = (quantoHelper != null) ? buildQuantoProcess(
+                payoff.strike()) : process;
 
         // maturity
         final Date exerciseDate = a.exercise.lastDate();
         final double maturity = effectiveProcess.time(exerciseDate);
 
         // 1. Mesher
-        final Fdm1dMesher equityMesher = new FdmBlackScholesMesher(
-                xGrid, effectiveProcess, maturity, payoff.strike(),
+        final Fdm1dMesher equityMesher = new FdmBlackScholesMesher(xGrid, effectiveProcess, maturity, payoff.strike(),
                 dividendSchedule, spotAdjustment);
 
         final FdmMesher mesher = new FdmMesherComposite(equityMesher);
 
         // 2. Calculator
-        final FdmInnerValueCalculator calculator =
-                new FdmLogInnerValue(payoff, mesher, 0);
+        final FdmInnerValueCalculator calculator = new FdmLogInnerValue(payoff, mesher, 0);
 
         // 3. Step conditions
         final Date refDate = effectiveProcess.riskFreeRate().currentLink().referenceDate();
-        final org.jquantlib.daycounters.DayCounter dc =
-                effectiveProcess.riskFreeRate().currentLink().dayCounter();
+        final org.jquantlib.daycounters.DayCounter dc = effectiveProcess.riskFreeRate().currentLink().dayCounter();
 
-        final FdmStepConditionComposite conditions =
-                FdmStepConditionComposite.vanillaComposite(
-                        dividendSchedule, a.exercise, mesher,
-                        calculator, refDate, dc);
+        final FdmStepConditionComposite conditions = FdmStepConditionComposite.vanillaComposite(dividendSchedule,
+                a.exercise, mesher, calculator, refDate, dc);
 
         // 4. Boundary conditions (empty)
         final FdmBoundaryConditionSet boundaries = new FdmBoundaryConditionSet();
 
         // 5. Solver
-        final FdmSolverDesc solverDesc = new FdmSolverDesc(
-                mesher, boundaries, conditions, calculator,
-                maturity, tGrid, dampingSteps);
+        final FdmSolverDesc solverDesc = new FdmSolverDesc(mesher, boundaries, conditions, calculator, maturity, tGrid,
+                dampingSteps);
 
-        final FdmBlackScholesSolver solver = new FdmBlackScholesSolver(
-                effectiveProcess, payoff.strike(), solverDesc, schemeDesc,
-                localVol, illegalLocalVolOverwrite);
+        final FdmBlackScholesSolver solver = new FdmBlackScholesSolver(effectiveProcess, payoff.strike(), solverDesc,
+                schemeDesc, localVol, illegalLocalVolOverwrite);
 
         final double spot = effectiveProcess.x0() + spotAdjustment;
 
-        r.value     = solver.valueAt(spot);
+        r.value = solver.valueAt(spot);
         greeks.delta = solver.deltaAt(spot);
         greeks.gamma = solver.gammaAt(spot);
         greeks.theta = solver.thetaAt(spot);
     }
 
+    // --------------------------------------------------------------------
+    // PricingEngine implementation
+    // --------------------------------------------------------------------
+
     /**
-     * Build a quanto-adjusted GBS process: the dividend yield is the original
-     * dividend yield plus the helper's continuous quanto drift adjustment
-     * (folded via {@link QuantoTermStructure}). All other handles are
-     * inherited from {@link #process}.
+     * Build a quanto-adjusted GBS process: the dividend yield is the original dividend yield plus the helper's
+     * continuous quanto drift adjustment (folded via {@link QuantoTermStructure}). All other handles are inherited from
+     * {@link #process}.
      */
     private GeneralizedBlackScholesProcess buildQuantoProcess(final double strike) {
-        final Handle<YieldTermStructure> origDividend = process.dividendYield();
-        final Handle<YieldTermStructure> origRiskFree = process.riskFreeRate();
-        final Handle<YieldTermStructure> foreignTS =
-                new Handle<YieldTermStructure>(quantoHelper.fTS());
-        final Handle<BlackVolTermStructure> fxVolTS =
-                new Handle<BlackVolTermStructure>(quantoHelper.fxVolTS());
-        final Handle<BlackVolTermStructure> origBlackVol = process.blackVolatility();
+        final Handle< YieldTermStructure > origDividend = process.dividendYield();
+        final Handle< YieldTermStructure > origRiskFree = process.riskFreeRate();
+        final Handle< YieldTermStructure > foreignTS = new Handle< YieldTermStructure >(quantoHelper.fTS());
+        final Handle< BlackVolTermStructure > fxVolTS = new Handle< BlackVolTermStructure >(quantoHelper.fxVolTS());
+        final Handle< BlackVolTermStructure > origBlackVol = process.blackVolatility();
 
-        final QuantoTermStructure quantoTS = new QuantoTermStructure(
-                origDividend, origRiskFree, foreignTS, origBlackVol,
-                strike, fxVolTS,
-                quantoHelper.exchRateATMlevel(),
-                quantoHelper.equityFxCorrelation());
+        final QuantoTermStructure quantoTS = new QuantoTermStructure(origDividend, origRiskFree, foreignTS,
+                origBlackVol, strike, fxVolTS, quantoHelper.exchRateATMlevel(), quantoHelper.equityFxCorrelation());
 
-        final Handle<YieldTermStructure> dividendYield =
-                new Handle<YieldTermStructure>(quantoTS);
+        final Handle< YieldTermStructure > dividendYield = new Handle< YieldTermStructure >(quantoTS);
 
-        return new GeneralizedBlackScholesProcess(
-                process.stateVariable(), dividendYield, origRiskFree, origBlackVol);
+        return new GeneralizedBlackScholesProcess(process.stateVariable(), dividendYield, origRiskFree, origBlackVol);
+    }
+
+    /** Cash-dividend model for discrete dividends. */
+    public enum CashDividendModel {
+        /**
+         * Spot model: dividends are deducted from the spot at payment time. Grid nodes shift at each dividend date.
+         */
+        Spot,
+        /**
+         * Escrowed model: PV of future dividends is subtracted from spot. Deferred to Phase 2m.5.
+         */
+        Escrowed
     }
 }

@@ -40,7 +40,6 @@ FOR A PARTICULAR PURPOSE.  See the license for more details.
 
 package org.jquantlib.termstructures.yieldcurves;
 
-import org.jquantlib.QL;
 import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.termstructures.AbstractYieldTermStructure;
@@ -57,126 +56,113 @@ import org.jquantlib.time.calendars.Target;
  * <p>
  * Rates are assumed to be annual continuous compounding.
  *
- * @see TermStructure documentation for issues regarding constructors.
- *
  * @author Richard Gomes
+ * @see TermStructure documentation for issues regarding constructors.
  */
 public abstract class ZeroYieldStructure extends AbstractYieldTermStructure {
 
-	//
-	// public constructors
-	//
+    //
+    // public constructors
+    //
 
-
-	/**
-	 * @see TermStructure documentation for issues regarding constructors.
-	 *
-	 * @param dc
-	 */
-	public ZeroYieldStructure() {
-		this(new Actual365Fixed());
-	}
-
-	/**
-	 * @see TermStructure documentation for issues regarding constructors.
-	 *
-	 * @param dc
-	 */
-	public ZeroYieldStructure(final DayCounter dc) {
-		super(dc);
-	}
-
-	// ---
-
-	/**
-	 * @see TermStructure documentation for issues regarding constructors.
-	 *
-	 * @param refDate
-	 * @param cal
-	 * @param dc
-	 */
-	public ZeroYieldStructure(final Date refDate, final Calendar cal) {
-		this(refDate, cal, new Actual365Fixed());
-	}
-
-	/**
-	 * @see TermStructure documentation for issues regarding constructors.
-	 *
-	 * @param refDate
-	 * @param cal
-	 * @param dc
-	 */
-	public ZeroYieldStructure(final Date refDate, final DayCounter dc) {
-		this(refDate, new Target(), dc); // FIXME: code review : default calendar
-	}
-
-	/**
-	 * @see TermStructure documentation for issues regarding constructors.
-	 *
-	 * @param refDate
-	 * @param cal
-	 * @param dc
-	 */
-	public ZeroYieldStructure(final Date refDate) {
-		this(refDate, new Target(), new Actual365Fixed()); // FIXME: code review : default calendar
-	}
-
-
-	/**
-	 * @see TermStructure documentation for issues regarding constructors.
-	 *
-	 * @param refDate
-	 * @param cal
-	 * @param dc
-	 */
-	public ZeroYieldStructure(final Date refDate, final Calendar cal, final DayCounter dc) {
-		super(refDate, cal, dc);
-	}
-
-	// ---
-
-
-	/**
-	 * @see TermStructure documentation for issues regarding constructors.
-	 *
-	 * @param settlementDays
-	 * @param cal
-	 * @param dc
-	 */
-	public ZeroYieldStructure(final int settlementDays, final Calendar cal) {
-		this(settlementDays, cal, new Actual365Fixed());
-	}
-
-	/**
-	 * @see TermStructure documentation for issues regarding constructors.
-	 *
-	 * @param settlementDays
-	 * @param cal
-	 * @param dc
-	 */
-	public ZeroYieldStructure(final int settlementDays, final Calendar cal, final DayCounter dc) {
-		super(settlementDays, cal, dc);
-	}
-
-
-	//
-	// protected methods
-	//
-
-	/**
-	 * Returns the discount factor for the given date calculating it from the zero yield.
-	 */
-	@Override
-    protected /*@DiscountFactor*/ double discountImpl(/*@Time*/ final double t) /* @ReadOnly */ {
-        /*@Rate*/ final double r = zeroYieldImpl(t);
-        return Math.exp(-r*t);
+    /**
+     * @param dc
+     * @see TermStructure documentation for issues regarding constructors.
+     */
+    public ZeroYieldStructure() {
+        this(new Actual365Fixed());
     }
 
+    /**
+     * @param dc
+     * @see TermStructure documentation for issues regarding constructors.
+     */
+    public ZeroYieldStructure(final DayCounter dc) {
+        super(dc);
+    }
 
-	//
-	// abstract methods
-	//
+    // ---
 
-	protected abstract /*@Rate*/ double zeroYieldImpl(/*@Time*/ double t) /* @ReadOnly */;
+    /**
+     * @param refDate
+     * @param cal
+     * @param dc
+     * @see TermStructure documentation for issues regarding constructors.
+     */
+    public ZeroYieldStructure(final Date refDate, final Calendar cal) {
+        this(refDate, cal, new Actual365Fixed());
+    }
+
+    /**
+     * @param refDate
+     * @param cal
+     * @param dc
+     * @see TermStructure documentation for issues regarding constructors.
+     */
+    public ZeroYieldStructure(final Date refDate, final DayCounter dc) {
+        this(refDate, new Target(), dc); // FIXME: code review : default calendar
+    }
+
+    /**
+     * @param refDate
+     * @param cal
+     * @param dc
+     * @see TermStructure documentation for issues regarding constructors.
+     */
+    public ZeroYieldStructure(final Date refDate) {
+        this(refDate, new Target(), new Actual365Fixed()); // FIXME: code review : default calendar
+    }
+
+    /**
+     * @param refDate
+     * @param cal
+     * @param dc
+     * @see TermStructure documentation for issues regarding constructors.
+     */
+    public ZeroYieldStructure(final Date refDate, final Calendar cal, final DayCounter dc) {
+        super(refDate, cal, dc);
+    }
+
+    // ---
+
+    /**
+     * @param settlementDays
+     * @param cal
+     * @param dc
+     * @see TermStructure documentation for issues regarding constructors.
+     */
+    public ZeroYieldStructure(final int settlementDays, final Calendar cal) {
+        this(settlementDays, cal, new Actual365Fixed());
+    }
+
+    /**
+     * @param settlementDays
+     * @param cal
+     * @param dc
+     * @see TermStructure documentation for issues regarding constructors.
+     */
+    public ZeroYieldStructure(final int settlementDays, final Calendar cal, final DayCounter dc) {
+        super(settlementDays, cal, dc);
+    }
+
+    //
+    // protected methods
+    //
+
+    /**
+     * Returns the discount factor for the given date calculating it from the zero yield.
+     */
+    @Override
+    protected /*@DiscountFactor*/ double discountImpl(/*@Time*/ final double t) /* @ReadOnly */ {
+        /*@Rate*/
+        final double r = zeroYieldImpl(t);
+        return Math.exp(-r * t);
+    }
+
+    //
+    // abstract methods
+    //
+
+    protected abstract /*@Rate*/ double zeroYieldImpl(/*@Time*/ double t) /* @ReadOnly */;
 
 }

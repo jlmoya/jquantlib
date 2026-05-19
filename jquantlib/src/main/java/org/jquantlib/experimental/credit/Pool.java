@@ -24,16 +24,11 @@
 
 package org.jquantlib.experimental.credit;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.jquantlib.QL;
 import org.jquantlib.currencies.Currency;
 import org.jquantlib.time.Period;
+
+import java.util.*;
 
 /**
  * Pool of issuers.
@@ -42,17 +37,16 @@ import org.jquantlib.time.Period;
  * ({@code ql/experimental/credit/pool.{hpp,cpp}}).
  *
  * <p>Each entry holds an {@link Issuer}, a default-prob {@link DefaultProbKey}
- * (the seniority/currency under which this name enters the basket), and a
- * scalar simulation time. Insertion preserves order via a parallel name
- * vector for stable iteration matching the C++ {@code names_} field.
+ * (the seniority/currency under which this name enters the basket), and a scalar simulation time. Insertion preserves
+ * order via a parallel name vector for stable iteration matching the C++ {@code names_} field.
  *
  * <p>Phase 4m foundation.
  */
 public class Pool {
 
-    private final Map<String, Issuer> data = new HashMap<>();
-    private final Map<String, Double> time = new HashMap<>();
-    private final List<String> names = new ArrayList<>();
+    private final Map< String, Issuer > data = new HashMap<>();
+    private final Map< String, Double > time = new HashMap<>();
+    private final List< String > names = new ArrayList<>();
     /*
      * LinkedHashMap preserves insertion order so {@code defaultKeys()} aligns
      * 1:1 with {@code names()} — required by basket / latent-model consumers
@@ -61,7 +55,7 @@ public class Pool {
      * non-deterministic order, so we use {@code LinkedHashMap} for explicit
      * insertion-order semantics matching the {@code names_} vector.)
      */
-    private final Map<String, DefaultProbKey> defaultKeys = new LinkedHashMap<>();
+    private final Map< String, DefaultProbKey > defaultKeys = new LinkedHashMap<>();
 
     public Pool() {
         clear();
@@ -84,13 +78,11 @@ public class Pool {
 
     /** Default contract trigger: NA-Corp default key with empty currency, SeniorSec, zero grace, $1 amount. */
     public void add(final String name, final Issuer issuer) {
-        add(name, issuer, new NorthAmericaCorpDefaultKey(
-                new Currency(), Seniority.SeniorSec, new Period(), 1.0));
+        add(name, issuer, new NorthAmericaCorpDefaultKey(new Currency(), Seniority.SeniorSec, new Period(), 1.0));
     }
 
-    public void add(final String name, final Issuer issuer,
-                    final DefaultProbKey contractTrigger) {
-        if (!has(name)) {
+    public void add(final String name, final Issuer issuer, final DefaultProbKey contractTrigger) {
+        if ( !has(name) ) {
             data.put(name, issuer);
             time.put(name, 0.0);
             names.add(name);
@@ -117,12 +109,12 @@ public class Pool {
         time.put(name, t);
     }
 
-    public List<String> names() {
+    public List< String > names() {
         return Collections.unmodifiableList(names);
     }
 
-    public List<DefaultProbKey> defaultKeys() {
-        final List<DefaultProbKey> result = new ArrayList<>(defaultKeys.size());
+    public List< DefaultProbKey > defaultKeys() {
+        final List< DefaultProbKey > result = new ArrayList<>(defaultKeys.size());
         result.addAll(defaultKeys.values());
         return result;
     }

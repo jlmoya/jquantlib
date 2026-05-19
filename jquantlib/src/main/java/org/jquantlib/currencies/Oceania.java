@@ -40,36 +40,29 @@ package org.jquantlib.currencies;
 import org.jquantlib.math.Rounding;
 
 public class Oceania {
-    
 
     /**
-     * Australian dollar
-     * The ISO three-letter code is AUD; the numeric code is 36. It is divided in 100 cents.
+     * Australian dollar The ISO three-letter code is AUD; the numeric code is 36. It is divided in 100 cents.
+     *
      * @category currencies
      */
-    public static class AUDCurrency extends  Currency {
-      public AUDCurrency() {
-            Data audData=new Data("Australian dollar", "AUD", 36,
-                                               "A$", "", 100,
-                                               new Rounding(),
-                                               "%3% %1$.2f");
+    public static class AUDCurrency extends Currency {
+        public AUDCurrency() {
+            Data audData = new Data("Australian dollar", "AUD", 36, "A$", "", 100, new Rounding(), "%3% %1$.2f");
             data = audData;
         }
-    };
+    }
 
     /**
-     * New Zealand dollar
-     * The ISO three-letter code is NZD; the numeric code is 554. It is divided in 100 cents.
+     * New Zealand dollar The ISO three-letter code is NZD; the numeric code is 554. It is divided in 100 cents.
+     *
      * @category currencies
      */
     public static class NZDCurrency extends Currency {
-      public NZDCurrency() {
-            Data nzdData=new Data("New Zealand dollar", "NZD", 554,
-                                             "NZ$", "", 100,
-                                             new Rounding(),
-                                             "%3% %1$.2f");
+        public NZDCurrency() {
+            Data nzdData = new Data("New Zealand dollar", "NZD", 554, "NZ$", "", 100, new Rounding(), "%3% %1$.2f");
             data = nzdData;
         }
-    };
+    }
 
 }

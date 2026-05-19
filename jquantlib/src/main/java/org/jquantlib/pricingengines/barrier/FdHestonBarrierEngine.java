@@ -21,53 +21,37 @@
  */
 package org.jquantlib.pricingengines.barrier;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.exercise.Exercise;
-import org.jquantlib.instruments.BarrierOption;
-import org.jquantlib.instruments.BarrierType;
-import org.jquantlib.instruments.DividendSchedule;
-import org.jquantlib.instruments.OneAssetOption;
-import org.jquantlib.instruments.StrikedTypePayoff;
-import org.jquantlib.instruments.VanillaOption;
+import org.jquantlib.instruments.*;
 import org.jquantlib.math.transcendental.JQuantMath;
-import org.jquantlib.methods.finitedifferences.meshers.Fdm1dMesher;
-import org.jquantlib.methods.finitedifferences.meshers.FdmBlackScholesMesher;
-import org.jquantlib.methods.finitedifferences.meshers.FdmHestonVarianceMesher;
-import org.jquantlib.methods.finitedifferences.meshers.FdmMesher;
-import org.jquantlib.methods.finitedifferences.meshers.FdmMesherComposite;
+import org.jquantlib.methods.finitedifferences.meshers.*;
 import org.jquantlib.methods.finitedifferences.operators.FdmLinearOp;
 import org.jquantlib.methods.finitedifferences.schemes.FdmSchemeDesc;
 import org.jquantlib.methods.finitedifferences.solvers.FdmHestonSolver;
 import org.jquantlib.methods.finitedifferences.solvers.FdmSolverDesc;
 import org.jquantlib.methods.finitedifferences.stepconditions.FdmStepConditionComposite;
-import org.jquantlib.methods.finitedifferences.utilities.BoundaryCondition;
-import org.jquantlib.methods.finitedifferences.utilities.FdmBoundaryConditionSet;
-import org.jquantlib.methods.finitedifferences.utilities.FdmDividendHandler;
-import org.jquantlib.methods.finitedifferences.utilities.FdmLogInnerValue;
-import org.jquantlib.methods.finitedifferences.utilities.FdmTimeDepDirichletBoundary;
+import org.jquantlib.methods.finitedifferences.utilities.*;
 import org.jquantlib.model.equity.HestonModel;
 import org.jquantlib.pricingengines.vanilla.FdHestonVanillaEngine;
 import org.jquantlib.processes.HestonProcess;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Finite-differences Heston barrier-option engine.
  * <p>
- * Java port of v1.42.1
- * {@code ql/pricingengines/barrier/fdhestonbarrierengine.{hpp,cpp}}.
+ * Java port of v1.42.1 {@code ql/pricingengines/barrier/fdhestonbarrierengine.{hpp,cpp}}.
  * <p>
- * Solves the 2-factor Heston PDE on a (log-S, v) grid with a Dirichlet
- * boundary at the barrier (set to the rebate value), using the same ADI
- * machinery as {@link org.jquantlib.pricingengines.vanilla.FdHestonVanillaEngine}.
+ * Solves the 2-factor Heston PDE on a (log-S, v) grid with a Dirichlet boundary at the barrier (set to the rebate
+ * value), using the same ADI machinery as {@link org.jquantlib.pricingengines.vanilla.FdHestonVanillaEngine}.
  *
  * <p>All four barrier types are supported. In-barriers are computed via
- * parity {@code IN = vanilla + rebate - OUT}, delegating to
- * {@link FdHestonRebateEngine} for the rebate-on-touch leg and
- * {@link org.jquantlib.pricingengines.vanilla.FdHestonVanillaEngine
- * FdHestonVanillaEngine} for the unconstrained vanilla NPV.
+ * parity {@code IN = vanilla + rebate - OUT}, delegating to {@link FdHestonRebateEngine} for the rebate-on-touch leg
+ * and {@link org.jquantlib.pricingengines.vanilla.FdHestonVanillaEngine FdHestonVanillaEngine} for the unconstrained
+ * vanilla NPV.
  *
  * <h3>Limitations vs. C++ v1.42.1</h3>
  * <ul>
@@ -92,56 +76,40 @@ public class FdHestonBarrierEngine extends BarrierOption.EngineImpl {
     private final double mixingFactor;
 
     /** Convenience — all C++ defaults, no dividends. */
-    public FdHestonBarrierEngine(final HestonModel hestonModel,
-                                 final HestonProcess hestonProcess) {
-        this(hestonModel, hestonProcess, null,
-                100, 100, 50, 0, FdmSchemeDesc.Hundsdorfer(), 1.0);
+    public FdHestonBarrierEngine(final HestonModel hestonModel, final HestonProcess hestonProcess) {
+        this(hestonModel, hestonProcess, null, 100, 100, 50, 0, FdmSchemeDesc.Hundsdorfer(), 1.0);
     }
 
     /** Convenience — explicit grid + scheme, no dividends. */
-    public FdHestonBarrierEngine(final HestonModel hestonModel,
-                                 final HestonProcess hestonProcess,
-                                 final int tGrid,
-                                 final int xGrid,
-                                 final int vGrid,
-                                 final int dampingSteps,
-                                 final FdmSchemeDesc schemeDesc) {
-        this(hestonModel, hestonProcess, null,
-                tGrid, xGrid, vGrid, dampingSteps, schemeDesc, 1.0);
+    public FdHestonBarrierEngine(final HestonModel hestonModel, final HestonProcess hestonProcess, final int tGrid,
+            final int xGrid, final int vGrid, final int dampingSteps, final FdmSchemeDesc schemeDesc) {
+        this(hestonModel, hestonProcess, null, tGrid, xGrid, vGrid, dampingSteps, schemeDesc, 1.0);
     }
 
     /** Full constructor. */
-    public FdHestonBarrierEngine(final HestonModel hestonModel,
-                                 final HestonProcess hestonProcess,
-                                 final DividendSchedule dividends,
-                                 final int tGrid,
-                                 final int xGrid,
-                                 final int vGrid,
-                                 final int dampingSteps,
-                                 final FdmSchemeDesc schemeDesc,
-                                 final double mixingFactor) {
+    public FdHestonBarrierEngine(final HestonModel hestonModel, final HestonProcess hestonProcess,
+            final DividendSchedule dividends, final int tGrid, final int xGrid, final int vGrid, final int dampingSteps,
+            final FdmSchemeDesc schemeDesc, final double mixingFactor) {
         super();
-        QL.require(hestonModel   != null, "null Heston model");
+        QL.require(hestonModel != null, "null Heston model");
         QL.require(hestonProcess != null, "null Heston process");
-        QL.require(schemeDesc    != null, "null scheme descriptor");
-        this.hestonModel   = hestonModel;
+        QL.require(schemeDesc != null, "null scheme descriptor");
+        this.hestonModel = hestonModel;
         this.hestonProcess = hestonProcess;
-        this.dividends     = (dividends != null) ? dividends : new DividendSchedule();
-        this.tGrid         = tGrid;
-        this.xGrid         = xGrid;
-        this.vGrid         = vGrid;
-        this.dampingSteps  = dampingSteps;
-        this.schemeDesc    = schemeDesc;
-        this.mixingFactor  = mixingFactor;
+        this.dividends = (dividends != null) ? dividends : new DividendSchedule();
+        this.tGrid = tGrid;
+        this.xGrid = xGrid;
+        this.vGrid = vGrid;
+        this.dampingSteps = dampingSteps;
+        this.schemeDesc = schemeDesc;
+        this.mixingFactor = mixingFactor;
     }
 
     @Override
     public void calculate() {
-        final BarrierOption.ArgumentsImpl args =
-                (BarrierOption.ArgumentsImpl) arguments_;
+        final BarrierOption.ArgumentsImpl args = (BarrierOption.ArgumentsImpl) arguments_;
 
-        QL.require(args.exercise.type() == Exercise.Type.European,
-                "only European-style barrier options are supported");
+        QL.require(args.exercise.type() == Exercise.Type.European, "only European-style barrier options are supported");
 
         final BarrierType barrier = args.barrierType;
 
@@ -150,8 +118,7 @@ public class FdHestonBarrierEngine extends BarrierOption.EngineImpl {
 
         // 1.1 Variance mesher
         final int tGridMin = 5;
-        final FdmHestonVarianceMesher varianceMesher = new FdmHestonVarianceMesher(
-                vGrid, hestonProcess, maturity,
+        final FdmHestonVarianceMesher varianceMesher = new FdmHestonVarianceMesher(vGrid, hestonProcess, maturity,
                 Math.max(tGridMin, tGrid / 50), 0.0001);
 
         // 1.2 Equity mesher with barrier-aligned bounds. Per C++ v1.42.1,
@@ -161,28 +128,19 @@ public class FdHestonBarrierEngine extends BarrierOption.EngineImpl {
         final StrikedTypePayoff payoff = (StrikedTypePayoff) args.payoff;
         QL.require(payoff != null, "non-striked payoff given");
 
-        final double xMin = (barrier == BarrierType.DownOut
-                          || barrier == BarrierType.DownIn)
-                ? JQuantMath.log(args.barrier) : Double.NaN;
-        final double xMax = (barrier == BarrierType.UpOut
-                          || barrier == BarrierType.UpIn)
-                ? JQuantMath.log(args.barrier) : Double.NaN;
+        final double xMin = (barrier == BarrierType.DownOut || barrier == BarrierType.DownIn) ? JQuantMath.log(
+                args.barrier) : Double.NaN;
+        final double xMax = (barrier == BarrierType.UpOut || barrier == BarrierType.UpIn)
+                ? JQuantMath.log(args.barrier)
+                : Double.NaN;
 
         // C++ uses scale=1.5, eps=0.0001, no concentration point (Null<Real>).
         // Our equity-mesher constructor accepts NaN for "no constraint" and
         // null cPoint via the long form below.
-        final Fdm1dMesher equityMesher = new FdmBlackScholesMesher(
-                xGrid,
-                FdmBlackScholesMesher.processHelper(
-                        hestonProcess.s0(),
-                        hestonProcess.dividendYield(),
-                        hestonProcess.riskFreeRate(),
-                        varianceMesher.volaEstimate()),
-                maturity, payoff.strike(),
-                xMin, xMax,
-                0.0001, 1.5,
-                Double.NaN, Double.NaN,
-                dividends, 0.0);
+        final Fdm1dMesher equityMesher = new FdmBlackScholesMesher(xGrid,
+                FdmBlackScholesMesher.processHelper(hestonProcess.s0(), hestonProcess.dividendYield(),
+                        hestonProcess.riskFreeRate(), varianceMesher.volaEstimate()), maturity, payoff.strike(), xMin,
+                xMax, 0.0001, 1.5, Double.NaN, Double.NaN, dividends, 0.0);
 
         final FdmMesher mesher = new FdmMesherComposite(equityMesher, varianceMesher);
 
@@ -191,59 +149,50 @@ public class FdHestonBarrierEngine extends BarrierOption.EngineImpl {
 
         // 3. Step conditions (only dividends if any; European exercise so no
         //    early-exercise condition).
-        final FdmStepConditionComposite.Conditions stepConditions =
-                new FdmStepConditionComposite.Conditions();
-        final List<List<Double>> stoppingTimes = new ArrayList<List<Double>>();
+        final FdmStepConditionComposite.Conditions stepConditions = new FdmStepConditionComposite.Conditions();
+        final List< List< Double > > stoppingTimes = new ArrayList< List< Double > >();
 
-        if (!dividends.isEmpty()) {
-            final FdmDividendHandler dividendCondition = new FdmDividendHandler(
-                    dividends, mesher,
+        if ( !dividends.isEmpty() ) {
+            final FdmDividendHandler dividendCondition = new FdmDividendHandler(dividends, mesher,
                     hestonProcess.riskFreeRate().currentLink().referenceDate(),
                     hestonProcess.riskFreeRate().currentLink().dayCounter(),
                     /*equityDirection=*/0);
             stepConditions.add(dividendCondition);
             // exclude times after maturity, mirror C++.
-            final List<Double> divTimes = new ArrayList<Double>();
-            for (final double t : dividendCondition.dividendTimes()) {
+            final List< Double > divTimes = new ArrayList< Double >();
+            for ( final double t : dividendCondition.dividendTimes() ) {
                 divTimes.add(Math.min(maturity, t));
             }
             stoppingTimes.add(divTimes);
         }
 
-        final FdmStepConditionComposite conditions =
-                new FdmStepConditionComposite(stoppingTimes, stepConditions);
+        final FdmStepConditionComposite conditions = new FdmStepConditionComposite(stoppingTimes, stepConditions);
 
         // 4. Boundary conditions: Dirichlet at the barrier with constant rebate.
         //    Both Down{In,Out} take Lower; both Up{In,Out} take Upper.
-        final List<BoundaryCondition<FdmLinearOp>> bcList =
-                new ArrayList<BoundaryCondition<FdmLinearOp>>();
+        final List< BoundaryCondition< FdmLinearOp > > bcList = new ArrayList< BoundaryCondition< FdmLinearOp > >();
         final double rebateValue = args.rebate;
-        if (barrier == BarrierType.DownOut || barrier == BarrierType.DownIn) {
-            bcList.add(new FdmTimeDepDirichletBoundary(
-                    mesher, t -> rebateValue, /*direction=*/0,
+        if ( barrier == BarrierType.DownOut || barrier == BarrierType.DownIn ) {
+            bcList.add(new FdmTimeDepDirichletBoundary(mesher, t -> rebateValue, /*direction=*/0,
                     BoundaryCondition.Side.Lower));
         }
-        if (barrier == BarrierType.UpOut || barrier == BarrierType.UpIn) {
-            bcList.add(new FdmTimeDepDirichletBoundary(
-                    mesher, t -> rebateValue, /*direction=*/0,
+        if ( barrier == BarrierType.UpOut || barrier == BarrierType.UpIn ) {
+            bcList.add(new FdmTimeDepDirichletBoundary(mesher, t -> rebateValue, /*direction=*/0,
                     BoundaryCondition.Side.Upper));
         }
-        final FdmBoundaryConditionSet boundaries =
-                new FdmBoundaryConditionSet(Collections.unmodifiableList(bcList));
+        final FdmBoundaryConditionSet boundaries = new FdmBoundaryConditionSet(Collections.unmodifiableList(bcList));
 
         // 5. Solver
-        final FdmSolverDesc solverDesc = new FdmSolverDesc(
-                mesher, boundaries, conditions, calculator,
-                maturity, tGrid, dampingSteps);
+        final FdmSolverDesc solverDesc = new FdmSolverDesc(mesher, boundaries, conditions, calculator, maturity, tGrid,
+                dampingSteps);
 
-        final FdmHestonSolver solver = new FdmHestonSolver(
-                hestonProcess, solverDesc, schemeDesc, mixingFactor);
+        final FdmHestonSolver solver = new FdmHestonSolver(hestonProcess, solverDesc, schemeDesc, mixingFactor);
 
         final double spot = hestonProcess.s0().currentLink().value();
-        final double v0   = hestonProcess.v0().currentLink().value();
+        final double v0 = hestonProcess.v0().currentLink().value();
 
         final OneAssetOption.ResultsImpl r = (OneAssetOption.ResultsImpl) results_;
-        r.value          = solver.valueAt(spot, v0);
+        r.value = solver.valueAt(spot, v0);
         r.greeks().delta = solver.deltaAt(spot, v0);
         r.greeks().gamma = solver.gammaAt(spot, v0);
         r.greeks().theta = solver.thetaAt(spot, v0);
@@ -253,33 +202,28 @@ public class FdHestonBarrierEngine extends BarrierOption.EngineImpl {
         //    is paid on barrier non-touch). For Down*In/Up*In we add a
         //    standalone vanilla NPV and the rebate-on-touch leg, and
         //    subtract the OUT value already in r.value.
-        if (barrier == BarrierType.DownIn || barrier == BarrierType.UpIn) {
+        if ( barrier == BarrierType.DownIn || barrier == BarrierType.UpIn ) {
             // Standalone vanilla option.
             final VanillaOption vanillaOption = new VanillaOption(payoff, args.exercise);
-            vanillaOption.setPricingEngine(new FdHestonVanillaEngine(
-                    hestonModel, hestonProcess, dividends,
-                    tGrid, xGrid, vGrid, dampingSteps, schemeDesc, mixingFactor));
+            vanillaOption.setPricingEngine(
+                    new FdHestonVanillaEngine(hestonModel, hestonProcess, dividends, tGrid, xGrid, vGrid, dampingSteps,
+                            schemeDesc, mixingFactor));
 
             // Rebate (per C++ defaults: x/v grids reduced to 1/4 size, min
             // 20/10; damping reduced to min(1, dampingSteps/2) when nonzero).
-            final BarrierOption rebateOption = new BarrierOption(
-                    args.barrierType, args.barrier, args.rebate, payoff, args.exercise);
+            final BarrierOption rebateOption = new BarrierOption(args.barrierType, args.barrier, args.rebate, payoff,
+                    args.exercise);
             final int xGridMin = 20;
             final int vGridMin = 10;
-            final int rebateDampingSteps =
-                    (dampingSteps > 0) ? Math.min(1, dampingSteps / 2) : 0;
-            rebateOption.setPricingEngine(new FdHestonRebateEngine(
-                    hestonModel, hestonProcess, dividends,
-                    tGrid,
-                    Math.max(xGridMin, xGrid / 4),
-                    Math.max(vGridMin, vGrid / 4),
-                    rebateDampingSteps,
-                    schemeDesc, mixingFactor));
+            final int rebateDampingSteps = (dampingSteps > 0) ? Math.min(1, dampingSteps / 2) : 0;
+            rebateOption.setPricingEngine(new FdHestonRebateEngine(hestonModel, hestonProcess, dividends, tGrid,
+                    Math.max(xGridMin, xGrid / 4), Math.max(vGridMin, vGrid / 4), rebateDampingSteps, schemeDesc,
+                    mixingFactor));
 
-            r.value          = vanillaOption.NPV()       + rebateOption.NPV()       - r.value;
-            r.greeks().delta = vanillaOption.delta()     + rebateOption.delta()     - r.greeks().delta;
-            r.greeks().gamma = vanillaOption.gamma()     + rebateOption.gamma()     - r.greeks().gamma;
-            r.greeks().theta = vanillaOption.theta()     + rebateOption.theta()     - r.greeks().theta;
+            r.value = vanillaOption.NPV() + rebateOption.NPV() - r.value;
+            r.greeks().delta = vanillaOption.delta() + rebateOption.delta() - r.greeks().delta;
+            r.greeks().gamma = vanillaOption.gamma() + rebateOption.gamma() - r.greeks().gamma;
+            r.greeks().theta = vanillaOption.theta() + rebateOption.theta() - r.greeks().theta;
         }
     }
 }

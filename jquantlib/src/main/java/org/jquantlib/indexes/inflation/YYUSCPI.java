@@ -42,19 +42,11 @@ import org.jquantlib.time.TimeUnit;
 public class YYUSCPI extends YoYInflationIndex {
 
     public YYUSCPI(final boolean interpolated) {
-        this(interpolated, new Handle<YoYInflationTermStructure>());
+        this(interpolated, new Handle< YoYInflationTermStructure >());
     }
 
-    public YYUSCPI(final boolean interpolated,
-                   final Handle<YoYInflationTermStructure> termStructure) {
-        super("YY_CPI",
-                new USRegion(),
-                false,
-                interpolated,
-                false,
-                Frequency.Monthly,
-                new Period(1, TimeUnit.Months),
-                new USDCurrency(),
-                termStructure);
+    public YYUSCPI(final boolean interpolated, final Handle< YoYInflationTermStructure > termStructure) {
+        super("YY_CPI", new USRegion(), false, interpolated, false, Frequency.Monthly, new Period(1, TimeUnit.Months),
+                new USDCurrency(), termStructure);
     }
 }

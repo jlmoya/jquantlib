@@ -30,11 +30,9 @@ import org.jquantlib.pricingengines.McSimulation;
  * Fluent builder for {@link MCEverestEngine}.
  *
  * <p>Java port of {@code QuantLib v1.42.1
- * ql/experimental/exoticoptions/mceverestengine.hpp}'s
- * {@code MakeMCEverestEngine<RNG,S>} factory (Phase 5e.5b-CFC-d-15).
- * Specialised for {@code RNG = PseudoRandom} (Mersenne-Twister +
- * InverseCumulativeNormal); quasi-random variants are deferred to Phase
- * 5e.5b-CFC-d-15b.
+ * ql/experimental/exoticoptions/mceverestengine.hpp}'s {@code MakeMCEverestEngine<RNG,S>} factory (Phase
+ * 5e.5b-CFC-d-15). Specialised for {@code RNG = PseudoRandom} (Mersenne-Twister + InverseCumulativeNormal);
+ * quasi-random variants are deferred to Phase 5e.5b-CFC-d-15b.
  *
  * <h3>Java port deviations from C++ v1.42.1</h3>
  * <ul>
@@ -66,7 +64,6 @@ public class MakeMCEverestEngine {
     private double tolerance_ = McSimulation.NULL_TOLERANCE;
     private long seed_ = 0L;
 
-
     //
     // public constructors
     //
@@ -74,7 +71,6 @@ public class MakeMCEverestEngine {
     public MakeMCEverestEngine(final StochasticProcessArray process) {
         this.process_ = process;
     }
-
 
     //
     // named-parameter setters (return this for chaining)
@@ -117,8 +113,7 @@ public class MakeMCEverestEngine {
     }
 
     public MakeMCEverestEngine withAbsoluteTolerance(final double tolerance) {
-        QL.require(samples_ == McSimulation.NULL_SAMPLES,
-                "number of samples already set");
+        QL.require(samples_ == McSimulation.NULL_SAMPLES, "number of samples already set");
         // PseudoRandom (MT) allows error estimate; nothing to gate here
         this.tolerance_ = tolerance;
         return this;
@@ -134,7 +129,6 @@ public class MakeMCEverestEngine {
         return this;
     }
 
-
     //
     // build (Java analogue of C++ conversion operator)
     //
@@ -143,21 +137,11 @@ public class MakeMCEverestEngine {
      * Java analogue of C++ {@code operator ext::shared_ptr<PricingEngine>()}.
      */
     public MCEverestEngine value() {
-        QL.require(steps_ != McSimulation.NULL_SAMPLES
-                || stepsPerYear_ != McSimulation.NULL_SAMPLES,
+        QL.require(steps_ != McSimulation.NULL_SAMPLES || stepsPerYear_ != McSimulation.NULL_SAMPLES,
                 "number of steps not given");
-        QL.require(steps_ == McSimulation.NULL_SAMPLES
-                || stepsPerYear_ == McSimulation.NULL_SAMPLES,
+        QL.require(steps_ == McSimulation.NULL_SAMPLES || stepsPerYear_ == McSimulation.NULL_SAMPLES,
                 "number of steps overspecified");
-        return new MCEverestEngine(
-                process_,
-                steps_,
-                stepsPerYear_,
-                brownianBridge_,
-                antithetic_,
-                samples_,
-                tolerance_,
-                maxSamples_,
-                seed_);
+        return new MCEverestEngine(process_, steps_, stepsPerYear_, brownianBridge_, antithetic_, samples_, tolerance_,
+                maxSamples_, seed_);
     }
 }

@@ -36,10 +36,9 @@ import org.jquantlib.model.marketmodels.products.MultiProductOneStep;
 /**
  * One-step Optionlets.
  * <p>
- * Mirrors C++ {@code class OneStepOptionlets}
- * (ql/models/marketmodels/products/onestep/onestepoptionlets.{hpp,cpp} v1.42.1).
- * Each product i emits one cash flow {@code payoff[i](forwardRate(i)) * accrual[i]}
- * (only when the payoff is strictly positive) at paymentTime[i].
+ * Mirrors C++ {@code class OneStepOptionlets} (ql/models/marketmodels/products/onestep/onestepoptionlets.{hpp,cpp}
+ * v1.42.1). Each product i emits one cash flow {@code payoff[i](forwardRate(i)) * accrual[i]} (only when the payoff is
+ * strictly positive) at paymentTime[i].
  *
  * @author Jose Moya
  */
@@ -49,10 +48,8 @@ public class OneStepOptionlets extends MultiProductOneStep {
     private final double[] paymentTimes_;
     private final Payoff[] payoffs_;
 
-    public OneStepOptionlets(final double[] rateTimes,
-                             final double[] accruals,
-                             final double[] paymentTimes,
-                             final Payoff[] payoffs) {
+    public OneStepOptionlets(final double[] rateTimes, final double[] accruals, final double[] paymentTimes,
+            final Payoff[] payoffs) {
         super(rateTimes);
         this.accruals_ = accruals.clone();
         this.paymentTimes_ = paymentTimes.clone();
@@ -61,28 +58,33 @@ public class OneStepOptionlets extends MultiProductOneStep {
     }
 
     @Override
-    public double[] possibleCashFlowTimes() { return paymentTimes_; }
+    public double[] possibleCashFlowTimes() {
+        return paymentTimes_;
+    }
 
     @Override
-    public int numberOfProducts() { return payoffs_.length; }
+    public int numberOfProducts() {
+        return payoffs_.length;
+    }
 
     @Override
-    public int maxNumberOfCashFlowsPerProductPerStep() { return 1; }
+    public int maxNumberOfCashFlowsPerProductPerStep() {
+        return 1;
+    }
 
     @Override
     public void reset() { /* nothing to do */ }
 
     @Override
-    public boolean nextTimeStep(final CurveState currentState,
-                                final int[] numberCashFlowsThisStep,
-                                final MarketModelMultiProduct.CashFlow[][] genCashFlows) {
-        for (int i = 0; i < numberCashFlowsThisStep.length; ++i) {
+    public boolean nextTimeStep(final CurveState currentState, final int[] numberCashFlowsThisStep,
+            final MarketModelMultiProduct.CashFlow[][] genCashFlows) {
+        for ( int i = 0; i < numberCashFlowsThisStep.length; ++i ) {
             numberCashFlowsThisStep[i] = 0;
         }
-        for (int i = 0; i < payoffs_.length; ++i) {
+        for ( int i = 0; i < payoffs_.length; ++i ) {
             final double liborRate = currentState.forwardRate(i);
             final double payoff = payoffs_[i].get(liborRate);
-            if (payoff > 0.0) {
+            if ( payoff > 0.0 ) {
                 numberCashFlowsThisStep[i] = 1;
                 genCashFlows[i][0].timeIndex = i;
                 genCashFlows[i][0].amount = payoff * accruals_[i];

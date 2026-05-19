@@ -32,15 +32,14 @@ import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.util.LazyObject;
 
 /**
- * Lazy 2D solver for the Kluge OU + exp-jumps model, built around the
- * {@link FdmExtOUJumpOp} composite operator and a {@link Fdm2DimSolver}.
+ * Lazy 2D solver for the Kluge OU + exp-jumps model, built around the {@link FdmExtOUJumpOp} composite operator and a
+ * {@link Fdm2DimSolver}.
  * <p>
- * Java port of v1.42.1
- * {@code ql/experimental/finitedifferences/fdmextoujumpsolver.{hpp,cpp}}.
+ * Java port of v1.42.1 {@code ql/experimental/finitedifferences/fdmextoujumpsolver.{hpp,cpp}}.
  *
  * <p>The C++ default scheme is {@link FdmSchemeDesc#Hundsdorfer()}; the
- * default Gauss–Laguerre integration order for the jump-density transform
- * is 32 — both values are preserved in the Java port.</p>
+ * default Gauss–Laguerre integration order for the jump-density transform is 32 — both values are preserved in the Java
+ * port.</p>
  *
  * @author Phase 5e.5b-CFC-d-171 port
  */
@@ -55,16 +54,13 @@ public class FdmExtOUJumpSolver extends LazyObject {
 
     private Fdm2DimSolver solver_;
 
-    public FdmExtOUJumpSolver(final ExtOUWithJumpsProcess process,
-                              final YieldTermStructure rTS,
-                              final FdmSolverDesc solverDesc) {
+    public FdmExtOUJumpSolver(final ExtOUWithJumpsProcess process, final YieldTermStructure rTS,
+            final FdmSolverDesc solverDesc) {
         this(process, rTS, solverDesc, FdmSchemeDesc.Hundsdorfer());
     }
 
-    public FdmExtOUJumpSolver(final ExtOUWithJumpsProcess process,
-                              final YieldTermStructure rTS,
-                              final FdmSolverDesc solverDesc,
-                              final FdmSchemeDesc schemeDesc) {
+    public FdmExtOUJumpSolver(final ExtOUWithJumpsProcess process, final YieldTermStructure rTS,
+            final FdmSolverDesc solverDesc, final FdmSchemeDesc schemeDesc) {
         this.process_ = process;
         this.rTS_ = rTS;
         this.solverDesc_ = solverDesc;
@@ -78,9 +74,8 @@ public class FdmExtOUJumpSolver extends LazyObject {
 
     @Override
     protected void performCalculations() {
-        final FdmExtOUJumpOp op = new FdmExtOUJumpOp(
-                solverDesc_.mesher, process_, rTS_,
-                solverDesc_.bcSet, GAUSS_LAGUERRE_ORDER);
+        final FdmExtOUJumpOp op = new FdmExtOUJumpOp(solverDesc_.mesher, process_, rTS_, solverDesc_.bcSet,
+                GAUSS_LAGUERRE_ORDER);
         solver_ = new Fdm2DimSolver(solverDesc_, schemeDesc_, op);
     }
 

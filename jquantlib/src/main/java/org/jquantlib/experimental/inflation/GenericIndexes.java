@@ -70,7 +70,6 @@ public final class GenericIndexes {
         // static container
     }
 
-
     // -------------------------------------------------------------------------
     // GenericRegion
     // -------------------------------------------------------------------------
@@ -89,7 +88,6 @@ public final class GenericIndexes {
 
     }
 
-
     // -------------------------------------------------------------------------
     // GenericCPI
     // -------------------------------------------------------------------------
@@ -101,49 +99,39 @@ public final class GenericIndexes {
      * ({@code ql/experimental/inflation/genericindexes.hpp}).
      *
      * <p>Family name is "CPI"; region is {@link GenericRegion}.
-     * Constructed with {@code interpolated=false} (C++ v1.42.1 deprecated the
-     * {@code interpolated} parameter in v1.38; the non-interpolated constructor
-     * is the primary one in v1.42.1).
+     * Constructed with {@code interpolated=false} (C++ v1.42.1 deprecated the {@code interpolated} parameter in v1.38;
+     * the non-interpolated constructor is the primary one in v1.42.1).
      */
     public static class GenericCPI extends ZeroInflationIndex {
 
         /**
          * Constructs a GenericCPI index without an attached term structure.
          *
-         * @param frequency      observation frequency (e.g., Monthly)
-         * @param revised        whether the index is revised
-         * @param lag            availability lag
-         * @param currency       currency of the index
+         * @param frequency observation frequency (e.g., Monthly)
+         * @param revised   whether the index is revised
+         * @param lag       availability lag
+         * @param currency  currency of the index
          */
-        public GenericCPI(final Frequency frequency,
-                          final boolean revised,
-                          final Period lag,
-                          final Currency currency) {
-            this(frequency, revised, lag, currency,
-                 new Handle<ZeroInflationTermStructure>());
+        public GenericCPI(final Frequency frequency, final boolean revised, final Period lag, final Currency currency) {
+            this(frequency, revised, lag, currency, new Handle< ZeroInflationTermStructure >());
         }
 
         /**
          * Constructs a GenericCPI index with an attached term structure.
          *
-         * @param frequency      observation frequency (e.g., Monthly)
-         * @param revised        whether the index is revised
-         * @param lag            availability lag
-         * @param currency       currency of the index
-         * @param ts             zero-inflation term structure handle
+         * @param frequency observation frequency (e.g., Monthly)
+         * @param revised   whether the index is revised
+         * @param lag       availability lag
+         * @param currency  currency of the index
+         * @param ts        zero-inflation term structure handle
          */
-        public GenericCPI(final Frequency frequency,
-                          final boolean revised,
-                          final Period lag,
-                          final Currency currency,
-                          final Handle<ZeroInflationTermStructure> ts) {
+        public GenericCPI(final Frequency frequency, final boolean revised, final Period lag, final Currency currency,
+                final Handle< ZeroInflationTermStructure > ts) {
             // interpolated=false mirrors C++ v1.42.1 non-interpolated constructor
-            super("CPI", new GenericRegion(), revised, /* interpolated= */ false,
-                  frequency, lag, currency, ts);
+            super("CPI", new GenericRegion(), revised, /* interpolated= */ false, frequency, lag, currency, ts);
         }
 
     }
-
 
     // -------------------------------------------------------------------------
     // YYGenericCPI
@@ -162,37 +150,31 @@ public final class GenericIndexes {
         /**
          * Constructs a YYGenericCPI index without an attached term structure.
          *
-         * @param frequency      observation frequency (e.g., Monthly)
-         * @param revised        whether the index is revised
-         * @param lag            availability lag
-         * @param currency       currency of the index
+         * @param frequency observation frequency (e.g., Monthly)
+         * @param revised   whether the index is revised
+         * @param lag       availability lag
+         * @param currency  currency of the index
          */
-        public YYGenericCPI(final Frequency frequency,
-                            final boolean revised,
-                            final Period lag,
-                            final Currency currency) {
-            this(frequency, revised, lag, currency,
-                 new Handle<YoYInflationTermStructure>());
+        public YYGenericCPI(final Frequency frequency, final boolean revised, final Period lag,
+                final Currency currency) {
+            this(frequency, revised, lag, currency, new Handle< YoYInflationTermStructure >());
         }
 
         /**
          * Constructs a YYGenericCPI index with an attached term structure.
          *
-         * @param frequency      observation frequency (e.g., Monthly)
-         * @param revised        whether the index is revised
-         * @param lag            availability lag
-         * @param currency       currency of the index
-         * @param ts             year-on-year inflation term structure handle
+         * @param frequency observation frequency (e.g., Monthly)
+         * @param revised   whether the index is revised
+         * @param lag       availability lag
+         * @param currency  currency of the index
+         * @param ts        year-on-year inflation term structure handle
          */
-        public YYGenericCPI(final Frequency frequency,
-                            final boolean revised,
-                            final Period lag,
-                            final Currency currency,
-                            final Handle<YoYInflationTermStructure> ts) {
+        public YYGenericCPI(final Frequency frequency, final boolean revised, final Period lag, final Currency currency,
+                final Handle< YoYInflationTermStructure > ts) {
             // ratio=false: genuine YoY (not computed as ratio of zero levels)
             // interpolated=false mirrors C++ v1.42.1 non-interpolated constructor
             super("YY_CPI", new GenericRegion(), revised, /* interpolated= */ false,
-                  /* ratio= */ false, frequency, lag, currency, ts);
+                    /* ratio= */ false, frequency, lag, currency, ts);
         }
 
     }

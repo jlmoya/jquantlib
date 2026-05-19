@@ -29,39 +29,25 @@
 
 package org.jquantlib.instruments;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.QL;
-import org.jquantlib.cashflow.CashFlow;
-import org.jquantlib.cashflow.EquityCashFlow;
-import org.jquantlib.cashflow.IborLeg;
-import org.jquantlib.cashflow.Leg;
-import org.jquantlib.cashflow.OvernightLeg;
+import org.jquantlib.cashflow.*;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.indexes.EquityIndex;
 import org.jquantlib.indexes.IborIndex;
 import org.jquantlib.indexes.InterestRateIndex;
 import org.jquantlib.indexes.OvernightIndex;
-import org.jquantlib.time.BusinessDayConvention;
-import org.jquantlib.time.Calendar;
-import org.jquantlib.time.Date;
-import org.jquantlib.time.Schedule;
-import org.jquantlib.time.TimeUnit;
-import org.jquantlib.time.calendars.NullCalendar;
+import org.jquantlib.time.*;
 
 /**
  * Equity total return swap (TRS).
  *
  * <p>Exchanges the total return on an equity index for a floating
- * (Ibor- or Overnight-linked) funding leg. The equity-leg future
- * value is
+ * (Ibor- or Overnight-linked) funding leg. The equity-leg future value is
  * <pre>
  *   FV^{equity} = N * (I(t, T_M) / I(T_0) - 1)
  * </pre>
- * where {@code N} is the swap notional, {@code I(T_0)} is the value of
- * the equity index on the start date, and {@code I(t, T_M)} is the
- * value at maturity.
+ * where {@code N} is the swap notional, {@code I(T_0)} is the value of the equity index on the start date, and
+ * {@code I(t, T_M)} is the value at maturity.
  *
  * <p>Swap type ({@code Payer} / {@code Receiver}) refers to the equity
  * leg.
@@ -70,13 +56,10 @@ import org.jquantlib.time.calendars.NullCalendar;
  * ({@code ql/instruments/equitytotalreturnswap.{hpp,cpp}}).
  *
  * <p>Java port note: {@code IborLeg} in this codebase does not yet expose
- * {@code withPaymentCalendar} or {@code withPaymentLag}. For the IBOR
- * variant the constructor records those fields for inspection but the
- * generated coupons pay on the schedule date with no extra delay
- * (consistent with the default Java IborCoupon path). The OvernightIndex
- * variant honours both arguments via {@link OvernightLeg}. This deviation
- * from C++ is documented and exercised by the
- * {@code EquityTotalReturnSwapTest} cases that pass {@code paymentDelay=0}.
+ * {@code withPaymentCalendar} or {@code withPaymentLag}. For the IBOR variant the constructor records those fields for
+ * inspection but the generated coupons pay on the schedule date with no extra delay (consistent with the default Java
+ * IborCoupon path). The OvernightIndex variant honours both arguments via {@link OvernightLeg}. This deviation from C++
+ * is documented and exercised by the {@code EquityTotalReturnSwapTest} cases that pass {@code paymentDelay=0}.
  *
  * @author JQuantLib migration team (Phase 5d.5-EQ)
  */
@@ -98,17 +81,10 @@ public class EquityTotalReturnSwap extends Swap {
     // public constructors
     //
 
-    public EquityTotalReturnSwap(final VanillaSwap.Type type,
-                                 final double nominal,
-                                 final Schedule schedule,
-                                 final EquityIndex equityIndex,
-                                 final IborIndex interestRateIndex,
-                                 final DayCounter dayCounter,
-                                 final double margin,
-                                 final double gearing,
-                                 final Calendar paymentCalendar,
-                                 final BusinessDayConvention paymentConvention,
-                                 final int paymentDelay) {
+    public EquityTotalReturnSwap(final VanillaSwap.Type type, final double nominal, final Schedule schedule,
+            final EquityIndex equityIndex, final IborIndex interestRateIndex, final DayCounter dayCounter,
+            final double margin, final double gearing, final Calendar paymentCalendar,
+            final BusinessDayConvention paymentConvention, final int paymentDelay) {
         super(2);
         this.type_ = type;
         this.nominal_ = nominal;
@@ -131,30 +107,19 @@ public class EquityTotalReturnSwap extends Swap {
 
         // Floating leg via IborLeg (paymentCalendar / paymentLag dropped —
         // see class doc).
-        final Leg floatingLeg = new IborLeg(schedule, interestRateIndex)
-                .withNotionals(nominal)
-                .withPaymentDayCounter(dayCounter)
-                .withSpreads(margin)
-                .withGearings(gearing)
-                .withPaymentAdjustment(paymentConvention)
-                .Leg();
+        final Leg floatingLeg = new IborLeg(schedule, interestRateIndex).withNotionals(nominal)
+                .withPaymentDayCounter(dayCounter).withSpreads(margin).withGearings(gearing)
+                .withPaymentAdjustment(paymentConvention).Leg();
         legs.add(floatingLeg);
 
         wirePayerSign();
         wireObservers();
     }
 
-    public EquityTotalReturnSwap(final VanillaSwap.Type type,
-                                 final double nominal,
-                                 final Schedule schedule,
-                                 final EquityIndex equityIndex,
-                                 final OvernightIndex interestRateIndex,
-                                 final DayCounter dayCounter,
-                                 final double margin,
-                                 final double gearing,
-                                 final Calendar paymentCalendar,
-                                 final BusinessDayConvention paymentConvention,
-                                 final int paymentDelay) {
+    public EquityTotalReturnSwap(final VanillaSwap.Type type, final double nominal, final Schedule schedule,
+            final EquityIndex equityIndex, final OvernightIndex interestRateIndex, final DayCounter dayCounter,
+            final double margin, final double gearing, final Calendar paymentCalendar,
+            final BusinessDayConvention paymentConvention, final int paymentDelay) {
         super(2);
         this.type_ = type;
         this.nominal_ = nominal;
@@ -174,15 +139,10 @@ public class EquityTotalReturnSwap extends Swap {
         equityLeg.add(createEquityCashFlow());
         legs.add(equityLeg);
 
-        final Leg floatingLeg = new OvernightLeg(schedule, interestRateIndex)
-                .withNotionals(nominal)
-                .withPaymentDayCounter(dayCounter)
-                .withSpreads(margin)
-                .withGearings(gearing)
-                .withPaymentCalendar(paymentCalendar)
-                .withPaymentAdjustment(paymentConvention)
-                .withPaymentLag(paymentDelay)
-                .leg();
+        final Leg floatingLeg = new OvernightLeg(schedule, interestRateIndex).withNotionals(nominal)
+                .withPaymentDayCounter(dayCounter).withSpreads(margin).withGearings(gearing)
+                .withPaymentCalendar(paymentCalendar).withPaymentAdjustment(paymentConvention)
+                .withPaymentLag(paymentDelay).leg();
         legs.add(floatingLeg);
 
         wirePayerSign();
@@ -194,8 +154,7 @@ public class EquityTotalReturnSwap extends Swap {
     //
 
     /**
-     * Build the single {@link EquityCashFlow}. Mirrors the anonymous-namespace
-     * helper {@code createEquityCashFlow} at
+     * Build the single {@link EquityCashFlow}. Mirrors the anonymous-namespace helper {@code createEquityCashFlow} at
      * {@code ql/instruments/equitytotalreturnswap.cpp:31-49}.
      */
     private CashFlow createEquityCashFlow() {
@@ -203,18 +162,18 @@ public class EquityTotalReturnSwap extends Swap {
         final Date endDate = schedule_.endDate();
 
         Calendar cal = paymentCalendar_;
-        if (cal == null || cal.empty()) {
+        if ( cal == null || cal.empty() ) {
             QL.require(schedule_.calendar() != null && !schedule_.calendar().empty(),
                     "Calendar in schedule cannot be empty");
             cal = schedule_.calendar();
         }
-        final Date paymentDate = cal.advance(endDate, paymentDelay_, TimeUnit.Days,
-                paymentConvention_, schedule_.endOfMonth());
+        final Date paymentDate = cal.advance(endDate, paymentDelay_, TimeUnit.Days, paymentConvention_,
+                schedule_.endOfMonth());
         return new EquityCashFlow(nominal_, equityIndex_, startDate, endDate, paymentDate);
     }
 
     private void wirePayerSign() {
-        switch (type_) {
+        switch ( type_ ) {
         case Payer:
             payer[0] = -1.0;
             payer[1] = +1.0;
@@ -229,8 +188,8 @@ public class EquityTotalReturnSwap extends Swap {
     }
 
     private void wireObservers() {
-        for (final Leg leg : legs) {
-            for (final CashFlow item : leg) {
+        for ( final Leg leg : legs ) {
+            for ( final CashFlow item : leg ) {
                 item.addObserver(this);
             }
         }
@@ -240,27 +199,69 @@ public class EquityTotalReturnSwap extends Swap {
     // public inspectors
     //
 
-    public VanillaSwap.Type type() { return type_; }
-    public double nominal() { return nominal_; }
-    public EquityIndex equityIndex() { return equityIndex_; }
-    public InterestRateIndex interestRateIndex() { return interestRateIndex_; }
-    public Schedule schedule() { return schedule_; }
-    public DayCounter dayCounter() { return dayCounter_; }
-    public double margin() { return margin_; }
-    public double gearing() { return gearing_; }
-    public Calendar paymentCalendar() { return paymentCalendar_; }
-    public BusinessDayConvention paymentConvention() { return paymentConvention_; }
-    public int paymentDelay() { return paymentDelay_; }
+    public VanillaSwap.Type type() {
+        return type_;
+    }
 
-    public Leg equityLeg() { return legs.get(0); }
-    public Leg interestRateLeg() { return legs.get(1); }
+    public double nominal() {
+        return nominal_;
+    }
+
+    public EquityIndex equityIndex() {
+        return equityIndex_;
+    }
+
+    public InterestRateIndex interestRateIndex() {
+        return interestRateIndex_;
+    }
+
+    public Schedule schedule() {
+        return schedule_;
+    }
+
+    public DayCounter dayCounter() {
+        return dayCounter_;
+    }
+
+    public double margin() {
+        return margin_;
+    }
+
+    public double gearing() {
+        return gearing_;
+    }
+
+    public Calendar paymentCalendar() {
+        return paymentCalendar_;
+    }
+
+    public BusinessDayConvention paymentConvention() {
+        return paymentConvention_;
+    }
+
+    public int paymentDelay() {
+        return paymentDelay_;
+    }
+
+    public Leg equityLeg() {
+        return legs.get(0);
+    }
+
+    public Leg interestRateLeg() {
+        return legs.get(1);
+    }
 
     //
     // public results
     //
 
-    public double equityLegNPV() { return legNPV(0); }
-    public double interestRateLegNPV() { return legNPV(1); }
+    public double equityLegNPV() {
+        return legNPV(0);
+    }
+
+    public double interestRateLegNPV() {
+        return legNPV(1);
+    }
 
     /**
      * Mirrors C++ {@code EquityTotalReturnSwap::fairMargin} at

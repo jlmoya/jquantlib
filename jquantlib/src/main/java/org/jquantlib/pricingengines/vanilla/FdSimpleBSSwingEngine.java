@@ -24,22 +24,14 @@
  */
 package org.jquantlib.pricingengines.vanilla;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.exercise.Exercise;
-import org.jquantlib.instruments.Option;
+import org.jquantlib.instruments.DividendSchedule;
 import org.jquantlib.instruments.StrikedTypePayoff;
-import org.jquantlib.instruments.SwingExercise;
 import org.jquantlib.instruments.VanillaSwingOption;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.methods.finitedifferences.StepCondition;
-import org.jquantlib.methods.finitedifferences.meshers.Fdm1dMesher;
-import org.jquantlib.methods.finitedifferences.meshers.FdmBlackScholesMesher;
-import org.jquantlib.methods.finitedifferences.meshers.FdmMesher;
-import org.jquantlib.methods.finitedifferences.meshers.FdmMesherComposite;
-import org.jquantlib.methods.finitedifferences.meshers.Uniform1dMesher;
+import org.jquantlib.methods.finitedifferences.meshers.*;
 import org.jquantlib.methods.finitedifferences.schemes.FdmSchemeDesc;
 import org.jquantlib.methods.finitedifferences.solvers.FdmSimple2dBSSolver;
 import org.jquantlib.methods.finitedifferences.solvers.FdmSolverDesc;
@@ -53,7 +45,9 @@ import org.jquantlib.pricingengines.GenericEngine;
 import org.jquantlib.processes.GeneralizedBlackScholesProcess;
 import org.jquantlib.time.Date;
 import org.jquantlib.util.Observer;
-import org.jquantlib.instruments.DividendSchedule;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Finite-differences Black-Scholes engine for vanilla swing options.
@@ -62,19 +56,17 @@ import org.jquantlib.instruments.DividendSchedule;
  * {@code ql/pricingengines/vanilla/fdsimplebsswingengine.{hpp,cpp}}.
  *
  * <p>Builds a 2D mesh ({@code xGrid} log-spot points × {@code maxRights+1}
- * uniform exercise-counter points) and rolls back a single-asset BS PDE
- * augmented with a {@link FdmSimpleSwingCondition} that consumes exercise
- * rights at the user-supplied exercise dates. Terminal payoff is zero
- * ({@link FdmZeroInnerValue}); cash flows accrue only at exercise times
- * via {@link FdmLogInnerValue} applied to the {@link StrikedTypePayoff}.
+ * uniform exercise-counter points) and rolls back a single-asset BS PDE augmented with a
+ * {@link FdmSimpleSwingCondition} that consumes exercise rights at the user-supplied exercise dates. Terminal payoff is
+ * zero ({@link FdmZeroInnerValue}); cash flows accrue only at exercise times via {@link FdmLogInnerValue} applied to
+ * the {@link StrikedTypePayoff}.
  *
  * <h3>Defaults (matching C++ v1.42.1)</h3>
  * {@code tGrid = 50, xGrid = 100, scheme = Douglas}.
  *
  * @author Phase 5e.5b-CFC-d-170 port
  */
-public class FdSimpleBSSwingEngine
-        extends GenericEngine<VanillaSwingOption.Arguments, VanillaSwingOption.Results>
+public class FdSimpleBSSwingEngine extends GenericEngine< VanillaSwingOption.Arguments, VanillaSwingOption.Results >
         implements Observer {
 
     private final GeneralizedBlackScholesProcess process_;
@@ -88,24 +80,20 @@ public class FdSimpleBSSwingEngine
     }
 
     /** Grid parameters only (default scheme = Douglas). */
-    public FdSimpleBSSwingEngine(final GeneralizedBlackScholesProcess process,
-                                 final int tGrid, final int xGrid) {
+    public FdSimpleBSSwingEngine(final GeneralizedBlackScholesProcess process, final int tGrid, final int xGrid) {
         this(process, tGrid, xGrid, FdmSchemeDesc.Douglas());
     }
 
     /**
      * Full constructor mirroring C++ v1.42.1.
      */
-    public FdSimpleBSSwingEngine(final GeneralizedBlackScholesProcess process,
-                                 final int tGrid,
-                                 final int xGrid,
-                                 final FdmSchemeDesc schemeDesc) {
-        super(new VanillaSwingOption.ArgumentsImpl(),
-              new VanillaSwingOption.ResultsImpl());
+    public FdSimpleBSSwingEngine(final GeneralizedBlackScholesProcess process, final int tGrid, final int xGrid,
+            final FdmSchemeDesc schemeDesc) {
+        super(new VanillaSwingOption.ArgumentsImpl(), new VanillaSwingOption.ResultsImpl());
         QL.require(process != null, "null GBS process");
-        this.process_    = process;
-        this.tGrid_      = tGrid;
-        this.xGrid_      = xGrid;
+        this.process_ = process;
+        this.tGrid_ = tGrid;
+        this.xGrid_ = xGrid;
         this.schemeDesc_ = schemeDesc;
 
         process.addObserver(this);
@@ -114,11 +102,9 @@ public class FdSimpleBSSwingEngine
     @Override
     public void calculate() {
 
-        final VanillaSwingOption.ArgumentsImpl a =
-                (VanillaSwingOption.ArgumentsImpl) arguments_;
+        final VanillaSwingOption.ArgumentsImpl a = (VanillaSwingOption.ArgumentsImpl) arguments_;
 
-        QL.require(a.exercise.type() == Exercise.Type.Bermudan,
-                "Bermudan exercise supported only");
+        QL.require(a.exercise.type() == Exercise.Type.Bermudan, "Bermudan exercise supported only");
 
         // 1. Mesher
         final StrikedTypePayoff payoff = a.payoff;
@@ -127,12 +113,10 @@ public class FdSimpleBSSwingEngine
         final Date maturityDate = a.exercise.lastDate();
         final double maturity = process_.time(maturityDate);
 
-        final Fdm1dMesher equityMesher = new FdmBlackScholesMesher(
-                xGrid_, process_, maturity, payoff.strike(),
+        final Fdm1dMesher equityMesher = new FdmBlackScholesMesher(xGrid_, process_, maturity, payoff.strike(),
                 new DividendSchedule(), 0.0);
 
-        final Fdm1dMesher exerciseMesher = new Uniform1dMesher(
-                0.0, (double) a.maxExerciseRights,
+        final Fdm1dMesher exerciseMesher = new Uniform1dMesher(0.0, a.maxExerciseRights,
                 a.maxExerciseRights + 1);
 
         final FdmMesher mesher = new FdmMesherComposite(equityMesher, exerciseMesher);
@@ -142,13 +126,12 @@ public class FdSimpleBSSwingEngine
         final FdmInnerValueCalculator calculator = new FdmZeroInnerValue();
 
         // 3. Step conditions: Bermudan-style exercise on the swing axis
-        final List<List<Double>> stoppingTimes = new ArrayList<>();
-        final FdmStepConditionComposite.Conditions stepConditions =
-                new FdmStepConditionComposite.Conditions();
+        final List< List< Double > > stoppingTimes = new ArrayList<>();
+        final FdmStepConditionComposite.Conditions stepConditions = new FdmStepConditionComposite.Conditions();
 
         // 3.1 collect exercise times
-        final List<Double> exerciseTimes = new ArrayList<>();
-        for (final Date d : a.exercise.dates()) {
+        final List< Double > exerciseTimes = new ArrayList<>();
+        for ( final Date d : a.exercise.dates() ) {
             final double t = process_.time(d);
             QL.require(t >= 0.0, "exercise dates must not contain past date");
             exerciseTimes.add(t);
@@ -157,27 +140,22 @@ public class FdSimpleBSSwingEngine
 
         // The exercise cash-flow calculator operates on the spot (direction 0)
         // log-payoff.
-        final FdmInnerValueCalculator exerciseCalculator =
-                new FdmLogInnerValue(payoff, mesher, 0);
+        final FdmInnerValueCalculator exerciseCalculator = new FdmLogInnerValue(payoff, mesher, 0);
 
-        final StepCondition<Array> swingCondition = new FdmSimpleSwingCondition(
-                exerciseTimes, mesher, exerciseCalculator,
-                1, a.minExerciseRights);
+        final StepCondition< Array > swingCondition = new FdmSimpleSwingCondition(exerciseTimes, mesher,
+                exerciseCalculator, 1, a.minExerciseRights);
         stepConditions.add(swingCondition);
 
-        final FdmStepConditionComposite conditions =
-                new FdmStepConditionComposite(stoppingTimes, stepConditions);
+        final FdmStepConditionComposite conditions = new FdmStepConditionComposite(stoppingTimes, stepConditions);
 
         // 4. Boundary conditions (empty)
         final FdmBoundaryConditionSet boundaries = new FdmBoundaryConditionSet();
 
         // 5. Solver
-        final FdmSolverDesc solverDesc = new FdmSolverDesc(
-                mesher, boundaries, conditions, calculator,
-                maturity, tGrid_, 0);
+        final FdmSolverDesc solverDesc = new FdmSolverDesc(mesher, boundaries, conditions, calculator, maturity, tGrid_,
+                0);
 
-        final FdmSimple2dBSSolver solver = new FdmSimple2dBSSolver(
-                process_, payoff.strike(), solverDesc, schemeDesc_);
+        final FdmSimple2dBSSolver solver = new FdmSimple2dBSSolver(process_, payoff.strike(), solverDesc, schemeDesc_);
 
         final double spot = process_.x0();
 
@@ -186,12 +164,11 @@ public class FdSimpleBSSwingEngine
         // grants exactly maxRights-1 remaining rights from this slice).
         // C++ uses 1.0 as the y-coord directly; the uniform mesher places
         // node k at integer location k.
-        final VanillaSwingOption.ResultsImpl r =
-                (VanillaSwingOption.ResultsImpl) results_;
-        r.value             = solver.valueAt(spot, 1.0);
-        r.greeks().delta    = solver.deltaAt(spot, 1.0, spot * 0.01);
-        r.greeks().gamma    = solver.gammaAt(spot, 1.0, spot * 0.01);
-        r.greeks().theta    = solver.thetaAt(spot, 1.0);
+        final VanillaSwingOption.ResultsImpl r = (VanillaSwingOption.ResultsImpl) results_;
+        r.value = solver.valueAt(spot, 1.0);
+        r.greeks().delta = solver.deltaAt(spot, 1.0, spot * 0.01);
+        r.greeks().gamma = solver.gammaAt(spot, 1.0, spot * 0.01);
+        r.greeks().theta = solver.thetaAt(spot, 1.0);
     }
 
     @Override

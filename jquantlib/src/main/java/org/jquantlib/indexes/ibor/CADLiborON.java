@@ -49,38 +49,31 @@ import org.jquantlib.time.Period;
 import org.jquantlib.time.calendars.Canada;
 
 /**
- * Overnight Canadian Dollar LIBOR index
- * See <http://www.bba.org.uk/bba/jsp/polopoly.jsp?d=225&a=1414>.
- * This is the rate fixed in London by BBA. Use CDOR if
- * you're interested in the Canadian fixing by IDA.
+ * Overnight Canadian Dollar LIBOR index See <http://www.bba.org.uk/bba/jsp/polopoly.jsp?d=225&a=1414>. This is the rate
+ * fixed in London by BBA. Use CDOR if you're interested in the Canadian fixing by IDA.
  */
 public class CADLiborON extends DailyTenorLibor {
 
-	public CADLiborON(final Period tenor) {
-		this(tenor, new Handle<YieldTermStructure>(
-						new AbstractYieldTermStructure() {
-							@Override
-							protected double discountImpl(final double t) {
-								throw new UnsupportedOperationException();
-							}
-							@Override
-							public Date maxDate() {
-								throw new UnsupportedOperationException();
-							}
-						}
-				));
-	}
+    public CADLiborON(final Period tenor) {
+        this(tenor, new Handle< YieldTermStructure >(new AbstractYieldTermStructure() {
+            @Override
+            protected double discountImpl(final double t) {
+                throw new UnsupportedOperationException();
+            }
 
-	public CADLiborON(final Period tenor,
-			final Handle<YieldTermStructure> h) {
-		// align(indexes.ibor): match C++ v1.42.1 cadlibor.hpp (CADLiborON)
-		// dayCounter=Actual365Fixed (was Actual360). Same correction as the
-		// (overnight) CAD LIBOR template per OpenGamma "Interest Rate
-		// Instruments and Market Conventions Guide".
-		super("CADLibor", 0,
-				new CADCurrency(),
-				new Canada(),
-				new Actual365Fixed(), h);
-	}
+            @Override
+            public Date maxDate() {
+                throw new UnsupportedOperationException();
+            }
+        }));
+    }
+
+    public CADLiborON(final Period tenor, final Handle< YieldTermStructure > h) {
+        // align(indexes.ibor): match C++ v1.42.1 cadlibor.hpp (CADLiborON)
+        // dayCounter=Actual365Fixed (was Actual360). Same correction as the
+        // (overnight) CAD LIBOR template per OpenGamma "Interest Rate
+        // Instruments and Market Conventions Guide".
+        super("CADLibor", 0, new CADCurrency(), new Canada(), new Actual365Fixed(), h);
+    }
 
 }

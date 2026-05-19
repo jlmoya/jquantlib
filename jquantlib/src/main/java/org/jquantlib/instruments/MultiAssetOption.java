@@ -137,19 +137,18 @@ public class MultiAssetOption extends Option {
     public void fetchResults(final PricingEngine.Results r) /* @ReadOnly */ {
         super.fetchResults(r);
 
-        QL.require(MultiAssetOption.Results.class.isAssignableFrom(r.getClass()),
-                ReflectConstants.WRONG_ARGUMENT_TYPE);
+        QL.require(MultiAssetOption.Results.class.isAssignableFrom(r.getClass()), ReflectConstants.WRONG_ARGUMENT_TYPE);
 
         final MultiAssetOption.ResultsImpl ri = (MultiAssetOption.ResultsImpl) r;
         final Option.GreeksImpl results = ri.greeks();
 
         QL.ensure(results != null, "no greeks returned from pricing engine");
 
-        delta       = results.delta;
-        gamma       = results.gamma;
-        theta       = results.theta;
-        vega        = results.vega;
-        rho         = results.rho;
+        delta = results.delta;
+        gamma = results.gamma;
+        theta = results.theta;
+        vega = results.vega;
+        rho = results.rho;
         dividendRho = results.dividendRho;
     }
 
@@ -160,20 +159,24 @@ public class MultiAssetOption extends Option {
     /**
      * basic multi-asset option arguments (inherits from Option.Arguments)
      */
-    public interface Arguments extends Option.Arguments { /* marking interface */ }
+    public interface Arguments extends Option.Arguments { /* marking interface */
+    }
 
     /**
      * Results from multi-asset option calculation
      */
-    public interface Results extends Instrument.Results, Option.Greeks { /* marking interface */ }
+    public interface Results extends Instrument.Results, Option.Greeks { /* marking interface */
+    }
 
-    public interface Engine extends PricingEngine, Observer { /* marking interface */ }
+    public interface Engine extends PricingEngine, Observer { /* marking interface */
+    }
 
     //
     // public static inner classes
     //
 
-    public static class ArgumentsImpl extends Option.ArgumentsImpl implements MultiAssetOption.Arguments { /* marking */ }
+    public static class ArgumentsImpl extends Option.ArgumentsImpl implements MultiAssetOption.Arguments { /* marking */
+    }
 
     public static class ResultsImpl extends Instrument.ResultsImpl implements MultiAssetOption.Results {
 
@@ -198,15 +201,14 @@ public class MultiAssetOption extends Option {
      * The pricing engine for multi-asset options
      */
     public static abstract class EngineImpl
-            extends GenericEngine<MultiAssetOption.ArgumentsImpl, MultiAssetOption.ResultsImpl>
+            extends GenericEngine< MultiAssetOption.ArgumentsImpl, MultiAssetOption.ResultsImpl >
             implements MultiAssetOption.Engine {
 
         public EngineImpl() {
             super(new ArgumentsImpl(), new ResultsImpl());
         }
 
-        public EngineImpl(final MultiAssetOption.ArgumentsImpl arguments,
-                          final MultiAssetOption.ResultsImpl results) {
+        public EngineImpl(final MultiAssetOption.ArgumentsImpl arguments, final MultiAssetOption.ResultsImpl results) {
             super(arguments, results);
         }
     }

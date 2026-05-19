@@ -49,7 +49,7 @@ package org.jquantlib.instruments;
  */
 public abstract class StrikedTypePayoff extends TypePayoff {
 
-	//
+    //
     // protected fields
     //
 
@@ -63,17 +63,17 @@ public abstract class StrikedTypePayoff extends TypePayoff {
     //
 
     /**
-	 * Constructs a typed {@link Payoff} with a fixed strike price
-	 *
-	 * @param type is an {@link Option.Type}
-	 * @param strike is the strike price
-	 */
+     * Constructs a typed {@link Payoff} with a fixed strike price
+     *
+     * @param type   is an {@link Option.Type}
+     * @param strike is the strike price
+     */
     public StrikedTypePayoff(final Option.Type type, final /*@Real*/ double strike) {
-		super(type);
-		this.strike = strike;
-	}
+        super(type);
+        this.strike = strike;
+    }
 
-	//
+    //
     // public final methods
     //
 
@@ -81,8 +81,8 @@ public abstract class StrikedTypePayoff extends TypePayoff {
      * @return the strike value
      */
     public final /*@Real*/ double strike() {
-		return strike;
-	}
+        return strike;
+    }
 
     //
     // overrides Payoff
@@ -90,9 +90,7 @@ public abstract class StrikedTypePayoff extends TypePayoff {
 
     @Override
     public String description() /* @ReadOnly */ {
-        final StringBuilder sb = new StringBuilder();
-        sb.append(super.description()).append(", ").append(strike).append(" strike");
-        return sb.toString();
+        return super.description() + ", " + strike + " strike";
     }
 
 }

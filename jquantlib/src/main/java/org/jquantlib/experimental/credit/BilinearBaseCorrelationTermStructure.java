@@ -20,8 +20,6 @@
 
 package org.jquantlib.experimental.credit;
 
-import java.util.List;
-
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.lang.annotation.Natural;
 import org.jquantlib.math.interpolations.BilinearInterpolation;
@@ -30,6 +28,8 @@ import org.jquantlib.quotes.Quote;
 import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Period;
+
+import java.util.List;
 
 /**
  * BaseCorrelationTermStructure with bilinear 2D interpolation.
@@ -42,14 +42,9 @@ import org.jquantlib.time.Period;
  */
 public class BilinearBaseCorrelationTermStructure extends BaseCorrelationTermStructure {
 
-    public BilinearBaseCorrelationTermStructure(
-            final @Natural int settlementDays,
-            final Calendar cal,
-            final BusinessDayConvention bdc,
-            final List<Period> tenors,
-            final List<Double> lossLevel,
-            final List<List<Handle<Quote>>> correls,
-            final DayCounter dc) {
+    public BilinearBaseCorrelationTermStructure(final @Natural int settlementDays, final Calendar cal,
+            final BusinessDayConvention bdc, final List< Period > tenors, final List< Double > lossLevel,
+            final List< List< Handle< Quote > > > correls, final DayCounter dc) {
         super(settlementDays, cal, bdc, tenors, lossLevel, correls, dc);
     }
 
@@ -59,7 +54,6 @@ public class BilinearBaseCorrelationTermStructure extends BaseCorrelationTermStr
         //   interpolation_ = BilinearInterpolation(trancheTimes_.begin(),
         //       trancheTimes_.end(), lossLevel_.begin(), lossLevel_.end(),
         //       correlations_);
-        this.interpolation = new BilinearInterpolation(
-                trancheTimesArray(), lossLevelArray(), this.correlations);
+        this.interpolation = new BilinearInterpolation(trancheTimesArray(), lossLevelArray(), this.correlations);
     }
 }

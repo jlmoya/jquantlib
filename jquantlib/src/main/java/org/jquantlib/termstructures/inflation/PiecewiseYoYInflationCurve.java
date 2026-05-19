@@ -30,10 +30,6 @@
 
 package org.jquantlib.termstructures.inflation;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.lang.exceptions.LibraryException;
@@ -45,15 +41,17 @@ import org.jquantlib.math.solvers1D.FiniteDifferenceNewtonSafe;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Frequency;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 /**
- * Piecewise year-on-year inflation term structure — Java port of
- * QuantLib v1.42.1 {@code PiecewiseYoYInflationCurve<Interpolator,
- * Bootstrap, Traits>} with the default template arguments
+ * Piecewise year-on-year inflation term structure — Java port of QuantLib v1.42.1
+ * {@code PiecewiseYoYInflationCurve<Interpolator, Bootstrap, Traits>} with the default template arguments
  * ({@code Bootstrap = IterativeBootstrap}, {@code Traits = YoYInflationTraits}).
  *
  * <p>Sister class to {@link PiecewiseZeroInflationCurve}: same algorithm,
- * different traits ({@link YoYInflationTraits}) and different helper type
- * ({@link YearOnYearInflationSwapHelper}).
+ * different traits ({@link YoYInflationTraits}) and different helper type ({@link YearOnYearInflationSwapHelper}).
  *
  * <p>Bootstrap is performed lazily on first access; convergence is at the
  * {@code accuracy} threshold passed at construction.
@@ -62,14 +60,13 @@ import org.jquantlib.time.Frequency;
  * @see YoYInflationTraits
  * @see YearOnYearInflationSwapHelper
  */
-public class PiecewiseYoYInflationCurve<I extends Interpolator>
-        extends InterpolatedYoYInflationCurve<I> {
+public class PiecewiseYoYInflationCurve< I extends Interpolator > extends InterpolatedYoYInflationCurve< I > {
 
     //
     // private fields
     //
 
-    private final List<YearOnYearInflationSwapHelper> instruments;
+    private final List< YearOnYearInflationSwapHelper > instruments;
     private final YoYInflationTraits traits;
     private final double accuracy;
     private boolean validCurve;
@@ -80,27 +77,15 @@ public class PiecewiseYoYInflationCurve<I extends Interpolator>
     // public constructors
     //
 
-    public PiecewiseYoYInflationCurve(
-            final Class<I> classI,
-            final Date referenceDate,
-            final Date baseDate,
-            final double baseYoYRate,
-            final Frequency frequency,
-            final DayCounter dayCounter,
-            final List<YearOnYearInflationSwapHelper> instruments) {
-        this(classI, referenceDate, baseDate, baseYoYRate, frequency,
-             dayCounter, instruments, 1.0e-12);
+    public PiecewiseYoYInflationCurve(final Class< I > classI, final Date referenceDate, final Date baseDate,
+            final double baseYoYRate, final Frequency frequency, final DayCounter dayCounter,
+            final List< YearOnYearInflationSwapHelper > instruments) {
+        this(classI, referenceDate, baseDate, baseYoYRate, frequency, dayCounter, instruments, 1.0e-12);
     }
 
-    public PiecewiseYoYInflationCurve(
-            final Class<I> classI,
-            final Date referenceDate,
-            final Date baseDate,
-            final double baseYoYRate,
-            final Frequency frequency,
-            final DayCounter dayCounter,
-            final List<YearOnYearInflationSwapHelper> instruments,
-            final double accuracy) {
+    public PiecewiseYoYInflationCurve(final Class< I > classI, final Date referenceDate, final Date baseDate,
+            final double baseYoYRate, final Frequency frequency, final DayCounter dayCounter,
+            final List< YearOnYearInflationSwapHelper > instruments, final double accuracy) {
         super(classI, referenceDate, baseDate, baseYoYRate, frequency, dayCounter);
         QL.require(instruments != null && !instruments.isEmpty(),
                 "no helpers provided to piecewise YoY inflation curve");
@@ -110,7 +95,7 @@ public class PiecewiseYoYInflationCurve<I extends Interpolator>
         this.validCurve = false;
         this.calculated = false;
 
-        for (final YearOnYearInflationSwapHelper h : this.instruments) {
+        for ( final YearOnYearInflationSwapHelper h : this.instruments ) {
             h.addObserver(this);
         }
     }
@@ -120,7 +105,8 @@ public class PiecewiseYoYInflationCurve<I extends Interpolator>
     //
 
     private void ensureCalculated() {
-        if (calculated || calculating) return;
+        if ( calculated || calculating )
+            return;
         calculating = true;
         try {
             performCalculations();
@@ -131,12 +117,12 @@ public class PiecewiseYoYInflationCurve<I extends Interpolator>
     }
 
     /**
-     * Invalidates the bootstrap when any observed input changes. Mirrors C++
-     * {@code LazyObject::update()} which resets {@code calculated_} to false.
+     * Invalidates the bootstrap when any observed input changes. Mirrors C++ {@code LazyObject::update()} which resets
+     * {@code calculated_} to false.
      */
     @Override
     public void update() {
-        if (!calculating) {
+        if ( !calculating ) {
             calculated = false;
             validCurve = false;
         }
@@ -161,16 +147,28 @@ public class PiecewiseYoYInflationCurve<I extends Interpolator>
     }
 
     @Override
-    public Date[] dates() { ensureCalculated(); return super.dates(); }
+    public Date[] dates() {
+        ensureCalculated();
+        return super.dates();
+    }
 
     @Override
-    public double[] times() { ensureCalculated(); return super.times(); }
+    public double[] times() {
+        ensureCalculated();
+        return super.times();
+    }
 
     @Override
-    public double[] data() { ensureCalculated(); return super.data(); }
+    public double[] data() {
+        ensureCalculated();
+        return super.data();
+    }
 
     @Override
-    public double[] rates() { ensureCalculated(); return super.data(); }
+    public double[] rates() {
+        ensureCalculated();
+        return super.data();
+    }
 
     //
     // bootstrap loop — mirrors C++ IterativeBootstrap::calculate
@@ -181,15 +179,13 @@ public class PiecewiseYoYInflationCurve<I extends Interpolator>
 
         instruments.sort((a, b) -> a.latestDate().compareTo(b.latestDate()));
 
-        for (int i = 1; i < n; ++i) {
-            QL.require(!instruments.get(i - 1).latestDate()
-                            .eq(instruments.get(i).latestDate()),
+        for ( int i = 1; i < n; ++i ) {
+            QL.require(!instruments.get(i - 1).latestDate().eq(instruments.get(i).latestDate()),
                     "two instruments have the same maturity");
         }
 
-        for (int i = 0; i < n; ++i) {
-            QL.require(instruments.get(i).quoteIsValid(),
-                    "instrument has an invalid quote");
+        for ( int i = 0; i < n; ++i ) {
+            QL.require(instruments.get(i).quoteIsValid(), "instrument has an invalid quote");
         }
 
         // Pre-bootstrap dates / times / data: dates[0] = baseDate, dates[i+1]
@@ -209,7 +205,7 @@ public class PiecewiseYoYInflationCurve<I extends Interpolator>
         // overwritten in the bootstrap loop — but matters for the first
         // iteration's interpolation extension. Match C++ exactly.
         final double iv = newData[0];
-        for (int i = 0; i < n; ++i) {
+        for ( int i = 0; i < n; ++i ) {
             newDates[i + 1] = instruments.get(i).latestDate();
             newTimes[i + 1] = timeFromReference(newDates[i + 1]);
             newData[i + 1] = iv;
@@ -219,7 +215,7 @@ public class PiecewiseYoYInflationCurve<I extends Interpolator>
         setTimes(newTimes);
         setData(newData);
 
-        for (int i = 0; i < n; ++i) {
+        for ( int i = 0; i < n; ++i ) {
             instruments.get(i).setTermStructure(this);
         }
 
@@ -233,13 +229,12 @@ public class PiecewiseYoYInflationCurve<I extends Interpolator>
         final FiniteDifferenceNewtonSafe solver = new FiniteDifferenceNewtonSafe();
         final int maxIterations = traits.maxIterations();
 
-        for (int iteration = 0; ; ++iteration) {
+        for ( int iteration = 0; ; ++iteration ) {
             final double[] previousData = data().clone();
 
-            setInterpolation(interpolator().interpolate(
-                    new Array(times()), new Array(data())));
+            setInterpolation(interpolator().interpolate(new Array(times()), new Array(data())));
 
-            for (int i = 1; i < n + 1; ++i) {
+            for ( int i = 1; i < n + 1; ++i ) {
                 final YearOnYearInflationSwapHelper instrument = instruments.get(i - 1);
                 // Mirror C++ Traits::guess(i, ts_, validData, firstAliveHelper_)
                 // exactly: validData ? data[i] : avgInflation.
@@ -250,17 +245,16 @@ public class PiecewiseYoYInflationCurve<I extends Interpolator>
                 final double min = traits.minValueAfter(i, curData, validData);
                 final double max = traits.maxValueAfter(i, curData, validData);
                 // Match C++ guess-bracket adjustment exactly (iterativebootstrap.hpp:289-293).
-                if (guess >= max) {
+                if ( guess >= max ) {
                     guess = max - (max - min) / 5.0;
-                } else if (guess <= min) {
+                } else if ( guess <= min ) {
                     guess = min + (max - min) / 5.0;
                 }
 
-                if (!validCurve && iteration == 0) {
+                if ( !validCurve && iteration == 0 ) {
                     final double[] partialTimes = Arrays.copyOf(times(), i + 1);
                     final double[] partialData = Arrays.copyOf(data(), i + 1);
-                    setInterpolation(interpolator().interpolate(
-                            new Array(partialTimes), new Array(partialData)));
+                    setInterpolation(interpolator().interpolate(new Array(partialTimes), new Array(partialData)));
                 }
                 interpolation().update();
 
@@ -273,37 +267,34 @@ public class PiecewiseYoYInflationCurve<I extends Interpolator>
                     r = validData
                             ? solver.solve(error, accuracy, guess, min, max)
                             : firstSolver.solve(error, accuracy, guess, min, max);
-                } catch (final RuntimeException e) {
+                } catch ( final RuntimeException e ) {
                     validCurve = false;
                     throw new LibraryException(
-                            "could not bootstrap YoY inflation curve at instrument " + i +
-                            " (latest date " + instruments.get(i - 1).latestDate() + "): " +
-                            e.getMessage(), e);
+                            "could not bootstrap YoY inflation curve at instrument " + i + " (latest date "
+                                    + instruments.get(i - 1).latestDate() + "): " + e.getMessage(), e);
                 }
                 traits.updateGuess(data(), r, i);
             }
 
-            setInterpolation(interpolator().interpolate(
-                    new Array(times()), new Array(data())));
+            setInterpolation(interpolator().interpolate(new Array(times()), new Array(data())));
 
-            if (!interpolator().global()) {
+            if ( !interpolator().global() ) {
                 break;
-            } else if (!validCurve && iteration == 0) {
+            } else if ( !validCurve && iteration == 0 ) {
                 continue;
             }
 
             double improvement = 0.0;
-            for (int i = 1; i < n + 1; ++i) {
+            for ( int i = 1; i < n + 1; ++i ) {
                 improvement = Math.max(improvement, Math.abs(data()[i] - previousData[i]));
             }
-            if (improvement <= accuracy) {
+            if ( improvement <= accuracy ) {
                 break;
             }
 
             QL.require(iteration + 1 < maxIterations,
-                    "convergence not reached after " + (iteration + 1) +
-                    " iterations; last improvement " + improvement +
-                    ", required accuracy " + accuracy);
+                    "convergence not reached after " + (iteration + 1) + " iterations; last improvement " + improvement
+                            + ", required accuracy " + accuracy);
         }
         validCurve = true;
     }
@@ -314,14 +305,12 @@ public class PiecewiseYoYInflationCurve<I extends Interpolator>
 
     private static final class BootstrapErrorFn implements Ops.DoubleOp {
         private final YearOnYearInflationSwapHelper helper;
-        private final PiecewiseYoYInflationCurve<?> curve;
+        private final PiecewiseYoYInflationCurve< ? > curve;
         private final int idx;
         private final int size;
 
-        BootstrapErrorFn(final YearOnYearInflationSwapHelper helper,
-                         final PiecewiseYoYInflationCurve<?> curve,
-                         final int idx,
-                         final int size) {
+        BootstrapErrorFn(final YearOnYearInflationSwapHelper helper, final PiecewiseYoYInflationCurve< ? > curve,
+                final int idx, final int size) {
             this.helper = helper;
             this.curve = curve;
             this.idx = idx;
@@ -333,8 +322,7 @@ public class PiecewiseYoYInflationCurve<I extends Interpolator>
             curve.traits.updateGuess(curve.data(), x, idx);
             final double[] partialT = java.util.Arrays.copyOf(curve.times(), size);
             final double[] partialD = java.util.Arrays.copyOf(curve.data(), size);
-            curve.setInterpolation(curve.interpolator().interpolate(
-                    new Array(partialT), new Array(partialD)));
+            curve.setInterpolation(curve.interpolator().interpolate(new Array(partialT), new Array(partialD)));
             return helper.quoteError();
         }
     }

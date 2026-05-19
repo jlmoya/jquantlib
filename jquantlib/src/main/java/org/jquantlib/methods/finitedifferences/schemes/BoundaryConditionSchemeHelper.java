@@ -25,11 +25,10 @@ import org.jquantlib.methods.finitedifferences.utilities.BoundaryCondition;
 import org.jquantlib.methods.finitedifferences.utilities.FdmBoundaryConditionSet;
 
 /**
- * Helper that fans out boundary-condition calls to every
- * {@link BoundaryCondition} in an {@link FdmBoundaryConditionSet}.
+ * Helper that fans out boundary-condition calls to every {@link BoundaryCondition} in an
+ * {@link FdmBoundaryConditionSet}.
  * <p>
- * Java port of v1.42.1
- * ql/methods/finitedifferences/schemes/boundaryconditionschemehelper.hpp.
+ * Java port of v1.42.1 ql/methods/finitedifferences/schemes/boundaryconditionschemehelper.hpp.
  *
  * @author Phase 2h WI-1 port
  */
@@ -42,31 +41,31 @@ final class BoundaryConditionSchemeHelper {
     }
 
     void applyBeforeApplying(final FdmLinearOp op) {
-        for (final BoundaryCondition<FdmLinearOp> bc : bcSet) {
+        for ( final BoundaryCondition< FdmLinearOp > bc : bcSet ) {
             bc.applyBeforeApplying(op);
         }
     }
 
     void applyBeforeSolving(final FdmLinearOp op, final Array a) {
-        for (final BoundaryCondition<FdmLinearOp> bc : bcSet) {
+        for ( final BoundaryCondition< FdmLinearOp > bc : bcSet ) {
             bc.applyBeforeSolving(op, a);
         }
     }
 
     void applyAfterApplying(final Array a) {
-        for (final BoundaryCondition<FdmLinearOp> bc : bcSet) {
+        for ( final BoundaryCondition< FdmLinearOp > bc : bcSet ) {
             bc.applyAfterApplying(a);
         }
     }
 
     void applyAfterSolving(final Array a) {
-        for (final BoundaryCondition<FdmLinearOp> bc : bcSet) {
+        for ( final BoundaryCondition< FdmLinearOp > bc : bcSet ) {
             bc.applyAfterSolving(a);
         }
     }
 
     void setTime(final double t) {
-        for (final BoundaryCondition<FdmLinearOp> bc : bcSet) {
+        for ( final BoundaryCondition< FdmLinearOp > bc : bcSet ) {
             bc.setTime(t);
         }
     }

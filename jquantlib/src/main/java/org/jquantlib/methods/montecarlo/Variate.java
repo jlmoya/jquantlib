@@ -25,6 +25,6 @@ package org.jquantlib.methods.montecarlo;
  */
 public interface Variate {
 
- // Tagging interface
- 
+    // Tagging interface
+
 }

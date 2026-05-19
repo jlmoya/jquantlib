@@ -47,41 +47,46 @@ import org.jquantlib.math.matrixutilities.Array;
 /**
  * Interface for 1-D interpolations.
  * <p>
- * Classes implementing from this interface will provide interpolated
- * values from two sequences of equal length, representing
- * discretized values of a variable and a function of the former,
- * respectively.
+ * Classes implementing from this interface will provide interpolated values from two sequences of equal length,
+ * representing discretized values of a variable and a function of the former, respectively.
  *
  * @author Richard Gomes
  */
 public interface Interpolation extends Extrapolator, Ops.DoubleOp {
 
-    public boolean empty() /*@ReadOnly*/;
+    boolean empty() /*@ReadOnly*/;
 
-    public double op(final double x, boolean allowExtrapolation) /*@ReadOnly*/;
-    public double primitive(final double x, boolean allowExtrapolation) /*@ReadOnly*/;
-    public double derivative(final double x, boolean allowExtrapolation) /*@ReadOnly*/;
-    public double secondDerivative(final double x, boolean allowExtrapolation) /*@ReadOnly*/;
+    double op(final double x, boolean allowExtrapolation) /*@ReadOnly*/;
 
-    public double op(final double x) /*@ReadOnly*/;
-    public double primitive(final double x) /*@ReadOnly*/;
-    public double derivative(final double x) /*@ReadOnly*/;
-    public double secondDerivative(final double x) /*@ReadOnly*/;
+    double primitive(final double x, boolean allowExtrapolation) /*@ReadOnly*/;
 
-    public double xMin() /*@ReadOnly*/;
-    public double xMax() /*@ReadOnly*/;
+    double derivative(final double x, boolean allowExtrapolation) /*@ReadOnly*/;
 
-    public boolean isInRange(final double x) /*@ReadOnly*/;
+    double secondDerivative(final double x, boolean allowExtrapolation) /*@ReadOnly*/;
 
-    public void update();
+    double op(final double x) /*@ReadOnly*/;
 
+    double primitive(final double x) /*@ReadOnly*/;
 
-    public interface Interpolator {
+    double derivative(final double x) /*@ReadOnly*/;
 
-        public boolean global() /*@ReadOnly*/;
-        public int requiredPoints() /*@ReadOnly*/;
+    double secondDerivative(final double x) /*@ReadOnly*/;
 
-        public Interpolation interpolate(final Array vx, final Array vy);
+    double xMin() /*@ReadOnly*/;
+
+    double xMax() /*@ReadOnly*/;
+
+    boolean isInRange(final double x) /*@ReadOnly*/;
+
+    void update();
+
+    interface Interpolator {
+
+        boolean global() /*@ReadOnly*/;
+
+        int requiredPoints() /*@ReadOnly*/;
+
+        Interpolation interpolate(final Array vx, final Array vy);
 
     }
 

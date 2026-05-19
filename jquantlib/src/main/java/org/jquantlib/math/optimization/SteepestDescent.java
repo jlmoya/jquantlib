@@ -47,7 +47,7 @@ public class SteepestDescent extends LineSearchBasedMethod {
         // classical initial value for line-search step
         double t = 1.0;
         // set gold at the size of the optimization problem search direction
-        Array gold  = new Array(lineSearch_.searchDirection().size());
+        Array gold = new Array(lineSearch_.searchDirection().size());
         Array gdiff = new Array(lineSearch_.searchDirection().size());
 
         P.setFunctionValue(P.valueAndGradient(gold, x_));
@@ -58,16 +58,13 @@ public class SteepestDescent extends LineSearchBasedMethod {
         do {
             // Linesearch
             t = lineSearch_.evaluate(P, ecType, endCriteria, t);
-            if (lineSearch_.succeed_ == false) throw new ArithmeticException("line search failed");
+            if ( !lineSearch_.succeed_ )
+                throw new ArithmeticException("line search failed");
             // End
-            end = endCriteria.get(iterationNumber,
-                    stationaryStateIterationNumber_,
+            end = endCriteria.get(iterationNumber, stationaryStateIterationNumber_,
                     true, //FIXME: it should be in the problem
-                    P.functionValue(),
-                    Math.sqrt(P.gradientNormValue()),
-                    lineSearch_.lastFunctionValue(),
-                    Math.sqrt(lineSearch_.lastGradientNorm2()),
-                    ecType
+                    P.functionValue(), Math.sqrt(P.gradientNormValue()), lineSearch_.lastFunctionValue(),
+                    Math.sqrt(lineSearch_.lastGradientNorm2()), ecType
                     //FIXME: it's never been used! ???
                     // , normdiff
             );
@@ -87,7 +84,7 @@ public class SteepestDescent extends LineSearchBasedMethod {
 
             // Increase iteration number
             ++iterationNumber;
-        } while (end == false);
+        } while ( !end );
 
         P.setCurrentValue(x_);
         return ecType[0];

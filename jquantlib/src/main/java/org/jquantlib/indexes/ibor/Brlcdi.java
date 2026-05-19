@@ -33,40 +33,35 @@ import org.jquantlib.time.calendars.Brazil;
 /**
  * BRL-CDI overnight index.
  * <p>
- * Port of C++ QuantLib v1.42.1 {@code ql/indexes/ibor/cdi.hpp/cpp}
- * ({@code Cdi}). Relevant for Brazilian swaps; see
+ * Port of C++ QuantLib v1.42.1 {@code ql/indexes/ibor/cdi.hpp/cpp} ({@code Cdi}). Relevant for Brazilian swaps; see
  * <a href="https://en.wikipedia.org/wiki/Brazilian_Swap">Brazilian Swap</a>.
  * <p>
- * The forecast-fixing formula differs from the standard {@link OvernightIndex}:
- * the discount-factor ratio is compounded with an exponent of
- * {@code 1/yearFraction} rather than divided by the year fraction, to match
- * the Brazilian-market 252-business-day compounding convention.
+ * The forecast-fixing formula differs from the standard {@link OvernightIndex}: the discount-factor ratio is compounded
+ * with an exponent of {@code 1/yearFraction} rather than divided by the year fraction, to match the Brazilian-market
+ * 252-business-day compounding convention.
  * <p>
- * Reference: Zine-eddine, Arroub. "OpenGamma Quantitative research Brazilian
- * Swaps", London, December 2013, paragraph 5.
- *
- * @category indexes
+ * Reference: Zine-eddine, Arroub. "OpenGamma Quantitative research Brazilian Swaps", London, December 2013, paragraph
+ * 5.
  *
  * @author JQuantLib migration team
+ * @category indexes
  */
 public class Brlcdi extends OvernightIndex {
 
-    public Brlcdi(final Handle<YieldTermStructure> h) {
-        super("CDI", 0, new BRLCurrency(),
-              new Brazil(Brazil.Market.SETTLEMENT),
-              new Business252(new Brazil(Brazil.Market.SETTLEMENT)), h);
+    public Brlcdi(final Handle< YieldTermStructure > h) {
+        super("CDI", 0, new BRLCurrency(), new Brazil(Brazil.Market.SETTLEMENT),
+                new Business252(new Brazil(Brazil.Market.SETTLEMENT)), h);
     }
 
     public Brlcdi() {
-        this(new Handle<YieldTermStructure>());
+        this(new Handle< YieldTermStructure >());
     }
 
     /**
-     * Overrides the base IborIndex forecast to use the BRL-CDI 252-business-day
-     * compounding convention: {@code (Df_start / Df_end)^(1/yf) - 1}.
+     * Overrides the base IborIndex forecast to use the BRL-CDI 252-business-day compounding convention:
+     * {@code (Df_start / Df_end)^(1/yf) - 1}.
      * <p>
-     * C++ reference: {@code Cdi::forecastFixing} in
-     * {@code ql/indexes/ibor/cdi.cpp}.
+     * C++ reference: {@code Cdi::forecastFixing} in {@code ql/indexes/ibor/cdi.cpp}.
      */
     @Override
     protected double forecastFixing(final Date fixingDate) {
@@ -76,9 +71,8 @@ public class Brlcdi extends OvernightIndex {
 
         QL.require(yf > 0.0, "year fraction (" + yf + ") must be positive");
 
-        final Handle<YieldTermStructure> ts = termStructure();
-        QL.require(!ts.empty(),
-                "null term structure set to this instance of " + name());
+        final Handle< YieldTermStructure > ts = termStructure();
+        QL.require(!ts.empty(), "null term structure set to this instance of " + name());
 
         final double discountStart = ts.currentLink().discount(startDate);
         final double discountEnd = ts.currentLink().discount(endDate);
@@ -86,7 +80,7 @@ public class Brlcdi extends OvernightIndex {
     }
 
     @Override
-    public Handle<IborIndex> clone(final Handle<YieldTermStructure> h) {
-        return new Handle<IborIndex>(new Brlcdi(h));
+    public Handle< IborIndex > clone(final Handle< YieldTermStructure > h) {
+        return new Handle< IborIndex >(new Brlcdi(h));
     }
 }

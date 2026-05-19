@@ -29,16 +29,15 @@ import org.jquantlib.util.PolymorphicVisitor;
 import org.jquantlib.util.Visitor;
 
 /**
- * Forward-style {@link StrikedTypePayoff} returning a signed difference between
- * spot and strike (no max-with-zero floor).
+ * Forward-style {@link StrikedTypePayoff} returning a signed difference between spot and strike (no max-with-zero
+ * floor).
  *
  * <p>Java port of v1.42.1
  * {@code ql/instruments/vanillaswingoption.hpp::VanillaForwardPayoff}.
  *
  * <p>For a CALL: {@code price - strike}. For a PUT: {@code strike - price}.
- * Unlike {@link PlainVanillaPayoff}, the payoff may be negative — appropriate
- * for the swing-option per-exercise cash flow where an early exercise is
- * forced to be exercised once chosen (no opt-out).
+ * Unlike {@link PlainVanillaPayoff}, the payoff may be negative — appropriate for the swing-option per-exercise cash
+ * flow where an early exercise is forced to be exercised once chosen (no opt-out).
  *
  * @author Phase 5e.5b-CFC-d-170 port
  */
@@ -55,9 +54,9 @@ public class VanillaForwardPayoff extends StrikedTypePayoff {
 
     @Override
     public double get(final double price) /* @ReadOnly */ {
-        if (type == Option.Type.Call) {
+        if ( type == Option.Type.Call ) {
             return price - strike;
-        } else if (type == Option.Type.Put) {
+        } else if ( type == Option.Type.Put ) {
             return strike - price;
         } else {
             throw new LibraryException(UNKNOWN_OPTION_TYPE);
@@ -66,9 +65,8 @@ public class VanillaForwardPayoff extends StrikedTypePayoff {
 
     @Override
     public void accept(final PolymorphicVisitor pv) {
-        final Visitor<VanillaForwardPayoff> v =
-                (pv != null) ? pv.visitor(this.getClass()) : null;
-        if (v != null) {
+        final Visitor< VanillaForwardPayoff > v = (pv != null) ? pv.visitor(this.getClass()) : null;
+        if ( v != null ) {
             v.visit(this);
         } else {
             super.accept(pv);

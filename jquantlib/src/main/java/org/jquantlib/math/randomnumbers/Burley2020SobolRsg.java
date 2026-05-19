@@ -89,15 +89,14 @@ public class Burley2020SobolRsg {
     // private fields
     //
 
-    private final int                dimensionality;
-    private final long               seed;
+    private final int dimensionality;
+    private final long seed;
     private final SobolRsg.DirectionIntegers directionIntegers;
-    private final int[]              group4Seeds;
-
-    private SobolRsg                 sobolRsg;
-    private final long[]             integerSequence;
-    private Sample<double[]>         sequence;
-    private long                     nextSequenceCounter;
+    private final int[] group4Seeds;
+    private final long[] integerSequence;
+    private SobolRsg sobolRsg;
+    private Sample< double[] > sequence;
+    private long nextSequenceCounter;
 
     //
     // public constructors
@@ -111,23 +110,20 @@ public class Burley2020SobolRsg {
         this(dimensionality, seed, SobolRsg.DirectionIntegers.Jaeckel, 43L);
     }
 
-    public Burley2020SobolRsg(final int dimensionality,
-                              final long seed,
-                              final SobolRsg.DirectionIntegers directionIntegers) {
+    public Burley2020SobolRsg(final int dimensionality, final long seed,
+            final SobolRsg.DirectionIntegers directionIntegers) {
         this(dimensionality, seed, directionIntegers, 43L);
     }
 
-    public Burley2020SobolRsg(final int dimensionality,
-                              final long seed,
-                              final SobolRsg.DirectionIntegers directionIntegers,
-                              final long scrambleSeed) {
+    public Burley2020SobolRsg(final int dimensionality, final long seed,
+            final SobolRsg.DirectionIntegers directionIntegers, final long scrambleSeed) {
         QL.require(dimensionality > 0, "dimensionality must be greater than 0");
 
-        this.dimensionality    = dimensionality;
-        this.seed              = seed;
+        this.dimensionality = dimensionality;
+        this.seed = seed;
         this.directionIntegers = directionIntegers;
-        this.integerSequence   = new long[dimensionality];
-        this.sequence          = new Sample<double[]>(new double[dimensionality], 1.0);
+        this.integerSequence = new long[dimensionality];
+        this.sequence = new Sample< double[] >(new double[dimensionality], 1.0);
 
         reset();
 
@@ -135,9 +131,9 @@ public class Burley2020SobolRsg {
         // MersenneTwisterUniformRng mt(scrambleSeed);
         // for (auto& s : group4Seeds_) s = static_cast<uint32_t>(mt.nextInt32());
         final int nGroups = (dimensionality - 1) / 4 + 1;
-        this.group4Seeds  = new int[nGroups];
+        this.group4Seeds = new int[nGroups];
         final MersenneTwisterUniformRng mt = new MersenneTwisterUniformRng(scrambleSeed);
-        for (int i = 0; i < nGroups; i++) {
+        for ( int i = 0; i < nGroups; i++ ) {
             // mt.nextInt32() returns an unsigned 32-bit value in a long;
             // casting to int preserves the bit pattern exactly.
             this.group4Seeds[i] = (int) mt.nextInt32();
@@ -148,122 +144,17 @@ public class Burley2020SobolRsg {
     // public API
     //
 
-    public int dimension() {
-        return dimensionality;
-    }
-
     /**
-     * Advance the internal counter to the given index and return the
-     * scrambled integer Sobol vector at that index. Mirrors C++
-     * {@code Burley2020SobolRsg::skipTo(std::uint32_t n)}:
-     * sets {@code nextSequenceCounter_ = n}, calls
-     * {@link #nextInt32Sequence()} (which increments the counter),
-     * decrements it again, and returns the integer sequence.
-     *
-     * @param n target sample index (treated as an unsigned 32-bit value)
-     * @return reference to the internal integer-sequence buffer
-     */
-    public long[] skipTo(final long n) {
-        nextSequenceCounter = n & 0xFFFFFFFFL;
-        nextInt32Sequence();
-        --nextSequenceCounter;
-        return integerSequence;
-    }
-
-    /**
-     * Return the next 32-bit Sobol vector with Burley/Owen scrambling
-     * applied. Each call advances the internal counter by one.
-     *
-     * <p>The returned array stores the scrambled values in the lower
-     * 32 bits of each long ({@code values are masked to 0xFFFFFFFF}).
-     *
-     * @return reference to the internal integer-sequence buffer
-     */
-    public long[] nextInt32Sequence() {
-        // n = nested_uniform_scramble(nextSequenceCounter_, group4Seeds_[0])
-        final int n = nestedUniformScramble((int) nextSequenceCounter, group4Seeds[0]);
-
-        // const auto& seq = sobolRsg_->skipTo(n);
-        // (Java SobolRsg.skipTo takes a long; n is interpreted as unsigned.)
-        final long[] seq = sobolRsg.skipTo(n & 0xFFFFFFFFL);
-
-        // std::copy(seq.begin(), seq.end(), integerSequence_.begin());
-        // Convert Java 64-bit direction integers to the 32-bit form C++
-        // works with: take the upper 32 bits. See class javadoc for why
-        // this is exact for sample indices < 2^32.
-        for (int k = 0; k < dimensionality; k++) {
-            integerSequence[k] = (seq[k] >>> 32) & 0xFFFFFFFFL;
-        }
-
-        // Scramble in groups of four with hash_combine'd seeds.
-        int i = 0;
-        int group = 0;
-        do {
-            long seedAcc = group4Seeds[group++] & 0xFFFFFFFFL;
-            for (int g = 0; g < 4 && i < dimensionality; ++g, ++i) {
-                seedAcc = localHashCombine(seedAcc, g);
-                integerSequence[i] = nestedUniformScramble(
-                        (int) integerSequence[i], (int) seedAcc) & 0xFFFFFFFFL;
-            }
-        } while (i < dimensionality);
-
-        // ++nextSequenceCounter_; QL_REQUIRE(... != 0, "period exceeded");
-        nextSequenceCounter = (nextSequenceCounter + 1L) & 0xFFFFFFFFL;
-        QL.require(nextSequenceCounter != 0L,
-                "Burley2020SobolRsg::nextInt32Sequence(): period exceeded");
-        return integerSequence;
-    }
-
-    /**
-     * Return the next vector of doubles in {@code (0, 1)} (strictly).
-     * The {@code +0.5} offset before division by {@code 2^32} guarantees
-     * both bounds are excluded even when the scramble maps a coordinate
-     * to zero.
-     */
-    public Sample<double[]> nextSequence() {
-        final long[] v = nextInt32Sequence();
-        final double[] d = new double[dimensionality];
-        for (int k = 0; k < dimensionality; k++) {
-            d[k] = (((double) (v[k] & 0xFFFFFFFFL)) + 0.5) / 4294967296.0;
-        }
-        sequence = new Sample<double[]>(d, 1.0);
-        return sequence;
-    }
-
-    public Sample<double[]> lastSequence() {
-        return sequence;
-    }
-
-    //
-    // private helpers
-    //
-
-    private void reset() {
-        // C++ creates SobolRsg with useGrayCode=false; Java SobolRsg
-        // doesn't expose that flag but SobolRsg.skipTo is implemented in
-        // a use-Gray-code-agnostic way (it computes the sample at index
-        // skip+1 directly from the Gray-code expansion of skip+1), so the
-        // two modes agree on skipTo outputs.
-        sobolRsg = new SobolRsg(dimensionality, seed, directionIntegers);
-        nextSequenceCounter = 0L;
-    }
-
-    // ---- Bit-reverse + Laine-Karras + nested-uniform-scramble ----
-
-    /**
-     * Reverse the 32 bits of x. C++ uses a 256-entry lookup table; here
-     * we use {@link Integer#reverse(int)} which is HotSpot-intrinsified
-     * to a single instruction on common architectures and produces the
-     * identical bit pattern.
+     * Reverse the 32 bits of x. C++ uses a 256-entry lookup table; here we use {@link Integer#reverse(int)} which is
+     * HotSpot-intrinsified to a single instruction on common architectures and produces the identical bit pattern.
      */
     private static int reverseBits(final int x) {
         return Integer.reverse(x);
     }
 
     /**
-     * Laine-Karras permutation (Burley 2020, Section 6.1). All
-     * multiplications are 32-bit mod-2^32, which Java {@code int}
-     * arithmetic provides natively.
+     * Laine-Karras permutation (Burley 2020, Section 6.1). All multiplications are 32-bit mod-2^32, which Java
+     * {@code int} arithmetic provides natively.
      */
     private static int laineKarrasPermutation(int x, final int s) {
         x += s;
@@ -280,12 +171,6 @@ public class Burley2020SobolRsg {
         x = reverseBits(x);
         return x;
     }
-
-    // ---- Boost 1.83 hash_combine / hash / hash_mix (64-bit) ----
-    //
-    // We use longs throughout these helpers — Java {@code long} provides
-    // exact 64-bit modular multiplication identical to C++
-    // {@code uint64_t}.
 
     private static long localHashMix(long x) {
         final long m = 0x0e9846af9b1a615dL;
@@ -304,7 +189,109 @@ public class Burley2020SobolRsg {
         return s;
     }
 
+    //
+    // private helpers
+    //
+
     private static long localHashCombine(final long x, final long v) {
         return localHashMix(x + 0x9e3779b9L + localHash(v));
+    }
+
+    // ---- Bit-reverse + Laine-Karras + nested-uniform-scramble ----
+
+    public int dimension() {
+        return dimensionality;
+    }
+
+    /**
+     * Advance the internal counter to the given index and return the scrambled integer Sobol vector at that index.
+     * Mirrors C++ {@code Burley2020SobolRsg::skipTo(std::uint32_t n)}: sets {@code nextSequenceCounter_ = n}, calls
+     * {@link #nextInt32Sequence()} (which increments the counter), decrements it again, and returns the integer
+     * sequence.
+     *
+     * @param n target sample index (treated as an unsigned 32-bit value)
+     * @return reference to the internal integer-sequence buffer
+     */
+    public long[] skipTo(final long n) {
+        nextSequenceCounter = n & 0xFFFFFFFFL;
+        nextInt32Sequence();
+        --nextSequenceCounter;
+        return integerSequence;
+    }
+
+    /**
+     * Return the next 32-bit Sobol vector with Burley/Owen scrambling applied. Each call advances the internal counter
+     * by one.
+     *
+     * <p>The returned array stores the scrambled values in the lower
+     * 32 bits of each long ({@code values are masked to 0xFFFFFFFF}).
+     *
+     * @return reference to the internal integer-sequence buffer
+     */
+    public long[] nextInt32Sequence() {
+        // n = nested_uniform_scramble(nextSequenceCounter_, group4Seeds_[0])
+        final int n = nestedUniformScramble((int) nextSequenceCounter, group4Seeds[0]);
+
+        // const auto& seq = sobolRsg_->skipTo(n);
+        // (Java SobolRsg.skipTo takes a long; n is interpreted as unsigned.)
+        final long[] seq = sobolRsg.skipTo(n & 0xFFFFFFFFL);
+
+        // std::copy(seq.begin(), seq.end(), integerSequence_.begin());
+        // Convert Java 64-bit direction integers to the 32-bit form C++
+        // works with: take the upper 32 bits. See class javadoc for why
+        // this is exact for sample indices < 2^32.
+        for ( int k = 0; k < dimensionality; k++ ) {
+            integerSequence[k] = (seq[k] >>> 32) & 0xFFFFFFFFL;
+        }
+
+        // Scramble in groups of four with hash_combine'd seeds.
+        int i = 0;
+        int group = 0;
+        do {
+            long seedAcc = group4Seeds[group++] & 0xFFFFFFFFL;
+            for ( int g = 0; g < 4 && i < dimensionality; ++g, ++i ) {
+                seedAcc = localHashCombine(seedAcc, g);
+                integerSequence[i] = nestedUniformScramble((int) integerSequence[i], (int) seedAcc) & 0xFFFFFFFFL;
+            }
+        } while ( i < dimensionality );
+
+        // ++nextSequenceCounter_; QL_REQUIRE(... != 0, "period exceeded");
+        nextSequenceCounter = (nextSequenceCounter + 1L) & 0xFFFFFFFFL;
+        QL.require(nextSequenceCounter != 0L, "Burley2020SobolRsg::nextInt32Sequence(): period exceeded");
+        return integerSequence;
+    }
+
+    // ---- Boost 1.83 hash_combine / hash / hash_mix (64-bit) ----
+    //
+    // We use longs throughout these helpers — Java {@code long} provides
+    // exact 64-bit modular multiplication identical to C++
+    // {@code uint64_t}.
+
+    /**
+     * Return the next vector of doubles in {@code (0, 1)} (strictly). The {@code +0.5} offset before division by
+     * {@code 2^32} guarantees both bounds are excluded even when the scramble maps a coordinate to zero.
+     */
+    public Sample< double[] > nextSequence() {
+        final long[] v = nextInt32Sequence();
+        final double[] d = new double[dimensionality];
+        for ( int k = 0; k < dimensionality; k++ ) {
+            d[k] = (((double) (v[k] & 0xFFFFFFFFL)) + 0.5) / 4294967296.0;
+        }
+        sequence = new Sample< double[] >(d, 1.0);
+        return sequence;
+    }
+
+    public Sample< double[] > lastSequence() {
+        return sequence;
+    }
+
+    private void reset() {
+        // C++ creates SobolRsg with useGrayCode=false; Java SobolRsg
+        // doesn't expose that flag but SobolRsg.skipTo is implemented in
+        // a use-Gray-code-agnostic way (it computes the sample at index
+        // skip+1 directly from the Gray-code expansion of skip+1), so the
+        // two modes agree on skipTo outputs.
+        sobolRsg = new SobolRsg(dimensionality, seed, directionIntegers);
+        nextSequenceCounter = 0L;
     }
 }

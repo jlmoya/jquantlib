@@ -24,8 +24,6 @@
 
 package org.jquantlib.cashflow;
 
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.indexes.OvernightIndex;
@@ -39,22 +37,21 @@ import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.termstructures.volatilities.optionlet.OptionletVolatilityStructure;
 import org.jquantlib.time.Date;
 
+import java.util.List;
+
 /**
- * Black-formula pricer for capped/floored arithmetically-averaged
- * overnight-indexed coupons.
+ * Black-formula pricer for capped/floored arithmetically-averaged overnight-indexed coupons.
  * <p>
- * Port of C++ QuantLib v1.42.1
- * {@code ql/cashflows/blackovernightindexedcouponpricer.{hpp,cpp}}
+ * Port of C++ QuantLib v1.42.1 {@code ql/cashflows/blackovernightindexedcouponpricer.{hpp,cpp}}
  * {@code BlackAveragingOvernightIndexedCouponPricer}.
  * <p>
  * <b>Phase 5e.5b-CFC-b:</b> companion to
- * {@link BlackOvernightIndexedCouponPricer} for the simple-averaging path.
- * Only {@link RateAveraging.Type#Simple Simple} averaging is supported (the
- * C++ class explicitly fails initialization if the underlying coupon has
- * Compound averaging — those should use the compounding pricer instead).
+ * {@link BlackOvernightIndexedCouponPricer} for the simple-averaging path. Only
+ * {@link RateAveraging.Type#Simple Simple} averaging is supported (the C++ class explicitly fails initialization if the
+ * underlying coupon has Compound averaging — those should use the compounding pricer instead).
  * <p>
- * Both the global ({@link #optionletRateGlobal}) and the daily/local
- * ({@link #optionletRateLocal}) cap/floor paths are implemented:
+ * Both the global ({@link #optionletRateGlobal}) and the daily/local ({@link #optionletRateLocal}) cap/floor paths are
+ * implemented:
  * <ul>
  *   <li><b>Global:</b> if the last fixing has occurred, intrinsic
  *       {@code gearing * max(±(F-K), 0)}; otherwise a single Black/Bachelier
@@ -69,28 +66,30 @@ import org.jquantlib.time.Date;
  * {@link BlackOvernightIndexedCouponPricer}; see the C++ comment block
  * (overnightindexedcouponpricer.cpp:319-331) for the derivation.
  *
- * @category cashflows
- *
  * @author JQuantLib migration team
+ * @category cashflows
  */
-public class BlackAveragingOvernightIndexedCouponPricer
-        extends ArithmeticAveragedOvernightIndexedCouponPricer {
+public class BlackAveragingOvernightIndexedCouponPricer extends ArithmeticAveragedOvernightIndexedCouponPricer {
 
     private double gearing_;
     private double swapletRate_;
     private double forwardRate_;
 
     public BlackAveragingOvernightIndexedCouponPricer() {
-        super(0.03, 0.0, false, new Handle<OptionletVolatilityStructure>(), false);
+        super(0.03, 0.0, false, new Handle< OptionletVolatilityStructure >(), false);
     }
 
-    public BlackAveragingOvernightIndexedCouponPricer(final Handle<OptionletVolatilityStructure> v) {
+    public BlackAveragingOvernightIndexedCouponPricer(final Handle< OptionletVolatilityStructure > v) {
         super(0.03, 0.0, false, v, false);
     }
 
-    public BlackAveragingOvernightIndexedCouponPricer(final Handle<OptionletVolatilityStructure> v,
-                                                      final boolean effectiveVolatilityInput) {
+    public BlackAveragingOvernightIndexedCouponPricer(final Handle< OptionletVolatilityStructure > v,
+            final boolean effectiveVolatilityInput) {
         super(0.03, 0.0, false, v, effectiveVolatilityInput);
+    }
+
+    private static double cappedFlooredRate(final double r, final Option.Type optionType, final double k) {
+        return optionType == Option.Type.Call ? Math.min(r, k) : Math.max(r, k);
     }
 
     @Override
@@ -100,8 +99,7 @@ public class BlackAveragingOvernightIndexedCouponPricer
         // Mirror C++ guard: this class is only valid for simple-averaging
         // coupons. Compound coupons must use BlackOvernightIndexedCouponPricer.
         QL.require(coupon_.averagingMethod() != RateAveraging.Type.Compound,
-            "Averaging method required to be simple for "
-          + "BlackAveragingOvernightIndexedCouponPricer");
+                "Averaging method required to be simple for " + "BlackAveragingOvernightIndexedCouponPricer");
 
         gearing_ = coupon.gearing();
         // swapletRate_ is the gross rate (gearing*F + spread) per the parent.
@@ -142,16 +140,16 @@ public class BlackAveragingOvernightIndexedCouponPricer
     }
 
     /**
-     * Global (period-rate) cap/floor pricer.
-     * Mirrors C++ {@code BlackAveragingOvernightIndexedCouponPricer::optionletRateGlobal}.
+     * Global (period-rate) cap/floor pricer. Mirrors C++
+     * {@code BlackAveragingOvernightIndexedCouponPricer::optionletRateGlobal}.
      */
     private double optionletRateGlobal(final Option.Type optionType, final double effStrike) {
         final Date lastRelevantFixingDate = coupon_.fixingDate();
-        if (lastRelevantFixingDate.le(new Settings().evaluationDate())) {
+        if ( lastRelevantFixingDate.le(new Settings().evaluationDate()) ) {
             // already determined: intrinsic
             final double a;
             final double b;
-            if (optionType == Option.Type.Call) {
+            if ( optionType == Option.Type.Call ) {
                 a = forwardRate_;
                 b = effStrike;
             } else {
@@ -162,19 +160,17 @@ public class BlackAveragingOvernightIndexedCouponPricer
         }
         // not yet fixed: Black model
         QL.require(capletVolatility() != null && !capletVolatility().empty(),
-            "BlackAveragingOvernightIndexedCouponPricer: missing optionlet volatility");
-        final List<Date> fixingDates = coupon_.fixingDates();
-        QL.require(!fixingDates.isEmpty(),
-            "BlackAveragingOvernightIndexedCouponPricer: empty fixing dates");
+                "BlackAveragingOvernightIndexedCouponPricer: missing optionlet volatility");
+        final List< Date > fixingDates = coupon_.fixingDates();
+        QL.require(!fixingDates.isEmpty(), "BlackAveragingOvernightIndexedCouponPricer: empty fixing dates");
         final OptionletVolatilityStructure vol = capletVolatility().currentLink();
         final boolean shiftedLn = vol.volatilityType() == VolatilityType.ShiftedLognormal;
         final double shift = vol.displacement();
         final double effectiveTime = vol.timeFromReference(fixingDates.get(fixingDates.size() - 1));
 
         final double stdDev;
-        if (effectiveVolatilityInput()) {
-            stdDev = vol.volatility(fixingDates.get(fixingDates.size() - 1), effStrike)
-                    * Math.sqrt(effectiveTime);
+        if ( effectiveVolatilityInput() ) {
+            stdDev = vol.volatility(fixingDates.get(fixingDates.size() - 1), effStrike) * Math.sqrt(effectiveTime);
         } else {
             // Lyashenko-Mercurio dampening
             final double fixingStartTime = vol.timeFromReference(fixingDates.get(0));
@@ -183,7 +179,7 @@ public class BlackAveragingOvernightIndexedCouponPricer
             final Date sigmaDate = fixingDates.get(0).gt(refDateP1) ? fixingDates.get(0) : refDateP1;
             final double sigma = vol.volatility(sigmaDate, effStrike);
             double T = Math.max(fixingStartTime, 0.0);
-            if (!Closeness.isCloseEnough(fixingEndTime, T)) {
+            if ( !Closeness.isCloseEnough(fixingEndTime, T) ) {
                 final double diff = fixingEndTime - T;
                 final double span = fixingEndTime - fixingStartTime;
                 T += Math.pow(diff, 3.0) / Math.pow(span, 2.0) / 3.0;
@@ -191,49 +187,42 @@ public class BlackAveragingOvernightIndexedCouponPricer
             stdDev = sigma * Math.sqrt(T);
         }
 
-        if (optionType == Option.Type.Call) {
+        if ( optionType == Option.Type.Call ) {
             effectiveCapletVolatility_ = stdDev / Math.sqrt(effectiveTime);
         } else {
             effectiveFloorletVolatility_ = stdDev / Math.sqrt(effectiveTime);
         }
 
-        final double fixing = shiftedLn
-                ? BlackFormula.blackFormula(optionType, effStrike, forwardRate_, stdDev, 1.0, shift)
-                : BlackFormula.bachelierBlackFormula(optionType, effStrike, forwardRate_, stdDev, 1.0);
+        final double fixing = shiftedLn ? BlackFormula.blackFormula(optionType, effStrike, forwardRate_, stdDev, 1.0,
+                shift) : BlackFormula.bachelierBlackFormula(optionType, effStrike, forwardRate_, stdDev, 1.0);
         return gearing_ * fixing;
     }
 
     /**
      * Daily cap/floor pricer (the "local" path).
      * <p>
-     * Mirrors C++
-     * {@code BlackAveragingOvernightIndexedCouponPricer::optionletRateLocal}.
-     * Identical structure to the compounding variant
-     * ({@link BlackOvernightIndexedCouponPricer#optionletRateLocal}) but uses
+     * Mirrors C++ {@code BlackAveragingOvernightIndexedCouponPricer::optionletRateLocal}. Identical structure to the
+     * compounding variant ({@link BlackOvernightIndexedCouponPricer#optionletRateLocal}) but uses
      * <em>arithmetic accumulation</em> instead of compounding: the running
-     * variable is {@code accumulatedRate += rate * dt} and the average rate
-     * over the future portion is added directly rather than via
-     * {@code (1 + r*dailyTau)^days}.
+     * variable is {@code accumulatedRate += rate * dt} and the average rate over the future portion is added directly
+     * rather than via {@code (1 + r*dailyTau)^days}.
      */
     private double optionletRateLocal(final Option.Type optionType, final double effStrike) {
         QL.require(!effectiveVolatilityInput(),
-            "BlackAveragingOvernightIndexedCouponPricer.optionletRateLocal() does not support "
-          + "effective volatility input.");
+                "BlackAveragingOvernightIndexedCouponPricer.optionletRateLocal() does not support "
+                        + "effective volatility input.");
 
-        final double absStrike = coupon_.compoundSpreadDaily()
-                ? effStrike + coupon_.spread()
-                : effStrike;
+        final double absStrike = coupon_.compoundSpreadDaily() ? effStrike + coupon_.spread() : effStrike;
 
         final OvernightIndex index = coupon_.overnightIndex();
-        final List<Date> fixingDates = coupon_.fixingDates();
+        final List< Date > fixingDates = coupon_.fixingDates();
         final double[] dt = coupon_.dt();
-        final List<Date> dates = coupon_.valueDates();
+        final List< Date > dates = coupon_.valueDates();
 
         final int n = dt.length;
         final int lockoutDays = coupon_.lockoutDays();
         QL.require(lockoutDays < n,
-            "rate cutoff (" + lockoutDays
-          + ") must be less than number of fixings in period (" + n + ")");
+                "rate cutoff (" + lockoutDays + ") must be less than number of fixings in period (" + n + ")");
         final int nCutoff = n - lockoutDays;
 
         double accumulatedRate = 0.0;
@@ -242,12 +231,11 @@ public class BlackAveragingOvernightIndexedCouponPricer
         // historical portion
         final Date today = new Settings().evaluationDate();
         int i = 0;
-        while (i < n && fixingDates.get(Math.min(i, nCutoff)).lt(today)) {
+        while ( i < n && fixingDates.get(Math.min(i, nCutoff)).lt(today) ) {
             double pastFixing = index.pastFixing(fixingDates.get(Math.min(i, nCutoff)));
             QL.require(pastFixing != Constants.NULL_REAL,
-                "Missing " + index.name() + " fixing for "
-              + fixingDates.get(Math.min(i, nCutoff)));
-            if (coupon_.compoundSpreadDaily()) {
+                    "Missing " + index.name() + " fixing for " + fixingDates.get(Math.min(i, nCutoff)));
+            if ( coupon_.compoundSpreadDaily() ) {
                 pastFixing += coupon_.spread();
             }
             accumulatedRate += cappedFlooredRate(pastFixing, optionType, absStrike) * dt[i];
@@ -256,11 +244,11 @@ public class BlackAveragingOvernightIndexedCouponPricer
         }
 
         // today edge case
-        if (i < n && fixingDates.get(Math.min(i, nCutoff)).equals(today)) {
+        if ( i < n && fixingDates.get(Math.min(i, nCutoff)).equals(today) ) {
             try {
                 double pastFixing = index.pastFixing(today);
-                if (pastFixing != Constants.NULL_REAL) {
-                    if (coupon_.compoundSpreadDaily()) {
+                if ( pastFixing != Constants.NULL_REAL ) {
+                    if ( coupon_.compoundSpreadDaily() ) {
                         pastFixing += coupon_.spread();
                     }
                     accumulatedRate += cappedFlooredRate(pastFixing, optionType, absStrike) * dt[i];
@@ -268,25 +256,24 @@ public class BlackAveragingOvernightIndexedCouponPricer
                     ++i;
                 }
                 // else: fall through and forecast
-            } catch (final Exception e) {
+            } catch ( final Exception e ) {
                 // fall through and forecast
             }
         }
 
         // forward portion
-        if (i < n) {
-            final Handle<YieldTermStructure> curve = index.termStructure();
-            QL.require(!curve.empty(),
-                "null term structure set to this instance of " + index.name());
+        if ( i < n ) {
+            final Handle< YieldTermStructure > curve = index.termStructure();
+            QL.require(!curve.empty(), "null term structure set to this instance of " + index.name());
             final YieldTermStructure ts = curve.currentLink();
 
             double startDiscount = ts.discount(dates.get(i));
             double endDiscount = ts.discount(dates.get(Math.max(nCutoff, i)));
 
             // Lockout adjustment
-            if (nCutoff < n) {
-                final double discountCutoffDate = ts.discount(dates.get(nCutoff).add(1))
-                                                  / ts.discount(dates.get(nCutoff));
+            if ( nCutoff < n ) {
+                final double discountCutoffDate =
+                        ts.discount(dates.get(nCutoff).add(1)) / ts.discount(dates.get(nCutoff));
                 final long cutoffSpan = dates.get(n).sub(dates.get(nCutoff));
                 endDiscount *= Math.pow(discountCutoffDate, cutoffSpan);
             }
@@ -295,23 +282,22 @@ public class BlackAveragingOvernightIndexedCouponPricer
             double averageRate = -Math.log(endDiscount / startDiscount) / tau;
 
             final OptionletVolatilityStructure vol = capletVolatility().currentLink();
-            final double midPoint = (vol.timeFromReference(dates.get(i))
-                                   + vol.timeFromReference(dates.get(nCutoff))) / 2.0;
+            final double midPoint =
+                    (vol.timeFromReference(dates.get(i)) + vol.timeFromReference(dates.get(nCutoff))) / 2.0;
             final double stdDev = vol.volatility(midPoint, effStrike) * Math.sqrt(midPoint);
             final double shift = vol.displacement();
             final boolean shiftedLn = vol.volatilityType() == VolatilityType.ShiftedLognormal;
-            final double cfValue = shiftedLn
-                    ? BlackFormula.blackFormula(optionType, effStrike, averageRate, stdDev, 1.0, shift)
-                    : BlackFormula.bachelierBlackFormula(optionType, effStrike, averageRate, stdDev, 1.0);
+            final double cfValue = shiftedLn ? BlackFormula.blackFormula(optionType, effStrike, averageRate, stdDev,
+                    1.0, shift) : BlackFormula.bachelierBlackFormula(optionType, effStrike, averageRate, stdDev, 1.0);
 
             final double effectiveTime = vol.timeFromReference(fixingDates.get(fixingDates.size() - 1));
-            if (optionType == Option.Type.Call) {
+            if ( optionType == Option.Type.Call ) {
                 effectiveCapletVolatility_ = stdDev / Math.sqrt(effectiveTime);
             } else {
                 effectiveFloorletVolatility_ = stdDev / Math.sqrt(effectiveTime);
             }
 
-            if (coupon_.compoundSpreadDaily()) {
+            if ( coupon_.compoundSpreadDaily() ) {
                 averageRate += coupon_.spread();
             }
 
@@ -320,8 +306,7 @@ public class BlackAveragingOvernightIndexedCouponPricer
 
             // Arithmetic accumulation (no compounding) — formula (4) ORE
             final long span = dates.get(dates.size() - 1).sub(dates.get(i));
-            final double dailyTau = coupon_.dayCounter().yearFraction(
-                    dates.get(i), dates.get(dates.size() - 1)) / span;
+            final double dailyTau = coupon_.dayCounter().yearFraction(dates.get(i), dates.get(dates.size() - 1)) / span;
             accumulatedRate += dailyTau * averageRate * span;
             accumulatedRateRaw += dailyTau * averageRateRaw * span;
         }
@@ -338,16 +323,12 @@ public class BlackAveragingOvernightIndexedCouponPricer
         rate *= coupon_.gearing();
         rawRate *= coupon_.gearing();
 
-        if (!coupon_.compoundSpreadDaily()) {
+        if ( !coupon_.compoundSpreadDaily() ) {
             rate += coupon_.spread();
             rawRate += coupon_.spread();
         }
 
         return (optionType == Option.Type.Call ? -1.0 : 1.0) * (rate - rawRate);
-    }
-
-    private static double cappedFlooredRate(final double r, final Option.Type optionType, final double k) {
-        return optionType == Option.Type.Call ? Math.min(r, k) : Math.max(r, k);
     }
 
     @Override

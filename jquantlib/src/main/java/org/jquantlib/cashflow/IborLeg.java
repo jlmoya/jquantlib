@@ -42,20 +42,15 @@ When applicable, the original copyright notice follows this notice.
 */
 package org.jquantlib.cashflow;
 
-import java.lang.reflect.Field;
-
 import org.jquantlib.QL;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.indexes.IborIndex;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.termstructures.volatilities.optionlet.OptionletVolatilityStructure;
-import org.jquantlib.time.BusinessDayConvention;
-import org.jquantlib.time.Calendar;
-import org.jquantlib.time.Date;
-import org.jquantlib.time.Period;
-import org.jquantlib.time.Schedule;
-import org.jquantlib.time.TimeUnit;
+import org.jquantlib.time.*;
+
+import java.lang.reflect.Field;
 
 /**
  * Helper class building a sequence of capped/floored ibor-rate coupons
@@ -87,11 +82,11 @@ public class IborLeg {
     private BusinessDayConvention exCouponAdjustment_;
     /** Phase 5d.5-Bonds-b — ex-coupon end-of-month flag (default false). */
     private boolean exCouponEndOfMonth_;
-    /** Phase 5e.5b-CFC-d-179 — convention used by
-     *  {@link FloatingRateCoupon#fixingDate()} to roll the fixing date
-     *  when {@code refDate - fixingDays} lands on a non-business day.
-     *  Mirrors C++ {@code IborLeg::fixingConvention_} in
-     *  ql/cashflows/iborcoupon.hpp:179 (default {@code Preceding}). */
+    /**
+     * Phase 5e.5b-CFC-d-179 — convention used by {@link FloatingRateCoupon#fixingDate()} to roll the fixing date when
+     * {@code refDate - fixingDays} lands on a non-business day. Mirrors C++ {@code IborLeg::fixingConvention_} in
+     * ql/cashflows/iborcoupon.hpp:179 (default {@code Preceding}).
+     */
     private BusinessDayConvention fixingConvention_;
 
     public IborLeg(final Schedule schedule, final IborIndex index) {
@@ -206,9 +201,10 @@ public class IborLeg {
         return this;
     }
 
-    /** Phase 5d.5-Bonds-b — convenience overload mirroring C++
-     *  default {@code IborLeg::inArrears(bool flag = true)}
-     *  (ql/cashflows/iborcoupon.hpp:155). */
+    /**
+     * Phase 5d.5-Bonds-b — convenience overload mirroring C++ default {@code IborLeg::inArrears(bool flag = true)}
+     * (ql/cashflows/iborcoupon.hpp:155).
+     */
     public IborLeg inArrears() {
         return inArrears(true);
     }
@@ -218,45 +214,44 @@ public class IborLeg {
         return this;
     }
 
-    /** Phase 5d.5-Bonds-b — overload mirroring C++ default flag=true
-     *  ({@code IborLeg::withZeroPayments(bool flag = true)}). */
+    /**
+     * Phase 5d.5-Bonds-b — overload mirroring C++ default flag=true
+     * ({@code IborLeg::withZeroPayments(bool flag = true)}).
+     */
     public IborLeg withZeroPayments() {
         return withZeroPayments(true);
     }
 
-    /** Phase 5d.5-Bonds-b — mirror of C++
-     *  {@code IborLeg::withPaymentLag(Integer lag)}
-     *  (ql/cashflows/iborcoupon.cpp).  Number of business days to advance
-     *  from the period-end before applying the payment adjustment. */
+    /**
+     * Phase 5d.5-Bonds-b — mirror of C++ {@code IborLeg::withPaymentLag(Integer lag)} (ql/cashflows/iborcoupon.cpp).
+     * Number of business days to advance from the period-end before applying the payment adjustment.
+     */
     public IborLeg withPaymentLag(final int lag) {
         paymentLag_ = lag;
         return this;
     }
 
-    /** Phase 5d.5-Bonds-b — mirror of C++
-     *  {@code IborLeg::withPaymentCalendar(const Calendar&)}.  Overrides
-     *  the calendar used for payment-date advancement; defaults to
-     *  schedule.calendar(). */
+    /**
+     * Phase 5d.5-Bonds-b — mirror of C++ {@code IborLeg::withPaymentCalendar(const Calendar&)}.  Overrides the calendar
+     * used for payment-date advancement; defaults to schedule.calendar().
+     */
     public IborLeg withPaymentCalendar(final Calendar cal) {
         paymentCalendar_ = cal;
         return this;
     }
 
-    /** Phase 5d.5-Bonds-b — mirror of C++
-     *  {@code IborLeg::withExCouponPeriod(Period, Calendar,
-     *  BusinessDayConvention, bool endOfMonth = false)}. Records ex-coupon
-     *  parameters for downstream coupon construction.
+    /**
+     * Phase 5d.5-Bonds-b — mirror of C++
+     * {@code IborLeg::withExCouponPeriod(Period, Calendar, BusinessDayConvention, bool endOfMonth = false)}. Records
+     * ex-coupon parameters for downstream coupon construction.
      *
-     *  <p>NOTE: the Java {@link FloatingRateCoupon} hierarchy does not yet
-     *  carry an exCouponDate field (mirrors the gap noted on
-     *  {@code FixedRateCoupon}/{@code CPICoupon}). The values are recorded
-     *  on the builder and a TODO carry-forward is tracked for Phase
-     *  5d.5-Bonds-c (FloatingRateCoupon ex-coupon parameter +
-     *  Coupon.exCouponDate accessor). */
-    public IborLeg withExCouponPeriod(final Period period,
-                                      final Calendar cal,
-                                      final BusinessDayConvention convention,
-                                      final boolean endOfMonth) {
+     * <p>NOTE: the Java {@link FloatingRateCoupon} hierarchy does not yet
+     * carry an exCouponDate field (mirrors the gap noted on {@code FixedRateCoupon}/{@code CPICoupon}). The values are
+     * recorded on the builder and a TODO carry-forward is tracked for Phase 5d.5-Bonds-c (FloatingRateCoupon ex-coupon
+     * parameter + Coupon.exCouponDate accessor).
+     */
+    public IborLeg withExCouponPeriod(final Period period, final Calendar cal, final BusinessDayConvention convention,
+            final boolean endOfMonth) {
         exCouponPeriod_ = period;
         exCouponCalendar_ = cal;
         exCouponAdjustment_ = convention;
@@ -264,37 +259,31 @@ public class IborLeg {
         return this;
     }
 
-    public IborLeg withExCouponPeriod(final Period period,
-                                      final Calendar cal,
-                                      final BusinessDayConvention convention) {
+    public IborLeg withExCouponPeriod(final Period period, final Calendar cal, final BusinessDayConvention convention) {
         return withExCouponPeriod(period, cal, convention, false);
     }
 
-    /** Phase 5e.5b-CFC-d-179 — mirror of C++
-     *  {@code IborLeg::withFixingConvention(BusinessDayConvention)}
-     *  (ql/cashflows/iborcoupon.hpp:161, .cpp:263 v1.42.1).
+    /**
+     * Phase 5e.5b-CFC-d-179 — mirror of C++ {@code IborLeg::withFixingConvention(BusinessDayConvention)}
+     * (ql/cashflows/iborcoupon.hpp:161, .cpp:263 v1.42.1).
      *
-     *  <p>Selects the {@link BusinessDayConvention} used by every
-     *  generated coupon's {@link FloatingRateCoupon#fixingDate()} to
-     *  roll the {@code refDate - fixingDays} computation onto a
-     *  business day. When this setter is not called, the default
-     *  matches C++ (Preceding) and post-processing is skipped — every
-     *  existing call-site retains bit-identical behaviour. */
+     * <p>Selects the {@link BusinessDayConvention} used by every
+     * generated coupon's {@link FloatingRateCoupon#fixingDate()} to roll the {@code refDate - fixingDays} computation
+     * onto a business day. When this setter is not called, the default matches C++ (Preceding) and post-processing is
+     * skipped — every existing call-site retains bit-identical behaviour.
+     */
     public IborLeg withFixingConvention(final BusinessDayConvention convention) {
         fixingConvention_ = convention;
         return this;
     }
 
-    public Leg Leg() /* @ReadOnly */{
+    public Leg Leg() /* @ReadOnly */ {
 
         // Phase 5d.5-Bonds-b — thread paymentCalendar_/paymentLag_ through
         // to FloatingLeg's extended ctor.
-        final Leg cashflows = new FloatingLeg(
-        		IborIndex.class, IborCoupon.class, CappedFlooredIborCoupon.class,
-                notionals_, schedule_, index_,
-                paymentDayCounter_, paymentAdjustment_, fixingDays_,
-                gearings_, spreads_, caps_, floors_, inArrears_, zeroPayments_,
-                paymentCalendar_, paymentLag_);
+        final Leg cashflows = new FloatingLeg(IborIndex.class, IborCoupon.class, CappedFlooredIborCoupon.class,
+                notionals_, schedule_, index_, paymentDayCounter_, paymentAdjustment_, fixingDays_, gearings_, spreads_,
+                caps_, floors_, inArrears_, zeroPayments_, paymentCalendar_, paymentLag_);
 
         // Phase 5e.5b-CFC-d-111 — thread exCouponDate_ onto each Coupon
         // post-construction. FloatingLeg's reflective constructor does not
@@ -307,8 +296,9 @@ public class IborLeg {
         // owned by parallel-running agents this commit cycle).
         applyExCouponDates(cashflows);
 
-        if (caps_.empty() && floors_.empty() && !inArrears_) {
-            PricerSetter.setCouponPricer(cashflows, new BlackIborCouponPricer(new Handle <OptionletVolatilityStructure>()));
+        if ( caps_.empty() && floors_.empty() && !inArrears_ ) {
+            PricerSetter.setCouponPricer(cashflows,
+                    new BlackIborCouponPricer(new Handle< OptionletVolatilityStructure >()));
         }
 
         // Phase 5e.5b-CFC-d-179 — when the caller selected a
@@ -327,41 +317,36 @@ public class IborLeg {
         return cashflows;
     }
 
-    /** Phase 5e.5b-CFC-d-111 — compute the payment date for each
-     *  generated coupon (mirroring {@code FloatingLeg}'s own
-     *  {@code payCal.advance(end, paymentLag, Days, paymentAdj)}
-     *  formula) and, when an ex-coupon period was configured, set
-     *  the corresponding {@code Coupon.exCouponDate_} via reflection.
+    /**
+     * Phase 5e.5b-CFC-d-111 — compute the payment date for each generated coupon (mirroring {@code FloatingLeg}'s own
+     * {@code payCal.advance(end, paymentLag, Days, paymentAdj)} formula) and, when an ex-coupon period was configured,
+     * set the corresponding {@code Coupon.exCouponDate_} via reflection.
      *
-     *  <p>The reflective write is justified because (i) the field is
-     *  already present on the Java {@link Coupon} base class (mirror of
-     *  the C++ {@code Coupon::exCouponDate_} field) and (ii) extending
-     *  {@code FloatingLeg}'s reflective coupon-construction signature
-     *  to thread an extra {@code Date} argument is out of scope for
-     *  this commit (FloatingLeg / FloatingRateCoupon are owned by
-     *  another in-flight agent). */
+     * <p>The reflective write is justified because (i) the field is
+     * already present on the Java {@link Coupon} base class (mirror of the C++ {@code Coupon::exCouponDate_} field) and
+     * (ii) extending {@code FloatingLeg}'s reflective coupon-construction signature to thread an extra {@code Date}
+     * argument is out of scope for this commit (FloatingLeg / FloatingRateCoupon are owned by another in-flight
+     * agent).
+     */
     private void applyExCouponDates(final Leg cashflows) {
-        final boolean hasExCoupon =
-                exCouponPeriod_ != null && exCouponPeriod_.length() != 0;
-        if (!hasExCoupon) {
+        final boolean hasExCoupon = exCouponPeriod_ != null && exCouponPeriod_.length() != 0;
+        if ( !hasExCoupon ) {
             return;
         }
-        final Calendar payCal = (paymentCalendar_ == null)
-                ? schedule_.calendar() : paymentCalendar_;
+        final Calendar payCal = (paymentCalendar_ == null) ? schedule_.calendar() : paymentCalendar_;
         final Field exCouponDateField;
         try {
             exCouponDateField = Coupon.class.getDeclaredField("exCouponDate_");
             exCouponDateField.setAccessible(true);
-        } catch (final NoSuchFieldException nsfe) {
+        } catch ( final NoSuchFieldException nsfe ) {
             // Coupon.exCouponDate_ should always exist in this branch;
             // surface a clear error if a future refactor renames it.
             throw new IllegalStateException(
-                    "Coupon.exCouponDate_ not found — IborLeg "
-                  + "ex-coupon threading is broken", nsfe);
+                    "Coupon.exCouponDate_ not found — IborLeg " + "ex-coupon threading is broken", nsfe);
         }
-        for (int i = 0; i < cashflows.size(); ++i) {
-            final CashFlow cf = (CashFlow) cashflows.get(i);
-            if (!(cf instanceof Coupon)) {
+        for ( int i = 0; i < cashflows.size(); ++i ) {
+            final CashFlow cf = cashflows.get(i);
+            if ( !(cf instanceof Coupon) ) {
                 continue;
             }
             final Coupon coupon = (Coupon) cf;
@@ -369,97 +354,76 @@ public class IborLeg {
             // Schedule indices for coupon i correspond to schedule.date(i)
             // and schedule.date(i+1).
             final Date end = schedule_.date(i + 1);
-            final Date paymentDate = payCal.advance(
-                    end, paymentLag_, TimeUnit.Days, paymentAdjustment_, false);
-            final Date exCouponDate = exCouponCalendar_.advance(
-                    paymentDate,
-                    exCouponPeriod_.negative(),
-                    exCouponAdjustment_,
-                    exCouponEndOfMonth_);
+            final Date paymentDate = payCal.advance(end, paymentLag_, TimeUnit.Days, paymentAdjustment_, false);
+            final Date exCouponDate = exCouponCalendar_.advance(paymentDate, exCouponPeriod_.negative(),
+                    exCouponAdjustment_, exCouponEndOfMonth_);
             try {
                 exCouponDateField.set(coupon, exCouponDate);
-            } catch (final IllegalAccessException iae) {
+            } catch ( final IllegalAccessException iae ) {
                 QL.error("failed to set exCouponDate_ on " + coupon);
             }
         }
     }
 
-    /** Phase 5e.5b-CFC-d-179 — when {@link #withFixingConvention} was
-     *  used to pick anything other than {@code Preceding}, swap each
-     *  generated {@link IborCoupon} for a thin subclass that overrides
-     *  {@link FloatingRateCoupon#fixingDate()} to roll the fixing date
-     *  with the chosen convention. This mirrors the C++ pipeline
-     *  ({@code FloatingRateCoupon} stores {@code fixingConvention_} and
-     *  applies it inside {@code fixingDate()} —
-     *  ql/cashflows/floatingratecoupon.cpp:81-86, v1.42.1) without
-     *  touching the shared {@link FloatingRateCoupon} /
-     *  {@link FloatingLeg} classes (the migration scope of which is
-     *  owned elsewhere this commit cycle).
+    /**
+     * Phase 5e.5b-CFC-d-179 — when {@link #withFixingConvention} was used to pick anything other than
+     * {@code Preceding}, swap each generated {@link IborCoupon} for a thin subclass that overrides
+     * {@link FloatingRateCoupon#fixingDate()} to roll the fixing date with the chosen convention. This mirrors the C++
+     * pipeline ({@code FloatingRateCoupon} stores {@code fixingConvention_} and applies it inside {@code fixingDate()}
+     * — ql/cashflows/floatingratecoupon.cpp:81-86, v1.42.1) without touching the shared {@link FloatingRateCoupon} /
+     * {@link FloatingLeg} classes (the migration scope of which is owned elsewhere this commit cycle).
      *
-     *  <p>The default (Preceding) is a no-op so existing call-sites are
-     *  bit-identical. */
+     * <p>The default (Preceding) is a no-op so existing call-sites are
+     * bit-identical.
+     */
     private void applyFixingConvention(final Leg cashflows) {
-        if (fixingConvention_ == null
-                || fixingConvention_ == BusinessDayConvention.Preceding) {
+        if ( fixingConvention_ == null || fixingConvention_ == BusinessDayConvention.Preceding ) {
             return;
         }
-        for (int i = 0; i < cashflows.size(); ++i) {
-            final CashFlow cf = (CashFlow) cashflows.get(i);
-            if (!(cf instanceof IborCoupon)) {
+        for ( int i = 0; i < cashflows.size(); ++i ) {
+            final CashFlow cf = cashflows.get(i);
+            if ( !(cf instanceof IborCoupon) ) {
                 continue;
             }
             final IborCoupon original = (IborCoupon) cf;
-            final IborCoupon replacement =
-                    new FixingConventionIborCoupon(original, fixingConvention_);
+            final IborCoupon replacement = new FixingConventionIborCoupon(original, fixingConvention_);
             cashflows.set(i, replacement);
         }
     }
 
-    /** Phase 5e.5b-CFC-d-179 — IborCoupon subclass that honours the
-     *  configured {@link BusinessDayConvention} when computing the
-     *  fixing date. Mirrors the C++ codepath in
-     *  {@code FloatingRateCoupon::fixingDate()} —
-     *  {@code index_->fixingCalendar().advance(refDate,
-     *  -fixingDays_, Days, fixingConvention_)} —
-     *  see ql/cashflows/floatingratecoupon.cpp:81-86 (v1.42.1). */
+    /**
+     * Phase 5e.5b-CFC-d-179 — IborCoupon subclass that honours the configured {@link BusinessDayConvention} when
+     * computing the fixing date. Mirrors the C++ codepath in {@code FloatingRateCoupon::fixingDate()} —
+     * {@code index_->fixingCalendar().advance(refDate, -fixingDays_, Days, fixingConvention_)} — see
+     * ql/cashflows/floatingratecoupon.cpp:81-86 (v1.42.1).
+     */
     private static final class FixingConventionIborCoupon extends IborCoupon {
 
         private final BusinessDayConvention fixingConvention_;
 
-        FixingConventionIborCoupon(final IborCoupon source,
-                                   final BusinessDayConvention convention) {
-            super(source.date(),
-                  source.nominal(),
-                  source.accrualStartDate(),
-                  source.accrualEndDate(),
-                  source.fixingDays(),
-                  (org.jquantlib.indexes.IborIndex) source.index(),
-                  source.gearing(),
-                  source.spread(),
-                  source.referencePeriodStart(),
-                  source.referencePeriodEnd(),
-                  source.dayCounter(),
-                  source.isInArrears());
+        FixingConventionIborCoupon(final IborCoupon source, final BusinessDayConvention convention) {
+            super(source.date(), source.nominal(), source.accrualStartDate(), source.accrualEndDate(),
+                    source.fixingDays(), (org.jquantlib.indexes.IborIndex) source.index(), source.gearing(),
+                    source.spread(), source.referencePeriodStart(), source.referencePeriodEnd(), source.dayCounter(),
+                    source.isInArrears());
             this.fixingConvention_ = convention;
             // Preserve the source coupon's pricer (set by IborLeg.Leg()
             // via PricerSetter) so downstream rate/amount calls behave
             // identically.
-            if (source.pricer() != null) {
+            if ( source.pricer() != null ) {
                 this.setPricer(source.pricer());
             }
             // Preserve ex-coupon date threaded by applyExCouponDates.
             try {
-                final java.lang.reflect.Field f =
-                        Coupon.class.getDeclaredField("exCouponDate_");
+                final java.lang.reflect.Field f = Coupon.class.getDeclaredField("exCouponDate_");
                 f.setAccessible(true);
                 f.set(this, f.get(source));
-            } catch (final NoSuchFieldException nsfe) {
+            } catch ( final NoSuchFieldException nsfe ) {
                 // Coupon.exCouponDate_ is expected — surface clearly if
                 // a future refactor removes it.
                 throw new IllegalStateException(
-                        "Coupon.exCouponDate_ not found — IborLeg "
-                      + "fixingConvention wrapper is broken", nsfe);
-            } catch (final IllegalAccessException iae) {
+                        "Coupon.exCouponDate_ not found — IborLeg " + "fixingConvention wrapper is broken", nsfe);
+            } catch ( final IllegalAccessException iae ) {
                 QL.error("failed to copy exCouponDate_ onto fixingConvention wrapper");
             }
         }
@@ -470,10 +434,8 @@ public class IborLeg {
             // BusinessDayConvention is the configured one rather than
             // the hardcoded Preceding.
             final Date refDate = isInArrears() ? accrualEndDate_ : accrualStartDate_;
-            return index_.fixingCalendar().advance(
-                    refDate,
-                    new Period(-fixingDays(), TimeUnit.Days),
-                    fixingConvention_);
+            return index_.fixingCalendar()
+                    .advance(refDate, new Period(-fixingDays(), TimeUnit.Days), fixingConvention_);
         }
     }
 

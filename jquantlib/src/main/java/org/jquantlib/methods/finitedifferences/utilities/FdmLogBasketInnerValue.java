@@ -14,16 +14,13 @@ import org.jquantlib.methods.finitedifferences.operators.FdmLinearOpIterator;
 /**
  * Inner-value calculator for multi-asset log-space (ln S_i) grids.
  * <p>
- * Java port of v1.42.1
- * {@code ql/methods/finitedifferences/utilities/fdminnervaluecalculator.{hpp,cpp}}
- * — specifically {@code FdmLogBasketInnerValue}, which evaluates a
- * {@link BasketPayoff} at the mesh cell whose log-coordinates are
- * {@code (x_0, ..., x_{n-1})} by exponentiating each direction and forwarding
- * the asset vector to {@link BasketPayoff#get(double[])}.
+ * Java port of v1.42.1 {@code ql/methods/finitedifferences/utilities/fdminnervaluecalculator.{hpp,cpp}} — specifically
+ * {@code FdmLogBasketInnerValue}, which evaluates a {@link BasketPayoff} at the mesh cell whose log-coordinates are
+ * {@code (x_0, ..., x_{n-1})} by exponentiating each direction and forwarding the asset vector to
+ * {@link BasketPayoff#get(double[])}.
  * <p>
- * Cell-averaging is not performed here ({@link #avgInnerValue} delegates to
- * {@link #innerValue}) — this matches the C++ implementation, which simply
- * returns {@code innerValue} for the basket case.
+ * Cell-averaging is not performed here ({@link #avgInnerValue} delegates to {@link #innerValue}) — this matches the C++
+ * implementation, which simply returns {@code innerValue} for the basket case.
  *
  * @author Phase 5e.5b-CFC-d port
  */
@@ -34,11 +31,9 @@ public class FdmLogBasketInnerValue implements FdmInnerValueCalculator {
 
     /**
      * @param payoff basket payoff (Min / Max / Average / Spread)
-     * @param mesher multi-dimensional FDM mesh; each direction is in
-     *               log-space ({@code x_i = ln S_i})
+     * @param mesher multi-dimensional FDM mesh; each direction is in log-space ({@code x_i = ln S_i})
      */
-    public FdmLogBasketInnerValue(final BasketPayoff payoff,
-                                  final FdmMesher mesher) {
+    public FdmLogBasketInnerValue(final BasketPayoff payoff, final FdmMesher mesher) {
         this.payoff = payoff;
         this.mesher = mesher;
     }
@@ -47,7 +42,7 @@ public class FdmLogBasketInnerValue implements FdmInnerValueCalculator {
     public double innerValue(final FdmLinearOpIterator iter, final double t) {
         final int n = mesher.layout().dim().length;
         final double[] x = new double[n];
-        for (int i = 0; i < n; ++i) {
+        for ( int i = 0; i < n; ++i ) {
             x[i] = JQuantMath.exp(mesher.location(iter, i));
         }
         return payoff.get(x);

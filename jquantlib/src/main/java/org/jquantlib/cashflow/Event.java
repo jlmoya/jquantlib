@@ -22,17 +22,12 @@
 
 package org.jquantlib.cashflow;
 
-import java.util.List;
-
 import org.jquantlib.Settings;
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.time.Date;
-import org.jquantlib.util.DefaultObservable;
-import org.jquantlib.util.Observable;
-import org.jquantlib.util.Observer;
-import org.jquantlib.util.PolymorphicVisitable;
-import org.jquantlib.util.PolymorphicVisitor;
-import org.jquantlib.util.Visitor;
+import org.jquantlib.util.*;
+
+import java.util.List;
 
 /**
  * This class is the base class for all financial events.
@@ -45,20 +40,25 @@ public abstract class Event implements Observable, PolymorphicVisitable {
     // protected constructors
     //
 
-    protected Event() {
-        // only descendent classes can instantiate
-    }
-
+    /**
+     * Implements multiple inheritance via delegate pattern to an inner class.
+     *
+     * <p>Phase 2x A.4: switched to {@link
+     * org.jquantlib.util.WeakReferenceObservable} so that observers from completed tests don't accumulate on the
+     * cash-flow event's observer list and cascade on every Settings.setEvaluationDate.
+     *
+     * @see Observable
+     * @see DefaultObservable
+     */
+    private final DefaultObservable delegatedObservable = new org.jquantlib.util.WeakReferenceObservable(this);
 
     //
     // public abstract methods
     //
 
-    /**
-     * Keeps the date at which the event occurs
-     */
-    public abstract Date date() /* @ReadOnly */;
-
+    protected Event() {
+        // only descendent classes can instantiate
+    }
 
     //
     // public methods
@@ -76,78 +76,62 @@ public abstract class Event implements Observable, PolymorphicVisitable {
      * @see todaysPayments
      */
 
+    /**
+     * Keeps the date at which the event occurs
+     */
+    public abstract Date date() /* @ReadOnly */;
 
     /**
      * Returns true if an event has already occurred before a date
      * <p>
-     * If {@link Settings#isTodaysPayments()} is true, then a payment event has not
-     * occurred if the input date is the same as the event date,
-     * and so includeToday should be defaulted to true.
+     * If {@link Settings#isTodaysPayments()} is true, then a payment event has not occurred if the input date is the
+     * same as the event date, and so includeToday should be defaulted to true.
      * <p>
-     * This should be the only place in the code that is affected
-     * directly by {@link Settings#isTodaysPayments()}
+     * This should be the only place in the code that is affected directly by {@link Settings#isTodaysPayments()}
      */
     public boolean hasOccurred(final Date d) /* @ReadOnly */ {
         return hasOccurred(d, new Settings().isTodaysPayments());
     }
 
     /**
-     * Returns true if an event has already occurred before a date where it is
-     * explicitly defined whether the current date must considered.
+     * Returns true if an event has already occurred before a date where it is explicitly defined whether the current
+     * date must considered.
      *
      * @param d is a Date
      * @return true if an event has already occurred before a date
      */
-    public boolean hasOccurred(final Date d, final boolean includeToday) /* @ReadOnly */{
-        if (includeToday) {
+    public boolean hasOccurred(final Date d, final boolean includeToday) /* @ReadOnly */ {
+        if ( includeToday ) {
             return date().compareTo(d) < 0;
         } else {
             return date().compareTo(d) <= 0;
         }
     }
-
-    /**
-     * C++-aligned overload mirroring
-     * {@code Event::hasOccurred(refDate, ext::optional<bool> includeRefDate)}
-     * (event.cpp v1.42.1 lines 28-39). Java's nullable {@link Boolean}
-     * corresponds to {@code ext::optional<bool>}: when {@code null}, the
-     * {@link Settings#includeReferenceDateEvents()} flag is consulted; when
-     * non-null, the parameter wins.
-     *
-     * <p>If {@code refDate} is {@code null} or the null-date sentinel, the
-     * current evaluation date is used (matching C++
-     * {@code d != Date() ? d : Settings::instance().evaluationDate()}).
-     */
-    public boolean hasOccurred(final Date refDate, final Boolean includeRefDate) /* @ReadOnly */ {
-        final Settings settings = new Settings();
-        final Date d = (refDate == null || refDate.isNull()) ? settings.evaluationDate() : refDate;
-        final boolean includeRefDateEvent = includeRefDate != null
-                ? includeRefDate.booleanValue()
-                : settings.includeReferenceDateEvents();
-        if (includeRefDateEvent) {
-            return date().compareTo(d) < 0;
-        } else {
-            return date().compareTo(d) <= 0;
-        }
-    }
-
 
     //
     // implements Observable
     //
 
     /**
-     * Implements multiple inheritance via delegate pattern to an inner class.
+     * C++-aligned overload mirroring {@code Event::hasOccurred(refDate, ext::optional<bool> includeRefDate)} (event.cpp
+     * v1.42.1 lines 28-39). Java's nullable {@link Boolean} corresponds to {@code ext::optional<bool>}: when
+     * {@code null}, the {@link Settings#includeReferenceDateEvents()} flag is consulted; when non-null, the parameter
+     * wins.
      *
-     * <p>Phase 2x A.4: switched to {@link
-     * org.jquantlib.util.WeakReferenceObservable} so that observers from
-     * completed tests don't accumulate on the cash-flow event's
-     * observer list and cascade on every Settings.setEvaluationDate.
-     *
-     * @see Observable
-     * @see DefaultObservable
+     * <p>If {@code refDate} is {@code null} or the null-date sentinel, the
+     * current evaluation date is used (matching C++ {@code d != Date() ? d : Settings::instance().evaluationDate()}).
      */
-    private final DefaultObservable delegatedObservable = new org.jquantlib.util.WeakReferenceObservable(this);
+    public boolean hasOccurred(final Date refDate, final Boolean includeRefDate) /* @ReadOnly */ {
+        final Settings settings = new Settings();
+        final Date d = (refDate == null || refDate.isNull()) ? settings.evaluationDate() : refDate;
+        final boolean includeRefDateEvent =
+                includeRefDate != null ? includeRefDate.booleanValue() : settings.includeReferenceDateEvents();
+        if ( includeRefDateEvent ) {
+            return date().compareTo(d) < 0;
+        } else {
+            return date().compareTo(d) <= 0;
+        }
+    }
 
     @Override
     public void addObserver(final Observer observer) {
@@ -180,10 +164,9 @@ public abstract class Event implements Observable, PolymorphicVisitable {
     }
 
     @Override
-    public List<Observer> getObservers() {
+    public List< Observer > getObservers() {
         return delegatedObservable.getObservers();
     }
-
 
     //
     // implements PolymorphicVisitable
@@ -191,8 +174,8 @@ public abstract class Event implements Observable, PolymorphicVisitable {
 
     @Override
     public void accept(final PolymorphicVisitor pv) {
-        final Visitor<Event> v = (pv!=null) ? pv.visitor(this.getClass()) : null;
-        if (v != null) {
+        final Visitor< Event > v = (pv != null) ? pv.visitor(this.getClass()) : null;
+        if ( v != null ) {
             v.visit(this);
         } else {
             throw new LibraryException("null event visitor"); // TODO: message

@@ -25,19 +25,17 @@
 
 package org.jquantlib.instruments;
 
+import org.jquantlib.math.matrixutilities.Array;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import org.jquantlib.math.matrixutilities.Array;
 
 /**
  * Useful discretized discount bond asset.
  * <p>
- * Port of C++ v1.42.1 {@code ql/discretizedasset.hpp} {@code DiscretizedDiscountBond}.
- * Minimal helper used by {@code DiscretizedSwap} to roll back the discount
- * factor to a given pay date: {@code reset(size)} fills values with 1.0 and
- * {@code mandatoryTimes()} is empty (the lattice itself is responsible for
- * the discount-factor evolution).
+ * Port of C++ v1.42.1 {@code ql/discretizedasset.hpp} {@code DiscretizedDiscountBond}. Minimal helper used by
+ * {@code DiscretizedSwap} to roll back the discount factor to a given pay date: {@code reset(size)} fills values with
+ * 1.0 and {@code mandatoryTimes()} is empty (the lattice itself is responsible for the discount-factor evolution).
  */
 public class DiscretizedDiscountBond extends DiscretizedAsset {
 
@@ -51,7 +49,7 @@ public class DiscretizedDiscountBond extends DiscretizedAsset {
     }
 
     @Override
-    public List</*@Time*/ Double> mandatoryTimes() {
-        return new ArrayList</*@Time*/ Double>();
+    public List</*@Time*/ Double > mandatoryTimes() {
+        return new ArrayList</*@Time*/ Double >();
     }
 }

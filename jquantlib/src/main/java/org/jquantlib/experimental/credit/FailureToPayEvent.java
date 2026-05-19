@@ -25,23 +25,21 @@
 
 package org.jquantlib.experimental.credit;
 
-import java.util.Map;
-
 import org.jquantlib.currencies.Currency;
 import org.jquantlib.time.Date;
 
+import java.util.Map;
+
 /**
- * FailureToPay event. Records the defaulted amount and overrides
- * {@link #matchesEventType(DefaultType)} with FTP-specific logic.
+ * FailureToPay event. Records the defaulted amount and overrides {@link #matchesEventType(DefaultType)} with
+ * FTP-specific logic.
  *
  * <p>Java port of QuantLib v1.42.1 {@code QuantLib::FailureToPayEvent}
  * ({@code ql/experimental/credit/defaultevent.{hpp,cpp}}).
  *
  * <p>The C++ {@code matchesEventType} checks (a) the contract event type
- * is itself a {@link FailureToPay}, (b) the defaulted amount meets or
- * exceeds the contract's {@code amountRequired}, and (c) the event
- * occurred at-or-before {@code today - gracePeriod}. The Java port keeps
- * the same logic.
+ * is itself a {@link FailureToPay}, (b) the defaulted amount meets or exceeds the contract's {@code amountRequired},
+ * and (c) the event occurred at-or-before {@code today - gracePeriod}. The Java port keeps the same logic.
  *
  * <p>Phase 4m foundation.
  */
@@ -49,27 +47,17 @@ public class FailureToPayEvent extends DefaultEvent {
 
     private final double defaultedAmount;
 
-    public FailureToPayEvent(final Date creditEventDate,
-                             final Currency curr,
-                             final Seniority bondsSen,
-                             final double defaultedAmount,
-                             final Date settleDate,
-                             final Map<Seniority, Double> recoveryRates) {
-        super(creditEventDate,
-              new DefaultType(AtomicDefault.Type.FailureToPay, Restructuring.XR),
-              curr, bondsSen, settleDate, recoveryRates);
+    public FailureToPayEvent(final Date creditEventDate, final Currency curr, final Seniority bondsSen,
+            final double defaultedAmount, final Date settleDate, final Map< Seniority, Double > recoveryRates) {
+        super(creditEventDate, new DefaultType(AtomicDefault.Type.FailureToPay, Restructuring.XR), curr, bondsSen,
+                settleDate, recoveryRates);
         this.defaultedAmount = defaultedAmount;
     }
 
-    public FailureToPayEvent(final Date creditEventDate,
-                             final Currency curr,
-                             final Seniority bondsSen,
-                             final double defaultedAmount,
-                             final Date settleDate,
-                             final double recoveryRate) {
-        super(creditEventDate,
-              new DefaultType(AtomicDefault.Type.FailureToPay, Restructuring.XR),
-              curr, bondsSen, settleDate, recoveryRate);
+    public FailureToPayEvent(final Date creditEventDate, final Currency curr, final Seniority bondsSen,
+            final double defaultedAmount, final Date settleDate, final double recoveryRate) {
+        super(creditEventDate, new DefaultType(AtomicDefault.Type.FailureToPay, Restructuring.XR), curr, bondsSen,
+                settleDate, recoveryRate);
         this.defaultedAmount = defaultedAmount;
     }
 
@@ -79,11 +67,11 @@ public class FailureToPayEvent extends DefaultEvent {
 
     @Override
     public boolean matchesEventType(final DefaultType contractEvType) {
-        if (!(contractEvType instanceof FailureToPay)) {
+        if ( !(contractEvType instanceof FailureToPay) ) {
             return false;
         }
         final FailureToPay eveType = (FailureToPay) contractEvType;
-        if (defaultedAmount < eveType.amountRequired()) {
+        if ( defaultedAmount < eveType.amountRequired() ) {
             return false;
         }
         final Date today = evaluationDate();

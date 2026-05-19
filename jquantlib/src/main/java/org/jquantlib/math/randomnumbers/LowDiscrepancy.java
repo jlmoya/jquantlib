@@ -56,28 +56,25 @@ import org.jquantlib.math.distributions.InverseCumulativeNormal;
 public final class LowDiscrepancy {
 
     /**
-     * Optional shared inverse-cumulative functor. If {@code null}, each
-     * call to {@link #makeSequenceGenerator(int, long)} constructs the
-     * default {@link InverseCumulativeNormal}.
+     * Whether this generator type supports an error estimate. C++ sets {@code allowsErrorEstimate = 0} in
+     * {@code GenericLowDiscrepancy}.
+     */
+    public static final boolean ALLOWS_ERROR_ESTIMATE = false;
+    /**
+     * Optional shared inverse-cumulative functor. If {@code null}, each call to
+     * {@link #makeSequenceGenerator(int, long)} constructs the default {@link InverseCumulativeNormal}.
      *
      * <p>Mirrors the C++ static member {@code LowDiscrepancy::icInstance}.
      */
     public static InverseCumulativeNormal icInstance = null;
-
-    /**
-     * Whether this generator type supports an error estimate. C++ sets
-     * {@code allowsErrorEstimate = 0} in {@code GenericLowDiscrepancy}.
-     */
-    public static final boolean ALLOWS_ERROR_ESTIMATE = false;
 
     private LowDiscrepancy() {
         // utility class — not instantiable
     }
 
     /**
-     * Build an inverse-cumulative random sequence generator over a
-     * {@link SobolRsg} low-discrepancy sequence, mapped through the standard
-     * normal inverse CDF.
+     * Build an inverse-cumulative random sequence generator over a {@link SobolRsg} low-discrepancy sequence, mapped
+     * through the standard normal inverse CDF.
      *
      * <p>Equivalent to:
      * <pre>
@@ -88,19 +85,16 @@ public final class LowDiscrepancy {
      *
      * @param dimension sequence dimensionality (&ge; 1)
      * @param seed      Sobol seed
-     * @return a properly wired {@link InverseCumulativeRsg} over Sobol +
-     *         inverse normal CDF
+     * @return a properly wired {@link InverseCumulativeRsg} over Sobol + inverse normal CDF
      */
-    public static InverseCumulativeRsg<SobolRsg, InverseCumulativeNormal>
-    makeSequenceGenerator(final int dimension, final long seed) {
+    public static InverseCumulativeRsg< SobolRsg, InverseCumulativeNormal > makeSequenceGenerator(final int dimension,
+            final long seed) {
 
         final SobolRsg ursg = new SobolRsg(dimension, seed);
 
-        if (icInstance != null) {
-            return new InverseCumulativeRsg<SobolRsg, InverseCumulativeNormal>(
-                    ursg, icInstance);
+        if ( icInstance != null ) {
+            return new InverseCumulativeRsg< SobolRsg, InverseCumulativeNormal >(ursg, icInstance);
         }
-        return new InverseCumulativeRsg<SobolRsg, InverseCumulativeNormal>(
-                ursg, new InverseCumulativeNormal());
+        return new InverseCumulativeRsg< SobolRsg, InverseCumulativeNormal >(ursg, new InverseCumulativeNormal());
     }
 }

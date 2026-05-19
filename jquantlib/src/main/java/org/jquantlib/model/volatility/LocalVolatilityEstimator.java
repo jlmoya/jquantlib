@@ -44,11 +44,10 @@ import org.jquantlib.time.TimeSeries;
 /**
  * Volatility term structures
  *
- * @author Richard Gomes
- *
  * @param <V>
+ * @author Richard Gomes
  */
-public interface LocalVolatilityEstimator<V> {
+public interface LocalVolatilityEstimator< V > {
 
-    TimeSeries<Double> calculate(final TimeSeries<V> quoteSeries) ;
+    TimeSeries< Double > calculate(final TimeSeries< V > quoteSeries);
 }

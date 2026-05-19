@@ -29,12 +29,12 @@ import org.jquantlib.methods.montecarlo.PathPricer;
  * Multi-path pricer for the Heston-driven discrete arithmetic-average-price Asian.
  *
  * <p>Java port of {@code QuantLib v1.42.1
- * ql/pricingengines/asian/mc_discr_arith_av_price_heston.{hpp,cpp}}
- * {@code ArithmeticAPOHestonPathPricer} (Phase 5e.5b-CFC-d-114).
+ * ql/pricingengines/asian/mc_discr_arith_av_price_heston.{hpp,cpp}} {@code ArithmeticAPOHestonPathPricer} (Phase
+ * 5e.5b-CFC-d-114).
  *
  * @author JQuantLib
  */
-public final class ArithmeticAPOHestonPathPricer extends PathPricer<MultiPath> {
+public final class ArithmeticAPOHestonPathPricer extends PathPricer< MultiPath > {
 
     private final PlainVanillaPayoff payoff_;
     private final double discount_;
@@ -42,19 +42,13 @@ public final class ArithmeticAPOHestonPathPricer extends PathPricer<MultiPath> {
     private final double runningSum_;
     private final int pastFixings_;
 
-    public ArithmeticAPOHestonPathPricer(final Option.Type type,
-                                         final double strike,
-                                         final double discount,
-                                         final int[] fixingIndices) {
+    public ArithmeticAPOHestonPathPricer(final Option.Type type, final double strike, final double discount,
+            final int[] fixingIndices) {
         this(type, strike, discount, fixingIndices, 0.0, 0);
     }
 
-    public ArithmeticAPOHestonPathPricer(final Option.Type type,
-                                         final double strike,
-                                         final double discount,
-                                         final int[] fixingIndices,
-                                         final double runningSum,
-                                         final int pastFixings) {
+    public ArithmeticAPOHestonPathPricer(final Option.Type type, final double strike, final double discount,
+            final int[] fixingIndices, final double runningSum, final int pastFixings) {
         QL.require(strike >= 0.0, "strike less than zero not allowed");
         this.payoff_ = new PlainVanillaPayoff(type, strike);
         this.discount_ = discount;
@@ -72,7 +66,7 @@ public final class ArithmeticAPOHestonPathPricer extends PathPricer<MultiPath> {
         double sum = runningSum_;
         final int fixings = pastFixings_ + fixingIndices_.length;
 
-        for (final int fixingIndice : fixingIndices_) {
+        for ( final int fixingIndice : fixingIndices_ ) {
             sum += path.get(fixingIndice);
         }
 

@@ -35,9 +35,6 @@
 
 package org.jquantlib.model.shortrate.onefactormodels.gaussian1d;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.optimization.NoConstraint;
@@ -55,30 +52,28 @@ import org.jquantlib.time.Date;
 import org.jquantlib.util.Observable;
 import org.jquantlib.util.Observer;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * One-factor GSR (Gaussian Short Rate) model in the forward measure.
  * <p>
- * Java port of QuantLib v1.42.1
- * {@code ql/models/shortrate/onefactormodels/gsr.{hpp,cpp}}
- * (commit {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}). Phase 2j WI-1.3.
+ * Java port of QuantLib v1.42.1 {@code ql/models/shortrate/onefactormodels/gsr.{hpp,cpp}} (commit
+ * {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}). Phase 2j WI-1.3.
  * <p>
  * <b>Multiple-inheritance note.</b> The C++ {@code Gsr} inherits from both
- * {@code Gaussian1dModel} and {@code CalibratedModel}. Java cannot do this
- * directly, and {@link Gaussian1dModel} (per WI-1.1's design decision) extends
- * {@link org.jquantlib.util.LazyObject} only. We replicate the
- * {@code CalibratedModel} parameter-storage surface (the
- * {@code arguments_[0] = reversion}, {@code arguments_[1] = sigma} ref-binding
- * pattern, plus {@code params()} / {@code setParams()}) directly on this class
- * via a private {@code arguments_} list. Full {@code calibrate()} integration
- * (cost-function dispatch into {@link org.jquantlib.model.CalibratedModel})
- * is deferred to a future work item — this WI ports the model surface used by
- * pricing engines, which only need parameter readback and the
- * numeraire/zerobond pricing surface.
+ * {@code Gaussian1dModel} and {@code CalibratedModel}. Java cannot do this directly, and {@link Gaussian1dModel} (per
+ * WI-1.1's design decision) extends {@link org.jquantlib.util.LazyObject} only. We replicate the
+ * {@code CalibratedModel} parameter-storage surface (the {@code arguments_[0] = reversion},
+ * {@code arguments_[1] = sigma} ref-binding pattern, plus {@code params()} / {@code setParams()}) directly on this
+ * class via a private {@code arguments_} list. Full {@code calibrate()} integration (cost-function dispatch into
+ * {@link org.jquantlib.model.CalibratedModel}) is deferred to a future work item — this WI ports the model surface used
+ * by pricing engines, which only need parameter readback and the numeraire/zerobond pricing surface.
  * <p>
  * <b>Friend pattern.</b> The C++ {@code GsrProcess} uses {@code friend class Gsr}
- * to expose package-private setVols/setReversions/setTimes mutators. Java has
- * no friend mechanism and {@link GsrProcess} lives in a different package, so
- * those setters are public — see the alignment commit on {@code GsrProcess.java}.
+ * to expose package-private setVols/setReversions/setTimes mutators. Java has no friend mechanism and
+ * {@link GsrProcess} lives in a different package, so those setters are public — see the alignment commit on
+ * {@code GsrProcess.java}.
  *
  * @author Peter Caspers (C++ original)
  * @author JQuantLib contributors (Java port)
@@ -92,50 +87,48 @@ public class Gsr extends Gaussian1dModel {
     //
 
     /**
-     * Mirrors C++ {@code CalibratedModel::arguments_}. Slot 0 = reversion,
-     * slot 1 = sigma. The reference-binding members below (reversion_, sigma_)
-     * point into this list and are reassigned in {@link #initialize(double)}.
+     * Mirrors C++ {@code CalibratedModel::arguments_}. Slot 0 = reversion, slot 1 = sigma. The reference-binding
+     * members below (reversion_, sigma_) point into this list and are reassigned in {@link #initialize(double)}.
      */
-    private final List<Parameter> arguments_;
-
-    /**
-     * Reversion parameter (slot {@code arguments_.get(0)}). May be a
-     * {@link ConstantParameter} (single reversion) or a
-     * {@link PiecewiseConstantParameter} (one reversion per vol step).
-     */
-    private Parameter reversion_;
-
-    /** Sigma (volatility) parameter — always a {@link PiecewiseConstantParameter}. */
-    private Parameter sigma_;
+    private final List< Parameter > arguments_;
+    private final List< Handle< Quote > > volatilities_;
+    private final List< Handle< Quote > > reversions_;
 
     //
     // ──────────────────────────────────────────────────────────────────────
     //   Per-step Quote handles + step dates
     // ──────────────────────────────────────────────────────────────────────
     //
-
-    private final List<Handle<Quote>> volatilities_;
-    private final List<Handle<Quote>> reversions_;
-    private final List<Date> volstepdates_;
-
-    /** Cached step times (computed via termStructure().timeFromReference). */
-    private double[] volsteptimes_;
+    private final List< Date > volstepdates_;
+    /**
+     * Reversion parameter (slot {@code arguments_.get(0)}). May be a {@link ConstantParameter} (single reversion) or a
+     * {@link PiecewiseConstantParameter} (one reversion per vol step).
+     */
+    private Parameter reversion_;
+    /** Forwards Quote-update notifications to {@link #updateReversion()}. */
+    private final Observer reversionObserver_ = new Observer() {
+        @Override
+        public void update() {
+            updateReversion();
+        }
+    };
+    /** Sigma (volatility) parameter — always a {@link PiecewiseConstantParameter}. */
+    private Parameter sigma_;
 
     //
     // ──────────────────────────────────────────────────────────────────────
     //   Private observers — wire each Quote's notification to the model
     // ──────────────────────────────────────────────────────────────────────
     //
-
     /** Forwards Quote-update notifications to {@link #updateVolatility()}. */
     private final Observer volatilityObserver_ = new Observer() {
-        @Override public void update() { updateVolatility(); }
+        @Override
+        public void update() {
+            updateVolatility();
+        }
     };
-
-    /** Forwards Quote-update notifications to {@link #updateReversion()}. */
-    private final Observer reversionObserver_ = new Observer() {
-        @Override public void update() { updateReversion(); }
-    };
+    /** Cached step times (computed via termStructure().timeFromReference). */
+    private double[] volsteptimes_;
 
     //
     // ──────────────────────────────────────────────────────────────────────
@@ -144,122 +137,98 @@ public class Gsr extends Gaussian1dModel {
     //
 
     /** Constant mean reversion, real-valued vols. T defaults to 60.0. */
-    public Gsr(final Handle<YieldTermStructure> termStructure,
-               final List<Date> volstepdates,
-               final double[] volatilities,
-               final double reversion) {
+    public Gsr(final Handle< YieldTermStructure > termStructure, final List< Date > volstepdates,
+            final double[] volatilities, final double reversion) {
         this(termStructure, volstepdates, volatilities, reversion, 60.0);
     }
 
     /** Constant mean reversion, real-valued vols. */
-    public Gsr(final Handle<YieldTermStructure> termStructure,
-               final List<Date> volstepdates,
-               final double[] volatilities,
-               final double reversion,
-               final double T) {
+    public Gsr(final Handle< YieldTermStructure > termStructure, final List< Date > volstepdates,
+            final double[] volatilities, final double reversion, final double T) {
         super(termStructure);
-        QL.require(termStructure != null && !termStructure.empty(),
-                "yield term structure handle is empty");
+        QL.require(termStructure != null && !termStructure.empty(), "yield term structure handle is empty");
 
-        this.arguments_   = newArgumentsSlots();
-        this.volstepdates_ = new ArrayList<Date>(volstepdates);
-        this.volatilities_ = new ArrayList<Handle<Quote>>(volatilities.length);
-        for (int i = 0; i < volatilities.length; i++) {
-            volatilities_.add(new Handle<Quote>(new SimpleQuote(volatilities[i])));
+        this.arguments_ = newArgumentsSlots();
+        this.volstepdates_ = new ArrayList< Date >(volstepdates);
+        this.volatilities_ = new ArrayList< Handle< Quote > >(volatilities.length);
+        for ( int i = 0; i < volatilities.length; i++ ) {
+            volatilities_.add(new Handle< Quote >(new SimpleQuote(volatilities[i])));
         }
-        this.reversions_ = new ArrayList<Handle<Quote>>(1);
-        reversions_.add(new Handle<Quote>(new SimpleQuote(reversion)));
+        this.reversions_ = new ArrayList< Handle< Quote > >(1);
+        reversions_.add(new Handle< Quote >(new SimpleQuote(reversion)));
 
         initialize(T);
     }
 
     /** Piecewise-constant mean reversion (per vol step), real-valued. T=60.0. */
-    public Gsr(final Handle<YieldTermStructure> termStructure,
-               final List<Date> volstepdates,
-               final double[] volatilities,
-               final double[] reversions) {
+    public Gsr(final Handle< YieldTermStructure > termStructure, final List< Date > volstepdates,
+            final double[] volatilities, final double[] reversions) {
         this(termStructure, volstepdates, volatilities, reversions, 60.0);
     }
 
     /** Piecewise-constant mean reversion (per vol step), real-valued. */
-    public Gsr(final Handle<YieldTermStructure> termStructure,
-               final List<Date> volstepdates,
-               final double[] volatilities,
-               final double[] reversions,
-               final double T) {
+    public Gsr(final Handle< YieldTermStructure > termStructure, final List< Date > volstepdates,
+            final double[] volatilities, final double[] reversions, final double T) {
         super(termStructure);
-        QL.require(termStructure != null && !termStructure.empty(),
-                "yield term structure handle is empty");
+        QL.require(termStructure != null && !termStructure.empty(), "yield term structure handle is empty");
 
-        this.arguments_    = newArgumentsSlots();
-        this.volstepdates_ = new ArrayList<Date>(volstepdates);
-        this.volatilities_ = new ArrayList<Handle<Quote>>(volatilities.length);
-        for (int i = 0; i < volatilities.length; i++) {
-            volatilities_.add(new Handle<Quote>(new SimpleQuote(volatilities[i])));
+        this.arguments_ = newArgumentsSlots();
+        this.volstepdates_ = new ArrayList< Date >(volstepdates);
+        this.volatilities_ = new ArrayList< Handle< Quote > >(volatilities.length);
+        for ( int i = 0; i < volatilities.length; i++ ) {
+            volatilities_.add(new Handle< Quote >(new SimpleQuote(volatilities[i])));
         }
-        this.reversions_ = new ArrayList<Handle<Quote>>(reversions.length);
-        for (int i = 0; i < reversions.length; i++) {
-            reversions_.add(new Handle<Quote>(new SimpleQuote(reversions[i])));
+        this.reversions_ = new ArrayList< Handle< Quote > >(reversions.length);
+        for ( int i = 0; i < reversions.length; i++ ) {
+            reversions_.add(new Handle< Quote >(new SimpleQuote(reversions[i])));
         }
 
         initialize(T);
     }
 
     /** Constant mean reversion with floating Quote-backed vols. T=60.0. */
-    public Gsr(final Handle<YieldTermStructure> termStructure,
-               final List<Date> volstepdates,
-               final List<Handle<Quote>> volatilities,
-               final Handle<Quote> reversion) {
+    public Gsr(final Handle< YieldTermStructure > termStructure, final List< Date > volstepdates,
+            final List< Handle< Quote > > volatilities, final Handle< Quote > reversion) {
         this(termStructure, volstepdates, volatilities, reversion, 60.0);
     }
 
     /** Constant mean reversion with floating Quote-backed vols. */
-    public Gsr(final Handle<YieldTermStructure> termStructure,
-               final List<Date> volstepdates,
-               final List<Handle<Quote>> volatilities,
-               final Handle<Quote> reversion,
-               final double T) {
+    public Gsr(final Handle< YieldTermStructure > termStructure, final List< Date > volstepdates,
+            final List< Handle< Quote > > volatilities, final Handle< Quote > reversion, final double T) {
         super(termStructure);
-        QL.require(termStructure != null && !termStructure.empty(),
-                "yield term structure handle is empty");
+        QL.require(termStructure != null && !termStructure.empty(), "yield term structure handle is empty");
 
-        this.arguments_    = newArgumentsSlots();
-        this.volstepdates_ = new ArrayList<Date>(volstepdates);
-        this.volatilities_ = new ArrayList<Handle<Quote>>(volatilities);
-        this.reversions_   = new ArrayList<Handle<Quote>>(1);
+        this.arguments_ = newArgumentsSlots();
+        this.volstepdates_ = new ArrayList< Date >(volstepdates);
+        this.volatilities_ = new ArrayList< Handle< Quote > >(volatilities);
+        this.reversions_ = new ArrayList< Handle< Quote > >(1);
         reversions_.add(reversion);
 
         initialize(T);
     }
 
     /** Piecewise-constant Quote-backed reversion + vols. T=60.0. */
-    public Gsr(final Handle<YieldTermStructure> termStructure,
-               final List<Date> volstepdates,
-               final List<Handle<Quote>> volatilities,
-               final List<Handle<Quote>> reversions) {
+    public Gsr(final Handle< YieldTermStructure > termStructure, final List< Date > volstepdates,
+            final List< Handle< Quote > > volatilities, final List< Handle< Quote > > reversions) {
         this(termStructure, volstepdates, volatilities, reversions, 60.0);
     }
 
     /** Piecewise-constant Quote-backed reversion + vols. */
-    public Gsr(final Handle<YieldTermStructure> termStructure,
-               final List<Date> volstepdates,
-               final List<Handle<Quote>> volatilities,
-               final List<Handle<Quote>> reversions,
-               final double T) {
+    public Gsr(final Handle< YieldTermStructure > termStructure, final List< Date > volstepdates,
+            final List< Handle< Quote > > volatilities, final List< Handle< Quote > > reversions, final double T) {
         super(termStructure);
-        QL.require(termStructure != null && !termStructure.empty(),
-                "yield term structure handle is empty");
+        QL.require(termStructure != null && !termStructure.empty(), "yield term structure handle is empty");
 
-        this.arguments_    = newArgumentsSlots();
-        this.volstepdates_ = new ArrayList<Date>(volstepdates);
-        this.volatilities_ = new ArrayList<Handle<Quote>>(volatilities);
-        this.reversions_   = new ArrayList<Handle<Quote>>(reversions);
+        this.arguments_ = newArgumentsSlots();
+        this.volstepdates_ = new ArrayList< Date >(volstepdates);
+        this.volatilities_ = new ArrayList< Handle< Quote > >(volatilities);
+        this.reversions_ = new ArrayList< Handle< Quote > >(reversions);
 
         initialize(T);
     }
 
-    private static List<Parameter> newArgumentsSlots() {
-        final List<Parameter> a = new ArrayList<Parameter>(2);
+    private static List< Parameter > newArgumentsSlots() {
+        final List< Parameter > a = new ArrayList< Parameter >(2);
         // Pre-fill slots so set(0,...) / set(1,...) work in initialize().
         a.add(new NullParameter());
         a.add(new NullParameter());
@@ -272,44 +241,45 @@ public class Gsr extends Gaussian1dModel {
     // ──────────────────────────────────────────────────────────────────────
     //
 
+    private static double[] arrayCopy(final Array a) {
+        final double[] out = new double[a.size()];
+        for ( int i = 0; i < out.length; i++ )
+            out[i] = a.get(i);
+        return out;
+    }
+
     private void initialize(final double T) {
         // updateTimes() needs an array of the right size before it indexes into it
         volsteptimes_ = new double[volstepdates_.size()];
         updateTimes();
 
         QL.require(volatilities_.size() == volsteptimes_.length + 1,
-                "there must be n+1 volatilities (%d) for n volatility step times (%d)",
-                volatilities_.size(), volsteptimes_.length);
+                "there must be n+1 volatilities (%d) for n volatility step times (%d)", volatilities_.size(),
+                volsteptimes_.length);
 
-        QL.require(reversions_.size() == 1
-                || reversions_.size() == volsteptimes_.length + 1,
-                "there must be 1 or n+1 reversions (%d) for n volatility step times (%d)",
-                reversions_.size(), volsteptimes_.length);
+        QL.require(reversions_.size() == 1 || reversions_.size() == volsteptimes_.length + 1,
+                "there must be 1 or n+1 reversions (%d) for n volatility step times (%d)", reversions_.size(),
+                volsteptimes_.length);
 
-        if (reversions_.size() == 1) {
-            reversion_ = new ConstantParameter(reversions_.get(0).currentLink().value(),
-                    new NoConstraint());
+        if ( reversions_.size() == 1 ) {
+            reversion_ = new ConstantParameter(reversions_.get(0).currentLink().value(), new NoConstraint());
         } else {
             reversion_ = new PiecewiseConstantParameter(volsteptimes_);
-            for (int i = 0; i < reversion_.size(); i++) {
+            for ( int i = 0; i < reversion_.size(); i++ ) {
                 reversion_.setParam(i, reversions_.get(i).currentLink().value());
             }
         }
         arguments_.set(0, reversion_);
 
         sigma_ = new PiecewiseConstantParameter(volsteptimes_);
-        for (int i = 0; i < sigma_.size(); i++) {
+        for ( int i = 0; i < sigma_.size(); i++ ) {
             sigma_.setParam(i, volatilities_.get(i).currentLink().value());
         }
         arguments_.set(1, sigma_);
 
         // Build the state process. Note: this assigns to the protected
         // stateProcess_ field defined in Gaussian1dModel.
-        stateProcess_ = new GsrProcess(
-                volsteptimes_,
-                arrayCopy(sigma_.params()),
-                arrayCopy(reversion_.params()),
-                T);
+        stateProcess_ = new GsrProcess(volsteptimes_, arrayCopy(sigma_.params()), arrayCopy(reversion_.params()), T);
 
         // termStructure() observer registration is already done by
         // Gaussian1dModel's constructor; no need to repeat.
@@ -318,18 +288,12 @@ public class Gsr extends Gaussian1dModel {
         // an infinite notification loop — the Gsr model owns the process
         // lifecycle and pushes parameter changes into it explicitly.
 
-        for (Handle<Quote> r : reversions_) {
+        for ( Handle< Quote > r : reversions_ ) {
             r.addObserver(reversionObserver_);
         }
-        for (Handle<Quote> v : volatilities_) {
+        for ( Handle< Quote > v : volatilities_ ) {
             v.addObserver(volatilityObserver_);
         }
-    }
-
-    private static double[] arrayCopy(final Array a) {
-        final double[] out = new double[a.size()];
-        for (int i = 0; i < out.length; i++) out[i] = a.get(i);
-        return out;
     }
 
     //
@@ -342,21 +306,20 @@ public class Gsr extends Gaussian1dModel {
         final YieldTermStructure ts = termStructure().currentLink();
         // Resize defensively in case volstepdates_ changed (no public mutator,
         // but kept for parity with C++).
-        if (volsteptimes_ == null || volsteptimes_.length != volstepdates_.size()) {
+        if ( volsteptimes_ == null || volsteptimes_.length != volstepdates_.size() ) {
             volsteptimes_ = new double[volstepdates_.size()];
         }
-        for (int j = 0; j < volstepdates_.size(); j++) {
+        for ( int j = 0; j < volstepdates_.size(); j++ ) {
             volsteptimes_[j] = ts.timeFromReference(volstepdates_.get(j));
-            if (j == 0) {
-                QL.require(volsteptimes_[0] > 0.0,
-                        "volsteptimes must be positive (%f)", volsteptimes_[0]);
+            if ( j == 0 ) {
+                QL.require(volsteptimes_[0] > 0.0, "volsteptimes must be positive (%f)", volsteptimes_[0]);
             } else {
                 QL.require(volsteptimes_[j] > volsteptimes_[j - 1],
-                        "volsteptimes must be strictly increasing (%f@%d, %f@%d)",
-                        volsteptimes_[j - 1], j - 1, volsteptimes_[j], j);
+                        "volsteptimes must be strictly increasing (%f@%d, %f@%d)", volsteptimes_[j - 1], j - 1,
+                        volsteptimes_[j], j);
             }
         }
-        if (stateProcess_ != null) {
+        if ( stateProcess_ != null ) {
             final GsrProcess p = (GsrProcess) stateProcess_;
             p.flushCache();
             p.setTimes(volsteptimes_.clone());
@@ -364,7 +327,7 @@ public class Gsr extends Gaussian1dModel {
     }
 
     private void updateVolatility() {
-        for (int i = 0; i < sigma_.size(); i++) {
+        for ( int i = 0; i < sigma_.size(); i++ ) {
             sigma_.setParam(i, volatilities_.get(i).currentLink().value());
         }
         ((GsrProcess) stateProcess_).setVols(arrayCopy(sigma_.params()));
@@ -372,7 +335,7 @@ public class Gsr extends Gaussian1dModel {
     }
 
     private void updateReversion() {
-        for (int i = 0; i < reversion_.size(); i++) {
+        for ( int i = 0; i < reversion_.size(); i++ ) {
             reversion_.setParam(i, reversions_.get(i).currentLink().value());
         }
         ((GsrProcess) stateProcess_).setReversions(arrayCopy(reversion_.params()));
@@ -380,14 +343,13 @@ public class Gsr extends Gaussian1dModel {
     }
 
     /**
-     * Mirrors C++ {@code Gsr::update()}: flush the GSR process cache and
-     * delegate to {@link org.jquantlib.util.LazyObject}'s update flow which
-     * marks the model dirty and notifies observers (parity with the C++
-     * {@code LazyObject::update()} call at the bottom of {@code Gsr::update}).
+     * Mirrors C++ {@code Gsr::update()}: flush the GSR process cache and delegate to
+     * {@link org.jquantlib.util.LazyObject}'s update flow which marks the model dirty and notifies observers (parity
+     * with the C++ {@code LazyObject::update()} call at the bottom of {@code Gsr::update}).
      */
     @Override
     public void update() {
-        if (stateProcess_ != null) {
+        if ( stateProcess_ != null ) {
             ((GsrProcess) stateProcess_).flushCache();
             // C++ also calls stateProcess_->notifyObservers(), but per
             // initialize() we do not register as a stateProcess_ observer
@@ -421,27 +383,26 @@ public class Gsr extends Gaussian1dModel {
 
     @Override
     protected double zerobondImpl(final double T, final double t, final double y,
-                                  final Handle<YieldTermStructure> yts) {
+            final Handle< YieldTermStructure > yts) {
         calculate();
 
-        if (t == 0.0) {
+        if ( t == 0.0 ) {
             // C++: yts.empty() ? this->termStructure()->discount(T, true)
             //                  : yts->discount(T, true)
-            final YieldTermStructure ts =
-                    (yts == null || yts.empty()) ? termStructure().currentLink()
-                                                 : yts.currentLink();
+            final YieldTermStructure ts = (yts == null || yts.empty())
+                    ? termStructure().currentLink()
+                    : yts.currentLink();
             return ts.discount(T, true);
         }
 
         final GsrProcess p = (GsrProcess) stateProcess_;
 
         // x = y * stdDev(0, 0, t) + expectation(0, 0, t)
-        final double x = y * stateProcess_.stdDeviation(0.0, 0.0, t)
-                + stateProcess_.expectation(0.0, 0.0, t);
+        final double x = y * stateProcess_.stdDeviation(0.0, 0.0, t) + stateProcess_.expectation(0.0, 0.0, t);
         final double gtT = p.G(t, T, x);
 
         final double d;
-        if (yts == null || yts.empty()) {
+        if ( yts == null || yts.empty() ) {
             final YieldTermStructure ts = termStructure().currentLink();
             d = ts.discount(T, true) / ts.discount(t, true);
         } else {
@@ -454,21 +415,20 @@ public class Gsr extends Gaussian1dModel {
     }
 
     @Override
-    protected double numeraireImpl(final double t, final double y,
-                                   final Handle<YieldTermStructure> yts) {
+    protected double numeraireImpl(final double t, final double y, final Handle< YieldTermStructure > yts) {
         calculate();
 
         final GsrProcess p = (GsrProcess) stateProcess_;
         final double T = p.getForwardMeasureTime();
 
-        if (t == 0.0) {
-            final YieldTermStructure ts =
-                    (yts == null || yts.empty()) ? termStructure().currentLink()
-                                                 : yts.currentLink();
+        if ( t == 0.0 ) {
+            final YieldTermStructure ts = (yts == null || yts.empty())
+                    ? termStructure().currentLink()
+                    : yts.currentLink();
             // C++ branch difference (mirrored verbatim):
             // - empty yts: discount(T, true)  (extrapolation allowed)
             // - non-empty yts: discount(T)    (no explicit extrapolation flag)
-            if (yts == null || yts.empty()) {
+            if ( yts == null || yts.empty() ) {
                 return ts.discount(T, true);
             }
             return ts.discount(T);
@@ -498,21 +458,19 @@ public class Gsr extends Gaussian1dModel {
     }
 
     /**
-     * Sets the T-forward-measure horizon time. Per C++, this delegates to
-     * the GSR process which flushes its caches.
+     * Sets the T-forward-measure horizon time. Per C++, this delegates to the GSR process which flushes its caches.
      */
     public void numeraireTime(final double T) {
         ((GsrProcess) stateProcess_).setForwardMeasureTime(T);
     }
 
     /**
-     * Read-only view of the calibration arguments slots
-     * (slot 0 = reversion, slot 1 = sigma).
+     * Read-only view of the calibration arguments slots (slot 0 = reversion, slot 1 = sigma).
      * <p>
-     * Provided for parity with C++ {@code CalibratedModel::arguments_}; pricing
-     * engines that introspect calibration parameters can call this.
+     * Provided for parity with C++ {@code CalibratedModel::arguments_}; pricing engines that introspect calibration
+     * parameters can call this.
      */
-    public List<Parameter> arguments() {
+    public List< Parameter > arguments() {
         return java.util.Collections.unmodifiableList(arguments_);
     }
 
@@ -528,6 +486,6 @@ public class Gsr extends Gaussian1dModel {
     // Java's anonymous inner classes solve this directly.
 
     // Suppress an unused-import warning in some IDEs:
-    @SuppressWarnings("unused")
+    @SuppressWarnings( "unused" )
     private void __unused_observable_ref(final Observable o) { /* no-op */ }
 }

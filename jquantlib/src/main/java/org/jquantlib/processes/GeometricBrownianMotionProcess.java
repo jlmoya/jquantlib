@@ -28,10 +28,9 @@ package org.jquantlib.processes;
  * This class describes the stochastic process governed by
  * <p>
  * <p>{@latex[ dS(t, S) = \mu S dt + \sigma S dW_t }
- * 
- * @category processes
- * 
+ *
  * @author Ueli Hofstetter
+ * @category processes
  */
 public class GeometricBrownianMotionProcess extends StochasticProcess1D {
 
@@ -39,10 +38,7 @@ public class GeometricBrownianMotionProcess extends StochasticProcess1D {
     protected double mue_;
     protected double sigma_;
 
-    public GeometricBrownianMotionProcess(
-            final double initialValue,
-            final double mue,
-            final double sigma) {
+    public GeometricBrownianMotionProcess(final double initialValue, final double mue, final double sigma) {
         // Mirrors C++ v1.42.1 ql/processes/geometricbrownianprocess.cpp:
         // StochasticProcess1D(ext::shared_ptr<discretization>(new EulerDiscretization)).
         // Without it, the inherited expectation/stdDeviation/variance/evolve
@@ -54,16 +50,12 @@ public class GeometricBrownianMotionProcess extends StochasticProcess1D {
     }
 
     @Override
-    public double diffusion(
-            final double t,
-            final double x) {
+    public double diffusion(final double t, final double x) {
         return sigma_ * x;
     }
 
     @Override
-    public double drift(
-            final double t,
-            final double x) {
+    public double drift(final double t, final double x) {
         return mue_ * x;
     }
 

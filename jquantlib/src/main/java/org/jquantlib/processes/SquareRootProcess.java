@@ -28,8 +28,7 @@ package org.jquantlib.processes;
  *
  * <p>Governed by:
  * <pre>  dx = a (b - x_t) dt + sigma sqrt(x_t) dW_t</pre>
- * where {@code b} is the long-run mean, {@code a} is the speed of mean reversion,
- * and {@code sigma} is the volatility.
+ * where {@code b} is the long-run mean, {@code a} is the speed of mean reversion, and {@code sigma} is the volatility.
  *
  * <p>Java port of QuantLib v1.42.1
  * {@code ql/processes/squarerootprocess.{hpp,cpp}}.
@@ -44,24 +43,23 @@ public class SquareRootProcess extends StochasticProcess1D {
     private final double volatility_; // sigma
 
     /**
-     * @param b      long-run mean
-     * @param a      speed of mean reversion
-     * @param sigma  diffusion coefficient
-     * @param x0     initial value
+     * @param b     long-run mean
+     * @param a     speed of mean reversion
+     * @param sigma diffusion coefficient
+     * @param x0    initial value
      */
-    public SquareRootProcess(final double b, final double a, final double sigma,
-                             final double x0) {
+    public SquareRootProcess(final double b, final double a, final double sigma, final double x0) {
         super(new EulerDiscretization());
-        this.x0_         = x0;
-        this.mean_       = b;
-        this.speed_      = a;
+        this.x0_ = x0;
+        this.mean_ = b;
+        this.speed_ = a;
         this.volatility_ = sigma;
     }
 
     /**
-     * @param b      long-run mean
-     * @param a      speed of mean reversion
-     * @param sigma  diffusion coefficient
+     * @param b     long-run mean
+     * @param a     speed of mean reversion
+     * @param sigma diffusion coefficient
      */
     public SquareRootProcess(final double b, final double a, final double sigma) {
         this(b, a, sigma, 0.0);

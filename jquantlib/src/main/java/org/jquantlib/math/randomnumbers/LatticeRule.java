@@ -36,24 +36,26 @@ import org.jquantlib.QL;
  * {@code ql/math/randomnumbers/latticerules.{hpp,cpp}}.
  *
  * <p>The four embedded tables (A/B/C/D) each carry 3600 generator
- * coefficients reproduced verbatim from the C++ source. They are intended
- * for rank-1 cubature lattices with {@code N} between {@code 1024} and
- * {@code 2.9^20 ≈ 1.71e9} (the C++ upper bound; the same precondition is
- * enforced here for cross-validation).
+ * coefficients reproduced verbatim from the C++ source. They are intended for rank-1 cubature lattices with {@code N}
+ * between {@code 1024} and {@code 2.9^20 ≈ 1.71e9} (the C++ upper bound; the same precondition is enforced here for
+ * cross-validation).
  *
  * <p>Java packaging note: each table is loaded via several private
- * {@code fillX*} helpers to keep individual method bytecode well under the
- * JVM 64 KB class-initializer-code limit.
+ * {@code fillX*} helpers to keep individual method bytecode well under the JVM 64 KB class-initializer-code limit.
  */
 public final class LatticeRule {
 
-    public enum Type { A, B, C, D }
+    private static final double[] LATTICE_A = buildA();
+    private static final double[] LATTICE_B = buildB();
+    private static final double[] LATTICE_C = buildC();
+    private static final double[] LATTICE_D = buildD();
 
-    private LatticeRule() {}
+    private LatticeRule() {
+    }
 
     private static void fillA0(final double[] z) {
         int o = 0;
-        z[o + 0] = 1.0;
+        z[o] = 1.0;
         z[o + 1] = 182667.0;
         z[o + 2] = 469891.0;
         z[o + 3] = 498753.0;
@@ -957,7 +959,7 @@ public final class LatticeRule {
 
     private static void fillA1(final double[] z) {
         int o = 900;
-        z[o + 0] = 231339.0;
+        z[o] = 231339.0;
         z[o + 1] = 69451.0;
         z[o + 2] = 167207.0;
         z[o + 3] = 474283.0;
@@ -1861,7 +1863,7 @@ public final class LatticeRule {
 
     private static void fillA2(final double[] z) {
         int o = 1800;
-        z[o + 0] = 387243.0;
+        z[o] = 387243.0;
         z[o + 1] = 224899.0;
         z[o + 2] = 20489.0;
         z[o + 3] = 484965.0;
@@ -2765,7 +2767,7 @@ public final class LatticeRule {
 
     private static void fillA3(final double[] z) {
         int o = 2700;
-        z[o + 0] = 168457.0;
+        z[o] = 168457.0;
         z[o + 1] = 268881.0;
         z[o + 2] = 425747.0;
         z[o + 3] = 186685.0;
@@ -3676,11 +3678,9 @@ public final class LatticeRule {
         return z;
     }
 
-    private static final double[] LATTICE_A = buildA();
-
     private static void fillB0(final double[] z) {
         int o = 0;
-        z[o + 0] = 1.0;
+        z[o] = 1.0;
         z[o + 1] = 182667.0;
         z[o + 2] = 213731.0;
         z[o + 3] = 255351.0;
@@ -4584,7 +4584,7 @@ public final class LatticeRule {
 
     private static void fillB1(final double[] z) {
         int o = 900;
-        z[o + 0] = 488243.0;
+        z[o] = 488243.0;
         z[o + 1] = 89829.0;
         z[o + 2] = 395475.0;
         z[o + 3] = 1381.0;
@@ -5488,7 +5488,7 @@ public final class LatticeRule {
 
     private static void fillB2(final double[] z) {
         int o = 1800;
-        z[o + 0] = 202251.0;
+        z[o] = 202251.0;
         z[o + 1] = 452611.0;
         z[o + 2] = 106181.0;
         z[o + 3] = 413445.0;
@@ -6392,7 +6392,7 @@ public final class LatticeRule {
 
     private static void fillB3(final double[] z) {
         int o = 2700;
-        z[o + 0] = 428867.0;
+        z[o] = 428867.0;
         z[o + 1] = 57739.0;
         z[o + 2] = 82139.0;
         z[o + 3] = 348717.0;
@@ -7303,11 +7303,9 @@ public final class LatticeRule {
         return z;
     }
 
-    private static final double[] LATTICE_B = buildB();
-
     private static void fillC0(final double[] z) {
         int o = 0;
-        z[o + 0] = 1.0;
+        z[o] = 1.0;
         z[o + 1] = 433461.0;
         z[o + 2] = 103659.0;
         z[o + 3] = 481853.0;
@@ -8211,7 +8209,7 @@ public final class LatticeRule {
 
     private static void fillC1(final double[] z) {
         int o = 900;
-        z[o + 0] = 247309.0;
+        z[o] = 247309.0;
         z[o + 1] = 297383.0;
         z[o + 2] = 484591.0;
         z[o + 3] = 96287.0;
@@ -9115,7 +9113,7 @@ public final class LatticeRule {
 
     private static void fillC2(final double[] z) {
         int o = 1800;
-        z[o + 0] = 191625.0;
+        z[o] = 191625.0;
         z[o + 1] = 198237.0;
         z[o + 2] = 24223.0;
         z[o + 3] = 211611.0;
@@ -10019,7 +10017,7 @@ public final class LatticeRule {
 
     private static void fillC3(final double[] z) {
         int o = 2700;
-        z[o + 0] = 195147.0;
+        z[o] = 195147.0;
         z[o + 1] = 445607.0;
         z[o + 2] = 505157.0;
         z[o + 3] = 89415.0;
@@ -10930,11 +10928,9 @@ public final class LatticeRule {
         return z;
     }
 
-    private static final double[] LATTICE_C = buildC();
-
     private static void fillD0(final double[] z) {
         int o = 0;
-        z[o + 0] = 1.0;
+        z[o] = 1.0;
         z[o + 1] = 182667.0;
         z[o + 2] = 279195.0;
         z[o + 3] = 223491.0;
@@ -11838,7 +11834,7 @@ public final class LatticeRule {
 
     private static void fillD1(final double[] z) {
         int o = 900;
-        z[o + 0] = 342383.0;
+        z[o] = 342383.0;
         z[o + 1] = 486597.0;
         z[o + 2] = 449347.0;
         z[o + 3] = 311777.0;
@@ -12742,7 +12738,7 @@ public final class LatticeRule {
 
     private static void fillD2(final double[] z) {
         int o = 1800;
-        z[o + 0] = 205847.0;
+        z[o] = 205847.0;
         z[o + 1] = 405007.0;
         z[o + 2] = 444147.0;
         z[o + 3] = 387171.0;
@@ -13646,7 +13642,7 @@ public final class LatticeRule {
 
     private static void fillD3(final double[] z) {
         int o = 2700;
-        z[o + 0] = 3633.0;
+        z[o] = 3633.0;
         z[o + 1] = 2249.0;
         z[o + 2] = 197459.0;
         z[o + 3] = 239127.0;
@@ -14557,15 +14553,10 @@ public final class LatticeRule {
         return z;
     }
 
-    private static final double[] LATTICE_D = buildD();
-
-
-
     /**
-     * Copy the {@code A/B/C/D} rule of length {@code 3600} into a freshly
-     * allocated array.  Mirrors
-     * {@code LatticeRule::getRule(type name, std::vector<Real>& Z, Integer N)}
-     * in {@code ql/math/randomnumbers/latticerules.cpp}.
+     * Copy the {@code A/B/C/D} rule of length {@code 3600} into a freshly allocated array.  Mirrors
+     * {@code LatticeRule::getRule(type name, std::vector<Real>& Z, Integer N)} in
+     * {@code ql/math/randomnumbers/latticerules.cpp}.
      */
     public static double[] getRule(final Type name, final int n) {
         final int ruleLength = 3600;
@@ -14573,15 +14564,25 @@ public final class LatticeRule {
                 "N must be between 2 to 10 and 2 to the 20 for these lattice rules ");
         final double[] z = new double[ruleLength];
         final double[] src;
-        switch (name) {
-            case A: src = LATTICE_A; break;
-            case B: src = LATTICE_B; break;
-            case C: src = LATTICE_C; break;
-            case D: src = LATTICE_D; break;
-            default:
-                throw new IllegalStateException("unknown lattice rule requested");
+        switch ( name ) {
+        case A:
+            src = LATTICE_A;
+            break;
+        case B:
+            src = LATTICE_B;
+            break;
+        case C:
+            src = LATTICE_C;
+            break;
+        case D:
+            src = LATTICE_D;
+            break;
+        default:
+            throw new IllegalStateException("unknown lattice rule requested");
         }
         System.arraycopy(src, 0, z, 0, ruleLength);
         return z;
     }
+
+    public enum Type {A, B, C, D}
 }

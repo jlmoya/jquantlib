@@ -21,11 +21,11 @@
 
 package org.jquantlib.experimental.math;
 
-import java.util.List;
-
 import org.jquantlib.math.Ops;
 import org.jquantlib.math.distributions.InverseCumulativeNormal;
 import org.jquantlib.math.solvers1D.Brent;
+
+import java.util.List;
 
 /**
  * Inverse of the cumulative of the convolution of odd-T distributions.
@@ -44,16 +44,14 @@ public class InverseCumulativeBehrensFisher {
     private final double accuracy_;
     private final CumulativeBehrensFisher distrib_;
 
-    public InverseCumulativeBehrensFisher(final List<Integer> degreesFreedom,
-                                          final List<Double> factors) {
+    public InverseCumulativeBehrensFisher(final List< Integer > degreesFreedom, final List< Double > factors) {
         this(degreesFreedom, factors, 1.0e-6);
     }
 
-    public InverseCumulativeBehrensFisher(final List<Integer> degreesFreedom,
-                                          final List<Double> factors,
-                                          final double accuracy) {
+    public InverseCumulativeBehrensFisher(final List< Integer > degreesFreedom, final List< Double > factors,
+            final double accuracy) {
         double n2 = 0.0;
-        for (final Double v : factors) {
+        for ( final Double v : factors ) {
             n2 += v * v;
         }
         this.normSqr_ = n2;
@@ -63,12 +61,12 @@ public class InverseCumulativeBehrensFisher {
 
     /** Returns the cumulative inverse value for cumulative probability {@code q}. */
     public double op(final double q) {
-        if (q == 0.5) {
+        if ( q == 0.5 ) {
             return 0.0;
         }
         final double sign;
         final double effectiveq;
-        if (q < 0.5) {
+        if ( q < 0.5 ) {
             sign = -1.0;
             effectiveq = 1.0 - q;
         } else {

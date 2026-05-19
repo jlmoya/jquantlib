@@ -39,18 +39,17 @@ import org.jquantlib.time.Date;
  * ({@code ql/experimental/credit/factorspreadedhazardratecurve.hpp}).
  *
  * <p>This term structure remains linked to the original structure. Hazard
- * rate at time {@code t} is
- * {@code original.hazardRate(t, true) * (1 + spread.value())}.
+ * rate at time {@code t} is {@code original.hazardRate(t, true) * (1 + spread.value())}.
  *
  * <p>Phase 4m foundation.
  */
 public class FactorSpreadedHazardRateCurve extends HazardRateStructure {
 
-    private final Handle<DefaultProbabilityTermStructure> originalCurve;
-    private final Handle<Quote> spread;
+    private final Handle< DefaultProbabilityTermStructure > originalCurve;
+    private final Handle< Quote > spread;
 
-    public FactorSpreadedHazardRateCurve(final Handle<DefaultProbabilityTermStructure> h,
-                                         final Handle<Quote> spread) {
+    public FactorSpreadedHazardRateCurve(final Handle< DefaultProbabilityTermStructure > h,
+            final Handle< Quote > spread) {
         super(h.currentLink().dayCounter());
         this.originalCurve = h;
         this.spread = spread;

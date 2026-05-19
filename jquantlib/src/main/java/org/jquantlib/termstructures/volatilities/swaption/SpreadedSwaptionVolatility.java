@@ -43,9 +43,8 @@ import org.jquantlib.time.Date;
 import org.jquantlib.time.Period;
 
 /**
- * Spread overlay on a base {@link SwaptionVolatilityStructure}: adds a
- * constant additive volatility spread (via a {@link Quote}) to every
- * vol/smile returned by the base.
+ * Spread overlay on a base {@link SwaptionVolatilityStructure}: adds a constant additive volatility spread (via a
+ * {@link Quote}) to every vol/smile returned by the base.
  *
  * <p>Port of C++ QuantLib v1.42.1
  * {@code ql/termstructures/volatility/swaption/spreadedswaptionvol.{hpp,cpp}}.
@@ -65,17 +64,15 @@ import org.jquantlib.time.Period;
  */
 public class SpreadedSwaptionVolatility extends SwaptionVolatilityStructure {
 
-    private final Handle<SwaptionVolatilityStructure> baseVol_;
-    private final Handle<Quote> spread_;
+    private final Handle< SwaptionVolatilityStructure > baseVol_;
+    private final Handle< Quote > spread_;
 
-    public SpreadedSwaptionVolatility(
-            final Handle<SwaptionVolatilityStructure> baseVol,
-            final Handle<Quote> spread) {
-        super(baseVol.currentLink().dayCounter(),
-                baseVol.currentLink().businessDayConvention());
+    public SpreadedSwaptionVolatility(final Handle< SwaptionVolatilityStructure > baseVol,
+            final Handle< Quote > spread) {
+        super(baseVol.currentLink().dayCounter(), baseVol.currentLink().businessDayConvention());
         this.baseVol_ = baseVol;
         this.spread_ = spread;
-        if (baseVol_.currentLink().allowsExtrapolation()) {
+        if ( baseVol_.currentLink().allowsExtrapolation() ) {
             enableExtrapolation();
         }
         baseVol_.addObserver(this);
@@ -154,16 +151,13 @@ public class SpreadedSwaptionVolatility extends SwaptionVolatilityStructure {
     //
 
     @Override
-    protected SmileSection smileSectionImpl(final Date optionDate,
-                                            final Period swapTenor) {
-        final SmileSection baseSmile = baseVol_.currentLink()
-                .smileSection(optionDate, swapTenor, true);
+    protected SmileSection smileSectionImpl(final Date optionDate, final Period swapTenor) {
+        final SmileSection baseSmile = baseVol_.currentLink().smileSection(optionDate, swapTenor, true);
         return new SpreadedSmileSection(baseSmile, spread_);
     }
 
     @Override
-    protected SmileSection smileSectionImpl(final double optionTime,
-                                            final double swapLength) {
+    protected SmileSection smileSectionImpl(final double optionTime, final double swapLength) {
         // The base SwaptionVolatilityStructure exposes smileSection(Date,...)
         // but not directly smileSection(double, double, bool). Fall back via
         // optionDateFromTenor: we cannot easily invert (optionTime, swapLength)
@@ -171,61 +165,62 @@ public class SpreadedSwaptionVolatility extends SwaptionVolatilityStructure {
         // Reuse the optionTime→strike→volatility path: build an ad-hoc smile
         // wrapping baseVol_.volatility(t, l, strike) + spread.
         return new SpreadedSmileSection(
-                new BaseSmileWrapper(optionTime, swapLength,
-                        baseVol_.currentLink(), dayCounter(), volatilityType(), shift()),
-                spread_);
+                new BaseSmileWrapper(optionTime, swapLength, baseVol_.currentLink(), dayCounter(), volatilityType(),
+                        shift()), spread_);
     }
 
     @Override
-    public double volatilityImpl(final double optionTime,
-                                 final double swapLength,
-                                 final double strike) {
-        return baseVol_.currentLink().volatility(optionTime, swapLength, strike, true)
-                + spread_.currentLink().value();
+    public double volatilityImpl(final double optionTime, final double swapLength, final double strike) {
+        return baseVol_.currentLink().volatility(optionTime, swapLength, strike, true) + spread_.currentLink().value();
     }
 
     @Override
-    protected double volatilityImpl(final Date optionDate,
-                                    final Period swapTenor,
-                                    final double strike) {
-        return baseVol_.currentLink().volatility(optionDate, swapTenor, strike, true)
-                + spread_.currentLink().value();
+    protected double volatilityImpl(final Date optionDate, final Period swapTenor, final double strike) {
+        return baseVol_.currentLink().volatility(optionDate, swapTenor, strike, true) + spread_.currentLink().value();
     }
 
     @Override
-    public double blackVariance(final double optionTime, final double swapLength,
-                                final double strike, final boolean extrapolate) {
-        final double v = baseVol_.currentLink().volatility(
-                optionTime, swapLength, strike, extrapolate)
-                + spread_.currentLink().value();
+    public double blackVariance(final double optionTime, final double swapLength, final double strike,
+            final boolean extrapolate) {
+        final double v =
+                baseVol_.currentLink().volatility(optionTime, swapLength, strike, extrapolate) + spread_.currentLink()
+                        .value();
         return v * v * optionTime;
     }
 
     /**
-     * Helper smile-section that lazily evaluates the base
-     * SwaptionVolatilityStructure's {@code volatility(time, length, strike)}
-     * for a fixed (optionTime, swapLength) coordinate. Used by the
-     * {@code smileSectionImpl(double, double)} fallback when the base does
-     * not expose its own (time, length) smile section.
+     * Helper smile-section that lazily evaluates the base SwaptionVolatilityStructure's
+     * {@code volatility(time, length, strike)} for a fixed (optionTime, swapLength) coordinate. Used by the
+     * {@code smileSectionImpl(double, double)} fallback when the base does not expose its own (time, length) smile
+     * section.
      */
     private static final class BaseSmileWrapper extends SmileSection {
         private final double optionTime_;
         private final double swapLength_;
         private final SwaptionVolatilityStructure base_;
 
-        BaseSmileWrapper(final double optionTime, final double swapLength,
-                         final SwaptionVolatilityStructure base,
-                         final DayCounter dc,
-                         final VolatilityType type, final double shift) {
+        BaseSmileWrapper(final double optionTime, final double swapLength, final SwaptionVolatilityStructure base,
+                final DayCounter dc, final VolatilityType type, final double shift) {
             super(optionTime, dc, type, shift);
             this.optionTime_ = optionTime;
             this.swapLength_ = swapLength;
             this.base_ = base;
         }
 
-        @Override public double minStrike() { return base_.minStrike(); }
-        @Override public double maxStrike() { return base_.maxStrike(); }
-        @Override public double atmLevel()  { return Double.NaN; }
+        @Override
+        public double minStrike() {
+            return base_.minStrike();
+        }
+
+        @Override
+        public double maxStrike() {
+            return base_.maxStrike();
+        }
+
+        @Override
+        public double atmLevel() {
+            return Double.NaN;
+        }
 
         @Override
         protected double volatilityImpl(final double strike) {

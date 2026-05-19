@@ -28,20 +28,13 @@ public class SwapIndex extends InterestRateIndex {
     protected Period fixedLegTenor;
     protected BusinessDayConvention fixedLegConvention;
 
-
     //
     // public constructors
     //
 
-    public SwapIndex(
-            final String familyName,
-            final Period tenor,
-            final /*@Natural*/ int settlementDays,
-            final Currency currency,
-            final Calendar calendar,
-            final Period fixedLegTenor,
-            final BusinessDayConvention fixedLegConvention,
-            final DayCounter fixedLegDayCounter,
+    public SwapIndex(final String familyName, final Period tenor, final /*@Natural*/ int settlementDays,
+            final Currency currency, final Calendar calendar, final Period fixedLegTenor,
+            final BusinessDayConvention fixedLegConvention, final DayCounter fixedLegDayCounter,
             final IborIndex iborIndex) {
         super(familyName, tenor, settlementDays, currency, calendar, fixedLegDayCounter);
         this.tenor = tenor;
@@ -54,7 +47,6 @@ public class SwapIndex extends InterestRateIndex {
         //registerWith(this.iborIndex);
     }
 
-
     //
     // protected methods
     //
@@ -64,7 +56,6 @@ public class SwapIndex extends InterestRateIndex {
         return underlyingSwap(fixingDate).fairRate();
     }
 
-
     //
     // public methods
     //
@@ -73,7 +64,7 @@ public class SwapIndex extends InterestRateIndex {
         return iborIndex;
     }
 
-    public Period fixedLegTenor() /* @ReadOnly */{
+    public Period fixedLegTenor() /* @ReadOnly */ {
         return fixedLegTenor;
     }
 
@@ -82,14 +73,12 @@ public class SwapIndex extends InterestRateIndex {
     }
 
     public VanillaSwap underlyingSwap(final Date fixingDate) /* @ReadOnly */ {
-        /*@Rate*/ final double fixedRate = 0.0;
-        return new MakeVanillaSwap(tenor, iborIndex, fixedRate)
-        .withEffectiveDate(valueDate(fixingDate))
-        .withFixedLegCalendar(fixingCalendar())
-        .withFixedLegDayCount(dayCounter)
-        .withFixedLegTenor(fixedLegTenor)
-        .withFixedLegConvention(fixedLegConvention)
-        .withFixedLegTerminationDateConvention(fixedLegConvention).value();
+        /*@Rate*/
+        final double fixedRate = 0.0;
+        return new MakeVanillaSwap(tenor, iborIndex, fixedRate).withEffectiveDate(valueDate(fixingDate))
+                .withFixedLegCalendar(fixingCalendar()).withFixedLegDayCount(dayCounter)
+                .withFixedLegTenor(fixedLegTenor).withFixedLegConvention(fixedLegConvention)
+                .withFixedLegTerminationDateConvention(fixedLegConvention).value();
     }
 
     @Override
@@ -98,23 +87,18 @@ public class SwapIndex extends InterestRateIndex {
         return underlyingSwap(fixDate).maturityDate();
     }
 
-
-
     @Override
-    public Handle<YieldTermStructure> termStructure() /* @ReadOnly */ {
+    public Handle< YieldTermStructure > termStructure() /* @ReadOnly */ {
         return iborIndex.termStructure();
     }
 
     /**
-     * Returns a copy of this SwapIndex retemplated to a new tenor (mirrors
-     * C++ {@code SwapIndex::clone(Period)}). The new instance shares the
-     * same iborIndex / dayCounter / fixed-leg conventions but builds its
-     * underlying swap on the given tenor. Phase 2j.5 Track C.3 alignment.
+     * Returns a copy of this SwapIndex retemplated to a new tenor (mirrors C++ {@code SwapIndex::clone(Period)}). The
+     * new instance shares the same iborIndex / dayCounter / fixed-leg conventions but builds its underlying swap on the
+     * given tenor. Phase 2j.5 Track C.3 alignment.
      */
     public SwapIndex clone(final Period newTenor) {
-        return new SwapIndex(
-                familyName(), newTenor, fixingDays(), currency,
-                fixingCalendar(), fixedLegTenor, fixedLegConvention,
-                dayCounter, iborIndex);
+        return new SwapIndex(familyName(), newTenor, fixingDays(), currency, fixingCalendar(), fixedLegTenor,
+                fixedLegConvention, dayCounter, iborIndex);
     }
 }

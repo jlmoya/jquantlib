@@ -29,8 +29,8 @@ import org.jquantlib.math.distributions.NormalDistribution;
 import org.jquantlib.processes.GeneralizedBlackScholesProcess;
 
 /**
- * Risk-neutral terminal density calculator for the
- * Black-Scholes-Merton model with possibly strike-dependent volatility.
+ * Risk-neutral terminal density calculator for the Black-Scholes-Merton model with possibly strike-dependent
+ * volatility.
  *
  * <p>Java port of QuantLib v1.42.1
  * {@code ql/methods/finitedifferences/utilities/bsmrndcalculator.{hpp,cpp}}.
@@ -41,8 +41,8 @@ import org.jquantlib.processes.GeneralizedBlackScholesProcess;
  *   mean   = ln(S_0) - 0.5 * stdDev^2 + ln(D_q(t)/D_r(t))
  *   stdDev = sigma(t, exp(x)) * sqrt(t)
  * </pre>
- * where {@code D_q}, {@code D_r} are dividend / risk-free discount factors and
- * {@code sigma(t, K)} is the Black volatility at the implied strike.
+ * where {@code D_q}, {@code D_r} are dividend / risk-free discount factors and {@code sigma(t, K)} is the Black
+ * volatility at the implied strike.
  *
  * @author Phase 5h.5-RND port
  */
@@ -74,16 +74,13 @@ public class BSMRNDCalculator extends RiskNeutralDensityCalculator {
     }
 
     /**
-     * Returns {@code [mean, stdDev]} for the log-spot density at {@code (x, t)}.
-     * Mirrors the C++ {@code distributionParams} private helper.
+     * Returns {@code [mean, stdDev]} for the log-spot density at {@code (x, t)}. Mirrors the C++
+     * {@code distributionParams} private helper.
      */
     private double[] distributionParams(final double x, final double t) {
-        final double stdDev = process_.blackVolatility().currentLink().blackVol(t, Math.exp(x))
-                * Math.sqrt(t);
-        final double mean = Math.log(process_.x0())
-                - 0.5 * stdDev * stdDev
-                + Math.log(process_.dividendYield().currentLink().discount(t)
-                         / process_.riskFreeRate().currentLink().discount(t));
+        final double stdDev = process_.blackVolatility().currentLink().blackVol(t, Math.exp(x)) * Math.sqrt(t);
+        final double mean = Math.log(process_.x0()) - 0.5 * stdDev * stdDev + Math.log(
+                process_.dividendYield().currentLink().discount(t) / process_.riskFreeRate().currentLink().discount(t));
         return new double[] { mean, stdDev };
     }
 }

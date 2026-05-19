@@ -45,7 +45,6 @@ import org.jquantlib.QL;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.matrixutilities.Matrix;
 
-
 /**
  * 1-dimensional stochastic process
  * <p>
@@ -64,17 +63,17 @@ public abstract class StochasticProcess1D extends StochasticProcess {
 
     protected Discretization1D discretization1D;
 
-
     //
     // protected constructors
     //
 
     protected StochasticProcess1D() {
-    	// only extended classes can instantiate
+        // only extended classes can instantiate
     }
 
     /**
-     * @param discretization is an Object that <b>must</b> implement {@link Discretization} <b>and</b> {@link Discretization1D}.
+     * @param discretization is an Object that <b>must</b> implement {@link Discretization} <b>and</b>
+     *                       {@link Discretization1D}.
      */
     protected StochasticProcess1D(final Discretization1D discretization) {
         super();
@@ -88,74 +87,59 @@ public abstract class StochasticProcess1D extends StochasticProcess {
 
     /**
      *
-     * Returns the drift part of the equation
-     * {@latex$ \mu(t, x_t) }
+     * Returns the drift part of the equation {@latex$ \mu(t, x_t) }
      */
     public abstract /*@Drift*/ double drift(final /*@Time*/ double t, final /*@Real*/ double x);
 
     /**
-     * Returns the diffusion part of the equation, i.e.
-     * {@latex$ \sigma(t, x_t) }
+     * Returns the diffusion part of the equation, i.e. {@latex$ \sigma(t, x_t) }
      */
     public abstract /*@Diffusion*/ double diffusion(final /*@Time*/ double t, final /*@Real*/ double x);
 
     /**
-     * Returns the expectation
-     * {@latex$ E(x_{t_0 + \Delta t} | x_{t_0} = x_0) }
-     * of the process after a time interval {@latex$ \Delta t }
-     * according to the given discretization. This method can be
-     * overridden in derived classes which want to hard-code a
-     * particular discretization.
+     * Returns the expectation {@latex$ E(x_ { t_0 + \ Delta t } | x_ { t_0 } = x_0) } of the process after a time interval
+     * {@latex$ \Delta t } according to the given discretization. This method can be overridden in derived classes which
+     * want to hard-code a particular discretization.
      */
-    public /*@Expectation*/ double expectation(final /*@Time*/ double t0, final /*@Real*/ double x0, final /*@Time*/ double dt) {
+    public /*@Expectation*/ double expectation(final /*@Time*/ double t0, final /*@Real*/ double x0,
+            final /*@Time*/ double dt) {
         return apply(x0, discretization1D.driftDiscretization(this, t0, x0, dt)); // XXX
     }
 
     /**
-     * Returns the standard deviation
-     * {@latex$ S(x_{t_0 + \Delta t} | x_{t_0} = x_0) }
-     * of the process after a time interval {@latex$ \Delta t }
-     * according to the given discretization. This method can be
-     * overridden in derived classes which want to hard-code a
-     * particular discretization.
+     * Returns the standard deviation {@latex$ S(x_ { t_0 + \ Delta t } | x_ { t_0 } = x_0) } of the process after a time
+     * interval {@latex$ \Delta t } according to the given discretization. This method can be overridden in derived
+     * classes which want to hard-code a particular discretization.
      */
     public /*@StdDev*/ double stdDeviation(final /*@Time*/ double t0, final double x0, final /*@Time*/ double dt) {
         return discretization1D.diffusionDiscretization(this, t0, x0, dt); // XXX
     }
 
     /**
-     * Returns the variance
-     * {@latex$ V(x_{t_0 + \Delta t} | x_{t_0} = x_0) }
-     * of the process after a time interval {@latex$ \Delta t }
-     * according to the given discretization. This method can be
-     * overridden in derived classes which want to hard-code a
-     * particular discretization.
+     * Returns the variance {@latex$ V(x_ { t_0 + \ Delta t } | x_ { t_0 } = x_0) } of the process after a time interval
+     * {@latex$ \Delta t } according to the given discretization. This method can be overridden in derived classes which
+     * want to hard-code a particular discretization.
      */
     public /*@Variance*/ double variance(final /*@Time*/ double t0, final double x0, final /*@Time*/ double dt) {
         return discretization1D.varianceDiscretization(this, t0, x0, dt); // XXX
     }
 
     /**
-     * Returns the asset value after a time interval {@latex$ \Delta t }
-     * according to the given discretization. By default, it returns
-     * {@latex[
-     *     E(x_0,t_0,\Delta t) + S(x_0,t_0,\Delta t) \cdot \Delta w
-     * }
-     * where {@latex$ E } is the expectation and {@latex$ S } the
-     * standard deviation.
+     * Returns the asset value after a time interval {@latex$ \Delta t } according to the given discretization. By
+     * default, it returns {@latex[ E(x_0, t_0, \ Delta t) + S(x_0,t_0,\Delta t) \cdot \Delta w } where {@latex$ E } is the
+     * expectation and {@latex$ S } the standard deviation.
      */
-    public /*@Real*/ double evolve(final /*@Time*/ double t0, final /*@Real*/ double x0, final /*@Time*/ double dt, final double dw) {
-        return apply(expectation(t0,x0,dt), stdDeviation(t0,x0,dt) * dw);
+    public /*@Real*/ double evolve(final /*@Time*/ double t0, final /*@Real*/ double x0, final /*@Time*/ double dt,
+            final double dw) {
+        return apply(expectation(t0, x0, dt), stdDeviation(t0, x0, dt) * dw);
     }
 
     /**
-     * Applies a change to the asset value. By default, it
-     * returns {@latex$ x + \Delta x }.
+     * Applies a change to the asset value. By default, it returns {@latex$ x + \Delta x }.
      */
     public /*@Real*/ double apply(final /*@Real*/ double x0, final /*@Real*/ double dx) {
         return x0 + dx;
     }
-
 
     //
     // implements StochasticProcess
@@ -168,56 +152,59 @@ public abstract class StochasticProcess1D extends StochasticProcess {
 
     @Override
     public final /*@Real*/ Array initialValues() {
-        return new Array(1).fill( x0() );
+        return new Array(1).fill(x0());
     }
 
     @Override
     public final /*@Real*/ Array drift(final /*@Time*/ double t, /*@Real*/ final Array x) {
-        QL.require(x.size()==1 , ARRAY_1D_REQUIRED); // TODO: message
-        return new Array(1).fill( drift(t, x.first()) );//ZH:QL097, fill requires atleast one element
+        QL.require(x.size() == 1, ARRAY_1D_REQUIRED); // TODO: message
+        return new Array(1).fill(drift(t, x.first()));//ZH:QL097, fill requires atleast one element
     }
 
     @Override
     public final /*@Diffusion*/ Matrix diffusion(final /*@Time*/ double t, /*@Real*/ final Array x) {
-        QL.require(x.size()==1 , ARRAY_1D_REQUIRED); // TODO: message
+        QL.require(x.size() == 1, ARRAY_1D_REQUIRED); // TODO: message
         final double v = diffusion(t, x.first());
         return new Matrix(1, 1).fill(v);
     }
 
     @Override
-    public final /*@Expectation*/ Array expectation(final /*@Time*/ double t0, final /*@Real*/ Array x0, final /*@Time*/ double dt) {
-        QL.require(x0.size()==1 , ARRAY_1D_REQUIRED); // TODO: message
-        return new Array(1).fill( expectation(t0, x0.first(), dt) );//ZH: not same code as QL097, guessed size 1
+    public final /*@Expectation*/ Array expectation(final /*@Time*/ double t0, final /*@Real*/ Array x0,
+            final /*@Time*/ double dt) {
+        QL.require(x0.size() == 1, ARRAY_1D_REQUIRED); // TODO: message
+        return new Array(1).fill(expectation(t0, x0.first(), dt));//ZH: not same code as QL097, guessed size 1
     }
 
     @Override
-    public final /*@StdDev*/ Matrix stdDeviation(final /*@Time*/ double t0, final /*@Real*/ Array x0, final /*@Time*/ double dt) {
-        QL.require(x0.size()==1 , ARRAY_1D_REQUIRED); // TODO: message
+    public final /*@StdDev*/ Matrix stdDeviation(final /*@Time*/ double t0, final /*@Real*/ Array x0,
+            final /*@Time*/ double dt) {
+        QL.require(x0.size() == 1, ARRAY_1D_REQUIRED); // TODO: message
         final double v = stdDeviation(t0, x0.first(), dt);
         return new Matrix(1, 1).fill(v);
     }
 
     @Override
-    public final /*@Covariance*/ Matrix covariance(final /*@Time*/ double t0, final /*@Real*/ Array x0, final /*@Time*/ double dt) {
-        QL.require(x0.size()==1 , ARRAY_1D_REQUIRED); // TODO: message
+    public final /*@Covariance*/ Matrix covariance(final /*@Time*/ double t0, final /*@Real*/ Array x0,
+            final /*@Time*/ double dt) {
+        QL.require(x0.size() == 1, ARRAY_1D_REQUIRED); // TODO: message
         final double v = discretization1D.varianceDiscretization(this, t0, x0.first(), dt);
         return new Matrix(1, 1).fill(v);
     }
 
     @Override
-    public final Array evolve(final /*@Time*/ double t0, final /*@Real*/ Array x0, final /*@Time*/ double dt, final Array dw) {
-        QL.require(x0.size()==1 , ARRAY_1D_REQUIRED); // TODO: message
-        QL.require(dw.size()==1 , ARRAY_1D_REQUIRED); // TODO: message
-        return new Array(1).fill( evolve(t0, x0.first(), dt, dw.first()) );//ZH: Method different than QL097, set size 1
+    public final Array evolve(final /*@Time*/ double t0, final /*@Real*/ Array x0, final /*@Time*/ double dt,
+            final Array dw) {
+        QL.require(x0.size() == 1, ARRAY_1D_REQUIRED); // TODO: message
+        QL.require(dw.size() == 1, ARRAY_1D_REQUIRED); // TODO: message
+        return new Array(1).fill(evolve(t0, x0.first(), dt, dw.first()));//ZH: Method different than QL097, set size 1
     }
 
     @Override
     public final /*@Real*/ Array apply(final /*@Real*/ Array x0, final Array dx) {
-        QL.require(x0.size()==1 , ARRAY_1D_REQUIRED); // TODO: message
-        QL.require(dx.size()==1 , ARRAY_1D_REQUIRED); // TODO: message
-        return new Array(1).fill( apply(x0.first(), dx.first()) );//ZH: TBD review code with QL097
+        QL.require(x0.size() == 1, ARRAY_1D_REQUIRED); // TODO: message
+        QL.require(dx.size() == 1, ARRAY_1D_REQUIRED); // TODO: message
+        return new Array(1).fill(apply(x0.first(), dx.first()));//ZH: TBD review code with QL097
     }
-
 
     //
     // inner interfaces
@@ -233,25 +220,22 @@ public abstract class StochasticProcess1D extends StochasticProcess {
         /**
          * Returns the drift part of the equation, i.e. {@latex$ \mu(t, x_t) }
          */
-        public /* @Drift */double driftDiscretization(
-                    final StochasticProcess1D sp,
-                    final/* @Time */double t0, final/* @Real */double x0, final/* @Time */double dt); // XXX
+        /* @Drift */double driftDiscretization(final StochasticProcess1D sp, final/* @Time */double t0,
+                final/* @Real */double x0, final/* @Time */double dt); // XXX
 
         /**
          * Returns the diffusion part of the equation, i.e. {@latex$ \sigma(t, x_t) }
          */
-        public /* @Diffusion */double diffusionDiscretization(
-                    final StochasticProcess1D sp,
-                    final/* @Time */double t0, final/* @Real */double x0, final/* @Time */double dt); // XXX
+        /* @Diffusion */double diffusionDiscretization(final StochasticProcess1D sp, final/* @Time */double t0,
+                final/* @Real */double x0, final/* @Time */double dt); // XXX
 
         /**
-         * Returns the variance {@latex$ V(x_{t_0 + \Delta t} | x_{t_0} = x_0) } of the process after a time interval
-         * {@latex$ \Delta t } according to the given discretization. This method can be overridden in derived classes which want to
-         * hard-code a particular discretization.
+         * Returns the variance {@latex$ V(x_ { t_0 + \ Delta t } | x_ { t_0 } = x_0) } of the process after a time interval
+         * {@latex$ \Delta t } according to the given discretization. This method can be overridden in derived classes
+         * which want to hard-code a particular discretization.
          */
-        public /* @Variance */double varianceDiscretization(
-                    final StochasticProcess1D sp,
-                    final/* @Time */double t0, final/* @Real */double x0, final/* @Time */double dt); // XXX
+        /* @Variance */double varianceDiscretization(final StochasticProcess1D sp, final/* @Time */double t0,
+                final/* @Real */double x0, final/* @Time */double dt); // XXX
 
     }
 

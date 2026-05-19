@@ -37,30 +37,17 @@ import org.jquantlib.time.TimeUnit;
  * ({@code ql/indexes/inflation/aucpi.hpp:45-78}).
  *
  * <p>Family name is {@code "YY_CPI"}, region Australia, currency AUD,
- * availability lag 2 months. {@code ratio = false} since this is a quoted YY
- * index, not a derived ratio.
+ * availability lag 2 months. {@code ratio = false} since this is a quoted YY index, not a derived ratio.
  */
 public class YYAUCPI extends YoYInflationIndex {
 
-    public YYAUCPI(final Frequency frequency,
-                   final boolean revised,
-                   final boolean interpolated) {
-        this(frequency, revised, interpolated,
-                new Handle<YoYInflationTermStructure>());
+    public YYAUCPI(final Frequency frequency, final boolean revised, final boolean interpolated) {
+        this(frequency, revised, interpolated, new Handle< YoYInflationTermStructure >());
     }
 
-    public YYAUCPI(final Frequency frequency,
-                   final boolean revised,
-                   final boolean interpolated,
-                   final Handle<YoYInflationTermStructure> termStructure) {
-        super("YY_CPI",
-                new AustraliaRegion(),
-                revised,
-                interpolated,
-                false,
-                frequency,
-                new Period(2, TimeUnit.Months),
-                new AUDCurrency(),
-                termStructure);
+    public YYAUCPI(final Frequency frequency, final boolean revised, final boolean interpolated,
+            final Handle< YoYInflationTermStructure > termStructure) {
+        super("YY_CPI", new AustraliaRegion(), revised, interpolated, false, frequency, new Period(2, TimeUnit.Months),
+                new AUDCurrency(), termStructure);
     }
 }

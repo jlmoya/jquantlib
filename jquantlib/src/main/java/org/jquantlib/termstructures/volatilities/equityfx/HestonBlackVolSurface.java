@@ -57,19 +57,15 @@ import org.jquantlib.time.calendars.NullCalendar;
  *
  * <p>For each ({@code t}, {@code K}) query the surface (a) computes the
  * undiscounted Heston price of a plain-vanilla payoff via
- * {@link AnalyticHestonEngine#priceVanillaPayoff(PlainVanillaPayoff, double)},
- * (b) inverts that price to a Black-Scholes implied total standard deviation
- * with {@link BlackFormula#blackFormulaImpliedStdDev}, and (c) returns the
- * implied volatility {@code sigma_BS(t, K)}. Variance is exposed via
- * {@code sigma_BS^2 * t}.
+ * {@link AnalyticHestonEngine#priceVanillaPayoff(PlainVanillaPayoff, double)}, (b) inverts that price to a
+ * Black-Scholes implied total standard deviation with {@link BlackFormula#blackFormulaImpliedStdDev}, and (c) returns
+ * the implied volatility {@code sigma_BS(t, K)}. Variance is exposed via {@code sigma_BS^2 * t}.
  *
  * <p>Java port of QuantLib v1.42.1
- * {@code ql/termstructures/volatility/equityfx/hestonblackvolsurface.{hpp,cpp}}
- * (170 LOC). The port mirrors the C++ implementation function-for-function;
- * the only structural deviation is that the Java {@link AnalyticHestonEngine}
- * holds both {@link HestonModel} and {@link HestonProcess} (the C++ engine
- * derives the process from the model), so the surface accepts the model
- * directly and forwards {@code model.process()} to the engine.
+ * {@code ql/termstructures/volatility/equityfx/hestonblackvolsurface.{hpp,cpp}} (170 LOC). The port mirrors the C++
+ * implementation function-for-function; the only structural deviation is that the Java {@link AnalyticHestonEngine}
+ * holds both {@link HestonModel} and {@link HestonProcess} (the C++ engine derives the process from the model), so the
+ * surface accepts the model directly and forwards {@code model.process()} to the engine.
  *
  * <h3>Heston-only safeguards</h3>
  * <ul>
@@ -93,15 +89,12 @@ public class HestonBlackVolSurface extends BlackVolTermStructure {
     private final Integration integration_;
 
     /**
-     * Convenience constructor — Gauss-Laguerre order 160 with
-     * {@link ComplexLogFormula#Gatheral} (the only complex-log formula
-     * implemented in the Java port; the C++ default is
-     * {@link ComplexLogFormula#AngledContour}).
+     * Convenience constructor — Gauss-Laguerre order 160 with {@link ComplexLogFormula#Gatheral} (the only complex-log
+     * formula implemented in the Java port; the C++ default is {@link ComplexLogFormula#AngledContour}).
      *
      * <p>The Java {@link AnalyticHestonEngine} currently drives only the
-     * Gatheral integrand from {@code calculate()} /
-     * {@code priceVanillaPayoff()}; passing other enum values is accepted by
-     * the engine constructor but silently falls back to Gatheral pricing.
+     * Gatheral integrand from {@code calculate()} / {@code priceVanillaPayoff()}; passing other enum values is accepted
+     * by the engine constructor but silently falls back to Gatheral pricing.
      */
     public HestonBlackVolSurface(final HestonModel hestonModel) {
         this(hestonModel, ComplexLogFormula.Gatheral, Integration.gaussLaguerre(160));
@@ -110,24 +103,18 @@ public class HestonBlackVolSurface extends BlackVolTermStructure {
     /**
      * Full constructor mirroring C++ v1.42.1.
      *
-     * @param hestonModel    Heston model providing process, calibrated
-     *                       parameters and the underlying yield curves.
-     * @param cpxLogFormula  complex-log formula (only
-     *                       {@link ComplexLogFormula#Gatheral} is implemented
-     *                       by the Java engine).
-     * @param integration    Fourier-integration configurator passed to
-     *                       {@link AnalyticHestonEngine}.
+     * @param hestonModel   Heston model providing process, calibrated parameters and the underlying yield curves.
+     * @param cpxLogFormula complex-log formula (only {@link ComplexLogFormula#Gatheral} is implemented by the Java
+     *                      engine).
+     * @param integration   Fourier-integration configurator passed to {@link AnalyticHestonEngine}.
      */
-    public HestonBlackVolSurface(final HestonModel hestonModel,
-                                 final ComplexLogFormula cpxLogFormula,
-                                 final Integration integration) {
-        super(hestonModel.process().riskFreeRate().currentLink().referenceDate(),
-              new NullCalendar(),
-              BusinessDayConvention.Following,
-              hestonModel.process().riskFreeRate().currentLink().dayCounter());
-        this.hestonModel_  = hestonModel;
+    public HestonBlackVolSurface(final HestonModel hestonModel, final ComplexLogFormula cpxLogFormula,
+            final Integration integration) {
+        super(hestonModel.process().riskFreeRate().currentLink().referenceDate(), new NullCalendar(),
+                BusinessDayConvention.Following, hestonModel.process().riskFreeRate().currentLink().dayCounter());
+        this.hestonModel_ = hestonModel;
         this.cpxLogFormula_ = cpxLogFormula;
-        this.integration_  = integration;
+        this.integration_ = integration;
         hestonModel_.addObserver(this);
     }
 
@@ -163,22 +150,22 @@ public class HestonBlackVolSurface extends BlackVolTermStructure {
 
     @Override
     protected double blackVolImpl(final double t, final double strike) {
-        final AnalyticHestonEngine hestonEngine = new AnalyticHestonEngine(
-                hestonModel_, hestonModel_.process(), cpxLogFormula_, integration_);
+        final AnalyticHestonEngine hestonEngine = new AnalyticHestonEngine(hestonModel_, hestonModel_.process(),
+                cpxLogFormula_, integration_);
 
         final HestonProcess process = hestonModel_.process();
 
         final double df = process.riskFreeRate().currentLink().discount(t, true);
-        final double fwd = process.s0().currentLink().value()
-                * process.dividendYield().currentLink().discount(t, true) / df;
+        final double fwd =
+                process.s0().currentLink().value() * process.dividendYield().currentLink().discount(t, true) / df;
 
-        final PlainVanillaPayoff payoff = new PlainVanillaPayoff(
-                fwd > strike ? Option.Type.Put : Option.Type.Call, strike);
+        final PlainVanillaPayoff payoff = new PlainVanillaPayoff(fwd > strike ? Option.Type.Put : Option.Type.Call,
+                strike);
 
         final double npv = hestonEngine.priceVanillaPayoff(payoff, t);
 
         final double theta = hestonModel_.theta();
-        if (npv <= 0.0) {
+        if ( npv <= 0.0 ) {
             return Math.sqrt(theta);
         }
 
@@ -197,12 +184,12 @@ public class HestonBlackVolSurface extends BlackVolTermStructure {
         // (whose default accuracy is 1e-6 and whose default initial guess is
         // the Brenner-Subrahmanyam approximation, not sqrt(theta)).
         final double accuracy = Math.ulp(1.0); // numeric_limits<double>::epsilon()
-        final double guess    = Math.sqrt(theta);
-        final double step     = 0.01;
-        final double fwdF     = fwd;
-        final double dfF      = df;
+        final double guess = Math.sqrt(theta);
+        final double step = 0.01;
+        final double fwdF = fwd;
+        final double dfF = df;
         final Option.Type optType = payoff.optionType();
-        final double strikeF  = strike;
+        final double strikeF = strike;
 
         final Brent solver = new Brent();
         solver.setMaxEvaluations(10000);
@@ -211,8 +198,7 @@ public class HestonBlackVolSurface extends BlackVolTermStructure {
             @Override
             public double op(final double v) {
                 final double stddev = Math.max(0.0, v) * Math.sqrt(t);
-                return BlackFormula.blackFormula(optType, strikeF, fwdF,
-                        stddev, dfF) - npv;
+                return BlackFormula.blackFormula(optType, strikeF, fwdF, stddev, dfF) - npv;
             }
         };
 

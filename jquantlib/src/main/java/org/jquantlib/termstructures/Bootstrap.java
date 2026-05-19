@@ -24,12 +24,11 @@ package org.jquantlib.termstructures;
 
 import org.jquantlib.termstructures.yieldcurves.PiecewiseYieldCurve;
 
+public interface Bootstrap< Curve extends PiecewiseYieldCurve > {
 
-public interface Bootstrap<Curve extends PiecewiseYieldCurve> {
+    void calculate();
 
-    public void calculate();
-
-    public void setup(Curve curve);
+    void setup(Curve curve);
     //XXX
     //    public void setup(
     //            final YieldTermStructure termStructure,

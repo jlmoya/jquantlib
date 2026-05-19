@@ -28,9 +28,6 @@
 */
 package org.jquantlib.experimental.inflation;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.daycounters.DayCounter;
@@ -51,17 +48,15 @@ import org.jquantlib.quotes.SimpleQuote;
 import org.jquantlib.termstructures.YoYInflationTermStructure;
 import org.jquantlib.termstructures.volatility.inflation.ConstantYoYOptionletVolatility;
 import org.jquantlib.termstructures.volatility.inflation.YoYOptionletVolatilitySurface;
-import org.jquantlib.time.BusinessDayConvention;
-import org.jquantlib.time.Calendar;
-import org.jquantlib.time.Date;
-import org.jquantlib.time.Period;
-import org.jquantlib.time.TimeUnit;
+import org.jquantlib.time.*;
 import org.jquantlib.time.calendars.Target;
 import org.jquantlib.util.Pair;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * Concrete YoY optionlet stripper that interpolates along each K (rather
- * than fitting a model).
+ * Concrete YoY optionlet stripper that interpolates along each K (rather than fitting a model).
  *
  * <p>Mirrors C++ v1.42.1
  * {@code QuantLib::InterpolatedYoYOptionletStripper}
@@ -79,18 +74,16 @@ import org.jquantlib.util.Pair;
  * </ol>
  *
  * @param <I> Interpolator type used for the per-K curve (e.g. Linear)
- *
  * @author JQuantLib migration team (Phase 2s Track B)
  */
-public class InterpolatedYoYOptionletStripper<I extends Interpolator>
-        extends YoYOptionletStripper {
+public class InterpolatedYoYOptionletStripper< I extends Interpolator > extends YoYOptionletStripper {
 
     /** Per-K stripped vol curves (one per strike). */
-    protected final List<YoYOptionletVolatilitySurface> volCurves_ = new ArrayList<>();
+    protected final List< YoYOptionletVolatilitySurface > volCurves_ = new ArrayList<>();
 
-    private final Class<I> classI;
+    private final Class< I > classI;
 
-    public InterpolatedYoYOptionletStripper(final Class<I> classI) {
+    public InterpolatedYoYOptionletStripper(final Class< I > classI) {
         QL.require(classI != null, "Generic type for Interpolator is null");
         this.classI = classI;
     }
@@ -106,22 +99,22 @@ public class InterpolatedYoYOptionletStripper<I extends Interpolator>
 
     @Override
     public double maxStrike() {
-        final List<Double> ks = yoyCapFloorTermPriceSurface_.strikes();
+        final List< Double > ks = yoyCapFloorTermPriceSurface_.strikes();
         return ks.get(ks.size() - 1);
     }
 
     @Override
-    public List<Double> strikes() {
+    public List< Double > strikes() {
         return yoyCapFloorTermPriceSurface_.strikes();
     }
 
     @Override
-    public Pair<List<Double>, List<Double>> slice(final Date d) {
-        final List<Double> ks = strikes();
+    public Pair< List< Double >, List< Double > > slice(final Date d) {
+        final List< Double > ks = strikes();
         final int nK = ks.size();
-        final List<Double> outKs = new ArrayList<>(nK);
-        final List<Double> outVs = new ArrayList<>(nK);
-        for (int i = 0; i < nK; ++i) {
+        final List< Double > outKs = new ArrayList<>(nK);
+        final List< Double > outVs = new ArrayList<>(nK);
+        for ( int i = 0; i < nK; ++i ) {
             final double K = ks.get(i);
             final double v = volCurves_.get(i).volatility(d, K);
             outKs.add(K);
@@ -131,13 +124,12 @@ public class InterpolatedYoYOptionletStripper<I extends Interpolator>
     }
 
     /**
-     * Mirrors C++ {@code initialize(...)}. Strips per-K vol curves out of
-     * the price surface using the supplied cap/floor pricing engine.
+     * Mirrors C++ {@code initialize(...)}. Strips per-K vol curves out of the price surface using the supplied
+     * cap/floor pricing engine.
      */
     @Override
-    public void initialize(final YoYCapFloorTermPriceSurfaceLike s,
-                           final InflationCapFloorEngine p,
-                           final double slope) {
+    public void initialize(final YoYCapFloorTermPriceSurfaceLike s, final InflationCapFloorEngine p,
+            final double slope) {
         this.yoyCapFloorTermPriceSurface_ = s;
         this.p_ = p;
         this.lag_ = s.observationLag();
@@ -150,24 +142,22 @@ public class InterpolatedYoYOptionletStripper<I extends Interpolator>
         final DayCounter dc = s.dayCounter();
 
         // switch from caps to floors when out of floors
-        final List<Double> floorStrikes = s.floorStrikes();
+        final List< Double > floorStrikes = s.floorStrikes();
         final double maxFloor = floorStrikes.get(floorStrikes.size() - 1);
         InflationCapFloor.Type useType = InflationCapFloor.Type.Floor;
         final Period TPmin = s.maturities().get(0);
 
         // create a "fake index" based on Generic, this should work
         // provided that the lag and frequency are correct
-        final Handle<YoYInflationTermStructure> hYoY = new Handle<>(s.YoYTS());
-        final YoYInflationIndex anIndex = new YYGenericCPI(
-                frequency_, false, lag_,
-                new org.jquantlib.currencies.Currency(),
-                hYoY);
+        final Handle< YoYInflationTermStructure > hYoY = new Handle<>(s.YoYTS());
+        final YoYInflationIndex anIndex = new YYGenericCPI(frequency_, false, lag_,
+                new org.jquantlib.currencies.Currency(), hYoY);
 
         // strip each K separately
-        final List<Double> Ks = s.strikes();
-        for (int i = 0; i < Ks.size(); ++i) {
+        final List< Double > Ks = s.strikes();
+        for ( int i = 0; i < Ks.size(); ++i ) {
             final double K = Ks.get(i);
-            if (K > maxFloor) {
+            if ( K > maxFloor ) {
                 useType = InflationCapFloor.Type.Cap;
             }
 
@@ -186,46 +176,34 @@ public class InterpolatedYoYOptionletStripper<I extends Interpolator>
             try {
                 final InflationCapFloor.Type useTypeFinal = useType;
                 found = solver.solve(
-                        new ObjectiveFunction(useTypeFinal, slope, K, lag_,
-                                fixingDays_, anIndex, s, p_, priceToMatch),
+                        new ObjectiveFunction(useTypeFinal, slope, K, lag_, fixingDays_, anIndex, s, p_, priceToMatch),
                         solverTolerance, guess, lo, hi);
-            } catch (final RuntimeException re) {
-                throw new RuntimeException(
-                        "failed to find solution because: " + re.getMessage(),
-                        re);
+            } catch ( final RuntimeException re ) {
+                throw new RuntimeException("failed to find solution because: " + re.getMessage(), re);
             }
 
             // ***create helpers***
             final double notional = 10000;  // work in bps
-            final List<YoYOptionletHelper> helpers = new ArrayList<>();
-            final List<Period> mats = s.maturities();
-            for (int j = 0; j < mats.size(); ++j) {
+            final List< YoYOptionletHelper > helpers = new ArrayList<>();
+            final List< Period > mats = s.maturities();
+            for ( int j = 0; j < mats.size(); ++j ) {
                 final Period Tp = mats.get(j);
                 final double nextPrice = (useType == InflationCapFloor.Type.Cap)
                         ? s.capPrice(Tp, K)
                         : s.floorPrice(Tp, K);
 
-                final Handle<Quote> quote1 = new Handle<>(new SimpleQuote(nextPrice));
+                final Handle< Quote > quote1 = new Handle<>(new SimpleQuote(nextPrice));
 
                 // helper should be an integer number of periods away,
                 // this is enforced by rounding
-                final int nT = (int) Math.floor(
-                        s.timeFromReference(s.yoyOptionDateFromTenor(Tp)) + 0.5);
+                final int nT = (int) Math.floor(s.timeFromReference(s.yoyOptionDateFromTenor(Tp)) + 0.5);
 
-                final YoYOptionletHelper helper = new YoYOptionletHelper(
-                        quote1, notional, useType,
-                        lag_, dc, cal, fixingDays_,
-                        anIndex, CPI.InterpolationType.Flat,
-                        K, nT, p_);
+                final YoYOptionletHelper helper = new YoYOptionletHelper(quote1, notional, useType, lag_, dc, cal,
+                        fixingDays_, anIndex, CPI.InterpolationType.Flat, K, nT, p_);
 
-                final ConstantYoYOptionletVolatility yoyVolBLACK =
-                        new ConstantYoYOptionletVolatility(
-                                found, settlementDays,
-                                cal, bdc, dc,
-                                lag_, frequency_, false,
-                                -1.0, 3.0,  // -100% to +300%
-                                VolatilityType.ShiftedLognormal,
-                                0.0);
+                final ConstantYoYOptionletVolatility yoyVolBLACK = new ConstantYoYOptionletVolatility(found,
+                        settlementDays, cal, bdc, dc, lag_, frequency_, false, -1.0, 3.0,  // -100% to +300%
+                        VolatilityType.ShiftedLognormal, 0.0);
 
                 helper.setTermStructure(yoyVolBLACK);
                 helpers.add(helper);
@@ -239,12 +217,9 @@ public class InterpolatedYoYOptionletStripper<I extends Interpolator>
             final double minStrike = K - eps;
             final double maxStrike = K + eps;
 
-            final PiecewiseYoYOptionletVolatility<I> testPW =
-                    new PiecewiseYoYOptionletVolatility<>(
-                            classI, settlementDays, cal, bdc, dc, lag_,
-                            frequency_, indexIsInterpolated_,
-                            minStrike, maxStrike, baseYoYVolatility,
-                            helpers);
+            final PiecewiseYoYOptionletVolatility< I > testPW = new PiecewiseYoYOptionletVolatility<>(classI,
+                    settlementDays, cal, bdc, dc, lag_, frequency_, indexIsInterpolated_, minStrike, maxStrike,
+                    baseYoYVolatility, helpers);
             testPW.recalculate();
             volCurves_.add(testPW);
         }
@@ -255,8 +230,7 @@ public class InterpolatedYoYOptionletStripper<I extends Interpolator>
     //
 
     /**
-     * Mirrors C++ {@code ObjectiveFunction}: prices a small (2-pillar)
-     * cap/floor under a guess vol curve and returns
+     * Mirrors C++ {@code ObjectiveFunction}: prices a small (2-pillar) cap/floor under a guess vol curve and returns
      * {@code priceToMatch - NPV}.
      */
     private static final class ObjectiveFunction implements Ops.DoubleOp {
@@ -271,16 +245,10 @@ public class InterpolatedYoYOptionletStripper<I extends Interpolator>
         private final YoYCapFloorTermPriceSurfaceLike surf_;
         private final InflationCapFloorEngine p_;
 
-        @SuppressWarnings("unused")
-        ObjectiveFunction(final InflationCapFloor.Type type,
-                          final double slope,
-                          final double K,
-                          final Period lag,
-                          final int fixingDays,
-                          final YoYInflationIndex anIndex,
-                          final YoYCapFloorTermPriceSurfaceLike surf,
-                          final InflationCapFloorEngine p,
-                          final double priceToMatch) {
+        @SuppressWarnings( "unused" )
+        ObjectiveFunction(final InflationCapFloor.Type type, final double slope, final double K, final Period lag,
+                final int fixingDays, final YoYInflationIndex anIndex, final YoYCapFloorTermPriceSurfaceLike surf,
+                final InflationCapFloorEngine p, final double priceToMatch) {
             this.slope_ = slope;
             this.indexIsInterpolated_ = anIndex.interpolated();
             this.priceToMatch_ = priceToMatch;
@@ -292,12 +260,8 @@ public class InterpolatedYoYOptionletStripper<I extends Interpolator>
                     0.5 + surf.timeFromReference(surf.yoyOptionDateFromTenor(surf.minMaturity())));
             QL.require(n > 0, "first maturity in price surface not > 0: " + n);
 
-            this.capfloor_ = new MakeYoYInflationCapFloor(type, anIndex,
-                    n, surf.calendar(), surf.observationLag(),
-                    CPI.InterpolationType.AsIndex)
-                    .withNominal(10000.0)
-                    .withStrike(K)
-                    .build();
+            this.capfloor_ = new MakeYoYInflationCapFloor(type, anIndex, n, surf.calendar(), surf.observationLag(),
+                    CPI.InterpolationType.AsIndex).withNominal(10000.0).withStrike(K).build();
 
             // shortest time available from price surface
             // C++: dvec_[1] = surf_->minMaturity() + Period(7,Days)
@@ -305,8 +269,7 @@ public class InterpolatedYoYOptionletStripper<I extends Interpolator>
             // assigning to Date implies the C++ has an implicit Date(...) cast.
             // We simulate the intent: minMaturity_DATE + 7 days.
             dvec_[0] = surf.baseDate();
-            dvec_[1] = surf.yoyOptionDateFromTenor(surf.minMaturity())
-                    .add(new Period(7, TimeUnit.Days));
+            dvec_[1] = surf.yoyOptionDateFromTenor(surf.minMaturity()).add(new Period(7, TimeUnit.Days));
             tvec_[0] = surf.dayCounter().yearFraction(surf.referenceDate(), dvec_[0]);
             tvec_[1] = surf.dayCounter().yearFraction(surf.referenceDate(), dvec_[1]);
 
@@ -322,19 +285,10 @@ public class InterpolatedYoYOptionletStripper<I extends Interpolator>
             vvec_[0] = guess - slope_ * (tvec_[1] - tvec_[0]) * guess;
 
             // could have Interpolator1D instead of Linear
-            final InterpolatedYoYOptionletVolatilityCurve<Linear> vCurve =
-                    new InterpolatedYoYOptionletVolatilityCurve<>(
-                            Linear.class, 0,
-                            new Target(),
-                            BusinessDayConvention.ModifiedFollowing,
-                            new Actual365Fixed(),
-                            surf_.observationLag(),
-                            surf_.frequency(),
-                            indexIsInterpolated_,
-                            dvec_, vvec_,
-                            -1.0, 3.0);
-            final Handle<YoYOptionletVolatilitySurface> hCurve =
-                    new Handle<>(vCurve);
+            final InterpolatedYoYOptionletVolatilityCurve< Linear > vCurve = new InterpolatedYoYOptionletVolatilityCurve<>(
+                    Linear.class, 0, new Target(), BusinessDayConvention.ModifiedFollowing, new Actual365Fixed(),
+                    surf_.observationLag(), surf_.frequency(), indexIsInterpolated_, dvec_, vvec_, -1.0, 3.0);
+            final Handle< YoYOptionletVolatilitySurface > hCurve = new Handle<>(vCurve);
             p_.setVolatility(hCurve);
             // hopefully this gets to the pricer ... then
             return priceToMatch_ - capfloor_.NPV();

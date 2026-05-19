@@ -27,12 +27,11 @@ import org.jquantlib.model.ConstantParameter;
  */
 public class LmLinearExponentialCorrelationModel extends LmCorrelationModel {
 
+    private final int factors_;
     private Matrix corrMatrix_;
     private Matrix pseudoSqrt_;
-    private final int factors_;
 
-    public LmLinearExponentialCorrelationModel(final int size, final double rho,
-                                               final double beta, final int factors) {
+    public LmLinearExponentialCorrelationModel(final int size, final double rho, final double beta, final int factors) {
         super(size, 2);
         this.corrMatrix_ = new Matrix(size, size);
         this.factors_ = (factors > 0) ? factors : size;
@@ -75,8 +74,8 @@ public class LmLinearExponentialCorrelationModel extends LmCorrelationModel {
         final double rho = arguments_.get(0).get(0.0);
         final double beta = arguments_.get(1).get(0.0);
 
-        for (int i = 0; i < size_; ++i) {
-            for (int j = i; j < size_; ++j) {
+        for ( int i = 0; i < size_; ++i ) {
+            for ( int j = i; j < size_; ++j ) {
                 final double value = rho + (1 - rho) * Math.exp(-beta * Math.abs(i - j));
                 corrMatrix_.set(i, j, value);
                 corrMatrix_.set(j, i, value);

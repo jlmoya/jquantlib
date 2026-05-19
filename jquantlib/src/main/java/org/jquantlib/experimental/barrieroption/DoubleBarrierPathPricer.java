@@ -31,23 +31,18 @@ import org.jquantlib.methods.montecarlo.Path;
 import org.jquantlib.methods.montecarlo.PathPricer;
 
 /**
- * Path-pricer for a continuously monitored double-barrier option simulated
- * via Monte Carlo.
+ * Path-pricer for a continuously monitored double-barrier option simulated via Monte Carlo.
  *
  * <p>Java port of {@code QuantLib v1.42.1
- * ql/experimental/barrieroption/mcdoublebarrierengine.cpp::DoubleBarrierPathPricer}
- * (Phase 5e.5b-CFC-d-278).
+ * ql/experimental/barrieroption/mcdoublebarrierengine.cpp::DoubleBarrierPathPricer} (Phase 5e.5b-CFC-d-278).
  *
  * <p>For a {@link DoubleBarrierType#KnockOut} option the contract pays the
- * vanilla payoff against the terminal price discounted at maturity, unless
- * the path crosses either barrier at some intermediate node — in which
- * case the rebate is paid (discounted at the knock node). For a
- * {@link DoubleBarrierType#KnockIn} option the contract becomes active
- * only after the path crosses a barrier; otherwise the rebate is paid at
- * maturity. Knock-in/knock-out hybrids ({@code KIKO}, {@code KOKI}) are
- * rejected.
+ * vanilla payoff against the terminal price discounted at maturity, unless the path crosses either barrier at some
+ * intermediate node — in which case the rebate is paid (discounted at the knock node). For a
+ * {@link DoubleBarrierType#KnockIn} option the contract becomes active only after the path crosses a barrier; otherwise
+ * the rebate is paid at maturity. Knock-in/knock-out hybrids ({@code KIKO}, {@code KOKI}) are rejected.
  */
-final class DoubleBarrierPathPricer extends PathPricer<Path> {
+final class DoubleBarrierPathPricer extends PathPricer< Path > {
 
     private final DoubleBarrierType barrierType_;
     private final double barrierLow_;
@@ -56,13 +51,8 @@ final class DoubleBarrierPathPricer extends PathPricer<Path> {
     private final PlainVanillaPayoff payoff_;
     private final double[] discounts_;
 
-    DoubleBarrierPathPricer(final DoubleBarrierType barrierType,
-                            final double barrierLow,
-                            final double barrierHigh,
-                            final double rebate,
-                            final Option.Type type,
-                            final double strike,
-                            final double[] discounts) {
+    DoubleBarrierPathPricer(final DoubleBarrierType barrierType, final double barrierLow, final double barrierHigh,
+            final double rebate, final Option.Type type, final double strike, final double[] discounts) {
         QL.require(strike >= 0.0, "strike less than zero not allowed");
         QL.require(barrierLow > 0.0, "low barrier less/equal zero not allowed");
         QL.require(barrierHigh > 0.0, "high barrier less/equal zero not allowed");
@@ -84,47 +74,47 @@ final class DoubleBarrierPathPricer extends PathPricer<Path> {
         final double terminalPrice = path.back();
         final double[] v = path.values();
 
-        switch (barrierType_) {
-            case KnockOut:
-                isOptionActive = true;
-                for (int i = 0; i < n - 1; i++) {
-                    final double newAssetPrice = v[i + 1];
-                    if (newAssetPrice >= barrierHigh_ || newAssetPrice <= barrierLow_) {
-                        isOptionActive = false;
-                        if (knockNode == -1) {
-                            knockNode = i + 1;
-                        }
-                        break;
+        switch ( barrierType_ ) {
+        case KnockOut:
+            isOptionActive = true;
+            for ( int i = 0; i < n - 1; i++ ) {
+                final double newAssetPrice = v[i + 1];
+                if ( newAssetPrice >= barrierHigh_ || newAssetPrice <= barrierLow_ ) {
+                    isOptionActive = false;
+                    if ( knockNode == -1 ) {
+                        knockNode = i + 1;
                     }
+                    break;
                 }
-                break;
-            case KnockIn:
-                isOptionActive = false;
-                for (int i = 0; i < n - 1; i++) {
-                    final double newAssetPrice = v[i + 1];
-                    if (newAssetPrice >= barrierHigh_ || newAssetPrice <= barrierLow_) {
-                        isOptionActive = true;
-                        if (knockNode == -1) {
-                            knockNode = i + 1;
-                        }
-                        break;
+            }
+            break;
+        case KnockIn:
+            isOptionActive = false;
+            for ( int i = 0; i < n - 1; i++ ) {
+                final double newAssetPrice = v[i + 1];
+                if ( newAssetPrice >= barrierHigh_ || newAssetPrice <= barrierLow_ ) {
+                    isOptionActive = true;
+                    if ( knockNode == -1 ) {
+                        knockNode = i + 1;
                     }
+                    break;
                 }
-                break;
-            default:
-                throw new LibraryException("unknown barrier type");
+            }
+            break;
+        default:
+            throw new LibraryException("unknown barrier type");
         }
 
-        if (isOptionActive) {
+        if ( isOptionActive ) {
             return payoff_.get(terminalPrice) * discounts_[discounts_.length - 1];
         } else {
-            switch (barrierType_) {
-                case KnockOut:
-                    return rebate_ * discounts_[knockNode];
-                case KnockIn:
-                    return rebate_ * discounts_[discounts_.length - 1];
-                default:
-                    throw new LibraryException("unknown barrier type");
+            switch ( barrierType_ ) {
+            case KnockOut:
+                return rebate_ * discounts_[knockNode];
+            case KnockIn:
+                return rebate_ * discounts_[discounts_.length - 1];
+            default:
+                throw new LibraryException("unknown barrier type");
             }
         }
     }

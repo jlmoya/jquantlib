@@ -34,19 +34,17 @@ import org.jquantlib.model.marketmodels.MarketModelPathwiseMultiProduct;
 import org.jquantlib.model.marketmodels.Utilities;
 
 /**
- * Pathwise cash-rebate product: emits per-step deterministic cash amounts whose
- * derivative with respect to every forward rate is zero.
+ * Pathwise cash-rebate product: emits per-step deterministic cash amounts whose derivative with respect to every
+ * forward rate is zero.
  *
  * <p>Mirrors C++ {@code MarketModelPathwiseCashRebate}
- * (ql/models/marketmodels/products/pathwise/pathwiseproductcashrebate.{hpp,cpp}
- * v1.42.1).
+ * (ql/models/marketmodels/products/pathwise/pathwiseproductcashrebate.{hpp,cpp} v1.42.1).
  *
  * <p>Although fairly useless on its own, it becomes the standard "rebate" leg
  * of a {@code CallSpecified} pathwise product when modelling breakable swaps.
  *
- * @see "ql/models/marketmodels/products/pathwise/pathwiseproductcashrebate" v1.42.1
- *
  * @author Jose Moya
+ * @see "ql/models/marketmodels/products/pathwise/pathwiseproductcashrebate" v1.42.1
  */
 public class MarketModelPathwiseCashRebate extends MarketModelPathwiseMultiProduct {
 
@@ -58,10 +56,8 @@ public class MarketModelPathwiseCashRebate extends MarketModelPathwiseMultiProdu
     // path-varying state
     private int currentIndex_;
 
-    public MarketModelPathwiseCashRebate(final EvolutionDescription evolution,
-                                         final double[] paymentTimes,
-                                         final Matrix amounts,
-                                         final int numberOfProducts) {
+    public MarketModelPathwiseCashRebate(final EvolutionDescription evolution, final double[] paymentTimes,
+            final Matrix amounts, final int numberOfProducts) {
         this.evolution_ = evolution;
         this.paymentTimes_ = paymentTimes.clone();
         this.amounts_ = new Matrix(amounts);
@@ -115,14 +111,13 @@ public class MarketModelPathwiseCashRebate extends MarketModelPathwiseMultiProdu
     }
 
     @Override
-    public boolean nextTimeStep(final CurveState currentState,
-                                final int[] numberCashFlowsThisStep,
-                                final CashFlow[][] cashFlowsGenerated) {
-        for (int i = 0; i < numberOfProducts_; ++i) {
+    public boolean nextTimeStep(final CurveState currentState, final int[] numberCashFlowsThisStep,
+            final CashFlow[][] cashFlowsGenerated) {
+        for ( int i = 0; i < numberOfProducts_; ++i ) {
             numberCashFlowsThisStep[i] = 1;
             cashFlowsGenerated[i][0].timeIndex = currentIndex_;
             cashFlowsGenerated[i][0].amount[0] = amounts_.get(i, currentIndex_);
-            for (int k = 1; k <= evolution_.numberOfRates(); ++k) {
+            for ( int k = 1; k <= evolution_.numberOfRates(); ++k ) {
                 cashFlowsGenerated[i][0].amount[k] = 0.0;
             }
         }
@@ -132,8 +127,8 @@ public class MarketModelPathwiseCashRebate extends MarketModelPathwiseMultiProdu
 
     @Override
     public MarketModelPathwiseMultiProduct clone() {
-        final MarketModelPathwiseCashRebate copy = new MarketModelPathwiseCashRebate(
-                evolution_, paymentTimes_, amounts_, numberOfProducts_);
+        final MarketModelPathwiseCashRebate copy = new MarketModelPathwiseCashRebate(evolution_, paymentTimes_,
+                amounts_, numberOfProducts_);
         copy.currentIndex_ = this.currentIndex_;
         return copy;
     }

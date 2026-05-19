@@ -48,38 +48,34 @@ import org.jquantlib.time.Date;
  */
 public class Callability extends Event {
 
-	public enum Type { Call, Put }
+    private final Price price;
+    private final Type type;
+    private final Date date;
+    public Callability(final Price price, final Type type, final Date date) {
+        this.price = price;
+        this.type = type;
+        this.date = date;
+    }
 
-	private final Price price;
-	private final Type type;
-	private final Date date;
+    @Override
+    public Date date() {
+        return date;
+    }
 
-	public Callability(final Price price, final Type type, final Date date){
-        this.price=price;
-        this.type=type;
-        this.date=date;
-	}
+    public Price price() {
+        return price;
+    }
 
-	@Override
-	public Date date() {
-		return date;
-	}
+    public Type type() {
+        return type;
+    }
 
-	public Price price(){
-		return price;
-	}
+    public enum Type {Call, Put}
 
-	public Type type(){
-		return type;
-	}
+    public static class Price {
 
-	public static class Price {
-
-		public enum Type{ Dirty, Clean }
-
-		private final double amount;
-		private Type type;
-
+        private final double amount;
+        private Type type;
         public Price() {
             amount = 0.0;
         }
@@ -90,7 +86,7 @@ public class Callability extends Event {
         }
 
         public double amount() {
-            QL.require(!Double.isNaN(amount) , "no amount given"); // TODO: message
+            QL.require(!Double.isNaN(amount), "no amount given"); // TODO: message
             return amount;
         }
 
@@ -98,6 +94,8 @@ public class Callability extends Event {
             return type;
         }
 
-	}
+        public enum Type {Dirty, Clean}
+
+    }
 
 }

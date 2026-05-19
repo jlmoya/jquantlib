@@ -48,10 +48,8 @@ public class MultiStepOptionlets extends MultiProductMultiStep {
     private final Payoff[] payoffs_;
     private int currentIndex_;
 
-    public MultiStepOptionlets(final double[] rateTimes,
-                               final double[] accruals,
-                               final double[] paymentTimes,
-                               final Payoff[] payoffs) {
+    public MultiStepOptionlets(final double[] rateTimes, final double[] accruals, final double[] paymentTimes,
+            final Payoff[] payoffs) {
         super(rateTimes);
         this.accruals_ = accruals.clone();
         this.paymentTimes_ = paymentTimes.clone();
@@ -60,26 +58,32 @@ public class MultiStepOptionlets extends MultiProductMultiStep {
     }
 
     @Override
-    public double[] possibleCashFlowTimes() { return paymentTimes_; }
+    public double[] possibleCashFlowTimes() {
+        return paymentTimes_;
+    }
 
     @Override
-    public int numberOfProducts() { return payoffs_.length; }
+    public int numberOfProducts() {
+        return payoffs_.length;
+    }
 
     @Override
-    public int maxNumberOfCashFlowsPerProductPerStep() { return 1; }
+    public int maxNumberOfCashFlowsPerProductPerStep() {
+        return 1;
+    }
 
     @Override
-    public void reset() { currentIndex_ = 0; }
+    public void reset() {
+        currentIndex_ = 0;
+    }
 
     @Override
-    public boolean nextTimeStep(final CurveState currentState,
-                                final int[] numberCashFlowsThisStep,
-                                final MarketModelMultiProduct.CashFlow[][] genCashFlows) {
+    public boolean nextTimeStep(final CurveState currentState, final int[] numberCashFlowsThisStep,
+            final MarketModelMultiProduct.CashFlow[][] genCashFlows) {
         final double liborRate = currentState.forwardRate(currentIndex_);
         genCashFlows[currentIndex_][0].timeIndex = currentIndex_;
-        genCashFlows[currentIndex_][0].amount =
-                payoffs_[currentIndex_].get(liborRate) * accruals_[currentIndex_];
-        for (int i = 0; i < numberCashFlowsThisStep.length; ++i) {
+        genCashFlows[currentIndex_][0].amount = payoffs_[currentIndex_].get(liborRate) * accruals_[currentIndex_];
+        for ( int i = 0; i < numberCashFlowsThisStep.length; ++i ) {
             numberCashFlowsThisStep[i] = 0;
         }
         numberCashFlowsThisStep[currentIndex_] = 1;

@@ -14,8 +14,6 @@
  */
 package org.jquantlib.experimental.callablebonds;
 
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.experimental.callablebonds.CallableBond.CallableBondArgumentsImpl;
@@ -30,11 +28,12 @@ import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.TimeGrid;
 
+import java.util.List;
+
 /**
  * Numerical lattice engine for callable fixed-rate bonds.
  * <p>
- * Port of C++ v1.42.1
- * {@code ql/experimental/callablebonds/treecallablebondengine.{hpp,cpp}}.
+ * Port of C++ v1.42.1 {@code ql/experimental/callablebonds/treecallablebondengine.{hpp,cpp}}.
  *
  * <h3>Java port deviations from C++ v1.42.1</h3>
  * <ul>
@@ -54,36 +53,36 @@ public class TreeCallableFixedRateBondEngine extends CallableBondEngineImpl {
     private final TimeGrid timeGrid_;
     private final int timeSteps_;
     private final Lattice lattice_;
-    private final Handle<YieldTermStructure> termStructure_;
+    private final Handle< YieldTermStructure > termStructure_;
 
     public TreeCallableFixedRateBondEngine(final ShortRateModel model, final int timeSteps,
-            final Handle<YieldTermStructure> termStructure) {
+            final Handle< YieldTermStructure > termStructure) {
         super();
         this.model_ = model;
         this.timeSteps_ = timeSteps;
         this.timeGrid_ = null;
         this.lattice_ = null;
         this.termStructure_ = termStructure;
-        if (this.model_ != null) {
+        if ( this.model_ != null ) {
             this.model_.addObserver(this);
         }
-        if (this.termStructure_ != null) {
+        if ( this.termStructure_ != null ) {
             this.termStructure_.addObserver(this);
         }
     }
 
     public TreeCallableFixedRateBondEngine(final ShortRateModel model, final TimeGrid grid,
-            final Handle<YieldTermStructure> termStructure) {
+            final Handle< YieldTermStructure > termStructure) {
         super();
         this.model_ = model;
         this.timeGrid_ = grid;
         this.timeSteps_ = 0;
         this.lattice_ = (model != null) ? model.tree(grid) : null;
         this.termStructure_ = termStructure;
-        if (this.model_ != null) {
+        if ( this.model_ != null ) {
             this.model_.addObserver(this);
         }
-        if (this.termStructure_ != null) {
+        if ( this.termStructure_ != null ) {
             this.termStructure_.addObserver(this);
         }
     }
@@ -96,31 +95,29 @@ public class TreeCallableFixedRateBondEngine extends CallableBondEngineImpl {
     private void calculateWithSpread(final double s) {
         QL.require(model_ != null, "no model specified");
 
-        final Handle<YieldTermStructure> discountCurve;
-        if (model_ instanceof TermStructureConsistentModel) {
+        final Handle< YieldTermStructure > discountCurve;
+        if ( model_ instanceof TermStructureConsistentModel ) {
             discountCurve = ((TermStructureConsistentModel) model_).termStructure();
         } else {
             discountCurve = termStructure_;
         }
-        QL.require(discountCurve != null && !discountCurve.empty(),
-                "no term structure available");
+        QL.require(discountCurve != null && !discountCurve.empty(), "no term structure available");
 
         final CallableBondArgumentsImpl args = (CallableBondArgumentsImpl) arguments_;
         final CallableBondResultsImpl results = (CallableBondResultsImpl) results_;
 
-        final DiscretizedCallableFixedRateBond callableBond = new DiscretizedCallableFixedRateBond(
-                args, discountCurve);
+        final DiscretizedCallableFixedRateBond callableBond = new DiscretizedCallableFixedRateBond(args, discountCurve);
 
         final Lattice lattice;
-        if (lattice_ != null) {
+        if ( lattice_ != null ) {
             lattice = lattice_;
         } else {
-            final List<Double> times = callableBond.mandatoryTimes();
+            final List< Double > times = callableBond.mandatoryTimes();
             final TimeGrid grid = new TimeGrid(times, timeSteps_);
             lattice = model_.tree(grid);
         }
 
-        if (s != 0.0) {
+        if ( s != 0.0 ) {
             // Mirrors C++ v1.42.1 treecallablebondengine.cpp:69-74 —
             //   auto* sr = dynamic_cast<OneFactorModel::ShortRateTree*>(&(*lattice));
             //   QL_REQUIRE(sr,

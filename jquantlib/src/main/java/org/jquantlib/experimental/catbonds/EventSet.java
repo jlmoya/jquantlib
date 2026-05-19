@@ -11,8 +11,9 @@
 
 package org.jquantlib.experimental.catbonds;
 
-import java.util.List;
 import org.jquantlib.time.Date;
+
+import java.util.List;
 
 /**
  * Catastrophe risk based on a historical event set.
@@ -21,17 +22,14 @@ import org.jquantlib.time.Date;
  */
 public class EventSet extends CatRisk {
 
-    private final List<DateRealPair> events_;
+    private final List< DateRealPair > events_;
     private final Date eventsStart_;
     private final Date eventsEnd_;
 
-    public EventSet(
-            final List<DateRealPair> events,
-            final Date eventsStart,
-            final Date eventsEnd) {
-        this.events_      = events;
+    public EventSet(final List< DateRealPair > events, final Date eventsStart, final Date eventsEnd) {
+        this.events_ = events;
         this.eventsStart_ = eventsStart.clone();
-        this.eventsEnd_   = eventsEnd.clone();
+        this.eventsEnd_ = eventsEnd.clone();
     }
 
     @Override

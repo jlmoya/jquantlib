@@ -47,43 +47,47 @@ public class MakeMCDiscreteGeometricAPHestonEngine {
         this.antithetic_ = b;
         return this;
     }
+
     public MakeMCDiscreteGeometricAPHestonEngine withAntitheticVariate() {
         return withAntitheticVariate(true);
     }
+
     public MakeMCDiscreteGeometricAPHestonEngine withSamples(final int samples) {
         QL.require(Double.isNaN(tolerance_), "tolerance already set");
         this.samples_ = samples;
         return this;
     }
+
     public MakeMCDiscreteGeometricAPHestonEngine withAbsoluteTolerance(final double tolerance) {
         QL.require(samples_ == McSimulation.NULL_SAMPLES, "number of samples already set");
         this.tolerance_ = tolerance;
         return this;
     }
+
     public MakeMCDiscreteGeometricAPHestonEngine withMaxSamples(final int samples) {
         this.maxSamples_ = samples;
         return this;
     }
+
     public MakeMCDiscreteGeometricAPHestonEngine withSeed(final long seed) {
         this.seed_ = seed;
         return this;
     }
+
     public MakeMCDiscreteGeometricAPHestonEngine withSteps(final int steps) {
-        QL.require(stepsPerYear_ == McSimulation.NULL_SAMPLES,
-                "number of steps per year already set");
+        QL.require(stepsPerYear_ == McSimulation.NULL_SAMPLES, "number of steps per year already set");
         this.steps_ = steps;
         return this;
     }
+
     public MakeMCDiscreteGeometricAPHestonEngine withStepsPerYear(final int steps) {
-        QL.require(steps_ == McSimulation.NULL_SAMPLES,
-                "number of steps already set");
+        QL.require(steps_ == McSimulation.NULL_SAMPLES, "number of steps already set");
         this.stepsPerYear_ = steps;
         return this;
     }
 
     public PricingEngine value() {
-        return new MCDiscreteGeometricAPHestonEngine(
-                process_, antithetic_, samples_, tolerance_, maxSamples_,
-                seed_, steps_, stepsPerYear_);
+        return new MCDiscreteGeometricAPHestonEngine(process_, antithetic_, samples_, tolerance_, maxSamples_, seed_,
+                steps_, stepsPerYear_);
     }
 }

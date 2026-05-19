@@ -84,12 +84,15 @@ public class Swaption extends Option {
     //
 
     private final Swap swap_;
-    /** Cached {@link VanillaSwap} view of {@link #swap_} ({@code null} when
-     *  the underlying is an {@link OvernightIndexedSwap}). Mirrors C++
-     *  {@code vanilla_} (swaption.hpp:137). */
+    /**
+     * Cached {@link VanillaSwap} view of {@link #swap_} ({@code null} when the underlying is an
+     * {@link OvernightIndexedSwap}). Mirrors C++ {@code vanilla_} (swaption.hpp:137).
+     */
     private final VanillaSwap vanilla_;
-    /** Cached {@link OvernightIndexedSwap} view of {@link #swap_}
-     *  ({@code null} when the underlying is a {@link VanillaSwap}). */
+    /**
+     * Cached {@link OvernightIndexedSwap} view of {@link #swap_} ({@code null} when the underlying is a
+     * {@link VanillaSwap}).
+     */
     private final OvernightIndexedSwap ois_;
     private final Settlement.Type settlementType_;
     private final Settlement.Method settlementMethod_;
@@ -106,22 +109,17 @@ public class Swaption extends Option {
     }
 
     /**
-     * Constructs a swaption with the given settlement type, defaulting the
-     * method to a value consistent with the type.
+     * Constructs a swaption with the given settlement type, defaulting the method to a value consistent with the type.
      */
-    public Swaption(final VanillaSwap swap, final Exercise exercise,
-            final Settlement.Type delivery) {
+    public Swaption(final VanillaSwap swap, final Exercise exercise, final Settlement.Type delivery) {
         this(swap, exercise, delivery,
-                delivery == Settlement.Type.Physical
-                        ? Settlement.Method.PhysicalOTC
-                        : Settlement.Method.ParYieldCurve);
+                delivery == Settlement.Type.Physical ? Settlement.Method.PhysicalOTC : Settlement.Method.ParYieldCurve);
     }
 
     /**
      * Constructs a swaption with explicit settlement type and method.
      */
-    public Swaption(final VanillaSwap swap, final Exercise exercise,
-            final Settlement.Type delivery,
+    public Swaption(final VanillaSwap swap, final Exercise exercise, final Settlement.Type delivery,
             final Settlement.Method settlementMethod) {
         super(null /* payoff */, exercise);
         Settlement.checkTypeAndMethodConsistency(delivery, settlementMethod);
@@ -138,34 +136,28 @@ public class Swaption extends Option {
     //
 
     /**
-     * Constructs a physically-settled swaption on an
-     * {@link OvernightIndexedSwap} (PhysicalOTC method by default).
+     * Constructs a physically-settled swaption on an {@link OvernightIndexedSwap} (PhysicalOTC method by default).
      * <p>
-     * Mirrors the C++ templated ctor
-     * {@code Swaption(ext::shared_ptr<FixedVsFloatingSwap>, ...)}
-     * (swaption.hpp:94-97) with the {@code OvernightIndexedSwap} subclass.
+     * Mirrors the C++ templated ctor {@code Swaption(ext::shared_ptr<FixedVsFloatingSwap>, ...)} (swaption.hpp:94-97)
+     * with the {@code OvernightIndexedSwap} subclass.
      */
     public Swaption(final OvernightIndexedSwap swap, final Exercise exercise) {
         this(swap, exercise, Settlement.Type.Physical, Settlement.Method.PhysicalOTC);
     }
 
     /**
-     * Constructs an OIS swaption with the given settlement type, defaulting
-     * the method to a value consistent with the type.
+     * Constructs an OIS swaption with the given settlement type, defaulting the method to a value consistent with the
+     * type.
      */
-    public Swaption(final OvernightIndexedSwap swap, final Exercise exercise,
-            final Settlement.Type delivery) {
+    public Swaption(final OvernightIndexedSwap swap, final Exercise exercise, final Settlement.Type delivery) {
         this(swap, exercise, delivery,
-                delivery == Settlement.Type.Physical
-                        ? Settlement.Method.PhysicalOTC
-                        : Settlement.Method.ParYieldCurve);
+                delivery == Settlement.Type.Physical ? Settlement.Method.PhysicalOTC : Settlement.Method.ParYieldCurve);
     }
 
     /**
      * Constructs an OIS swaption with explicit settlement type and method.
      */
-    public Swaption(final OvernightIndexedSwap swap, final Exercise exercise,
-            final Settlement.Type delivery,
+    public Swaption(final OvernightIndexedSwap swap, final Exercise exercise, final Settlement.Type delivery,
             final Settlement.Method settlementMethod) {
         super(null /* payoff */, exercise);
         Settlement.checkTypeAndMethodConsistency(delivery, settlementMethod);
@@ -181,6 +173,26 @@ public class Swaption extends Option {
     // public inspectors
     //
 
+    /**
+     * Wraps a volatility quote into a {@link org.jquantlib.termstructures.SwaptionVolatilityStructure} handle
+     * compatible with {@link BlackSwaptionEngine}. Mirrors the implicit C++ vol-handle conversion in
+     * {@code ImpliedSwaptionVolHelper} (swaption.cpp:70-71) which constructs a {@code BlackSwaptionEngine} directly
+     * from {@code Handle<Quote>}.
+     *
+     * <p>Java's primary {@code BlackSwaptionEngine(Handle<YieldTermStructure>,
+     * Handle<Quote>)} factory does not accept a per-call displacement; we construct a
+     * {@link org.jquantlib.termstructures.volatilities.swaption.ConstantSwaptionVolatility} here so the displacement
+     * flows in via the surface's {@code shift()} accessor (matching the path the engine takes at calculate() time).
+     */
+    private static Handle< org.jquantlib.termstructures.SwaptionVolatilityStructure > wrapConstantVol(
+            final Handle< Quote > vol, final double displacement) {
+        return new Handle< org.jquantlib.termstructures.SwaptionVolatilityStructure >(
+                new org.jquantlib.termstructures.volatilities.swaption.ConstantSwaptionVolatility(0,
+                        new org.jquantlib.time.calendars.NullCalendar(),
+                        org.jquantlib.time.BusinessDayConvention.Following, vol, new Actual365Fixed(),
+                        VolatilityType.ShiftedLognormal, displacement));
+    }
+
     public Settlement.Type settlementType() {
         return settlementType_;
     }
@@ -190,34 +202,32 @@ public class Swaption extends Option {
     }
 
     /**
-     * @return the underlying swap as a {@link VanillaSwap}, or {@code null}
-     *         when the underlying is an {@link OvernightIndexedSwap}. Mirrors
-     *         C++ {@code underlyingSwap()} (the {@code vanilla_} branch,
-     *         swaption.hpp:137 + swaption.cpp:150).
+     * @return the underlying swap as a {@link VanillaSwap}, or {@code null} when the underlying is an
+     * {@link OvernightIndexedSwap}. Mirrors C++ {@code underlyingSwap()} (the {@code vanilla_} branch, swaption.hpp:137
+     * + swaption.cpp:150).
      */
     public VanillaSwap underlying() {
         return vanilla_;
     }
 
     /**
-     * Backwards-compatible alias for {@link #underlying()} (matches the
-     * C++ legacy accessor {@code underlyingSwap()}).
+     * Backwards-compatible alias for {@link #underlying()} (matches the C++ legacy accessor {@code underlyingSwap()}).
      */
     public VanillaSwap underlyingSwap() {
         return vanilla_;
     }
 
+    //
+    // overrides Instrument
+    //
+
     /**
-     * @return the underlying swap as an {@link OvernightIndexedSwap}, or
-     *         {@code null} when the underlying is a {@link VanillaSwap}.
+     * @return the underlying swap as an {@link OvernightIndexedSwap}, or {@code null} when the underlying is a
+     * {@link VanillaSwap}.
      */
     public OvernightIndexedSwap underlyingOis() {
         return ois_;
     }
-
-    //
-    // overrides Instrument
-    //
 
     @Override
     public boolean isExpired() /* @ReadOnly */ {
@@ -225,6 +235,11 @@ public class Swaption extends Option {
         // Mirror C++: the swaption is expired when its last exercise date has occurred.
         return exercise.lastDate().lt(today) || exercise.lastDate().eq(today);
     }
+
+    //
+    // implied volatility — mirrors C++ v1.42.1 swaption.cpp lines 182-205
+    // plus the anonymous-namespace ImpliedSwaptionVolHelper (swaption.cpp:38-103).
+    //
 
     @Override
     protected void setupArguments(final PricingEngine.Arguments args) /* @ReadOnly */ {
@@ -245,14 +260,87 @@ public class Swaption extends Option {
         // payoff is intentionally left null (matches C++ Swaption which passes an empty Payoff).
     }
 
-    //
-    // implied volatility — mirrors C++ v1.42.1 swaption.cpp lines 182-205
-    // plus the anonymous-namespace ImpliedSwaptionVolHelper (swaption.cpp:38-103).
-    //
+    /**
+     * Implied volatility (full-arity overload).
+     *
+     * <p>Mirrors C++ {@code Swaption::impliedVolatility(targetValue, disc,
+     * guess, accuracy, maxEvaluations, minVol, maxVol, type, displacement, priceType)} — swaption.cpp:182-205.
+     * Constructs an internal pricing engine that shares a {@link SimpleQuote} for the volatility, then runs
+     * {@link NewtonSafe} on the price-target residual until the engine NPV matches {@code targetValue} to within
+     * {@code accuracy}.
+     *
+     * <p>The {@link VolatilityType} parameter selects the formula: under
+     * {@link VolatilityType#ShiftedLognormal} the helper uses {@link BlackSwaptionEngine} with the supplied
+     * displacement; under {@link VolatilityType#Normal} a {@code BachelierSwaptionEngine} is required by C++ but is not
+     * yet ported on the Java side — passing {@code Normal} therefore throws {@link UnsupportedOperationException}.
+     *
+     * @param targetValue    target price (either spot NPV or forward price, selected by {@code priceType})
+     * @param discountCurve  discount curve handle
+     * @param guess          initial volatility guess
+     * @param accuracy       solver tolerance on the price residual
+     * @param maxEvaluations maximum solver evaluations
+     * @param minVol         lower volatility bracket
+     * @param maxVol         upper volatility bracket
+     * @param type           volatility convention (ShiftedLognormal or Normal)
+     * @param displacement   displacement for ShiftedLognormal (ignored for Normal)
+     * @param priceType      {@link PriceType#Spot} or {@link PriceType#Forward}
+     * @return implied volatility solving {@code engineNPV(targetValue) == 0}
+     */
+    public /*@Volatility*/ double impliedVolatility(final /*@Real*/ double targetValue,
+            final Handle< YieldTermStructure > discountCurve, final /*@Volatility*/ double guess,
+            final /*@Real*/ double accuracy, final /*@NonNegative*/ int maxEvaluations,
+            final /*@Volatility*/ double minVol, final /*@Volatility*/ double maxVol, final VolatilityType type,
+            final /*@Real*/ double displacement, final PriceType priceType) {
+        QL.require(!isExpired(), "instrument expired");
+        QL.require(exercise.type() == Exercise.Type.European, "not a European option");
+
+        // Convert forward target to spot if needed: spot = fwd * D(t_exercise).
+        // Mirrors C++ swaption.cpp:196-199 verbatim.
+        double effectiveTarget = targetValue;
+        if ( priceType == PriceType.Forward ) {
+            effectiveTarget *= discountCurve.currentLink().discount(exercise.date(0));
+        }
+
+        final ImpliedSwaptionVolHelper f = new ImpliedSwaptionVolHelper(this, discountCurve, effectiveTarget,
+                displacement, type);
+        final NewtonSafe solver = new NewtonSafe();
+        solver.setMaxEvaluations(maxEvaluations);
+        return solver.solve(f, accuracy, guess, minVol, maxVol);
+    }
+
+    /** Convenience overload: defaults priceType = Spot. */
+    public /*@Volatility*/ double impliedVolatility(final /*@Real*/ double targetValue,
+            final Handle< YieldTermStructure > discountCurve, final /*@Volatility*/ double guess,
+            final /*@Real*/ double accuracy, final /*@NonNegative*/ int maxEvaluations,
+            final /*@Volatility*/ double minVol, final /*@Volatility*/ double maxVol, final VolatilityType type,
+            final /*@Real*/ double displacement) {
+        return impliedVolatility(targetValue, discountCurve, guess, accuracy, maxEvaluations, minVol, maxVol, type,
+                displacement, PriceType.Spot);
+    }
 
     /**
-     * Price type for {@link #impliedVolatility}. Mirrors the C++ enum
-     * {@code Swaption::PriceType} (swaption.hpp:91).
+     * Convenience overload: defaults type = ShiftedLognormal, displacement = 0, priceType = Spot.
+     */
+    public /*@Volatility*/ double impliedVolatility(final /*@Real*/ double targetValue,
+            final Handle< YieldTermStructure > discountCurve, final /*@Volatility*/ double guess,
+            final /*@Real*/ double accuracy, final /*@NonNegative*/ int maxEvaluations,
+            final /*@Volatility*/ double minVol, final /*@Volatility*/ double maxVol) {
+        return impliedVolatility(targetValue, discountCurve, guess, accuracy, maxEvaluations, minVol, maxVol,
+                VolatilityType.ShiftedLognormal, 0.0, PriceType.Spot);
+    }
+
+    /**
+     * Convenience overload mirroring the C++ default arguments (accuracy=1e-4, maxEvaluations=100, minVol=1e-7,
+     * maxVol=4.0, type=ShiftedLognormal, displacement=0, priceType=Spot).
+     */
+    public /*@Volatility*/ double impliedVolatility(final /*@Real*/ double targetValue,
+            final Handle< YieldTermStructure > discountCurve, final /*@Volatility*/ double guess) {
+        return impliedVolatility(targetValue, discountCurve, guess, 1.0e-4, 100, 1.0e-7, 4.0,
+                VolatilityType.ShiftedLognormal, 0.0, PriceType.Spot);
+    }
+
+    /**
+     * Price type for {@link #impliedVolatility}. Mirrors the C++ enum {@code Swaption::PriceType} (swaption.hpp:91).
      * <ul>
      *   <li>{@link #Spot} — the target price is the swaption NPV (spot value).</li>
      *   <li>{@link #Forward} — the target price is the forward swaption price
@@ -260,125 +348,39 @@ public class Swaption extends Option {
      *       converts to a spot target by multiplying by the discount factor.</li>
      * </ul>
      */
-    public enum PriceType { Spot, Forward }
+    public enum PriceType {Spot, Forward}
 
     /**
-     * Implied volatility (full-arity overload).
-     *
-     * <p>Mirrors C++ {@code Swaption::impliedVolatility(targetValue, disc,
-     * guess, accuracy, maxEvaluations, minVol, maxVol, type, displacement,
-     * priceType)} — swaption.cpp:182-205. Constructs an internal pricing
-     * engine that shares a {@link SimpleQuote} for the volatility, then runs
-     * {@link NewtonSafe} on the price-target residual until the engine NPV
-     * matches {@code targetValue} to within {@code accuracy}.
-     *
-     * <p>The {@link VolatilityType} parameter selects the formula: under
-     * {@link VolatilityType#ShiftedLognormal} the helper uses
-     * {@link BlackSwaptionEngine} with the supplied displacement; under
-     * {@link VolatilityType#Normal} a {@code BachelierSwaptionEngine} is
-     * required by C++ but is not yet ported on the Java side — passing
-     * {@code Normal} therefore throws {@link UnsupportedOperationException}.
-     *
-     * @param targetValue target price (either spot NPV or forward price,
-     *                    selected by {@code priceType})
-     * @param discountCurve discount curve handle
-     * @param guess initial volatility guess
-     * @param accuracy solver tolerance on the price residual
-     * @param maxEvaluations maximum solver evaluations
-     * @param minVol lower volatility bracket
-     * @param maxVol upper volatility bracket
-     * @param type volatility convention (ShiftedLognormal or Normal)
-     * @param displacement displacement for ShiftedLognormal (ignored for Normal)
-     * @param priceType {@link PriceType#Spot} or {@link PriceType#Forward}
-     * @return implied volatility solving {@code engineNPV(targetValue) == 0}
+     * Marker interface for swaption arguments. In C++ this inherits from both {@code FixedVsFloatingSwap::arguments}
+     * and {@code Option::arguments}; see the class-level note for the Java compromise.
      */
-    public /*@Volatility*/ double impliedVolatility(
-            final /*@Real*/ double targetValue,
-            final Handle<YieldTermStructure> discountCurve,
-            final /*@Volatility*/ double guess,
-            final /*@Real*/ double accuracy,
-            final /*@NonNegative*/ int maxEvaluations,
-            final /*@Volatility*/ double minVol,
-            final /*@Volatility*/ double maxVol,
-            final VolatilityType type,
-            final /*@Real*/ double displacement,
-            final PriceType priceType) {
-        QL.require(!isExpired(), "instrument expired");
-        QL.require(exercise.type() == Exercise.Type.European,
-                "not a European option");
-
-        // Convert forward target to spot if needed: spot = fwd * D(t_exercise).
-        // Mirrors C++ swaption.cpp:196-199 verbatim.
-        double effectiveTarget = targetValue;
-        if (priceType == PriceType.Forward) {
-            effectiveTarget *= discountCurve.currentLink().discount(
-                    exercise.date(0));
-        }
-
-        final ImpliedSwaptionVolHelper f = new ImpliedSwaptionVolHelper(
-                this, discountCurve, effectiveTarget, displacement, type);
-        final NewtonSafe solver = new NewtonSafe();
-        solver.setMaxEvaluations(maxEvaluations);
-        return solver.solve(f, accuracy, guess, minVol, maxVol);
+    public interface Arguments extends Swap.Arguments, Option.Arguments {
+        /* marking interface */
     }
 
-    /** Convenience overload: defaults priceType = Spot. */
-    public /*@Volatility*/ double impliedVolatility(
-            final /*@Real*/ double targetValue,
-            final Handle<YieldTermStructure> discountCurve,
-            final /*@Volatility*/ double guess,
-            final /*@Real*/ double accuracy,
-            final /*@NonNegative*/ int maxEvaluations,
-            final /*@Volatility*/ double minVol,
-            final /*@Volatility*/ double maxVol,
-            final VolatilityType type,
-            final /*@Real*/ double displacement) {
-        return impliedVolatility(targetValue, discountCurve, guess, accuracy,
-                maxEvaluations, minVol, maxVol, type, displacement,
-                PriceType.Spot);
-    }
+    //
+    // public inner interfaces
+    //
 
-    /** Convenience overload: defaults type = ShiftedLognormal, displacement = 0,
-     *  priceType = Spot. */
-    public /*@Volatility*/ double impliedVolatility(
-            final /*@Real*/ double targetValue,
-            final Handle<YieldTermStructure> discountCurve,
-            final /*@Volatility*/ double guess,
-            final /*@Real*/ double accuracy,
-            final /*@NonNegative*/ int maxEvaluations,
-            final /*@Volatility*/ double minVol,
-            final /*@Volatility*/ double maxVol) {
-        return impliedVolatility(targetValue, discountCurve, guess, accuracy,
-                maxEvaluations, minVol, maxVol,
-                VolatilityType.ShiftedLognormal, 0.0, PriceType.Spot);
-    }
-
-    /** Convenience overload mirroring the C++ default arguments
-     *  (accuracy=1e-4, maxEvaluations=100, minVol=1e-7, maxVol=4.0,
-     *  type=ShiftedLognormal, displacement=0, priceType=Spot). */
-    public /*@Volatility*/ double impliedVolatility(
-            final /*@Real*/ double targetValue,
-            final Handle<YieldTermStructure> discountCurve,
-            final /*@Volatility*/ double guess) {
-        return impliedVolatility(targetValue, discountCurve, guess, 1.0e-4,
-                100, 1.0e-7, 4.0,
-                VolatilityType.ShiftedLognormal, 0.0, PriceType.Spot);
+    /**
+     * Marker interface for swaption results.
+     */
+    public interface Results extends Instrument.Results {
+        /* marking interface */
     }
 
     /**
      * Functor passed to the 1D solver inside {@link #impliedVolatility}.
      *
      * <p>Mirrors the C++ anonymous-namespace {@code ImpliedSwaptionVolHelper}
-     * (swaption.cpp:38-103). The helper owns a {@link SimpleQuote} shared
-     * with an internal {@link BlackSwaptionEngine} (ShiftedLognormal); each
-     * call to {@link #op(double)} sets the quote to the trial volatility,
-     * triggers the engine, and returns {@code engineNPV - targetValue}.
+     * (swaption.cpp:38-103). The helper owns a {@link SimpleQuote} shared with an internal {@link BlackSwaptionEngine}
+     * (ShiftedLognormal); each call to {@link #op(double)} sets the quote to the trial volatility, triggers the engine,
+     * and returns {@code engineNPV - targetValue}.
      *
      * <h3>Derivative</h3>
      * <p>C++ reads the analytical {@code vega} from
-     * {@code results.additionalResults["vega"]} (swaption.cpp:94-102). The
-     * Java {@link BlackSwaptionEngine} populates the same key
-     * (Phase 5e.5b-CFC-d-73), so we read it directly to mirror C++ verbatim.
+     * {@code results.additionalResults["vega"]} (swaption.cpp:94-102). The Java {@link BlackSwaptionEngine} populates
+     * the same key (Phase 5e.5b-CFC-d-73), so we read it directly to mirror C++ verbatim.
      */
     private static final class ImpliedSwaptionVolHelper implements Derivative {
         private final PricingEngine engine_;
@@ -386,41 +388,35 @@ public class Swaption extends Option {
         private final /*@Real*/ double targetValue_;
         private final Instrument.ResultsImpl results_;
 
-        ImpliedSwaptionVolHelper(final Swaption swaption,
-                                 final Handle<YieldTermStructure> discountCurve,
-                                 final /*@Real*/ double targetValue,
-                                 final /*@Real*/ double displacement,
-                                 final VolatilityType type) {
+        ImpliedSwaptionVolHelper(final Swaption swaption, final Handle< YieldTermStructure > discountCurve,
+                final /*@Real*/ double targetValue, final /*@Real*/ double displacement, final VolatilityType type) {
             this.targetValue_ = targetValue;
             // Implausible starting value forces a recalculate on the first
             // op(x) call (mirrors C++ SimpleQuote(-1.0) sentinel,
             // swaption.cpp:61-64).
             this.vol_ = new SimpleQuote(-1.0);
-            final Handle<Quote> h = new Handle<Quote>(vol_);
+            final Handle< Quote > h = new Handle< Quote >(vol_);
 
-            switch (type) {
-                case ShiftedLognormal:
-                    // C++ uses BlackSwaptionEngine(disc, h, Actual365Fixed,
-                    // displacement). Java's BlackSwaptionEngine builds an
-                    // internal ConstantSwaptionVolatility with the supplied
-                    // quote handle; displacement is propagated as the
-                    // engine-level displacement (used when the surface's own
-                    // shift is zero) — see BlackSwaptionEngine.calculate()
-                    // effective-displacement branch.
-                    this.engine_ = new BlackSwaptionEngine(discountCurve,
-                            wrapConstantVol(h, displacement));
-                    break;
-                case Normal:
-                    // BachelierSwaptionEngine is not yet ported on the Java
-                    // side (see SwaptionAdditionalTest.testSwaptionDeltaIn
-                    // BachelierModel). Mirror C++ swaption.cpp:77-79 fail
-                    // path with a Java equivalent.
-                    throw new UnsupportedOperationException(
-                            "Normal vol implied-vol path requires"
-                            + " BachelierSwaptionEngine (not yet ported)");
-                default:
-                    throw new LibraryException(
-                            "unknown VolatilityType (" + type + ")");
+            switch ( type ) {
+            case ShiftedLognormal:
+                // C++ uses BlackSwaptionEngine(disc, h, Actual365Fixed,
+                // displacement). Java's BlackSwaptionEngine builds an
+                // internal ConstantSwaptionVolatility with the supplied
+                // quote handle; displacement is propagated as the
+                // engine-level displacement (used when the surface's own
+                // shift is zero) — see BlackSwaptionEngine.calculate()
+                // effective-displacement branch.
+                this.engine_ = new BlackSwaptionEngine(discountCurve, wrapConstantVol(h, displacement));
+                break;
+            case Normal:
+                // BachelierSwaptionEngine is not yet ported on the Java
+                // side (see SwaptionAdditionalTest.testSwaptionDeltaIn
+                // BachelierModel). Mirror C++ swaption.cpp:77-79 fail
+                // path with a Java equivalent.
+                throw new UnsupportedOperationException(
+                        "Normal vol implied-vol path requires" + " BachelierSwaptionEngine (not yet ported)");
+            default:
+                throw new LibraryException("unknown VolatilityType (" + type + ")");
             }
 
             // Mirrors C++ swaption.setupArguments(engine_->getArguments()).
@@ -433,7 +429,7 @@ public class Swaption extends Option {
 
         @Override
         public double op(final double x) {
-            if (x != vol_.value()) {
+            if ( x != vol_.value() ) {
                 vol_.setValue(x);
                 engine_.calculate();
             }
@@ -442,7 +438,7 @@ public class Swaption extends Option {
 
         @Override
         public double derivative(final double x) {
-            if (x != vol_.value()) {
+            if ( x != vol_.value() ) {
                 vol_.setValue(x);
                 engine_.calculate();
             }
@@ -453,52 +449,6 @@ public class Swaption extends Option {
         }
     }
 
-    /**
-     * Wraps a volatility quote into a {@link org.jquantlib.termstructures.SwaptionVolatilityStructure}
-     * handle compatible with {@link BlackSwaptionEngine}. Mirrors the
-     * implicit C++ vol-handle conversion in {@code ImpliedSwaptionVolHelper}
-     * (swaption.cpp:70-71) which constructs a {@code BlackSwaptionEngine}
-     * directly from {@code Handle<Quote>}.
-     *
-     * <p>Java's primary {@code BlackSwaptionEngine(Handle<YieldTermStructure>,
-     * Handle<Quote>)} factory does not accept a per-call displacement;
-     * we construct a {@link org.jquantlib.termstructures.volatilities.swaption.ConstantSwaptionVolatility}
-     * here so the displacement flows in via the surface's {@code shift()}
-     * accessor (matching the path the engine takes at calculate() time).
-     */
-    private static Handle<org.jquantlib.termstructures.SwaptionVolatilityStructure>
-            wrapConstantVol(final Handle<Quote> vol, final double displacement) {
-        return new Handle<org.jquantlib.termstructures.SwaptionVolatilityStructure>(
-                new org.jquantlib.termstructures.volatilities.swaption.ConstantSwaptionVolatility(
-                        0,
-                        new org.jquantlib.time.calendars.NullCalendar(),
-                        org.jquantlib.time.BusinessDayConvention.Following,
-                        vol,
-                        new Actual365Fixed(),
-                        VolatilityType.ShiftedLognormal,
-                        displacement));
-    }
-
-    //
-    // public inner interfaces
-    //
-
-    /**
-     * Marker interface for swaption arguments. In C++ this inherits from both
-     * {@code FixedVsFloatingSwap::arguments} and {@code Option::arguments};
-     * see the class-level note for the Java compromise.
-     */
-    public interface Arguments extends Swap.Arguments, Option.Arguments {
-        /* marking interface */
-    }
-
-    /**
-     * Marker interface for swaption results.
-     */
-    public interface Results extends Instrument.Results {
-        /* marking interface */
-    }
-
     //
     // public static inner classes
     //
@@ -506,15 +456,16 @@ public class Swaption extends Option {
     /**
      * %Arguments for swaption calculation.
      */
-    public static class ArgumentsImpl extends Swap.ArgumentsImpl
-            implements Swaption.Arguments {
+    public static class ArgumentsImpl extends Swap.ArgumentsImpl implements Swaption.Arguments {
 
-        /** {@link VanillaSwap}-typed underlying view (null when the underlying
-         *  is an {@link OvernightIndexedSwap}). */
+        /**
+         * {@link VanillaSwap}-typed underlying view (null when the underlying is an {@link OvernightIndexedSwap}).
+         */
         public VanillaSwap swap;
-        /** {@link OvernightIndexedSwap}-typed underlying view (null when the
-         *  underlying is a {@link VanillaSwap}). Mirrors the C++ template
-         *  hierarchy via runtime dispatch — see class-level note. */
+        /**
+         * {@link OvernightIndexedSwap}-typed underlying view (null when the underlying is a {@link VanillaSwap}).
+         * Mirrors the C++ template hierarchy via runtime dispatch — see class-level note.
+         */
         public OvernightIndexedSwap ois;
         public Settlement.Type settlementType = Settlement.Type.Physical;
         public Settlement.Method settlementMethod = Settlement.Method.PhysicalOTC;
@@ -533,12 +484,10 @@ public class Swaption extends Option {
     }
 
     /**
-     * %Results from swaption calculation. Adds no fields beyond
-     * {@link Instrument.ResultsImpl}; engines may still publish extra values
-     * (such as {@code vega}) via {@link Instrument.ResultsImpl#additionalResults()}.
+     * %Results from swaption calculation. Adds no fields beyond {@link Instrument.ResultsImpl}; engines may still
+     * publish extra values (such as {@code vega}) via {@link Instrument.ResultsImpl#additionalResults()}.
      */
-    public static class ResultsImpl extends Instrument.ResultsImpl
-            implements Swaption.Results {
+    public static class ResultsImpl extends Instrument.ResultsImpl implements Swaption.Results {
 
         @Override
         public void reset() {
@@ -550,8 +499,7 @@ public class Swaption extends Option {
      * Base class for swaption pricing engines. Mirrors C++
      * {@code Swaption::engine = GenericEngine<Swaption::arguments, Swaption::results>}.
      */
-    public abstract static class EngineImpl
-            extends GenericEngine<Swaption.Arguments, Swaption.Results> {
+    public abstract static class EngineImpl extends GenericEngine< Swaption.Arguments, Swaption.Results > {
 
         protected EngineImpl() {
             super(new Swaption.ArgumentsImpl(), new Swaption.ResultsImpl());

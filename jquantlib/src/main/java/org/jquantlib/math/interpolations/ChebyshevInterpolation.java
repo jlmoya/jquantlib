@@ -32,9 +32,8 @@ import org.jquantlib.math.Ops;
  * <p>Reference: S.A. Sarra, <i>Chebyshev Interpolation: An Interactive Tour</i>.
  *
  * <p>The implementation reuses the barycentric {@link LagrangeInterpolation}
- * over the Chebyshev nodes, which is exactly what the C++ implementation does
- * (it instantiates {@code detail::LagrangeInterpolationImpl} on top of the
- * Chebyshev grid).
+ * over the Chebyshev nodes, which is exactly what the C++ implementation does (it instantiates
+ * {@code detail::LagrangeInterpolationImpl} on top of the Chebyshev grid).
  *
  * <p>Two flavours of Chebyshev nodes are supported:
  * <ul>
@@ -48,21 +47,12 @@ import org.jquantlib.math.Ops;
  */
 public class ChebyshevInterpolation {
 
-    /** Chebyshev node flavour. */
-    public enum PointsType {
-        /** First-kind nodes: zeros of the Chebyshev polynomial T_n. */
-        FirstKind,
-        /** Second-kind nodes: extrema of T_{n-1} (includes -1 and +1). */
-        SecondKind
-    }
-
     private final double[] x_;
     private final double[] y_;
     private final LagrangeInterpolation impl_;
-
     /**
-     * Construct from an array of y-values; nodes are generated automatically
-     * (second-kind by default to match the C++ constructor's default argument).
+     * Construct from an array of y-values; nodes are generated automatically (second-kind by default to match the C++
+     * constructor's default argument).
      */
     public ChebyshevInterpolation(final double[] y) {
         this(y, PointsType.SecondKind);
@@ -76,22 +66,42 @@ public class ChebyshevInterpolation {
     }
 
     /**
-     * Construct by sampling {@code f} at the {@code n} Chebyshev nodes
-     * (second-kind by default).
+     * Construct by sampling {@code f} at the {@code n} Chebyshev nodes (second-kind by default).
      */
     public ChebyshevInterpolation(final int n, final Ops.DoubleOp f) {
         this(n, f, PointsType.SecondKind);
     }
 
     /** Construct by sampling {@code f} at the {@code n} Chebyshev nodes. */
-    public ChebyshevInterpolation(final int n, final Ops.DoubleOp f,
-                                  final PointsType pointsType) {
+    public ChebyshevInterpolation(final int n, final Ops.DoubleOp f, final PointsType pointsType) {
         this.x_ = nodes(n, pointsType);
         this.y_ = new double[n];
-        for (int i = 0; i < n; ++i) {
+        for ( int i = 0; i < n; ++i ) {
             this.y_[i] = f.op(this.x_[i]);
         }
         this.impl_ = new LagrangeInterpolation(this.x_, this.y_);
+    }
+
+    /**
+     * Static helper: generate the {@code n} Chebyshev nodes of the given flavour, on the interval {@code [-1, +1]}.
+     */
+    public static double[] nodes(final int n, final PointsType pointsType) {
+        final double[] t = new double[n];
+        switch ( pointsType ) {
+        case FirstKind:
+            for ( int i = 0; i < n; ++i ) {
+                t[i] = -Math.cos((i + 0.5) * Math.PI / n);
+            }
+            break;
+        case SecondKind:
+            for ( int i = 0; i < n; ++i ) {
+                t[i] = -Math.cos(i * Math.PI / (n - 1));
+            }
+            break;
+        default:
+            throw new IllegalArgumentException("unknown Chebyshev interpolation points type: " + pointsType);
+        }
+        return t;
     }
 
     /** Evaluate the interpolation at {@code x}. */
@@ -100,9 +110,8 @@ public class ChebyshevInterpolation {
     }
 
     /**
-     * Evaluate the interpolation at {@code x}. The {@code allowExtrapolation}
-     * flag is accepted for parity with the C++ {@code Interpolation::operator()}
-     * but ignored: Lagrange interpolation extrapolates implicitly.
+     * Evaluate the interpolation at {@code x}. The {@code allowExtrapolation} flag is accepted for parity with the C++
+     * {@code Interpolation::operator()} but ignored: Lagrange interpolation extrapolates implicitly.
      */
     public double op(final double x, final boolean allowExtrapolation) {
         return impl_.value(y_, x);
@@ -110,10 +119,9 @@ public class ChebyshevInterpolation {
 
     /** Replace the y-values in-place; the new array must have the same length. */
     public void updateY(final double[] y) {
-        if (y.length != y_.length) {
+        if ( y.length != y_.length ) {
             throw new IllegalArgumentException(
-                    "interpolation override has the wrong length: "
-                    + y.length + " (expected " + y_.length + ")");
+                    "interpolation override has the wrong length: " + y.length + " (expected " + y_.length + ")");
         }
         System.arraycopy(y, 0, y_, 0, y.length);
         impl_.setY(y_);
@@ -124,27 +132,11 @@ public class ChebyshevInterpolation {
         return x_.clone();
     }
 
-    /**
-     * Static helper: generate the {@code n} Chebyshev nodes of the given
-     * flavour, on the interval {@code [-1, +1]}.
-     */
-    public static double[] nodes(final int n, final PointsType pointsType) {
-        final double[] t = new double[n];
-        switch (pointsType) {
-            case FirstKind:
-                for (int i = 0; i < n; ++i) {
-                    t[i] = -Math.cos((i + 0.5) * Math.PI / n);
-                }
-                break;
-            case SecondKind:
-                for (int i = 0; i < n; ++i) {
-                    t[i] = -Math.cos(i * Math.PI / (n - 1));
-                }
-                break;
-            default:
-                throw new IllegalArgumentException(
-                        "unknown Chebyshev interpolation points type: " + pointsType);
-        }
-        return t;
+    /** Chebyshev node flavour. */
+    public enum PointsType {
+        /** First-kind nodes: zeros of the Chebyshev polynomial T_n. */
+        FirstKind,
+        /** Second-kind nodes: extrema of T_{n-1} (includes -1 and +1). */
+        SecondKind
     }
 }

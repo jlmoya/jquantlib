@@ -16,14 +16,13 @@
 
 package org.jquantlib.math.matrixutilities;
 
+import org.jquantlib.QL;
+
 import java.util.ArrayList;
 import java.util.List;
 
-import org.jquantlib.QL;
-
 /**
- * Builds an ordered basis for an incomplete subspace by Gram-Schmidt
- * orthonormalization.
+ * Builds an ordered basis for an incomplete subspace by Gram-Schmidt orthonormalization.
  *
  * <p>Java port of {@code ql/math/matrixutilities/basisincompleteordered.{hpp,cpp}}
  * (QuantLib v1.42.1). Phase 3j Track B align — replaces the prior stub.
@@ -31,15 +30,15 @@ import org.jquantlib.QL;
 public class BasisIncompleteOrdered {
 
     private final int euclideanDimension_;
-    private final List<double[]> currentBasis_ = new ArrayList<>();
+    private final List< double[] > currentBasis_ = new ArrayList<>();
 
     public BasisIncompleteOrdered(final int euclideanDimension) {
         this.euclideanDimension_ = euclideanDimension;
     }
 
     /**
-     * Adds a new vector to the basis. Returns true if it was linearly
-     * independent (i.e., admitted into the basis after orthonormalization).
+     * Adds a new vector to the basis. Returns true if it was linearly independent (i.e., admitted into the basis after
+     * orthonormalization).
      *
      * @param newVector1 vector of length {@link #euclideanDimension()}
      * @return true if added, false if linearly dependent on existing basis
@@ -48,29 +47,30 @@ public class BasisIncompleteOrdered {
         QL.require(newVector1.length == euclideanDimension_,
                 "missized vector passed to BasisIncompleteOrdered.addVector");
 
-        if (currentBasis_.size() == euclideanDimension_) {
+        if ( currentBasis_.size() == euclideanDimension_ ) {
             return false;
         }
 
         final double[] v = newVector1.clone();
-        for (final double[] basisVec : currentBasis_) {
+        for ( final double[] basisVec : currentBasis_ ) {
             double innerProd = 0.0;
-            for (int k = 0; k < euclideanDimension_; ++k) {
+            for ( int k = 0; k < euclideanDimension_; ++k ) {
                 innerProd += v[k] * basisVec[k];
             }
-            for (int k = 0; k < euclideanDimension_; ++k) {
+            for ( int k = 0; k < euclideanDimension_; ++k ) {
                 v[k] -= innerProd * basisVec[k];
             }
         }
 
         double normSq = 0.0;
-        for (final double e : v) normSq += e * e;
+        for ( final double e : v )
+            normSq += e * e;
         final double norm = Math.sqrt(normSq);
 
-        if (norm < 1e-12) {
+        if ( norm < 1e-12 ) {
             return false;
         }
-        for (int l = 0; l < euclideanDimension_; ++l) {
+        for ( int l = 0; l < euclideanDimension_; ++l ) {
             v[l] /= norm;
         }
         currentBasis_.add(v);
@@ -80,7 +80,7 @@ public class BasisIncompleteOrdered {
     /** Convenience overload: takes Array. */
     public boolean addVector(final Array newVector) {
         final double[] arr = new double[newVector.size()];
-        for (int i = 0; i < arr.length; ++i) {
+        for ( int i = 0; i < arr.length; ++i ) {
             arr[i] = newVector.get(i);
         }
         return addVector(arr);
@@ -98,9 +98,9 @@ public class BasisIncompleteOrdered {
     public Matrix getBasisAsRowsInMatrix() {
         final int rows = currentBasis_.size();
         final Matrix basis = new Matrix(rows, euclideanDimension_);
-        for (int i = 0; i < rows; ++i) {
+        for ( int i = 0; i < rows; ++i ) {
             final double[] v = currentBasis_.get(i);
-            for (int j = 0; j < euclideanDimension_; ++j) {
+            for ( int j = 0; j < euclideanDimension_; ++j ) {
                 basis.set(i, j, v[j]);
             }
         }

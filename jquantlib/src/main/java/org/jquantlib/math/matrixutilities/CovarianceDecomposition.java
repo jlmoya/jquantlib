@@ -31,14 +31,12 @@ import org.jquantlib.QL;
 /**
  * Covariance decomposition into correlation and variances.
  * <p>
- * Extracts the correlation matrix and the vector of variances out of the
- * input covariance matrix.
+ * Extracts the correlation matrix and the vector of variances out of the input covariance matrix.
  * <p>
  * Note: only the lower symmetric part of the covariance matrix is used.
  *
- * @see "ql/math/matrixutilities/getcovariance.{hpp,cpp}" v1.42.1
- *
  * @author Jose Moya
+ * @see "ql/math/matrixutilities/getcovariance.{hpp,cpp}" v1.42.1
  */
 public class CovarianceDecomposition {
 
@@ -59,15 +57,14 @@ public class CovarianceDecomposition {
         this.stdDevs_ = new double[size];
         this.correlationMatrix_ = new Matrix(size, size);
 
-        for (int i = 0; i < size; ++i) {
+        for ( int i = 0; i < size; ++i ) {
             variances_[i] = cov.get(i, i);
             stdDevs_[i] = Math.sqrt(variances_[i]);
             correlationMatrix_.set(i, i, 1.0);
-            for (int j = 0; j < i; ++j) {
+            for ( int j = 0; j < i; ++j ) {
                 QL.require(Math.abs(cov.get(i, j) - cov.get(j, i)) <= tolerance,
-                        "invalid covariance matrix:"
-                                + "\nc[" + i + ", " + j + "] = " + cov.get(i, j)
-                                + "\nc[" + j + ", " + i + "] = " + cov.get(j, i));
+                        "invalid covariance matrix:" + "\nc[" + i + ", " + j + "] = " + cov.get(i, j) + "\nc[" + j
+                                + ", " + i + "] = " + cov.get(j, i));
                 final double rho = cov.get(i, j) / (stdDevs_[i] * stdDevs_[j]);
                 correlationMatrix_.set(i, j, rho);
                 correlationMatrix_.set(j, i, rho);

@@ -38,9 +38,9 @@ import org.jquantlib.math.Ops;
  * where {@code I(z; a, b)} is the regularised incomplete beta function.
  *
  * <p>The C++ implementation passes the regularisation arg as the third parameter
- * to {@code incompleteBetaFunction(a, b, x)}, matching QuantLib's signature.
- * Java {@link Beta#incompleteBetaFunction(double, double, double, double, Integer)}
- * mirrors that call signature with explicit accuracy and iteration overrides.
+ * to {@code incompleteBetaFunction(a, b, x)}, matching QuantLib's signature. Java
+ * {@link Beta#incompleteBetaFunction(double, double, double, double, Integer)} mirrors that call signature with
+ * explicit accuracy and iteration overrides.
  */
 public class CumulativeStudentDistribution implements Ops.DoubleOp {
 

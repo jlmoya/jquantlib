@@ -50,15 +50,13 @@ import org.jquantlib.time.calendars.NullCalendar;
 /**
  * Vanna/Volga double-barrier option engine.
  * <p>
- * Java port of QuantLib v1.42.1
- * {@code ql/experimental/barrieroption/vannavolgadoublebarrierengine.hpp}
- * (header-only template).
+ * Java port of QuantLib v1.42.1 {@code ql/experimental/barrieroption/vannavolgadoublebarrierengine.hpp} (header-only
+ * template).
  *
  * <p>The C++ class is templated on the inner Black-Scholes double-barrier
- * engine; in this Java port the inner engine is supplied via the
- * {@link DoubleBarrierEngineFactory} functional interface, allowing the same
- * Vanna/Volga wrapper to be combined with either {@link SuoWangDoubleBarrierEngine}
- * or {@link org.jquantlib.pricingengines.barrier.AnalyticDoubleBarrierEngine}.
+ * engine; in this Java port the inner engine is supplied via the {@link DoubleBarrierEngineFactory} functional
+ * interface, allowing the same Vanna/Volga wrapper to be combined with either {@link SuoWangDoubleBarrierEngine} or
+ * {@link org.jquantlib.pricingengines.barrier.AnalyticDoubleBarrierEngine}.
  *
  * <p>Supports {@link DoubleBarrierType#KnockIn} and
  * {@link DoubleBarrierType#KnockOut} only (matching the C++ requirement).
@@ -67,63 +65,38 @@ import org.jquantlib.time.calendars.NullCalendar;
  */
 public class VannaVolgaDoubleBarrierEngine extends DoubleBarrierOption.EngineImpl {
 
-    /**
-     * Factory for the inner Black-Scholes double-barrier engine, mirroring the
-     * C++ template parameter. The factory receives the temporary
-     * Black-Scholes-Merton process (built with the shifted ATM-vol quote) and
-     * the series-truncation count.
-     */
-    public interface DoubleBarrierEngineFactory {
-        DoubleBarrierOption.EngineImpl create(GeneralizedBlackScholesProcess process, int series);
-    }
-
-
-    private final Handle<DeltaVolQuote> atmVol_;
-    private final Handle<DeltaVolQuote> vol25Put_;
-    private final Handle<DeltaVolQuote> vol25Call_;
+    private final Handle< DeltaVolQuote > atmVol_;
+    private final Handle< DeltaVolQuote > vol25Put_;
+    private final Handle< DeltaVolQuote > vol25Call_;
     private final double T_;
-    private final Handle<? extends Quote> spotFX_;
-    private final Handle<YieldTermStructure> domesticTS_;
-    private final Handle<YieldTermStructure> foreignTS_;
+    private final Handle< ? extends Quote > spotFX_;
+    private final Handle< YieldTermStructure > domesticTS_;
+    private final Handle< YieldTermStructure > foreignTS_;
     private final boolean adaptVanDelta_;
     private final double bsPriceWithSmile_;
     private final int series_;
     private final DoubleBarrierEngineFactory engineFactory_;
-
-
-    public VannaVolgaDoubleBarrierEngine(final Handle<DeltaVolQuote> atmVol,
-                                         final Handle<DeltaVolQuote> vol25Put,
-                                         final Handle<DeltaVolQuote> vol25Call,
-                                         final Handle<? extends Quote> spotFX,
-                                         final Handle<YieldTermStructure> domesticTS,
-                                         final Handle<YieldTermStructure> foreignTS,
-                                         final DoubleBarrierEngineFactory engineFactory) {
+    public VannaVolgaDoubleBarrierEngine(final Handle< DeltaVolQuote > atmVol, final Handle< DeltaVolQuote > vol25Put,
+            final Handle< DeltaVolQuote > vol25Call, final Handle< ? extends Quote > spotFX,
+            final Handle< YieldTermStructure > domesticTS, final Handle< YieldTermStructure > foreignTS,
+            final DoubleBarrierEngineFactory engineFactory) {
         this(atmVol, vol25Put, vol25Call, spotFX, domesticTS, foreignTS, false, 0.0, 5, engineFactory);
     }
 
-    public VannaVolgaDoubleBarrierEngine(final Handle<DeltaVolQuote> atmVol,
-                                         final Handle<DeltaVolQuote> vol25Put,
-                                         final Handle<DeltaVolQuote> vol25Call,
-                                         final Handle<? extends Quote> spotFX,
-                                         final Handle<YieldTermStructure> domesticTS,
-                                         final Handle<YieldTermStructure> foreignTS,
-                                         final boolean adaptVanDelta,
-                                         final double bsPriceWithSmile,
-                                         final DoubleBarrierEngineFactory engineFactory) {
-        this(atmVol, vol25Put, vol25Call, spotFX, domesticTS, foreignTS,
-                adaptVanDelta, bsPriceWithSmile, 5, engineFactory);
+    public VannaVolgaDoubleBarrierEngine(final Handle< DeltaVolQuote > atmVol, final Handle< DeltaVolQuote > vol25Put,
+            final Handle< DeltaVolQuote > vol25Call, final Handle< ? extends Quote > spotFX,
+            final Handle< YieldTermStructure > domesticTS, final Handle< YieldTermStructure > foreignTS,
+            final boolean adaptVanDelta, final double bsPriceWithSmile,
+            final DoubleBarrierEngineFactory engineFactory) {
+        this(atmVol, vol25Put, vol25Call, spotFX, domesticTS, foreignTS, adaptVanDelta, bsPriceWithSmile, 5,
+                engineFactory);
     }
 
-    public VannaVolgaDoubleBarrierEngine(final Handle<DeltaVolQuote> atmVol,
-                                         final Handle<DeltaVolQuote> vol25Put,
-                                         final Handle<DeltaVolQuote> vol25Call,
-                                         final Handle<? extends Quote> spotFX,
-                                         final Handle<YieldTermStructure> domesticTS,
-                                         final Handle<YieldTermStructure> foreignTS,
-                                         final boolean adaptVanDelta,
-                                         final double bsPriceWithSmile,
-                                         final int series,
-                                         final DoubleBarrierEngineFactory engineFactory) {
+    public VannaVolgaDoubleBarrierEngine(final Handle< DeltaVolQuote > atmVol, final Handle< DeltaVolQuote > vol25Put,
+            final Handle< DeltaVolQuote > vol25Call, final Handle< ? extends Quote > spotFX,
+            final Handle< YieldTermStructure > domesticTS, final Handle< YieldTermStructure > foreignTS,
+            final boolean adaptVanDelta, final double bsPriceWithSmile, final int series,
+            final DoubleBarrierEngineFactory engineFactory) {
         this.atmVol_ = atmVol;
         this.vol25Put_ = vol25Put;
         this.vol25Call_ = vol25Call;
@@ -136,19 +109,16 @@ public class VannaVolgaDoubleBarrierEngine extends DoubleBarrierOption.EngineImp
         this.series_ = series;
         this.engineFactory_ = engineFactory;
 
-        QL.require(vol25Put.currentLink().delta() == -0.25,
-                "25 delta put is required by vanna volga method");
-        QL.require(vol25Call.currentLink().delta() == 0.25,
-                "25 delta call is required by vanna volga method");
+        QL.require(vol25Put.currentLink().delta() == -0.25, "25 delta put is required by vanna volga method");
+        QL.require(vol25Call.currentLink().delta() == 0.25, "25 delta call is required by vanna volga method");
 
-        QL.require(vol25Put.currentLink().maturity() == vol25Call.currentLink().maturity() &&
-                   vol25Put.currentLink().maturity() == atmVol.currentLink().maturity(),
+        QL.require(vol25Put.currentLink().maturity() == vol25Call.currentLink().maturity()
+                        && vol25Put.currentLink().maturity() == atmVol.currentLink().maturity(),
                 "Maturity of 3 vols are not the same");
 
         QL.require(!domesticTS.empty(), "domestic yield curve is not defined");
         QL.require(!foreignTS.empty(), "foreign yield curve is not defined");
     }
-
 
     @Override
     public void calculate() {
@@ -166,94 +136,77 @@ public class VannaVolgaDoubleBarrierEngine extends DoubleBarrierOption.EngineImp
         final SimpleQuote x0Quote = new SimpleQuote(spotFX_.currentLink().value());
         final SimpleQuote atmVolQuote = new SimpleQuote(atmVol_.currentLink().value());
 
-        final BlackVolTermStructure blackVolTS = new BlackConstantVol(
-                new Settings().evaluationDate(),
-                new NullCalendar(),
-                new Handle<Quote>(atmVolQuote),
-                new Actual365Fixed());
-        final BlackScholesMertonProcess stochProcess = new BlackScholesMertonProcess(
-                new Handle<Quote>(x0Quote),
-                foreignTS_,
-                domesticTS_,
-                new Handle<BlackVolTermStructure>(blackVolTS));
+        final BlackVolTermStructure blackVolTS = new BlackConstantVol(new Settings().evaluationDate(),
+                new NullCalendar(), new Handle< Quote >(atmVolQuote), new Actual365Fixed());
+        final BlackScholesMertonProcess stochProcess = new BlackScholesMertonProcess(new Handle< Quote >(x0Quote),
+                foreignTS_, domesticTS_, new Handle< BlackVolTermStructure >(blackVolTS));
 
         final DoubleBarrierOption.EngineImpl engineBS = engineFactory_.create(stochProcess, series_);
 
-        final BlackDeltaCalculator blackDeltaCalculatorAtm = new BlackDeltaCalculator(
-                Option.Type.Call, atmVol_.currentLink().deltaType(), x0Quote.value(),
-                domesticTS_.currentLink().discount(T_), foreignTS_.currentLink().discount(T_),
-                atmVol_.currentLink().value() * Math.sqrt(T_));
+        final BlackDeltaCalculator blackDeltaCalculatorAtm = new BlackDeltaCalculator(Option.Type.Call,
+                atmVol_.currentLink().deltaType(), x0Quote.value(), domesticTS_.currentLink().discount(T_),
+                foreignTS_.currentLink().discount(T_), atmVol_.currentLink().value() * Math.sqrt(T_));
         final double atmStrike = blackDeltaCalculatorAtm.atmStrike(atmVol_.currentLink().atmType());
 
         final double call25Vol = vol25Call_.currentLink().value();
         final double put25Vol = vol25Put_.currentLink().value();
 
-        final BlackDeltaCalculator blackDeltaCalculatorPut25 = new BlackDeltaCalculator(
-                Option.Type.Put, vol25Put_.currentLink().deltaType(), x0Quote.value(),
-                domesticTS_.currentLink().discount(T_), foreignTS_.currentLink().discount(T_),
-                put25Vol * Math.sqrt(T_));
+        final BlackDeltaCalculator blackDeltaCalculatorPut25 = new BlackDeltaCalculator(Option.Type.Put,
+                vol25Put_.currentLink().deltaType(), x0Quote.value(), domesticTS_.currentLink().discount(T_),
+                foreignTS_.currentLink().discount(T_), put25Vol * Math.sqrt(T_));
         final double put25Strike = blackDeltaCalculatorPut25.strikeFromDelta(-0.25);
-        final BlackDeltaCalculator blackDeltaCalculatorCall25 = new BlackDeltaCalculator(
-                Option.Type.Call, vol25Call_.currentLink().deltaType(), x0Quote.value(),
-                domesticTS_.currentLink().discount(T_), foreignTS_.currentLink().discount(T_),
-                call25Vol * Math.sqrt(T_));
+        final BlackDeltaCalculator blackDeltaCalculatorCall25 = new BlackDeltaCalculator(Option.Type.Call,
+                vol25Call_.currentLink().deltaType(), x0Quote.value(), domesticTS_.currentLink().discount(T_),
+                foreignTS_.currentLink().discount(T_), call25Vol * Math.sqrt(T_));
         final double call25Strike = blackDeltaCalculatorCall25.strikeFromDelta(0.25);
 
         // NOTE: C++ uses foreignTS_->discount(T_) twice here (looks like a bug, but we
         // mirror v1.42.1 faithfully so the reference values match).
         final double[] strikes = new double[] { put25Strike, atmStrike, call25Strike };
-        final double[] vols    = new double[] { put25Vol, atmVol_.currentLink().value(), call25Vol };
-        final VannaVolgaInterpolation interpolation = new VannaVolgaInterpolation(
-                strikes, vols, x0Quote.value(),
+        final double[] vols = new double[] { put25Vol, atmVol_.currentLink().value(), call25Vol };
+        final VannaVolgaInterpolation interpolation = new VannaVolgaInterpolation(strikes, vols, x0Quote.value(),
                 foreignTS_.currentLink().discount(T_), foreignTS_.currentLink().discount(T_), T_);
         final StrikedTypePayoff payoff = (StrikedTypePayoff) a.payoff;
         final double strikeVol = interpolation.value(payoff.strike());
 
-        final double forward = x0Quote.value() * foreignTS_.currentLink().discount(T_)
-                / domesticTS_.currentLink().discount(T_);
-        final double vanillaOption = BlackFormula.blackFormula(payoff.optionType(), payoff.strike(),
-                forward, strikeVol * Math.sqrt(T_), domesticTS_.currentLink().discount(T_));
+        final double forward =
+                x0Quote.value() * foreignTS_.currentLink().discount(T_) / domesticTS_.currentLink().discount(T_);
+        final double vanillaOption = BlackFormula.blackFormula(payoff.optionType(), payoff.strike(), forward,
+                strikeVol * Math.sqrt(T_), domesticTS_.currentLink().discount(T_));
 
         // Already-touched short-circuits
         final boolean outside = x0Quote.value() > a.barrier_hi || x0Quote.value() < a.barrier_lo;
-        if (outside && a.barrierType == DoubleBarrierType.KnockOut) {
+        if ( outside && a.barrierType == DoubleBarrierType.KnockOut ) {
             r.value = 0.0;
             return;
         }
-        if (outside && a.barrierType == DoubleBarrierType.KnockIn) {
+        if ( outside && a.barrierType == DoubleBarrierType.KnockIn ) {
             r.value = adaptVanDelta_ ? bsPriceWithSmile_ : vanillaOption;
             return;
         }
 
         // Compute the BS knock-out price; KI = vanilla - KO.
-        final DoubleBarrierOption doubleBarrierOption = new DoubleBarrierOption(
-                DoubleBarrierType.KnockOut, a.barrier_lo, a.barrier_hi, a.rebate,
-                (StrikedTypePayoff) a.payoff, a.exercise);
+        final DoubleBarrierOption doubleBarrierOption = new DoubleBarrierOption(DoubleBarrierType.KnockOut,
+                a.barrier_lo, a.barrier_hi, a.rebate, (StrikedTypePayoff) a.payoff, a.exercise);
         doubleBarrierOption.setPricingEngine(engineBS);
 
         final double priceBS = doubleBarrierOption.NPV();
 
-        final double priceAtmCallBS = BlackFormula.blackFormula(Option.Type.Call, atmStrike,
-                forward, atmVol_.currentLink().value() * Math.sqrt(T_),
-                domesticTS_.currentLink().discount(T_));
-        final double price25CallBS = BlackFormula.blackFormula(Option.Type.Call, call25Strike,
-                forward, atmVol_.currentLink().value() * Math.sqrt(T_),
-                domesticTS_.currentLink().discount(T_));
-        final double price25PutBS = BlackFormula.blackFormula(Option.Type.Put, put25Strike,
-                forward, atmVol_.currentLink().value() * Math.sqrt(T_),
-                domesticTS_.currentLink().discount(T_));
+        final double priceAtmCallBS = BlackFormula.blackFormula(Option.Type.Call, atmStrike, forward,
+                atmVol_.currentLink().value() * Math.sqrt(T_), domesticTS_.currentLink().discount(T_));
+        final double price25CallBS = BlackFormula.blackFormula(Option.Type.Call, call25Strike, forward,
+                atmVol_.currentLink().value() * Math.sqrt(T_), domesticTS_.currentLink().discount(T_));
+        final double price25PutBS = BlackFormula.blackFormula(Option.Type.Put, put25Strike, forward,
+                atmVol_.currentLink().value() * Math.sqrt(T_), domesticTS_.currentLink().discount(T_));
 
         // ATM call market price re-uses atmVol_, so priceAtmCallMkt == priceAtmCallBS
         // (mirrors v1.42.1).
-        final double priceAtmCallMkt = BlackFormula.blackFormula(Option.Type.Call, atmStrike,
-                forward, atmVol_.currentLink().value() * Math.sqrt(T_),
-                domesticTS_.currentLink().discount(T_));
-        final double price25CallMkt = BlackFormula.blackFormula(Option.Type.Call, call25Strike,
-                forward, call25Vol * Math.sqrt(T_),
-                domesticTS_.currentLink().discount(T_));
-        final double price25PutMkt = BlackFormula.blackFormula(Option.Type.Put, put25Strike,
-                forward, put25Vol * Math.sqrt(T_),
-                domesticTS_.currentLink().discount(T_));
+        final double priceAtmCallMkt = BlackFormula.blackFormula(Option.Type.Call, atmStrike, forward,
+                atmVol_.currentLink().value() * Math.sqrt(T_), domesticTS_.currentLink().discount(T_));
+        final double price25CallMkt = BlackFormula.blackFormula(Option.Type.Call, call25Strike, forward,
+                call25Vol * Math.sqrt(T_), domesticTS_.currentLink().discount(T_));
+        final double price25PutMkt = BlackFormula.blackFormula(Option.Type.Put, put25Strike, forward,
+                put25Vol * Math.sqrt(T_), domesticTS_.currentLink().discount(T_));
 
         // Analytical vega / vanna / volga of vanillas at atm vol
         final NormalDistribution norm = new NormalDistribution();
@@ -323,9 +276,15 @@ public class VannaVolgaDoubleBarrierEngine extends DoubleBarrierOption.EngineImp
 
         // Solve A q = b
         final Matrix A = new Matrix(3, 3);
-        A.set(0, 0, vegaAtm);  A.set(0, 1, vega25Call);  A.set(0, 2, vega25Put);
-        A.set(1, 0, vannaAtm); A.set(1, 1, vanna25Call); A.set(1, 2, vanna25Put);
-        A.set(2, 0, volgaAtm); A.set(2, 1, volga25Call); A.set(2, 2, volga25Put);
+        A.set(0, 0, vegaAtm);
+        A.set(0, 1, vega25Call);
+        A.set(0, 2, vega25Put);
+        A.set(1, 0, vannaAtm);
+        A.set(1, 1, vanna25Call);
+        A.set(1, 2, vanna25Put);
+        A.set(2, 0, volgaAtm);
+        A.set(2, 1, volga25Call);
+        A.set(2, 2, volga25Put);
 
         final Array b = new Array(3);
         b.set(0, vegaBarBS);
@@ -337,36 +296,32 @@ public class VannaVolgaDoubleBarrierEngine extends DoubleBarrierOption.EngineImp
         // Double-no-touch survival probability via Ikeda/Kunitomo series.
         final double H = a.barrier_hi;
         final double L = a.barrier_lo;
-        final double thetaTiltMinus = ((domesticTS_.currentLink().zeroRate(T_,
-                org.jquantlib.termstructures.Compounding.Continuous,
-                org.jquantlib.time.Frequency.NoFrequency, false).rate()
-                - foreignTS_.currentLink().zeroRate(T_,
-                org.jquantlib.termstructures.Compounding.Continuous,
-                org.jquantlib.time.Frequency.NoFrequency, false).rate())
-                / atmVol_.currentLink().value()
+        final double thetaTiltMinus = ((domesticTS_.currentLink()
+                .zeroRate(T_, org.jquantlib.termstructures.Compounding.Continuous,
+                        org.jquantlib.time.Frequency.NoFrequency, false).rate() - foreignTS_.currentLink()
+                .zeroRate(T_, org.jquantlib.termstructures.Compounding.Continuous,
+                        org.jquantlib.time.Frequency.NoFrequency, false).rate()) / atmVol_.currentLink().value()
                 - atmVol_.currentLink().value() / 2.0) * sqrtT;
         final double h = (1.0 / atmVol_.currentLink().value()) * Math.log(H / x0Quote.value()) / sqrtT;
         final double l = (1.0 / atmVol_.currentLink().value()) * Math.log(L / x0Quote.value()) / sqrtT;
         final CumulativeNormalDistribution cnd = new CumulativeNormalDistribution();
 
         double doubleNoTouch = 0.0;
-        for (int j = -series_; j < series_; j++) {
+        for ( int j = -series_; j < series_; j++ ) {
             final double e_minus = 2.0 * j * (h - l) - thetaTiltMinus;
-            doubleNoTouch +=
-                    Math.exp(-2.0 * j * thetaTiltMinus * (h - l))
-                        * (cnd.op(h + e_minus) - cnd.op(l + e_minus))
-                  - Math.exp(-2.0 * j * thetaTiltMinus * (h - l) + 2.0 * thetaTiltMinus * h)
-                        * (cnd.op(h - 2.0 * h + e_minus) - cnd.op(l - 2.0 * h + e_minus));
+            doubleNoTouch += Math.exp(-2.0 * j * thetaTiltMinus * (h - l)) * (cnd.op(h + e_minus) - cnd.op(l + e_minus))
+                    - Math.exp(-2.0 * j * thetaTiltMinus * (h - l) + 2.0 * thetaTiltMinus * h) * (
+                    cnd.op(h - 2.0 * h + e_minus) - cnd.op(l - 2.0 * h + e_minus));
         }
 
         final double lambda = doubleNoTouch;
-        final double adjust = q.get(0) * (priceAtmCallMkt - priceAtmCallBS)
-                            + q.get(1) * (price25CallMkt - price25CallBS)
-                            + q.get(2) * (price25PutMkt - price25PutBS);
+        final double adjust =
+                q.get(0) * (priceAtmCallMkt - priceAtmCallBS) + q.get(1) * (price25CallMkt - price25CallBS)
+                        + q.get(2) * (price25PutMkt - price25PutBS);
         double outPrice = priceBS + lambda * adjust;
         final double inPrice;
 
-        if (adaptVanDelta_) {
+        if ( adaptVanDelta_ ) {
             outPrice += lambda * (bsPriceWithSmile_ - vanillaOption);
             outPrice = Math.max(0.0, Math.min(bsPriceWithSmile_, outPrice));
             inPrice = bsPriceWithSmile_ - outPrice;
@@ -375,10 +330,19 @@ public class VannaVolgaDoubleBarrierEngine extends DoubleBarrierOption.EngineImp
             inPrice = vanillaOption - outPrice;
         }
 
-        if (a.barrierType == DoubleBarrierType.KnockOut) {
+        if ( a.barrierType == DoubleBarrierType.KnockOut ) {
             r.value = outPrice;
         } else {
             r.value = inPrice;
         }
+    }
+
+    /**
+     * Factory for the inner Black-Scholes double-barrier engine, mirroring the C++ template parameter. The factory
+     * receives the temporary Black-Scholes-Merton process (built with the shifted ATM-vol quote) and the
+     * series-truncation count.
+     */
+    public interface DoubleBarrierEngineFactory {
+        DoubleBarrierOption.EngineImpl create(GeneralizedBlackScholesProcess process, int series);
     }
 }

@@ -37,11 +37,11 @@ POSSIBILITY OF SUCH DAMAGE.
 */
 package org.jquantlib.math.matrixutilities.internal;
 
-import java.util.ListIterator;
-import java.util.Set;
-
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.matrixutilities.Matrix;
+
+import java.util.ListIterator;
+import java.util.Set;
 
 /**
  * This is the main interface responsible for {@link Matrix} and {@link Array} accessors
@@ -50,31 +50,30 @@ import org.jquantlib.math.matrixutilities.Matrix;
  */
 public interface Address {
 
-    public static final String INVALID_BACKWARD_INDEXING = "invalid backward indexing";
-    public static final String INVALID_ROW_INDEX = "invalid row index";
-    public static final String INVALID_COLUMN_INDEX = "invalid column index";
-    public static final String GAP_INDEX_FOUND = "gap index found";
-
+    String INVALID_BACKWARD_INDEXING = "invalid backward indexing";
+    String INVALID_ROW_INDEX = "invalid row index";
+    String INVALID_COLUMN_INDEX = "invalid column index";
+    String GAP_INDEX_FOUND = "gap index found";
 
     /**
      * @return the number of rows mapped
      */
-    public int rows();
+    int rows();
 
     /**
      * @return the number of columns mapped
      */
-    public int cols();
+    int cols();
 
     /**
      * @return the base address (inclusive)
      */
-    public int base();
+    int base();
 
     /**
      * @return the last address (exclusive)
      */
-    public int last();
+    int last();
 
     /**
      * <code>row0</code> is the row offset of the upmost row of a Matrix.
@@ -89,7 +88,7 @@ public interface Address {
      *
      * @return
      */
-    public int row0();
+    int row0();
 
     /**
      * <code>col0</code> is the row offset of the leftmost column of a Matrix.
@@ -104,35 +103,32 @@ public interface Address {
      *
      * @return
      */
-    public int col0();
+    int col0();
 
     /**
      * Tells if the underlying memory storage can be accessed in a continuous way.
      * <p>
      * When <code>contiguous</code> is <code>true</code>, certain operations are benefited by bulk operations.
      */
-    public boolean isContiguous();
+    boolean isContiguous();
 
     /**
      * This is a convenience method intended to return {@link Flags#FORTRAN}
      *
      * @return Flags#FORTRAN
      */
-    public boolean isFortran();
-
-
+    boolean isFortran();
 
     /**
      * @return a set of flags in effect on this {@link Address} object.
      */
-    public Set<Address.Flags> flags();
-
+    Set< Address.Flags > flags();
 
     //
     // public inner enumerations
     //
 
-    public enum Flags {
+    enum Flags {
 
         /**
          * Tells if this {@link Address} is intended to Fortran 1-based indexing.
@@ -148,37 +144,33 @@ public interface Address {
          */
         FORTRAN,
 
-//TODO: to be implemented
-//        /**
-//         * Tells if rows and columns must be transposed.
-//         * <p>
-//         * This feature is particularly important in 2 situations:
-//         * <li>Implement Matrix transposition in constant time by simply changing the address mapping as opposed
-//         * to performing an actual transposition of all elements, possibly employing very expensive copy of elements;</li>
-//         * <li>Increase performance when a Matrix is mostly used as a set of column arrays. As columns are mapped
-//         * internally as rows, the processor will show better performance due to memory caching of adjacent elements</li>
-//         * <p>
-//         * <b>NOT IMPLEMENTED YET</b>
-//         */
-//        TRANSPOSE
+        //TODO: to be implemented
+        //        /**
+        //         * Tells if rows and columns must be transposed.
+        //         * <p>
+        //         * This feature is particularly important in 2 situations:
+        //         * <li>Implement Matrix transposition in constant time by simply changing the address mapping as opposed
+        //         * to performing an actual transposition of all elements, possibly employing very expensive copy of elements;</li>
+        //         * <li>Increase performance when a Matrix is mostly used as a set of column arrays. As columns are mapped
+        //         * internally as rows, the processor will show better performance due to memory caching of adjacent elements</li>
+        //         * <p>
+        //         * <b>NOT IMPLEMENTED YET</b>
+        //         */
+        //        TRANSPOSE
     }
-
-
-
-
 
     //
     // public inner interfaces
     //
 
     /**
-     * This is the main interface responsible for generation of Iterators associated to
-     * classes {@link Matrix} and  {@link Array}
+     * This is the main interface responsible for generation of Iterators associated to classes {@link Matrix} and
+     * {@link Array}
      *
      * @see ListIterator
      */
-    public interface Offset {
-        public abstract int op();
+    interface Offset {
+        int op();
     }
 
     /**
@@ -186,25 +178,27 @@ public interface Address {
      *
      * @author Richard Gomes
      */
-    public interface ArrayAddress extends Cloneable, Address {
+    interface ArrayAddress extends Cloneable, Address {
 
-        public ArrayAddress clone();
+        ArrayAddress clone();
 
-        public int op(int index);
+        int op(int index);
 
-        public ArrayAddress toFortran();
-        public ArrayAddress toJava();
+        ArrayAddress toFortran();
 
-        public ArrayOffset offset();
-        public ArrayOffset offset(int index);
+        ArrayAddress toJava();
+
+        ArrayOffset offset();
+
+        ArrayOffset offset(int index);
 
         /**
          * This interface defines Iterators associated to class {@link Array}
          *
          * @see ListIterator
          */
-        public interface ArrayOffset extends Offset, ListIterator<Double> {
-            public void setIndex(final int index);
+        interface ArrayOffset extends Offset, ListIterator< Double > {
+            void setIndex(final int index);
         }
     }
 
@@ -213,30 +207,37 @@ public interface Address {
      *
      * @author Richard Gomes
      */
-    public interface MatrixAddress extends Cloneable, Address {
+    interface MatrixAddress extends Cloneable, Address {
 
-        public MatrixAddress clone();
+        MatrixAddress clone();
 
-        public int op(int row, int col);
+        int op(int row, int col);
 
-        public MatrixAddress toFortran();
-        public MatrixAddress toJava();
+        MatrixAddress toFortran();
 
-        public MatrixOffset offset();
-        public MatrixOffset offset(final int row, final int col);
+        MatrixAddress toJava();
+
+        MatrixOffset offset();
+
+        MatrixOffset offset(final int row, final int col);
 
         /**
          * This interface defines Iterators associated to class {@link Matrix}
          *
          * @see ListIterator
          */
-        public interface MatrixOffset extends Offset {
-            public void setRow(final int row);
-            public void setCol(final int col);
-            public void nextRow();
-            public void prevRow();
-            public void nextCol();
-            public void prevCol();
+        interface MatrixOffset extends Offset {
+            void setRow(final int row);
+
+            void setCol(final int col);
+
+            void nextRow();
+
+            void prevRow();
+
+            void nextCol();
+
+            void prevCol();
         }
 
     }

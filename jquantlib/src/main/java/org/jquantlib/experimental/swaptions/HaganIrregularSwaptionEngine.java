@@ -27,11 +27,7 @@
 package org.jquantlib.experimental.swaptions;
 
 import org.jquantlib.QL;
-import org.jquantlib.cashflow.CashFlow;
-import org.jquantlib.cashflow.CashFlows;
-import org.jquantlib.cashflow.FixedRateCoupon;
-import org.jquantlib.cashflow.IborCoupon;
-import org.jquantlib.cashflow.Leg;
+import org.jquantlib.cashflow.*;
 import org.jquantlib.exercise.Exercise;
 import org.jquantlib.indexes.IborIndex;
 import org.jquantlib.instruments.MakeVanillaSwap;
@@ -59,8 +55,8 @@ import org.jquantlib.time.TimeUnit;
  * Pricing engine for irregular swaptions via super-replication.
  *
  * <p>Phase 4i port of C++ QuantLib v1.42.1
- * {@code ql/experimental/swaptions/haganirregularswaptionengine.{hpp,cpp}}.
- * Pinned commit {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
+ * {@code ql/experimental/swaptions/haganirregularswaptionengine.{hpp,cpp}}. Pinned commit
+ * {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
  *
  * <p>References:
  * <ol>
@@ -90,17 +86,15 @@ import org.jquantlib.time.TimeUnit;
  */
 public class HaganIrregularSwaptionEngine extends IrregularSwaption.EngineImpl {
 
-    private final Handle<YieldTermStructure> termStructure_;
-    private final Handle<SwaptionVolatilityStructure> volatilityStructure_;
+    private final Handle< YieldTermStructure > termStructure_;
+    private final Handle< SwaptionVolatilityStructure > volatilityStructure_;
 
-    public HaganIrregularSwaptionEngine(
-            final Handle<SwaptionVolatilityStructure> volatilityStructure) {
-        this(volatilityStructure, new Handle<YieldTermStructure>());
+    public HaganIrregularSwaptionEngine(final Handle< SwaptionVolatilityStructure > volatilityStructure) {
+        this(volatilityStructure, new Handle< YieldTermStructure >());
     }
 
-    public HaganIrregularSwaptionEngine(
-            final Handle<SwaptionVolatilityStructure> volatilityStructure,
-            final Handle<YieldTermStructure> termStructure) {
+    public HaganIrregularSwaptionEngine(final Handle< SwaptionVolatilityStructure > volatilityStructure,
+            final Handle< YieldTermStructure > termStructure) {
         super();
         this.termStructure_ = termStructure;
         this.volatilityStructure_ = volatilityStructure;
@@ -117,8 +111,7 @@ public class HaganIrregularSwaptionEngine extends IrregularSwaption.EngineImpl {
         final IrregularSwaption.ArgumentsImpl args = (IrregularSwaption.ArgumentsImpl) getArguments();
 
         final Exercise exercise = args.exercise;
-        QL.require(exercise.type() == Exercise.Type.European,
-                "swaption must be european");
+        QL.require(exercise.type() == Exercise.Type.European, "swaption must be european");
 
         IrregularSwap swap = args.swap;
 
@@ -133,15 +126,12 @@ public class HaganIrregularSwaptionEngine extends IrregularSwaption.EngineImpl {
         final double fltLgBPS = CashFlows.getInstance().bps(floatLeg, termStructure_);
 
         final Leg floatCFS = new Leg();
-        for (final CashFlow cf : floatLeg) {
+        for ( final CashFlow cf : floatLeg ) {
             final IborCoupon coupon = (IborCoupon) cf;
-            final IborCoupon newCpn = new IborCoupon(
-                    coupon.date(), coupon.nominal(), coupon.accrualStartDate(),
-                    coupon.accrualEndDate(), coupon.fixingDays(),
-                    (IborIndex) coupon.index(),
-                    coupon.gearing(), 0.0,
-                    coupon.referencePeriodStart(), coupon.referencePeriodEnd(),
-                    coupon.dayCounter(), coupon.isInArrears());
+            final IborCoupon newCpn = new IborCoupon(coupon.date(), coupon.nominal(), coupon.accrualStartDate(),
+                    coupon.accrualEndDate(), coupon.fixingDays(), (IborIndex) coupon.index(), coupon.gearing(), 0.0,
+                    coupon.referencePeriodStart(), coupon.referencePeriodEnd(), coupon.dayCounter(),
+                    coupon.isInArrears());
             // Note: in the C++ port a BlackIborCouponPricer is set on each
             // non-in-arrears coupon. The pricer requires an
             // OptionletVolatilityStructure handle which the engine does not
@@ -156,14 +146,11 @@ public class HaganIrregularSwaptionEngine extends IrregularSwaption.EngineImpl {
         final double cpnAdjustment = avgSpread * fltLgBPS / fxdLgBPS;
 
         final Leg fixedCFS = new Leg();
-        for (final CashFlow cf : fixedLeg) {
+        for ( final CashFlow cf : fixedLeg ) {
             final FixedRateCoupon coupon = (FixedRateCoupon) cf;
-            final FixedRateCoupon newCpn = new FixedRateCoupon(
-                    coupon.nominal(), coupon.date(),
-                    coupon.rate() - cpnAdjustment,
-                    coupon.dayCounter(), coupon.accrualStartDate(),
-                    coupon.accrualEndDate(),
-                    coupon.referencePeriodStart(), coupon.referencePeriodEnd());
+            final FixedRateCoupon newCpn = new FixedRateCoupon(coupon.nominal(), coupon.date(),
+                    coupon.rate() - cpnAdjustment, coupon.dayCounter(), coupon.accrualStartDate(),
+                    coupon.accrualEndDate(), coupon.referencePeriodStart(), coupon.referencePeriodEnd());
             fixedCFS.add(newCpn);
         }
 
@@ -187,19 +174,18 @@ public class HaganIrregularSwaptionEngine extends IrregularSwaption.EngineImpl {
     }
 
     /**
-     * Computes irregular swaption price via the Hunt-Kennedy super-replication
-     * sum: each basket weight times the corresponding regular swaption NPV.
+     * Computes irregular swaption price via the Hunt-Kennedy super-replication sum: each basket weight times the
+     * corresponding regular swaption NPV.
      */
     public double HKPrice(final Basket basket, final Exercise exercise) {
         QL.require(volatilityStructure_.currentLink().volatilityType() == VolatilityType.Normal,
                 "swaptionEngine: only normal volatility implemented.");
 
-        final PricingEngine swaptionEngine = new BlackSwaptionEngine(
-                termStructure_, volatilityStructure_);
+        final PricingEngine swaptionEngine = new BlackSwaptionEngine(termStructure_, volatilityStructure_);
 
         final Array weights = basket.weights();
         double npv = 0.0;
-        for (int i = 0; i < weights.size(); ++i) {
+        for ( int i = 0; i < weights.size(); ++i ) {
             final VanillaSwap pvSwap = basket.component(i);
             final Swaption swaption = new Swaption(pvSwap, exercise);
             swaption.setPricingEngine(swaptionEngine);
@@ -209,12 +195,11 @@ public class HaganIrregularSwaptionEngine extends IrregularSwaption.EngineImpl {
     }
 
     /**
-     * LGM (Linear Gauss-Markov) variant. C++ declares but does not fully
-     * implement this in v1.42.1; left as a Phase 4i.5 carry-forward.
+     * LGM (Linear Gauss-Markov) variant. C++ declares but does not fully implement this in v1.42.1; left as a Phase
+     * 4i.5 carry-forward.
      */
     public double LGMPrice(final Basket basket, final Exercise exercise) {
-        throw new LibraryException(
-                "HaganIrregularSwaptionEngine.LGMPrice not yet implemented (Phase 4i.5)");
+        throw new LibraryException("HaganIrregularSwaptionEngine.LGMPrice not yet implemented (Phase 4i.5)");
     }
 
     //
@@ -222,27 +207,23 @@ public class HaganIrregularSwaptionEngine extends IrregularSwaption.EngineImpl {
     //
 
     /**
-     * Helper holding the basket of vanilla swaps that super-replicates the
-     * irregular swap, parameterised by Lagrange multiplier {@code lambda}.
+     * Helper holding the basket of vanilla swaps that super-replicates the irregular swap, parameterised by Lagrange
+     * multiplier {@code lambda}.
      */
     public static class Basket implements Ops.DoubleOp {
 
         private final IrregularSwap swap_;
-        private final Handle<YieldTermStructure> termStructure_;
-        private final Handle<SwaptionVolatilityStructure> volatilityStructure_;
-
-        private double targetNPV_ = 0.0;
+        private final Handle< YieldTermStructure > termStructure_;
+        private final Handle< SwaptionVolatilityStructure > volatilityStructure_;
         private final PricingEngine engine_;
-
-        private final java.util.List<Double> fairRates_ = new java.util.ArrayList<Double>();
-        private final java.util.List<Double> annuities_ = new java.util.ArrayList<Double>();
-        private final java.util.List<Date> expiries_ = new java.util.ArrayList<Date>();
-
+        private final java.util.List< Double > fairRates_ = new java.util.ArrayList< Double >();
+        private final java.util.List< Double > annuities_ = new java.util.ArrayList< Double >();
+        private final java.util.List< Date > expiries_ = new java.util.ArrayList< Date >();
+        private double targetNPV_ = 0.0;
         private double lambda_ = 0.0;
 
-        public Basket(final IrregularSwap swap,
-                final Handle<YieldTermStructure> termStructure,
-                final Handle<SwaptionVolatilityStructure> volatilityStructure) {
+        public Basket(final IrregularSwap swap, final Handle< YieldTermStructure > termStructure,
+                final Handle< SwaptionVolatilityStructure > volatilityStructure) {
             this.swap_ = swap;
             this.termStructure_ = termStructure;
             this.volatilityStructure_ = volatilityStructure;
@@ -257,14 +238,12 @@ public class HaganIrregularSwaptionEngine extends IrregularSwaption.EngineImpl {
 
             final Leg fixedCFS = new Leg();
 
-            for (int i = 0; i < fixedLeg.size(); ++i) {
+            for ( int i = 0; i < fixedLeg.size(); ++i ) {
                 final FixedRateCoupon coupon = (FixedRateCoupon) fixedLeg.get(i);
                 expiries_.add(coupon.date());
 
-                final FixedRateCoupon newCpn = new FixedRateCoupon(
-                        1.0, coupon.date(), coupon.rate(),
-                        coupon.dayCounter(), coupon.accrualStartDate(),
-                        coupon.accrualEndDate(),
+                final FixedRateCoupon newCpn = new FixedRateCoupon(1.0, coupon.date(), coupon.rate(),
+                        coupon.dayCounter(), coupon.accrualStartDate(), coupon.accrualEndDate(),
                         coupon.referencePeriodStart(), coupon.referencePeriodEnd());
 
                 fixedCFS.add(newCpn);
@@ -272,17 +251,13 @@ public class HaganIrregularSwaptionEngine extends IrregularSwaption.EngineImpl {
                 annuities_.add(10000.0 * CashFlows.getInstance().bps(fixedCFS, termStructure_));
 
                 final Leg floatCFS = new Leg();
-                for (final CashFlow cf : floatLeg) {
+                for ( final CashFlow cf : floatLeg ) {
                     final IborCoupon fcpn = (IborCoupon) cf;
-                    if (fcpn.date().le(expiries_.get(i))) {
-                        final IborCoupon newFloat = new IborCoupon(
-                                fcpn.date(), 1.0,
-                                fcpn.accrualStartDate(), fcpn.accrualEndDate(),
-                                fcpn.fixingDays(), (IborIndex) fcpn.index(),
-                                1.0, fcpn.spread(),
-                                fcpn.referencePeriodStart(),
-                                fcpn.referencePeriodEnd(),
-                                fcpn.dayCounter(), fcpn.isInArrears());
+                    if ( fcpn.date().le(expiries_.get(i)) ) {
+                        final IborCoupon newFloat = new IborCoupon(fcpn.date(), 1.0, fcpn.accrualStartDate(),
+                                fcpn.accrualEndDate(), fcpn.fixingDays(), (IborIndex) fcpn.index(), 1.0, fcpn.spread(),
+                                fcpn.referencePeriodStart(), fcpn.referencePeriodEnd(), fcpn.dayCounter(),
+                                fcpn.isInArrears());
                         // (No pricer assigned here — see engine note above.)
                         floatCFS.add(newFloat);
                     }
@@ -294,8 +269,8 @@ public class HaganIrregularSwaptionEngine extends IrregularSwaption.EngineImpl {
         }
 
         /**
-         * Computes a replication of the swap as a basket of vanilla swaps by
-         * solving a linear system of equations. Returns the basket weights.
+         * Computes a replication of the swap as a basket of vanilla swaps by solving a linear system of equations.
+         * Returns the basket weights.
          */
         public Array compute(final double lambda) {
             this.lambda_ = lambda;
@@ -305,19 +280,19 @@ public class HaganIrregularSwaptionEngine extends IrregularSwaption.EngineImpl {
             final Array rhs = new Array(n);
 
             // Fill matrix (upper-triangular block plus identity on the diagonal)
-            for (int r = 0; r < n; ++r) {
+            for ( int r = 0; r < n; ++r ) {
                 final FixedRateCoupon cpnR = (FixedRateCoupon) swap_.fixedLeg().get(r);
-                for (int c = r; c < n; ++c) {
+                for ( int c = r; c < n; ++c ) {
                     arr.set(r, c, (fairRates_.get(c) + lambda_) * cpnR.accrualPeriod());
                 }
                 arr.set(r, r, arr.get(r, r) + 1.0);
             }
 
             // RHS: nominal repayment + coupon accrual
-            for (int r = 0; r < n; ++r) {
+            for ( int r = 0; r < n; ++r ) {
                 final FixedRateCoupon cpnR = (FixedRateCoupon) swap_.fixedLeg().get(r);
                 final double Nr = cpnR.nominal();
-                if (r < n - 1) {
+                if ( r < n - 1 ) {
                     final FixedRateCoupon cpnR1 = (FixedRateCoupon) swap_.fixedLeg().get(r + 1);
                     final double Nr1 = cpnR1.nominal();
                     rhs.set(r, Nr * cpnR.rate() * cpnR.accrualPeriod() + (Nr - Nr1));
@@ -331,12 +306,12 @@ public class HaganIrregularSwaptionEngine extends IrregularSwaption.EngineImpl {
             // square, well-conditioned Hagan basket. See class javadoc for
             // the SVD carry-forward.)
             final Matrix rhsMat = new Matrix(n, 1);
-            for (int i = 0; i < n; ++i) {
+            for ( int i = 0; i < n; ++i ) {
                 rhsMat.set(i, 0, rhs.get(i));
             }
             final Matrix sol = new LUDecomposition(arr).solve(rhsMat);
             final Array out = new Array(n);
-            for (int i = 0; i < n; ++i) {
+            for ( int i = 0; i < n; ++i ) {
                 out.set(i, sol.get(i, 0));
             }
             return out;
@@ -347,15 +322,15 @@ public class HaganIrregularSwaptionEngine extends IrregularSwaption.EngineImpl {
         public double op(final double lambda) {
             final Array weights = compute(lambda);
             double defect = -targetNPV_;
-            for (int i = 0; i < weights.size(); ++i) {
+            for ( int i = 0; i < weights.size(); ++i ) {
                 defect -= swap_.type().toInteger() * lambda * weights.get(i) * annuities_.get(i);
             }
             return defect;
         }
 
         /**
-         * Constructs a vanilla swap component matching the i-th basket element
-         * by deriving conventions from the underlying floating index.
+         * Constructs a vanilla swap component matching the i-th basket element by deriving conventions from the
+         * underlying floating index.
          */
         public VanillaSwap component(final int i) {
             final IborCoupon iborCpn = (IborCoupon) swap_.floatingLeg().get(0);
@@ -363,27 +338,17 @@ public class HaganIrregularSwaptionEngine extends IrregularSwaption.EngineImpl {
 
             final Period dummySwapLength = new Period(1, TimeUnit.Years);
 
-            VanillaSwap memberSwap = new MakeVanillaSwap(dummySwapLength, iborIndex)
-                    .withType(swap_.type())
-                    .withEffectiveDate(swap_.startDate())
-                    .withTerminationDate(expiries_.get(i))
-                    .withRule(DateGeneration.Rule.Backward)
-                    .withDiscountingTermStructure(termStructure_)
-                    .value();
+            VanillaSwap memberSwap = new MakeVanillaSwap(dummySwapLength, iborIndex).withType(swap_.type())
+                    .withEffectiveDate(swap_.startDate()).withTerminationDate(expiries_.get(i))
+                    .withRule(DateGeneration.Rule.Backward).withDiscountingTermStructure(termStructure_).value();
 
-            final double stdAnnuity = 10000.0
-                    * CashFlows.getInstance().bps(memberSwap.fixedLeg(), termStructure_);
+            final double stdAnnuity = 10000.0 * CashFlows.getInstance().bps(memberSwap.fixedLeg(), termStructure_);
 
-            final double transformedRate = (fairRates_.get(i) + lambda_) * annuities_.get(i)
-                    / stdAnnuity;
+            final double transformedRate = (fairRates_.get(i) + lambda_) * annuities_.get(i) / stdAnnuity;
 
-            memberSwap = new MakeVanillaSwap(dummySwapLength, iborIndex, transformedRate)
-                    .withType(swap_.type())
-                    .withEffectiveDate(swap_.startDate())
-                    .withTerminationDate(expiries_.get(i))
-                    .withRule(DateGeneration.Rule.Backward)
-                    .withDiscountingTermStructure(termStructure_)
-                    .value();
+            memberSwap = new MakeVanillaSwap(dummySwapLength, iborIndex, transformedRate).withType(swap_.type())
+                    .withEffectiveDate(swap_.startDate()).withTerminationDate(expiries_.get(i))
+                    .withRule(DateGeneration.Rule.Backward).withDiscountingTermStructure(termStructure_).value();
 
             return memberSwap;
         }

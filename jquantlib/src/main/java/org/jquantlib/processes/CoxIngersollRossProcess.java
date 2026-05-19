@@ -33,18 +33,16 @@ import org.jquantlib.math.distributions.CumulativeNormalDistribution;
  * <pre>  dx(t) = k (theta - x(t)) dt + sigma sqrt(x(t)) dW(t)</pre>
  *
  * <p>The process is discretised using the Quadratic-Exponential scheme of
- * Leif Andersen ("Efficient Simulation of the Heston Stochastic Volatility
- * Model", J. Comput. Finance, 2008).
+ * Leif Andersen ("Efficient Simulation of the Heston Stochastic Volatility Model", J. Comput. Finance, 2008).
  *
  * <p>Java port of v1.42.1
  * {@code ql/processes/coxingersollrossprocess.{hpp,cpp}}.
  *
  * <p><b>Note vs. {@link SquareRootProcess}.</b> {@code SquareRootProcess}
- * is a sibling type that mirrors C++ {@code SquareRootProcess} (Cox-Ross
- * volatility process used by jump-diffusion models). The CIR process here
- * matches the same SDE but ships the analytic mean and variance closed-form
- * solutions and the Andersen QE evolution rule — these are required by
- * {@code FdmSimpleProcess1dMesher} when building the short-rate FD grid.
+ * is a sibling type that mirrors C++ {@code SquareRootProcess} (Cox-Ross volatility process used by jump-diffusion
+ * models). The CIR process here matches the same SDE but ships the analytic mean and variance closed-form solutions and
+ * the Andersen QE evolution rule — these are required by {@code FdmSimpleProcess1dMesher} when building the short-rate
+ * FD grid.
  *
  * @author Phase 5e.5b-CFC-d-86 port
  */
@@ -58,20 +56,17 @@ public class CoxIngersollRossProcess extends StochasticProcess1D {
     /**
      * Construct a CIR process.
      *
-     * @param speed       mean-reversion speed {@code k}
-     * @param vol         diffusion coefficient {@code sigma}
-     * @param x0          initial value
-     * @param level       long-run mean {@code theta}
+     * @param speed mean-reversion speed {@code k}
+     * @param vol   diffusion coefficient {@code sigma}
+     * @param x0    initial value
+     * @param level long-run mean {@code theta}
      */
-    public CoxIngersollRossProcess(final double speed,
-                                   final double vol,
-                                   final double x0,
-                                   final double level) {
+    public CoxIngersollRossProcess(final double speed, final double vol, final double x0, final double level) {
         super(new EulerDiscretization());
         QL.require(vol >= 0.0, "negative volatility given");
-        this.x0_         = x0;
-        this.speed_      = speed;
-        this.level_      = level;
+        this.x0_ = x0;
+        this.speed_ = speed;
+        this.level_ = level;
         this.volatility_ = vol;
     }
 
@@ -81,16 +76,24 @@ public class CoxIngersollRossProcess extends StochasticProcess1D {
     }
 
     @Override
-    public double x0() { return x0_; }
+    public double x0() {
+        return x0_;
+    }
 
     /** Mean-reversion speed {@code k}. */
-    public double speed() { return speed_; }
+    public double speed() {
+        return speed_;
+    }
 
     /** Diffusion coefficient {@code sigma}. */
-    public double volatility() { return volatility_; }
+    public double volatility() {
+        return volatility_;
+    }
 
     /** Long-run mean {@code theta}. */
-    public double level() { return level_; }
+    public double level() {
+        return level_;
+    }
 
     @Override
     public double drift(final double t, final double x) {
@@ -121,8 +124,7 @@ public class CoxIngersollRossProcess extends StochasticProcess1D {
         final double e1 = Math.exp(-speed_ * dt);
         final double e2 = Math.exp(-2.0 * speed_ * dt);
         final double frac = (volatility_ * volatility_) / speed_;
-        return x0_ * frac * (e1 - e2)
-                + level_ * frac * (1.0 - e1) * (1.0 - e1);
+        return x0_ * frac * (e1 - e2) + level_ * frac * (1.0 - e1) * (1.0 - e1);
     }
 
     @Override
@@ -130,17 +132,15 @@ public class CoxIngersollRossProcess extends StochasticProcess1D {
         // Quadratic-Exponential discretisation (Andersen 2008).
         final double ex = Math.exp(-speed_ * dt);
 
-        final double m  = level_ + (x0 - level_) * ex;
+        final double m = level_ + (x0 - level_) * ex;
         final double s2 = x0 * volatility_ * volatility_ * ex / speed_ * (1.0 - ex)
-                        + level_ * volatility_ * volatility_ / (2.0 * speed_)
-                          * (1.0 - ex) * (1.0 - ex);
+                + level_ * volatility_ * volatility_ / (2.0 * speed_) * (1.0 - ex) * (1.0 - ex);
         final double psi = s2 / (m * m);
 
-        if (psi <= 1.5) {
-            final double b2 = 2.0 / psi - 1.0
-                            + Math.sqrt(2.0 / psi * (2.0 / psi - 1.0));
-            final double b  = Math.sqrt(b2);
-            final double a  = m / (1.0 + b2);
+        if ( psi <= 1.5 ) {
+            final double b2 = 2.0 / psi - 1.0 + Math.sqrt(2.0 / psi * (2.0 / psi - 1.0));
+            final double b = Math.sqrt(b2);
+            final double a = m / (1.0 + b2);
             return a * (b + dw) * (b + dw);
         } else {
             final double p = (psi - 1.0) / (psi + 1.0);
@@ -148,8 +148,7 @@ public class CoxIngersollRossProcess extends StochasticProcess1D {
 
             final double u = new CumulativeNormalDistribution().op(dw);
 
-            return (u <= p) ? 0.0
-                            : Math.log((1.0 - p) / (1.0 - u)) / beta;
+            return (u <= p) ? 0.0 : Math.log((1.0 - p) / (1.0 - u)) / beta;
         }
     }
 }

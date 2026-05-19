@@ -57,19 +57,18 @@ public enum Weekday {
 
     private final int enumValue;
 
-    private Weekday(final int weekday) {
+    Weekday(final int weekday) {
         this.enumValue = weekday;
     }
 
     /**
      * Returns a new Weekday object given its cardinality
      *
-     * @param value
-     *            is the cardinality from 1 (Sunday) till 7 (Saturday)
+     * @param value is the cardinality from 1 (Sunday) till 7 (Saturday)
      * @return a new Weekday object given its cardinality
      */
     static public Weekday valueOf(final int value) {
-        switch (value) {
+        switch ( value ) {
         case 1:
             return Weekday.Sunday;
         case 2:
@@ -101,12 +100,12 @@ public enum Weekday {
     /**
      * Returns the name of weekdays in long format
      *
-     * @see Weekday#getLongFormat
      * @return the name of weekdays in long format
+     * @see Weekday#getLongFormat
      */
     @Override
     public String toString() {
-        switch (enumValue) {
+        switch ( enumValue ) {
         case 1:
             return "Sunday";
         case 2:
@@ -128,8 +127,8 @@ public enum Weekday {
     /**
      * Returns the name of weekdays in long format
      *
-     * @see Weekday#toString
      * @return the name of weekdays in long format
+     * @see Weekday#toString
      */
     public String getLongFormat() {
         return this.toString();
@@ -156,7 +155,7 @@ public enum Weekday {
     /**
      * Returns the name of weekdays in short format (3 letters)
      */
-    private String getAsShortFormat (){
+    private String getAsShortFormat() {
         final StringBuilder sb = new StringBuilder();
         sb.append(this);
         sb.setLength(3);
@@ -166,7 +165,7 @@ public enum Weekday {
     /**
      * Returns the name of weekdays in shortest format (2 letters)
      */
-    private String getAsShortestFormat(){
+    private String getAsShortestFormat() {
         final StringBuilder sb = new StringBuilder();
         sb.append(this);
         sb.setLength(2);

@@ -36,10 +36,8 @@ public class QuantoForwardVanillaOption extends ForwardVanillaOption {
     private double qrho_;
     private double qlambda_;
 
-    public QuantoForwardVanillaOption(final double moneyness,
-                                      final Date resetDate,
-                                      final StrikedTypePayoff payoff,
-                                      final Exercise exercise) {
+    public QuantoForwardVanillaOption(final double moneyness, final Date resetDate, final StrikedTypePayoff payoff,
+            final Exercise exercise) {
         super(moneyness, resetDate, payoff, exercise);
     }
 
@@ -72,10 +70,9 @@ public class QuantoForwardVanillaOption extends ForwardVanillaOption {
         super.fetchResults(r);
         QL.require(r instanceof QuantoForwardVanillaOption.ResultsImpl,
                 "no quanto results returned from pricing engine");
-        final QuantoForwardVanillaOption.ResultsImpl qr =
-                (QuantoForwardVanillaOption.ResultsImpl) r;
-        qrho_    = qr.qrho;
-        qvega_   = qr.qvega;
+        final QuantoForwardVanillaOption.ResultsImpl qr = (QuantoForwardVanillaOption.ResultsImpl) r;
+        qrho_ = qr.qrho;
+        qvega_ = qr.qvega;
         qlambda_ = qr.qlambda;
     }
 
@@ -83,7 +80,8 @@ public class QuantoForwardVanillaOption extends ForwardVanillaOption {
     // Inner types
     //
 
-    public interface Results extends ForwardVanillaOption.Results { /* marker */ }
+    public interface Results extends ForwardVanillaOption.Results { /* marker */
+    }
 
     /**
      * Quanto-augmented forward results (delta1/qvega/qrho/qlambda overlays).
@@ -91,8 +89,8 @@ public class QuantoForwardVanillaOption extends ForwardVanillaOption {
     public static class ResultsImpl extends ForwardVanillaOption.ResultsImpl
             implements QuantoForwardVanillaOption.Results {
 
-        public double qvega   = Constants.NULL_REAL;
-        public double qrho    = Constants.NULL_REAL;
+        public double qvega = Constants.NULL_REAL;
+        public double qrho = Constants.NULL_REAL;
         public double qlambda = Constants.NULL_REAL;
 
         @Override
@@ -106,11 +104,9 @@ public class QuantoForwardVanillaOption extends ForwardVanillaOption {
      * Engine base class for quanto forward vanilla options.
      */
     public abstract static class EngineImpl
-            extends GenericEngine<ForwardVanillaOption.Arguments,
-                                  QuantoForwardVanillaOption.Results> {
+            extends GenericEngine< ForwardVanillaOption.Arguments, QuantoForwardVanillaOption.Results > {
         public EngineImpl() {
-            super(new ForwardVanillaOption.ArgumentsImpl(),
-                  new QuantoForwardVanillaOption.ResultsImpl());
+            super(new ForwardVanillaOption.ArgumentsImpl(), new QuantoForwardVanillaOption.ResultsImpl());
         }
     }
 }

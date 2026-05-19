@@ -29,8 +29,8 @@ import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.matrixutilities.Matrix;
 
 public abstract class LfmCovarianceParameterization {
-    protected int size_;
     private final int factors_;
+    protected int size_;
 
     public LfmCovarianceParameterization(final int size, final int factors) {
         this.size_ = size;
@@ -72,11 +72,11 @@ public abstract class LfmCovarianceParameterization {
         // {@code QL_REQUIRE(x.empty(), ...)} — the previous Java port had the
         // predicate inverted, which made the only test path
         // (testLambdaBootstrapping) impossible to call.
-        QL.require(x.empty() , "can not handle given x here"); // TODO: message
+        QL.require(x.empty(), "can not handle given x here"); // TODO: message
 
         final Matrix tmp = new Matrix(size_, size_);
-        for (int i = 0; i < size_; ++i) {
-            for (int j = 0; j <= i; ++j) {
+        for ( int i = 0; i < size_; ++i ) {
+            for ( int j = 0; j <= i; ++j ) {
                 final Var_Helper helper = new Var_Helper(this, i, j);
                 // Note: each per-cell {@code GaussKronrodAdaptive} instance is
                 // re-created inside the {@code k} sub-interval loop so that
@@ -85,9 +85,9 @@ public abstract class LfmCovarianceParameterization {
                 // the same because the integrator object is constructed at
                 // top scope but {@code Integrator}'s evaluation count resets
                 // per {@code operator()} call.
-                for (int k = 0; k < 64; ++k) {
+                for ( int k = 0; k < 64; ++k ) {
                     final GaussKronrodAdaptive integrator = new GaussKronrodAdaptive(1e-10, 10000);
-                    tmp.set(i, j, tmp.get(i, j) + integrator.op(helper, k*t/64.0, (k+1)*t/64.0));
+                    tmp.set(i, j, tmp.get(i, j) + integrator.op(helper, k * t / 64.0, (k + 1) * t / 64.0));
                 }
                 tmp.set(j, i, tmp.get(i, j));
             }

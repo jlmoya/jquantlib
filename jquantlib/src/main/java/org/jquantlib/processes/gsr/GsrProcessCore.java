@@ -13,7 +13,6 @@ package org.jquantlib.processes.gsr;
 import org.jquantlib.QL;
 import org.jquantlib.math.transcendental.JQuantMath;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -33,14 +32,6 @@ import java.util.Map;
  */
 public class GsrProcessCore {
 
-    // Parameter arrays  (package-accessible so GsrProcess.Gsr friend can mutate)
-    protected double[] times_;
-    protected double[] vols_;
-    protected double[] reversions_;
-
-    private double T_;
-    private boolean[] revZero_;
-
     // Caches — keyed by (w, t) pairs.
     //
     // ALIGNMENT (Phase 2j WI-1.3): the original WI-1.2 implementation packed
@@ -51,12 +42,18 @@ public class GsrProcessCore {
     // tests (Gaussian1dModelTest fm_073 etc.), so we now key on a real
     // {@link DoublePair} object whose equals/hashCode honours both members.
     // y(t) (cache4_) uses a single double and stays on Long.
-    private final Map<DoublePair, Double> cache1_  = new HashMap<>();  // expectation_x0dep_part A(w,t)
-    private final Map<DoublePair, Double> cache2a_ = new HashMap<>();  // expectation_rn_part
-    private final Map<DoublePair, Double> cache2b_ = new HashMap<>();  // expectation_tf_part
-    private final Map<DoublePair, Double> cache3_  = new HashMap<>();  // variance
-    private final Map<Long,       Double> cache4_  = new HashMap<>();  // y(t) — single arg
-    private final Map<DoublePair, Double> cache5_  = new HashMap<>();  // G(t,w)
+    private final Map< DoublePair, Double > cache1_ = new HashMap<>();  // expectation_x0dep_part A(w,t)
+    private final Map< DoublePair, Double > cache2a_ = new HashMap<>();  // expectation_rn_part
+    private final Map< DoublePair, Double > cache2b_ = new HashMap<>();  // expectation_tf_part
+    private final Map< DoublePair, Double > cache3_ = new HashMap<>();  // variance
+    private final Map< Long, Double > cache4_ = new HashMap<>();  // y(t) — single arg
+    private final Map< DoublePair, Double > cache5_ = new HashMap<>();  // G(t,w)
+    // Parameter arrays  (package-accessible so GsrProcess.Gsr friend can mutate)
+    protected double[] times_;
+    protected double[] vols_;
+    protected double[] reversions_;
+    private final double T_;
+    private boolean[] revZero_;
 
     /**
      * Creates the core with piecewise-constant parameters.
@@ -66,13 +63,12 @@ public class GsrProcessCore {
      * @param reversions piecewise mean reversions (size 1 = constant, or times.length + 1)
      * @param T          T-forward measure horizon
      */
-    public GsrProcessCore(final double[] times, final double[] vols,
-                          final double[] reversions, final double T) {
-        this.times_      = times.clone();
-        this.vols_       = vols.clone();
+    public GsrProcessCore(final double[] times, final double[] vols, final double[] reversions, final double T) {
+        this.times_ = times.clone();
+        this.vols_ = vols.clone();
         this.reversions_ = reversions.clone();
-        this.T_          = T;
-        this.revZero_    = new boolean[reversions.length];
+        this.T_ = T;
+        this.revZero_ = new boolean[reversions.length];
         flushCache();
         checkTimesVolsReversions();
     }
@@ -123,12 +119,12 @@ public class GsrProcessCore {
         final double t = w + dt;
         final DoublePair key = new DoublePair(w, t);
         final Double cached = cache1_.get(key);
-        if (cached != null) {
+        if ( cached != null ) {
             return xw * cached;
         }
         // A(w,t) = prod_{i=lowerIndex(w)}^{upperIndex(t)-1} exp(-kappa_i * delta_i)
         double res2 = 1.0;
-        for (int i = lowerIndex(w); i <= upperIndex(t) - 1; i++) {
+        for ( int i = lowerIndex(w); i <= upperIndex(t) - 1; i++ ) {
             res2 *= JQuantMath.exp(-rev(i) * (cappedTime(i + 1, t) - flooredTime(i, w)));
         }
         cache1_.put(key, res2);
@@ -146,63 +142,58 @@ public class GsrProcessCore {
         final double t = w + dt;
         final DoublePair key = new DoublePair(w, t);
         final Double cached = cache2a_.get(key);
-        if (cached != null) {
+        if ( cached != null ) {
             return cached;
         }
 
         double res = 0.0;
-        for (int k = lowerIndex(w); k <= upperIndex(t) - 1; k++) {
+        for ( int k = lowerIndex(w); k <= upperIndex(t) - 1; k++ ) {
             // l < k
-            for (int l = 0; l <= k - 1; l++) {
+            for ( int l = 0; l <= k - 1; l++ ) {
                 double res2 = 1.0;
                 // alpha_l
-                if (revZero(l)) {
+                if ( revZero(l) ) {
                     res2 *= vol(l) * vol(l) * (time2(l + 1) - time2(l));
                 } else {
-                    res2 *= vol(l) * vol(l) / (2.0 * rev(l))
-                            * (1.0 - JQuantMath.exp(-2.0 * rev(l) * (time2(l + 1) - time2(l))));
+                    res2 *= vol(l) * vol(l) / (2.0 * rev(l)) * (1.0 - JQuantMath.exp(
+                            -2.0 * rev(l) * (time2(l + 1) - time2(l))));
                 }
                 // zeta_i (i > k)
-                for (int i = k + 1; i <= upperIndex(t) - 1; i++) {
+                for ( int i = k + 1; i <= upperIndex(t) - 1; i++ ) {
                     res2 *= JQuantMath.exp(-rev(i) * (cappedTime(i + 1, t) - time2(i)));
                 }
                 // beta_j (l < j < k)
-                for (int j = l + 1; j <= k - 1; j++) {
+                for ( int j = l + 1; j <= k - 1; j++ ) {
                     res2 *= JQuantMath.exp(-2.0 * rev(j) * (time2(j + 1) - time2(j)));
                 }
                 // zeta_k * beta_k
-                if (revZero(k)) {
-                    res2 *= 2.0 * time2(k) - flooredTime(k, w) - cappedTime(k + 1, t)
-                            - 2.0 * (time2(k) - cappedTime(k + 1, t));
+                if ( revZero(k) ) {
+                    res2 *= 2.0 * time2(k) - flooredTime(k, w) - cappedTime(k + 1, t) - 2.0 * (time2(k) - cappedTime(
+                            k + 1, t));
                 } else {
-                    res2 *= (JQuantMath.exp(rev(k) * (2.0 * time2(k) - flooredTime(k, w)
-                                                      - cappedTime(k + 1, t)))
-                             - JQuantMath.exp(2.0 * rev(k) * (time2(k) - cappedTime(k + 1, t))))
-                            / rev(k);
+                    res2 *= (JQuantMath.exp(rev(k) * (2.0 * time2(k) - flooredTime(k, w) - cappedTime(k + 1, t)))
+                            - JQuantMath.exp(2.0 * rev(k) * (time2(k) - cappedTime(k + 1, t)))) / rev(k);
                 }
                 res += res2;
             }
             // l = k
             double res2 = 1.0;
             // alpha_k * zeta_k
-            if (revZero(k)) {
+            if ( revZero(k) ) {
                 // Phase 2n A.2: JQuantMath.pow (CORE-MATH cr_pow) now active here.
                 final double capped = cappedTime(k + 1, t);
                 final double floored = flooredTime(k, w);
-                res2 *= vol(k) * vol(k) / 4.0
-                        * (4.0 * JQuantMath.pow(capped - time2(k), 2.0)
-                           - (JQuantMath.pow(floored - 2.0 * time2(k) + capped, 2.0)
-                              + JQuantMath.pow(capped - floored, 2.0)));
+                res2 *= vol(k) * vol(k) / 4.0 * (4.0 * JQuantMath.pow(capped - time2(k), 2.0) - (
+                        JQuantMath.pow(floored - 2.0 * time2(k) + capped, 2.0) + JQuantMath.pow(capped - floored,
+                                2.0)));
             } else {
-                res2 *= vol(k) * vol(k) / (2.0 * rev(k) * rev(k))
-                        * (JQuantMath.exp(-2.0 * rev(k) * (cappedTime(k + 1, t) - time2(k)))
-                           + 1.0
-                           - (JQuantMath.exp(-rev(k) * (flooredTime(k, w) - 2.0 * time2(k)
-                                                        + cappedTime(k + 1, t)))
-                              + JQuantMath.exp(-rev(k) * (cappedTime(k + 1, t) - flooredTime(k, w)))));
+                res2 *= vol(k) * vol(k) / (2.0 * rev(k) * rev(k)) * (
+                        JQuantMath.exp(-2.0 * rev(k) * (cappedTime(k + 1, t) - time2(k))) + 1.0 - (
+                                JQuantMath.exp(-rev(k) * (flooredTime(k, w) - 2.0 * time2(k) + cappedTime(k + 1, t)))
+                                        + JQuantMath.exp(-rev(k) * (cappedTime(k + 1, t) - flooredTime(k, w)))));
             }
             // zeta_i (i > k)
-            for (int i = k + 1; i <= upperIndex(t) - 1; i++) {
+            for ( int i = k + 1; i <= upperIndex(t) - 1; i++ ) {
                 res2 *= JQuantMath.exp(-rev(i) * (cappedTime(i + 1, t) - time2(i)));
             }
             res += res2;
@@ -223,65 +214,58 @@ public class GsrProcessCore {
         final double t = w + dt;
         final DoublePair key = new DoublePair(w, t);
         final Double cached = cache2b_.get(key);
-        if (cached != null) {
+        if ( cached != null ) {
             return cached;
         }
 
         double res = 0.0;
-        for (int k = lowerIndex(w); k <= upperIndex(t) - 1; k++) {
+        for ( int k = lowerIndex(w); k <= upperIndex(t) - 1; k++ ) {
             double res2 = 0.0;
             // l > k
-            for (int l = k + 1; l <= upperIndex(T_) - 1; l++) {
+            for ( int l = k + 1; l <= upperIndex(T_) - 1; l++ ) {
                 double res3 = 1.0;
                 // eta_l
-                if (revZero(l)) {
+                if ( revZero(l) ) {
                     res3 *= cappedTime(l + 1, T_) - time2(l);
                 } else {
-                    res3 *= (1.0 - JQuantMath.exp(-rev(l) * (cappedTime(l + 1, T_) - time2(l))))
-                            / rev(l);
+                    res3 *= (1.0 - JQuantMath.exp(-rev(l) * (cappedTime(l + 1, T_) - time2(l)))) / rev(l);
                 }
                 // zeta_i (i > k)
-                for (int i = k + 1; i <= upperIndex(t) - 1; i++) {
+                for ( int i = k + 1; i <= upperIndex(t) - 1; i++ ) {
                     res3 *= JQuantMath.exp(-rev(i) * (cappedTime(i + 1, t) - time2(i)));
                 }
                 // gamma_j (k < j < l)
-                for (int j = k + 1; j <= l - 1; j++) {
+                for ( int j = k + 1; j <= l - 1; j++ ) {
                     res3 *= JQuantMath.exp(-rev(j) * (time2(j + 1) - time2(j)));
                 }
                 // zeta_k * gamma_k
-                if (revZero(k)) {
-                    res3 *= (cappedTime(k + 1, t) - time2(k + 1)
-                             - (2.0 * flooredTime(k, w) - cappedTime(k + 1, t) - time2(k + 1)))
-                            / 2.0;
+                if ( revZero(k) ) {
+                    res3 *= (cappedTime(k + 1, t) - time2(k + 1) - (2.0 * flooredTime(k, w) - cappedTime(k + 1, t)
+                            - time2(k + 1))) / 2.0;
                 } else {
-                    res3 *= (JQuantMath.exp(rev(k) * (cappedTime(k + 1, t) - time2(k + 1)))
-                             - JQuantMath.exp(rev(k) * (2.0 * flooredTime(k, w)
-                                                        - cappedTime(k + 1, t) - time2(k + 1))))
-                            / (2.0 * rev(k));
+                    res3 *= (JQuantMath.exp(rev(k) * (cappedTime(k + 1, t) - time2(k + 1))) - JQuantMath.exp(
+                            rev(k) * (2.0 * flooredTime(k, w) - cappedTime(k + 1, t) - time2(k + 1)))) / (2.0 * rev(k));
                 }
                 res2 += res3;
             }
             // l = k
             double res3 = 1.0;
             // eta_k * zeta_k
-            if (revZero(k)) {
+            if ( revZero(k) ) {
                 // Phase 2n A.2: JQuantMath.pow (CORE-MATH cr_pow) now active here (see expectation_rn_part).
                 final double capped_t = cappedTime(k + 1, t);
                 final double capped_T = cappedTime(k + 1, T_);
                 final double floored = flooredTime(k, w);
-                res3 *= (-JQuantMath.pow(capped_t - capped_T, 2.0)
-                         - 2.0 * JQuantMath.pow(capped_t - floored, 2.0)
-                         + JQuantMath.pow(2.0 * floored - capped_T - capped_t, 2.0))
-                        / 4.0;
+                res3 *= (-JQuantMath.pow(capped_t - capped_T, 2.0) - 2.0 * JQuantMath.pow(capped_t - floored, 2.0)
+                        + JQuantMath.pow(2.0 * floored - capped_T - capped_t, 2.0)) / 4.0;
             } else {
-                res3 *= (2.0 - JQuantMath.exp(rev(k) * (cappedTime(k + 1, t) - cappedTime(k + 1, T_)))
-                         - (2.0 * JQuantMath.exp(-rev(k) * (cappedTime(k + 1, t) - flooredTime(k, w)))
-                            - JQuantMath.exp(rev(k) * (2.0 * flooredTime(k, w)
-                                                       - cappedTime(k + 1, T_) - cappedTime(k + 1, t)))))
-                        / (2.0 * rev(k) * rev(k));
+                res3 *= (2.0 - JQuantMath.exp(rev(k) * (cappedTime(k + 1, t) - cappedTime(k + 1, T_))) - (
+                        2.0 * JQuantMath.exp(-rev(k) * (cappedTime(k + 1, t) - flooredTime(k, w))) - JQuantMath.exp(
+                                rev(k) * (2.0 * flooredTime(k, w) - cappedTime(k + 1, T_) - cappedTime(k + 1, t))))) / (
+                        2.0 * rev(k) * rev(k));
             }
             // zeta_i (i > k)
-            for (int i = k + 1; i <= upperIndex(t) - 1; i++) {
+            for ( int i = k + 1; i <= upperIndex(t) - 1; i++ ) {
                 res3 *= JQuantMath.exp(-rev(i) * (cappedTime(i + 1, t) - time2(i)));
             }
             res2 += res3;
@@ -303,22 +287,22 @@ public class GsrProcessCore {
         final double t = w + dt;
         final DoublePair key = new DoublePair(w, t);
         final Double cached = cache3_.get(key);
-        if (cached != null) {
+        if ( cached != null ) {
             return cached;
         }
 
         double res = 0.0;
-        for (int k = lowerIndex(w); k <= upperIndex(t) - 1; k++) {
+        for ( int k = lowerIndex(w); k <= upperIndex(t) - 1; k++ ) {
             double res2 = vol(k) * vol(k);
             // zeta_k^2
-            if (revZero(k)) {
+            if ( revZero(k) ) {
                 res2 *= -(flooredTime(k, w) - cappedTime(k + 1, t));
             } else {
-                res2 *= (1.0 - JQuantMath.exp(2.0 * rev(k) * (flooredTime(k, w) - cappedTime(k + 1, t))))
-                        / (2.0 * rev(k));
+                res2 *= (1.0 - JQuantMath.exp(2.0 * rev(k) * (flooredTime(k, w) - cappedTime(k + 1, t)))) / (2.0 * rev(
+                        k));
             }
             // zeta_i^2 (i > k)
-            for (int i = k + 1; i <= upperIndex(t) - 1; i++) {
+            for ( int i = k + 1; i <= upperIndex(t) - 1; i++ ) {
                 res2 *= JQuantMath.exp(-2.0 * rev(i) * (cappedTime(i + 1, t) - time2(i)));
             }
             res += res2;
@@ -329,8 +313,7 @@ public class GsrProcessCore {
     }
 
     /**
-     * y(t) = ∫_0^t A(s,t)^2 σ(s)^2 ds — the variance of the Gaussian distribution
-     * of x(t) conditional on x(0) = 0.
+     * y(t) = ∫_0^t A(s,t)^2 σ(s)^2 ds — the variance of the Gaussian distribution of x(t) conditional on x(0) = 0.
      *
      * @param t time
      * @return y(t)
@@ -338,21 +321,21 @@ public class GsrProcessCore {
     public double y(final double t) {
         final long key = Double.doubleToRawLongBits(t);
         final Double cached = cache4_.get(key);
-        if (cached != null) {
+        if ( cached != null ) {
             return cached;
         }
 
         double res = 0.0;
-        for (int i = 0; i <= upperIndex(t) - 1; i++) {
+        for ( int i = 0; i <= upperIndex(t) - 1; i++ ) {
             double res2 = 1.0;
-            for (int j = i + 1; j <= upperIndex(t) - 1; j++) {
+            for ( int j = i + 1; j <= upperIndex(t) - 1; j++ ) {
                 res2 *= JQuantMath.exp(-2.0 * rev(j) * (cappedTime(j + 1, t) - time2(j)));
             }
-            if (revZero(i)) {
+            if ( revZero(i) ) {
                 res2 *= vol(i) * vol(i) * (cappedTime(i + 1, t) - time2(i));
             } else {
-                res2 *= vol(i) * vol(i) / (2.0 * rev(i))
-                        * (1.0 - JQuantMath.exp(-2.0 * rev(i) * (cappedTime(i + 1, t) - time2(i))));
+                res2 *= vol(i) * vol(i) / (2.0 * rev(i)) * (1.0 - JQuantMath.exp(
+                        -2.0 * rev(i) * (cappedTime(i + 1, t) - time2(i))));
             }
             res += res2;
         }
@@ -371,21 +354,20 @@ public class GsrProcessCore {
     public double G(final double t, final double w) {
         final DoublePair key = new DoublePair(w, t); // note: cache5_ uses (w,t) as in C++ cache5_ key
         final Double cached = cache5_.get(key);
-        if (cached != null) {
+        if ( cached != null ) {
             return cached;
         }
 
         double res = 0.0;
-        for (int i = lowerIndex(t); i <= upperIndex(w) - 1; i++) {
+        for ( int i = lowerIndex(t); i <= upperIndex(w) - 1; i++ ) {
             double res2 = 1.0;
-            for (int j = lowerIndex(t); j <= i - 1; j++) {
+            for ( int j = lowerIndex(t); j <= i - 1; j++ ) {
                 res2 *= JQuantMath.exp(-rev(j) * (time2(j + 1) - flooredTime(j, t)));
             }
-            if (revZero(i)) {
+            if ( revZero(i) ) {
                 res2 *= cappedTime(i + 1, w) - flooredTime(i, t);
             } else {
-                res2 *= (1.0 - JQuantMath.exp(-rev(i) * (cappedTime(i + 1, w) - flooredTime(i, t))))
-                        / rev(i);
+                res2 *= (1.0 - JQuantMath.exp(-rev(i) * (cappedTime(i + 1, w) - flooredTime(i, t)))) / rev(i);
             }
             res += res2;
         }
@@ -396,7 +378,7 @@ public class GsrProcessCore {
 
     /** Invalidate all caches and recompute the revZero_ flags. */
     public void flushCache() {
-        for (int i = 0; i < reversions_.length; i++) {
+        for ( int i = 0; i < reversions_.length; i++ ) {
             revZero_[i] = Math.abs(reversions_[i]) < 1.0e-4;
         }
         cache1_.clear();
@@ -412,48 +394,51 @@ public class GsrProcessCore {
     // -----------------------------------------------------------------------
 
     /**
-     * Lower-index: returns the segment index k such that times_[k-1] < t <= times_[k]
-     * (or 0 if t <= times_[0]).
+     * Lower-index: returns the segment index k such that times_[k-1] < t <= times_[k] (or 0 if t <= times_[0]).
      */
     private int lowerIndex(final double t) {
         // upper_bound equivalent: first index i where times_[i] > t
         int lo = 0, hi = times_.length;
-        while (lo < hi) {
+        while ( lo < hi ) {
             int mid = (lo + hi) >>> 1;
-            if (times_[mid] <= t) lo = mid + 1;
-            else hi = mid;
+            if ( times_[mid] <= t )
+                lo = mid + 1;
+            else
+                hi = mid;
         }
         return lo; // same as C++ std::upper_bound - begin
     }
 
     /**
-     * Upper-index: returns the segment index for the open interval ending at t.
-     * Special-cased so that t == 0 returns 0.
+     * Upper-index: returns the segment index for the open interval ending at t. Special-cased so that t == 0 returns
+     * 0.
      */
     private int upperIndex(final double t) {
-        if (t < Double.MIN_VALUE) { // QL_MIN_POSITIVE_REAL = min normal double
+        if ( t < Double.MIN_VALUE ) { // QL_MIN_POSITIVE_REAL = min normal double
             return 0;
         }
         // upper_bound on (t - epsilon) + 1
         final double tEps = t - Math.ulp(1.0); // QL_EPSILON is machine epsilon for double
         int lo = 0, hi = times_.length;
-        while (lo < hi) {
+        while ( lo < hi ) {
             int mid = (lo + hi) >>> 1;
-            if (times_[mid] <= tEps) lo = mid + 1;
-            else hi = mid;
+            if ( times_[mid] <= tEps )
+                lo = mid + 1;
+            else
+                hi = mid;
         }
         return lo + 1;
     }
 
     /**
-     * time2(index): returns the time associated with segment boundary index.
-     * index 0 => 0.0; index > times_.length => T_; otherwise times_[index-1].
+     * time2(index): returns the time associated with segment boundary index. index 0 => 0.0; index > times_.length =>
+     * T_; otherwise times_[index-1].
      */
     private double time2(final int index) {
-        if (index == 0) {
+        if ( index == 0 ) {
             return 0.0;
         }
-        if (index > times_.length) {
+        if ( index > times_.length ) {
             return T_;
         }
         return times_[index - 1];
@@ -472,21 +457,21 @@ public class GsrProcessCore {
     }
 
     private double vol(final int index) {
-        if (index >= vols_.length) {
+        if ( index >= vols_.length ) {
             return vols_[vols_.length - 1];
         }
         return vols_[index];
     }
 
     private double rev(final int index) {
-        if (index >= reversions_.length) {
+        if ( index >= reversions_.length ) {
             return reversions_[reversions_.length - 1];
         }
         return reversions_[index];
     }
 
     private boolean revZero(final int index) {
-        if (index >= revZero_.length) {
+        if ( index >= revZero_.length ) {
             return revZero_[revZero_.length - 1];
         }
         return revZero_[index];
@@ -494,41 +479,44 @@ public class GsrProcessCore {
 
     private void checkTimesVolsReversions() {
         QL.require(times_.length == vols_.length - 1,
-                "number of volatilities (%d) compared to number of times (%d) must be bigger by one",
-                vols_.length, times_.length);
+                "number of volatilities (%d) compared to number of times (%d) must be bigger by one", vols_.length,
+                times_.length);
         QL.require(times_.length == reversions_.length - 1 || reversions_.length == 1,
                 "number of reversions (%d) compared to number of times (%d) must be bigger by one, "
-                        + "or exactly 1 reversion must be given",
-                reversions_.length, times_.length);
-        for (int i = 0; i < times_.length - 1; i++) {
-            QL.require(times_[i] < times_[i + 1],
-                    "times must be increasing (times[%d]=%f, times[%d]=%f)",
-                    i, times_[i], i + 1, times_[i + 1]);
+                        + "or exactly 1 reversion must be given", reversions_.length, times_.length);
+        for ( int i = 0; i < times_.length - 1; i++ ) {
+            QL.require(times_[i] < times_[i + 1], "times must be increasing (times[%d]=%f, times[%d]=%f)", i, times_[i],
+                    i + 1, times_[i + 1]);
         }
     }
 
     /**
      * Hash key holding a 128-bit (a, b) double pair without collisions.
      * <p>
-     * The previous {@code pairKey(a, b) = la * 1000003L ^ lb} encoding was
-     * not collision-free over 128 bits — e.g. (3.0, 2.0) and (1.5, 1.0)
-     * collided, which silently corrupted G(t, w) cache lookups across
-     * Gsr-driven test grids.
+     * The previous {@code pairKey(a, b) = la * 1000003L ^ lb} encoding was not collision-free over 128 bits — e.g.
+     * (3.0, 2.0) and (1.5, 1.0) collided, which silently corrupted G(t, w) cache lookups across Gsr-driven test grids.
      */
     private static final class DoublePair {
         private final long la;
         private final long lb;
+
         DoublePair(final double a, final double b) {
             this.la = Double.doubleToRawLongBits(a);
             this.lb = Double.doubleToRawLongBits(b);
         }
-        @Override public boolean equals(final Object o) {
-            if (this == o) return true;
-            if (!(o instanceof DoublePair)) return false;
+
+        @Override
+        public boolean equals(final Object o) {
+            if ( this == o )
+                return true;
+            if ( !(o instanceof DoublePair) )
+                return false;
             final DoublePair p = (DoublePair) o;
             return la == p.la && lb == p.lb;
         }
-        @Override public int hashCode() {
+
+        @Override
+        public int hashCode() {
             // 32-bit fold of the 128-bit pair — collisions in hashCode are
             // OK (HashMap chains via equals); collisions in equals are the
             // bug we're fixing.

@@ -22,46 +22,55 @@
 
 package org.jquantlib.termstructures.yieldcurves;
 
-import java.util.List;
-
 import org.jquantlib.math.interpolations.Interpolation;
 import org.jquantlib.math.interpolations.Interpolation.Interpolator;
 import org.jquantlib.termstructures.RateHelper;
 import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.termstructures.credit.PiecewiseDefaultCurve;
+import org.jquantlib.termstructures.inflation.PiecewiseYoYInflationCurve;
+import org.jquantlib.termstructures.inflation.PiecewiseZeroInflationCurve;
 import org.jquantlib.time.Date;
 import org.jquantlib.util.Pair;
+
+import java.util.List;
 
 /**
  * This interface represent a family of piecewise curves.
  *
+ * @author Richard Gomes
  * @see PiecewiseYieldCurve
  * @see PiecewiseDefaultCurve
  * @see PiecewiseYoYInflationCurve
  * @see PiecewiseZeroInflationCurve
- *
- * @author Richard Gomes
  */
-public interface PiecewiseCurve<I extends Interpolator> extends YieldTermStructure {
+public interface PiecewiseCurve< I extends Interpolator > extends YieldTermStructure {
 
     @Override
-    public Date maxDate() /* @ReadOnly */;
-    public RateHelper[] instruments() /* @ReadOnly */;
-    public Date[] dates() /* @ReadOnly */;
-    public/* @Time */ double[] times() /* @ReadOnly */;
-    public double accuracy() /* @ReadOnly */;
+    Date maxDate() /* @ReadOnly */;
 
-    public Date[] jumpDates() /* @ReadOnly */;
-    public/* @Time */ double[] jumpTimes() /* @ReadOnly */;
-    
-    public List<Pair<Date, /* @Rate */Double>> nodes() /* @ReadOnly */;
-    public double[] data();
+    RateHelper[] instruments() /* @ReadOnly */;
 
-    public Traits traits() /* @ReadOnly */;
+    Date[] dates() /* @ReadOnly */;
 
-    public Interpolator                         interpolator() /* @ReadOnly */;
-    public Interpolation                        interpolation() /* @ReadOnly */;
-    public void                                 setInterpolation(final Interpolation interpolation);
+    /* @Time */ double[] times() /* @ReadOnly */;
 
+    double accuracy() /* @ReadOnly */;
+
+    Date[] jumpDates() /* @ReadOnly */;
+
+    /* @Time */ double[] jumpTimes() /* @ReadOnly */;
+
+    List< Pair< Date, /* @Rate */Double > > nodes() /* @ReadOnly */;
+
+    double[] data();
+
+    Traits traits() /* @ReadOnly */;
+
+    Interpolator interpolator() /* @ReadOnly */;
+
+    Interpolation interpolation() /* @ReadOnly */;
+
+    void setInterpolation(final Interpolation interpolation);
 
     //FIXME:: remove these methods. SEE: http://bugs.jquantlib.org/view.php?id=464
     // Ideally, we should employ Array<T> which could mimick closer std::vector (which is a dynamic array).
@@ -69,8 +78,10 @@ public interface PiecewiseCurve<I extends Interpolator> extends YieldTermStructu
     // data structure, but we could simply rezise it and add more data.
     // Then these 3 methods below could be removed.
     // The same issue happens in Traits.Curve
-    public void setDates (final Date[] dates);
-    public void setTimes (/*@Time*/ double[] times);
-    public void setData (final double[] data);
+    void setDates(final Date[] dates);
+
+    void setTimes(/*@Time*/ double[] times);
+
+    void setData(final double[] data);
 
 }

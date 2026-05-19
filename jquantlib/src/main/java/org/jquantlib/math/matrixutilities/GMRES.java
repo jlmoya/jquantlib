@@ -42,8 +42,7 @@ import java.util.function.Function;
  * Generalized Minimal RESidual (GMRES) iterative solver.
  *
  * <p>Solves the linear system A*x = b using the GMRES(m) algorithm with
- * optional left preconditioning. Supports restart via
- * {@link #solveWithRestart(int, Array, Array)}.
+ * optional left preconditioning. Supports restart via {@link #solveWithRestart(int, Array, Array)}.
  *
  * <p>Ported from QuantLib v1.42.1
  * {@code ql/math/matrixutilities/gmres.hpp} and {@code .cpp}.
@@ -52,36 +51,12 @@ public class GMRES {
 
     /** Machine epsilon: std::numeric_limits&lt;double&gt;::epsilon() equivalent. */
     private static final double QL_EPSILON = Math.ulp(1.0);
-
-    /** Operator type: maps an Array to an Array (e.g., x -&gt; A*x). */
-    public interface MatrixMult extends Function<Array, Array> {
-        // inherits: Array apply(Array x);
-    }
-
-    /** Result of a GMRES solve. */
-    public static final class Result {
-        /**
-         * List of relative residual errors ‖r‖/‖b‖ collected at each iteration.
-         * The first element is the initial residual; subsequent elements are
-         * after each Arnoldi step.
-         */
-        public final List<Double> errors;
-        /** Solution vector. */
-        public final Array x;
-
-        public Result(final List<Double> errors, final Array x) {
-            this.errors = errors;
-            this.x = x;
-        }
-    }
-
-    // -----------------------------------------------------------------------
-
     private final MatrixMult A_;
     private final MatrixMult M_;
+
+    // -----------------------------------------------------------------------
     private final int maxIter_;
     private final double relTol_;
-
     /**
      * Constructs a GMRES solver without preconditioner.
      *
@@ -92,7 +67,6 @@ public class GMRES {
     public GMRES(final MatrixMult A, final int maxIter, final double relTol) {
         this(A, maxIter, relTol, null);
     }
-
     /**
      * Constructs a GMRES solver with an optional preconditioner.
      *
@@ -101,16 +75,82 @@ public class GMRES {
      * @param relTol         relative tolerance
      * @param preConditioner preconditioner x -&gt; M^{-1}*x, or {@code null}
      */
-    public GMRES(final MatrixMult A, final int maxIter, final double relTol,
-                 final MatrixMult preConditioner) {
-        if (maxIter <= 0) {
+    public GMRES(final MatrixMult A, final int maxIter, final double relTol, final MatrixMult preConditioner) {
+        if ( maxIter <= 0 ) {
             throw new IllegalArgumentException("GMRES: maxIter must be greater than zero");
         }
-        this.A_       = A;
+        this.A_ = A;
         this.maxIter_ = maxIter;
-        this.relTol_  = relTol;
-        this.M_       = preConditioner;
+        this.relTol_ = relTol;
+        this.M_ = preConditioner;
     }
+
+    /** Create a new double[] scaled by {@code scale}. */
+    private static double[] scaled(final Array arr, final double scale) {
+        final int n = arr.size();
+        final double[] out = new double[n];
+        for ( int i = 0; i < n; i++ ) {
+            out[i] = arr.get(i) * scale;
+        }
+        return out;
+    }
+
+    /** Create a new double[] scaled by {@code scale}. */
+    private static double[] scaled(final double[] arr, final double scale) {
+        final int n = arr.length;
+        final double[] out = new double[n];
+        for ( int i = 0; i < n; i++ ) {
+            out[i] = arr[i] * scale;
+        }
+        return out;
+    }
+
+    /** Euclidean norm of a raw double[] array. */
+    private static double norm2Raw(final double[] x) {
+        double sum = 0.0;
+        for ( final double v : x )
+            sum += v * v;
+        return Math.sqrt(sum);
+    }
+
+    /** Dot product of two raw double[] arrays. */
+    private static double dotProductRaw(final double[] a, final double[] b) {
+        double sum = 0.0;
+        final int n = a.length;
+        for ( int i = 0; i < n; i++ )
+            sum += a[i] * b[i];
+        return sum;
+    }
+
+    /** Euclidean norm of an Array. */
+    private static double norm2(final Array x) {
+        final int n = x.size();
+        double sum = 0.0;
+        for ( int i = 0; i < n; i++ ) {
+            final double v = x.get(i);
+            sum += v * v;
+        }
+        return Math.sqrt(sum);
+    }
+
+    /** Wrap a raw double[] into an Array (zero-copy where possible). */
+    private static Array arrayFrom(final double[] data) {
+        return new Array(data, data.length);
+    }
+
+    // -----------------------------------------------------------------------
+
+    /** Extract an Array's contents into a raw double[]. */
+    private static double[] doubleArray(final Array arr) {
+        final int n = arr.size();
+        final double[] out = new double[n];
+        for ( int i = 0; i < n; i++ )
+            out[i] = arr.get(i);
+        return out;
+    }
+
+    // -----------------------------------------------------------------------
+    // Low-level helpers using raw double[] to match C++ Array performance.
 
     /**
      * Solve A*x = b starting from the zero vector.
@@ -132,7 +172,7 @@ public class GMRES {
      */
     public Result solve(final Array b, final Array x0) {
         final Result result = solveImpl(b, x0);
-        if (result.errors.get(result.errors.size() - 1) >= relTol_) {
+        if ( result.errors.get(result.errors.size() - 1) >= relTol_ ) {
             throw new IllegalStateException("GMRES: could not converge");
         }
         return result;
@@ -161,56 +201,52 @@ public class GMRES {
      */
     public Result solveWithRestart(final int restart, final Array b, final Array x0) {
         Result result = solveImpl(b, x0);
-        final List<Double> errors = new ArrayList<>(result.errors);
+        final List< Double > errors = new ArrayList<>(result.errors);
 
-        for (int i = 0; i < restart - 1 && result.errors.get(result.errors.size() - 1) >= relTol_; ++i) {
+        for ( int i = 0; i < restart - 1 && result.errors.get(result.errors.size() - 1) >= relTol_; ++i ) {
             result = solveImpl(b, result.x);
             errors.addAll(result.errors);
         }
 
-        if (errors.get(errors.size() - 1) >= relTol_) {
+        if ( errors.get(errors.size() - 1) >= relTol_ ) {
             throw new IllegalStateException("GMRES: could not converge");
         }
 
         return new Result(errors, result.x);
     }
 
-    // -----------------------------------------------------------------------
-
     /**
-     * Core GMRES implementation (one cycle, no restart, no convergence check).
-     * Mirrors {@code GMRES::solveImpl} in QuantLib v1.42.1.
+     * Core GMRES implementation (one cycle, no restart, no convergence check). Mirrors {@code GMRES::solveImpl} in
+     * QuantLib v1.42.1.
      */
     protected Result solveImpl(final Array b, final Array x0) {
         final double bn = norm2(b);
-        if (bn == 0.0) {
-            final List<Double> errs = new ArrayList<>();
+        if ( bn == 0.0 ) {
+            final List< Double > errs = new ArrayList<>();
             errs.add(0.0);
             return new Result(errs, b.clone());
         }
 
-        final Array x = (x0 != null && x0.size() > 0)
-                ? x0.clone()
-                : new Array(b.size());
+        final Array x = (x0 != null && x0.size() > 0) ? x0.clone() : new Array(b.size());
 
         // r = b - A*x
         final Array r = b.sub(A_.apply(x));
 
         final double g = norm2(r);
-        if (g / bn < relTol_) {
-            final List<Double> errs = new ArrayList<>();
+        if ( g / bn < relTol_ ) {
+            final List< Double > errs = new ArrayList<>();
             errs.add(g / bn);
             return new Result(errs, x);
         }
 
         // Krylov basis vectors: v[0] = r/g
-        final List<double[]> v = new ArrayList<>();
+        final List< double[] > v = new ArrayList<>();
         v.add(scaled(r, 1.0 / g));
 
         // Upper Hessenberg matrix h, stored as list of double[] columns
         // h[i][j]: element at row i, column j — but stored as h.get(i)[j]
         // Initial: h[0] is a row of length maxIter_
-        final List<double[]> h = new ArrayList<>();
+        final List< double[] > h = new ArrayList<>();
         h.add(new double[maxIter_]);   // h[0] — length maxIter_
 
         final double[] c = new double[maxIter_ + 1];
@@ -219,10 +255,10 @@ public class GMRES {
 
         z[0] = g;
 
-        final List<Double> errors = new ArrayList<>();
+        final List< Double > errors = new ArrayList<>();
         errors.add(g / bn);
 
-        for (int j = 0; j < maxIter_ && errors.get(errors.size() - 1) >= relTol_; ++j) {
+        for ( int j = 0; j < maxIter_ && errors.get(errors.size() - 1) >= relTol_; ++j ) {
             // Add new column to h
             h.add(new double[maxIter_]);  // h[j+1]
 
@@ -233,11 +269,11 @@ public class GMRES {
             final double[] w = doubleArray(wArr);
 
             // Modified Gram-Schmidt orthogonalization
-            for (int ii = 0; ii <= j; ++ii) {
+            for ( int ii = 0; ii <= j; ++ii ) {
                 final double[] vi = v.get(ii);
                 h.get(ii)[j] = dotProductRaw(w, vi);
                 // w -= h[i][j] * v[i]
-                for (int k = 0; k < w.length; k++) {
+                for ( int k = 0; k < w.length; k++ ) {
                     w[k] -= h.get(ii)[j] * vi[k];
                 }
             }
@@ -245,7 +281,7 @@ public class GMRES {
 
             // If w is (near) zero, Krylov space is exhausted — stop
             final double eps2 = QL_EPSILON * QL_EPSILON;
-            if (h.get(j + 1)[j] < eps2) {
+            if ( h.get(j + 1)[j] < eps2 ) {
                 break;
             }
 
@@ -254,24 +290,23 @@ public class GMRES {
             v.add(scaled(w, scale));
 
             // Apply previous Givens rotations to new column
-            for (int ii = 0; ii < j; ++ii) {
-                final double h0 =  c[ii] * h.get(ii)[j] + s[ii] * h.get(ii + 1)[j];
+            for ( int ii = 0; ii < j; ++ii ) {
+                final double h0 = c[ii] * h.get(ii)[j] + s[ii] * h.get(ii + 1)[j];
                 final double h1 = -s[ii] * h.get(ii)[j] + c[ii] * h.get(ii + 1)[j];
-                h.get(ii)[j]     = h0;
+                h.get(ii)[j] = h0;
                 h.get(ii + 1)[j] = h1;
             }
 
             // Compute new Givens rotation for (h[j][j], h[j+1][j])
-            final double nu = Math.sqrt(h.get(j)[j] * h.get(j)[j]
-                                      + h.get(j + 1)[j] * h.get(j + 1)[j]);
+            final double nu = Math.sqrt(h.get(j)[j] * h.get(j)[j] + h.get(j + 1)[j] * h.get(j + 1)[j]);
             c[j] = h.get(j)[j] / nu;
             s[j] = h.get(j + 1)[j] / nu;
 
-            h.get(j)[j]     = nu;
+            h.get(j)[j] = nu;
             h.get(j + 1)[j] = 0.0;
 
             z[j + 1] = -s[j] * z[j];
-            z[j]     =  c[j] * z[j];
+            z[j] = c[j] * z[j];
 
             errors.add(Math.abs(z[j + 1]) / bn);
         }
@@ -279,11 +314,11 @@ public class GMRES {
         // Back-substitution: solve upper triangular system H*y = z
         final int k = v.size() - 1;   // number of Krylov vectors used
         final double[] y = new double[k];
-        if (k > 0) {
+        if ( k > 0 ) {
             y[k - 1] = z[k - 1] / h.get(k - 1)[k - 1];
-            for (int ii = k - 2; ii >= 0; --ii) {
+            for ( int ii = k - 2; ii >= 0; --ii ) {
                 double sum = 0.0;
-                for (int jj = ii + 1; jj < k; jj++) {
+                for ( int jj = ii + 1; jj < k; jj++ ) {
                     sum += h.get(ii)[jj] * y[jj];
                 }
                 y[ii] = (z[ii] - sum) / h.get(ii)[ii];
@@ -293,87 +328,46 @@ public class GMRES {
         // xm = x + sum_{i=0}^{k-1} y[i] * (M == null ? v[i] : M(v[i]))
         final int n = x.size();
         final double[] xm = new double[n];
-        for (int ii = 0; ii < k; ii++) {
+        for ( int ii = 0; ii < k; ii++ ) {
             final double yi = y[ii];
-            if (M_ == null) {
+            if ( M_ == null ) {
                 final double[] vi = v.get(ii);
-                for (int d = 0; d < n; d++) {
+                for ( int d = 0; d < n; d++ ) {
                     xm[d] += yi * vi[d];
                 }
             } else {
                 final Array mvi = M_.apply(arrayFrom(v.get(ii)));
-                for (int d = 0; d < n; d++) {
+                for ( int d = 0; d < n; d++ ) {
                     xm[d] += yi * mvi.get(d);
                 }
             }
         }
         // xm = x + xm
-        for (int d = 0; d < n; d++) {
+        for ( int d = 0; d < n; d++ ) {
             xm[d] += x.get(d);
         }
 
         return new Result(errors, arrayFrom(xm));
     }
 
-    // -----------------------------------------------------------------------
-    // Low-level helpers using raw double[] to match C++ Array performance.
+    /** Operator type: maps an Array to an Array (e.g., x -&gt; A*x). */
+    public interface MatrixMult extends Function< Array, Array > {
+        // inherits: Array apply(Array x);
+    }
 
-    /** Create a new double[] scaled by {@code scale}. */
-    private static double[] scaled(final Array arr, final double scale) {
-        final int n = arr.size();
-        final double[] out = new double[n];
-        for (int i = 0; i < n; i++) {
-            out[i] = arr.get(i) * scale;
+    /** Result of a GMRES solve. */
+    public static final class Result {
+        /**
+         * List of relative residual errors ‖r‖/‖b‖ collected at each iteration. The first element is the initial
+         * residual; subsequent elements are after each Arnoldi step.
+         */
+        public final List< Double > errors;
+        /** Solution vector. */
+        public final Array x;
+
+        public Result(final List< Double > errors, final Array x) {
+            this.errors = errors;
+            this.x = x;
         }
-        return out;
-    }
-
-    /** Create a new double[] scaled by {@code scale}. */
-    private static double[] scaled(final double[] arr, final double scale) {
-        final int n = arr.length;
-        final double[] out = new double[n];
-        for (int i = 0; i < n; i++) {
-            out[i] = arr[i] * scale;
-        }
-        return out;
-    }
-
-    /** Euclidean norm of a raw double[] array. */
-    private static double norm2Raw(final double[] x) {
-        double sum = 0.0;
-        for (final double v : x) sum += v * v;
-        return Math.sqrt(sum);
-    }
-
-    /** Dot product of two raw double[] arrays. */
-    private static double dotProductRaw(final double[] a, final double[] b) {
-        double sum = 0.0;
-        final int n = a.length;
-        for (int i = 0; i < n; i++) sum += a[i] * b[i];
-        return sum;
-    }
-
-    /** Euclidean norm of an Array. */
-    private static double norm2(final Array x) {
-        final int n = x.size();
-        double sum = 0.0;
-        for (int i = 0; i < n; i++) {
-            final double v = x.get(i);
-            sum += v * v;
-        }
-        return Math.sqrt(sum);
-    }
-
-    /** Wrap a raw double[] into an Array (zero-copy where possible). */
-    private static Array arrayFrom(final double[] data) {
-        return new Array(data, data.length);
-    }
-
-    /** Extract an Array's contents into a raw double[]. */
-    private static double[] doubleArray(final Array arr) {
-        final int n = arr.size();
-        final double[] out = new double[n];
-        for (int i = 0; i < n; i++) out[i] = arr.get(i);
-        return out;
     }
 }

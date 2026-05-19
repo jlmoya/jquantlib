@@ -27,19 +27,18 @@ import org.jquantlib.math.Ops;
 /**
  * Verifies if 2 double numbers are close enough
  *
- * @see Closeness#isCloseEnough(double, double)
- *
  * @author Richard Gomes
+ * @see Closeness#isCloseEnough(double, double)
  */
 public final class CloseEnough implements Ops.BinaryDoublePredicate {
 
-	//
+    //
     // implements BinaryDoublePredicate
     //
 
-	@Override
-	public boolean op(final double a, final double b) {
-		return Closeness.isCloseEnough(a, b);
-	}
+    @Override
+    public boolean op(final double a, final double b) {
+        return Closeness.isCloseEnough(a, b);
+    }
 
 }

@@ -25,8 +25,6 @@
 
 package org.jquantlib.methods.finitedifferences.utilities;
 
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.termstructures.BlackVolTermStructure;
@@ -36,6 +34,8 @@ import org.jquantlib.util.DefaultObservable;
 import org.jquantlib.util.Observable;
 import org.jquantlib.util.Observer;
 
+import java.util.List;
+
 /**
  * Helper class storing market data needed for the quanto adjustment.
  *
@@ -43,13 +43,11 @@ import org.jquantlib.util.Observer;
  * {@code ql/methods/finitedifferences/utilities/fdmquantohelper.{hpp,cpp}}.
  *
  * <p>Returns the continuous-time quanto drift adjustment
- * {@code r_domestic - r_foreign + equityFxCorrelation * equityVol * fxVol}
- * for use in finite-difference PDE engines that price an asset paid in a
- * domestic currency but driven by foreign dynamics.
+ * {@code r_domestic - r_foreign + equityFxCorrelation * equityVol * fxVol} for use in finite-difference PDE engines
+ * that price an asset paid in a domestic currency but driven by foreign dynamics.
  *
  * <p>Implements {@link Observable} via delegation so downstream FDM
- * components (e.g., {@code FdmBlackScholesMesher}) can register for
- * market-data updates.
+ * components (e.g., {@code FdmBlackScholesMesher}) can register for market-data updates.
  */
 public class FdmQuantoHelper implements Observable, Observer {
 
@@ -58,13 +56,10 @@ public class FdmQuantoHelper implements Observable, Observer {
     private final BlackVolTermStructure fxVolTS_;
     private final double equityFxCorrelation_;
     private final double exchRateATMlevel_;
+    private final Observable delegatedObservable = new DefaultObservable(this);
 
-    public FdmQuantoHelper(
-            final YieldTermStructure rTS,
-            final YieldTermStructure fTS,
-            final BlackVolTermStructure fxVolTS,
-            final double equityFxCorrelation,
-            final double exchRateATMlevel) {
+    public FdmQuantoHelper(final YieldTermStructure rTS, final YieldTermStructure fTS,
+            final BlackVolTermStructure fxVolTS, final double equityFxCorrelation, final double exchRateATMlevel) {
         QL.require(rTS != null, "null domestic yield term structure");
         QL.require(fTS != null, "null foreign yield term structure");
         QL.require(fxVolTS != null, "null FX vol term structure");
@@ -83,50 +78,60 @@ public class FdmQuantoHelper implements Observable, Observer {
      * Quanto drift adjustment for a scalar equity volatility:
      * {@code r_domestic - r_foreign + equityVol * fxVol * equityFxCorrelation}.
      */
-    public double quantoAdjustment(
-            final double equityVol, final double t1, final double t2) {
+    public double quantoAdjustment(final double equityVol, final double t1, final double t2) {
         final double rDomestic = rTS_.forwardRate(t1, t2, Compounding.Continuous).rate();
-        final double rForeign  = fTS_.forwardRate(t1, t2, Compounding.Continuous).rate();
-        final double fxVol     = fxVolTS_.blackForwardVol(t1, t2, exchRateATMlevel_, true);
+        final double rForeign = fTS_.forwardRate(t1, t2, Compounding.Continuous).rate();
+        final double fxVol = fxVolTS_.blackForwardVol(t1, t2, exchRateATMlevel_, true);
         return rDomestic - rForeign + equityVol * fxVol * equityFxCorrelation_;
     }
 
     /**
      * Vector overload — applies the scalar quanto adjustment element-wise.
      */
-    public Array quantoAdjustment(
-            final Array equityVol, final double t1, final double t2) {
+    public Array quantoAdjustment(final Array equityVol, final double t1, final double t2) {
         final double rDomestic = rTS_.forwardRate(t1, t2, Compounding.Continuous).rate();
-        final double rForeign  = fTS_.forwardRate(t1, t2, Compounding.Continuous).rate();
-        final double fxVol     = fxVolTS_.blackForwardVol(t1, t2, exchRateATMlevel_, true);
+        final double rForeign = fTS_.forwardRate(t1, t2, Compounding.Continuous).rate();
+        final double fxVol = fxVolTS_.blackForwardVol(t1, t2, exchRateATMlevel_, true);
         final int n = equityVol.size();
         final Array out = new Array(n);
-        for (int i = 0; i < n; ++i) {
+        for ( int i = 0; i < n; ++i ) {
             out.set(i, rDomestic - rForeign + equityVol.get(i) * fxVol * equityFxCorrelation_);
         }
         return out;
     }
 
-    public YieldTermStructure rTS() { return rTS_; }
-    public YieldTermStructure fTS() { return fTS_; }
-    public BlackVolTermStructure fxVolTS() { return fxVolTS_; }
-    public double equityFxCorrelation() { return equityFxCorrelation_; }
-    public double exchRateATMlevel()    { return exchRateATMlevel_; }
+    public YieldTermStructure rTS() {
+        return rTS_;
+    }
+
+    public YieldTermStructure fTS() {
+        return fTS_;
+    }
+
+    public BlackVolTermStructure fxVolTS() {
+        return fxVolTS_;
+    }
+
+    public double equityFxCorrelation() {
+        return equityFxCorrelation_;
+    }
 
     //
     // implements Observer
     //
 
-    @Override
-    public void update() {
-        notifyObservers();
+    public double exchRateATMlevel() {
+        return exchRateATMlevel_;
     }
 
     //
     // implements Observable via delegate pattern
     //
 
-    private final Observable delegatedObservable = new DefaultObservable(this);
+    @Override
+    public void update() {
+        notifyObservers();
+    }
 
     @Override
     public final void addObserver(final Observer observer) {
@@ -159,7 +164,7 @@ public class FdmQuantoHelper implements Observable, Observer {
     }
 
     @Override
-    public final List<Observer> getObservers() {
+    public final List< Observer > getObservers() {
         return delegatedObservable.getObservers();
     }
 }

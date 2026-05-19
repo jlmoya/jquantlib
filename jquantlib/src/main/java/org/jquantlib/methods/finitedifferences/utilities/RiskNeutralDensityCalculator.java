@@ -32,12 +32,12 @@ import org.jquantlib.math.solvers1D.Brent;
  * {@code ql/methods/finitedifferences/utilities/riskneutraldensitycalculator.{hpp,cpp}}.
  *
  * <p>Mirrors the C++ abstract base + nested {@code InvCDFHelper}; the
- * {@link InvCDFHelper#inverseCDF(double, double)} method uses Brent root-finding
- * to invert {@link #cdf(double, double)} starting from a caller-supplied guess.
+ * {@link InvCDFHelper#inverseCDF(double, double)} method uses Brent root-finding to invert {@link #cdf(double, double)}
+ * starting from a caller-supplied guess.
  *
  * <p>NOTE: We use a Java {@code abstract class} rather than an interface so we can
- * embed the protected nested {@code InvCDFHelper} (matching C++) without forcing
- * it onto the public API. Subclasses extend this class.
+ * embed the protected nested {@code InvCDFHelper} (matching C++) without forcing it onto the public API. Subclasses
+ * extend this class.
  *
  * @author Phase 5h.5-RND port
  */
@@ -53,8 +53,8 @@ public abstract class RiskNeutralDensityCalculator {
     public abstract double invcdf(final double q, final double t);
 
     /**
-     * Helper to invert the CDF via Brent root-finding around a starting guess.
-     * Mirrors C++ {@code RiskNeutralDensityCalculator::InvCDFHelper}.
+     * Helper to invert the CDF via Brent root-finding around a starting guess. Mirrors C++
+     * {@code RiskNeutralDensityCalculator::InvCDFHelper}.
      */
     protected static class InvCDFHelper {
         private final RiskNeutralDensityCalculator calculator_;
@@ -63,23 +63,18 @@ public abstract class RiskNeutralDensityCalculator {
         private final int maxEvaluations_;
         private final double stepSize_;
 
-        public InvCDFHelper(final RiskNeutralDensityCalculator calculator,
-                            final double guess,
-                            final double accuracy,
-                            final int maxEvaluations) {
+        public InvCDFHelper(final RiskNeutralDensityCalculator calculator, final double guess, final double accuracy,
+                final int maxEvaluations) {
             this(calculator, guess, accuracy, maxEvaluations, 0.01);
         }
 
-        public InvCDFHelper(final RiskNeutralDensityCalculator calculator,
-                            final double guess,
-                            final double accuracy,
-                            final int maxEvaluations,
-                            final double stepSize) {
-            this.calculator_     = calculator;
-            this.guess_          = guess;
-            this.accuracy_       = accuracy;
+        public InvCDFHelper(final RiskNeutralDensityCalculator calculator, final double guess, final double accuracy,
+                final int maxEvaluations, final double stepSize) {
+            this.calculator_ = calculator;
+            this.guess_ = guess;
+            this.accuracy_ = accuracy;
             this.maxEvaluations_ = maxEvaluations;
-            this.stepSize_       = stepSize;
+            this.stepSize_ = stepSize;
         }
 
         public double inverseCDF(final double p, final double t) {

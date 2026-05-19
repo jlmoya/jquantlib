@@ -34,31 +34,21 @@ import org.jquantlib.time.TimeUnit;
  * Quoted year-on-year UK HICP (i.e. NOT a ratio of UKHICP).
  *
  * <p>Sibling YY index for {@link UKHICP}. Family name is {@code "YY_HICP"},
- * region UK, currency GBP, frequency Monthly, availability lag 1 month,
- * {@code ratio = false}.
+ * region UK, currency GBP, frequency Monthly, availability lag 1 month, {@code ratio = false}.
  *
  * <p>Note: the C++ source-of-truth file {@code ukhicp.hpp} defines only the
- * zero-inflation {@code UKHICP} class (no {@code YYUKHICP}). This Java class
- * is added as a sibling for symmetry with the other CPI/HICP families
- * (FRHICP/YYFRHICP, EUHICP/YYEUHICP, etc.) — required for any YoY-bootstrap
- * test that uses UK HICP rather than UK RPI.
+ * zero-inflation {@code UKHICP} class (no {@code YYUKHICP}). This Java class is added as a sibling for symmetry with
+ * the other CPI/HICP families (FRHICP/YYFRHICP, EUHICP/YYEUHICP, etc.) — required for any YoY-bootstrap test that uses
+ * UK HICP rather than UK RPI.
  */
 public class YYUKHICP extends YoYInflationIndex {
 
     public YYUKHICP(final boolean interpolated) {
-        this(interpolated, new Handle<YoYInflationTermStructure>());
+        this(interpolated, new Handle< YoYInflationTermStructure >());
     }
 
-    public YYUKHICP(final boolean interpolated,
-                    final Handle<YoYInflationTermStructure> termStructure) {
-        super("YY_HICP",
-                new UKRegion(),
-                false,
-                interpolated,
-                false,
-                Frequency.Monthly,
-                new Period(1, TimeUnit.Months),
-                new GBPCurrency(),
-                termStructure);
+    public YYUKHICP(final boolean interpolated, final Handle< YoYInflationTermStructure > termStructure) {
+        super("YY_HICP", new UKRegion(), false, interpolated, false, Frequency.Monthly, new Period(1, TimeUnit.Months),
+                new GBPCurrency(), termStructure);
     }
 }

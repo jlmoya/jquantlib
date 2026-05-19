@@ -36,12 +36,7 @@ import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.exercise.Exercise;
-import org.jquantlib.instruments.AverageType;
-import org.jquantlib.instruments.ContinuousAveragingAsianOption;
-import org.jquantlib.instruments.Option;
-import org.jquantlib.instruments.PlainVanillaPayoff;
-import org.jquantlib.instruments.StrikedTypePayoff;
-import org.jquantlib.instruments.VanillaOption;
+import org.jquantlib.instruments.*;
 import org.jquantlib.math.Rounding;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.methods.finitedifferences.TridiagonalOperator;
@@ -67,43 +62,38 @@ import org.jquantlib.time.Frequency;
 public class ContinuousArithmeticAsianVecerEngine extends ContinuousAveragingAsianOption.EngineImpl {
 
     private static final String NOT_AN_ARITHMETIC_AVERAGE = "not an Arithmetic average option";
-    private static final String NOT_AN_EUROPEAN_OPTION    = "not an European Option";
-    private static final String STRIKE_NOT_ON_GRID        = "strike (0 for vecer fixed strike asian)  not on Grid";
-    private static final String NON_PLAIN_PAYOFF          = "non-plain payoff given";
-    private static final String SEASONED_NOT_IMPLEMENTED  = "Seasoned Asian not yet implemented";
-    private static final String SPOT_NOT_ON_GRID          = "spot not on grid";
-    private static final String AVG_START_BEFORE_END      = "Average Start must be before Average End";
+    private static final String NOT_AN_EUROPEAN_OPTION = "not an European Option";
+    private static final String STRIKE_NOT_ON_GRID = "strike (0 for vecer fixed strike asian)  not on Grid";
+    private static final String NON_PLAIN_PAYOFF = "non-plain payoff given";
+    private static final String SEASONED_NOT_IMPLEMENTED = "Seasoned Asian not yet implemented";
+    private static final String SPOT_NOT_ON_GRID = "spot not on grid";
+    private static final String AVG_START_BEFORE_END = "Average Start must be before Average End";
 
     private final GeneralizedBlackScholesProcess process_;
-    private final Handle<? extends Quote>        currentAverage_;
-    private final Date                           startDate_;
-    private final double                         z_min_;
-    private final double                         z_max_;
-    private final int                            timeSteps_;
-    private final int                            assetSteps_;
+    private final Handle< ? extends Quote > currentAverage_;
+    private final Date startDate_;
+    private final double z_min_;
+    private final double z_max_;
+    private final int timeSteps_;
+    private final int assetSteps_;
 
     public ContinuousArithmeticAsianVecerEngine(final GeneralizedBlackScholesProcess process,
-                                                final Handle<? extends Quote> currentAverage,
-                                                final Date startDate,
-                                                final int timeSteps,
-                                                final int assetSteps,
-                                                final double z_min,
-                                                final double z_max) {
-        this.process_        = process;
+            final Handle< ? extends Quote > currentAverage, final Date startDate, final int timeSteps,
+            final int assetSteps, final double z_min, final double z_max) {
+        this.process_ = process;
         this.currentAverage_ = currentAverage;
-        this.startDate_      = startDate;
-        this.timeSteps_      = timeSteps;
-        this.assetSteps_     = assetSteps;
-        this.z_min_          = z_min;
-        this.z_max_          = z_max;
+        this.startDate_ = startDate;
+        this.timeSteps_ = timeSteps;
+        this.assetSteps_ = assetSteps;
+        this.z_min_ = z_min;
+        this.z_max_ = z_max;
         process_.addObserver(this);
         currentAverage_.addObserver(this);
     }
 
     /** Convenience overload mirroring the C++ default arguments. */
     public ContinuousArithmeticAsianVecerEngine(final GeneralizedBlackScholesProcess process,
-                                                final Handle<? extends Quote> currentAverage,
-                                                final Date startDate) {
+            final Handle< ? extends Quote > currentAverage, final Date startDate) {
         this(process, currentAverage, startDate, 100, 100, -1.0, 1.0);
     }
 
@@ -137,11 +127,11 @@ public class ContinuousArithmeticAsianVecerEngine extends ContinuousAveragingAsi
         QL.require(startDate_.ge(today), SEASONED_NOT_IMPLEMENTED);
 
         // expiry in years
-        final double T  = rfdc.yearFraction(today, maturity);
+        final double T = rfdc.yearFraction(today, maturity);
         final double T1 = rfdc.yearFraction(today, startDate_);   // average begin
         final double T2 = T;                                      // average end (only maturity supported)
 
-        if ((T2 - T1) < 0.001) {
+        if ( (T2 - T1) < 0.001 ) {
             // it's a vanilla option — use vanilla engine
             final VanillaOption europeanOption = new VanillaOption(payoff, arguments_.exercise);
             europeanOption.setPricingEngine(new AnalyticEuropeanEngine(process_));
@@ -160,12 +150,12 @@ public class ContinuousArithmeticAsianVecerEngine extends ContinuousAveragingAsi
         final double sigma2 = sigma * sigma;
 
         final int gridSize = assetSteps_ + 1;
-        final Array SVec      = new Array(gridSize);
+        final Array SVec = new Array(gridSize);
         final Array u_initial = new Array(gridSize);
-        Array       u         = new Array(gridSize);
-        Array       rhs       = new Array(gridSize);
+        Array u = new Array(gridSize);
+        Array rhs = new Array(gridSize);
 
-        for (int i = 0; i < gridSize; i++) {
+        for ( int i = 0; i < gridSize; i++ ) {
             SVec.set(i, z_min_ + i * h); // value of underlying on the grid
         }
 
@@ -182,34 +172,33 @@ public class ContinuousArithmeticAsianVecerEngine extends ContinuousAveragingAsi
         // gamma operator we need to keep around.
         final Array upperD = new Array(gammaOp.upperDiagonal());
         final Array lowerD = new Array(gammaOp.lowerDiagonal());
-        final Array Dia    = new Array(gammaOp.diagonal());
+        final Array Dia = new Array(gammaOp.diagonal());
 
-        for (int i = 0; i < gridSize; i++) {
+        for ( int i = 0; i < gridSize; i++ ) {
             u_initial.set(i, Math.max(SVec.get(i), 0.0)); // call payoff
         }
 
         // u = u_initial (deep copy)
         u = new Array(gridSize);
-        for (int i = 0; i < gridSize; i++) {
+        for ( int i = 0; i < gridSize; i++ ) {
             u.set(i, u_initial.get(i));
         }
 
         // start time loop
-        for (int j = 1; j <= timeSteps_; j++) {
-            if (Theta != 1.0) { // explicit part
-                for (int i = 1; i <= gridSize - 2; i++) {
-                    final double vecerTerm = SVec.get(i) - Math.exp(-q * (T - (j - 1) * k))
-                            * cont_strategy(T - (j - 1) * k, T1, T2, q, r);
+        for ( int j = 1; j <= timeSteps_; j++ ) {
+            if ( Theta != 1.0 ) { // explicit part
+                for ( int i = 1; i <= gridSize - 2; i++ ) {
+                    final double vecerTerm =
+                            SVec.get(i) - Math.exp(-q * (T - (j - 1) * k)) * cont_strategy(T - (j - 1) * k, T1, T2, q,
+                                    r);
                     final double vt2 = vecerTerm * vecerTerm;
-                    gammaOp.setMidRow(i,
-                            0.5 * sigma2 * vt2 * lowerD.get(i - 1),
-                            0.5 * sigma2 * vt2 * Dia.get(i),
+                    gammaOp.setMidRow(i, 0.5 * sigma2 * vt2 * lowerD.get(i - 1), 0.5 * sigma2 * vt2 * Dia.get(i),
                             0.5 * sigma2 * vt2 * upperD.get(i));
                 }
                 // explicit_part = I + (1 - Theta) * k * gammaOp
                 final TridiagonalOperator identity = gammaOp.identity(gridSize);
-                final TridiagonalOperator scaled   = (TridiagonalOperator) gammaOp.multiply((1 - Theta) * k);
-                TridiagonalOperator explicit_part  = (TridiagonalOperator) identity.add(scaled);
+                final TridiagonalOperator scaled = (TridiagonalOperator) gammaOp.multiply((1 - Theta) * k);
+                TridiagonalOperator explicit_part = (TridiagonalOperator) identity.add(scaled);
                 explicit_part.setFirstRow(1.0, 0.0); // apply before applying
                 explicit_part.setLastRow(-1.0, 1.0); // Neumann BC
 
@@ -220,26 +209,24 @@ public class ContinuousArithmeticAsianVecerEngine extends ContinuousAveragingAsi
                 u.set(0, 0.0);
             } // end explicit part
 
-            if (Theta != 0.0) { // implicit part
-                for (int i = 1; i <= gridSize - 2; i++) {
-                    final double vecerTerm = SVec.get(i) - Math.exp(-q * (T - j * k))
-                            * cont_strategy(T - j * k, T1, T2, q, r);
+            if ( Theta != 0.0 ) { // implicit part
+                for ( int i = 1; i <= gridSize - 2; i++ ) {
+                    final double vecerTerm =
+                            SVec.get(i) - Math.exp(-q * (T - j * k)) * cont_strategy(T - j * k, T1, T2, q, r);
                     final double vt2 = vecerTerm * vecerTerm;
-                    gammaOp.setMidRow(i,
-                            0.5 * sigma2 * vt2 * lowerD.get(i - 1),
-                            0.5 * sigma2 * vt2 * Dia.get(i),
+                    gammaOp.setMidRow(i, 0.5 * sigma2 * vt2 * lowerD.get(i - 1), 0.5 * sigma2 * vt2 * Dia.get(i),
                             0.5 * sigma2 * vt2 * upperD.get(i));
                 }
                 // implicit_part = I - Theta * k * gammaOp
                 final TridiagonalOperator identity = gammaOp.identity(gridSize);
-                final TridiagonalOperator scaled   = (TridiagonalOperator) gammaOp.multiply(Theta * k);
-                TridiagonalOperator implicit_part  = (TridiagonalOperator) identity.subtract(scaled);
+                final TridiagonalOperator scaled = (TridiagonalOperator) gammaOp.multiply(Theta * k);
+                TridiagonalOperator implicit_part = (TridiagonalOperator) identity.subtract(scaled);
 
                 implicit_part.setFirstRow(1.0, 0.0);
                 implicit_part.setLastRow(-1.0, 1.0);
 
                 rhs = new Array(gridSize);
-                for (int i = 0; i < gridSize; i++) {
+                for ( int i = 0; i < gridSize; i++ ) {
                     rhs.set(i, u.get(i));
                 }
                 rhs.set(0, 0.0);          // lower BC
@@ -252,18 +239,16 @@ public class ContinuousArithmeticAsianVecerEngine extends ContinuousAveragingAsi
         final int lowerI = (int) rounding.operator((Z_0 - z_min_) / h);
 
         // interpolate solution
-        final double pv = u.get(lowerI)
-                        + (u.get(lowerI + 1) - u.get(lowerI)) * (Z_0 - SVec.get(lowerI)) / h;
+        final double pv = u.get(lowerI) + (u.get(lowerI + 1) - u.get(lowerI)) * (Z_0 - SVec.get(lowerI)) / h;
         results_.value = S_0 * pv;
 
-        if (payoff.optionType() == Option.Type.Put) {
+        if ( payoff.optionType() == Option.Type.Put ) {
             // apply call-put parity for Asians
             final double expectedAverage;
-            if (r == q) {
+            if ( r == q ) {
                 expectedAverage = S_0;
             } else {
-                expectedAverage = S_0 * (Math.exp((r - q) * T2) - Math.exp((r - q) * T1))
-                                / ((r - q) * (T2 - T1));
+                expectedAverage = S_0 * (Math.exp((r - q) * T2) - Math.exp((r - q) * T1)) / ((r - q) * (T2 - T1));
             }
             final double asianForward = Math.exp(-r * T2) * (expectedAverage - X);
             results_.value = results_.value - asianForward;
@@ -273,25 +258,22 @@ public class ContinuousArithmeticAsianVecerEngine extends ContinuousAveragingAsi
     /**
      * Replication of average by holding this amount in assets.
      */
-    protected double cont_strategy(final double t, final double T1, final double T2,
-                                   final double v, final double r) {
+    protected double cont_strategy(final double t, final double T1, final double T2, final double v, final double r) {
         final double eps = 0.00001;
         QL.require(T1 <= T2, AVG_START_BEFORE_END);
 
-        if (Math.abs(t - T2) < eps) {
+        if ( Math.abs(t - T2) < eps ) {
             return 0.0;
         }
-        if (t < T1) {
-            if (Math.abs(r - v) >= eps) {
-                return Math.exp(v * (t - T2)) * (1.0 - Math.exp((v - r) * (T2 - T1)))
-                       / ((r - v) * (T2 - T1));
+        if ( t < T1 ) {
+            if ( Math.abs(r - v) >= eps ) {
+                return Math.exp(v * (t - T2)) * (1.0 - Math.exp((v - r) * (T2 - T1))) / ((r - v) * (T2 - T1));
             }
             return Math.exp(v * (t - T2));
         }
         // t >= T1
-        if (Math.abs(r - v) >= eps) {
-            return Math.exp(v * (t - T2)) * (1.0 - Math.exp((v - r) * (T2 - t)))
-                   / ((r - v) * (T2 - T1));
+        if ( Math.abs(r - v) >= eps ) {
+            return Math.exp(v * (t - T2)) * (1.0 - Math.exp((v - r) * (T2 - t))) / ((r - v) * (T2 - T1));
         }
         return Math.exp(v * (t - T2)) * (T2 - t) / (T2 - T1);
     }

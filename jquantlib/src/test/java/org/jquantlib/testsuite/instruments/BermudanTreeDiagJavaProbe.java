@@ -64,6 +64,133 @@ import org.junit.Test;
 public class BermudanTreeDiagJavaProbe {
 
     @Test
+    public void engineReplay() {
+        final Date today = new Date(15, Month.February, 2002);
+        final Date settle = new Date(19, Month.February, 2002);
+        new Settings().setEvaluationDate(today);
+
+        final RelinkableHandle<YieldTermStructure> ts =
+                new RelinkableHandle<YieldTermStructure>();
+        final IborIndex idx = new Euribor6M(ts);
+        final Calendar cal = idx.fixingCalendar();
+        final Actual365Fixed dc = new Actual365Fixed();
+        ts.linkTo(new FlatForward(settle, 0.04875825, dc));
+
+        final Date start = cal.advance(settle, new Period(1, TimeUnit.Years));
+        final Date maturity = cal.advance(start, new Period(5, TimeUnit.Years));
+        final Schedule fixSched = new Schedule(start, maturity,
+                new Period(Frequency.Annual), cal,
+                BusinessDayConvention.Unadjusted, BusinessDayConvention.Unadjusted,
+                DateGeneration.Rule.Forward, false);
+        final Schedule fltSched = new Schedule(start, maturity,
+                new Period(Frequency.Semiannual), cal,
+                BusinessDayConvention.ModifiedFollowing, BusinessDayConvention.ModifiedFollowing,
+                DateGeneration.Rule.Forward, false);
+        final Thirty360 fixDc = new Thirty360(Thirty360.Convention.BondBasis);
+
+        final VanillaSwap swap0 = new VanillaSwap(VanillaSwap.Type.Payer, 1000.0,
+                fixSched, 0.0, fixDc, fltSched, idx, 0.0, idx.dayCounter());
+        swap0.setPricingEngine(new DiscountingSwapEngine(ts));
+        final double atm = swap0.fairRate();
+
+        final VanillaSwap atmSwap = new VanillaSwap(VanillaSwap.Type.Payer, 1000.0,
+                fixSched, atm, fixDc, fltSched, idx, 0.0, idx.dayCounter());
+        atmSwap.setPricingEngine(new DiscountingSwapEngine(ts));
+
+        final List<Date> exDates = new ArrayList<Date>();
+        for (final CashFlow cf : atmSwap.fixedLeg()) {
+            exDates.add(((Coupon) cf).accrualStartDate());
+        }
+
+        final HullWhite hw = new HullWhite(ts, 0.048696, 0.0058904);
+
+        // Build Swaption args + manually replay engine path for n_ex=1.
+        final List<Date> sub1 = new ArrayList<Date>(exDates.subList(0, 1));
+        final org.jquantlib.instruments.Swaption.ArgumentsImpl args =
+                new org.jquantlib.instruments.Swaption.ArgumentsImpl();
+        args.swap = atmSwap;
+        args.exercise = new BermudanExercise(sub1.toArray(new Date[0]));
+        args.settlementType = org.jquantlib.instruments.Settlement.Type.Physical;
+        args.settlementMethod = org.jquantlib.instruments.Settlement.Method.PhysicalOTC;
+
+        final DiscretizedSwaption swaption =
+                new DiscretizedSwaption(args, today, dc);
+        final List<Double> mand = swaption.mandatoryTimes();
+        final TimeGrid grid = new TimeGrid(mand, 50);
+        final Lattice latt = hw.tree(grid);
+
+        final double exTime = dc.yearFraction(today, sub1.get(0));
+
+        System.out.println("=== Java engine path replay (n_ex=1) ===");
+        System.out.printf("exTime = %.18g%n", exTime);
+
+        // Trace underlying value sequence with explicit manual rollback,
+        // matching the *engine* path step-by-step.
+        {
+            final DiscretizedSwap und = new DiscretizedSwap(atmSwap,
+                    today, dc);
+            final double lastFixed = dc.yearFraction(today,
+                    atmSwap.fixedLeg().get(atmSwap.fixedLeg().size() - 1).date());
+            final double lastFloat = dc.yearFraction(today,
+                    atmSwap.floatingLeg().get(atmSwap.floatingLeg().size() - 1).date());
+            final double lastPay = Math.max(lastFixed, lastFloat);
+
+            und.initialize(latt, lastPay);
+            System.out.printf("[engine-traced]  after-und.initialize: time=%.18g size=%d underlying[8]=%.18g%n",
+                    und.time(), und.values().size(),
+                    und.values().size() > 8 ? und.values().get(8) : Double.NaN);
+
+            und.partialRollback(exTime);
+            System.out.printf("[engine-traced]  after-und.partialRollback(exTime): time=%.18g underlying[8]=%.18g%n",
+                    und.time(), und.values().get(8));
+
+            und.preAdjustValues();
+            System.out.printf("[engine-traced]  after-und.preAdjustValues: time=%.18g underlying[8]=%.18g (this is what applyExerciseCondition would see)%n",
+                    und.time(), und.values().get(8));
+
+            // Direct path: rollback (which includes adjustValues)
+            final DiscretizedSwap und2 = new DiscretizedSwap(atmSwap,
+                    today, dc);
+            und2.initialize(latt, lastPay);
+            und2.rollback(exTime);
+            und2.preAdjustValues();
+            System.out.printf("[direct-traced]  after-und.rollback(exTime)+preAdjust: time=%.18g underlying[8]=%.18g (this is the direct-path value)%n",
+                    und2.time(), und2.values().get(8));
+
+            // The C++ engine value is 0.333 (the underlying[8] right after
+            // preAdjustValues without intermediate post-adjusts during
+            // partialRollback's intermediate adjustValues calls).
+            // Compare both Java traces with C++ engine_path snapshots.
+        }
+
+        swaption.initialize(latt, exTime);
+        System.out.printf("after_initialize:  time=%.18g  size=%d%n",
+                swaption.time(), swaption.values().size());
+        for (int j = 0; j < swaption.values().size(); j++) {
+            System.out.printf("  swp[%2d] = %.18g%n", j, swaption.values().get(j));
+        }
+
+        swaption.rollback(exTime);
+        System.out.printf("after_rollback:    time=%.18g  size=%d%n",
+                swaption.time(), swaption.values().size());
+        for (int j = 0; j < swaption.values().size(); j++) {
+            System.out.printf("  swp[%2d] = %.18g%n", j, swaption.values().get(j));
+        }
+
+        final double pv = swaption.presentValue();
+        System.out.printf("present_value (replay) = %.18g%n", pv);
+
+        // Run the real engine.
+        {
+            final TreeSwaptionEngine eng = new TreeSwaptionEngine(hw, 50, ts);
+            final org.jquantlib.instruments.Swaption sw = new org.jquantlib.instruments.Swaption(
+                    atmSwap, args.exercise);
+            sw.setPricingEngine(eng);
+            System.out.printf("engine_npv_n1 = %.18g%n", sw.NPV());
+        }
+    }
+
+    @Test
     public void dumpJavaTreeState() {
         final Date today = new Date(15, Month.February, 2002);
         final Date settle = new Date(19, Month.February, 2002);

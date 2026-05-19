@@ -20,8 +20,6 @@
 
 package org.jquantlib.experimental.credit;
 
-import java.util.List;
-
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.lang.annotation.Natural;
 import org.jquantlib.math.interpolations.BicubicSplineInterpolation;
@@ -31,29 +29,25 @@ import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Period;
 
+import java.util.List;
+
 /**
  * BaseCorrelationTermStructure with bicubic-spline 2D interpolation.
  *
  * <p>Java port of QuantLib v1.42.1 template specialisation
- * {@code BaseCorrelationTermStructure<BicubicSpline>}
- * ({@code ql/experimental/credit/basecorrelationstructure.cpp}).
+ * {@code BaseCorrelationTermStructure<BicubicSpline>} ({@code ql/experimental/credit/basecorrelationstructure.cpp}).
  *
  * <p>Note (mirrors C++ comment): "some interpolators might take you out of
- * the [-1,1] correlation domain" — bicubic splines may overshoot at the
- * grid boundaries. Caller must verify the result is admissible.
+ * the [-1,1] correlation domain" — bicubic splines may overshoot at the grid boundaries. Caller must verify the result
+ * is admissible.
  *
  * <p>Phase 4m.7c-c.
  */
 public class BicubicBaseCorrelationTermStructure extends BaseCorrelationTermStructure {
 
-    public BicubicBaseCorrelationTermStructure(
-            final @Natural int settlementDays,
-            final Calendar cal,
-            final BusinessDayConvention bdc,
-            final List<Period> tenors,
-            final List<Double> lossLevel,
-            final List<List<Handle<Quote>>> correls,
-            final DayCounter dc) {
+    public BicubicBaseCorrelationTermStructure(final @Natural int settlementDays, final Calendar cal,
+            final BusinessDayConvention bdc, final List< Period > tenors, final List< Double > lossLevel,
+            final List< List< Handle< Quote > > > correls, final DayCounter dc) {
         super(settlementDays, cal, bdc, tenors, lossLevel, correls, dc);
     }
 
@@ -63,7 +57,6 @@ public class BicubicBaseCorrelationTermStructure extends BaseCorrelationTermStru
         //   interpolation_ = BicubicSpline(trancheTimes_.begin(),
         //       trancheTimes_.end(), lossLevel_.begin(), lossLevel_.end(),
         //       correlations_);
-        this.interpolation = new BicubicSplineInterpolation(
-                trancheTimesArray(), lossLevelArray(), this.correlations);
+        this.interpolation = new BicubicSplineInterpolation(trancheTimesArray(), lossLevelArray(), this.correlations);
     }
 }

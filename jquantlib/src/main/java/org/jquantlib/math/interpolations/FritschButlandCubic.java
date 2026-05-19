@@ -27,13 +27,12 @@ import org.jquantlib.math.matrixutilities.Array;
 /**
  * Fritsch-Butland cubic interpolation between discrete points.
  * <p>
- * Convenience subclass of {@link CubicInterpolation} configured for the
- * Fritsch-Butland derivative approximation (local, monotonic, non-linear)
- * with second-derivative natural boundary conditions and Hyman monotonicity
- * filtering enabled.
+ * Convenience subclass of {@link CubicInterpolation} configured for the Fritsch-Butland derivative approximation
+ * (local, monotonic, non-linear) with second-derivative natural boundary conditions and Hyman monotonicity filtering
+ * enabled.
  * <p>
- * Mirrors C++ {@code FritschButlandCubic} in
- * {@code ql/math/interpolations/cubicinterpolation.hpp} (v1.42.1, lines 297-308).
+ * Mirrors C++ {@code FritschButlandCubic} in {@code ql/math/interpolations/cubicinterpolation.hpp} (v1.42.1, lines
+ * 297-308).
  *
  * @author JQuantLib migration contributors
  */
@@ -43,9 +42,7 @@ public class FritschButlandCubic extends CubicInterpolation {
      * @pre the {@code x} values must be sorted.
      */
     public FritschButlandCubic(final Array vx, final Array vy) {
-        super(vx, vy,
-              DerivativeApprox.FritschButland, true,
-              BoundaryCondition.SecondDerivative, 0.0,
-              BoundaryCondition.SecondDerivative, 0.0);
+        super(vx, vy, DerivativeApprox.FritschButland, true, BoundaryCondition.SecondDerivative, 0.0,
+                BoundaryCondition.SecondDerivative, 0.0);
     }
 }

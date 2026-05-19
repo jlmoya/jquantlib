@@ -31,10 +31,7 @@ public class PricingPeriod extends DateInterval {
     private final Date paymentDate_;
     private final Quantity quantity_;
 
-    public PricingPeriod(final Date startDate,
-                         final Date endDate,
-                         final Date paymentDate,
-                         final Quantity quantity) {
+    public PricingPeriod(final Date startDate, final Date endDate, final Date paymentDate, final Quantity quantity) {
         super(startDate, endDate);
         this.paymentDate_ = paymentDate;
         this.quantity_ = quantity;

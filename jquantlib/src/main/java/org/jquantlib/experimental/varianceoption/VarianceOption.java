@@ -56,11 +56,9 @@ import org.jquantlib.time.Date;
  *
  * <p>This class does not manage seasoned variance options.
  *
- * @see <a href="http://www.econ.univpm.it/recchioni/finance/w4/">Reference</a>
- *
- * @category instruments
- *
  * @author JQuantLib migration contributors
+ * @category instruments
+ * @see <a href="http://www.econ.univpm.it/recchioni/finance/w4/">Reference</a>
  */
 public class VarianceOption extends Instrument {
 
@@ -69,10 +67,7 @@ public class VarianceOption extends Instrument {
     private final Date startDate_;
     private final Date maturityDate_;
 
-    public VarianceOption(
-            final Payoff payoff,
-            final /*@Real*/ double notional,
-            final Date startDate,
+    public VarianceOption(final Payoff payoff, final /*@Real*/ double notional, final Date startDate,
             final Date maturityDate) {
         this.payoff_ = payoff;
         this.notional_ = notional;
@@ -87,7 +82,7 @@ public class VarianceOption extends Instrument {
         // Java mirror: Event::hasOccurred(d) defers to Settings::isTodaysPayments().
         final Settings s = new Settings();
         final Date eval = s.evaluationDate();
-        if (s.isTodaysPayments()) {
+        if ( s.isTodaysPayments() ) {
             return maturityDate_.lt(eval);
         }
         return maturityDate_.le(eval);
@@ -119,7 +114,6 @@ public class VarianceOption extends Instrument {
         a.startDate = startDate_;
         a.maturityDate = maturityDate_;
     }
-
 
     //
     // public inner classes
@@ -153,15 +147,14 @@ public class VarianceOption extends Instrument {
     /**
      * Results from variance-option calculation.
      */
-    public static class ResultsImpl extends Instrument.ResultsImpl
-            implements Instrument.Results { /* marking class */ }
-
+    public static class ResultsImpl extends Instrument.ResultsImpl implements Instrument.Results { /* marking class */
+    }
 
     /**
      * Base class for variance-option engines.
      */
     public abstract static class EngineImpl
-            extends GenericEngine<VarianceOption.ArgumentsImpl, VarianceOption.ResultsImpl> {
+            extends GenericEngine< VarianceOption.ArgumentsImpl, VarianceOption.ResultsImpl > {
 
         protected EngineImpl() {
             super(new ArgumentsImpl(), new ResultsImpl());

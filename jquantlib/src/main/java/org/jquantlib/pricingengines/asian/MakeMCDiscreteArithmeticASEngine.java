@@ -27,9 +27,7 @@ import org.jquantlib.processes.GeneralizedBlackScholesProcess;
  * Fluent builder for {@link MCDiscreteArithmeticASEngine}.
  *
  * <p>Java port of {@code MakeMCDiscreteArithmeticASEngine} from
- * {@code QuantLib v1.42.1
- * ql/pricingengines/asian/mc_discr_arith_av_strike.hpp}
- * (Phase 5e.5b-CFC-d-243).
+ * {@code QuantLib v1.42.1 ql/pricingengines/asian/mc_discr_arith_av_strike.hpp} (Phase 5e.5b-CFC-d-243).
  *
  * @author JQuantLib
  */
@@ -51,38 +49,44 @@ public class MakeMCDiscreteArithmeticASEngine {
         this.brownianBridge_ = b;
         return this;
     }
+
     public MakeMCDiscreteArithmeticASEngine withBrownianBridge() {
         return withBrownianBridge(true);
     }
+
     public MakeMCDiscreteArithmeticASEngine withAntitheticVariate(final boolean b) {
         this.antithetic_ = b;
         return this;
     }
+
     public MakeMCDiscreteArithmeticASEngine withAntitheticVariate() {
         return withAntitheticVariate(true);
     }
+
     public MakeMCDiscreteArithmeticASEngine withSamples(final int samples) {
         QL.require(Double.isNaN(tolerance_), "tolerance already set");
         this.samples_ = samples;
         return this;
     }
+
     public MakeMCDiscreteArithmeticASEngine withAbsoluteTolerance(final double tolerance) {
         QL.require(samples_ == McSimulation.NULL_SAMPLES, "number of samples already set");
         this.tolerance_ = tolerance;
         return this;
     }
+
     public MakeMCDiscreteArithmeticASEngine withMaxSamples(final int samples) {
         this.maxSamples_ = samples;
         return this;
     }
+
     public MakeMCDiscreteArithmeticASEngine withSeed(final long seed) {
         this.seed_ = seed;
         return this;
     }
 
     public PricingEngine value() {
-        return new MCDiscreteArithmeticASEngine(
-                process_, brownianBridge_, antithetic_,
-                samples_, tolerance_, maxSamples_, seed_);
+        return new MCDiscreteArithmeticASEngine(process_, brownianBridge_, antithetic_, samples_, tolerance_,
+                maxSamples_, seed_);
     }
 }

@@ -37,12 +37,10 @@ import org.jquantlib.time.Date;
 /**
  * Simple chooser option.
  * <p>
- * Gives the holder the right to choose, at a future date prior to exercise,
- * whether the option is a call or a put. The exercise date and strike are
- * the same for both call and put alternatives.
+ * Gives the holder the right to choose, at a future date prior to exercise, whether the option is a call or a put. The
+ * exercise date and strike are the same for both call and put alternatives.
  * <p>
- * Mirrors C++ QuantLib v1.42.1 {@code SimpleChooserOption} in
- * {@code ql/instruments/simplechooseroption.{hpp,cpp}}.
+ * Mirrors C++ QuantLib v1.42.1 {@code SimpleChooserOption} in {@code ql/instruments/simplechooseroption.{hpp,cpp}}.
  *
  * @author Jose Moya
  */
@@ -50,9 +48,7 @@ public class SimpleChooserOption extends OneAssetOption {
 
     private final Date choosingDate;
 
-    public SimpleChooserOption(final Date choosingDate,
-                               final double strike,
-                               final Exercise exercise) {
+    public SimpleChooserOption(final Date choosingDate, final double strike, final Exercise exercise) {
         super(new PlainVanillaPayoff(Option.Type.Call, strike), exercise);
         this.choosingDate = choosingDate;
     }
@@ -60,10 +56,8 @@ public class SimpleChooserOption extends OneAssetOption {
     @Override
     protected void setupArguments(final PricingEngine.Arguments args) {
         super.setupArguments(args);
-        QL.require(args instanceof SimpleChooserOption.ArgumentsImpl,
-                   "wrong argument type");
-        final SimpleChooserOption.ArgumentsImpl moreArgs =
-                (SimpleChooserOption.ArgumentsImpl) args;
+        QL.require(args instanceof SimpleChooserOption.ArgumentsImpl, "wrong argument type");
+        final SimpleChooserOption.ArgumentsImpl moreArgs = (SimpleChooserOption.ArgumentsImpl) args;
         moreArgs.choosingDate = choosingDate;
     }
 
@@ -72,18 +66,15 @@ public class SimpleChooserOption extends OneAssetOption {
      * <p>
      * Mirrors C++ QuantLib v1.42.1 {@code SimpleChooserOption::arguments}.
      */
-    public static class ArgumentsImpl extends OneAssetOption.ArgumentsImpl
-            implements OneAssetOption.Arguments {
+    public static class ArgumentsImpl extends OneAssetOption.ArgumentsImpl implements OneAssetOption.Arguments {
 
         public Date choosingDate;
 
         @Override
         public void validate() {
             super.validate();
-            QL.require(choosingDate != null && !choosingDate.isNull(),
-                       "no choosing date given");
-            QL.require(choosingDate.lt(exercise.lastDate()),
-                       "choosing date later than or equal to maturity date");
+            QL.require(choosingDate != null && !choosingDate.isNull(), "no choosing date given");
+            QL.require(choosingDate.lt(exercise.lastDate()), "choosing date later than or equal to maturity date");
         }
     }
 }

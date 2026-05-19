@@ -19,23 +19,22 @@
 
 package org.jquantlib.experimental.commodities;
 
-import java.util.List;
-
 import org.jquantlib.currencies.Currency;
 import org.jquantlib.indexes.Index;
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
 
+import java.util.List;
+
 /**
  * Base commodity-index class.
  * <p>
  * Java port of QuantLib v1.42.1 {@code commodityindex.{hpp,cpp}}.
  * <p>
- * The {@code registerWith(Settings::evaluationDate())} call from C++ is
- * intentionally omitted here; the Java {@link Index} base already exposes
- * the {@link org.jquantlib.util.Observable} interface, and observer
- * registration is done by the consumer where needed.
+ * The {@code registerWith(Settings::evaluationDate())} call from C++ is intentionally omitted here; the Java
+ * {@link Index} base already exposes the {@link org.jquantlib.util.Observable} interface, and observer registration is
+ * done by the consumer where needed.
  */
 public class CommodityIndex extends Index {
 
@@ -46,19 +45,14 @@ public class CommodityIndex extends Index {
     private final Calendar calendar_;
     private final double lotQuantity_;
     private final CommodityCurve forwardCurve_;
-    private final List<ExchangeContract> exchangeContracts_;
+    private final List< ExchangeContract > exchangeContracts_;
     private final int nearbyOffset_;
     private double forwardCurveUomConversionFactor_;
 
-    public CommodityIndex(final String name,
-                          final CommodityType commodityType,
-                          final Currency currency,
-                          final UnitOfMeasure unitOfMeasure,
-                          final Calendar calendar,
-                          final double lotQuantity,
-                          final CommodityCurve forwardCurve,
-                          final List<ExchangeContract> exchangeContracts,
-                          final int nearbyOffset) {
+    public CommodityIndex(final String name, final CommodityType commodityType, final Currency currency,
+            final UnitOfMeasure unitOfMeasure, final Calendar calendar, final double lotQuantity,
+            final CommodityCurve forwardCurve, final List< ExchangeContract > exchangeContracts,
+            final int nearbyOffset) {
         this.name_ = name;
         this.commodityType_ = commodityType;
         this.unitOfMeasure_ = unitOfMeasure;
@@ -69,12 +63,9 @@ public class CommodityIndex extends Index {
         this.exchangeContracts_ = exchangeContracts;
         this.nearbyOffset_ = nearbyOffset;
         this.forwardCurveUomConversionFactor_ = 1.0;
-        if (forwardCurve_ != null) {
-            this.forwardCurveUomConversionFactor_ =
-                    CommodityPricingHelper.calculateUomConversionFactor(
-                            commodityType_,
-                            forwardCurve_.unitOfMeasure(),
-                            unitOfMeasure_);
+        if ( forwardCurve_ != null ) {
+            this.forwardCurveUomConversionFactor_ = CommodityPricingHelper.calculateUomConversionFactor(commodityType_,
+                    forwardCurve_.unitOfMeasure(), unitOfMeasure_);
         }
     }
 
@@ -94,20 +85,22 @@ public class CommodityIndex extends Index {
     }
 
     /**
-     * The C++ implementation returns {@code pastFixing(date)} unconditionally
-     * (no forecasting). We mirror that by reading the registered time
-     * series; if no fixing exists, return NaN.
+     * The C++ implementation returns {@code pastFixing(date)} unconditionally (no forecasting). We mirror that by
+     * reading the registered time series; if no fixing exists, return NaN.
      */
     @Override
     public double fixing(final Date fixingDate, final boolean forecastTodaysFixing) {
-        final org.jquantlib.time.TimeSeries<Double> ts = timeSeries();
-        if (ts == null) return Double.NaN;
+        final org.jquantlib.time.TimeSeries< Double > ts = timeSeries();
+        if ( ts == null )
+            return Double.NaN;
         final Double f = ts.get(fixingDate);
         return f == null ? Double.NaN : f.doubleValue();
     }
 
-    /** C++ {@code void update() override}; not on Java {@link Index} (which is
-     *  Observable, not Observer), so we expose it as a plain helper. */
+    /**
+     * C++ {@code void update() override}; not on Java {@link Index} (which is Observable, not Observer), so we expose
+     * it as a plain helper.
+     */
     public void update() {
         notifyObservers();
     }
@@ -136,27 +129,26 @@ public class CommodityIndex extends Index {
         try {
             final double fp = forwardCurve_.price(date, exchangeContracts_, nearbyOffset_);
             return fp * forwardCurveUomConversionFactor_;
-        } catch (final RuntimeException e) {
-            throw new LibraryException("error fetching forward price for index " + name_
-                    + ": " + e.getMessage(), e);
+        } catch ( final RuntimeException e ) {
+            throw new LibraryException("error fetching forward price for index " + name_ + ": " + e.getMessage(), e);
         }
     }
 
     public Date lastQuoteDate() {
-        final org.jquantlib.time.TimeSeries<Double> ts = timeSeries();
-        if (ts == null || ts.size() == 0) {
+        final org.jquantlib.time.TimeSeries< Double > ts = timeSeries();
+        if ( ts == null || ts.size() == 0 ) {
             return new Date();
         }
         return ts.lastKey();
     }
 
     public boolean empty() {
-        final org.jquantlib.time.TimeSeries<Double> ts = timeSeries();
+        final org.jquantlib.time.TimeSeries< Double > ts = timeSeries();
         return ts == null || ts.size() == 0;
     }
 
     public boolean forwardCurveEmpty() {
-        if (forwardCurve_ != null) {
+        if ( forwardCurve_ != null ) {
             return forwardCurve_.empty();
         }
         return false;

@@ -28,14 +28,7 @@ import org.jquantlib.QL;
 import org.jquantlib.exercise.AmericanExercise;
 import org.jquantlib.exercise.EuropeanExercise;
 import org.jquantlib.exercise.Exercise;
-import org.jquantlib.instruments.AssetOrNothingPayoff;
-import org.jquantlib.instruments.BarrierOption;
-import org.jquantlib.instruments.BarrierType;
-import org.jquantlib.instruments.CashOrNothingPayoff;
-import org.jquantlib.instruments.OneAssetOption;
-import org.jquantlib.instruments.Option;
-import org.jquantlib.instruments.StrikedTypePayoff;
-import org.jquantlib.instruments.VanillaOption;
+import org.jquantlib.instruments.*;
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.math.Constants;
 import org.jquantlib.math.distributions.CumulativeNormalDistribution;
@@ -48,8 +41,8 @@ import org.jquantlib.processes.GeneralizedBlackScholesProcess;
  * Mirrors {@code QuantLib::AnalyticBinaryBarrierEngine} from
  * {@code ql/pricingengines/barrier/analyticbinarybarrierengine.cpp} (v1.42.1).
  * <p>
- * The formulas are taken from "The complete guide to option pricing formulas 2nd Ed",
- * E.G. Haug, McGraw-Hill, p.176 and following.
+ * The formulas are taken from "The complete guide to option pricing formulas 2nd Ed", E.G. Haug, McGraw-Hill, p.176 and
+ * following.
  *
  * @author JQuantLib migration
  */
@@ -81,15 +74,14 @@ public class AnalyticBinaryBarrierEngine extends BarrierOption.EngineImpl {
         final double spot = process_.stateVariable().currentLink().value();
         QL.require(spot > 0.0, "negative or null underlying given");
 
-        final double variance = process_.blackVolatility().currentLink().blackVariance(
-                ex.lastDate(), payoff.strike());
+        final double variance = process_.blackVolatility().currentLink().blackVariance(ex.lastDate(), payoff.strike());
         final double barrier = a.barrier;
         QL.require(barrier > 0.0, "positive barrier value required");
         final BarrierType barrierType = a.barrierType;
 
         // KO degenerate cases
-        if ((barrierType == BarrierType.DownOut && spot <= barrier)
-                || (barrierType == BarrierType.UpOut && spot >= barrier)) {
+        if ( (barrierType == BarrierType.DownOut && spot <= barrier) || (barrierType == BarrierType.UpOut
+                && spot >= barrier) ) {
             r.value = 0;
             r.greeks().delta = 0;
             r.greeks().gamma = 0;
@@ -101,8 +93,8 @@ public class AnalyticBinaryBarrierEngine extends BarrierOption.EngineImpl {
         }
 
         // KI degenerate cases — knocked in becomes a digital European
-        if ((barrierType == BarrierType.DownIn && spot <= barrier)
-                || (barrierType == BarrierType.UpIn && spot >= barrier)) {
+        if ( (barrierType == BarrierType.DownIn && spot <= barrier) || (barrierType == BarrierType.UpIn
+                && spot >= barrier) ) {
             final Exercise euExercise = new EuropeanExercise(a.exercise.lastDate());
             final VanillaOption opt = new VanillaOption(payoff, euExercise);
             opt.setPricingEngine(new AnalyticEuropeanEngine(process_));
@@ -120,19 +112,13 @@ public class AnalyticBinaryBarrierEngine extends BarrierOption.EngineImpl {
         r.value = payoffAtExpiry(payoff, a, ex, spot, variance, riskFreeDiscount);
     }
 
-
     /**
-     * Mirrors C++ {@code AnalyticBinaryBarrierEngine_helper::payoffAtExpiry}.
-     * Computes the value of a binary barrier option that pays at expiry.
+     * Mirrors C++ {@code AnalyticBinaryBarrierEngine_helper::payoffAtExpiry}. Computes the value of a binary barrier
+     * option that pays at expiry.
      */
-    private double payoffAtExpiry(final StrikedTypePayoff payoff,
-                                   final BarrierOption.ArgumentsImpl a,
-                                   final Exercise exercise,
-                                   final double spot,
-                                   final double variance,
-                                   final double discount) {
-        final double dividendDiscount =
-                process_.dividendYield().currentLink().discount(exercise.lastDate());
+    private double payoffAtExpiry(final StrikedTypePayoff payoff, final BarrierOption.ArgumentsImpl a,
+            final Exercise exercise, final double spot, final double variance, final double discount) {
+        final double dividendDiscount = process_.dividendYield().currentLink().discount(exercise.lastDate());
 
         QL.require(spot > 0.0, "positive spot value required");
         QL.require(discount > 0.0, "positive discount required");
@@ -149,11 +135,11 @@ public class AnalyticBinaryBarrierEngine extends BarrierOption.EngineImpl {
         double mu = Math.log(dividendDiscount / discount) / variance - 0.5;
         double K = 0;
 
-        if (payoff instanceof CashOrNothingPayoff) {
+        if ( payoff instanceof CashOrNothingPayoff ) {
             K = ((CashOrNothingPayoff) payoff).getCashPayoff();
         }
 
-        if (payoff instanceof AssetOrNothingPayoff) {
+        if ( payoff instanceof AssetOrNothingPayoff ) {
             mu += 1.0;
             K = spot * dividendDiscount / discount; // forward
         }
@@ -164,12 +150,11 @@ public class AnalyticBinaryBarrierEngine extends BarrierOption.EngineImpl {
         final double logH2SX = Math.log(barrier * barrier / (spot * strike));
         final double HS2mu = Math.pow(barrier / spot, 2 * mu);
 
-        final double eta = (barrierType == BarrierType.DownIn
-                || barrierType == BarrierType.DownOut) ? 1.0 : -1.0;
+        final double eta = (barrierType == BarrierType.DownIn || barrierType == BarrierType.DownOut) ? 1.0 : -1.0;
         final double phi = (type == Option.Type.Call) ? 1.0 : -1.0;
 
         double cumX1, cumX2, cumY1, cumY2;
-        if (variance >= Constants.QL_EPSILON) {
+        if ( variance >= Constants.QL_EPSILON ) {
             // mu*stddev instead of (mu+1)*stddev — cash-or-nothing doesn't need it,
             // and asset-or-nothing's mu has already been bumped by +1 above.
             final double x1 = phi * (logSX / stdDev + mu * stdDev);
@@ -191,72 +176,72 @@ public class AnalyticBinaryBarrierEngine extends BarrierOption.EngineImpl {
 
         double alpha = 0;
 
-        switch (barrierType) {
-            case DownIn:
-                if (type == Option.Type.Call) {
-                    if (strike >= barrier) {
-                        alpha = HS2mu * cumY1; // B3
-                    } else {
-                        alpha = cumX1 - cumX2 + HS2mu * cumY2; // B1-B2+B4
-                    }
+        switch ( barrierType ) {
+        case DownIn:
+            if ( type == Option.Type.Call ) {
+                if ( strike >= barrier ) {
+                    alpha = HS2mu * cumY1; // B3
                 } else {
-                    if (strike >= barrier) {
-                        alpha = cumX2 + HS2mu * (-cumY1 + cumY2); // B2-B3+B4
-                    } else {
-                        alpha = cumX1; // B1
-                    }
+                    alpha = cumX1 - cumX2 + HS2mu * cumY2; // B1-B2+B4
                 }
-                break;
+            } else {
+                if ( strike >= barrier ) {
+                    alpha = cumX2 + HS2mu * (-cumY1 + cumY2); // B2-B3+B4
+                } else {
+                    alpha = cumX1; // B1
+                }
+            }
+            break;
 
-            case UpIn:
-                if (type == Option.Type.Call) {
-                    if (strike >= barrier) {
-                        alpha = cumX1; // B1
-                    } else {
-                        alpha = cumX2 + HS2mu * (-cumY1 + cumY2); // B2-B3+B4
-                    }
+        case UpIn:
+            if ( type == Option.Type.Call ) {
+                if ( strike >= barrier ) {
+                    alpha = cumX1; // B1
                 } else {
-                    if (strike >= barrier) {
-                        alpha = cumX1 - cumX2 + HS2mu * cumY2; // B1-B2+B4
-                    } else {
-                        alpha = HS2mu * cumY1; // B3
-                    }
+                    alpha = cumX2 + HS2mu * (-cumY1 + cumY2); // B2-B3+B4
                 }
-                break;
+            } else {
+                if ( strike >= barrier ) {
+                    alpha = cumX1 - cumX2 + HS2mu * cumY2; // B1-B2+B4
+                } else {
+                    alpha = HS2mu * cumY1; // B3
+                }
+            }
+            break;
 
-            case DownOut:
-                if (type == Option.Type.Call) {
-                    if (strike >= barrier) {
-                        alpha = cumX1 - HS2mu * cumY1; // B1-B3
-                    } else {
-                        alpha = cumX2 - HS2mu * cumY2; // B2-B4
-                    }
+        case DownOut:
+            if ( type == Option.Type.Call ) {
+                if ( strike >= barrier ) {
+                    alpha = cumX1 - HS2mu * cumY1; // B1-B3
                 } else {
-                    if (strike >= barrier) {
-                        alpha = cumX1 - cumX2 + HS2mu * (cumY1 - cumY2); // B1-B2+B3-B4
-                    } else {
-                        alpha = 0;
-                    }
+                    alpha = cumX2 - HS2mu * cumY2; // B2-B4
                 }
-                break;
+            } else {
+                if ( strike >= barrier ) {
+                    alpha = cumX1 - cumX2 + HS2mu * (cumY1 - cumY2); // B1-B2+B3-B4
+                } else {
+                    alpha = 0;
+                }
+            }
+            break;
 
-            case UpOut:
-                if (type == Option.Type.Call) {
-                    if (strike >= barrier) {
-                        alpha = 0;
-                    } else {
-                        alpha = cumX1 - cumX2 + HS2mu * (cumY1 - cumY2); // B1-B2+B3-B4
-                    }
+        case UpOut:
+            if ( type == Option.Type.Call ) {
+                if ( strike >= barrier ) {
+                    alpha = 0;
                 } else {
-                    if (strike >= barrier) {
-                        alpha = cumX2 - HS2mu * cumY2; // B2-B4
-                    } else {
-                        alpha = cumX1 - HS2mu * cumY1; // B1-B3
-                    }
+                    alpha = cumX1 - cumX2 + HS2mu * (cumY1 - cumY2); // B1-B2+B3-B4
                 }
-                break;
-            default:
-                throw new LibraryException("invalid barrier type");
+            } else {
+                if ( strike >= barrier ) {
+                    alpha = cumX2 - HS2mu * cumY2; // B2-B4
+                } else {
+                    alpha = cumX1 - HS2mu * cumY1; // B1-B3
+                }
+            }
+            break;
+        default:
+            throw new LibraryException("invalid barrier type");
         }
 
         return discount * K * alpha;

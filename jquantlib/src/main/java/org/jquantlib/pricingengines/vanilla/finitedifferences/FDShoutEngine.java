@@ -37,12 +37,12 @@
 */
 package org.jquantlib.pricingengines.vanilla.finitedifferences;
 
-import java.util.List;
-
 import org.jquantlib.instruments.OneAssetOption;
 import org.jquantlib.instruments.VanillaOption;
 import org.jquantlib.processes.GeneralizedBlackScholesProcess;
 import org.jquantlib.util.Observer;
+
+import java.util.List;
 
 /**
  * Finite-differences pricing engine for shout vanilla options
@@ -52,39 +52,29 @@ import org.jquantlib.util.Observer;
  */
 //typedef FDEngineAdapter<FDAmericanCondition<FDStepConditionEngine>, VanillaOption::engine> FDAmericanEngine;
 
-public class FDShoutEngine
-        extends FDEngineAdapter<FDShoutCondition<FDStepConditionEngine>, VanillaOption.Engine>
+public class FDShoutEngine extends FDEngineAdapter< FDShoutCondition< FDStepConditionEngine >, VanillaOption.Engine >
         implements OneAssetOption.Engine {
 
     //
     // public constructors
     //
 
-    public FDShoutEngine(
-            final GeneralizedBlackScholesProcess process) {
-        super(FDShoutCondition.class, VanillaOption.Engine.class, process, 100,100, false);
+    public FDShoutEngine(final GeneralizedBlackScholesProcess process) {
+        super(FDShoutCondition.class, VanillaOption.Engine.class, process, 100, 100, false);
         super.impl = new Impl(this);
     }
 
-    public FDShoutEngine(
-            final GeneralizedBlackScholesProcess process,
-            final int timeSteps) {
+    public FDShoutEngine(final GeneralizedBlackScholesProcess process, final int timeSteps) {
         super(FDShoutCondition.class, VanillaOption.Engine.class, process, timeSteps, 100, false);
         super.impl = new Impl(this);
     }
 
-    public FDShoutEngine(
-            final GeneralizedBlackScholesProcess process,
-            final int timeSteps,
-            final int gridPoints) {
+    public FDShoutEngine(final GeneralizedBlackScholesProcess process, final int timeSteps, final int gridPoints) {
         super(FDShoutCondition.class, VanillaOption.Engine.class, process, timeSteps, gridPoints, false);
         super.impl = new Impl(this);
     }
 
-    public FDShoutEngine(
-            final GeneralizedBlackScholesProcess process,
-            final int timeSteps,
-            final int gridPoints,
+    public FDShoutEngine(final GeneralizedBlackScholesProcess process, final int timeSteps, final int gridPoints,
             final boolean timeDependent) {
         super(FDShoutCondition.class, VanillaOption.Engine.class, process, timeSteps, gridPoints, timeDependent);
         super.impl = new Impl(this);
@@ -94,31 +84,14 @@ public class FDShoutEngine
     // private inner classes
     //
 
-
-    private class Impl extends VanillaOption.EngineImpl {
-
-        private final FDShoutEngine engine;
-
-        private Impl(final FDShoutEngine engine) {
-            this.engine = engine;
-        }
-
-        @Override
-        public void calculate() {
-            // calls FDEngineAdapter#calculate()
-            engine.calculate();
-        }
-    }
-
-
-    //
-    // implements VanillaOption.Engine
-    //
-
     @Override
     public Arguments getArguments() {
         return super.impl.getArguments();
     }
+
+    //
+    // implements VanillaOption.Engine
+    //
 
     @Override
     public Results getResults() {
@@ -130,29 +103,27 @@ public class FDShoutEngine
         super.impl.reset();
     }
 
-
-    //
-    // implements Observer
-    //
-
-//    @Override
-//XXX::OBS    public void update(final Observable o, final Object arg) {
-//        super.impl.update(o, arg);
-//    }
+    //    @Override
+    //XXX::OBS    public void update(final Observable o, final Object arg) {
+    //        super.impl.update(o, arg);
+    //    }
     @Override
     public void update() {
         super.impl.update();
     }
 
-
     //
-    // implements Observable
+    // implements Observer
     //
 
     @Override
     public void addObserver(final Observer observer) {
         super.impl.addObserver(observer);
     }
+
+    //
+    // implements Observable
+    //
 
     @Override
     public int countObservers() {
@@ -170,7 +141,7 @@ public class FDShoutEngine
     }
 
     @Override
-    public List<Observer> getObservers() {
+    public List< Observer > getObservers() {
         return super.impl.getObservers();
     }
 
@@ -182,6 +153,21 @@ public class FDShoutEngine
     @Override
     public void notifyObservers(final Object arg) {
         super.impl.notifyObservers(arg);
+    }
+
+    private class Impl extends VanillaOption.EngineImpl {
+
+        private final FDShoutEngine engine;
+
+        private Impl(final FDShoutEngine engine) {
+            this.engine = engine;
+        }
+
+        @Override
+        public void calculate() {
+            // calls FDEngineAdapter#calculate()
+            engine.calculate();
+        }
     }
 
 }

@@ -33,13 +33,11 @@ import org.jquantlib.termstructures.YieldTermStructure;
 /**
  * Black-Scholes process which supports local vega stress tests.
  * <p>
- * Java port of v1.42.1
- * {@code ql/experimental/processes/vegastressedblackscholesprocess.{hpp,cpp}}.
+ * Java port of v1.42.1 {@code ql/experimental/processes/vegastressedblackscholesprocess.{hpp,cpp}}.
  * <p>
- * The diffusion is shifted upward by {@code stressLevel} when both time
- * {@code t} is in {@code [lowerTimeBorder, upperTimeBorder]} and asset
- * {@code x} is in {@code [lowerAssetBorder, upperAssetBorder]}; outside the
- * stress region the underlying BlackVol value is returned unmodified.
+ * The diffusion is shifted upward by {@code stressLevel} when both time {@code t} is in
+ * {@code [lowerTimeBorder, upperTimeBorder]} and asset {@code x} is in {@code [lowerAssetBorder, upperAssetBorder]};
+ * outside the stress region the underlying BlackVol value is returned unmodified.
  *
  * @author Phase 4n WI port
  */
@@ -51,25 +49,17 @@ public class VegaStressedBlackScholesProcess extends GeneralizedBlackScholesProc
     private double upperAssetBorderForStressTest_;
     private double stressLevel_;
 
-    public VegaStressedBlackScholesProcess(
-            final Handle<? extends Quote> x0,
-            final Handle<YieldTermStructure> dividendTS,
-            final Handle<YieldTermStructure> riskFreeTS,
-            final Handle<BlackVolTermStructure> blackVolTS) {
-        this(x0, dividendTS, riskFreeTS, blackVolTS,
-                0.0, 1000000.0, 0.0, 1000000.0, 0.0);
+    public VegaStressedBlackScholesProcess(final Handle< ? extends Quote > x0,
+            final Handle< YieldTermStructure > dividendTS, final Handle< YieldTermStructure > riskFreeTS,
+            final Handle< BlackVolTermStructure > blackVolTS) {
+        this(x0, dividendTS, riskFreeTS, blackVolTS, 0.0, 1000000.0, 0.0, 1000000.0, 0.0);
     }
 
-    public VegaStressedBlackScholesProcess(
-            final Handle<? extends Quote> x0,
-            final Handle<YieldTermStructure> dividendTS,
-            final Handle<YieldTermStructure> riskFreeTS,
-            final Handle<BlackVolTermStructure> blackVolTS,
-            final double lowerTimeBorderForStressTest,
-            final double upperTimeBorderForStressTest,
-            final double lowerAssetBorderForStressTest,
-            final double upperAssetBorderForStressTest,
-            final double stressLevel) {
+    public VegaStressedBlackScholesProcess(final Handle< ? extends Quote > x0,
+            final Handle< YieldTermStructure > dividendTS, final Handle< YieldTermStructure > riskFreeTS,
+            final Handle< BlackVolTermStructure > blackVolTS, final double lowerTimeBorderForStressTest,
+            final double upperTimeBorderForStressTest, final double lowerAssetBorderForStressTest,
+            final double upperAssetBorderForStressTest, final double stressLevel) {
         super(x0, dividendTS, riskFreeTS, blackVolTS);
         this.lowerTimeBorderForStressTest_ = lowerTimeBorderForStressTest;
         this.upperTimeBorderForStressTest_ = upperTimeBorderForStressTest;
@@ -82,25 +72,13 @@ public class VegaStressedBlackScholesProcess extends GeneralizedBlackScholesProc
         return lowerTimeBorderForStressTest_;
     }
 
-    public double getUpperTimeBorderForStressTest() {
-        return upperTimeBorderForStressTest_;
-    }
-
-    public double getLowerAssetBorderForStressTest() {
-        return lowerAssetBorderForStressTest_;
-    }
-
-    public double getUpperAssetBorderForStressTest() {
-        return upperAssetBorderForStressTest_;
-    }
-
-    public double getStressLevel() {
-        return stressLevel_;
-    }
-
     public void setLowerTimeBorderForStressTest(final double LTB) {
         lowerTimeBorderForStressTest_ = LTB;
         update();
+    }
+
+    public double getUpperTimeBorderForStressTest() {
+        return upperTimeBorderForStressTest_;
     }
 
     public void setUpperTimeBorderForStressTest(final double UTB) {
@@ -108,14 +86,26 @@ public class VegaStressedBlackScholesProcess extends GeneralizedBlackScholesProc
         update();
     }
 
+    public double getLowerAssetBorderForStressTest() {
+        return lowerAssetBorderForStressTest_;
+    }
+
     public void setLowerAssetBorderForStressTest(final double LAB) {
         lowerAssetBorderForStressTest_ = LAB;
         update();
     }
 
+    public double getUpperAssetBorderForStressTest() {
+        return upperAssetBorderForStressTest_;
+    }
+
     public void setUpperAssetBorderForStressTest(final double UBA) {
         upperAssetBorderForStressTest_ = UBA;
         update();
+    }
+
+    public double getStressLevel() {
+        return stressLevel_;
     }
 
     public void setStressLevel(final double SL) {
@@ -125,8 +115,8 @@ public class VegaStressedBlackScholesProcess extends GeneralizedBlackScholesProc
 
     @Override
     public double diffusion(final double t, final double x) {
-        if (lowerTimeBorderForStressTest_ <= t && t <= upperTimeBorderForStressTest_
-                && lowerAssetBorderForStressTest_ <= x && x <= upperAssetBorderForStressTest_) {
+        if ( lowerTimeBorderForStressTest_ <= t && t <= upperTimeBorderForStressTest_
+                && lowerAssetBorderForStressTest_ <= x && x <= upperAssetBorderForStressTest_ ) {
             return super.diffusion(t, x) + stressLevel_;
         } else {
             return super.diffusion(t, x);

@@ -21,8 +21,6 @@ When applicable, the original copyright notice follows this notice.
  */
 package org.jquantlib.model.shortrate.twofactormodels;
 
-import java.util.ArrayList;
-
 import org.jquantlib.math.matrixutilities.Matrix;
 import org.jquantlib.methods.lattices.Lattice;
 import org.jquantlib.methods.lattices.TreeLattice2D;
@@ -33,12 +31,44 @@ import org.jquantlib.processes.StochasticProcess;
 import org.jquantlib.processes.StochasticProcess1D;
 import org.jquantlib.time.TimeGrid;
 
+import java.util.ArrayList;
+
 /**
  *
  * @author Praneet Tiwari
  */
 // TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public abstract class TwoFactorModel extends ShortRateModel {
+
+    public TwoFactorModel(final int /* @Size */nParams) {
+        super(nParams);
+    }
+
+    // ! Recombining two-dimensional tree discretizing the state variable
+
+    // ! Returns the short-rate dynamics
+    public abstract ShortRateDynamics dynamics();
+
+    // ! Returns a two-dimensional trinomial tree
+    @Override
+    public Lattice tree(final TimeGrid grid) {
+
+        final ShortRateDynamics dyn = dynamics();
+
+        // Aligned to v1.42.1 twofactormodel.cpp: TrinomialTree built with
+        // default isPositive=false (Phase 2e WI-1; same divergence the
+        // Phase 2c WI-4 HullWhite.tree(grid) fix addressed for the
+        // one-factor case). isPositive=true sends the inner Branching
+        // loop in TrinomialTree (lines 102-105) into a non-terminating
+        // while when dx is small relative to x0_; even when it does
+        // terminate, the resulting tree underlying values diverge from
+        // the C++ reference by ~5x.
+        final TrinomialTree tree1 = new TrinomialTree(dyn.xProcess(), grid);
+        final TrinomialTree tree2 = new TrinomialTree(dyn.yProcess(), grid);
+
+        return new ShortRateTree(tree1, tree2, dyn);
+
+    }
 
     // ! Class describing the dynamics of the two state variables
     /*
@@ -84,16 +114,14 @@ public abstract class TwoFactorModel extends ShortRateModel {
             correlation.set(1, 1, 1.0);
             correlation.set(0, 1, correlation_);
             correlation.set(1, 0, correlation_);
-            final ArrayList<StochasticProcess1D> processes = new ArrayList<StochasticProcess1D>();
+            final ArrayList< StochasticProcess1D > processes = new ArrayList< StochasticProcess1D >();
             processes.add(0, xProcess_);
             processes.add(1, xProcess_);
             return (new StochasticProcessArray(processes, correlation));
         }
     }
 
-    // ! Recombining two-dimensional tree discretizing the state variable
-
-    public class ShortRateTree extends TreeLattice2D<TrinomialTree> {
+    public class ShortRateTree extends TreeLattice2D< TrinomialTree > {
 
         private final ShortRateDynamics dynamics_;
 
@@ -116,33 +144,5 @@ public abstract class TwoFactorModel extends ShortRateModel {
             final double /* @Real */r = dynamics_.shortRate(timeGrid().at(i), x, y);
             return Math.exp(-r * timeGrid().dt(i));
         }
-    }
-
-    public TwoFactorModel(final int /* @Size */nParams) {
-        super(nParams);
-    }
-
-    // ! Returns the short-rate dynamics
-    public abstract ShortRateDynamics dynamics();
-
-    // ! Returns a two-dimensional trinomial tree
-    @Override
-    public Lattice tree(final TimeGrid grid) {
-
-        final ShortRateDynamics dyn = dynamics();
-
-        // Aligned to v1.42.1 twofactormodel.cpp: TrinomialTree built with
-        // default isPositive=false (Phase 2e WI-1; same divergence the
-        // Phase 2c WI-4 HullWhite.tree(grid) fix addressed for the
-        // one-factor case). isPositive=true sends the inner Branching
-        // loop in TrinomialTree (lines 102-105) into a non-terminating
-        // while when dx is small relative to x0_; even when it does
-        // terminate, the resulting tree underlying values diverge from
-        // the C++ reference by ~5x.
-        final TrinomialTree tree1 = new TrinomialTree(dyn.xProcess(), grid);
-        final TrinomialTree tree2 = new TrinomialTree(dyn.yProcess(), grid);
-
-        return new ShortRateTree(tree1, tree2, dyn);
-
     }
 }

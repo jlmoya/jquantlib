@@ -53,35 +53,34 @@ import org.jquantlib.time.Frequency;
  */
 public class PdeBSM extends PdeSecondOrderParabolic {
 
-	private final GeneralizedBlackScholesProcess process;
+    private final GeneralizedBlackScholesProcess process;
 
-	public PdeBSM(final GeneralizedBlackScholesProcess process) {
-		this.process = process;
-	}
+    public PdeBSM(final GeneralizedBlackScholesProcess process) {
+        this.process = process;
+    }
 
-	@Override
-	public double diffusion(final double t, final double x) {
-		  return process.diffusion(t, x);
-	}
+    @Override
+    public double diffusion(final double t, final double x) {
+        return process.diffusion(t, x);
+    }
 
-	@Override
-	public double discount(double t, final double x) {
-		if (Math.abs(t) < 1e-8) {
+    @Override
+    public double discount(double t, final double x) {
+        if ( Math.abs(t) < 1e-8 ) {
             t = 0;
         }
-        return process.riskFreeRate().currentLink().forwardRate(t,t,Compounding.Continuous,Frequency.NoFrequency,true).rate();
-	}
+        return process.riskFreeRate().currentLink()
+                .forwardRate(t, t, Compounding.Continuous, Frequency.NoFrequency, true).rate();
+    }
 
-	@Override
-	public double drift(final double t, final double x) {
-		return process.drift(t, x);
-	}
+    @Override
+    public double drift(final double t, final double x) {
+        return process.drift(t, x);
+    }
 
     @Override
     public TransformedGrid applyGridType(final Array grid) {
         return new LogGrid(grid);
     }
-
-
 
 }

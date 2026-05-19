@@ -25,8 +25,7 @@ When applicable, the original copyright notice follows this notice.
 package org.jquantlib.model;
 
 /**
- * Abstract base class for calibration helpers. Mirrors C++ v1.42.1
- * ql/models/calibrationhelper.hpp lines 39-44.
+ * Abstract base class for calibration helpers. Mirrors C++ v1.42.1 ql/models/calibrationhelper.hpp lines 39-44.
  */
 public interface CalibrationHelper {
     /** Returns the error resulting from the model valuation. */

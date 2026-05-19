@@ -22,12 +22,11 @@ import org.jquantlib.math.distributions.GammaFunction;
 import org.jquantlib.math.transcendental.JQuantMath;
 
 /**
- * Generalized Gauss-Laguerre polynomial with weight
- * {@code w(x; s) = x^s * exp(-x)} on {@code [0, ∞)}, {@code s > -1}.
+ * Generalized Gauss-Laguerre polynomial with weight {@code w(x; s) = x^s * exp(-x)} on {@code [0, ∞)}, {@code s > -1}.
  *
  * <p>Phase 5h.5-MC port of {@code QuantLib::GaussLaguerrePolynomial}
- * (v1.42.1 ql/math/integrals/gaussianorthogonalpolynomial.{hpp,cpp}). Pinned
- * commit {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
+ * (v1.42.1 ql/math/integrals/gaussianorthogonalpolynomial.{hpp,cpp}). Pinned commit
+ * {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
  *
  * <p>Three-term recurrence coefficients:
  * <pre>

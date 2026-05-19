@@ -44,10 +44,10 @@ import org.jquantlib.math.matrixutilities.Array;
 
 /**
  * No constraint
- * 
+ *
  * @author Richard Gomes
  */
-@QualityAssurance(quality=Quality.Q3_DOCUMENTATION, version=Version.V097, reviewers="Richard Gomes")
+@QualityAssurance( quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = "Richard Gomes" )
 public class NoConstraint extends Constraint {
 
     //
@@ -57,7 +57,6 @@ public class NoConstraint extends Constraint {
     public NoConstraint() {
         super.impl = new Impl();
     }
-
 
     //
     // private inner classes
@@ -76,7 +75,7 @@ public class NoConstraint extends Constraint {
          * <p>Tests if params satisfy the constraint. </p>
          */
         @Override
-        public boolean test(final Array  params) /* @ReadOnly */ {
+        public boolean test(final Array params) /* @ReadOnly */ {
             return true;
         }
 

@@ -24,8 +24,7 @@ package org.jquantlib.cashflow;
 /**
  * G-function used in CMS conundrum/replication pricing (Hagan 2003).
  * <p>
- * Mirrors C++ QuantLib v1.42.1 {@code GFunction} in
- * {@code ql/cashflows/conundrumpricer.hpp}:
+ * Mirrors C++ QuantLib v1.42.1 {@code GFunction} in {@code ql/cashflows/conundrumpricer.hpp}:
  * <pre>{@code
  * class GFunction {
  *   public:

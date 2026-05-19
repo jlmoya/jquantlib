@@ -26,8 +26,8 @@ package org.jquantlib.experimental.barrieroption;
 
 import org.jquantlib.QL;
 import org.jquantlib.instruments.EuropeanOption;
-import org.jquantlib.instruments.Option;
 import org.jquantlib.instruments.OneAssetOption;
+import org.jquantlib.instruments.Option;
 import org.jquantlib.instruments.PlainVanillaPayoff;
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.math.distributions.CumulativeNormalDistribution;
@@ -37,8 +37,8 @@ import org.jquantlib.termstructures.Compounding;
 import org.jquantlib.time.Frequency;
 
 /**
- * Pricing engine for double-barrier options using the analytical formulae of
- * Wulin Suo and Yong Wang ("Barrier Option Pricing").
+ * Pricing engine for double-barrier options using the analytical formulae of Wulin Suo and Yong Wang ("Barrier Option
+ * Pricing").
  * <p>
  * Mirrors {@code QuantLib::SuoWangDoubleBarrierEngine} from
  * {@code ql/experimental/barrieroption/suowangdoublebarrierengine.cpp} (v1.42.1).
@@ -56,13 +56,11 @@ public class SuoWangDoubleBarrierEngine extends DoubleBarrierOption.EngineImpl {
     private final DoubleBarrierOption.ArgumentsImpl a;
     private final OneAssetOption.ResultsImpl r;
 
-
     public SuoWangDoubleBarrierEngine(final GeneralizedBlackScholesProcess process) {
         this(process, 5);
     }
 
-    public SuoWangDoubleBarrierEngine(final GeneralizedBlackScholesProcess process,
-                                      final int series) {
+    public SuoWangDoubleBarrierEngine(final GeneralizedBlackScholesProcess process, final int series) {
         this.process_ = process;
         this.series_ = series;
         this.f_ = new CumulativeNormalDistribution();
@@ -83,8 +81,7 @@ public class SuoWangDoubleBarrierEngine extends DoubleBarrierOption.EngineImpl {
         QL.require(!triggered(S), "barrier touched");
 
         final DoubleBarrierType barrierType = a.barrierType;
-        QL.require(barrierType == DoubleBarrierType.KnockOut
-                || barrierType == DoubleBarrierType.KnockIn,
+        QL.require(barrierType == DoubleBarrierType.KnockOut || barrierType == DoubleBarrierType.KnockIn,
                 "only KnockIn and KnockOut options supported");
 
         final double L = a.barrier_lo;
@@ -110,7 +107,7 @@ public class SuoWangDoubleBarrierEngine extends DoubleBarrierOption.EngineImpl {
 
         double barrierOut = 0.0;
         double rebateIn = 0.0;
-        for (int n = -series_; n < series_; n++) {
+        for ( int n = -series_; n < series_; n++ ) {
             final double d1 = D(S / H * Math.pow(L / H, 2.0 * n), vol * vol + mu, vol, T);
             final double d2 = d1 - vol * Math.sqrt(T);
             final double g1 = D(H / S * Math.pow(L / H, 2.0 * n - 1.0), vol * vol + mu, vol, T);
@@ -128,18 +125,18 @@ public class SuoWangDoubleBarrierEngine extends DoubleBarrierOption.EngineImpl {
             final double k1_up = D((H * H) / (K_up * S) * Math.pow(L / H, 2.0 * n), vol * vol + mu, vol, T);
             final double k2_up = k1_up - vol * Math.sqrt(T);
 
-            if (payoff.optionType() == Option.Type.Call) {
-                barrierOut += Math.pow(L / H, 2.0 * n * mu / (vol * vol)) *
-                        (df * S * Math.pow(L / H, 2.0 * n) * (f_.op(d1_down) - f_.op(d1))
-                                - dd * K * (f_.op(d2_down) - f_.op(d2))
-                                - df * Math.pow(L / H, 2.0 * n) * H * H / S * Math.pow(H / S, 2.0 * mu / (vol * vol)) * (f_.op(k1_down) - f_.op(k1))
-                                + dd * K * Math.pow(H / S, 2.0 * mu / (vol * vol)) * (f_.op(k2_down) - f_.op(k2)));
-            } else if (payoff.optionType() == Option.Type.Put) {
-                barrierOut += Math.pow(L / H, 2.0 * n * mu / (vol * vol)) *
-                        (dd * K * (f_.op(h2) - f_.op(d2_up))
-                                - df * S * Math.pow(L / H, 2.0 * n) * (f_.op(h1) - f_.op(d1_up))
-                                - dd * K * Math.pow(H / S, 2.0 * mu / (vol * vol)) * (f_.op(g2) - f_.op(k2_up))
-                                + df * Math.pow(L / H, 2.0 * n) * H * H / S * Math.pow(H / S, 2.0 * mu / (vol * vol)) * (f_.op(g1) - f_.op(k1_up)));
+            if ( payoff.optionType() == Option.Type.Call ) {
+                barrierOut += Math.pow(L / H, 2.0 * n * mu / (vol * vol)) * (
+                        df * S * Math.pow(L / H, 2.0 * n) * (f_.op(d1_down) - f_.op(d1)) - dd * K * (f_.op(d2_down)
+                                - f_.op(d2)) - df * Math.pow(L / H, 2.0 * n) * H * H / S * Math.pow(H / S,
+                                2.0 * mu / (vol * vol)) * (f_.op(k1_down) - f_.op(k1)) + dd * K * Math.pow(H / S,
+                                2.0 * mu / (vol * vol)) * (f_.op(k2_down) - f_.op(k2)));
+            } else if ( payoff.optionType() == Option.Type.Put ) {
+                barrierOut += Math.pow(L / H, 2.0 * n * mu / (vol * vol)) * (
+                        dd * K * (f_.op(h2) - f_.op(d2_up)) - df * S * Math.pow(L / H, 2.0 * n) * (f_.op(h1) - f_.op(
+                                d1_up)) - dd * K * Math.pow(H / S, 2.0 * mu / (vol * vol)) * (f_.op(g2) - f_.op(k2_up))
+                                + df * Math.pow(L / H, 2.0 * n) * H * H / S * Math.pow(H / S, 2.0 * mu / (vol * vol))
+                                * (f_.op(g1) - f_.op(k1_up)));
             } else {
                 throw new LibraryException("option type not recognized");
             }
@@ -149,24 +146,23 @@ public class SuoWangDoubleBarrierEngine extends DoubleBarrierOption.EngineImpl {
             final double v3 = D(S / L * Math.pow(H / L, 2.0 * n), -mu, vol, T);
             final double v4 = D(S / L * Math.pow(H / L, 2.0 * n), mu, vol, T);
             rebateIn += dd * R_H * sgn * (Math.pow(L / H, 2.0 * n * mu / (vol * vol)) * f_.op(sgn * v1)
-                    - Math.pow(H / S, 2.0 * mu / (vol * vol)) * f_.op(-sgn * v2))
-                    + dd * R_L * sgn * (Math.pow(L / S, 2.0 * mu / (vol * vol)) * f_.op(-sgn * v3)
-                    - Math.pow(H / L, 2.0 * n * mu / (vol * vol)) * f_.op(sgn * v4));
+                    - Math.pow(H / S, 2.0 * mu / (vol * vol)) * f_.op(-sgn * v2)) + dd * R_L * sgn * (
+                    Math.pow(L / S, 2.0 * mu / (vol * vol)) * f_.op(-sgn * v3)
+                            - Math.pow(H / L, 2.0 * n * mu / (vol * vol)) * f_.op(sgn * v4));
         }
 
         // rebate paid at maturity
-        if (barrierType == DoubleBarrierType.KnockOut) {
+        if ( barrierType == DoubleBarrierType.KnockOut ) {
             r.value = barrierOut;
         } else {
             r.value = european - barrierOut;
         }
         // additionalResults map: not modeled in JQuantLib (rebateIn unused — see C++ for parity)
         // Touching the unused locals so static analyzers don't strip them; they document the C++ contract.
-        if (false) {
+        if ( false ) {
             System.out.println(rebateIn);
         }
     }
-
 
     //
     // helpers (mirror C++ private members)
@@ -182,8 +178,8 @@ public class SuoWangDoubleBarrierEngine extends DoubleBarrierOption.EngineImpl {
     }
 
     private double riskFreeRate() {
-        return process_.riskFreeRate().currentLink().zeroRate(
-                residualTime(), Compounding.Continuous, Frequency.NoFrequency, false).rate();
+        return process_.riskFreeRate().currentLink()
+                .zeroRate(residualTime(), Compounding.Continuous, Frequency.NoFrequency, false).rate();
     }
 
     private double riskFreeDiscount() {
@@ -191,8 +187,8 @@ public class SuoWangDoubleBarrierEngine extends DoubleBarrierOption.EngineImpl {
     }
 
     private double dividendYield() {
-        return process_.dividendYield().currentLink().zeroRate(
-                residualTime(), Compounding.Continuous, Frequency.NoFrequency, false).rate();
+        return process_.dividendYield().currentLink()
+                .zeroRate(residualTime(), Compounding.Continuous, Frequency.NoFrequency, false).rate();
     }
 
     private double dividendDiscount() {

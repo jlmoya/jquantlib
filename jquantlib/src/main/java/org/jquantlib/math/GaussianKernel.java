@@ -36,9 +36,8 @@ import org.jquantlib.math.distributions.NormalDistribution;
  * <pre>
  *   K(x) = sqrt(2*pi) * pdf(x; mean, sigma)
  * </pre>
- * where {@code pdf} is the normal probability density function with the
- * given mean and standard deviation. The {@code sqrt(2*pi)} factor cancels
- * the {@code 1/(sigma*sqrt(2*pi))} normalisation in the pdf so that
+ * where {@code pdf} is the normal probability density function with the given mean and standard deviation. The
+ * {@code sqrt(2*pi)} factor cancels the {@code 1/(sigma*sqrt(2*pi))} normalisation in the pdf so that
  * {@code K(mean) = 1/sigma} — matching the C++ behaviour exactly.
  *
  * @author Phase 5e.5b-CFC-d-59 port
@@ -50,14 +49,13 @@ public class GaussianKernel implements KernelFunction {
     private final double normFact_;
 
     /**
-     * Construct a Gaussian kernel with the given mean and standard
-     * deviation.
+     * Construct a Gaussian kernel with the given mean and standard deviation.
      *
      * @param average mean of the normal distribution
      * @param sigma   standard deviation (must be &gt; 0)
      */
     public GaussianKernel(final double average, final double sigma) {
-        this.nd_  = new NormalDistribution(average, sigma);
+        this.nd_ = new NormalDistribution(average, sigma);
         this.cnd_ = new CumulativeNormalDistribution(average, sigma);
         // normFact_ = sqrt(2) * sqrt(pi) = sqrt(2*pi)
         this.normFact_ = Constants.M_SQRT2 * Constants.M_SQRTPI;

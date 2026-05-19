@@ -31,9 +31,6 @@
 
 package org.jquantlib.termstructures;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.lang.annotation.Natural;
@@ -41,20 +38,22 @@ import org.jquantlib.lang.annotation.Rate;
 import org.jquantlib.lang.annotation.Time;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
+import org.jquantlib.termstructures.credit.HazardRateStructure;
+import org.jquantlib.termstructures.credit.SurvivalProbabilityStructure;
 import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Month;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * Default probability term structure — Java port of QuantLib v1.42.1
- * {@code DefaultProbabilityTermStructure}
+ * Default probability term structure — Java port of QuantLib v1.42.1 {@code DefaultProbabilityTermStructure}
  * ({@code ql/termstructures/defaulttermstructure.{hpp,cpp}}).
  *
  * <p>Abstract base for credit term structures. Concrete implementations
- * implement the {@code survivalProbabilityImpl(Time)} and
- * {@code defaultDensityImpl(Time)} hooks; the public surface gives the standard
- * survival/default-probability/default-density/hazard-rate accessors with
- * date or time inputs.
+ * implement the {@code survivalProbabilityImpl(Time)} and {@code defaultDensityImpl(Time)} hooks; the public surface
+ * gives the standard survival/default-probability/default-density/hazard-rate accessors with date or time inputs.
  *
  * <p>Mirrors C++ jump-quote handling: optional time-of-default jumps reduce
  * survival probability multiplicatively at each jump time.
@@ -68,9 +67,9 @@ public abstract class DefaultProbabilityTermStructure extends AbstractTermStruct
     // private fields
     //
 
-    private final List<Handle<Quote>> jumps;
-    private final List<Date> jumpDates;
-    private final List<Double> jumpTimes;
+    private final List< Handle< Quote > > jumps;
+    private final List< Date > jumpDates;
+    private final List< Double > jumpTimes;
     private final int nJumps;
     private Date latestReference;
 
@@ -79,77 +78,61 @@ public abstract class DefaultProbabilityTermStructure extends AbstractTermStruct
     //
 
     public DefaultProbabilityTermStructure(final DayCounter dc) {
-        this(dc, new ArrayList<Handle<Quote>>(), new ArrayList<Date>());
+        this(dc, new ArrayList< Handle< Quote > >(), new ArrayList< Date >());
     }
 
-    public DefaultProbabilityTermStructure(
-            final DayCounter dc,
-            final List<Handle<Quote>> jumps,
-            final List<Date> jumpDates) {
+    public DefaultProbabilityTermStructure(final DayCounter dc, final List< Handle< Quote > > jumps,
+            final List< Date > jumpDates) {
         super(dc);
-        this.jumps = (jumps != null) ? new ArrayList<>(jumps) : new ArrayList<Handle<Quote>>();
-        this.jumpDates = (jumpDates != null) ? new ArrayList<>(jumpDates) : new ArrayList<Date>();
+        this.jumps = (jumps != null) ? new ArrayList<>(jumps) : new ArrayList< Handle< Quote > >();
+        this.jumpDates = (jumpDates != null) ? new ArrayList<>(jumpDates) : new ArrayList< Date >();
         this.jumpTimes = new ArrayList<>(this.jumpDates.size());
-        for (int i = 0; i < this.jumpDates.size(); ++i) {
+        for ( int i = 0; i < this.jumpDates.size(); ++i ) {
             this.jumpTimes.add(0.0);
         }
         this.nJumps = this.jumps.size();
         setJumps();
-        for (int i = 0; i < nJumps; ++i) {
+        for ( int i = 0; i < nJumps; ++i ) {
             this.jumps.get(i).addObserver(this);
         }
     }
 
-    public DefaultProbabilityTermStructure(
-            final Date referenceDate,
-            final Calendar cal,
-            final DayCounter dc) {
-        this(referenceDate, cal, dc, new ArrayList<Handle<Quote>>(), new ArrayList<Date>());
+    public DefaultProbabilityTermStructure(final Date referenceDate, final Calendar cal, final DayCounter dc) {
+        this(referenceDate, cal, dc, new ArrayList< Handle< Quote > >(), new ArrayList< Date >());
     }
 
-    public DefaultProbabilityTermStructure(
-            final Date referenceDate,
-            final Calendar cal,
-            final DayCounter dc,
-            final List<Handle<Quote>> jumps,
-            final List<Date> jumpDates) {
+    public DefaultProbabilityTermStructure(final Date referenceDate, final Calendar cal, final DayCounter dc,
+            final List< Handle< Quote > > jumps, final List< Date > jumpDates) {
         super(referenceDate, cal, dc);
-        this.jumps = (jumps != null) ? new ArrayList<>(jumps) : new ArrayList<Handle<Quote>>();
-        this.jumpDates = (jumpDates != null) ? new ArrayList<>(jumpDates) : new ArrayList<Date>();
+        this.jumps = (jumps != null) ? new ArrayList<>(jumps) : new ArrayList< Handle< Quote > >();
+        this.jumpDates = (jumpDates != null) ? new ArrayList<>(jumpDates) : new ArrayList< Date >();
         this.jumpTimes = new ArrayList<>(this.jumpDates.size());
-        for (int i = 0; i < this.jumpDates.size(); ++i) {
+        for ( int i = 0; i < this.jumpDates.size(); ++i ) {
             this.jumpTimes.add(0.0);
         }
         this.nJumps = this.jumps.size();
         setJumps();
-        for (int i = 0; i < nJumps; ++i) {
+        for ( int i = 0; i < nJumps; ++i ) {
             this.jumps.get(i).addObserver(this);
         }
     }
 
-    public DefaultProbabilityTermStructure(
-            final @Natural int settlementDays,
-            final Calendar cal,
-            final DayCounter dc) {
-        this(settlementDays, cal, dc, new ArrayList<Handle<Quote>>(), new ArrayList<Date>());
+    public DefaultProbabilityTermStructure(final @Natural int settlementDays, final Calendar cal, final DayCounter dc) {
+        this(settlementDays, cal, dc, new ArrayList< Handle< Quote > >(), new ArrayList< Date >());
     }
 
-    public DefaultProbabilityTermStructure(
-            final @Natural int settlementDays,
-            final Calendar cal,
-            final DayCounter dc,
-            final List<Handle<Quote>> jumps,
-            final List<Date> jumpDates) {
+    public DefaultProbabilityTermStructure(final @Natural int settlementDays, final Calendar cal, final DayCounter dc,
+            final List< Handle< Quote > > jumps, final List< Date > jumpDates) {
         super(settlementDays, cal, dc);
-        this.jumps = (jumps != null) ? new ArrayList<>(jumps) : new ArrayList<Handle<Quote>>();
-        this.jumpDates = (jumpDates != null) ? new ArrayList<>(jumpDates) : new ArrayList<Date>();
+        this.jumps = (jumps != null) ? new ArrayList<>(jumps) : new ArrayList< Handle< Quote > >();
+        this.jumpDates = (jumpDates != null) ? new ArrayList<>(jumpDates) : new ArrayList< Date >();
         this.jumpTimes = new ArrayList<>(this.jumpDates.size());
-        for (int i = 0; i < this.jumpDates.size(); ++i) {
+        for ( int i = 0; i < this.jumpDates.size(); ++i ) {
             this.jumpTimes.add(0.0);
         }
         this.nJumps = this.jumps.size();
         setJumps();
-        for (int i = 0; i < nJumps; ++i) {
+        for ( int i = 0; i < nJumps; ++i ) {
             this.jumps.get(i).addObserver(this);
         }
     }
@@ -159,21 +142,20 @@ public abstract class DefaultProbabilityTermStructure extends AbstractTermStruct
     //
 
     private void setJumps() {
-        if (jumpDates.isEmpty() && !jumps.isEmpty()) {
+        if ( jumpDates.isEmpty() && !jumps.isEmpty() ) {
             // turn-of-year dates
             jumpDates.clear();
             jumpTimes.clear();
             final int y = referenceDate().year();
-            for (int i = 0; i < nJumps; ++i) {
+            for ( int i = 0; i < nJumps; ++i ) {
                 jumpDates.add(new Date(31, Month.December, y + i));
                 jumpTimes.add(0.0);
             }
         } else {
             QL.require(jumpDates.size() == nJumps,
-                    "mismatch between number of jumps (" + nJumps +
-                    ") and jump dates (" + jumpDates.size() + ")");
+                    "mismatch between number of jumps (" + nJumps + ") and jump dates (" + jumpDates.size() + ")");
         }
-        for (int i = 0; i < nJumps; ++i) {
+        for ( int i = 0; i < nJumps; ++i ) {
             jumpTimes.set(i, timeFromReference(jumpDates.get(i)));
         }
         latestReference = referenceDate();
@@ -194,15 +176,13 @@ public abstract class DefaultProbabilityTermStructure extends AbstractTermStruct
     public double survivalProbability(final @Time double t, final boolean extrapolate) {
         checkRange(t, extrapolate);
 
-        if (!jumps.isEmpty()) {
+        if ( !jumps.isEmpty() ) {
             double jumpEffect = 1.0;
-            for (int i = 0; i < nJumps && jumpTimes.get(i) < t; ++i) {
-                final Handle<Quote> q = jumps.get(i);
-                QL.require(!q.empty() && q.currentLink().isValid(),
-                        "invalid jump quote at index " + i);
+            for ( int i = 0; i < nJumps && jumpTimes.get(i) < t; ++i ) {
+                final Handle< Quote > q = jumps.get(i);
+                QL.require(!q.empty() && q.currentLink().isValid(), "invalid jump quote at index " + i);
                 final double thisJump = q.currentLink().value();
-                QL.require(thisJump > 0.0 && thisJump <= 1.0,
-                        "invalid jump value at index " + i + ": " + thisJump);
+                QL.require(thisJump > 0.0 && thisJump <= 1.0, "invalid jump value at index " + i + ": " + thisJump);
                 jumpEffect *= thisJump;
             }
             return jumpEffect * survivalProbabilityImpl(t);
@@ -235,8 +215,7 @@ public abstract class DefaultProbabilityTermStructure extends AbstractTermStruct
     }
 
     public double defaultProbability(final Date d1, final Date d2, final boolean extrapolate) {
-        QL.require(d1.le(d2),
-                "initial date (" + d1 + ") later than final date (" + d2 + ")");
+        QL.require(d1.le(d2), "initial date (" + d1 + ") later than final date (" + d2 + ")");
         final double p1 = d1.lt(referenceDate()) ? 0.0 : defaultProbability(d1, extrapolate);
         final double p2 = defaultProbability(d2, extrapolate);
         return p2 - p1;
@@ -247,8 +226,7 @@ public abstract class DefaultProbabilityTermStructure extends AbstractTermStruct
     }
 
     public double defaultProbability(final @Time double t1, final @Time double t2, final boolean extrapolate) {
-        QL.require(t1 <= t2,
-                "initial time (" + t1 + ") later than final time (" + t2 + ")");
+        QL.require(t1 <= t2, "initial time (" + t1 + ") later than final time (" + t2 + ")");
         final double p1 = (t1 < 0.0) ? 0.0 : defaultProbability(t1, extrapolate);
         final double p2 = defaultProbability(t2, extrapolate);
         return p2 - p1;
@@ -304,11 +282,11 @@ public abstract class DefaultProbabilityTermStructure extends AbstractTermStruct
     // Jump inspectors
     //
 
-    public List<Date> jumpDates() {
+    public List< Date > jumpDates() {
         return new ArrayList<>(jumpDates);
     }
 
-    public List<Double> jumpTimes() {
+    public List< Double > jumpTimes() {
         return new ArrayList<>(jumpTimes);
     }
 
@@ -319,10 +297,10 @@ public abstract class DefaultProbabilityTermStructure extends AbstractTermStruct
     @Override
     public void update() {
         super.update();
-        if (referenceDate() == null) {
+        if ( referenceDate() == null ) {
             return;
         }
-        if (latestReference == null || !referenceDate().eq(latestReference)) {
+        if ( latestReference == null || !referenceDate().eq(latestReference) ) {
             setJumps();
         }
     }
@@ -336,9 +314,8 @@ public abstract class DefaultProbabilityTermStructure extends AbstractTermStruct
     protected abstract double defaultDensityImpl(@Time double t);
 
     /**
-     * Default hazard-rate implementation based on survival probability and
-     * default density. Mirrors C++ default {@code hazardRateImpl(Time)}
-     * inline definition: if {@code S(t) == 0} returns 0; otherwise returns
+     * Default hazard-rate implementation based on survival probability and default density. Mirrors C++ default
+     * {@code hazardRateImpl(Time)} inline definition: if {@code S(t) == 0} returns 0; otherwise returns
      * {@code defaultDensity(t,true) / S}.
      *
      * <p>Derived classes (e.g. {@link HazardRateStructure}) may override.

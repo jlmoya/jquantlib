@@ -29,26 +29,19 @@ package org.jquantlib.model.marketmodels.evolvers;
 
 import org.jquantlib.QL;
 import org.jquantlib.math.matrixutilities.Matrix;
-import org.jquantlib.model.marketmodels.BrownianGenerator;
-import org.jquantlib.model.marketmodels.BrownianGeneratorFactory;
-import org.jquantlib.model.marketmodels.CurveState;
-import org.jquantlib.model.marketmodels.EvolutionDescription;
-import org.jquantlib.model.marketmodels.MarketModel;
-import org.jquantlib.model.marketmodels.MarketModelEvolver;
+import org.jquantlib.model.marketmodels.*;
 import org.jquantlib.model.marketmodels.curvestates.LMMCurveState;
 import org.jquantlib.model.marketmodels.driftcomputation.LMMNormalDriftCalculator;
 
 /**
  * Predictor-corrector normal forward-rate evolver.
  * <p>
- * Two-pass scheme: D1 at T1 advances forwards (predictor), D2 at predicted T2
- * corrects via average ((D1+D2)/2). Unlike the log-normal variants, forwards
- * are added directly (not exponentiated) — so this is the normal/Bachelier
- * dynamics for forward rates.
- *
- * @see "ql/models/marketmodels/evolvers/normalfwdratepc.{hpp,cpp}" v1.42.1
+ * Two-pass scheme: D1 at T1 advances forwards (predictor), D2 at predicted T2 corrects via average ((D1+D2)/2). Unlike
+ * the log-normal variants, forwards are added directly (not exponentiated) — so this is the normal/Bachelier dynamics
+ * for forward rates.
  *
  * @author Jose Moya
+ * @see "ql/models/marketmodels/evolvers/normalfwdratepc.{hpp,cpp}" v1.42.1
  */
 public class NormalFwdRatePc extends MarketModelEvolver {
 
@@ -61,7 +54,6 @@ public class NormalFwdRatePc extends MarketModelEvolver {
     private final int numberOfRates_;
     private final int numberOfFactors_;
     private final LMMCurveState curveState_;
-    private int currentStep_;
     private final double[] forwards_;
     private final double[] initialForwards_;
     private final double[] drifts1_;
@@ -71,19 +63,15 @@ public class NormalFwdRatePc extends MarketModelEvolver {
     private final int[] alive_;
     // helper classes
     private final LMMNormalDriftCalculator[] calculators_;
+    private int currentStep_;
 
-    public NormalFwdRatePc(
-            final MarketModel marketModel,
-            final BrownianGeneratorFactory factory,
+    public NormalFwdRatePc(final MarketModel marketModel, final BrownianGeneratorFactory factory,
             final int[] numeraires) {
         this(marketModel, factory, numeraires, 0);
     }
 
-    public NormalFwdRatePc(
-            final MarketModel marketModel,
-            final BrownianGeneratorFactory factory,
-            final int[] numeraires,
-            final int initialStep) {
+    public NormalFwdRatePc(final MarketModel marketModel, final BrownianGeneratorFactory factory,
+            final int[] numeraires, final int initialStep) {
         this.marketModel_ = marketModel;
         this.numeraires_ = numeraires.clone();
         this.initialStep_ = initialStep;
@@ -107,11 +95,10 @@ public class NormalFwdRatePc extends MarketModelEvolver {
         this.currentStep_ = initialStep_;
 
         this.calculators_ = new LMMNormalDriftCalculator[steps];
-        for (int j = 0; j < steps; ++j) {
+        for ( int j = 0; j < steps; ++j ) {
             final Matrix A = marketModel.pseudoRoot(j);
-            calculators_[j] = new LMMNormalDriftCalculator(A,
-                    marketModel.evolution().rateTaus(),
-                    numeraires[j], alive_[j]);
+            calculators_[j] = new LMMNormalDriftCalculator(A, marketModel.evolution().rateTaus(), numeraires[j],
+                    alive_[j]);
         }
 
         setForwards(marketModel_.initialRates());
@@ -123,8 +110,7 @@ public class NormalFwdRatePc extends MarketModelEvolver {
     }
 
     private void setForwards(final double[] forwards) {
-        QL.require(forwards.length == numberOfRates_,
-                "mismatch between forwards and rateTimes");
+        QL.require(forwards.length == numberOfRates_, "mismatch between forwards and rateTimes");
         // C++ has a bare for-loop that does nothing observable, then computes initialDrifts_
         calculators_[initialStep_].compute(forwards, initialDrifts_);
     }
@@ -146,7 +132,7 @@ public class NormalFwdRatePc extends MarketModelEvolver {
         // we're going from T1 to T2
 
         // a) compute drifts D1 at T1
-        if (currentStep_ > initialStep_) {
+        if ( currentStep_ > initialStep_ ) {
             calculators_[currentStep_].compute(forwards_, drifts1_);
         } else {
             System.arraycopy(initialDrifts_, 0, drifts1_, 0, numberOfRates_);
@@ -157,10 +143,10 @@ public class NormalFwdRatePc extends MarketModelEvolver {
         final Matrix A = marketModel_.pseudoRoot(currentStep_);
 
         final int alive = alive_[currentStep_];
-        for (int i = alive; i < numberOfRates_; ++i) {
+        for ( int i = alive; i < numberOfRates_; ++i ) {
             forwards_[i] += drifts1_[i];
             double inner = 0.0;
-            for (int f = 0; f < numberOfFactors_; ++f) {
+            for ( int f = 0; f < numberOfFactors_; ++f ) {
                 inner += A.get(i, f) * brownians_[f];
             }
             forwards_[i] += inner;
@@ -170,7 +156,7 @@ public class NormalFwdRatePc extends MarketModelEvolver {
         calculators_[currentStep_].compute(forwards_, drifts2_);
 
         // d) correct forwards using both drifts
-        for (int i = alive; i < numberOfRates_; ++i) {
+        for ( int i = alive; i < numberOfRates_; ++i ) {
             forwards_[i] += (drifts2_[i] - drifts1_[i]) / 2.0;
         }
 

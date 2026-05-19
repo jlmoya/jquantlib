@@ -41,89 +41,85 @@
 
 package org.jquantlib.exercise;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.lang.annotation.QualityAssurance;
 import org.jquantlib.lang.annotation.QualityAssurance.Quality;
 import org.jquantlib.lang.annotation.QualityAssurance.Version;
 import org.jquantlib.time.Date;
 
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Abstract base class for exercise dates
- * 
+ *
  * @author Richard Gomes
  */
-@QualityAssurance(quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Richard Gomes" })
+@QualityAssurance( quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Richard Gomes" } )
 public abstract class Exercise {
 
-	//
-	// protected fields
-	//
-	
+    //
+    // protected fields
+    //
+
+    protected final List< Date > dates;
     protected Exercise.Type type;
-	protected final List<Date> dates;
-	
 
-	//
-	// protected constructors
-	//
-	
-	/**
-	 * Constructs an exercise and defines the exercise type
-	 * 
-	 * @param type is the type of exercise
-	 * 
-	 * @see Exercise.Type
-	 */
-	protected Exercise(final Exercise.Type type) {
-		this.type = type;
-		this.dates = new ArrayList<Date>(5); // some reasonable prime number
-	}
+    //
+    // protected constructors
+    //
 
-	
+    /**
+     * Constructs an exercise and defines the exercise type
+     *
+     * @param type is the type of exercise
+     * @see Exercise.Type
+     */
+    protected Exercise(final Exercise.Type type) {
+        this.type = type;
+        this.dates = new ArrayList< Date >(5); // some reasonable prime number
+    }
+
     //
     // public final methods
     //
-    
-	/**
-	 * Returns the exercise type
-	 * 
-	 * @return the exercise type
-	 * 
-	 * @see Exercise.Type
-	 */
-	public final Exercise.Type type() {
-		return type;
-	}
-	
-	public List<Date> dates() {
-		return dates;
-	}
-	public final int size() {
-		return dates.size();
-	}
-	
-	public final Date date(final int index) /* @ReadOnly */ {
-		return (Date)dates.get(index);
-	}
-	
-	public final Date lastDate() /* @ReadOnly */ {
-		return date(dates.size()-1);
-	}
-	
+
+    /**
+     * Returns the exercise type
+     *
+     * @return the exercise type
+     * @see Exercise.Type
+     */
+    public final Exercise.Type type() {
+        return type;
+    }
+
+    public List< Date > dates() {
+        return dates;
+    }
+
+    public final int size() {
+        return dates.size();
+    }
+
+    public final Date date(final int index) /* @ReadOnly */ {
+        return dates.get(index);
+    }
+
+    public final Date lastDate() /* @ReadOnly */ {
+        return date(dates.size() - 1);
+    }
+
     //
     // public static inner enums
     //
-    
+
     /**
      * Defines the exercise type. It can be American, Bermudan or European
-     * 
+     *
      * @author Richard Gomes
      */
-    public static enum Type {
-        American, Bermudan, European;
+    public enum Type {
+        American, Bermudan, European
     }
 
 }

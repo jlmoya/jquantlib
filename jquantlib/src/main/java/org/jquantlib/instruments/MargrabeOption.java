@@ -31,8 +31,7 @@ import org.jquantlib.pricingengines.PricingEngine;
  * second asset for Q1 stocks of the first at expiration.
  *
  * <p>Phase 5i.5-MGR port of {@code QuantLib::MargrabeOption}
- * (v1.42.1 ql/instruments/margrabeoption.{hpp,cpp}). Pinned commit
- * {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
+ * (v1.42.1 ql/instruments/margrabeoption.{hpp,cpp}). Pinned commit {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
  */
 public class MargrabeOption extends MultiAssetOption {
 
@@ -97,9 +96,11 @@ public class MargrabeOption extends MultiAssetOption {
     // public inner interfaces
     //
 
-    public interface Arguments extends MultiAssetOption.Arguments { /* marker */ }
+    public interface Arguments extends MultiAssetOption.Arguments { /* marker */
+    }
 
-    public interface Results extends MultiAssetOption.Results { /* marker */ }
+    public interface Results extends MultiAssetOption.Results { /* marker */
+    }
 
     //
     // public inner classes
@@ -108,8 +109,7 @@ public class MargrabeOption extends MultiAssetOption {
     /**
      * Extra arguments for Margrabe option calculation.
      */
-    public static class ArgumentsImpl extends MultiAssetOption.ArgumentsImpl
-            implements MargrabeOption.Arguments {
+    public static class ArgumentsImpl extends MultiAssetOption.ArgumentsImpl implements MargrabeOption.Arguments {
 
         public int Q1 = -1;   // sentinel for "unspecified"
         public int Q2 = -1;
@@ -127,8 +127,7 @@ public class MargrabeOption extends MultiAssetOption {
     /**
      * Extra results for Margrabe option.
      */
-    public static class ResultsImpl extends MultiAssetOption.ResultsImpl
-            implements MargrabeOption.Results {
+    public static class ResultsImpl extends MultiAssetOption.ResultsImpl implements MargrabeOption.Results {
 
         public double delta1 = Constants.NULL_REAL;
         public double delta2 = Constants.NULL_REAL;
@@ -149,7 +148,7 @@ public class MargrabeOption extends MultiAssetOption {
      * Margrabe-option engine base class.
      */
     public abstract static class EngineImpl
-            extends GenericEngine<MargrabeOption.ArgumentsImpl, MargrabeOption.ResultsImpl> {
+            extends GenericEngine< MargrabeOption.ArgumentsImpl, MargrabeOption.ResultsImpl > {
 
         public EngineImpl() {
             super(new ArgumentsImpl(), new ResultsImpl());

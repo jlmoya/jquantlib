@@ -52,35 +52,28 @@ import org.jquantlib.time.calendars.SouthAfrica;
 
 /**
  * Johannesburg Interbank Agreed Rate
- *        
+ *
  * TODO check settlement days and day-count convention.
  */
 public class Jibar extends IborIndex {
 
-	public Jibar(final Period tenor) {
-		this(tenor, new Handle<YieldTermStructure>(
-						new AbstractYieldTermStructure() {
-							@Override
-							protected double discountImpl(final double t) {
-								throw new UnsupportedOperationException();
-							}
-							@Override
-							public Date maxDate() {
-								throw new UnsupportedOperationException();
-							}
-						}
-				));
-	}
+    public Jibar(final Period tenor) {
+        this(tenor, new Handle< YieldTermStructure >(new AbstractYieldTermStructure() {
+            @Override
+            protected double discountImpl(final double t) {
+                throw new UnsupportedOperationException();
+            }
 
-	public Jibar(final Period tenor,
-			final Handle<YieldTermStructure> h) {
-		super("Jibar", tenor, 0,
-				new ZARCurrency(),
-				new SouthAfrica(),
-				BusinessDayConvention.ModifiedFollowing,
-				false,
-				new Actual365Fixed(), 
-				h);
-	}
+            @Override
+            public Date maxDate() {
+                throw new UnsupportedOperationException();
+            }
+        }));
+    }
+
+    public Jibar(final Period tenor, final Handle< YieldTermStructure > h) {
+        super("Jibar", tenor, 0, new ZARCurrency(), new SouthAfrica(), BusinessDayConvention.ModifiedFollowing, false,
+                new Actual365Fixed(), h);
+    }
 
 }

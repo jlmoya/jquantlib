@@ -34,20 +34,19 @@ package org.jquantlib.model.marketmodels;
  * {@code ql/models/marketmodels/marketmodel.hpp} (QuantLib v1.42.1).
  *
  * <p>C++ {@code MarketModelFactory} extends {@code Observable}; in Java
- * implementations may compose a {@link org.jquantlib.util.DefaultObservable}
- * if observation is required (e.g. {@code FlatVolFactory}).
- *
- * @see "ql/models/marketmodels/marketmodel.hpp" v1.42.1
+ * implementations may compose a {@link org.jquantlib.util.DefaultObservable} if observation is required (e.g.
+ * {@code FlatVolFactory}).
  *
  * @author Jose Moya
+ * @see "ql/models/marketmodels/marketmodel.hpp" v1.42.1
  */
 public interface MarketModelFactory {
 
     /**
      * Builds a {@link MarketModel} for the given evolution and number of factors.
      *
-     * @param evolution         the evolution description
-     * @param numberOfFactors   number of stochastic factors driving the model
+     * @param evolution       the evolution description
+     * @param numberOfFactors number of stochastic factors driving the model
      * @return the constructed market model
      */
     MarketModel create(final EvolutionDescription evolution, final int numberOfFactors);

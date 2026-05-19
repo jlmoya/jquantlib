@@ -33,14 +33,12 @@ import org.jquantlib.model.marketmodels.MarketModelPathwiseMultiProduct;
 import org.jquantlib.model.marketmodels.Utilities;
 
 /**
- * Pathwise (adjoint Greeks) multi-caplet product. Cash flow per step is
- * {@code (libor - strike) * accrual} (positive part); pathwise derivative
- * with respect to forward[step] is just {@code accruals[step]} (in the money)
- * or 0 (out).
+ * Pathwise (adjoint Greeks) multi-caplet product. Cash flow per step is {@code (libor - strike) * accrual} (positive
+ * part); pathwise derivative with respect to forward[step] is just {@code accruals[step]} (in the money) or 0 (out).
  *
  * <p>Mirrors C++ {@code MarketModelPathwiseMultiCaplet}
- * (ql/models/marketmodels/products/pathwise/pathwiseproductcaplet.{hpp,cpp}
- * v1.42.1). Used in {@code testPathwiseGreeks}.
+ * (ql/models/marketmodels/products/pathwise/pathwiseproductcaplet.{hpp,cpp} v1.42.1). Used in
+ * {@code testPathwiseGreeks}.
  *
  * @author Jose Moya
  */
@@ -56,10 +54,8 @@ public class MarketModelPathwiseMultiCaplet extends MarketModelPathwiseMultiProd
 
     private int currentIndex_;
 
-    public MarketModelPathwiseMultiCaplet(final double[] rateTimes,
-                                          final double[] accruals,
-                                          final double[] paymentTimes,
-                                          final double[] strikes) {
+    public MarketModelPathwiseMultiCaplet(final double[] rateTimes, final double[] accruals,
+            final double[] paymentTimes, final double[] strikes) {
         Utilities.checkIncreasingTimes(rateTimes);
         Utilities.checkIncreasingTimes(paymentTimes);
         this.rateTimes_ = rateTimes.clone();
@@ -70,14 +66,10 @@ public class MarketModelPathwiseMultiCaplet extends MarketModelPathwiseMultiProd
 
         final double[] evolTimes = new double[numberRates_];
         System.arraycopy(rateTimes_, 0, evolTimes, 0, numberRates_);
-        QL.require(evolTimes.length == numberRates_,
-                "rateTimes.size()<> numberOfRates+1");
-        QL.require(paymentTimes.length == numberRates_,
-                "paymentTimes.size()<> numberOfRates");
-        QL.require(accruals.length == numberRates_,
-                "accruals.size()<> numberOfRates");
-        QL.require(strikes.length == numberRates_,
-                "strikes.size()<> numberOfRates");
+        QL.require(evolTimes.length == numberRates_, "rateTimes.size()<> numberOfRates+1");
+        QL.require(paymentTimes.length == numberRates_, "paymentTimes.size()<> numberOfRates");
+        QL.require(accruals.length == numberRates_, "accruals.size()<> numberOfRates");
+        QL.require(strikes.length == numberRates_, "strikes.size()<> numberOfRates");
 
         this.evolution_ = new EvolutionDescription(rateTimes_, evolTimes);
         this.currentIndex_ = 0;
@@ -89,25 +81,23 @@ public class MarketModelPathwiseMultiCaplet extends MarketModelPathwiseMultiProd
     }
 
     @Override
-    public boolean nextTimeStep(final CurveState currentState,
-                                final int[] numberCashFlowsThisStep,
-                                final CashFlow[][] cashFlowsGenerated) {
+    public boolean nextTimeStep(final CurveState currentState, final int[] numberCashFlowsThisStep,
+            final CashFlow[][] cashFlowsGenerated) {
         final double liborRate = currentState.forwardRate(currentIndex_);
         cashFlowsGenerated[currentIndex_][0].timeIndex = currentIndex_;
         cashFlowsGenerated[currentIndex_][0].amount[0] =
                 (liborRate - strikes_[currentIndex_]) * accruals_[currentIndex_];
 
-        for (int i = 0; i < numberCashFlowsThisStep.length; ++i) {
+        for ( int i = 0; i < numberCashFlowsThisStep.length; ++i ) {
             numberCashFlowsThisStep[i] = 0;
         }
 
-        if (cashFlowsGenerated[currentIndex_][0].amount[0] > 0) {
+        if ( cashFlowsGenerated[currentIndex_][0].amount[0] > 0 ) {
             numberCashFlowsThisStep[currentIndex_] = 1;
-            for (int i = 1; i <= numberRates_; ++i) {
+            for ( int i = 1; i <= numberRates_; ++i ) {
                 cashFlowsGenerated[currentIndex_][0].amount[i] = 0.0;
             }
-            cashFlowsGenerated[currentIndex_][0].amount[currentIndex_ + 1] =
-                    accruals_[currentIndex_];
+            cashFlowsGenerated[currentIndex_][0].amount[currentIndex_ + 1] = accruals_[currentIndex_];
         }
         ++currentIndex_;
         return currentIndex_ == strikes_.length;
@@ -115,8 +105,8 @@ public class MarketModelPathwiseMultiCaplet extends MarketModelPathwiseMultiProd
 
     @Override
     public MarketModelPathwiseMultiProduct clone() {
-        final MarketModelPathwiseMultiCaplet copy = new MarketModelPathwiseMultiCaplet(
-                rateTimes_, accruals_, paymentTimes_, strikes_);
+        final MarketModelPathwiseMultiCaplet copy = new MarketModelPathwiseMultiCaplet(rateTimes_, accruals_,
+                paymentTimes_, strikes_);
         copy.currentIndex_ = this.currentIndex_;
         return copy;
     }
@@ -124,7 +114,7 @@ public class MarketModelPathwiseMultiCaplet extends MarketModelPathwiseMultiProd
     @Override
     public int[] suggestedNumeraires() {
         final int[] numeraires = new int[numberRates_];
-        for (int i = 0; i < numberRates_; ++i) {
+        for ( int i = 0; i < numberRates_; ++i ) {
             numeraires[i] = i + 1;
         }
         return numeraires;

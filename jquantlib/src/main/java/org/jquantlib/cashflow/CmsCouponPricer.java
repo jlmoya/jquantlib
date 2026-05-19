@@ -34,33 +34,33 @@ import org.jquantlib.termstructures.SwaptionVolatilityStructure;
 // TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public abstract class CmsCouponPricer extends FloatingRateCouponPricer {
 
-    private Handle<SwaptionVolatilityStructure> swaptionVol_;
     private static final String no_adequate_swaptionVol_given = "no adequate swaptionVol given";
+    private Handle< SwaptionVolatilityStructure > swaptionVol_;
 
-    public CmsCouponPricer(final Handle<SwaptionVolatilityStructure> swaptionVol) {
+    public CmsCouponPricer(final Handle< SwaptionVolatilityStructure > swaptionVol) {
         this.swaptionVol_ = swaptionVol;
         this.swaptionVol_.addObserver(this);
         //XXX:registerWith
         //registerWith(this.swaptionVol_);
     }
 
-    public Handle<SwaptionVolatilityStructure> swaptionVolatility() {
+    public Handle< SwaptionVolatilityStructure > swaptionVolatility() {
         return swaptionVol_;
     }
 
-    public void setSwaptionVolatility(final Handle<SwaptionVolatilityStructure> swaptionVol) {
+    public void setSwaptionVolatility(final Handle< SwaptionVolatilityStructure > swaptionVol) {
         swaptionVol.currentLink().deleteObserver(this);
         //XXX:registerWith
         //unregisterWith(swaptionVol);
 
         this.swaptionVol_ = swaptionVol;
-        QL.require(swaptionVol_!=null && swaptionVol_.currentLink() != null , no_adequate_swaptionVol_given); // TODO: message
+        QL.require(swaptionVol_ != null && swaptionVol_.currentLink() != null,
+                no_adequate_swaptionVol_given); // TODO: message
 
         this.swaptionVol_.addObserver(this);
         //registerWith(swaptionVol_);
         update();
     }
-
 
     //
     // implements Observer

@@ -49,68 +49,51 @@ import org.jquantlib.time.Frequency;
 import org.jquantlib.time.Period;
 
 /**
- * 
+ *
  * Base class for year-on-year inflation term structures.
- * 
+ *
  * @author Tim Blackler
  *
  */
 
 public abstract class YoYInflationTermStructure extends InflationTermStructure {
 
-	
-    public YoYInflationTermStructure(final DayCounter dayCounter,
-						    		  final Period lag,
-						    		  final Frequency frequency,
-						    		  final @Rate double baseYoYRate,
-						    		  final Handle<YieldTermStructure> yTS) {
-    	super(lag, frequency, baseYoYRate, yTS, dayCounter);
-    	
+    public YoYInflationTermStructure(final DayCounter dayCounter, final Period lag, final Frequency frequency,
+            final @Rate double baseYoYRate, final Handle< YieldTermStructure > yTS) {
+        super(lag, frequency, baseYoYRate, yTS, dayCounter);
+
     }
 
+    public YoYInflationTermStructure(final Date referenceDate, final Calendar calendar, final DayCounter dayCounter,
+            final Period lag, final Frequency frequency, final @Rate double baseYoYRate,
+            final Handle< YieldTermStructure > yTS) {
 
-    public YoYInflationTermStructure(final Date referenceDate,
-									  final Calendar calendar,
-									  final DayCounter dayCounter,
-						  		  	  final Period lag,
-									  final Frequency frequency,
-									  final @Rate double baseYoYRate,
-									  final Handle<YieldTermStructure> yTS) {
-
-    	super(referenceDate, lag, frequency, baseYoYRate, yTS, calendar, dayCounter);
+        super(referenceDate, lag, frequency, baseYoYRate, yTS, calendar, dayCounter);
     }
-    
-    
-    public YoYInflationTermStructure(final @Natural int settlementDays,
-	    							  final Calendar calendar,
-	    							  final DayCounter dayCounter,
-	    							  final Period lag,
-	    							  final Frequency frequency,
-	    							  final @Rate double baseYoYRate,
-	    							  final Handle<YieldTermStructure> yTS) {
-    	
-    	super(settlementDays, calendar, lag, frequency,baseYoYRate, yTS, dayCounter);
-    }  
-    
-    
+
+    public YoYInflationTermStructure(final @Natural int settlementDays, final Calendar calendar,
+            final DayCounter dayCounter, final Period lag, final Frequency frequency, final @Rate double baseYoYRate,
+            final Handle< YieldTermStructure > yTS) {
+
+        super(settlementDays, calendar, lag, frequency, baseYoYRate, yTS, dayCounter);
+    }
+
     public /*@Rate*/ double yoyRate(final Date date) {
-    	return this.yoyRate(date, false);
+        return this.yoyRate(date, false);
     }
-    
-    public /*@Rate*/ double yoyRate(final Date date,
-            						 final boolean extrapolate) {
-    	this.checkRange(date, extrapolate);
-    	return this.yoyRate(timeFromReference(date));
+
+    public /*@Rate*/ double yoyRate(final Date date, final boolean extrapolate) {
+        this.checkRange(date, extrapolate);
+        return this.yoyRate(timeFromReference(date));
     }
 
     public /*@Rate*/ double yoyRate(final @Time double time) {
-    	return this.yoyRate(time, false);
+        return this.yoyRate(time, false);
     }
-    
-    public /*@Rate*/ double yoyRate(final @Time double time,
-            						 final boolean extrapolate) {
-    	this.checkRange(time, extrapolate);
-    	return this.yoyRateImpl(time);
+
+    public /*@Rate*/ double yoyRate(final @Time double time, final boolean extrapolate) {
+        this.checkRange(time, extrapolate);
+        return this.yoyRateImpl(time);
     }
 
     protected abstract /*@Rate*/ double yoyRateImpl(@Time double time);

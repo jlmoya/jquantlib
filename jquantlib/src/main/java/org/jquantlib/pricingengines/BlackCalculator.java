@@ -41,13 +41,7 @@
 package org.jquantlib.pricingengines;
 
 import org.jquantlib.QL;
-import org.jquantlib.instruments.AssetOrNothingPayoff;
-import org.jquantlib.instruments.CashOrNothingPayoff;
-import org.jquantlib.instruments.GapPayoff;
-import org.jquantlib.instruments.Option;
-import org.jquantlib.instruments.Payoff;
-import org.jquantlib.instruments.PlainVanillaPayoff;
-import org.jquantlib.instruments.StrikedTypePayoff;
+import org.jquantlib.instruments.*;
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.math.Closeness;
 import org.jquantlib.math.Constants;
@@ -58,11 +52,9 @@ import org.jquantlib.util.Visitor;
 /**
  * Black 1976 calculator class
  *
- * @note <b>BUG:</b> When the variance is null, division by zero occur during
- *       the calculation of delta, delta forward, gamma, gamma forward, rho,
- *       dividend rho, vega, and strike sensitivity.
- *
  * @author Richard Gomes
+ * @note <b>BUG:</b> When the variance is null, division by zero occur during the calculation of delta, delta forward,
+ * gamma, gamma forward, rho, dividend rho, vega, and strike sensitivity.
  */
 // FIXME When the variance is null, division by zero occur during calculations
 // TODO: write test cases, including a situation when variance is zero
@@ -80,17 +72,16 @@ public class BlackCalculator {
     private final double dX_dS;
     private final double n_d1, cum_d1, n_d2, cum_d2;
 
-
     //
     // private fields
     //
 
-    private double D1, D2;
+    private final double D1;
+    private final double D2;
     private double alpha, beta;
     private double dAlpha_dD1, dBeta_dD2;
     private double x;
     private double dx_dStrike;
-
 
     //
     // public constructors
@@ -101,29 +92,23 @@ public class BlackCalculator {
     }
 
     /**
-     * Convenience constructor matching C++ v1.42.1 — internally builds a
-     * {@link PlainVanillaPayoff}.
+     * Convenience constructor matching C++ v1.42.1 — internally builds a {@link PlainVanillaPayoff}.
      */
-    public BlackCalculator(final Option.Type optionType,
-                           final double strike,
-                           final double forward,
-                           final double stdDev) {
+    public BlackCalculator(final Option.Type optionType, final double strike, final double forward,
+            final double stdDev) {
         this(new PlainVanillaPayoff(optionType, strike), forward, stdDev, 1.0);
     }
 
     /**
-     * Convenience constructor matching C++ v1.42.1 — internally builds a
-     * {@link PlainVanillaPayoff}.
+     * Convenience constructor matching C++ v1.42.1 — internally builds a {@link PlainVanillaPayoff}.
      */
-    public BlackCalculator(final Option.Type optionType,
-                           final double strike,
-                           final double forward,
-                           final double stdDev,
-                           final double discount) {
+    public BlackCalculator(final Option.Type optionType, final double strike, final double forward, final double stdDev,
+            final double discount) {
         this(new PlainVanillaPayoff(optionType, strike), forward, stdDev, discount);
     }
 
-    public BlackCalculator(final StrikedTypePayoff payoff, final double forward, final double stdDev, final double discount) {
+    public BlackCalculator(final StrikedTypePayoff payoff, final double forward, final double stdDev,
+            final double discount) {
 
         this.strike = payoff.strike();
         this.forward = forward;
@@ -132,12 +117,12 @@ public class BlackCalculator {
         this.variance = stdDev * stdDev;
 
         QL.require(strike >= 0.0, "strike (" + strike + ") must be non-negative");
-        QL.require(forward > 0.0 , "positive forward value required");
-        QL.require(stdDev >= 0.0 , "non-negative standard deviation required");
-        QL.require(discount > 0.0 , "positive discount required");
+        QL.require(forward > 0.0, "positive forward value required");
+        QL.require(stdDev >= 0.0, "non-negative standard deviation required");
+        QL.require(discount > 0.0, "positive discount required");
 
-        if (stdDev >= Constants.QL_EPSILON) {
-            if (strike == 0.0) {
+        if ( stdDev >= Constants.QL_EPSILON ) {
+            if ( strike == 0.0 ) {
                 D1 = Constants.QL_MAX_REAL;
                 D2 = Constants.QL_MAX_REAL;
                 n_d1 = 0.0;
@@ -156,14 +141,14 @@ public class BlackCalculator {
         } else {
             // Zero-volatility case: align with C++ v1.42.1 (initialize d1/d2/cum/n
             // for the three sub-cases ATM / ITM-call (forward>strike) / OTM-call).
-            if (Closeness.isClose(forward, strike)) {
+            if ( Closeness.isClose(forward, strike) ) {
                 D1 = 0.0;
                 D2 = 0.0;
                 cum_d1 = 0.5;
                 cum_d2 = 0.5;
                 n_d1 = Constants.M_SQRT_2 * Constants.M_1_SQRTPI;
                 n_d2 = Constants.M_SQRT_2 * Constants.M_1_SQRTPI;
-            } else if (forward > strike) {
+            } else if ( forward > strike ) {
                 D1 = Constants.QL_MAX_REAL;
                 D2 = Constants.QL_MAX_REAL;
                 cum_d1 = 1.0;
@@ -191,12 +176,12 @@ public class BlackCalculator {
         // in case of plain-vanilla payoffs, it is also the only part
         // which is executed.
         final Option.Type optionType = payoff.optionType();
-        if (optionType == Option.Type.Call) {
+        if ( optionType == Option.Type.Call ) {
             alpha = cum_d1;// N(d1)
             dAlpha_dD1 = n_d1;// n(d1)
             beta = -cum_d2;// -N(d2)
             dBeta_dD2 = -n_d2;// -n(d2)
-        } else if (optionType == Option.Type.Put) {
+        } else if ( optionType == Option.Type.Put ) {
             alpha = -1.0 + cum_d1;// -N(-d1)
             dAlpha_dD1 = n_d1;// n( d1)
             beta = 1.0 - cum_d2;// N(-d2)
@@ -210,30 +195,29 @@ public class BlackCalculator {
         payoff.accept(calc);
     }
 
-
     //
     // public methods
     //
 
-    public/* @Real */double value() /* @ReadOnly */{
-        /* @Real */final double result = discount * (forward * alpha + x * beta);
+    public/* @Real */double value() /* @ReadOnly */ {
+        /* @Real */
+        final double result = discount * (forward * alpha + x * beta);
         return result;
     }
 
     /**
      * Sensitivity to change in the underlying spot price.
      */
-    public/* @Real */double delta(final double spot) /* @ReadOnly */{
+    public/* @Real */double delta(final double spot) /* @ReadOnly */ {
 
-        QL.require(spot > 0.0 , "positive spot value required");
+        QL.require(spot > 0.0, "positive spot value required");
 
         // Zero-volatility case (C++ v1.42.1 blackcalculator.cpp:202-235).
-        if (stdDev <= Constants.QL_EPSILON) {
+        if ( stdDev <= Constants.QL_EPSILON ) {
             final double DforwardDsZero = forward / spot;
-            if (Closeness.isClose(forward, strike)) {
-                return alpha >= 0 ? discount * 0.5 * DforwardDsZero
-                                  : discount * (-0.5) * DforwardDsZero;
-            } else if (forward > strike) {
+            if ( Closeness.isClose(forward, strike) ) {
+                return alpha >= 0 ? discount * 0.5 * DforwardDsZero : discount * (-0.5) * DforwardDsZero;
+            } else if ( forward > strike ) {
                 return alpha >= 0 ? discount * 1.0 * DforwardDsZero : 0.0;
             } else {
                 return alpha >= 0 ? 0.0 : discount * (-1.0) * DforwardDsZero;
@@ -252,14 +236,14 @@ public class BlackCalculator {
     /**
      * Sensitivity to change in the underlying forward price.
      */
-    public/* @Real */double deltaForward() /* @ReadOnly */{
+    public/* @Real */double deltaForward() /* @ReadOnly */ {
 
         // Zero-volatility case (C++ v1.42.1 blackcalculator.cpp:248-277).
-        if (stdDev <= Constants.QL_EPSILON) {
-            if (Closeness.isClose(forward, strike)) {
+        if ( stdDev <= Constants.QL_EPSILON ) {
+            if ( Closeness.isClose(forward, strike) ) {
                 return alpha >= 0 ? discount * 0.5 : discount * (-0.5);
-            } else if (forward > strike) {
-                return alpha >= 0 ? discount * 1.0 : 0.0;
+            } else if ( forward > strike ) {
+                return alpha >= 0 ? discount : 0.0;
             } else {
                 return alpha >= 0 ? 0.0 : discount * (-1.0);
             }
@@ -277,46 +261,44 @@ public class BlackCalculator {
     /**
      * Sensitivity in percent to a percent change in the underlying spot price.
      */
-    public double elasticity(final double spot) /* @ReadOnly */{
+    public double elasticity(final double spot) /* @ReadOnly */ {
         final double val = value();
         final double del = delta(spot);
-        if (val > Constants.QL_EPSILON)
+        if ( val > Constants.QL_EPSILON )
             return del / val * spot;
-        else if (Math.abs(del) < Constants.QL_EPSILON)
+        else if ( Math.abs(del) < Constants.QL_EPSILON )
             return 0.0;
-        else if (del > 0.0)
+        else if ( del > 0.0 )
             return Double.MAX_VALUE;
         else
             return Double.MIN_VALUE;
     }
 
     /**
-     * Sensitivity in percent to a percent change in the underlying forward
-     * price.
+     * Sensitivity in percent to a percent change in the underlying forward price.
      */
-    public double elasticityForward() /* @ReadOnly */{
+    public double elasticityForward() /* @ReadOnly */ {
         final double val = value();
         final double del = deltaForward();
-        if (val > Constants.QL_EPSILON)
+        if ( val > Constants.QL_EPSILON )
             return del / val * forward;
-        else if (Math.abs(del) < Constants.QL_EPSILON)
+        else if ( Math.abs(del) < Constants.QL_EPSILON )
             return 0.0;
-        else if (del > 0.0)
+        else if ( del > 0.0 )
             return Double.MAX_VALUE;
         else
             return Double.MIN_VALUE;
     }
 
     /**
-     * Second order derivative with respect to change in the underlying spot
-     * price.
+     * Second order derivative with respect to change in the underlying spot price.
      */
-    public double gamma(final double spot) /* @ReadOnly */{
+    public double gamma(final double spot) /* @ReadOnly */ {
 
-        QL.require(spot > 0.0 , "positive spot value required");
+        QL.require(spot > 0.0, "positive spot value required");
 
         // Zero volatility ⇒ no convexity (C++ v1.42.1 blackcalculator.cpp:319-323).
-        if (stdDev <= Constants.QL_EPSILON) {
+        if ( stdDev <= Constants.QL_EPSILON ) {
             return 0.0;
         }
 
@@ -332,13 +314,12 @@ public class BlackCalculator {
     }
 
     /**
-     * Second order derivative with respect to change in the underlying forward
-     * price.
+     * Second order derivative with respect to change in the underlying forward price.
      */
-    public double gammaForward() /* @ReadOnly */{
+    public double gammaForward() /* @ReadOnly */ {
 
         // Zero volatility ⇒ no convexity (C++ v1.42.1 blackcalculator.cpp:342-346).
-        if (stdDev <= Constants.QL_EPSILON) {
+        if ( stdDev <= Constants.QL_EPSILON ) {
             return 0.0;
         }
 
@@ -359,11 +340,11 @@ public class BlackCalculator {
     /**
      * Sensitivity to time to maturity.
      */
-    public double theta(final double spot, final/* @Time */double maturity) /* @ReadOnly */{
+    public double theta(final double spot, final/* @Time */double maturity) /* @ReadOnly */ {
 
-        QL.require(maturity >= 0.0 , "negative maturity not allowed");
-        if (Closeness.isClose(maturity, 0.0)) return 0.0;
-
+        QL.require(maturity >= 0.0, "negative maturity not allowed");
+        if ( Closeness.isClose(maturity, 0.0) )
+            return 0.0;
 
         // =====================================================================
         //
@@ -375,24 +356,25 @@ public class BlackCalculator {
         // return rate*value() - (rate-dividendRate)*spot*delta(spot) - 0.5*vol*vol*spot*spot*gamma(spot);
         // =====================================================================
 
-        return -(Math.log(discount) * value() + Math.log(forward / spot) * spot * delta(spot) + 0.5 * variance * spot * spot * gamma(spot)) / maturity;
+        return -(Math.log(discount) * value() + Math.log(forward / spot) * spot * delta(spot)
+                + 0.5 * variance * spot * spot * gamma(spot)) / maturity;
     }
 
     /**
      * Sensitivity to time to maturity per day, assuming 365 day per year.
      */
-    public double thetaPerDay(final double spot, /* @Time */final double maturity) /* @ReadOnly */{
+    public double thetaPerDay(final double spot, /* @Time */final double maturity) /* @ReadOnly */ {
         return theta(spot, maturity) / 365.0;
     }
 
     /**
      * Sensitivity to volatility.
      */
-    public double vega(final/* @Time */double maturity) /* @ReadOnly */{
-        QL.require(maturity >= 0.0 , "negative maturity not allowed");
+    public double vega(final/* @Time */double maturity) /* @ReadOnly */ {
+        QL.require(maturity >= 0.0, "negative maturity not allowed");
 
         // Zero volatility ⇒ no vol sensitivity (C++ v1.42.1 blackcalculator.cpp:376-379).
-        if (stdDev <= Constants.QL_EPSILON) {
+        if ( stdDev <= Constants.QL_EPSILON ) {
             return 0.0;
         }
 
@@ -408,12 +390,12 @@ public class BlackCalculator {
     /**
      * Sensitivity to discounting rate.
      */
-    public double rho(final/* @Time */double maturity) /* @ReadOnly */{
-        QL.require(maturity >= 0.0 , "negative maturity not allowed");
+    public double rho(final/* @Time */double maturity) /* @ReadOnly */ {
+        QL.require(maturity >= 0.0, "negative maturity not allowed");
 
         // Zero volatility ⇒ rho = T * (delta_forward * forward - value/discount)
         // (C++ v1.42.1 blackcalculator.cpp:395-400).
-        if (stdDev <= Constants.QL_EPSILON) {
+        if ( stdDev <= Constants.QL_EPSILON ) {
             final double deltaFwd = deltaForward();
             return maturity * (deltaFwd * forward - value());
         }
@@ -429,12 +411,12 @@ public class BlackCalculator {
     /**
      * Sensitivity to dividend/growth rate.
      */
-    public double dividendRho(final/* @Time */double maturity) /* @ReadOnly */{
-        QL.require(maturity >= 0.0 , "negative maturity not allowed");
+    public double dividendRho(final/* @Time */double maturity) /* @ReadOnly */ {
+        QL.require(maturity >= 0.0, "negative maturity not allowed");
 
         // Zero volatility ⇒ dividendRho = -T * discount * delta_forward * forward
         // (C++ v1.42.1 blackcalculator.cpp:413-419).
-        if (stdDev <= Constants.QL_EPSILON) {
+        if ( stdDev <= Constants.QL_EPSILON ) {
             final double deltaFwd = deltaForward() / discount;  // remove discount to get pure delta
             return -maturity * discount * deltaFwd * forward;
         }
@@ -448,42 +430,40 @@ public class BlackCalculator {
     }
 
     /**
-     * Probability of being in the money in the bond martingale measure, i.e.
-     * N(d2).
+     * Probability of being in the money in the bond martingale measure, i.e. N(d2).
      *
      * <p>
      * It is a risk-neutral probability, not the real world one.
      */
-    public double itmCashProbability() /* @ReadOnly */{
+    public double itmCashProbability() /* @ReadOnly */ {
         return cum_d2;
     }
 
     /**
-     * Probability of being in the money in the asset martingale measure, i.e.
-     * N(d1).
+     * Probability of being in the money in the asset martingale measure, i.e. N(d1).
      *
      * <p>
      * It is a risk-neutral probability, not the real world one.
      */
-    public double itmAssetProbability() /* @ReadOnly */{
+    public double itmAssetProbability() /* @ReadOnly */ {
         return cum_d1;
     }
 
     /**
      * Sensitivity to strike.
      */
-    public double strikeSensitivity() /* @ReadOnly */{
+    public double strikeSensitivity() /* @ReadOnly */ {
 
         // Zero-volatility case (C++ v1.42.1 blackcalculator.cpp:432-459).
         // Call: -N(d2) where d2 -> 1 (ITM), 0 (OTM), 0.5 (ATM)
         // Put : N(-d2) = 1 - N(d2)
-        if (stdDev <= Constants.QL_EPSILON) {
-            if (Closeness.isClose(forward, strike)) {
+        if ( stdDev <= Constants.QL_EPSILON ) {
+            if ( Closeness.isClose(forward, strike) ) {
                 return alpha >= 0 ? -discount * 0.5 : discount * 0.5;
-            } else if (forward > strike) {
-                return alpha >= 0 ? -discount * 1.0 : discount * 0.0;
+            } else if ( forward > strike ) {
+                return alpha >= 0 ? -discount : discount * 0.0;
             } else {
-                return alpha >= 0 ? -discount * 0.0 : discount * 1.0;
+                return alpha >= 0 ? -discount * 0.0 : discount;
             }
         }
 
@@ -500,23 +480,21 @@ public class BlackCalculator {
      *
      * <p>Java port of C++ v1.42.1 {@code BlackCalculator::strikeGamma}.
      */
-    public double strikeGamma() /* @ReadOnly */{
+    public double strikeGamma() /* @ReadOnly */ {
 
         // Zero volatility ⇒ no convexity (C++ v1.42.1 blackcalculator.cpp:474-478).
-        if (stdDev <= Constants.QL_EPSILON) {
+        if ( stdDev <= Constants.QL_EPSILON ) {
             return 0.0;
         }
 
         final double temp = stdDev * strike;
         final double DalphaDstrike = -dAlpha_dD1 / temp;
-        final double DbetaDstrike  = -dBeta_dD2 / temp;
+        final double DbetaDstrike = -dBeta_dD2 / temp;
 
         final double D2alphaD2strike = -DalphaDstrike / strike * (1 - D1 / stdDev);
-        final double D2betaD2strike  = -DbetaDstrike  / strike * (1 - D2 / stdDev);
+        final double D2betaD2strike = -DbetaDstrike / strike * (1 - D2 / stdDev);
 
-        final double temp2 =
-                D2alphaD2strike * forward + D2betaD2strike * x
-                + 2.0 * DbetaDstrike * dx_dStrike;
+        final double temp2 = D2alphaD2strike * forward + D2betaD2strike * x + 2.0 * DbetaDstrike * dx_dStrike;
 
         return discount * temp2;
     }
@@ -526,11 +504,11 @@ public class BlackCalculator {
      *
      * <p>Java port of C++ v1.42.1 {@code BlackCalculator::vanna}.
      */
-    public double vanna(final double spot, final/* @Time */double maturity) /* @ReadOnly */{
+    public double vanna(final double spot, final/* @Time */double maturity) /* @ReadOnly */ {
         QL.require(spot > 0.0, "positive spot value required");
         QL.require(maturity >= 0.0, "negative maturity not allowed");
 
-        if (stdDev <= Constants.QL_EPSILON) {
+        if ( stdDev <= Constants.QL_EPSILON ) {
             return 0.0;
         }
 
@@ -544,10 +522,10 @@ public class BlackCalculator {
      *
      * <p>Java port of C++ v1.42.1 {@code BlackCalculator::volga}.
      */
-    public double volga(final/* @Time */double maturity) /* @ReadOnly */{
+    public double volga(final/* @Time */double maturity) /* @ReadOnly */ {
         QL.require(maturity >= 0.0, "negative maturity not allowed");
 
-        if (stdDev <= Constants.QL_EPSILON) {
+        if ( stdDev <= Constants.QL_EPSILON ) {
             return 0.0;
         }
 
@@ -555,15 +533,13 @@ public class BlackCalculator {
         return vega(maturity) * D1 * D2 / stdDev;
     }
 
-    public double alpha() /* @ReadOnly */{
+    public double alpha() /* @ReadOnly */ {
         return alpha;
     }
 
-    public double beta() /* @ReadOnly */{
+    public double beta() /* @ReadOnly */ {
         return beta;
     }
-
-
 
     //
     // inner classes
@@ -581,69 +557,69 @@ public class BlackCalculator {
 
         private final BlackCalculator black;
 
-
         //
         // public constructors
+        //
+        private final PlainVanillaPayoffVisitor plainVanillaPayoffVisitor = new PlainVanillaPayoffVisitor();
+
+        //
+        // implements PolymorphicVisitor<Payoff>
+        //
+        private final CashOrNothingPayoffVisitor cashOrNothingPayoffVisitor = new CashOrNothingPayoffVisitor();
+
+        //
+        // implements Visitor<PlainVanillaPayoff>
+        //
+        private final AssetOrNothingPayoffVisitor assetOrNothingPayoffVisitor = new AssetOrNothingPayoffVisitor();
+        private final GapPayoffVisitor gapPayoffVisitor = new GapPayoffVisitor();
+
+        //
+        // implements Visitor<CashOrNothingPayoff>
         //
 
         public Calculator(final BlackCalculator black) {
             this.black = black;
         }
 
-
-        //
-        // implements PolymorphicVisitor<Payoff>
-        //
-
-		@Override
-        public <Payoff> Visitor<Payoff> visitor(final Class<? extends Payoff> klass) {
-            if (klass==PlainVanillaPayoff.class)
-                return (Visitor<Payoff>) plainVanillaPayoffVisitor;
-            else if (klass==CashOrNothingPayoff.class)
-                return (Visitor<Payoff>) cashOrNothingPayoffVisitor;
-            else if (klass==AssetOrNothingPayoff.class)
-                return (Visitor<Payoff>) assetOrNothingPayoffVisitor;
-            else if (klass==GapPayoff.class)
-                return (Visitor<Payoff>) gapPayoffVisitor;
+        @Override
+        public < Payoff > Visitor< Payoff > visitor(final Class< ? extends Payoff > klass) {
+            if ( klass == PlainVanillaPayoff.class )
+                return (Visitor< Payoff >) plainVanillaPayoffVisitor;
+            else if ( klass == CashOrNothingPayoff.class )
+                return (Visitor< Payoff >) cashOrNothingPayoffVisitor;
+            else if ( klass == AssetOrNothingPayoff.class )
+                return (Visitor< Payoff >) assetOrNothingPayoffVisitor;
+            else if ( klass == GapPayoff.class )
+                return (Visitor< Payoff >) gapPayoffVisitor;
             else
                 throw new UnsupportedOperationException(INVALID_PAYOFF_TYPE + klass);
         }
 
-
         //
-        // implements Visitor<PlainVanillaPayoff>
+        // implements Visitor<AssetOrNothingPayoff>
         //
 
-        private final PlainVanillaPayoffVisitor plainVanillaPayoffVisitor = new PlainVanillaPayoffVisitor();
-
-        private static final class PlainVanillaPayoffVisitor implements Visitor<Payoff> {
+        private static final class PlainVanillaPayoffVisitor implements Visitor< Payoff > {
 
             @Override
-            public final void visit(final Payoff o) {
+            public void visit(final Payoff o) {
                 // nothing
             }
         }
 
-
-        //
-        // implements Visitor<CashOrNothingPayoff>
-        //
-
-        private final CashOrNothingPayoffVisitor cashOrNothingPayoffVisitor = new CashOrNothingPayoffVisitor();
-
-        private final class CashOrNothingPayoffVisitor implements Visitor<Payoff> {
+        private final class CashOrNothingPayoffVisitor implements Visitor< Payoff > {
 
             @Override
-            public final void visit(final Payoff o) {
-                final CashOrNothingPayoff payoff = (CashOrNothingPayoff)o;
+            public void visit(final Payoff o) {
+                final CashOrNothingPayoff payoff = (CashOrNothingPayoff) o;
                 black.alpha = black.dAlpha_dD1 = 0.0;
                 black.x = payoff.getCashPayoff();
                 black.dx_dStrike = 0.0;
                 final Option.Type optionType = payoff.optionType();
-                if (optionType == Option.Type.Call) {
+                if ( optionType == Option.Type.Call ) {
                     black.beta = black.cum_d2;
                     black.dBeta_dD2 = black.n_d2;
-                } else if (optionType == Option.Type.Put) {
+                } else if ( optionType == Option.Type.Put ) {
                     black.beta = 1.0 - black.cum_d2;
                     black.dBeta_dD2 = -black.n_d2;
                 } else
@@ -651,24 +627,21 @@ public class BlackCalculator {
             }
         }
 
-
         //
-        // implements Visitor<AssetOrNothingPayoff>
+        // implements Visitor<GapPayoff>
         //
 
-        private final AssetOrNothingPayoffVisitor assetOrNothingPayoffVisitor = new AssetOrNothingPayoffVisitor();
-
-        private final class AssetOrNothingPayoffVisitor implements Visitor<Payoff> {
+        private final class AssetOrNothingPayoffVisitor implements Visitor< Payoff > {
 
             @Override
             public void visit(final Payoff o) {
-                final AssetOrNothingPayoff payoff = (AssetOrNothingPayoff)o;
+                final AssetOrNothingPayoff payoff = (AssetOrNothingPayoff) o;
                 black.beta = black.dBeta_dD2 = 0.0;
                 final Option.Type optionType = payoff.optionType();
-                if (optionType == Option.Type.Call) {
+                if ( optionType == Option.Type.Call ) {
                     black.alpha = black.cum_d1;
                     black.dAlpha_dD1 = black.n_d1;
-                } else if (optionType == Option.Type.Put) {
+                } else if ( optionType == Option.Type.Put ) {
                     black.alpha = 1.0 - black.cum_d1;
                     black.dAlpha_dD1 = -black.n_d1;
                 } else
@@ -676,18 +649,11 @@ public class BlackCalculator {
             }
         }
 
-
-        //
-        // implements Visitor<GapPayoff>
-        //
-
-        private final GapPayoffVisitor gapPayoffVisitor = new GapPayoffVisitor();
-
-        private final class GapPayoffVisitor implements Visitor<Payoff> {
+        private final class GapPayoffVisitor implements Visitor< Payoff > {
 
             @Override
-            public final void visit(final Payoff o) {
-                final GapPayoff payoff = (GapPayoff)o;
+            public void visit(final Payoff o) {
+                final GapPayoff payoff = (GapPayoff) o;
                 black.x = payoff.getSecondStrike();
                 black.dx_dStrike = 0.0;
             }

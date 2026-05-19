@@ -43,8 +43,7 @@ import org.jquantlib.termstructures.Compounding;
 import org.jquantlib.time.Frequency;
 
 /**
- * Analytic engine for two-asset correlation option (Zhang 1995 closed-form,
- * from Haug "Option Pricing Formulas").
+ * Analytic engine for two-asset correlation option (Zhang 1995 closed-form, from Haug "Option Pricing Formulas").
  * <p>
  * Mirrors C++ QuantLib v1.42.1 {@code AnalyticTwoAssetCorrelationEngine} in
  * {@code ql/pricingengines/exotic/analytictwoassetcorrelationengine.{hpp,cpp}}.
@@ -55,17 +54,15 @@ public class AnalyticTwoAssetCorrelationEngine extends MultiAssetOption.EngineIm
 
     private final GeneralizedBlackScholesProcess p1;
     private final GeneralizedBlackScholesProcess p2;
-    private final Handle<? extends Quote> correlation;
+    private final Handle< ? extends Quote > correlation;
     private final TwoAssetCorrelationOption.ArgumentsImpl a;
     private final MultiAssetOption.ResultsImpl r;
 
     public AnalyticTwoAssetCorrelationEngine(final GeneralizedBlackScholesProcess p1,
-                                             final GeneralizedBlackScholesProcess p2,
-                                             final Handle<? extends Quote> correlation) {
-        super(new TwoAssetCorrelationOption.ArgumentsImpl(),
-              new MultiAssetOption.ResultsImpl());
+            final GeneralizedBlackScholesProcess p2, final Handle< ? extends Quote > correlation) {
+        super(new TwoAssetCorrelationOption.ArgumentsImpl(), new MultiAssetOption.ResultsImpl());
         this.a = (TwoAssetCorrelationOption.ArgumentsImpl) arguments_;
-        this.r = (MultiAssetOption.ResultsImpl) results_;
+        this.r = results_;
         this.p1 = p1;
         this.p2 = p2;
         this.correlation = correlation;
@@ -77,8 +74,7 @@ public class AnalyticTwoAssetCorrelationEngine extends MultiAssetOption.EngineIm
     @Override
     public void calculate() {
         final double rho = correlation.currentLink().value();
-        final BivariateCumulativeNormalDistributionDr78 M =
-                new BivariateCumulativeNormalDistributionDr78(rho);
+        final BivariateCumulativeNormalDistributionDr78 M = new BivariateCumulativeNormalDistributionDr78(rho);
 
         QL.require(a.payoff instanceof PlainVanillaPayoff, "non-plain payoff given");
         final PlainVanillaPayoff payoff = (PlainVanillaPayoff) a.payoff;
@@ -108,23 +104,19 @@ public class AnalyticTwoAssetCorrelationEngine extends MultiAssetOption.EngineIm
 
         final double sqrtT = Math.sqrt(T);
 
-        final double y1 = (Math.log(s1 / strike) + (b1 - (sigma1 * sigma1) / 2.0) * T)
-                / (sigma1 * sqrtT);
-        final double y2 = (Math.log(s2 / a.X2) + (b2 - (sigma2 * sigma2) / 2.0) * T)
-                / (sigma2 * sqrtT);
+        final double y1 = (Math.log(s1 / strike) + (b1 - (sigma1 * sigma1) / 2.0) * T) / (sigma1 * sqrtT);
+        final double y2 = (Math.log(s2 / a.X2) + (b2 - (sigma2 * sigma2) / 2.0) * T) / (sigma2 * sqrtT);
 
-        switch (payoff.optionType()) {
-          case Call:
-            r.value = s2 * Math.exp((b2 - rRate) * T)
-                          * M.op(y2 + sigma2 * sqrtT, y1 + rho * sigma2 * sqrtT)
+        switch ( payoff.optionType() ) {
+        case Call:
+            r.value = s2 * Math.exp((b2 - rRate) * T) * M.op(y2 + sigma2 * sqrtT, y1 + rho * sigma2 * sqrtT)
                     - a.X2 * Math.exp(-rRate * T) * M.op(y2, y1);
             break;
-          case Put:
-            r.value = a.X2 * Math.exp(-rRate * T) * M.op(-y2, -y1)
-                    - s2 * Math.exp((b2 - rRate) * T)
-                          * M.op(-y2 - sigma2 * sqrtT, -y1 - rho * sigma2 * sqrtT);
+        case Put:
+            r.value = a.X2 * Math.exp(-rRate * T) * M.op(-y2, -y1) - s2 * Math.exp((b2 - rRate) * T) * M.op(
+                    -y2 - sigma2 * sqrtT, -y1 - rho * sigma2 * sqrtT);
             break;
-          default:
+        default:
             throw new LibraryException(Option.Type.UNKNOWN_OPTION_TYPE);
         }
     }

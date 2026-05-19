@@ -23,7 +23,7 @@ package org.jquantlib.methods.finitedifferences;
 
 /**
  * @author Srinivas Hasti
- * 
+ *
  */
 public class DZero extends TridiagonalOperator {
 

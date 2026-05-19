@@ -22,13 +22,11 @@ package org.jquantlib.experimental.commodities;
 /**
  * Tokyo kilolitre unit of measure (KL_tk).
  * <p>
- * Java port of QuantLib v1.42.1 {@code TokyoKilolitreUnitOfMeasure} from
- * {@code petroleumunitsofmeasure.hpp}.
+ * Java port of QuantLib v1.42.1 {@code TokyoKilolitreUnitOfMeasure} from {@code petroleumunitsofmeasure.hpp}.
  */
 public class TokyoKilolitreUnitOfMeasure extends UnitOfMeasure {
 
-    private static final Data SHARED =
-            new Data("Tokyo Kilolitres", "KL_tk", Type.Volume, new BarrelUnitOfMeasure());
+    private static final Data SHARED = new Data("Tokyo Kilolitres", "KL_tk", Type.Volume, new BarrelUnitOfMeasure());
 
     public TokyoKilolitreUnitOfMeasure() {
         super();

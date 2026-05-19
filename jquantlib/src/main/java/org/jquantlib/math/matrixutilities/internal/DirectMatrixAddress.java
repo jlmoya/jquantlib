@@ -37,32 +37,25 @@ POSSIBILITY OF SUCH DAMAGE.
 */
 package org.jquantlib.math.matrixutilities.internal;
 
-import java.util.EnumSet;
-import java.util.Set;
-
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.math.matrixutilities.Matrix;
+
+import java.util.EnumSet;
+import java.util.Set;
 
 /**
  * This accessor provides contiguous addressing on matrices
  *
- * @see Matrix
- *
  * @author Richard Gomes
+ * @see Matrix
  */
 public class DirectMatrixAddress extends DirectAddress implements Address.MatrixAddress {
 
-    public DirectMatrixAddress(
-            final double[] data,
-            final int row0, final int row1,
-            final Address chain,
-            final int col0, final int col1,
-            final Set<Address.Flags> flags,
-            final boolean contiguous,
-            final int rows, final int cols) {
+    public DirectMatrixAddress(final double[] data, final int row0, final int row1, final Address chain, final int col0,
+            final int col1, final Set< Address.Flags > flags, final boolean contiguous, final int rows,
+            final int cols) {
         super(data, row0, row1, chain, col0, col1, flags, contiguous, rows, cols);
     }
-
 
     //
     // implements MatrixAddress
@@ -70,15 +63,16 @@ public class DirectMatrixAddress extends DirectAddress implements Address.Matrix
 
     @Override
     public MatrixAddress toFortran() {
-        return isFortran() ? this :
-            new DirectMatrixAddress(data, row0, row1, this.chain, col0, col1, EnumSet.of(Address.Flags.FORTRAN), contiguous, rows, cols);
+        return isFortran()
+                ? this
+                : new DirectMatrixAddress(data, row0, row1, this.chain, col0, col1, EnumSet.of(Address.Flags.FORTRAN),
+                        contiguous, rows, cols);
     }
 
     @Override
     public MatrixAddress toJava() {
-        return isFortran() ?
-            new DirectMatrixAddress(data, row0+1, row1+1, this.chain, col0+1, col1+1, EnumSet.noneOf(Address.Flags.class), contiguous, rows, cols)
-            : this;
+        return isFortran() ? new DirectMatrixAddress(data, row0 + 1, row1 + 1, this.chain, col0 + 1, col1 + 1,
+                EnumSet.noneOf(Address.Flags.class), contiguous, rows, cols) : this;
     }
 
     @Override
@@ -93,9 +87,8 @@ public class DirectMatrixAddress extends DirectAddress implements Address.Matrix
 
     @Override
     public int op(final int row, final int col) {
-        return (row0+row)*cols + (col0+col);
+        return (row0 + row) * cols + (col0 + col);
     }
-
 
     //
     // implements Cloneable
@@ -105,11 +98,10 @@ public class DirectMatrixAddress extends DirectAddress implements Address.Matrix
     public DirectMatrixAddress clone() {
         try {
             return (DirectMatrixAddress) super.clone();
-        } catch (final Exception e) {
+        } catch ( final Exception e ) {
             throw new LibraryException(e);
         }
     }
-
 
     //
     // private inner classes
@@ -118,8 +110,8 @@ public class DirectMatrixAddress extends DirectAddress implements Address.Matrix
     private class DirectMatrixAddressOffset extends DirectAddressOffset implements Address.MatrixAddress.MatrixOffset {
 
         public DirectMatrixAddressOffset(final int row, final int col) {
-            super.row = row0+row;
-            super.col = col0+col;
+            super.row = row0 + row;
+            super.col = col0 + col;
         }
 
         @Override
@@ -144,17 +136,17 @@ public class DirectMatrixAddress extends DirectAddress implements Address.Matrix
 
         @Override
         public void setRow(final int row) {
-            super.row = row0+row;
+            super.row = row0 + row;
         }
 
         @Override
         public void setCol(final int col) {
-            super.col = col0+col;
+            super.col = col0 + col;
         }
 
         @Override
         public int op() {
-            return row*cols + col;
+            return row * cols + col;
         }
 
     }

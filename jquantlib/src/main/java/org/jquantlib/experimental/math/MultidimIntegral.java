@@ -21,11 +21,11 @@
 
 package org.jquantlib.experimental.math;
 
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.math.Ops;
 import org.jquantlib.math.integrals.Integrator;
+
+import java.util.List;
 
 /**
  * Integrates a scalar function of vector domain.
@@ -34,29 +34,19 @@ import org.jquantlib.math.integrals.Integrator;
  * {@code ql/experimental/math/multidimintegrator.{hpp,cpp}}.
  *
  * <p>Uses a collection of arbitrary 1D integrators along each of the
- * dimensions. Recursive cross-section integration; the outer integrator
- * iterates over the last variable, while the next-level integrator handles
- * the remaining variables.
+ * dimensions. Recursive cross-section integration; the outer integrator iterates over the last variable, while the
+ * next-level integrator handles the remaining variables.
  *
  * <p>The C++ template metaprogramming is replaced by direct recursion in this
  * Java port.
  */
 public class MultidimIntegral {
 
-    /** Functional interface for the multi-dim integrand. */
-    public interface MultiVarOp {
-        /** @param args length must equal the number of integrators */
-        double op(double[] args);
-    }
-
     private static final int MAX_DIMENSIONS = 15;
-
     private final Integrator[] integrators_;
     private final double[] varBuffer_;
-
-    public MultidimIntegral(final List<Integrator> integrators) {
-        QL.require(integrators.size() <= MAX_DIMENSIONS,
-                "Too many dimensions in integration.");
+    public MultidimIntegral(final List< Integrator > integrators) {
+        QL.require(integrators.size() <= MAX_DIMENSIONS, "Too many dimensions in integration.");
         this.integrators_ = integrators.toArray(new Integrator[0]);
         this.varBuffer_ = new double[integrators.size()];
     }
@@ -75,21 +65,26 @@ public class MultidimIntegral {
     }
 
     /**
-     * Integrate over dimension {@code dim} using the dim-th integrator;
-     * recursively integrate the remaining dimensions.
+     * Integrate over dimension {@code dim} using the dim-th integrator; recursively integrate the remaining
+     * dimensions.
      */
-    private double integrate(final int dim, final MultiVarOp f,
-                             final double[] a, final double[] b) {
+    private double integrate(final int dim, final MultiVarOp f, final double[] a, final double[] b) {
         return integrators_[dim].op(new Ops.DoubleOp() {
             @Override
             public double op(final double x) {
                 varBuffer_[dim] = x;
-                if (dim == 0) {
+                if ( dim == 0 ) {
                     return f.op(varBuffer_);
                 } else {
                     return integrate(dim - 1, f, a, b);
                 }
             }
         }, a[dim], b[dim]);
+    }
+
+    /** Functional interface for the multi-dim integrand. */
+    public interface MultiVarOp {
+        /** @param args length must equal the number of integrators */
+        double op(double[] args);
     }
 }

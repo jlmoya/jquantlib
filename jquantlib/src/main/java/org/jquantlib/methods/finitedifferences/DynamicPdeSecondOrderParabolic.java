@@ -24,39 +24,38 @@ package org.jquantlib.methods.finitedifferences;
 /**
  * @author Srinivas Hasti
  */
-import java.lang.reflect.Proxy;
 
 import org.jquantlib.lang.reflect.DynamicProxyInvocationHandler;
 
+import java.lang.reflect.Proxy;
+
 public class DynamicPdeSecondOrderParabolic extends PdeSecondOrderParabolic {
 
-	private Pde pde;
+    private final Pde pde;
 
-	private DynamicPdeSecondOrderParabolic(Pde pde) {
-		this.pde = pde;
-	}
+    private DynamicPdeSecondOrderParabolic(Pde pde) {
+        this.pde = pde;
+    }
 
-	@Override
-	public double diffusion(double t, double x) {
-		return pde.diffusion(t, x);
-	}
+    public static < T > DynamicPdeSecondOrderParabolic getInstance(T process) {
+        Pde parabolic = (Pde) Proxy.newProxyInstance(Pde.class.getClassLoader(), new Class[] { Pde.class },
+                new DynamicProxyInvocationHandler< T >(process));
+        return new DynamicPdeSecondOrderParabolic(parabolic);
+    }
 
-	@Override
-	public double discount(double t, double x) {
-		return pde.discount(t, x);
-	}
+    @Override
+    public double diffusion(double t, double x) {
+        return pde.diffusion(t, x);
+    }
 
-	@Override
-	public double drift(double t, double x) {
-		return pde.drift(t, x);
-	}
+    @Override
+    public double discount(double t, double x) {
+        return pde.discount(t, x);
+    }
 
-	public static <T> DynamicPdeSecondOrderParabolic getInstance(T process) {
-		Pde parabolic = (Pde) Proxy.newProxyInstance(
-				Pde.class.getClassLoader(),
-				new Class[] { Pde.class },
-				new DynamicProxyInvocationHandler<T>(process));
-		return new DynamicPdeSecondOrderParabolic(parabolic);
-	}
+    @Override
+    public double drift(double t, double x) {
+        return pde.drift(t, x);
+    }
 
 }

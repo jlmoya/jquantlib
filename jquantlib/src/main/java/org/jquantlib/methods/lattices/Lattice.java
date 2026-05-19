@@ -69,7 +69,6 @@ public abstract class Lattice {
         return t;
     }
 
-
     ////////////////////////////////////////////////////////////////////////////////////
     //
     // Numerical method interface
@@ -97,8 +96,9 @@ public abstract class Lattice {
     /**
      * Roll back an asset until the given time, but do not perform the final adjustment.
      * <p>
-     * @warning In version 0.3.7 and earlier, this method was called rollAlmostBack and performed pre-adjustment.
-     * This is no longer true; when migrating your code, you'll have to replace calls such as:
+     *
+     * @warning In version 0.3.7 and earlier, this method was called rollAlmostBack and performed pre-adjustment. This
+     * is no longer true; when migrating your code, you'll have to replace calls such as:
      * <pre>
      * method->rollAlmostBack(asset,t);
      * </pre>
@@ -117,6 +117,7 @@ public abstract class Lattice {
 
     /**
      * This is smelly, but we need it. We'll rethink it later.
+     *
      * @param t
      * @return
      */

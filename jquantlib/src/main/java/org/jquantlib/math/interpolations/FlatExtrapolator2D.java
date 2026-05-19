@@ -46,41 +46,41 @@ public class FlatExtrapolator2D extends AbstractInterpolation2D {
             calculate();
         }
 
-//XXX
-//        //
-//        // public methods
-//        //
-//
-//        public void update() {
-//            decoratedInterp_.update();
-//        }
+        //XXX
+        //        //
+        //        // public methods
+        //        //
+        //
+        //        public void update() {
+        //            decoratedInterp_.update();
+        //        }
 
         //
         // overrides AbstractInterpolation2D.Impl
         //
 
         @Override
-        public double xMin() /* @ReadOnly */{
+        public double xMin() /* @ReadOnly */ {
             return decoratedInterp_.xMin();
         }
 
         @Override
-        public double xMax() /* @ReadOnly */{
+        public double xMax() /* @ReadOnly */ {
             return decoratedInterp_.xMax();
         }
 
         @Override
-        public double yMin() /* @ReadOnly */{
+        public double yMin() /* @ReadOnly */ {
             return decoratedInterp_.yMin();
         }
 
         @Override
-        public double yMax() /* @ReadOnly */{
+        public double yMax() /* @ReadOnly */ {
             return decoratedInterp_.yMax();
         }
 
         @Override
-        public boolean isInRange(final double x, final double y) /* @ReadOnly */{
+        public boolean isInRange(final double x, final double y) /* @ReadOnly */ {
             return decoratedInterp_.isInRange(x, y);
         }
 
@@ -90,7 +90,7 @@ public class FlatExtrapolator2D extends AbstractInterpolation2D {
         }
 
         @Override
-        public double op(double x, double y) /* @ReadOnly */{
+        public double op(double x, double y) /* @ReadOnly */ {
             x = bindX(x);
             y = bindY(y);
             return decoratedInterp_.op(x, y);
@@ -101,35 +101,34 @@ public class FlatExtrapolator2D extends AbstractInterpolation2D {
         //
 
         @Override
-        protected int locateX(final double x) /* @ReadOnly */{
+        protected int locateX(final double x) /* @ReadOnly */ {
             return decoratedInterp_.locateX(x);
         }
 
         @Override
-        protected int locateY(final double y) /* @ReadOnly */{
+        protected int locateY(final double y) /* @ReadOnly */ {
             return decoratedInterp_.locateY(y);
         }
-
 
         //
         // private methods
         //
 
-        private double bindX(final double x) /* @ReadOnly */{
-            if (x < xMin()) {
+        private double bindX(final double x) /* @ReadOnly */ {
+            if ( x < xMin() ) {
                 return xMin();
             }
-            if (x > xMax()) {
+            if ( x > xMax() ) {
                 return xMax();
             }
             return x;
         }
 
-        private double bindY(final double y) /* @ReadOnly */{
-            if (y < yMin()) {
+        private double bindY(final double y) /* @ReadOnly */ {
+            if ( y < yMin() ) {
                 return yMin();
             }
-            if (y > yMax()) {
+            if ( y > yMax() ) {
                 return yMax();
             }
             return y;

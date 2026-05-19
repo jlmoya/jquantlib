@@ -32,23 +32,19 @@ import org.jquantlib.time.Date;
  * {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
  *
  * <p>A forward-start option whose strike is set at {@code resetDate}
- * to {@code moneyness * S(resetDate)}. The exercise is European at the
- * payoff's terminal exercise date.
+ * to {@code moneyness * S(resetDate)}. The exercise is European at the payoff's terminal exercise date.
  *
  * <p>Because Java does not support C++ template member typedefs, the
- * {@code ForwardOptionArguments<ArgumentsType>} template is collapsed to
- * a single concrete subclass {@link ArgumentsImpl} extending
- * {@link OneAssetOption.ArgumentsImpl}.
+ * {@code ForwardOptionArguments<ArgumentsType>} template is collapsed to a single concrete subclass
+ * {@link ArgumentsImpl} extending {@link OneAssetOption.ArgumentsImpl}.
  */
 public class ForwardVanillaOption extends OneAssetOption {
 
     private final double moneyness_;
-    private final Date   resetDate_;
+    private final Date resetDate_;
 
-    public ForwardVanillaOption(final double moneyness,
-                                final Date resetDate,
-                                final StrikedTypePayoff payoff,
-                                final Exercise exercise) {
+    public ForwardVanillaOption(final double moneyness, final Date resetDate, final StrikedTypePayoff payoff,
+            final Exercise exercise) {
         super(payoff, exercise);
         this.moneyness_ = moneyness;
         this.resetDate_ = resetDate;
@@ -69,31 +65,38 @@ public class ForwardVanillaOption extends OneAssetOption {
         // Results are inherited from OneAssetOption — no extra fields here.
     }
 
-    public double moneyness() { return moneyness_; }
-    public Date resetDate()   { return resetDate_; }
+    public double moneyness() {
+        return moneyness_;
+    }
 
+    public Date resetDate() {
+        return resetDate_;
+    }
 
     //
     // public inner classes
     //
 
     /** Marking interface — extra fields in {@link ArgumentsImpl}. */
-    public interface Arguments extends OneAssetOption.Arguments { /* marker */ }
+    public interface Arguments extends OneAssetOption.Arguments { /* marker */
+    }
 
     /** Marking interface — same shape as {@link OneAssetOption.Results}. */
-    public interface Results extends OneAssetOption.Results { /* marker */ }
+    public interface Results extends OneAssetOption.Results { /* marker */
+    }
 
     /**
-     * Arguments for forward (strike-resetting) option calculation.
-     * Mirrors C++ {@code ForwardOptionArguments<OneAssetOption::arguments>}.
+     * Arguments for forward (strike-resetting) option calculation. Mirrors C++
+     * {@code ForwardOptionArguments<OneAssetOption::arguments>}.
      */
-    public static class ArgumentsImpl extends OneAssetOption.ArgumentsImpl
-            implements ForwardVanillaOption.Arguments {
+    public static class ArgumentsImpl extends OneAssetOption.ArgumentsImpl implements ForwardVanillaOption.Arguments {
 
         public double moneyness = Double.NaN;
-        public Date   resetDate;
+        public Date resetDate;
 
-        public ArgumentsImpl() { super(); }
+        public ArgumentsImpl() {
+            super();
+        }
 
         @Override
         public void validate() {
@@ -101,25 +104,22 @@ public class ForwardVanillaOption extends OneAssetOption {
             QL.require(!Double.isNaN(moneyness), "null moneyness given");
             QL.require(moneyness > 0.0, "negative or zero moneyness given");
             QL.require(resetDate != null, "null reset date given");
-            QL.require(!resetDate.lt(new Settings().evaluationDate()),
-                       "reset date in the past");
-            QL.require(exercise.lastDate().gt(resetDate),
-                       "reset date later or equal to maturity");
+            QL.require(!resetDate.lt(new Settings().evaluationDate()), "reset date in the past");
+            QL.require(exercise.lastDate().gt(resetDate), "reset date later or equal to maturity");
         }
     }
 
     /** Results — same as base {@link OneAssetOption.ResultsImpl}. */
     public static class ResultsImpl extends OneAssetOption.ResultsImpl
-            implements ForwardVanillaOption.Results { /* marker */ }
+            implements ForwardVanillaOption.Results { /* marker */
+    }
 
     /**
      * Pricing-engine base for forward vanilla options. Mirrors C++
-     * {@code GenericEngine<ForwardOptionArguments<VanillaOption::arguments>,
-     * VanillaOption::results>}.
+     * {@code GenericEngine<ForwardOptionArguments<VanillaOption::arguments>, VanillaOption::results>}.
      */
     public abstract static class EngineImpl
-            extends GenericEngine<ForwardVanillaOption.Arguments,
-                                  ForwardVanillaOption.Results> {
+            extends GenericEngine< ForwardVanillaOption.Arguments, ForwardVanillaOption.Results > {
         public EngineImpl() {
             super(new ArgumentsImpl(), new ResultsImpl());
         }

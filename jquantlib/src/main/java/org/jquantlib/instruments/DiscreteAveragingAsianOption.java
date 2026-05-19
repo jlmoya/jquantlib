@@ -44,10 +44,6 @@
 
 package org.jquantlib.instruments;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.exercise.Exercise;
 import org.jquantlib.lang.exceptions.LibraryException;
@@ -57,39 +53,39 @@ import org.jquantlib.pricingengines.GenericEngine;
 import org.jquantlib.pricingengines.PricingEngine;
 import org.jquantlib.time.Date;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Discrete-averaging Asian option
  *
- * @category instruments
- *
  * @author <Richard Gomes>
+ * @category instruments
  */
 public class DiscreteAveragingAsianOption extends OneAssetOption {
 
     protected final AverageType averageType;
     protected final /* @Real */ double runningAccumulator;
     protected final /* @Size */ int pastFixings;
-    protected final List<Date> fixingDates;
+    protected final List< Date > fixingDates;
 
-    public DiscreteAveragingAsianOption(
-            final AverageType averageType,
-            final /* @Real */ double runningAccumulator,
-            final /* @Size */ int pastFixings,
-            final List<Date> fixingDates,
-            final StrikedTypePayoff payoff,
+    public DiscreteAveragingAsianOption(final AverageType averageType, final /* @Real */ double runningAccumulator,
+            final /* @Size */ int pastFixings, final List< Date > fixingDates, final StrikedTypePayoff payoff,
             final Exercise exercise) {
         super(payoff, exercise);
         this.averageType = averageType;
         this.runningAccumulator = runningAccumulator;
         this.pastFixings = pastFixings;
-        this.fixingDates = new ArrayList<Date>(fixingDates);
+        this.fixingDates = new ArrayList< Date >(fixingDates);
         Collections.sort(this.fixingDates);
     }
 
     @Override
     public void setupArguments(final PricingEngine.Arguments arguments) /* @ReadOnly */ {
         super.setupArguments(arguments);
-        QL.require(DiscreteAveragingAsianOption.Arguments.class.isAssignableFrom(arguments.getClass()), ReflectConstants.WRONG_ARGUMENT_TYPE); // QA:[RG]::verified
+        QL.require(DiscreteAveragingAsianOption.Arguments.class.isAssignableFrom(arguments.getClass()),
+                ReflectConstants.WRONG_ARGUMENT_TYPE); // QA:[RG]::verified
         final DiscreteAveragingAsianOption.ArgumentsImpl a = (DiscreteAveragingAsianOption.ArgumentsImpl) arguments;
         a.averageType = averageType;
         a.runningAccumulator = runningAccumulator;
@@ -97,24 +93,22 @@ public class DiscreteAveragingAsianOption extends OneAssetOption {
         a.fixingDates = fixingDates;
     }
 
-
     //
     // public inner classes
     //
-
 
     /**
      * Description of the terms and conditions of a discrete average out fixed strike option.
      *
      * @author <Richard Gomes>
      */
-    static public class ArgumentsImpl extends OneAssetOption.ArgumentsImpl implements DiscreteAveragingAsianOption.Arguments {
+    static public class ArgumentsImpl extends OneAssetOption.ArgumentsImpl
+            implements DiscreteAveragingAsianOption.Arguments {
 
         public AverageType averageType;
         public /*@Real*/ double runningAccumulator;
         public /*@Size*/ int pastFixings;
-        public List<Date> fixingDates;
-
+        public List< Date > fixingDates;
 
         //
         // public constructors
@@ -124,27 +118,27 @@ public class DiscreteAveragingAsianOption extends OneAssetOption {
             averageType = null;
             runningAccumulator = Constants.NULL_REAL; //FIXME is there central values?
             pastFixings = Constants.NULL_INTEGER; //FIXME is there central values?
-            fixingDates = new ArrayList<Date>();
+            fixingDates = new ArrayList< Date >();
         }
-
 
         //
         // public methods
         //
 
         @Override
-        public void validate() /*@ReadOnly*/{
+        public void validate() /*@ReadOnly*/ {
             super.validate();
-            QL.require(averageType!=null , "unspecified average type"); // TODO: message
-            QL.require(pastFixings!=Constants.NULL_INTEGER, "null past-fixing number"); // TODO: message
+            QL.require(averageType != null, "unspecified average type"); // TODO: message
+            QL.require(pastFixings != Constants.NULL_INTEGER, "null past-fixing number"); // TODO: message
             QL.require(!Double.isNaN(runningAccumulator), "null running product"); // TODO: message
 
-            switch (averageType) {
+            switch ( averageType ) {
             case Arithmetic:
-                QL.require(runningAccumulator >= 0.0 , "non negative running sum required: not allowed"); // TODO: message
+                QL.require(runningAccumulator >= 0.0,
+                        "non negative running sum required: not allowed"); // TODO: message
                 break;
             case Geometric:
-                QL.require(runningAccumulator > 0.0 , "positive running product required: not allowed"); // TODO: message
+                QL.require(runningAccumulator > 0.0, "positive running product required: not allowed"); // TODO: message
                 break;
             default:
                 throw new LibraryException("invalid average type"); // TODO: message
@@ -153,11 +147,9 @@ public class DiscreteAveragingAsianOption extends OneAssetOption {
 
     }
 
-
-    static public class ResultsImpl
-            extends OneAssetOption.ResultsImpl
-            implements DiscreteAveragingAsianOption.Results { /* marking interface */ }
-
+    static public class ResultsImpl extends OneAssetOption.ResultsImpl
+            implements DiscreteAveragingAsianOption.Results { /* marking interface */
+    }
 
     /**
      * Asian option on a single asset
@@ -167,7 +159,7 @@ public class DiscreteAveragingAsianOption extends OneAssetOption {
      * @author <Richard Gomes>
      */
     static public abstract class EngineImpl
-            extends GenericEngine<DiscreteAveragingAsianOption.Arguments, DiscreteAveragingAsianOption.Results>
+            extends GenericEngine< DiscreteAveragingAsianOption.Arguments, DiscreteAveragingAsianOption.Results >
             implements DiscreteAveragingAsianOption.Results {
 
         /**
@@ -178,7 +170,5 @@ public class DiscreteAveragingAsianOption extends OneAssetOption {
         }
 
     }
-
-
 
 }

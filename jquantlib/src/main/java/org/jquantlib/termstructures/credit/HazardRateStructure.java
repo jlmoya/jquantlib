@@ -32,8 +32,6 @@
 
 package org.jquantlib.termstructures.credit;
 
-import java.util.List;
-
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.lang.annotation.Natural;
 import org.jquantlib.lang.annotation.Time;
@@ -44,22 +42,20 @@ import org.jquantlib.termstructures.DefaultProbabilityTermStructure;
 import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
 
+import java.util.List;
+
 /**
- * Hazard-rate term structure — Java port of QuantLib v1.42.1
- * {@code HazardRateStructure}
+ * Hazard-rate term structure — Java port of QuantLib v1.42.1 {@code HazardRateStructure}
  * ({@code ql/termstructures/credit/hazardratestructure.{hpp,cpp}}).
  *
  * <p>Abstract adapter on {@link DefaultProbabilityTermStructure}; subclasses
- * implement {@link #hazardRateImpl(double)} and survival probability /
- * default density are derived.
+ * implement {@link #hazardRateImpl(double)} and survival probability / default density are derived.
  *
  * <p>Hazard rates are defined with annual frequency and continuous
- * compounding. The default {@link #survivalProbabilityImpl(double)} would
- * use Gauss-Chebyshev quadrature in the C++ source; the JQuantLib port
- * intentionally throws {@link UnsupportedOperationException} for the
- * non-overridden numerical-fallback path because the ported subclasses
- * (e.g. {@code FlatHazardRate}, {@code InterpolatedHazardRateCurve}) all
- * supply closed-form overrides. A future port can wire in
+ * compounding. The default {@link #survivalProbabilityImpl(double)} would use Gauss-Chebyshev quadrature in the C++
+ * source; the JQuantLib port intentionally throws {@link UnsupportedOperationException} for the non-overridden
+ * numerical-fallback path because the ported subclasses (e.g. {@code FlatHazardRate},
+ * {@code InterpolatedHazardRateCurve}) all supply closed-form overrides. A future port can wire in
  * {@link org.jquantlib.math.integrals.GaussianQuadrature} if needed.
  */
 public abstract class HazardRateStructure extends DefaultProbabilityTermStructure {
@@ -68,66 +64,46 @@ public abstract class HazardRateStructure extends DefaultProbabilityTermStructur
         super(dayCounter);
     }
 
-    public HazardRateStructure(
-            final DayCounter dayCounter,
-            final List<Handle<Quote>> jumps,
-            final List<Date> jumpDates) {
+    public HazardRateStructure(final DayCounter dayCounter, final List< Handle< Quote > > jumps,
+            final List< Date > jumpDates) {
         super(dayCounter, jumps, jumpDates);
     }
 
-    public HazardRateStructure(
-            final Date referenceDate,
-            final Calendar cal,
-            final DayCounter dayCounter) {
+    public HazardRateStructure(final Date referenceDate, final Calendar cal, final DayCounter dayCounter) {
         super(referenceDate, cal, dayCounter);
     }
 
-    public HazardRateStructure(
-            final Date referenceDate,
-            final Calendar cal,
-            final DayCounter dayCounter,
-            final List<Handle<Quote>> jumps,
-            final List<Date> jumpDates) {
+    public HazardRateStructure(final Date referenceDate, final Calendar cal, final DayCounter dayCounter,
+            final List< Handle< Quote > > jumps, final List< Date > jumpDates) {
         super(referenceDate, cal, dayCounter, jumps, jumpDates);
     }
 
-    public HazardRateStructure(
-            final @Natural int settlementDays,
-            final Calendar cal,
-            final DayCounter dayCounter) {
+    public HazardRateStructure(final @Natural int settlementDays, final Calendar cal, final DayCounter dayCounter) {
         super(settlementDays, cal, dayCounter);
     }
 
-    public HazardRateStructure(
-            final @Natural int settlementDays,
-            final Calendar cal,
-            final DayCounter dayCounter,
-            final List<Handle<Quote>> jumps,
-            final List<Date> jumpDates) {
+    public HazardRateStructure(final @Natural int settlementDays, final Calendar cal, final DayCounter dayCounter,
+            final List< Handle< Quote > > jumps, final List< Date > jumpDates) {
         super(settlementDays, cal, dayCounter, jumps, jumpDates);
     }
 
     /**
-     * Derived classes must implement this. Mirrors C++ pure-virtual
-     * {@code hazardRateImpl(Time)}.
+     * Derived classes must implement this. Mirrors C++ pure-virtual {@code hazardRateImpl(Time)}.
      */
     @Override
     protected double hazardRateImpl(final @Time double t) {
-        throw new LibraryException(
-                "hazardRateImpl() must be implemented by a class derived from HazardRateStructure");
+        throw new LibraryException("hazardRateImpl() must be implemented by a class derived from HazardRateStructure");
     }
 
     /**
-     * Default implementation: numerical integration of {@code -h(t)} via
-     * Gauss-Chebyshev quadrature in C++. Java port currently requires
-     * subclasses to override (closed-form path); the numerical fallback is
-     * deferred until a derived class needs it.
+     * Default implementation: numerical integration of {@code -h(t)} via Gauss-Chebyshev quadrature in C++. Java port
+     * currently requires subclasses to override (closed-form path); the numerical fallback is deferred until a derived
+     * class needs it.
      */
     @Override
     protected double survivalProbabilityImpl(final @Time double t) {
-        throw new LibraryException(
-                "default numerical survivalProbabilityImpl(Time) not yet ported; " +
-                "derived class must override (Gauss-Chebyshev fallback deferred)");
+        throw new LibraryException("default numerical survivalProbabilityImpl(Time) not yet ported; "
+                + "derived class must override (Gauss-Chebyshev fallback deferred)");
     }
 
     /**

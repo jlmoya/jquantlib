@@ -41,9 +41,8 @@ import org.jquantlib.util.Observer;
 /**
  * Barrier option on two assets.
  * <p>
- * The value of the first asset is compared to the strike to determine the
- * payoff, while the value of the second asset is monitored to check if the
- * barrier is hit.
+ * The value of the first asset is compared to the strike to determine the payoff, while the value of the second asset
+ * is monitored to check if the barrier is hit.
  * <p>
  * Mirrors C++ QuantLib v1.42.1 {@code TwoAssetBarrierOption} in
  * {@code ql/instruments/twoassetbarrieroption.{hpp,cpp}}.
@@ -57,22 +56,18 @@ public class TwoAssetBarrierOption extends MultiAssetOption {
     //
 
     protected final BarrierType barrierType_;
-    protected final double      barrier_;
-
+    protected final double barrier_;
 
     //
     // public constructors
     //
 
-    public TwoAssetBarrierOption(final BarrierType barrierType,
-                                 final double barrier,
-                                 final StrikedTypePayoff payoff,
-                                 final Exercise exercise) {
+    public TwoAssetBarrierOption(final BarrierType barrierType, final double barrier, final StrikedTypePayoff payoff,
+            final Exercise exercise) {
         super(payoff, exercise);
         this.barrierType_ = barrierType;
-        this.barrier_     = barrier;
+        this.barrier_ = barrier;
     }
-
 
     //
     // overrides MultiAssetOption / Option
@@ -83,12 +78,10 @@ public class TwoAssetBarrierOption extends MultiAssetOption {
         super.setupArguments(args);
         QL.require(TwoAssetBarrierOption.ArgumentsImpl.class.isAssignableFrom(args.getClass()),
                 ReflectConstants.WRONG_ARGUMENT_TYPE);
-        final TwoAssetBarrierOption.ArgumentsImpl moreArgs =
-                (TwoAssetBarrierOption.ArgumentsImpl) args;
+        final TwoAssetBarrierOption.ArgumentsImpl moreArgs = (TwoAssetBarrierOption.ArgumentsImpl) args;
         moreArgs.barrierType = barrierType_;
-        moreArgs.barrier     = barrier_;
+        moreArgs.barrier = barrier_;
     }
-
 
     //
     // public inner classes
@@ -99,31 +92,30 @@ public class TwoAssetBarrierOption extends MultiAssetOption {
      * <p>
      * Mirrors C++ QuantLib v1.42.1 {@code TwoAssetBarrierOption::arguments}.
      */
-    public static class ArgumentsImpl extends MultiAssetOption.ArgumentsImpl
-            implements MultiAssetOption.Arguments {
+    public static class ArgumentsImpl extends MultiAssetOption.ArgumentsImpl implements MultiAssetOption.Arguments {
 
         // TODO: refactor messages
         private static final String UNKNOWN_TYPE = "unknown type";
 
         public BarrierType barrierType;
-        public double      barrier;
+        public double barrier;
 
         public ArgumentsImpl() {
             this.barrierType = BarrierType.Unknown;
-            this.barrier     = Constants.NULL_REAL;
+            this.barrier = Constants.NULL_REAL;
         }
 
         @Override
         public void validate() /* @ReadOnly */ {
             super.validate();
 
-            switch (barrierType) {
-              case DownIn:
-              case UpIn:
-              case DownOut:
-              case UpOut:
+            switch ( barrierType ) {
+            case DownIn:
+            case UpIn:
+            case DownOut:
+            case UpOut:
                 break;
-              default:
+            default:
                 throw new LibraryException(UNKNOWN_TYPE);
             }
 
@@ -131,18 +123,17 @@ public class TwoAssetBarrierOption extends MultiAssetOption {
         }
     }
 
-    public static class ResultsImpl extends MultiAssetOption.ResultsImpl { /* marking */ }
+    public static class ResultsImpl extends MultiAssetOption.ResultsImpl { /* marking */
+    }
 
     /**
      * Two-asset barrier-option engine base class.
      * <p>
-     * Mirrors C++ QuantLib v1.42.1 {@code TwoAssetBarrierOption::engine} and
-     * provides the {@code triggered(underlying)} helper used by analytic
-     * implementations.
+     * Mirrors C++ QuantLib v1.42.1 {@code TwoAssetBarrierOption::engine} and provides the {@code triggered(underlying)}
+     * helper used by analytic implementations.
      */
     public static abstract class EngineImpl
-            extends GenericEngine<TwoAssetBarrierOption.ArgumentsImpl,
-                                  TwoAssetBarrierOption.ResultsImpl>
+            extends GenericEngine< TwoAssetBarrierOption.ArgumentsImpl, TwoAssetBarrierOption.ResultsImpl >
             implements MultiAssetOption.Engine, Observer {
 
         protected EngineImpl() {
@@ -150,16 +141,15 @@ public class TwoAssetBarrierOption extends MultiAssetOption {
         }
 
         protected boolean triggered(final double underlying) /* @ReadOnly */ {
-            final TwoAssetBarrierOption.ArgumentsImpl a =
-                    (TwoAssetBarrierOption.ArgumentsImpl) arguments_;
-            switch (a.barrierType) {
-              case DownIn:
-              case DownOut:
+            final TwoAssetBarrierOption.ArgumentsImpl a = arguments_;
+            switch ( a.barrierType ) {
+            case DownIn:
+            case DownOut:
                 return underlying < a.barrier;
-              case UpIn:
-              case UpOut:
+            case UpIn:
+            case UpOut:
                 return underlying > a.barrier;
-              default:
+            default:
                 throw new LibraryException("unknown type");
             }
         }

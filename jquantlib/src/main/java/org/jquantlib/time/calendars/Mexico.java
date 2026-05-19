@@ -22,13 +22,6 @@
 
 package org.jquantlib.time.calendars;
 
-import static org.jquantlib.time.Month.December;
-import static org.jquantlib.time.Month.February;
-import static org.jquantlib.time.Month.January;
-import static org.jquantlib.time.Month.March;
-import static org.jquantlib.time.Month.May;
-import static org.jquantlib.time.Month.September;
-
 import org.jquantlib.lang.annotation.QualityAssurance;
 import org.jquantlib.lang.annotation.QualityAssurance.Quality;
 import org.jquantlib.lang.annotation.QualityAssurance.Version;
@@ -37,6 +30,8 @@ import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Month;
 import org.jquantlib.time.Weekday;
+
+import static org.jquantlib.time.Month.*;
 
 /**
  * Mexican calendars Holidays for the Mexican stock exchange (data from <http://www.bmv.com.mx/>):
@@ -54,39 +49,38 @@ import org.jquantlib.time.Weekday;
  * <li>Christmas, December 25th</li>
  * </ul>
  *
- * @category calendars
- * @see <a href="http://www.bmv.com.mx/">Bolsa Mexicana de Valores</a>
- *
  * @author Q Boiler
  * @author Zahid Hussain
+ * @category calendars
+ * @see <a href="http://www.bmv.com.mx/">Bolsa Mexicana de Valores</a>
  */
 
-@QualityAssurance(quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Zahid Hussain" })
+@QualityAssurance( quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Zahid Hussain" } )
 public class Mexico extends Calendar {
-
-    public enum Market {
-        /**
-         * Mexican stock exchange
-         */
-        BMV
-    };
-
-    //
-    // public constructors
-    //
 
     public Mexico() {
         this(Market.BMV);
     }
 
+    //
+    // public constructors
+    //
+
     public Mexico(final Market m) {
-        switch (m) {
+        switch ( m ) {
         case BMV:
             impl = new BmvImpl();
             break;
         default:
             throw new LibraryException(UNKNOWN_MARKET);
         }
+    }
+
+    public enum Market {
+        /**
+         * Mexican stock exchange
+         */
+        BMV
     }
 
     //
@@ -107,28 +101,25 @@ public class Mexico extends Calendar {
             final Month m = date.month();
             final int y = date.year();
             final int em = easterMonday(y);
-            if (isWeekend(w)
+            return !isWeekend(w)
                     // New Year's Day
-                    || (d == 1 && m == January)
+                    && (d != 1 || m != January)
                     // Constitution Day
-                    || (d == 5 && m == February)
+                    && (d != 5 || m != February)
                     // Birthday of Benito Juarez
-                    || (d == 21 && m == March)
+                    && (d != 21 || m != March)
                     // Holy Thursday
-                    || (dd == em - 4)
+                    && (dd != em - 4)
                     // Good Friday
-                    || (dd == em - 3)
+                    && (dd != em - 3)
                     // Labour Day
-                    || (d == 1 && m == May)
+                    && (d != 1 || m != May)
                     // National Day
-                    || (d == 16 && m == September)
+                    && (d != 16 || m != September)
                     // Our Lady of Guadalupe
-                    || (d == 12 && m == December)
+                    && (d != 12 || m != December)
                     // Christmas
-                    || (d == 25 && m == December)) {
-                return false;
-            }
-            return true;
+                    && (d != 25 || m != December);
         }
     }
 }

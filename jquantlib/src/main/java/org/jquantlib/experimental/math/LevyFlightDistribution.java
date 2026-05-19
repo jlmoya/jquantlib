@@ -36,39 +36,13 @@ import org.jquantlib.QL;
  * with support over {@code x &gt;= x_m} and parameter {@code alpha &gt; 0}.
  *
  * <p>Levy Flight is normally defined as {@code x_m = 1} and {@code 0 &lt; alpha &lt; 2}
- * (where the variance is infinite). The general Pareto Type I version is well
- * defined for {@code alpha &gt; 2}, so this implementation does not restrict
- * {@code alpha &lt; 2}.
+ * (where the variance is infinite). The general Pareto Type I version is well defined for {@code alpha &gt; 2}, so this
+ * implementation does not restrict {@code alpha &lt; 2}.
  */
 public class LevyFlightDistribution {
 
-    /** Parameter holder. */
-    public static final class ParamType {
-        private final double xm_;
-        private final double alpha_;
-
-        public ParamType() {
-            this(1.0, 1.0);
-        }
-
-        public ParamType(final double xm, final double alpha) {
-            QL.require(alpha > 0.0, "alpha must be larger than 0");
-            this.xm_ = xm;
-            this.alpha_ = alpha;
-        }
-
-        public double xm() {
-            return xm_;
-        }
-
-        public double alpha() {
-            return alpha_;
-        }
-    }
-
     private double xm_;
     private double alpha_;
-
     public LevyFlightDistribution() {
         this(1.0, 1.0);
     }
@@ -121,16 +95,15 @@ public class LevyFlightDistribution {
 
     /** Returns the PDF evaluated at {@code x}. */
     public double op(final double x) {
-        if (x < xm_) {
+        if ( x < xm_ ) {
             return 0.0;
         }
         return alpha_ * Math.pow(xm_ / x, alpha_) / x;
     }
 
     /**
-     * Returns a random variate distributed according to the Levy flight
-     * distribution given a uniform variate {@code u} in {@code (0, 1)}. The
-     * inverse-transform formula is
+     * Returns a random variate distributed according to the Levy flight distribution given a uniform variate {@code u}
+     * in {@code (0, 1)}. The inverse-transform formula is
      * <pre>
      *   x = x_m * u^{-1/alpha}
      * </pre>
@@ -139,5 +112,29 @@ public class LevyFlightDistribution {
      */
     public double draw(final double u) {
         return xm_ * Math.pow(u, -1.0 / alpha_);
+    }
+
+    /** Parameter holder. */
+    public static final class ParamType {
+        private final double xm_;
+        private final double alpha_;
+
+        public ParamType() {
+            this(1.0, 1.0);
+        }
+
+        public ParamType(final double xm, final double alpha) {
+            QL.require(alpha > 0.0, "alpha must be larger than 0");
+            this.xm_ = xm;
+            this.alpha_ = alpha;
+        }
+
+        public double xm() {
+            return xm_;
+        }
+
+        public double alpha() {
+            return alpha_;
+        }
     }
 }

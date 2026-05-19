@@ -36,8 +36,8 @@ import org.jquantlib.util.Visitor;
 /**
  * Black-volatility term structure
  * <p>
- * This abstract class defines the interface of concrete Black-volatility term
- * structures which will be derived from this one.
+ * This abstract class defines the interface of concrete Black-volatility term structures which will be derived from
+ * this one.
  * <p>
  * Volatilities are assumed to be expressed on an annual basis.
  *
@@ -45,7 +45,111 @@ import org.jquantlib.util.Visitor;
  */
 public abstract class BlackVolTermStructure extends VolatilityTermStructure implements PolymorphicVisitable {
 
-    static private final double dT = 1.0/365.0;
+    static private final double dT = 1.0 / 365.0;
+
+    /**
+     * 'default' constructor
+     * <p>
+     *
+     * @warning term structures initialized by means of this constructor must manage their own reference date by
+     * overriding the referenceDate() method.
+     */
+    public BlackVolTermStructure() {
+        this(new Calendar(), BusinessDayConvention.Following, new DayCounter());
+    }
+
+    /**
+     * 'default' constructor
+     * <p>
+     *
+     * @warning term structures initialized by means of this constructor must manage their own reference date by
+     * overriding the referenceDate() method.
+     */
+    public BlackVolTermStructure(final Calendar cal) {
+        this(cal, BusinessDayConvention.Following, new DayCounter());
+    }
+
+    /**
+     * 'default' constructor
+     * <p>
+     *
+     * @warning term structures initialized by means of this constructor must manage their own reference date by
+     * overriding the referenceDate() method.
+     */
+    public BlackVolTermStructure(final Calendar cal, final BusinessDayConvention bdc) {
+        this(cal, bdc, new DayCounter());
+    }
+
+    /**
+     * 'default' constructor
+     * <p>
+     *
+     * @warning term structures initialized by means of this constructor must manage their own reference date by
+     * overriding the referenceDate() method.
+     */
+    public BlackVolTermStructure(final Calendar cal, final BusinessDayConvention bdc, final DayCounter dc) {
+        super(cal, bdc, dc);
+    }
+
+    //
+    // public constructors
+    //
+    // See the TermStructure documentation for issues regarding constructors.
+    //
+
+    /**
+     * initialize with a fixed reference date
+     */
+    public BlackVolTermStructure(final Date referenceDate) {
+        this(referenceDate, new Calendar(), BusinessDayConvention.Following, new DayCounter());
+    }
+
+    /**
+     * initialize with a fixed reference date
+     */
+    public BlackVolTermStructure(final Date referenceDate, final Calendar cal) {
+        this(referenceDate, cal, BusinessDayConvention.Following, new DayCounter());
+    }
+
+    /**
+     * initialize with a fixed reference date
+     */
+    public BlackVolTermStructure(final Date referenceDate, final Calendar cal, final BusinessDayConvention bdc) {
+        this(referenceDate, cal, bdc, new DayCounter());
+    }
+
+    /**
+     * initialize with a fixed reference date
+     */
+    public BlackVolTermStructure(final Date referenceDate, final Calendar cal, final BusinessDayConvention bdc,
+            final DayCounter dc) {
+        super(referenceDate, cal, bdc, dc);
+    }
+
+    /**
+     * calculate the reference date based on the global evaluation date
+     */
+    public BlackVolTermStructure(
+            /*@Natural*/ final int settlementDays, final Calendar cal) {
+        this(settlementDays, cal, BusinessDayConvention.Following, new DayCounter());
+    }
+
+    /**
+     * calculate the reference date based on the global evaluation date
+     */
+    public BlackVolTermStructure(
+            /*@Natural*/ final int settlementDays, final Calendar cal, final BusinessDayConvention bdc) {
+        this(settlementDays, cal, bdc, new DayCounter());
+    }
+
+    /**
+     * calculate the reference date based on the global evaluation date
+     */
+    public BlackVolTermStructure(
+            /*@Natural*/ final int settlementDays, final Calendar cal, final BusinessDayConvention bdc,
+            final DayCounter dc) {
+        super(settlementDays, cal, bdc, dc);
+    }
 
     /**
      * The minimum strike for which the term structure can return vols
@@ -59,134 +163,11 @@ public abstract class BlackVolTermStructure extends VolatilityTermStructure impl
     @Override
     public abstract /*@Real*/ double maxStrike();
 
-    protected abstract /*@Volatility*/ double blackVolImpl(final /*@Time*/ double maturity, final /*@Real*/ double strike);
+    protected abstract /*@Volatility*/ double blackVolImpl(final /*@Time*/ double maturity,
+            final /*@Real*/ double strike);
 
-    protected abstract /*@Variance*/ double blackVarianceImpl(final /*@Time*/ double maturity, final /*@Real*/ double strike);
-
-
-
-    //
-    // public constructors
-    //
-    // See the TermStructure documentation for issues regarding constructors.
-    //
-
-    /**
-     * 'default' constructor
-     * <p>
-     * @warning term structures initialized by means of this
-     *          constructor must manage their own reference date
-     *          by overriding the referenceDate() method.
-     */
-    public BlackVolTermStructure() {
-        this(new Calendar(), BusinessDayConvention.Following, new DayCounter());
-    }
-
-    /**
-     * 'default' constructor
-     * <p>
-     * @warning term structures initialized by means of this
-     *          constructor must manage their own reference date
-     *          by overriding the referenceDate() method.
-     */
-    public BlackVolTermStructure(final Calendar cal) {
-        this(cal, BusinessDayConvention.Following, new DayCounter());
-    }
-
-    /**
-     * 'default' constructor
-     * <p>
-     * @warning term structures initialized by means of this
-     *          constructor must manage their own reference date
-     *          by overriding the referenceDate() method.
-     */
-    public BlackVolTermStructure(
-            final Calendar cal,
-            final BusinessDayConvention bdc) {
-        this(cal, bdc, new DayCounter());
-    }
-
-    /**
-     * 'default' constructor
-     * <p>
-     * @warning term structures initialized by means of this
-     *          constructor must manage their own reference date
-     *          by overriding the referenceDate() method.
-     */
-    public BlackVolTermStructure(
-            final Calendar cal,
-            final BusinessDayConvention bdc,
-            final DayCounter dc) {
-        super(cal, bdc, dc);
-    }
-
-    /**
-     *  initialize with a fixed reference date
-     */
-    public BlackVolTermStructure(final Date referenceDate) {
-        this(referenceDate, new Calendar(), BusinessDayConvention.Following, new DayCounter());
-    }
-
-    /**
-     *  initialize with a fixed reference date
-     */
-    public BlackVolTermStructure(
-            final Date referenceDate,
-            final Calendar cal) {
-        this(referenceDate, cal, BusinessDayConvention.Following, new DayCounter());
-    }
-
-    /**
-     *  initialize with a fixed reference date
-     */
-    public BlackVolTermStructure(
-            final Date referenceDate,
-            final Calendar cal,
-            final BusinessDayConvention bdc) {
-        this(referenceDate, cal, bdc, new DayCounter());
-    }
-
-    /**
-     *  initialize with a fixed reference date
-     */
-    public BlackVolTermStructure(
-            final Date referenceDate,
-            final Calendar cal,
-            final BusinessDayConvention bdc,
-            final DayCounter dc) {
-        super(referenceDate, cal, bdc, dc);
-    }
-
-    /**
-     * calculate the reference date based on the global evaluation date
-     */
-    public BlackVolTermStructure(
-            /*@Natural*/ final int settlementDays,
-            final Calendar cal) {
-        this(settlementDays, cal, BusinessDayConvention.Following, new DayCounter());
-    }
-
-    /**
-     * calculate the reference date based on the global evaluation date
-     */
-    public BlackVolTermStructure(
-            /*@Natural*/ final int settlementDays,
-            final Calendar cal,
-            final BusinessDayConvention bdc) {
-        this(settlementDays, cal, bdc, new DayCounter());
-    }
-
-    /**
-     * calculate the reference date based on the global evaluation date
-     */
-    public BlackVolTermStructure(
-            /*@Natural*/ final int settlementDays,
-            final Calendar cal,
-            final BusinessDayConvention bdc,
-            final DayCounter dc) {
-        super(settlementDays, cal, bdc, dc);
-    }
-
+    protected abstract /*@Variance*/ double blackVarianceImpl(final /*@Time*/ double maturity,
+            final /*@Real*/ double strike);
 
     //
     // public methods
@@ -202,10 +183,12 @@ public abstract class BlackVolTermStructure extends VolatilityTermStructure impl
     /**
      * Present (a.k.a spot) volatility
      */
-    public final /*@Volatility*/ double blackVol(final Date maturity, final /*@Real*/ double strike, final boolean extrapolate) {
+    public final /*@Volatility*/ double blackVol(final Date maturity, final /*@Real*/ double strike,
+            final boolean extrapolate) {
         checkRange(maturity, extrapolate);
         checkStrike(strike, extrapolate);
-        /*@Time*/ final double t = timeFromReference(maturity);
+        /*@Time*/
+        final double t = timeFromReference(maturity);
         return blackVolImpl(t, strike);
     }
 
@@ -219,7 +202,8 @@ public abstract class BlackVolTermStructure extends VolatilityTermStructure impl
     /**
      * Present (a.k.a spot) volatility
      */
-    public final /*@Volatility*/ double blackVol(final /*@Time*/ double maturity, final /*@Real*/ double strike, final boolean extrapolate) {
+    public final /*@Volatility*/ double blackVol(final /*@Time*/ double maturity, final /*@Real*/ double strike,
+            final boolean extrapolate) {
         checkRange(maturity, extrapolate);
         checkStrike(strike, extrapolate);
         return blackVolImpl(maturity, strike);
@@ -235,10 +219,12 @@ public abstract class BlackVolTermStructure extends VolatilityTermStructure impl
     /**
      * Present (a.k.a spot) variance
      */
-    public final /*@Variance*/ double blackVariance(final Date maturity, final /*@Real*/ double strike, final boolean extrapolate) {
+    public final /*@Variance*/ double blackVariance(final Date maturity, final /*@Real*/ double strike,
+            final boolean extrapolate) {
         checkRange(maturity, extrapolate);
         checkStrike(strike, extrapolate);
-        /*@Time*/ final double t = timeFromReference(maturity);
+        /*@Time*/
+        final double t = timeFromReference(maturity);
         return blackVarianceImpl(t, strike);
     }
 
@@ -252,12 +238,12 @@ public abstract class BlackVolTermStructure extends VolatilityTermStructure impl
     /**
      * Present (a.k.a spot) variance
      */
-    public final /*@Variance*/ double blackVariance(final /*@Time*/ double maturity, final /*@Real*/ double strike, final boolean extrapolate) {
+    public final /*@Variance*/ double blackVariance(final /*@Time*/ double maturity, final /*@Real*/ double strike,
+            final boolean extrapolate) {
         checkRange(maturity, extrapolate);
         checkStrike(strike, extrapolate);
         return blackVarianceImpl(maturity, strike);
     }
-
 
     /**
      * Future (a.k.a. forward) volatility
@@ -268,10 +254,13 @@ public abstract class BlackVolTermStructure extends VolatilityTermStructure impl
      * @param extrapolate
      * @return
      */
-    public final /*@Volatility*/ double blackForwardVol(final Date date1, final Date date2, final /*@Real*/ double strike, final boolean extrapolate) {
+    public final /*@Volatility*/ double blackForwardVol(final Date date1, final Date date2,
+            final /*@Real*/ double strike, final boolean extrapolate) {
         QL.require(date1.le(date2), "date1 later than date2"); // TODO: message
-        /*@Time*/ final double time1 = timeFromReference(date1);
-        /*@Time*/ final double time2 = timeFromReference(date2);
+        /*@Time*/
+        final double time1 = timeFromReference(date1);
+        /*@Time*/
+        final double time2 = timeFromReference(date2);
         return blackForwardVol(time1, time2, strike, extrapolate);
     }
 
@@ -284,29 +273,38 @@ public abstract class BlackVolTermStructure extends VolatilityTermStructure impl
      * @param extrapolate
      * @return
      */
-    public final /*@Volatility*/ double blackForwardVol(final /*@Time*/ double time1, final /*@Time*/ double time2, final /*@Real*/ double strike, final boolean extrapolate) {
-        /*@Time*/ final double t1 = time1;
-        /*@Time*/ final double t2 = time2;
-        QL.require(t1 <= t2 , "t1 later than t2"); // TODO: message
+    public final /*@Volatility*/ double blackForwardVol(final /*@Time*/ double time1, final /*@Time*/ double time2,
+            final /*@Real*/ double strike, final boolean extrapolate) {
+        /*@Time*/
+        final double t1 = time1;
+        /*@Time*/
+        final double t2 = time2;
+        QL.require(t1 <= t2, "t1 later than t2"); // TODO: message
         checkRange(time2, extrapolate);
         checkStrike(strike, extrapolate);
-        if (t1==t2) {
-            if (t1==0.0) {
-                /*@Time*/ final double epsilon = 1.0e-5;
-                /*@Variance*/ final double var = blackVarianceImpl(epsilon, strike);
-                return Math.sqrt(var/epsilon);
+        if ( t1 == t2 ) {
+            if ( t1 == 0.0 ) {
+                /*@Time*/
+                final double epsilon = 1.0e-5;
+                /*@Variance*/
+                final double var = blackVarianceImpl(epsilon, strike);
+                return Math.sqrt(var / epsilon);
             } else {
                 final double epsilon = Math.min(1.0e-5, t1);
-                /*@Variance*/ final double var1 = blackVarianceImpl(t1-epsilon, strike);
-                /*@Variance*/ final double var2 = blackVarianceImpl(t1+epsilon, strike);
-                QL.require(var2 >= var1 , "variances must be non-decreasing"); // TODO: message
-                return  Math.sqrt((var2-var1) / (2*epsilon));
+                /*@Variance*/
+                final double var1 = blackVarianceImpl(t1 - epsilon, strike);
+                /*@Variance*/
+                final double var2 = blackVarianceImpl(t1 + epsilon, strike);
+                QL.require(var2 >= var1, "variances must be non-decreasing"); // TODO: message
+                return Math.sqrt((var2 - var1) / (2 * epsilon));
             }
         } else {
-            /*@Variance*/ final double var1 = blackVarianceImpl(time1, strike);
-            /*@Variance*/ final double var2 = blackVarianceImpl(time2, strike);
-            QL.require(var2 >= var1 , "variances must be non-decreasing"); // TODO: message
-            return  Math.sqrt((var2-var1)/(t2-t1));
+            /*@Variance*/
+            final double var1 = blackVarianceImpl(time1, strike);
+            /*@Variance*/
+            final double var2 = blackVarianceImpl(time2, strike);
+            QL.require(var2 >= var1, "variances must be non-decreasing"); // TODO: message
+            return Math.sqrt((var2 - var1) / (t2 - t1));
         }
     }
 
@@ -319,10 +317,13 @@ public abstract class BlackVolTermStructure extends VolatilityTermStructure impl
      * @param extrapolate
      * @return
      */
-    public final /*@Variance*/ double blackForwardVariance(final Date date1, final Date date2, final /*@Real*/ double strike, final boolean extrapolate) {
-        QL.require(date1.le(date2) , "date1 later than date2"); // TODO: message
-        /*@Time*/ final double time1 = timeFromReference(date1);
-        /*@Time*/ final double time2 = timeFromReference(date2);
+    public final /*@Variance*/ double blackForwardVariance(final Date date1, final Date date2,
+            final /*@Real*/ double strike, final boolean extrapolate) {
+        QL.require(date1.le(date2), "date1 later than date2"); // TODO: message
+        /*@Time*/
+        final double time1 = timeFromReference(date1);
+        /*@Time*/
+        final double time2 = timeFromReference(date2);
         return blackForwardVariance(time1, time2, strike, extrapolate);
     }
 
@@ -335,27 +336,31 @@ public abstract class BlackVolTermStructure extends VolatilityTermStructure impl
      * @param extrapolate
      * @return
      */
-    public final /*@Variance*/ double blackForwardVariance(final /*@Time*/ double time1, final /*@Time*/ double time2, final /*@Real*/ double strike, final boolean extrapolate) {
-        /*@Time*/ final double t1 = time1;
-        /*@Time*/ final double t2 = time2;
-        QL.require(t1<=t2 , "t1 later than t2"); // TODO: message
+    public final /*@Variance*/ double blackForwardVariance(final /*@Time*/ double time1, final /*@Time*/ double time2,
+            final /*@Real*/ double strike, final boolean extrapolate) {
+        /*@Time*/
+        final double t1 = time1;
+        /*@Time*/
+        final double t2 = time2;
+        QL.require(t1 <= t2, "t1 later than t2"); // TODO: message
         checkRange(time2, extrapolate);
         checkStrike(strike, extrapolate);
-        /*@Variance*/ final double v1 = blackVarianceImpl(time1, strike);
-        /*@Variance*/ final double v2 = blackVarianceImpl(time2, strike);
-        QL.require(v2 >= v1 , "variances must be non-decreasing"); // TODO: message
-        return v2-v1;
+        /*@Variance*/
+        final double v1 = blackVarianceImpl(time1, strike);
+        /*@Variance*/
+        final double v2 = blackVarianceImpl(time2, strike);
+        QL.require(v2 >= v1, "variances must be non-decreasing"); // TODO: message
+        return v2 - v1;
     }
 
-    
     //
     // implements PolymorphicVisitable
     //
 
     @Override
     public void accept(final PolymorphicVisitor pv) {
-        final Visitor<BlackVolTermStructure> v = (pv!=null) ? pv.visitor(this.getClass()) : null;
-        if (v != null) {
+        final Visitor< BlackVolTermStructure > v = (pv != null) ? pv.visitor(this.getClass()) : null;
+        if ( v != null ) {
             v.visit(this);
         } else {
             throw new LibraryException("not a Black-volatility term structure visitor"); // TODO: message

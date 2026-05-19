@@ -22,8 +22,8 @@
 package org.jquantlib.experimental.credit;
 
 /**
- * Compact default-event record used by {@link RandomDefaultLM} to store a
- * Monte-Carlo simulation outcome (one event per defaulting name in one path).
+ * Compact default-event record used by {@link RandomDefaultLM} to store a Monte-Carlo simulation outcome (one event per
+ * defaulting name in one path).
  *
  * <p>Java port of QuantLib v1.42.1
  * {@code simEvent<RandomDefaultLM<copulaPolicy, USNG> >} (declared in
@@ -31,17 +31,14 @@ package org.jquantlib.experimental.credit;
  * {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
  *
  * <p>The C++ struct uses 16-bit bitfields ({@code unsigned int : 16}) for
- * memory packing; in Java we use {@code int} for both {@code nameIdx} and
- * {@code dayFromRef} since the JVM does not support packed bitfields and
- * {@code short} would require sign-extension juggling for indices > 32k.
- * Memory footprint is ~2x C++ (16 bytes vs 4) which is acceptable given
- * Java object overhead already dwarfs the difference.
+ * memory packing; in Java we use {@code int} for both {@code nameIdx} and {@code dayFromRef} since the JVM does not
+ * support packed bitfields and {@code short} would require sign-extension juggling for indices > 32k. Memory footprint
+ * is ~2x C++ (16 bytes vs 4) which is acceptable given Java object overhead already dwarfs the difference.
  *
  * <p>Implements {@code Comparable} so that {@link java.util.Collections#sort}
- * orders events by {@code dayFromRef} (ascending), matching C++
- * {@code operator<} on the inner struct.
+ * orders events by {@code dayFromRef} (ascending), matching C++ {@code operator<} on the inner struct.
  */
-public final class DefaultSimEvent implements Comparable<DefaultSimEvent> {
+public final class DefaultSimEvent implements Comparable< DefaultSimEvent > {
 
     /** Index of the defaulting name within the basket's pool ordering. */
     public final int nameIdx;

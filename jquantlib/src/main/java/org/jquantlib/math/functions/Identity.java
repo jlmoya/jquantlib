@@ -30,13 +30,13 @@ import org.jquantlib.math.Ops;
  */
 public final class Identity implements Ops.DoubleOp {
 
-	//
+    //
     // implements Ops.DoubleOp
     //
 
-	@Override
-	public double op(final double a) {
-		return a;
-	}
+    @Override
+    public double op(final double a) {
+        return a;
+    }
 
 }

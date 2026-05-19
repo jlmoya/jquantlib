@@ -38,6 +38,7 @@
 */
 
 package org.jquantlib.instruments.bonds;
+
 import org.jquantlib.instruments.Bond;
 import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Calendar;
@@ -46,54 +47,35 @@ import org.jquantlib.time.Date;
 /**
  * ZeroCouponBond class
  *
+ * @author John Nichol
  * @category instruments
  *
- * @author John Nichol
- * 
  *
  */
 // TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class ZeroCouponBond extends Bond {
 
-	public ZeroCouponBond(
-			final /* @Natural */ int settlementDays,
-            final Calendar calendar,
-            final double faceAmount,
-            final Date maturityDate,
-            final BusinessDayConvention paymentConvention,
-            final double redemption,
+    public ZeroCouponBond(final /* @Natural */ int settlementDays, final Calendar calendar, final double faceAmount,
+            final Date maturityDate, final BusinessDayConvention paymentConvention, final double redemption,
             final Date issueDate) {
-		super(settlementDays, calendar, issueDate);
+        super(settlementDays, calendar, issueDate);
         maturityDate_ = maturityDate.clone();
-        final Date redemptionDate = calendar_.adjust(maturityDate,
-                                               paymentConvention);
+        final Date redemptionDate = calendar_.adjust(maturityDate, paymentConvention);
         setSingleRedemption(faceAmount, redemption, redemptionDate);
-	}
+    }
 
-	public ZeroCouponBond(
-	        final /* @Natural */ int settlementDays,
-            final Calendar calendar,
-            final double faceAmount,
+    public ZeroCouponBond(final /* @Natural */ int settlementDays, final Calendar calendar, final double faceAmount,
             final Date maturityDate) {
-		this(settlementDays, calendar, faceAmount, maturityDate, BusinessDayConvention.Following, 100.0, new Date());
-	}
+        this(settlementDays, calendar, faceAmount, maturityDate, BusinessDayConvention.Following, 100.0, new Date());
+    }
 
-	public ZeroCouponBond(
-	        final /* @Natural */ int settlementDays,
-            final Calendar calendar,
-            final double faceAmount,
-            final Date maturityDate,
-            final BusinessDayConvention paymentConvention,
-            final double redemption) {
-		this(settlementDays, calendar, faceAmount, maturityDate, paymentConvention, redemption, new Date());
-	}
+    public ZeroCouponBond(final /* @Natural */ int settlementDays, final Calendar calendar, final double faceAmount,
+            final Date maturityDate, final BusinessDayConvention paymentConvention, final double redemption) {
+        this(settlementDays, calendar, faceAmount, maturityDate, paymentConvention, redemption, new Date());
+    }
 
-	public ZeroCouponBond(
-	        final /* @Natural */ int settlementDays,
-            final Calendar calendar,
-            final double faceAmount,
-            final Date maturityDate,
-            final BusinessDayConvention paymentConvention) {
-		this(settlementDays, calendar, faceAmount, maturityDate, paymentConvention, 100.0, new Date());
-	}
+    public ZeroCouponBond(final /* @Natural */ int settlementDays, final Calendar calendar, final double faceAmount,
+            final Date maturityDate, final BusinessDayConvention paymentConvention) {
+        this(settlementDays, calendar, faceAmount, maturityDate, paymentConvention, 100.0, new Date());
+    }
 }

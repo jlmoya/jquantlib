@@ -48,18 +48,15 @@ import org.jquantlib.time.Date;
  *
  * <p>Phase 4m.5 work-item 3.
  */
-public class BlackCdsOptionEngine
-        extends GenericEngine<CdsOption.ArgumentsImpl, CdsOption.ResultsImpl> {
+public class BlackCdsOptionEngine extends GenericEngine< CdsOption.ArgumentsImpl, CdsOption.ResultsImpl > {
 
-    private final Handle<DefaultProbabilityTermStructure> probability;
+    private final Handle< DefaultProbabilityTermStructure > probability;
     private final double recoveryRate;
-    private final Handle<YieldTermStructure> termStructure;
-    private final Handle<Quote> volatility;
+    private final Handle< YieldTermStructure > termStructure;
+    private final Handle< Quote > volatility;
 
-    public BlackCdsOptionEngine(final Handle<DefaultProbabilityTermStructure> probability,
-                                final double recoveryRate,
-                                final Handle<YieldTermStructure> termStructure,
-                                final Handle<Quote> volatility) {
+    public BlackCdsOptionEngine(final Handle< DefaultProbabilityTermStructure > probability, final double recoveryRate,
+            final Handle< YieldTermStructure > termStructure, final Handle< Quote > volatility) {
         super(new CdsOption.ArgumentsImpl(), new CdsOption.ResultsImpl());
         this.probability = probability;
         this.recoveryRate = recoveryRate;
@@ -76,7 +73,7 @@ public class BlackCdsOptionEngine
         final CashFlow firstCoupon = arguments_.leg.get(0);
         final Date maturityDate = firstCoupon.date();
         final Date exerciseDate = arguments_.exercise.date(0);
-        if (maturityDate.compareTo(exerciseDate) <= 0) {
+        if ( maturityDate.compareTo(exerciseDate) <= 0 ) {
             throw new IllegalStateException("Underlying CDS should start after option maturity");
         }
         final Date settlement = termStructure.currentLink().referenceDate();
@@ -95,27 +92,24 @@ public class BlackCdsOptionEngine
 
         final double T = tSDc.yearFraction(settlement, exerciseDate);
         final double stdDev = volatility.currentLink().value() * Math.sqrt(T);
-        final Option.Type callPut = (arguments_.side == Protection.Side.Buyer)
-                ? Option.Type.Call : Option.Type.Put;
+        final Option.Type callPut = (arguments_.side == Protection.Side.Buyer) ? Option.Type.Call : Option.Type.Put;
 
-        results_.value = BlackFormula.blackFormula(callPut, swapSpread, spotFwdSpread,
-                stdDev, riskyAnnuity);
+        results_.value = BlackFormula.blackFormula(callPut, swapSpread, spotFwdSpread, stdDev, riskyAnnuity);
 
         // If a non knock-out payer option, add front-end protection value.
-        if (arguments_.side == Protection.Side.Buyer && !arguments_.knocksOut) {
-            final double frontEndProtection = callPut.toInteger() * arguments_.notional
-                    * (1.0 - recoveryRate)
-                    * probability.currentLink().defaultProbability(exerciseDate)
-                    * termStructure.currentLink().discount(exerciseDate);
+        if ( arguments_.side == Protection.Side.Buyer && !arguments_.knocksOut ) {
+            final double frontEndProtection =
+                    callPut.toInteger() * arguments_.notional * (1.0 - recoveryRate) * probability.currentLink()
+                            .defaultProbability(exerciseDate) * termStructure.currentLink().discount(exerciseDate);
             results_.value += frontEndProtection;
         }
     }
 
-    public Handle<YieldTermStructure> termStructure() {
+    public Handle< YieldTermStructure > termStructure() {
         return termStructure;
     }
 
-    public Handle<Quote> volatility() {
+    public Handle< Quote > volatility() {
         return volatility;
     }
 }

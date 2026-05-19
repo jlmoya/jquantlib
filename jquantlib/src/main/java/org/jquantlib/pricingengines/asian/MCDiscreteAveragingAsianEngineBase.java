@@ -24,9 +24,6 @@
 
 package org.jquantlib.pricingengines.asian;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.instruments.DiscreteAveragingAsianOption;
 import org.jquantlib.pricingengines.McSimulation;
@@ -35,20 +32,20 @@ import org.jquantlib.processes.StochasticProcess;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.TimeGrid;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Base class for Monte Carlo discrete-averaging Asian engines.
  *
  * <p>Java port of {@code QuantLib v1.42.1
- * ql/pricingengines/asian/mcdiscreteasianenginebase.hpp}
- * {@code MCDiscreteAveragingAsianEngineBase} (Phase 5e.5b-CFC-d-114).
+ * ql/pricingengines/asian/mcdiscreteasianenginebase.hpp} {@code MCDiscreteAveragingAsianEngineBase} (Phase
+ * 5e.5b-CFC-d-114).
  *
- * @param <PathType> {@code Path} for single-variate MC, {@code MultiPath}
- *                   for multi-variate (Heston) MC.
- *
+ * @param <PathType> {@code Path} for single-variate MC, {@code MultiPath} for multi-variate (Heston) MC.
  * @author JQuantLib
  */
-public abstract class MCDiscreteAveragingAsianEngineBase<PathType>
-        extends DiscreteAveragingAsianOption.EngineImpl {
+public abstract class MCDiscreteAveragingAsianEngineBase< PathType > extends DiscreteAveragingAsianOption.EngineImpl {
 
     protected final StochasticProcess process_;
     protected final int requiredSamples_;
@@ -62,20 +59,12 @@ public abstract class MCDiscreteAveragingAsianEngineBase<PathType>
     protected final long seed_;
     protected final boolean includeExerciseDate_;
 
-    protected McSimulation<PathType> simulation_;
+    protected McSimulation< PathType > simulation_;
 
-
-    protected MCDiscreteAveragingAsianEngineBase(final StochasticProcess process,
-                                                 final boolean brownianBridge,
-                                                 final boolean antitheticVariate,
-                                                 final boolean controlVariate,
-                                                 final int requiredSamples,
-                                                 final double requiredTolerance,
-                                                 final int maxSamples,
-                                                 final long seed,
-                                                 final int timeSteps,
-                                                 final int timeStepsPerYear,
-                                                 final boolean includeExerciseDate) {
+    protected MCDiscreteAveragingAsianEngineBase(final StochasticProcess process, final boolean brownianBridge,
+            final boolean antitheticVariate, final boolean controlVariate, final int requiredSamples,
+            final double requiredTolerance, final int maxSamples, final long seed, final int timeSteps,
+            final int timeStepsPerYear, final boolean includeExerciseDate) {
         super();
         QL.require(process != null, "null stochastic process");
         this.process_ = process;
@@ -94,43 +83,39 @@ public abstract class MCDiscreteAveragingAsianEngineBase<PathType>
 
     /** Mirrors C++ {@code MCDiscreteAveragingAsianEngineBase::timeGrid()}. */
     protected TimeGrid timeGrid() {
-        final DiscreteAveragingAsianOption.ArgumentsImpl a =
-                (DiscreteAveragingAsianOption.ArgumentsImpl) arguments_;
-        final List<Double> fixingTimes = new ArrayList<Double>();
-        for (int i = 0; i < a.fixingDates.size(); i++) {
+        final DiscreteAveragingAsianOption.ArgumentsImpl a = (DiscreteAveragingAsianOption.ArgumentsImpl) arguments_;
+        final List< Double > fixingTimes = new ArrayList< Double >();
+        for ( int i = 0; i < a.fixingDates.size(); i++ ) {
             final double t = process_.time(a.fixingDates.get(i));
-            if (t >= 0) {
+            if ( t >= 0 ) {
                 fixingTimes.add(Double.valueOf(t));
             }
         }
-        if (fixingTimes.isEmpty()
-                || (fixingTimes.size() == 1 && fixingTimes.get(0) == 0.0)) {
+        if ( fixingTimes.isEmpty() || (fixingTimes.size() == 1 && fixingTimes.get(0) == 0.0) ) {
             throw new PastFixingsOnlyException();
         }
 
         final Date lastExerciseDate = a.exercise.lastDate();
         final double t = process_.time(lastExerciseDate);
 
-        if (includeExerciseDate_ && t > fixingTimes.get(fixingTimes.size() - 1)) {
+        if ( includeExerciseDate_ && t > fixingTimes.get(fixingTimes.size() - 1) ) {
             fixingTimes.add(Double.valueOf(t));
         }
 
-        if (timeSteps_ != McSimulation.NULL_SAMPLES) {
+        if ( timeSteps_ != McSimulation.NULL_SAMPLES ) {
             return new TimeGrid(fixingTimes, timeSteps_);
-        } else if (timeStepsPerYear_ != McSimulation.NULL_SAMPLES) {
+        } else if ( timeStepsPerYear_ != McSimulation.NULL_SAMPLES ) {
             return new TimeGrid(fixingTimes, (int) (timeStepsPerYear_ * t));
         }
         // Equivalent to C++ `TimeGrid(begin, end)` — mandatory points only.
         return new TimeGrid(fixingTimes, 0);
     }
 
+    protected abstract org.jquantlib.methods.montecarlo.PathPricer< PathType > pathPricer();
 
-    protected abstract org.jquantlib.methods.montecarlo.PathPricer<PathType> pathPricer();
+    protected abstract org.jquantlib.methods.montecarlo.MonteCarloModel.PathGeneratorAdapter< PathType > pathGenerator();
 
-    protected abstract org.jquantlib.methods.montecarlo.MonteCarloModel.PathGeneratorAdapter<PathType>
-            pathGenerator();
-
-    protected org.jquantlib.methods.montecarlo.PathPricer<PathType> controlPathPricer() {
+    protected org.jquantlib.methods.montecarlo.PathPricer< PathType > controlPathPricer() {
         return null;
     }
 
@@ -138,42 +123,39 @@ public abstract class MCDiscreteAveragingAsianEngineBase<PathType>
         return null;
     }
 
-
     @Override
     public void calculate() /* @ReadOnly */ {
-        final DiscreteAveragingAsianOption.ResultsImpl r =
-                (DiscreteAveragingAsianOption.ResultsImpl) results_;
+        final DiscreteAveragingAsianOption.ResultsImpl r = (DiscreteAveragingAsianOption.ResultsImpl) results_;
 
-        this.simulation_ = new McSimulation<PathType>(antitheticVariate_, controlVariate_) {
+        this.simulation_ = new McSimulation< PathType >(antitheticVariate_, controlVariate_) {
             @Override
-            protected org.jquantlib.methods.montecarlo.PathPricer<PathType> pathPricer() {
+            protected org.jquantlib.methods.montecarlo.PathPricer< PathType > pathPricer() {
                 return MCDiscreteAveragingAsianEngineBase.this.pathPricer();
             }
+
             @Override
-            protected org.jquantlib.methods.montecarlo.MonteCarloModel.PathGeneratorAdapter<PathType>
-                    pathGenerator() {
+            protected org.jquantlib.methods.montecarlo.MonteCarloModel.PathGeneratorAdapter< PathType > pathGenerator() {
                 return MCDiscreteAveragingAsianEngineBase.this.pathGenerator();
             }
+
             @Override
             protected TimeGrid timeGrid() {
                 return MCDiscreteAveragingAsianEngineBase.this.timeGrid();
             }
+
             @Override
-            protected org.jquantlib.methods.montecarlo.PathPricer<PathType> controlPathPricer() {
+            protected org.jquantlib.methods.montecarlo.PathPricer< PathType > controlPathPricer() {
                 return MCDiscreteAveragingAsianEngineBase.this.controlPathPricer();
             }
+
             @Override
             protected double controlVariateValue() {
-                final PricingEngine controlPE =
-                        MCDiscreteAveragingAsianEngineBase.this.controlPricingEngine();
-                if (controlPE == null) {
+                final PricingEngine controlPE = MCDiscreteAveragingAsianEngineBase.this.controlPricingEngine();
+                if ( controlPE == null ) {
                     return Double.NaN;
                 }
-                final DiscreteAveragingAsianOption.ArgumentsImpl controlArgs =
-                        (DiscreteAveragingAsianOption.ArgumentsImpl) controlPE.getArguments();
-                final DiscreteAveragingAsianOption.ArgumentsImpl srcArgs =
-                        (DiscreteAveragingAsianOption.ArgumentsImpl)
-                                MCDiscreteAveragingAsianEngineBase.this.arguments_;
+                final DiscreteAveragingAsianOption.ArgumentsImpl controlArgs = (DiscreteAveragingAsianOption.ArgumentsImpl) controlPE.getArguments();
+                final DiscreteAveragingAsianOption.ArgumentsImpl srcArgs = (DiscreteAveragingAsianOption.ArgumentsImpl) MCDiscreteAveragingAsianEngineBase.this.arguments_;
                 controlArgs.payoff = srcArgs.payoff;
                 controlArgs.exercise = srcArgs.exercise;
                 controlArgs.averageType = srcArgs.averageType;
@@ -181,23 +163,22 @@ public abstract class MCDiscreteAveragingAsianEngineBase<PathType>
                 controlArgs.pastFixings = srcArgs.pastFixings;
                 controlArgs.fixingDates = srcArgs.fixingDates;
                 controlPE.calculate();
-                final DiscreteAveragingAsianOption.ResultsImpl controlRes =
-                        (DiscreteAveragingAsianOption.ResultsImpl) controlPE.getResults();
+                final DiscreteAveragingAsianOption.ResultsImpl controlRes = (DiscreteAveragingAsianOption.ResultsImpl) controlPE.getResults();
                 return controlRes.value;
             }
         };
         this.simulation_.calculate(requiredTolerance_, requiredSamples_, maxSamples_);
         r.value = this.simulation_.sampleAccumulator().mean();
-        if (controlVariate_) {
+        if ( controlVariate_ ) {
             r.value = Math.max(0.0, r.value);
         }
         r.errorEstimate = this.simulation_.errorEstimate();
     }
 
-
     /** Mirrors C++ {@code detail::PastFixingsOnly}. */
     public static class PastFixingsOnlyException extends RuntimeException {
         private static final long serialVersionUID = 1L;
+
         public PastFixingsOnlyException() {
             super("all fixings are in the past");
         }

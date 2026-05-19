@@ -31,7 +31,6 @@ package org.jquantlib.pricingengines.lookback;
 import org.jquantlib.QL;
 import org.jquantlib.instruments.ContinuousFloatingLookbackOption;
 import org.jquantlib.instruments.FloatingTypePayoff;
-import org.jquantlib.instruments.Option;
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.math.distributions.CumulativeNormalDistribution;
 import org.jquantlib.processes.GeneralizedBlackScholesProcess;
@@ -48,8 +47,7 @@ import org.jquantlib.time.Frequency;
  * {@code QuantLib::AnalyticContinuousFloatingLookbackEngine}
  * ({@code ql/pricingengines/lookback/analyticcontinuousfloatinglookback.{hpp,cpp}}).
  */
-public class AnalyticContinuousFloatingLookbackEngine
-        extends ContinuousFloatingLookbackOption.EngineImpl {
+public class AnalyticContinuousFloatingLookbackEngine extends ContinuousFloatingLookbackOption.EngineImpl {
 
     private static final String NON_FLOATING_PAYOFF_GIVEN = "Non-floating payoff given";
     private static final String NEGATIVE_OR_NULL_UNDERLYING = "negative or null underlying";
@@ -59,7 +57,7 @@ public class AnalyticContinuousFloatingLookbackEngine
     private final CumulativeNormalDistribution f;
 
     private final ContinuousFloatingLookbackOption.ArgumentsImpl a;
-    private final ContinuousFloatingLookbackOption.ResultsImpl   r;
+    private final ContinuousFloatingLookbackOption.ResultsImpl r;
 
     public AnalyticContinuousFloatingLookbackEngine(final GeneralizedBlackScholesProcess process) {
         this.process = process;
@@ -75,15 +73,15 @@ public class AnalyticContinuousFloatingLookbackEngine
         final FloatingTypePayoff payoff = (FloatingTypePayoff) a.payoff;
         QL.require(underlying() > 0.0, NEGATIVE_OR_NULL_UNDERLYING);
 
-        switch (payoff.optionType()) {
-            case Call:
-                r.value = A(1);
-                break;
-            case Put:
-                r.value = A(-1);
-                break;
-            default:
-                throw new LibraryException(UNKNOWN_TYPE);
+        switch ( payoff.optionType() ) {
+        case Call:
+            r.value = A(1);
+            break;
+        case Put:
+            r.value = A(-1);
+            break;
+        default:
+            throw new LibraryException(UNKNOWN_TYPE);
         }
     }
 
@@ -104,8 +102,8 @@ public class AnalyticContinuousFloatingLookbackEngine
     }
 
     private double riskFreeRate() {
-        return process.riskFreeRate().currentLink().zeroRate(
-                residualTime(), Compounding.Continuous, Frequency.NoFrequency, false).rate();
+        return process.riskFreeRate().currentLink()
+                .zeroRate(residualTime(), Compounding.Continuous, Frequency.NoFrequency, false).rate();
     }
 
     private double riskFreeDiscount() {
@@ -113,8 +111,8 @@ public class AnalyticContinuousFloatingLookbackEngine
     }
 
     private double dividendYield() {
-        return process.dividendYield().currentLink().zeroRate(
-                residualTime(), Compounding.Continuous, Frequency.NoFrequency, false).rate();
+        return process.dividendYield().currentLink()
+                .zeroRate(residualTime(), Compounding.Continuous, Frequency.NoFrequency, false).rate();
     }
 
     private double dividendDiscount() {
@@ -126,8 +124,7 @@ public class AnalyticContinuousFloatingLookbackEngine
     }
 
     /**
-     * Goldman-Sosin-Gatto formula (Haug 1998, p.61-62). {@code eta = +1} for
-     * call, {@code -1} for put.
+     * Goldman-Sosin-Gatto formula (Haug 1998, p.61-62). {@code eta = +1} for call, {@code -1} for put.
      */
     private double A(final double eta) {
         final double vol = volatility();
@@ -140,10 +137,8 @@ public class AnalyticContinuousFloatingLookbackEngine
         final double n3 = f.op(eta * (-d1 + lambda * sd));
         final double n4 = f.op(eta * -d1);
         final double pow_s = Math.pow(s, -lambda);
-        return eta * ((underlying() * dividendDiscount() * n1 -
-                       minmax() * riskFreeDiscount() * n2) +
-                      (underlying() * riskFreeDiscount() *
-                       (pow_s * n3 - dividendDiscount() * n4 / riskFreeDiscount()) /
-                       lambda));
+        return eta * ((underlying() * dividendDiscount() * n1 - minmax() * riskFreeDiscount() * n2) + (
+                underlying() * riskFreeDiscount() * (pow_s * n3 - dividendDiscount() * n4 / riskFreeDiscount())
+                        / lambda));
     }
 }

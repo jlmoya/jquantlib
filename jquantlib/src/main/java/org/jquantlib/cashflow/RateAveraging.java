@@ -15,25 +15,22 @@
 package org.jquantlib.cashflow;
 
 /**
- * Rate-averaging method for multi-fixing coupons (e.g., overnight
- * compounded vs simple-averaged coupons).
+ * Rate-averaging method for multi-fixing coupons (e.g., overnight compounded vs simple-averaged coupons).
  * <p>
- * Port of C++ QuantLib v1.42.1 {@code ql/cashflows/rateaveraging.hpp}
- * {@code RateAveraging::Type}.
+ * Port of C++ QuantLib v1.42.1 {@code ql/cashflows/rateaveraging.hpp} {@code RateAveraging::Type}.
  */
 public final class RateAveraging {
 
-    private RateAveraging() {}
+    private RateAveraging() {
+    }
 
     public enum Type {
         /**
-         * Simple averaging: amount of interest is the sum of sub-rates
-         * applied to the principal.
+         * Simple averaging: amount of interest is the sum of sub-rates applied to the principal.
          */
         Simple,
         /**
-         * Compound averaging: each sub-rate is applied to principal plus
-         * accumulated unpaid interest.
+         * Compound averaging: each sub-rate is applied to principal plus accumulated unpaid interest.
          */
         Compound
     }

@@ -21,14 +21,13 @@
 
 package org.jquantlib.experimental.credit;
 
+import org.jquantlib.QL;
+
 import java.util.ArrayList;
 import java.util.List;
 
-import org.jquantlib.QL;
-
 /**
- * Loss distribution with Hull-White bucketing for varying volumes and
- * probabilities of default; independence assumed.
+ * Loss distribution with Hull-White bucketing for varying volumes and probabilities of default; independence assumed.
  *
  * <p>Java port of QuantLib v1.42.1 {@code QuantLib::LossDistBucketing}
  * ({@code ql/experimental/credit/lossdistribution.{hpp,cpp}}).
@@ -55,13 +54,13 @@ public class LossDistBucketing extends LossDist {
     }
 
     @Override
-    public Distribution op(final List<Double> nominals, final List<Double> probabilities) {
+    public Distribution op(final List< Double > nominals, final List< Double > probabilities) {
         QL.require(nominals.size() == probabilities.size(),
                 "sizes differ: " + nominals.size() + " vs " + probabilities.size());
 
-        final List<Double> p = new ArrayList<>(nBuckets_);
-        final List<Double> a = new ArrayList<>(nBuckets_);
-        for (int i = 0; i < nBuckets_; ++i) {
+        final List< Double > p = new ArrayList<>(nBuckets_);
+        final List< Double > a = new ArrayList<>(nBuckets_);
+        for ( int i = 0; i < nBuckets_; ++i ) {
             p.add(0.0);
             a.add(0.0);
         }
@@ -69,27 +68,27 @@ public class LossDistBucketing extends LossDist {
         p.set(0, 1.0);
         a.set(0, 0.0);
         final double dx = maximum_ / nBuckets_;
-        for (int k = 1; k < nBuckets_; ++k) {
+        for ( int k = 1; k < nBuckets_; ++k ) {
             a.set(k, dx * k + dx / 2);
         }
 
-        for (int i = 0; i < nominals.size(); ++i) {
+        for ( int i = 0; i < nominals.size(); ++i ) {
             final double L = nominals.get(i);
             final double P = probabilities.get(i);
-            for (int k = a.size() - 1; k >= 0; --k) {
-                if (p.get(k) > 0) {
+            for ( int k = a.size() - 1; k >= 0; --k ) {
+                if ( p.get(k) > 0 ) {
                     final int u = locateTargetBucket(a.get(k) + L, k);
                     QL.require(u >= 0, "u=" + u + " at i=" + i + " k=" + k);
                     QL.require(u >= k, "u=" + u + "<k=" + k + " at i=" + i);
 
                     final double dp = p.get(k) * P;
-                    if (u == k) {
+                    if ( u == k ) {
                         a.set(k, a.get(k) + P * L);
                     } else {
                         // no update of a[u] and p[u] if u is beyond grid end
-                        if (u < nBuckets_) {
+                        if ( u < nBuckets_ ) {
                             // a[u] remains unchanged if dp = 0
-                            if (dp > 0.0) {
+                            if ( dp > 0.0 ) {
                                 final double f = 1.0 / (1.0 + (p.get(u) / p.get(k)) / P);
                                 a.set(u, (1.0 - f) * a.get(u) + f * (a.get(k) + L));
                             }
@@ -104,7 +103,7 @@ public class LossDistBucketing extends LossDist {
         }
 
         final Distribution dist = new Distribution(nBuckets_, 0.0, maximum_);
-        for (int i = 0; i < nBuckets_; ++i) {
+        for ( int i = 0; i < nBuckets_; ++i ) {
             dist.addDensity(i, p.get(i) / dx);
             dist.addAverage(i, a.get(i));
         }
@@ -124,8 +123,8 @@ public class LossDistBucketing extends LossDist {
     private int locateTargetBucket(final double loss, final int i0) {
         QL.require(loss >= 0, "loss " + loss + " must be >= 0");
         final double dx = maximum_ / nBuckets_;
-        for (int i = i0; i < nBuckets_; ++i) {
-            if (dx * i > loss + epsilon_) {
+        for ( int i = i0; i < nBuckets_; ++i ) {
+            if ( dx * i > loss + epsilon_ ) {
                 return i - 1;
             }
         }

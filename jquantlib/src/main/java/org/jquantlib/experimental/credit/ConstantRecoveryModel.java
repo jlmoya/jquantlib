@@ -26,12 +26,10 @@ package org.jquantlib.experimental.credit;
 
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.time.Date;
-import org.jquantlib.util.Observable;
 import org.jquantlib.util.Observer;
 
 /**
- * Simple recovery-rate model returning the constant value of the quote
- * independently of the date and the seniority.
+ * Simple recovery-rate model returning the constant value of the quote independently of the date and the seniority.
  *
  * <p>Java port of QuantLib v1.42.1 {@code QuantLib::ConstantRecoveryModel}
  * ({@code ql/experimental/credit/recoveryratemodel.{hpp,cpp}}).
@@ -40,9 +38,9 @@ import org.jquantlib.util.Observer;
  */
 public class ConstantRecoveryModel extends RecoveryRateModel implements Observer {
 
-    private final Handle<RecoveryRateQuote> quote;
+    private final Handle< RecoveryRateQuote > quote;
 
-    public ConstantRecoveryModel(final Handle<RecoveryRateQuote> quote) {
+    public ConstantRecoveryModel(final Handle< RecoveryRateQuote > quote) {
         this.quote = quote;
         this.quote.addObserver(this);
     }
@@ -52,7 +50,7 @@ public class ConstantRecoveryModel extends RecoveryRateModel implements Observer
     }
 
     public ConstantRecoveryModel(final double recovery, final Seniority sen) {
-        this.quote = new Handle<RecoveryRateQuote>(new RecoveryRateQuote(recovery, sen));
+        this.quote = new Handle< RecoveryRateQuote >(new RecoveryRateQuote(recovery, sen));
     }
 
     @Override

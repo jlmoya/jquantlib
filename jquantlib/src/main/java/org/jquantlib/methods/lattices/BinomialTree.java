@@ -31,24 +31,23 @@ import org.jquantlib.processes.StochasticProcess1D;
 /**
  * Binomial tree base class
  *
- * @category lattices
- *
  * @author Srinivas Hasti
  * @author Tim Swetonic
+ * @category lattices
  */
 // TODO: http://bugs.jquantlib.org/view.php?id=394
 public abstract class BinomialTree extends Tree {
 
     public static final Branches branches = Branches.BINOMIAL;
 
-	protected @Real final double x0;
-    protected @Real final double driftPerStep;
-    protected @Time final double dt;
+    protected @Real
+    final double x0;
+    protected @Real
+    final double driftPerStep;
+    protected @Time
+    final double dt;
 
-	protected BinomialTree(
-	        final StochasticProcess1D process,
-	        final @Time double end,
-	        final @NonNegative int steps) {
+    protected BinomialTree(final StochasticProcess1D process, final @Time double end, final @NonNegative int steps) {
         super(steps + 1);
 
         x0 = process.x0();
@@ -56,14 +55,14 @@ public abstract class BinomialTree extends Tree {
         driftPerStep = process.drift(0.0, x0) * dt;
     }
 
-	@Override
+    @Override
     public final int size(final int i) {
-		return i + 1;
-	}
+        return i + 1;
+    }
 
-	@Override
+    @Override
     public final int descendant(final @Unused int unused, final int index, final int branch) {
-		return index + branch;
-	}
+        return index + branch;
+    }
 
 }

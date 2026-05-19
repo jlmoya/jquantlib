@@ -57,8 +57,8 @@ import org.jquantlib.math.Constants;
 public class LagrangeInterpolation {
 
     private final double[] xNodes_;
-    private double[] yValues_;
     private final double[] lambda_;   // barycentric weights
+    private final double[] yValues_;
 
     /**
      * Construct with fixed x-nodes and y-values.
@@ -67,21 +67,38 @@ public class LagrangeInterpolation {
      * @param y y-values at the x-nodes
      */
     public LagrangeInterpolation(final double[] x, final double[] y) {
-        this.xNodes_  = x.clone();
+        this.xNodes_ = x.clone();
         this.yValues_ = y.clone();
-        this.lambda_  = computeWeights(x);
+        this.lambda_ = computeWeights(x);
     }
 
     /**
-     * Construct with fixed x-nodes; y-values will be supplied dynamically
-     * via {@link #value(double[], double)}.
+     * Construct with fixed x-nodes; y-values will be supplied dynamically via {@link #value(double[], double)}.
      *
      * @param x x-nodes (must be distinct and sorted)
      */
     public LagrangeInterpolation(final double[] x) {
-        this.xNodes_  = x.clone();
+        this.xNodes_ = x.clone();
         this.yValues_ = new double[x.length];
-        this.lambda_  = computeWeights(x);
+        this.lambda_ = computeWeights(x);
+    }
+
+    private static double[] computeWeights(final double[] x) {
+        final int n = x.length;
+        final double cM1 = 4.0 / (x[n - 1] - x[0]);
+        final double[] lambda = new double[n];
+
+        for ( int i = 0; i < n; ++i ) {
+            lambda[i] = 1.0;
+            final double xi = x[i];
+            for ( int j = 0; j < n; ++j ) {
+                if ( i != j ) {
+                    lambda[i] *= cM1 * (xi - x[j]);
+                }
+            }
+            lambda[i] = 1.0 / lambda[i];
+        }
+        return lambda;
     }
 
     /**
@@ -96,7 +113,7 @@ public class LagrangeInterpolation {
     /**
      * Evaluate the interpolation at {@code x} using the stored y-values.
      *
-     * @param x  query point
+     * @param x           query point
      * @param extrapolate if false (unused here, always extrapolates)
      * @return interpolated value
      */
@@ -112,8 +129,8 @@ public class LagrangeInterpolation {
     }
 
     /**
-     * Evaluate the interpolation at {@code x} using externally supplied {@code y}-values.
-     * This mirrors the C++ {@code LagrangeInterpolation::value(const Array&, Real)} method.
+     * Evaluate the interpolation at {@code x} using externally supplied {@code y}-values. This mirrors the C++
+     * {@code LagrangeInterpolation::value(const Array&, Real)} method.
      *
      * @param y y-values (same length as x-nodes)
      * @param x query point
@@ -123,13 +140,13 @@ public class LagrangeInterpolation {
         return _value(y, x);
     }
 
+    // --- private ---
+
     /**
-     * First derivative of the barycentric Lagrange interpolant at {@code x}
-     * using the stored y-values.
+     * First derivative of the barycentric Lagrange interpolant at {@code x} using the stored y-values.
      *
      * <p>Faithful port of C++ v1.42.1
-     * {@code LagrangeInterpolationImpl::derivative(Real)} in
-     * {@code ql/math/interpolations/lagrangeinterpolation.hpp}.
+     * {@code LagrangeInterpolationImpl::derivative(Real)} in {@code ql/math/interpolations/lagrangeinterpolation.hpp}.
      *
      * @param x query point
      * @return interpolated derivative
@@ -137,50 +154,29 @@ public class LagrangeInterpolation {
     public double derivative(final double x) {
         final int n = xNodes_.length;
         double num = 0.0, den = 0.0, numD = 0.0, denD = 0.0;
-        for (int i = 0; i < n; ++i) {
+        for ( int i = 0; i < n; ++i ) {
             final double xi = xNodes_[i];
 
-            if (Closeness.isCloseEnough(x, xi)) {
+            if ( Closeness.isCloseEnough(x, xi) ) {
                 // When x coincides with a node, use the closed-form
                 // expression from Berrut & Trefethen (2004) eq. 9.4.
                 double p = 0.0;
-                for (int j = 0; j < n; ++j) {
-                    if (i != j) {
-                        p += lambda_[j] / (x - xNodes_[j])
-                                * (yValues_[j] - yValues_[i]);
+                for ( int j = 0; j < n; ++j ) {
+                    if ( i != j ) {
+                        p += lambda_[j] / (x - xNodes_[j]) * (yValues_[j] - yValues_[i]);
                     }
                 }
                 return p / lambda_[i];
             }
 
-            final double alpha  = lambda_[i] / (x - xi);
+            final double alpha = lambda_[i] / (x - xi);
             final double alphaD = -alpha / (x - xi);
-            num  += alpha  * yValues_[i];
-            den  += alpha;
+            num += alpha * yValues_[i];
+            den += alpha;
             numD += alphaD * yValues_[i];
             denD += alphaD;
         }
         return (numD * den - num * denD) / (den * den);
-    }
-
-    // --- private ---
-
-    private static double[] computeWeights(final double[] x) {
-        final int n    = x.length;
-        final double cM1 = 4.0 / (x[n - 1] - x[0]);
-        final double[] lambda = new double[n];
-
-        for (int i = 0; i < n; ++i) {
-            lambda[i] = 1.0;
-            final double xi = x[i];
-            for (int j = 0; j < n; ++j) {
-                if (i != j) {
-                    lambda[i] *= cM1 * (xi - x[j]);
-                }
-            }
-            lambda[i] = 1.0 / lambda[i];
-        }
-        return lambda;
     }
 
     private double _value(final double[] y, final double x) {
@@ -193,19 +189,21 @@ public class LagrangeInterpolation {
 
         // Binary search for nearest node from below
         int lo = 0, hi = n;
-        while (lo < hi) {
+        while ( lo < hi ) {
             final int mid = (lo + hi) >>> 1;
-            if (xNodes_[mid] < x - eps) lo = mid + 1;
-            else hi = mid;
+            if ( xNodes_[mid] < x - eps )
+                lo = mid + 1;
+            else
+                hi = mid;
         }
         // lo is the first index where xNodes_[lo] >= x - eps
-        if (lo < n && xNodes_[lo] - x <= eps) {
+        if ( lo < n && xNodes_[lo] - x <= eps ) {
             return y[lo];
         }
 
         // Barycentric formula
         double num = 0.0, den = 0.0;
-        for (int i = 0; i < n; ++i) {
+        for ( int i = 0; i < n; ++i ) {
             final double alpha = lambda_[i] / (x - xNodes_[i]);
             num += alpha * y[i];
             den += alpha;

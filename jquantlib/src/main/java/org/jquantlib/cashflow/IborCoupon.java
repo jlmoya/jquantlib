@@ -51,8 +51,9 @@ import org.jquantlib.time.Date;
 import org.jquantlib.time.TimeUnit;
 import org.jquantlib.util.PolymorphicVisitor;
 import org.jquantlib.util.Visitor;
+
 /**
- * 
+ *
  * @author Zahid Hussain
  *
  */
@@ -61,96 +62,53 @@ public class IborCoupon extends FloatingRateCoupon {
 
     private final static String NULL_TERM_STRUCTURE = "null term structure set to par coupon";
 
-    public IborCoupon(final Date paymentDate,
-                      final double nominal,
-                      final Date startDate,
-                      final Date endDate,
-                      final int fixingDays,
-                      final IborIndex index) {
+    public IborCoupon(final Date paymentDate, final double nominal, final Date startDate, final Date endDate,
+            final int fixingDays, final IborIndex index) {
         // gearing default constructor
-        this (paymentDate, nominal, startDate, endDate, fixingDays, index, 1.0);
+        this(paymentDate, nominal, startDate, endDate, fixingDays, index, 1.0);
     }
 
-    public IborCoupon(final Date paymentDate,
-                      final double nominal,
-                      final Date startDate,
-                      final Date endDate,
-                      final int fixingDays,
-                      final IborIndex index,
-                      final double gearing) {
+    public IborCoupon(final Date paymentDate, final double nominal, final Date startDate, final Date endDate,
+            final int fixingDays, final IborIndex index, final double gearing) {
         // spread default constructor
-        this (paymentDate, nominal, startDate, endDate, fixingDays, index, gearing, 0.0);
+        this(paymentDate, nominal, startDate, endDate, fixingDays, index, gearing, 0.0);
     }
 
-    public IborCoupon(final Date paymentDate,
-                      final double nominal,
-                      final Date startDate,
-                      final Date endDate,
-                      final int fixingDays,
-                      final IborIndex index,
-                      final double gearing,
-                      final double spread) {
+    public IborCoupon(final Date paymentDate, final double nominal, final Date startDate, final Date endDate,
+            final int fixingDays, final IborIndex index, final double gearing, final double spread) {
         // refperiodStart, refperiod end default constructor
-        this (paymentDate, nominal, startDate, endDate, fixingDays,
-              index, gearing, spread, new Date(), new Date());
+        this(paymentDate, nominal, startDate, endDate, fixingDays, index, gearing, spread, new Date(), new Date());
     }
 
-    public IborCoupon(final Date paymentDate,
-                      final double nominal,
-                      final Date startDate,
-                      final Date endDate,
-                      final int fixingDays,
-                      final IborIndex index,
-                      final double gearing,
-                      final double spread,
-                      final Date refPeriodStart,
-                      final Date refPeriodEnd) {
+    public IborCoupon(final Date paymentDate, final double nominal, final Date startDate, final Date endDate,
+            final int fixingDays, final IborIndex index, final double gearing, final double spread,
+            final Date refPeriodStart, final Date refPeriodEnd) {
         // default daycounter constructor
-        this (paymentDate, nominal, startDate, endDate, fixingDays,
-              index, gearing, spread, refPeriodStart, refPeriodEnd, new DayCounter());
+        this(paymentDate, nominal, startDate, endDate, fixingDays, index, gearing, spread, refPeriodStart, refPeriodEnd,
+                new DayCounter());
     }
 
-    public IborCoupon(final Date paymentDate,
-                      final double nominal,
-                      final Date startDate,
-                      final Date endDate,
-                      final int fixingDays,
-                      final IborIndex index,
-                      final double gearing,
-                      final double spread,
-                      final Date refPeriodStart,
-                      final Date refPeriodEnd,
-                      final DayCounter dayCounter) {
+    public IborCoupon(final Date paymentDate, final double nominal, final Date startDate, final Date endDate,
+            final int fixingDays, final IborIndex index, final double gearing, final double spread,
+            final Date refPeriodStart, final Date refPeriodEnd, final DayCounter dayCounter) {
         // default inArrears constructor
-        this (paymentDate, nominal, startDate, endDate, fixingDays,
-              index, gearing, spread, refPeriodStart, refPeriodEnd, dayCounter, false);
+        this(paymentDate, nominal, startDate, endDate, fixingDays, index, gearing, spread, refPeriodStart, refPeriodEnd,
+                dayCounter, false);
     }
 
-    public IborCoupon(
-            final Date paymentDate,
-            final double nominal,
-            final Date startDate,
-            final Date endDate,
-            final int fixingDays,
-            final IborIndex index,
-            final double gearing,
-            final double spread,
-            final Date refPeriodStart,
-            final Date refPeriodEnd,
-            final DayCounter dayCounter,
+    public IborCoupon(final Date paymentDate, final double nominal, final Date startDate, final Date endDate,
+            final int fixingDays, final IborIndex index, final double gearing, final double spread,
+            final Date refPeriodStart, final Date refPeriodEnd, final DayCounter dayCounter,
             final boolean isInArrears) {
-        super(paymentDate, nominal, startDate, endDate, fixingDays, index,
-                gearing, spread, refPeriodStart, refPeriodEnd,
-                dayCounter, isInArrears);
+        super(paymentDate, nominal, startDate, endDate, fixingDays, index, gearing, spread, refPeriodStart,
+                refPeriodEnd, dayCounter, isInArrears);
     }
 
     /**
-     * Mirror of C++ {@code IborCoupon::hasFixed() const}
-     * (ql/cashflows/iborcoupon.cpp:93-108, v1.42.1).
+     * Mirror of C++ {@code IborCoupon::hasFixed() const} (ql/cashflows/iborcoupon.cpp:93-108, v1.42.1).
      *
      * <p>Returns {@code true} iff the coupon's fixing date is strictly
-     * before today, OR is equal to today AND either
-     * {@link org.jquantlib.Settings#isEnforcesTodaysHistoricFixings()} is
+     * before today, OR is equal to today AND either {@link org.jquantlib.Settings#isEnforcesTodaysHistoricFixings()} is
      * set, OR a historical fixing has already been stored for today.
      *
      * <p>Phase 5e.5b-CFC-d-111.
@@ -158,14 +116,14 @@ public class IborCoupon extends FloatingRateCoupon {
     public boolean hasFixed() {
         final Date today = new org.jquantlib.Settings().evaluationDate();
         final Date fixingDate = fixingDate();
-        if (fixingDate.gt(today)) {
+        if ( fixingDate.gt(today) ) {
             return false;
         }
-        if (fixingDate.lt(today)) {
+        if ( fixingDate.lt(today) ) {
             return true;
         }
         // fixingDate == today
-        if (new org.jquantlib.Settings().isEnforcesTodaysHistoricFixings()) {
+        if ( new org.jquantlib.Settings().isEnforcesTodaysHistoricFixings() ) {
             return true;
         }
         return index_.hasHistoricalFixing(fixingDate);
@@ -178,43 +136,41 @@ public class IborCoupon extends FloatingRateCoupon {
         // C++ ql/cashflows/iborcoupon.cpp:110-128, v1.42.1: when
         // hasFixed() is true the past fixing is returned without ever
         // touching the index's term structure.
-        if (hasFixed()) {
+        if ( hasFixed() ) {
             final double pastFixing = index_.pastFixing(fixingDate());
             QL.require(pastFixing != org.jquantlib.math.Constants.NULL_REAL,
-                       "Missing " + index_.name() + " fixing for " + fixingDate());
+                    "Missing " + index_.name() + " fixing for " + fixingDate());
             return pastFixing;
         }
 
         final org.jquantlib.Settings settings = new org.jquantlib.Settings();
-        if (settings.isUseIndexedCoupon())
+        if ( settings.isUseIndexedCoupon() )
             return index_.fixing(fixingDate());
-        if (isInArrears())
+        if ( isInArrears() )
             return index_.fixing(fixingDate());
         else {
-            final Handle<YieldTermStructure> termStructure = index_.termStructure();
-            QL.require(termStructure != null , NULL_TERM_STRUCTURE);  // QA:[RG]::verified
+            final Handle< YieldTermStructure > termStructure = index_.termStructure();
+            QL.require(termStructure != null, NULL_TERM_STRUCTURE);  // QA:[RG]::verified
             final Date fixing_date = fixingDate();
 
             // start discount
             final Date fixingValueDate = index_.fixingCalendar()
-                .advance(fixing_date, index_.fixingDays(), TimeUnit.Days);
+                    .advance(fixing_date, index_.fixingDays(), TimeUnit.Days);
             final double startDiscount = termStructure.currentLink().discount(fixingValueDate);
 
             // end discount
             final Date nextFixingDate = index_.fixingCalendar()
-                .advance(accrualEndDate_, -(fixingDays()), TimeUnit.Days);
+                    .advance(accrualEndDate_, -(fixingDays()), TimeUnit.Days);
             final Date nextFixingValueDate = index_.fixingCalendar()
-                .advance (nextFixingDate, index_.fixingDays(), TimeUnit.Days);
+                    .advance(nextFixingDate, index_.fixingDays(), TimeUnit.Days);
             final double endDiscount = termStructure.currentLink().discount(nextFixingValueDate);
 
             // spanning time
-            final double spanningTime = index_.dayCounter()
-                .yearFraction (fixingValueDate, nextFixingValueDate);
+            final double spanningTime = index_.dayCounter().yearFraction(fixingValueDate, nextFixingValueDate);
             // implied fixing
             return (startDiscount / endDiscount - 1.0) / spanningTime;
         }
     }
-
 
     //
     // implements PolymorphicVisitable
@@ -222,14 +178,13 @@ public class IborCoupon extends FloatingRateCoupon {
 
     @Override
     public void accept(final PolymorphicVisitor pv) {
-        final Visitor<IborCoupon> v = (pv!=null) ? pv.visitor(this.getClass()) : null;
-        if (v != null) {
+        final Visitor< IborCoupon > v = (pv != null) ? pv.visitor(this.getClass()) : null;
+        if ( v != null ) {
             v.visit(this);
         } else {
             super.accept(pv);
         }
     }
-
 
     //
     // nested Settings class — mirrors C++ IborCoupon::Settings singleton
@@ -237,14 +192,12 @@ public class IborCoupon extends FloatingRateCoupon {
     //
 
     /**
-     * Per-session settings for the {@link IborCoupon} class. Mirrors the
-     * C++ {@code IborCoupon::Settings} singleton.
+     * Per-session settings for the {@link IborCoupon} class. Mirrors the C++ {@code IborCoupon::Settings} singleton.
      *
      * <p>The C++ default depends on the compile-time flag
-     * {@code QL_USE_INDEXED_COUPON}. v1.42.1 ships with that flag NOT set,
-     * so {@code usingAtParCoupons_ = true} by default. The Java port keeps
-     * the same default and honors {@link org.jquantlib.Settings#isUseIndexedCoupon()}
-     * for back-compat with the existing per-session flag.
+     * {@code QL_USE_INDEXED_COUPON}. v1.42.1 ships with that flag NOT set, so {@code usingAtParCoupons_ = true} by
+     * default. The Java port keeps the same default and honors {@link org.jquantlib.Settings#isUseIndexedCoupon()} for
+     * back-compat with the existing per-session flag.
      */
     public static final class Settings {
 
@@ -262,9 +215,9 @@ public class IborCoupon extends FloatingRateCoupon {
         }
 
         public static Settings getInstance() {
-            if (instance == null) {
-                synchronized (Settings.class) {
-                    if (instance == null) {
+            if ( instance == null ) {
+                synchronized ( Settings.class ) {
+                    if ( instance == null ) {
                         instance = new Settings();
                     }
                 }
@@ -273,8 +226,7 @@ public class IborCoupon extends FloatingRateCoupon {
         }
 
         /**
-         * When called, IborCoupons are created as par coupons instead of
-         * indexed coupons. Mirrors C++
+         * When called, IborCoupons are created as par coupons instead of indexed coupons. Mirrors C++
          * {@code IborCoupon::Settings::createAtParCoupons()}.
          */
         public void createAtParCoupons() {
@@ -283,8 +235,7 @@ public class IborCoupon extends FloatingRateCoupon {
         }
 
         /**
-         * When called, IborCoupons are created as indexed coupons instead
-         * of par coupons. Mirrors C++
+         * When called, IborCoupons are created as indexed coupons instead of par coupons. Mirrors C++
          * {@code IborCoupon::Settings::createIndexedCoupons()}.
          */
         public void createIndexedCoupons() {
@@ -293,9 +244,8 @@ public class IborCoupon extends FloatingRateCoupon {
         }
 
         /**
-         * If true, IborCoupons are created as par coupons; otherwise indexed.
-         * The default (matching v1.42.1 without QL_USE_INDEXED_COUPON) is
-         * {@code true}.
+         * If true, IborCoupons are created as par coupons; otherwise indexed. The default (matching v1.42.1 without
+         * QL_USE_INDEXED_COUPON) is {@code true}.
          *
          * <p>Mirrors C++
          * {@code IborCoupon::Settings::usingAtParCoupons() const}.

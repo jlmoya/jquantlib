@@ -20,17 +20,7 @@
  When applicable, the original copyright notice follows this notice.
  */
 
-
-
 package org.jquantlib.time.calendars;
-
-import static org.jquantlib.time.Month.August;
-import static org.jquantlib.time.Month.December;
-import static org.jquantlib.time.Month.January;
-import static org.jquantlib.time.Month.July;
-import static org.jquantlib.time.Month.May;
-import static org.jquantlib.time.Month.November;
-import static org.jquantlib.time.Month.September;
 
 import org.jquantlib.lang.annotation.QualityAssurance;
 import org.jquantlib.lang.annotation.QualityAssurance.Quality;
@@ -39,6 +29,8 @@ import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Month;
 import org.jquantlib.time.Weekday;
+
+import static org.jquantlib.time.Month.*;
 
 /**
  * Slovak calendars
@@ -63,13 +55,26 @@ import org.jquantlib.time.Weekday;
  * <li>Christmas, December 25th</li>
  * <li>St. Stephen, December 26th</li>
  * </ul>
- * @category calendars
+ *
  * @author Richard Gomes
+ * @category calendars
  */
 
-@QualityAssurance(quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Zahid Hussain" })
+@QualityAssurance( quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Zahid Hussain" } )
 
 public class Slovakia extends Calendar {
+    public Slovakia() {
+        this(Market.BSSE);
+    }
+
+    //
+    // public constructors
+    //
+
+    public Slovakia(final Market m) {
+        impl = new BsseImpl();
+    }
+
     public enum Market {
         /**
          * Bratislava stock exchange
@@ -78,69 +83,56 @@ public class Slovakia extends Calendar {
     }
 
     //
-    // public constructors
-    //
-
-    public Slovakia() {
-    	this(Market.BSSE);
-    }
-    public Slovakia(final Market m) {
-    	impl = new BsseImpl();
-    }
-
-
-    //
     // private final inner classes
     //
 
-    private final class BsseImpl extends WesternImpl  {
-    	@Override
-    	public String name() { return "Bratislava stock exchange"; }
+    private final class BsseImpl extends WesternImpl {
+        @Override
+        public String name() {
+            return "Bratislava stock exchange";
+        }
 
-    	@Override
+        @Override
         public boolean isBusinessDay(final Date date) {
             final Weekday w = date.weekday();
             final int d = date.dayOfMonth(), dd = date.dayOfYear();
             final Month m = date.month();
             final int y = date.year();
             final int em = easterMonday(y);
-            if (isWeekend(w)
-                // New Year's Day
-                || (d == 1 && m == January)
-                // Epiphany
-                || (d == 6 && m == January)
-                // Good Friday
-                || (dd == em-3)
-                // Easter Monday
-                || (dd == em)
-                // May Day
-                || (d == 1 && m == May)
-                // Liberation of the Republic
-                || (d == 8 && m == May)
-                // SS. Cyril and Methodius
-                || (d == 5 && m == July)
-                // Slovak National Uprising
-                || (d == 29 && m == August)
-                // Constitution of the Slovak Republic
-                || (d == 1 && m == September)
-                // Our Lady of the Seven Sorrows
-                || (d == 15 && m == September)
-                // All Saints Day
-                || (d == 1 && m == November)
-                // Freedom and Democracy of the Slovak Republic
-                || (d == 17 && m == November)
-                // Christmas Eve
-                || (d == 24 && m == December)
-                // Christmas
-                || (d == 25 && m == December)
-                // St. Stephen
-                || (d == 26 && m == December)
-                // unidentified closing days for stock exchange
-                || (d >= 24 && d <= 31 && m == December && y == 2004)
-                || (d >= 24 && d <= 31 && m == December && y == 2005)) {
-                return false;
-            }
-            return true;
+            return !isWeekend(w)
+                    // New Year's Day
+                    && (d != 1 || m != January)
+                    // Epiphany
+                    && (d != 6 || m != January)
+                    // Good Friday
+                    && (dd != em - 3)
+                    // Easter Monday
+                    && (dd != em)
+                    // May Day
+                    && (d != 1 || m != May)
+                    // Liberation of the Republic
+                    && (d != 8 || m != May)
+                    // SS. Cyril and Methodius
+                    && (d != 5 || m != July)
+                    // Slovak National Uprising
+                    && (d != 29 || m != August)
+                    // Constitution of the Slovak Republic
+                    && (d != 1 || m != September)
+                    // Our Lady of the Seven Sorrows
+                    && (d != 15 || m != September)
+                    // All Saints Day
+                    && (d != 1 || m != November)
+                    // Freedom and Democracy of the Slovak Republic
+                    && (d != 17 || m != November)
+                    // Christmas Eve
+                    && (d != 24 || m != December)
+                    // Christmas
+                    && (d != 25 || m != December)
+                    // St. Stephen
+                    && (d != 26 || m != December)
+                    // unidentified closing days for stock exchange
+                    && (d < 24 || d > 31 || m != December || y != 2004) && (d < 24 || d > 31 || m != December
+                    || y != 2005);
         }
     }
 }

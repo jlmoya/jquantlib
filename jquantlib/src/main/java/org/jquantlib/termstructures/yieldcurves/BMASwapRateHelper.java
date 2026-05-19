@@ -21,8 +21,6 @@
 
 package org.jquantlib.termstructures.yieldcurves;
 
-
-
 import org.jquantlib.QL;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.indexes.BMAIndex;
@@ -34,14 +32,7 @@ import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.RelinkableHandle;
 import org.jquantlib.termstructures.YieldTermStructure;
-import org.jquantlib.time.BusinessDayConvention;
-import org.jquantlib.time.Calendar;
-import org.jquantlib.time.Date;
-import org.jquantlib.time.MakeSchedule;
-import org.jquantlib.time.Period;
-import org.jquantlib.time.Schedule;
-import org.jquantlib.time.TimeUnit;
-import org.jquantlib.time.Weekday;
+import org.jquantlib.time.*;
 import org.jquantlib.util.PolymorphicVisitor;
 import org.jquantlib.util.Visitor;
 
@@ -54,34 +45,29 @@ import org.jquantlib.util.Visitor;
 public class BMASwapRateHelper extends RelativeDateRateHelper {
 
     protected final Period tenor;
-    protected /* @Natural */ int settlementDays;
     protected final Calendar calendar;
     protected final Period bmaPeriod;
     protected final BusinessDayConvention bmaConvention;
     protected final DayCounter bmaDayCount;
     protected final BMAIndex bmaIndex;
     protected final IborIndex iborIndex;
+    protected /* @Natural */ int settlementDays;
     protected BMASwap swap;
-    protected RelinkableHandle<YieldTermStructure> termStructureHandle = new RelinkableHandle <YieldTermStructure> (null);
- 
+    protected RelinkableHandle< YieldTermStructure > termStructureHandle = new RelinkableHandle< YieldTermStructure >(
+            null);
+
     //
     // public constructors
     //
 
-    public BMASwapRateHelper(
-            final Handle<Quote> liborFraction,
-            final Period tenor,
-            final @Natural int settlementDays,
+    public BMASwapRateHelper(final Handle< Quote > liborFraction, final Period tenor, final @Natural int settlementDays,
             final Calendar calendar,
             // bma leg
-            final Period bmaPeriod,
-            final BusinessDayConvention bmaConvention,
-            final DayCounter bmaDayCount,
+            final Period bmaPeriod, final BusinessDayConvention bmaConvention, final DayCounter bmaDayCount,
             final BMAIndex bmaIndex,
             // libor leg
             final IborIndex iborIndex) {
         super(liborFraction);
-
 
         this.tenor = tenor;
         this.settlementDays = settlementDays;
@@ -99,69 +85,45 @@ public class BMASwapRateHelper extends RelativeDateRateHelper {
         initializeDates();
     }
 
-
-
     //
     // protected methods
     //
 
-	/** 
-     * 
+    /**
+     *
      * @see org.jquantlib.termstructures.yield.RelativeDateRateHelper#initializeDates()
      */
     @Override
     protected void initializeDates() {
 
-    	earliestDate = calendar.advance(evaluationDate, 
-    			                        new Period(settlementDays, TimeUnit.Days), 
-    			                        BusinessDayConvention.Following);
-    	
+        earliestDate = calendar.advance(evaluationDate, new Period(settlementDays, TimeUnit.Days),
+                BusinessDayConvention.Following);
 
-    	Date maturity = earliestDate.add(tenor);
-    	BMAIndex clonedIndex = bmaIndex.clone(termStructureHandle);
-    	Schedule bmaSchedule = new MakeSchedule(earliestDate,
-    			                                maturity,
-    			                                bmaPeriod,
-    			                                bmaIndex.fixingCalendar(),
-    			                                bmaConvention)
-    								.backwards()
-    								.schedule();
-    	
-    	Schedule liborSchedule = new MakeSchedule(earliestDate,
-                								  maturity,
-                								  iborIndex.tenor(),
-                								  iborIndex.fixingCalendar(),
-                								  iborIndex.businessDayConvention())
-    								.endOfMonth(iborIndex.endOfMonth())
-    								.schedule();
+        Date maturity = earliestDate.add(tenor);
+        BMAIndex clonedIndex = bmaIndex.clone(termStructureHandle);
+        Schedule bmaSchedule = new MakeSchedule(earliestDate, maturity, bmaPeriod, bmaIndex.fixingCalendar(),
+                bmaConvention).backwards().schedule();
 
-    	this.swap = new BMASwap(BMASwap.Type.Payer,
-    							100.0,
-    							liborSchedule,
-    							0.75, //arbitary
-    							0.0,
-    							iborIndex,
-    							iborIndex.dayCounter(),
-    							bmaSchedule,
-    							clonedIndex,
-    							bmaDayCount);
-    	
-    	this.swap.setPricingEngine(new DiscountingSwapEngine(iborIndex.termStructure()));
-    	
-    	Date d = calendar.adjust(swap.maturityDate(), BusinessDayConvention.Following);
-    	Weekday w = d.weekday();
-    	Date nextWednesday = w.value() >=4 ? d.add(11 - w.value()) :  d.add(4 - w.value());
-    	
-    	latestDate = clonedIndex.valueDate(clonedIndex.fixingCalendar().adjust(nextWednesday));
+        Schedule liborSchedule = new MakeSchedule(earliestDate, maturity, iborIndex.tenor(), iborIndex.fixingCalendar(),
+                iborIndex.businessDayConvention()).endOfMonth(iborIndex.endOfMonth()).schedule();
+
+        this.swap = new BMASwap(BMASwap.Type.Payer, 100.0, liborSchedule, 0.75, //arbitary
+                0.0, iborIndex, iborIndex.dayCounter(), bmaSchedule, clonedIndex, bmaDayCount);
+
+        this.swap.setPricingEngine(new DiscountingSwapEngine(iborIndex.termStructure()));
+
+        Date d = calendar.adjust(swap.maturityDate(), BusinessDayConvention.Following);
+        Weekday w = d.weekday();
+        Date nextWednesday = w.value() >= 4 ? d.add(11 - w.value()) : d.add(4 - w.value());
+
+        latestDate = clonedIndex.valueDate(clonedIndex.fixingCalendar().adjust(nextWednesday));
     }
-    
+
     /**
-     * Do not set the relinkable handle as an observer.
-     * Force recalculation when needed
-     * 
-     * @see org.jquantlib.termstructures.BootstrapHelper#setTermStructure
+     * Do not set the relinkable handle as an observer. Force recalculation when needed
      *
      * @param t
+     * @see org.jquantlib.termstructures.BootstrapHelper#setTermStructure
      */
     @Override
     public void setTermStructure(final YieldTermStructure t) {
@@ -169,16 +131,16 @@ public class BMASwapRateHelper extends RelativeDateRateHelper {
         super.setTermStructure(t);
     }
 
-    /** 
+    /**
      * @see org.jquantlib.termstructures.BootstrapHelper#getImpliedQuote()
      */
     @Override
     public /*@Real*/ double impliedQuote() /* @ReadOnly */ {
-        QL.require(termStructure != null , "term structure not set");
+        QL.require(termStructure != null, "term structure not set");
 
         // we didn't register as observers - force calculation
         swap.recalculate();
-        
+
         return swap.fairLiborFraction();
     }
 
@@ -188,8 +150,8 @@ public class BMASwapRateHelper extends RelativeDateRateHelper {
 
     @Override
     public void accept(final PolymorphicVisitor pv) {
-        final Visitor<BMASwapRateHelper> v = (pv!=null) ? pv.visitor(this.getClass()) : null;
-        if (v != null) {
+        final Visitor< BMASwapRateHelper > v = (pv != null) ? pv.visitor(this.getClass()) : null;
+        if ( v != null ) {
             v.visit(this);
         } else {
             super.accept(pv);

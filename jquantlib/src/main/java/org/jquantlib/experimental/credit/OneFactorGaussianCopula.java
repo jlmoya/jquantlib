@@ -37,9 +37,8 @@ import org.jquantlib.quotes.Quote;
  * ({@code ql/experimental/credit/onefactorgaussiancopula.{hpp,cpp}}).
  *
  * <p>Specifies the densities of M, Z, and Y to the standard normal
- * distribution {@code phi(x) = exp(-x^2/2) / sqrt(2 pi)} and overrides
- * the table-based cumulative-Y / inverse-Y of the base class with
- * direct CDF calls.
+ * distribution {@code phi(x) = exp(-x^2/2) / sqrt(2 pi)} and overrides the table-based cumulative-Y / inverse-Y of the
+ * base class with direct CDF calls.
  *
  * <p>Phase 4m.5.
  */
@@ -49,14 +48,13 @@ public class OneFactorGaussianCopula extends OneFactorCopula {
     private final CumulativeNormalDistribution cumulative = new CumulativeNormalDistribution();
     private final InverseCumulativeNormal inverseCumulative = new InverseCumulativeNormal();
 
-    public OneFactorGaussianCopula(final Handle<Quote> correlation,
-                                   final double maximum,
-                                   final int integrationSteps) {
+    public OneFactorGaussianCopula(final Handle< Quote > correlation, final double maximum,
+            final int integrationSteps) {
         super(correlation, maximum, integrationSteps, -maximum);
         correlation.addObserver(this);
     }
 
-    public OneFactorGaussianCopula(final Handle<Quote> correlation) {
+    public OneFactorGaussianCopula(final Handle< Quote > correlation) {
         this(correlation, 5.0, 50);
     }
 
@@ -83,7 +81,7 @@ public class OneFactorGaussianCopula extends OneFactorCopula {
     /** Test cumulative-Y via direct double-Euler integration; mirrors C++ {@code testCumulativeY}. */
     public double testCumulativeY(final double y) {
         final double c = correlation.currentLink().value();
-        if (c == 0 || c == 1) {
+        if ( c == 0 || c == 1 ) {
             return new CumulativeNormalDistribution().op(y);
         }
         final NormalDistribution dz = new NormalDistribution();
@@ -93,17 +91,17 @@ public class OneFactorGaussianCopula extends OneFactorCopula {
         final int steps = 200;
         final double delta = (maximum - minimum) / steps;
         double cumulated = 0.0;
-        if (c < 0.5) {
-            for (double m = minimum; m < maximum; m += delta) {
+        if ( c < 0.5 ) {
+            for ( double m = minimum; m < maximum; m += delta ) {
                 final double zMax = (y - Math.sqrt(c) * m) / Math.sqrt(1.0 - c);
-                for (double z = minimum; z < zMax; z += delta) {
+                for ( double z = minimum; z < zMax; z += delta ) {
                     cumulated += dm.op(m) * dz.op(z);
                 }
             }
         } else {
-            for (double z = minimum; z < maximum; z += delta) {
+            for ( double z = minimum; z < maximum; z += delta ) {
                 final double mMax = (y - Math.sqrt(1.0 - c) * z) / Math.sqrt(c);
-                for (double m = minimum; m < mMax; m += delta) {
+                for ( double m = minimum; m < mMax; m += delta ) {
                     cumulated += dm.op(m) * dz.op(z);
                 }
             }

@@ -40,9 +40,8 @@ import org.jquantlib.time.Schedule;
 /**
  * Base class for CMS-coupon pricing via Hagan static replication.
  * <p>
- * Mirrors C++ QuantLib v1.42.1 {@code HaganPricer} in
- * {@code ql/cashflows/conundrumpricer.{hpp,cpp}}. Concrete subclasses
- * supply the {@code optionletPrice(Type, strike)} integral:
+ * Mirrors C++ QuantLib v1.42.1 {@code HaganPricer} in {@code ql/cashflows/conundrumpricer.{hpp,cpp}}. Concrete
+ * subclasses supply the {@code optionletPrice(Type, strike)} integral:
  * <ul>
  *   <li>{@link AnalyticHaganPricer} — Hagan eq. 3.5b/3.5c closed form.</li>
  *   <li>{@link NumericHaganPricer} — Gauss-Kronrod numerical replication.</li>
@@ -69,17 +68,16 @@ public abstract class HaganPricer extends CmsCouponPricer implements MeanReverti
     protected double spreadLegValue_;
     protected double cutoffForCaplet_ = 2.0;
     protected double cutoffForFloorlet_ = 0.0;
-    protected Handle<Quote> meanReversion_;
+    protected Handle< Quote > meanReversion_;
     protected Period swapTenor_;
     protected VanillaOptionPricer vanillaOptionPricer_;
 
-    protected HaganPricer(final Handle<SwaptionVolatilityStructure> swaptionVol,
-                          final GFunctionFactory.YieldCurveModel modelOfYieldCurve,
-                          final Handle<Quote> meanReversion) {
+    protected HaganPricer(final Handle< SwaptionVolatilityStructure > swaptionVol,
+            final GFunctionFactory.YieldCurveModel modelOfYieldCurve, final Handle< Quote > meanReversion) {
         super(swaptionVol);
         this.modelOfYieldCurve_ = modelOfYieldCurve;
         this.meanReversion_ = meanReversion;
-        if (this.meanReversion_ != null) {
+        if ( this.meanReversion_ != null ) {
             this.meanReversion_.addObserver(this);
         }
     }
@@ -108,7 +106,7 @@ public abstract class HaganPricer extends CmsCouponPricer implements MeanReverti
 
         final Date today = new Settings().evaluationDate();
 
-        if (paymentDate_.gt(today)) {
+        if ( paymentDate_.gt(today) ) {
             discount_ = rateCurve_.discount(paymentDate_);
         } else {
             discount_ = 1.0;
@@ -116,7 +114,7 @@ public abstract class HaganPricer extends CmsCouponPricer implements MeanReverti
 
         spreadLegValue_ = spread_ * accrualPeriod * discount_;
 
-        if (fixingDate_.gt(today)) {
+        if ( fixingDate_.gt(today) ) {
             swapTenor_ = swapIndex.tenor();
             final VanillaSwap swap = swapIndex.underlyingSwap(fixingDate_);
 
@@ -133,28 +131,26 @@ public abstract class HaganPricer extends CmsCouponPricer implements MeanReverti
             final double paymentTime = dc.yearFraction(rateCurve_.referenceDate(), paymentDate_);
             final double delta = (paymentTime - startTime) / (swapFirstPaymentTime - startTime);
 
-            switch (modelOfYieldCurve_) {
-                case Standard:
-                    gFunction_ = GFunctionFactory.newGFunctionStandard(q, delta, swapTenor_.length());
-                    break;
-                case ExactYield:
-                    gFunction_ = GFunctionFactory.newGFunctionExactYield(coupon_);
-                    break;
-                case ParallelShifts: {
-                    final Handle<Quote> nullMeanReversionQuote =
-                            new Handle<Quote>(new SimpleQuote(0.0));
-                    gFunction_ = GFunctionFactory.newGFunctionWithShifts(coupon_, nullMeanReversionQuote);
-                    break;
-                }
-                case NonParallelShifts:
-                    gFunction_ = GFunctionFactory.newGFunctionWithShifts(coupon_, meanReversion_);
-                    break;
-                default:
-                    QL.error("unknown/illegal gFunction type");
+            switch ( modelOfYieldCurve_ ) {
+            case Standard:
+                gFunction_ = GFunctionFactory.newGFunctionStandard(q, delta, swapTenor_.length());
+                break;
+            case ExactYield:
+                gFunction_ = GFunctionFactory.newGFunctionExactYield(coupon_);
+                break;
+            case ParallelShifts: {
+                final Handle< Quote > nullMeanReversionQuote = new Handle< Quote >(new SimpleQuote(0.0));
+                gFunction_ = GFunctionFactory.newGFunctionWithShifts(coupon_, nullMeanReversionQuote);
+                break;
+            }
+            case NonParallelShifts:
+                gFunction_ = GFunctionFactory.newGFunctionWithShifts(coupon_, meanReversion_);
+                break;
+            default:
+                QL.error("unknown/illegal gFunction type");
             }
 
-            vanillaOptionPricer_ = new MarketQuotedOptionPricer(
-                    swapRateValue_, fixingDate_, swapTenor_,
+            vanillaOptionPricer_ = new MarketQuotedOptionPricer(swapRateValue_, fixingDate_, swapTenor_,
                     swaptionVolatility().currentLink());
         }
     }
@@ -165,12 +161,12 @@ public abstract class HaganPricer extends CmsCouponPricer implements MeanReverti
     }
 
     @Override
-    public void setMeanReversion(final Handle<Quote> meanReversion) {
-        if (meanReversion_ != null) {
+    public void setMeanReversion(final Handle< Quote > meanReversion) {
+        if ( meanReversion_ != null ) {
             meanReversion_.deleteObserver(this);
         }
         this.meanReversion_ = meanReversion;
-        if (this.meanReversion_ != null) {
+        if ( this.meanReversion_ != null ) {
             this.meanReversion_.addObserver(this);
         }
         update();
@@ -185,15 +181,15 @@ public abstract class HaganPricer extends CmsCouponPricer implements MeanReverti
     public double capletPrice(final double effectiveCap) {
         // caplet is equivalent to a call option on the fixing
         final Date today = new Settings().evaluationDate();
-        if (fixingDate_.le(today)) {
+        if ( fixingDate_.le(today) ) {
             // the fixing is determined
             final double Rs = Math.max(coupon_.swapIndex().fixing(fixingDate_) - effectiveCap, 0.0);
             return (gearing_ * Rs) * (coupon_.accrualPeriod() * discount_);
         }
         double capletPx = 0.0;
-        if (swaptionVolatility().currentLink().volatilityType() == VolatilityType.ShiftedLognormal) {
+        if ( swaptionVolatility().currentLink().volatilityType() == VolatilityType.ShiftedLognormal ) {
             final double cutoffNearZero = 1.0e-10;
-            if (effectiveCap < cutoffForCaplet_) {
+            if ( effectiveCap < cutoffForCaplet_ ) {
                 final double effectiveStrikeForMax = Math.max(effectiveCap, cutoffNearZero);
                 capletPx = optionletPrice(Option.Type.Call, effectiveStrikeForMax);
             }
@@ -212,14 +208,14 @@ public abstract class HaganPricer extends CmsCouponPricer implements MeanReverti
     public double floorletPrice(final double effectiveFloor) {
         // floorlet is equivalent to a put option on the fixing
         final Date today = new Settings().evaluationDate();
-        if (fixingDate_.le(today)) {
+        if ( fixingDate_.le(today) ) {
             final double Rs = Math.max(effectiveFloor - coupon_.swapIndex().fixing(fixingDate_), 0.0);
             return (gearing_ * Rs) * (coupon_.accrualPeriod() * discount_);
         }
         double floorletPx = 0.0;
-        if (swaptionVolatility().currentLink().volatilityType() == VolatilityType.ShiftedLognormal) {
+        if ( swaptionVolatility().currentLink().volatilityType() == VolatilityType.ShiftedLognormal ) {
             final double cutoffNearZero = 1.0e-10;
-            if (effectiveFloor > cutoffForFloorlet_) {
+            if ( effectiveFloor > cutoffForFloorlet_ ) {
                 final double effectiveStrikeForMin = Math.max(effectiveFloor, cutoffNearZero);
                 floorletPx = optionletPrice(Option.Type.Put, effectiveStrikeForMin);
             }

@@ -42,19 +42,17 @@
     \brief Asian option on a single asset
 */
 
-
 package org.jquantlib.instruments;
 
 /**
- * 
+ *
  * Average/Asian option type.
- * 
+ *
  * Port from ql/instruments/asianoption.hpp
- * 
+ *
  * @author <Richard Gomes>
  *
  */
 public enum AverageType {
-    Arithmetic, 
-    Geometric 
+    Arithmetic, Geometric
 }

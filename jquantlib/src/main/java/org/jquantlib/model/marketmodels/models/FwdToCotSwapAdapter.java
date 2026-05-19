@@ -36,8 +36,8 @@ import org.jquantlib.model.marketmodels.SwapForwardMappings;
 import org.jquantlib.model.marketmodels.curvestates.LMMCurveState;
 
 /**
- * Adapter that maps a forward-measure {@link MarketModel} to a coterminal-swap
- * measure model. Inverse of {@link CotSwapToFwdAdapter}.
+ * Adapter that maps a forward-measure {@link MarketModel} to a coterminal-swap measure model. Inverse of
+ * {@link CotSwapToFwdAdapter}.
  *
  * <p>Java port of {@code ql/models/marketmodels/models/fwdtocotswapadapter.{hpp,cpp}}
  * (QuantLib v1.42.1).
@@ -62,19 +62,21 @@ public final class FwdToCotSwapAdapter extends MarketModel {
 
         // require all displacements equal
         final double[] displacements = fwdModel.displacements();
-        for (int i = 1; i < displacements.length; ++i) {
+        for ( int i = 1; i < displacements.length; ++i ) {
             QL.require(displacements[i] == displacements[0],
-                    (i + 1) + "-th displacement (" + displacements[i]
-                            + ") not equal to the previous ones (" + displacements[0] + ")");
+                    (i + 1) + "-th displacement (" + displacements[i] + ") not equal to the previous ones ("
+                            + displacements[0] + ")");
         }
 
         final double[] rateTimes = fwdModel.evolution().rateTimes();
         final double[] evolutionTimes = fwdModel.evolution().evolutionTimes();
-        for (int i = 0; i < rateTimes.length
-                && rateTimes[i] <= evolutionTimes[evolutionTimes.length - 1]; ++i) {
+        for ( int i = 0; i < rateTimes.length && rateTimes[i] <= evolutionTimes[evolutionTimes.length - 1]; ++i ) {
             boolean found = false;
-            for (final double t : evolutionTimes) {
-                if (t == rateTimes[i]) { found = true; break; }
+            for ( final double t : evolutionTimes ) {
+                if ( t == rateTimes[i] ) {
+                    found = true;
+                    break;
+                }
             }
             QL.require(found, "skipping " + (i + 1) + "-th rate time");
         }
@@ -86,21 +88,48 @@ public final class FwdToCotSwapAdapter extends MarketModel {
         final Matrix zedMatrix = SwapForwardMappings.coterminalSwapZedMatrix(cs, displacements[0]);
 
         final int[] alive = fwdModel.evolution().firstAliveRate();
-        for (int k = 0; k < numberOfSteps_; ++k) {
+        for ( int k = 0; k < numberOfSteps_; ++k ) {
             pseudoRoots_[k] = zedMatrix.mul(fwdModel.pseudoRoot(k));
-            for (int i = 0; i < alive[k]; ++i) {
-                for (int j = 0; j < pseudoRoots_[k].columns(); ++j) {
+            for ( int i = 0; i < alive[k]; ++i ) {
+                for ( int j = 0; j < pseudoRoots_[k].columns(); ++j ) {
                     pseudoRoots_[k].set(i, j, 0.0);
                 }
             }
         }
     }
 
-    @Override public double[] initialRates() { return initialRates_; }
-    @Override public double[] displacements() { return fwdModel_.displacements(); }
-    @Override public EvolutionDescription evolution() { return fwdModel_.evolution(); }
-    @Override public int numberOfRates() { return numberOfRates_; }
-    @Override public int numberOfFactors() { return numberOfFactors_; }
-    @Override public int numberOfSteps() { return numberOfSteps_; }
-    @Override public Matrix pseudoRoot(final int i) { return pseudoRoots_[i]; }
+    @Override
+    public double[] initialRates() {
+        return initialRates_;
+    }
+
+    @Override
+    public double[] displacements() {
+        return fwdModel_.displacements();
+    }
+
+    @Override
+    public EvolutionDescription evolution() {
+        return fwdModel_.evolution();
+    }
+
+    @Override
+    public int numberOfRates() {
+        return numberOfRates_;
+    }
+
+    @Override
+    public int numberOfFactors() {
+        return numberOfFactors_;
+    }
+
+    @Override
+    public int numberOfSteps() {
+        return numberOfSteps_;
+    }
+
+    @Override
+    public Matrix pseudoRoot(final int i) {
+        return pseudoRoots_[i];
+    }
 }

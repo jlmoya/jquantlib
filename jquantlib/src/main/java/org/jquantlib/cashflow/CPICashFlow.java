@@ -68,30 +68,16 @@ public class CPICashFlow extends IndexedCashFlow {
     // public constructors
     //
 
-    public CPICashFlow(final double notional,
-                       final ZeroInflationIndex index,
-                       final Date baseDate,
-                       final double baseFixing,
-                       final Date observationDate,
-                       final Period observationLag,
-                       final CPI.InterpolationType interpolation,
-                       final Date paymentDate) {
-        this(notional, index, baseDate, baseFixing, observationDate,
-             observationLag, interpolation, paymentDate, false);
+    public CPICashFlow(final double notional, final ZeroInflationIndex index, final Date baseDate,
+            final double baseFixing, final Date observationDate, final Period observationLag,
+            final CPI.InterpolationType interpolation, final Date paymentDate) {
+        this(notional, index, baseDate, baseFixing, observationDate, observationLag, interpolation, paymentDate, false);
     }
 
-    public CPICashFlow(final double notional,
-                       final ZeroInflationIndex index,
-                       final Date baseDate,
-                       final double baseFixing,
-                       final Date observationDate,
-                       final Period observationLag,
-                       final CPI.InterpolationType interpolation,
-                       final Date paymentDate,
-                       final boolean growthOnly) {
-        super(notional, index, baseDate,
-              observationDate.sub(observationLag),
-              paymentDate, growthOnly);
+    public CPICashFlow(final double notional, final ZeroInflationIndex index, final Date baseDate,
+            final double baseFixing, final Date observationDate, final Period observationLag,
+            final CPI.InterpolationType interpolation, final Date paymentDate, final boolean growthOnly) {
+        super(notional, index, baseDate, observationDate.sub(observationLag), paymentDate, growthOnly);
 
         this.baseFixing_ = baseFixing;
         this.observationDate_ = observationDate.clone();
@@ -101,8 +87,7 @@ public class CPICashFlow extends IndexedCashFlow {
 
         QL.require(index != null, "no index provided");
         QL.require(!isNullCPI(baseFixing_) || !baseDate.isNull(),
-                "baseCPI and baseDate can not be both null, "
-                + "provide a valid baseCPI or baseDate");
+                "baseCPI and baseDate can not be both null, " + "provide a valid baseCPI or baseDate");
         QL.require(isNullCPI(baseFixing_) || Math.abs(baseFixing_) > 1e-16,
                 "|baseCPI_| < 1e-16, future divide-by-zero problem");
     }
@@ -111,37 +96,39 @@ public class CPICashFlow extends IndexedCashFlow {
     // public methods
     //
 
+    /** Sentinel test for "no base CPI passed" (mirrors C++ Null<Rate>()). */
+    static boolean isNullCPI(final double v) {
+        return Double.isNaN(v) || v == Constants.NULL_REAL;
+    }
+
     /**
-     * Returns the base date supplied at construction. Throws if no base date
-     * was specified (mirrors C++ {@code CPICashFlow::baseDate()}).
+     * Returns the base date supplied at construction. Throws if no base date was specified (mirrors C++
+     * {@code CPICashFlow::baseDate()}).
      */
     @Override
     public Date baseDate() {
         final Date base = super.baseDate();
-        if (!base.isNull()) {
+        if ( !base.isNull() ) {
             return base;
         }
         throw new LibraryException("no base date specified");
     }
 
     /**
-     * Value used on the base date. Does not have to agree with the index on
-     * that date. Falls back to {@link CPI#laggedFixing} with zero lag if no
-     * explicit base fixing was supplied.
+     * Value used on the base date. Does not have to agree with the index on that date. Falls back to
+     * {@link CPI#laggedFixing} with zero lag if no explicit base fixing was supplied.
      */
     @Override
     public double baseFixing() {
-        if (!isNullCPI(baseFixing_)) {
+        if ( !isNullCPI(baseFixing_) ) {
             return baseFixing_;
         }
-        return CPI.laggedFixing(cpiIndex(), baseDate(),
-                new Period(0, TimeUnit.Months), interpolation_);
+        return CPI.laggedFixing(cpiIndex(), baseDate(), new Period(0, TimeUnit.Months), interpolation_);
     }
 
     @Override
     public double indexFixing() {
-        return CPI.laggedFixing(cpiIndex(), observationDate_,
-                observationLag_, interpolation_);
+        return CPI.laggedFixing(cpiIndex(), observationDate_, observationLag_, interpolation_);
     }
 
     public Date observationDate() {
@@ -161,30 +148,25 @@ public class CPICashFlow extends IndexedCashFlow {
         return frequency_;
     }
 
-    public ZeroInflationIndex cpiIndex() {
-        return (ZeroInflationIndex) index();
-    }
-
     //
     // implements PolymorphicVisitable
     //
 
-    @Override
-    public void accept(final PolymorphicVisitor pv) {
-        final Visitor<CPICashFlow> v = (pv != null) ? pv.visitor(this.getClass()) : null;
-        if (v != null) {
-            v.visit(this);
-        } else {
-            super.accept(pv);
-        }
+    public ZeroInflationIndex cpiIndex() {
+        return (ZeroInflationIndex) index();
     }
 
     //
     // static helpers
     //
 
-    /** Sentinel test for "no base CPI passed" (mirrors C++ Null<Rate>()). */
-    static boolean isNullCPI(final double v) {
-        return Double.isNaN(v) || v == Constants.NULL_REAL;
+    @Override
+    public void accept(final PolymorphicVisitor pv) {
+        final Visitor< CPICashFlow > v = (pv != null) ? pv.visitor(this.getClass()) : null;
+        if ( v != null ) {
+            v.visit(this);
+        } else {
+            super.accept(pv);
+        }
     }
 }

@@ -38,9 +38,7 @@ import org.jquantlib.pricingengines.AnalyticEuropeanEngine;
 import org.jquantlib.processes.GeneralizedBlackScholesProcess;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
-import org.jquantlib.termstructures.BlackVolTermStructure;
 import org.jquantlib.termstructures.Compounding;
-import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.time.Frequency;
 
 /**
@@ -69,6 +67,21 @@ public class AnalyticPartialTimeBarrierOptionEngine extends PartialTimeBarrierOp
         this.process_.addObserver(this);
     }
 
+    private static BarrierType getSymmetricBarrierType(final BarrierType bt) {
+        switch ( bt ) {
+        case UpIn:
+            return BarrierType.DownIn;
+        case DownIn:
+            return BarrierType.UpIn;
+        case UpOut:
+            return BarrierType.DownOut;
+        case DownOut:
+            return BarrierType.UpOut;
+        default:
+            throw new LibraryException("unknown barrier type");
+        }
+    }
+
     @Override
     public void calculate() {
         final PartialTimeBarrierOption.ArgumentsImpl a = args();
@@ -87,11 +100,11 @@ public class AnalyticPartialTimeBarrierOptionEngine extends PartialTimeBarrierOp
         final org.jquantlib.instruments.Payoff origPayoff = a.payoff;
 
         try {
-            if (payoff.optionType() == org.jquantlib.instruments.Option.Type.Put) {
+            if ( payoff.optionType() == org.jquantlib.instruments.Option.Type.Put ) {
                 final double spotSq = spot * spot;
                 final double callStrike = spotSq / payoff.strike();
-                final PlainVanillaPayoff callPayoff =
-                    new PlainVanillaPayoff(org.jquantlib.instruments.Option.Type.Call, callStrike);
+                final PlainVanillaPayoff callPayoff = new PlainVanillaPayoff(org.jquantlib.instruments.Option.Type.Call,
+                        callStrike);
                 a.barrierType = getSymmetricBarrierType(origBarrierType);
                 a.barrier = spotSq / origBarrier;
                 a.payoff = callPayoff;
@@ -99,11 +112,9 @@ public class AnalyticPartialTimeBarrierOptionEngine extends PartialTimeBarrierOp
                 // (Note: GeneralizedBlackScholesProcess constructor signature is
                 // (stateVariable, dividendTS, riskFreeTS, blackVolTS) — we pass
                 // process_.riskFreeRate() in the dividend slot and vice-versa.)
-                @SuppressWarnings("unchecked")
-                final Handle<? extends Quote> stateVar = process_.stateVariable();
-                final GeneralizedBlackScholesProcess callProcess =
-                    new GeneralizedBlackScholesProcess(
-                        stateVar,
+                @SuppressWarnings( "unchecked" )
+                final Handle< ? extends Quote > stateVar = process_.stateVariable();
+                final GeneralizedBlackScholesProcess callProcess = new GeneralizedBlackScholesProcess(stateVar,
                         process_.riskFreeRate(),       // in dividendYield slot
                         process_.dividendYield(),      // in riskFreeRate slot
                         process_.blackVolatility());
@@ -126,16 +137,6 @@ public class AnalyticPartialTimeBarrierOptionEngine extends PartialTimeBarrierOp
         }
     }
 
-    private static BarrierType getSymmetricBarrierType(final BarrierType bt) {
-        switch (bt) {
-            case UpIn:    return BarrierType.DownIn;
-            case DownIn:  return BarrierType.UpIn;
-            case UpOut:   return BarrierType.DownOut;
-            case DownOut: return BarrierType.UpOut;
-            default: throw new LibraryException("unknown barrier type");
-        }
-    }
-
     private double calculateInternal(final PlainVanillaPayoff payoff) {
         final BarrierType barrierType = currentArgs.barrierType;
         final PartialBarrier barrierRange = currentArgs.barrierRange;
@@ -144,44 +145,56 @@ public class AnalyticPartialTimeBarrierOptionEngine extends PartialTimeBarrierOp
         final double barrier = currentArgs.barrier;
         final double strike = payoff.strike();
 
-        switch (barrierType) {
-          case DownOut:
-            switch (barrierRange) {
-              case Start: return CA(1, barrier, strike, r, q);
-              case EndB1: return CoB1(barrier, strike, r, q);
-              case EndB2: return CoB2(BarrierType.DownOut, barrier, strike, r, q);
-              default: throw new LibraryException("invalid barrier range");
+        switch ( barrierType ) {
+        case DownOut:
+            switch ( barrierRange ) {
+            case Start:
+                return CA(1, barrier, strike, r, q);
+            case EndB1:
+                return CoB1(barrier, strike, r, q);
+            case EndB2:
+                return CoB2(BarrierType.DownOut, barrier, strike, r, q);
+            default:
+                throw new LibraryException("invalid barrier range");
             }
-          case DownIn:
-            switch (barrierRange) {
-              case Start: return CIA(1, barrier, strike, r, q);
-              case EndB1:
-              case EndB2:
+        case DownIn:
+            switch ( barrierRange ) {
+            case Start:
+                return CIA(1, barrier, strike, r, q);
+            case EndB1:
+            case EndB2:
                 throw new LibraryException("Down-and-in partial-time end barrier is not implemented");
-              default: throw new LibraryException("invalid barrier range");
+            default:
+                throw new LibraryException("invalid barrier range");
             }
-          case UpOut:
-            switch (barrierRange) {
-              case Start: return CA(-1, barrier, strike, r, q);
-              case EndB1: return CoB1(barrier, strike, r, q);
-              case EndB2: return CoB2(BarrierType.UpOut, barrier, strike, r, q);
-              default: throw new LibraryException("invalid barrier range");
+        case UpOut:
+            switch ( barrierRange ) {
+            case Start:
+                return CA(-1, barrier, strike, r, q);
+            case EndB1:
+                return CoB1(barrier, strike, r, q);
+            case EndB2:
+                return CoB2(BarrierType.UpOut, barrier, strike, r, q);
+            default:
+                throw new LibraryException("invalid barrier range");
             }
-          case UpIn:
-            switch (barrierRange) {
-              case Start: return CIA(-1, barrier, strike, r, q);
-              case EndB1:
-              case EndB2:
+        case UpIn:
+            switch ( barrierRange ) {
+            case Start:
+                return CIA(-1, barrier, strike, r, q);
+            case EndB1:
+            case EndB2:
                 throw new LibraryException("Up-and-in partial-time end barrier is not implemented");
-              default: throw new LibraryException("invalid barrier range");
+            default:
+                throw new LibraryException("invalid barrier range");
             }
-          default:
+        default:
             throw new LibraryException("unknown barrier type");
         }
     }
 
-    private double CoB2(final BarrierType barrierType, final double barrier,
-                        final double strike, final double r, final double q) {
+    private double CoB2(final BarrierType barrierType, final double barrier, final double strike, final double r,
+            final double q) {
         final double b = r - q;
         final double T = residualTime();
         final double S = underlying();
@@ -199,26 +212,24 @@ public class AnalyticPartialTimeBarrierOptionEngine extends PartialTimeBarrierOp
         final double HSMu1 = HS(S, barrier, 2 * (mu_ + 1));
         final double X1 = strike * Math.exp(-r * T);
 
-        if (strike < barrier) {
-            switch (barrierType) {
-              case DownOut: {
+        if ( strike < barrier ) {
+            switch ( barrierType ) {
+            case DownOut: {
                 double result = S * Math.exp((b - r) * T);
                 result *= (M(g1_, e1_, rho_) - HSMu1 * M(g3_, -e3_, -rho_));
                 result -= X1 * (M(g2_, e2_, rho_) - HSMu * M(g4_, -e4_, -rho_));
                 return result;
-              }
-              case UpOut: {
+            }
+            case UpOut: {
                 double result = S * Math.exp((b - r) * T);
                 result *= (M(-g1_, -e1_, rho_) - HSMu1 * M(-g3_, e3_, -rho_));
                 result -= X1 * (M(-g2_, -e2_, rho_) - HSMu * M(-g4_, e4_, -rho_));
-                result -= S * Math.exp((b - r) * T)
-                        * (M(-d1(strike, b), -e1_, rho_) - HSMu1
-                                * M(e3_, -f1(barrier, strike, b), -rho_));
-                result += X1 * (M(-d2(strike, b), -e2_, rho_) - HSMu
-                                * M(e4_, -f2(barrier, strike, b), -rho_));
+                result -= S * Math.exp((b - r) * T) * (M(-d1(strike, b), -e1_, rho_) - HSMu1 * M(e3_,
+                        -f1(barrier, strike, b), -rho_));
+                result += X1 * (M(-d2(strike, b), -e2_, rho_) - HSMu * M(e4_, -f2(barrier, strike, b), -rho_));
                 return result;
-              }
-              default:
+            }
+            default:
                 throw new LibraryException("invalid barrier type");
             }
         } else {
@@ -244,7 +255,7 @@ public class AnalyticPartialTimeBarrierOptionEngine extends PartialTimeBarrierOp
         final double HSMu1 = HS(S, barrier, 2 * (mu_ + 1));
         final double X1 = strike * Math.exp(-r * T);
 
-        if (strike > barrier) {
+        if ( strike > barrier ) {
             double result = S * Math.exp((b - r) * T);
             result *= (M(d1(strike, b), e1_, rho_) - HSMu1 * M(f1(barrier, strike, b), -e3_, -rho_));
             result -= X1 * (M(d2(strike, b), e2_, rho_) - HSMu * M(f2(barrier, strike, b), -e4_, -rho_));
@@ -265,8 +276,7 @@ public class AnalyticPartialTimeBarrierOptionEngine extends PartialTimeBarrierOp
     /**
      * eta = -1: Up-and-In Call; eta = 1: Down-and-In Call.
      */
-    private double CIA(final int eta, final double barrier, final double strike,
-                       final double r, final double q) {
+    private double CIA(final int eta, final double barrier, final double strike, final double r, final double q) {
         final EuropeanExercise exercise = (EuropeanExercise) currentArgs.exercise;
         final PlainVanillaPayoff payoff = (PlainVanillaPayoff) currentArgs.payoff;
         final VanillaOption europeanOption = new VanillaOption(payoff, exercise);
@@ -274,8 +284,7 @@ public class AnalyticPartialTimeBarrierOptionEngine extends PartialTimeBarrierOp
         return europeanOption.NPV() - CA(eta, barrier, strike, r, q);
     }
 
-    private double CA(final int eta, final double barrier, final double strike,
-                      final double r, final double q) {
+    private double CA(final int eta, final double barrier, final double strike, final double r, final double q) {
         // Partial-Time-Start- OUT  Call Option calculation
         final double b = r - q;
         final double rho_ = rho();
@@ -290,14 +299,11 @@ public class AnalyticPartialTimeBarrierOptionEngine extends PartialTimeBarrierOp
         final double HSMu1 = HS(S, barrier, 2 * (mu_ + 1));
 
         double result = S * Math.exp((b - r) * T);
-        result *= (M(d1(strike, b), eta * e1_, eta * rho_) - HSMu1
-                * M(f1(barrier, strike, b), eta * e3_, eta * rho_));
-        result -= (strike * Math.exp(-r * T)
-                * (M(d2(strike, b), eta * e2_, eta * rho_) - HSMu
-                        * M(f2(barrier, strike, b), eta * e4_, eta * rho_)));
+        result *= (M(d1(strike, b), eta * e1_, eta * rho_) - HSMu1 * M(f1(barrier, strike, b), eta * e3_, eta * rho_));
+        result -= (strike * Math.exp(-r * T) * (M(d2(strike, b), eta * e2_, eta * rho_) - HSMu * M(
+                f2(barrier, strike, b), eta * e4_, eta * rho_)));
         return result;
     }
-
 
     //
     // helpers (mirror C++ private members)
@@ -320,21 +326,21 @@ public class AnalyticPartialTimeBarrierOptionEngine extends PartialTimeBarrierOp
     }
 
     private double riskFreeRateZero() {
-        return currentProcess.riskFreeRate().currentLink().zeroRate(
-                residualTime(), Compounding.Continuous, Frequency.NoFrequency, false).rate();
+        return currentProcess.riskFreeRate().currentLink()
+                .zeroRate(residualTime(), Compounding.Continuous, Frequency.NoFrequency, false).rate();
     }
 
     private double dividendYieldZero() {
-        return currentProcess.dividendYield().currentLink().zeroRate(
-                residualTime(), Compounding.Continuous, Frequency.NoFrequency, false).rate();
+        return currentProcess.dividendYield().currentLink()
+                .zeroRate(residualTime(), Compounding.Continuous, Frequency.NoFrequency, false).rate();
     }
 
     private double f1(final double barrier, final double strike, final double b) {
         final double S = underlying();
         final double T = residualTime();
         final double sigma = volatility(T, strike);
-        return (Math.log(S / strike) + 2 * Math.log(barrier / S)
-                + (b + (sigma * sigma) / 2) * T) / (sigma * Math.sqrt(T));
+        return (Math.log(S / strike) + 2 * Math.log(barrier / S) + (b + (sigma * sigma) / 2) * T) / (sigma * Math.sqrt(
+                T));
     }
 
     private double f2(final double barrier, final double strike, final double b) {

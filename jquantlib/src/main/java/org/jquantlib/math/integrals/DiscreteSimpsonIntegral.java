@@ -28,11 +28,9 @@ import org.jquantlib.math.matrixutilities.Array;
  * Composite Simpson's rule on a non-uniform discrete grid.
  *
  * <p>Java port of v1.42.1
- * {@code ql/math/integrals/discreteintegrals.{hpp,cpp}}
- * (the {@code DiscreteSimpsonIntegral} functor only — the
- * {@code DiscreteSimpsonIntegrator} adaptive variant and the
- * {@code DiscreteTrapezoidIntegral} sibling are not yet required by Java
- * callers).
+ * {@code ql/math/integrals/discreteintegrals.{hpp,cpp}} (the {@code DiscreteSimpsonIntegral} functor only — the
+ * {@code DiscreteSimpsonIntegrator} adaptive variant and the {@code DiscreteTrapezoidIntegral} sibling are not yet
+ * required by Java callers).
  *
  * <p>Reference: Levy, D. <i>Numerical Integration</i>
  * (https://www2.math.umd.edu/~dlevy/classes/amsc466/lecture-notes/integration-chap.pdf).
@@ -47,13 +45,11 @@ import org.jquantlib.math.matrixutilities.Array;
  *   k     = (dxj + dxjp1) / (6 * dxjp1 * dxj)
  *   contrib = k * (alpha*f[j] + beta*f[j+1] + gamma*f[j+2])
  * </pre>
- * Pairs are summed for {@code j = 0, 2, ..., n-3}. When {@code n} is even,
- * a trapezoidal contribution closes the last interval (one cell is left
- * unpaired by the pair-step).
+ * Pairs are summed for {@code j = 0, 2, ..., n-3}. When {@code n} is even, a trapezoidal contribution closes the last
+ * interval (one cell is left unpaired by the pair-step).
  *
  * <p>For a uniform grid this degenerates to the standard composite Simpson's
- * 1/3 rule: per pair the weight pattern reduces to
- * {@code h/3 * (f0 + 4 f1 + f2)}.
+ * 1/3 rule: per pair the weight pattern reduces to {@code h/3 * (f0 + 4 f1 + f2)}.
  *
  * @author Phase 5h.5-RND-b port
  */
@@ -76,22 +72,22 @@ public class DiscreteSimpsonIntegral {
         // possibly non-uniform grid. The C++ loop is `for (j=0; j < n-2; j+=2)`
         // — with j being unsigned. Be explicit about n >= 2 to avoid
         // wrap-around in the equivalent Java int.
-        for (int j = 0; j + 2 < n; j += 2) {
-            final double dxj   = x.get(j + 1) - x.get(j);
+        for ( int j = 0; j + 2 < n; j += 2 ) {
+            final double dxj = x.get(j + 1) - x.get(j);
             final double dxjp1 = x.get(j + 2) - x.get(j + 1);
 
-            final double alpha = dxjp1 * (2.0 * dxj   - dxjp1);
-            final double dd    = dxj + dxjp1;
-            final double k     = dd / (6.0 * dxjp1 * dxj);
-            final double beta  = dd * dd;
-            final double gamma = dxj   * (2.0 * dxjp1 - dxj);
+            final double alpha = dxjp1 * (2.0 * dxj - dxjp1);
+            final double dd = dxj + dxjp1;
+            final double k = dd / (6.0 * dxjp1 * dxj);
+            final double beta = dd * dd;
+            final double gamma = dxj * (2.0 * dxjp1 - dxj);
 
             sum += k * (alpha * f.get(j) + beta * f.get(j + 1) + gamma * f.get(j + 2));
         }
 
         // For even n, one trailing interval is left unpaired — close with a
         // trapezoidal contribution. Mirrors C++ `(n & 1) == 0U` branch.
-        if ((n & 1) == 0) {
+        if ( (n & 1) == 0 ) {
             sum += 0.5 * (x.get(n - 1) - x.get(n - 2)) * (f.get(n - 1) + f.get(n - 2));
         }
 

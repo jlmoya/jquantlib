@@ -22,15 +22,15 @@
 
 package org.jquantlib.cashflow;
 
-import java.util.ArrayList;
-
 import org.jquantlib.QL;
+
+import java.util.ArrayList;
 
 /**
  * @author Ueli Hofstetter
  */
 // TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
-public class Leg extends ArrayList<CashFlow> implements Cloneable {
+public class Leg extends ArrayList< CashFlow > implements Cloneable {
 
     //
     // public constructors
@@ -45,18 +45,18 @@ public class Leg extends ArrayList<CashFlow> implements Cloneable {
     }
 
     public CashFlow first() {
-        QL.require(this.size() > 0 , "no cashflows");  // TODO: message
+        QL.require(this.size() > 0, "no cashflows");  // TODO: message
         return this.get(0);
     }
 
     public CashFlow last() {
-        QL.require(this.size() > 0 , "no cashflows");  // TODO: message
-        return this.get(this.size()-1);
+        QL.require(this.size() > 0, "no cashflows");  // TODO: message
+        return this.get(this.size() - 1);
     }
 
     @Override
     public Object clone() {
-    	return (Leg)super.clone();
+        return super.clone();
     }
 
 }

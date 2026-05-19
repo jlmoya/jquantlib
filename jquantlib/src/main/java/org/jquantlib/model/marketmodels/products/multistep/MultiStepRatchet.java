@@ -34,12 +34,11 @@ import org.jquantlib.model.marketmodels.products.MultiProductMultiStep;
 /**
  * Multi-step Ratchet (full-ratchet variant).
  * <p>
- * Mirrors C++ {@code class MultiStepRatchet}
- * (ql/models/marketmodels/products/multistep/multistepratchet.{hpp,cpp} v1.42.1).
+ * Mirrors C++ {@code class MultiStepRatchet} (ql/models/marketmodels/products/multistep/multistepratchet.{hpp,cpp}
+ * v1.42.1).
  * <p>
- * Per step the coupon is
- * {@code max(gearingOfFloor*floor + spreadOfFloor, gearingOfFixing*libor + spreadOfFixing)};
- * the floor is then updated to this coupon (full-ratchet semantics).
+ * Per step the coupon is {@code max(gearingOfFloor*floor + spreadOfFloor, gearingOfFixing*libor + spreadOfFixing)}; the
+ * floor is then updated to this coupon (full-ratchet semantics).
  *
  * @author Jose Moya
  */
@@ -59,15 +58,9 @@ public class MultiStepRatchet extends MultiProductMultiStep {
     private double floor_;
     private int currentIndex_;
 
-    public MultiStepRatchet(final double[] rateTimes,
-                            final double[] accruals,
-                            final double[] paymentTimes,
-                            final double gearingOfFloor,
-                            final double gearingOfFixing,
-                            final double spreadOfFloor,
-                            final double spreadOfFixing,
-                            final double initialFloor,
-                            final boolean payer) {
+    public MultiStepRatchet(final double[] rateTimes, final double[] accruals, final double[] paymentTimes,
+            final double gearingOfFloor, final double gearingOfFixing, final double spreadOfFloor,
+            final double spreadOfFixing, final double initialFloor, final boolean payer) {
         super(rateTimes);
         this.accruals_ = accruals.clone();
         this.paymentTimes_ = paymentTimes.clone();
@@ -82,26 +75,27 @@ public class MultiStepRatchet extends MultiProductMultiStep {
         Utilities.checkIncreasingTimes(this.paymentTimes_);
     }
 
-    public MultiStepRatchet(final double[] rateTimes,
-                            final double[] accruals,
-                            final double[] paymentTimes,
-                            final double gearingOfFloor,
-                            final double gearingOfFixing,
-                            final double spreadOfFloor,
-                            final double spreadOfFixing,
-                            final double initialFloor) {
-        this(rateTimes, accruals, paymentTimes, gearingOfFloor, gearingOfFixing,
-                spreadOfFloor, spreadOfFixing, initialFloor, true);
+    public MultiStepRatchet(final double[] rateTimes, final double[] accruals, final double[] paymentTimes,
+            final double gearingOfFloor, final double gearingOfFixing, final double spreadOfFloor,
+            final double spreadOfFixing, final double initialFloor) {
+        this(rateTimes, accruals, paymentTimes, gearingOfFloor, gearingOfFixing, spreadOfFloor, spreadOfFixing,
+                initialFloor, true);
     }
 
     @Override
-    public double[] possibleCashFlowTimes() { return paymentTimes_; }
+    public double[] possibleCashFlowTimes() {
+        return paymentTimes_;
+    }
 
     @Override
-    public int numberOfProducts() { return 1; }
+    public int numberOfProducts() {
+        return 1;
+    }
 
     @Override
-    public int maxNumberOfCashFlowsPerProductPerStep() { return 1; }
+    public int maxNumberOfCashFlowsPerProductPerStep() {
+        return 1;
+    }
 
     @Override
     public void reset() {
@@ -110,9 +104,8 @@ public class MultiStepRatchet extends MultiProductMultiStep {
     }
 
     @Override
-    public boolean nextTimeStep(final CurveState currentState,
-                                final int[] numberCashFlowsThisStep,
-                                final MarketModelMultiProduct.CashFlow[][] genCashFlows) {
+    public boolean nextTimeStep(final CurveState currentState, final int[] numberCashFlowsThisStep,
+            final MarketModelMultiProduct.CashFlow[][] genCashFlows) {
         final double liborRate = currentState.forwardRate(currentIndex_);
         final double currentCoupon = Math.max(gearingOfFloor_ * floor_ + spreadOfFloor_,
                 gearingOfFixing_ * liborRate + spreadOfFixing_);
@@ -129,8 +122,7 @@ public class MultiStepRatchet extends MultiProductMultiStep {
 
     @Override
     public MarketModelMultiProduct clone() {
-        return new MultiStepRatchet(rateTimes_, accruals_, paymentTimes_,
-                gearingOfFloor_, gearingOfFixing_, spreadOfFloor_, spreadOfFixing_,
-                initialFloor_, payer_);
+        return new MultiStepRatchet(rateTimes_, accruals_, paymentTimes_, gearingOfFloor_, gearingOfFixing_,
+                spreadOfFloor_, spreadOfFixing_, initialFloor_, payer_);
     }
 }

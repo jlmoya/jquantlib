@@ -32,14 +32,11 @@ import org.jquantlib.processes.StochasticProcess1D;
 /**
  * Geman-Roncoroni process.
  * <p>
- * Java port of v1.42.1
- * {@code ql/experimental/processes/gemanroncoroniprocess.{hpp,cpp}}.
+ * Java port of v1.42.1 {@code ql/experimental/processes/gemanroncoroniprocess.{hpp,cpp}}.
  * <p>
- * Models a power-spot process with seasonal mean reversion plus signed jumps.
- * The drift incorporates a periodic mean {@code mu(t) = alpha + beta t +
- * gamma cos(eps + 2 pi t) + delta cos(zeta + 4 pi t)} and the jumps are
- * conditional on the relation between the state and the mean (positive jump
- * if {@code x0 <= mu+d}, otherwise negative).
+ * Models a power-spot process with seasonal mean reversion plus signed jumps. The drift incorporates a periodic mean
+ * {@code mu(t) = alpha + beta t + gamma cos(eps + 2 pi t) + delta cos(zeta + 4 pi t)} and the jumps are conditional on
+ * the relation between the state and the mean (positive jump if {@code x0 <= mu+d}, otherwise negative).
  *
  * @author Phase 4n WI port
  */
@@ -54,15 +51,10 @@ public class GemanRoncoroniProcess extends StochasticProcess1D {
     private final double psi_;
     private MersenneTwisterUniformRng urng_;
 
-    public GemanRoncoroniProcess(
-            final double x0,
-            final double alpha, final double beta,
-            final double gamma, final double delta,
-            final double eps, final double zeta, final double d,
-            final double k, final double tau,
-            final double sig2, final double a, final double b,
-            final double theta1, final double theta2, final double theta3,
-            final double psi) {
+    public GemanRoncoroniProcess(final double x0, final double alpha, final double beta, final double gamma,
+            final double delta, final double eps, final double zeta, final double d, final double k, final double tau,
+            final double sig2, final double a, final double b, final double theta1, final double theta2,
+            final double theta3, final double psi) {
         super(new EulerDiscretization());
         this.x0_ = x0;
         this.alpha_ = alpha;
@@ -90,12 +82,11 @@ public class GemanRoncoroniProcess extends StochasticProcess1D {
 
     @Override
     public double drift(final double t, final double x) {
-        final double mu = alpha_ + beta_ * t
-                + gamma_ * Math.cos(eps_ + 2 * Math.PI * t)
-                + delta_ * Math.cos(zeta_ + 4 * Math.PI * t);
-        final double muPrime = beta_
-                - gamma_ * 2 * Math.PI * Math.sin(eps_ + 2 * Math.PI * t)
-                - delta_ * 4 * Math.PI * Math.sin(zeta_ + 4 * Math.PI * t);
+        final double mu = alpha_ + beta_ * t + gamma_ * Math.cos(eps_ + 2 * Math.PI * t) + delta_ * Math.cos(
+                zeta_ + 4 * Math.PI * t);
+        final double muPrime =
+                beta_ - gamma_ * 2 * Math.PI * Math.sin(eps_ + 2 * Math.PI * t) - delta_ * 4 * Math.PI * Math.sin(
+                        zeta_ + 4 * Math.PI * t);
         return muPrime + theta1_ * (mu - x);
     }
 
@@ -115,7 +106,7 @@ public class GemanRoncoroniProcess extends StochasticProcess1D {
     @Override
     public double evolve(final double t0, final double x0, final double dt, final double dw) {
         // random number generator for the jump part
-        if (urng_ == null) {
+        if ( urng_ == null ) {
             urng_ = new MersenneTwisterUniformRng((long) (1234L * dw + 56789L));
         }
         final Array du = new Array(3);
@@ -124,23 +115,19 @@ public class GemanRoncoroniProcess extends StochasticProcess1D {
         return evolve(t0, x0, dt, dw, du);
     }
 
-    public double evolve(final double t0, final double x0, final double dt,
-                         final double dw, final Array du) {
+    public double evolve(final double t0, final double x0, final double dt, final double dw, final Array du) {
         double retVal;
         final double t = t0 + 0.5 * dt;
-        final double mu = alpha_ + beta_ * t
-                + gamma_ * Math.cos(eps_ + 2 * Math.PI * t)
-                + delta_ * Math.cos(zeta_ + 4 * Math.PI * t);
+        final double mu = alpha_ + beta_ * t + gamma_ * Math.cos(eps_ + 2 * Math.PI * t) + delta_ * Math.cos(
+                zeta_ + 4 * Math.PI * t);
 
-        final double j = -1.0 / theta3_
-                * Math.log(1.0 + du.get(1) * (Math.exp(-theta3_ * psi_) - 1.0));
+        final double j = -1.0 / theta3_ * Math.log(1.0 + du.get(1) * (Math.exp(-theta3_ * psi_) - 1.0));
 
-        if (x0 <= mu + d_) {
+        if ( x0 <= mu + d_ ) {
             retVal = super.evolve(t, x0, dt, dw);
-            final double jumpIntensity = theta2_
-                    * (2.0 / (1 + Math.abs(Math.sin(Math.PI * (t - tau_) / k_))) - 1);
+            final double jumpIntensity = theta2_ * (2.0 / (1 + Math.abs(Math.sin(Math.PI * (t - tau_) / k_))) - 1);
             final double interarrival = -1.0 / jumpIntensity * Math.log(du.get(0));
-            if (interarrival < dt) {
+            if ( interarrival < dt ) {
                 retVal += j;
             }
         } else {

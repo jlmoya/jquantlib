@@ -27,8 +27,7 @@ package org.jquantlib.experimental.exoticoptions;
 /**
  * Choice of time range for partial-time barrier options.
  * <p>
- * Mirrors {@code QuantLib::PartialBarrier::Range} from
- * {@code ql/instruments/partialtimebarrieroption.hpp} (v1.42.1).
+ * Mirrors {@code QuantLib::PartialBarrier::Range} from {@code ql/instruments/partialtimebarrieroption.hpp} (v1.42.1).
  *
  * <ul>
  *   <li>{@link #Start}: monitor the barrier from the start of the option lifetime
@@ -44,7 +43,5 @@ package org.jquantlib.experimental.exoticoptions;
  * @author JQuantLib migration
  */
 public enum PartialBarrier {
-    Start,
-    EndB1,
-    EndB2
+    Start, EndB1, EndB2
 }

@@ -25,8 +25,7 @@ import org.jquantlib.processes.HestonProcess;
  * BatesModel variant with deterministic jump intensity.
  *
  * <p>Phase 5h.5-Bates promotion of the previously private/buggy nested
- * {@code BatesModel.BatesDetJumpModel} to a public top-level class
- * matching the C++ class layout. Mirrors v1.42.1
+ * {@code BatesModel.BatesDetJumpModel} to a public top-level class matching the C++ class layout. Mirrors v1.42.1
  * {@code ql/models/equity/batesmodel.hpp} BatesDetJumpModel.
  */
 public class BatesDetJumpModel extends BatesModel {
@@ -35,12 +34,11 @@ public class BatesDetJumpModel extends BatesModel {
         this(process, 0.1, 0.0, 0.1, 1.0, 0.1);
     }
 
-    public BatesDetJumpModel(final HestonProcess process,
-                             final double lambda, final double nu, final double delta,
-                             final double kappaLambda, final double thetaLambda) {
+    public BatesDetJumpModel(final HestonProcess process, final double lambda, final double nu, final double delta,
+            final double kappaLambda, final double thetaLambda) {
         super(process, lambda, nu, delta);
         // Match C++ arguments_.resize(10): extend by 2 NullParameter slots.
-        while (arguments_.size() < 10) {
+        while ( arguments_.size() < 10 ) {
             arguments_.add(new NullParameter());
         }
         arguments_.set(8, new ConstantParameter(kappaLambda, new PositiveConstraint()));

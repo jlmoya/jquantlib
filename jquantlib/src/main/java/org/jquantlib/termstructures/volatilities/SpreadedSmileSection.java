@@ -34,8 +34,7 @@ import org.jquantlib.quotes.Quote;
 import org.jquantlib.time.Date;
 
 /**
- * SmileSection that adds a constant additive volatility spread to an
- * underlying smile section.
+ * SmileSection that adds a constant additive volatility spread to an underlying smile section.
  *
  * <p>Port of C++ QuantLib v1.42.1
  * {@code ql/termstructures/volatility/spreadedsmilesection.{hpp,cpp}}.
@@ -61,18 +60,15 @@ import org.jquantlib.time.Date;
 public class SpreadedSmileSection extends SmileSection {
 
     private final SmileSection underlyingSection_;
-    private final Handle<Quote> spread_;
+    private final Handle< Quote > spread_;
 
     /**
      * @param underlyingSection base smile to spread; must be non-null
-     * @param spread quote handle providing the additive spread (in vol units)
+     * @param spread            quote handle providing the additive spread (in vol units)
      */
-    public SpreadedSmileSection(final SmileSection underlyingSection,
-                                final Handle<Quote> spread) {
-        super(spreadingExerciseTime(underlyingSection),
-                inferDayCounter(underlyingSection),
-                spreadingVolatilityType(underlyingSection),
-                spreadingShift(underlyingSection));
+    public SpreadedSmileSection(final SmileSection underlyingSection, final Handle< Quote > spread) {
+        super(spreadingExerciseTime(underlyingSection), inferDayCounter(underlyingSection),
+                spreadingVolatilityType(underlyingSection), spreadingShift(underlyingSection));
         this.underlyingSection_ = underlyingSection;
         this.spread_ = spread;
         underlyingSection.addObserver(this);
@@ -130,9 +126,8 @@ public class SpreadedSmileSection extends SmileSection {
     }
 
     /**
-     * Mirrors C++ SpreadedSmileSection::update(): notify observers but
-     * do NOT propagate to the base SmileSection lazy-recalculation path
-     * (the spread is purely additive — no recalc needed).
+     * Mirrors C++ SpreadedSmileSection::update(): notify observers but do NOT propagate to the base SmileSection
+     * lazy-recalculation path (the spread is purely additive — no recalc needed).
      */
     @Override
     public void update() {

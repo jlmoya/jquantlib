@@ -49,27 +49,27 @@ import org.jquantlib.time.Date;
  * <p>
  * LIBOR fixed by BBA.
  *
- * @see <a href="http://www.bba.org.uk/bba/jsp/polopoly.jsp?d=225&a=1414">http://www.bba.org.uk/bba/jsp/polopoly.jsp?d=225&a=1414</a>
+ * @see <a
+ * href="http://www.bba.org.uk/bba/jsp/polopoly.jsp?d=225&a=1414">http://www.bba.org.uk/bba/jsp/polopoly.jsp?d=225&a=1414</a>
  */
 public class USDLiborON extends DailyTenorUSDLibor {
 
-	public USDLiborON() {
-		this(new Handle<YieldTermStructure>(
-				new AbstractYieldTermStructure() {
-					@Override
-					protected double discountImpl(final double t) {
-						throw new UnsupportedOperationException();
-					}
-					@Override
-					public Date maxDate() {
-						throw new UnsupportedOperationException();
-					}
-				}
-		));
-	}
+    public USDLiborON() {
+        this(new Handle< YieldTermStructure >(new AbstractYieldTermStructure() {
+            @Override
+            protected double discountImpl(final double t) {
+                throw new UnsupportedOperationException();
+            }
 
-	public USDLiborON(final Handle<YieldTermStructure> h) {
-		super(0, h);
-	}
+            @Override
+            public Date maxDate() {
+                throw new UnsupportedOperationException();
+            }
+        }));
+    }
+
+    public USDLiborON(final Handle< YieldTermStructure > h) {
+        super(0, h);
+    }
 
 }

@@ -36,20 +36,42 @@ import org.jquantlib.time.TimeGrid;
  * Path-pricers used by {@link MCLookbackEngine} variants.
  *
  * <p>Java port of the four C++ {@code Lookback*PathPricer} classes from
- * {@code ql/pricingengines/lookback/mclookbackengine.cpp} (QuantLib
- * v1.42.1, Phase 5e.5b-CFC-d-183). One pricer per instrument flavour:
- * fixed strike, partial-time fixed strike, floating strike, partial-time
- * floating strike — each continuous-monitoring (sample running extremum
- * over all path nodes after the initial point).
+ * {@code ql/pricingengines/lookback/mclookbackengine.cpp} (QuantLib v1.42.1, Phase 5e.5b-CFC-d-183). One pricer per
+ * instrument flavour: fixed strike, partial-time fixed strike, floating strike, partial-time floating strike — each
+ * continuous-monitoring (sample running extremum over all path nodes after the initial point).
  */
 final class LookbackPathPricers {
 
     private LookbackPathPricers() { /* static-only */ }
 
     //
+    // local extremum helpers (mirror C++ std::min_element / max_element
+    // over [begin, end) — end is exclusive).
+    //
+    private static double min(final double[] v, final int fromInclusive, final int toExclusive) {
+        double m = v[fromInclusive];
+        for ( int i = fromInclusive + 1; i < toExclusive; i++ ) {
+            if ( v[i] < m ) {
+                m = v[i];
+            }
+        }
+        return m;
+    }
+
+    private static double max(final double[] v, final int fromInclusive, final int toExclusive) {
+        double m = v[fromInclusive];
+        for ( int i = fromInclusive + 1; i < toExclusive; i++ ) {
+            if ( v[i] > m ) {
+                m = v[i];
+            }
+        }
+        return m;
+    }
+
+    //
     // Continuous fixed-strike — plain-vanilla payoff vs. running extremum.
     //
-    static final class Fixed extends PathPricer<Path> {
+    static final class Fixed extends PathPricer< Path > {
         private final PlainVanillaPayoff payoff_;
         private final double discount_;
 
@@ -64,15 +86,15 @@ final class LookbackPathPricers {
             QL.require(!path.empty(), "the path cannot be empty");
             final double[] v = path.values();
             final double underlying;
-            switch (payoff_.optionType()) {
-                case Put:
-                    underlying = min(v, 1, v.length);
-                    break;
-                case Call:
-                    underlying = max(v, 1, v.length);
-                    break;
-                default:
-                    throw new LibraryException("unknown option type");
+            switch ( payoff_.optionType() ) {
+            case Put:
+                underlying = min(v, 1, v.length);
+                break;
+            case Call:
+                underlying = max(v, 1, v.length);
+                break;
+            default:
+                throw new LibraryException("unknown option type");
             }
             return payoff_.get(underlying) * discount_;
         }
@@ -82,13 +104,12 @@ final class LookbackPathPricers {
     // Continuous partial-time fixed-strike: max/min taken from lookback
     // start onwards.
     //
-    static final class PartialFixed extends PathPricer<Path> {
+    static final class PartialFixed extends PathPricer< Path > {
         private final double lookbackStart_;
         private final PlainVanillaPayoff payoff_;
         private final double discount_;
 
-        PartialFixed(final double lookbackStart, final Option.Type type,
-                     final double strike, final double discount) {
+        PartialFixed(final double lookbackStart, final Option.Type type, final double strike, final double discount) {
             QL.require(strike >= 0.0, "strike less than zero not allowed");
             this.lookbackStart_ = lookbackStart;
             this.payoff_ = new PlainVanillaPayoff(type, strike);
@@ -102,15 +123,15 @@ final class LookbackPathPricers {
             final int startIndex = grid.closestIndex(lookbackStart_);
             final double[] v = path.values();
             final double underlying;
-            switch (payoff_.optionType()) {
-                case Put:
-                    underlying = min(v, startIndex + 1, v.length);
-                    break;
-                case Call:
-                    underlying = max(v, startIndex + 1, v.length);
-                    break;
-                default:
-                    throw new LibraryException("unknown option type");
+            switch ( payoff_.optionType() ) {
+            case Put:
+                underlying = min(v, startIndex + 1, v.length);
+                break;
+            case Call:
+                underlying = max(v, startIndex + 1, v.length);
+                break;
+            default:
+                throw new LibraryException("unknown option type");
             }
             return payoff_.get(underlying) * discount_;
         }
@@ -120,7 +141,7 @@ final class LookbackPathPricers {
     // Continuous floating-strike: strike = running extremum, payoff
     // against terminal price.
     //
-    static final class Floating extends PathPricer<Path> {
+    static final class Floating extends PathPricer< Path > {
         private final FloatingTypePayoff payoff_;
         private final double discount_;
 
@@ -135,15 +156,15 @@ final class LookbackPathPricers {
             final double[] v = path.values();
             final double terminalPrice = path.back();
             final double strike;
-            switch (payoff_.optionType()) {
-                case Call:
-                    strike = min(v, 1, v.length);
-                    break;
-                case Put:
-                    strike = max(v, 1, v.length);
-                    break;
-                default:
-                    throw new LibraryException("unknown option type");
+            switch ( payoff_.optionType() ) {
+            case Call:
+                strike = min(v, 1, v.length);
+                break;
+            case Put:
+                strike = max(v, 1, v.length);
+                break;
+            default:
+                throw new LibraryException("unknown option type");
             }
             return payoff_.get(terminalPrice, strike) * discount_;
         }
@@ -153,13 +174,12 @@ final class LookbackPathPricers {
     // Continuous partial-time floating-strike: extremum taken only over
     // [start, lookbackEnd].
     //
-    static final class PartialFloating extends PathPricer<Path> {
+    static final class PartialFloating extends PathPricer< Path > {
         private final double lookbackEnd_;
         private final FloatingTypePayoff payoff_;
         private final double discount_;
 
-        PartialFloating(final double lookbackEnd, final Option.Type type,
-                        final double discount) {
+        PartialFloating(final double lookbackEnd, final Option.Type type, final double discount) {
             this.lookbackEnd_ = lookbackEnd;
             this.payoff_ = new FloatingTypePayoff(type);
             this.discount_ = discount;
@@ -173,41 +193,17 @@ final class LookbackPathPricers {
             final double[] v = path.values();
             final double terminalPrice = path.back();
             final double strike;
-            switch (payoff_.optionType()) {
-                case Call:
-                    strike = min(v, 1, endIndex + 1);
-                    break;
-                case Put:
-                    strike = max(v, 1, endIndex + 1);
-                    break;
-                default:
-                    throw new LibraryException("unknown option type");
+            switch ( payoff_.optionType() ) {
+            case Call:
+                strike = min(v, 1, endIndex + 1);
+                break;
+            case Put:
+                strike = max(v, 1, endIndex + 1);
+                break;
+            default:
+                throw new LibraryException("unknown option type");
             }
             return payoff_.get(terminalPrice, strike) * discount_;
         }
-    }
-
-    //
-    // local extremum helpers (mirror C++ std::min_element / max_element
-    // over [begin, end) — end is exclusive).
-    //
-    private static double min(final double[] v, final int fromInclusive, final int toExclusive) {
-        double m = v[fromInclusive];
-        for (int i = fromInclusive + 1; i < toExclusive; i++) {
-            if (v[i] < m) {
-                m = v[i];
-            }
-        }
-        return m;
-    }
-
-    private static double max(final double[] v, final int fromInclusive, final int toExclusive) {
-        double m = v[fromInclusive];
-        for (int i = fromInclusive + 1; i < toExclusive; i++) {
-            if (v[i] > m) {
-                m = v[i];
-            }
-        }
-        return m;
     }
 }

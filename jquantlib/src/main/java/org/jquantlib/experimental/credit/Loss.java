@@ -28,15 +28,13 @@ package org.jquantlib.experimental.credit;
  * Pair of loss time and amount, sortable by loss time.
  *
  * <p>Java port of QuantLib v1.42.1 {@code QuantLib::Loss}
- * ({@code ql/experimental/credit/loss.hpp}). The C++ class is a tiny POD
- * with two public fields and free comparison operators that order by
- * {@code time} only. The Java port keeps the public fields, adds a
- * {@code compareTo}-style ordering helper, and equality / hash on
- * {@code time} alone (matching C++ {@code operator==}).
+ * ({@code ql/experimental/credit/loss.hpp}). The C++ class is a tiny POD with two public fields and free comparison
+ * operators that order by {@code time} only. The Java port keeps the public fields, adds a {@code compareTo}-style
+ * ordering helper, and equality / hash on {@code time} alone (matching C++ {@code operator==}).
  *
  * <p>Phase 4m foundation.
  */
-public final class Loss implements Comparable<Loss> {
+public final class Loss implements Comparable< Loss > {
 
     public double time;
     public double amount;
@@ -59,10 +57,10 @@ public final class Loss implements Comparable<Loss> {
     /** Mirrors C++ {@code operator==} on {@code time} only. */
     @Override
     public boolean equals(final Object o) {
-        if (this == o) {
+        if ( this == o ) {
             return true;
         }
-        if (!(o instanceof Loss)) {
+        if ( !(o instanceof Loss) ) {
             return false;
         }
         final Loss other = (Loss) o;

@@ -45,7 +45,6 @@ import org.jquantlib.math.interpolations.CubicInterpolation.DerivativeApprox;
 import org.jquantlib.math.interpolations.factories.Cubic;
 import org.jquantlib.math.matrixutilities.Array;
 
-
 /**
  * log-cubic interpolation between discrete points
  *
@@ -57,21 +56,11 @@ public class LogCubicInterpolation extends AbstractInterpolation {
     // public constructors
     //
 
-    public LogCubicInterpolation(
-            final Array vx,
-            final Array vy,
-            final DerivativeApprox da,
-            final boolean monotonic,
-            final BoundaryCondition leftCondition,
-            final double leftConditionValue,
-            final BoundaryCondition rightCondition,
-            final double rightConditionValue) {
-        super.impl = new AbstractInterpolation.LogInterpolationImpl(
-                vx, vy,
-                new Cubic(
-                        da, monotonic,
-                        leftCondition, leftConditionValue,
-                        rightCondition, rightConditionValue));
+    public LogCubicInterpolation(final Array vx, final Array vy, final DerivativeApprox da, final boolean monotonic,
+            final BoundaryCondition leftCondition, final double leftConditionValue,
+            final BoundaryCondition rightCondition, final double rightConditionValue) {
+        super.impl = new AbstractInterpolation.LogInterpolationImpl(vx, vy,
+                new Cubic(da, monotonic, leftCondition, leftConditionValue, rightCondition, rightConditionValue));
         super.impl.update();
     }
 

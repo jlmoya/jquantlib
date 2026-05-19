@@ -40,9 +40,6 @@ When applicable, the original copyright notice follows this notice.
 
 package org.jquantlib.termstructures.yieldcurves;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.lang.exceptions.LibraryException;
@@ -55,282 +52,248 @@ import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
 import org.jquantlib.util.Pair;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Term structure based on interpolation of zero yields
  * <p>
- * @category yieldtermstructures
- * 
- * @author Richard Gomes
  *
  * @param <I> Interpolator
+ * @author Richard Gomes
+ * @category yieldtermstructures
  */
-public class InterpolatedZeroCurve<I extends Interpolator> extends ZeroYieldStructure implements Traits.Curve {
+public class InterpolatedZeroCurve< I extends Interpolator > extends ZeroYieldStructure implements Traits.Curve {
 
     //
     // private fields
     //
     // TODO: all fields should be protected?  See: QL/C++
 
-    private Date[]              dates;
-    private /*@Time*/ double[]  times;
-    private Interpolation       interpolation;
-    private double[]            data;
-
+    private final Class< I > classI;
+    private final Interpolator interpolator;
+    private Date[] dates;
+    private /*@Time*/ double[] times;
 
     //
     // private final fields
     //
+    private Interpolation interpolation;
+    private double[] data;
 
-    private final Class<I>      classI;
-    private final Interpolator  interpolator;
-
-    
     //
     // public constructors
     //
-    
-    public InterpolatedZeroCurve(
-            final Class<I> classI,
-    		final Date[] dates,
-			final double[] yields, 
-			final DayCounter dc) {
-    	this(classI, dates, yields, dc, null, null);
+
+    public InterpolatedZeroCurve(final Class< I > classI, final Date[] dates, final double[] yields,
+            final DayCounter dc) {
+        this(classI, dates, yields, dc, null, null);
     }
-    public InterpolatedZeroCurve(
-            final Class<I> classI,
-    		final Date[] dates,
-			final double[] yields, 
-			final DayCounter dc,
-			final Calendar calendar) {
-    	this(classI, dates, yields, dc, calendar, null);
+
+    public InterpolatedZeroCurve(final Class< I > classI, final Date[] dates, final double[] yields,
+            final DayCounter dc, final Calendar calendar) {
+        this(classI, dates, yields, dc, calendar, null);
     }
-    public InterpolatedZeroCurve(
-            final Class<I> classI,
-    		final Date[] dates,
-			final double[] yields, 
-			final DayCounter dc,
-			final Calendar calendar, 
-			final Interpolator interpolator) {
-		super(dates[0], calendar==null ? new Calendar() : calendar, dc);
-		
-		QL.require(classI!=null, "Generic type for Interpolation is null");
+
+    public InterpolatedZeroCurve(final Class< I > classI, final Date[] dates, final double[] yields,
+            final DayCounter dc, final Calendar calendar, final Interpolator interpolator) {
+        super(dates[0], calendar == null ? new Calendar() : calendar, dc);
+
+        QL.require(classI != null, "Generic type for Interpolation is null");
         this.classI = classI;
-		
-		QL.require(dates.length != 0, "Dates cannot be empty"); // TODO: message
-		QL.require(yields.length != 0, "yields cannot be empty"); // TODO: message
-		QL.require(dates.length == yields.length, "Dates must be the same size as yields"); // TODO: message
-		// NOTE: data are zero rates, NOT discount factors. The previous
-		// `yields[0] == 1.0` and `data[0] > 0` assertions were a stale
-		// copy-paste from InterpolatedDiscountCurve and have been removed
-		// (Phase 2x A.1) — zero rates are arbitrary doubles per C++ v1.42.1
-		// (ql/termstructures/yield/zerocurve.hpp).
 
-		this.dates = dates; // TODO: clone() ?
-		this.data = yields; // TODO: clone() ?
-		this.times = new double[dates.length]; times[0] = 0.0;
+        QL.require(dates.length != 0, "Dates cannot be empty"); // TODO: message
+        QL.require(yields.length != 0, "yields cannot be empty"); // TODO: message
+        QL.require(dates.length == yields.length, "Dates must be the same size as yields"); // TODO: message
+        // NOTE: data are zero rates, NOT discount factors. The previous
+        // `yields[0] == 1.0` and `data[0] > 0` assertions were a stale
+        // copy-paste from InterpolatedDiscountCurve and have been removed
+        // (Phase 2x A.1) — zero rates are arbitrary doubles per C++ v1.42.1
+        // (ql/termstructures/yield/zerocurve.hpp).
 
-		for (int i = 1; i < dates.length; ++i) {
-			QL.require(dates[i].gt(dates[i-1]), "Dates must be in ascending order"); // TODO: message
-			times[i] = dc.yearFraction(dates[0], dates[i]);
-			QL.require(!Closeness.isClose(times[i], times[i-1]), "two dates correspond to the same time under this curve's day count convention"); // TODO: message
-		}
+        this.dates = dates; // TODO: clone() ?
+        this.data = yields; // TODO: clone() ?
+        this.times = new double[dates.length];
+        times[0] = 0.0;
 
-        this.interpolator = interpolator==null ? constructInterpolator(classI) : interpolator;
-		this.interpolation = this.interpolator.interpolate(new Array(times), new Array(data));
-		this.interpolation.update();
+        for ( int i = 1; i < dates.length; ++i ) {
+            QL.require(dates[i].gt(dates[i - 1]), "Dates must be in ascending order"); // TODO: message
+            times[i] = dc.yearFraction(dates[0], dates[i]);
+            QL.require(!Closeness.isClose(times[i], times[i - 1]),
+                    "two dates correspond to the same time under this curve's day count convention"); // TODO: message
+        }
+
+        this.interpolator = interpolator == null ? constructInterpolator(classI) : interpolator;
+        this.interpolation = this.interpolator.interpolate(new Array(times), new Array(data));
+        this.interpolation.update();
     }
-    
 
     //
     // protected constructors
     //
 
-    protected InterpolatedZeroCurve(
-            final Class<I> classI,
-            final Date referenceDate,
-            final DayCounter dc) {
+    protected InterpolatedZeroCurve(final Class< I > classI, final Date referenceDate, final DayCounter dc) {
         this(classI, referenceDate, dc, null);
     }
-    protected InterpolatedZeroCurve(
-            final Class<I> classI,
-            final Date referenceDate,
-            final DayCounter dc,
+
+    protected InterpolatedZeroCurve(final Class< I > classI, final Date referenceDate, final DayCounter dc,
             final Interpolator interpolator) {
         super(referenceDate, new Calendar(), dc);
         this.classI = classI;
-        this.interpolator = interpolator==null ? constructInterpolator(classI) : interpolator;
+        this.interpolator = interpolator == null ? constructInterpolator(classI) : interpolator;
     }
 
-
-    protected InterpolatedZeroCurve(
-            final Class<I> classI,
-    		final DayCounter dc) {
+    protected InterpolatedZeroCurve(final Class< I > classI, final DayCounter dc) {
         this(classI, dc, null);
     }
-    protected InterpolatedZeroCurve(
-            final Class<I> classI,
-            final DayCounter dc,
-            final Interpolator interpolator) {
+
+    protected InterpolatedZeroCurve(final Class< I > classI, final DayCounter dc, final Interpolator interpolator) {
         super(dc);
-        
+
         this.classI = classI;
-        this.interpolator = interpolator==null ? constructInterpolator(classI) : interpolator;
+        this.interpolator = interpolator == null ? constructInterpolator(classI) : interpolator;
     }
 
-
-    protected InterpolatedZeroCurve(
-            final Class<I> classI,
-    		final /*@Natural*/ int settlementDays,
-            final Calendar calendar,
-            final DayCounter dc) {
+    protected InterpolatedZeroCurve(final Class< I > classI, final /*@Natural*/ int settlementDays,
+            final Calendar calendar, final DayCounter dc) {
         this(classI, settlementDays, calendar, dc, null);
     }
-    protected InterpolatedZeroCurve(
-            final Class<I> classI,
-    		final /*@Natural*/ int settlementDays,
-            final Calendar calendar,
-            final DayCounter dc,
-            final Interpolator interpolator) {
+
+    protected InterpolatedZeroCurve(final Class< I > classI, final /*@Natural*/ int settlementDays,
+            final Calendar calendar, final DayCounter dc, final Interpolator interpolator) {
         // Phase 3e: align to v1.42.1 — pass the supplied calendar (was
         // `new Calendar()`, which left impl==null and broke advance/adjust).
         super(settlementDays, calendar, dc);
 
-		QL.require(classI!=null, "Generic type for Interpolation is null");
+        QL.require(classI != null, "Generic type for Interpolation is null");
         this.classI = classI;
-        this.interpolator = interpolator==null ? constructInterpolator(classI) : interpolator;
+        this.interpolator = interpolator == null ? constructInterpolator(classI) : interpolator;
     }
-
 
     //
     // static private methods
     //
-    
-    static private Interpolator constructInterpolator(final Class<?> klass) {
-        if (klass==null)
+
+    static private Interpolator constructInterpolator(final Class< ? > klass) {
+        if ( klass == null )
             throw new LibraryException("null interpolator"); // TODO: message
-        if (!Interpolator.class.isAssignableFrom(klass))
+        if ( !Interpolator.class.isAssignableFrom(klass) )
             throw new LibraryException(ReflectConstants.WRONG_ARGUMENT_TYPE);
 
         try {
             return (Interpolator) klass.newInstance();
-        } catch (final Exception e) {
+        } catch ( final Exception e ) {
             throw new LibraryException("cannot create Interpolator", e); // TODO: message
         }
     }
 
-    
-//XXX :: this method is defined in QuantLib/C++ but it is never called
-//	public double[] zeroRates() {
-//        return data();
-//	}
-    
-    
-    
+    //XXX :: this method is defined in QuantLib/C++ but it is never called
+    //	public double[] zeroRates() {
+    //        return data();
+    //	}
+
     //
-	// implements Traits.Curve
-	//
-	
-	@Override
-	public Date maxDate() {
-        final int last = dates.length-1;
+    // implements Traits.Curve
+    //
+
+    @Override
+    public Date maxDate() {
+        final int last = dates.length - 1;
         return dates[last];
-	}
+    }
 
-	@Override
-	public Date[] dates() {
+    @Override
+    public Date[] dates() {
         return dates;
-	}
+    }
 
-	@Override
-	public double[] times() {
+    @Override
+    public double[] times() {
         return times;
-	}
+    }
 
-	@Override
-	public List<Pair<Date, Double>> nodes() {
-        final List<Pair<Date, Double>> nodes = new ArrayList<Pair<Date, Double>>();
-        for (int i = 0; i < dates.length; ++i) {
-            nodes.add(new Pair<Date, Double>(dates[i], data[i]));
+    @Override
+    public List< Pair< Date, Double > > nodes() {
+        final List< Pair< Date, Double > > nodes = new ArrayList< Pair< Date, Double > >();
+        for ( int i = 0; i < dates.length; ++i ) {
+            nodes.add(new Pair< Date, Double >(dates[i], data[i]));
         }
         return nodes;
-	}
+    }
 
-	@Override
-	public double[] data() {
+    @Override
+    public double[] data() {
         return data;
-	}
+    }
 
-	@Override
-	public Interpolator interpolator() {
+    @Override
+    public Interpolator interpolator() {
         return interpolator;
-	}
+    }
 
-	@Override
-	public Interpolation interpolation() {
+    @Override
+    public Interpolation interpolation() {
         return interpolation;
-	}
+    }
 
-	@Override
-	public void setInterpolation(final Interpolation interpolation) {
+    @Override
+    public void setInterpolation(final Interpolation interpolation) {
         this.interpolation = interpolation;
-	}
+    }
 
     @Override
     public void setDates(final Date[] dates) {
         this.dates = dates; // TODO: clone() ?
     }
 
-
     @Override
     public void setTimes(final double[] times) {
         this.times = times; // TODO: clone() ?
     }
-
 
     @Override
     public void setData(final double[] data) {
         this.data = data; // TODO: clone() ?
     }
 
-	@Override
-	public double discount(final double t) {
-		return discountImpl(t);
-	}
+    @Override
+    public double discount(final double t) {
+        return discountImpl(t);
+    }
 
-	@Override
-	public double forward(final double t) {
-		throw new UnsupportedOperationException();
-	}
-	
-	@Override
-	public double zeroYield(final double t) {
-		return zeroYieldImpl(t);
-	}
+    @Override
+    public double forward(final double t) {
+        throw new UnsupportedOperationException();
+    }
 
-	
-	//
-	// overrides ZeroYieldStructure
-	//
+    @Override
+    public double zeroYield(final double t) {
+        return zeroYieldImpl(t);
+    }
 
-	@Override
-	protected double zeroYieldImpl(final double t) {
-		// Mirror C++ InterpolatedZeroCurve<T>::zeroYieldImpl (v1.42.1
-		// ql/termstructures/yield/zerocurve.hpp:159-169): inside the
-		// curve's last pillar use the interpolator directly; PAST the
-		// last pillar use FLAT-FORWARD extrapolation. Cubic-extrapolating
-		// the zero-rate polynomial past the last pillar produces an
-		// uncontrolled tail (Phase 5e.5b-CFC-d-4): the extrapolated zero
-		// is dominated by the curvature of the last segment, which can
-		// be far from the locally-instantaneous forward, and discount
-		// factors drift from the C++ reference at the level of 1e-7+.
-		final double tMax = times[times.length - 1];
-		if (t <= tMax) {
-			return interpolation.op(t, true);
-		}
-		// flat fwd extrapolation
-		final double zMax = data[data.length - 1];
-		final double instFwdMax = zMax + tMax * interpolation.derivative(tMax, true);
-		return (zMax * tMax + instFwdMax * (t - tMax)) / t;
-	}
+    //
+    // overrides ZeroYieldStructure
+    //
+
+    @Override
+    protected double zeroYieldImpl(final double t) {
+        // Mirror C++ InterpolatedZeroCurve<T>::zeroYieldImpl (v1.42.1
+        // ql/termstructures/yield/zerocurve.hpp:159-169): inside the
+        // curve's last pillar use the interpolator directly; PAST the
+        // last pillar use FLAT-FORWARD extrapolation. Cubic-extrapolating
+        // the zero-rate polynomial past the last pillar produces an
+        // uncontrolled tail (Phase 5e.5b-CFC-d-4): the extrapolated zero
+        // is dominated by the curvature of the last segment, which can
+        // be far from the locally-instantaneous forward, and discount
+        // factors drift from the C++ reference at the level of 1e-7+.
+        final double tMax = times[times.length - 1];
+        if ( t <= tMax ) {
+            return interpolation.op(t, true);
+        }
+        // flat fwd extrapolation
+        final double zMax = data[data.length - 1];
+        final double instFwdMax = zMax + tMax * interpolation.derivative(tMax, true);
+        return (zMax * tMax + instFwdMax * (t - tMax)) / t;
+    }
 
 }

@@ -1,4 +1,3 @@
-
 /*
 Copyright (C) 2009 John Martin
 
@@ -21,7 +20,6 @@ JQuantLib is based on QuantLib. http://quantlib.org/
 When applicable, the original copyright notice follows this notice.
  */
 
-
 package org.jquantlib.cashflow;
 
 import org.jquantlib.daycounters.DayCounter;
@@ -30,121 +28,60 @@ import org.jquantlib.time.Date;
 
 public class CappedFlooredCmsCoupon extends CappedFlooredCoupon {
 
-    public CappedFlooredCmsCoupon(
-            final Date paymentDate,
-            final /*Real*/double nominal,
-            final Date startDate,
-            final Date endDate,
-            final /*Natural*/int fixingDays,
-            final SwapIndex index) {
+    public CappedFlooredCmsCoupon(final Date paymentDate, final /*Real*/double nominal, final Date startDate,
+            final Date endDate, final /*Natural*/int fixingDays, final SwapIndex index) {
         // default gearing to 1.0
-        this (paymentDate, nominal, startDate, endDate, fixingDays, index, 1.0);
+        this(paymentDate, nominal, startDate, endDate, fixingDays, index, 1.0);
     }
 
-    public CappedFlooredCmsCoupon(
-            final Date paymentDate,
-            final /*Real*/double nominal,
-            final Date startDate,
-            final Date endDate,
-            final /*Natural*/int fixingDays,
-            final SwapIndex index,
-            final double gearing) {
+    public CappedFlooredCmsCoupon(final Date paymentDate, final /*Real*/double nominal, final Date startDate,
+            final Date endDate, final /*Natural*/int fixingDays, final SwapIndex index, final double gearing) {
         // default spread to 0.0
-        this (paymentDate, nominal, startDate, endDate, fixingDays, index, gearing, 0.0);
+        this(paymentDate, nominal, startDate, endDate, fixingDays, index, gearing, 0.0);
     }
 
-    public CappedFlooredCmsCoupon(
-            final Date paymentDate,
-            final /*Real*/double nominal,
-            final Date startDate,
-            final Date endDate,
-            final /*Natural*/int fixingDays,
-            final SwapIndex index,
-            final double gearing,
+    public CappedFlooredCmsCoupon(final Date paymentDate, final /*Real*/double nominal, final Date startDate,
+            final Date endDate, final /*Natural*/int fixingDays, final SwapIndex index, final double gearing,
             final double spread) {
         // default cap and floor to NaN
-        this (paymentDate, nominal, startDate, endDate,
-              fixingDays, index, gearing, spread, Double.NaN, Double.NaN);
+        this(paymentDate, nominal, startDate, endDate, fixingDays, index, gearing, spread, Double.NaN, Double.NaN);
     }
 
-    public CappedFlooredCmsCoupon(
-            final Date paymentDate,
-            final /*Real*/double nominal,
-            final Date startDate,
-            final Date endDate,
-            final /*Natural*/int fixingDays,
-            final SwapIndex index,
-            final double gearing,
-            final double spread,
-            final double cap,
-            final double floor) {
+    public CappedFlooredCmsCoupon(final Date paymentDate, final /*Real*/double nominal, final Date startDate,
+            final Date endDate, final /*Natural*/int fixingDays, final SwapIndex index, final double gearing,
+            final double spread, final double cap, final double floor) {
         // default reference dates
-        this (paymentDate, nominal, startDate, endDate,
-              fixingDays, index, gearing, spread,
-              cap, floor, new Date(), new Date());
+        this(paymentDate, nominal, startDate, endDate, fixingDays, index, gearing, spread, cap, floor, new Date(),
+                new Date());
     }
 
-    public CappedFlooredCmsCoupon(
-            final Date paymentDate,
-            final /*Real*/double nominal,
-            final Date startDate,
-            final Date endDate,
-            final /*Natural*/int fixingDays,
-            final SwapIndex index,
-            final double gearing,
-            final double spread,
-            final double cap,
-            final double floor,
-            final Date refPeriodStart,
+    public CappedFlooredCmsCoupon(final Date paymentDate, final /*Real*/double nominal, final Date startDate,
+            final Date endDate, final /*Natural*/int fixingDays, final SwapIndex index, final double gearing,
+            final double spread, final double cap, final double floor, final Date refPeriodStart,
             final Date refPeriodEnd) {
         // default day counter
-        this (paymentDate, nominal, startDate, endDate,
-              fixingDays, index, gearing, spread,
-              cap, floor, refPeriodStart, refPeriodEnd, new DayCounter());
+        this(paymentDate, nominal, startDate, endDate, fixingDays, index, gearing, spread, cap, floor, refPeriodStart,
+                refPeriodEnd, new DayCounter());
     }
 
-    public CappedFlooredCmsCoupon(
-            final Date paymentDate,
-            final /*Real*/double nominal,
-            final Date startDate,
-            final Date endDate,
-            final /*Natural*/int fixingDays,
-            final SwapIndex index,
-            final double gearing,
-            final double spread,
-            final double cap,
-            final double floor,
-            final Date refPeriodStart,
-            final Date refPeriodEnd,
-            final DayCounter dayCounter) {
+    public CappedFlooredCmsCoupon(final Date paymentDate, final /*Real*/double nominal, final Date startDate,
+            final Date endDate, final /*Natural*/int fixingDays, final SwapIndex index, final double gearing,
+            final double spread, final double cap, final double floor, final Date refPeriodStart,
+            final Date refPeriodEnd, final DayCounter dayCounter) {
         // default isInArrears false
-        this (paymentDate, nominal, startDate, endDate,
-              fixingDays, index, gearing, spread,
-              cap, floor, refPeriodStart, refPeriodEnd,
-              dayCounter, false);
+        this(paymentDate, nominal, startDate, endDate, fixingDays, index, gearing, spread, cap, floor, refPeriodStart,
+                refPeriodEnd, dayCounter, false);
     }
 
-    public CappedFlooredCmsCoupon(
-            final Date paymentDate,
-            final /*Real*/double nominal,
-            final Date startDate,
-            final Date endDate,
-            final /*Natural*/int fixingDays,
-            final SwapIndex index,
-            final double gearing,
-            final double spread,
-            final double cap,
-            final double floor,
-            final Date refPeriodStart,
-            final Date refPeriodEnd,
-            final DayCounter dayCounter,
-            final boolean isInArrears) {
+    public CappedFlooredCmsCoupon(final Date paymentDate, final /*Real*/double nominal, final Date startDate,
+            final Date endDate, final /*Natural*/int fixingDays, final SwapIndex index, final double gearing,
+            final double spread, final double cap, final double floor, final Date refPeriodStart,
+            final Date refPeriodEnd, final DayCounter dayCounter, final boolean isInArrears) {
         // Mirrors C++ CappedFlooredCmsCoupon (capflooredcoupon.hpp:137-160):
         // wraps a freshly-built CmsCoupon and delegates to the
         // CappedFlooredCoupon(FloatingRateCoupon, cap, floor) ctor which
         // handles cap/floor sentinel logic and gearing-sign flip.
-        super (new CmsCoupon(paymentDate, nominal, startDate, endDate, fixingDays,
-            index, gearing, spread, refPeriodStart, refPeriodEnd,
-                dayCounter, isInArrears), cap, floor);
+        super(new CmsCoupon(paymentDate, nominal, startDate, endDate, fixingDays, index, gearing, spread,
+                refPeriodStart, refPeriodEnd, dayCounter, isInArrears), cap, floor);
     }
 }

@@ -46,15 +46,12 @@ import org.jquantlib.time.Schedule;
 /**
  * Amortizing floating-rate bond (possibly capped and/or floored).
  *
- * Java port of QuantLib v1.42.1
- * {@code ql/instruments/bonds/amortizingfloatingratebond.{hpp,cpp}}.
+ * Java port of QuantLib v1.42.1 {@code ql/instruments/bonds/amortizingfloatingratebond.{hpp,cpp}}.
  *
  * <p>The notional vector encodes the amortization schedule. The full C++
- * constructor surface (paymentLag, ex-coupon-period vector, redemptions
- * vector) is exposed insofar as the existing Java {@link IborLeg} builder
- * supports it; the un-supported builder methods (withPaymentLag,
- * withExCouponPeriod) are deferred to Phase 5d.5-Bonds-b. The simplest
- * 5-arg overload mirrors the {@code FloatingRateBond} convention used
+ * constructor surface (paymentLag, ex-coupon-period vector, redemptions vector) is exposed insofar as the existing Java
+ * {@link IborLeg} builder supports it; the un-supported builder methods (withPaymentLag, withExCouponPeriod) are
+ * deferred to Phase 5d.5-Bonds-b. The simplest 5-arg overload mirrors the {@code FloatingRateBond} convention used
  * elsewhere in the Java tree.
  *
  * @author Jose Moya
@@ -62,37 +59,21 @@ import org.jquantlib.time.Schedule;
 public class AmortizingFloatingRateBond extends Bond {
 
     /**
-     * Primary constructor — mirrors the simplest overload, parameterized
-     * by an explicit gearings/spreads/caps/floors/inArrears tuple.
+     * Primary constructor — mirrors the simplest overload, parameterized by an explicit
+     * gearings/spreads/caps/floors/inArrears tuple.
      */
-    public AmortizingFloatingRateBond(final /* @Natural */ int settlementDays,
-                                        final double[] notionals,
-                                        final Schedule schedule,
-                                        final IborIndex index,
-                                        final DayCounter accrualDayCounter,
-                                        final BusinessDayConvention paymentConvention,
-                                        final /* @Natural */ int fixingDays,
-                                        final Array gearings,
-                                        final Array spreads,
-                                        final Array caps,
-                                        final Array floors,
-                                        final boolean inArrears,
-                                        final double[] redemptions,
-                                        final Date issueDate) {
+    public AmortizingFloatingRateBond(final /* @Natural */ int settlementDays, final double[] notionals,
+            final Schedule schedule, final IborIndex index, final DayCounter accrualDayCounter,
+            final BusinessDayConvention paymentConvention, final /* @Natural */ int fixingDays, final Array gearings,
+            final Array spreads, final Array caps, final Array floors, final boolean inArrears,
+            final double[] redemptions, final Date issueDate) {
         super(settlementDays, schedule.calendar(), issueDate);
         maturityDate_ = schedule.endDate().clone();
 
-        cashflows_ = new IborLeg(schedule, index)
-                        .withNotionals(new Array(notionals))
-                        .withPaymentDayCounter(accrualDayCounter)
-                        .withPaymentAdjustment(paymentConvention)
-                        .withFixingDays(fixingDays)
-                        .withGearings(gearings)
-                        .withSpreads(spreads)
-                        .withCaps(caps)
-                        .withFloors(floors)
-                        .inArrears(inArrears)
-                        .Leg();
+        cashflows_ = new IborLeg(schedule, index).withNotionals(new Array(notionals))
+                .withPaymentDayCounter(accrualDayCounter).withPaymentAdjustment(paymentConvention)
+                .withFixingDays(fixingDays).withGearings(gearings).withSpreads(spreads).withCaps(caps)
+                .withFloors(floors).inArrears(inArrears).Leg();
 
         addRedemptionsToCashflows(redemptions);
 
@@ -101,16 +82,10 @@ public class AmortizingFloatingRateBond extends Bond {
     }
 
     /** Convenience overload mirroring the simplest C++ defaulting. */
-    public AmortizingFloatingRateBond(final /* @Natural */ int settlementDays,
-                                        final double[] notionals,
-                                        final Schedule schedule,
-                                        final IborIndex index,
-                                        final DayCounter accrualDayCounter) {
-        this(settlementDays, notionals, schedule, index, accrualDayCounter,
-             BusinessDayConvention.Following, Constants.NULL_INTEGER,
-             new Array(new double[] { 1.0 }),
-             new Array(new double[] { 0.0 }),
-             new Array(0), new Array(0),
-             false, new double[] { 100.0 }, new Date());
+    public AmortizingFloatingRateBond(final /* @Natural */ int settlementDays, final double[] notionals,
+            final Schedule schedule, final IborIndex index, final DayCounter accrualDayCounter) {
+        this(settlementDays, notionals, schedule, index, accrualDayCounter, BusinessDayConvention.Following,
+                Constants.NULL_INTEGER, new Array(new double[] { 1.0 }), new Array(new double[] { 0.0 }), new Array(0),
+                new Array(0), false, new double[] { 100.0 }, new Date());
     }
 }

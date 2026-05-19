@@ -28,12 +28,11 @@ package org.jquantlib.experimental.math;
  * {@code ql/experimental/math/piecewisefunction.hpp}.
  *
  * <p>Defines a piecewise constant, RCLL function which takes the values
- * {@code Y[0], Y[1], ... Y[n]} on the intervals
- * {@code (-inf, X[0]), [X[1], X[2]), ..., [X[n-1], inf)}.
+ * {@code Y[0], Y[1], ... Y[n]} on the intervals {@code (-inf, X[0]), [X[1], X[2]), ..., [X[n-1], inf)}.
  *
  * <p>Normally {@code Y.length} should be {@code X.length + 1}. If more values
- * for {@code Y} are given, they are ignored. If fewer values are given, the
- * last given value is reused for the remaining intervals.
+ * for {@code Y} are given, they are ignored. If fewer values are given, the last given value is reused for the
+ * remaining intervals.
  *
  * <p>If {@code X.length == 0} a constant function returning {@code Y[0]} is
  * evaluated.
@@ -63,9 +62,9 @@ public final class PiecewiseFunction {
     private static int upperBound(final double[] X, final double x) {
         int lo = 0;
         int hi = X.length;
-        while (lo < hi) {
+        while ( lo < hi ) {
             final int mid = (lo + hi) >>> 1;
-            if (X[mid] <= x) {
+            if ( X[mid] <= x ) {
                 lo = mid + 1;
             } else {
                 hi = mid;

@@ -19,15 +19,15 @@
  */
 package org.jquantlib.methods.finitedifferences.operators;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.matrixutilities.Matrix;
 import org.jquantlib.methods.finitedifferences.meshers.FdmMesher;
 import org.jquantlib.model.shortrate.onefactormodels.HullWhite;
 import org.jquantlib.model.shortrate.onefactormodels.OneFactorModel;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Finite-difference operator for the Hull-White short-rate dynamics
@@ -36,8 +36,7 @@ import org.jquantlib.model.shortrate.onefactormodels.OneFactorModel;
  * <p>
  * decomposed on a 1D mesh of the OU state variable {@code x = r - phi(t)}.
  * <p>
- * Java port of v1.42.1
- * ql/methods/finitedifferences/operators/fdmhullwhiteop.{hpp,cpp}.
+ * Java port of v1.42.1 ql/methods/finitedifferences/operators/fdmhullwhiteop.{hpp,cpp}.
  *
  * @author Phase 2h WI-1 port
  */
@@ -49,9 +48,7 @@ public final class FdmHullWhiteOp implements FdmLinearOpComposite {
     private final TripleBandLinearOp mapT;
     private final HullWhite model;
 
-    public FdmHullWhiteOp(final FdmMesher mesher,
-                          final HullWhite model,
-                          final int direction) {
+    public FdmHullWhiteOp(final FdmMesher mesher, final HullWhite model, final int direction) {
         this.direction = direction;
         this.x = mesher.locations(direction);
         this.model = model;
@@ -98,7 +95,7 @@ public final class FdmHullWhiteOp implements FdmLinearOpComposite {
 
     @Override
     public Array applyDirection(final int direction, final Array r) {
-        if (direction == this.direction) {
+        if ( direction == this.direction ) {
             return mapT.apply(r);
         }
         return new Array(r.size()).fill(0.0);
@@ -106,7 +103,7 @@ public final class FdmHullWhiteOp implements FdmLinearOpComposite {
 
     @Override
     public Array solveSplitting(final int direction, final Array r, final double s) {
-        if (direction == this.direction) {
+        if ( direction == this.direction ) {
             return mapT.solveSplitting(r, s, 1.0);
         }
         return new Array(r.size()).fill(0.0);
@@ -123,8 +120,8 @@ public final class FdmHullWhiteOp implements FdmLinearOpComposite {
     }
 
     @Override
-    public List<Matrix> toMatrixDecomp() {
-        final List<Matrix> ret = new ArrayList<Matrix>(1);
+    public List< Matrix > toMatrixDecomp() {
+        final List< Matrix > ret = new ArrayList< Matrix >(1);
         ret.add(mapT.toMatrix());
         return Collections.unmodifiableList(ret);
     }

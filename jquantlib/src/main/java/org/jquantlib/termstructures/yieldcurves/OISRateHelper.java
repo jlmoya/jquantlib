@@ -16,12 +16,7 @@
 package org.jquantlib.termstructures.yieldcurves;
 
 import org.jquantlib.QL;
-import org.jquantlib.cashflow.CashFlow;
-import org.jquantlib.cashflow.FloatingRateCoupon;
-import org.jquantlib.cashflow.FloatingRateCouponPricer;
-import org.jquantlib.cashflow.Leg;
-import org.jquantlib.cashflow.OvernightIndexedCoupon;
-import org.jquantlib.cashflow.RateAveraging;
+import org.jquantlib.cashflow.*;
 import org.jquantlib.indexes.OvernightIndex;
 import org.jquantlib.instruments.MakeOIS;
 import org.jquantlib.instruments.OvernightIndexedSwap;
@@ -32,28 +27,20 @@ import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.RelinkableHandle;
 import org.jquantlib.termstructures.Pillar;
 import org.jquantlib.termstructures.YieldTermStructure;
-import org.jquantlib.time.BusinessDayConvention;
-import org.jquantlib.time.Calendar;
-import org.jquantlib.time.Date;
-import org.jquantlib.time.Frequency;
-import org.jquantlib.time.Period;
-import org.jquantlib.time.TimeUnit;
+import org.jquantlib.time.*;
 import org.jquantlib.util.PolymorphicVisitor;
 import org.jquantlib.util.Visitor;
 
 /**
  * Rate helper for bootstrapping over Overnight Indexed Swap rates.
  * <p>
- * Port of C++ QuantLib v1.42.1
- * {@code ql/termstructures/yield/oisratehelper.hpp/cpp} {@code OISRateHelper}.
+ * Port of C++ QuantLib v1.42.1 {@code ql/termstructures/yield/oisratehelper.hpp/cpp} {@code OISRateHelper}.
  * <p>
  * <b>Phase 5e.5b-CFC-d-36 align:</b> internal {@link OvernightIndexedSwap}
- * construction delegated to {@link MakeOIS} to mirror C++ exactly (same
- * {@code DateGeneration.Rule}, {@code endOfMonth}, calendar handling). The
- * pillar/latest date is computed as
- * {@code max(maturityDate, lastPaymentDate, fixingEndDate)} per C++
- * {@code oisratehelper.cpp:179}, ensuring partial bootstrap succeeds even
- * when {@code paymentLag > 0} pushes the last payment beyond the maturity.
+ * construction delegated to {@link MakeOIS} to mirror C++ exactly (same {@code DateGeneration.Rule},
+ * {@code endOfMonth}, calendar handling). The pillar/latest date is computed as
+ * {@code max(maturityDate, lastPaymentDate, fixingEndDate)} per C++ {@code oisratehelper.cpp:179}, ensuring partial
+ * bootstrap succeeds even when {@code paymentLag > 0} pushes the last payment beyond the maturity.
  *
  * <p><b>Phase 5e.5b-CFC-d-169 align:</b>
  * <ul>
@@ -76,9 +63,8 @@ import org.jquantlib.util.Visitor;
  * separate fixed/overnight calendars are deferred — the Phase 5e MVP
  * constructor does not yet expose them.
  *
- * @category termstructures
- *
  * @author JQuantLib migration team
+ * @category termstructures
  */
 public class OISRateHelper extends RelativeDateRateHelper {
 
@@ -91,12 +77,11 @@ public class OISRateHelper extends RelativeDateRateHelper {
     /** Non-null when the date-based ctor was used. */
     protected final Date endDate_;
     /**
-     * Clone of the user-supplied overnight index, re-linked to
-     * {@link #termStructureHandle_} so the bootstrap drives forecasting.
-     * Mirrors C++ {@code oisratehelper.cpp:112}.
+     * Clone of the user-supplied overnight index, re-linked to {@link #termStructureHandle_} so the bootstrap drives
+     * forecasting. Mirrors C++ {@code oisratehelper.cpp:112}.
      */
     protected final OvernightIndex overnightIndex_;
-    protected final Handle<YieldTermStructure> discountHandle_;
+    protected final Handle< YieldTermStructure > discountHandle_;
     protected final boolean telescopicValueDates_;
     protected final int paymentLag_;
     protected final BusinessDayConvention paymentConvention_;
@@ -104,97 +89,63 @@ public class OISRateHelper extends RelativeDateRateHelper {
     protected final Calendar paymentCalendar_;
     protected final RateAveraging.Type averagingMethod_;
     protected final Pillar.Choice pillarChoice_;
+    protected final RelinkableHandle< YieldTermStructure > termStructureHandle_ = new RelinkableHandle< YieldTermStructure >(
+            null);
+    protected final RelinkableHandle< YieldTermStructure > discountRelinkableHandle_ = new RelinkableHandle< YieldTermStructure >(
+            null);
     protected Date pillarDate_;
     protected FloatingRateCouponPricer pricer_;
-
     protected OvernightIndexedSwap swap_;
-    protected final RelinkableHandle<YieldTermStructure> termStructureHandle_ =
-            new RelinkableHandle<YieldTermStructure>(null);
-    protected final RelinkableHandle<YieldTermStructure> discountRelinkableHandle_ =
-            new RelinkableHandle<YieldTermStructure>(null);
 
     /**
-     * Most-common-case constructor (defaults: discountHandle empty so the
-     * bootstrapped curve is used for discounting; Annual payment frequency;
-     * Following BDC; Compound averaging; no telescopic dates; no payment lag;
-     * payment calendar defaults to the overnight index fixing calendar;
-     * pillar = LastRelevantDate; no coupon pricer).
+     * Most-common-case constructor (defaults: discountHandle empty so the bootstrapped curve is used for discounting;
+     * Annual payment frequency; Following BDC; Compound averaging; no telescopic dates; no payment lag; payment
+     * calendar defaults to the overnight index fixing calendar; pillar = LastRelevantDate; no coupon pricer).
      */
-    public OISRateHelper(
-            final int settlementDays,
-            final Period tenor,
-            final Handle<Quote> fixedRate,
+    public OISRateHelper(final int settlementDays, final Period tenor, final Handle< Quote > fixedRate,
             final OvernightIndex overnightIndex) {
-        this(settlementDays, tenor, fixedRate, overnightIndex,
-             new Handle<YieldTermStructure>(),
-             false, 0, BusinessDayConvention.Following, Frequency.Annual,
-             null /* paymentCalendar -> defaults to overnightIndex.fixingCalendar() */,
-             RateAveraging.Type.Compound,
-             Pillar.Choice.LastRelevantDate, new Date(), null /* pricer */);
+        this(settlementDays, tenor, fixedRate, overnightIndex, new Handle< YieldTermStructure >(), false, 0,
+                BusinessDayConvention.Following, Frequency.Annual,
+                null /* paymentCalendar -> defaults to overnightIndex.fixingCalendar() */, RateAveraging.Type.Compound,
+                Pillar.Choice.LastRelevantDate, new Date(), null /* pricer */);
     }
 
     /**
-     * Pre-Phase-5e.5b-CFC-d-169 constructor (backward-compatible). Defaults
-     * pillar = LastRelevantDate and pricer = null.
+     * Pre-Phase-5e.5b-CFC-d-169 constructor (backward-compatible). Defaults pillar = LastRelevantDate and pricer =
+     * null.
      */
-    public OISRateHelper(
-            final int settlementDays,
-            final Period tenor,
-            final Handle<Quote> fixedRate,
-            final OvernightIndex overnightIndex,
-            final Handle<YieldTermStructure> discountingCurve,
-            final boolean telescopicValueDates,
-            final int paymentLag,
-            final BusinessDayConvention paymentConvention,
-            final Frequency paymentFrequency,
-            final Calendar paymentCalendar,
+    public OISRateHelper(final int settlementDays, final Period tenor, final Handle< Quote > fixedRate,
+            final OvernightIndex overnightIndex, final Handle< YieldTermStructure > discountingCurve,
+            final boolean telescopicValueDates, final int paymentLag, final BusinessDayConvention paymentConvention,
+            final Frequency paymentFrequency, final Calendar paymentCalendar,
             final RateAveraging.Type averagingMethod) {
-        this(settlementDays, tenor, fixedRate, overnightIndex,
-             discountingCurve, telescopicValueDates, paymentLag,
-             paymentConvention, paymentFrequency, paymentCalendar,
-             averagingMethod,
-             Pillar.Choice.LastRelevantDate, new Date(), null /* pricer */);
+        this(settlementDays, tenor, fixedRate, overnightIndex, discountingCurve, telescopicValueDates, paymentLag,
+                paymentConvention, paymentFrequency, paymentCalendar, averagingMethod, Pillar.Choice.LastRelevantDate,
+                new Date(), null /* pricer */);
     }
 
     /**
-     * Full constructor mirroring C++ tenor-based ctor (Phase 5e MVP slice
-     * + Phase 5e.5b-CFC-d-169 pillar + pricer hook).
+     * Full constructor mirroring C++ tenor-based ctor (Phase 5e MVP slice + Phase 5e.5b-CFC-d-169 pillar + pricer
+     * hook).
      *
-     * @param paymentCalendar may be {@code null} to default to the overnight
-     *                        index fixing calendar (C++ {@code Calendar()} default).
-     * @param pillarChoice    {@link Pillar.Choice#LastRelevantDate} (default)
-     *                        keeps {@code latestDate = max(maturity,
-     *                        lastPayment, fixingEnd)}; {@link
-     *                        Pillar.Choice#MaturityDate} fixes
-     *                        {@code latestDate = maturityDate} so bootstrap
-     *                        nodes land exactly on each swap's maturity
-     *                        (regression #1.16 / FedFunds).
-     * @param customPillarDate required when {@code pillarChoice ==
-     *                         Pillar.Choice.CustomDate}; ignored otherwise.
+     * @param paymentCalendar  may be {@code null} to default to the overnight index fixing calendar (C++
+     *                         {@code Calendar()} default).
+     * @param pillarChoice     {@link Pillar.Choice#LastRelevantDate} (default) keeps
+     *                         {@code latestDate = max(maturity, lastPayment, fixingEnd)};
+     *                         {@link Pillar.Choice#MaturityDate} fixes {@code latestDate = maturityDate} so bootstrap
+     *                         nodes land exactly on each swap's maturity (regression #1.16 / FedFunds).
+     * @param customPillarDate required when {@code pillarChoice == Pillar.Choice.CustomDate}; ignored otherwise.
      * @param pricer           optional {@link FloatingRateCouponPricer} (e.g.
-     *                         {@link
-     *                         org.jquantlib.cashflow.ArithmeticAveragedOvernightIndexedCouponPricer})
-     *                         applied to every overnight coupon in the bootstrap
-     *                         swap. {@code null} means "use the leg's default
-     *                         pricer", which is what {@link
-     *                         org.jquantlib.cashflow.OvernightIndexedCoupon#amount()}
+     *                         {@link org.jquantlib.cashflow.ArithmeticAveragedOvernightIndexedCouponPricer}) applied to
+     *                         every overnight coupon in the bootstrap swap. {@code null} means "use the leg's default
+     *                         pricer", which is what {@link org.jquantlib.cashflow.OvernightIndexedCoupon#amount()}
      *                         falls back to.
      */
-    public OISRateHelper(
-            final int settlementDays,
-            final Period tenor,
-            final Handle<Quote> fixedRate,
-            final OvernightIndex overnightIndex,
-            final Handle<YieldTermStructure> discountingCurve,
-            final boolean telescopicValueDates,
-            final int paymentLag,
-            final BusinessDayConvention paymentConvention,
-            final Frequency paymentFrequency,
-            final Calendar paymentCalendar,
-            final RateAveraging.Type averagingMethod,
-            final Pillar.Choice pillarChoice,
-            final Date customPillarDate,
-            final FloatingRateCouponPricer pricer) {
+    public OISRateHelper(final int settlementDays, final Period tenor, final Handle< Quote > fixedRate,
+            final OvernightIndex overnightIndex, final Handle< YieldTermStructure > discountingCurve,
+            final boolean telescopicValueDates, final int paymentLag, final BusinessDayConvention paymentConvention,
+            final Frequency paymentFrequency, final Calendar paymentCalendar, final RateAveraging.Type averagingMethod,
+            final Pillar.Choice pillarChoice, final Date customPillarDate, final FloatingRateCouponPricer pricer) {
         super(fixedRate);
         this.settlementDays_ = settlementDays;
         this.tenor_ = tenor;
@@ -207,8 +158,7 @@ public class OISRateHelper extends RelativeDateRateHelper {
         //                         overnightIndex->clone(termStructureHandle_))
         // The Java OvernightIndex.clone returns Handle<IborIndex>; we
         // unwrap to OvernightIndex.
-        this.overnightIndex_ =
-                (OvernightIndex) overnightIndex.clone(termStructureHandle_).currentLink();
+        this.overnightIndex_ = (OvernightIndex) overnightIndex.clone(termStructureHandle_).currentLink();
         this.discountHandle_ = discountingCurve;
         this.telescopicValueDates_ = telescopicValueDates;
         this.paymentLag_ = paymentLag;
@@ -221,60 +171,42 @@ public class OISRateHelper extends RelativeDateRateHelper {
         this.pricer_ = pricer;
 
         overnightIndex_.addObserver(this);
-        if (!discountHandle_.empty()) {
+        if ( !discountHandle_.empty() ) {
             discountHandle_.currentLink().addObserver(this);
         }
         initializeDates();
     }
 
     /**
-     * Date-based constructor mirroring C++
-     * {@code OISRateHelper(const Date& startDate, const Date& endDate, ...)}.
+     * Date-based constructor mirroring C++ {@code OISRateHelper(const Date& startDate, const Date& endDate, ...)}.
      * <p>
-     * Used by the 1.31 bootstrap regression where helpers anchor explicit
-     * effective + termination dates rather than {@code (settlementDays, tenor)}.
+     * Used by the 1.31 bootstrap regression where helpers anchor explicit effective + termination dates rather than
+     * {@code (settlementDays, tenor)}.
      */
-    public OISRateHelper(
-            final Date startDate,
-            final Date endDate,
-            final Handle<Quote> fixedRate,
+    public OISRateHelper(final Date startDate, final Date endDate, final Handle< Quote > fixedRate,
             final OvernightIndex overnightIndex) {
-        this(startDate, endDate, fixedRate, overnightIndex,
-             new Handle<YieldTermStructure>(),
-             false, 0, BusinessDayConvention.Following, Frequency.Annual,
-             null /* paymentCalendar -> defaults to overnightIndex.fixingCalendar() */,
-             RateAveraging.Type.Compound,
-             Pillar.Choice.LastRelevantDate, new Date(), null /* pricer */);
+        this(startDate, endDate, fixedRate, overnightIndex, new Handle< YieldTermStructure >(), false, 0,
+                BusinessDayConvention.Following, Frequency.Annual,
+                null /* paymentCalendar -> defaults to overnightIndex.fixingCalendar() */, RateAveraging.Type.Compound,
+                Pillar.Choice.LastRelevantDate, new Date(), null /* pricer */);
     }
 
     /**
-     * Full date-based constructor (Phase 5e.5b-CFC-d-169). See {@link
-     * #OISRateHelper(int, Period, Handle, OvernightIndex, Handle, boolean,
-     * int, BusinessDayConvention, Frequency, Calendar, RateAveraging.Type,
-     * Pillar.Choice, Date, FloatingRateCouponPricer)} for parameter docs.
+     * Full date-based constructor (Phase 5e.5b-CFC-d-169). See
+     * {@link #OISRateHelper(int, Period, Handle, OvernightIndex, Handle, boolean, int, BusinessDayConvention,
+     * Frequency, Calendar, RateAveraging.Type, Pillar.Choice, Date, FloatingRateCouponPricer)} for parameter docs.
      */
-    public OISRateHelper(
-            final Date startDate,
-            final Date endDate,
-            final Handle<Quote> fixedRate,
-            final OvernightIndex overnightIndex,
-            final Handle<YieldTermStructure> discountingCurve,
-            final boolean telescopicValueDates,
-            final int paymentLag,
-            final BusinessDayConvention paymentConvention,
-            final Frequency paymentFrequency,
-            final Calendar paymentCalendar,
-            final RateAveraging.Type averagingMethod,
-            final Pillar.Choice pillarChoice,
-            final Date customPillarDate,
-            final FloatingRateCouponPricer pricer) {
+    public OISRateHelper(final Date startDate, final Date endDate, final Handle< Quote > fixedRate,
+            final OvernightIndex overnightIndex, final Handle< YieldTermStructure > discountingCurve,
+            final boolean telescopicValueDates, final int paymentLag, final BusinessDayConvention paymentConvention,
+            final Frequency paymentFrequency, final Calendar paymentCalendar, final RateAveraging.Type averagingMethod,
+            final Pillar.Choice pillarChoice, final Date customPillarDate, final FloatingRateCouponPricer pricer) {
         super(fixedRate);
         this.settlementDays_ = 0; // unused for date-based ctor
         this.tenor_ = null;       // unused for date-based ctor
         this.startDate_ = startDate;
         this.endDate_ = endDate;
-        this.overnightIndex_ =
-                (OvernightIndex) overnightIndex.clone(termStructureHandle_).currentLink();
+        this.overnightIndex_ = (OvernightIndex) overnightIndex.clone(termStructureHandle_).currentLink();
         this.discountHandle_ = discountingCurve;
         this.telescopicValueDates_ = telescopicValueDates;
         this.paymentLag_ = paymentLag;
@@ -287,18 +219,16 @@ public class OISRateHelper extends RelativeDateRateHelper {
         this.pricer_ = pricer;
 
         overnightIndex_.addObserver(this);
-        if (!discountHandle_.empty()) {
+        if ( !discountHandle_.empty() ) {
             discountHandle_.currentLink().addObserver(this);
         }
         initializeDates();
     }
 
     /**
-     * Set the coupon pricer applied to the overnight leg of the internal
-     * bootstrap swap. Mirrors C++ pattern where {@code pricer_} can be
-     * supplied at construction; the Java setter exists to allow late-binding
-     * via the builder-style usage in tests and rebuilds the swap so the
-     * pricer is wired in before the bootstrap iterates.
+     * Set the coupon pricer applied to the overnight leg of the internal bootstrap swap. Mirrors C++ pattern where
+     * {@code pricer_} can be supplied at construction; the Java setter exists to allow late-binding via the
+     * builder-style usage in tests and rebuilds the swap so the pricer is wired in before the bootstrap iterates.
      */
     public void withCouponPricer(final FloatingRateCouponPricer pricer) {
         this.pricer_ = pricer;
@@ -315,14 +245,11 @@ public class OISRateHelper extends RelativeDateRateHelper {
                 ? tenor_
                 : new Period(1, TimeUnit.Days); // dummy; overridden by termination date
         final MakeOIS make = new MakeOIS(tenorForMake, overnightIndex_, 0.0,
-                                         new Period(0, TimeUnit.Days))
-                .withDiscountingTermStructure(discountRelinkableHandle_)
-                .withTelescopicValueDates(telescopicValueDates_)
-                .withPaymentLag(paymentLag_)
-                .withPaymentAdjustment(paymentConvention_)
-                .withPaymentFrequency(paymentFrequency_)
+                new Period(0, TimeUnit.Days)).withDiscountingTermStructure(discountRelinkableHandle_)
+                .withTelescopicValueDates(telescopicValueDates_).withPaymentLag(paymentLag_)
+                .withPaymentAdjustment(paymentConvention_).withPaymentFrequency(paymentFrequency_)
                 .withAveragingMethod(averagingMethod_);
-        if (startDate_ != null) {
+        if ( startDate_ != null ) {
             // date-based ctor: pass explicit dates; MakeOIS guards against
             // settlementDays+effectiveDate conflict, so do NOT call
             // withSettlementDays in this path.
@@ -330,7 +257,7 @@ public class OISRateHelper extends RelativeDateRateHelper {
         } else {
             make.withSettlementDays(settlementDays_);
         }
-        if (paymentCalendar_ != null) {
+        if ( paymentCalendar_ != null ) {
             make.withPaymentCalendar(paymentCalendar_);
         }
         swap_ = make.value();
@@ -342,11 +269,11 @@ public class OISRateHelper extends RelativeDateRateHelper {
         // oisratehelper.cpp:165-166. We call FloatingRateCoupon.setPricer
         // directly to avoid a hard dependency on CashFlows.setCouponPricer
         // / PricerSetter dispatch logic (which is keyed off coupon subtype).
-        if (pricer_ != null) {
+        if ( pricer_ != null ) {
             final Leg overnightLeg = swap_.overnightLeg();
-            for (int i = 0; i < overnightLeg.size(); ++i) {
+            for ( int i = 0; i < overnightLeg.size(); ++i ) {
                 final CashFlow cf = overnightLeg.get(i);
-                if (cf instanceof FloatingRateCoupon) {
+                if ( cf instanceof FloatingRateCoupon ) {
                     ((FloatingRateCoupon) cf).setPricer(pricer_);
                 }
             }
@@ -359,7 +286,7 @@ public class OISRateHelper extends RelativeDateRateHelper {
         // RelinkableHandle with null link returns true from empty(),
         // so MakeOIS's "if (engine == null && !disc.empty())" branch is
         // skipped when discountRelinkableHandle_ is not yet linked.
-        if (discountHandle_.empty()) {
+        if ( discountHandle_.empty() ) {
             swap_.setPricingEngine(new DiscountingSwapEngine(termStructureHandle_));
         } else {
             swap_.setPricingEngine(new DiscountingSwapEngine(discountHandle_));
@@ -378,21 +305,19 @@ public class OISRateHelper extends RelativeDateRateHelper {
         final Leg fixedLeg = swap_.fixedLeg();
         Date lastPaymentDate = overnightLeg.get(overnightLeg.size() - 1).date();
         final Date lastFixedDate = fixedLeg.get(fixedLeg.size() - 1).date();
-        if (lastFixedDate.gt(lastPaymentDate)) {
+        if ( lastFixedDate.gt(lastPaymentDate) ) {
             lastPaymentDate = lastFixedDate;
         }
 
-        final OvernightIndexedCoupon lastOnCoupon =
-                (OvernightIndexedCoupon) overnightLeg.get(overnightLeg.size() - 1);
+        final OvernightIndexedCoupon lastOnCoupon = (OvernightIndexedCoupon) overnightLeg.get(overnightLeg.size() - 1);
         final Date lastFixingDate = lastOnCoupon.fixingDate();
-        final Date fixingEndDate = overnightIndex_.maturityDate(
-                overnightIndex_.valueDate(lastFixingDate));
+        final Date fixingEndDate = overnightIndex_.maturityDate(overnightIndex_.valueDate(lastFixingDate));
 
         Date latestRelevant = maturityDate;
-        if (lastPaymentDate.gt(latestRelevant)) {
+        if ( lastPaymentDate.gt(latestRelevant) ) {
             latestRelevant = lastPaymentDate;
         }
-        if (fixingEndDate.gt(latestRelevant)) {
+        if ( fixingEndDate.gt(latestRelevant) ) {
             latestRelevant = fixingEndDate;
         }
 
@@ -400,7 +325,7 @@ public class OISRateHelper extends RelativeDateRateHelper {
         // hook on BootstrapHelper), so the pillar choice is realized by
         // choosing which date latestDate_ takes.
         // Port of C++ oisratehelper.cpp:181-201.
-        switch (pillarChoice_) {
+        switch ( pillarChoice_ ) {
         case MaturityDate:
             latestDate = maturityDate;
             pillarDate_ = maturityDate;
@@ -410,16 +335,11 @@ public class OISRateHelper extends RelativeDateRateHelper {
             pillarDate_ = latestRelevant;
             break;
         case CustomDate:
-            QL.require(pillarDate_ != null && !pillarDate_.isNull(),
-                    "custom pillar date must be provided");
-            QL.require(pillarDate_.ge(earliestDate),
-                    "pillar date (" + pillarDate_ + ") must be later than or "
-                            + "equal to the instrument's earliest date ("
-                            + earliestDate + ")");
-            QL.require(pillarDate_.le(latestRelevant),
-                    "pillar date (" + pillarDate_ + ") must be before or "
-                            + "equal to the instrument's latest relevant date ("
-                            + latestRelevant + ")");
+            QL.require(pillarDate_ != null && !pillarDate_.isNull(), "custom pillar date must be provided");
+            QL.require(pillarDate_.ge(earliestDate), "pillar date (" + pillarDate_ + ") must be later than or "
+                    + "equal to the instrument's earliest date (" + earliestDate + ")");
+            QL.require(pillarDate_.le(latestRelevant), "pillar date (" + pillarDate_ + ") must be before or "
+                    + "equal to the instrument's latest relevant date (" + latestRelevant + ")");
             latestDate = latestRelevant;
             break;
         default:
@@ -433,7 +353,7 @@ public class OISRateHelper extends RelativeDateRateHelper {
         termStructureHandle_.linkTo(t, false);
         // When there is no exogenous discount curve, the bootstrap curve
         // is also the discount curve.
-        if (discountHandle_.empty()) {
+        if ( discountHandle_.empty() ) {
             discountRelinkableHandle_.linkTo(t, false);
         } else {
             discountRelinkableHandle_.linkTo(discountHandle_.currentLink(), false);
@@ -456,8 +376,8 @@ public class OISRateHelper extends RelativeDateRateHelper {
     }
 
     /**
-     * @return the pillar date used as the curve-node anchor for this helper.
-     *         Mirrors C++ {@code BootstrapHelper::pillarDate()}.
+     * @return the pillar date used as the curve-node anchor for this helper. Mirrors C++
+     * {@code BootstrapHelper::pillarDate()}.
      */
     public Date pillarDate() {
         return pillarDate_;
@@ -465,9 +385,8 @@ public class OISRateHelper extends RelativeDateRateHelper {
 
     @Override
     public void accept(final PolymorphicVisitor pv) {
-        final Visitor<OISRateHelper> v =
-                (pv != null) ? pv.visitor(this.getClass()) : null;
-        if (v != null) {
+        final Visitor< OISRateHelper > v = (pv != null) ? pv.visitor(this.getClass()) : null;
+        if ( v != null ) {
             v.visit(this);
         } else {
             super.accept(pv);

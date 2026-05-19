@@ -32,14 +32,12 @@ import java.util.List;
  *
  * <p>Java port of the {@code double}-specialization of the C++ template
  * {@code MomentBasedGaussianPolynomial<Real>} from QuantLib v1.42.1
- * {@code ql/math/integrals/momentbasedgaussianpolynomial.hpp}.
- * The arbitrary-precision template parameter {@code mp_real} is not needed
- * in the Java port; {@code double} is used throughout.
+ * {@code ql/math/integrals/momentbasedgaussianpolynomial.hpp}. The arbitrary-precision template parameter
+ * {@code mp_real} is not needed in the Java port; {@code double} is used throughout.
  *
  * <p>Implements the Golub-Welsch / Chebyshev algorithm: the three-term
- * recurrence coefficients {@code alpha(i)} and {@code beta(i)} are derived
- * from the moments of the weight function via a modified Chebyshev recursion
- * on the matrix {@code z[k][i]}.
+ * recurrence coefficients {@code alpha(i)} and {@code beta(i)} are derived from the moments of the weight function via
+ * a modified Chebyshev recursion on the matrix {@code z[k][i]}.
  *
  * <p>References:
  * <ul>
@@ -53,12 +51,21 @@ import java.util.List;
 public abstract class MomentBasedGaussianPolynomial extends GaussianOrthogonalPolynomial {
 
     // z matrix: z_[k][i], lazily populated
-    private final List<List<Double>> z_ = new ArrayList<>();
+    private final List< List< Double > > z_ = new ArrayList<>();
+    private final List< Double > b_ = new ArrayList<>();   // alpha cache
+    private final List< Double > c_ = new ArrayList<>();   // beta cache
+
     {
         z_.add(new ArrayList<>());  // z_[0] is initially empty
     }
-    private final List<Double> b_ = new ArrayList<>();   // alpha cache
-    private final List<Double> c_ = new ArrayList<>();   // beta cache
+
+    private static void ensureSize(final List< Double > list, final int size) {
+        while ( list.size() < size ) {
+            list.add(Double.NaN);
+        }
+    }
+
+    // --- GaussianOrthogonalPolynomial interface ---
 
     /**
      * Returns the {@code i}-th moment of the weight function:
@@ -67,13 +74,10 @@ public abstract class MomentBasedGaussianPolynomial extends GaussianOrthogonalPo
      */
     public abstract double moment(int i);
 
-    // --- GaussianOrthogonalPolynomial interface ---
-
     @Override
     public double mu_0() {
         final double m0 = moment(0);
-        QL.require(Closeness.isClose(m0, 1.0),
-                "MomentBasedGaussianPolynomial: zero moment must be one");
+        QL.require(Closeness.isClose(m0, 1.0), "MomentBasedGaussianPolynomial: zero moment must be one");
         return m0;
     }
 
@@ -82,18 +86,18 @@ public abstract class MomentBasedGaussianPolynomial extends GaussianOrthogonalPo
         return alpha_(u);
     }
 
+    // --- internal helpers ---
+
     @Override
     public double beta(final int u) {
         return beta_(u);
     }
 
-    // --- internal helpers ---
-
     private double alpha_(final int u) {
         ensureSize(b_, u + 1);
-        if (Double.isNaN(b_.get(u))) {
+        if ( Double.isNaN(b_.get(u)) ) {
             final double val;
-            if (u == 0) {
+            if ( u == 0 ) {
                 val = moment(1);
             } else {
                 // b_[u] = -z(u-1, u)/z(u-1, u-1) + z(u, u+1)/z(u, u)
@@ -105,9 +109,10 @@ public abstract class MomentBasedGaussianPolynomial extends GaussianOrthogonalPo
     }
 
     private double beta_(final int u) {
-        if (u == 0) return 1.0;
+        if ( u == 0 )
+            return 1.0;
         ensureSize(c_, u + 1);
-        if (Double.isNaN(c_.get(u))) {
+        if ( Double.isNaN(c_.get(u)) ) {
             // c_[u] = z(u, u) / z(u-1, u-1)
             final double val = z(u, u) / z(u - 1, u - 1);
             c_.set(u, val);
@@ -116,26 +121,27 @@ public abstract class MomentBasedGaussianPolynomial extends GaussianOrthogonalPo
     }
 
     private double z(final int k, final int i) {
-        if (k == -1) return 0.0;
+        if ( k == -1 )
+            return 0.0;
 
         // Ensure z_ has at least k+1 rows and each row has at least i+1 cols
-        while (z_.size() <= k) {
+        while ( z_.size() <= k ) {
             z_.add(new ArrayList<>());
         }
-        final List<Double> row = z_.get(k);
-        while (row.size() <= i) {
+        final List< Double > row = z_.get(k);
+        while ( row.size() <= i ) {
             row.add(Double.NaN);
         }
         // Also ensure all earlier rows have same column width
-        for (int l = 0; l < z_.size(); ++l) {
-            while (z_.get(l).size() <= i) {
+        for ( int l = 0; l < z_.size(); ++l ) {
+            while ( z_.get(l).size() <= i ) {
                 z_.get(l).add(Double.NaN);
             }
         }
 
-        if (Double.isNaN(row.get(i))) {
+        if ( Double.isNaN(row.get(i)) ) {
             final double val;
-            if (k == 0) {
+            if ( k == 0 ) {
                 val = moment(i);
             } else {
                 // z_[k][i] = z_[k-1][i+1] - alpha_(k-1)*z_[k-1][i] - beta_(k-1)*z_[k-2][i]
@@ -144,11 +150,5 @@ public abstract class MomentBasedGaussianPolynomial extends GaussianOrthogonalPo
             row.set(i, val);
         }
         return row.get(i);
-    }
-
-    private static void ensureSize(final List<Double> list, final int size) {
-        while (list.size() < size) {
-            list.add(Double.NaN);
-        }
     }
 }

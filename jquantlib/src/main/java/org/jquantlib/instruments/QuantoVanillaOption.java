@@ -27,9 +27,8 @@ import org.jquantlib.pricingengines.PricingEngine;
  * Quanto version of a vanilla option.
  *
  * <p>Phase 5i.5-MGR port of {@code QuantLib::QuantoVanillaOption}
- * (v1.42.1 ql/instruments/quantovanillaoption.{hpp,cpp}). The C++ template
- * {@code QuantoOptionResults<ResultsType>} is collapsed to a concrete Java
- * class extending {@link OneAssetOption.ResultsImpl}.
+ * (v1.42.1 ql/instruments/quantovanillaoption.{hpp,cpp}). The C++ template {@code QuantoOptionResults<ResultsType>} is
+ * collapsed to a concrete Java class extending {@link OneAssetOption.ResultsImpl}.
  */
 public class QuantoVanillaOption extends OneAssetOption {
 
@@ -68,11 +67,10 @@ public class QuantoVanillaOption extends OneAssetOption {
     @Override
     public void fetchResults(final PricingEngine.Results r) {
         super.fetchResults(r);
-        QL.require(r instanceof QuantoVanillaOption.ResultsImpl,
-                "no quanto results returned from pricing engine");
+        QL.require(r instanceof QuantoVanillaOption.ResultsImpl, "no quanto results returned from pricing engine");
         final QuantoVanillaOption.ResultsImpl qr = (QuantoVanillaOption.ResultsImpl) r;
-        qrho_    = qr.qrho;
-        qvega_   = qr.qvega;
+        qrho_ = qr.qrho;
+        qvega_ = qr.qvega;
         qlambda_ = qr.qlambda;
     }
 
@@ -81,17 +79,16 @@ public class QuantoVanillaOption extends OneAssetOption {
     //
 
     /** Marker — extra fields in {@link ResultsImpl}. */
-    public interface Results extends OneAssetOption.Results { /* marker */ }
+    public interface Results extends OneAssetOption.Results { /* marker */
+    }
 
     /**
-     * Quanto-augmented results: extends OneAssetOption.ResultsImpl with
-     * qvega / qrho / qlambda quanto-specific Greeks.
+     * Quanto-augmented results: extends OneAssetOption.ResultsImpl with qvega / qrho / qlambda quanto-specific Greeks.
      */
-    public static class ResultsImpl extends OneAssetOption.ResultsImpl
-            implements QuantoVanillaOption.Results {
+    public static class ResultsImpl extends OneAssetOption.ResultsImpl implements QuantoVanillaOption.Results {
 
-        public double qvega   = Constants.NULL_REAL;
-        public double qrho    = Constants.NULL_REAL;
+        public double qvega = Constants.NULL_REAL;
+        public double qrho = Constants.NULL_REAL;
         public double qlambda = Constants.NULL_REAL;
 
         @Override
@@ -103,11 +100,10 @@ public class QuantoVanillaOption extends OneAssetOption {
 
     /**
      * Engine base class for Quanto vanilla options. Mirrors C++
-     * {@code GenericEngine<QuantoVanillaOption::arguments,
-     *                       QuantoVanillaOption::results>}.
+     * {@code GenericEngine<QuantoVanillaOption::arguments, QuantoVanillaOption::results>}.
      */
     public abstract static class EngineImpl
-            extends GenericEngine<OneAssetOption.Arguments, QuantoVanillaOption.Results> {
+            extends GenericEngine< OneAssetOption.Arguments, QuantoVanillaOption.Results > {
 
         public EngineImpl() {
             super(new OneAssetOption.ArgumentsImpl(), new QuantoVanillaOption.ResultsImpl());

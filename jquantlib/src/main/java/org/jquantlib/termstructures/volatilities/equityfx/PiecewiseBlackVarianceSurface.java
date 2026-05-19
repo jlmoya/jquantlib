@@ -31,11 +31,8 @@ package org.jquantlib.termstructures.volatilities.equityfx;
 import org.jquantlib.QL;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.math.Constants;
-import org.jquantlib.math.matrixutilities.Matrix;
 import org.jquantlib.math.interpolations.factories.Linear;
-import org.jquantlib.quotes.Handle;
-import org.jquantlib.quotes.Quote;
-import org.jquantlib.quotes.SimpleQuote;
+import org.jquantlib.math.matrixutilities.Matrix;
 import org.jquantlib.model.VolatilityType;
 import org.jquantlib.termstructures.BlackVarianceTermStructure;
 import org.jquantlib.termstructures.volatilities.InterpolatedSmileSection;
@@ -51,11 +48,9 @@ import org.jquantlib.util.Visitor;
  * {@code ql/termstructures/volatility/equityfx/piecewiseblackvariancesurface.{hpp,cpp}}.
  *
  * <p>This class builds a Black volatility surface from a set of smile
- * sections, one per tenor. It interpolates linearly in total variance
- * between tenors for a given strike. Beyond the last tenor a flat-vol
- * extrapolation in time is applied (i.e. variance is proportional to
- * time). Below the first tenor the variance is interpolated linearly
- * from the origin {@code (t=0, w=0)} to the first tenor's variance.
+ * sections, one per tenor. It interpolates linearly in total variance between tenors for a given strike. Beyond the
+ * last tenor a flat-vol extrapolation in time is applied (i.e. variance is proportional to time). Below the first tenor
+ * the variance is interpolated linearly from the origin {@code (t=0, w=0)} to the first tenor's variance.
  *
  * <h3>Java port notes</h3>
  * <ul>
@@ -80,29 +75,22 @@ public class PiecewiseBlackVarianceSurface extends BlackVarianceTermStructure {
     private final /* @Time */ double[] times_;
     private final SmileSection[] smileSections_;
 
-
     //
     // public constructors
     //
 
     /**
-     * Multi-section constructor — mirrors C++ lines 30-68 of
-     * {@code piecewiseblackvariancesurface.cpp}.
+     * Multi-section constructor — mirrors C++ lines 30-68 of {@code piecewiseblackvariancesurface.cpp}.
      */
-    public PiecewiseBlackVarianceSurface(
-            final Date referenceDate,
-            final Date[] dates,
-            final SmileSection[] smileSections,
-            final DayCounter dayCounter) {
+    public PiecewiseBlackVarianceSurface(final Date referenceDate, final Date[] dates,
+            final SmileSection[] smileSections, final DayCounter dayCounter) {
         super(referenceDate);
         this.dayCounter_ = dayCounter;
 
-        QL.require(dates != null && dates.length > 0,
-                "at least one date is required");
+        QL.require(dates != null && dates.length > 0, "at least one date is required");
         QL.require(smileSections != null && dates.length == smileSections.length,
-                "mismatch between " + dates.length + " dates and "
-                + (smileSections == null ? 0 : smileSections.length)
-                + " smile sections");
+                "mismatch between " + dates.length + " dates and " + (smileSections == null ? 0 : smileSections.length)
+                        + " smile sections");
 
         this.maxDate_ = dates[dates.length - 1];
         this.times_ = new double[dates.length];
@@ -110,20 +98,17 @@ public class PiecewiseBlackVarianceSurface extends BlackVarianceTermStructure {
 
         this.times_[0] = timeFromReference(dates[0]);
         QL.require(this.times_[0] > 0.0,
-                "first date (" + dates[0] + ") must be after reference date ("
-                + referenceDate + ")");
+                "first date (" + dates[0] + ") must be after reference date (" + referenceDate + ")");
 
-        for (int i = 1; i < dates.length; ++i) {
+        for ( int i = 1; i < dates.length; ++i ) {
             this.times_[i] = timeFromReference(dates[i]);
             QL.require(this.times_[i] > this.times_[i - 1],
-                    "dates must be sorted and unique, but date " + dates[i]
-                    + " (t=" + this.times_[i] + ") is not after date "
-                    + dates[i - 1] + " (t=" + this.times_[i - 1] + ")");
+                    "dates must be sorted and unique, but date " + dates[i] + " (t=" + this.times_[i]
+                            + ") is not after date " + dates[i - 1] + " (t=" + this.times_[i - 1] + ")");
         }
 
-        for (int i = 0; i < this.smileSections_.length; ++i) {
-            QL.require(this.smileSections_[i] != null,
-                    "null smile section at index " + i);
+        for ( int i = 0; i < this.smileSections_.length; ++i ) {
+            QL.require(this.smileSections_[i] != null, "null smile section at index " + i);
             this.smileSections_[i].addObserver(this);
         }
     }
@@ -131,9 +116,7 @@ public class PiecewiseBlackVarianceSurface extends BlackVarianceTermStructure {
     /**
      * Convenience overload — default day counter.
      */
-    public PiecewiseBlackVarianceSurface(
-            final Date referenceDate,
-            final Date[] dates,
+    public PiecewiseBlackVarianceSurface(final Date referenceDate, final Date[] dates,
             final SmileSection[] smileSections) {
         this(referenceDate, dates, smileSections, new DayCounter());
     }
@@ -141,25 +124,17 @@ public class PiecewiseBlackVarianceSurface extends BlackVarianceTermStructure {
     /**
      * Single-section constructor — mirrors C++ lines 70-79.
      */
-    public PiecewiseBlackVarianceSurface(
-            final Date referenceDate,
-            final Date date,
-            final SmileSection smileSection,
+    public PiecewiseBlackVarianceSurface(final Date referenceDate, final Date date, final SmileSection smileSection,
             final DayCounter dayCounter) {
-        this(referenceDate, new Date[] { date }, new SmileSection[] { smileSection },
-                dayCounter);
+        this(referenceDate, new Date[] { date }, new SmileSection[] { smileSection }, dayCounter);
     }
 
     /**
      * Convenience overload — default day counter.
      */
-    public PiecewiseBlackVarianceSurface(
-            final Date referenceDate,
-            final Date date,
-            final SmileSection smileSection) {
+    public PiecewiseBlackVarianceSurface(final Date referenceDate, final Date date, final SmileSection smileSection) {
         this(referenceDate, date, smileSection, new DayCounter());
     }
-
 
     //
     // factory
@@ -171,45 +146,33 @@ public class PiecewiseBlackVarianceSurface extends BlackVarianceTermStructure {
      * <p>Each column of the matrix becomes an
      * {@link InterpolatedSmileSection} with linear interpolation.
      *
-     * @param blackVols a matrix with rows indexed by strike and columns
-     *                  indexed by date
+     * @param blackVols a matrix with rows indexed by strike and columns indexed by date
      */
-    public static PiecewiseBlackVarianceSurface makeFromGrid(
-            final Date referenceDate,
-            final Date[] dates,
-            final double[] strikes,
-            final Matrix blackVols,
-            final DayCounter dc) {
+    public static PiecewiseBlackVarianceSurface makeFromGrid(final Date referenceDate, final Date[] dates,
+            final double[] strikes, final Matrix blackVols, final DayCounter dc) {
 
         QL.require(blackVols.rows() == strikes.length,
-                "mismatch between " + strikes.length + " strikes and "
-                + blackVols.rows() + " matrix rows");
+                "mismatch between " + strikes.length + " strikes and " + blackVols.rows() + " matrix rows");
         QL.require(blackVols.columns() == dates.length,
-                "mismatch between " + dates.length + " dates and "
-                + blackVols.columns() + " matrix columns");
+                "mismatch between " + dates.length + " dates and " + blackVols.columns() + " matrix columns");
 
         final SmileSection[] sections = new SmileSection[dates.length];
 
-        for (int j = 0; j < dates.length; ++j) {
+        for ( int j = 0; j < dates.length; ++j ) {
             final double[] stdDevs = new double[strikes.length];
             final double t = dc.yearFraction(referenceDate, dates[j]);
-            QL.require(t > 0.0,
-                    "date " + dates[j] + " must be after reference date "
-                    + referenceDate);
+            QL.require(t > 0.0, "date " + dates[j] + " must be after reference date " + referenceDate);
             final double sqrtT = Math.sqrt(t);
-            for (int i = 0; i < strikes.length; ++i) {
+            for ( int i = 0; i < strikes.length; ++i ) {
                 stdDevs[i] = blackVols.get(i, j) * sqrtT;
             }
 
-            sections[j] = new InterpolatedSmileSection(
-                    dates[j], strikes.clone(), stdDevs, Constants.NULL_REAL,
-                    dc, new Linear(), referenceDate,
-                    VolatilityType.ShiftedLognormal, 0.0, false);
+            sections[j] = new InterpolatedSmileSection(dates[j], strikes.clone(), stdDevs, Constants.NULL_REAL, dc,
+                    new Linear(), referenceDate, VolatilityType.ShiftedLognormal, 0.0, false);
         }
 
         return new PiecewiseBlackVarianceSurface(referenceDate, dates, sections, dc);
     }
-
 
     //
     // Overrides TermStructure
@@ -224,7 +187,6 @@ public class PiecewiseBlackVarianceSurface extends BlackVarianceTermStructure {
     public final Date maxDate() {
         return maxDate_;
     }
-
 
     //
     // Overrides BlackVolTermStructure
@@ -243,20 +205,20 @@ public class PiecewiseBlackVarianceSurface extends BlackVarianceTermStructure {
     }
 
     @Override
-    protected final /* @Variance */ double blackVarianceImpl(
-            final /* @Time */ double t, final /* @Real */ double strike) {
+    protected final /* @Variance */ double blackVarianceImpl(final /* @Time */ double t,
+            final /* @Real */ double strike) {
 
-        if (t == 0.0) {
+        if ( t == 0.0 ) {
             return 0.0;
         }
 
-        if (t <= times_[0]) {
+        if ( t <= times_[0] ) {
             // linear interpolation from (0, 0) to first tenor
             final double var1 = sectionVariance(0, strike);
             return var1 * t / times_[0];
         }
 
-        if (t >= times_[times_.length - 1]) {
+        if ( t >= times_[times_.length - 1] ) {
             // flat vol extrapolation beyond last tenor
             final double varN = sectionVariance(smileSections_.length - 1, strike);
             return varN * t / times_[times_.length - 1];
@@ -264,7 +226,7 @@ public class PiecewiseBlackVarianceSurface extends BlackVarianceTermStructure {
 
         // find enclosing interval: hi = first index with times_[hi] > t
         int hi = 1;
-        while (hi < times_.length && times_[hi] <= t) {
+        while ( hi < times_.length && times_[hi] <= t ) {
             ++hi;
         }
         final int lo = hi - 1;
@@ -276,26 +238,21 @@ public class PiecewiseBlackVarianceSurface extends BlackVarianceTermStructure {
         return varLo + (varHi - varLo) * alpha;
     }
 
-
     //
     // private helpers
     //
 
     /**
-     * Query the variance of the i-th smile section, enforcing strike-range
-     * checks unless extrapolation is allowed on this surface.
-     * Mirrors C++ {@code sectionVariance} (lines 81-91).
+     * Query the variance of the i-th smile section, enforcing strike-range checks unless extrapolation is allowed on
+     * this surface. Mirrors C++ {@code sectionVariance} (lines 81-91).
      */
     private double sectionVariance(final int i, final double strike) {
         final SmileSection s = smileSections_[i];
-        QL.require(allowsExtrapolation()
-                || (strike >= s.minStrike() && strike <= s.maxStrike()),
-                "strike (" + strike
-                + ") is outside the range of smile section " + i
-                + " [" + s.minStrike() + ", " + s.maxStrike() + "]");
+        QL.require(allowsExtrapolation() || (strike >= s.minStrike() && strike <= s.maxStrike()),
+                "strike (" + strike + ") is outside the range of smile section " + i + " [" + s.minStrike() + ", "
+                        + s.maxStrike() + "]");
         return s.variance(strike);
     }
-
 
     //
     // implements PolymorphicVisitable
@@ -303,9 +260,8 @@ public class PiecewiseBlackVarianceSurface extends BlackVarianceTermStructure {
 
     @Override
     public void accept(final PolymorphicVisitor pv) {
-        final Visitor<PiecewiseBlackVarianceSurface> v =
-                (pv != null) ? pv.visitor(this.getClass()) : null;
-        if (v != null) {
+        final Visitor< PiecewiseBlackVarianceSurface > v = (pv != null) ? pv.visitor(this.getClass()) : null;
+        if ( v != null ) {
             v.visit(this);
         } else {
             super.accept(pv);

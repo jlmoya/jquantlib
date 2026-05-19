@@ -40,9 +40,8 @@ import org.jquantlib.util.Visitor;
  * Cash flow dependent on a zero inflation index ratio.
  *
  * <p>The ratio is taken between fixings observed at the start date and the
- * end date minus the observation lag; that is, if the start and end dates
- * are, e.g., in June and the observation lag is three months, the ratio will
- * be taken between March fixings.
+ * end date minus the observation lag; that is, if the start and end dates are, e.g., in June and the observation lag is
+ * three months, the ratio will be taken between March fixings.
  *
  * <p>Mirrors C++ {@code QuantLib::ZeroInflationCashFlow} at v1.42.1
  * (cashflows/zeroinflationcashflow.{hpp,cpp}).
@@ -65,32 +64,19 @@ public class ZeroInflationCashFlow extends IndexedCashFlow {
     // public constructors
     //
 
-    public ZeroInflationCashFlow(final double notional,
-                                 final ZeroInflationIndex index,
-                                 final CPI.InterpolationType observationInterpolation,
-                                 final Date startDate,
-                                 final Date endDate,
-                                 final Period observationLag,
-                                 final Date paymentDate) {
-        this(notional, index, observationInterpolation, startDate, endDate,
-             observationLag, paymentDate, false);
+    public ZeroInflationCashFlow(final double notional, final ZeroInflationIndex index,
+            final CPI.InterpolationType observationInterpolation, final Date startDate, final Date endDate,
+            final Period observationLag, final Date paymentDate) {
+        this(notional, index, observationInterpolation, startDate, endDate, observationLag, paymentDate, false);
     }
 
     /**
-     * The fixing dates for the index are {@code startDate - observationLag}
-     * and {@code endDate - observationLag}.
+     * The fixing dates for the index are {@code startDate - observationLag} and {@code endDate - observationLag}.
      */
-    public ZeroInflationCashFlow(final double notional,
-                                 final ZeroInflationIndex index,
-                                 final CPI.InterpolationType observationInterpolation,
-                                 final Date startDate,
-                                 final Date endDate,
-                                 final Period observationLag,
-                                 final Date paymentDate,
-                                 final boolean growthOnly) {
-        super(notional, index,
-              startDate.sub(observationLag), endDate.sub(observationLag),
-              paymentDate, growthOnly);
+    public ZeroInflationCashFlow(final double notional, final ZeroInflationIndex index,
+            final CPI.InterpolationType observationInterpolation, final Date startDate, final Date endDate,
+            final Period observationLag, final Date paymentDate, final boolean growthOnly) {
+        super(notional, index, startDate.sub(observationLag), endDate.sub(observationLag), paymentDate, growthOnly);
         this.zeroInflationIndex_ = index;
         this.interpolation_ = observationInterpolation;
         this.startDate_ = startDate.clone();
@@ -116,14 +102,12 @@ public class ZeroInflationCashFlow extends IndexedCashFlow {
 
     @Override
     public double baseFixing() {
-        return CPI.laggedFixing(zeroInflationIndex_, startDate_,
-                                observationLag_, interpolation_);
+        return CPI.laggedFixing(zeroInflationIndex_, startDate_, observationLag_, interpolation_);
     }
 
     @Override
     public double indexFixing() {
-        return CPI.laggedFixing(zeroInflationIndex_, endDate_,
-                                observationLag_, interpolation_);
+        return CPI.laggedFixing(zeroInflationIndex_, endDate_, observationLag_, interpolation_);
     }
 
     //
@@ -132,9 +116,8 @@ public class ZeroInflationCashFlow extends IndexedCashFlow {
 
     @Override
     public void accept(final PolymorphicVisitor pv) {
-        final Visitor<ZeroInflationCashFlow> v =
-                (pv != null) ? pv.visitor(this.getClass()) : null;
-        if (v != null) {
+        final Visitor< ZeroInflationCashFlow > v = (pv != null) ? pv.visitor(this.getClass()) : null;
+        if ( v != null ) {
             v.visit(this);
         } else {
             super.accept(pv);

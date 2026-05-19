@@ -22,7 +22,6 @@
 
 package org.jquantlib.termstructures.yieldcurves;
 
-import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
@@ -33,8 +32,7 @@ import org.jquantlib.time.Date;
  * Rate helper with date schedule relative to the global evaluation date
  *
  * <p>
- * This class takes care of rebuilding the date schedule when the global
- * evaluation date changes
+ * This class takes care of rebuilding the date schedule when the global evaluation date changes
  *
  * @author Srinivas Hasti
  */
@@ -47,20 +45,18 @@ public abstract class RelativeDateRateHelper extends RateHelper {
 
     protected Date evaluationDate;
 
-
-//    //
-//    // protected constructors
-//    //
-//
-//    protected RelativeDateRateHelper() {
-//        super();
-//
-//        this.evaluationDate = new Settings().evaluationDate();
-//        this.evaluationDate.addObserver(this);
-//        // XXX:registerWith
-//        //registerWith(this.evaluationDate);
-//    }
-
+    //    //
+    //    // protected constructors
+    //    //
+    //
+    //    protected RelativeDateRateHelper() {
+    //        super();
+    //
+    //        this.evaluationDate = new Settings().evaluationDate();
+    //        this.evaluationDate.addObserver(this);
+    //        // XXX:registerWith
+    //        //registerWith(this.evaluationDate);
+    //    }
 
     //
     // public constructors
@@ -75,7 +71,7 @@ public abstract class RelativeDateRateHelper extends RateHelper {
         //registerWith(this.evaluationDate);
     }
 
-    public RelativeDateRateHelper(final Handle<Quote> quote) {
+    public RelativeDateRateHelper(final Handle< Quote > quote) {
         super(quote);
         this.evaluationDate = new Settings().evaluationDate();
         this.evaluationDate.addObserver(this);
@@ -83,15 +79,14 @@ public abstract class RelativeDateRateHelper extends RateHelper {
         //registerWith(this.evaluationDate);
     }
 
-//XXX
-//    public RelativeDateRateHelper(final Handle<Quote> quote, final T termStructure, final Date earliestDate, final Date latestDate) {
-//        super(quote, termStructure, earliestDate, latestDate);
-//        this.evaluationDate = new Settings().evaluationDate();
-//        this.evaluationDate.addObserver(this);
-//        // XXX:registerWith
-//        //registerWith(this.evaluationDate);
-//    }
-
+    //XXX
+    //    public RelativeDateRateHelper(final Handle<Quote> quote, final T termStructure, final Date earliestDate, final Date latestDate) {
+    //        super(quote, termStructure, earliestDate, latestDate);
+    //        this.evaluationDate = new Settings().evaluationDate();
+    //        this.evaluationDate.addObserver(this);
+    //        // XXX:registerWith
+    //        //registerWith(this.evaluationDate);
+    //    }
 
     //
     // protected abstract methods
@@ -99,16 +94,15 @@ public abstract class RelativeDateRateHelper extends RateHelper {
 
     protected abstract void initializeDates();
 
-
     //
     // overrides RateHelper
     //
 
     @Override
-  //XXX::OBS public void update(final Observable o, final Object arg) {
+    //XXX::OBS public void update(final Observable o, final Object arg) {
     public void update() {
         final Date newEvaluationDate = new Settings().evaluationDate();
-        if (!evaluationDate.equals(newEvaluationDate)) {
+        if ( !evaluationDate.equals(newEvaluationDate) ) {
             evaluationDate = newEvaluationDate;
             initializeDates();
         }

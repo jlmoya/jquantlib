@@ -22,13 +22,13 @@
 
 package org.jquantlib.cashflow;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.time.Date;
 import org.jquantlib.util.PolymorphicVisitor;
 import org.jquantlib.util.Visitor;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Predetermined cash flow
@@ -37,47 +37,45 @@ import org.jquantlib.util.Visitor;
  *
  * @author Daniel Kong
  */
-@SuppressWarnings("PMD.AbstractNaming")
+@SuppressWarnings( "PMD.AbstractNaming" )
 public abstract class Dividend extends CashFlow {
 
-	protected Date date;
+    protected Date date;
 
-	public Dividend (final Date date) {
-		super();
-		this.date = date;
-	}
+    public Dividend(final Date date) {
+        super();
+        this.date = date;
+    }
 
+    //
+    // overrides Event
+    //
 
-	//
-	// overrides Event
-	//
-
-	@Override
-	public Date date() {
-		return date;
-	}
-
-
-	//
-	// public abstract methods
-	//
-
-	public abstract double amount(final double underlying);
-
-
-	//
-	// public static methods
-	//
-
-	public static List<? extends Dividend> DividendVector(final List<Date> dividendDates, final List<Double> dividends) {
-	    QL.require(dividendDates.size() == dividends.size() , "size mismatch between dividend dates and amounts");  // TODO: message
-        final List<Dividend> items = new ArrayList<Dividend>(dividendDates.size());
-        for (int i=0; i<dividendDates.size(); i++) {
+    public static List< ? extends Dividend > DividendVector(final List< Date > dividendDates,
+            final List< Double > dividends) {
+        QL.require(dividendDates.size() == dividends.size(),
+                "size mismatch between dividend dates and amounts");  // TODO: message
+        final List< Dividend > items = new ArrayList< Dividend >(dividendDates.size());
+        for ( int i = 0; i < dividendDates.size(); i++ ) {
             items.add(new FixedDividend(dividends.get(i), dividendDates.get(i)));
         }
         return items;
     }
 
+    //
+    // public abstract methods
+    //
+
+    @Override
+    public Date date() {
+        return date;
+    }
+
+    //
+    // public static methods
+    //
+
+    public abstract double amount(final double underlying);
 
     //
     // implements PolymorphicVisitable
@@ -85,8 +83,8 @@ public abstract class Dividend extends CashFlow {
 
     @Override
     public void accept(final PolymorphicVisitor pv) {
-        final Visitor<Dividend> v = (pv!=null) ? pv.visitor(this.getClass()) : null;
-        if (v != null) {
+        final Visitor< Dividend > v = (pv != null) ? pv.visitor(this.getClass()) : null;
+        if ( v != null ) {
             v.visit(this);
         } else {
             super.accept(pv);

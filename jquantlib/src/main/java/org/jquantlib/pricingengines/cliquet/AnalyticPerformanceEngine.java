@@ -39,24 +39,19 @@
 
 package org.jquantlib.pricingengines.cliquet;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.exercise.Exercise;
-import org.jquantlib.instruments.CliquetOption;
-import org.jquantlib.instruments.Option;
-import org.jquantlib.instruments.OneAssetOption;
-import org.jquantlib.instruments.PercentageStrikePayoff;
-import org.jquantlib.instruments.PlainVanillaPayoff;
-import org.jquantlib.instruments.StrikedTypePayoff;
+import org.jquantlib.instruments.*;
 import org.jquantlib.math.Constants;
 import org.jquantlib.pricingengines.BlackCalculator;
 import org.jquantlib.processes.GeneralizedBlackScholesProcess;
 import org.jquantlib.termstructures.Compounding;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Frequency;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Pricing engine for performance options using analytical formulae.
@@ -85,16 +80,16 @@ public class AnalyticPerformanceEngine extends OneAssetOption.EngineImpl {
     @Override
     public void calculate() {
         QL.require(a.accruedCoupon == Constants.NULL_REAL && a.lastFixing == Constants.NULL_REAL,
-                   "this engine cannot price options already started");
+                "this engine cannot price options already started");
         QL.require(a.localCap == Constants.NULL_REAL && a.localFloor == Constants.NULL_REAL
-                   && a.globalCap == Constants.NULL_REAL && a.globalFloor == Constants.NULL_REAL,
-                   "this engine cannot price capped/floored options");
+                        && a.globalCap == Constants.NULL_REAL && a.globalFloor == Constants.NULL_REAL,
+                "this engine cannot price capped/floored options");
         QL.require(a.exercise.type() == Exercise.Type.European, "not an European option");
 
         QL.require(a.payoff instanceof PercentageStrikePayoff, "wrong payoff given");
         final PercentageStrikePayoff moneyness = (PercentageStrikePayoff) a.payoff;
 
-        final List<Date> resetDates = new ArrayList<Date>(a.resetDates);
+        final List< Date > resetDates = new ArrayList< Date >(a.resetDates);
         resetDates.add(a.exercise.lastDate());
 
         final double underlying = process.stateVariable().currentLink().value();
@@ -111,24 +106,23 @@ public class AnalyticPerformanceEngine extends OneAssetOption.EngineImpl {
         greeks.dividendRho = 0.0;
         greeks.vega = 0.0;
 
-        for (int i = 1; i < resetDates.size(); i++) {
+        for ( int i = 1; i < resetDates.size(); i++ ) {
 
-            final double discount =
-                process.riskFreeRate().currentLink().discount(resetDates.get(i - 1));
+            final double discount = process.riskFreeRate().currentLink().discount(resetDates.get(i - 1));
 
             final double rDiscount =
-                process.riskFreeRate().currentLink().discount(resetDates.get(i))
-                / process.riskFreeRate().currentLink().discount(resetDates.get(i - 1));
+                    process.riskFreeRate().currentLink().discount(resetDates.get(i)) / process.riskFreeRate()
+                            .currentLink().discount(resetDates.get(i - 1));
 
             final double qDiscount =
-                process.dividendYield().currentLink().discount(resetDates.get(i))
-                / process.dividendYield().currentLink().discount(resetDates.get(i - 1));
+                    process.dividendYield().currentLink().discount(resetDates.get(i)) / process.dividendYield()
+                            .currentLink().discount(resetDates.get(i - 1));
 
             final double forward = (1.0 / moneyness.strike()) * qDiscount / rDiscount;
 
-            final double variance = process.blackVolatility().currentLink().blackForwardVariance(
-                    resetDates.get(i - 1), resetDates.get(i),
-                    underlying * moneyness.strike(), false);
+            final double variance = process.blackVolatility().currentLink()
+                    .blackForwardVariance(resetDates.get(i - 1), resetDates.get(i), underlying * moneyness.strike(),
+                            false);
 
             final BlackCalculator black = new BlackCalculator(payoff, forward, Math.sqrt(variance), rDiscount);
 
@@ -138,17 +132,14 @@ public class AnalyticPerformanceEngine extends OneAssetOption.EngineImpl {
 
             r.value += discount * moneyness.strike() * black.value();
             // delta += 0.0; gamma += 0.0
-            greeks.theta += process.riskFreeRate().currentLink().forwardRate(
-                    resetDates.get(i - 1), resetDates.get(i), rfdc,
-                    Compounding.Continuous, Frequency.NoFrequency).rate()
-                    * discount * moneyness.strike() * black.value();
+            greeks.theta += process.riskFreeRate().currentLink()
+                    .forwardRate(resetDates.get(i - 1), resetDates.get(i), rfdc, Compounding.Continuous,
+                            Frequency.NoFrequency).rate() * discount * moneyness.strike() * black.value();
 
             double dt = rfdc.yearFraction(resetDates.get(i - 1), resetDates.get(i));
-            final double t = rfdc.yearFraction(
-                    process.riskFreeRate().currentLink().referenceDate(),
+            final double t = rfdc.yearFraction(process.riskFreeRate().currentLink().referenceDate(),
                     resetDates.get(i - 1));
-            greeks.rho += discount * moneyness.strike()
-                    * (black.rho(dt) - t * black.value());
+            greeks.rho += discount * moneyness.strike() * (black.rho(dt) - t * black.value());
 
             dt = divdc.yearFraction(resetDates.get(i - 1), resetDates.get(i));
             greeks.dividendRho += discount * moneyness.strike() * black.dividendRho(dt);

@@ -92,20 +92,21 @@ public class ConjugateGradient extends LineSearchBasedMethod {
         final double t = 1.0;
         // Set gradient g at the size of the optimization problem search direction.
         final int sz = lineSearch_.searchDirection().size();
-        Array g = new Array(sz); Array d = new Array(sz); final Array sddiff = new Array(sz);
+        Array g = new Array(sz);
+        Array d = new Array(sz);
+        final Array sddiff = new Array(sz);
         // Initialize cost function and gradient g
         P.setFunctionValue(P.valueAndGradient(g, x_));
         lineSearch_.setSearchDirection(g.mul(-1));
         P.setGradientNormValue(g.dotProduct(g));
         // Loop over iterations
-        do{
+        do {
             // Linesearch
             // FIXME: what are we doing here?
             //t = (*lineSearch_)(P, ecType, endCriteria, t);
             // don't throw: it can fail just because maxIterations exceeded
             //QL_REQUIRE(lineSearch_->succeed(), "line-search failed!");
-            if (lineSearch_.succeed_)
-            {
+            if ( lineSearch_.succeed_ ) {
                 // Updates
                 d = lineSearch_.searchDirection();
                 // New point
@@ -139,11 +140,10 @@ public class ConjugateGradient extends LineSearchBasedMethod {
                 // Increase interation number"
                 ++iterationNumber_;
             } else {
-                done=true;
+                done = true;
             }
-        } while (!done);
+        } while ( !done );
         P.setCurrentValue(x_);
         return ecType;
-        }
     }
-
+}

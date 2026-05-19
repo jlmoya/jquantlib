@@ -40,10 +40,6 @@ FOR A PARTICULAR PURPOSE.  See the license for more details.
 
 package org.jquantlib.termstructures.yieldcurves;
 
-import java.util.Arrays;
-
-import org.jquantlib.QL;
-import org.jquantlib.math.Constants;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.time.Date;
 
@@ -85,19 +81,18 @@ public class Discount implements Traits {
 
     @Override
     public double guess(final YieldTermStructure c, final Date d) {
-        return c.discount(d,true);
+        return c.discount(d, true);
     }
 
     @Override
-    public double minValueAfter(final int i, final double[] data,
-                                final boolean validData, final double[] times) {
+    public double minValueAfter(final int i, final double[] data, final boolean validData, final double[] times) {
         // Phase Bug-Fix-Curve: pillar-aware bound matching C++ v1.42.1
         // Discount::minValueAfter (bootstraptraits.hpp lines 81-93).
-        if (validData) {
+        if ( validData ) {
             // min over data[]/2.0
             double minVal = data[0];
-            for (int k = 1; k < data.length; ++k) {
-                if (data[k] < minVal) {
+            for ( int k = 1; k < data.length; ++k ) {
+                if ( data[k] < minVal ) {
                     minVal = data[k];
                 }
             }
@@ -108,8 +103,7 @@ public class Discount implements Traits {
     }
 
     @Override
-    public double maxValueAfter(final int i, final double[] data,
-                                final boolean validData, final double[] times) {
+    public double maxValueAfter(final int i, final double[] data, final boolean validData, final double[] times) {
         // Phase Bug-Fix-Curve: pillar-aware bound matching C++ v1.42.1
         // Discount::maxValueAfter (bootstraptraits.hpp lines 94-102). C++
         // does NOT branch on validData here — it always returns
@@ -129,7 +123,6 @@ public class Discount implements Traits {
         // bootstrap on multi-helper inputs.
         data[i] = value;
     }
-
 
     @Override
     public boolean dummyInitialValue() {

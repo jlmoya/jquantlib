@@ -51,31 +51,25 @@ import org.jquantlib.time.calendars.NullCalendar;
 /**
  * Local constant volatility, no time dependence, no asset dependence
  * <p>
- * This class implements the LocalVolatilityTermStructure interface for a
- * constant local volatility (no time/asset dependence). Local volatility and
- * Black volatility are the same when volatility is at most time dependent, so
- * this class is basically a proxy for BlackVolatilityTermStructure.
+ * This class implements the LocalVolatilityTermStructure interface for a constant local volatility (no time/asset
+ * dependence). Local volatility and Black volatility are the same when volatility is at most time dependent, so this
+ * class is basically a proxy for BlackVolatilityTermStructure.
  *
  * @author Richard Gomes
  */
 public class LocalConstantVol extends LocalVolTermStructure {
 
-    private final Handle<Quote> volatility;
+    private final Handle< Quote > volatility;
     private final DayCounter dayCounter;
 
-    public LocalConstantVol(
-            final Date referenceDate,
-            final /*@Volatility*/ double volatility,
+    public LocalConstantVol(final Date referenceDate, final /*@Volatility*/ double volatility,
             final DayCounter dayCounter) {
         super(referenceDate);
-        this.volatility = new Handle<Quote>(new SimpleQuote(volatility));
+        this.volatility = new Handle< Quote >(new SimpleQuote(volatility));
         this.dayCounter = dayCounter;
     }
 
-    public LocalConstantVol(
-            final Date referenceDate,
-            final Handle<Quote> volatility,
-            final DayCounter dayCounter) {
+    public LocalConstantVol(final Date referenceDate, final Handle< Quote > volatility, final DayCounter dayCounter) {
         super(referenceDate);
         this.volatility = volatility;
         this.dayCounter = dayCounter;
@@ -83,20 +77,14 @@ public class LocalConstantVol extends LocalVolTermStructure {
         this.volatility.addObserver(this);
     }
 
-    public LocalConstantVol(
-            final int settlementDays,
-            final Calendar cal,
-            final /*@Volatility*/ double volatility,
+    public LocalConstantVol(final int settlementDays, final Calendar cal, final /*@Volatility*/ double volatility,
             final DayCounter dayCounter) {
         super(settlementDays, new NullCalendar());
-        this.volatility = new Handle<Quote>(new SimpleQuote(volatility));
+        this.volatility = new Handle< Quote >(new SimpleQuote(volatility));
         this.dayCounter = dayCounter;
     }
 
-    public LocalConstantVol(
-            final int settlementDays,
-            final Calendar cal,
-            final Handle<Quote> volatility,
+    public LocalConstantVol(final int settlementDays, final Calendar cal, final Handle< Quote > volatility,
             final DayCounter dayCounter) {
         super(settlementDays, new NullCalendar());
         this.volatility = volatility;
@@ -124,8 +112,7 @@ public class LocalConstantVol extends LocalVolTermStructure {
     }
 
     @Override
-    protected final /*@Volatility*/ double localVolImpl(
-            final /*@Time*/ double maturity,
+    protected final /*@Volatility*/ double localVolImpl(final /*@Time*/ double maturity,
             final /*@Real*/ double strike) {
         return this.volatility.currentLink().value();
     }

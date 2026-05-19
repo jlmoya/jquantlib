@@ -32,31 +32,24 @@ import org.jquantlib.processes.GeneralizedBlackScholesProcess;
  * FDStepConditionEngine-------|o---FDAmericanCondition
  * </pre>
  *
- * @see <a href="http://bugs.jquantlib.org/view.php?id=425">issue 425</a>
- *
  * @author Srinivas Hasti
  * @author Richard Gomes
+ * @see <a href="http://bugs.jquantlib.org/view.php?id=425">issue 425</a>
  */
 //TODO: http://bugs.jquantlib.org/view.php?id=425
-public class FDAmericanCondition
-        <T                            /* TODO: should be:: T extends FDDividendEngineBase & FDStepConditionEngine */ >
+public class FDAmericanCondition< T                            /* TODO: should be:: T extends FDDividendEngineBase & FDStepConditionEngine */ >
         extends FDStepConditionEngine /* TODO: should be:: implements FDDividendEngineBase, FDStepConditionEngine */ {
 
     public FDAmericanCondition(final GeneralizedBlackScholesProcess process) {
         this(process, 100, 100);
     }
 
-    public FDAmericanCondition(
-            final GeneralizedBlackScholesProcess process,
-            final int timeSteps,
+    public FDAmericanCondition(final GeneralizedBlackScholesProcess process, final int timeSteps,
             final int gridPoints) {
         this(process, timeSteps, gridPoints, false);
     }
 
-    public FDAmericanCondition(
-            final GeneralizedBlackScholesProcess process,
-            final int timeSteps,
-            final int gridPoints,
+    public FDAmericanCondition(final GeneralizedBlackScholesProcess process, final int timeSteps, final int gridPoints,
             final boolean value) {
         super(process, timeSteps, gridPoints, value);
     }

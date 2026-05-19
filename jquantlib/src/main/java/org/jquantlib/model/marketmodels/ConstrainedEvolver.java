@@ -29,18 +29,15 @@ package org.jquantlib.model.marketmodels;
 /**
  * Constrained market-model evolver.
  * <p>
- * Abstract base class. Requires extra methods above that of
- * {@link MarketModelEvolver} to let you fix rates via importance sampling.
+ * Abstract base class. Requires extra methods above that of {@link MarketModelEvolver} to let you fix rates via
+ * importance sampling.
  * <p>
- * The evolver does the actual gritty work of evolving the forward rates from
- * one time to the next.
+ * The evolver does the actual gritty work of evolving the forward rates from one time to the next.
  * <p>
- * This is intended to be used for the Fries-Joshi proxy simulation approach
- * to Greeks.
- *
- * @see "ql/models/marketmodels/constrainedevolver.hpp" v1.42.1
+ * This is intended to be used for the Fries-Joshi proxy simulation approach to Greeks.
  *
  * @author Jose Moya
+ * @see "ql/models/marketmodels/constrainedevolver.hpp" v1.42.1
  */
 public abstract class ConstrainedEvolver extends MarketModelEvolver {
 

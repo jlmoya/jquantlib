@@ -22,19 +22,6 @@
 
 package org.jquantlib.time.calendars;
 
-import static org.jquantlib.time.Month.April;
-import static org.jquantlib.time.Month.August;
-import static org.jquantlib.time.Month.December;
-import static org.jquantlib.time.Month.February;
-import static org.jquantlib.time.Month.January;
-import static org.jquantlib.time.Month.July;
-import static org.jquantlib.time.Month.June;
-import static org.jquantlib.time.Month.March;
-import static org.jquantlib.time.Month.May;
-import static org.jquantlib.time.Month.November;
-import static org.jquantlib.time.Month.October;
-import static org.jquantlib.time.Month.September;
-
 import org.jquantlib.lang.annotation.QualityAssurance;
 import org.jquantlib.lang.annotation.QualityAssurance.Quality;
 import org.jquantlib.lang.annotation.QualityAssurance.Version;
@@ -43,6 +30,8 @@ import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Month;
 import org.jquantlib.time.Weekday;
+
+import static org.jquantlib.time.Month.*;
 
 /**
  * Indonesian calendars Holidays for the Jakarta stock exchange (data from <http://www.jsx.co.id/>):
@@ -72,18 +61,36 @@ import org.jquantlib.time.Weekday;
  * <li>Other national leaves</li>
  * </ul>
  *
- * @category calendars
- * @see <a href="http://www.idx.co.id/">Indonesia Stock Exchange</a>
- *
  * @author Joon Tiang
  * @author Jia Jia
  * @author Zahid Hussain
+ * @category calendars
+ * @see <a href="http://www.idx.co.id/">Indonesia Stock Exchange</a>
  */
 
-@QualityAssurance(quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Zahid Hussain" })
+@QualityAssurance( quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Zahid Hussain" } )
 public class Indonesia extends Calendar {
 
-    public static enum Market {
+    public Indonesia() {
+        this(Market.BEJ);
+    }
+
+    //
+    // public constructors
+    //
+
+    public Indonesia(final Market market) {
+        switch ( market ) {
+        case BEJ:
+        case JSX:
+            impl = new BejImpl();
+            break;
+        default:
+            throw new LibraryException(UNKNOWN_MARKET);
+        }
+    }
+
+    public enum Market {
         /**
          * Jakarta stock exchange
          */
@@ -94,26 +101,6 @@ public class Indonesia extends Calendar {
          */
         JSX
     }
-
-    //
-    // public constructors
-    //
-
-    public Indonesia() {
-        this(Market.BEJ);
-    }
-
-    public Indonesia(final Market market) {
-        switch (market) {
-        case BEJ:
-        case JSX:
-            impl = new BejImpl();
-            break;
-        default:
-            throw new LibraryException(UNKNOWN_MARKET);
-        }
-    }
-
 
     //
     // private final inner classes
@@ -135,8 +122,8 @@ public class Indonesia extends Calendar {
             final int dd = date.dayOfYear();
             final int em = easterMonday(y);
 
-            if (isWeekend(w)
-            // New Year's Day
+            if ( isWeekend(w)
+                    // New Year's Day
                     || (d == 1 && m == January)
                     // Good Friday
                     || (dd == em - 3)
@@ -145,150 +132,147 @@ public class Indonesia extends Calendar {
                     // Independence Day
                     || (d == 17 && m == August)
                     // Christmas
-                    || (d == 25 && m == December)) {
+                    || (d == 25 && m == December) ) {
                 return false;
             }
-            if (y == 2005) {
+            if ( y == 2005 ) {
                 if (// Idul Adha
-                (d == 21 && m == January)
-                // Imlek
-                        || (d == 9 && m == February)
-                        // Moslem's New Year Day
-                        || (d == 10 && m == February)
-                        // Nyepi
-                        || (d == 11 && m == March)
-                        // Birthday of Prophet Muhammad SAW
-                        || (d == 22 && m == April)
-                        // Waisak
-                        || (d == 24 && m == May)
-                        // Ascension of Prophet Muhammad SAW
-                        || (d == 2 && m == September)
-                        // Idul Fitri
-                        || ((d == 3 || d == 4) && m == November)
-                        // National leaves
-                        || ((d == 2 || d == 7 || d == 8) && m == November) || (d == 26 && m == December)) {
+                        (d == 21 && m == January)
+                                // Imlek
+                                || (d == 9 && m == February)
+                                // Moslem's New Year Day
+                                || (d == 10 && m == February)
+                                // Nyepi
+                                || (d == 11 && m == March)
+                                // Birthday of Prophet Muhammad SAW
+                                || (d == 22 && m == April)
+                                // Waisak
+                                || (d == 24 && m == May)
+                                // Ascension of Prophet Muhammad SAW
+                                || (d == 2 && m == September)
+                                // Idul Fitri
+                                || ((d == 3 || d == 4) && m == November)
+                                // National leaves
+                                || ((d == 2 || d == 7 || d == 8) && m == November) || (d == 26 && m == December) ) {
                     return false;
                 }
             }
-            if (y == 2006) {
+            if ( y == 2006 ) {
                 if (// Idul Adha
-                (d == 10 && m == January)
-                // Moslem's New Year Day
-                        || (d == 31 && m == January)
-                        // Nyepi
-                        || (d == 30 && m == March)
-                        // Birthday of Prophet Muhammad SAW
-                        || (d == 10 && m == April)
-                        // Ascension of Prophet Muhammad SAW
-                        || (d == 21 && m == August)
-                        // Idul Fitri
-                        || ((d == 24 || d == 25) && m == October)
-                        // National leaves
-                        || ((d == 23 || d == 26 || d == 27) && m == October)) {
+                        (d == 10 && m == January)
+                                // Moslem's New Year Day
+                                || (d == 31 && m == January)
+                                // Nyepi
+                                || (d == 30 && m == March)
+                                // Birthday of Prophet Muhammad SAW
+                                || (d == 10 && m == April)
+                                // Ascension of Prophet Muhammad SAW
+                                || (d == 21 && m == August)
+                                // Idul Fitri
+                                || ((d == 24 || d == 25) && m == October)
+                                // National leaves
+                                || ((d == 23 || d == 26 || d == 27) && m == October) ) {
                     return false;
                 }
             }
-            if (y == 2007) {
+            if ( y == 2007 ) {
                 if (// Nyepi
-                (d == 19 && m == March)
-                        // Waisak
-                        || (d == 1 && m == June)
-                        // Ied Adha
-                        || (d == 20 && m == December)
-                        // National leaves
-                        || (d == 18 && m == May) || ((d == 12 || d == 15 || d == 16) && m == October)
-                        || ((d == 21 || d == 24) && m == October)) {
+                        (d == 19 && m == March)
+                                // Waisak
+                                || (d == 1 && m == June)
+                                // Ied Adha
+                                || (d == 20 && m == December)
+                                // National leaves
+                                || (d == 18 && m == May) || ((d == 12 || d == 15 || d == 16) && m == October) || (
+                                (d == 21 || d == 24) && m == October) ) {
                     return false;
                 }
             }
-            if (y == 2007) {
+            if ( y == 2007 ) {
                 if (// Islamic New Year
-                ((d == 10 || d == 11) && m == January)
-                // Chinese New Year
-                        || ((d == 7 || d == 8) && m == February)
-                        // Saka's New Year
-                        || (d == 7 && m == March)
-                        // Birthday of the prophet Muhammad SAW
-                        || (d == 20 && m == March)
-                        // Vesak Day
-                        || (d == 20 && m == May)
-                        // Isra' Mi'raj of the prophet Muhammad SAW
-                        || (d == 30 && m == July)
-                        // Ied Fitr
-                        || (d == 30 && m == September) || ((d == 1 || d == 2 || d == 3) && m == October)
-                        // Ied Adha
-                        || (d == 8 && m == December) // Zahid: it is Saturday, should not be here
-                        // Islamic New Year
-                        || (d == 29 && m == December) // Zahid: it is Saturday, should not be here
-                        // New Year's Eve
-                        || (d == 31 && m == December)
-                        // National leave
-                        || (d == 18 && m == August)) {
+                        ((d == 10 || d == 11) && m == January)
+                                // Chinese New Year
+                                || ((d == 7 || d == 8) && m == February)
+                                // Saka's New Year
+                                || (d == 7 && m == March)
+                                // Birthday of the prophet Muhammad SAW
+                                || (d == 20 && m == March)
+                                // Vesak Day
+                                || (d == 20 && m == May)
+                                // Isra' Mi'raj of the prophet Muhammad SAW
+                                || (d == 30 && m == July)
+                                // Ied Fitr
+                                || (d == 30 && m == September) || ((d == 1 || d == 2 || d == 3) && m == October)
+                                // Ied Adha
+                                || (d == 8 && m == December) // Zahid: it is Saturday, should not be here
+                                // Islamic New Year
+                                || (d == 29 && m == December) // Zahid: it is Saturday, should not be here
+                                // New Year's Eve
+                                || (d == 31 && m == December)
+                                // National leave
+                                || (d == 18 && m == August) ) {
                     return false;
                 }
             }
 
             // New holidays: QL97 has only upto year 2007 ////
 
-            if (y == 2008) {
+            if ( y == 2008 ) {
                 if (
-                // Islamic New Year 1429 H
-                (d == 10 && m == January)
-                // National Leave
-                        || (d == 11 && m == January)
-                        // Chinese New Year
-                        || (d == 7 && m == February)
-                        // Trading Holiday
-                        || (d == 8 && m == February)
-                        // Saka's New Year
-                        || (d == 7 && m == March)
-                        // Birthday of the prophet Muhammad
-                        || (d == 20 && m == March)
-                        // Vesak Day
-                        || (d == 20 && m == May)
-                        // Isra' Mi'raj of the prophet Muhammad
-                        || (d == 30 && m == July)
-                        // National Leave
-                        || (d == 18 && m == August) || (d == 30 && m == September)
-                        // Ied Fitr 1 Syawal
-                        || (d == 1 && m == October) || (d == 2 && m == October)
-                        // National Leave
-                        || (d == 3 && m == October)
-                        // Ied Adha
-                        || (d == 8 && m == December)
-                        // Islamic New Year
-                        || (d == 29 && m == December)
-                        // New Year's Eve
-                        || (d == 31 && m == December)) {
+                    // Islamic New Year 1429 H
+                        (d == 10 && m == January)
+                                // National Leave
+                                || (d == 11 && m == January)
+                                // Chinese New Year
+                                || (d == 7 && m == February)
+                                // Trading Holiday
+                                || (d == 8 && m == February)
+                                // Saka's New Year
+                                || (d == 7 && m == March)
+                                // Birthday of the prophet Muhammad
+                                || (d == 20 && m == March)
+                                // Vesak Day
+                                || (d == 20 && m == May)
+                                // Isra' Mi'raj of the prophet Muhammad
+                                || (d == 30 && m == July)
+                                // National Leave
+                                || (d == 18 && m == August) || (d == 30 && m == September)
+                                // Ied Fitr 1 Syawal
+                                || (d == 1 && m == October) || (d == 2 && m == October)
+                                // National Leave
+                                || (d == 3 && m == October)
+                                // Ied Adha
+                                || (d == 8 && m == December)
+                                // Islamic New Year
+                                || (d == 29 && m == December)
+                                // New Year's Eve
+                                || (d == 31 && m == December) ) {
                     return false;
                 }
             }
-            if (y == 2009) {
-                if (
+            if ( y == 2009 ) {
                 // Public Holiday
-                (d == 2 && m == January)
-                // Chinese New Year
-                        || (d == 26 && m == January)
+                return (d != 2 || m != January)
+                        // Chinese New Year
+                        && (d != 26 || m != January)
                         // Saka's New Year
-                        || (d == 26 && m == March)
+                        && (d != 26 || m != March)
                         // Birthday of the prophet Muhammad
-                        || (d == 9 && m == March)
+                        && (d != 9 || m != March)
                         // Isra' Mi'raj of the prophet Muhammad
-                        || (d == 20 && m == July)
+                        && (d != 20 || m != July)
                         // Public Holiday
-                        || (d == 18 && m == September) || (d == 23 && m == September)
+                        && (d != 18 || m != September) && (d != 23 || m != September)
                         // Ied Fitr 1 Syawal
-                        || (d == 21 && m == September) || (d == 22 && m == September)
+                        && (d != 21 || m != September) && (d != 22 || m != September)
                         // Ied Adha
-                        || (d == 27 && m == November)
+                        && (d != 27 || m != November)
                         // Islamic New Year
-                        || (d == 18 && m == December)
+                        && (d != 18 || m != December)
                         // Public Holiday
-                        || (d == 24 && m == December)
+                        && (d != 24 || m != December)
                         // Trading Holiday
-                        || (d == 31 && m == December)) {
-                    return false;
-                }
+                        && (d != 31 || m != December);
             }
             return true;
         }

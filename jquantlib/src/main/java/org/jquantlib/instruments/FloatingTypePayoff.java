@@ -38,9 +38,8 @@ import org.jquantlib.util.Visitor;
  * Floating-strike payoff (used by floating-strike lookback options).
  *
  * <p>The single-argument {@link #get(double)} form is not supported because
- * floating-strike payoffs require both the underlying price and a separately
- * tracked strike (typically the running min/max of the underlying). Use
- * {@link #get(double, double)} instead.
+ * floating-strike payoffs require both the underlying price and a separately tracked strike (typically the running
+ * min/max of the underlying). Use {@link #get(double, double)} instead.
  *
  * <p>Port of QuantLib v1.42.1 {@code QuantLib::FloatingTypePayoff}
  * ({@code ql/instruments/payoffs.hpp}).
@@ -57,9 +56,8 @@ public class FloatingTypePayoff extends TypePayoff {
     }
 
     /**
-     * Floating-strike payoffs cannot be evaluated with a single price; the
-     * strike depends on the running extremum of the path. C++ throws
-     * {@code QL_FAIL("floating payoff not handled")}; we mirror that.
+     * Floating-strike payoffs cannot be evaluated with a single price; the strike depends on the running extremum of
+     * the path. C++ throws {@code QL_FAIL("floating payoff not handled")}; we mirror that.
      */
     @Override
     public double get(final double price) {
@@ -67,13 +65,12 @@ public class FloatingTypePayoff extends TypePayoff {
     }
 
     /**
-     * Two-argument form: {@code max(price - strike, 0)} for calls, {@code
-     * max(strike - price, 0)} for puts.
+     * Two-argument form: {@code max(price - strike, 0)} for calls, {@code max(strike - price, 0)} for puts.
      */
     public double get(final double price, final double strike) {
-        if (type == Option.Type.Call) {
+        if ( type == Option.Type.Call ) {
             return Math.max(price - strike, 0.0);
-        } else if (type == Option.Type.Put) {
+        } else if ( type == Option.Type.Put ) {
             return Math.max(strike - price, 0.0);
         } else {
             throw new LibraryException(UNKNOWN_OPTION_TYPE);
@@ -82,9 +79,8 @@ public class FloatingTypePayoff extends TypePayoff {
 
     @Override
     public void accept(final PolymorphicVisitor pv) {
-        final Visitor<FloatingTypePayoff> v =
-            (pv != null) ? pv.visitor(this.getClass()) : null;
-        if (v != null) {
+        final Visitor< FloatingTypePayoff > v = (pv != null) ? pv.visitor(this.getClass()) : null;
+        if ( v != null ) {
             v.visit(this);
         } else {
             super.accept(pv);

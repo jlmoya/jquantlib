@@ -45,18 +45,17 @@ import org.jquantlib.methods.montecarlo.Sample;
 /**
  * Inverse cumulative random number generator
  * <p>
- * It uses a uniform deviate in (0, 1) as the source of cumulative distribution values. Then an inverse cumulative distribution is
- * used to calculate the distribution deviate.
- * 
+ * It uses a uniform deviate in (0, 1) as the source of cumulative distribution values. Then an inverse cumulative
+ * distribution is used to calculate the distribution deviate.
+ *
  * The uniform deviate is supplied by RNG.
- * 
+ *
  * @author Richard Gomes
  */
-public class InverseCumulativeRng<RNG extends RandomNumberGenerator, IC extends InverseCumulative> {
-    
-    private RNG uniformGenerator_;
-    private IC ICND_; // FIXME: not initialized; possibly a static variable used via templates
+public class InverseCumulativeRng< RNG extends RandomNumberGenerator, IC extends InverseCumulative > {
 
+    private final RNG uniformGenerator_;
+    private IC ICND_; // FIXME: not initialized; possibly a static variable used via templates
 
     public InverseCumulativeRng(final RNG ug) {
         this.uniformGenerator_ = ug;
@@ -65,9 +64,9 @@ public class InverseCumulativeRng<RNG extends RandomNumberGenerator, IC extends 
     /**
      * @return a sample from a Gaussian distribution
      */
-    public Sample<Double> getNext() /* @ReadOnly */ {
-        Sample<Double> sample = uniformGenerator_.next(); // FIXME: usage of sample_type :: typedef Sample<Real> sample_type;
-        
-        return new Sample<Double>(ICND_.op(sample.value()), sample.weight());
+    public Sample< Double > getNext() /* @ReadOnly */ {
+        Sample< Double > sample = uniformGenerator_.next(); // FIXME: usage of sample_type :: typedef Sample<Real> sample_type;
+
+        return new Sample< Double >(ICND_.op(sample.value()), sample.weight());
     }
 }

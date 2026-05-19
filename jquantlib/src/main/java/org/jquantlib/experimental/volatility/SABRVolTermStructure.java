@@ -35,13 +35,12 @@ import org.jquantlib.time.calendars.NullCalendar;
  * Implied vol surface backed by an analytic SABR model.
  *
  * <p>Faithful header-only port of QuantLib v1.42.1
- * {@code ql/experimental/volatility/sabrvoltermstructure.hpp}. Computes the
- * Black implied vol via the standard Hagan SABR closed form
- * {@link Sabr#sabrVolatility(double, double, double, double, double, double, double)}.
+ * {@code ql/experimental/volatility/sabrvoltermstructure.hpp}. Computes the Black implied vol via the standard Hagan
+ * SABR closed form {@link Sabr#sabrVolatility(double, double, double, double, double, double, double)}.
  *
  * <p>The C++ class names the third SABR parameter {@code gamma} (instead of
- * {@code nu}), but the substance is identical: {@code gamma} maps to the
- * {@code nu} (vol-of-vol) argument of the Hagan formula.
+ * {@code nu}), but the substance is identical: {@code gamma} maps to the {@code nu} (vol-of-vol) argument of the Hagan
+ * formula.
  */
 public class SABRVolTermStructure extends BlackVolatilityTermStructure {
 
@@ -52,17 +51,15 @@ public class SABRVolTermStructure extends BlackVolatilityTermStructure {
     private final double s0_;
     private final double r_;
 
-    public SABRVolTermStructure(final double alpha, final double beta,
-            final double gamma, final double rho,
-            final double s0, final double r,
-            final Date referenceDate, final DayCounter dc) {
+    public SABRVolTermStructure(final double alpha, final double beta, final double gamma, final double rho,
+            final double s0, final double r, final Date referenceDate, final DayCounter dc) {
         super(referenceDate, new NullCalendar(), BusinessDayConvention.Following, dc);
         this.alpha_ = alpha;
-        this.beta_  = beta;
+        this.beta_ = beta;
         this.gamma_ = gamma;
-        this.rho_   = rho;
-        this.s0_    = s0;
-        this.r_     = r;
+        this.rho_ = rho;
+        this.s0_ = s0;
+        this.r_ = r;
     }
 
     @Override

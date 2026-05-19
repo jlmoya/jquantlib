@@ -51,7 +51,6 @@ import org.jquantlib.time.Date;
 /**
  * Merton-76 jump diffusion process
  *
- *
  * @author <Richard Gomes>
  */
 public class Merton76Process extends StochasticProcess1D {
@@ -61,23 +60,19 @@ public class Merton76Process extends StochasticProcess1D {
     //
 
     private final GeneralizedBlackScholesProcess blackProcess;
-    private final Handle<? extends Quote> jumpIntensity, logMeanJump, logJumpVolatility;
-
+    private final Handle< ? extends Quote > jumpIntensity, logMeanJump, logJumpVolatility;
 
     //
     // public constructors
     //
 
-    public Merton76Process(
-            final Handle< ? extends Quote > stateVariable,
-            final Handle<YieldTermStructure> dividendTS,
-            final Handle<YieldTermStructure> riskFreeTS,
-            final Handle<BlackVolTermStructure> blackVolTS,
-            final Handle<? extends Quote> jumpInt,
-            final Handle<? extends Quote> logJMean,
-            final Handle<? extends Quote> logJVol) {
+    public Merton76Process(final Handle< ? extends Quote > stateVariable, final Handle< YieldTermStructure > dividendTS,
+            final Handle< YieldTermStructure > riskFreeTS, final Handle< BlackVolTermStructure > blackVolTS,
+            final Handle< ? extends Quote > jumpInt, final Handle< ? extends Quote > logJMean,
+            final Handle< ? extends Quote > logJVol) {
 
-        this.blackProcess = new BlackScholesMertonProcess(stateVariable, dividendTS, riskFreeTS, blackVolTS, new EulerDiscretization());
+        this.blackProcess = new BlackScholesMertonProcess(stateVariable, dividendTS, riskFreeTS, blackVolTS,
+                new EulerDiscretization());
         this.jumpIntensity = jumpInt;
         this.logJumpVolatility = logJVol;
         this.logMeanJump = logJMean;
@@ -88,39 +83,37 @@ public class Merton76Process extends StochasticProcess1D {
         this.logMeanJump.addObserver(this);
     }
 
-
     //
     // public methods
     //
 
-    public Handle<? extends Quote> stateVariable() {
+    public Handle< ? extends Quote > stateVariable() {
         return blackProcess.stateVariable();
     }
 
-    public Handle<YieldTermStructure> dividendYield() {
+    public Handle< YieldTermStructure > dividendYield() {
         return blackProcess.dividendYield();
     }
 
-    public Handle<YieldTermStructure> riskFreeRate() {
+    public Handle< YieldTermStructure > riskFreeRate() {
         return blackProcess.riskFreeRate();
     }
 
-    public Handle<BlackVolTermStructure> blackVolatility() {
+    public Handle< BlackVolTermStructure > blackVolatility() {
         return blackProcess.blackVolatility();
     }
 
-    public Handle<? extends Quote> jumpIntensity() {
+    public Handle< ? extends Quote > jumpIntensity() {
         return this.jumpIntensity;
     }
 
-    public Handle<? extends Quote> logMeanJump() {
+    public Handle< ? extends Quote > logMeanJump() {
         return this.logMeanJump;
     }
 
-    public Handle<? extends Quote> logJumpVolatility() {
+    public Handle< ? extends Quote > logJumpVolatility() {
         return this.logJumpVolatility;
     }
-
 
     //
     // Overrides StochasticProcess1D
@@ -130,7 +123,6 @@ public class Merton76Process extends StochasticProcess1D {
     public double /* @Real */x0() {
         return blackProcess.x0();
     }
-
 
     //-- Real drift(Time, Real) const override { QL_FAIL("Merton76Process does not implement drift"); }
     //-- in ql/processes/merton76process.hpp
@@ -150,7 +142,6 @@ public class Merton76Process extends StochasticProcess1D {
     public double apply(final double x, final double y) {
         throw new LibraryException("Merton76Process does not implement apply");
     }
-
 
     //
     // Overrides StochasticProcess1D

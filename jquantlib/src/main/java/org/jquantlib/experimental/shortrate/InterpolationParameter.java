@@ -50,19 +50,16 @@ import org.jquantlib.model.Parameter;
  * Parameter that holds an {@link Interpolation} object.
  *
  * <p>Phase 4c port of {@code QuantLib::InterpolationParameter}
- * (declared at the top of v1.42.1
- * ql/experimental/shortrate/generalizedhullwhite.hpp).
+ * (declared at the top of v1.42.1 ql/experimental/shortrate/generalizedhullwhite.hpp).
  *
  * <p>This is the storage class for piecewise-linear (or other) parameters
- * in {@link GeneralizedHullWhite}: parameter values live as ordinates
- * in {@link Parameter#params()}, and the abscissae are external; the
- * driving interpolation is bound at {@link #reset(Interpolation)} time
- * after the underlying parameter array has been populated.
+ * in {@link GeneralizedHullWhite}: parameter values live as ordinates in {@link Parameter#params()}, and the abscissae
+ * are external; the driving interpolation is bound at {@link #reset(Interpolation)} time after the underlying parameter
+ * array has been populated.
  *
  * <p>{@link Parameter.Impl} is a {@code protected} interface in
- * {@link Parameter}; this class is in a different package, so we expose
- * a package-private {@link InterpolationImpl} and a public
- * {@link Parameter#implementation()} hop to reset the interpolator.
+ * {@link Parameter}; this class is in a different package, so we expose a package-private {@link InterpolationImpl} and
+ * a public {@link Parameter#implementation()} hop to reset the interpolator.
  */
 public class InterpolationParameter extends Parameter {
 
@@ -75,22 +72,19 @@ public class InterpolationParameter extends Parameter {
     }
 
     /**
-     * Bind the interpolation. The interpolator's y-values must be the same
-     * underlying buffer as {@link #params()} for parameter updates to
-     * propagate; {@code Linear/BackwardFlat/LinearFlat} factories all
-     * follow this convention when given {@code params().constIterator()}
-     * style backing.
+     * Bind the interpolation. The interpolator's y-values must be the same underlying buffer as {@link #params()} for
+     * parameter updates to propagate; {@code Linear/BackwardFlat/LinearFlat} factories all follow this convention when
+     * given {@code params().constIterator()} style backing.
      */
     public void reset(final Interpolation interp) {
-        if (impl instanceof InterpolationImpl) {
+        if ( impl instanceof InterpolationImpl ) {
             ((InterpolationImpl) impl).interpolator = interp;
         }
     }
 
     /**
-     * Package-private {@link Parameter.Impl} that defers to the bound
-     * {@link Interpolation}. Mutable {@code interpolator} field per the
-     * C++ {@code reset()} pattern.
+     * Package-private {@link Parameter.Impl} that defers to the bound {@link Interpolation}. Mutable
+     * {@code interpolator} field per the C++ {@code reset()} pattern.
      */
     static final class InterpolationImpl implements Parameter.Impl {
         Interpolation interpolator;

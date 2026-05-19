@@ -32,11 +32,10 @@ import org.jquantlib.model.marketmodels.MarketModelMultiProduct;
 import org.jquantlib.model.marketmodels.products.MultiProductMultiStep;
 
 /**
- * Multi-step "Nothing" product — no cash flows; useful as the underlying of a
- * Bermudan swaption (rebate-only product).
+ * Multi-step "Nothing" product — no cash flows; useful as the underlying of a Bermudan swaption (rebate-only product).
  * <p>
- * Mirrors C++ {@code class MultiStepNothing}
- * (ql/models/marketmodels/products/multistep/multistepnothing.{hpp,cpp} v1.42.1).
+ * Mirrors C++ {@code class MultiStepNothing} (ql/models/marketmodels/products/multistep/multistepnothing.{hpp,cpp}
+ * v1.42.1).
  *
  * @author Jose Moya
  */
@@ -46,9 +45,7 @@ public class MultiStepNothing extends MultiProductMultiStep {
     private final int doneIndex_;
     private int currentIndex_;
 
-    public MultiStepNothing(final EvolutionDescription evolution,
-                            final int numberOfProducts,
-                            final int doneIndex) {
+    public MultiStepNothing(final EvolutionDescription evolution, final int numberOfProducts, final int doneIndex) {
         super(evolution.rateTimes());
         this.numberOfProducts_ = numberOfProducts;
         this.doneIndex_ = doneIndex;
@@ -59,22 +56,29 @@ public class MultiStepNothing extends MultiProductMultiStep {
     }
 
     @Override
-    public double[] possibleCashFlowTimes() { return new double[0]; }
+    public double[] possibleCashFlowTimes() {
+        return new double[0];
+    }
 
     @Override
-    public int numberOfProducts() { return numberOfProducts_; }
+    public int numberOfProducts() {
+        return numberOfProducts_;
+    }
 
     @Override
-    public int maxNumberOfCashFlowsPerProductPerStep() { return 0; }
+    public int maxNumberOfCashFlowsPerProductPerStep() {
+        return 0;
+    }
 
     @Override
-    public void reset() { currentIndex_ = 0; }
+    public void reset() {
+        currentIndex_ = 0;
+    }
 
     @Override
-    public boolean nextTimeStep(final CurveState currentState,
-                                final int[] numberCashFlowsThisStep,
-                                final MarketModelMultiProduct.CashFlow[][] genCashFlows) {
-        for (int i = 0; i < numberCashFlowsThisStep.length; ++i) {
+    public boolean nextTimeStep(final CurveState currentState, final int[] numberCashFlowsThisStep,
+            final MarketModelMultiProduct.CashFlow[][] genCashFlows) {
+        for ( int i = 0; i < numberCashFlowsThisStep.length; ++i ) {
             numberCashFlowsThisStep[i] = 0;
         }
         ++currentIndex_;

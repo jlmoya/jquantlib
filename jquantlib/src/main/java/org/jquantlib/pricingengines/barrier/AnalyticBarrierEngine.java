@@ -59,11 +59,10 @@ import org.jquantlib.time.Frequency;
  * <p>
  * The formulas are taken from "Option pricing formulas", E.G. Haug, McGraw-Hill, p.69 and following.
  *
- * @category barrierengines
- *
  * @author <Richard Gomes>
+ * @category barrierengines
  */
-@SuppressWarnings("PMD.TooManyMethods")
+@SuppressWarnings( "PMD.TooManyMethods" )
 public class AnalyticBarrierEngine extends BarrierOption.EngineImpl {
 
     // TODO: refactor messages
@@ -71,7 +70,6 @@ public class AnalyticBarrierEngine extends BarrierOption.EngineImpl {
     private static final String NON_PLAIN_PAYOFF_GIVEN = "non-plain payoff given";
     private static final String STRIKE_MUST_BE_POSITIVE = "strike must be positive";
     private static final String UNKNOWN_TYPE = "unknown type";
-
 
     //
     // private fields
@@ -82,15 +80,13 @@ public class AnalyticBarrierEngine extends BarrierOption.EngineImpl {
     // these fields are initialised every time calculate() is called
     // FIXME: code review
     private transient final GeneralizedBlackScholesProcess process;
-    private transient PlainVanillaPayoff payoff;
+    final private BarrierOption.ArgumentsImpl a;
 
     //
     // final private fields
     //
-
-    final private BarrierOption.ArgumentsImpl a;
-    final private BarrierOption.ResultsImpl   r;
-
+    final private BarrierOption.ResultsImpl r;
+    private transient PlainVanillaPayoff payoff;
 
     //
     // public constructors
@@ -98,12 +94,11 @@ public class AnalyticBarrierEngine extends BarrierOption.EngineImpl {
 
     public AnalyticBarrierEngine(final GeneralizedBlackScholesProcess process) {
         this.f = new CumulativeNormalDistribution();
-        this.a = (BarrierOption.ArgumentsImpl)arguments_;
-        this.r = (BarrierOption.ResultsImpl)results_;
+        this.a = (BarrierOption.ArgumentsImpl) arguments_;
+        this.r = (BarrierOption.ResultsImpl) results_;
         this.process = process;
         this.process.addObserver(this);
     }
-
 
     //
     // implements PricingEngine
@@ -112,196 +107,195 @@ public class AnalyticBarrierEngine extends BarrierOption.EngineImpl {
     @Override
     public void calculate() {
         QL.require(a.payoff instanceof PlainVanillaPayoff, NON_PLAIN_PAYOFF_GIVEN); // TODO: message
-        this.payoff = (PlainVanillaPayoff)a.payoff;
-        QL.require(payoff.strike()>0.0 , STRIKE_MUST_BE_POSITIVE); // TODO: message
+        this.payoff = (PlainVanillaPayoff) a.payoff;
+        QL.require(payoff.strike() > 0.0, STRIKE_MUST_BE_POSITIVE); // TODO: message
 
         final double strike = payoff.strike();
         final BarrierType barrierType = a.barrierType;
 
-        switch (payoff.optionType()) {
-            case Call:
-                switch (barrierType) {
-                    case DownIn:
-                        if (strike >= barrier()) {
-                            r.value = C(1,1) + E(1);
-                        } else {
-                            r.value = A(1) - B(1) + D(1,1) + E(1);
-                        }
-                        break;
-                    case  UpIn:
-                        if (strike >= barrier()) {
-                            r.value = A(1) + E(-1);
-                        } else {
-                            r.value = B(1) - C(-1,1) + D(-1,1) + E(-1);
-                        }
-                        break;
-                    case  DownOut:
-                        if (strike >= barrier()) {
-                            r.value = A(1) - C(1,1) + F(1);
-                        } else {
-                            r.value = B(1) - D(1,1) + F(1);
-                        }
-                        break;
-                    case  UpOut:
-                        if (strike >= barrier()) {
-                            r.value = F(-1);
-                        } else {
-                            r.value = A(1) - B(1) + C(-1,1) - D(-1,1) + F(-1);
-                        }
-                        break;
+        switch ( payoff.optionType() ) {
+        case Call:
+            switch ( barrierType ) {
+            case DownIn:
+                if ( strike >= barrier() ) {
+                    r.value = C(1, 1) + E(1);
+                } else {
+                    r.value = A(1) - B(1) + D(1, 1) + E(1);
                 }
                 break;
-            case Put:
-                switch (barrierType) {
-                    case  DownIn:
-                        if (strike >= barrier()) {
-                            r.value = B(-1) - C(1,-1) + D(1,-1) + E(1);
-                        } else {
-                            r.value = A(-1) + E(1);
-                        }
-                        break;
-                    case  UpIn:
-                        if (strike >= barrier()) {
-                            r.value = A(-1) - B(-1) + D(-1,-1) + E(-1);
-                        } else {
-                            r.value = C(-1,-1) + E(-1);
-                        }
-                        break;
-                    case  DownOut:
-                        if (strike >= barrier()) {
-                            r.value = A(-1) - B(-1) + C(1,-1) - D(1,-1) + F(1);
-                        } else {
-                            r.value = F(1);
-                        }
-                        break;
-                    case  UpOut:
-                        if (strike >= barrier()) {
-                            r.value = B(-1) - D(-1,-1) + F(-1);
-                        } else {
-                            r.value = A(-1) - C(-1,-1) + F(-1);
-                        }
-                        break;
+            case UpIn:
+                if ( strike >= barrier() ) {
+                    r.value = A(1) + E(-1);
+                } else {
+                    r.value = B(1) - C(-1, 1) + D(-1, 1) + E(-1);
                 }
                 break;
-            default:
-                throw new LibraryException(UNKNOWN_TYPE); // QA:[RG]::verified
+            case DownOut:
+                if ( strike >= barrier() ) {
+                    r.value = A(1) - C(1, 1) + F(1);
+                } else {
+                    r.value = B(1) - D(1, 1) + F(1);
+                }
+                break;
+            case UpOut:
+                if ( strike >= barrier() ) {
+                    r.value = F(-1);
+                } else {
+                    r.value = A(1) - B(1) + C(-1, 1) - D(-1, 1) + F(-1);
+                }
+                break;
+            }
+            break;
+        case Put:
+            switch ( barrierType ) {
+            case DownIn:
+                if ( strike >= barrier() ) {
+                    r.value = B(-1) - C(1, -1) + D(1, -1) + E(1);
+                } else {
+                    r.value = A(-1) + E(1);
+                }
+                break;
+            case UpIn:
+                if ( strike >= barrier() ) {
+                    r.value = A(-1) - B(-1) + D(-1, -1) + E(-1);
+                } else {
+                    r.value = C(-1, -1) + E(-1);
+                }
+                break;
+            case DownOut:
+                if ( strike >= barrier() ) {
+                    r.value = A(-1) - B(-1) + C(1, -1) - D(1, -1) + F(1);
+                } else {
+                    r.value = F(1);
+                }
+                break;
+            case UpOut:
+                if ( strike >= barrier() ) {
+                    r.value = B(-1) - D(-1, -1) + F(-1);
+                } else {
+                    r.value = A(-1) - C(-1, -1) + F(-1);
+                }
+                break;
+            }
+            break;
+        default:
+            throw new LibraryException(UNKNOWN_TYPE); // QA:[RG]::verified
         }
 
     }
-
 
     //
     // private methods
     //
 
-    private double  underlying()  {
-        return this.process.initialValues(). first();
+    private double underlying() {
+        return this.process.initialValues().first();
     }
 
-    private double strike()  {
+    private double strike() {
         return this.payoff.strike();
     }
 
-    private double /*@Time*/  residualTime()  {
+    private double /*@Time*/  residualTime() {
         return this.process.time(a.exercise.lastDate());
     }
 
-    private double /*@Volatility*/  volatility()  {
+    private double /*@Volatility*/  volatility() {
         return this.process.blackVolatility().currentLink().blackVol(residualTime(), strike());
     }
 
-    private double  stdDeviation()  {
+    private double stdDeviation() {
         return volatility() * Math.sqrt(residualTime());
     }
 
-    private double  barrier()  {
+    private double barrier() {
         return a.barrier;
     }
 
-    private double  rebate()  {
+    private double rebate() {
         return a.rebate;
     }
 
-    private double /*@Rate*/  riskFreeRate()  {
-        final InterestRate rate =  this.process.riskFreeRate().currentLink().zeroRate(residualTime(), Compounding.Continuous,
-                Frequency.NoFrequency, false);
+    private double /*@Rate*/  riskFreeRate() {
+        final InterestRate rate = this.process.riskFreeRate().currentLink()
+                .zeroRate(residualTime(), Compounding.Continuous, Frequency.NoFrequency, false);
         return rate.rate();
     }
 
-    private double /*@DiscountFactor*/  riskFreeDiscount()  {
+    private double /*@DiscountFactor*/  riskFreeDiscount() {
         return this.process.riskFreeRate().currentLink().discount(residualTime());
     }
 
-    private double /*@Rate*/  dividendYield()  {
-        final InterestRate yield = this.process.dividendYield().currentLink().zeroRate(
-                residualTime(), Compounding.Continuous, Frequency.NoFrequency, false);
+    private double /*@Rate*/  dividendYield() {
+        final InterestRate yield = this.process.dividendYield().currentLink()
+                .zeroRate(residualTime(), Compounding.Continuous, Frequency.NoFrequency, false);
         return yield.rate();
     }
 
-    private double /*@DiscountFactor*/  dividendDiscount()  {
+    private double /*@DiscountFactor*/  dividendDiscount() {
         return this.process.dividendYield().currentLink().discount(residualTime());
     }
 
-    private double /*@Rate*/  mu()  {
+    private double /*@Rate*/  mu() {
         final double /*@Volatility*/ vol = volatility();
-        return (riskFreeRate() - dividendYield())/(vol * vol) - 0.5;
+        return (riskFreeRate() - dividendYield()) / (vol * vol) - 0.5;
     }
 
-    private double  muSigma()  {
+    private double muSigma() {
         return (1 + mu()) * stdDeviation();
     }
 
     //TODO: consider change method name to lowercase
-    @SuppressWarnings("PMD.MethodNamingConventions")
-    private double  A(final double phi)  {
-        final double x1 = Math.log(underlying()/strike())/stdDeviation() + muSigma();
-        final double N1 = f.op(phi*x1);
-        final double N2 = f.op(phi*(x1-stdDeviation()));
-        return phi*(underlying() * dividendDiscount() * N1 - strike() * riskFreeDiscount() * N2);
+    @SuppressWarnings( "PMD.MethodNamingConventions" )
+    private double A(final double phi) {
+        final double x1 = Math.log(underlying() / strike()) / stdDeviation() + muSigma();
+        final double N1 = f.op(phi * x1);
+        final double N2 = f.op(phi * (x1 - stdDeviation()));
+        return phi * (underlying() * dividendDiscount() * N1 - strike() * riskFreeDiscount() * N2);
     }
 
     //TODO: consider change method name to lowercase
-    @SuppressWarnings("PMD.MethodNamingConventions")
-    private double  B(final double phi)  {
-        final double x2 = Math.log(underlying()/barrier())/stdDeviation() + muSigma();
-        final double N1 = f.op(phi*x2);
-        final double N2 = f.op(phi*(x2-stdDeviation()));
-        return phi*(underlying() * dividendDiscount() * N1 - strike() * riskFreeDiscount() * N2);
+    @SuppressWarnings( "PMD.MethodNamingConventions" )
+    private double B(final double phi) {
+        final double x2 = Math.log(underlying() / barrier()) / stdDeviation() + muSigma();
+        final double N1 = f.op(phi * x2);
+        final double N2 = f.op(phi * (x2 - stdDeviation()));
+        return phi * (underlying() * dividendDiscount() * N1 - strike() * riskFreeDiscount() * N2);
     }
 
     //TODO: consider change method name to lowercase
-    @SuppressWarnings("PMD.MethodNamingConventions")
-    private double  C(final double eta, final double phi)  {
-        final double HS = barrier()/underlying();
+    @SuppressWarnings( "PMD.MethodNamingConventions" )
+    private double C(final double eta, final double phi) {
+        final double HS = barrier() / underlying();
         final double powHS0 = JQuantMath.pow(HS, 2 * mu());
         final double powHS1 = powHS0 * HS * HS;
-        final double y1 = Math.log(barrier()*HS/strike())/stdDeviation() + muSigma();
-        final double N1 = f.op(eta*y1);
-        final double N2 = f.op(eta*(y1-stdDeviation()));
-        return phi*(underlying() * dividendDiscount() * powHS1 * N1 - strike() * riskFreeDiscount() * powHS0 * N2);
+        final double y1 = Math.log(barrier() * HS / strike()) / stdDeviation() + muSigma();
+        final double N1 = f.op(eta * y1);
+        final double N2 = f.op(eta * (y1 - stdDeviation()));
+        return phi * (underlying() * dividendDiscount() * powHS1 * N1 - strike() * riskFreeDiscount() * powHS0 * N2);
     }
 
     //TODO: consider change method name to lowercase
-    @SuppressWarnings("PMD.MethodNamingConventions")
-    private double  D(final double eta, final double phi)  {
-        final double HS = barrier()/underlying();
+    @SuppressWarnings( "PMD.MethodNamingConventions" )
+    private double D(final double eta, final double phi) {
+        final double HS = barrier() / underlying();
         final double powHS0 = JQuantMath.pow(HS, 2 * mu());
         final double powHS1 = powHS0 * HS * HS;
-        final double y2 = Math.log(barrier()/underlying())/stdDeviation() + muSigma();
-        final double N1 = f.op(eta*y2);
-        final double N2 = f.op(eta*(y2-stdDeviation()));
-        return phi*(underlying() * dividendDiscount() * powHS1 * N1 - strike() * riskFreeDiscount() * powHS0 * N2);
+        final double y2 = Math.log(barrier() / underlying()) / stdDeviation() + muSigma();
+        final double N1 = f.op(eta * y2);
+        final double N2 = f.op(eta * (y2 - stdDeviation()));
+        return phi * (underlying() * dividendDiscount() * powHS1 * N1 - strike() * riskFreeDiscount() * powHS0 * N2);
     }
 
     //TODO: consider change method name to lowercase
-    @SuppressWarnings("PMD.MethodNamingConventions")
-    private double  E(final double eta)  {
-        if (rebate() > 0) {
-            final double powHS0 = JQuantMath.pow(barrier()/underlying(), 2 * mu());
-            final double x2 = Math.log(underlying()/barrier())/stdDeviation() + muSigma();
-            final double y2 = Math.log(barrier()/underlying())/stdDeviation() + muSigma();
-            final double N1 = f.op(eta*(x2 - stdDeviation()));
-            final double N2 = f.op(eta*(y2 - stdDeviation()));
+    @SuppressWarnings( "PMD.MethodNamingConventions" )
+    private double E(final double eta) {
+        if ( rebate() > 0 ) {
+            final double powHS0 = JQuantMath.pow(barrier() / underlying(), 2 * mu());
+            final double x2 = Math.log(underlying() / barrier()) / stdDeviation() + muSigma();
+            final double y2 = Math.log(barrier() / underlying()) / stdDeviation() + muSigma();
+            final double N1 = f.op(eta * (x2 - stdDeviation()));
+            final double N2 = f.op(eta * (y2 - stdDeviation()));
             return rebate() * riskFreeDiscount() * (N1 - powHS0 * N2);
         } else {
             return 0.0;
@@ -309,18 +303,18 @@ public class AnalyticBarrierEngine extends BarrierOption.EngineImpl {
     }
 
     //TODO: consider change method name to lowercase
-    @SuppressWarnings("PMD.MethodNamingConventions")
-    private double  F(final double eta)  {
-        if (rebate() > 0) {
+    @SuppressWarnings( "PMD.MethodNamingConventions" )
+    private double F(final double eta) {
+        if ( rebate() > 0 ) {
             final double /*@Rate*/ m = mu();
             final double /*@Volatility*/ vol = volatility();
-            final double lambda = Math.sqrt(m*m + 2.0*riskFreeRate()/(vol * vol));
-            final double HS = barrier()/underlying();
+            final double lambda = Math.sqrt(m * m + 2.0 * riskFreeRate() / (vol * vol));
+            final double HS = barrier() / underlying();
             final double powHSplus = JQuantMath.pow(HS, m + lambda);
             final double powHSminus = JQuantMath.pow(HS, m - lambda);
 
             final double sigmaSqrtT = stdDeviation();
-            final double z = Math.log(barrier()/underlying())/sigmaSqrtT + lambda*sigmaSqrtT;
+            final double z = Math.log(barrier() / underlying()) / sigmaSqrtT + lambda * sigmaSqrtT;
 
             final double N1 = f.op(eta * z);
             final double N2 = f.op(eta * (z - 2.0 * lambda * sigmaSqrtT));

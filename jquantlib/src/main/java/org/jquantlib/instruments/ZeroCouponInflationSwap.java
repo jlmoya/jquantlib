@@ -32,11 +32,7 @@
 package org.jquantlib.instruments;
 
 import org.jquantlib.QL;
-import org.jquantlib.cashflow.CashFlow;
-import org.jquantlib.cashflow.IndexedCashFlow;
-import org.jquantlib.cashflow.Leg;
-import org.jquantlib.cashflow.SimpleCashFlow;
-import org.jquantlib.cashflow.ZeroInflationCashFlow;
+import org.jquantlib.cashflow.*;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.indexes.CPI;
 import org.jquantlib.indexes.ZeroInflationIndex;
@@ -56,22 +52,19 @@ import org.jquantlib.time.calendars.NullCalendar;
  * <pre>
  *   P_n(0,T) N [(1+K)^T - 1] = P_n(0,T) N [I(T)/I(0) - 1]
  * </pre>
- * where {@code T} is the maturity time, {@code P_n(0,t)} is the nominal
- * discount factor at time {@code t}, {@code N} is the notional, and
- * {@code I(t)} is the inflation index value at time {@code t}.
+ * where {@code T} is the maturity time, {@code P_n(0,t)} is the nominal discount factor at time {@code t}, {@code N} is
+ * the notional, and {@code I(t)} is the inflation index value at time {@code t}.
  *
  * <p>This inherits from {@link Swap} and has two very simple legs: a fixed
- * leg, from the quote ({@code K}); and an indexed leg. At maturity the two
- * single cashflows are swapped. These are the notional versus the
- * inflation-indexed notional. Because the coupons are zero there are no
- * accruals (and no coupons).
+ * leg, from the quote ({@code K}); and an indexed leg. At maturity the two single cashflows are swapped. These are the
+ * notional versus the inflation-indexed notional. Because the coupons are zero there are no accruals (and no coupons).
  *
  * <p>In this swap, the passed type ({@code Payer} or {@code Receiver}) refers
  * to the inflation leg.
  *
  * <p>Inflation is generally available on every day, including holidays and
- * weekends. Hence there is a variable to state whether the observe/fix dates
- * for inflation are adjusted or not. The default is not to adjust.
+ * weekends. Hence there is a variable to state whether the observe/fix dates for inflation are adjusted or not. The
+ * default is not to adjust.
  *
  * <p>A zero inflation swap is a simple enough instrument that the standard
  * discounting pricing engine that works for a vanilla swap also works here.
@@ -87,43 +80,11 @@ public class ZeroCouponInflationSwap extends Swap {
     // public inner enums
     //
 
-    /**
-     * Payer/Receiver type. Mirrors C++ {@code Swap::Type}
-     * ({@code Receiver = -1, Payer = 1}).
-     *
-     * <p>The Java port follows {@link VanillaSwap.Type} convention rather
-     * than reusing {@code VanillaSwap.Type} directly, to keep the C++
-     * {@code ZeroCouponInflationSwap} signature self-contained (avoiding a
-     * dependency on the unrelated VanillaSwap class).
-     */
-    public enum Type {
-        Receiver(-1),
-        Payer(1);
-
-        private final int value;
-
-        Type(final int value) {
-            this.value = value;
-        }
-
-        public int toInteger() {
-            return value;
-        }
-
-        public static Type valueOf(final int v) {
-            switch (v) {
-                case -1: return Receiver;
-                case 1:  return Payer;
-                default: throw new LibraryException("value must be -1 (Receiver) or 1 (Payer)");
-            }
-        }
-    }
+    private final Type type;
 
     //
     // protected fields
     //
-
-    private final Type type;
     private final double nominal;
     private final Date startDate;
     private final Date maturityDate;
@@ -139,51 +100,31 @@ public class ZeroCouponInflationSwap extends Swap {
     private final DayCounter dayCounter;
     private final Date baseDate;
     private final Date obsDate;
+    /**
+     * Construct a zero-coupon inflation-indexed swap, with default {@code adjustInfObsDates = false} and
+     * {@code infCalendar / infConvention} equal to the fixed-side calendar / convention.
+     */
+    public ZeroCouponInflationSwap(final Type type, final double nominal, final Date startDate, final Date maturity,
+            final Calendar fixCalendar, final BusinessDayConvention fixConvention, final DayCounter dayCounter,
+            final double fixedRate, final ZeroInflationIndex infIndex, final Period observationLag,
+            final CPI.InterpolationType observationInterpolation) {
+        this(type, nominal, startDate, maturity, fixCalendar, fixConvention, dayCounter, fixedRate, infIndex,
+                observationLag, observationInterpolation, false, new NullCalendar(), null);
+    }
 
     //
     // public constructors
     //
 
     /**
-     * Construct a zero-coupon inflation-indexed swap, with default
-     * {@code adjustInfObsDates = false} and {@code infCalendar / infConvention}
-     * equal to the fixed-side calendar / convention.
+     * Construct a zero-coupon inflation-indexed swap. Mirrors C++ v1.42.1 single-overload constructor (deprecated
+     * overloads are not ported).
      */
-    public ZeroCouponInflationSwap(final Type type,
-                                   final double nominal,
-                                   final Date startDate,
-                                   final Date maturity,
-                                   final Calendar fixCalendar,
-                                   final BusinessDayConvention fixConvention,
-                                   final DayCounter dayCounter,
-                                   final double fixedRate,
-                                   final ZeroInflationIndex infIndex,
-                                   final Period observationLag,
-                                   final CPI.InterpolationType observationInterpolation) {
-        this(type, nominal, startDate, maturity, fixCalendar, fixConvention,
-             dayCounter, fixedRate, infIndex, observationLag,
-             observationInterpolation, false,
-             new NullCalendar(), null);
-    }
-
-    /**
-     * Construct a zero-coupon inflation-indexed swap. Mirrors C++ v1.42.1
-     * single-overload constructor (deprecated overloads are not ported).
-     */
-    public ZeroCouponInflationSwap(final Type type,
-                                   final double nominal,
-                                   final Date startDate,
-                                   final Date maturity,
-                                   final Calendar fixCalendar,
-                                   final BusinessDayConvention fixConvention,
-                                   final DayCounter dayCounter,
-                                   final double fixedRate,
-                                   final ZeroInflationIndex infIndex,
-                                   final Period observationLag,
-                                   final CPI.InterpolationType observationInterpolation,
-                                   final boolean adjustInfObsDates,
-                                   final Calendar infCalendarIn,
-                                   final BusinessDayConvention infConventionIn) {
+    public ZeroCouponInflationSwap(final Type type, final double nominal, final Date startDate, final Date maturity,
+            final Calendar fixCalendar, final BusinessDayConvention fixConvention, final DayCounter dayCounter,
+            final double fixedRate, final ZeroInflationIndex infIndex, final Period observationLag,
+            final CPI.InterpolationType observationInterpolation, final boolean adjustInfObsDates,
+            final Calendar infCalendarIn, final BusinessDayConvention infConventionIn) {
         super(2);
         this.type = type;
         this.nominal = nominal;
@@ -201,23 +142,19 @@ public class ZeroCouponInflationSwap extends Swap {
         // Compatibility check between index and swap definitions.
         // Mirrors C++ detail::CPI::effectiveInterpolationType (AsIndex -> Flat,
         // others pass through), then checks Linear vs availability lag.
-        final CPI.InterpolationType effInterp =
-                (observationInterpolation == CPI.InterpolationType.AsIndex)
+        final CPI.InterpolationType effInterp = (observationInterpolation == CPI.InterpolationType.AsIndex)
                 ? CPI.InterpolationType.Flat
                 : observationInterpolation;
-        if (effInterp == CPI.InterpolationType.Linear) {
+        if ( effInterp == CPI.InterpolationType.Linear ) {
             final Period pShift = new Period(infIndex.frequency());
             QL.require(observationLag.sub(pShift).ge(infIndex.availabilityLag()),
-                    "inconsistency between swap observation lag "
-                            + observationLag + ", interpolated index period "
-                            + pShift + " and index availability "
-                            + infIndex.availabilityLag()
+                    "inconsistency between swap observation lag " + observationLag + ", interpolated index period "
+                            + pShift + " and index availability " + infIndex.availabilityLag()
                             + ": need (obsLag-index period) >= availLag");
         } else {
             QL.require(infIndex.availabilityLag().le(observationLag),
-                    "index tries to observe inflation fixings that do not yet exist: "
-                            + " availability lag " + infIndex.availabilityLag()
-                            + " versus obs lag = " + observationLag);
+                    "index tries to observe inflation fixings that do not yet exist: " + " availability lag "
+                            + infIndex.availabilityLag() + " versus obs lag = " + observationLag);
         }
 
         // Default infCalendar / infConvention to fix calendar/convention if absent.
@@ -234,9 +171,8 @@ public class ZeroCouponInflationSwap extends Swap {
 
         final boolean growthOnly = true;
 
-        final ZeroInflationCashFlow inflationCashFlow = new ZeroInflationCashFlow(
-                nominal, infIndex, observationInterpolation,
-                this.startDate, this.maturityDate, observationLag, infPayDate, growthOnly);
+        final ZeroInflationCashFlow inflationCashFlow = new ZeroInflationCashFlow(nominal, infIndex,
+                observationInterpolation, this.startDate, this.maturityDate, observationLag, infPayDate, growthOnly);
 
         this.baseDate = inflationCashFlow.baseDate();
         this.obsDate = inflationCashFlow.fixingDate();
@@ -262,28 +198,28 @@ public class ZeroCouponInflationSwap extends Swap {
         // the swap re-prices when the index updates propagate through it.
         inflationCashFlow.addObserver(this);
 
-        switch (type) {
-            case Payer:
-                this.payer[0] = +1.0;
-                this.payer[1] = -1.0;
-                break;
-            case Receiver:
-                this.payer[0] = -1.0;
-                this.payer[1] = +1.0;
-                break;
-            default:
-                throw new LibraryException("unknown zero-inflation-swap type");
+        switch ( type ) {
+        case Payer:
+            this.payer[0] = +1.0;
+            this.payer[1] = -1.0;
+            break;
+        case Receiver:
+            this.payer[0] = -1.0;
+            this.payer[1] = +1.0;
+            break;
+        default:
+            throw new LibraryException("unknown zero-inflation-swap type");
         }
     }
-
-    //
-    // public methods — inspectors
-    //
 
     /** "Payer" or "Receiver" refers to the inflation leg. */
     public Type type() {
         return type;
     }
+
+    //
+    // public methods — inspectors
+    //
 
     public double nominal() {
         return nominal;
@@ -350,15 +286,15 @@ public class ZeroCouponInflationSwap extends Swap {
         return legs.get(1);
     }
 
-    //
-    // public methods — results
-    //
-
     public double fixedLegNPV() {
         calculate();
         QL.require(legNPV[0] != Constants.NULL_REAL, "result not available");
         return legNPV[0];
     }
+
+    //
+    // public methods — results
+    //
 
     public double inflationLegNPV() {
         calculate();
@@ -370,10 +306,9 @@ public class ZeroCouponInflationSwap extends Swap {
      * Analytic fixed-leg basis-point sensitivity.
      *
      * <p>{@code legBPS_[0]} (from the engine) is 0 because the fixed leg uses
-     * a {@link SimpleCashFlow}; the BPS calculator assumes simple cashflows
-     * are insensitive to {@code fixedRate} and that all coupons are linear in
-     * {@code fixedRate}, but the ZCIIS fixed leg uses annual compounding so
-     * neither assumption holds. We compute it directly here.
+     * a {@link SimpleCashFlow}; the BPS calculator assumes simple cashflows are insensitive to {@code fixedRate} and
+     * that all coupons are linear in {@code fixedRate}, but the ZCIIS fixed leg uses annual compounding so neither
+     * assumption holds. We compute it directly here.
      *
      * <p>Mirrors C++ v1.42.1 {@code ZeroCouponInflationSwap::fixedLegBPS}.
      */
@@ -391,21 +326,19 @@ public class ZeroCouponInflationSwap extends Swap {
         // when fixedAmount != 0.
         final double T = dayCounter.yearFraction(startDate, maturityDate);
         final double fixedAmount = nominal * (JQuantMath.pow(1.0 + fixedRate, T) - 1.0);
-        QL.require(fixedAmount != 0.0,
-                "cannot compute fixedLegBPS when fixedAmount is zero");
+        QL.require(fixedAmount != 0.0, "cannot compute fixedLegBPS when fixedAmount is zero");
         QL.require(!Double.isNaN(legNPV[0]) && legNPV[0] != Constants.NULL_REAL,
                 "cannot compute fixedLegBPS when legNPV[0] is unavailable");
         final double dfSigned = legNPV[0] / fixedAmount;
 
         final double basisPoint = 1.0e-4;
-        return dfSigned * nominal *
-                (JQuantMath.pow(1.0 + fixedRate + basisPoint, T)
-                        - JQuantMath.pow(1.0 + fixedRate, T));
+        return dfSigned * nominal * (JQuantMath.pow(1.0 + fixedRate + basisPoint, T) - JQuantMath.pow(1.0 + fixedRate,
+                T));
     }
 
     /**
-     * Fair fixed rate. Always means that NPV is zero for this instrument
-     * if it was created with this rate (knowing the time from base to obs etc).
+     * Fair fixed rate. Always means that NPV is zero for this instrument if it was created with this rate (knowing the
+     * time from base to obs etc).
      *
      * <p>Mirrors C++ v1.42.1 {@code ZeroCouponInflationSwap::fairRate}.
      */
@@ -421,9 +354,40 @@ public class ZeroCouponInflationSwap extends Swap {
 
     private IndexedCashFlow downcastInflationLeg() {
         final CashFlow cf = legs.get(1).get(0);
-        QL.require(cf instanceof IndexedCashFlow,
-                "failed to downcast to IndexedCashFlow in fairRate()");
+        QL.require(cf instanceof IndexedCashFlow, "failed to downcast to IndexedCashFlow in fairRate()");
         return (IndexedCashFlow) cf;
+    }
+
+    /**
+     * Payer/Receiver type. Mirrors C++ {@code Swap::Type} ({@code Receiver = -1, Payer = 1}).
+     *
+     * <p>The Java port follows {@link VanillaSwap.Type} convention rather
+     * than reusing {@code VanillaSwap.Type} directly, to keep the C++ {@code ZeroCouponInflationSwap} signature
+     * self-contained (avoiding a dependency on the unrelated VanillaSwap class).
+     */
+    public enum Type {
+        Receiver(-1), Payer(1);
+
+        private final int value;
+
+        Type(final int value) {
+            this.value = value;
+        }
+
+        public static Type valueOf(final int v) {
+            switch ( v ) {
+            case -1:
+                return Receiver;
+            case 1:
+                return Payer;
+            default:
+                throw new LibraryException("value must be -1 (Receiver) or 1 (Payer)");
+            }
+        }
+
+        public int toInteger() {
+            return value;
+        }
     }
 
     //
@@ -431,9 +395,8 @@ public class ZeroCouponInflationSwap extends Swap {
     //
 
     /**
-     * Argument carrier matching C++ {@code ZeroCouponInflationSwap::arguments}.
-     * Inherits the leg/payer machinery from {@link Swap.ArgumentsImpl} and adds
-     * {@code fixedRate}.
+     * Argument carrier matching C++ {@code ZeroCouponInflationSwap::arguments}. Inherits the leg/payer machinery from
+     * {@link Swap.ArgumentsImpl} and adds {@code fixedRate}.
      */
     public static class Arguments extends Swap.ArgumentsImpl {
         public double fixedRate;

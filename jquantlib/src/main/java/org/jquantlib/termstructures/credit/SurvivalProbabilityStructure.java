@@ -28,8 +28,6 @@
 
 package org.jquantlib.termstructures.credit;
 
-import java.util.List;
-
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.lang.annotation.Natural;
 import org.jquantlib.lang.annotation.Time;
@@ -40,14 +38,14 @@ import org.jquantlib.termstructures.DefaultProbabilityTermStructure;
 import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
 
+import java.util.List;
+
 /**
- * Survival-probability term structure — Java port of QuantLib v1.42.1
- * {@code SurvivalProbabilityStructure}
+ * Survival-probability term structure — Java port of QuantLib v1.42.1 {@code SurvivalProbabilityStructure}
  * ({@code ql/termstructures/credit/survivalprobabilitystructure.{hpp,cpp}}).
  *
  * <p>Abstract adapter on {@link DefaultProbabilityTermStructure}; subclasses
- * implement {@link #survivalProbabilityImpl(double)} and the default density
- * is derived via numerical differentiation
+ * implement {@link #survivalProbabilityImpl(double)} and the default density is derived via numerical differentiation
  * ({@code (S(t-dt) - S(t+dt)) / (2 dt)} with {@code dt = 1e-4}).
  */
 public abstract class SurvivalProbabilityStructure extends DefaultProbabilityTermStructure {
@@ -56,48 +54,33 @@ public abstract class SurvivalProbabilityStructure extends DefaultProbabilityTer
         super(dayCounter);
     }
 
-    public SurvivalProbabilityStructure(
-            final DayCounter dayCounter,
-            final List<Handle<Quote>> jumps,
-            final List<Date> jumpDates) {
+    public SurvivalProbabilityStructure(final DayCounter dayCounter, final List< Handle< Quote > > jumps,
+            final List< Date > jumpDates) {
         super(dayCounter, jumps, jumpDates);
     }
 
-    public SurvivalProbabilityStructure(
-            final Date referenceDate,
-            final Calendar cal,
-            final DayCounter dayCounter) {
+    public SurvivalProbabilityStructure(final Date referenceDate, final Calendar cal, final DayCounter dayCounter) {
         super(referenceDate, cal, dayCounter);
     }
 
-    public SurvivalProbabilityStructure(
-            final Date referenceDate,
-            final Calendar cal,
-            final DayCounter dayCounter,
-            final List<Handle<Quote>> jumps,
-            final List<Date> jumpDates) {
+    public SurvivalProbabilityStructure(final Date referenceDate, final Calendar cal, final DayCounter dayCounter,
+            final List< Handle< Quote > > jumps, final List< Date > jumpDates) {
         super(referenceDate, cal, dayCounter, jumps, jumpDates);
     }
 
-    public SurvivalProbabilityStructure(
-            final @Natural int settlementDays,
-            final Calendar cal,
+    public SurvivalProbabilityStructure(final @Natural int settlementDays, final Calendar cal,
             final DayCounter dayCounter) {
         super(settlementDays, cal, dayCounter);
     }
 
-    public SurvivalProbabilityStructure(
-            final @Natural int settlementDays,
-            final Calendar cal,
-            final DayCounter dayCounter,
-            final List<Handle<Quote>> jumps,
-            final List<Date> jumpDates) {
+    public SurvivalProbabilityStructure(final @Natural int settlementDays, final Calendar cal,
+            final DayCounter dayCounter, final List< Handle< Quote > > jumps, final List< Date > jumpDates) {
         super(settlementDays, cal, dayCounter, jumps, jumpDates);
     }
 
     /**
-     * Subclasses must implement. Mirrors C++ pure-virtual override
-     * (declared {@code = 0} in {@code DefaultProbabilityTermStructure}).
+     * Subclasses must implement. Mirrors C++ pure-virtual override (declared {@code = 0} in
+     * {@code DefaultProbabilityTermStructure}).
      */
     @Override
     protected double survivalProbabilityImpl(final @Time double t) {
@@ -106,8 +89,7 @@ public abstract class SurvivalProbabilityStructure extends DefaultProbabilityTer
     }
 
     /**
-     * Numerical differentiation mirrors C++ {@code (p1 - p2) / (t2 - t1)}
-     * with {@code dt = 1e-4}.
+     * Numerical differentiation mirrors C++ {@code (p1 - p2) / (t2 - t1)} with {@code dt = 1e-4}.
      */
     @Override
     protected double defaultDensityImpl(final @Time double t) {

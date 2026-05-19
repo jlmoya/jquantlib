@@ -32,9 +32,6 @@
 
 package org.jquantlib.experimental.exoticoptions;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jquantlib.QL;
 import org.jquantlib.exercise.EuropeanExercise;
 import org.jquantlib.instruments.MultiAssetOption;
@@ -45,15 +42,16 @@ import org.jquantlib.pricingengines.GenericEngine;
 import org.jquantlib.pricingengines.PricingEngine;
 import org.jquantlib.time.Date;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Himalaya option.
  *
  * <p>The payoff of a Himalaya option is computed in the following
- * way: Given a basket of N assets, and N time periods, at the
- * end of each period the option who performed the best is added
- * to the average and then discarded from the basket. At the end
- * of the N periods the option pays the max between the strike
- * and the average of the best performers.</p>
+ * way: Given a basket of N assets, and N time periods, at the end of each period the option who performed the best is
+ * added to the average and then discarded from the basket. At the end of the N periods the option pays the max between
+ * the strike and the average of the best performers.</p>
  *
  * <p>This implementation still does not manage seasoned options.</p>
  *
@@ -64,13 +62,13 @@ import org.jquantlib.time.Date;
  */
 public class HimalayaOption extends MultiAssetOption {
 
-    private final List<Date> fixingDates_;
+    private final List< Date > fixingDates_;
 
-    public HimalayaOption(final List<Date> fixingDates, final double strike) {
+    public HimalayaOption(final List< Date > fixingDates, final double strike) {
         super(new PlainVanillaPayoff(Option.Type.Call, strike),
-              new EuropeanExercise(fixingDates.get(fixingDates.size() - 1)));
+                new EuropeanExercise(fixingDates.get(fixingDates.size() - 1)));
         // defensive copy to mirror C++ store-by-value semantics
-        this.fixingDates_ = new ArrayList<Date>(fixingDates);
+        this.fixingDates_ = new ArrayList< Date >(fixingDates);
     }
 
     @Override
@@ -80,17 +78,16 @@ public class HimalayaOption extends MultiAssetOption {
         QL.require(HimalayaOption.ArgumentsImpl.class.isAssignableFrom(args.getClass()),
                 ReflectConstants.WRONG_ARGUMENT_TYPE);
         final HimalayaOption.ArgumentsImpl arguments = (HimalayaOption.ArgumentsImpl) args;
-        arguments.fixingDates = new ArrayList<Date>(fixingDates_);
+        arguments.fixingDates = new ArrayList< Date >(fixingDates_);
     }
 
     //
     // public inner classes
     //
 
-    public static class ArgumentsImpl extends MultiAssetOption.ArgumentsImpl
-            implements MultiAssetOption.Arguments {
+    public static class ArgumentsImpl extends MultiAssetOption.ArgumentsImpl implements MultiAssetOption.Arguments {
 
-        public List<Date> fixingDates;
+        public List< Date > fixingDates;
 
         @Override
         public void validate() /* @ReadOnly */ {
@@ -99,10 +96,11 @@ public class HimalayaOption extends MultiAssetOption {
         }
     }
 
-    public static class ResultsImpl extends MultiAssetOption.ResultsImpl { /* marking */ }
+    public static class ResultsImpl extends MultiAssetOption.ResultsImpl { /* marking */
+    }
 
     public static abstract class EngineImpl
-            extends GenericEngine<HimalayaOption.ArgumentsImpl, HimalayaOption.ResultsImpl>
+            extends GenericEngine< HimalayaOption.ArgumentsImpl, HimalayaOption.ResultsImpl >
             implements MultiAssetOption.Engine {
 
         public EngineImpl() {

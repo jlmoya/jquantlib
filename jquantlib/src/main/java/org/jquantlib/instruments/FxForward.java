@@ -31,9 +31,6 @@
 
 package org.jquantlib.instruments;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.currencies.Currency;
@@ -45,12 +42,15 @@ import org.jquantlib.time.Date;
 import org.jquantlib.time.TimeUnit;
 import org.jquantlib.time.calendars.NullCalendar;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * FX Forward instrument.
  *
  * <p>This class represents a foreign exchange forward contract: an
- * agreement to exchange a specified amount of one currency for another
- * currency at a future date at a predetermined exchange rate.
+ * agreement to exchange a specified amount of one currency for another currency at a future date at a predetermined
+ * exchange rate.
  *
  * <p>Settlement conventions:
  * <ul>
@@ -86,13 +86,10 @@ public class FxForward extends Instrument {
     private double npvTargetCurrency_ = Constants.NULL_REAL;
 
     /**
-     * Cached snapshot of engine's additional-results map, copied during
-     * {@link #fetchResults(PricingEngine.Results)}. Mirrors the C++
-     * pattern where {@code Instrument::result<T>(name)} reads from
-     * {@code additionalResults}.
+     * Cached snapshot of engine's additional-results map, copied during {@link #fetchResults(PricingEngine.Results)}.
+     * Mirrors the C++ pattern where {@code Instrument::result<T>(name)} reads from {@code additionalResults}.
      */
-    private Map<String, Object> additionalResults_ = new HashMap<String, Object>();
-
+    private Map< String, Object > additionalResults_ = new HashMap< String, Object >();
 
     // ── constructors ────────────────────────────────────────────────────
 
@@ -104,69 +101,51 @@ public class FxForward extends Instrument {
      * @param targetNominal     notional amount in target (foreign) currency
      * @param targetCurrency    currency of {@code targetNominal}
      * @param maturityDate      settlement date of the forward contract
-     * @param paySourceCurrency if {@code true}, pay source currency and receive target;
-     *                          if {@code false}, receive source and pay target
-     * @param settlementDays    number of business days for payment settlement
-     *                          (0=O/N, 1=T/N, 2=Spot)
+     * @param paySourceCurrency if {@code true}, pay source currency and receive target; if {@code false}, receive
+     *                          source and pay target
+     * @param settlementDays    number of business days for payment settlement (0=O/N, 1=T/N, 2=Spot)
      * @param paymentCalendar   calendar for computing payment date (empty → {@link NullCalendar})
      */
-    public FxForward(final double sourceNominal,
-                     final Currency sourceCurrency,
-                     final double targetNominal,
-                     final Currency targetCurrency,
-                     final Date maturityDate,
-                     final boolean paySourceCurrency,
-                     final int settlementDays,
-                     final Calendar paymentCalendar) {
+    public FxForward(final double sourceNominal, final Currency sourceCurrency, final double targetNominal,
+            final Currency targetCurrency, final Date maturityDate, final boolean paySourceCurrency,
+            final int settlementDays, final Calendar paymentCalendar) {
         super();
-        QL.require(sourceCurrency != null && !sourceCurrency.empty(),
-                "source currency must not be empty");
-        QL.require(targetCurrency != null && !targetCurrency.empty(),
-                "target currency must not be empty");
-        QL.require(!sourceCurrency.equals(targetCurrency),
-                "source and target currencies must be different");
+        QL.require(sourceCurrency != null && !sourceCurrency.empty(), "source currency must not be empty");
+        QL.require(targetCurrency != null && !targetCurrency.empty(), "target currency must not be empty");
+        QL.require(!sourceCurrency.equals(targetCurrency), "source and target currencies must be different");
         QL.require(sourceNominal > 0.0, "source nominal must be positive");
         QL.require(targetNominal > 0.0, "target nominal must be positive");
 
-        this.sourceNominal_   = sourceNominal;
-        this.sourceCurrency_  = sourceCurrency;
-        this.targetNominal_   = targetNominal;
-        this.targetCurrency_  = targetCurrency;
-        this.maturityDate_    = maturityDate;
+        this.sourceNominal_ = sourceNominal;
+        this.sourceCurrency_ = sourceCurrency;
+        this.targetNominal_ = targetNominal;
+        this.targetCurrency_ = targetCurrency;
+        this.maturityDate_ = maturityDate;
         this.paySourceCurrency_ = paySourceCurrency;
-        this.settlementDays_  = settlementDays;
+        this.settlementDays_ = settlementDays;
         this.paymentCalendar_ = (paymentCalendar == null || paymentCalendar.empty())
                 ? new NullCalendar()
                 : paymentCalendar;
     }
 
     /**
-     * Constructor for FX Forward using nominal amounts, default Spot (2-day)
-     * settlement and a {@link NullCalendar}.
+     * Constructor for FX Forward using nominal amounts, default Spot (2-day) settlement and a {@link NullCalendar}.
      */
-    public FxForward(final double sourceNominal,
-                     final Currency sourceCurrency,
-                     final double targetNominal,
-                     final Currency targetCurrency,
-                     final Date maturityDate,
-                     final boolean paySourceCurrency) {
-        this(sourceNominal, sourceCurrency, targetNominal, targetCurrency,
-             maturityDate, paySourceCurrency, 2, new NullCalendar());
+    public FxForward(final double sourceNominal, final Currency sourceCurrency, final double targetNominal,
+            final Currency targetCurrency, final Date maturityDate, final boolean paySourceCurrency) {
+        this(sourceNominal, sourceCurrency, targetNominal, targetCurrency, maturityDate, paySourceCurrency, 2,
+                new NullCalendar());
     }
 
     /**
-     * Constructor for FX Forward using nominal amounts and explicit
-     * settlement days, with a default {@link NullCalendar}.
+     * Constructor for FX Forward using nominal amounts and explicit settlement days, with a default
+     * {@link NullCalendar}.
      */
-    public FxForward(final double sourceNominal,
-                     final Currency sourceCurrency,
-                     final double targetNominal,
-                     final Currency targetCurrency,
-                     final Date maturityDate,
-                     final boolean paySourceCurrency,
-                     final int settlementDays) {
-        this(sourceNominal, sourceCurrency, targetNominal, targetCurrency,
-             maturityDate, paySourceCurrency, settlementDays, new NullCalendar());
+    public FxForward(final double sourceNominal, final Currency sourceCurrency, final double targetNominal,
+            final Currency targetCurrency, final Date maturityDate, final boolean paySourceCurrency,
+            final int settlementDays) {
+        this(sourceNominal, sourceCurrency, targetNominal, targetCurrency, maturityDate, paySourceCurrency,
+                settlementDays, new NullCalendar());
     }
 
     /**
@@ -181,75 +160,82 @@ public class FxForward extends Instrument {
      * @param settlementDays    business days for payment settlement
      * @param paymentCalendar   calendar (empty → {@link NullCalendar})
      */
-    public FxForward(final double sourceNominal,
-                     final Currency sourceCurrency,
-                     final Currency targetCurrency,
-                     final double forwardRate,
-                     final Date maturityDate,
-                     final boolean paySourceCurrency,
-                     final int settlementDays,
-                     final Calendar paymentCalendar) {
+    public FxForward(final double sourceNominal, final Currency sourceCurrency, final Currency targetCurrency,
+            final double forwardRate, final Date maturityDate, final boolean paySourceCurrency,
+            final int settlementDays, final Calendar paymentCalendar) {
         super();
-        QL.require(sourceCurrency != null && !sourceCurrency.empty(),
-                "source currency must not be empty");
-        QL.require(targetCurrency != null && !targetCurrency.empty(),
-                "target currency must not be empty");
-        QL.require(!sourceCurrency.equals(targetCurrency),
-                "source and target currencies must be different");
+        QL.require(sourceCurrency != null && !sourceCurrency.empty(), "source currency must not be empty");
+        QL.require(targetCurrency != null && !targetCurrency.empty(), "target currency must not be empty");
+        QL.require(!sourceCurrency.equals(targetCurrency), "source and target currencies must be different");
         QL.require(sourceNominal > 0.0, "source nominal must be positive");
         QL.require(forwardRate > 0.0, "forward rate must be positive");
 
-        this.sourceNominal_   = sourceNominal;
-        this.sourceCurrency_  = sourceCurrency;
-        this.targetNominal_   = sourceNominal * forwardRate;
-        this.targetCurrency_  = targetCurrency;
-        this.maturityDate_    = maturityDate;
+        this.sourceNominal_ = sourceNominal;
+        this.sourceCurrency_ = sourceCurrency;
+        this.targetNominal_ = sourceNominal * forwardRate;
+        this.targetCurrency_ = targetCurrency;
+        this.maturityDate_ = maturityDate;
         this.paySourceCurrency_ = paySourceCurrency;
-        this.settlementDays_  = settlementDays;
+        this.settlementDays_ = settlementDays;
         this.paymentCalendar_ = (paymentCalendar == null || paymentCalendar.empty())
                 ? new NullCalendar()
                 : paymentCalendar;
     }
 
     /**
-     * Constructor for FX Forward using exchange rate, default Spot (2-day)
-     * settlement and a {@link NullCalendar}.
+     * Constructor for FX Forward using exchange rate, default Spot (2-day) settlement and a {@link NullCalendar}.
      */
-    public FxForward(final double sourceNominal,
-                     final Currency sourceCurrency,
-                     final Currency targetCurrency,
-                     final double forwardRate,
-                     final Date maturityDate,
-                     final boolean paySourceCurrency) {
-        this(sourceNominal, sourceCurrency, targetCurrency, forwardRate,
-             maturityDate, paySourceCurrency, 2, new NullCalendar());
+    public FxForward(final double sourceNominal, final Currency sourceCurrency, final Currency targetCurrency,
+            final double forwardRate, final Date maturityDate, final boolean paySourceCurrency) {
+        this(sourceNominal, sourceCurrency, targetCurrency, forwardRate, maturityDate, paySourceCurrency, 2,
+                new NullCalendar());
     }
-
 
     // ── inspectors ──────────────────────────────────────────────────────
 
-    public double sourceNominal() { return sourceNominal_; }
-    public Currency sourceCurrency() { return sourceCurrency_; }
-    public double targetNominal() { return targetNominal_; }
-    public Currency targetCurrency() { return targetCurrency_; }
-    public Date maturityDate() { return maturityDate_; }
-    public boolean paySourceCurrency() { return paySourceCurrency_; }
+    public double sourceNominal() {
+        return sourceNominal_;
+    }
+
+    public Currency sourceCurrency() {
+        return sourceCurrency_;
+    }
+
+    public double targetNominal() {
+        return targetNominal_;
+    }
+
+    public Currency targetCurrency() {
+        return targetCurrency_;
+    }
+
+    public Date maturityDate() {
+        return maturityDate_;
+    }
+
+    public boolean paySourceCurrency() {
+        return paySourceCurrency_;
+    }
 
     /** Contracted forward rate (target currency per unit of source currency). */
-    public double forwardRate() { return targetNominal_ / sourceNominal_; }
+    public double forwardRate() {
+        return targetNominal_ / sourceNominal_;
+    }
 
     /** Number of settlement days (0=O/N, 1=T/N, 2=Spot). */
-    public int settlementDays() { return settlementDays_; }
+    public int settlementDays() {
+        return settlementDays_;
+    }
 
     /** Settlement calendar. */
-    public Calendar settlementCalendar() { return paymentCalendar_; }
+    public Calendar settlementCalendar() {
+        return paymentCalendar_;
+    }
 
     /** Settlement date — evaluation date + {@code settlementDays} business days. */
     public Date settlementDate() {
-        return paymentCalendar_.advance(
-                new Settings().evaluationDate(), settlementDays_, TimeUnit.Days);
+        return paymentCalendar_.advance(new Settings().evaluationDate(), settlementDays_, TimeUnit.Days);
     }
-
 
     // ── Instrument interface ────────────────────────────────────────────
 
@@ -263,13 +249,13 @@ public class FxForward extends Instrument {
         QL.require(args instanceof FxForward.ArgumentsImpl, "wrong argument type");
         final FxForward.ArgumentsImpl a = (FxForward.ArgumentsImpl) args;
 
-        a.sourceNominal     = sourceNominal_;
-        a.sourceCurrency    = sourceCurrency_;
-        a.targetNominal     = targetNominal_;
-        a.targetCurrency    = targetCurrency_;
-        a.maturityDate      = maturityDate_;
+        a.sourceNominal = sourceNominal_;
+        a.sourceCurrency = sourceCurrency_;
+        a.targetNominal = targetNominal_;
+        a.targetCurrency = targetCurrency_;
+        a.maturityDate = maturityDate_;
         a.paySourceCurrency = paySourceCurrency_;
-        a.settlementDate    = settlementDate();
+        a.settlementDate = settlementDate();
     }
 
     @Override
@@ -278,93 +264,81 @@ public class FxForward extends Instrument {
         QL.require(r instanceof FxForward.ResultsImpl, "wrong result type");
         final FxForward.ResultsImpl results = (FxForward.ResultsImpl) r;
 
-        fairForwardRate_   = results.fairForwardRate;
+        fairForwardRate_ = results.fairForwardRate;
         npvSourceCurrency_ = results.npvSourceCurrency;
         npvTargetCurrency_ = results.npvTargetCurrency;
 
         // Snapshot additional results so callers can read them later.
-        additionalResults_ = new HashMap<String, Object>(results.additionalResults());
+        additionalResults_ = new HashMap< String, Object >(results.additionalResults());
     }
-
 
     // ── additional results ──────────────────────────────────────────────
 
     /** Fair forward rate (target/source) implied by the curves. */
     public double fairForwardRate() {
         calculate();
-        QL.require(fairForwardRate_ != Constants.NULL_REAL,
-                "fair forward rate not available");
+        QL.require(fairForwardRate_ != Constants.NULL_REAL, "fair forward rate not available");
         return fairForwardRate_;
     }
 
     /** NPV expressed in source-currency terms. */
     public double npvSourceCurrency() {
         calculate();
-        QL.require(npvSourceCurrency_ != Constants.NULL_REAL,
-                "NPV in source currency not available");
+        QL.require(npvSourceCurrency_ != Constants.NULL_REAL, "NPV in source currency not available");
         return npvSourceCurrency_;
     }
 
     /** NPV expressed in target-currency terms. */
     public double npvTargetCurrency() {
         calculate();
-        QL.require(npvTargetCurrency_ != Constants.NULL_REAL,
-                "NPV in target currency not available");
+        QL.require(npvTargetCurrency_ != Constants.NULL_REAL, "NPV in target currency not available");
         return npvTargetCurrency_;
     }
 
     /** Read-only access to the engine's additional-results snapshot. */
-    public Map<String, Object> additionalResults() {
+    public Map< String, Object > additionalResults() {
         calculate();
         return additionalResults_;
     }
 
-
     // ── inner classes ───────────────────────────────────────────────────
 
     /**
-     * Arguments for the FX-forward pricing engine. Mirrors C++
-     * {@code FxForward::arguments}.
+     * Arguments for the FX-forward pricing engine. Mirrors C++ {@code FxForward::arguments}.
      */
     public static class ArgumentsImpl implements Instrument.Arguments {
-        public double   sourceNominal = Constants.NULL_REAL;
+        public double sourceNominal = Constants.NULL_REAL;
         public Currency sourceCurrency;
-        public double   targetNominal = Constants.NULL_REAL;
+        public double targetNominal = Constants.NULL_REAL;
         public Currency targetCurrency;
-        public Date     maturityDate;
-        public boolean  paySourceCurrency = true;
-        public Date     settlementDate;
+        public Date maturityDate;
+        public boolean paySourceCurrency = true;
+        public Date settlementDate;
 
         @Override
         public void validate() {
             QL.require(sourceNominal != Constants.NULL_REAL, "source nominal not set");
             QL.require(targetNominal != Constants.NULL_REAL, "target nominal not set");
-            QL.require(sourceCurrency != null && !sourceCurrency.empty(),
-                    "source currency not set");
-            QL.require(targetCurrency != null && !targetCurrency.empty(),
-                    "target currency not set");
-            QL.require(maturityDate != null && !maturityDate.isNull(),
-                    "maturity date not set");
-            QL.require(settlementDate != null && !settlementDate.isNull(),
-                    "settlement date not set");
+            QL.require(sourceCurrency != null && !sourceCurrency.empty(), "source currency not set");
+            QL.require(targetCurrency != null && !targetCurrency.empty(), "target currency not set");
+            QL.require(maturityDate != null && !maturityDate.isNull(), "maturity date not set");
+            QL.require(settlementDate != null && !settlementDate.isNull(), "settlement date not set");
         }
     }
 
     /**
-     * Results for the FX-forward pricing engine. Mirrors C++
-     * {@code FxForward::results}.
+     * Results for the FX-forward pricing engine. Mirrors C++ {@code FxForward::results}.
      */
-    public static class ResultsImpl extends Instrument.ResultsImpl
-            implements Instrument.Results {
+    public static class ResultsImpl extends Instrument.ResultsImpl implements Instrument.Results {
 
-        public double fairForwardRate   = Constants.NULL_REAL;
+        public double fairForwardRate = Constants.NULL_REAL;
         public double npvSourceCurrency = Constants.NULL_REAL;
         public double npvTargetCurrency = Constants.NULL_REAL;
 
         @Override
         public void reset() {
             super.reset();
-            fairForwardRate   = Constants.NULL_REAL;
+            fairForwardRate = Constants.NULL_REAL;
             npvSourceCurrency = Constants.NULL_REAL;
             npvTargetCurrency = Constants.NULL_REAL;
         }
@@ -374,8 +348,7 @@ public class FxForward extends Instrument {
      * Base class for FX-forward pricing engines. Mirrors C++
      * {@code FxForward::engine = GenericEngine<arguments, results>}.
      */
-    public abstract static class EngineImpl
-            extends GenericEngine<Instrument.Arguments, Instrument.Results> {
+    public abstract static class EngineImpl extends GenericEngine< Instrument.Arguments, Instrument.Results > {
 
         protected EngineImpl() {
             super(new FxForward.ArgumentsImpl(), new FxForward.ResultsImpl());

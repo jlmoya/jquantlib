@@ -30,15 +30,14 @@ import org.jquantlib.math.Ops;
  * Cumulative normal distribution function (CDF).
  * <p>
  * Given x it provides an approximation to the integral of the Gaussian Normal Distribution.
- * 
- * {@latex[
- * 	\frac12 \left(1+\mathrm{erf}\left( \frac{x-\mu}{\sigma\sqrt2}\right) \right)
- * }
+ *
+ * {@latex[ \frac12 \left(1+\mathrm{erf}\left( \frac{x-\mu}{\sigma\sqrt2}\right) \right) }
  * <p>
- * @see cite: <i>M. Abramowitz and I. Stegun, Handbook of Mathematical Functions, Dover Publications, New York (1972)</i>
- * @see <a href="http://en.wikipedia.org/wiki/Normal_distribution">Cumulative Normal Distribution</a>
- * 
+ *
  * @author Richard Gomes
+ * @see cite: <i>M. Abramowitz and I. Stegun, Handbook of Mathematical Functions, Dover Publications, New York
+ * (1972)</i>
+ * @see <a href="http://en.wikipedia.org/wiki/Normal_distribution">Cumulative Normal Distribution</a>
  */
 public class CumulativeNormalDistribution extends NormalDistribution implements Ops.DoubleOp {
 
@@ -61,7 +60,6 @@ public class CumulativeNormalDistribution extends NormalDistribution implements 
         super(average, sigma);
     }
 
-
     //
     // Implements Ops.DoubleOp
     //
@@ -70,40 +68,39 @@ public class CumulativeNormalDistribution extends NormalDistribution implements 
      * Computes the cumulative normal distribution.
      * <p>
      * Asymptotic expansion for very negative z as references on M. Abramowitz book.
-     * 
-     * @see cite: "Monte Carlo Methods in Finance", ISBN-13: 978-0471497417
-     * @see cite: M. Abramowitz and A. Stegun, Pocketbook of Mathematical Functions, ISBN 3-87144818-4, p.408, item 26.2.12
-     * 
+     *
      * @param z
      * @return result
+     * @see cite: "Monte Carlo Methods in Finance", ISBN-13: 978-0471497417
+     * @see cite: M. Abramowitz and A. Stegun, Pocketbook of Mathematical Functions, ISBN 3-87144818-4, p.408, item
+     * 26.2.12
      */
     @Override
     public double op(double z) /* @Read-only */ {
         // QL.require(!(z >= average && 2.0*average-z > average) , "not a real number");
         z = (z - average) / sigma;
-        double result = 0.5 * ( 1.0 + errorFunction.op( z*Constants.M_SQRT_2 ) );
-        if (result<=1e-8) { //TODO: investigate the threshold level
+        double result = 0.5 * (1.0 + errorFunction.op(z * Constants.M_SQRT_2));
+        if ( result <= 1e-8 ) { //TODO: investigate the threshold level
             // See:Asymptotic expansion for very negative z following (26.2.12) on page 408 in M. Abramowitz and A. Stegun,
             // Pocketbook of Mathematical Functions, ISBN 3-87144818-4.
             // See also: Jaeckels book "Monte Carlo Methods in Finance", ISBN-13: 978-0471497417
-            double sum=1.0;
-            final double zsqr=z*z;
-            double i=1.0, g=1.0, x, y, a=Constants.QL_MAX_REAL, lasta;
+            double sum = 1.0;
+            final double zsqr = z * z;
+            double i = 1.0, g = 1.0, x, y, a = Constants.QL_MAX_REAL, lasta;
             do {
-                lasta=a;
-                x = (4.0*i-3.0)/zsqr;
-                y = x*((4.0*i-1)/zsqr);
-                a = g*(x-y);
+                lasta = a;
+                x = (4.0 * i - 3.0) / zsqr;
+                y = x * ((4.0 * i - 1) / zsqr);
+                a = g * (x - y);
                 sum -= a;
                 g *= y;
                 ++i;
                 a = Math.abs(a);
-            } while (lasta>a && a>=Math.abs(sum*Constants.QL_EPSILON));
-            result = -gaussian.op(z)/z*sum;
+            } while ( lasta > a && a >= Math.abs(sum * Constants.QL_EPSILON) );
+            result = -gaussian.op(z) / z * sum;
         }
         return result;
     }
-
 
     //
     // implements Derivative
@@ -111,6 +108,7 @@ public class CumulativeNormalDistribution extends NormalDistribution implements 
 
     /**
      * Computes the derivative.
+     *
      * @param x
      * @return <code>gaussian.evaluate(xn) / sigma</code>
      */
@@ -121,6 +119,3 @@ public class CumulativeNormalDistribution extends NormalDistribution implements 
     }
 
 }
-
-
-

@@ -27,12 +27,10 @@
 package org.jquantlib.methods.montecarlo;
 
 /**
- * Data accumulated at a simulation node for Longstaff-Schwartz / parametric
- * exercise strategies.
+ * Data accumulated at a simulation node for Longstaff-Schwartz / parametric exercise strategies.
  * <p>
- * Mirrors C++ {@code struct NodeData}
- * (ql/methods/montecarlo/nodedata.hpp v1.42.1). Each field directly
- * corresponds to its C++ counterpart:
+ * Mirrors C++ {@code struct NodeData} (ql/methods/montecarlo/nodedata.hpp v1.42.1). Each field directly corresponds to
+ * its C++ counterpart:
  * <ul>
  *   <li>{@code exerciseValue} — discounted exercise value at this node</li>
  *   <li>{@code cumulatedCashFlows} — sum of future discounted cash flows if
@@ -46,9 +44,8 @@ package org.jquantlib.methods.montecarlo;
  *       previously exercised) and should be excluded from the regression</li>
  * </ul>
  *
- * @see "ql/methods/montecarlo/nodedata.hpp" v1.42.1
- *
  * @author Jose Moya
+ * @see "ql/methods/montecarlo/nodedata.hpp" v1.42.1
  */
 public final class NodeData {
 
@@ -59,9 +56,8 @@ public final class NodeData {
     public double cumulatedCashFlows;
 
     /**
-     * Basis-function evaluations (for Longstaff-Schwartz) or parametric
-     * variables (for parametric exercise optimisation).
-     * Mirrors C++ {@code std::vector<Real> values}.
+     * Basis-function evaluations (for Longstaff-Schwartz) or parametric variables (for parametric exercise
+     * optimisation). Mirrors C++ {@code std::vector<Real> values}.
      */
     public double[] values;
 
@@ -69,14 +65,12 @@ public final class NodeData {
     public double controlValue;
 
     /**
-     * {@code false} if this path is invalid at this exercise date (e.g. already
-     * exercised at an earlier date).
+     * {@code false} if this path is invalid at this exercise date (e.g. already exercised at an earlier date).
      */
     public boolean isValid;
 
     /**
-     * Default constructor — all numerics to zero, {@code isValid = false},
-     * {@code values} is an empty array.
+     * Default constructor — all numerics to zero, {@code isValid = false}, {@code values} is an empty array.
      */
     public NodeData() {
         this.exerciseValue = 0.0;

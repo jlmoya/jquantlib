@@ -41,15 +41,13 @@ package org.jquantlib.util;
 
 import java.util.List;
 
-
 /**
  * Framework for calculation on demand and result caching.
  *
+ * @author Richard Gomes
  * @see <a href="http://c2.com/cgi/wiki?LazyObject">Lazy Object Design Pattern</a>
  * @see Observer
  * @see Observable
- *
- * @author Richard Gomes
  */
 public abstract class LazyObject implements Observer, Observable {
 
@@ -57,45 +55,45 @@ public abstract class LazyObject implements Observer, Observable {
     // protected fields
     //
 
+    /**
+     * Implements multiple inheritance via delegate pattern to an inner class.
+     *
+     * <p>Phase 2x A.4: switched to {@link WeakReferenceObservable} so
+     * that observers from completed tests don't accumulate on the lazy object's observer list and cascade on every
+     * {@code Settings.setEvaluationDate}.
+     *
+     * @see Observable
+     * @see DefaultObservable
+     */
+    private final Observable delegatedObservable = new WeakReferenceObservable(this);
     protected boolean calculated;
     protected boolean frozen;
     /**
-     * Mirrors C++ {@code LazyObject::failed_} - set when a prior
-     * {@link #performCalculations()} invocation threw, so subsequent
-     * {@link #update()} calls still forward a notification (observers
-     * must be told that the failed state is invalidated by the new
-     * input).
+     * Mirrors C++ {@code LazyObject::failed_} - set when a prior {@link #performCalculations()} invocation threw, so
+     * subsequent {@link #update()} calls still forward a notification (observers must be told that the failed state is
+     * invalidated by the new input).
      */
     protected boolean failed;
-    private   boolean alwaysForwardNotifications_;
-    /**
-     * Re-entrancy guard - mirrors C++ {@code LazyObject::updating_}.
-     * Set to {@code true} while {@link #update()} is executing so that
-     * recursive calls from a downstream {@code notifyObservers()} chain
-     * return immediately, breaking any observer-cycle that would otherwise
-     * cause a {@link StackOverflowError}.
-     */
-    private boolean updating_ = false;
+    private boolean alwaysForwardNotifications_;
 
     //
     // protected abstract methods
     //
-
     /**
-     * This method must implement any calculations which must be (re)done in order to calculate the desired results.
-     *
-     * @throws ArithmeticException
-     *
+     * Re-entrancy guard - mirrors C++ {@code LazyObject::updating_}. Set to {@code true} while {@link #update()} is
+     * executing so that recursive calls from a downstream {@code notifyObservers()} chain return immediately, breaking
+     * any observer-cycle that would otherwise cause a {@link StackOverflowError}.
      */
-    protected abstract void performCalculations() throws ArithmeticException;
+    private boolean updating_ = false;
 
     //
     // public constructors
     //
 
     /**
-     * Creates a new LazyObject instance which is potentially able to perform calculations on demand every time it observes a change
-     * in a {@link Observable} object. A LazyObject is an {@link Observer} and an {@link Observable} at the same time.
+     * Creates a new LazyObject instance which is potentially able to perform calculations on demand every time it
+     * observes a change in a {@link Observable} object. A LazyObject is an {@link Observer} and an {@link Observable}
+     * at the same time.
      */
     public LazyObject() {
         this.calculated = false;
@@ -114,10 +112,18 @@ public abstract class LazyObject implements Observer, Observable {
     //
 
     /**
+     * This method must implement any calculations which must be (re)done in order to calculate the desired results.
+     *
+     * @throws ArithmeticException
+     *
+     */
+    protected abstract void performCalculations() throws ArithmeticException;
+
+    /**
      * This method force the recalculation of any results which would otherwise be cached.
      *
-     * @note Explicit invocation of this method is <b>not</b> necessary if the object registered itself as observer with the
-     *       structures on which such results depend. It is strongly advised to follow this policy when possible.
+     * @note Explicit invocation of this method is <b>not</b> necessary if the object registered itself as observer with
+     * the structures on which such results depend. It is strongly advised to follow this policy when possible.
      */
     public final void recalculate() {
         final boolean wasFrozen = frozen;
@@ -132,53 +138,52 @@ public abstract class LazyObject implements Observer, Observable {
     }
 
     /**
-     * Returns whether a calculation has been performed and is currently cached.
-     * Mirrors C++ {@code LazyObject::isCalculated()}.
+     * Returns whether a calculation has been performed and is currently cached. Mirrors C++
+     * {@code LazyObject::isCalculated()}.
      * <p>Phase 5e.5b-CFC-d-62 alignment.
      * <p>Not declared {@code final} because legacy code in
-     * {@link org.jquantlib.model.shortrate.onefactormodels.gaussian1d.MarkovFunctional}
-     * declares a same-named private method (Java disallows shadowing a
-     * {@code final} superclass method even with {@code private}).
+     * {@link org.jquantlib.model.shortrate.onefactormodels.gaussian1d.MarkovFunctional} declares a same-named private
+     * method (Java disallows shadowing a {@code final} superclass method even with {@code private}).
      */
     public boolean isCalculated() {
         return calculated;
     }
 
     /**
-     * This method constrains the object to return the presently cached results on successive invocations, even if arguments upon
-     * which they depend should change.
+     * This method constrains the object to return the presently cached results on successive invocations, even if
+     * arguments upon which they depend should change.
      */
     public final void freeze() {
         frozen = true;
     }
 
     /**
-     * Forces the object to always forward notifications to its observers,
-     * even when already marked as needing recalculation.
+     * Forces the object to always forward notifications to its observers, even when already marked as needing
+     * recalculation.
      *
      * <p>Mirrors C++ {@code LazyObject::alwaysForwardNotifications()}.
-     * This is needed for instruments (e.g., swaptions) where the underlying
-     * asset can change the expired state without triggering a recalculation,
-     * so observers must still be notified.
+     * This is needed for instruments (e.g., swaptions) where the underlying asset can change the expired state without
+     * triggering a recalculation, so observers must still be notified.
      */
     public final void alwaysForwardNotifications() {
         alwaysForwardNotifications_ = true;
     }
 
     /**
-     * Causes the object to forward only the first notification received
-     * after each (re)calculation; subsequent notifications are
-     * discarded until the next recalculation. Inverse of
-     * {@link #alwaysForwardNotifications()}.
+     * Causes the object to forward only the first notification received after each (re)calculation; subsequent
+     * notifications are discarded until the next recalculation. Inverse of {@link #alwaysForwardNotifications()}.
      *
      * <p>Mirrors C++ {@code LazyObject::forwardFirstNotificationOnly()}.
-     * Useful when the global default
-     * ({@link LazyObject.Defaults#alwaysForwardNotifications()}) has been
-     * flipped to forward-all but a specific instance should opt back.
+     * Useful when the global default ({@link LazyObject.Defaults#alwaysForwardNotifications()}) has been flipped to
+     * forward-all but a specific instance should opt back.
      */
     public final void forwardFirstNotificationOnly() {
         alwaysForwardNotifications_ = false;
     }
+
+    //
+    // protected methods
+    //
 
     /**
      * This method reverts the effect of the <i><b>freeze</b></i> method, thus re-enabling recalculations.
@@ -187,43 +192,6 @@ public abstract class LazyObject implements Observer, Observable {
         frozen = false;
         // send notification, just in case we lost any
         notifyObservers();
-    }
-
-    //
-    // protected methods
-    //
-
-    /**
-     * This method performs all needed calculations by calling the <i><b>performCalculations</b></i> method.
-     * <p>
-     *
-     * @note Objects cache the results of the previous calculation. Such results will be returned upon later invocations of <i><b>calculate</b></i>.
-     *       When the results depend on arguments which could change between invocations, the lazy object must register itself as
-     *       observer of such objects for the calculations to be performed again when they change.
-     */
-    protected void calculate() {
-        if (!calculated && !frozen) {
-            // prevent infinite recursion in case of bootstrapping
-            calculated = true;
-            try {
-                performCalculations();
-                // needed when calculate() is called directly after a
-                // prior failure - mirrors C++ failed_ = false
-                failed = false;
-            } catch (final ArithmeticException e) {
-                calculated = false;
-                failed = true;
-                throw e;
-            } catch (final RuntimeException e) {
-                // Java performCalculations() signature only declares
-                // ArithmeticException, but in practice many subclasses
-                // throw plain RuntimeException; mirror C++ catch-all so
-                // failed_ semantics work for any thrown error.
-                calculated = false;
-                failed = true;
-                throw e;
-            }
-        }
     }
 
     //
@@ -241,6 +209,44 @@ public abstract class LazyObject implements Observer, Observable {
     //        o.deleteObserver(this);
     //    }
 
+    /**
+     * This method performs all needed calculations by calling the <i><b>performCalculations</b></i> method.
+     * <p>
+     *
+     * @note Objects cache the results of the previous calculation. Such results will be returned upon later invocations
+     * of <i><b>calculate</b></i>. When the results depend on arguments which could change between invocations, the lazy
+     * object must register itself as observer of such objects for the calculations to be performed again when they
+     * change.
+     */
+    protected void calculate() {
+        if ( !calculated && !frozen ) {
+            // prevent infinite recursion in case of bootstrapping
+            calculated = true;
+            try {
+                performCalculations();
+                // needed when calculate() is called directly after a
+                // prior failure - mirrors C++ failed_ = false
+                failed = false;
+            } catch ( final ArithmeticException e ) {
+                calculated = false;
+                failed = true;
+                throw e;
+            } catch ( final RuntimeException e ) {
+                // Java performCalculations() signature only declares
+                // ArithmeticException, but in practice many subclasses
+                // throw plain RuntimeException; mirror C++ catch-all so
+                // failed_ semantics work for any thrown error.
+                calculated = false;
+                failed = true;
+                throw e;
+            }
+        }
+    }
+
+    //
+    // implements Observable
+    //
+
     @Override
     //XXX::OBS public void update(final Observable o, final Object arg) {
     public void update() {
@@ -248,7 +254,7 @@ public abstract class LazyObject implements Observer, Observable {
         // Guard against recursive re-entry (observer cycles created during
         // inflation curve bootstrap). C++ uses an RAII UpdateChecker + updating_
         // flag; Java uses try/finally.
-        if (updating_) {
+        if ( updating_ ) {
             // recursive call - break the cycle silently (C++ default behaviour,
             // without QL_THROW_IN_CYCLES defined)
             return;
@@ -258,7 +264,7 @@ public abstract class LazyObject implements Observer, Observable {
             // forwards notifications only the first time, or always if
             // alwaysForward_, or if a prior calculation failed (so that
             // observers are told the failed state has been invalidated)
-            if (calculated || failed || alwaysForwardNotifications_) {
+            if ( calculated || failed || alwaysForwardNotifications_ ) {
                 // set to false BEFORE notifyObservers so that:
                 //   1) a downstream calculate() call that re-enters update()
                 //      and checks calculated_ sees false -> no double-notification
@@ -266,7 +272,7 @@ public abstract class LazyObject implements Observer, Observable {
                 calculated = false;
                 failed = false;
                 // observers don't expect notifications from frozen objects
-                if (!frozen)
+                if ( !frozen )
                     //XXX::OBS notifyObservers(arg);
                     notifyObservers();
             } else {
@@ -276,24 +282,6 @@ public abstract class LazyObject implements Observer, Observable {
             updating_ = false;
         }
     }
-
-
-    //
-    // implements Observable
-    //
-
-    /**
-     * Implements multiple inheritance via delegate pattern to an inner class.
-     *
-     * <p>Phase 2x A.4: switched to {@link WeakReferenceObservable} so
-     * that observers from completed tests don't accumulate on the
-     * lazy object's observer list and cascade on every
-     * {@code Settings.setEvaluationDate}.
-     *
-     * @see Observable
-     * @see DefaultObservable
-     */
-    private final Observable delegatedObservable = new WeakReferenceObservable(this);
 
     @Override
     public final void addObserver(final Observer observer) {
@@ -326,7 +314,7 @@ public abstract class LazyObject implements Observer, Observable {
     }
 
     @Override
-    public final List<Observer> getObservers() {
+    public final List< Observer > getObservers() {
         return delegatedObservable.getObservers();
     }
 
@@ -335,29 +323,21 @@ public abstract class LazyObject implements Observer, Observable {
     //
 
     /**
-     * Per-session defaults for the {@link LazyObject} class. Mirrors C++
-     * {@code LazyObject::Defaults} (ql/patterns/lazyobject.hpp).
+     * Per-session defaults for the {@link LazyObject} class. Mirrors C++ {@code LazyObject::Defaults}
+     * (ql/patterns/lazyobject.hpp).
      *
      * <p>Singleton. Lazy objects created <em>after</em> a call to one of
-     * the setters pick up the new default in their constructor; lazy
-     * objects created before are unaffected (so toggling the default
-     * mid-test should be paired with a {@code TearDown}-style restore).
+     * the setters pick up the new default in their constructor; lazy objects created before are unaffected (so toggling
+     * the default mid-test should be paired with a {@code TearDown}-style restore).
      *
      * <p><b>Java-vs-C++ default note:</b> JQuantLib defaults to
-     * {@code forwardsAllNotifications() == false} (i.e., forward only the
-     * first notification after recalculation). C++ defaults to
-     * {@code true} unless {@code QL_FASTER_LAZY_OBJECTS} is defined. The
-     * Java default is preserved for backwards compatibility with the
-     * existing JQuantLib test suite.
+     * {@code forwardsAllNotifications() == false} (i.e., forward only the first notification after recalculation). C++
+     * defaults to {@code true} unless {@code QL_FASTER_LAZY_OBJECTS} is defined. The Java default is preserved for
+     * backwards compatibility with the existing JQuantLib test suite.
      */
     public static final class Defaults {
 
         private static final Defaults INSTANCE = new Defaults();
-
-        public static Defaults instance() {
-            return INSTANCE;
-        }
-
         // JQuantLib historical default: 'forward first only' (false).
         private boolean forwardsAllNotifications_ = false;
 
@@ -365,17 +345,20 @@ public abstract class LazyObject implements Observer, Observable {
             // singleton
         }
 
+        public static Defaults instance() {
+            return INSTANCE;
+        }
+
         /**
-         * Sets the default for subsequently-created lazy objects to
-         * forward only the first notification after recalculation.
+         * Sets the default for subsequently-created lazy objects to forward only the first notification after
+         * recalculation.
          */
         public void forwardFirstNotificationOnly() {
             forwardsAllNotifications_ = false;
         }
 
         /**
-         * Sets the default for subsequently-created lazy objects to
-         * forward every notification (no first-only filter).
+         * Sets the default for subsequently-created lazy objects to forward every notification (no first-only filter).
          */
         public void alwaysForwardNotifications() {
             forwardsAllNotifications_ = true;

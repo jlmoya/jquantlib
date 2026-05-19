@@ -43,12 +43,10 @@ import org.jquantlib.processes.GeneralizedBlackScholesProcess;
 /**
  * Finite-differences pricing engine for dividend European options
  *
+ * @author Richard Gomes
  * @test the correctness of the returned greeks is tested by reproducing numerical derivatives.
  * @test the invariance of the results upon addition of null dividends is tested.
- *
  * @category vanillaengines
- *
- * @author Richard Gomes
  */
 
 /*
@@ -60,8 +58,7 @@ import org.jquantlib.processes.GeneralizedBlackScholesProcess;
 */
 
 //typedef FDEngineAdapter<FDDividendEngine, DividendVanillaOption::engine> FDDividendEuropeanEngine;
-public class FDDividendEuropeanEngine
-        extends FDEngineAdapter<FDDividendEngine, DividendVanillaOption.Engine>
+public class FDDividendEuropeanEngine extends FDEngineAdapter< FDDividendEngine, DividendVanillaOption.Engine >
         implements DividendVanillaOption.Engine {
 
     //
@@ -72,32 +69,44 @@ public class FDDividendEuropeanEngine
         this(process, 100, 100, false);
     }
 
-    public FDDividendEuropeanEngine(
-            final GeneralizedBlackScholesProcess process,
-            final int timeSteps) {
+    public FDDividendEuropeanEngine(final GeneralizedBlackScholesProcess process, final int timeSteps) {
         this(process, timeSteps, 100, false);
     }
 
-    public FDDividendEuropeanEngine(
-            final GeneralizedBlackScholesProcess process,
-            final int timeSteps,
+    public FDDividendEuropeanEngine(final GeneralizedBlackScholesProcess process, final int timeSteps,
             final int gridPoints) {
         this(process, timeSteps, gridPoints, false);
     }
 
-    public FDDividendEuropeanEngine(
-            final GeneralizedBlackScholesProcess process,
-            final int timeSteps,
-            final int gridPoints,
-            final boolean timeDependent) {
-        super(FDDividendEngine.class, DividendVanillaOption.Engine.class, process, timeSteps, gridPoints, timeDependent);
+    public FDDividendEuropeanEngine(final GeneralizedBlackScholesProcess process, final int timeSteps,
+            final int gridPoints, final boolean timeDependent) {
+        super(FDDividendEngine.class, DividendVanillaOption.Engine.class, process, timeSteps, gridPoints,
+                timeDependent);
         super.impl = new Impl(this);
     }
-
 
     //
     // private inner classes
     //
+
+    @Override
+    public Arguments getArguments() {
+        return super.impl.getArguments();
+    }
+
+    //
+    // implements OneAssetOption.Engine
+    //
+
+    @Override
+    public Results getResults() {
+        return super.impl.getResults();
+    }
+
+    @Override
+    public void reset() {
+        super.impl.reset();
+    }
 
     private class Impl extends DividendVanillaOption.EngineImpl {
 
@@ -114,83 +123,61 @@ public class FDDividendEuropeanEngine
         }
     }
 
+    //    @Override
+    //XXX::OBS    public void update(final Observable o, final Object arg) {
+    //        super.impl.update(o, arg);
+    //    }
 
+    //    //
+    //    // implements Observer
+    //    //
     //
-    // implements OneAssetOption.Engine
+    //    @Override
+    //    public void update() {
+    //      if (impl==null)
+    //          throw new LibraryException(PRICING_ENGINE_NOT_SET);
+    //      impl.update();
+    //      //XXX  super.impl.update();
+    //    }
     //
-
-    @Override
-    public Arguments getArguments() {
-        return super.impl.getArguments();
-    }
-
-    @Override
-    public Results getResults() {
-        return super.impl.getResults();
-    }
-
-    @Override
-    public void reset() {
-        super.impl.reset();
-    }
-
-
-//    @Override
-//XXX::OBS    public void update(final Observable o, final Object arg) {
-//        super.impl.update(o, arg);
-//    }
-
-
-//    //
-//    // implements Observer
-//    //
-//
-//    @Override
-//    public void update() {
-//      if (impl==null)
-//          throw new LibraryException(PRICING_ENGINE_NOT_SET);
-//      impl.update();
-//      //XXX  super.impl.update();
-//    }
-//
-//
-//    //
-//    // implements Observable
-//    //
-//
-//    @Override
-//    public void addObserver(final Observer observer) {
-//        super.impl.addObserver(observer);
-//    }
-//
-//    @Override
-//    public int countObservers() {
-//        return super.impl.countObservers();
-//    }
-//
-//    @Override
-//    public void deleteObserver(final Observer observer) {
-//        super.impl.deleteObserver(observer);
-//    }
-//
-//    @Override
-//    public void deleteObservers() {
-//        super.impl.deleteObservers();
-//    }
-//
-//    @Override
-//    public List<Observer> getObservers() {
-//        return super.impl.getObservers();
-//    }
-//
-//    @Override
-//    public void notifyObservers() {
-//        super.impl.notifyObservers();
-//    }
-//
-//    @Override
-//    public void notifyObservers(final Object arg) {
-//        super.impl.notifyObservers(arg);
-//    }
+    //
+    //    //
+    //    // implements Observable
+    //    //
+    //
+    //    @Override
+    //    public void addObserver(final Observer observer) {
+    //        super.impl.addObserver(observer);
+    //    }
+    //
+    //    @Override
+    //    public int countObservers() {
+    //        return super.impl.countObservers();
+    //    }
+    //
+    //    @Override
+    //    public void deleteObserver(final Observer observer) {
+    //        super.impl.deleteObserver(observer);
+    //    }
+    //
+    //    @Override
+    //    public void deleteObservers() {
+    //        super.impl.deleteObservers();
+    //    }
+    //
+    //    @Override
+    //    public List<Observer> getObservers() {
+    //        return super.impl.getObservers();
+    //    }
+    //
+    //    @Override
+    //    public void notifyObservers() {
+    //        super.impl.notifyObservers();
+    //    }
+    //
+    //    @Override
+    //    public void notifyObservers(final Object arg) {
+    //        super.impl.notifyObservers(arg);
+    //    }
 
 }

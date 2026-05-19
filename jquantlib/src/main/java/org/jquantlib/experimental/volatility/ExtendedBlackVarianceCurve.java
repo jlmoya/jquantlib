@@ -40,10 +40,9 @@ import org.jquantlib.util.Visitor;
  * Black volatility curve modelled as variance curve, with quoted vol inputs.
  *
  * <p>Faithful port of QuantLib v1.42.1
- * {@code ql/experimental/volatility/extendedblackvariancecurve.{hpp,cpp}}.
- * Similar to {@link org.jquantlib.termstructures.volatilities.BlackVarianceCurve}
- * but extends it to use quoted volatilities ({@link Quote} instances)
- * rather than raw doubles.
+ * {@code ql/experimental/volatility/extendedblackvariancecurve.{hpp,cpp}}. Similar to
+ * {@link org.jquantlib.termstructures.volatilities.BlackVarianceCurve} but extends it to use quoted volatilities
+ * ({@link Quote} instances) rather than raw doubles.
  */
 public class ExtendedBlackVarianceCurve extends BlackVarianceTermStructure {
 
@@ -52,18 +51,15 @@ public class ExtendedBlackVarianceCurve extends BlackVarianceTermStructure {
     private final Quote[] volatilities_;
     private final double[] times_;
     private final double[] variances_;
-    private Interpolation varianceCurve_;
     private final Interpolation.Interpolator factory_;
     private final boolean forceMonotoneVariance_;
+    private Interpolation varianceCurve_;
 
-    public ExtendedBlackVarianceCurve(final Date referenceDate,
-            final Date[] dates, final Quote[] volatilities,
+    public ExtendedBlackVarianceCurve(final Date referenceDate, final Date[] dates, final Quote[] volatilities,
             final DayCounter dayCounter, final boolean forceMonotoneVariance) {
         super(referenceDate);
-        QL.require(dates.length == volatilities.length,
-                "size mismatch between dates and volatilities");
-        QL.require(dates[0].gt(referenceDate),
-                "cannot have dates_[0] <= referenceDate");
+        QL.require(dates.length == volatilities.length, "size mismatch between dates and volatilities");
+        QL.require(dates[0].gt(referenceDate), "cannot have dates_[0] <= referenceDate");
 
         this.dayCounter_ = dayCounter;
         this.maxDate_ = dates[dates.length - 1];
@@ -71,9 +67,9 @@ public class ExtendedBlackVarianceCurve extends BlackVarianceTermStructure {
         this.forceMonotoneVariance_ = forceMonotoneVariance;
 
         this.variances_ = new double[dates.length + 1];
-        this.times_     = new double[dates.length + 1];
-        this.times_[0]  = 0.0;
-        for (int j = 1; j <= dates.length; ++j) {
+        this.times_ = new double[dates.length + 1];
+        this.times_[0] = 0.0;
+        for ( int j = 1; j <= dates.length; ++j ) {
             times_[j] = timeFromReference(dates[j - 1]);
             QL.require(times_[j] > times_[j - 1], "dates must be sorted unique!");
         }
@@ -83,8 +79,8 @@ public class ExtendedBlackVarianceCurve extends BlackVarianceTermStructure {
         setInterpolation(factory_);
 
         // Register as observer of each quote — invalidates and recalculates on change.
-        for (final Quote q : volatilities_) {
-            if (q != null) {
+        for ( final Quote q : volatilities_ ) {
+            if ( q != null ) {
                 q.addObserver(new Observer() {
                     @Override
                     public void update() {
@@ -95,15 +91,14 @@ public class ExtendedBlackVarianceCurve extends BlackVarianceTermStructure {
         }
     }
 
-    public ExtendedBlackVarianceCurve(final Date referenceDate,
-            final Date[] dates, final Quote[] volatilities,
+    public ExtendedBlackVarianceCurve(final Date referenceDate, final Date[] dates, final Quote[] volatilities,
             final DayCounter dayCounter) {
         this(referenceDate, dates, volatilities, dayCounter, true);
     }
 
     private void setVariances() {
         variances_[0] = 0.0;
-        for (int j = 1; j <= volatilities_.length; ++j) {
+        for ( int j = 1; j <= volatilities_.length; ++j ) {
             final double sigma = volatilities_[j - 1].value();
             variances_[j] = times_[j] * sigma * sigma;
             QL.require(variances_[j] >= variances_[j - 1] || !forceMonotoneVariance_,
@@ -122,39 +117,46 @@ public class ExtendedBlackVarianceCurve extends BlackVarianceTermStructure {
     @Override
     public void update() {
         setVariances();
-        if (varianceCurve_ != null) {
+        if ( varianceCurve_ != null ) {
             varianceCurve_.update();
         }
         notifyObservers();
     }
 
     @Override
-    public DayCounter dayCounter() { return dayCounter_; }
+    public DayCounter dayCounter() {
+        return dayCounter_;
+    }
 
     @Override
-    public Date maxDate() { return maxDate_; }
+    public Date maxDate() {
+        return maxDate_;
+    }
 
     @Override
-    public double minStrike() { return Double.NEGATIVE_INFINITY; }
+    public double minStrike() {
+        return Double.NEGATIVE_INFINITY;
+    }
 
     @Override
-    public double maxStrike() { return Double.POSITIVE_INFINITY; }
+    public double maxStrike() {
+        return Double.POSITIVE_INFINITY;
+    }
 
     @Override
     protected double blackVarianceImpl(final double t, final double strike) {
-        if (t <= times_[times_.length - 1]) {
+        if ( t <= times_[times_.length - 1] ) {
             return varianceCurve_.op(t, true);
         } else {
-            return varianceCurve_.op(times_[times_.length - 1], true)
-                    * t / times_[times_.length - 1];
+            return varianceCurve_.op(times_[times_.length - 1], true) * t / times_[times_.length - 1];
         }
     }
 
     @Override
     public void accept(final PolymorphicVisitor pv) {
-        final Visitor<ExtendedBlackVarianceCurve> v = (pv != null)
-                ? pv.<ExtendedBlackVarianceCurve>visitor(this.getClass()) : null;
-        if (v != null) {
+        final Visitor< ExtendedBlackVarianceCurve > v = (pv != null) ? pv.visitor(
+                this.getClass()) : null;
+        if ( v != null ) {
             v.visit(this);
         } else {
             super.accept(pv);

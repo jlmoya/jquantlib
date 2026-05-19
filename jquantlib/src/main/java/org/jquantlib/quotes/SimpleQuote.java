@@ -28,13 +28,12 @@ import org.jquantlib.lang.annotation.QualityAssurance.Quality;
 import org.jquantlib.lang.annotation.QualityAssurance.Version;
 import org.jquantlib.math.Constants;
 
-
 /**
  * Market element returning a stored value
  *
  * @author Richard Gomes
  */
-@QualityAssurance(quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Richard Gomes" })
+@QualityAssurance( quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Richard Gomes" } )
 public class SimpleQuote extends Quote {
 
     //
@@ -42,7 +41,6 @@ public class SimpleQuote extends Quote {
     //
 
     private double value;
-
 
     //
     // public constructors
@@ -60,7 +58,6 @@ public class SimpleQuote extends Quote {
         this.value = d;
     }
 
-
     //
     // public methods
     //
@@ -74,7 +71,7 @@ public class SimpleQuote extends Quote {
      */
     public double setValue(final double value) {
         final double diff = this.value - value;
-        if (diff != 0.0) {
+        if ( diff != 0.0 ) {
             this.value = value;
             notifyObservers();
         }
@@ -85,7 +82,6 @@ public class SimpleQuote extends Quote {
         setValue(Constants.NULL_REAL);
     }
 
-
     //
     // overrides Object
     //
@@ -95,14 +91,13 @@ public class SimpleQuote extends Quote {
         return String.valueOf(value);
     }
 
-
     //
     // implements Quote
     //
 
     @Override
     public final double value() /* @ReadOnly */ {
-        QL.require(isValid() , "invalid simple quote: no value available"); // TODO: message
+        QL.require(isValid(), "invalid simple quote: no value available"); // TODO: message
         return value;
     }
 

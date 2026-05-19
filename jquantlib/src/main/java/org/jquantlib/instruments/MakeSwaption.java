@@ -33,9 +33,8 @@ import org.jquantlib.time.Period;
  * Port of C++ QuantLib v1.42.1 {@code ql/instruments/makeswaption.{hpp,cpp}}.
  *
  * <p>The C++ class supports both vanilla-swap-backed and OIS-backed swaptions
- * (via {@code OvernightIndexedSwapIndex} dynamic_cast). The Java port wires
- * the vanilla-swap branch only; the OIS branch is deferred until
- * {@code OvernightIndexedSwapIndex} is ported (Phase 5d.5b carry-forward).
+ * (via {@code OvernightIndexedSwapIndex} dynamic_cast). The Java port wires the vanilla-swap branch only; the OIS
+ * branch is deferred until {@code OvernightIndexedSwapIndex} is ported (Phase 5d.5b carry-forward).
  *
  * <h3>Java port deviations from C++ v1.42.1</h3>
  * <ul>
@@ -66,7 +65,7 @@ public class MakeSwaption {
     private Date exerciseDate_;
     private Calendar exerciseCalendar_;
 
-    private double strike_;          // Constants.NULL_REAL → ATM
+    private final double strike_;          // Constants.NULL_REAL → ATM
     private VanillaSwap.Type underlyingType_;
     private double nominal_;
     private Boolean useIndexedCoupons_;   // null → not set (Java boxed boolean)
@@ -78,18 +77,14 @@ public class MakeSwaption {
     //
 
     /**
-     * Build a swaption using a SwapIndex and an option tenor (period from
-     * today). Strike defaults to ATM-on-curves
+     * Build a swaption using a SwapIndex and an option tenor (period from today). Strike defaults to ATM-on-curves
      * ({@link org.jquantlib.math.Constants#NULL_REAL} sentinel).
      */
-    public MakeSwaption(final SwapIndex swapIndex,
-                        final Period optionTenor) {
+    public MakeSwaption(final SwapIndex swapIndex, final Period optionTenor) {
         this(swapIndex, optionTenor, org.jquantlib.math.Constants.NULL_REAL);
     }
 
-    public MakeSwaption(final SwapIndex swapIndex,
-                        final Period optionTenor,
-                        final double strike) {
+    public MakeSwaption(final SwapIndex swapIndex, final Period optionTenor, final double strike) {
         QL.require(swapIndex != null, "swap index required");
         QL.require(optionTenor != null, "option tenor required");
         this.swapIndex_ = swapIndex;
@@ -103,14 +98,11 @@ public class MakeSwaption {
     }
 
     /** Build a swaption using a SwapIndex and a fixed fixing-date. */
-    public MakeSwaption(final SwapIndex swapIndex,
-                        final Date fixingDate) {
+    public MakeSwaption(final SwapIndex swapIndex, final Date fixingDate) {
         this(swapIndex, fixingDate, org.jquantlib.math.Constants.NULL_REAL);
     }
 
-    public MakeSwaption(final SwapIndex swapIndex,
-                        final Date fixingDate,
-                        final double strike) {
+    public MakeSwaption(final SwapIndex swapIndex, final Date fixingDate, final double strike) {
         QL.require(swapIndex != null, "swap index required");
         QL.require(fixingDate != null, "fixing date required");
         this.swapIndex_ = swapIndex;
@@ -158,10 +150,9 @@ public class MakeSwaption {
     }
 
     /**
-     * Alias for {@link #withExerciseCalendar(Calendar)}. The C++
-     * MakeSwaption only exposes {@code withExerciseCalendar}; this alias
-     * is supplied for callers using the more explicit name and is a no-op
-     * over {@link #withExerciseCalendar(Calendar)}.
+     * Alias for {@link #withExerciseCalendar(Calendar)}. The C++ MakeSwaption only exposes
+     * {@code withExerciseCalendar}; this alias is supplied for callers using the more explicit name and is a no-op over
+     * {@link #withExerciseCalendar(Calendar)}.
      */
     public MakeSwaption withExerciseDateCalendar(final Calendar cal) {
         return withExerciseCalendar(cal);
@@ -196,67 +187,53 @@ public class MakeSwaption {
      * {@code operator ext::shared_ptr<Swaption>()}.
      */
     public Swaption value() {
-        final Calendar calendar = (exerciseCalendar_ != null)
-                ? exerciseCalendar_
-                : swapIndex_.fixingCalendar();
+        final Calendar calendar = (exerciseCalendar_ != null) ? exerciseCalendar_ : swapIndex_.fixingCalendar();
         Date refDate = new Settings().evaluationDate();
         refDate = calendar.adjust(refDate);
 
-        if (fixingDate_ == null) {
+        if ( fixingDate_ == null ) {
             fixingDate_ = calendar.advance(refDate, optionTenor_, optionConvention_);
         }
 
         final Exercise exercise;
-        if (exerciseDate_ == null) {
+        if ( exerciseDate_ == null ) {
             exercise = new EuropeanExercise(fixingDate_);
         } else {
             QL.require(exerciseDate_.le(fixingDate_),
-                    "exercise date (" + exerciseDate_ + ") must be less "
-                            + "than or equal to fixing date (" + fixingDate_ + ")");
+                    "exercise date (" + exerciseDate_ + ") must be less " + "than or equal to fixing date ("
+                            + fixingDate_ + ")");
             exercise = new EuropeanExercise(exerciseDate_);
         }
 
         // ATM-on-curve strike: build a temp swap at strike=0, take the fairRate.
         double usedStrike;
-        if (strike_ == org.jquantlib.math.Constants.NULL_REAL) {
+        if ( strike_ == org.jquantlib.math.Constants.NULL_REAL ) {
             // ATM-on-curve: build a temp 0-strike swap, price via discounting,
             // read fairRate. Mirrors the C++ vanilla branch (the OIS branch is
             // deferred — see class javadoc).
-            final VanillaSwap tempSwap = new MakeVanillaSwap(
-                    swapIndex_.tenor(), swapIndex_.iborIndex(), 0.0)
-                    .withEffectiveDate(swapIndex_.valueDate(fixingDate_))
-                    .withFixedLegCalendar(swapIndex_.fixingCalendar())
-                    .withFixedLegDayCount(swapIndex_.dayCounter())
+            final VanillaSwap tempSwap = new MakeVanillaSwap(swapIndex_.tenor(), swapIndex_.iborIndex(),
+                    0.0).withEffectiveDate(swapIndex_.valueDate(fixingDate_))
+                    .withFixedLegCalendar(swapIndex_.fixingCalendar()).withFixedLegDayCount(swapIndex_.dayCounter())
                     .withFixedLegTenor(swapIndex_.fixedLegTenor())
                     .withFixedLegConvention(swapIndex_.fixedLegConvention())
-                    .withFixedLegTerminationDateConvention(swapIndex_.fixedLegConvention())
-                    .withType(underlyingType_)
-                    .withNominal(nominal_)
-                    .value();
+                    .withFixedLegTerminationDateConvention(swapIndex_.fixedLegConvention()).withType(underlyingType_)
+                    .withNominal(nominal_).value();
             // Use the swap-index's forwarding curve as the discount curve too.
-            tempSwap.setPricingEngine(
-                    new DiscountingSwapEngine(swapIndex_.termStructure()));
+            tempSwap.setPricingEngine(new DiscountingSwapEngine(swapIndex_.termStructure()));
             usedStrike = tempSwap.fairRate();
         } else {
             usedStrike = strike_;
         }
 
         final BusinessDayConvention bdc = swapIndex_.fixedLegConvention();
-        final VanillaSwap underlyingSwap = new MakeVanillaSwap(
-                swapIndex_.tenor(), swapIndex_.iborIndex(), usedStrike)
-                .withEffectiveDate(swapIndex_.valueDate(fixingDate_))
-                .withFixedLegCalendar(swapIndex_.fixingCalendar())
-                .withFixedLegDayCount(swapIndex_.dayCounter())
-                .withFixedLegTenor(swapIndex_.fixedLegTenor())
-                .withFixedLegConvention(bdc)
-                .withFixedLegTerminationDateConvention(bdc)
-                .withType(underlyingType_)
-                .withNominal(nominal_)
-                .value();
+        final VanillaSwap underlyingSwap = new MakeVanillaSwap(swapIndex_.tenor(), swapIndex_.iborIndex(),
+                usedStrike).withEffectiveDate(swapIndex_.valueDate(fixingDate_))
+                .withFixedLegCalendar(swapIndex_.fixingCalendar()).withFixedLegDayCount(swapIndex_.dayCounter())
+                .withFixedLegTenor(swapIndex_.fixedLegTenor()).withFixedLegConvention(bdc)
+                .withFixedLegTerminationDateConvention(bdc).withType(underlyingType_).withNominal(nominal_).value();
 
-        final Swaption swaption = new Swaption(underlyingSwap, exercise,
-                delivery_, settlementMethod_);
-        if (engine_ != null) {
+        final Swaption swaption = new Swaption(underlyingSwap, exercise, delivery_, settlementMethod_);
+        if ( engine_ != null ) {
             swaption.setPricingEngine(engine_);
         }
         return swaption;

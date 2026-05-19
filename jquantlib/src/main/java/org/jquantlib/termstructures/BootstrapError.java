@@ -1,4 +1,3 @@
-
 /*
 Copyright (C) 2009 John Martin
 
@@ -21,10 +20,8 @@ JQuantLib is based on QuantLib. http://quantlib.org/
 When applicable, the original copyright notice follows this notice.
  */
 
-
 package org.jquantlib.termstructures;
 
-import org.jquantlib.QL;
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.lang.reflect.ReflectConstants;
 import org.jquantlib.math.Ops;
@@ -32,28 +29,21 @@ import org.jquantlib.termstructures.yieldcurves.PiecewiseCurve;
 import org.jquantlib.termstructures.yieldcurves.Traits;
 
 // FIXME: http://bugs.jquantlib.org/view.php?id=463
-public class BootstrapError<T extends Traits> implements Ops.DoubleOp {
+public class BootstrapError< T extends Traits > implements Ops.DoubleOp {
 
-    private final PiecewiseCurve    curve;
-    private final Traits            traits;
-    private final RateHelper        helper;
-    private final int               segment;
+    private final PiecewiseCurve curve;
+    private final Traits traits;
+    private final RateHelper helper;
+    private final int segment;
 
-
-    public BootstrapError(
-            final Class<?> klass,
-            final PiecewiseCurve curve,
-            final RateHelper helper,
+    public BootstrapError(final Class< ? > klass, final PiecewiseCurve curve, final RateHelper helper,
             final int segment) {
         this(constructTraits(klass), curve, helper, segment);
     }
-    public BootstrapError(
-            final Traits traits,
-            final PiecewiseCurve c,
-            final RateHelper helper,
-            final int segment) {
 
-        if (!Traits.class.isAssignableFrom(traits.getClass())) {
+    public BootstrapError(final Traits traits, final PiecewiseCurve c, final RateHelper helper, final int segment) {
+
+        if ( !Traits.class.isAssignableFrom(traits.getClass()) ) {
             throw new LibraryException(ReflectConstants.WRONG_ARGUMENT_TYPE);
         }
 
@@ -63,37 +53,35 @@ public class BootstrapError<T extends Traits> implements Ops.DoubleOp {
         this.helper = helper;
     }
 
-
     //
     // public methods
     //
 
-    @Override
-	public double op (final double guess) {
-        //FIXME: find a way to solve this! :: ifndef DOXYGEN
-        traits.updateGuess (curve.data(), guess, segment);
-        curve.interpolation().update();
-        return helper.quoteError();
-    }
-
-
-    //
-    // static private methods
-    //
-
-    static private Traits constructTraits(final Class<?> klass) {
-        if (klass==null) {
+    static private Traits constructTraits(final Class< ? > klass) {
+        if ( klass == null ) {
             throw new LibraryException("null Traits"); // TODO: message
         }
-        if (klass!=Traits.class) {
+        if ( klass != Traits.class ) {
             throw new LibraryException(ReflectConstants.WRONG_ARGUMENT_TYPE);
         }
 
         try {
             return (Traits) klass.newInstance();
-        } catch (final Exception e) {
+        } catch ( final Exception e ) {
             throw new LibraryException("cannot create Traits", e); // TODO: message
         }
+    }
+
+    //
+    // static private methods
+    //
+
+    @Override
+    public double op(final double guess) {
+        //FIXME: find a way to solve this! :: ifndef DOXYGEN
+        traits.updateGuess(curve.data(), guess, segment);
+        curve.interpolation().update();
+        return helper.quoteError();
     }
 
 }

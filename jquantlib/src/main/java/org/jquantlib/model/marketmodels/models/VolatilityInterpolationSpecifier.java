@@ -32,13 +32,18 @@ import java.util.List;
 public interface VolatilityInterpolationSpecifier {
 
     void setScalingFactors(double[] scales);
+
     void setLastCapletVol(double vol);
 
-    List<PiecewiseConstantVariance> interpolatedVariances();
-    List<PiecewiseConstantVariance> originalVariances();
+    List< PiecewiseConstantVariance > interpolatedVariances();
+
+    List< PiecewiseConstantVariance > originalVariances();
 
     int getPeriod();
+
     int getOffset();
+
     int getNoBigRates();
+
     int getNoSmallRates();
 }

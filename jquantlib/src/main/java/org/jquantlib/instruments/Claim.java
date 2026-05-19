@@ -29,33 +29,36 @@
 
 package org.jquantlib.instruments;
 
-import java.util.List;
-
 import org.jquantlib.time.Date;
 import org.jquantlib.util.DefaultObservable;
 import org.jquantlib.util.Observable;
 import org.jquantlib.util.Observer;
 
+import java.util.List;
+
 /**
  * Claim associated to a default event.
  *
  * <p>Mirrors C++ v1.42.1 {@code QuantLib::Claim}
- * ({@code ql/instruments/claim.{hpp,cpp}}). A {@code Claim} computes the
- * payment due to the protection buyer when a default event occurs. The
- * abstract {@link #amount(Date, double, double)} hook is implemented by
- * concrete subclasses such as {@link FaceValueClaim}.
+ * ({@code ql/instruments/claim.{hpp,cpp}}). A {@code Claim} computes the payment due to the protection buyer when a
+ * default event occurs. The abstract {@link #amount(Date, double, double)} hook is implemented by concrete subclasses
+ * such as {@link FaceValueClaim}.
  *
  * <p>Implements {@link Observer}/{@link Observable} via the standard
- * delegate-pattern used elsewhere in JQuantLib (see e.g.
- * {@link org.jquantlib.pricingengines.GenericEngine}).
+ * delegate-pattern used elsewhere in JQuantLib (see e.g. {@link org.jquantlib.pricingengines.GenericEngine}).
  *
  * @category instruments
  */
 public abstract class Claim implements Observable, Observer {
 
+    private final Observable delegatedObservable = new DefaultObservable(this);
+
+    //
+    // implements Observer
+    //
+
     /**
-     * Returns the claim amount due to the protection buyer at the given
-     * default date.
+     * Returns the claim amount due to the protection buyer at the given default date.
      *
      * @param defaultDate  the date on which the default event occurs
      * @param notional     the contract notional
@@ -64,21 +67,14 @@ public abstract class Claim implements Observable, Observer {
      */
     public abstract double amount(Date defaultDate, double notional, double recoveryRate);
 
-
     //
-    // implements Observer
+    // implements Observable via delegate pattern
     //
 
     @Override
     public void update() {
         notifyObservers();
     }
-
-    //
-    // implements Observable via delegate pattern
-    //
-
-    private final Observable delegatedObservable = new DefaultObservable(this);
 
     @Override
     public final void addObserver(final Observer observer) {
@@ -111,7 +107,7 @@ public abstract class Claim implements Observable, Observer {
     }
 
     @Override
-    public final List<Observer> getObservers() {
+    public final List< Observer > getObservers() {
         return delegatedObservable.getObservers();
     }
 }

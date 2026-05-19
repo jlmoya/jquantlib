@@ -42,18 +42,11 @@ import org.jquantlib.time.TimeUnit;
 public class FRHICP extends ZeroInflationIndex {
 
     public FRHICP(final boolean interpolated) {
-        this(interpolated, new Handle<ZeroInflationTermStructure>());
+        this(interpolated, new Handle< ZeroInflationTermStructure >());
     }
 
-    public FRHICP(final boolean interpolated,
-                  final Handle<ZeroInflationTermStructure> termStructure) {
-        super("HICP",
-                new FranceRegion(),
-                false,
-                interpolated,
-                Frequency.Monthly,
-                new Period(1, TimeUnit.Months),
-                new EURCurrency(),
-                termStructure);
+    public FRHICP(final boolean interpolated, final Handle< ZeroInflationTermStructure > termStructure) {
+        super("HICP", new FranceRegion(), false, interpolated, Frequency.Monthly, new Period(1, TimeUnit.Months),
+                new EURCurrency(), termStructure);
     }
 }

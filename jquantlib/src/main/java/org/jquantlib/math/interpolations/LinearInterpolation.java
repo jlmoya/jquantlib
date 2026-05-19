@@ -42,8 +42,6 @@ package org.jquantlib.math.interpolations;
 
 import org.jquantlib.math.matrixutilities.Array;
 
-
-
 /**
  * Linear interpolation between discrete points
  *
@@ -62,7 +60,6 @@ public class LinearInterpolation extends AbstractInterpolation {
 
     }
 
-
     //
     // protected inner classes
     //
@@ -76,7 +73,6 @@ public class LinearInterpolation extends AbstractInterpolation {
         private final Array vp;
         private final Array vs;
 
-
         //
         // protected constructors
         //
@@ -87,7 +83,6 @@ public class LinearInterpolation extends AbstractInterpolation {
             this.vs = new Array(vx.size());
         }
 
-
         //
         // overrides AbstractInterpolation.Impl
         //
@@ -96,11 +91,11 @@ public class LinearInterpolation extends AbstractInterpolation {
         public void update() {
             vp.set(0, 0.0);
             double value;
-            for (int i=1; i < vx.size(); i++) {
-                final double dx = vx.get(i) - vx.get(i-1);
-                value = (vy.get(i) - vy.get(i-1)) / dx;
-                vs.set(i-1, value);
-                value = vp.get(i-1) + dx*(vy.get(i-1) +0.5*dx*vs.get(i-1));
+            for ( int i = 1; i < vx.size(); i++ ) {
+                final double dx = vx.get(i) - vx.get(i - 1);
+                value = (vy.get(i) - vy.get(i - 1)) / dx;
+                vs.set(i - 1, value);
+                value = vp.get(i - 1) + dx * (vy.get(i - 1) + 0.5 * dx * vs.get(i - 1));
                 vp.set(i, value);
             }
         }
@@ -108,7 +103,7 @@ public class LinearInterpolation extends AbstractInterpolation {
         @Override
         public double op(final double x) {
             final int i = locate(x);
-            return vy.get(i) + (x - vx.get(i))*vs.get(i);
+            return vy.get(i) + (x - vx.get(i)) * vs.get(i);
         }
 
         @Override
@@ -122,7 +117,7 @@ public class LinearInterpolation extends AbstractInterpolation {
             // Fix matches v1.42.1 exactly.
             final int i = locate(x);
             final double dx = x - vx.get(i);
-            return vp.get(i) + dx*(vy.get(i) + 0.5*dx*vs.get(i));
+            return vp.get(i) + dx * (vy.get(i) + 0.5 * dx * vs.get(i));
         }
 
         @Override

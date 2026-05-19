@@ -20,12 +20,7 @@
  When applicable, the original copyright notice follows this notice.
  */
 
-
-
 package org.jquantlib.math.randomnumbers;
-
-
-
 
 /**
  * Random seed generator
@@ -38,84 +33,79 @@ package org.jquantlib.math.randomnumbers;
 //TEST: write test cases
 public class SeedGenerator {
 
-	//
-	// private static fields
-	//
+    //
+    // private static fields
+    //
 
     /**
-     * @see <a href="http://www.cs.umd.edu/~pugh/java/memoryModel/DoubleCheckedLocking.html">The "Double-Checked Locking is Broken" Declaration </a>
+     * @see <a href="http://www.cs.umd.edu/~pugh/java/memoryModel/DoubleCheckedLocking.html">The "Double-Checked Locking
+     * is Broken" Declaration </a>
      */
-	private static volatile SeedGenerator instance;
+    private static volatile SeedGenerator instance;
 
+    //
+    // private fields
+    //
 
-	//
-	// private fields
-	//
+    private MersenneTwisterUniformRng rng;
 
-	private MersenneTwisterUniformRng rng;
+    //
+    // private constructor
+    //
 
+    private SeedGenerator() {
+        this.rng = new MersenneTwisterUniformRng(42);
+        initialize();
+    }
 
-	//
-	// private constructor
-	//
+    //
+    // private methods
+    //
 
-	private SeedGenerator() {
-		this.rng = new MersenneTwisterUniformRng(42);
-		initialize();
-	}
+    public static SeedGenerator getInstance() {
+        if ( instance == null ) {
+            synchronized ( SeedGenerator.class ) {
+                if ( instance == null ) {
+                    instance = new SeedGenerator();
+                }
+            }
+        }
+        return instance;
+    }
 
+    //
+    // Singleton pattern.
+    // Create new instance only if it does not exist yet
+    //
 
-	//
-	// private methods
-	//
+    private void initialize() {
 
-	private void initialize() {
+        // firstSeed is chosen based on Date and used for the first rng
+        final long firstSeed = System.currentTimeMillis();
+        final MersenneTwisterUniformRng first = new MersenneTwisterUniformRng(firstSeed);
 
-		// firstSeed is chosen based on Date and used for the first rng
-		final long firstSeed = System.currentTimeMillis();
-		final MersenneTwisterUniformRng first = new MersenneTwisterUniformRng(firstSeed);
+        // secondSeed is as random as it could be
+        // feel free to suggest improvements
+        final long secondSeed = first.nextInt32();
+        final MersenneTwisterUniformRng second = new MersenneTwisterUniformRng(secondSeed);
 
-		// secondSeed is as random as it could be
-		// feel free to suggest improvements
-	 	final long secondSeed = first.nextInt32();
-		final MersenneTwisterUniformRng second = new MersenneTwisterUniformRng(secondSeed);
+        // use the second rng to initialize the final one
+        final long skip = second.nextInt32() % 1000;
+        final int[] init = new int[4];
+        init[0] = (int) second.nextInt32();
+        init[1] = (int) second.nextInt32();
+        init[2] = (int) second.nextInt32();
+        init[3] = (int) second.nextInt32();
 
-		// use the second rng to initialize the final one
-		final long skip = second.nextInt32() % 1000;
-		final int init[] = new int[4];
-		init[0] = (int) second.nextInt32();
-		init[1] = (int) second.nextInt32();
-		init[2] = (int) second.nextInt32();
-		init[3] = (int) second.nextInt32();
+        this.rng = new MersenneTwisterUniformRng(init);
 
-		this.rng = new MersenneTwisterUniformRng(init);
+        for ( long i = 0; i < skip; i++ ) {
+            rng.nextInt32();
+        }
+    }
 
-		for (long i=0; i<skip; i++ ){
-			rng.nextInt32();
-		}
-	}
-
-	//
-	// Singleton pattern.
-	// Create new instance only if it does not exist yet
-	//
-
-	public static SeedGenerator getInstance() {
-		if (instance == null) {
-			synchronized (SeedGenerator.class) {
-				if (instance == null) {
-					instance = new SeedGenerator();
-				}
-			}
-		}
-		return instance;
-	}
-
-
-	public long get() {
-		return  rng.nextInt32();
-	}
+    public long get() {
+        return rng.nextInt32();
+    }
 
 }
-
-

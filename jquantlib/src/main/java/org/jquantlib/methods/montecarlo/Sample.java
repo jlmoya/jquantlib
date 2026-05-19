@@ -24,11 +24,10 @@ package org.jquantlib.methods.montecarlo;
 
 /**
  * Weighted sample
- * 
+ *
+ * @param <T>
  * @author Dominik Holenstein
  * @author Richard Gomes
- * 
- * @param <T>
  */
 
 //TODO: Add JavaDocs
@@ -39,8 +38,8 @@ package org.jquantlib.methods.montecarlo;
 // Sample<Path>
 // Sample<MultiPath>
 
-public final class Sample<T> {
-    
+public final class Sample< T > {
+
     //
     // private fields
     //
@@ -56,23 +55,21 @@ public final class Sample<T> {
      */
     //XXX This field has public read access via getter but can be written by friend classes (same package)
     private double weight;
-    
 
     //
     // public constructors
     //
-    
+
     //-- template<class T> Sample(T value, Real weight); in ql/methods/montecarlo/sample.hpp:38
     public Sample(final T value, final double weight) {
         this.value = value;
         this.weight = weight;
     }
 
-    
     //
     // public getters
     //
-    
+
     public T value() {
         return value;
     }
@@ -81,12 +78,10 @@ public final class Sample<T> {
         return weight;
     }
 
-    
     //
     // package private setters
     //
-    
-    
+
     /*@PackagePrivate*/ void setValue(T value) {
         this.value = value;
     }

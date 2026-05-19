@@ -15,15 +15,12 @@ import org.jquantlib.util.LazyObject;
 /**
  * Lazy 2-D FDM solver for the two-asset Black-Scholes PDE in log-space.
  * <p>
- * Java port of v1.42.1
- * {@code ql/methods/finitedifferences/solvers/fdm2dblackscholessolver.{hpp,cpp}}.
+ * Java port of v1.42.1 {@code ql/methods/finitedifferences/solvers/fdm2dblackscholessolver.{hpp,cpp}}.
  * <p>
- * Wires {@link Fdm2dBlackScholesOp} into a {@link Fdm2DimSolver}. The solver
- * interpolates in {@code (ln S1, ln S2)} space; the public API
- * ({@link #valueAt}, {@link #deltaXat}, {@link #deltaYat}, {@link #gammaXat},
- * {@link #gammaYat}, {@link #gammaXYat}, {@link #thetaAt}) accepts the raw
- * spot pair {@code (u, v)} and converts to {@code (ln u, ln v)} before
- * interpolation, matching C++ {@code std::log(u)} / {@code std::log(v)}.
+ * Wires {@link Fdm2dBlackScholesOp} into a {@link Fdm2DimSolver}. The solver interpolates in {@code (ln S1, ln S2)}
+ * space; the public API ({@link #valueAt}, {@link #deltaXat}, {@link #deltaYat}, {@link #gammaXat}, {@link #gammaYat},
+ * {@link #gammaXYat}, {@link #thetaAt}) accepts the raw spot pair {@code (u, v)} and converts to {@code (ln u, ln v)}
+ * before interpolation, matching C++ {@code std::log(u)} / {@code std::log(v)}.
  *
  * <h3>Local-vol branch</h3>
  * The {@code localVol} / {@code illegalLocalVolOverwrite} pair is forwarded
@@ -45,21 +42,14 @@ public class Fdm2dBlackScholesSolver extends LazyObject {
 
     private Fdm2DimSolver solver;
 
-    public Fdm2dBlackScholesSolver(final GeneralizedBlackScholesProcess p1,
-                                   final GeneralizedBlackScholesProcess p2,
-                                   final double correlation,
-                                   final FdmSolverDesc solverDesc,
-                                   final FdmSchemeDesc schemeDesc) {
+    public Fdm2dBlackScholesSolver(final GeneralizedBlackScholesProcess p1, final GeneralizedBlackScholesProcess p2,
+            final double correlation, final FdmSolverDesc solverDesc, final FdmSchemeDesc schemeDesc) {
         this(p1, p2, correlation, solverDesc, schemeDesc, false, Double.NaN);
     }
 
-    public Fdm2dBlackScholesSolver(final GeneralizedBlackScholesProcess p1,
-                                   final GeneralizedBlackScholesProcess p2,
-                                   final double correlation,
-                                   final FdmSolverDesc solverDesc,
-                                   final FdmSchemeDesc schemeDesc,
-                                   final boolean localVol,
-                                   final double illegalLocalVolOverwrite) {
+    public Fdm2dBlackScholesSolver(final GeneralizedBlackScholesProcess p1, final GeneralizedBlackScholesProcess p2,
+            final double correlation, final FdmSolverDesc solverDesc, final FdmSchemeDesc schemeDesc,
+            final boolean localVol, final double illegalLocalVolOverwrite) {
         this.p1 = p1;
         this.p2 = p2;
         this.correlation = correlation;
@@ -74,8 +64,7 @@ public class Fdm2dBlackScholesSolver extends LazyObject {
 
     @Override
     protected void performCalculations() {
-        final Fdm2dBlackScholesOp op = new Fdm2dBlackScholesOp(
-                solverDesc.mesher, p1, p2, correlation,
+        final Fdm2dBlackScholesOp op = new Fdm2dBlackScholesOp(solverDesc.mesher, p1, p2, correlation,
                 solverDesc.maturity, localVol, illegalLocalVolOverwrite);
         solver = new Fdm2DimSolver(solverDesc, schemeDesc, op);
     }
@@ -109,8 +98,7 @@ public class Fdm2dBlackScholesSolver extends LazyObject {
         calculate();
         final double x = JQuantMath.log(u);
         final double y = JQuantMath.log(v);
-        return (solver.derivativeXX(x, y) - solver.derivativeX(x, y))
-                / (u * u);
+        return (solver.derivativeXX(x, y) - solver.derivativeX(x, y)) / (u * u);
     }
 
     /** Gamma d^2V/dS2^2 at {@code (u, v)}. */
@@ -118,8 +106,7 @@ public class Fdm2dBlackScholesSolver extends LazyObject {
         calculate();
         final double x = JQuantMath.log(u);
         final double y = JQuantMath.log(v);
-        return (solver.derivativeYY(x, y) - solver.derivativeY(x, y))
-                / (v * v);
+        return (solver.derivativeYY(x, y) - solver.derivativeY(x, y)) / (v * v);
     }
 
     /** Cross-gamma d^2V/dS1dS2 at {@code (u, v)}. */

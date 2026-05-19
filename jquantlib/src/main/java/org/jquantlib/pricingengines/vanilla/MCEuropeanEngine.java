@@ -39,10 +39,9 @@ import org.jquantlib.processes.GeneralizedBlackScholesProcess;
  * European option pricing engine using Monte Carlo simulation.
  *
  * <p>Java port of {@code QuantLib v1.42.1
- * ql/pricingengines/vanilla/mceuropeanengine.hpp} (Phase 5h.5-MC-INFRA
- * WI-8). Specialised for {@code RNG = PseudoRandom} (Mersenne-Twister
- * +InverseCumulativeNormal) — quasi-random / low-discrepancy variants
- * are deferred to Phase 5h.5-MC-INFRA-b.
+ * ql/pricingengines/vanilla/mceuropeanengine.hpp} (Phase 5h.5-MC-INFRA WI-8). Specialised for
+ * {@code RNG = PseudoRandom} (Mersenne-Twister +InverseCumulativeNormal) — quasi-random / low-discrepancy variants are
+ * deferred to Phase 5h.5-MC-INFRA-b.
  *
  * <p>Cross-validates against {@code AnalyticEuropeanEngine} —
  * convergence to the closed-form Black-Scholes price as N→∞.
@@ -51,34 +50,25 @@ import org.jquantlib.processes.GeneralizedBlackScholesProcess;
  */
 public final class MCEuropeanEngine extends MCVanillaEngine {
 
-    public MCEuropeanEngine(final GeneralizedBlackScholesProcess process,
-                            final int timeSteps,
-                            final int timeStepsPerYear,
-                            final boolean brownianBridge,
-                            final boolean antitheticVariate,
-                            final int requiredSamples,
-                            final double requiredTolerance,
-                            final int maxSamples,
-                            final long seed) {
-        super(process, timeSteps, timeStepsPerYear,
-                brownianBridge, antitheticVariate,
-                /* controlVariate=*/ false,
-                requiredSamples, requiredTolerance, maxSamples, seed);
+    public MCEuropeanEngine(final GeneralizedBlackScholesProcess process, final int timeSteps,
+            final int timeStepsPerYear, final boolean brownianBridge, final boolean antitheticVariate,
+            final int requiredSamples, final double requiredTolerance, final int maxSamples, final long seed) {
+        super(process, timeSteps, timeStepsPerYear, brownianBridge, antitheticVariate,
+                /* controlVariate=*/ false, requiredSamples, requiredTolerance, maxSamples, seed);
     }
 
     @Override
-    protected PathPricer<Path> pathPricer() {
+    protected PathPricer< Path > pathPricer() {
         final OneAssetOption.ArgumentsImpl a = (OneAssetOption.ArgumentsImpl) arguments_;
         final PlainVanillaPayoff payoff;
         try {
             payoff = (PlainVanillaPayoff) a.payoff;
-        } catch (final ClassCastException e) {
+        } catch ( final ClassCastException e ) {
             throw new RuntimeException("non-plain payoff given");
         }
         QL.require(payoff != null, "non-plain payoff given");
 
-        final double discount = process_.riskFreeRate().currentLink()
-                .discount(timeGrid().back());
+        final double discount = process_.riskFreeRate().currentLink().discount(timeGrid().back());
         return new EuropeanPathPricer(payoff.optionType(), payoff.strike(), discount);
     }
 }

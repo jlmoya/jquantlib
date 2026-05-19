@@ -37,8 +37,8 @@ package org.jquantlib.instruments;
 import org.jquantlib.QL;
 
 /**
- * Spread basket payoff: applies the base payoff to the spread {@code a[0] - a[1]}
- * of two underlying asset values at exercise.
+ * Spread basket payoff: applies the base payoff to the spread {@code a[0] - a[1]} of two underlying asset values at
+ * exercise.
  *
  * <p>Ported from C++ QuantLib v1.42.1
  * {@code ql/instruments/basketoption.hpp::SpreadBasketPayoff}.</p>
@@ -53,8 +53,7 @@ public class SpreadBasketPayoff extends BasketPayoff {
 
     @Override
     public double accumulate(final double[] a) {
-        QL.require(a != null && a.length == 2,
-                "spread payoff is only defined for two underlyings");
+        QL.require(a != null && a.length == 2, "spread payoff is only defined for two underlyings");
         return a[0] - a[1];
     }
 }

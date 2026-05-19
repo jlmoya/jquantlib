@@ -34,10 +34,9 @@ import org.jquantlib.model.marketmodels.products.MultiProductOneStep;
 /**
  * One-step Forward Rate Agreements.
  * <p>
- * Mirrors C++ {@code class OneStepForwards}
- * (ql/models/marketmodels/products/onestep/onestepforwards.{hpp,cpp} v1.42.1).
- * Each product i pays {@code (forwardRate(i) - strike[i]) * accrual[i]} at
- * paymentTime[i] in a single evolution step.
+ * Mirrors C++ {@code class OneStepForwards} (ql/models/marketmodels/products/onestep/onestepforwards.{hpp,cpp}
+ * v1.42.1). Each product i pays {@code (forwardRate(i) - strike[i]) * accrual[i]} at paymentTime[i] in a single
+ * evolution step.
  *
  * @author Jose Moya
  */
@@ -47,10 +46,8 @@ public class OneStepForwards extends MultiProductOneStep {
     private final double[] paymentTimes_;
     private final double[] strikes_;
 
-    public OneStepForwards(final double[] rateTimes,
-                           final double[] accruals,
-                           final double[] paymentTimes,
-                           final double[] strikes) {
+    public OneStepForwards(final double[] rateTimes, final double[] accruals, final double[] paymentTimes,
+            final double[] strikes) {
         super(rateTimes);
         this.accruals_ = accruals.clone();
         this.paymentTimes_ = paymentTimes.clone();
@@ -59,22 +56,27 @@ public class OneStepForwards extends MultiProductOneStep {
     }
 
     @Override
-    public double[] possibleCashFlowTimes() { return paymentTimes_; }
+    public double[] possibleCashFlowTimes() {
+        return paymentTimes_;
+    }
 
     @Override
-    public int numberOfProducts() { return strikes_.length; }
+    public int numberOfProducts() {
+        return strikes_.length;
+    }
 
     @Override
-    public int maxNumberOfCashFlowsPerProductPerStep() { return 1; }
+    public int maxNumberOfCashFlowsPerProductPerStep() {
+        return 1;
+    }
 
     @Override
     public void reset() { /* nothing to do */ }
 
     @Override
-    public boolean nextTimeStep(final CurveState currentState,
-                                final int[] numberCashFlowsThisStep,
-                                final MarketModelMultiProduct.CashFlow[][] genCashFlows) {
-        for (int i = 0; i < strikes_.length; ++i) {
+    public boolean nextTimeStep(final CurveState currentState, final int[] numberCashFlowsThisStep,
+            final MarketModelMultiProduct.CashFlow[][] genCashFlows) {
+        for ( int i = 0; i < strikes_.length; ++i ) {
             final double liborRate = currentState.forwardRate(i);
             genCashFlows[i][0].timeIndex = i;
             genCashFlows[i][0].amount = (liborRate - strikes_[i]) * accruals_[i];

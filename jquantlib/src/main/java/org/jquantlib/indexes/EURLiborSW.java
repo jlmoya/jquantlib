@@ -27,21 +27,21 @@ import org.jquantlib.time.Period;
 import org.jquantlib.time.TimeUnit;
 
 /**
- * 1-week EUR Libor index    
- * 
+ * 1-week EUR Libor index
+ *
  * @author Tim Blackler
  */
 public class EURLiborSW extends EURLibor {
-
 
     //
     // public constructors
     //
 
     public EURLiborSW() {
-    	this(new Handle<YieldTermStructure>());
+        this(new Handle< YieldTermStructure >());
     }
-    public EURLiborSW(final Handle<YieldTermStructure> h) {
+
+    public EURLiborSW(final Handle< YieldTermStructure > h) {
         super(new Period(1, TimeUnit.Weeks), h);
     }
 

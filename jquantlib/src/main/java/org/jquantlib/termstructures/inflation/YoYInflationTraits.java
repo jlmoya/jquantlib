@@ -34,8 +34,7 @@ import org.jquantlib.termstructures.YoYInflationTermStructure;
 import org.jquantlib.time.Date;
 
 /**
- * Bootstrap traits for {@code PiecewiseYoYInflationCurve} — Java port of
- * QuantLib v1.42.1 {@code YoYInflationTraits}
+ * Bootstrap traits for {@code PiecewiseYoYInflationCurve} — Java port of QuantLib v1.42.1 {@code YoYInflationTraits}
  * ({@code ql/termstructures/inflation/inflationtraits.hpp:118-191}).
  *
  * <p>Differences from the zero-side traits:
@@ -70,11 +69,11 @@ public final class YoYInflationTraits {
     }
 
     /**
-     * Iterative guess for node {@code i}. If {@code validData}, reuse
-     * {@code data[i]}; otherwise fall back to the average-inflation constant.
+     * Iterative guess for node {@code i}. If {@code validData}, reuse {@code data[i]}; otherwise fall back to the
+     * average-inflation constant.
      */
     public double guess(final int i, final double[] data, final boolean validData) {
-        if (validData) {
+        if ( validData ) {
             return data[i];
         }
         return AVG_INFLATION;
@@ -82,10 +81,11 @@ public final class YoYInflationTraits {
 
     /** Lower bound for node {@code i}'s value. Mirrors C++ minValueAfter. */
     public double minValueAfter(final int i, final double[] data, final boolean validData) {
-        if (validData) {
+        if ( validData ) {
             double r = data[0];
-            for (int k = 1; k < data.length; ++k) {
-                if (data[k] < r) r = data[k];
+            for ( int k = 1; k < data.length; ++k ) {
+                if ( data[k] < r )
+                    r = data[k];
             }
             return r < 0.0 ? r * 2.0 : r / 2.0;
         }
@@ -94,10 +94,11 @@ public final class YoYInflationTraits {
 
     /** Upper bound for node {@code i}'s value. Mirrors C++ maxValueAfter. */
     public double maxValueAfter(final int i, final double[] data, final boolean validData) {
-        if (validData) {
+        if ( validData ) {
             double r = data[0];
-            for (int k = 1; k < data.length; ++k) {
-                if (data[k] > r) r = data[k];
+            for ( int k = 1; k < data.length; ++k ) {
+                if ( data[k] > r )
+                    r = data[k];
             }
             return r < 0.0 ? r / 2.0 : r * 2.0;
         }
@@ -105,9 +106,8 @@ public final class YoYInflationTraits {
     }
 
     /**
-     * Update data on a Newton step. Mirrors C++ {@code updateGuess}: assigns
-     * {@code data[i] = level} only — does NOT propagate to {@code data[0]}
-     * (this is the key difference from zero-inflation traits).
+     * Update data on a Newton step. Mirrors C++ {@code updateGuess}: assigns {@code data[i] = level} only — does NOT
+     * propagate to {@code data[0]} (this is the key difference from zero-inflation traits).
      */
     public void updateGuess(final double[] data, final double level, final int i) {
         data[i] = level;

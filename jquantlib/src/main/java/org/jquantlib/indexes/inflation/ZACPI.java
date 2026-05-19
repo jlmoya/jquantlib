@@ -42,18 +42,11 @@ import org.jquantlib.time.TimeUnit;
 public class ZACPI extends ZeroInflationIndex {
 
     public ZACPI(final boolean interpolated) {
-        this(interpolated, new Handle<ZeroInflationTermStructure>());
+        this(interpolated, new Handle< ZeroInflationTermStructure >());
     }
 
-    public ZACPI(final boolean interpolated,
-                 final Handle<ZeroInflationTermStructure> termStructure) {
-        super("CPI",
-                new ZARegion(),
-                false,
-                interpolated,
-                Frequency.Monthly,
-                new Period(1, TimeUnit.Months),
-                new ZARCurrency(),
-                termStructure);
+    public ZACPI(final boolean interpolated, final Handle< ZeroInflationTermStructure > termStructure) {
+        super("CPI", new ZARegion(), false, interpolated, Frequency.Monthly, new Period(1, TimeUnit.Months),
+                new ZARCurrency(), termStructure);
     }
 }

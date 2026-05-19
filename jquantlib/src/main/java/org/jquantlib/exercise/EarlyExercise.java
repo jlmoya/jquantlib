@@ -47,44 +47,42 @@ import org.jquantlib.lang.annotation.QualityAssurance.Version;
 
 /**
  * Early exercise base class
- * 
+ *
  * @author Richard Gomes
  */
-@QualityAssurance(quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Richard Gomes" })
+@QualityAssurance( quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Richard Gomes" } )
 public abstract class EarlyExercise extends Exercise {
 
     //
     // protected fields
     //
-    
+
     protected boolean payoffAtExpiry;
-	
-	
+
     //
     // protected constructors
     //
-    
+
     protected EarlyExercise(Exercise.Type type) {
-		this(type, false);
-	}
+        this(type, false);
+    }
 
-	protected EarlyExercise(Exercise.Type type, boolean payoffAtExpiry) {
-		super(type);
-		this.payoffAtExpiry = payoffAtExpiry;
-	}
+    protected EarlyExercise(Exercise.Type type, boolean payoffAtExpiry) {
+        super(type);
+        this.payoffAtExpiry = payoffAtExpiry;
+    }
 
-	
-	//
-	// public methods
-	//
-	
-	/**
-	 * Returns the payoff at expiry
-	 * 
-	 * @return the payoff at expiry
-	 */
-	public boolean payoffAtExpiry() {
-		return this.payoffAtExpiry;
-	}
-	
+    //
+    // public methods
+    //
+
+    /**
+     * Returns the payoff at expiry
+     *
+     * @return the payoff at expiry
+     */
+    public boolean payoffAtExpiry() {
+        return this.payoffAtExpiry;
+    }
+
 }

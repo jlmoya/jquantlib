@@ -50,16 +50,16 @@ import org.jquantlib.time.Date;
  * Implied term structure at a given date in the future.
  *
  * @note The given date will be the implied reference date.
- * @note This term structure will remain linked to the original structure, i.e., any changes in the latter will be reflected in this
- *       structure as well.
+ * @note This term structure will remain linked to the original structure, i.e., any changes in the latter will be
+ * reflected in this structure as well.
  */
 //TEST the correctness of the returned values is tested by checking them against numerical calculations.
 //TEST observability against changes in the underlying term structure is checked.
-public class ImpliedTermStructure<T extends YieldTermStructure> extends AbstractYieldTermStructure {
+public class ImpliedTermStructure< T extends YieldTermStructure > extends AbstractYieldTermStructure {
 
-    private final Handle<T>	originalCurve;
+    private final Handle< T > originalCurve;
 
-    public ImpliedTermStructure(final Handle<T> h, final Date referenceDate) {
+    public ImpliedTermStructure(final Handle< T > h, final Date referenceDate) {
         super(referenceDate);
         this.originalCurve = h;
         this.originalCurve.addObserver(this);
@@ -85,16 +85,18 @@ public class ImpliedTermStructure<T extends YieldTermStructure> extends Abstract
     }
 
     @Override
-    protected /*@DiscountFactor*/ double discountImpl(final /*@Time*/ double  t) /* @ReadOnly */ {
+    protected /*@DiscountFactor*/ double discountImpl(final /*@Time*/ double t) /* @ReadOnly */ {
         /* t is relative to the current reference date
            and needs to be converted to the time relative
            to the reference date of the original curve */
         final Date ref = referenceDate();
-        final /*@Time*/ double originalTime = t + dayCounter().yearFraction(originalCurve.currentLink().referenceDate(), ref);
+        final /*@Time*/ double originalTime =
+                t + dayCounter().yearFraction(originalCurve.currentLink().referenceDate(), ref);
         /* discount at evaluation date cannot be cached
            since the original curve could change between
            invocations of this method */
-        return originalCurve.currentLink().discount(originalTime, true) / originalCurve.currentLink().discount(ref, true);
+        return originalCurve.currentLink().discount(originalTime, true) / originalCurve.currentLink()
+                .discount(ref, true);
     }
 
 }

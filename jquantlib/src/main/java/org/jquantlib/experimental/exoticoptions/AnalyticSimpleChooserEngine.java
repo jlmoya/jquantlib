@@ -66,13 +66,11 @@ public class AnalyticSimpleChooserEngine extends OneAssetOption.EngineImpl {
     @Override
     public void calculate() {
         final Date today = new Settings().evaluationDate();
-        final DayCounter rfdc  = process.riskFreeRate().currentLink().dayCounter();
+        final DayCounter rfdc = process.riskFreeRate().currentLink().dayCounter();
         final DayCounter divdc = process.dividendYield().currentLink().dayCounter();
         final DayCounter voldc = process.blackVolatility().currentLink().dayCounter();
-        QL.require(rfdc.equals(divdc),
-                   "Risk-free rate and dividend yield must have the same day counter");
-        QL.require(rfdc.equals(voldc),
-                   "Risk-free rate and volatility must have the same day counter");
+        QL.require(rfdc.equals(divdc), "Risk-free rate and dividend yield must have the same day counter");
+        QL.require(rfdc.equals(voldc), "Risk-free rate and volatility must have the same day counter");
 
         final double spot = process.stateVariable().currentLink().value();
         QL.require(a.payoff instanceof StrikedTypePayoff, "non-plain payoff given");
@@ -80,8 +78,7 @@ public class AnalyticSimpleChooserEngine extends OneAssetOption.EngineImpl {
         final double strike = payoff.strike();
 
         final Date maturity = a.exercise.lastDate();
-        final double volatility = process.blackVolatility().currentLink()
-                .blackVol(maturity, strike);
+        final double volatility = process.blackVolatility().currentLink().blackVol(maturity, strike);
         final double timeToMaturity = rfdc.yearFraction(today, maturity);
         final double timeToChoosing = rfdc.yearFraction(today, a.choosingDate);
 
@@ -93,28 +90,23 @@ public class AnalyticSimpleChooserEngine extends OneAssetOption.EngineImpl {
         QL.require(spot > 0.0, "negative or null spot value");
         QL.require(strike > 0.0, "negative or null strike value");
         QL.require(volatility > 0.0, "negative or null volatility");
-        QL.require(timeToChoosing > 0.0,
-                   "choosing date earlier than or equal to evaluation date");
+        QL.require(timeToChoosing > 0.0, "choosing date earlier than or equal to evaluation date");
 
-        final double sqrtT  = Math.sqrt(timeToMaturity);
+        final double sqrtT = Math.sqrt(timeToMaturity);
         final double sqrtTc = Math.sqrt(timeToChoosing);
 
         final double d = (Math.log(spot / strike)
-                + ((riskFreeRate - dividendRate) + volatility * volatility * 0.5) * timeToMaturity)
-                / (volatility * sqrtT);
+                + ((riskFreeRate - dividendRate) + volatility * volatility * 0.5) * timeToMaturity) / (volatility
+                * sqrtT);
 
-        final double y = (Math.log(spot / strike)
-                + (riskFreeRate - dividendRate) * timeToMaturity
-                + (volatility * volatility * timeToChoosing / 2.0))
-                / (volatility * sqrtTc);
+        final double y = (Math.log(spot / strike) + (riskFreeRate - dividendRate) * timeToMaturity + (
+                volatility * volatility * timeToChoosing / 2.0)) / (volatility * sqrtTc);
 
         final CumulativeNormalDistribution f = new CumulativeNormalDistribution();
 
-        r.value = spot * Math.exp(-dividendRate * timeToMaturity) * f.op(d)
-                - strike * Math.exp(-riskFreeRate * timeToMaturity)
-                  * f.op(d - volatility * sqrtT)
-                - spot * Math.exp(-dividendRate * timeToMaturity) * f.op(-y)
-                + strike * Math.exp(-riskFreeRate * timeToMaturity)
-                  * f.op(-y + volatility * sqrtTc);
+        r.value = spot * Math.exp(-dividendRate * timeToMaturity) * f.op(d) - strike * Math.exp(
+                -riskFreeRate * timeToMaturity) * f.op(d - volatility * sqrtT) - spot * Math.exp(
+                -dividendRate * timeToMaturity) * f.op(-y) + strike * Math.exp(-riskFreeRate * timeToMaturity) * f.op(
+                -y + volatility * sqrtTc);
     }
 }

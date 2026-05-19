@@ -26,10 +26,9 @@ import org.jquantlib.processes.HestonProcess;
  * Analytic Bates-model engine — Heston SV plus log-normal jump diffusion.
  *
  * <p>Phase 5h.5-Bates port of QuantLib v1.42.1
- * {@code ql/pricingengines/vanilla/batesengine.{hpp,cpp}}. Extends
- * {@link AnalyticHestonEngine} and overrides {@link #addOnTerm} to inject
- * the Bates jump-diffusion correction into the Gatheral characteristic
- * function. The integrand and quadrature stay identical to the Heston engine.
+ * {@code ql/pricingengines/vanilla/batesengine.{hpp,cpp}}. Extends {@link AnalyticHestonEngine} and overrides
+ * {@link #addOnTerm} to inject the Bates jump-diffusion correction into the Gatheral characteristic function. The
+ * integrand and quadrature stay identical to the Heston engine.
  *
  * <p>Characteristic function add-on (Sepp 2003):
  * <pre>
@@ -39,9 +38,8 @@ import org.jquantlib.processes.HestonProcess;
  * </pre>
  *
  * <p>The {@link BatesProcess} is supplied separately because (matching
- * the Java {@link AnalyticHestonEngine} constructor pattern) the Java
- * {@code HestonModel} does not currently expose a {@code process()}
- * accessor.
+ * the Java {@link AnalyticHestonEngine} constructor pattern) the Java {@code HestonModel} does not currently expose a
+ * {@code process()} accessor.
  *
  * @see AnalyticHestonEngine
  * @see BatesModel
@@ -52,28 +50,27 @@ public class BatesEngine extends AnalyticHestonEngine {
     private final BatesModel batesModel_;
 
     /**
-     * Convenience constructor: Gatheral formula + Gauss-Laguerre 144 (the
-     * C++ default). Java currently uses the embedded n=128 quadrature table.
+     * Convenience constructor: Gatheral formula + Gauss-Laguerre 144 (the C++ default). Java currently uses the
+     * embedded n=128 quadrature table.
      */
     public BatesEngine(final BatesModel model, final BatesProcess process) {
         this(model, process, 144);
     }
 
     /** Standard constructor: Gauss-Laguerre quadrature of the requested order. */
-    public BatesEngine(final BatesModel model, final BatesProcess process,
-                       final int integrationOrder) {
-        super(model, (HestonProcess) process, integrationOrder);
+    public BatesEngine(final BatesModel model, final BatesProcess process, final int integrationOrder) {
+        super(model, process, integrationOrder);
         this.batesModel_ = model;
     }
 
     /** Bates jump-diffusion characteristic-function add-on. */
     @Override
     protected Complex addOnTerm(final double phi, final double t, final int j) {
-        final double nu     = batesModel_.nu();
+        final double nu = batesModel_.nu();
         final double delta2 = 0.5 * batesModel_.delta() * batesModel_.delta();
         final double lambda = batesModel_.lambda();
-        final double i      = (j == 1) ? 1.0 : 0.0;
-        final Complex g     = new Complex(i, phi);
+        final double i = (j == 1) ? 1.0 : 0.0;
+        final Complex g = new Complex(i, phi);
 
         // exp(nu*g + delta2*g*g) - 1 - g*(exp(nu+delta2)-1)
         final Complex term1 = g.mul(nu).add(g.mul(g).mul(delta2)).exp().sub(1.0);

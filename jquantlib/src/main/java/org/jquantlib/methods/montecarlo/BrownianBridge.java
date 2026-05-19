@@ -48,26 +48,26 @@
 // ===========================================================================
 package org.jquantlib.methods.montecarlo;
 
-import java.util.Arrays;
-
 import org.jquantlib.time.TimeGrid;
+
+import java.util.Arrays;
 
 /**
  * Builds Wiener process paths using Gaussian variates
  * <p>
- * This class generates normalized (i.e., unit-variance) paths as sequences of variations. In order to obtain the actual path of the
- * underlying, the returned variations must be multiplied by the integrated variance (including time) over the corresponding time
- * step.
+ * This class generates normalized (i.e., unit-variance) paths as sequences of variations. In order to obtain the actual
+ * path of the underlying, the returned variations must be multiplied by the integrated variance (including time) over
+ * the corresponding time step.
  *
  * @author Richard Gomes
  */
 public class BrownianBridge {
 
-    private final /* @NonNegative */int size_;
-    private final /* @Time */double[] t_;
-    private final /* @Real */double[] sqrtdt_;
-    private final /* @NonNegative */int[] bridgeIndex_, leftIndex_, rightIndex_;
-    private final /* @Real */double[] leftWeight_, rightWeight_, stdDev_;
+    private final /* @NonNegative */ int size_;
+    private final /* @Time */ double[] t_;
+    private final /* @Real */ double[] sqrtdt_;
+    private final /* @NonNegative */ int[] bridgeIndex_, leftIndex_, rightIndex_;
+    private final /* @Real */ double[] leftWeight_, rightWeight_, stdDev_;
 
     /**
      * unit-time path
@@ -87,7 +87,7 @@ public class BrownianBridge {
         this.rightWeight_ = new double[this.size_];
         this.stdDev_ = new double[this.size_];
 
-        for (int i = 0; i < size_; ++i) {
+        for ( int i = 0; i < size_; ++i ) {
             t_[i] = /* @Time */ (i + 1);
         }
         initialize();
@@ -96,9 +96,8 @@ public class BrownianBridge {
     /**
      * generic times
      *
-     * @note the starting time of the path is assumed to be 0 and must not be included
-     *
      * @param times
+     * @note the starting time of the path is assumed to be 0 and must not be included
      */
     public BrownianBridge(final/* @Time */double[] times) {
         this.size_ = times.length;
@@ -134,7 +133,7 @@ public class BrownianBridge {
         this.rightWeight_ = new double[this.size_];
         this.stdDev_ = new double[this.size_];
 
-        for (int i = 0; i < size_; ++i) {
+        for ( int i = 0; i < size_; ++i ) {
             t_[i] = timeGrid.get(i + 1);
         }
         initialize();
@@ -143,7 +142,7 @@ public class BrownianBridge {
     private void initialize() {
 
         sqrtdt_[0] = Math.sqrt(t_[0]);
-        for (int i = 1; i < size_; ++i) {
+        for ( int i = 1; i < size_; ++i ) {
             sqrtdt_[i] = Math.sqrt(t_[i] - t_[i - 1]);
         }
 
@@ -162,14 +161,14 @@ public class BrownianBridge {
         stdDev_[0] = Math.sqrt(t_[size_ - 1]);
         // The global step to the last point in time is special.
         leftWeight_[0] = rightWeight_[0] = 0.0;
-        for (int j = 0, i = 1; i < size_; ++i) {
+        for ( int j = 0, i = 1; i < size_; ++i ) {
             // Find the next unpopulated entry in the map.
-            while (map[j] != 0) {
+            while ( map[j] != 0 ) {
                 ++j;
             }
             int k = j;
             // Find the next populated entry in the map from there.
-            while (map[k] == 0) {
+            while ( map[k] == 0 ) {
                 ++k;
             }
             // l-1 is now the index of the point to be constructed next.
@@ -179,7 +178,7 @@ public class BrownianBridge {
             bridgeIndex_[i] = l;
             leftIndex_[i] = j;
             rightIndex_[i] = k;
-            if (j != 0) {
+            if ( j != 0 ) {
                 leftWeight_[i] = (t_[k] - t_[l]) / (t_[k] - t_[j - 1]);
                 rightWeight_[i] = (t_[l] - t_[j - 1]) / (t_[k] - t_[j - 1]);
                 stdDev_[i] = Math.sqrt(((t_[l] - t_[j - 1]) * (t_[k] - t_[l])) / (t_[k] - t_[j - 1]));
@@ -189,64 +188,63 @@ public class BrownianBridge {
                 stdDev_[i] = Math.sqrt(t_[l] * (t_[k] - t_[l]) / t_[k]);
             }
             j = k + 1;
-            if (j >= size_) {
+            if ( j >= size_ ) {
                 j = 0; // wrap around
             }
         }
     }
 
-    public/* @NonNegative */int size() /* @ReadOnly */{
+    public/* @NonNegative */int size() /* @ReadOnly */ {
         return size_;
     }
 
-    public final/* @Time */double[] times() /* @ReadOnly */{
+    public final/* @Time */double[] times() /* @ReadOnly */ {
         return t_;
     }
 
     /**
-     * Mirrors C++ {@code const std::vector<Size>& bridgeIndex() const}:
-     * for each variate index {@code i}, the path-point index that
-     * variate constructs (Phase MC-extras WI-5 alignment).
+     * Mirrors C++ {@code const std::vector<Size>& bridgeIndex() const}: for each variate index {@code i}, the
+     * path-point index that variate constructs (Phase MC-extras WI-5 alignment).
      */
     public final int[] bridgeIndex() /* @ReadOnly */ {
         return bridgeIndex_;
     }
 
     /**
-     * Mirrors C++ {@code const std::vector<Size>& leftIndex() const}:
-     * the left-anchor path-point for the {@code i}th step.
+     * Mirrors C++ {@code const std::vector<Size>& leftIndex() const}: the left-anchor path-point for the {@code i}th
+     * step.
      */
     public final int[] leftIndex() /* @ReadOnly */ {
         return leftIndex_;
     }
 
     /**
-     * Mirrors C++ {@code const std::vector<Size>& rightIndex() const}:
-     * the right-anchor path-point for the {@code i}th step.
+     * Mirrors C++ {@code const std::vector<Size>& rightIndex() const}: the right-anchor path-point for the {@code i}th
+     * step.
      */
     public final int[] rightIndex() /* @ReadOnly */ {
         return rightIndex_;
     }
 
     /**
-     * Mirrors C++ {@code const std::vector<Real>& leftWeight() const}:
-     * the left-anchor convex coefficient for the {@code i}th step.
+     * Mirrors C++ {@code const std::vector<Real>& leftWeight() const}: the left-anchor convex coefficient for the
+     * {@code i}th step.
      */
     public final double[] leftWeight() /* @ReadOnly */ {
         return leftWeight_;
     }
 
     /**
-     * Mirrors C++ {@code const std::vector<Real>& rightWeight() const}:
-     * the right-anchor convex coefficient for the {@code i}th step.
+     * Mirrors C++ {@code const std::vector<Real>& rightWeight() const}: the right-anchor convex coefficient for the
+     * {@code i}th step.
      */
     public final double[] rightWeight() /* @ReadOnly */ {
         return rightWeight_;
     }
 
     /**
-     * Mirrors C++ {@code const std::vector<Real>& stdDeviation() const}:
-     * the conditional standard deviation for the {@code i}th step.
+     * Mirrors C++ {@code const std::vector<Real>& stdDeviation() const}: the conditional standard deviation for the
+     * {@code i}th step.
      */
     public final double[] stdDeviation() /* @ReadOnly */ {
         return stdDev_;
@@ -263,18 +261,18 @@ public class BrownianBridge {
     // ArrayIndexOutOfBoundsException which can be easily avoided.
     // -- Richard Gomes
     //
-    public void transform(final double[] input, final double[] output) /* @ReadOnly */{
-        if (input == null || input.length == 0)
+    public void transform(final double[] input, final double[] output) /* @ReadOnly */ {
+        if ( input == null || input.length == 0 )
             throw new IllegalArgumentException("invalid sequence");
-        if (input.length != size_)
+        if ( input.length != size_ )
             throw new IllegalArgumentException("incompatible sequence size");
         // We use output to store the path...
         output[size_ - 1] = stdDev_[0] * input[0];
-        for (int i = 1; i < size_; ++i) {
+        for ( int i = 1; i < size_; ++i ) {
             final int j = leftIndex_[i];
             final int k = rightIndex_[i];
             final int l = bridgeIndex_[i];
-            if (j != 0) {
+            if ( j != 0 ) {
                 output[l] = leftWeight_[i] * output[j - 1] + rightWeight_[i] * output[k] + stdDev_[i] * input[i];
             } else {
                 output[l] = rightWeight_[i] * output[k] + stdDev_[i] * input[i];
@@ -282,7 +280,7 @@ public class BrownianBridge {
         }
         // ...after which, we calculate the variations and
         // normalize to unit times
-        for (int i = size_ - 1; i >= 1; --i) {
+        for ( int i = size_ - 1; i >= 1; --i ) {
             output[i] -= output[i - 1];
             output[i] /= sqrtdt_[i];
         }

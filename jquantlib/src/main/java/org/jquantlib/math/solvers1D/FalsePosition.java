@@ -30,17 +30,17 @@ import org.jquantlib.math.Ops;
  * <p>
  * The implementation of the algorithm was inspired by
  * <i>Press, Teukolsky, Vetterling, and Flannery,
- * "Numerical Recipes in C", 2nd edition,
- * Cambridge University Press</i>
- * 
+ * "Numerical Recipes in C", 2nd edition, Cambridge University Press</i>
+ *
  * @author Dominik Holenstein
  */
 //TODO FalsePosition: Add test case.
-public class FalsePosition extends AbstractSolver1D<Ops.DoubleOp> {
+public class FalsePosition extends AbstractSolver1D< Ops.DoubleOp > {
 
     /**
      * Computes the roots of a function by using the False Position method.
-     * @param f the function
+     *
+     * @param f         the function
      * @param xAccuracy the provided accuracy
      * @returns <code>root_</code>
      */
@@ -50,37 +50,37 @@ public class FalsePosition extends AbstractSolver1D<Ops.DoubleOp> {
         double fl, fh, xl, xh, dx, del, froot;
 
         // Identify the limits so that xl corresponds to the low side
-        if (fxMin < 0.0) {
-            xl=xMin;
+        if ( fxMin < 0.0 ) {
+            xl = xMin;
             fl = fxMin;
-            xh=xMax;
+            xh = xMax;
             fh = fxMax;
         } else {
-            xl=xMax;
+            xl = xMax;
             fl = fxMax;
-            xh=xMin;
+            xh = xMin;
             fh = fxMin;
         }
-        dx=xh-xl;
+        dx = xh - xl;
 
-        while (evaluationNumber<= getMaxEvaluations()) {
+        while ( evaluationNumber <= getMaxEvaluations() ) {
             // Increment with respect to latest value
-            root=xl+dx*fl/(fl-fh);
-            froot=f.op(root);
+            root = xl + dx * fl / (fl - fh);
+            froot = f.op(root);
             evaluationNumber++;
-            if (froot < 0.0) {  // Replace appropriate limit
-                del=xl-root;
-                xl=root;
-                fl=froot;
+            if ( froot < 0.0 ) {  // Replace appropriate limit
+                del = xl - root;
+                xl = root;
+                fl = froot;
             } else {
-                del=xh-root;
-                xh=root;
-                fh=froot;
+                del = xh - root;
+                xh = root;
+                fh = froot;
             }
-            dx=xh-xl;
+            dx = xh - xl;
 
             // Convergence criterion
-            if (Math.abs(del) < xAccuracy || froot == 0.0)
+            if ( Math.abs(del) < xAccuracy || froot == 0.0 )
                 return root;
         }
         throw new ArithmeticException("maximum number of function evaluations exceeded"); // TODO: message

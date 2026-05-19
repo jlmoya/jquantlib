@@ -34,34 +34,27 @@ import org.jquantlib.methods.montecarlo.PathPricer;
  * Path pricer for discrete geometric-average-price Asian payoffs.
  *
  * <p>Java port of {@code QuantLib v1.42.1
- * ql/pricingengines/asian/mc_discr_geom_av_price.{hpp,cpp}}
- * {@code GeometricAPOPathPricer} (Phase 5e.5b-CFC-d-114).
+ * ql/pricingengines/asian/mc_discr_geom_av_price.{hpp,cpp}} {@code GeometricAPOPathPricer} (Phase 5e.5b-CFC-d-114).
  *
  * <p>Mirrors C++ {@code Real GeometricAPOPathPricer::operator()(const Path&)}:
- * computes the geometric mean of the asset values along the path
- * (skipping the t=0 point unless the time grid explicitly starts at 0),
- * applies the payoff, and discounts.
+ * computes the geometric mean of the asset values along the path (skipping the t=0 point unless the time grid
+ * explicitly starts at 0), applies the payoff, and discounts.
  *
  * @author JQuantLib
  */
-public final class GeometricAPOPathPricer extends PathPricer<Path> {
+public final class GeometricAPOPathPricer extends PathPricer< Path > {
 
     private final PlainVanillaPayoff payoff_;
     private final double discount_;
     private final double runningProduct_;
     private final int pastFixings_;
 
-    public GeometricAPOPathPricer(final Option.Type type,
-                                  final double strike,
-                                  final double discount) {
+    public GeometricAPOPathPricer(final Option.Type type, final double strike, final double discount) {
         this(type, strike, discount, 1.0, 0);
     }
 
-    public GeometricAPOPathPricer(final Option.Type type,
-                                  final double strike,
-                                  final double discount,
-                                  final double runningProduct,
-                                  final int pastFixings) {
+    public GeometricAPOPathPricer(final Option.Type type, final double strike, final double discount,
+            final double runningProduct, final int pastFixings) {
         QL.require(strike >= 0.0, "negative strike given");
         this.payoff_ = new PlainVanillaPayoff(type, strike);
         this.discount_ = discount;
@@ -77,15 +70,15 @@ public final class GeometricAPOPathPricer extends PathPricer<Path> {
         double averagePrice = 1.0;
         double product = runningProduct_;
         int fixings = n + pastFixings_;
-        if (path.timeGrid().mandatoryTimes().get(0) == 0.0) {
+        if ( path.timeGrid().mandatoryTimes().get(0) == 0.0 ) {
             fixings += 1;
             product *= path.front();
         }
         // care must be taken not to overflow product
         final double maxValue = Double.MAX_VALUE;
-        for (int i = 1; i < n + 1; i++) {
+        for ( int i = 1; i < n + 1; i++ ) {
             final double price = path.get(i);
-            if (product < maxValue / price) {
+            if ( product < maxValue / price ) {
                 product *= price;
             } else {
                 averagePrice *= Math.pow(product, 1.0 / fixings);
