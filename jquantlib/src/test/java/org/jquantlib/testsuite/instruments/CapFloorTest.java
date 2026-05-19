@@ -33,6 +33,7 @@ import org.jquantlib.cashflow.FloatingRateCoupon;
 import org.jquantlib.cashflow.IborLeg;
 import org.jquantlib.cashflow.Leg;
 import org.jquantlib.daycounters.Actual360;
+import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.daycounters.ActualActual;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.indexes.Euribor6M;
@@ -637,16 +638,74 @@ public class CapFloorTest {
      * {@code @Ignore}'d with the refined reason below until the upstream
      * IborCoupon divergence is fixed (separate work item).
      */
-    @Ignore("Phase 5e.5b-CFC-d-222: probe-captured C++ ref values "
-            + "(capNPV=6.875700267315598, floorNPV=2.6581292795945015, "
-            + "references/instruments/capfloor_cached_value.json). Java engine "
-            + "diverges by ~3.99e-3 on cap NPV (calculated 6.871705355889598) — "
-            + "same structural IborCoupon-fixing divergence flagged on the "
-            + "sibling testCachedValueFromOptionLets. MakeCapFloor and "
-            + "BlackCapFloorEngine are not implicated; root cause is upstream "
-            + "in IborLeg/IborCoupon. Blocked on upstream alignment.")
     @Test
     public void testCachedValue() {
+        QL.info("Testing Black cap/floor price against cached values...");
+
+        final CommonVars vars = new CommonVars();
+        final Settings settings = new Settings();
+        final Date savedEvalDate = settings.evaluationDate();
+        try {
+            final Date cachedToday = new Date(14, Month.March, 2002);
+            final Date cachedSettlement = new Date(18, Month.March, 2002);
+            settings.setEvaluationDate(cachedToday);
+            vars.termStructure.linkTo(Utilities.flatRate(cachedSettlement,
+                    0.05, new Actual360()));
+            final Date startDate = vars.termStructure.currentLink().referenceDate();
+            final Leg leg = vars.makeLeg(startDate, 20);
+
+            // Build cap/floor with an Actual365Fixed engine so the
+            // BlackCapFloorEngine's internal ConstantOptionletVolatility
+            // matches the C++ default (capfloor.cpp:90-94 uses the
+            // BlackCapFloorEngine ctor's default day counter, which is
+            // Actual365Fixed). The shared CommonVars.makeEngine uses
+            // ActualActual.ISDA for the structural tests, which would
+            // otherwise yield a slightly different blackVariance(fixingDate)
+            // and break the cached-value comparison.
+            final List<Double> capStrikes = new ArrayList<Double>(
+                    Arrays.asList(Double.valueOf(0.07)));
+            final CapFloor cap = new CapFloor(CapFloor.Type.Cap, leg,
+                    capStrikes, vars.termStructure, null);
+            final List<Double> floorStrikes = new ArrayList<Double>(
+                    Arrays.asList(Double.valueOf(0.03)));
+            final CapFloor floor = new CapFloor(CapFloor.Type.Floor, leg,
+                    floorStrikes, vars.termStructure, null);
+
+            final BlackCapFloorEngine engine = new BlackCapFloorEngine(
+                    vars.termStructure,
+                    new Handle<Quote>(new SimpleQuote(0.20)),
+                    new Actual365Fixed());
+            cap.setPricingEngine(engine);
+            floor.setPricingEngine(engine);
+
+            // Probe-captured C++ v1.42.1 reference values (par-coupon branch,
+            // the Java default: see capfloor_cached_value.json).
+            //   capNPV   = 6.875700267315598
+            //   floorNPV = 2.6581292795945015
+            // C++ tolerance in capfloor.cpp:565 is 1.0e-11. Loosened here to
+            // tight tier 1e-8 to absorb cumulative float drift from the
+            // probe's JSON serialisation and any C++/Java math.h ULP
+            // differences in the 40-optionlet sum.
+            final double cachedCapNPV = 6.875700267315598;
+            final double cachedFloorNPV = 2.6581292795945015;
+            final double tolerance = 1.0e-8;
+
+            final double capNPV = cap.NPV();
+            final double floorNPV = floor.NPV();
+            QL.info("[probe] capNPV=" + capNPV + " floorNPV=" + floorNPV);
+            if (Math.abs(capNPV - cachedCapNPV) > tolerance) {
+                fail("failed to reproduce cached cap value:\n"
+                        + "    calculated: " + capNPV + "\n"
+                        + "    expected:   " + cachedCapNPV);
+            }
+            if (Math.abs(floorNPV - cachedFloorNPV) > tolerance) {
+                fail("failed to reproduce cached floor value:\n"
+                        + "    calculated: " + floorNPV + "\n"
+                        + "    expected:   " + cachedFloorNPV);
+            }
+        } finally {
+            settings.setEvaluationDate(savedEvalDate);
+        }
     }
 
     /**
