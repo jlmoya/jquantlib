@@ -456,16 +456,77 @@ public class CalendarsTest {
         assertFalse(testDate4 + " (marked as holiday) not detected", a2.isBusinessDay(testDate4));
     }
 
-    @Ignore("Java Date is whole-day-resolution only; C++ QL_HIGH_RESOLUTION_DATE intraday timestamps unsupported")
+    /**
+     * Mirrors C++ v1.42.1 test-suite/calendars.cpp:3766-3855
+     * ({@code testIntradayAddHolidays}, guarded by
+     * {@code #ifdef QL_HIGH_RESOLUTION_DATE}).
+     *
+     * <p>Phase 5e.5b-CFC-d-304: with the intraday-aware {@link Date}
+     * constructor in place ({@code Date(d, m, y, h, m, s, ms, mus)}), this
+     * test now runs. Day-level identity of {@code Date} (the
+     * {@code equals}/{@code hashCode} based on {@code serialNumber} only —
+     * see Date.java field-Javadoc on {@code timeOfDayNanos}) gives the
+     * same behaviour as the C++ {@code Calendar::addHoliday} explicit
+     * normalisation to {@code Date(d.dayOfMonth(), d.month(), d.year())}
+     * at ql/time/calendar.cpp:48-52.
+     */
     @Test
     public void testIntradayAddHolidays() {
-        // Mirrors test-suite/calendars.cpp:3766-3855, guarded by
-        // #ifdef QL_HIGH_RESOLUTION_DATE in C++. The Java {@link Date} class
-        // stores a single serial number (days since reference epoch) with no
-        // sub-day precision; intraday-resolution addHoliday/removeHoliday
-        // semantics cannot be expressed without a parallel intraday Date
-        // representation. Deferred indefinitely — this is a design-level
-        // divergence, not a missing port.
+        QL.info("Testing addHolidays with intraday-aware Date...");
+
+        final Calendar c1 = new Target();
+        final Calendar c2 = new UnitedStates(UnitedStates.Market.NYSE);
+
+        final Date d1 = new Date(1, Month.May, 2004);                 // holiday for both
+        final Date d2 = new Date(26, Month.April, 2004, 0, 0, 1, 1, 0); // business day, intraday
+
+        final Date d1Mock = new Date(1, Month.May, 2004, 1, 1, 0, 0, 0);  // holiday, intraday
+        final Date d2Mock = new Date(26, Month.April, 2004);              // business day
+
+        // pre-conditions (mirror C++ lines 3782-3793)
+        assertTrue("wrong assumption — c1.isHoliday(d1)", c1.isHoliday(d1));
+        assertTrue("wrong assumption — c1.isBusinessDay(d2)", c1.isBusinessDay(d2));
+        assertTrue("wrong assumption — c2.isHoliday(d1)", c2.isHoliday(d1));
+        assertTrue("wrong assumption — c2.isBusinessDay(d2)", c2.isBusinessDay(d2));
+
+        assertTrue("wrong assumption — c1.isHoliday(d1Mock)", c1.isHoliday(d1Mock));
+        assertTrue("wrong assumption — c1.isBusinessDay(d2Mock)", c1.isBusinessDay(d2Mock));
+        assertTrue("wrong assumption — c2.isHoliday(d1Mock)", c2.isHoliday(d1Mock));
+        assertTrue("wrong assumption — c2.isBusinessDay(d2Mock)", c2.isBusinessDay(d2Mock));
+
+        // modify TARGET — passes the intraday-decorated d2 in to addHoliday
+        c1.removeHoliday(d1);
+        c1.addHoliday(d2);
+
+        // c1 should now treat d1 as a business day and d2 as a holiday, with
+        // and without intraday metadata on the lookup key.
+        assertFalse(d1 + " still a holiday for original TARGET instance",
+                c1.isHoliday(d1));
+        assertFalse(d2 + " still a business day for original TARGET instance",
+                c1.isBusinessDay(d2));
+        assertFalse(d1Mock + " still a holiday for original TARGET instance and different hours/min/secs",
+                c1.isHoliday(d1Mock));
+        assertFalse(d2Mock + " still a business day for original TARGET instance and different hours/min/secs",
+                c1.isBusinessDay(d2Mock));
+
+        // NYSE is untouched
+        assertFalse(d1 + " business day for New York", c2.isBusinessDay(d1));
+        assertFalse(d2 + " holiday for New York", c2.isHoliday(d2));
+        assertFalse(d1Mock + " business day for New York and different hours/min/secs",
+                c2.isBusinessDay(d1Mock));
+        assertFalse(d2Mock + " holiday for New York and different hours/min/secs",
+                c2.isHoliday(d2Mock));
+
+        // restore — pass intraday-decorated dates for the reverse operation
+        c1.addHoliday(d1Mock);
+        c1.removeHoliday(d2Mock);
+
+        assertFalse(d1 + " still a business day", c1.isBusinessDay(d1));
+        assertFalse(d2 + " still a holiday", c1.isHoliday(d2));
+        assertFalse(d1Mock + " still a business day and different hours/min/secs",
+                c1.isBusinessDay(d1Mock));
+        assertFalse(d2Mock + " still a holiday and different hours/min/secs",
+                c1.isHoliday(d2Mock));
     }
 
     /**

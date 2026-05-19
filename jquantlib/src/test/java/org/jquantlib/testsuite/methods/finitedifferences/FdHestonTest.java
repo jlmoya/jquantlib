@@ -697,19 +697,31 @@ public class FdHestonTest {
      * for an ATM put on Heston as the evaluation timestamp advances by 15
      * minutes from 15:00 to 17:15 (just before 17:30 maturity). Mirrors C++
      * test-suite/fdheston.cpp lines 693-751.
-     * <p>
-     * <strong>Phase 5j.5b carry — not portable to JQuantLib until intraday
-     * Date support lands.</strong> The C++ test is gated on
-     * {@code #ifdef QL_HIGH_RESOLUTION_DATE} which enables the
-     * {@code Date(day, month, year, hours, minutes, seconds)} constructor.
-     * The Java {@link org.jquantlib.time.Date} only supports day-resolution
-     * (constructors at lines 220, 231, 242, 255 of Date.java). To port this
-     * test, JQuantLib must first grow an intraday Date implementation
-     * matching the C++ {@code QL_HIGH_RESOLUTION_DATE} build (sub-day
-     * serial format, hours/minutes/seconds accessors, year-fraction
-     * arithmetic, and intraday-aware {@code Settings.evaluationDate}).
+     *
+     * <p>Phase 5e.5b-CFC-d-304 update: the intraday-aware {@link
+     * org.jquantlib.time.Date} constructor {@code Date(d, m, y, h, m, s, ms,
+     * mus)} is now in place (Date.java timeOfDayNanos field +
+     * {@link org.jquantlib.time.Date#fractionOfDay()} accessor), so the
+     * C++-style date-time literals in this test could now compile. Two
+     * production-side gaps still block the test, and both are deliberately
+     * out of the Date-only scope:
+     * <ol>
+     *   <li>{@code Settings.DateProxy.assign(Date)} only propagates
+     *       {@code serialNumber()} and silently drops {@code timeOfDayNanos}
+     *       — so {@code Settings.evaluationDate() = now} loses the intraday
+     *       part and gamma is held constant across all 10 timestamps.</li>
+     *   <li>{@code DayCounter.dayCount(Date,Date)} returns {@code long}
+     *       (whole days). Even if Settings propagated intraday, the
+     *       {@link org.jquantlib.daycounters.Actual365Fixed#yearFraction(...)}
+     *       used by the option's term structure would still discard it.
+     *       The fix requires either a parallel {@code double} API or a
+     *       hostile signature change rippling across the entire daycounter
+     *       hierarchy.</li>
+     * </ol>
+     * Both require touching production classes beyond {@link
+     * org.jquantlib.time.Date}; tracked as a follow-up.
      */
-    @Ignore("Phase 5j.5b — requires intraday Date support (Date(d,m,y,h,m,s) ctor; matches C++ QL_HIGH_RESOLUTION_DATE)")
+    @Ignore("Phase 5e.5b-CFC-d-304 — intraday Date ctor now present; pending Settings.DateProxy intraday propagation + DayCounter fractional dayCount")
     @Test
     public void testFdmHestonIntradayPricing() {
         fail("not implemented");

@@ -203,6 +203,34 @@ public class Date implements Observable, Comparable< Date >, Serializable, Clone
     private /* @NonNegative */ long serialNumber;
 
     /**
+     * Intraday time-of-day, expressed in nanoseconds since 00:00:00 of
+     * {@link #serialNumber}'s calendar day. Always in
+     * {@code [0, 86_400_000_000_000L)}.
+     *
+     * <p>Phase 5e.5b-CFC-d-304 (intraday support — mirrors C++
+     * {@code QL_HIGH_RESOLUTION_DATE}, ql/time/date.cpp:540-548). For the
+     * vast majority of constructors (day-only) this field stays at {@code 0}
+     * and {@link Date} behaves bit-identically to the pre-intraday class.
+     * Identity semantics ({@link #equals}, {@link #hashCode}, {@link
+     * #serialNumber}, {@link #compareTo}) are deliberately day-only — they
+     * ignore this field. That matches the C++ Calendar convention:
+     * {@code Calendar::addHoliday(d)} explicitly normalises {@code d} to
+     * {@code Date(d.dayOfMonth(), d.month(), d.year())} before inserting it
+     * into the holiday set (ql/time/calendar.cpp:48-52). Day-only identity
+     * therefore lets the Java port of intraday-aware {@code Calendar} tests
+     * pass without touching {@link Calendar}.
+     *
+     * <p>Intraday content is preserved as supplementary metadata accessible
+     * via {@link #hours()}, {@link #minutes()}, {@link #seconds()},
+     * {@link #milliseconds()}, {@link #microseconds()},
+     * {@link #fractionOfDay()}, and {@link #fractionOfSecond()}.
+     */
+    private long timeOfDayNanos;
+
+    /** {@code 86_400 * 1_000_000_000L}, i.e. nanoseconds per 24-hour day. */
+    private static final long NANOS_PER_DAY = 86_400_000_000_000L;
+
+    /**
      * Default constructor returning a null date.
      */
     public Date() {
@@ -217,6 +245,7 @@ public class Date implements Observable, Comparable< Date >, Serializable, Clone
      */
     public Date(final long serialNumber) {
         this.serialNumber = serialNumber;
+        this.timeOfDayNanos = 0L;
     }
 
     /**
@@ -239,6 +268,65 @@ public class Date implements Observable, Comparable< Date >, Serializable, Clone
      */
     public Date(final int day, final int month, final int year) {
         this(fromDMY(day, month, year));
+    }
+
+    /**
+     * Intraday-aware constructor. Mirrors C++ v1.42.1
+     * ql/time/date.hpp:140-145 / ql/time/date.cpp:540-548 — the
+     * {@code QL_HIGH_RESOLUTION_DATE} branch.
+     *
+     * <p>The day/month/year component is encoded into {@link #serialNumber}
+     * exactly as in the day-only constructor; the {@code hours},
+     * {@code minutes}, {@code seconds}, {@code millisec}, and
+     * {@code microsec} components are packed into {@link #timeOfDayNanos}.
+     * The resulting Date compares ({@code ==}, {@code hashCode}) equal to a
+     * day-only Date built from the same {@code (day, month, year)}; the
+     * intraday metadata is recovered via the {@link #hours()} /
+     * {@link #minutes()} / {@link #seconds()} accessors.
+     *
+     * @param day        day of month, 1-31
+     * @param month      1-based month index (1 = January, 12 = December)
+     * @param year       four-digit year, must be in [1901, 2199]
+     * @param hours      hour of day, 0-23
+     * @param minutes    minute of hour, 0-59
+     * @param seconds    second of minute, 0-59
+     * @param millisec   millisecond of second, 0-999
+     * @param microsec   microsecond of millisecond, 0-999
+     */
+    public Date(final int day, final int month, final int year,
+                final int hours, final int minutes, final int seconds,
+                final int millisec, final int microsec) {
+        this(fromDMY(day, month, year));
+        QL.require(hours >= 0 && hours < 24, "hours outside [0,23]");
+        QL.require(minutes >= 0 && minutes < 60, "minutes outside [0,59]");
+        QL.require(seconds >= 0 && seconds < 60, "seconds outside [0,59]");
+        QL.require(millisec >= 0 && millisec < 1000, "millisec outside [0,999]");
+        QL.require(microsec >= 0 && microsec < 1000, "microsec outside [0,999]");
+        this.timeOfDayNanos =
+                ((long) hours) * 3_600_000_000_000L
+              + ((long) minutes) * 60_000_000_000L
+              + ((long) seconds) * 1_000_000_000L
+              + ((long) millisec) * 1_000_000L
+              + ((long) microsec) * 1_000L;
+    }
+
+    /** Intraday-aware constructor with default milli/microseconds (=0). */
+    public Date(final int day, final int month, final int year,
+                final int hours, final int minutes, final int seconds) {
+        this(day, month, year, hours, minutes, seconds, 0, 0);
+    }
+
+    /** Intraday-aware {@link Month}-typed constructor convenience. */
+    public Date(final int day, final Month month, final int year,
+                final int hours, final int minutes, final int seconds,
+                final int millisec, final int microsec) {
+        this(day, month.value(), year, hours, minutes, seconds, millisec, microsec);
+    }
+
+    /** Intraday-aware {@link Month}-typed constructor convenience (no milli/micro). */
+    public Date(final int day, final Month month, final int year,
+                final int hours, final int minutes, final int seconds) {
+        this(day, month.value(), year, hours, minutes, seconds, 0, 0);
     }
 
     //
@@ -626,6 +714,77 @@ public class Date implements Observable, Comparable< Date >, Serializable, Clone
 
     public long serialNumber() /* @ReadOnly */ {
         return this.serialNumber;
+    }
+
+    //
+    // public methods :: intraday accessors (mirror C++ QL_HIGH_RESOLUTION_DATE)
+    //
+
+    /**
+     * Hour-of-day (0-23). Mirrors C++ {@code Date::hours()}
+     * (ql/time/date.cpp:578-580). For day-only Dates this always returns 0.
+     */
+    public int hours() /* @ReadOnly */ {
+        return (int) (timeOfDayNanos / 3_600_000_000_000L);
+    }
+
+    /**
+     * Minute-of-hour (0-59). Mirrors C++ {@code Date::minutes()}
+     * (ql/time/date.cpp:582-584).
+     */
+    public int minutes() /* @ReadOnly */ {
+        return (int) ((timeOfDayNanos / 60_000_000_000L) % 60L);
+    }
+
+    /**
+     * Second-of-minute (0-59). Mirrors C++ {@code Date::seconds()}
+     * (ql/time/date.cpp:586-588).
+     */
+    public int seconds() /* @ReadOnly */ {
+        return (int) ((timeOfDayNanos / 1_000_000_000L) % 60L);
+    }
+
+    /**
+     * Millisecond-of-second (0-999). Mirrors C++ {@code Date::milliseconds()}
+     * (ql/time/date.cpp:605-608).
+     */
+    public int milliseconds() /* @ReadOnly */ {
+        return (int) ((timeOfDayNanos / 1_000_000L) % 1000L);
+    }
+
+    /**
+     * Microsecond-of-millisecond (0-999). Mirrors C++
+     * {@code Date::microseconds()} (ql/time/date.cpp:610-614).
+     */
+    public int microseconds() /* @ReadOnly */ {
+        return (int) ((timeOfDayNanos / 1_000L) % 1000L);
+    }
+
+    /**
+     * Fractional part of the day in {@code [0.0, 1.0)}, computed from the
+     * intraday {@code hh:mm:ss.SSSS}. Mirrors C++ {@code Date::fractionOfDay()}
+     * (ql/time/date.cpp:590-598). For a day-only Date this returns 0.0.
+     */
+    public double fractionOfDay() /* @ReadOnly */ {
+        return ((double) timeOfDayNanos) / (double) NANOS_PER_DAY;
+    }
+
+    /**
+     * Fractional part of the current second in {@code [0.0, 1.0)}. Mirrors
+     * C++ {@code Date::fractionOfSecond()} (ql/time/date.cpp:600-603).
+     */
+    public double fractionOfSecond() /* @ReadOnly */ {
+        return ((double) (timeOfDayNanos % 1_000_000_000L)) / 1.0e9;
+    }
+
+    /**
+     * Internal accessor for the time-of-day in nanoseconds since 00:00:00.
+     * Always in {@code [0, 86_400_000_000_000L)}. Day-only Dates report 0.
+     * Reserved for migration plumbing (e.g. propagating intraday across
+     * {@code Settings.evaluationDate} assignments); not part of the C++ API.
+     */
+    public long timeOfDayNanos() /* @ReadOnly */ {
+        return timeOfDayNanos;
     }
 
     //
