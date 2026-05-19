@@ -15,9 +15,11 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.jquantlib.Settings;
+import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.daycounters.ActualActual;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.exercise.EuropeanExercise;
+import org.jquantlib.experimental.finitedifferences.FdmExpExtOUInnerValueCalculator.ShapePoint;
 import org.jquantlib.experimental.processes.ExtOUWithJumpsProcess;
 import org.jquantlib.experimental.processes.ExtendedOrnsteinUhlenbeckProcess;
 import org.jquantlib.instruments.Option;
@@ -28,8 +30,11 @@ import org.jquantlib.instruments.VanillaForwardPayoff;
 import org.jquantlib.instruments.VanillaOption;
 import org.jquantlib.instruments.VanillaSwingOption;
 import org.jquantlib.math.Constants;
+import org.jquantlib.math.Factorial;
 import org.jquantlib.math.Ops;
+import org.jquantlib.math.RichardsonExtrapolation;
 import org.jquantlib.math.distributions.InverseCumulativeNormal;
+import org.jquantlib.math.distributions.NormalDistribution;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.randomnumbers.InverseCumulativeRsg;
 import org.jquantlib.math.randomnumbers.MersenneTwisterUniformRng;
@@ -43,6 +48,7 @@ import org.jquantlib.math.statistics.GeneralStatistics;
 import org.jquantlib.methods.montecarlo.MultiPath;
 import org.jquantlib.methods.montecarlo.MultiPathGenerator;
 import org.jquantlib.pricingengines.AnalyticEuropeanEngine;
+import org.jquantlib.pricingengines.BlackFormula;
 import org.jquantlib.pricingengines.PricingEngine;
 import org.jquantlib.pricingengines.vanilla.FdBlackScholesVanillaEngine;
 import org.jquantlib.pricingengines.vanilla.FdSimpleBSSwingEngine;
@@ -59,7 +65,6 @@ import org.jquantlib.time.Period;
 import org.jquantlib.time.TimeGrid;
 import org.jquantlib.time.TimeUnit;
 import org.jquantlib.time.calendars.NullCalendar;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -611,9 +616,210 @@ public class SwingOptionTest {
         }
     }
 
-    @Ignore("Phase 5j.5 — requires Kluge characteristic-function pricer + COS method")
+    /**
+     * Kluge (exp-OU + exp-jumps) PDE vanilla pricing vs moment-matching
+     * approximations.
+     *
+     * <p>Faithful port of C++ {@code testKlugeChFVanillaPricing} in
+     * {@code test-suite/swingoption.cpp} v1.42.1.  The C++ test name contains
+     * "ChF" but it does <em>not</em> use a characteristic-function pricer or
+     * the COS method: the reference price is computed by a Richardson
+     * extrapolation of a {@link FdExtOUJumpVanillaEngine} PDE pricer, and the
+     * comparison values come from Black-Scholes + Corrado-Su (3rd, 4th order)
+     * + Rubinstein Edgeworth moment-matching approximations evaluated against
+     * analytic moments of the Kluge process.
+     *
+     * <p>Algorithm (matches C++ verbatim):
+     * <ol>
+     *   <li>Build {@link ExtOUWithJumpsProcess} with
+     *       {@code beta=5, eta=5, lambda=4, alpha=4, sig=1}, x0=y0=0.</li>
+     *   <li>6-month European call struck at {@code f0=30}.</li>
+     *   <li>Compute the shape value {@code ps = ln(f0) - sig^2/(4*alpha) *
+     *       (1 - exp(-2*alpha*t)) - lambda/beta * ln((eta - exp(-beta*t))/(eta-1))}
+     *       so the PDE engine produces a forward-shifted process equivalent
+     *       to spot S = exp(X + Y) with the desired moments.</li>
+     *   <li>Richardson-extrapolate the PDE price at {@code dt=4.0} with
+     *       {@code (t, s) = (2.0, 1.5)} (unknown-order overload).</li>
+     *   <li>Compute analytic moments (stdDev, skewness g1, excess kurtosis g2)
+     *       of {@code ln(S/f0)} via closed-form integrals of the Kluge
+     *       characteristic function.</li>
+     *   <li>Black-Scholes price + Corrado-Su 3rd/4th-order corrections + a
+     *       Rubinstein Edgeworth (5th moment via {@code g1^2}) correction.</li>
+     *   <li>Compare via implied volatilities (each NPV is inverted by
+     *       {@link BlackFormula#blackFormulaImpliedStdDev} divided by
+     *       {@code sqrt(t)}). The C++ uses Li-Rusponi-Stalla's solver
+     *       {@code blackFormulaImpliedStdDevLiRS}; jquantlib's Newton-safe
+     *       solver converges to the same zero of the Black equation and
+     *       leaves the absolute vol differences well inside the per-method
+     *       tolerances.</li>
+     * </ol>
+     *
+     * <p><strong>Tolerances</strong> (C++-identical):
+     * {@code {0.01, 0.0075, 0.005, 0.004}} for
+     * {@code {Second-Order, Third-Order, Fourth-Order, Rubinstein}}
+     * respectively. All four are well above the Phase 5e.5b loose-tier
+     * floor (1e-3).
+     */
     @Test
-    public void testKlugeChFVanillaPricing() { fail("not implemented"); }
+    public void testKlugeChFVanillaPricing() {
+        final Date settlementDate = new Date(22, org.jquantlib.time.Month.November, 2019);
+        new Settings().setEvaluationDate(settlementDate);
+        final DayCounter dayCounter = new Actual365Fixed();
+        final Date maturityDate = settlementDate.add(new Period(6, TimeUnit.Months));
+        final double t = dayCounter.yearFraction(settlementDate, maturityDate);
+
+        final double f0 = 30.0;
+
+        final double x0 = 0.0;
+        final double y0 = 0.0;
+
+        final double beta   = 5.0;
+        final double eta    = 5.0;
+        final double lambda = 4.0;
+        final double alpha  = 4.0;
+        final double sig    = 1.0;
+
+        final DoubleOp constantZero = new DoubleOp() {
+            @Override public double op(final double x) { return 0.0; }
+        };
+        final ExtendedOrnsteinUhlenbeckProcess ouProcess =
+                new ExtendedOrnsteinUhlenbeckProcess(alpha, sig, x0, constantZero);
+        final ExtOUWithJumpsProcess klugeProcess =
+                new ExtOUWithJumpsProcess(ouProcess, y0, beta, lambda, eta);
+
+        final double strike = f0;
+
+        final StrikedTypePayoff payoff =
+                new PlainVanillaPayoff(Option.Type.Call, strike);
+        final org.jquantlib.exercise.Exercise exercise =
+                new EuropeanExercise(maturityDate);
+
+        // ----- shape (single-point time-dependent shift) -----------------
+        final double ps = Math.log(f0)
+                - sig * sig / (4.0 * alpha) * (1.0 - Math.exp(-2.0 * alpha * t))
+                - lambda / beta * Math.log((eta - Math.exp(-beta * t)) / (eta - 1.0));
+        final List<ShapePoint> shape = new ArrayList<ShapePoint>();
+        shape.add(new ShapePoint(t, ps));
+
+        // ----- Richardson-extrapolated PDE price -------------------------
+        // C++: RichardsonExtrapolation(SwingPdePricing(klugeProcess, option,
+        // shape), 4.0)(2.0, 1.5).  SwingPdePricing(x) builds a
+        // FdExtOUJumpVanillaEngine with (tGrid/x, xGrid/x, yGrid/x) =
+        // (100/x, 200/x, 100/x) for x in {4.0, 2.0, 4.0/1.5}.
+        final ExtOUWithJumpsProcess processRef = klugeProcess;
+        final List<ShapePoint> shapeRef = shape;
+        final StrikedTypePayoff payoffRef = payoff;
+        final org.jquantlib.exercise.Exercise exerciseRef = exercise;
+
+        final DoubleOp swingPdePricing = new DoubleOp() {
+            @Override public double op(final double x) {
+                final YieldTermStructure rTSinner =
+                        new FlatForward(settlementDate, 0.0, new Actual365Fixed());
+
+                final int gridX = 200;
+                final int gridY = 100;
+                final int gridT = 100;
+
+                final VanillaOption opt = new VanillaOption(payoffRef, exerciseRef);
+                opt.setPricingEngine(new FdExtOUJumpVanillaEngine(
+                        processRef, rTSinner,
+                        (int) (gridT / x), (int) (gridX / x), (int) (gridY / x),
+                        shapeRef));
+                return opt.NPV();
+            }
+        };
+
+        final double expected =
+                new RichardsonExtrapolation(swingPdePricing, 4.0).valueAt(2.0, 1.5);
+
+        // ----- moment-matching analytics --------------------------------
+        // Analytic variance of ln(S/f0) under the Kluge model =
+        //   (((2 - 2*exp(-2*beta*t))*lambda)/(beta*eta^2)
+        //    + ((1 - exp(-2*alpha*t))*sig^2)/alpha) / 2
+        final double stdDev = Math.sqrt(
+                (((2.0 - 2.0 * Math.exp(-2.0 * beta * t)) * lambda)
+                        / (beta * eta * eta)
+                  + ((1.0 - Math.exp(-2.0 * alpha * t)) * sig * sig) / alpha) / 2.0);
+
+        final double bsNPV =
+                BlackFormula.blackFormula(Option.Type.Call, strike, f0, stdDev);
+
+        // skewness g1 = (third central moment) / stdDev^3
+        final double g1 = ((2.0 - 2.0 * Math.exp(-3.0 * beta * t)) * lambda)
+                / (beta * eta * eta * eta)
+                / (stdDev * stdDev * stdDev);
+
+        // excess kurtosis g2 = (fourth central moment) / stdDev^4 - 3
+        final double g2 = 3.0 * (Math.exp((alpha + beta) * t)
+                  * sqr(2.0 * alpha * Math.exp(2.0 * alpha * t)
+                            * (-1.0 + Math.exp(2.0 * beta * t)) * lambda
+                          + beta * Math.exp(2.0 * beta * t)
+                            * (-1.0 + Math.exp(2.0 * alpha * t))
+                            * eta * eta * sig * sig)
+                  + 16.0 * alpha * alpha * beta
+                        * Math.exp((5.0 * alpha + 3.0 * beta) * t)
+                        * lambda * Math.sinh(2.0 * beta * t))
+                / (4.0 * alpha * alpha * beta * beta
+                        * Math.exp(5.0 * (alpha + beta) * t)
+                        * eta * eta * eta * eta)
+                / (stdDev * stdDev * stdDev * stdDev) - 3.0;
+
+        final double d = (Math.log(f0 / strike) + 0.5 * stdDev * stdDev) / stdDev;
+
+        // Jurczenko, Maillet & Negrea, Multi-Moment Approximate Option
+        // Pricing Models, ssrn 300922 — q-coefficients of the Gauss
+        // expansion (n(d) = standard normal PDF at d).
+        final NormalDistribution n = new NormalDistribution();
+        final Factorial factorial = new Factorial();
+        final double q3 = 1.0 / factorial.get(3) * f0 * stdDev * (2.0 * stdDev - d) * n.op(d);
+        final double q4 = 1.0 / factorial.get(4) * f0 * stdDev * (d * d - 3.0 * d * stdDev - 1.0) * n.op(d);
+        final double q5 = 10.0 / factorial.get(6) * f0 * stdDev
+                * (d * d * d * d - 5.0 * d * d * d * stdDev - 6.0 * d * d
+                   + 15.0 * d * stdDev + 3.0) * n.op(d);
+
+        // Corrado & Su (1996b), Journal of Financial Research — 3rd & 4th
+        // moment corrections to the Black-Scholes price.
+        final double ccs3 = bsNPV + g1 * q3;
+        final double ccs4 = ccs3 + g2 * q4;
+
+        // Rubinstein (1998), Journal of Derivatives — Edgeworth binomial
+        // refinement adds g1^2 * q5.
+        final double cr = ccs4 + g1 * g1 * q5;
+
+        // ----- implied vols ---------------------------------------------
+        final double expectedImplVol = BlackFormula.blackFormulaImpliedStdDev(
+                Option.Type.Call, strike, f0, expected, 1.0) / Math.sqrt(t);
+        final double bsImplVol = BlackFormula.blackFormulaImpliedStdDev(
+                Option.Type.Call, strike, f0, bsNPV, 1.0) / Math.sqrt(t);
+        final double ccs3ImplVol = BlackFormula.blackFormulaImpliedStdDev(
+                Option.Type.Call, strike, f0, ccs3, 1.0) / Math.sqrt(t);
+        final double ccs4ImplVol = BlackFormula.blackFormulaImpliedStdDev(
+                Option.Type.Call, strike, f0, ccs4, 1.0) / Math.sqrt(t);
+        final double crImplVol = BlackFormula.blackFormulaImpliedStdDev(
+                Option.Type.Call, strike, f0, cr, 1.0) / Math.sqrt(t);
+
+        // C++ tolerances are well above the Phase 5e.5b loose-tier floor (1e-3).
+        final double[] tol = { 0.01, 0.0075, 0.005, 0.004 };
+        final String[] methods = {
+                "Second Order", "Third Order", "Fourth Order", "Rubinstein" };
+        final double[] calculated = { bsImplVol, ccs3ImplVol, ccs4ImplVol, crImplVol };
+
+        for (int i = 0; i < 4; ++i) {
+            final double diff = Math.abs(calculated[i] - expectedImplVol);
+            if (diff > tol[i]) {
+                fail("failed to reproduce vanilla option implied volatility "
+                        + "with moment matching"
+                        + "\n    calculated: " + calculated[i]
+                        + "\n    expected:   " + expectedImplVol
+                        + "\n    difference: " + diff
+                        + "\n    tolerance:  " + tol[i]
+                        + "\n    method:     " + methods[i]);
+            }
+        }
+    }
+
+    /** Local helper: {@code x*x}, mirroring C++'s {@code squared}. */
+    private static double sqr(final double x) { return x * x; }
 
     // ----- helpers ---------------------------------------------------------
 
