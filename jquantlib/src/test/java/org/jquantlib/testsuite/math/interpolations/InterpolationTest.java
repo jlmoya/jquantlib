@@ -37,6 +37,7 @@ import org.jquantlib.math.interpolations.CubicInterpolation;
 import org.jquantlib.math.interpolations.ForwardFlatInterpolation;
 import org.jquantlib.math.interpolations.Interpolation;
 import org.jquantlib.math.interpolations.LinearInterpolation;
+import org.jquantlib.math.interpolations.MultiCubicSpline;
 import org.jquantlib.math.interpolations.SABRInterpolation;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.optimization.EndCriteria;
@@ -45,7 +46,6 @@ import org.jquantlib.math.optimization.OptimizationMethod;
 import org.jquantlib.math.optimization.Simplex;
 import org.jquantlib.math.randomnumbers.SobolRsg;
 import org.jquantlib.termstructures.volatilities.Sabr;
-import org.junit.Ignore;
 import org.junit.Test;
 
 
@@ -420,13 +420,6 @@ public class InterpolationTest {
     }
 
 
-    @Ignore("Phase Bug-Fix carry-forward — requires porting C++ MultiCubicSpline<5> "
-            + "(ql/math/interpolations/multicubicspline.hpp, 571 LOC of templated code "
-            + "with SplineGrid + data_table). Current Java test-body is a stub: "
-            + "grid[i] are size-0 Arrays, MultiCubicSpline is an inner class whose op() "
-            + "throws UnsupportedOperationException, and the loop fails with "
-            + "ArrayIndexOutOfBoundsException at line 472 (grid[0].get(i) on empty Array). "
-            + "Out of scope for the bug-fix burst (need full template port).")
     @Test
     public void testMultiSpline() {
         QL.info("Testing N-dimensional cubic spline...");
@@ -441,29 +434,25 @@ public class InterpolationTest {
                 offsets[4],
         };
 
-        double s = args[0];
-        double t = args[1];
-        double u = args[2];
-        double v = args[3];
-        double w = args[4];
-
-        //TODO: final SplineGrid grid = new SplineGrid(5);
-        final Array grid[] = new Array[5]; //XXX: just to compile
+        // Mirrors C++ ql/math/interpolations/multicubicspline.hpp / SplineGrid:
+        // per-axis grid points. Java MultiCubicSpline takes double[][] directly.
+        final double[][] grid = new double[5][];
 
         double r = 0.15;
-
         for (int i = 0; i < 5; ++i) {
-// TODO: translate this code
-//            double temp = offsets[i];
-//            for (int j = 0; j < dim[i]; temp += r, ++j) {
-//                grid[i].push_back(temp);
-//            }
-            grid[i] = new Array(0); //XXX: just to compile
+            grid[i] = new double[dim[i]];
+            double temp = offsets[i];
+            for (int j = 0; j < dim[i]; temp += r, ++j) {
+                grid[i][j] = temp;
+            }
         }
 
         r = 0.01;
 
-        //TODO: MultiCubicSpline<5>::data_table y5(dim);
+        // C++: MultiCubicSpline<5>::data_table y5(dim) — nested vector.
+        // Java port uses a flat row-major (last-fastest) array.
+        final int total = dim[0] * dim[1] * dim[2] * dim[3] * dim[4];
+        final double y5flat[] = new double[total];
         final double y5[][][][][] = new double [dim[0]] [dim[1]] [dim[2]] [dim[3]] [dim[4]];
 
         for (int i = 0; i < dim[0]; ++i) {
@@ -471,34 +460,20 @@ public class InterpolationTest {
                 for (int k = 0; k < dim[2]; ++k) {
                     for (int l = 0; l < dim[3]; ++l) {
                         for (int m = 0; m < dim[4]; ++m) {
-//TODO: translate properly
-//                            y5[i][j][k][l][m] = multif(grid[0][i], grid[1][j], grid[2][k], grid[3][l], grid[4][m]);
-
-                            //XXX: just to compile
-                            y5[i][j][k][l][m] = multif(
-                                    grid[0].get(i),
-                                    grid[1].get(j),
-                                    grid[2].get(k),
-                                    grid[3].get(l),
-                                    grid[4].get(m));
-                            //-----------------------------------------------
+                            final double val = multif(
+                                    grid[0][i], grid[1][j], grid[2][k],
+                                    grid[3][l], grid[4][m]);
+                            y5[i][j][k][l][m] = val;
+                            final int idx = ((((i * dim[1] + j) * dim[2] + k) * dim[3] + l) * dim[4]) + m;
+                            y5flat[idx] = val;
                         }
                     }
                 }
             }
         }
 
-        //TODO: MultiCubicSpline<5> cs(grid, y5);
-
-        //XXX: just to compile
-        class MultiCubicSpline {
-            public double op(final double[] args) {
-                throw new UnsupportedOperationException();
-            }
-        };
-        final MultiCubicSpline cs = new MultiCubicSpline();
-        //----------------------------------
-
+        // C++: MultiCubicSpline<5> cs(grid, y5);
+        final MultiCubicSpline cs = new MultiCubicSpline(grid, y5flat, null);
 
         /* ORIGINAL COMMENT FROM C++ SOURCES:
         It would fail with
@@ -509,24 +484,20 @@ public class InterpolationTest {
                         for (m = 0; m < dim[4]; ++m) {
         */
 
+        // Nodal evaluation: at grid points, natural cubic spline returns y exactly
+        // (up to floating-point). C++ uses tolerance 1e-16 — we match.
         for (int i = 1; i < dim[0]-1; ++i) {
             for (int j = 1; j < dim[1]-1; ++j) {
                 for (int k = 1; k < dim[2]-1; ++k) {
                     for (int l = 1; l < dim[3]-1; ++l) {
                         for (int m = 1; m < dim[4]-1; ++m) {
-//TODO: translate properly
-//                            s = grid[0][i];
-//                            t = grid[1][j];
-//                            u = grid[2][k];
-//                            v = grid[3][l];
-//                            w = grid[4][m];
-                            //XXX: just to compile
-                            s = grid[0].get(i);
-                            t = grid[1].get(j);
-                            u = grid[2].get(k);
-                            v = grid[3].get(l);
-                            w = grid[4].get(m);
-                            //--------------------------------
+                            // C++ aliases args[0..4] via references to s..w; in
+                            // Java we update args[] directly.
+                            args[0] = grid[0][i];
+                            args[1] = grid[1][j];
+                            args[2] = grid[2][k];
+                            args[3] = grid[3][l];
+                            args[4] = grid[4][m];
                             final double interpolated = cs.op(args);
                             final double expected = y5[i][j][k][l][m];
                             final double error = Math.abs(interpolated-expected);
@@ -550,21 +521,13 @@ public class InterpolationTest {
         // actually tested up to 2^21-1=2097151 Sobol draws
         for (int i = 0; i < 1023; ++i) {
             final double next[] = rsg.nextSequence().value();
-// TODO: translate properly
-//            s = grid[0].front() + next[0]*(grid[0].back()-grid[0].front());
-//            t = grid[1].front() + next[1]*(grid[1].back()-grid[1].front());
-//            u = grid[2].front() + next[2]*(grid[2].back()-grid[2].front());
-//            v = grid[3].front() + next[3]*(grid[3].back()-grid[3].front());
-//            w = grid[4].front() + next[4]*(grid[4].back()-grid[4].front());
-            // XXX: just to compile
-            s = grid[0].first() + next[0]*(grid[0].last()-grid[0].first());
-            t = grid[1].first() + next[1]*(grid[1].last()-grid[1].first());
-            u = grid[2].first() + next[2]*(grid[2].last()-grid[2].first());
-            v = grid[3].first() + next[3]*(grid[3].last()-grid[3].first());
-            w = grid[4].first() + next[4]*(grid[4].last()-grid[4].first());
-            // ------------------------------------------------------------
+            args[0] = grid[0][0] + next[0]*(grid[0][dim[0]-1] - grid[0][0]);
+            args[1] = grid[1][0] + next[1]*(grid[1][dim[1]-1] - grid[1][0]);
+            args[2] = grid[2][0] + next[2]*(grid[2][dim[2]-1] - grid[2][0]);
+            args[3] = grid[3][0] + next[3]*(grid[3][dim[3]-1] - grid[3][0]);
+            args[4] = grid[4][0] + next[4]*(grid[4][dim[4]-1] - grid[4][0]);
             final double interpolated = cs.op(args);
-            final double expected = multif(s, t, u, v, w);
+            final double expected = multif(args[0], args[1], args[2], args[3], args[4]);
             final double error = Math.abs(interpolated-expected);
             assertFalse("failed to reproduce expected datum"
                     +"\n    expected value:   "+expected
