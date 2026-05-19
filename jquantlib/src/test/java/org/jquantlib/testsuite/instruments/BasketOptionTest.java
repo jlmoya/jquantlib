@@ -41,6 +41,7 @@ import org.jquantlib.pricingengines.basket.BjerksundStenslandSpreadEngine;
 import org.jquantlib.pricingengines.basket.ChoiBasketEngine;
 import org.jquantlib.pricingengines.basket.DengLiZhouBasketEngine;
 import org.jquantlib.pricingengines.basket.Fd2dBlackScholesVanillaEngine;
+import org.jquantlib.pricingengines.basket.FdndimBlackScholesVanillaEngine;
 import org.jquantlib.pricingengines.basket.KirkEngine;
 import org.jquantlib.pricingengines.basket.MCAmericanBasketEngine;
 import org.jquantlib.pricingengines.basket.OperatorSplittingSpreadEngine;
@@ -914,8 +915,7 @@ public class BasketOptionTest {
     // Phase 5e.5b-CFC-d-166 — see methods below.
     // testOperatorSplittingSpreadEngine + testStrangSplittingSpreadEngineVsMathematica
     // body-filled in Phase 5e.5b-CFC-d-149 — see methods below.
-    @Ignore(REASON_NDIM_PDE)           @Test public void testNdimPDEvs2dimPDE()                       { fail("not implemented"); }
-    @Ignore(REASON_NDIM_PDE)           @Test public void testNdimPDEinDifferentDims()                 { fail("not implemented"); }
+    // testNdimPDEvs2dimPDE + testNdimPDEinDifferentDims body-filled in Phase 5e.5b-CFC-d-281 — see methods below.
     // testDengLiZhouVsPDE + testDengLiZhouWithNegativeStrike (Phase 5e.5b-CFC-d-104) — see methods below.
     // testRootOfSumExponentials + testSingleFactorBsmBasketEngine + testGoldenChoiBasketEngineExample
     // body-filled in Phase 5e.5b-CFC-d-105 — see methods below.
@@ -947,6 +947,8 @@ public class BasketOptionTest {
     private static final String UNUSED_NO_DIV_ZERO_REASON = REASON_NO_DIV_ZERO;
     @SuppressWarnings("unused")
     private static final String UNUSED_BARRAQUAND_REASON = REASON_BARRAQUAND;
+    @SuppressWarnings("unused")
+    private static final String UNUSED_NDIM_PDE_REASON = REASON_NDIM_PDE;
 
     // ---- Bodied tests for DengLiZhouBasketEngine (Phase 5e.5b-CFC-d-104) -----
 
@@ -2222,6 +2224,195 @@ public class BasketOptionTest {
                         + "  calculated = " + amCalc + "\n"
                         + "  relError   = " + amRelError + "\n"
                         + "  tolerance  = " + mcAmericanRelativeErrorTolerance);
+            }
+        }
+    }
+
+    // ---- Bodied tests for FdndimBlackScholesVanillaEngine (Phase 5e.5b-CFC-d-281) -----
+
+    /**
+     * Two-asset PDE engine ({@link Fd2dBlackScholesVanillaEngine}) vs.
+     * N-dim PDE engine ({@link FdndimBlackScholesVanillaEngine}) cross-check.
+     *
+     * <p>Mirrors C++ {@code BasketOption_testNdimPDEvs2dimPDE}
+     * (test-suite/basketoption.cpp v1.42.1 lines 1467-1563). Tolerance 0.2
+     * is the C++ value verbatim (the two engines use different mesh
+     * geometries and PCA rotations, so 0.2 is the band the C++ test
+     * accepts).</p>
+     */
+    @Test
+    public void testNdimPDEvs2dimPDE() {
+        QL.info("Testing n-dimensional PDE engine vs two dimensional engine...");
+
+        final DayCounter dc = new Actual365Fixed();
+        final Date today = new Date(25, Month.February, 2024);
+        new Settings().setEvaluationDate(today);
+        final Date maturity = today.add(new Period(6, TimeUnit.Months));
+
+        final SimpleQuote s1 = new SimpleQuote(110);
+        final SimpleQuote s2 = new SimpleQuote(100);
+
+        final YieldTermStructure rTS = Utilities.flatRate(today, 0.1, dc);
+
+        final SimpleQuote v1 = new SimpleQuote(0.5);
+        final SimpleQuote v2 = new SimpleQuote(0.3);
+
+        // C++ BlackProcess(s1, rTS, volTS) <==> GBS with q == r, x0 = s1.
+        final GeneralizedBlackScholesProcess p1 =
+                makeProcess(s1, rTS, rTS, Utilities.flatVol(today, v1, dc));
+
+        final YieldTermStructure qTS = Utilities.flatRate(today, 0.075, dc);
+        final GeneralizedBlackScholesProcess p2 =
+                makeProcess(s2, qTS, rTS, Utilities.flatVol(today, v2, dc));
+
+        final double rho = 0.75;
+
+        final PricingEngine twoDimEngine = new Fd2dBlackScholesVanillaEngine(
+                p1, p2, rho, 25, 25, 100);
+
+        final List<GeneralizedBlackScholesProcess> procs = new ArrayList<>();
+        procs.add(p1);
+        procs.add(p2);
+        final Matrix rhoM = new Matrix(2, 2);
+        rhoM.set(0, 0, 1.0);  rhoM.set(0, 1, rho);
+        rhoM.set(1, 0, rho);  rhoM.set(1, 1, 1.0);
+
+        final PricingEngine nDimEngine = new FdndimBlackScholesVanillaEngine(
+                procs, rhoM, new int[] { 25, 25 }, 100);
+
+        final double tol = 0.2;
+
+        final Exercise[] exercises = new Exercise[] {
+                new EuropeanExercise(maturity),
+                new AmericanExercise(today, maturity)
+        };
+        final Option.Type[] types = new Option.Type[] {
+                Option.Type.Call, Option.Type.Put
+        };
+
+        for (final Exercise exercise : exercises) {
+            for (final Option.Type type : types) {
+                final BasketOption option = new BasketOption(
+                        new SpreadBasketPayoff(new PlainVanillaPayoff(type, 5)),
+                        exercise);
+
+                option.setPricingEngine(twoDimEngine);
+                final double sb2dNPV = option.NPV();
+
+                option.setPricingEngine(nDimEngine);
+                final double sbndNPV = option.NPV();
+
+                if (Math.abs(sb2dNPV - sbndNPV) > tol) {
+                    fail("failed to reproduce spread option prices with "
+                            + "multidimensional PDE engine."
+                            + "\n    type:        " + type
+                            + "\n    exercise:    " + exercise.getClass().getSimpleName()
+                            + "\n    calculated:  " + sbndNPV
+                            + "\n    expected:    " + sb2dNPV
+                            + "\n    diff:        " + Math.abs(sb2dNPV - sbndNPV)
+                            + "\n    tolerance:   " + tol);
+                }
+
+                final double[] weights = { 1.5, 0.5 };
+                final BasketOption avgOption = new BasketOption(
+                        new AverageBasketPayoff(
+                                new PlainVanillaPayoff(type, 200), weights),
+                        exercise);
+
+                avgOption.setPricingEngine(twoDimEngine);
+                final double avg2dNPV = avgOption.NPV();
+
+                avgOption.setPricingEngine(nDimEngine);
+                final double avgndNPV = avgOption.NPV();
+
+                if (Math.abs(avg2dNPV - avgndNPV) > tol) {
+                    fail("failed to reproduce average option prices with "
+                            + "multidimensional PDE engine."
+                            + "\n    type:        " + type
+                            + "\n    exercise:    " + exercise.getClass().getSimpleName()
+                            + "\n    calculated:  " + avgndNPV
+                            + "\n    expected:    " + avg2dNPV
+                            + "\n    diff:        " + Math.abs(avg2dNPV - avgndNPV)
+                            + "\n    tolerance:   " + tol);
+                }
+            }
+        }
+    }
+
+    /**
+     * N-dim PDE engine self-consistency across dimensions 1..4.
+     *
+     * <p>Mirrors C++ {@code BasketOption_testNdimPDEinDifferentDims}
+     * (test-suite/basketoption.cpp v1.42.1 lines 1565-1637). For each
+     * {@code d} in {1, 2, 3, 4}: build a {@code d}-dim basket with
+     * exponentially-decaying correlations and compare against the
+     * Choi/SingleFactor analytic reference. Tolerance 0.05 per C++.</p>
+     */
+    @Test
+    public void testNdimPDEinDifferentDims() {
+        QL.info("Testing n-dimensional PDE engine in different dimensions...");
+
+        final DayCounter dc = new Actual365Fixed();
+        final Date today = new Date(25, Month.February, 2024);
+        new Settings().setEvaluationDate(today);
+        final Date maturity = today.add(new Period(6, TimeUnit.Months));
+
+        final double[] underlyings = { 100, 50, 75, 120 };
+        final double[] volatilities = { 0.3, 0.2, 0.6, 0.4 };
+        double strike = 5.0;
+
+        final YieldTermStructure rTS = Utilities.flatRate(today, 0.05, dc);
+        final EuropeanExercise exercise = new EuropeanExercise(maturity);
+
+        final List<GeneralizedBlackScholesProcess> processes = new ArrayList<>();
+        for (int d = 1; d <= FdndimBlackScholesVanillaEngine.MAX_SUPPORTED_DIM; ++d) {
+            final SimpleQuote spot = new SimpleQuote(underlyings[d - 1]);
+            // C++ BlackScholesProcess(spot, rTS, volTS) — no dividend, q = 0.
+            processes.add(makeProcess(
+                    spot, Utilities.flatRate(today, 0.0, dc),
+                    rTS, Utilities.flatVol(today, volatilities[d - 1], dc)));
+
+            strike += underlyings[d - 1];
+
+            final Matrix rhoM = new Matrix(d, d);
+            for (int i = 0; i < d; ++i) {
+                for (int j = 0; j < d; ++j) {
+                    rhoM.set(i, j, Math.exp(-0.5 * Math.abs(i - j)));
+                }
+            }
+
+            final double[] weights = new double[d];
+            for (int i = 0; i < d; ++i) weights[i] = 1.0;
+
+            final BasketOption option = new BasketOption(
+                    new AverageBasketPayoff(
+                            new PlainVanillaPayoff(Option.Type.Call, strike),
+                            weights),
+                    exercise);
+
+            // Reference engine: analytic Choi for d>1, SingleFactor BSM for d=1.
+            final double expected;
+            if (d > 1) {
+                option.setPricingEngine(new ChoiBasketEngine(processes, rhoM, 15));
+                expected = option.NPV();
+            } else {
+                option.setPricingEngine(new SingleFactorBsmBasketEngine(processes));
+                expected = option.NPV();
+            }
+
+            // Test engine: N-dim PDE. C++ uses xGrid=30, tGrid=7.
+            option.setPricingEngine(new FdndimBlackScholesVanillaEngine(
+                    processes, rhoM, 30, 7));
+            final double calculated = option.NPV();
+            final double diff = Math.abs(calculated - expected);
+            final double tol = 0.05;
+
+            if (diff > tol) {
+                fail("failed to reproduce precalculated " + d + "-dim option price"
+                        + "\n    calculated: " + calculated
+                        + "\n    expected:   " + expected
+                        + "\n    diff:       " + diff
+                        + "\n    tolerance : " + tol);
             }
         }
     }
