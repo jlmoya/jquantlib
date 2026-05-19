@@ -119,11 +119,30 @@ public class PiecewiseYoYOptionletVolatility< I extends Interpolator >
         calculate();
     }
 
-    /** Lazy-evaluation entry point. */
+    /**
+     * Lazy-evaluation entry point.
+     *
+     * <p>Mirrors C++ {@code LazyObject::calculate()}
+     * ({@code ql/patterns/lazyobject.hpp:256-270}). The flag is set
+     * BEFORE invoking {@code performCalculations()} (then reset in the
+     * catch block on failure) to break recursion when the bootstrap
+     * re-enters the curve via the pricer's
+     * {@code volatilityImpl(...)} → {@code calculate()} during NPV
+     * evaluation of a {@code YoYOptionletHelper}. The previous
+     * AFTER-style guard (set the flag after a successful
+     * {@code performCalculations()}) recursed indefinitely on the first
+     * bootstrap iteration. See C++ comment
+     * "{@code prevent infinite recursion in case of bootstrapping}".
+     */
     public final void calculate() {
         if ( !calculated_ ) {
-            performCalculations();
-            calculated_ = true;
+            calculated_ = true;  // prevent infinite recursion in case of bootstrapping
+            try {
+                performCalculations();
+            } catch ( final RuntimeException re ) {
+                calculated_ = false;
+                throw re;
+            }
         }
     }
 
