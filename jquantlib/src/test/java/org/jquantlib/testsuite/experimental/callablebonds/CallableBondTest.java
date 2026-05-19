@@ -17,8 +17,6 @@ package org.jquantlib.testsuite.experimental.callablebonds;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -59,7 +57,6 @@ import org.jquantlib.time.TimeUnit;
 import org.jquantlib.time.calendars.NullCalendar;
 import org.jquantlib.time.calendars.Target;
 import org.jquantlib.time.calendars.UnitedStates;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -591,21 +588,45 @@ public class CallableBondTest {
     /**
      * testBlackEngine — Black engine for European callable zero-coupon bond.
      * <p>
-     * C++ probe reports cleanPrice = 74.54494134581076 under the same fixture
-     * (v1.42.1 SHA 099987f). JQuantLib's
-     * {@link BlackCallableZeroCouponBondEngine} computes ~73.73 — a ~0.81
-     * absolute divergence that exceeds the C++ inline 1e-4 tolerance by four
-     * orders of magnitude. The cause is a real Java-port divergence in the
-     * Black engine path; fixing it requires editing the production engine
-     * which is out of scope for this test-port phase per the task
-     * "do not touch BlackCallable* production code" constraint.
+     * Pinned against the C++ probe value
+     * {@code 74.54494134581076} (see
+     * {@code migration-harness/references/instruments/callable_bond_black_engine.json}).
+     * <p>
+     * Phase 5e.5b-CFC-d-271: un-ignored after the
+     * {@link BlackCallableFixedRateBondEngine} production fix landed
+     * (Java was passing {@code null} as the {@code npvDate} arg to the
+     * 5-arg {@code CashFlows.npv} static overload, which returns the
+     * un-rescaled total instead of the present value at the settlement /
+     * exercise date; the C++ engine uses the 4-arg overload whose
+     * {@code npvDate} defaults to the settlement date).
      */
     @Test
-    @Ignore("Phase 5e.5b: Java BlackCallableZeroCouponBondEngine diverges "
-            + "from C++ by ~0.81 at the same fixture; production fix required "
-            + "before un-ignoring (C++ probe: 74.54494134581076; Java: ~73.73).")
     public void testBlackEngine() {
-        fail("deferred until Java Black engine matches C++ within 1e-4");
+        final Vars vars = new Vars();
+        vars.setToday(new Date(20, Month.September, 2022));
+        vars.flatCurve = vars.makeFlatCurve(0.03);
+        final Handle<YieldTermStructure> termStructure = new Handle<YieldTermStructure>(vars.flatCurve);
+
+        final CallabilitySchedule callabilities = new CallabilitySchedule();
+        callabilities.add(new Callability(
+                new Callability.Price(100.0, Callability.Price.Type.Clean),
+                Callability.Type.Call,
+                vars.calendar.advance(vars.issueDate(),
+                        new Period(4, TimeUnit.Years),
+                        BusinessDayConvention.Following)));
+
+        final CallableZeroCouponBond bond = new CallableZeroCouponBond(3, 10000.0, vars.calendar,
+                vars.maturityDate(), new Thirty360(Thirty360.Convention.BondBasis),
+                vars.rollingConvention, 100.0, vars.issueDate(), callabilities);
+
+        bond.setPricingEngine(new BlackCallableZeroCouponBondEngine(
+                new Handle<Quote>(new SimpleQuote(0.3)), termStructure));
+
+        // C++ probe value (v1.42.1 SHA 099987f). C++ inline test tolerance
+        // is 1.0e-4; Java vs C++ agree to ~6e-10 after the engine fix.
+        final double cached = 74.54494134581076;
+        assertEquals("Java Black engine cleanPrice must match C++",
+                cached, bond.cleanPrice(), 1.0e-4);
     }
 
     /**

@@ -117,8 +117,16 @@ public class BlackCallableFixedRateBondEngine extends CallableBondEngineImpl {
         final Leg fixedLeg = args.cashflows;
         final YieldTermStructure ts = discountCurve_.currentLink();
 
-        final double value = CashFlows.npv(fixedLeg, ts, false, settle, null);
-        final double npv = CashFlows.npv(fixedLeg, ts, false, ts.referenceDate(), null);
+        // Phase 5e.5b-CFC-d-271 fix: C++ engine uses the 4-arg CashFlows::npv
+        // overload where `npvDate` defaults to `settlementDate`, producing the
+        // PRESENT value AT the settlement (i.e. divided by ts.discount(settle)).
+        // The Java static `CashFlows.npv(..., settle, null)` returns the
+        // un-rescaled total instead (PV at the curve's reference date), which
+        // is wrong whenever settle != referenceDate. Explicitly pass the
+        // settlement as the npvDate so the division is performed.
+        final double value = CashFlows.npv(fixedLeg, ts, false, settle, settle);
+        final double npv = CashFlows.npv(fixedLeg, ts, false, ts.referenceDate(),
+                ts.referenceDate());
 
         final double fwdCashPrice = (value - spotIncome()) / ts.discount(exerciseDate);
         final double cashStrike = args.callabilityPrices.get(0) * args.faceAmount / 100.0;
@@ -186,8 +194,13 @@ public class BlackCallableFixedRateBondEngine extends CallableBondEngineImpl {
         final Leg fixedLeg = args.cashflows;
         final YieldTermStructure ts = discountCurve_.currentLink();
 
-        // value of bond cash flows at option maturity
-        final double fwdNpv = CashFlows.npv(fixedLeg, ts, false, exerciseDate, null);
+        // value of bond cash flows at option maturity (forward NPV).
+        // Phase 5e.5b-CFC-d-271 fix: C++ uses the 4-arg CashFlows::npv where
+        // `npvDate` defaults to `settlementDate`; pass exerciseDate explicitly
+        // as the npvDate so the result is the forward PV AT exerciseDate
+        // (i.e. divided by ts.discount(exerciseDate)), not the raw sum of
+        // discounted future cashflows.
+        final double fwdNpv = CashFlows.npv(fixedLeg, ts, false, exerciseDate, exerciseDate);
 
         DayCounter dayCounter = args.paymentDayCounter;
         Frequency frequency = args.frequency;
