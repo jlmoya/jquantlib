@@ -246,7 +246,26 @@ public class HestonSLVMCModel extends LazyObject {
                 final double midStrike = 0.5 * (pairs[e - 1][0] + pairs[s][0]);
                 vStrikes.get(n)[i] = midStrike;
                 final double lv = localVol.currentLink().localVol(t, midStrike, true);
-                L.set(i, n, Math.sqrt(lv * lv / sum));
+                // Per-bin leverage estimate L = sqrt(lv^2 / E[v|bin]).
+                // C++ v1.42.1 (hestonslvmcmodel.cpp:181) does not guard the
+                // denominator; the C++ paths happen to keep the mean variance
+                // strictly positive in every bin under their Sobol+QE
+                // realisation. The Java Sobol+QE realisation occasionally
+                // produces a bin whose paths all hit the absorbing v=0 branch
+                // (psi >= 1.5, u <= p), driving E[v|bin] to zero and the raw
+                // estimator to +Inf/NaN. The companion FDM calibrator clamps
+                // the leverage cell to [1e-3, 50.0] (hestonslvfdmmodel.cpp:484)
+                // for the same robustness reason; we apply the same clamp here
+                // so that downstream FdmHestonOp solvers see a finite L on
+                // every interior cell.
+                final double lRaw = Math.sqrt(lv * lv / sum);
+                final double lClamped;
+                if (Double.isNaN(lRaw) || Double.isInfinite(lRaw)) {
+                    lClamped = 50.0;
+                } else {
+                    lClamped = Math.min(50.0, Math.max(1.0e-3, lRaw));
+                }
+                L.set(i, n, lClamped);
 
                 s = e;
             }
