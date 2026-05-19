@@ -15,6 +15,7 @@ import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.cashflow.AveragingMultipleResetsPricer;
 import org.jquantlib.cashflow.CashFlow;
+import org.jquantlib.cashflow.CashFlows;
 import org.jquantlib.cashflow.CompoundingMultipleResetsPricer;
 import org.jquantlib.cashflow.IborCoupon;
 import org.jquantlib.cashflow.IborLeg;
@@ -40,7 +41,6 @@ import org.jquantlib.time.Period;
 import org.jquantlib.time.Schedule;
 import org.jquantlib.time.TimeUnit;
 import org.jquantlib.time.calendars.Target;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -71,17 +71,6 @@ import org.junit.Test;
  */
 public class MultipleResetsCouponsTest {
 
-    private static final String REASON_EX_COUPON =
-            "Phase 5e.5b-CFC-d-203 carry: MultipleResetsCoupon now threads "
-          + "exCouponDate onto the inherited Coupon.exCouponDate_ field "
-          + "(matching C++ semantics), but the Java CashFlows.npv(Leg, YTS, "
-          + "boolean, Date, Date) overload does not yet filter out cashflows "
-          + "for which tradingExCoupon(settlementDate) is true (C++ "
-          + "cashflows.cpp:441-443). The C++ testExCouponCashFlow case relies "
-          + "on that filter to drive npv to zero on the ex-coupon date. "
-          + "CashFlows.java is currently on the DO-NOT-TOUCH list pending "
-          + "a coordinated tradingExCoupon-honoring sweep.";
-
     private static final String REASON_CONSISTENCY =
             "Phase 5d.5-MR carry: Java MultipleResetsLeg builder does not yet "
           + "validate against zero-gearing or oversized gearings vector at "
@@ -90,11 +79,12 @@ public class MultipleResetsCouponsTest {
 
     /**
      * Mirrors C++ {@code multipleresetscoupons.cpp::CommonVars}. As of
-     * Phase 5e.5b-CFC-d-203, {@link MultipleResetsCoupon} accepts an
-     * {@code exCouponDate} parameter and {@link MultipleResetsLeg} threads
-     * it through; the {@code testExCouponCashFlow} case nevertheless still
-     * carries (see {@link #REASON_EX_COUPON}) because
-     * {@code CashFlows.npv} does not yet honour {@code tradingExCoupon}.
+     * Phase 5e.5b-CFC-d-302 the full ex-coupon flow lights up:
+     * {@link MultipleResetsCoupon} threads {@code exCouponDate} onto the
+     * inherited {@code Coupon.exCouponDate_} field (Phase 5e.5b-CFC-d-203)
+     * and {@link CashFlows#npv(Leg, YieldTermStructure, boolean, Date, Date)}
+     * skips cashflows for which {@code tradingExCoupon(settlementDate)} is
+     * {@code true} (cashflows.cpp:441-443).
      */
     private static final class CommonVars {
         final Date today;
@@ -279,9 +269,60 @@ public class MultipleResetsCouponsTest {
         }
     }
 
-    @Ignore(REASON_EX_COUPON)
+    /**
+     * Port of C++ {@code multipleresetscoupons.cpp::testExCouponCashFlow}
+     * (test-suite/multipleresetscoupons.cpp:185-213).
+     *
+     * <p>Builds a 6-month multi-reset coupon paying on
+     * {@code today + 2 business days} with an ex-coupon date at
+     * {@code today - 2 business days}. With settlement on {@code today},
+     * the cashflow is in its ex-coupon window, so
+     * {@code CashFlows.npv(leg, curve, false, today, today)} must return
+     * {@code 0.0} once {@link CashFlows} honours
+     * {@code tradingExCoupon(settlementDate)} (cashflows.cpp:441-443).
+     *
+     * <p>Phase 5e.5b-CFC-d-302 — un-ignore + body-fill following the
+     * {@link CashFlows#npv(Leg, YieldTermStructure, boolean, Date, Date)}
+     * ex-coupon filter alignment.
+     */
     @Test
-    public void testExCouponCashFlow() { fail("not implemented"); }
+    public void testExCouponCashFlow() {
+        QL.info("Testing ex-coupon cash flow...");
+
+        final CommonVars vars = new CommonVars();
+
+        final Date start = vars.calendar.advance(vars.today, -6, TimeUnit.Months);
+        final Date end   = vars.today;
+        final Schedule schedule = vars.createSchedule(start, end);
+
+        final Calendar paymentCalendar = vars.euribor.fixingCalendar();
+        final Date paymentDate   = paymentCalendar.advance(end,  2, TimeUnit.Days);
+        final Date exCouponDate  = paymentCalendar.advance(end, -2, TimeUnit.Days);
+
+        final MultipleResetsCoupon cpn = new MultipleResetsCoupon(
+                paymentDate, /* nominal */ 1.0, schedule,
+                /* fixingDays */ 2, vars.euribor,
+                /* gearing */ 1.0, /* couponSpread */ 0.0,
+                /* rateSpread */ 0.0,
+                /* refStart */ new Date(), /* refEnd */ new Date(),
+                new DayCounter(), exCouponDate);
+        cpn.setPricer(new CompoundingMultipleResetsPricer());
+
+        final Leg leg = new Leg();
+        leg.add(cpn);
+
+        final double npv = CashFlows.npv(leg, vars.euriborHandle.currentLink(),
+                /* includeSettlementDateFlows */ false, vars.today, vars.today);
+
+        final double tolerance = 1.0e-14;
+        if (Math.abs(npv) > tolerance) {
+            fail("cash flow was expected to go ex-coupon\n"
+                    + "    calculated: " + npv + "\n"
+                    + "    expected:   " + 0.0 + "\n"
+                    + "    start:      " + start + "\n"
+                    + "    end:        " + end);
+        }
+    }
 
     /**
      * Port of C++ {@code multipleresetscoupons.cpp::testMultipleResetsLegConsistencyChecks}.

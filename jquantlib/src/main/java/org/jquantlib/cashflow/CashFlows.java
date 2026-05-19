@@ -148,7 +148,14 @@ public class CashFlows {
 
     /**
      * NPV of the cash flows. Mirrors C++
-     * {@code CashFlows::npv(leg, discountCurve, includeSettlementDateFlows, settlementDate, npvDate)}.
+     * {@code CashFlows::npv(leg, discountCurve, includeSettlementDateFlows, settlementDate, npvDate)}
+     * (ql/cashflows/cashflows.cpp:424-447).
+     *
+     * <p>Skips any cashflow that has already occurred or for which
+     * {@link CashFlow#tradingExCoupon(Date) tradingExCoupon(settlementDate)}
+     * is {@code true} (cashflows.cpp:441-443) — the ex-coupon filter that
+     * goes hand-in-hand with {@code hasOccurred} in the C++ reference.
+     * Phase 5e.5b-CFC-d-302.
      *
      * @param leg                        the cash-flow leg
      * @param discountCurve              discount-curve handle (raw, like the C++ reference)
@@ -168,7 +175,7 @@ public class CashFlows {
         double totalNPV = 0.0;
         for ( int i = 0; i < leg.size(); ++i ) {
             final CashFlow cf = leg.get(i);
-            if ( !cf.hasOccurred(date, includeSettlementDateFlows) ) {
+            if ( !cf.hasOccurred(date, includeSettlementDateFlows) && !cf.tradingExCoupon(date) ) {
                 totalNPV += cf.amount() * discountCurve.discount(cf.date());
             }
         }
