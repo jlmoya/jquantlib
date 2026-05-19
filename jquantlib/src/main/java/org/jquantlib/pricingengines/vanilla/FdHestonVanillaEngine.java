@@ -207,10 +207,22 @@ public class FdHestonVanillaEngine
         final double maturity = hestonProcess.time(args.exercise.lastDate());
 
         // 1.1 Variance mesher (Heston CIR v-process)
+        //
+        // Phase 5e.5b-CFC-d-283: thread {@code mixingFactor} through to the
+        // mesher constructor. Mirrors C++ v1.42.1 fdhestonvanillaengine.cpp
+        // line 114, which passes {@code mixingFactor_} to
+        // {@code FdmHestonLocalVolatilityVarianceMesher}. Without this,
+        // {@code FdHestonVanillaEngine(model[sigma=0.8], ..., mix=1.0)} and
+        // {@code FdHestonVanillaEngine(model[sigma=8.0], ..., mix=0.1)} —
+        // which produce mathematically identical PDEs since
+        // {@code sigma*mix = 0.8} in both — yielded different prices because
+        // the variance mesh itself was built from raw {@code sigma}, not
+        // {@code sigma*mix}. The {@code testMonteCarloVsFdmPricing}
+        // {@code priceFDM == priceFDMWithMix} assertion requires this fix.
         final int tGridMin = 5;
         final FdmHestonVarianceMesher varianceMesher = new FdmHestonVarianceMesher(
                 vGrid, hestonProcess, maturity,
-                Math.max(tGridMin, tGrid / 50), 0.0001);
+                Math.max(tGridMin, tGrid / 50), 0.0001, mixingFactor);
 
         // 1.2 Equity mesher (log-spot)
         final StrikedTypePayoff payoff = (StrikedTypePayoff) args.payoff;
