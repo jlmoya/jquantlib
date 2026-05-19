@@ -29,6 +29,7 @@ import org.jquantlib.instruments.StrikedTypePayoff;
 import org.jquantlib.math.transcendental.JQuantMath;
 import org.jquantlib.methods.finitedifferences.meshers.Fdm1dMesher;
 import org.jquantlib.methods.finitedifferences.meshers.FdmBlackScholesMesher;
+import org.jquantlib.methods.finitedifferences.meshers.FdmBlackScholesMultiStrikeMesher;
 import org.jquantlib.methods.finitedifferences.meshers.FdmHestonVarianceMesher;
 import org.jquantlib.methods.finitedifferences.meshers.FdmMesher;
 import org.jquantlib.methods.finitedifferences.meshers.FdmMesherComposite;
@@ -76,8 +77,11 @@ import org.jquantlib.termstructures.LocalVolTermStructure;
  *       {@link Fdm2DimSolver} with an {@link FdmHestonOp} that carries the
  *       leverage surface. When null, the standard {@link FdmHestonSolver}
  *       path is used (binary-equivalent to the pre-port behaviour).</li>
- *   <li>Multiple-strikes caching ({@code enableMultipleStrikesCaching}) not implemented
- *       — requires the unported {@code FdmBlackScholesMultiStrikeMesher}.</li>
+ *   <li>Multiple-strikes mode ({@code enableMultipleStrikesCaching}) — the
+ *       grid-widening {@link FdmBlackScholesMultiStrikeMesher} is wired
+ *       (Phase 5e.5b-CFC-d-279); the C++ {@code cachedArgs2results_}
+ *       cross-strike result-caching path is not yet ported, so each
+ *       {@link #calculate()} call still performs a fresh PDE solve.</li>
  *   <li>The Java {@link HestonModel} does not expose {@code .process()},
  *       so the engine takes the model and process as separate constructor
  *       arguments (matching {@link FdHestonHullWhiteVanillaEngine}).</li>
@@ -96,6 +100,20 @@ public class FdHestonVanillaEngine
     private final FdmSchemeDesc schemeDesc;
     private final double mixingFactor;
     private final LocalVolTermStructure leverageFct;
+
+    /**
+     * Optional list of strikes for multi-strike caching. When non-null, the
+     * equity mesher in {@link #getSolverDesc()} is constructed via
+     * {@link FdmBlackScholesMultiStrikeMesher} so the grid spans all strikes'
+     * density tails (mirrors C++ v1.42.1
+     * {@code FdHestonVanillaEngine::enableMultipleStrikesCaching}).
+     * <p>
+     * Note: the C++ {@code cachedArgs2results_} re-use of solver values across
+     * strikes (spot scaling trick) is not yet ported — every call still
+     * performs a fresh PDE solve. The multi-strike mesher alone delivers the
+     * relevant API + grid behaviour the test requires.
+     */
+    private double[] strikes;
 
     /** Convenience constructor — all C++ defaults, no dividends. */
     public FdHestonVanillaEngine(final HestonModel hestonModel,
@@ -198,15 +216,30 @@ public class FdHestonVanillaEngine
         final StrikedTypePayoff payoff = (StrikedTypePayoff) args.payoff;
         QL.require(payoff != null, "non-striked payoff given");
 
-        final Fdm1dMesher equityMesher = new FdmBlackScholesMesher(
-                xGrid,
-                FdmBlackScholesMesher.processHelper(
-                        hestonProcess.s0(),
-                        hestonProcess.dividendYield(),
-                        hestonProcess.riskFreeRate(),
-                        varianceMesher.volaEstimate()),
-                maturity, payoff.strike(),
-                dividends, 0.0);
+        final Fdm1dMesher equityMesher;
+        if (strikes == null) {
+            equityMesher = new FdmBlackScholesMesher(
+                    xGrid,
+                    FdmBlackScholesMesher.processHelper(
+                            hestonProcess.s0(),
+                            hestonProcess.dividendYield(),
+                            hestonProcess.riskFreeRate(),
+                            varianceMesher.volaEstimate()),
+                    maturity, payoff.strike(),
+                    dividends, 0.0);
+        } else {
+            QL.require(dividends.size() == 0,
+                    "multiple strikes engine does not work with discrete dividends");
+            equityMesher = new FdmBlackScholesMultiStrikeMesher(
+                    xGrid,
+                    FdmBlackScholesMesher.processHelper(
+                            hestonProcess.s0(),
+                            hestonProcess.dividendYield(),
+                            hestonProcess.riskFreeRate(),
+                            varianceMesher.volaEstimate()),
+                    maturity, strikes, 0.0001, 1.5,
+                    payoff.strike(), 0.075);
+        }
 
         final FdmMesher mesher = new FdmMesherComposite(equityMesher, varianceMesher);
 
@@ -263,5 +296,28 @@ public class FdHestonVanillaEngine
                                 / (spot * spot);
             r.greeks().theta = solver.thetaAt(x, v0);
         }
+    }
+
+    /**
+     * Enable multi-strike mode by binding a strike vector that the engine
+     * uses to widen its log-spot grid via
+     * {@link FdmBlackScholesMultiStrikeMesher}.
+     * <p>
+     * Mirrors C++ v1.42.1
+     * {@code FdHestonVanillaEngine::enableMultipleStrikesCaching}. The C++
+     * {@code cachedArgs2results_} cross-strike result-caching path is not
+     * yet ported — every {@link #calculate()} invocation still performs a
+     * fresh PDE solve. The multi-strike mesher itself, however, delivers
+     * the wider grid behaviour the C++ test
+     * {@code hestonmodel.cpp::testMultipleStrikesEngine} validates.
+     * <p>
+     * Pass {@code null} (or call again with a new vector) to clear / replace
+     * the strike list.
+     *
+     * @param strikes vector of strikes to span; {@code null} disables
+     *                multi-strike mode and restores the single-strike grid
+     */
+    public void enableMultipleStrikesCaching(final double[] strikes) {
+        this.strikes = (strikes == null) ? null : strikes.clone();
     }
 }

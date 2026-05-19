@@ -3703,9 +3703,111 @@ public class HestonModelTest {
                 expectedNPV, calculatedNPV, 1.0e-9);
     }
 
-    @Ignore(REASON_PTD)
+    /**
+     * Body-fill port of C++
+     * {@code test-suite/hestonmodel.cpp::testMultipleStrikesEngine}
+     * (lines 1067-1142).
+     *
+     * <p>Tests that the multi-strike FD Heston engine (with
+     * {@code FdmBlackScholesMultiStrikeMesher} wired via
+     * {@link FdHestonVanillaEngine#enableMultipleStrikesCaching(double[])})
+     * reproduces, to {@code relTol=5e-3}, the NPV / delta / gamma / theta
+     * computed by a single-strike FD Heston engine on the same grid for a
+     * set of put options at strikes
+     * {@code {1.0, 0.5, 0.75, 1.5, 2.0}}.
+     *
+     * <p>Java port deviation: the C++ {@code cachedArgs2results_}
+     * cross-strike caching is not yet ported (Phase 5e.5b-CFC-d-279). Both
+     * engines therefore perform fresh PDE solves; what we cross-validate
+     * is that the wider multi-strike grid does not perturb the prices
+     * beyond the 5e-3 relative tolerance the C++ test uses.
+     *
+     * <p>Source: {@code test-suite/hestonmodel.cpp:1067-1142} v1.42.1.
+     */
     @Test
-    public void testMultipleStrikesEngine() { fail("not implemented"); }
+    public void testMultipleStrikesEngine() {
+        final Date settlementDate = new Date(27, Month.December, 2004);
+        new Settings().setEvaluationDate(settlementDate);
+
+        final DayCounter dayCounter = new ActualActual(ActualActual.Convention.ISDA);
+        final Date exerciseDate = new Date(28, Month.March, 2006);
+
+        final Exercise exercise = new EuropeanExercise(exerciseDate);
+
+        // C++ flatRate(rate, dc) -> FlatForward(0, NullCalendar, ...).
+        final Handle<YieldTermStructure> riskFreeTS = new Handle<YieldTermStructure>(
+                new FlatForward(settlementDate,
+                        new Handle<Quote>(new SimpleQuote(0.06)), dayCounter));
+        final Handle<YieldTermStructure> dividendTS = new Handle<YieldTermStructure>(
+                new FlatForward(settlementDate,
+                        new Handle<Quote>(new SimpleQuote(0.02)), dayCounter));
+
+        final Handle<Quote> s0 = new Handle<Quote>(new SimpleQuote(1.05));
+
+        final HestonProcess process = new HestonProcess(riskFreeTS, dividendTS, s0,
+                /* v0 */ 0.16, /* kappa */ 2.5, /* theta */ 0.09,
+                /* sigma */ 0.8, /* rho */ -0.8);
+        final HestonModel model = new HestonModel(process);
+
+        final double[] strikes = { 1.0, 0.5, 0.75, 1.5, 2.0 };
+
+        // singleStrikeEngine: no enableMultipleStrikesCaching call.
+        final FdHestonVanillaEngine singleStrikeEngine = new FdHestonVanillaEngine(
+                model, process,
+                /* tGrid */ 20, /* xGrid */ 400, /* vGrid */ 50,
+                /* dampingSteps */ 0, FdmSchemeDesc.Hundsdorfer());
+
+        // multiStrikeEngine: enable multi-strike grid for the full strike set.
+        final FdHestonVanillaEngine multiStrikeEngine = new FdHestonVanillaEngine(
+                model, process,
+                /* tGrid */ 20, /* xGrid */ 400, /* vGrid */ 50,
+                /* dampingSteps */ 0, FdmSchemeDesc.Hundsdorfer());
+        multiStrikeEngine.enableMultipleStrikesCaching(strikes);
+
+        final double relTol = 5.0e-3;
+        for (final double strike : strikes) {
+            final StrikedTypePayoff payoff = new PlainVanillaPayoff(Option.Type.Put, strike);
+
+            final VanillaOption aOption = new VanillaOption(payoff, exercise);
+
+            aOption.setPricingEngine(multiStrikeEngine);
+            final double npvCalculated   = aOption.NPV();
+            final double deltaCalculated = aOption.delta();
+            final double gammaCalculated = aOption.gamma();
+            final double thetaCalculated = aOption.theta();
+
+            aOption.setPricingEngine(singleStrikeEngine);
+            final double npvExpected   = aOption.NPV();
+            final double deltaExpected = aOption.delta();
+            final double gammaExpected = aOption.gamma();
+            final double thetaExpected = aOption.theta();
+
+            if (Math.abs(npvCalculated - npvExpected) / npvExpected > relTol) {
+                fail("failed to reproduce price with FD multi strike engine"
+                        + "\n    strike:     " + strike
+                        + "\n    calculated: " + npvCalculated
+                        + "\n    expected:   " + npvExpected);
+            }
+            if (Math.abs(deltaCalculated - deltaExpected) / deltaExpected > relTol) {
+                fail("failed to reproduce delta with FD multi strike engine"
+                        + "\n    strike:     " + strike
+                        + "\n    calculated: " + deltaCalculated
+                        + "\n    expected:   " + deltaExpected);
+            }
+            if (Math.abs(gammaCalculated - gammaExpected) / gammaExpected > relTol) {
+                fail("failed to reproduce gamma with FD multi strike engine"
+                        + "\n    strike:     " + strike
+                        + "\n    calculated: " + gammaCalculated
+                        + "\n    expected:   " + gammaExpected);
+            }
+            if (Math.abs(thetaCalculated - thetaExpected) / thetaExpected > relTol) {
+                fail("failed to reproduce theta with FD multi strike engine"
+                        + "\n    strike:     " + strike
+                        + "\n    calculated: " + thetaCalculated
+                        + "\n    expected:   " + thetaExpected);
+            }
+        }
+    }
 
     /**
      * Body-fill port of C++ {@code testLocalVolFromHestonModel}
