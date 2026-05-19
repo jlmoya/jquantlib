@@ -503,26 +503,26 @@ public class InflationVolatilityTest {
      * {@code atmYoYRate(d)} NPEs. Defer to Phase 2y after
      * {@code PiecewiseYoYInflationCurve} bootstrap is fixed.
      */
-    @Ignore("Phase 2z+: YoYInflationIndex.needsForecast ratio_ branch is now"
-            + " aligned with C++ (Phase 5e.5b-CFC-d-273 — fixing() now"
-            + " dispatches via needsForecast() exactly like C++"
-            + " inflationindex.cpp:290-297, so ratio-based indices delegate"
-            + " to underlyingIndex.needsForecast for the past/forecast"
-            + " threshold). The earlier ZeroInflationIndex NPE is gone."
-            + " New blocker: YearOnYearInflationSwapHelper currently sets"
-            + " earliestDate=latestDate=fixingPeriod.first regardless of CPI"
-            + " interpolation type, but C++ inflationhelpers.cpp:253-290"
-            + " sets latestDate=fixingPeriod.second+1 when"
-            + " detail::CPI::isInterpolated(interpolation_, yii_) is true"
-            + " (CPI::Linear or CPI::AsIndex on an interpolated index)."
-            + " Without that 1-day pillar extension the bootstrap"
-            + " PiecewiseYoYInflationCurve's maxDate falls short and"
-            + " CPI.laggedYoYRate's Linear branch — which queries"
-            + " index.fixing(fixingPeriod.second+1) — fails with"
-            + " 'date past max curve date' on the 30Y helper. Fix is"
-            + " out-of-scope here (touches YearOnYearInflationSwapHelper,"
-            + " not allowed by current task constraints); defer to a"
-            + " dedicated align(YearOnYearInflationSwapHelper) commit.")
+    @Ignore("Phase 5e.5b-CFC-d-274: YearOnYearInflationSwapHelper pillar"
+            + " bug is now fixed (latestDate=fixingPeriod.second+1 when"
+            + " CPI::isInterpolated(interpolation, yii); mirrors C++"
+            + " inflationhelpers.cpp:253-291). The 'date past max curve"
+            + " date' NPE is gone and the bootstrap completes for all 30"
+            + " annual helpers including 30Y. First two assertion loops"
+            + " (cached crv/swaps arrays via atmYoYSwapTimeRates /"
+            + " atmYoYSwapRate) now PASS cleanly at eps=2e-5. Remaining"
+            + " blocker is downstream and pre-existing: the third loop"
+            + " (atmYoYRate(d) — re-derived from the bootstrapped"
+            + " PiecewiseYoYInflationCurve) drifts ~1e-3 at 30Y (i=6:"
+            + " java=0.0280505 vs cpp=0.0295884), with drift growing"
+            + " monotonically with maturity. Signature matches the"
+            + " accumulated discount-factor divergence from using"
+            + " FlatForward in place of InterpolatedZeroCurve (Phase 2x"
+            + " A.1 bug — already documented in the inline tolerance"
+            + " comments). Cannot loosen below 1e-8 per CLAUDE.md;"
+            + " defer to a dedicated align(InterpolatedZeroCurve) or"
+            + " InflationVolatilityTest.setup() repair commit that"
+            + " restores the InterpolatedZeroCurve construction.")
     @Test
     public void testYoYPriceSurfaceToATM() {
         setup();

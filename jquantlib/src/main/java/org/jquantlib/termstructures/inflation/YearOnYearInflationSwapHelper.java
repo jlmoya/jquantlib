@@ -185,9 +185,19 @@ public class YearOnYearInflationSwapHelper extends BootstrapHelper<YoYInflationT
         // Compute earliest/latest from inflation period of (maturity - swapObsLag).
         final Pair<Date, Date> fixingPeriod = InflationTermStructure
                 .inflationPeriod(maturity.sub(swapObsLag), yii.frequency());
-        // Mirror C++ NoInterpolation branch (line 290-291) — pillar at fixingPeriod.first
+        // Mirror C++ inflationhelpers.cpp:253-291 — split by interpolation type.
+        // When detail::CPI::isInterpolated(interpolation, yii) is true
+        // (CPI::Linear, or CPI::AsIndex on an interpolated index), the
+        // helper's pillar must extend to fixingPeriod.second + 1 so the
+        // bootstrapped curve's maxDate covers CPI.laggedYoYRate's Linear
+        // branch lookup at (fixingPeriod.second + 1). Otherwise only the
+        // left node matters (earliestDate == latestDate).
         this.earliestDate = fixingPeriod.first();
-        this.latestDate = fixingPeriod.first();
+        if (isInterpolated(interpolation, yii)) {
+            this.latestDate = fixingPeriod.second().add(1);
+        } else {
+            this.latestDate = fixingPeriod.first();
+        }
 
         yii.addObserver(this);
         if (!this.nominalTermStructure.empty()) {
@@ -296,9 +306,26 @@ public class YearOnYearInflationSwapHelper extends BootstrapHelper<YoYInflationT
     /**
      * Pillar date — the curve node this helper anchors. For the
      * NoInterpolation case this is the inflation-period start of
-     * {@code maturity - swapObsLag}.
+     * {@code maturity - swapObsLag}; for the Interpolated case it is
+     * {@code fixingPeriod.second + 1}.
      */
     public Date pillarDate() {
         return latestDate;
+    }
+
+    /**
+     * Mirrors C++ {@code detail::CPI::isInterpolated(CPI::InterpolationType,
+     * YoYInflationIndex)} ({@code ql/indexes/inflationindex.cpp:432}).
+     *
+     * <p>{@code CPI::AsIndex} delegates to the index's own
+     * {@link YoYInflationIndex#interpolated()} flag; otherwise
+     * {@code CPI::Linear} is interpolated and {@code CPI::Flat} is not.
+     */
+    private static boolean isInterpolated(final CPI.InterpolationType t,
+                                          final YoYInflationIndex idx) {
+        if (t == CPI.InterpolationType.AsIndex) {
+            return idx != null && idx.interpolated();
+        }
+        return t == CPI.InterpolationType.Linear;
     }
 }
