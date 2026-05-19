@@ -26,18 +26,38 @@ import org.jquantlib.time.Date;
  */
 public class BetaRisk extends CatRisk {
 
+    /** Sentinel: no deterministic seed; use the time-seeded legacy RNG path. */
+    private static final long NO_SEED = Long.MIN_VALUE;
+
     private final double maxLoss_;
     private final double lambda_;
     private final double alpha_;
     private final double beta_;
+    private final long seed_;
 
     public BetaRisk(final double maxLoss, final double years, final double mean, final double stdDev) {
+        this(maxLoss, years, mean, stdDev, NO_SEED);
+    }
+
+    /**
+     * Deterministic-seed constructor.
+     *
+     * <p>Phase 5e.5b-CFC-d-300: forwards {@code seed} to each
+     * {@link BetaRiskSimulation} returned by {@link #newSimulation}, so
+     * Monte-Carlo callers (notably {@code testBetaRisk}) can exercise a
+     * reproducible sample stream.
+     *
+     * @param seed MT19937 seed for the underlying simulation
+     */
+    public BetaRisk(final double maxLoss, final double years, final double mean, final double stdDev,
+            final long seed) {
 
         QL.require(mean < maxLoss,
                 "Mean " + mean + " of the loss distribution must be less than the maximum loss " + maxLoss);
 
         this.maxLoss_ = maxLoss;
         this.lambda_ = 1.0 / years;
+        this.seed_ = seed;
 
         final double normalizedMean = mean / maxLoss;
         final double normalizedVar = stdDev * stdDev / (maxLoss * maxLoss);
@@ -53,6 +73,9 @@ public class BetaRisk extends CatRisk {
 
     @Override
     public CatSimulation newSimulation(final Date start, final Date end) {
-        return new BetaRiskSimulation(start, end, maxLoss_, lambda_, alpha_, beta_);
+        if ( seed_ == NO_SEED ) {
+            return new BetaRiskSimulation(start, end, maxLoss_, lambda_, alpha_, beta_);
+        }
+        return new BetaRiskSimulation(start, end, maxLoss_, lambda_, alpha_, beta_, seed_);
     }
 }
