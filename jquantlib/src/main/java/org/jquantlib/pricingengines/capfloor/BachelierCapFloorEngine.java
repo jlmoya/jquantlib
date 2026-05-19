@@ -96,9 +96,12 @@ public class BachelierCapFloorEngine extends CapFloor.Engine {
     }
 
     /**
-     * Mirrors C++ bacheliercapfloorengine.cpp::calculate(). Phase 2f WI-1 ports the {@code value} aggregation only; the
-     * additionalResults map (vega, optionletsPrice, optionletsVega, etc.) is a tactical follow-up that does not change
-     * the {@code NPV()} surface and matches the deferred scope of {@link BlackCapFloorEngine}.
+     * Mirrors C++ bacheliercapfloorengine.cpp::calculate() (v1.42.1 lines 62-149).
+     *
+     * <p>Populates {@code results.value} plus the named additionalResults
+     * (vega, optionletsPrice, optionletsVega, optionletsDelta, optionletsDiscountFactor, optionletsAtmForward,
+     * optionletsStdDev) exactly as C++ does — Phase 5e.5b-CFC-d-299 finished the port and unblocked
+     * {@code CapFloorTest.testBachelierOptionLetsDelta}.
      */
     @Override
     public void calculate() {
@@ -106,15 +109,25 @@ public class BachelierCapFloorEngine extends CapFloor.Engine {
         final CapFloor.ResultsImpl results = (CapFloor.ResultsImpl) results_;
 
         double value = 0.0;
+        double vega = 0.0;
         final int optionlets = arguments.startDates.length;
+        final double[] values = new double[optionlets];
+        final double[] deltas = new double[optionlets];
+        final double[] vegas = new double[optionlets];
+        final double[] stdDevs = new double[optionlets];
+        final double[] discountFactors = new double[optionlets];
         final CapFloor.Type type = arguments.type;
         final Date today = vol_.currentLink().referenceDate();
         final Date settlement = discountCurve_.currentLink().referenceDate();
 
         for ( int i = 0; i < optionlets; ++i ) {
             final Date paymentDate = arguments.endDates[i];
+            // handling of settlementDate, npvDate and includeSettlementFlows
+            // should be implemented; for the time being just discard expired
+            // caplets.
             if ( paymentDate.gt(settlement) ) {
                 final double d = discountCurve_.currentLink().discount(paymentDate);
+                discountFactors[i] = d;
                 final double accrualFactor = arguments.nominals[i] * arguments.gearings[i] * arguments.accrualTimes[i];
                 final double discountedAccrual = d * accrualFactor;
                 final double forward = arguments.forwards[i];
@@ -125,35 +138,63 @@ public class BachelierCapFloorEngine extends CapFloor.Engine {
                     sqrtTime = Math.sqrt(vol_.currentLink().timeFromReference(fixingDate));
                 }
 
-                double letValue = 0.0;
                 if ( type == CapFloor.Type.Cap || type == CapFloor.Type.Collar ) {
                     final double strike = arguments.capRates[i];
-                    double stdDev = 0.0;
                     if ( sqrtTime > 0.0 ) {
-                        stdDev = Math.sqrt(vol_.currentLink().blackVariance(fixingDate, strike));
+                        stdDevs[i] = Math.sqrt(vol_.currentLink().blackVariance(fixingDate, strike));
+                        vegas[i] = BlackFormula.bachelierBlackFormulaStdDevDerivative(strike, forward, stdDevs[i],
+                                discountedAccrual) * sqrtTime;
+                        deltas[i] = BlackFormula.bachelierBlackFormulaAssetItmProbability(Option.Type.Call, strike,
+                                forward, stdDevs[i]);
                     }
-                    letValue = BlackFormula.bachelierBlackFormula(Option.Type.Call, strike, forward, stdDev,
+                    // include caplets with past fixing date
+                    values[i] = BlackFormula.bachelierBlackFormula(Option.Type.Call, strike, forward, stdDevs[i],
                             discountedAccrual);
                 }
                 if ( type == CapFloor.Type.Floor || type == CapFloor.Type.Collar ) {
                     final double strike = arguments.floorRates[i];
-                    double stdDev = 0.0;
+                    double floorletVega = 0.0;
+                    double floorletDelta = 0.0;
                     if ( sqrtTime > 0.0 ) {
-                        stdDev = Math.sqrt(vol_.currentLink().blackVariance(fixingDate, strike));
+                        stdDevs[i] = Math.sqrt(vol_.currentLink().blackVariance(fixingDate, strike));
+                        floorletVega = BlackFormula.bachelierBlackFormulaStdDevDerivative(strike, forward, stdDevs[i],
+                                discountedAccrual) * sqrtTime;
+                        // C++: Integer(Option::Put) * bachelierBlackFormulaAssetItmProbability(Put, ...)
+                        //      = -1 * Phi(-h) — a non-positive delta.
+                        floorletDelta = Option.Type.Put.toInteger() * BlackFormula
+                                .bachelierBlackFormulaAssetItmProbability(Option.Type.Put, strike, forward, stdDevs[i]);
                     }
-                    final double floorlet = BlackFormula.bachelierBlackFormula(Option.Type.Put, strike, forward, stdDev,
-                            discountedAccrual);
+                    final double floorlet = BlackFormula.bachelierBlackFormula(Option.Type.Put, strike, forward,
+                            stdDevs[i], discountedAccrual);
                     if ( type == CapFloor.Type.Floor ) {
-                        letValue = floorlet;
+                        values[i] = floorlet;
+                        vegas[i] = floorletVega;
+                        deltas[i] = floorletDelta;
                     } else {
                         // a collar is long a cap and short a floor
-                        letValue -= floorlet;
+                        values[i] -= floorlet;
+                        vegas[i] -= floorletVega;
+                        deltas[i] -= floorletDelta;
                     }
                 }
-                value += letValue;
+                value += values[i];
+                vega += vegas[i];
             }
         }
         QL.require(!Double.isNaN(value), "BachelierCapFloorEngine produced NaN value");
         results.value = value;
+
+        // Populate additionalResults exactly as C++ does (lines 140-148).
+        // Keys match the C++ names verbatim so callers reading via
+        // Instrument.result(key) port without churn.
+        results.additionalResults().put("vega", vega);
+        results.additionalResults().put("optionletsPrice", values);
+        results.additionalResults().put("optionletsVega", vegas);
+        results.additionalResults().put("optionletsDelta", deltas);
+        results.additionalResults().put("optionletsDiscountFactor", discountFactors);
+        results.additionalResults().put("optionletsAtmForward", arguments.forwards);
+        if ( type != CapFloor.Type.Collar ) {
+            results.additionalResults().put("optionletsStdDev", stdDevs);
+        }
     }
 }

@@ -41,6 +41,7 @@ import org.jquantlib.indexes.IborIndex;
 import org.jquantlib.instruments.CapFloor;
 import org.jquantlib.instruments.VanillaSwap;
 import org.jquantlib.math.matrixutilities.Array;
+import org.jquantlib.pricingengines.capfloor.BachelierCapFloorEngine;
 import org.jquantlib.pricingengines.capfloor.BlackCapFloorEngine;
 import org.jquantlib.pricingengines.swap.DiscountingSwapEngine;
 import org.jquantlib.quotes.Handle;
@@ -59,7 +60,6 @@ import org.jquantlib.time.Month;
 import org.jquantlib.time.Period;
 import org.jquantlib.time.Schedule;
 import org.jquantlib.time.TimeUnit;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -143,8 +143,26 @@ public class CapFloorTest {
                     new ActualActual(ActualActual.Convention.ISDA));
         }
 
+        /** Mirror of C++ {@code CommonVars::makeBachelierEngine} (capfloor.cpp:96-100). */
+        BachelierCapFloorEngine makeBachelierEngine(final double volatility) {
+            final Handle<Quote> vol = new Handle<Quote>(new SimpleQuote(volatility));
+            return new BachelierCapFloorEngine(termStructure, vol,
+                    new ActualActual(ActualActual.Convention.ISDA));
+        }
+
         CapFloor makeCapFloor(final CapFloor.Type type, final Leg leg,
                               final double strike, final double volatility) {
+            return makeCapFloor(type, leg, strike, volatility, true);
+        }
+
+        /**
+         * Mirror of C++ {@code CommonVars::makeCapFloor(..., bool isLogNormal)}
+         * (capfloor.cpp:102-126). When {@code isLogNormal} is false the cap/floor
+         * is priced with a {@link BachelierCapFloorEngine}.
+         */
+        CapFloor makeCapFloor(final CapFloor.Type type, final Leg leg,
+                              final double strike, final double volatility,
+                              final boolean isLogNormal) {
             final List<Double> strikes = new ArrayList<Double>(
                     Arrays.asList(Double.valueOf(strike)));
             final CapFloor cf;
@@ -160,7 +178,11 @@ public class CapFloorTest {
                 default:
                     throw new IllegalArgumentException("unknown cap/floor type");
             }
-            cf.setPricingEngine(makeEngine(volatility));
+            if (isLogNormal) {
+                cf.setPricingEngine(makeEngine(volatility));
+            } else {
+                cf.setPricingEngine(makeBachelierEngine(volatility));
+            }
             return cf;
         }
     }
@@ -930,9 +952,129 @@ public class CapFloorTest {
         }
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-CF-2 + WI-5e.5-CF-3 — needs Bachelier-mode "
-            + "CapFloor engine + optionletsDelta accessor.")
+    /**
+     * Mirrors C++ capfloor.cpp testBachelierOptionLetsDelta (lines 766-886).
+     * For each Bachelier-engine caplet/floorlet, computes a finite-difference
+     * forward-only delta by bumping a zero-spread on the term structure, then
+     * compares it against the analytic delta exposed via
+     * {@link CapFloor#optionletsDelta()}. The per-optionlet vectors are read
+     * via {@link CapFloor#optionletsPrice()},
+     * {@link CapFloor#optionletsDiscountFactor()}, and
+     * {@link CapFloor#optionletsAtmForward()}. Phase 5e.5b-CFC-d-299.
+     */
     @Test
     public void testBachelierOptionLetsDelta() {
+        QL.info("Testing Bachelier caplet/floorlet delta coefficients against "
+                + "finite difference values...");
+
+        final CommonVars vars = new CommonVars();
+        final Settings settings = new Settings();
+        final Date savedEvalDate = settings.evaluationDate();
+        try {
+            final Date cachedToday = new Date(14, Month.March, 2002);
+            final Date cachedSettlement = new Date(18, Month.March, 2002);
+            settings.setEvaluationDate(cachedToday);
+            final YieldTermStructure baseCurve = Utilities.flatRate(
+                    cachedSettlement, 0.05, new Actual360());
+            final RelinkableHandle<YieldTermStructure> baseCurveHandle =
+                    new RelinkableHandle<YieldTermStructure>(baseCurve);
+
+            // Define spreaded curve with eps as spread used for FD sensitivities.
+            final double eps = 1.0e-6;
+            final SimpleQuote spread = new SimpleQuote(0.0);
+            final YieldTermStructure spreadCurve = new ZeroSpreadedTermStructure(
+                    baseCurveHandle, new Handle<Quote>(spread));
+            vars.termStructure.linkTo(spreadCurve);
+            final Date startDate = vars.termStructure.currentLink().referenceDate();
+            final Leg leg = vars.makeLeg(startDate, 20);
+
+            // Use normal (Bachelier) model — vol = 0.01 in absolute terms.
+            final boolean isLogNormal = false;
+            final CapFloor cap = vars.makeCapFloor(
+                    CapFloor.Type.Cap, leg, 0.05, 0.01, isLogNormal);
+            final CapFloor floor = vars.makeCapFloor(
+                    CapFloor.Type.Floor, leg, 0.05, 0.01, isLogNormal);
+
+            // Analytic delta at spread = 0.
+            final double[] capletAnalyticDelta = cap.optionletsDelta();
+            final double[] floorletAnalyticDelta = floor.optionletsDelta();
+            if (capletAnalyticDelta == null || floorletAnalyticDelta == null) {
+                fail("BachelierCapFloorEngine did not populate optionletsDelta");
+            }
+
+            // Bump up.
+            spread.setValue(eps);
+            final double[] capletUpPrices = cap.optionletsPrice();
+            final double[] floorletUpPrices = floor.optionletsPrice();
+            final double[] capletDFup = cap.optionletsDiscountFactor();
+            final double[] floorletDFup = floor.optionletsDiscountFactor();
+            final double[] capletFwdUp = cap.optionletsAtmForward();
+            final double[] floorletFwdUp = floor.optionletsAtmForward();
+
+            // Bump down.
+            spread.setValue(-eps);
+            final double[] capletDownPrices = cap.optionletsPrice();
+            final double[] floorletDownPrices = floor.optionletsPrice();
+            final double[] capletDFdown = cap.optionletsDiscountFactor();
+            final double[] floorletDFdown = floor.optionletsDiscountFactor();
+            final double[] capletFwdDown = cap.optionletsAtmForward();
+            final double[] floorletFwdDown = floor.optionletsAtmForward();
+
+            // FD delta computation per C++ lines 842-862.
+            final Leg capLeg = cap.floatingLeg();
+            final Leg floorLeg = floor.floatingLeg();
+            final int capletsNum = capletUpPrices.length;
+            final int floorletsNum = floorletUpPrices.length;
+            final double[] capletFDDelta = new double[capletsNum];
+            final double[] floorletFDDelta = new double[floorletsNum];
+
+            for (int n = 1; n < capletsNum; ++n) {
+                // C++ skips n=0 caplet because its fixing is in the past
+                // (no forward sensitivity).
+                final FloatingRateCoupon c = (FloatingRateCoupon) capLeg.get(n);
+                final double accrualFactor = c.nominal()
+                        * c.accrualPeriod() * c.gearing();
+                capletFDDelta[n] =
+                        (capletUpPrices[n] / capletDFup[n]
+                                - capletDownPrices[n] / capletDFdown[n])
+                                / (capletFwdUp[n] - capletFwdDown[n])
+                                / accrualFactor;
+            }
+            for (int n = 0; n < floorletsNum; ++n) {
+                final FloatingRateCoupon c = (FloatingRateCoupon) floorLeg.get(n);
+                final double accrualFactor = c.nominal()
+                        * c.accrualPeriod() * c.gearing();
+                floorletFDDelta[n] =
+                        (floorletUpPrices[n] / floorletDFup[n]
+                                - floorletDownPrices[n] / floorletDFdown[n])
+                                / (floorletFwdUp[n] - floorletFwdDown[n])
+                                / accrualFactor;
+            }
+
+            for (int n = 0; n < capletAnalyticDelta.length; ++n) {
+                if (Math.abs(capletAnalyticDelta[n] - capletFDDelta[n]) > 1.0e-6) {
+                    fail("failed to compare analytical and finite difference caplet delta:\n"
+                            + "caplet number:     " + n + "\n"
+                            + "    finite difference: " + capletFDDelta[n] + "\n"
+                            + "    analytical value:  " + capletAnalyticDelta[n] + "\n"
+                            + "    resulting ratio:   "
+                            + (capletAnalyticDelta[n] == 0.0 ? "n/a"
+                                    : String.valueOf(capletFDDelta[n] / capletAnalyticDelta[n])));
+                }
+            }
+            for (int n = 0; n < floorletAnalyticDelta.length; ++n) {
+                if (Math.abs(floorletAnalyticDelta[n] - floorletFDDelta[n]) > 1.0e-6) {
+                    fail("failed to compare analytical and finite difference floorlet delta:\n"
+                            + "floorlet number:    " + n + "\n"
+                            + "    finite difference: " + floorletFDDelta[n] + "\n"
+                            + "    analytical value:  " + floorletAnalyticDelta[n] + "\n"
+                            + "    resulting ratio:   "
+                            + (floorletAnalyticDelta[n] == 0.0 ? "n/a"
+                                    : String.valueOf(floorletFDDelta[n] / floorletAnalyticDelta[n])));
+                }
+            }
+        } finally {
+            settings.setEvaluationDate(savedEvalDate);
+        }
     }
 }

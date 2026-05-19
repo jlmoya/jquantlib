@@ -1071,6 +1071,57 @@ public class BlackFormula {
     }
 
     /**
+     * Bachelier (normal-model) derivative of price w.r.t. {@code stdDev}. Mirrors C++
+     * {@code bachelierBlackFormulaStdDevDerivative} (blackformula.cpp:923-939). Used by
+     * {@code BachelierCapFloorEngine} to compute per-optionlet vegas. Returns
+     * {@code discount * phi'(d1)} with {@code d1 = (forward - strike) / stdDev}, and {@code 0.0} when
+     * {@code stdDev == 0.0}.
+     */
+    public static double bachelierBlackFormulaStdDevDerivative(final double strike, final double forward,
+            final double stdDev, final double discount) {
+        QL.require(stdDev >= 0.0, "stdDev must be non-negative");
+        QL.require(discount > 0.0, "discount must be positive");
+        if ( stdDev == 0.0 ) {
+            return 0.0;
+        }
+        final double d1 = (forward - strike) / stdDev;
+        final CumulativeNormalDistribution phi = new CumulativeNormalDistribution();
+        return discount * phi.derivative(d1);
+    }
+
+    /** PlainVanillaPayoff overload of {@link #bachelierBlackFormulaStdDevDerivative}. */
+    public static double bachelierBlackFormulaStdDevDerivative(final PlainVanillaPayoff payoff, final double forward,
+            final double stdDev, final double discount) {
+        return bachelierBlackFormulaStdDevDerivative(payoff.strike(), forward, stdDev, discount);
+    }
+
+    /**
+     * Bachelier (normal-model) in-the-money probability of the asset (forward). Mirrors C++
+     * {@code bachelierBlackFormulaAssetItmProbability} (blackformula.cpp:950-963). Used by
+     * {@code BachelierCapFloorEngine} to compute per-optionlet deltas. Returns {@code Phi(h)} with
+     * {@code h = sign*(forward-strike)/stdDev} (sign = +1 for Call, -1 for Put), or {@code max(d, 0)} when
+     * {@code stdDev == 0.0}.
+     */
+    public static double bachelierBlackFormulaAssetItmProbability(final Option.Type optionType, final double strike,
+            final double forward, final double stdDev) {
+        QL.require(stdDev >= 0.0, "stdDev must be non-negative");
+        final int sign = (optionType == Option.Type.Call) ? 1 : -1;
+        final double d = (forward - strike) * sign;
+        if ( stdDev == 0.0 ) {
+            return Math.max(d, 0.0);
+        }
+        final double h = d / stdDev;
+        final CumulativeNormalDistribution phi = new CumulativeNormalDistribution();
+        return phi.op(h);
+    }
+
+    /** PlainVanillaPayoff overload of {@link #bachelierBlackFormulaAssetItmProbability}. */
+    public static double bachelierBlackFormulaAssetItmProbability(final PlainVanillaPayoff payoff, final double forward,
+            final double stdDev) {
+        return bachelierBlackFormulaAssetItmProbability(payoff.optionType(), payoff.strike(), forward, stdDev);
+    }
+
+    /**
      * Implied stdev approximation by Radoicic-Stefanica (RS) closed-form inversion. Mirrors C++
      * {@code blackFormulaImpliedStdDevApproximationRS} (blackformula.cpp:269-318).
      */
