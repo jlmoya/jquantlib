@@ -23,6 +23,8 @@
 
 package org.jquantlib.time;
 
+import java.util.Map;
+
 /**
  * Container for historical data
  * <p>
@@ -39,6 +41,31 @@ public class TimeSeries< V > extends Series< Date, V > {
 
     public TimeSeries(final Class< V > classV) {
         super(Date.class, classV);
+    }
+
+    /**
+     * Constructs a {@link TimeSeries} pre-populated from an arbitrary
+     * {@link Map} of date/value pairs. Mirrors C++ v1.42.1
+     * {@code ql/timeseries.hpp}'s parametric custom-container constructor
+     * ({@code TimeSeries<T, boost::unordered_map<Date, T>>}), which accepts
+     * any map-like container of (Date, value) entries.
+     * <p>
+     * Entries are copied into the internal sorted {@link java.util.TreeMap}
+     * delegate, so iteration order remains ascending by date regardless of
+     * the input container's iteration order. Accepts any {@link Map}
+     * implementation (e.g., {@link java.util.HashMap}, {@link java.util.LinkedHashMap}).
+     *
+     * @param classV runtime class token for the value type
+     * @param data   source map of date-keyed entries; null is treated as
+     *               empty
+     */
+    public TimeSeries(final Class< V > classV, final Map< Date, V > data) {
+        super(Date.class, classV);
+        if (data != null) {
+            for (final Map.Entry< Date, V > e : data.entrySet()) {
+                put(e.getKey(), e.getValue());
+            }
+        }
     }
 
 }

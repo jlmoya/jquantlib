@@ -26,16 +26,19 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
 import org.jquantlib.QL;
 import org.jquantlib.math.IntervalPrice;
+import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Month;
 import org.jquantlib.time.Series;
 import org.jquantlib.time.TimeSeries;
-import org.junit.Ignore;
+import org.jquantlib.time.TimeUnit;
+import org.jquantlib.time.calendars.UnitedStates;
 import org.junit.Test;
 
 /**
@@ -44,9 +47,9 @@ import org.junit.Test;
  * <p>5 BOOST_AUTO_TEST_CASE methods. {@link TimeSeries} in JQuantLib extends
  * {@code Series<Date,V>}; the C++ container exposes inspectors {@code dates()},
  * {@code values()}, {@code firstDate()}, {@code lastDate()}, plus a custom
- * unordered-map container parameter that the Java NavigableMap-based
- * implementation does not support. Where Java semantics diverge, the
- * affected case is annotated {@code @Ignore} with a Phase 5a.5 carry-forward.
+ * unordered-map container parameter that is mirrored in Java via
+ * {@link TimeSeries#TimeSeries(Class, Map)} (any {@link Map} implementation is
+ * accepted; entries are copied into the internal sorted TreeMap delegate).
  */
 public class TimeSeriesTest {
 
@@ -124,11 +127,42 @@ public class TimeSeriesTest {
         assertEquals(3, i);
     }
 
-    @Ignore("Phase 5a.5 carry-forward — Java TimeSeries delegate is a "
-            + "TreeMap-based NavigableMap; the parametric custom-container "
-            + "constructor (boost::unordered_map) is not available.")
+    /**
+     * Mirrors v1.42.1 test-suite/timeseries.cpp::testCustomContainer
+     * (timeseries.cpp:112-129). The C++ test instantiates
+     * {@code TimeSeries<int, boost::unordered_map<Date, int>>} to verify the
+     * library supports an arbitrary map-like container (in addition to the
+     * default {@code std::map}). Java mirrors the intent via the
+     * {@link TimeSeries#TimeSeries(Class, Map)} constructor, which copies
+     * entries from any {@link Map} implementation (e.g. {@link HashMap}) into
+     * the sorted {@link java.util.TreeMap} delegate.
+     */
     @Test
     public void testCustomContainer() {
+        QL.info("Testing usage of a custom container for time series data...");
+
+        // populate an unordered (HashMap) container with NYSE business-day
+        // dates between d0 and d1, indexed by sequential int.
+        final Date d0 = new Date(25, Month.March, 2005);
+        final Date d1 = new Date(25, Month.April, 2005);
+        final UnitedStates calendar = new UnitedStates(UnitedStates.Market.NYSE);
+
+        final Map<Date, Integer> unordered = new HashMap<Date, Integer>();
+        Date d = d0.clone();
+        for (int i = 0; d.lt(d1); i++) {
+            unordered.put(d.clone(), i);
+            d = calendar.advance(d, 1, TimeUnit.Days, BusinessDayConvention.Following, false);
+        }
+
+        // copy the unordered map into a TimeSeries (TreeMap delegate)
+        final TimeSeries<Integer> ts = new TimeSeries<Integer>(Integer.class, unordered);
+
+        // read back via Date keys — must yield the same sequential int per date
+        d = d0.clone();
+        for (int i = 0; d.lt(d1); i++) {
+            assertEquals("ts[" + d + "]", Integer.valueOf(i), ts.get(d));
+            d = calendar.advance(d, 1, TimeUnit.Days, BusinessDayConvention.Following, false);
+        }
     }
 
     @Test
