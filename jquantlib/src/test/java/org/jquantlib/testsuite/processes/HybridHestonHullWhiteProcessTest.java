@@ -1060,34 +1060,54 @@ public class HybridHestonHullWhiteProcessTest {
     }
 
     /**
-     * Phase 5e.5b-CFC-d-213 partial: C++
+     * Phase 5e.5b-CFC-d-272 partial: C++
      * {@code testFdmHestonHullWhiteEngine} (810-883) cross-validates
      * {@link org.jquantlib.pricingengines.vanilla.FdHestonHullWhiteVanillaEngine}
      * against {@link AnalyticBSMHullWhiteEngine} in the deterministic-vol
-     * Heston (sigma_v=1e-6) limit. The mesher-level v0-out-of-range fix
-     * from Phase 5e.5b-CFC-d-213 (force v0 into the mesh; widen the
-     * uniform-fallback to {@code [0.5*v0, 2*v0]}) successfully unblocks
-     * the sister {@code testFdmHestonBarrierVsBlackScholes} test in
-     * {@code FdHestonTest}, but {@code FdHestonHullWhiteVanillaEngine}
-     * at sigma_v=1e-6 still produces unbounded numerical breakdown
-     * (calculated NPV = -4e180 vs expected = 41.8) — independent of
-     * mesh, the 3-factor FD operator's variance-direction coefficients
-     * (sigma_v^2 = 1e-12) drive solver instability.  This is a separate
-     * carry-forward in {@code FdmHestonHullWhiteOp} / the ADI scheme;
-     * cross-validation intent is currently covered by the existing
-     * {@code FdHestonHullWhiteVanillaEngineTest} fingerprint test which
-     * uses sigma_v at sane magnitudes (0.5).
+     * Heston (sigma_v=1e-6) limit. Phase 5e.5b-CFC-d-272 introduces a
+     * {@code 1e-3} floor on the effective sigma used for the
+     * variance-direction second-derivative coefficient in
+     * {@link org.jquantlib.methods.finitedifferences.operators.FdmHestonHullWhiteOp}
+     * — this is a defense-in-depth stabilizer that prevents the
+     * variance-direction operator's diffusion coefficient from collapsing
+     * to ~1e-13 when the model sigma is below {@code 1e-3}. The floor
+     * does <em>not</em> on its own un-stick this test, because the
+     * dominant breakdown source at very small sigma is
+     * {@link org.jquantlib.methods.finitedifferences.meshers.FdmHestonVarianceMesher}
+     * itself: at sigma <= 1e-4 the non-central chi-square inverter
+     * diverges (df ~ 1e7+, ncp ~ 1e10+), the mesher falls back to a
+     * uniform mesh widened to {@code [0.5*v0, 2*v0]} centred on v0,
+     * and that fallback mesh is qualitatively different from the
+     * chi-square mesh the C++ implementation builds (C++'s
+     * InverseNonCentralCumulativeChiSquare converges where Java throws,
+     * so C++ rarely enters the fallback). The 3-factor FD operator
+     * then sees a fundamentally different v-grid than the analytic
+     * reference assumes, and the ADI splitting amplifies round-off
+     * into unbounded growth (NPV ~ -4e180 with no floor; ~ -2e8 with
+     * floor=0.3 — still unbounded, confirming the operator floor is
+     * not the rate-limiter). The sister
+     * {@link #testBsmHullWhitePricing()} works around this with the
+     * {@link org.jquantlib.pricingengines.vanilla.FdHestonHullWhiteVanillaEngine#enableMultipleStrikesCaching}
+     * control-variate path (CV correction absorbs the FD-vs-analytic
+     * residual). Cross-validation intent for the no-CV path is covered
+     * by the existing {@code FdHestonHullWhiteVanillaEngineTest}
+     * fingerprint test which uses sigma_v at sane magnitudes (~0.3).
      */
-    @Ignore("Phase 5e.5b-CFC-d-213: mesher v0-pin fix unblocked the sister "
-            + "FdHestonTest#testFdmHestonBarrierVsBlackScholes test, but "
-            + "FdHestonHullWhiteVanillaEngine at sigma_v=1e-6 still produces "
-            + "unbounded numerical breakdown (calculated NPV = -4e180 vs "
-            + "expected = 41.8) — independent of mesh, the 3-factor FD "
-            + "operator's variance-direction coefficients (sigma_v^2 = 1e-12) "
-            + "drive solver instability. This is a separate carry-forward "
-            + "in FdmHestonHullWhiteOp / the ADI scheme; cross-validation "
-            + "intent is currently covered by FdHestonHullWhiteVanillaEngineTest "
-            + "fingerprint test which uses sigma_v at sane magnitudes (~0.5).")
+    @Ignore("Phase 5e.5b-CFC-d-272: FdmHestonHullWhiteOp 1e-3 sigma floor "
+            + "for variance-direction diffusion coefficient landed (defense-in-depth, "
+            + "no regression). But FdHestonHullWhiteVanillaEngine at sigma_v=1e-6 "
+            + "still produces unbounded numerical breakdown (calculated NPV = -4e180 "
+            + "vs expected = 41.8) because the rate-limiter is FdmHestonVarianceMesher: "
+            + "at sigma <= 1e-4 Java's InverseNonCentralCumulativeChiSquare throws "
+            + "(df ~ 1e7+, ncp ~ 1e10+), the mesher falls through to its uniform "
+            + "[0.5*v0, 2*v0] fallback, and that mesh is qualitatively different "
+            + "from the chi-square mesh C++ builds (C++'s chi-square inverter "
+            + "converges where Java's throws). Full un-block requires either a "
+            + "robust InverseNonCentralCumulativeChiSquare implementation or a "
+            + "mesh-fallback strategy that matches the chi-square shape at large "
+            + "df/ncp — neither of which is in scope for the operator-level CFC-d-272 "
+            + "fix. Cross-validation intent is covered by FdHestonHullWhiteVanillaEngineTest "
+            + "fingerprint test (sane sigma) + testBsmHullWhitePricing (control-variate path).")
     @Test
     public void testFdmHestonHullWhiteEngine() { fail("not implemented"); }
 

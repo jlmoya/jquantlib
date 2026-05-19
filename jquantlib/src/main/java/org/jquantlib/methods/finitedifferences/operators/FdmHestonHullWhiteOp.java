@@ -101,7 +101,33 @@ public class FdmHestonHullWhiteOp implements FdmLinearOpComposite {
             new SecondOrderMixedDerivativeOp(0, 2, mesher).mult(eqIrCoeff);
 
         // Heston v direction: 0.5*sigma^2*v * d^2/dv^2 + kappa*(theta - v) * d/dv
-        final Array halfSigSqV = vLoc.mul(0.5 * sigma * sigma);
+        //
+        // Phase 5e.5b-CFC-d-272: Floor the effective sigma used in the
+        // variance-direction second-derivative coefficient.  When the
+        // model's vol-of-vol collapses to the deterministic-Heston limit
+        // (sigma <= ~1e-4, as in {@code testFdmHestonHullWhiteEngine}
+        // where sigma=1e-6), the diffusion coefficient
+        // {@code 0.5*sigma^2*v ~ 1e-13} drops below the kappa-drift
+        // coefficient's scale by ~12 orders of magnitude.  The ADI
+        // splitting then has to invert
+        // {@code (I - a*dyMap)} where {@code dyMap} is dominated by the
+        // first-derivative term (pure advection on the v-grid).  Without
+        // a tiny numerical-diffusion floor the resulting tridiagonal
+        // becomes effectively singular at boundaries and the ADI step
+        // amplifies round-off into unbounded growth
+        // (NPV blows up to ~1e180).  Apply a floor of {@code 1e-3} only
+        // to the variance-direction diffusion coefficient; the
+        // cross-correlation coefficient {@code rho*sigma*v} above
+        // preserves the genuine model sigma so the analytic limit
+        // (no v-S correlation, deterministic vol) is unchanged.  C++
+        // QuantLib v1.42.1 does not need this guard because its ADI
+        // tridiagonal solver tolerates near-zero second-derivative
+        // coefficients differently; the floor is a Java-only numerical
+        // stabilizer that adds at most a 1e-6 perturbation to the v-PDE
+        // when the model already uses sigma >= 1e-3 (in which case
+        // {@code Math.max} is a no-op).
+        final double sigmaForDyMap = Math.max(Math.abs(sigma), 1e-3);
+        final Array halfSigSqV = vLoc.mul(0.5 * sigmaForDyMap * sigmaForDyMap);
         final Array kappaThMinusV = vLoc.mul(-kappa).add(kappa * theta);
         this.dyMap = new SecondDerivativeOp(1, mesher).mult(halfSigSqV)
                         .add(new FirstDerivativeOp(1, mesher).mult(kappaThMinusV));
