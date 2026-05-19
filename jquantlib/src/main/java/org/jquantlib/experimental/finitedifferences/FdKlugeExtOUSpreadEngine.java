@@ -30,12 +30,12 @@ import org.jquantlib.QL;
 import org.jquantlib.experimental.finitedifferences.FdmExpExtOUInnerValueCalculator.ShapePoint;
 import org.jquantlib.experimental.processes.ExtOUWithJumpsProcess;
 import org.jquantlib.experimental.processes.KlugeExtOUProcess;
+import org.jquantlib.instruments.BasketOption;
 import org.jquantlib.instruments.BasketPayoff;
 import org.jquantlib.instruments.Option;
-import org.jquantlib.instruments.OneAssetOption;
 import org.jquantlib.instruments.Payoff;
 import org.jquantlib.instruments.PlainVanillaPayoff;
-import org.jquantlib.lang.exceptions.LibraryException;
+import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.methods.finitedifferences.meshers.ExponentialJump1dMesher;
 import org.jquantlib.methods.finitedifferences.meshers.Fdm1dMesher;
 import org.jquantlib.methods.finitedifferences.meshers.FdmMesher;
@@ -46,7 +46,6 @@ import org.jquantlib.methods.finitedifferences.solvers.FdmSolverDesc;
 import org.jquantlib.methods.finitedifferences.stepconditions.FdmStepConditionComposite;
 import org.jquantlib.methods.finitedifferences.utilities.FdmBoundaryConditionSet;
 import org.jquantlib.methods.finitedifferences.utilities.FdmInnerValueCalculator;
-import org.jquantlib.pricingengines.GenericEngine;
 import org.jquantlib.processes.StochasticProcess1D;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.time.Date;
@@ -64,24 +63,18 @@ import org.jquantlib.time.Date;
  * inner-value calculators, and solves the backward PIDE associated with
  * the {@link KlugeExtOUProcess}.</p>
  *
- * <p><strong>Phase 5e.5b-CFC-d-164 status:</strong> the mesh, calculator,
- * step-condition, and boundary-condition setup are faithful Java ports.
- * The terminal {@code valueAt} interpolation, however, requires a
- * 3-dimensional ADI solver ({@code FdmNdimSolver}) and the
- * {@code FdmKlugeExtOUOp} linear operator. Neither is yet ported to
- * Java; {@link #calculate()} therefore throws a {@link LibraryException}
- * with a descriptive message once the setup phase completes. This is
- * sufficient for sibling classes that need to reference the engine type
- * (and for future tests that exercise only the prep phase).</p>
+ * <p><strong>Phase 5e.5b-CFC-d-287 update:</strong> the calculate() body
+ * is now wired against the new {@link FdmKlugeExtOUSolver} ({@link
+ * FdmKlugeExtOUOp} + {@link
+ * org.jquantlib.methods.finitedifferences.solvers.FdmNdimSolver}).
  *
  * <p>The C++ engine is parameterised on N (default 3) for the
  * {@code FdmKlugeExtOUSolver&lt;N&gt;}. Java uses {@code N == 3} only,
  * which is also the C++ static-asserted minimum.</p>
  *
- * @author Phase 5e.5b-CFC-d-164 port
+ * @author Phase 5e.5b-CFC-d-164 port; Phase 5e.5b-CFC-d-287 body-fill
  */
-public class FdKlugeExtOUSpreadEngine
-        extends GenericEngine<OneAssetOption.Arguments, OneAssetOption.Results> {
+public class FdKlugeExtOUSpreadEngine extends BasketOption.Engine {
 
     /**
      * Time-shape descriptor for the gas leg. Mirrors C++ typedef
@@ -163,7 +156,7 @@ public class FdKlugeExtOUSpreadEngine
                                     final GasShape gasShape,
                                     final PowerShape powerShape,
                                     final FdmSchemeDesc schemeDesc) {
-        super(new OneAssetOption.ArgumentsImpl(), new OneAssetOption.ResultsImpl());
+        super();
         QL.require(klugeOUProcess != null, "null Kluge ExtOU process");
         QL.require(rTS != null, "null risk-free term structure");
         QL.require(schemeDesc != null, "null FDM scheme descriptor");
@@ -180,23 +173,16 @@ public class FdKlugeExtOUSpreadEngine
 
     /**
      * Build the FD mesh, inner-value calculators, step- and
-     * boundary-condition sets, then defer the final 3D solve to
-     * {@code FdmKlugeExtOUSolver&lt;3&gt;} (not yet ported to Java).
-     *
-     * <p>The setup phase is a faithful translation of the C++
-     * implementation, so that subclasses or future ports of the 3D
-     * solver can pick up exactly the same {@link FdmSolverDesc} as the
-     * C++ reference.</p>
+     * boundary-condition sets, then solve the 3-D backward PIDE via
+     * {@link FdmKlugeExtOUSolver} and interpolate at the process's
+     * initial state.
      */
     @Override
     public void calculate() {
         // 1. Mesher
-        final OneAssetOption.ArgumentsImpl args =
-                (OneAssetOption.ArgumentsImpl) arguments_;
-
         final Date refDate = rTS_.referenceDate();
         final double maturity = rTS_.dayCounter()
-                .yearFraction(refDate, args.exercise.lastDate());
+                .yearFraction(refDate, arguments_.exercise.lastDate());
 
         final ExtOUWithJumpsProcess klugeProcess = klugeOUProcess_.getKlugeProcess();
         final StochasticProcess1D ouProcess =
@@ -217,9 +203,9 @@ public class FdKlugeExtOUSpreadEngine
         final FdmMesher mesher = new FdmMesherComposite(xMesher, yMesher, uMesher);
 
         // 2. Calculator
-        QL.require(BasketPayoff.class.isAssignableFrom(args.payoff.getClass()),
+        QL.require(BasketPayoff.class.isAssignableFrom(arguments_.payoff.getClass()),
                 "basket payoff expected");
-        final BasketPayoff basketPayoff = (BasketPayoff) args.payoff;
+        final BasketPayoff basketPayoff = (BasketPayoff) arguments_.payoff;
 
         final Payoff zeroStrikeCall = new PlainVanillaPayoff(Option.Type.Call, 0.0);
 
@@ -240,26 +226,24 @@ public class FdKlugeExtOUSpreadEngine
         // 3. Step conditions
         final FdmStepConditionComposite conditions =
                 FdmStepConditionComposite.vanillaComposite(
-                        null, args.exercise, mesher, calculator,
+                        null, arguments_.exercise, mesher, calculator,
                         rTS_.referenceDate(), rTS_.dayCounter());
 
         // 4. Boundary conditions
         final FdmBoundaryConditionSet boundaries = new FdmBoundaryConditionSet();
 
-        // 5. Solver descriptor — ready to hand to FdmKlugeExtOUSolver<3>
-        //    once that class (and FdmNdimSolver) are ported to Java.
-        @SuppressWarnings("unused")
+        // 5. Solver
         final FdmSolverDesc solverDesc = new FdmSolverDesc(
                 mesher, boundaries, conditions, calculator,
                 maturity, tGrid_, 0);
 
-        throw new LibraryException(
-                "FdKlugeExtOUSpreadEngine.calculate(): the 3D ADI solver "
-              + "(FdmKlugeExtOUSolver<3> + FdmNdimSolver + FdmKlugeExtOUOp) "
-              + "is not yet ported to Java (Phase 5e.5b-CFC-d-164 carry-forward). "
-              + "Mesh, calculator, step conditions, and solver descriptor are "
-              + "fully prepared; only the terminal valueAt(x) interpolation is "
-              + "missing.");
+        final FdmKlugeExtOUSolver solver = new FdmKlugeExtOUSolver(
+                klugeOUProcess_, rTS_, solverDesc, schemeDesc_);
+
+        // 6. Interpolate at the process's initial values [X0, Y0, U0].
+        final Array x0 = klugeOUProcess_.initialValues();
+        final double[] x = new double[] { x0.get(0), x0.get(1), x0.get(2) };
+        results_.value = solver.valueAt(x);
     }
 
     /** Returns the FDM scheme descriptor used by the engine. */

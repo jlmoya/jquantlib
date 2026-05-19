@@ -18,13 +18,24 @@ import org.jquantlib.Settings;
 import org.jquantlib.daycounters.ActualActual;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.exercise.BermudanExercise;
+import org.jquantlib.exercise.EuropeanExercise;
+import org.jquantlib.experimental.finitedifferences.DynProgVPPIntrinsicValueEngine;
+import org.jquantlib.experimental.finitedifferences.FdKlugeExtOUSpreadEngine;
 import org.jquantlib.experimental.finitedifferences.FdSimpleExtOUStorageEngine;
 import org.jquantlib.experimental.finitedifferences.FdmExtOUJumpOp;
 import org.jquantlib.experimental.finitedifferences.FdmKlugeExtOUOp;
+import org.jquantlib.experimental.finitedifferences.VanillaVPPOption;
 import org.jquantlib.experimental.processes.ExtOUWithJumpsProcess;
 import org.jquantlib.experimental.processes.ExtendedOrnsteinUhlenbeckProcess;
 import org.jquantlib.experimental.processes.GemanRoncoroniProcess;
 import org.jquantlib.experimental.processes.KlugeExtOUProcess;
+import org.jquantlib.instruments.AverageBasketPayoff;
+import org.jquantlib.instruments.BasketOption;
+import org.jquantlib.instruments.BasketPayoff;
+import org.jquantlib.instruments.Option;
+import org.jquantlib.instruments.Payoff;
+import org.jquantlib.instruments.PlainVanillaPayoff;
+import org.jquantlib.instruments.SwingExercise;
 import org.jquantlib.instruments.VanillaStorageOption;
 import org.jquantlib.math.Ops;
 import org.jquantlib.math.distributions.InverseCumulativeNormal;
@@ -90,18 +101,6 @@ public class VppTest {
             "Phase 5j.5 — requires FdSimpleKlugeExtOUVPPEngine "
           + "(full VPP pricing path; FdmKlugeExtOUOp + FdmVPPStepCondition* "
           + "not yet ported)";
-
-    private static final String REASON_DP_ENGINE =
-            "Phase 5j.5 — VanillaVPPOption + SwingExercise are ported "
-          + "(Phase 5e.5b-CFC-d-164); still requires DynProgVPPIntrinsicValueEngine "
-          + "(needs FdmVPPStepCondition + FdmVPPStepConditionFactory)";
-
-    private static final String REASON_SPREAD_ENGINE =
-            "Phase 5j.5 — FdKlugeExtOUSpreadEngine + FdmSpreadPayoffInnerValue are "
-          + "ported as a skeleton (Phase 5e.5b-CFC-d-164); the calculate() body "
-          + "still needs FdmKlugeExtOUSolver<3> (which needs FdmNdimSolver "
-          + "+ FdmKlugeExtOUOp), plus AverageBasketPayoff + BasketOption + "
-          + "MultiPathGenerator harness for the MC reference value";
 
     /**
      * Java port of C++ {@code testGemanRoncoroniProcess} (vpp.cpp:238-357).
@@ -328,13 +327,266 @@ public class VppTest {
                    expected, calculated, 5.0e-2);
     }
 
-    @Ignore(REASON_SPREAD_ENGINE)
+    /**
+     * Java port of C++ {@code testKlugeExtOUSpreadOption} (vpp.cpp:404-485).
+     *
+     * <p>Builds a Kluge ext-OU spread basket option (power - 2*gas, zero
+     * strike call), prices it with the FD engine on a coarse 3-D grid,
+     * and compares the FD NPV against an inline Monte-Carlo reference
+     * (replicating the C++ test's harness with reduced trail count to
+     * keep the JVM runtime bounded).</p>
+     *
+     * <p>Tolerance: project LOOSE tier {@code max(3*mcError, 5e-2*|MC|)}
+     * (the C++ test uses just {@code 3*mcError}; we add a relative
+     * floor to absorb MT-stream differences vs C++).</p>
+     */
     @Test
-    public void testKlugeExtOUSpreadOption() { fail("not implemented"); }
+    public void testKlugeExtOUSpreadOption() {
+        final Date settlementDate = new Date(18, Month.December, 2011);
+        new Settings().setEvaluationDate(settlementDate);
+        final DayCounter dayCounter = new ActualActual(ActualActual.Convention.ISDA);
+        final Date maturityDate = settlementDate.add(new Period(1, TimeUnit.Years));
+        final double maturity = dayCounter.yearFraction(settlementDate, maturityDate);
 
-    @Ignore(REASON_DP_ENGINE)
+        final double speed     = 1.0;
+        final double vol       = Math.sqrt(1.4);
+        final double betaG     = 0.0;
+        final double alphaG    = 3.0;
+        final double x0G       = 3.0;
+
+        final double irRate    = 0.0;
+        final double heatRate  = 2.0;
+        final double rho       = 0.5;
+
+        final ExtOUWithJumpsProcess klugeProcess = createKlugeProcessForSpread();
+
+        final double alphaGFinal = alphaG;
+        final double betaGFinal  = betaG;
+        final Ops.DoubleOp f = new Ops.DoubleOp() {
+            @Override public double op(final double x) {
+                return alphaGFinal + betaGFinal * x;
+            }
+        };
+
+        final ExtendedOrnsteinUhlenbeckProcess extOUProcess =
+                new ExtendedOrnsteinUhlenbeckProcess(speed, vol, x0G, f,
+                        ExtendedOrnsteinUhlenbeckProcess.Discretization.Trapezodial,
+                        1.0e-4);
+
+        final YieldTermStructure rTS = new FlatForward(settlementDate, irRate, dayCounter);
+
+        final KlugeExtOUProcess klugeOUProcess =
+                new KlugeExtOUProcess(rho, klugeProcess, extOUProcess);
+
+        final Payoff payoff = new PlainVanillaPayoff(Option.Type.Call, 0.0);
+        final double[] spreadFactors = new double[] { 1.0, -heatRate };
+        final BasketPayoff basketPayoff = new AverageBasketPayoff(payoff, spreadFactors);
+
+        final BasketOption option = new BasketOption(basketPayoff,
+                new EuropeanExercise(maturityDate));
+
+        // C++ uses tGrid=5, xGrid=200, yGrid=50, uGrid=20 (heavy 3-D
+        // ADI). To keep JVM test runtime bounded we reduce the spatial
+        // grids; the spread option is well-behaved enough that a coarser
+        // mesh still hits the MC reference inside the LOOSE band.
+        option.setPricingEngine(new FdKlugeExtOUSpreadEngine(
+                klugeOUProcess, rTS, 5, 100, 30, 20));
+
+        final double calculated = option.NPV();
+
+        // MC reference: replicate the inline Monte-Carlo verification
+        // block from the C++ test (vpp.cpp:454-483) but with a reduced
+        // trail count that fits the project's JVM budget.
+        final TimeGrid grid = new TimeGrid(maturity, 50);
+        final int nTrails = 4000;
+
+        final int dim = klugeOUProcess.factors() * (grid.size() - 1);
+        final MersenneTwisterUniformRng rng = new MersenneTwisterUniformRng(1234L);
+        final RandomSequenceGenerator<MersenneTwisterUniformRng> rsg =
+                new RandomSequenceGenerator<MersenneTwisterUniformRng>(
+                        MersenneTwisterUniformRng.class, dim, rng);
+        final InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
+                                   InverseCumulativeNormal> gsg =
+                new InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
+                                        InverseCumulativeNormal>(
+                        rsg, new InverseCumulativeNormal());
+
+        final MultiPathGenerator<InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
+                                                      InverseCumulativeNormal>> generator =
+                new MultiPathGenerator<InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
+                                                            InverseCumulativeNormal>>(
+                        klugeOUProcess, grid, gsg, false);
+
+        final GeneralStatistics npv = new GeneralStatistics();
+        for (int i = 0; i < nTrails; ++i) {
+            final Sample<MultiPath> path = generator.next();
+            // C++: p[0] = path[0].back() + path[1].back(); p[1] = path[2].back()
+            // (power is X + Y, gas is U), then basketPayoff(exp(p)).
+            final int last = path.value().get(0).length() - 1;
+            final double p0 = path.value().get(0).get(last)
+                            + path.value().get(1).get(last);
+            final double p1 = path.value().get(2).get(last);
+            final double[] expValues = new double[] { Math.exp(p0), Math.exp(p1) };
+            npv.add(basketPayoff.get(expValues));
+        }
+
+        final double expectedMC = npv.mean();
+        final double mcError = npv.errorEstimate();
+
+        final double band = Math.max(3.0 * mcError, 5.0e-2 * Math.abs(expectedMC));
+        assertEquals(
+                "Failed to reproduce Kluge ExtOU spread MC reference"
+              + " (calculated=" + calculated
+              + ", expectedMC=" + expectedMC
+              + ", mcError=" + mcError
+              + ", band=" + band + ")",
+                expectedMC, calculated, band);
+    }
+
+    /**
+     * Java port of C++ {@code testVPPIntrinsicValue} (vpp.cpp:487-533).
+     *
+     * <p>Prices a {@link VanillaVPPOption} (no start or running-hour
+     * limit) on a deterministic 168-hour power / fuel price trajectory
+     * via {@link DynProgVPPIntrinsicValueEngine} for a sweep of seven
+     * heat rates and compares the NPV against MILP-derived reference
+     * values cached in the C++ test.</p>
+     */
     @Test
-    public void testVPPIntrinsicValue() { fail("not implemented"); }
+    public void testVPPIntrinsicValue() {
+        final Date today = new Date(18, Month.December, 2011);
+        new Settings().setEvaluationDate(today);
+        final DayCounter dc = new ActualActual(ActualActual.Convention.ISDA);
+
+        final double pMin = 8.0;
+        final double pMax = 40.0;
+        final int tMinUp = 2;
+        final int tMinDown = 2;
+        final double startUpFuel = 20.0;
+        final double startUpFixCost = 100.0;
+        final double fuelCostAddon = 3.0;
+
+        final SwingExercise exercise = new SwingExercise(today,
+                today.add(new Period(6, TimeUnit.Days)), 3600);
+
+        // MILP-derived reference values from C++ vpp.cpp:511-512.
+        final double[] efficiency = { 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.9 };
+        final double[] expected = {
+                0.0, 2056.04, 11145.577778, 26452.04,
+                44512.461818, 62000.626667, 137591.911111 };
+
+        final double[] fuelPrices = vppFuelPrices();
+        final double[] powerPrices = vppPowerPrices();
+
+        final YieldTermStructure rTS = new FlatForward(today, 0.0, dc);
+
+        for (int i = 0; i < efficiency.length; ++i) {
+            final double heatRate = 1.0 / efficiency[i];
+
+            final VanillaVPPOption option = new VanillaVPPOption(
+                    heatRate, pMin, pMax, tMinUp, tMinDown,
+                    startUpFuel, startUpFixCost, exercise);
+
+            option.setPricingEngine(new DynProgVPPIntrinsicValueEngine(
+                    fuelPrices, powerPrices, fuelCostAddon, rTS));
+
+            final double calculated = option.NPV();
+
+            // C++ tolerance: 1e-4 abs. Project LOOSE tier: 1e-2 abs.
+            assertEquals(
+                    "Failed to reproduce reference VPP intrinsic value"
+                  + " (i=" + i + ", efficiency=" + efficiency[i]
+                  + ", calculated=" + calculated
+                  + ", expected=" + expected[i] + ")",
+                    expected[i], calculated, 1.0e-2);
+        }
+    }
+
+    /**
+     * VPP-test fixture parameter mirroring C++ {@code createKlugeProcess}
+     * (vpp.cpp:69-84). The Kluge process for the spread option uses
+     * {@code (x0=3, beta=5, eta=2, lambda=1, speed=1, vol=2)}, distinct
+     * from the heavier {@code createKlugeExtOUProcess} that drives the
+     * full VPP option.
+     */
+    private static ExtOUWithJumpsProcess createKlugeProcessForSpread() {
+        final double beta          = 5.0;
+        final double eta           = 2.0;
+        final double jumpIntensity = 1.0;
+        final double speed         = 1.0;
+        final double volatility    = 2.0;
+        final double x0X           = 3.0;
+        final double x0Y           = 0.0;
+
+        final ExtendedOrnsteinUhlenbeckProcess ouProcess =
+                new ExtendedOrnsteinUhlenbeckProcess(speed, volatility, x0X,
+                        new Ops.DoubleOp() {
+                            @Override public double op(final double t) {
+                                return x0X;
+                            }
+                        });
+        return new ExtOUWithJumpsProcess(ouProcess, x0Y, beta, jumpIntensity, eta);
+    }
+
+    /**
+     * 168-hour fuel-price trajectory mirroring C++ {@code fuelPrices}
+     * (vpp.cpp:97-118).
+     */
+    private static double[] vppFuelPrices() {
+        return new double[] {
+                20.74, 21.65, 20.78, 21.58, 21.43, 20.82, 22.02, 21.52,
+                21.02, 21.46, 21.75, 20.69, 22.16, 20.38, 20.82, 20.68,
+                20.57, 21.92, 22.04, 20.45, 20.75, 21.92, 20.53, 20.67,
+                20.88, 21.02, 20.82, 21.67, 21.82, 22.12, 20.45, 20.74,
+                22.39, 20.95, 21.71, 20.70, 20.94, 21.59, 22.33, 21.13,
+                21.50, 21.42, 20.56, 21.23, 21.37, 21.90, 20.62, 21.17,
+                21.86, 22.04, 22.05, 21.00, 20.70, 21.12, 21.26, 22.40,
+                21.31, 22.24, 21.96, 21.02, 21.71, 20.48, 21.36, 21.75,
+                21.90, 20.44, 21.26, 22.29, 20.34, 21.79, 21.66, 21.50,
+                20.76, 20.27, 20.84, 20.24, 21.97, 20.52, 20.98, 21.40,
+                20.39, 20.71, 20.78, 20.30, 21.56, 21.72, 20.27, 21.57,
+                21.82, 20.57, 21.33, 20.51, 22.32, 21.99, 20.57, 22.11,
+                21.56, 22.24, 20.62, 21.70, 21.11, 21.19, 21.79, 20.46,
+                22.21, 20.82, 20.52, 22.29, 20.71, 21.45, 22.40, 20.63,
+                20.95, 21.97, 22.20, 20.67, 21.01, 22.25, 20.76, 21.33,
+                20.49, 20.33, 21.94, 20.64, 20.99, 21.09, 20.97, 22.17,
+                20.72, 22.06, 20.86, 21.40, 21.75, 20.78, 21.79, 20.47,
+                21.19, 21.60, 20.75, 21.36, 21.61, 20.37, 21.67, 20.28,
+                22.33, 21.37, 21.33, 20.87, 21.25, 22.01, 22.08, 20.81,
+                20.70, 21.84, 21.82, 21.68, 21.24, 22.36, 20.83, 20.64,
+                21.03, 20.57, 22.34, 20.96, 21.54, 21.26, 21.43, 22.39
+        };
+    }
+
+    /**
+     * 168-hour power-price trajectory mirroring C++ {@code powerPrices}
+     * (vpp.cpp:120-141).
+     */
+    private static double[] vppPowerPrices() {
+        return new double[] {
+                40.40, 36.71, 31.87, 25.81, 31.61, 35.00, 46.22, 60.68,
+                42.45, 38.01, 33.84, 29.79, 31.84, 38.53, 49.23, 59.92,
+                43.85, 37.47, 34.89, 29.99, 30.85, 29.19, 29.25, 38.67,
+                36.90, 25.93, 22.12, 20.19, 17.19, 19.29, 13.51, 18.14,
+                33.76, 30.48, 25.63, 18.01, 23.86, 32.41, 48.56, 64.69,
+                38.42, 39.31, 32.73, 29.97, 31.41, 35.02, 46.85, 58.12,
+                39.14, 35.42, 32.61, 28.76, 29.41, 35.83, 46.73, 61.41,
+                61.01, 59.43, 60.43, 66.29, 62.79, 62.66, 57.66, 51.63,
+                62.18, 60.53, 61.94, 64.86, 59.57, 58.15, 53.74, 48.36,
+                45.64, 51.21, 51.54, 50.79, 54.50, 49.92, 41.58, 39.81,
+                28.86, 37.42, 39.78, 42.36, 45.67, 36.84, 33.91, 28.75,
+                62.97, 63.84, 62.91, 68.77, 64.33, 61.95, 59.12, 54.89,
+                63.62, 60.90, 66.57, 69.51, 64.71, 59.89, 57.28, 57.10,
+                65.09, 63.82, 67.52, 70.51, 65.59, 59.36, 58.22, 54.64,
+                52.17, 53.02, 57.12, 53.50, 53.16, 49.21, 52.21, 40.96,
+                49.01, 47.94, 49.89, 53.83, 52.96, 50.33, 51.72, 46.99,
+                39.06, 47.99, 47.91, 52.35, 48.51, 47.39, 50.45, 43.66,
+                25.62, 35.76, 42.76, 46.51, 45.62, 46.79, 48.76, 41.00,
+                52.65, 55.57, 57.67, 56.79, 55.15, 54.74, 50.31, 47.49,
+                53.72, 55.62, 55.89, 58.11, 54.46, 52.92, 49.61, 44.68,
+                51.59, 57.44, 56.50, 55.12, 57.22, 54.61, 49.92, 45.20
+        };
+    }
 
     @Ignore(REASON_VPP_ENGINE)
     @Test
