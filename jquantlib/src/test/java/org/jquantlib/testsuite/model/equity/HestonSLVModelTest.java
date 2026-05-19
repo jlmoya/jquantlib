@@ -61,7 +61,9 @@ import org.jquantlib.experimental.barrieroption.DoubleBarrierType;
 import org.jquantlib.experimental.models.HestonSLVFDMModel;
 import org.jquantlib.experimental.models.HestonSLVFokkerPlanckFdmParams;
 import org.jquantlib.experimental.models.HestonSLVMCModel;
+import org.jquantlib.math.randomnumbers.SobolBrownianBridgeRsg;
 import org.jquantlib.math.randomnumbers.SobolRsg;
+import org.jquantlib.math.statistics.GeneralStatistics;
 import org.jquantlib.methods.finitedifferences.utilities.LocalVolRNDCalculator;
 import org.jquantlib.model.equity.HestonModel;
 import org.jquantlib.model.marketmodels.BrownianGeneratorFactory;
@@ -2371,17 +2373,171 @@ public class HestonSLVModelTest {
 
     /* ---- 5. Process discretization ------------------------------------ */
 
-    @Ignore("Phase 5e.5b-CFC-d-175 — SobolBrownianBridgeRsg (Phase 5e.5b-CFC-d-163, "
-            + "cross-validated against C++ v1.42.1), HestonBlackVolSurface, "
-            + "NoExceptLocalVolSurface, LocalVolRNDCalculator, and FixedLocalVolSurface "
-            + "all landed; HestonStochasticLocalVolProcess (Java name for C++ "
-            + "HestonSLVProcess) exposes apply(), drift(), and diffusion(). "
-            + "Phase 5e.5b-CFC-d-254 — FdHestonVanillaEngine now exposes a "
-            + "LocalVolTermStructure leverage-function ctor variant "
-            + "(see Limitations javadoc in FdHestonVanillaEngine.java; "
-            + "plumb-through validated by testFdHestonVanillaEngineLeverageFctCtorSmoke). "
-            + "Remaining blocker: getFixedLocalVolFromHeston test helper "
-            + "(test-suite/hestonslvmodel.cpp:654) — not in Java.")
+    /**
+     * Phase 5e.5b-CFC-d-275 body-fill of C++
+     * {@code test-suite/hestonslvmodel.cpp:2396}
+     * ({@code testDiffusionAndDriftSlvProcess}).
+     *
+     * <p>Cross-validates the {@link
+     * org.jquantlib.experimental.processes.HestonStochasticLocalVolProcess}
+     * {@code apply / drift / diffusion} triple by driving a full-truncation
+     * Euler Monte-Carlo path generator against a {@link
+     * FdHestonVanillaEngine} (with the {@code localVol} surface plumbed
+     * through) reference. The MC mean of the discounted vanilla call
+     * payoff must agree with the FD reference within {@code 2.35 *
+     * standardError} (matches the C++ acceptance bound on line 2492).
+     *
+     * <p>All required infrastructure now lives in Java:
+     * <ul>
+     *   <li>{@link SobolBrownianBridgeRsg} (Phase 5e.5b-CFC-d-163);</li>
+     *   <li>{@link SobolRsg.DirectionIntegers#JoeKuoD7} (Phase 5e.5b-CFC-d-268);</li>
+     *   <li>{@link #getFixedLocalVolFromHeston(HestonModel, TimeGrid)}
+     *       (Phase 5e.5b-CFC-d-270);</li>
+     *   <li>{@link FdHestonVanillaEngine} {@code (..., leverageFct)} ctor
+     *       (Phase 5e.5b-CFC-d-254);</li>
+     *   <li>{@link
+     *       org.jquantlib.experimental.processes.HestonStochasticLocalVolProcess}
+     *       {@code apply / drift / diffusion / evolve} (Phase 5h.5-SLV WI-3).</li>
+     * </ul>
+     *
+     * <p>The MC step exactly mirrors the C++ test:
+     * {@code x = slvProcess.apply(x, slvProcess.diffusion(t, xt) * sqrtDt * dw
+     * + slvProcess.drift(t, xt) * dt)} with full-truncation on the variance
+     * component {@code xt[1] = max(0, x[1])}. The Sobol sequence is consumed
+     * with the same factor-major-looking indexing pattern as the C++ test
+     * ({@code n[j], n[j+nTimeSteps]}); even though the underlying generator
+     * lays bytes out step-major, the access pattern produces a valid
+     * permutation of the same i.i.d. normals, and the MC test bound is
+     * statistical, not bit-exact.
+     */
     @Test
-    public void testDiffusionAndDriftSlvProcess() { fail("not implemented"); }
+    public void testDiffusionAndDriftSlvProcess() {
+        QL.info("Testing diffusion and drift of the SLV process "
+                + "(C++ test-suite/hestonslvmodel.cpp:2396)...");
+
+        final Date todaysDate = new Date(6, Month.June, 2020);
+        new Settings().setEvaluationDate(todaysDate);
+
+        final DayCounter dc = new Actual365Fixed();
+        final Date maturityDate = todaysDate.add(new Period(6, TimeUnit.Months));
+        final double maturity = dc.yearFraction(todaysDate, maturityDate);
+
+        final double s0 = 100.0;
+        final Handle<Quote> spot = new Handle<Quote>(new SimpleQuote(s0));
+        final double r = -0.005;
+        final double q =  0.04;
+
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                Utilities.flatRate(todaysDate, r, dc));
+        final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
+                Utilities.flatRate(todaysDate, q, dc));
+
+        // Build the "true" local-vol surface from a Heston model on the
+        // (rTS, qTS, spot, 0.1, 1.0, 0.13, 0.8, 0.4) parameter set, then
+        // fix it on a 20-step TimeGrid up to maturity.
+        final HestonModel localVolHestonModel = new HestonModel(
+                new HestonProcess(rTS, qTS, spot, 0.1, 1.0, 0.13, 0.8, 0.4));
+        final TimeGrid localVolTimeGrid = new TimeGrid(maturity, 20);
+        final LocalVolTermStructure localVol = getFixedLocalVolFromHeston(
+                localVolHestonModel, localVolTimeGrid);
+
+        // SLV Heston parameter set (C++:2422-2426). These are deliberately
+        // different from the local-vol Heston model — the SLV process drift
+        // and diffusion exercise the leverage-fct multiplication, and the
+        // FD reference uses the same SLV parameter set with the same
+        // localVol leverage surface.
+        final double kappa =  2.5;
+        final double theta =  1.0;
+        final double rho   = -0.75;
+        final double sigma =  2.4;
+        final double v0    =  1.0;
+
+        final HestonProcess hestonProcess = new HestonProcess(
+                rTS, qTS, spot, v0, kappa, theta, sigma, rho);
+
+        final Handle<HestonModel> hestonModel = new Handle<HestonModel>(
+                new HestonModel(hestonProcess));
+
+        final org.jquantlib.experimental.processes.HestonStochasticLocalVolProcess slvProcess =
+                new org.jquantlib.experimental.processes.HestonStochasticLocalVolProcess(
+                        hestonProcess, localVol);
+
+        final VanillaOption option = new VanillaOption(
+                new PlainVanillaPayoff(Option.Type.Call, s0),
+                new EuropeanExercise(maturityDate));
+
+        // FD reference (C++:2442-2449): FdHestonVanillaEngine with the
+        // localVol leverage surface, grid (tGrid=26, xGrid=201, vGrid=101,
+        // dampingSteps=0), ModifiedCraigSneyd scheme.
+        option.setPricingEngine(new FdHestonVanillaEngine(
+                hestonModel.currentLink(), hestonProcess, null,
+                26, 201, 101, 0,
+                FdmSchemeDesc.ModifiedCraigSneyd(),
+                1.0, localVol));
+
+        final double expected = option.NPV();
+
+        final int nSims = 16733;
+        final int nTimeSteps = 40;
+        final double df = rTS.currentLink().discount(maturity);
+
+        final SobolBrownianBridgeRsg rsg = new SobolBrownianBridgeRsg(
+                2, nTimeSteps,
+                SobolBrownianGenerator.Ordering.Diagonal, 12345L,
+                SobolRsg.DirectionIntegers.JoeKuoD7);
+
+        final Array x  = new Array(2);
+        final Array xt = new Array(2);
+        final Array dw = new Array(2);
+
+        final GeneralStatistics stats = new GeneralStatistics();
+
+        final double dt = maturity / nTimeSteps;
+        final double sqrtDt = Math.sqrt(dt);
+
+        for (int i = 0; i < nSims; ++i) {
+            double t = 0.0;
+            x.set(0, s0);
+            x.set(1, v0);
+
+            final double[] n = rsg.nextSequence().value();
+
+            for (int j = 0; j < nTimeSteps; ++j, t += dt) {
+                dw.set(0, n[j]);
+                dw.set(1, n[j + nTimeSteps]);
+
+                // full truncation scheme
+                xt.set(0, x.get(0));
+                xt.set(1, (x.get(1) > 0) ? x.get(1) : 0.0);
+
+                // x = slvProcess.apply(x,
+                //         slvProcess.diffusion(t,xt)*sqrtDt*dw
+                //       + slvProcess.drift(t,xt)*dt)
+                final Array diffusionTerm =
+                        slvProcess.diffusion(t, xt).mul(dw).mul(sqrtDt);
+                final Array driftTerm =
+                        slvProcess.drift(t, xt).mul(dt);
+                final Array dx = diffusionTerm.add(driftTerm);
+
+                final Array xNew = slvProcess.apply(x, dx);
+                x.set(0, xNew.get(0));
+                x.set(1, xNew.get(1));
+            }
+
+            stats.add(df * option.payoff().get(x.get(0)));
+        }
+
+        final double calculated = stats.mean();
+        final double errorEstimate = stats.errorEstimate();
+        final double diff = Math.abs(expected - calculated);
+
+        if (diff > 2.35 * errorEstimate) {
+            fail("Failed to reproduce call option price with HestonSLVProcess "
+                    + "diffusion and drift discretization scheme"
+                    + "\n expected   : " + expected
+                    + "\n calculated : " + calculated
+                    + "\n error est. : " + errorEstimate
+                    + "\n diff       : " + diff);
+        }
+    }
 }
