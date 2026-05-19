@@ -28,6 +28,8 @@ import org.jquantlib.instruments.MinBasketPayoff;
 import org.jquantlib.instruments.Option;
 import org.jquantlib.instruments.PlainVanillaPayoff;
 import org.jquantlib.instruments.SpreadBasketPayoff;
+import org.jquantlib.instruments.VanillaOption;
+import org.jquantlib.math.interpolations.factories.Linear;
 import org.jquantlib.math.matrixutilities.Matrix;
 import org.jquantlib.methods.montecarlo.LsmBasisSystem;
 import org.jquantlib.model.shortrate.StochasticProcessArray;
@@ -47,6 +49,7 @@ import org.jquantlib.pricingengines.basket.MCAmericanBasketEngine;
 import org.jquantlib.pricingengines.basket.OperatorSplittingSpreadEngine;
 import org.jquantlib.pricingengines.basket.SingleFactorBsmBasketEngine;
 import org.jquantlib.pricingengines.basket.StulzEngine;
+import org.jquantlib.pricingengines.vanilla.FdBlackScholesVanillaEngine;
 import org.jquantlib.processes.BlackScholesMertonProcess;
 import org.jquantlib.processes.GeneralizedBlackScholesProcess;
 import org.jquantlib.processes.StochasticProcess1D;
@@ -55,6 +58,7 @@ import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.SimpleQuote;
 import org.jquantlib.termstructures.BlackVolTermStructure;
 import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.termstructures.yieldcurves.InterpolatedZeroCurve;
 import org.jquantlib.testsuite.util.Utilities;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Month;
@@ -920,8 +924,8 @@ public class BasketOptionTest {
     // testRootOfSumExponentials + testSingleFactorBsmBasketEngine + testGoldenChoiBasketEngineExample
     // body-filled in Phase 5e.5b-CFC-d-105 — see methods below.
     @Ignore(REASON_BENCHMARK)          @Test public void testSpreadAndBasketBenchmarks()              { fail("not implemented"); }
-    @Ignore(REASON_FDM_AMERICAN)       @Test public void testFdmAmericanBasketOptions()               { fail("not implemented"); }
-    @Ignore(REASON_FDM_AMERICAN)       @Test public void testAccurateAmericanBasketOptions()          { fail("not implemented"); }
+    // testFdmAmericanBasketOptions + testAccurateAmericanBasketOptions body-filled in
+    // Phase 5e.5b-CFC-d-293 — see methods below.
     // testNoDivByZeroOperatorSplitting body-filled in Phase 5e.5b-CFC-d-172 — see method below.
 
     // Suppress unused-warning for the catch-all reasons (some have been
@@ -949,6 +953,8 @@ public class BasketOptionTest {
     private static final String UNUSED_BARRAQUAND_REASON = REASON_BARRAQUAND;
     @SuppressWarnings("unused")
     private static final String UNUSED_NDIM_PDE_REASON = REASON_NDIM_PDE;
+    @SuppressWarnings("unused")
+    private static final String UNUSED_FDM_AMERICAN_REASON = REASON_FDM_AMERICAN;
 
     // ---- Bodied tests for DengLiZhouBasketEngine (Phase 5e.5b-CFC-d-104) -----
 
@@ -2414,6 +2420,173 @@ public class BasketOptionTest {
                         + "\n    diff:       " + diff
                         + "\n    tolerance : " + tol);
             }
+        }
+    }
+
+    // ---- Bodied tests for American basket FD pricing (Phase 5e.5b-CFC-d-293) -----
+
+    /**
+     * American basket / spread option priced with the N-dim PDE engine.
+     *
+     * <p>Mirrors C++ {@code BasketOption_testFdmAmericanBasketOptions}
+     * (test-suite/basketoption.cpp v1.42.1 lines 2391-2455). In QuantLib
+     * v1.42.1 the test uses {@link FdndimBlackScholesVanillaEngine} for
+     * American exercise as well; the engine plugs in an early-exercise step
+     * via {@code FdmStepConditionComposite.vanillaComposite(...)} when the
+     * exercise type is {@link AmericanExercise}. The expected NPV is the
+     * Choi engine value 15.1858 (hard-coded reference in the C++ test). The
+     * Choi engine is American-aware via the same payoff projection.
+     * Tolerance 0.01 verbatim from C++.</p>
+     */
+    @Test
+    public void testFdmAmericanBasketOptions() {
+        QL.info("Testing American Basket and Spread Options using FDM...");
+
+        final DayCounter dc = new Actual365Fixed();
+        final Date today = new Date(28, Month.October, 2024);
+        new Settings().setEvaluationDate(today);
+        final Date maturity = today.add(new Period(9, TimeUnit.Months));
+
+        final YieldTermStructure rTS = Utilities.flatRate(today, 0.1, dc);
+
+        final GeneralizedBlackScholesProcess p1 = makeProcess(
+                new SimpleQuote(100),
+                Utilities.flatRate(today, 0.02, dc),
+                rTS,
+                Utilities.flatVol(today, 0.4, dc));
+        final GeneralizedBlackScholesProcess p2 = makeProcess(
+                new SimpleQuote(25),
+                Utilities.flatRate(today, 0.035, dc),
+                rTS,
+                Utilities.flatVol(today, 0.5, dc));
+        final GeneralizedBlackScholesProcess p3 = makeProcess(
+                new SimpleQuote(90),
+                Utilities.flatRate(today, 0.08, dc),
+                rTS,
+                Utilities.flatVol(today, 0.25, dc));
+
+        final List<GeneralizedBlackScholesProcess> processes = new ArrayList<>();
+        processes.add(p1);
+        processes.add(p2);
+        processes.add(p3);
+
+        final Matrix rho = new Matrix(3, 3);
+        rho.set(0, 0,  1.0); rho.set(0, 1,  0.2); rho.set(0, 2,  0.6);
+        rho.set(1, 0,  0.2); rho.set(1, 1,  1.0); rho.set(1, 2, -0.3);
+        rho.set(2, 0,  0.6); rho.set(2, 1, -0.3); rho.set(2, 2,  1.0);
+
+        // Negative strike basket put: payoff = max(-K - sum(w_i * S_i), 0)
+        // with K = -30 and weights {1, -2, -1}. Matches C++ verbatim.
+        final double[] weights = { 1.0, -2.0, -1.0 };
+        final BasketOption option = new BasketOption(
+                new AverageBasketPayoff(
+                        new PlainVanillaPayoff(Option.Type.Put, -30),
+                        weights),
+                new AmericanExercise(today, maturity));
+
+        // Expected NPV is the Choi engine's value, hard-coded in C++ at 15.1858.
+        final double expected = 15.1858;
+
+        option.setPricingEngine(new FdndimBlackScholesVanillaEngine(
+                processes, rho, new int[] {
+                        20, 20, 20
+                }, 15));
+
+        final double calculated = option.NPV();
+        final double diff = Math.abs(calculated - expected);
+        final double tol = 0.01;
+        if (diff > tol) {
+            fail("failed to reproduce american spread-basket option price"
+                    + "\n    calculated:  " + calculated
+                    + "\n    expected:    " + expected
+                    + "\n    diff:        " + diff
+                    + "\n    tolerance:   " + tol);
+        }
+    }
+
+    /**
+     * High-precision American vanilla option priced via the N-dim PDE engine
+     * (single-asset basket case).
+     *
+     * <p>Mirrors C++ {@code BasketOption_testAccurateAmericanBasketOptions}
+     * (test-suite/basketoption.cpp v1.42.1 lines 2457-2516). Builds an
+     * American put on a single underlying with a piecewise-linear dividend
+     * curve and a piecewise-linear risk-free curve, then prices it two
+     * ways: via {@link FdBlackScholesVanillaEngine} (the 1D vanilla FD
+     * engine) and via {@link FdndimBlackScholesVanillaEngine} with d=1.
+     * Tolerance 0.02 verbatim from C++.</p>
+     */
+    @Test
+    public void testAccurateAmericanBasketOptions() {
+        QL.info("Testing high precision American Options Pricing using multi-dim FDM...");
+
+        final DayCounter dc = new Actual365Fixed();
+        final Date today = new Date(28, Month.October, 2024);
+        new Settings().setEvaluationDate(today);
+        final Date maturity = today.add(new Period(18, TimeUnit.Months));
+
+        // Risk-free: piecewise-linear zero curve at {today, +1M, +2Y} -> {0.05, 0.075, 0.02}
+        final Date[] rfDates = new Date[] {
+                today,
+                today.add(new Period(1, TimeUnit.Months)),
+                today.add(new Period(2, TimeUnit.Years))
+        };
+        final double[] rfRates = new double[] { 0.05, 0.075, 0.02 };
+        final YieldTermStructure rTS =
+                new InterpolatedZeroCurve<Linear>(Linear.class, rfDates, rfRates, dc);
+
+        // Dividend: piecewise-linear zero curve at {today, +3M, +2Y} -> {0.15, 0.1, 0.2}
+        final Date[] qDates = new Date[] {
+                today,
+                today.add(new Period(3, TimeUnit.Months)),
+                today.add(new Period(2, TimeUnit.Years))
+        };
+        final double[] qRates = new double[] { 0.15, 0.1, 0.2 };
+        final YieldTermStructure qTS =
+                new InterpolatedZeroCurve<Linear>(Linear.class, qDates, qRates, dc);
+
+        final BlackVolTermStructure volTS = Utilities.flatVol(today, 0.25, dc);
+
+        final GeneralizedBlackScholesProcess p = new BlackScholesMertonProcess(
+                new Handle<Quote>(new SimpleQuote(100)),
+                new Handle<YieldTermStructure>(qTS),
+                new Handle<YieldTermStructure>(rTS),
+                new Handle<BlackVolTermStructure>(volTS));
+
+        final Exercise exercise = new AmericanExercise(today, maturity);
+        final PlainVanillaPayoff payoff = new PlainVanillaPayoff(Option.Type.Put, 120);
+
+        // Reference: 1D FD vanilla engine with tGrid=200, xGrid=800.
+        final VanillaOption vanillaOption = new VanillaOption(payoff, exercise);
+        vanillaOption.setPricingEngine(new FdBlackScholesVanillaEngine(
+                p, 200, 800, 0, org.jquantlib.methods.finitedifferences.schemes.FdmSchemeDesc.Douglas()));
+
+        // Test engine: 1D basket via FdndimBlackScholesVanillaEngine.
+        final BasketOption basketOption = new BasketOption(
+                new AverageBasketPayoff(payoff, new double[] { 1.0 }),
+                exercise);
+
+        final List<GeneralizedBlackScholesProcess> processes = new ArrayList<>();
+        processes.add(p);
+        final Matrix rho = new Matrix(1, 1);
+        rho.set(0, 0, 1.0);
+
+        // C++ passes (processes, Matrix({{1}}), 200, 800) — these are
+        // xGrid=200, tGrid=800 per the auto-scaling constructor signature.
+        basketOption.setPricingEngine(new FdndimBlackScholesVanillaEngine(
+                processes, rho, 200, 800));
+
+        final double expected = vanillaOption.NPV();
+        final double calculated = basketOption.NPV();
+        final double diff = Math.abs(expected - calculated);
+        final double tol = 0.02;
+        if (diff > tol) {
+            fail("failed to reproduce american vanilla option price "
+                    + "with multi-dim FDM engine"
+                    + "\n    calculated:  " + calculated
+                    + "\n    expected:    " + expected
+                    + "\n    diff:        " + diff
+                    + "\n    tolerance:   " + tol);
         }
     }
 }
