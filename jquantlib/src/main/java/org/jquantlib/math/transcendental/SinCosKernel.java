@@ -3004,7 +3004,7 @@ final class SinCosKernel {
         if ( e == 0x7ff ) {
             // NaN, +Inf, -Inf
             if ( (u << 1) == (0x7ffL << 53) ) {
-                return 0.0; // ±inf → NaN, raises invalid
+                return Double.NaN; // ±inf → NaN, raises invalid
             }
             return x + x; // NaN
         }
