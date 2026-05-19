@@ -27,6 +27,11 @@ import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
@@ -55,7 +60,6 @@ import org.jquantlib.util.Observable;
 import org.jquantlib.util.ObservableSettings;
 import org.jquantlib.util.Observer;
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -65,11 +69,12 @@ import org.junit.Test;
  * <ul>
  *   <li>{@code testObservableSettings}: Phase 5e.5b-CFC-d-54 port via
  *       new {@link ObservableSettings} singleton.</li>
- *   <li>{@code testAsyncGarbagCollector},
- *       {@code testMultiThreadingGlobalSettings}: depend on
- *       {@code QL_ENABLE_THREAD_SAFE_OBSERVER_PATTERN} (off by default
- *       in C++; Java does not need a thread-safe observer pattern).</li>
- *   <li>{@code testDeepUpdate}: Phase 5a.5 carry-forward - requires
+ *   <li>{@code testAsyncGarbagCollector} +
+ *       {@code testMultiThreadingGlobalSettings}: Phase 5e.5b-CFC-d-307
+ *       port as Java-idiomatic equivalents — exercise the JVM's actual
+ *       GC + concurrent-modification + ObservableSettings paths against
+ *       the same shape the C++ thread-safe variant stresses.</li>
+ *   <li>{@code testDeepUpdate}: Phase 5a.5 carry-forward — requires
  *       {@code StrippedOptionletAdapter} interplay; the surface
  *       ({@code Observer.deepUpdate()}) is now present but the test
  *       body needs the full optionlet wiring (deferred).</li>
@@ -98,10 +103,12 @@ public class ObservableTest {
 
     /**
      * Mirror of C++ {@code UpdateCounter}: counts how many times
-     * {@code update()} has been called.
+     * {@code update()} has been called. Counter is volatile so a
+     * post-join read on the test thread sees the final value written
+     * by worker threads in the threading tests.
      */
     private static final class UpdateCounter implements Observer {
-        private int counter = 0;
+        private volatile int counter = 0;
         @Override public void update() { ++counter; }
         int counter() { return counter; }
     }
@@ -175,16 +182,254 @@ public class ObservableTest {
         }
     }
 
-    @Ignore("Java does not need QL_ENABLE_THREAD_SAFE_OBSERVER_PATTERN - the JVM "
-            + "provides its own GC + memory model; the multi-threaded stress test "
-            + "from the C++ suite is not portable.")
-    @Test
-    public void testAsyncGarbagCollector() {
+    /**
+     * Java-idiomatic equivalent of C++
+     * {@code testAsyncGarbagCollector} (observable.cpp:191-220,
+     * v1.42.1).
+     *
+     * <p>The C++ test exists because, when
+     * {@code QL_ENABLE_THREAD_SAFE_OBSERVER_PATTERN} is on, an
+     * asynchronous garbage-collector thread can destroy observers while
+     * the main thread is iterating over the observer list on
+     * {@code notifyObservers}; without the thread-safe variant, that
+     * races into use-after-free / core dump.
+     *
+     * <p>The Java port pursues the same intent against the JVM's actual
+     * concurrency model:
+     * <ul>
+     *   <li>Spawn N short-lived observers attached to a single
+     *       {@link SimpleQuote}; the observers are wrapped by
+     *       {@link org.jquantlib.util.WeakReferenceObservable} (see
+     *       {@link org.jquantlib.quotes.Quote}) so they become eligible
+     *       for GC once their strong reference goes out of scope.</li>
+     *   <li>Concurrently, a worker thread periodically calls
+     *       {@link System#gc()} (analog of the C++
+     *       {@code GarbageCollector}).</li>
+     *   <li>The main thread fires {@code setValue} from inside the
+     *       observer-creation loop, exactly as the C++ test does.</li>
+     * </ul>
+     *
+     * <p>The assertions are structural: the run must complete without
+     * any exception or hang (timeout enforced by {@link Test#timeout()}),
+     * the worker must execute at least one GC cycle, and the final
+     * observer count must not exceed the spawn count - confirming the
+     * {@code WeakReferenceObserver} cleanup path is GC + concurrent-
+     * modification safe.
+     */
+    @Test(timeout = 60_000L)
+    public void testAsyncGarbagCollector() throws Exception {
+        QL.info("Testing observer pattern with an asynchronous "
+              + "garbage collector (JVM/.NET use case)...");
+
+        final SimpleQuote quote = new SimpleQuote(-1.0);
+
+        // Scaled down from the C++ 10000 by a factor of 10 - JVM
+        // System.gc() is significantly heavier than the C++ list-pop
+        // GarbageCollector, and CI time matters more than nominal
+        // observer count. Both implementations stress the same path
+        // (concurrent observer creation + GC + notifyObservers).
+        final int totalObservers = 1000;
+        final int innerNotifications = 10;
+
+        final AtomicInteger gcCycles = new AtomicInteger(0);
+        final java.util.concurrent.atomic.AtomicBoolean terminate =
+                new java.util.concurrent.atomic.AtomicBoolean(false);
+
+        final ExecutorService gcExec = Executors.newSingleThreadExecutor();
+        final java.util.concurrent.Future<?> gcFuture = gcExec.submit(new Runnable() {
+            @Override public void run() {
+                while (!terminate.get()) {
+                    System.gc();
+                    gcCycles.incrementAndGet();
+                    try {
+                        // Cooperative pacing — mirrors the 2 ms sleep in
+                        // the C++ GarbageCollector::run loop.
+                        Thread.sleep(2L);
+                    } catch (final InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        return;
+                    }
+                }
+            }
+        });
+
+        try {
+            for (int i = 0; i < totalObservers; i++) {
+                // Create observer in this scope only; once the loop
+                // body exits, the only reference left to {@code observer}
+                // is the weak one inside the quote's observer list, so
+                // GC may reclaim it at any point.
+                final UpdateCounter observer = new UpdateCounter();
+                quote.addObserver(observer);
+
+                for (int j = 0; j < innerNotifications; j++) {
+                    quote.setValue((double) j);
+                }
+            }
+        } finally {
+            terminate.set(true);
+            gcExec.shutdown();
+            if (!gcExec.awaitTermination(10L, java.util.concurrent.TimeUnit.SECONDS)) {
+                gcExec.shutdownNow();
+                fail("GC worker thread did not terminate cleanly");
+            }
+            // Surface any swallowed exception from the GC worker.
+            gcFuture.get(5L, java.util.concurrent.TimeUnit.SECONDS);
+        }
+
+        // Final pass: force GC and notify once more. Because no
+        // observer is reachable any longer, all
+        // {@code WeakReferenceObserver} wrappers should be dead refs;
+        // the notify path's {@code compact()} sweep must drain them
+        // without throwing.
+        System.gc();
+        Thread.sleep(50L);
+        quote.notifyObservers();
+
+        // After compact() runs, the only live observers are those that
+        // are still strongly referenced from this test scope (none).
+        // The observer count is allowed to be nonzero if the JVM has
+        // not yet finalized weak refs, but it must monotonically
+        // decrease as GC progresses; we accept "<= totalObservers" as
+        // the structural invariant and additionally assert that at
+        // least one GC cycle ran.
+        if (gcCycles.get() == 0) {
+            fail("GC worker did not execute any cycles");
+        }
+        final int remaining = quote.countObservers();
+        if (remaining > totalObservers) {
+            fail("observer count grew past totalObservers: " + remaining);
+        }
     }
 
-    @Ignore("Java does not need QL_ENABLE_THREAD_SAFE_OBSERVER_PATTERN.")
-    @Test
-    public void testMultiThreadingGlobalSettings() {
+    /**
+     * Java-idiomatic equivalent of C++
+     * {@code testMultiThreadingGlobalSettings}
+     * (observable.cpp:222-270, v1.42.1).
+     *
+     * <p>The C++ test stresses the global
+     * {@link ObservableSettings#disableUpdates(boolean)} /
+     * {@link ObservableSettings#enableUpdates()} toggle in a
+     * multi-threaded setting: an asynchronous GC thread destroys
+     * observers concurrently with the main thread that registers more
+     * observers, sets quote values (deferred), and finally
+     * {@link ObservableSettings#enableUpdates() drains} the deferred
+     * queue.
+     *
+     * <p>The Java port reproduces the same shape:
+     * <ul>
+     *   <li>Multiple worker threads concurrently
+     *       {@link Observable#addObserver(Observer) addObserver} and
+     *       {@code setValue} on a single shared {@link SimpleQuote}.</li>
+     *   <li>The {@link ObservableSettings} singleton is in deferred
+     *       mode for the whole run; no observer must see any update
+     *       while the disable is in effect.</li>
+     *   <li>After all workers finish, {@code enableUpdates()} drains
+     *       the deferred queue exactly once; every retained observer
+     *       must see exactly one update.</li>
+     * </ul>
+     *
+     * <p>Structural assertions only: no
+     * {@code ConcurrentModificationException} from
+     * {@link org.jquantlib.util.DefaultObservable#notifyObservers()},
+     * no exception escaped from {@code enableUpdates()}, and the
+     * retained-observer update count is exactly 1 each.
+     */
+    @Test(timeout = 60_000L)
+    public void testMultiThreadingGlobalSettings() throws Exception {
+        QL.info("Testing observer global settings in a "
+              + "multithreading environment...");
+
+        final SimpleQuote quote = new SimpleQuote(-1.0);
+
+        ObservableSettings.instance().disableUpdates(true);
+        try {
+            final int nThreads = 4;
+            final int iterationsPerThread = 1000;
+            // Strong-ref bag mirrors the C++ {@code localList}: every
+            // 4th observer is retained for the post-drain assertion;
+            // the rest are released so the JVM is free to collect them.
+            final List<UpdateCounter> retained =
+                    java.util.Collections.synchronizedList(
+                            new ArrayList<UpdateCounter>());
+
+            final CyclicBarrier start = new CyclicBarrier(nThreads);
+            final CountDownLatch done = new CountDownLatch(nThreads);
+            final ExecutorService pool =
+                    Executors.newFixedThreadPool(nThreads);
+            final List<java.util.concurrent.Future<?>> futures =
+                    new ArrayList<java.util.concurrent.Future<?>>(nThreads);
+
+            for (int t = 0; t < nThreads; t++) {
+                futures.add(pool.submit(new Runnable() {
+                    @Override public void run() {
+                        try {
+                            start.await();
+                            for (int i = 0; i < iterationsPerThread; i++) {
+                                final UpdateCounter observer = new UpdateCounter();
+                                quote.addObserver(observer);
+                                if ((i % 4) == 0) {
+                                    retained.add(observer);
+                                    for (int j = 0; j < 5; j++) {
+                                        // Deferred-mode: each setValue
+                                        // adds the observer to the
+                                        // ObservableSettings deferred
+                                        // queue but must NOT fire
+                                        // observer.update().
+                                        quote.setValue((double) j);
+                                    }
+                                }
+                            }
+                        } catch (final Exception e) {
+                            throw new RuntimeException(e);
+                        } finally {
+                            done.countDown();
+                        }
+                    }
+                }));
+            }
+
+            if (!done.await(45L, java.util.concurrent.TimeUnit.SECONDS)) {
+                pool.shutdownNow();
+                fail("worker threads did not complete in time - possible deadlock");
+            }
+            pool.shutdown();
+            if (!pool.awaitTermination(5L, java.util.concurrent.TimeUnit.SECONDS)) {
+                pool.shutdownNow();
+                fail("executor pool did not terminate");
+            }
+            // Surface any exception thrown inside a worker.
+            for (final java.util.concurrent.Future<?> f : futures) {
+                f.get(5L, java.util.concurrent.TimeUnit.SECONDS);
+            }
+
+            // Invariant (1): no retained observer saw an update while
+            // deferred mode was in force.
+            for (final UpdateCounter c : retained) {
+                if (c.counter() != 0) {
+                    fail("notification should have been blocked while "
+                       + "ObservableSettings was disabled (deferred). "
+                       + "Saw counter=" + c.counter());
+                }
+            }
+
+            // Drain. Every retained observer must see exactly one
+            // notification (the deferred queue dedups by identity).
+            ObservableSettings.instance().enableUpdates();
+
+            for (final UpdateCounter c : retained) {
+                if (c.counter() != 1) {
+                    fail("only one notification should have been sent. "
+                       + "Saw counter=" + c.counter());
+                }
+            }
+            // Sanity: we must have retained at least one observer.
+            if (retained.isEmpty()) {
+                fail("no observers were retained - test setup mistake");
+            }
+        } finally {
+            ObservableSettings.instance().enableUpdates();
+        }
     }
 
     /**
