@@ -415,12 +415,19 @@ public class InterpolatedYoYCapFloorTermPriceSurface<
                     .add(new Period((int) i, TimeUnit.Years));
             final Quote sq = new SimpleQuote(atmYoYSwapRate(maturity, true));
             final Handle<Quote> quote = new Handle<>(sq);
+            // Pass the surface's nominal yield handle to the helper so the
+            // internal YYIIS discounts with the real InterpolatedZeroCurve
+            // rather than the helper's FlatForward(0) fallback. Mirrors C++
+            // yoycapfloortermpricesurface.hpp:540 — the helper ctor receives
+            // nominalTS_ directly, ensuring fair-rate calibration uses
+            // discount factors consistent with the rest of the surface.
             final YearOnYearInflationSwapHelper helper = new YearOnYearInflationSwapHelper(
                     quote, observationLag(), maturity,
                     calendar(), bdc_, dayCounter(),
                     yoyIndex_,
                     indexIsInterpolated() ? CPI.InterpolationType.Linear
-                                          : CPI.InterpolationType.Flat);
+                                          : CPI.InterpolationType.Flat,
+                    nominalTS_);
             yyHelpers.add(helper);
         }
 

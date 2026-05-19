@@ -490,39 +490,16 @@ public class InflationVolatilityTest {
      * <p>Tier: {@link Tolerance#within} with {@code 2e-5} per C++
      * {@code eps = 2e-5}.
      *
-     * <p>Phase 2x A.1 removed the stale {@code yields[0] == 1.0} assertion
-     * in {@link
-     * org.jquantlib.termstructures.yieldcurves.InterpolatedZeroCurve},
-     * unblocking the nominal-curve construction. However the deeper
-     * issue persists: the surface's internal
+     * <p>Phase 5e.5b-CFC-d-289 fix: the surface's
+     * {@code calculateYoYTermStructure()} now forwards its nominal yield
+     * handle {@code nominalTS_} to each {@link
+     * org.jquantlib.termstructures.inflation.YearOnYearInflationSwapHelper},
+     * mirroring C++ {@code yoycapfloortermpricesurface.hpp:540}. This
+     * eliminates the prior FlatForward(0) discount substitution inside the
+     * helpers' internal YYIIS and aligns the bootstrapped
      * {@link org.jquantlib.termstructures.inflation.PiecewiseYoYInflationCurve}
-     * bootstrap throws "date before reference date" inside
-     * {@code DiscountingSwapEngine.calculate} → {@code CashFlows.bps}
-     * → {@code AbstractYieldTermStructure.discount}. The bootstrap
-     * leaves {@code yoy_} {@code null} and the third loop's
-     * {@code atmYoYRate(d)} NPEs. Defer to Phase 2y after
-     * {@code PiecewiseYoYInflationCurve} bootstrap is fixed.
+     * with C++ reference values within the C++ {@code eps = 2e-5}.
      */
-    @Ignore("Phase 5e.5b-CFC-d-274: YearOnYearInflationSwapHelper pillar"
-            + " bug is now fixed (latestDate=fixingPeriod.second+1 when"
-            + " CPI::isInterpolated(interpolation, yii); mirrors C++"
-            + " inflationhelpers.cpp:253-291). The 'date past max curve"
-            + " date' NPE is gone and the bootstrap completes for all 30"
-            + " annual helpers including 30Y. First two assertion loops"
-            + " (cached crv/swaps arrays via atmYoYSwapTimeRates /"
-            + " atmYoYSwapRate) now PASS cleanly at eps=2e-5. Remaining"
-            + " blocker is downstream and pre-existing: the third loop"
-            + " (atmYoYRate(d) — re-derived from the bootstrapped"
-            + " PiecewiseYoYInflationCurve) drifts ~1e-3 at 30Y (i=6:"
-            + " java=0.0280505 vs cpp=0.0295884), with drift growing"
-            + " monotonically with maturity. Signature matches the"
-            + " accumulated discount-factor divergence from using"
-            + " FlatForward in place of InterpolatedZeroCurve (Phase 2x"
-            + " A.1 bug — already documented in the inline tolerance"
-            + " comments). Cannot loosen below 1e-8 per CLAUDE.md;"
-            + " defer to a dedicated align(InterpolatedZeroCurve) or"
-            + " InflationVolatilityTest.setup() repair commit that"
-            + " restores the InterpolatedZeroCurve construction.")
     @Test
     public void testYoYPriceSurfaceToATM() {
         setup();
@@ -543,12 +520,11 @@ public class InflationVolatilityTest {
         for (int i = 0; i < yyATMt.first().length && i < crv.length; i++) {
             final double java = yyATMt.second()[i];
             final double cpp = crv[i];
-            // Tier: per-test tolerance 2e-5 per C++ eps; justified by
-            // FlatForward substitution for InterpolatedZeroCurve (the
-            // discount-curve absolute level shifts the put/call parity).
-            if (!Tolerance.within(java, cpp, eps,
-                    "C++ test eps=2e-5; FlatForward used in place of "
-                    + "InterpolatedZeroCurve (Phase 2x bug)")) {
+            // Tier: per-test tolerance 2e-5 per C++ eps (cap/floor parity
+            // intersection rounding); the surface's nominal-curve discount
+            // path now matches C++ since Phase 5e.5b-CFC-d-289 forwarded
+            // nominalTS_ to the helpers.
+            if (!Tolerance.within(java, cpp, eps, "C++ test eps=2e-5")) {
                 mismatches.add(String.format(
                         "could not recover cached yoy swap curve at i=%d: "
                         + "java=%.7f vs cpp=%.7f",
@@ -559,9 +535,7 @@ public class InflationVolatilityTest {
         for (int i = 0; i < yyATMd.first().length && i < swaps.length; i++) {
             final double java = priceSurfEU.atmYoYSwapRate(yyATMd.first()[i]);
             final double cpp = swaps[i];
-            if (!Tolerance.within(java, cpp, eps,
-                    "C++ test eps=2e-5; FlatForward used in place of "
-                    + "InterpolatedZeroCurve")) {
+            if (!Tolerance.within(java, cpp, eps, "C++ test eps=2e-5")) {
                 mismatches.add(String.format(
                         "could not recover yoy swap curve at i=%d: "
                         + "java=%.7f vs cpp=%.7f",
@@ -572,9 +546,7 @@ public class InflationVolatilityTest {
         for (int i = 0; i < yyATMd.first().length && i < ayoy.length; i++) {
             final double java = priceSurfEU.atmYoYRate(yyATMd.first()[i]);
             final double cpp = ayoy[i];
-            if (!Tolerance.within(java, cpp, eps,
-                    "C++ test eps=2e-5; FlatForward used in place of "
-                    + "InterpolatedZeroCurve")) {
+            if (!Tolerance.within(java, cpp, eps, "C++ test eps=2e-5")) {
                 mismatches.add(String.format(
                         "could not recover cached yoy curve at i=%d: "
                         + "java=%.7f vs cpp=%.7f at date=%s",
