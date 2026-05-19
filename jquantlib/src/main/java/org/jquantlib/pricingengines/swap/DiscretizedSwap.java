@@ -140,6 +140,30 @@ public class DiscretizedSwap extends DiscretizedAsset {
         // mirrored in the Java Settings).
         final boolean includeTodaysCashFlows = true;
 
+        // C++ prepareSwaptionWithSnappedDates rebuilds a VanillaSwap on a
+        // Schedule(dates) — which uses NullCalendar — and reads its
+        // fixedResetDates/fixedPayDates back via setupArguments(). Pay
+        // dates on the snapped swap therefore mirror the snapped
+        // Schedule's dates directly (no businessDayConvention adjustment
+        // on NullCalendar). To mirror that, the Java port reads pay dates
+        // from the underlying Schedule rather than from each coupon's
+        // BDC-adjusted c.date(). This keeps Java DiscretizedSwap pay
+        // times bit-identical to C++ snapped-swap pay times — which the
+        // tree engine requires for the lattice grid to align cleanly
+        // with the swap's mandatory times. Without this step, a fixed
+        // leg with Unadjusted schedule + ModFol paymentConvention sees
+        // its pay dates shifted by 1-2 calendar days whenever the raw
+        // accrualEnd date falls on a weekend, and the resulting +0.01
+        // bias propagates into the Bermudan engine NPV. (Phase
+        // 5e.5b-CFC-d-284.)
+        //
+        // The snapped accrualStart array (snappedFixedResetDates) supplies
+        // entries 0..nFixed-1; the terminal accrualEnd date (which the C++
+        // snap loop never touches because it iterates only the interior
+        // dates) comes from the original Schedule's last date.
+        final List<Date> fixedSchedDates = swap.fixedSchedule().dates();
+        final List<Date> floatSchedDates = swap.floatingSchedule().dates();
+
         final int nFixed = fixedLeg.size();
         this.fixedResetTimes_ = new double[nFixed];
         this.fixedPayTimes_ = new double[nFixed];
@@ -149,19 +173,36 @@ public class DiscretizedSwap extends DiscretizedAsset {
         for (int i = 0; i < nFixed; i++) {
             final FixedRateCoupon c = (FixedRateCoupon) fixedLeg.get(i);
             final Date resetDate = (snappedFixedResetDates != null)
-                    ? snappedFixedResetDates.get(i) : c.accrualStartDate();
+                    ? snappedFixedResetDates.get(i)
+                    : fixedSchedDates.get(i);
+            // Pay date for coupon[i] = snapped accrualStart of coupon[i+1]
+            // (for interior coupons) or the original Schedule's terminal
+            // date (for the last coupon — the snap loop never touches it).
+            final Date payDate;
+            if (i + 1 < nFixed) {
+                payDate = (snappedFixedResetDates != null)
+                        ? snappedFixedResetDates.get(i + 1)
+                        : fixedSchedDates.get(i + 1);
+            } else {
+                payDate = fixedSchedDates.get(nFixed);
+            }
             final double resetTime = dayCounter.yearFraction(referenceDate, resetDate);
-            final double payTime = dayCounter.yearFraction(referenceDate, c.date());
+            final double payTime = dayCounter.yearFraction(referenceDate, payDate);
             fixedResetTimes_[i] = resetTime;
             fixedPayTimes_[i] = payTime;
-            // When the reset date was snapped (≠ original accrual start),
-            // recompute the coupon amount on the snapped accrual period —
-            // matches C++ which builds a fresh VanillaSwap on the snapped
-            // Schedule and reads the recomputed coupons.
-            if (snappedFixedResetDates != null
-                    && !resetDate.eq(c.accrualStartDate())) {
+            // Coupon amount is recomputed on the snapped accrual period
+            // (resetDate, payDate) whenever either bound was snapped — or
+            // whenever the snapped pay date differs from the original
+            // coupon's c.date() (which happens for Unadjusted fixed
+            // schedules combined with ModFol paymentConvention: the
+            // original c.date() picks up a 1-2 day shift that the C++
+            // snapped (NullCalendar) leg strips).
+            final boolean snappedReset = (snappedFixedResetDates != null
+                    && !resetDate.eq(c.accrualStartDate()));
+            final boolean snappedPay = !payDate.eq(c.date());
+            if (snappedReset || snappedPay) {
                 final double snappedAccrual = swap.fixedDayCount()
-                        .yearFraction(resetDate, c.date());
+                        .yearFraction(resetDate, payDate);
                 fixedCoupons_[i] = c.rate() * snappedAccrual * c.nominal();
             } else {
                 fixedCoupons_[i] = c.amount();
@@ -184,17 +225,29 @@ public class DiscretizedSwap extends DiscretizedAsset {
         for (int i = 0; i < nFloat; i++) {
             final FloatingRateCoupon c = (FloatingRateCoupon) floatingLeg.get(i);
             final Date resetDate = (snappedFloatingResetDates != null)
-                    ? snappedFloatingResetDates.get(i) : c.accrualStartDate();
+                    ? snappedFloatingResetDates.get(i)
+                    : floatSchedDates.get(i);
+            final Date payDate;
+            if (i + 1 < nFloat) {
+                payDate = (snappedFloatingResetDates != null)
+                        ? snappedFloatingResetDates.get(i + 1)
+                        : floatSchedDates.get(i + 1);
+            } else {
+                payDate = floatSchedDates.get(nFloat);
+            }
             final double resetTime = dayCounter.yearFraction(referenceDate, resetDate);
-            final double payTime = dayCounter.yearFraction(referenceDate, c.date());
+            final double payTime = dayCounter.yearFraction(referenceDate, payDate);
             floatingResetTimes_[i] = resetTime;
             floatingPayTimes_[i] = payTime;
-            // Recompute the accrual period when the reset is snapped (mirrors
-            // C++ rebuilt-on-snapped-Schedule semantics).
-            if (snappedFloatingResetDates != null
-                    && !resetDate.eq(c.accrualStartDate())) {
+            // Recompute the accrual period when reset OR pay was snapped
+            // (mirrors C++ rebuilt-on-snapped-Schedule semantics; see
+            // fixed-leg comment above).
+            final boolean snappedReset = (snappedFloatingResetDates != null
+                    && !resetDate.eq(c.accrualStartDate()));
+            final boolean snappedPay = !payDate.eq(c.date());
+            if (snappedReset || snappedPay) {
                 floatingAccrualTimes_[i] = swap.floatingDayCount()
-                        .yearFraction(resetDate, c.date());
+                        .yearFraction(resetDate, payDate);
             } else {
                 floatingAccrualTimes_[i] = c.accrualPeriod();
             }

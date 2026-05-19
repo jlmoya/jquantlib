@@ -194,19 +194,6 @@ public class BermudanSwaptionTest {
      * snapping + {@code TreeSwaptionEngine} drive identical
      * mandatory-times into the same Hull-White short-rate tree.
      */
-    @Ignore("Phase 5e.5b-CFC-d-207/261 — Tree-vs-cached HW Bermudan NPV diverges from C++ by "
-          + "+0.011 (n_ex=1) ramping to +0.186 (n_ex=5). Phase 5e.5b-CFC-d-261 deep-dive: tree "
-          + "internals (sizes, x[i,j], discount[i,j], grid times, mandatory times, swap arg "
-          + "pay/reset times) ALL bit-match C++ at every step; underlying VanillaSwap NPV via "
-          + "TreeVanillaSwapEngine = 0 (machine ε) at t=0 matching analytical. Yet the swaption "
-          + "engine path gives systematically higher per-state underlying values at exTime "
-          + "(C++ engine: 0.333 at index 8; both Java and C++-direct-rollback: 0.351). "
-          + "Discrepancy isolates to DiscretizedSwaption.postAdjustValuesImpl's interaction "
-          + "between underlying.partialRollback + pre/postAdjust + exercise sequence (vs a "
-          + "direct rollback + adjustValues). Diag probes at migration-harness/cpp/probes/"
-          + "instruments/bermudan_tree_diag_probe.cpp (n_ex=1..5 NPVs) and bermudan_tree_state_probe.cpp "
-          + "(full tree state). Java diag probe: BermudanTreeDiagJavaProbe.java. Root cause not "
-          + "yet pinpointed despite tree-fingerprint exact match.")
     @Test
     public void testCachedValuesTree() {
         final ReferenceReader reader =
@@ -313,8 +300,6 @@ public class BermudanSwaptionTest {
      * {@link Tolerance#loose} (rel 1e-8); same rationale as
      * {@link #testCachedValuesTree}.
      */
-    @Ignore("Phase 5e.5b-CFC-d-207 — same upstream divergence as testCachedValuesTree; G2 "
-          + "tree exhibits the same fixture-specific HullWhite/Euribor6M bias.")
     @Test
     public void testCachedG2ValuesTree() {
         final ReferenceReader reader =
