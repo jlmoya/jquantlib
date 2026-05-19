@@ -1021,7 +1021,87 @@ public class OvernightIndexedSwapTest {
         assertTrue("discount(1.0) positive (" + discount + ")", discount > 0.0);
     }
 
-    @Ignore(REASON_BOOTSTRAP) @Test public void testBootstrapWithDifferentCalendars() { fail("not implemented"); }
+    /**
+     * Port of C++ {@code testBootstrapWithDifferentCalendars}
+     * (overnightindexedswap.cpp:737-778).
+     *
+     * <p><strong>What the C++ test verifies:</strong> when an OIS schedule
+     * uses a calendar that differs from the index's fixing calendar (here:
+     * SOFR fixes on a calendar that closes Good Friday, but the OIS schedule
+     * runs on the Federal Reserve Bankwire calendar which does <em>not</em>
+     * close Good Friday), the schedule's maturity date is computed against
+     * the OIS calendar — Good Friday is a business day there, so the 3-year
+     * swap matures on Friday 14 April 2028 rather than rolling to Monday 17
+     * April 2028.
+     *
+     * <p><strong>Java port (Phase 5e.5b-CFC-d-301):</strong> the C++ test
+     * threads {@code overnightCalendar} and {@code fixedCalendar} through
+     * {@code OISRateHelper} (which is not allowed for this edit) and then
+     * inspects {@code helpers.back()->maturityDate()}. Java exposes the same
+     * surface area through {@link MakeOIS#withOvernightLegCalendar} /
+     * {@link MakeOIS#withFixedLegCalendar} (added in this phase) — the swap
+     * built via {@link MakeOIS#value()} has the identical maturity, so we
+     * port the C++ assertion against {@code MakeOIS} directly. This stays
+     * faithful to the original intent: prove that per-leg calendar overrides
+     * propagate into the schedule and the resulting maturity date matches
+     * C++'s 14-April-2028 cached expectation.
+     *
+     * <p>Tolerance: <em>exact</em> on the maturity date (no float math).
+     */
+    @Test
+    public void testBootstrapWithDifferentCalendars() {
+        QL.info("Testing OIS schedule maturity when the swap calendar differs"
+                + " from the index fixing calendar...");
+
+        final Date today = new Date(10, Month.April, 2025);
+        new Settings().setEvaluationDate(today);
+
+        // C++ test uses Sofr() with UnitedStates(UnitedStates::FederalReserve)
+        // for both overnight and fixed leg, so that the 3-year swap maturity
+        // falls on 14-Apr-2028 (Good Friday — a Federal Reserve business day,
+        // but a SOFR fixing-calendar holiday).
+        final Sofr index = new Sofr();
+        final Calendar fedReserve = new org.jquantlib.time.calendars.UnitedStates(
+                org.jquantlib.time.calendars.UnitedStates.Market.FederalReserve);
+
+        // Use an explicit fixed rate (rather than fair-rate bootstrap) so
+        // MakeOIS does not require a term structure on the index — the
+        // assertion only inspects maturityDate(), not NPV.
+        final OvernightIndexedSwap swap3y = new MakeOIS(
+                new Period(3, TimeUnit.Years), index, 0.03,
+                new Period(0, TimeUnit.Days))
+                .withSettlementDays(2)
+                .withOvernightLegCalendar(fedReserve)
+                .withFixedLegCalendar(fedReserve)
+                .withPaymentCalendar(fedReserve)
+                .value();
+
+        // C++ helpers.back()->maturityDate() == Date(14, April, 2028) — Good
+        // Friday; holiday for SOFR but not for Federal Reserve.
+        final Date expectedMaturity = new Date(14, Month.April, 2028);
+        assertEquals("MakeOIS.withOvernightLegCalendar(FederalReserve) — 3y "
+                + "OIS matures on the Federal-Reserve business day "
+                + "(Good Friday), not the SOFR-adjusted next business day",
+                expectedMaturity, swap3y.maturityDate());
+
+        // Divergence cross-check: under the SOFR fixing calendar (Good
+        // Friday is closed) the same 3-year swap would NOT mature on
+        // 14-Apr-2028 — it must roll to the next business day. We verify
+        // this contrasting behavior to make sure the per-leg calendar
+        // override is what drives the difference (rather than the test
+        // happening to land on a business day regardless of calendar).
+        final OvernightIndexedSwap swap3yDefault = new MakeOIS(
+                new Period(3, TimeUnit.Years), index, 0.03,
+                new Period(0, TimeUnit.Days))
+                .withSettlementDays(2)
+                .value();
+        assertTrue("Sanity: with the default (SOFR-fixing) calendar the "
+                + "3y maturity must differ from the Federal-Reserve maturity "
+                + "(Good Friday rolls forward) — got "
+                + swap3yDefault.maturityDate()
+                + " vs FedReserve " + swap3y.maturityDate(),
+                !swap3yDefault.maturityDate().eq(expectedMaturity));
+    }
 
     /**
      * Port of C++ {@code testConstructorsAndNominals}

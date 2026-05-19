@@ -53,7 +53,8 @@ public class MakeOIS {
     private int settlementDays_ = Constants.NULL_NATURAL;
     private Date effectiveDate_ = new Date();
     private Date terminationDate_ = new Date();
-    private Calendar calendar_;
+    private Calendar fixedCalendar_;
+    private Calendar overnightCalendar_;
     private DayCounter fixedDayCount_;
 
     private Frequency paymentFrequency_ = Frequency.Annual;
@@ -93,7 +94,10 @@ public class MakeOIS {
         this.overnightIndex_ = overnightIndex;
         this.fixedRate_ = fixedRate;
         this.forwardStart_ = fwdStart;
-        this.calendar_ = overnightIndex.fixingCalendar();
+        // Both legs default to the overnight index fixing calendar, matching
+        // C++ MakeOIS ctor (makeois.cpp:38-39).
+        this.fixedCalendar_ = overnightIndex.fixingCalendar();
+        this.overnightCalendar_ = overnightIndex.fixingCalendar();
         this.fixedDayCount_ = overnightIndex.dayCounter();
     }
 
@@ -168,8 +172,33 @@ public class MakeOIS {
         return this;
     }
 
+    /**
+     * Sets the calendar for both the fixed and overnight legs, mirroring C++
+     * {@code MakeOIS::withCalendar} (makeois.cpp:246-248) which delegates to
+     * {@link #withFixedLegCalendar(Calendar)} and
+     * {@link #withOvernightLegCalendar(Calendar)}.
+     */
     public MakeOIS withCalendar(final Calendar cal) {
-        this.calendar_ = cal;
+        return withFixedLegCalendar(cal).withOvernightLegCalendar(cal);
+    }
+
+    /**
+     * Sets the calendar used for the fixed-leg schedule generation. Mirror of C++
+     * {@code MakeOIS::withFixedLegCalendar} (makeois.cpp:250-253).
+     */
+    public MakeOIS withFixedLegCalendar(final Calendar cal) {
+        this.fixedCalendar_ = cal;
+        return this;
+    }
+
+    /**
+     * Sets the calendar used for the overnight-leg schedule generation and for
+     * the start-date / spot computation (which advances along the overnight
+     * fixing calendar in C++). Mirror of C++ {@code MakeOIS::withOvernightLegCalendar}
+     * (makeois.cpp:255-258).
+     */
+    public MakeOIS withOvernightLegCalendar(final Calendar cal) {
+        this.overnightCalendar_ = cal;
         return this;
     }
 
@@ -249,31 +278,43 @@ public class MakeOIS {
                     settlementDays = 2;
                 }
             }
+            // C++ uses overnightCalendar_ for the start-date / spot
+            // computation (makeois.cpp:71-82).
             Date refDate = new Settings().evaluationDate();
-            refDate = calendar_.adjust(refDate);
-            Date spotDate = calendar_.advance(refDate, new Period(settlementDays, TimeUnit.Days),
+            refDate = overnightCalendar_.adjust(refDate);
+            Date spotDate = overnightCalendar_.advance(refDate, new Period(settlementDays, TimeUnit.Days),
                     BusinessDayConvention.Following);
             startDate = spotDate.add(forwardStart_);
-            startDate = calendar_.adjust(startDate,
+            startDate = overnightCalendar_.adjust(startDate,
                     forwardStart_.length() < 0 ? BusinessDayConvention.Preceding : BusinessDayConvention.Following);
         }
 
-        boolean useEOM = isDefaultEOM_ ? calendar_.isEndOfMonth(startDate) : endOfMonth_;
+        // Default EOM keys off the overnight calendar (mirrors C++
+        // makeois.cpp:85-87 which uses overnightCalendar_.isEndOfMonth).
+        boolean useEOM = isDefaultEOM_ ? overnightCalendar_.isEndOfMonth(startDate) : endOfMonth_;
 
         Date endDate = terminationDate_;
         if ( endDate.isNull() ) {
             endDate = startDate.add(swapTenor_);
         }
 
-        final Schedule schedule = new Schedule(startDate, endDate, new Period(paymentFrequency_), calendar_,
+        final Schedule fixedSchedule = new Schedule(startDate, endDate, new Period(paymentFrequency_), fixedCalendar_,
                 paymentAdjustment_, paymentAdjustment_, rule_, useEOM, new Date(), new Date());
+
+        final Schedule overnightSchedule = new Schedule(startDate, endDate, new Period(paymentFrequency_),
+                overnightCalendar_, paymentAdjustment_, paymentAdjustment_, rule_, useEOM, new Date(), new Date());
+
+        // Default paymentCalendar -> overnight calendar (matches C++ where an
+        // unset paymentCalendar_ falls back to the overnight schedule's
+        // calendar in the OvernightIndexedSwap ctor).
+        final Calendar effectivePaymentCalendar = paymentCalendar_ != null ? paymentCalendar_ : overnightCalendar_;
 
         double usedFixedRate = fixedRate_;
         if ( fixedRate_ == Constants.NULL_REAL ) {
             // bootstrap fair rate
-            final OvernightIndexedSwap temp = new OvernightIndexedSwap(type_, nominal_, schedule, 0.0, fixedDayCount_,
-                    schedule, overnightIndex_, overnightSpread_, paymentLag_, paymentAdjustment_,
-                    paymentCalendar_ != null ? paymentCalendar_ : calendar_, telescopicValueDates_, averagingMethod_,
+            final OvernightIndexedSwap temp = new OvernightIndexedSwap(type_, nominal_, fixedSchedule, 0.0,
+                    fixedDayCount_, overnightSchedule, overnightIndex_, overnightSpread_, paymentLag_,
+                    paymentAdjustment_, effectivePaymentCalendar, telescopicValueDates_, averagingMethod_,
                     lookbackDays_, lockoutDays_, applyObservationShift_);
             if ( engine_ == null ) {
                 final Handle< YieldTermStructure > disc = discountingTermStructure_.empty()
@@ -287,9 +328,9 @@ public class MakeOIS {
             usedFixedRate = temp.fairRate();
         }
 
-        final OvernightIndexedSwap ois = new OvernightIndexedSwap(type_, nominal_, schedule, usedFixedRate,
-                fixedDayCount_, schedule, overnightIndex_, overnightSpread_, paymentLag_, paymentAdjustment_,
-                paymentCalendar_ != null ? paymentCalendar_ : calendar_, telescopicValueDates_, averagingMethod_,
+        final OvernightIndexedSwap ois = new OvernightIndexedSwap(type_, nominal_, fixedSchedule, usedFixedRate,
+                fixedDayCount_, overnightSchedule, overnightIndex_, overnightSpread_, paymentLag_, paymentAdjustment_,
+                effectivePaymentCalendar, telescopicValueDates_, averagingMethod_,
                 lookbackDays_, lockoutDays_, applyObservationShift_);
 
         if ( engine_ == null && !discountingTermStructure_.empty() ) {
