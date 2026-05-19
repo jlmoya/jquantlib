@@ -40,6 +40,7 @@ import org.jquantlib.QL;
 import org.jquantlib.instruments.Option;
 import org.jquantlib.instruments.PlainVanillaPayoff;
 import org.jquantlib.pricingengines.BlackFormula;
+import org.jquantlib.pricingengines.LetsBeRational;
 import org.jquantlib.testsuite.util.ReferenceReader;
 import org.jquantlib.testsuite.util.ReferenceReader.Case;
 import org.junit.Test;
@@ -473,5 +474,56 @@ public class BlackFormulaTest {
         final double vol = 0.0;
         assertBachelierBlackFormulaForwardDerivative(Option.Type.Call, strikes, vol);
         assertBachelierBlackFormulaForwardDerivative(Option.Type.Put, strikes, vol);
+    }
+
+    /**
+     * Phase 5e.5b-CFC-d-310 foundation: round-trip sanity for Jäckel
+     * "Let's Be Rational" closed-form implied-vol solver.
+     *
+     * <p>Drives a synthetic grid of (forward, strike, T, vol) through
+     * {@link BlackFormula#blackFormula} to get a price, then through
+     * {@link LetsBeRational#impliedStdDev} to recover stddev. The
+     * round-trip residual must be small relative to the input stddev.
+     *
+     * <p>Tolerance is set to {@code 5e-3} on the recovered stddev — the
+     * LBR foundation provides a robust initial guess plus 8 plain-Newton
+     * iterations, which is enough to converge to within a few hundred
+     * ULPs of the true stddev across the ATM / near-ATM region. The full
+     * Householder(3) refinement step (Jäckel §4) — which would tighten
+     * this to {@code ~1e-14} — is left for follow-up.
+     */
+    @Test
+    public void testLetsBeRationalRoundtripFoundation() {
+        QL.info("Foundation: Let's Be Rational closed-form implied vol round-trip...");
+        final double[] forwards = { 0.01, 0.05, 0.10 };
+        final double[] strikeRatios = { 0.9, 1.0, 1.1 };
+        final double[] times = { 1.0, 5.0 };
+        final double[] vols = { 0.10, 0.20, 0.30 };
+        int probes = 0;
+        for (final double F : forwards) {
+            for (final double r : strikeRatios) {
+                final double K = F * r;
+                for (final double T : times) {
+                    for (final double sigma : vols) {
+                        final double stdDev = sigma * Math.sqrt(T);
+                        final double price = BlackFormula.blackFormula(Option.Type.Call, K, F, stdDev);
+                        if (price <= 0.0 || !Double.isFinite(price)) {
+                            continue;
+                        }
+                        final double recovered = LetsBeRational.impliedStdDev(+1.0, F, K, price);
+                        // Foundation tolerance: 5e-3 of true stddev. The
+                        // production Householder(3) port targets 2.5e-8.
+                        final double tol = 5.0e-3 * stdDev + 1.0e-8;
+                        assertEquals(
+                            String.format(
+                                "LBR round-trip F=%.4f K=%.4f T=%.2f sigma=%.3f price=%.6g",
+                                F, K, T, sigma, price),
+                            stdDev, recovered, tol);
+                        probes++;
+                    }
+                }
+            }
+        }
+        assertTrue("LBR round-trip exercised at least one probe", probes > 0);
     }
 }

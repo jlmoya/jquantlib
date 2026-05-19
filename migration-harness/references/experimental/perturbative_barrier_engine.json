@@ -1,0 +1,49 @@
+{
+  "cases": [
+    {
+      "expected": 0.8973652907908002,
+      "inputs": {
+        "S": 100.0,
+        "barrier": 101.0,
+        "barrierType": "UpOut",
+        "daysToExercise": 180,
+        "optionType": "Put",
+        "order": 0,
+        "q": 0.02,
+        "r": 0.03,
+        "rebate": 0.0,
+        "strike": 101.0,
+        "today": "2024-09-15",
+        "vol_180": 0.11,
+        "vol_90": 0.105,
+        "zeroGamma": false
+      },
+      "name": "up_out_put_strike101_barrier101_order0"
+    },
+    {
+      "expected": 0.894374489635132,
+      "inputs": {
+        "S": 100.0,
+        "barrier": 101.0,
+        "barrierType": "UpOut",
+        "daysToExercise": 180,
+        "optionType": "Put",
+        "order": 1,
+        "q": 0.02,
+        "r": 0.03,
+        "rebate": 0.0,
+        "strike": 101.0,
+        "today": "2024-09-15",
+        "vol_180": 0.11,
+        "vol_90": 0.105,
+        "zeroGamma": false
+      },
+      "name": "up_out_put_strike101_barrier101_order1"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-19T23:06:31Z",
+  "generated_by": "perturbative_barrier_engine_probe",
+  "test_group": "experimental/perturbative_barrier_engine"
+}
