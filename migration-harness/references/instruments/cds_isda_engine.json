@@ -1,0 +1,560 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "curveNodes": [
+          {
+            "date": 39954,
+            "discount": 1.0,
+            "index": 0,
+            "time": 0.0
+          },
+          {
+            "date": 39989,
+            "discount": 0.9997005429079852,
+            "index": 1,
+            "time": 0.0958904109589041
+          },
+          {
+            "date": 40021,
+            "discount": 0.9989998637995903,
+            "index": 2,
+            "time": 0.18356164383561643
+          },
+          {
+            "date": 40050,
+            "discount": 0.9981386346604275,
+            "index": 3,
+            "time": 0.26301369863013696
+          },
+          {
+            "date": 40142,
+            "discount": 0.9936615632893555,
+            "index": 4,
+            "time": 0.5150684931506849
+          },
+          {
+            "date": 40234,
+            "discount": 0.989346782988777,
+            "index": 5,
+            "time": 0.7671232876712328
+          },
+          {
+            "date": 40323,
+            "discount": 0.984505965231278,
+            "index": 6,
+            "time": 1.010958904109589
+          },
+          {
+            "date": 40688,
+            "discount": 0.9765376411530569,
+            "index": 7,
+            "time": 2.010958904109589
+          },
+          {
+            "date": 41054,
+            "discount": 0.9502809364324118,
+            "index": 8,
+            "time": 3.0136986301369864
+          },
+          {
+            "date": 41421,
+            "discount": 0.9182344548650926,
+            "index": 9,
+            "time": 4.019178082191781
+          },
+          {
+            "date": 41785,
+            "discount": 0.8839849994152379,
+            "index": 10,
+            "time": 5.016438356164383
+          },
+          {
+            "date": 42149,
+            "discount": 0.8490968167668681,
+            "index": 11,
+            "time": 6.013698630136986
+          },
+          {
+            "date": 42515,
+            "discount": 0.8139001366802117,
+            "index": 12,
+            "time": 7.016438356164383
+          },
+          {
+            "date": 42880,
+            "discount": 0.7799810919945747,
+            "index": 13,
+            "time": 8.016438356164384
+          },
+          {
+            "date": 43245,
+            "discount": 0.747262016319509,
+            "index": 14,
+            "time": 9.016438356164384
+          },
+          {
+            "date": 43612,
+            "discount": 0.7148960778511506,
+            "index": 15,
+            "time": 10.021917808219179
+          },
+          {
+            "date": 44341,
+            "discount": 0.6531767235089024,
+            "index": 16,
+            "time": 12.01917808219178
+          },
+          {
+            "date": 45439,
+            "discount": 0.5705357433093754,
+            "index": 17,
+            "time": 15.027397260273972
+          },
+          {
+            "date": 47263,
+            "discount": 0.4669439019693363,
+            "index": 18,
+            "time": 20.024657534246575
+          },
+          {
+            "date": 49089,
+            "discount": 0.38482608987141353,
+            "index": 19,
+            "time": 25.027397260273972
+          },
+          {
+            "date": 50915,
+            "discount": 0.31408494808956505,
+            "index": 20,
+            "time": 30.03013698630137
+          }
+        ],
+        "helperDates": [
+          {
+            "earliestDate": 39958,
+            "index": 0,
+            "latestDate": 39989,
+            "latestRelevantDate": 39989,
+            "maturityDate": 39989,
+            "pillarDate": 39989
+          },
+          {
+            "earliestDate": 39958,
+            "index": 1,
+            "latestDate": 40021,
+            "latestRelevantDate": 40021,
+            "maturityDate": 40021,
+            "pillarDate": 40021
+          },
+          {
+            "earliestDate": 39958,
+            "index": 2,
+            "latestDate": 40050,
+            "latestRelevantDate": 40050,
+            "maturityDate": 40050,
+            "pillarDate": 40050
+          },
+          {
+            "earliestDate": 39958,
+            "index": 3,
+            "latestDate": 40142,
+            "latestRelevantDate": 40142,
+            "maturityDate": 40142,
+            "pillarDate": 40142
+          },
+          {
+            "earliestDate": 39958,
+            "index": 4,
+            "latestDate": 40234,
+            "latestRelevantDate": 40234,
+            "maturityDate": 40234,
+            "pillarDate": 40234
+          },
+          {
+            "earliestDate": 39958,
+            "index": 5,
+            "latestDate": 40323,
+            "latestRelevantDate": 40323,
+            "maturityDate": 40323,
+            "pillarDate": 40323
+          },
+          {
+            "earliestDate": 39958,
+            "index": 6,
+            "latestDate": 40688,
+            "latestRelevantDate": 40688,
+            "maturityDate": 40688,
+            "pillarDate": 40688
+          },
+          {
+            "earliestDate": 39958,
+            "index": 7,
+            "latestDate": 41054,
+            "latestRelevantDate": 41054,
+            "maturityDate": 41054,
+            "pillarDate": 41054
+          },
+          {
+            "earliestDate": 39958,
+            "index": 8,
+            "latestDate": 41421,
+            "latestRelevantDate": 41421,
+            "maturityDate": 41421,
+            "pillarDate": 41421
+          },
+          {
+            "earliestDate": 39958,
+            "index": 9,
+            "latestDate": 41785,
+            "latestRelevantDate": 41785,
+            "maturityDate": 41785,
+            "pillarDate": 41785
+          },
+          {
+            "earliestDate": 39958,
+            "index": 10,
+            "latestDate": 42149,
+            "latestRelevantDate": 42149,
+            "maturityDate": 42149,
+            "pillarDate": 42149
+          },
+          {
+            "earliestDate": 39958,
+            "index": 11,
+            "latestDate": 42515,
+            "latestRelevantDate": 42515,
+            "maturityDate": 42515,
+            "pillarDate": 42515
+          },
+          {
+            "earliestDate": 39958,
+            "index": 12,
+            "latestDate": 42880,
+            "latestRelevantDate": 42880,
+            "maturityDate": 42880,
+            "pillarDate": 42880
+          },
+          {
+            "earliestDate": 39958,
+            "index": 13,
+            "latestDate": 43245,
+            "latestRelevantDate": 43245,
+            "maturityDate": 43245,
+            "pillarDate": 43245
+          },
+          {
+            "earliestDate": 39958,
+            "index": 14,
+            "latestDate": 43612,
+            "latestRelevantDate": 43612,
+            "maturityDate": 43612,
+            "pillarDate": 43612
+          },
+          {
+            "earliestDate": 39958,
+            "index": 15,
+            "latestDate": 44341,
+            "latestRelevantDate": 44341,
+            "maturityDate": 44341,
+            "pillarDate": 44341
+          },
+          {
+            "earliestDate": 39958,
+            "index": 16,
+            "latestDate": 45439,
+            "latestRelevantDate": 45439,
+            "maturityDate": 45439,
+            "pillarDate": 45439
+          },
+          {
+            "earliestDate": 39958,
+            "index": 17,
+            "latestDate": 47263,
+            "latestRelevantDate": 47263,
+            "maturityDate": 47263,
+            "pillarDate": 47263
+          },
+          {
+            "earliestDate": 39958,
+            "index": 18,
+            "latestDate": 49089,
+            "latestRelevantDate": 49089,
+            "maturityDate": 49089,
+            "pillarDate": 49089
+          },
+          {
+            "earliestDate": 39958,
+            "index": 19,
+            "latestDate": 50915,
+            "latestRelevantDate": 50915,
+            "maturityDate": 50915,
+            "pillarDate": 50915
+          }
+        ],
+        "sampleDiscounts": [
+          {
+            "date": 40349,
+            "discount": 0.9839362140137133
+          },
+          {
+            "date": 40714,
+            "discount": 0.9746487055399172
+          },
+          {
+            "date": 41080,
+            "discount": 0.9479742533589463
+          },
+          {
+            "date": 42541,
+            "discount": 0.8114359332764154
+          },
+          {
+            "date": 43636,
+            "discount": 0.7127742097817467
+          }
+        ],
+        "upfrontSweep": [
+          {
+            "fairUpfront": -0.00977982935791607,
+            "hazardRate": 0.0012649183169094152,
+            "index": 0,
+            "notionalUpfront": -97798.2935791607,
+            "recovery": 0.2,
+            "spread": 0.001,
+            "termDate": 40349
+          },
+          {
+            "fairUpfront": -0.009777611889143965,
+            "hazardRate": 0.0016865588346679017,
+            "index": 1,
+            "notionalUpfront": -97776.11889143965,
+            "recovery": 0.4,
+            "spread": 0.001,
+            "termDate": 40349
+          },
+          {
+            "fairUpfront": 0.09149715976809106,
+            "hazardRate": 0.12651589995346774,
+            "index": 2,
+            "notionalUpfront": 914971.5976809106,
+            "recovery": 0.2,
+            "spread": 0.1,
+            "termDate": 40349
+          },
+          {
+            "fairUpfront": 0.08949856298400007,
+            "hazardRate": 0.16869869420964884,
+            "index": 3,
+            "notionalUpfront": 894985.6298400006,
+            "recovery": 0.4,
+            "spread": 0.1,
+            "termDate": 40349
+          },
+          {
+            "fairUpfront": -0.018692135939715814,
+            "hazardRate": 0.001265283690881205,
+            "index": 4,
+            "notionalUpfront": -186921.35939715814,
+            "recovery": 0.2,
+            "spread": 0.001,
+            "termDate": 40714
+          },
+          {
+            "fairUpfront": -0.018683981475671445,
+            "hazardRate": 0.0016870459003168632,
+            "index": 5,
+            "notionalUpfront": -186839.81475671445,
+            "recovery": 0.4,
+            "spread": 0.001,
+            "termDate": 40714
+          },
+          {
+            "fairUpfront": 0.16466236702537734,
+            "hazardRate": 0.12655017531952312,
+            "index": 6,
+            "notionalUpfront": 1646623.6702537735,
+            "recovery": 0.2,
+            "spread": 0.1,
+            "termDate": 40714
+          },
+          {
+            "fairUpfront": 0.1579803624043552,
+            "hazardRate": 0.16874335855633585,
+            "index": 7,
+            "notionalUpfront": 1579803.624043552,
+            "recovery": 0.4,
+            "spread": 0.1,
+            "termDate": 40714
+          },
+          {
+            "fairUpfront": -0.027429892025325666,
+            "hazardRate": 0.0012644981988056267,
+            "index": 8,
+            "notionalUpfront": -274298.9202532567,
+            "recovery": 0.2,
+            "spread": 0.001,
+            "termDate": 41080
+          },
+          {
+            "fairUpfront": -0.027412247245843006,
+            "hazardRate": 0.0016859990841917125,
+            "index": 9,
+            "notionalUpfront": -274122.47245843004,
+            "recovery": 0.4,
+            "spread": 0.001,
+            "termDate": 41080
+          },
+          {
+            "fairUpfront": 0.227973092823292,
+            "hazardRate": 0.12648252049058306,
+            "index": 10,
+            "notionalUpfront": 2279730.92823292,
+            "recovery": 0.2,
+            "spread": 0.1,
+            "termDate": 41080
+          },
+          {
+            "fairUpfront": 0.2147972524728687,
+            "hazardRate": 0.16865778926236552,
+            "index": 11,
+            "notionalUpfront": 2147972.524728687,
+            "recovery": 0.4,
+            "spread": 0.1,
+            "termDate": 41080
+          },
+          {
+            "fairUpfront": -0.059242022969142265,
+            "hazardRate": 0.0012626612334256091,
+            "index": 12,
+            "notionalUpfront": -592420.2296914227,
+            "recovery": 0.2,
+            "spread": 0.001,
+            "termDate": 42541
+          },
+          {
+            "fairUpfront": -0.05915712293675161,
+            "hazardRate": 0.0016835514272598047,
+            "index": 13,
+            "notionalUpfront": -591571.2293675161,
+            "recovery": 0.4,
+            "spread": 0.001,
+            "termDate": 42541
+          },
+          {
+            "fairUpfront": 0.39935502046989724,
+            "hazardRate": 0.12633517795275004,
+            "index": 14,
+            "notionalUpfront": 3993550.2046989724,
+            "recovery": 0.2,
+            "spread": 0.1,
+            "termDate": 42541
+          },
+          {
+            "fairUpfront": 0.35458434168483116,
+            "hazardRate": 0.16847719232510916,
+            "index": 15,
+            "notionalUpfront": 3545843.4168483117,
+            "recovery": 0.4,
+            "spread": 0.1,
+            "termDate": 42541
+          },
+          {
+            "fairUpfront": -0.07975011421832609,
+            "hazardRate": 0.001262072870521296,
+            "index": 16,
+            "notionalUpfront": -797501.1421832609,
+            "recovery": 0.2,
+            "spread": 0.001,
+            "termDate": 43636
+          },
+          {
+            "fairUpfront": -0.07959159786476541,
+            "hazardRate": 0.0016827677048894744,
+            "index": 17,
+            "notionalUpfront": -795915.9786476542,
+            "recovery": 0.4,
+            "spread": 0.001,
+            "termDate": 43636
+          },
+          {
+            "fairUpfront": 0.47020346873930546,
+            "hazardRate": 0.12629424849335516,
+            "index": 18,
+            "notionalUpfront": 4702034.687393054,
+            "recovery": 0.2,
+            "spread": 0.1,
+            "termDate": 43636
+          },
+          {
+            "fairUpfront": 0.4042340998881844,
+            "hazardRate": 0.1684304316159614,
+            "index": 19,
+            "notionalUpfront": 4042340.998881844,
+            "recovery": 0.4,
+            "spread": 0.1,
+            "termDate": 43636
+          }
+        ],
+        "usingAtParCoupons": true
+      },
+      "inputs": {
+        "depQuotes": [
+          0.003081,
+          0.005525,
+          0.007163,
+          0.012413,
+          0.014,
+          0.015488
+        ],
+        "depTenors": [
+          1,
+          2,
+          3,
+          6,
+          9,
+          12
+        ],
+        "swapQuotes": [
+          0.011907,
+          0.01699,
+          0.021198,
+          0.02444,
+          0.026937,
+          0.028967,
+          0.030504,
+          0.031719,
+          0.03279,
+          0.034535,
+          0.036217,
+          0.036981,
+          0.037246,
+          0.037605
+        ],
+        "swapTenors": [
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          12,
+          15,
+          20,
+          25,
+          30
+        ],
+        "tradeDate": 39954
+      },
+      "name": "testIsdaEngine_usdCurveAndSweep"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-19T12:12:48Z",
+  "generated_by": "migration-harness/cpp/probes/instruments/cds_isda_engine_probe.cpp",
+  "test_group": "instruments/cds_isda_engine"
+}

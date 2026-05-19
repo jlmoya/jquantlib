@@ -663,20 +663,6 @@ public class CreditDefaultSwapTest {
      * engine deferred to Phase 3c; {@code MakeCreditDefaultSwap} factory
      * is Phase 3b Track B / 3c.
      */
-    @Ignore("Phase 3g: Phase 3g.A.1 (Discount.maxValueAfter alignment to v1.42.1) "
-            + "fixed the EUR negative-rate bootstrap (testIsdaCalculatorReconcile* "
-            + "now pass) but did NOT improve the testIsdaEngine residual — drift "
-            + "is unchanged at ~1.4e-4 fraction (iteration 0: -97812.18 vs Markit "
-            + "-97798.29, abs diff 13.89 / |97798| = 1.42e-4). C++ tolerance is "
-            + "1e-6 (1e-8 fraction); Java is ~140x over budget. Root cause is "
-            + "orthogonal to the negative-rate bootstrap traits and orthogonal "
-            + "to IsdaCdsEngine accrual paths (both EUR fixtures pass via the "
-            + "same engine). Most likely candidates for Phase 3h: (a) "
-            + "PiecewiseYieldCurve LogLinear interpolation precision in the "
-            + "USD swap-quote calibration loop (depTenors 1-12M + swapTenors "
-            + "2-30Y), (b) SwapRateHelper / DepositRateHelper subtle "
-            + "discrepancy in advance/adjust around the May 2009 evaluation "
-            + "date. Carry-forward to Phase 3h.")
     @Test
     public void testIsdaEngine() {
         // C++ creditdefaultswap.cpp:567-722.
