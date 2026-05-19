@@ -20,14 +20,17 @@ import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.exercise.BermudanExercise;
 import org.jquantlib.experimental.finitedifferences.FdSimpleExtOUStorageEngine;
 import org.jquantlib.experimental.finitedifferences.FdmExtOUJumpOp;
+import org.jquantlib.experimental.finitedifferences.FdmKlugeExtOUOp;
 import org.jquantlib.experimental.processes.ExtOUWithJumpsProcess;
 import org.jquantlib.experimental.processes.ExtendedOrnsteinUhlenbeckProcess;
 import org.jquantlib.experimental.processes.GemanRoncoroniProcess;
+import org.jquantlib.experimental.processes.KlugeExtOUProcess;
 import org.jquantlib.instruments.VanillaStorageOption;
 import org.jquantlib.math.Ops;
 import org.jquantlib.math.distributions.InverseCumulativeNormal;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.matrixutilities.Matrix;
+import org.jquantlib.math.matrixutilities.SparseMatrix;
 import org.jquantlib.math.randomnumbers.InverseCumulativeRsg;
 import org.jquantlib.math.randomnumbers.MersenneTwisterUniformRng;
 import org.jquantlib.math.randomnumbers.RandomSequenceGenerator;
@@ -36,6 +39,7 @@ import org.jquantlib.methods.finitedifferences.meshers.ExponentialJump1dMesher;
 import org.jquantlib.methods.finitedifferences.meshers.Fdm1dMesher;
 import org.jquantlib.methods.finitedifferences.meshers.FdmMesher;
 import org.jquantlib.methods.finitedifferences.meshers.FdmMesherComposite;
+import org.jquantlib.methods.finitedifferences.meshers.FdmSimpleProcess1dMesher;
 import org.jquantlib.methods.finitedifferences.meshers.Uniform1dMesher;
 import org.jquantlib.methods.finitedifferences.utilities.FdmBoundaryConditionSet;
 import org.jquantlib.methods.montecarlo.MultiPath;
@@ -336,10 +340,173 @@ public class VppTest {
     @Test
     public void testVPPPricing() { fail("not implemented"); }
 
-    @Ignore("Phase 5j.5 — requires Kluge ExtOU matrix decomposition utility "
-          + "(used by Bermudan VPP MC engine)")
+    /**
+     * Java port of C++ {@code testKlugeExtOUMatrixDecomposition} (vpp.cpp:848-939).
+     *
+     * <p>Builds the {@link KlugeExtOUProcess} on a 3D mesher (50x20x20 grid)
+     * and the corresponding {@link FdmKlugeExtOUOp}, evolves to
+     * {@code (t1,t2) = (0.1, 0.2)}, applies the operator to a Mersenne-
+     * Twister-seeded random vector, and verifies that:</p>
+     * <ul>
+     *   <li>{@code op.toSparseMatrix() * x == op.apply(x)} (full-operator
+     *       sparse matrix reproduces the apply action);</li>
+     *   <li>{@code matrixDecomp.back() * x == op.applyMixed(x)} (the last
+     *       decomp entry is the correlation + Kluge integro mixed
+     *       contribution);</li>
+     *   <li>{@code matrixDecomp[i] * x == op.applyDirection(i, x)} for
+     *       {@code i in {0,1,2}} (per-direction decomp matrices reproduce
+     *       the directional apply action).</li>
+     * </ul>
+     *
+     * <p>Tolerance matches the C++ test: absolute 1e-9 OR relative 1e-9
+     * (TIGHT tier — exact matrix-form / apply-form equivalence).</p>
+     *
+     * <p>Note on storage: the C++ test uses {@code SparseMatrix} (boost
+     * uBLAS compressed). The Java port likewise uses
+     * {@link FdmKlugeExtOUOp#toSparseMatrixDecomp()} +
+     * {@link FdmKlugeExtOUOp#toSparseMatrix()} — the 50x20x20 = 20000-cell
+     * layout would otherwise need 20000x20000 = 3.2 GB dense matrices,
+     * exceeding the surefire heap.</p>
+     *
+     * <p>Source: {@code test-suite/vpp.cpp} v1.42.1 @ {@code 099987f0ca}.
+     * Port: Phase 5e.5b-CFC-d-285 along with {@link FdmKlugeExtOUOp}.
+     */
     @Test
-    public void testKlugeExtOUMatrixDecomposition() { fail("not implemented"); }
+    public void testKlugeExtOUMatrixDecomposition() {
+        final Date today = new Date(18, Month.December, 2011);
+        new Settings().setEvaluationDate(today);
+
+        final KlugeExtOUProcess klugeOUProcess = createKlugeExtOUProcess();
+
+        final int xGrid = 50;
+        final int yGrid = 20;
+        final int uGrid = 20;
+        final double maturity = 1.0;
+
+        final ExtOUWithJumpsProcess klugeProcess = klugeOUProcess.getKlugeProcess();
+        final StochasticProcess1D ouProcess =
+                klugeProcess.getExtendedOrnsteinUhlenbeckProcess();
+
+        final Fdm1dMesher xMesher =
+                new FdmSimpleProcess1dMesher(xGrid, ouProcess, maturity);
+        final Fdm1dMesher yMesher =
+                new ExponentialJump1dMesher(yGrid,
+                        klugeProcess.beta(),
+                        klugeProcess.jumpIntensity(),
+                        klugeProcess.eta());
+        final Fdm1dMesher uMesher =
+                new FdmSimpleProcess1dMesher(uGrid,
+                        klugeOUProcess.getExtOUProcess(),
+                        maturity);
+        final FdmMesher mesher = new FdmMesherComposite(xMesher, yMesher, uMesher);
+
+        final DayCounter dc = new ActualActual(ActualActual.Convention.ISDA);
+        final YieldTermStructure rTS = new FlatForward(today, 0.0, dc);
+
+        final FdmKlugeExtOUOp op = new FdmKlugeExtOUOp(
+                mesher, klugeOUProcess, rTS, new FdmBoundaryConditionSet(), 16);
+        op.setTime(0.1, 0.2);
+
+        final int n = mesher.layout().size();
+        final Array x = new Array(n);
+
+        // C++ uses PseudoRandom::rng_type rng(PseudoRandom::urng_type(12345UL))
+        // i.e. a Mersenne-Twister uniform on [0,1).
+        final MersenneTwisterUniformRng rng = new MersenneTwisterUniformRng(12345L);
+        for (int i = 0; i < n; ++i) {
+            x.set(i, rng.next().value());
+        }
+
+        final double tol = 1.0e-9;
+        final Array applyExpected      = op.apply(x);
+        final Array applyExpectedMixed = op.applyMixed(x);
+
+        final List<SparseMatrix> matrixDecomp = op.toSparseMatrixDecomp();
+        final Array applyCalculated      = op.toSparseMatrix().mul(x);
+        final Array applyCalculatedMixed =
+                matrixDecomp.get(matrixDecomp.size() - 1).mul(x);
+
+        for (int i = 0; i < n; ++i) {
+            final double diffApply = Math.abs(applyExpected.get(i) - applyCalculated.get(i));
+            assertTrue(
+                    "Failed to reproduce apply operation at i=" + i
+                  + " expected="   + applyExpected.get(i)
+                  + " calculated=" + applyCalculated.get(i)
+                  + " diff="       + diffApply,
+                    diffApply <= tol
+                 || diffApply <= Math.abs(applyExpected.get(i)) * tol);
+
+            final double diffMixed =
+                    Math.abs(applyExpectedMixed.get(i) - applyCalculatedMixed.get(i));
+            assertTrue(
+                    "Failed to reproduce mixed apply at i=" + i
+                  + " expected="   + applyExpectedMixed.get(i)
+                  + " calculated=" + applyCalculatedMixed.get(i)
+                  + " diff="       + diffMixed,
+                    diffMixed <= tol
+                 || diffMixed <= Math.abs(applyExpected.get(i)) * tol);
+        }
+
+        for (int dir = 0; dir < 3; ++dir) {
+            final Array applyExpectedDir   = op.applyDirection(dir, x);
+            final Array applyCalculatedDir = matrixDecomp.get(dir).mul(x);
+
+            for (int j = 0; j < n; ++j) {
+                final double diff =
+                        Math.abs(applyExpectedDir.get(j) - applyCalculatedDir.get(j));
+                assertTrue(
+                        "Failed to reproduce apply_direction at dir=" + dir + " j=" + j
+                      + " expected="   + applyExpectedDir.get(j)
+                      + " calculated=" + applyCalculatedDir.get(j)
+                      + " diff="       + diff,
+                        diff <= tol
+                     || diff <= Math.abs(applyExpectedDir.get(j)) * tol);
+            }
+        }
+    }
+
+    /**
+     * Java port of C++ {@code createKlugeExtOUProcess} helper (vpp.cpp:206-236).
+     *
+     * <p>Constructs the canonical Kluge OU + extended OU joint process used
+     * by the VPP test suite: power ≡ {@code exp(X + Y)} where {@code X} is
+     * an OU diffusion (alpha=7.0, vol=1.4) and {@code Y} is exponential
+     * jumps (beta=200, lambda=4.0, eta=5.0); gas ≡ {@code exp(U)} where
+     * {@code U} is OU (kappa=4.45, vol=sqrt(1.3)); correlation {@code rho=0.7}
+     * between {@code dW^X} and {@code dW^U}.</p>
+     */
+    private static KlugeExtOUProcess createKlugeExtOUProcess() {
+        final double beta         = 200.0;
+        final double eta          = 1.0 / 0.2;
+        final double lambda       = 4.0;
+        final double alpha        = 7.0;
+        final double volatility_x = 1.4;
+        final double kappa        = 4.45;
+        final double volatility_u = Math.sqrt(1.3);
+        final double rho          = 0.7;
+
+        final double x0_0 = 0.0;
+        final double x0_1 = 0.0;
+        final double u    = 0.0;
+
+        // constant_b(x) returns the constant function t -> x
+        final Ops.DoubleOp constB_x0 = new Ops.DoubleOp() {
+            @Override public double op(final double t) { return x0_0; }
+        };
+        final Ops.DoubleOp constB_u = new Ops.DoubleOp() {
+            @Override public double op(final double t) { return u; }
+        };
+
+        final ExtendedOrnsteinUhlenbeckProcess ouProcess =
+                new ExtendedOrnsteinUhlenbeckProcess(alpha, volatility_x, x0_0, constB_x0);
+        final ExtOUWithJumpsProcess lnPowerProcess =
+                new ExtOUWithJumpsProcess(ouProcess, x0_1, beta, lambda, eta);
+
+        final ExtendedOrnsteinUhlenbeckProcess lnGasProcess =
+                new ExtendedOrnsteinUhlenbeckProcess(kappa, volatility_u, u, constB_u);
+
+        return new KlugeExtOUProcess(rho, lnPowerProcess, lnGasProcess);
+    }
 
     @Test
     public void testFdmExtOUJumpOpSmoke() {

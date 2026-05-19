@@ -251,6 +251,29 @@ public class FdmExtOUJumpOp implements FdmLinearOpComposite {
         return Collections.unmodifiableList(ret);
     }
 
+    /**
+     * Native sparse decomposition — avoids the {@code O(n^2)} dense
+     * intermediate of {@link #toMatrixDecomp()}.
+     *
+     * <p>Returns {@code [ouMapX, dyMap, integroPart]}, each as a native
+     * sparse matrix.</p>
+     *
+     * <p>Added in Phase 5e.5b-CFC-d-285 so {@link FdmKlugeExtOUOp}
+     * can service the 20000-cell {@code testKlugeExtOUMatrixDecomposition}
+     * test without OOM.
+     */
+    @Override
+    public List<SparseMatrix> toSparseMatrixDecomp() {
+        QL.require(bcSet_ == null || bcSet_.size() == 0,
+                "boundary conditions are not supported");
+
+        final List<SparseMatrix> ret = new ArrayList<SparseMatrix>(3);
+        ret.add(ouOp_.toSparseMatrixDecomp().get(0));
+        ret.add(dyMap_.toSparseMatrix());
+        ret.add(integroPart_);
+        return Collections.unmodifiableList(ret);
+    }
+
     private Array integro(final Array r) {
         return integroPart_.mul(r);
     }

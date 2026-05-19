@@ -24,6 +24,7 @@ package org.jquantlib.methods.finitedifferences.operators;
 import org.jquantlib.QL;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.matrixutilities.Matrix;
+import org.jquantlib.math.matrixutilities.SparseMatrix;
 import org.jquantlib.methods.finitedifferences.meshers.FdmMesher;
 
 /**
@@ -160,6 +161,38 @@ public class NinePointLinearOp implements FdmLinearOp {
             ret.set(i, i22[i], ret.get(i, i22[i]) + a22[i]);
         }
         return ret;
+    }
+
+    /**
+     * Native sparse view of the nine-point cross-derivative operator: at most
+     * 9 entries per row (the {@code 3x3} stencil around each cell). Overrides
+     * {@link FdmLinearOp#toSparseMatrix()} so callers do not materialize a
+     * dense {@code n*n} matrix first — important for large 3-D layouts
+     * (e.g. 50x20x20 = 20000 rows ⇒ dense ~4e8 cells / ~3.2 GB).
+     *
+     * <p>Boundary nodes can have stencil indices collapse onto the same
+     * column; we accumulate via {@link SparseMatrix#addAt} so the nine
+     * writes combine where needed, matching the {@link #toMatrix()} {@code +=}
+     * semantics verbatim.
+     *
+     * @author Phase 5e.5b-CFC-d-285 — sparse path for FdmKlugeExtOUOp
+     */
+    @Override
+    public SparseMatrix toSparseMatrix() {
+        final int n = mesher.layout().size();
+        final SparseMatrix out = new SparseMatrix(n, n);
+        for (int i = 0; i < n; ++i) {
+            out.addAt(i, i00[i], a00[i]);
+            out.addAt(i, i01[i], a01[i]);
+            out.addAt(i, i02[i], a02[i]);
+            out.addAt(i, i10[i], a10[i]);
+            out.addAt(i, i,      a11[i]);
+            out.addAt(i, i12[i], a12[i]);
+            out.addAt(i, i20[i], a20[i]);
+            out.addAt(i, i21[i], a21[i]);
+            out.addAt(i, i22[i], a22[i]);
+        }
+        return out;
     }
 
     /** Multiply on the LHS by the diagonal matrix {@code diag(u)}. */

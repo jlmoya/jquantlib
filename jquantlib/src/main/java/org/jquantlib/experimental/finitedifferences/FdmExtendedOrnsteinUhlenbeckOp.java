@@ -31,6 +31,7 @@ import java.util.List;
 import org.jquantlib.experimental.processes.ExtendedOrnsteinUhlenbeckProcess;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.matrixutilities.Matrix;
+import org.jquantlib.math.matrixutilities.SparseMatrix;
 import org.jquantlib.methods.finitedifferences.meshers.FdmMesher;
 import org.jquantlib.methods.finitedifferences.operators.FdmLinearOpComposite;
 import org.jquantlib.methods.finitedifferences.operators.FdmLinearOpIterator;
@@ -164,6 +165,23 @@ public class FdmExtendedOrnsteinUhlenbeckOp implements FdmLinearOpComposite {
     public List<Matrix> toMatrixDecomp() {
         final List<Matrix> ret = new ArrayList<Matrix>(1);
         ret.add(mapX_.toMatrix());
+        return Collections.unmodifiableList(ret);
+    }
+
+    /**
+     * Native sparse decomposition: avoids materialising the dense
+     * {@code n*n} matrix produced by {@link #toMatrixDecomp()}.
+     * Delegates to {@link TripleBandLinearOp#toSparseMatrix()} which
+     * exposes a native CSR view (3-band).
+     *
+     * <p>Added in Phase 5e.5b-CFC-d-285 so {@link FdmKlugeExtOUOp} can
+     * service the 50x20x20 = 20000-cell {@code testKlugeExtOUMatrixDecomposition}
+     * test without the {@code O(n^2)} dense intermediate.
+     */
+    @Override
+    public List<SparseMatrix> toSparseMatrixDecomp() {
+        final List<SparseMatrix> ret = new ArrayList<SparseMatrix>(1);
+        ret.add(mapX_.toSparseMatrix());
         return Collections.unmodifiableList(ret);
     }
 }
