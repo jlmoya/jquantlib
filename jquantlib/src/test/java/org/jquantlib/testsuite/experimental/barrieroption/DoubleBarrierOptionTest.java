@@ -22,6 +22,7 @@ import static org.junit.Assert.assertTrue;
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.daycounters.Actual360;
+import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.exercise.EuropeanExercise;
 import org.jquantlib.exercise.Exercise;
@@ -30,6 +31,7 @@ import org.jquantlib.experimental.barrieroption.DiscretizedDermanKaniDoubleBarri
 import org.jquantlib.experimental.barrieroption.DiscretizedDoubleBarrierOption;
 import org.jquantlib.experimental.barrieroption.DoubleBarrierOption;
 import org.jquantlib.experimental.barrieroption.DoubleBarrierType;
+import org.jquantlib.experimental.barrieroption.MakeMCDoubleBarrierEngine;
 import org.jquantlib.experimental.barrieroption.SuoWangDoubleBarrierEngine;
 import org.jquantlib.experimental.barrieroption.VannaVolgaDoubleBarrierEngine;
 import org.jquantlib.experimental.fx.DeltaVolQuote;
@@ -493,11 +495,108 @@ public class DoubleBarrierOptionTest {
         // Carry-forward: port PerturbativeBarrierOptionEngine (heavy NR code).
     }
 
+    /**
+     * Mirrors {@code QuantLib::testMonteCarloDoubleBarrierWithAnalytical}
+     * (v1.42.1 {@code test-suite/doublebarrieroption.cpp} line 525).
+     *
+     * <p>Cross-validates {@link MCDoubleBarrierEngine} against
+     * {@link AnalyticDoubleBarrierEngine} (Ikeda/Kunitomo): a one-year
+     * put on spot 36, strike 40, q=0, r=0.06, vol=0.20, with low/high
+     * barriers at 90%/110% of spot. The C++ test:
+     * <ul>
+     *   <li>{@code KnockIn}: MC tolerance 0.5 abs, then percentage-diff vs.
+     *       analytical &le; 1% (loose because the analytical KnockIn value
+     *       is small, so percentage error is sensitive).</li>
+     *   <li>{@code KnockOut}: MC tolerance 0.01 abs, then absolute-diff vs.
+     *       analytical &le; 0.01.</li>
+     * </ul>
+     */
     @Test
-    @Ignore("Phase 4e.5: McDoubleBarrierEngine requires multi-asset MC infrastructure "
-            + "(MultiAssetMCEngine) not yet ported in JQuantLib.")
     public void testMonteCarloValues() {
-        // Carry-forward: port McDoubleBarrierEngine on top of MultiAssetMCEngine.
+        QL.info("Testing MC double-barrier options against analytical values...");
+
+        final DayCounter dc = new Actual365Fixed();
+        final Date today = new Date(15, org.jquantlib.time.Month.May, 1998);
+        new Settings().setEvaluationDate(today);
+
+        final Option.Type type = Option.Type.Put;
+        final double underlying = 36.0;
+        final double strike = 40.0;
+        final double dividendYield = 0.0;
+        final double riskFreeRate = 0.06;
+        final double volatility = 0.20;
+        final Date maturity = new Date(17, org.jquantlib.time.Month.May, 1999);
+
+        final SimpleQuote underlyingQ = new SimpleQuote(underlying);
+
+        final YieldTermStructure flatTermStructure = Utilities.flatRate(today, riskFreeRate, dc);
+        final YieldTermStructure flatDividendTS = Utilities.flatRate(today, dividendYield, dc);
+        final BlackVolTermStructure flatVolTS = Utilities.flatVol(today, volatility, dc);
+
+        final StrikedTypePayoff payoff = new PlainVanillaPayoff(type, strike);
+        final BlackScholesMertonProcess bsmProcess = new BlackScholesMertonProcess(
+                new Handle<Quote>(underlyingQ),
+                new Handle<YieldTermStructure>(flatDividendTS),
+                new Handle<YieldTermStructure>(flatTermStructure),
+                new Handle<BlackVolTermStructure>(flatVolTS));
+
+        final Exercise europeanExercise = new EuropeanExercise(maturity);
+
+        final double barrierLow = underlying * 0.9;
+        final double barrierHigh = underlying * 1.1;
+
+        // ---- KnockIn ----
+        final DoubleBarrierOption knockIn = new DoubleBarrierOption(
+                DoubleBarrierType.KnockIn, barrierLow, barrierHigh, 0.0, payoff, europeanExercise);
+
+        knockIn.setPricingEngine(new AnalyticDoubleBarrierEngine(bsmProcess));
+        final double analyticalKI = knockIn.NPV();
+
+        final org.jquantlib.pricingengines.PricingEngine mcKI =
+                new MakeMCDoubleBarrierEngine(bsmProcess)
+                        .withSteps(5000)
+                        .withAntitheticVariate()
+                        .withAbsoluteTolerance(0.5)
+                        .withSeed(1L)
+                        .value();
+        knockIn.setPricingEngine(mcKI);
+        final double monteCarloKI = knockIn.NPV();
+
+        final double percentageDiff = Math.abs(analyticalKI - monteCarloKI) / analyticalKI;
+        // C++ tolerance is 0.01 (1% percentage diff). Per CLAUDE.md loose tier
+        // 1e-2 is the floor for MC noise.
+        final double pctTol = 0.01;
+        assertTrue(String.format(
+                "MC KnockIn: analytical=%.6f mc=%.6f percentageDiff=%.4g (tol=%.4g)",
+                analyticalKI, monteCarloKI, percentageDiff, pctTol),
+                percentageDiff <= pctTol);
+
+        // ---- KnockOut ----
+        final DoubleBarrierOption knockOut = new DoubleBarrierOption(
+                DoubleBarrierType.KnockOut, barrierLow, barrierHigh, 0.0, payoff, europeanExercise);
+
+        knockOut.setPricingEngine(new AnalyticDoubleBarrierEngine(bsmProcess));
+        final double analyticalKO = knockOut.NPV();
+
+        // Java MT + scrambled seed differs from C++ Boost MT; tighten the MC
+        // convergence target so the absolute-diff check still passes at 1e-2.
+        final double mcAbsTol = 0.005;
+        final double absTol = 0.01;
+        final org.jquantlib.pricingengines.PricingEngine mcKO =
+                new MakeMCDoubleBarrierEngine(bsmProcess)
+                        .withSteps(5000)
+                        .withAntitheticVariate()
+                        .withAbsoluteTolerance(mcAbsTol)
+                        .withSeed(10L)
+                        .value();
+        knockOut.setPricingEngine(mcKO);
+        final double monteCarloKO = knockOut.NPV();
+
+        final double diff = Math.abs(analyticalKO - monteCarloKO);
+        assertTrue(String.format(
+                "MC KnockOut: analytical=%.6f mc=%.6f diff=%.4g (tol=%.4g)",
+                analyticalKO, monteCarloKO, diff, absTol),
+                diff <= absTol);
     }
 
 
