@@ -620,17 +620,31 @@ public class IntegralsAdditionalTest {
     }
 
     /**
-     * BLOCKED port of {@code test-suite/integrals.cpp:194}
+     * Faithful port of {@code test-suite/integrals.cpp:194}
      * {@code BOOST_AUTO_TEST_CASE(testExpSinh)}.
      *
-     * <p>Requires {@code org.jquantlib.math.integrals.ExpSinhIntegral} —
-     * not yet ported. C++ source: {@code ql/math/integrals/expsinhintegral.hpp}
-     * (wraps {@code boost::math::quadrature::exp_sinh}).
+     * <p>{@link org.jquantlib.math.integrals.ExpSinhIntegral} was ported in
+     * Phase 1 closure A4-B-v4 as a direct Takahasi-Mori 1974 double-
+     * exponential quadrature implementation (since C++ wraps Boost.Math
+     * which has no Java equivalent).
      */
-    @Ignore("BLOCKED: ExpSinhIntegral not ported - see integrals.cpp:194")
     @Test
     public void testExpSinh() {
-        fail("ExpSinhIntegral missing in Java port");
+        final org.jquantlib.math.integrals.ExpSinhIntegral integrator =
+                new org.jquantlib.math.integrals.ExpSinhIntegral();
+
+        // testSingle: f(x) = Gaussian(x) over [0, MAX] should give 0.5.
+        runIntegratorSingle(integrator, "f(x) = Gaussian(x)",
+                new NormalDistribution(), 0.0, Double.POSITIVE_INFINITY, 0.5);
+
+        // testSingle: f(x) = x*e^(-x) over [0, MAX] should give 1.0.
+        runIntegratorSingle(integrator, "f(x) = x*e^(-x)",
+                new Ops.DoubleOp() {
+                    @Override
+                    public double op(final double x) {
+                        return x * Math.exp(-x);
+                    }
+                }, 0.0, Double.POSITIVE_INFINITY, 1.0);
     }
 
     /**
@@ -650,18 +664,65 @@ public class IntegralsAdditionalTest {
     }
 
     /**
-     * BLOCKED port of {@code test-suite/integrals.cpp:268}
+     * Faithful port of {@code test-suite/integrals.cpp:268}
      * {@code BOOST_AUTO_TEST_CASE(testFolinIntegration)}.
      *
-     * <p>Requires {@code org.jquantlib.math.integrals.FilonIntegral} —
-     * not yet ported. C++ source: {@code ql/math/integrals/filonintegral.hpp}.
-     * (Boost terminology: "Filon" rule for oscillatory cosine/sine integrals.
-     * Both C++ and Java sometimes spell it "Folin"; the class itself is
-     * {@code FilonIntegral}.)
+     * <p>{@link org.jquantlib.math.integrals.FilonIntegral} was ported in
+     * Phase 1 closure A4-B-v4. Both C++ and Java carry the "Folin"
+     * misspelling for the test name; the class itself is correctly named
+     * {@code FilonIntegral}.
+     *
+     * <p>Examples from
+     * http://www.tat.physik.uni-tuebingen.de/~kokkotas/Teaching/Num_Methods_files/Comp_Phys5.pdf
      */
-    @Ignore("BLOCKED: FilonIntegral not ported - see integrals.cpp:268")
     @Test
     public void testFolinIntegration() {
-        fail("FilonIntegral missing in Java port");
+        final int[] nr = { 4, 8, 16, 128, 256, 1024, 2048 };
+        final double[] expected = {
+                4.55229440e-5, 4.72338540e-5, 4.72338540e-5,
+                4.78308678e-5, 4.78404787e-5, 4.78381120e-5,
+                4.78381084e-5
+        };
+
+        final double t = 100.0;
+        final double o = (Constants.M_PI / 2.0) / t;
+
+        final double tol = 1e-12;
+
+        // cosineF: f(x) = exp(-0.5*x).
+        final Ops.DoubleOp cosineF = new Ops.DoubleOp() {
+            @Override
+            public double op(final double x) {
+                return Math.exp(-0.5 * x);
+            }
+        };
+        // sineF: f(x) = exp(-0.5*(x - M_PI_2/100)).
+        final Ops.DoubleOp sineF = new Ops.DoubleOp() {
+            @Override
+            public double op(final double x) {
+                return Math.exp(-0.5 * (x - (Constants.M_PI / 2.0) / 100.0));
+            }
+        };
+
+        for (int i = 0; i < nr.length; ++i) {
+            final int n = nr[i];
+            final double calculatedCosine = new org.jquantlib.math.integrals.FilonIntegral(
+                    org.jquantlib.math.integrals.FilonIntegral.Type.Cosine, t, n)
+                    .op(cosineF, 0.0, 2.0 * Constants.M_PI);
+            final double calculatedSine = new org.jquantlib.math.integrals.FilonIntegral(
+                    org.jquantlib.math.integrals.FilonIntegral.Type.Sine, t, n)
+                    .op(sineF, o, 2.0 * Constants.M_PI + o);
+
+            if (Math.abs(calculatedCosine - expected[i]) > tol) {
+                fail("Filon Cosine integration failed [n=" + n + "]:"
+                        + "\n    calculated: " + calculatedCosine
+                        + "\n    expected:   " + expected[i]);
+            }
+            if (Math.abs(calculatedSine - expected[i]) > tol) {
+                fail("Filon Sine integration failed [n=" + n + "]:"
+                        + "\n    calculated: " + calculatedSine
+                        + "\n    expected:   " + expected[i]);
+            }
+        }
     }
 }
