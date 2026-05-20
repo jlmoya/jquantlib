@@ -114,6 +114,31 @@ public class MarketModelUtilitiesTest {
         assertArrayEquals(expected, r);
     }
 
+    /**
+     * Mirrors C++ {@code test-suite/marketmodel.cpp::testIsInSubset} (line 4534).
+     *
+     * <p>C++ smoke/performance test: dim=100, set=[0,100), subset=[100,200). The C++
+     * version asserts nothing explicitly (printReport_ is false in the test suite), but
+     * by construction every set element is strictly less than every subset element, so
+     * the deterministic semantics require all-false output. Java port adds that
+     * assertion to keep the test meaningful in CI.
+     */
+    @Test
+    public void testIsInSubset() {
+        final int dim = 100;
+        final double[] set = new double[dim];
+        final double[] subset = new double[dim];
+        for (int i = 0; i < dim; ++i) {
+            set[i] = i * 1.0;
+            subset[i] = dim + i * 1.0;
+        }
+        final boolean[] result = Utilities.isInSubset(set, subset);
+        assertEquals(dim, result.length);
+        for (int i = 0; i < dim; ++i) {
+            assertTrue("set[" + i + "]=" + set[i] + " unexpectedly reported in subset", !result[i]);
+        }
+    }
+
     @Test
     public void testCheckIncreasingTimesValid() {
         Utilities.checkIncreasingTimes(new double[]{0.5, 1.0, 1.5, 2.0});
