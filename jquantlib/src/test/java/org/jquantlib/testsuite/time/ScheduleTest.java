@@ -792,6 +792,266 @@ public class ScheduleTest {
         runCDSConventions(inputs, DateGeneration.Rule.CDS);
     }
 
+    /** Faithful port of {@code test-suite/schedule.cpp:663} {@code BOOST_AUTO_TEST_CASE(testOldCDSConventionGrid)}.
+     *  ISDA-spec grid for the OldCDS (pre-2009) convention. */
+    @Test
+    public void testOldCDSConventionGrid() {
+        final Period p3M = new Period(3, TimeUnit.Months);
+        final Period p6M = new Period(6, TimeUnit.Months);
+        final Period p9M = new Period(9, TimeUnit.Months);
+        final Period p1Y = new Period(1, TimeUnit.Years);
+        final Period p5Y = new Period(5, TimeUnit.Years);
+        final List<CdsInput> inputs = new ArrayList<CdsInput>();
+        // 3M
+        inputs.add(new CdsInput(new Date(19, Month.March, 2016), p3M, new Date(19, Month.March, 2016), new Date(20, Month.June, 2016)));
+        inputs.add(new CdsInput(new Date(20, Month.March, 2016), p3M, new Date(20, Month.March, 2016), new Date(20, Month.September, 2016)));
+        inputs.add(new CdsInput(new Date(21, Month.March, 2016), p3M, new Date(21, Month.March, 2016), new Date(20, Month.September, 2016)));
+        inputs.add(new CdsInput(new Date(19, Month.June, 2016), p3M, new Date(19, Month.June, 2016), new Date(20, Month.September, 2016)));
+        inputs.add(new CdsInput(new Date(20, Month.June, 2016), p3M, new Date(20, Month.June, 2016), new Date(20, Month.December, 2016)));
+        inputs.add(new CdsInput(new Date(21, Month.June, 2016), p3M, new Date(21, Month.June, 2016), new Date(20, Month.December, 2016)));
+        inputs.add(new CdsInput(new Date(19, Month.September, 2016), p3M, new Date(19, Month.September, 2016), new Date(20, Month.December, 2016)));
+        inputs.add(new CdsInput(new Date(20, Month.September, 2016), p3M, new Date(20, Month.September, 2016), new Date(20, Month.March, 2017)));
+        inputs.add(new CdsInput(new Date(21, Month.September, 2016), p3M, new Date(21, Month.September, 2016), new Date(20, Month.March, 2017)));
+        inputs.add(new CdsInput(new Date(19, Month.December, 2016), p3M, new Date(19, Month.December, 2016), new Date(20, Month.March, 2017)));
+        inputs.add(new CdsInput(new Date(20, Month.December, 2016), p3M, new Date(20, Month.December, 2016), new Date(20, Month.June, 2017)));
+        inputs.add(new CdsInput(new Date(21, Month.December, 2016), p3M, new Date(21, Month.December, 2016), new Date(20, Month.June, 2017)));
+        // 6M
+        inputs.add(new CdsInput(new Date(19, Month.March, 2016), p6M, new Date(19, Month.March, 2016), new Date(20, Month.September, 2016)));
+        inputs.add(new CdsInput(new Date(20, Month.March, 2016), p6M, new Date(20, Month.March, 2016), new Date(20, Month.December, 2016)));
+        inputs.add(new CdsInput(new Date(21, Month.March, 2016), p6M, new Date(21, Month.March, 2016), new Date(20, Month.December, 2016)));
+        inputs.add(new CdsInput(new Date(19, Month.June, 2016), p6M, new Date(19, Month.June, 2016), new Date(20, Month.December, 2016)));
+        inputs.add(new CdsInput(new Date(20, Month.June, 2016), p6M, new Date(20, Month.June, 2016), new Date(20, Month.March, 2017)));
+        inputs.add(new CdsInput(new Date(21, Month.June, 2016), p6M, new Date(21, Month.June, 2016), new Date(20, Month.March, 2017)));
+        inputs.add(new CdsInput(new Date(19, Month.September, 2016), p6M, new Date(19, Month.September, 2016), new Date(20, Month.March, 2017)));
+        inputs.add(new CdsInput(new Date(20, Month.September, 2016), p6M, new Date(20, Month.September, 2016), new Date(20, Month.June, 2017)));
+        inputs.add(new CdsInput(new Date(21, Month.September, 2016), p6M, new Date(21, Month.September, 2016), new Date(20, Month.June, 2017)));
+        inputs.add(new CdsInput(new Date(19, Month.December, 2016), p6M, new Date(19, Month.December, 2016), new Date(20, Month.June, 2017)));
+        inputs.add(new CdsInput(new Date(20, Month.December, 2016), p6M, new Date(20, Month.December, 2016), new Date(20, Month.September, 2017)));
+        inputs.add(new CdsInput(new Date(21, Month.December, 2016), p6M, new Date(21, Month.December, 2016), new Date(20, Month.September, 2017)));
+        // 9M
+        inputs.add(new CdsInput(new Date(19, Month.March, 2016), p9M, new Date(19, Month.March, 2016), new Date(20, Month.December, 2016)));
+        inputs.add(new CdsInput(new Date(20, Month.March, 2016), p9M, new Date(20, Month.March, 2016), new Date(20, Month.March, 2017)));
+        inputs.add(new CdsInput(new Date(21, Month.March, 2016), p9M, new Date(21, Month.March, 2016), new Date(20, Month.March, 2017)));
+        inputs.add(new CdsInput(new Date(19, Month.June, 2016), p9M, new Date(19, Month.June, 2016), new Date(20, Month.March, 2017)));
+        inputs.add(new CdsInput(new Date(20, Month.June, 2016), p9M, new Date(20, Month.June, 2016), new Date(20, Month.June, 2017)));
+        inputs.add(new CdsInput(new Date(21, Month.June, 2016), p9M, new Date(21, Month.June, 2016), new Date(20, Month.June, 2017)));
+        inputs.add(new CdsInput(new Date(19, Month.September, 2016), p9M, new Date(19, Month.September, 2016), new Date(20, Month.June, 2017)));
+        inputs.add(new CdsInput(new Date(20, Month.September, 2016), p9M, new Date(20, Month.September, 2016), new Date(20, Month.September, 2017)));
+        inputs.add(new CdsInput(new Date(21, Month.September, 2016), p9M, new Date(21, Month.September, 2016), new Date(20, Month.September, 2017)));
+        inputs.add(new CdsInput(new Date(19, Month.December, 2016), p9M, new Date(19, Month.December, 2016), new Date(20, Month.September, 2017)));
+        inputs.add(new CdsInput(new Date(20, Month.December, 2016), p9M, new Date(20, Month.December, 2016), new Date(20, Month.December, 2017)));
+        inputs.add(new CdsInput(new Date(21, Month.December, 2016), p9M, new Date(21, Month.December, 2016), new Date(20, Month.December, 2017)));
+        // 1Y
+        inputs.add(new CdsInput(new Date(19, Month.March, 2016), p1Y, new Date(19, Month.March, 2016), new Date(20, Month.March, 2017)));
+        inputs.add(new CdsInput(new Date(20, Month.March, 2016), p1Y, new Date(20, Month.March, 2016), new Date(20, Month.June, 2017)));
+        inputs.add(new CdsInput(new Date(21, Month.March, 2016), p1Y, new Date(21, Month.March, 2016), new Date(20, Month.June, 2017)));
+        inputs.add(new CdsInput(new Date(19, Month.June, 2016), p1Y, new Date(19, Month.June, 2016), new Date(20, Month.June, 2017)));
+        inputs.add(new CdsInput(new Date(20, Month.June, 2016), p1Y, new Date(20, Month.June, 2016), new Date(20, Month.September, 2017)));
+        inputs.add(new CdsInput(new Date(21, Month.June, 2016), p1Y, new Date(21, Month.June, 2016), new Date(20, Month.September, 2017)));
+        inputs.add(new CdsInput(new Date(19, Month.September, 2016), p1Y, new Date(19, Month.September, 2016), new Date(20, Month.September, 2017)));
+        inputs.add(new CdsInput(new Date(20, Month.September, 2016), p1Y, new Date(20, Month.September, 2016), new Date(20, Month.December, 2017)));
+        inputs.add(new CdsInput(new Date(21, Month.September, 2016), p1Y, new Date(21, Month.September, 2016), new Date(20, Month.December, 2017)));
+        inputs.add(new CdsInput(new Date(19, Month.December, 2016), p1Y, new Date(19, Month.December, 2016), new Date(20, Month.December, 2017)));
+        inputs.add(new CdsInput(new Date(20, Month.December, 2016), p1Y, new Date(20, Month.December, 2016), new Date(20, Month.March, 2018)));
+        inputs.add(new CdsInput(new Date(21, Month.December, 2016), p1Y, new Date(21, Month.December, 2016), new Date(20, Month.March, 2018)));
+        // 5Y
+        inputs.add(new CdsInput(new Date(19, Month.March, 2016), p5Y, new Date(19, Month.March, 2016), new Date(20, Month.March, 2021)));
+        inputs.add(new CdsInput(new Date(20, Month.March, 2016), p5Y, new Date(20, Month.March, 2016), new Date(20, Month.June, 2021)));
+        inputs.add(new CdsInput(new Date(21, Month.March, 2016), p5Y, new Date(21, Month.March, 2016), new Date(20, Month.June, 2021)));
+        inputs.add(new CdsInput(new Date(19, Month.June, 2016), p5Y, new Date(19, Month.June, 2016), new Date(20, Month.June, 2021)));
+        inputs.add(new CdsInput(new Date(20, Month.June, 2016), p5Y, new Date(20, Month.June, 2016), new Date(20, Month.September, 2021)));
+        inputs.add(new CdsInput(new Date(21, Month.June, 2016), p5Y, new Date(21, Month.June, 2016), new Date(20, Month.September, 2021)));
+        inputs.add(new CdsInput(new Date(19, Month.September, 2016), p5Y, new Date(19, Month.September, 2016), new Date(20, Month.September, 2021)));
+        inputs.add(new CdsInput(new Date(20, Month.September, 2016), p5Y, new Date(20, Month.September, 2016), new Date(20, Month.December, 2021)));
+        inputs.add(new CdsInput(new Date(21, Month.September, 2016), p5Y, new Date(21, Month.September, 2016), new Date(20, Month.December, 2021)));
+        inputs.add(new CdsInput(new Date(19, Month.December, 2016), p5Y, new Date(19, Month.December, 2016), new Date(20, Month.December, 2021)));
+        inputs.add(new CdsInput(new Date(20, Month.December, 2016), p5Y, new Date(20, Month.December, 2016), new Date(20, Month.March, 2022)));
+        inputs.add(new CdsInput(new Date(21, Month.December, 2016), p5Y, new Date(21, Month.December, 2016), new Date(20, Month.March, 2022)));
+        runCDSConventions(inputs, DateGeneration.Rule.OldCDS);
+    }
+
+    /** Faithful port of {@code test-suite/schedule.cpp:742}
+     *  {@code BOOST_AUTO_TEST_CASE(testCDS2015ConventionSampleDates)}.
+     *  All dates in two sample CDS2015 schedules — across trade dates straddling the 20-Sep-2015 roll. */
+    @Test
+    public void testCDS2015ConventionSampleDates() {
+        final DateGeneration.Rule rule = DateGeneration.Rule.CDS2015;
+        final Period tenor = new Period(1, TimeUnit.Years);
+
+        // trade date = Fri 18 Sep 2015.
+        Date tradeDate = new Date(18, Month.September, 2015);
+        Date maturity = CreditDefaultSwap.cdsMaturity(tradeDate, tenor, rule);
+        Schedule s = makeCdsSchedule(tradeDate, maturity, rule);
+        List<Date> expDates = new ArrayList<Date>(Arrays.asList(
+                new Date(22, Month.June, 2015), new Date(21, Month.September, 2015),
+                new Date(21, Month.December, 2015), new Date(21, Month.March, 2016),
+                new Date(20, Month.June, 2016)));
+        checkDates(s, expDates);
+
+        // trade date = Sat 19 Sep 2015, no change.
+        tradeDate = new Date(19, Month.September, 2015);
+        maturity = CreditDefaultSwap.cdsMaturity(tradeDate, tenor, rule);
+        s = makeCdsSchedule(tradeDate, maturity, rule);
+        checkDates(s, expDates);
+
+        // trade date = Sun 20 Sep 2015. Roll to new maturity. Trade date still before next coupon payment
+        // date of Mon 21 Sep 2015, so keep the first period from 22 Jun 2015 to 21 Sep 2015 in schedule.
+        tradeDate = new Date(20, Month.September, 2015);
+        maturity = CreditDefaultSwap.cdsMaturity(tradeDate, tenor, rule);
+        s = makeCdsSchedule(tradeDate, maturity, rule);
+        expDates.add(new Date(20, Month.September, 2016));
+        expDates.add(new Date(20, Month.December, 2016));
+        checkDates(s, expDates);
+
+        // trade date = Mon 21 Sep 2015, first period drops out of schedule.
+        tradeDate = new Date(21, Month.September, 2015);
+        maturity = CreditDefaultSwap.cdsMaturity(tradeDate, tenor, rule);
+        s = makeCdsSchedule(tradeDate, maturity, rule);
+        expDates.remove(0);
+        checkDates(s, expDates);
+
+        // Another sample trade date, Sat 20 Jun 2009.
+        tradeDate = new Date(20, Month.June, 2009);
+        maturity = new Date(20, Month.December, 2009);
+        s = makeCdsSchedule(tradeDate, maturity, rule);
+        expDates = new ArrayList<Date>(Arrays.asList(
+                new Date(20, Month.March, 2009), new Date(22, Month.June, 2009),
+                new Date(21, Month.September, 2009), new Date(20, Month.December, 2009)));
+        checkDates(s, expDates);
+
+        // Move forward to Sun 21 Jun 2009
+        tradeDate = new Date(21, Month.June, 2009);
+        s = makeCdsSchedule(tradeDate, maturity, rule);
+        checkDates(s, expDates);
+
+        // Move forward to Mon 22 Jun 2009
+        tradeDate = new Date(22, Month.June, 2009);
+        s = makeCdsSchedule(tradeDate, maturity, rule);
+        expDates.remove(0);
+        checkDates(s, expDates);
+    }
+
+    /** Faithful port of {@code test-suite/schedule.cpp:805}
+     *  {@code BOOST_AUTO_TEST_CASE(testCDSConventionSampleDates)}.
+     *  All dates in two sample CDS schedules — across trade dates straddling the 20-Sep-2015 roll. */
+    @Test
+    public void testCDSConventionSampleDates() {
+        final DateGeneration.Rule rule = DateGeneration.Rule.CDS;
+        final Period tenor = new Period(1, TimeUnit.Years);
+
+        // trade date = Fri 18 Sep 2015.
+        Date tradeDate = new Date(18, Month.September, 2015);
+        Date maturity = CreditDefaultSwap.cdsMaturity(tradeDate, tenor, rule);
+        Schedule s = makeCdsSchedule(tradeDate, maturity, rule);
+        List<Date> expDates = new ArrayList<Date>(Arrays.asList(
+                new Date(22, Month.June, 2015), new Date(21, Month.September, 2015),
+                new Date(21, Month.December, 2015), new Date(21, Month.March, 2016),
+                new Date(20, Month.June, 2016), new Date(20, Month.September, 2016)));
+        checkDates(s, expDates);
+
+        // trade date = Sat 19 Sep 2015, no change.
+        tradeDate = new Date(19, Month.September, 2015);
+        maturity = CreditDefaultSwap.cdsMaturity(tradeDate, tenor, rule);
+        s = makeCdsSchedule(tradeDate, maturity, rule);
+        checkDates(s, expDates);
+
+        // trade date = Sun 20 Sep 2015. Roll to new maturity. Trade date still before next coupon payment
+        // date of Mon 21 Sep 2015, so keep the first period from 22 Jun 2015 to 21 Sep 2015 in schedule.
+        tradeDate = new Date(20, Month.September, 2015);
+        maturity = CreditDefaultSwap.cdsMaturity(tradeDate, tenor, rule);
+        s = makeCdsSchedule(tradeDate, maturity, rule);
+        expDates.add(new Date(20, Month.December, 2016));
+        checkDates(s, expDates);
+
+        // trade date = Mon 21 Sep 2015, first period drops out of schedule.
+        tradeDate = new Date(21, Month.September, 2015);
+        maturity = CreditDefaultSwap.cdsMaturity(tradeDate, tenor, rule);
+        s = makeCdsSchedule(tradeDate, maturity, rule);
+        expDates.remove(0);
+        checkDates(s, expDates);
+
+        // Another sample trade date, Sat 20 Jun 2009.
+        tradeDate = new Date(20, Month.June, 2009);
+        maturity = new Date(20, Month.December, 2009);
+        s = makeCdsSchedule(tradeDate, maturity, rule);
+        expDates = new ArrayList<Date>(Arrays.asList(
+                new Date(20, Month.March, 2009), new Date(22, Month.June, 2009),
+                new Date(21, Month.September, 2009), new Date(20, Month.December, 2009)));
+        checkDates(s, expDates);
+
+        // Move forward to Sun 21 Jun 2009
+        tradeDate = new Date(21, Month.June, 2009);
+        s = makeCdsSchedule(tradeDate, maturity, rule);
+        checkDates(s, expDates);
+
+        // Move forward to Mon 22 Jun 2009
+        tradeDate = new Date(22, Month.June, 2009);
+        s = makeCdsSchedule(tradeDate, maturity, rule);
+        expDates.remove(0);
+        checkDates(s, expDates);
+    }
+
+    /** Faithful port of {@code test-suite/schedule.cpp:865}
+     *  {@code BOOST_AUTO_TEST_CASE(testOldCDSConventionSampleDates)}.
+     *  All dates in sample OldCDS schedules — including the 30-day stub rule near a coupon payment date. */
+    @Test
+    public void testOldCDSConventionSampleDates() {
+        final DateGeneration.Rule rule = DateGeneration.Rule.OldCDS;
+        final Period tenor = new Period(1, TimeUnit.Years);
+
+        // trade date plus 1D = Fri 18 Sep 2015.
+        Date tradeDatePlusOne = new Date(18, Month.September, 2015);
+        Date maturity = CreditDefaultSwap.cdsMaturity(tradeDatePlusOne, tenor, rule);
+        Schedule s = makeCdsSchedule(tradeDatePlusOne, maturity, rule);
+        List<Date> expDates = new ArrayList<Date>(Arrays.asList(
+                new Date(18, Month.September, 2015), new Date(21, Month.December, 2015),
+                new Date(21, Month.March, 2016), new Date(20, Month.June, 2016),
+                new Date(20, Month.September, 2016)));
+        checkDates(s, expDates);
+
+        // trade date plus 1D = Sat 19 Sep 2015, no change.
+        // OldCDS, schedule start date is not adjusted (kept this).
+        tradeDatePlusOne = new Date(19, Month.September, 2015);
+        expDates.set(0, tradeDatePlusOne);
+        maturity = CreditDefaultSwap.cdsMaturity(tradeDatePlusOne, tenor, rule);
+        s = makeCdsSchedule(tradeDatePlusOne, maturity, rule);
+        checkDates(s, expDates);
+
+        // trade date plus 1D = Sun 20 Sep 2015, roll.
+        tradeDatePlusOne = new Date(20, Month.September, 2015);
+        expDates.set(0, tradeDatePlusOne);
+        maturity = CreditDefaultSwap.cdsMaturity(tradeDatePlusOne, tenor, rule);
+        s = makeCdsSchedule(tradeDatePlusOne, maturity, rule);
+        expDates.add(new Date(20, Month.December, 2016));
+        checkDates(s, expDates);
+
+        // trade date plus 1D = Mon 21 Sep 2015, no change.
+        tradeDatePlusOne = new Date(21, Month.September, 2015);
+        expDates.set(0, tradeDatePlusOne);
+        maturity = CreditDefaultSwap.cdsMaturity(tradeDatePlusOne, tenor, rule);
+        s = makeCdsSchedule(tradeDatePlusOne, maturity, rule);
+        checkDates(s, expDates);
+
+        // 30 day stub rule: 19 Nov 2015 + 30D = 19 Dec 2015 <= 20 Dec 2015 => short front stub.
+        tradeDatePlusOne = new Date(19, Month.November, 2015);
+        expDates.set(0, tradeDatePlusOne);
+        s = makeCdsSchedule(tradeDatePlusOne, maturity, rule);
+        checkDates(s, expDates);
+
+        // 20 Nov 2015 + 30D = 20 Dec 2015 <= 20 Dec 2015 => short front stub.
+        tradeDatePlusOne = new Date(20, Month.November, 2015);
+        expDates.set(0, tradeDatePlusOne);
+        s = makeCdsSchedule(tradeDatePlusOne, maturity, rule);
+        checkDates(s, expDates);
+
+        // 21 Nov 2015 + 30D = 21 Dec 2015 > 20 Dec 2015 => long front stub.
+        tradeDatePlusOne = new Date(21, Month.November, 2015);
+        expDates.set(0, tradeDatePlusOne);
+        s = makeCdsSchedule(tradeDatePlusOne, maturity, rule);
+        expDates.remove(1);
+        checkDates(s, expDates);
+    }
+
     /** Faithful port of {@code test-suite/schedule.cpp:366}
      *  {@code BOOST_AUTO_TEST_CASE(testEffectiveDateWithEomAdjustment)}.
      *  Forward EOM schedule must not move the effective date to end-of-month when effective and first dates are in
