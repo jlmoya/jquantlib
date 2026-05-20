@@ -93,5 +93,43 @@ public class CurrencyTest {
     }
 
 
+    /**
+     * Faithful port of test-suite/currency.cpp:30 testBespokeConstructor.
+     * <p>
+     * The C++ test exercises the public {@code Currency(string name, string
+     * code, Integer numericCode, string symbol, string fractionSymbol, Integer
+     * fractionsPerUnit, const Rounding&)} constructor introduced in v1.42.1
+     * for ad-hoc/proprietary currencies (the so-called "bespoke" constructor).
+     * <p>
+     * The Java port keeps the existing pattern of building a currency by
+     * extending {@link Currency} and assigning to the protected
+     * {@code data} field with a {@link Currency.Data} instance, mirroring how
+     * every concrete currency under {@code org.jquantlib.currencies.*} is
+     * defined (see {@code Europe.EURCurrency}, etc.).  We exercise that path
+     * with an anonymous subclass.  Behavior under test is identical: the
+     * resulting Currency must report the supplied name, code and symbol and
+     * must not be empty.
+     */
+    @Test
+    public void testBespokeConstructor() {
+        QL.info("Testing bespoke currency constructor...");
+
+        final String name = "Some Currency";
+        final String code = "CCY";
+        final String symbol = "#";
+
+        final Currency customCcy = new Currency() {
+            {
+                data = new Currency.Data(
+                        name, code, 100, symbol, "", 100, new Rounding(),
+                        "%2% %1$.2f");
+            }
+        };
+
+        assertFalse("Failed to create bespoke currency.", customCcy.empty());
+        assertEquals("incorrect currency name",   name,   customCcy.name());
+        assertEquals("incorrect currency code",   code,   customCcy.code());
+        assertEquals("incorrect currency symbol", symbol, customCcy.symbol());
+    }
 
 }
