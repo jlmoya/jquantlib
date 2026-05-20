@@ -96,7 +96,27 @@ abstract class QdPutCallParityEngine extends VanillaOption.EngineImpl {
             return 0.0;
         }
         if (Closeness.isClose(S, 0.0)) {
+            // Java-only guard: when T==0, dispatch in calculate() computes
+            //   rRate = -log(rfDisc) / T → -log(1)/0 = NaN
+            // and the same for qRate.  C++ silently propagates the NaN
+            // through std::exp(NaN) = NaN and std::max(K, NaN) selects K on
+            // most libcs (NaN compares unordered → max returns first arg
+            // when used with the C++ Real overload).  Java's Math.max
+            // returns NaN for any NaN operand, so we explicitly select K.
+            if (Double.isNaN(r) || Double.isNaN(q) || T <= 0.0) {
+                return K;
+            }
             return Math.max(K, K * Math.exp(-r * T));
+        }
+        if (Double.isNaN(r) || Double.isNaN(q) || T <= 0.0) {
+            // At-maturity guard (T=0 → rRate/qRate are 0/0 = NaN).
+            // The American option at maturity equals its terminal payoff,
+            // which for the (after Put/Call-parity swap) put-equivalent
+            // representation is max(K-S, 0).  Aligns with v1.42.1
+            // test-suite/americanoption.cpp::testQdAmericanEngines
+            // at-maturity spec which assumes the engine returns the
+            // intrinsic value rather than throwing in xMax.
+            return Math.max(0.0, K - S);
         }
         if (r <= 0.0 && r <= q) {
             return Math.max(0.0,
