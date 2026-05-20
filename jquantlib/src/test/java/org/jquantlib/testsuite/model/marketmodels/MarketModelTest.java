@@ -35,7 +35,13 @@ import org.jquantlib.model.marketmodels.EvolutionDescription;
 import org.jquantlib.model.marketmodels.ForwardForwardMappings;
 import org.jquantlib.model.marketmodels.MarketModel;
 import org.jquantlib.model.marketmodels.MarketModelEvolver;
+import org.jquantlib.model.marketmodels.MarketModelPathwiseMultiProduct;
+import org.jquantlib.model.marketmodels.PathwiseAccountingEngine;
 import org.jquantlib.model.marketmodels.SwapForwardMappings;
+import org.jquantlib.model.marketmodels.evolvers.LogNormalFwdRateEuler;
+import org.jquantlib.model.marketmodels.evolvers.MarketModelVolProcess;
+import org.jquantlib.model.marketmodels.evolvers.SVDDFwdRatePc;
+import org.jquantlib.model.marketmodels.evolvers.volprocesses.SquareRootAndersen;
 import org.jquantlib.model.marketmodels.browniangenerators.MTBrownianGeneratorFactory;
 import org.jquantlib.model.marketmodels.browniangenerators.SobolBrownianGenerator;
 import org.jquantlib.model.marketmodels.browniangenerators.SobolBrownianGeneratorFactory;
@@ -43,6 +49,8 @@ import org.jquantlib.model.marketmodels.curvestates.LMMCurveState;
 import org.jquantlib.model.marketmodels.models.FwdPeriodAdapter;
 import org.jquantlib.model.marketmodels.models.FwdToCotSwapAdapter;
 import org.jquantlib.model.marketmodels.products.MultiProductComposite;
+import org.jquantlib.model.marketmodels.products.pathwise.MarketModelPathwiseMultiCaplet;
+import org.jquantlib.model.marketmodels.products.pathwise.MarketModelPathwiseMultiDeflatedCaplet;
 import org.jquantlib.model.marketmodels.products.multistep.MultiProductPathwiseWrapper;
 import org.jquantlib.model.marketmodels.products.multistep.MultiStepCoinitialSwaps;
 import org.jquantlib.model.marketmodels.products.multistep.MultiStepCoterminalSwaps;
@@ -50,6 +58,18 @@ import org.jquantlib.model.marketmodels.products.multistep.MultiStepCoterminalSw
 import org.jquantlib.model.marketmodels.products.multistep.MultiStepForwards;
 import org.jquantlib.model.marketmodels.products.multistep.MultiStepInverseFloater;
 import org.jquantlib.model.marketmodels.products.multistep.MultiStepOptionlets;
+
+import org.jquantlib.daycounters.DayCounter;
+import org.jquantlib.daycounters.SimpleDayCounter;
+import org.jquantlib.model.equity.HestonModel;
+import org.jquantlib.processes.HestonProcess;
+import org.jquantlib.pricingengines.vanilla.AnalyticHestonEngine;
+import org.jquantlib.quotes.Handle;
+import org.jquantlib.quotes.Quote;
+import org.jquantlib.quotes.SimpleQuote;
+import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.termstructures.yieldcurves.FlatForward;
+import org.jquantlib.time.Date;
 import org.jquantlib.model.marketmodels.products.multistep.MultiStepPeriodCapletSwaptions;
 import org.jquantlib.model.marketmodels.products.onestep.OneStepForwards;
 import org.jquantlib.model.marketmodels.products.onestep.OneStepOptionlets;
@@ -347,7 +367,7 @@ public class MarketModelTest {
     private static final class SubProductExpectedValues {
         final String description;
         final List<Double> values = new ArrayList<Double>();
-        boolean testBias = true;
+        boolean testBias = false; // C++ struct default (cpp:154)
         double errorThreshold;
 
         SubProductExpectedValues(final String descr) {
@@ -720,6 +740,173 @@ public class MarketModelTest {
     }
 
     // ------------------------------------------------------------------
+    // testPathwiseGreeks — cpp:2090
+    // ------------------------------------------------------------------
+
+    /** Faithful port of {@code test-suite/marketmodel.cpp:2090} {@code BOOST_AUTO_TEST_CASE(testPathwiseGreeks)}. */
+    @Test
+    public void testPathwiseGreeks() {
+        final int N = MarketModelTestSetup.todaysForwards.length;
+        final List<StrikedTypePayoff> displacedPayoffs = new ArrayList<StrikedTypePayoff>(N);
+        for (int i = 0; i < N; ++i) {
+            displacedPayoffs.add(new PlainVanillaPayoff(Option.Type.Call,
+                    MarketModelTestSetup.todaysForwards[i] + MarketModelTestSetup.displacement));
+        }
+
+        for (int whichProduct = 0; whichProduct < 2; ++whichProduct) {
+            // C++ swaps the order: whichProduct==0 → product2 (non-deflated), 1 → product1 (deflated)
+            final MarketModelPathwiseMultiProduct product;
+            if (whichProduct == 0) {
+                product = new MarketModelPathwiseMultiCaplet(MarketModelTestSetup.rateTimes,
+                        MarketModelTestSetup.accruals, MarketModelTestSetup.paymentTimes,
+                        MarketModelTestSetup.todaysForwards);
+            } else {
+                product = new MarketModelPathwiseMultiDeflatedCaplet(MarketModelTestSetup.rateTimes,
+                        MarketModelTestSetup.accruals, MarketModelTestSetup.paymentTimes,
+                        MarketModelTestSetup.todaysForwards);
+            }
+
+            // productDummy is needed for makeMeasure (it's MarketModelMultiProduct);
+            // build a parallel non-pathwise MultiStepOptionlets with PlainVanilla.
+            final Payoff[] payoffs = new Payoff[N];
+            for (int i = 0; i < N; ++i) {
+                payoffs[i] = new PlainVanillaPayoff(Option.Type.Call, MarketModelTestSetup.todaysForwards[i]);
+            }
+            final MultiStepOptionlets productDummy = new MultiStepOptionlets(MarketModelTestSetup.rateTimes,
+                    MarketModelTestSetup.accruals, MarketModelTestSetup.paymentTimes, payoffs);
+
+            final EvolutionDescription evolution = product.evolution();
+
+            final MarketModelTestSetup.MarketModelType[] marketModels = {
+                    ExponentialCorrelationAbcdVolatility
+            };
+            for (final MarketModelTestSetup.MarketModelType mmType : marketModels) {
+                final int[] testedFactors = { 2 };
+                for (final int factors : testedFactors) {
+                    final MarketModelTestSetup.MeasureType[] measures = { MoneyMarket };
+                    for (final MarketModelTestSetup.MeasureType measure : measures) {
+                        final int[] numeraires = MarketModelTestSetup.makeMeasure(productDummy, measure);
+                        final MTBrownianGeneratorFactory generatorFactory =
+                                new MTBrownianGeneratorFactory(MarketModelTestSetup.seed_);
+                        final boolean logNormal = true;
+                        final MarketModel marketModel = MarketModelTestSetup.makeMarketModel(
+                                logNormal, evolution, factors, mmType);
+
+                        final LogNormalFwdRateEuler evolver = new LogNormalFwdRateEuler(
+                                marketModel, generatorFactory, numeraires);
+                        final SequenceStatistics stats = new SequenceStatistics(
+                                product.numberOfProducts() * (N + 1));
+
+                        final double forwardBump = 1.0e-6;
+
+                        final int initialNumeraire = evolver.numeraires()[0];
+                        final double initialNumeraireValue =
+                                MarketModelTestSetup.todaysDiscounts[initialNumeraire];
+
+                        final PathwiseAccountingEngine engine = new PathwiseAccountingEngine(
+                                evolver, product, marketModel, initialNumeraireValue);
+                        engine.multiplePathValues(stats, MarketModelTestSetup.paths_);
+
+                        final org.jquantlib.math.matrixutilities.Array valuesAndDeltas = stats.mean();
+                        final org.jquantlib.math.matrixutilities.Array errors = stats.errorEstimate();
+
+                        final double[] prices = new double[product.numberOfProducts()];
+                        final double[] priceErrors = new double[product.numberOfProducts()];
+                        final double[][] deltas =
+                                new double[product.numberOfProducts()][N];
+                        final double[][] deltasErrors =
+                                new double[product.numberOfProducts()][N];
+                        final double[] modelPrices = new double[product.numberOfProducts()];
+
+                        for (int i = 0; i < product.numberOfProducts(); ++i) {
+                            prices[i] = valuesAndDeltas.get(i);
+                            priceErrors[i] = errors.get(i);
+                            modelPrices[i] = new BlackCalculator(displacedPayoffs.get(i),
+                                    MarketModelTestSetup.todaysForwards[i],
+                                    MarketModelTestSetup.volatilities[i]
+                                            * Math.sqrt(MarketModelTestSetup.rateTimes[i]),
+                                    MarketModelTestSetup.todaysDiscounts[i + 1]
+                                            * (MarketModelTestSetup.rateTimes[i + 1]
+                                                    - MarketModelTestSetup.rateTimes[i])).value();
+                            for (int j = 0; j < N; ++j) {
+                                deltas[i][j] = valuesAndDeltas.get((i + 1) * product.numberOfProducts() + j);
+                                deltasErrors[i][j] = errors.get((i + 1) * product.numberOfProducts() + j);
+                            }
+                        }
+
+                        final double[][] modelDeltas = new double[product.numberOfProducts()][N];
+
+                        final double[] discPlus = new double[N + 1];
+                        final double[] discMinus = new double[N + 1];
+                        Arrays.fill(discPlus, MarketModelTestSetup.todaysDiscounts[0]);
+                        Arrays.fill(discMinus, MarketModelTestSetup.todaysDiscounts[0]);
+                        final double[] fwdPlus = new double[N];
+                        final double[] fwdMinus = new double[N];
+
+                        for (int i = 0; i < N; ++i) {
+                            for (int j = 0; j < N; ++j) {
+                                if (i != j) {
+                                    fwdPlus[j] = MarketModelTestSetup.todaysForwards[j];
+                                    fwdMinus[j] = MarketModelTestSetup.todaysForwards[j];
+                                } else {
+                                    fwdPlus[j] = MarketModelTestSetup.todaysForwards[j] + forwardBump;
+                                    fwdMinus[j] = MarketModelTestSetup.todaysForwards[j] - forwardBump;
+                                }
+                                final double tau =
+                                        MarketModelTestSetup.rateTimes[j + 1] - MarketModelTestSetup.rateTimes[j];
+                                discPlus[j + 1] = discPlus[j] / (1.0 + fwdPlus[j] * tau);
+                                discMinus[j + 1] = discMinus[j] / (1.0 + fwdMinus[j] * tau);
+                            }
+                            for (int k = 0; k < product.numberOfProducts(); ++k) {
+                                final double tau =
+                                        MarketModelTestSetup.rateTimes[k + 1] - MarketModelTestSetup.rateTimes[k];
+                                final double priceUp = new BlackCalculator(displacedPayoffs.get(k), fwdPlus[k],
+                                        MarketModelTestSetup.volatilities[k]
+                                                * Math.sqrt(MarketModelTestSetup.rateTimes[k]),
+                                        discPlus[k + 1] * tau).value();
+                                final double priceDown = new BlackCalculator(displacedPayoffs.get(k), fwdMinus[k],
+                                        MarketModelTestSetup.volatilities[k]
+                                                * Math.sqrt(MarketModelTestSetup.rateTimes[k]),
+                                        discMinus[k + 1] * tau).value();
+                                modelDeltas[k][i] = (priceUp - priceDown) / (2 * forwardBump);
+                            }
+                        }
+
+                        int numberErrors = 0;
+                        for (int i = 0; i < product.numberOfProducts(); ++i) {
+                            final double thisPrice = prices[i];
+                            final double thisModelPrice = modelPrices[i];
+                            final double priceErrorInSds = (thisPrice - thisModelPrice) / priceErrors[i];
+                            final double errorThreshold = 3.5;
+                            if (Math.abs(priceErrorInSds) > errorThreshold) {
+                                ++numberErrors;
+                            }
+                            final double threshold = 1e-10;
+                            for (int j = 0; j < N; ++j) {
+                                final double delta = deltas[i][j];
+                                final double modelDelta = modelDeltas[i][j];
+                                double deltaErrorInSds = 100;
+                                if (deltasErrors[i][j] > 0.0) {
+                                    deltaErrorInSds = (delta - modelDelta) / deltasErrors[i][j];
+                                } else if (Math.abs(modelDelta - delta) < threshold) {
+                                    deltaErrorInSds = 0.0;
+                                }
+                                if (Math.abs(deltaErrorInSds) > errorThreshold) {
+                                    ++numberErrors;
+                                }
+                            }
+                        }
+                        if (numberErrors > 0) {
+                            fail("Pathwise greeks test (whichProduct=" + whichProduct + ") has "
+                                    + numberErrors + " errors");
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------
     // testAbcdVolatilityIntegration — cpp:4133
     // ------------------------------------------------------------------
 
@@ -874,8 +1061,139 @@ public class MarketModelTest {
     }
 
     // ------------------------------------------------------------------
+    // testStochVolForwardsAndOptionlets — cpp:4285
+    // ------------------------------------------------------------------
+
+    /** Faithful port of {@code test-suite/marketmodel.cpp:4285} {@code BOOST_AUTO_TEST_CASE(testStochVolForwardsAndOptionlets)}. */
+    @Test
+    public void testStochVolForwardsAndOptionlets() {
+        final int N = MarketModelTestSetup.todaysForwards.length;
+        final double[] forwardStrikes = new double[N];
+        final Payoff[] optionletPayoffs = new Payoff[N];
+        for (int i = 0; i < N; ++i) {
+            forwardStrikes[i] = MarketModelTestSetup.todaysForwards[i] + 0.01;
+            optionletPayoffs[i] = new PlainVanillaPayoff(Option.Type.Call, MarketModelTestSetup.todaysForwards[i]);
+        }
+
+        final MultiStepForwards forwards = new MultiStepForwards(MarketModelTestSetup.rateTimes,
+                MarketModelTestSetup.accruals, MarketModelTestSetup.paymentTimes, forwardStrikes);
+        final MultiStepOptionlets optionlets = new MultiStepOptionlets(MarketModelTestSetup.rateTimes,
+                MarketModelTestSetup.accruals, MarketModelTestSetup.paymentTimes, optionletPayoffs);
+
+        final MultiProductComposite product = new MultiProductComposite();
+        product.add(forwards);
+        product.add(optionlets);
+        product.finalizeComposite();
+
+        final EvolutionDescription evolution = product.evolution();
+
+        final MarketModelTestSetup.MarketModelType[] marketModels = {
+                ExponentialCorrelationFlatVolatility
+        };
+
+        final int firstVolatilityFactor = 2;
+        final int volatilityFactorStep = 2;
+
+        final double meanLevel = 1.0;
+        final double reversionSpeed = 1.0;
+
+        final double volVar = 1;
+        final double v0 = 1.0;
+        final int numberSubSteps = 8;
+        final double w1 = 0.5;
+        final double w2 = 0.5;
+        final double cutPoint = 1.5;
+
+        final MarketModelVolProcess volProcess = new SquareRootAndersen(
+                meanLevel, reversionSpeed, volVar, v0,
+                evolution.evolutionTimes(), numberSubSteps, w1, w2, cutPoint);
+
+        final DayCounter dc = MarketModelTestSetup.dayCounter;
+        final Date today = MarketModelTestSetup.todaysDate;
+
+        for (final MarketModelTestSetup.MarketModelType mmType : marketModels) {
+            final int[] testedFactors = { 1, 2, MarketModelTestSetup.todaysForwards.length };
+            for (final int factors : testedFactors) {
+                final MarketModelTestSetup.MeasureType[] measures = { MoneyMarket, Terminal };
+                for (final MarketModelTestSetup.MeasureType measure : measures) {
+                    final int[] numeraires = MarketModelTestSetup.makeMeasure(product, measure);
+                    final boolean logNormal = true;
+                    final MarketModel marketModel = MarketModelTestSetup.makeMarketModel(
+                            logNormal, evolution, factors, mmType);
+
+                    final MTBrownianGeneratorFactory generatorFactory =
+                            new MTBrownianGeneratorFactory(MarketModelTestSetup.seed_);
+                    final MarketModelEvolver evolver = new SVDDFwdRatePc(marketModel, generatorFactory,
+                            volProcess, firstVolatilityFactor, volatilityFactorStep, numeraires);
+
+                    final SequenceStatistics stats = MarketModelTestSetup.simulate(evolver, product);
+                    final org.jquantlib.math.matrixutilities.Array results = stats.mean();
+                    final org.jquantlib.math.matrixutilities.Array errors = stats.errorEstimate();
+
+                    final int sz = MarketModelTestSetup.accruals.length;
+                    // check forwards
+                    for (int i = 0; i < sz; ++i) {
+                        final double trueValue = MarketModelTestSetup.todaysDiscounts[i]
+                                - MarketModelTestSetup.todaysDiscounts[i + 1]
+                                        * (1 + forwardStrikes[i] * MarketModelTestSetup.accruals[i]);
+                        final double error = results.get(i) - trueValue;
+                        final double errorSds = error / errors.get(i);
+                        if (Math.abs(errorSds) > 3.5) {
+                            fail("error in sds: " + errorSds + " for forward " + i
+                                    + " in SV LMM test. True value:" + trueValue
+                                    + ", actual value: " + results.get(i)
+                                    + ", standard error " + errors.get(i));
+                        }
+                    }
+                    // check caplets
+                    for (int i = 0; i < sz; ++i) {
+                        final double volCoeff = MarketModelTestSetup.volatilities[i];
+                        final double theta = volCoeff * volCoeff * meanLevel;
+                        final double kappa = reversionSpeed;
+                        final double sigma = volCoeff * volVar;
+                        final double rho = 0.0;
+                        final double v1 = v0 * volCoeff * volCoeff;
+
+                        final PlainVanillaPayoff payoff = new PlainVanillaPayoff(Option.Type.Call,
+                                MarketModelTestSetup.todaysForwards[i] + MarketModelTestSetup.displacement);
+
+                        final Handle<YieldTermStructure> rfHandle = new Handle<YieldTermStructure>(
+                                new FlatForward(today, 0.0, dc));
+                        final Handle<YieldTermStructure> divHandle = new Handle<YieldTermStructure>(
+                                new FlatForward(today, 0.0, dc));
+                        final Handle<Quote> s0Handle = new Handle<Quote>(new SimpleQuote(
+                                MarketModelTestSetup.todaysForwards[i] + MarketModelTestSetup.displacement));
+
+                        final HestonProcess process = new HestonProcess(rfHandle, divHandle, s0Handle,
+                                v1, kappa, theta, sigma, rho);
+                        final HestonModel hestonModel = new HestonModel(process);
+                        final AnalyticHestonEngine engine = new AnalyticHestonEngine(hestonModel, process, 128);
+                        double trueValue = engine.priceVanillaPayoff(payoff,
+                                MarketModelTestSetup.rateTimes[i]);
+                        trueValue *= MarketModelTestSetup.accruals[i]
+                                * MarketModelTestSetup.todaysDiscounts[i + 1];
+
+                        final double error = results.get(i + sz) - trueValue;
+                        final double errorSds = error / errors.get(i);
+                        if (Math.abs(errorSds) > 4) {
+                            fail("error in sds: " + errorSds + " for caplet " + i
+                                    + " in SV LMM test. True value:" + trueValue
+                                    + ", actual value: " + results.get(i + sz)
+                                    + ", standard error " + errors.get(i));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------
     // Helper utilities
     // ------------------------------------------------------------------
+
+    /** Discard unused-import warnings (used in JavaDoc references only). */
+    @SuppressWarnings("unused")
+    private static final Class<?> UNUSED_DC = SimpleDayCounter.class;
 
     private static double[] filled(final int n, final double v) {
         final double[] a = new double[n];
