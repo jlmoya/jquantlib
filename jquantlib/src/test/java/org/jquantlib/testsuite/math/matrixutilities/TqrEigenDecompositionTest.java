@@ -150,6 +150,115 @@ public class TqrEigenDecompositionTest {
         assertNoFailures(failures);
     }
 
+    /**
+     * Faithful port of {@code test-suite/tqreigendecomposition.cpp:31}
+     * {@code BOOST_AUTO_TEST_CASE(testEigenValueDecomposition)}. Verifies the
+     * 5x5 tridiagonal eigenvalue table {diag=[11,7,6,2,0], sub=[1,1,1,1]}
+     * against C++-tabulated reference eigenvalues to 1.0e-10. The reference
+     * values come straight from the C++ source (lines 37-41) so this is
+     * cross-validated against v1.42.1 without a probe.
+     */
+    @Test
+    public void testEigenValueDecomposition() {
+        final double[] diag = { 11.0, 7.0, 6.0, 2.0, 0.0 };
+        final double[] sub  = { 1.0, 1.0, 1.0, 1.0 };
+        final double[] ev   = {
+                11.2467832217139119,
+                 7.4854967362908535,
+                 5.5251516080277518,
+                 2.1811760273123308,
+                -0.4386075933448487
+        };
+        final TqrEigenDecomposition tqre = new TqrEigenDecomposition(
+                diag, sub,
+                EigenVectorCalculation.WithoutEigenVector,
+                ShiftStrategy.CloseEigenValue);
+
+        final double tolerance = 1.0e-10;
+        for (int i = 0; i < diag.length; i++) {
+            final double expected = ev[i];
+            final double calculated = tqre.d[i];
+            if (Math.abs(expected - calculated) > tolerance) {
+                assertTrue("wrong eigenvalue [" + i + "]"
+                        + "\n    calculated: " + calculated
+                        + "\n    expected:   " + expected,
+                        false);
+            }
+        }
+    }
+
+    /**
+     * Faithful port of {@code test-suite/tqreigendecomposition.cpp:59}
+     * {@code BOOST_AUTO_TEST_CASE(testZeroOffDiagEigenValues)}. Verifies that
+     * the QR sweep treats exact-zero off-diagonal entries the same as
+     * numerically-tiny (1e-14) entries: {diag=[12,9,6,3,0], sub=[0,1,0,1]}
+     * vs {diag=[12,9,6,3,0], sub=[1e-14,1,1e-14,1]} must yield eigenvalues
+     * agreeing to 1.0e-10. Cross-validated against C++ tqre1.eigenvalues()
+     * implicitly — both decompositions are computed in Java and compared
+     * pairwise, matching the C++ test's own internal-consistency check.
+     */
+    @Test
+    public void testZeroOffDiagEigenValues() {
+        final double[] diag = { 12.0, 9.0, 6.0, 3.0, 0.0 };
+        final double[] subExact = { 0.0, 1.0, 0.0, 1.0 };
+        final double[] subFuzz  = { 1.0e-14, 1.0, 1.0e-14, 1.0 };
+
+        // Default args in C++ header: WithEigenVector + CloseEigenValue.
+        final TqrEigenDecomposition tqre1 = new TqrEigenDecomposition(
+                diag.clone(), subExact,
+                EigenVectorCalculation.WithEigenVector,
+                ShiftStrategy.CloseEigenValue);
+        final TqrEigenDecomposition tqre2 = new TqrEigenDecomposition(
+                diag.clone(), subFuzz,
+                EigenVectorCalculation.WithEigenVector,
+                ShiftStrategy.CloseEigenValue);
+
+        final double tolerance = 1.0e-10;
+        for (int i = 0; i < diag.length; i++) {
+            final double expected = tqre2.d[i];
+            final double calculated = tqre1.d[i];
+            if (Math.abs(expected - calculated) > tolerance) {
+                assertTrue("wrong eigenvalue [" + i + "]"
+                        + "\n    calculated: " + calculated
+                        + "\n    expected:   " + expected,
+                        false);
+            }
+        }
+    }
+
+    /**
+     * Faithful port of {@code test-suite/tqreigendecomposition.cpp:86}
+     * {@code BOOST_AUTO_TEST_CASE(testEigenVectorDecomposition)}. Verifies
+     * the eigenvector product invariant for the trivial
+     * {diag=[1,1], sub=[1]} tridiagonal: matrix [[1,1],[1,1]] has
+     * eigenvalues 2 and 0 with eigenvectors [1/√2, 1/√2] and
+     * [1/√2, -1/√2]; the product
+     * {@code ev[0][0]*ev[0][1]*ev[1][0]*ev[1][1] = -0.25} so the test
+     * verifies {@code |0.25 + product| <= 1.0e-10}.
+     */
+    @Test
+    public void testEigenVectorDecomposition() {
+        final double[] diag = { 1.0, 1.0 };
+        final double[] sub  = { 1.0 };
+
+        final TqrEigenDecomposition tqre = new TqrEigenDecomposition(
+                diag, sub,
+                EigenVectorCalculation.WithEigenVector,
+                ShiftStrategy.CloseEigenValue);
+        final double tolerance = 1.0e-10;
+        final double product = tqre.ev[0][0] * tqre.ev[0][1]
+                             * tqre.ev[1][0] * tqre.ev[1][1];
+        if (Math.abs(0.25 + product) > tolerance) {
+            assertTrue("wrong eigenvector"
+                    + "\n    ev[0][0]: " + tqre.ev[0][0]
+                    + "\n    ev[0][1]: " + tqre.ev[0][1]
+                    + "\n    ev[1][0]: " + tqre.ev[1][0]
+                    + "\n    ev[1][1]: " + tqre.ev[1][1]
+                    + "\n    product : " + product,
+                    false);
+        }
+    }
+
     // -----------------------------------------------------------------------
 
     private static void checkVal(final double got, final double expected,
