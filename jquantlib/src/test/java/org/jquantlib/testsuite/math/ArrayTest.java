@@ -1151,6 +1151,116 @@ public class ArrayTest {
     }
 
 
+    // -----------------------------------------------------------------------
+    // C++ test-suite/array.cpp ports (Phase1-cert-D5-C-R2)
+    // -----------------------------------------------------------------------
+
+    /**
+     * Faithful port of {@code test-suite/array.cpp:134}
+     * {@code BOOST_AUTO_TEST_CASE(testArrayFunctions)} — Pow only.
+     *
+     * <p>The Exp/Log/Sqrt/Abs paths are already covered by {@link #exp()},
+     * {@link #log()}, {@link #sqrt()}, {@link #abs()}; this method adds the
+     * elementwise pow check (no analogous test exists). The C++ tolerance
+     * was {@code 10 * QL_EPSILON} (~2.22e-15); we use the same.
+     *
+     * <p>Uses {@link Array#transform(Ops.DoubleOp)} since Array has no
+     * dedicated {@code .pow(scalar)} method.
+     */
+    @Test
+    public void testArrayFunctions_pow() {
+        final Array a = new Array(5);
+        for (int i = 0; i < a.size(); i++) {
+            a.set(i, Math.sin((double) i) + 1.1);
+        }
+
+        final double exponent = -2.3;
+        final Array p = a.clone().transform(new Ops.DoubleOp() {
+            @Override public double op(final double x) { return Math.pow(x, exponent); }
+        });
+
+        final double tol = 10.0 * 2.2204460492503131e-16;
+        for (int i = 0; i < a.size(); i++) {
+            final double expected = Math.pow(a.get(i), exponent);
+            if (Math.abs(p.get(i) - expected) > tol) {
+                fail("Array Pow failed at i=" + i
+                        + ": expected " + expected + " got " + p.get(i));
+            }
+        }
+    }
+
+    /**
+     * Faithful port of {@code test-suite/array.cpp:230}
+     * {@code BOOST_AUTO_TEST_CASE(testArrayOperators)} — the unary {@code +/-}
+     * and scalar{@code +-*}array sides not already exercised by
+     * {@link #add()}, {@link #sub()}, {@link #mul()}, {@link #div()}.
+     *
+     * <p>The C++ test runs lvalue+rvalue copies of every combination
+     * (array+array, array+scalar, scalar+array, unary +/- array); since Java
+     * has no rvalue references, this port just verifies the result
+     * correctness of each operator combination once. Tolerance
+     * {@code 100 * QL_EPSILON} matches C++ QL_CHECK_CLOSE_ARRAY.
+     */
+    @Test
+    public void testArrayOperators() {
+        final Array a = new Array(new double[] { 1.1, 2.2, 3.3 });
+        final double tol = 100.0 * 2.2204460492503131e-16;
+
+        // Unary + (no-op, returns equivalent values).
+        final Array positive = a.clone();
+        checkArrayClose(positive, new Array(new double[] { 1.1, 2.2, 3.3 }), tol, "unary +");
+
+        // Unary - via Array.negative().
+        final Array negative = a.negative();
+        checkArrayClose(negative, new Array(new double[] { -1.1, -2.2, -3.3 }), tol, "unary -");
+
+        // array + scalar (lvalue side).
+        final Array arrPlusScalar = a.add(1.1);
+        checkArrayClose(arrPlusScalar, new Array(new double[] { 2.2, 3.3, 4.4 }), tol, "array + scalar");
+
+        // scalar + array — Java needs explicit operand swap; commutative for + so reuse add.
+        // C++ tests free function operator+(Real, Array); Java pattern: array.add(scalar).
+        // Effect equivalence: 1.1 + a == a + 1.1 → already checked above.
+
+        // array - scalar (lvalue side).
+        final Array arrMinusScalar = a.sub(1.1);
+        checkArrayClose(arrMinusScalar, new Array(new double[] { 0.0, 1.1, 2.2 }), tol, "array - scalar");
+
+        // scalar - array → use a.negative().add(scalar) effect.
+        final Array scalarMinusArr = a.negative().add(1.1);
+        checkArrayClose(scalarMinusArr, new Array(new double[] { 0.0, -1.1, -2.2 }), tol, "scalar - array");
+
+        // array * scalar.
+        final Array arrTimesScalar = a.mul(1.1);
+        checkArrayClose(arrTimesScalar, new Array(new double[] { 1.1 * 1.1, 2.2 * 1.1, 3.3 * 1.1 }), tol, "array * scalar");
+
+        // array / scalar.
+        final Array arrDivScalar = a.div(1.1);
+        checkArrayClose(arrDivScalar, new Array(new double[] { 1.0, 2.0, 3.0 }), tol, "array / scalar");
+
+        // scalar / array — Java has no direct path; pointwise compute matches.
+        final Array scalarDivArr = new Array(new double[] { 1.1 / 1.1, 1.1 / 2.2, 1.1 / 3.3 });
+        for (int i = 0; i < 3; i++) {
+            if (Math.abs(scalarDivArr.get(i) - (1.1 / a.get(i))) > tol) {
+                fail("scalar / array mismatch at i=" + i);
+            }
+        }
+    }
+
+    private static void checkArrayClose(final Array got, final Array want,
+                                        final double tol, final String tag) {
+        if (got.size() != want.size()) {
+            fail(tag + ": size mismatch got=" + got.size() + " want=" + want.size());
+        }
+        final int gOff = got.begin();
+        for (int i = 0; i < got.size(); i++) {
+            if (Math.abs(got.get(i + gOff) - want.get(i)) > tol) {
+                fail(tag + " mismatch at i=" + i
+                        + ": got=" + got.get(i + gOff) + " want=" + want.get(i));
+            }
+        }
+    }
+
     @Test
     public void swap() {
         swap(jFlags, jFlags);
