@@ -387,6 +387,50 @@ public class TermStructuresTest {
 
 
     /**
+     * Faithful port of {@code test-suite/termstructures.cpp:302}
+     * {@code BOOST_AUTO_TEST_CASE(testCreateWithNullUnderlying)}.
+     * Verifies that {@link ZeroSpreadedTermStructure} accepts an empty
+     * {@link RelinkableHandle} at construction and only requires a live
+     * underlying when the structure is actually used.
+     */
+    @Test
+    public void testCreateWithNullUnderlying() {
+        QL.info("Testing that a zero-spreaded curve can be created with a null underlying curve...");
+
+        final Handle<Quote> spread = new Handle<Quote>(new SimpleQuote(0.01));
+        final RelinkableHandle<YieldTermStructure> underlying = new RelinkableHandle<YieldTermStructure>();
+        // this shouldn't throw
+        final YieldTermStructure spreaded = new ZeroSpreadedTermStructure(underlying, spread);
+        // if we do this, the curve can work
+        underlying.linkTo(termStructure);
+        // check that we can use it
+        spreaded.referenceDate();
+    }
+
+
+    /**
+     * Faithful port of {@code test-suite/termstructures.cpp:518}
+     * {@code BOOST_AUTO_TEST_CASE(testLinkToNullUnderlying)}. Build the
+     * spreaded curve over a live underlying, use it, then reset the
+     * underlying handle: the structure must not throw as long as it isn't
+     * touched after reset.
+     */
+    @Test
+    public void testLinkToNullUnderlying() {
+        QL.info("Testing that an underlying curve can be relinked to a null underlying curve...");
+
+        final Handle<Quote> spread = new Handle<Quote>(new SimpleQuote(0.01));
+        final RelinkableHandle<YieldTermStructure> underlying = new RelinkableHandle<YieldTermStructure>(termStructure);
+        final YieldTermStructure spreaded = new ZeroSpreadedTermStructure(underlying, spread);
+        // check that we can use it
+        spreaded.referenceDate();
+        // if we do this, the curve can't work anymore. But it shouldn't
+        // throw as long as we don't try to use it.
+        underlying.linkTo(null);
+    }
+
+
+    /**
      * Phase 5e.5b-CFC-d-40 regression: PiecewiseYieldCurve.forwardRate /
      * zeroRate / parRate overrides must invoke calculate() so the lazy
      * bootstrap runs on the first read. Before the fix these delegated
