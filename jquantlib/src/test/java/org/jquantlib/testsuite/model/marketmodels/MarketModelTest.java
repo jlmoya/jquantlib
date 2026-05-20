@@ -3079,6 +3079,44 @@ public class MarketModelTest {
     }
 
     // ------------------------------------------------------------------
+    // testAbcdDegenerateCases — cpp:4557
+    // ------------------------------------------------------------------
+
+    /**
+     * Faithful port of {@code test-suite/marketmodel.cpp:4557}
+     * {@code BOOST_AUTO_TEST_CASE(testAbcdDegenerateCases)}.
+     *
+     * <p>Verifies that {@link AbcdFunction#covariance(double, double, double, double)}
+     * stays finite and equals the closed-form expected value 1.0 in two limiting
+     * parameter configurations:
+     * <ul>
+     *   <li>{@code (a,b,c,d)=(0,0,1e-15,1)} — exponential pre-factor collapses to
+     *       (essentially) 1; covariance over [0,1] with T=S=1 must equal 1.0.</li>
+     *   <li>{@code (a,b,c,d)=(1,0,1e-50,0)} — linear pre-factor of 1 at u=0 with
+     *       c→0; same integrand evaluates to 1.0 across [0,1].</li>
+     * </ul>
+     *
+     * <p>Tolerance matches the C++ test (1e-14 abs).
+     */
+    @Test
+    public void testAbcdDegenerateCases() {
+        final AbcdFunction f1 = new AbcdFunction(0.0, 0.0, 1.0E-15, 1.0);
+        final AbcdFunction f2 = new AbcdFunction(1.0, 0.0, 1.0E-50, 0.0);
+
+        final double cov1 = f1.covariance(0.0, 1.0, 1.0, 1.0);
+        if (Math.abs(cov1 - 1.0) > 1E-14 || Double.isNaN(cov1) || Double.isInfinite(cov1)) {
+            fail("(a,b,c,d)=(0,0,0,1): true covariance should be 1.0, "
+                    + "error is " + Math.abs(cov1 - 1.0));
+        }
+
+        final double cov2 = f2.covariance(0.0, 1.0, 1.0, 1.0);
+        if (Math.abs(cov2 - 1.0) > 1E-14 || Double.isNaN(cov2) || Double.isInfinite(cov2)) {
+            fail("(a,b,c,d)=(1,0,0,0): true covariance should be 1.0, "
+                    + "error is " + Math.abs(cov2 - 1.0));
+        }
+    }
+
+    // ------------------------------------------------------------------
     // Helper utilities
     // ------------------------------------------------------------------
 
