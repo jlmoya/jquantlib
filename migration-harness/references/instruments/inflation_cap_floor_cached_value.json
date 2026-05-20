@@ -1,0 +1,222 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "baseDate_serial": 39295,
+        "baseRate": 0.029500000000000002,
+        "nodes": [
+          {
+            "date_iso": "2007-08-01",
+            "date_serial": 39295,
+            "rate": 0.029500000000000002
+          },
+          {
+            "date_iso": "2008-06-01",
+            "date_serial": 39600,
+            "rate": 0.0295
+          },
+          {
+            "date_iso": "2009-06-01",
+            "date_serial": 39965,
+            "rate": 0.029499999999999995
+          },
+          {
+            "date_iso": "2010-06-01",
+            "date_serial": 40330,
+            "rate": 0.02886872326152974
+          },
+          {
+            "date_iso": "2011-06-01",
+            "date_serial": 40695,
+            "rate": 0.030279132879889762
+          },
+          {
+            "date_iso": "2012-06-01",
+            "date_serial": 41061,
+            "rate": 0.029101828487773946
+          },
+          {
+            "date_iso": "2013-06-01",
+            "date_serial": 41426,
+            "rate": 0.032179311379455094
+          },
+          {
+            "date_iso": "2014-06-01",
+            "date_serial": 41791,
+            "rate": 0.031893278853894466
+          },
+          {
+            "date_iso": "2015-06-01",
+            "date_serial": 42156,
+            "rate": 0.03249804000093568
+          },
+          {
+            "date_iso": "2016-06-01",
+            "date_serial": 42522,
+            "rate": 0.0325674496890239
+          },
+          {
+            "date_iso": "2017-06-01",
+            "date_serial": 42887,
+            "rate": 0.033080700195771195
+          },
+          {
+            "date_iso": "2019-06-01",
+            "date_serial": 43617,
+            "rate": 0.03309983524674431
+          },
+          {
+            "date_iso": "2022-06-01",
+            "date_serial": 44713,
+            "rate": 0.033057343188719175
+          },
+          {
+            "date_iso": "2027-06-01",
+            "date_serial": 46539,
+            "rate": 0.03226121255853987
+          },
+          {
+            "date_iso": "2032-06-01",
+            "date_serial": 48366,
+            "rate": 0.02952343647944007
+          },
+          {
+            "date_iso": "2037-06-01",
+            "date_serial": 50192,
+            "rate": 0.032844825378241314
+          }
+        ],
+        "refDate_serial": 39307
+      },
+      "inputs": null,
+      "name": "curve_nodes"
+    },
+    {
+      "expected": {
+        "coupons": [
+          {
+            "accrualEnd_iso": "2008-08-13",
+            "accrualEnd_serial": 39673,
+            "accrualPeriod": 1.0,
+            "accrualStart_iso": "2007-08-13",
+            "accrualStart_serial": 39307,
+            "fixingDate_iso": "2008-06-13",
+            "fixingDate_serial": 39612,
+            "forward_rate_at_fixing": 0.0295,
+            "i": 0,
+            "nominal_discount_at_pay": 0.9511792262037443,
+            "observationLag_months": 2,
+            "payDate_iso": "2008-08-13",
+            "payDate_serial": 39673
+          },
+          {
+            "accrualEnd_iso": "2009-08-13",
+            "accrualEnd_serial": 40038,
+            "accrualPeriod": 1.0,
+            "accrualStart_iso": "2008-08-13",
+            "accrualStart_serial": 39673,
+            "fixingDate_iso": "2009-06-13",
+            "fixingDate_serial": 39977,
+            "forward_rate_at_fixing": 0.029499999999999995,
+            "i": 1,
+            "nominal_discount_at_pay": 0.9048374180359595,
+            "observationLag_months": 2,
+            "payDate_iso": "2009-08-13",
+            "payDate_serial": 40038
+          }
+        ]
+      },
+      "inputs": null,
+      "name": "leg_coupons"
+    },
+    {
+      "expected": {
+        "cap_npv": 262.5380880174304,
+        "cap_optionletsPrice": [
+          111.94188839906745,
+          150.596199618363
+        ],
+        "floor_npv": 262.538088017432,
+        "floor_optionletsPrice": [
+          111.94188839906737,
+          150.59619961836464
+        ],
+        "optionletsAtmForward": [
+          0.0295,
+          0.029499999999999995
+        ],
+        "optionletsStdDev": [
+          0.01,
+          0.01414213562373095
+        ]
+      },
+      "inputs": {
+        "engine": "black",
+        "strike": 0.0295,
+        "vol": 0.01
+      },
+      "name": "npv_black"
+    },
+    {
+      "expected": {
+        "cap_npv": 9162.13429199816,
+        "cap_optionletsPrice": [
+          3906.5821731132214,
+          5255.552118884939
+        ],
+        "floor_npv": 9162.134291998109,
+        "floor_optionletsPrice": [
+          3906.58217311317,
+          5255.552118884939
+        ],
+        "optionletsAtmForward": [
+          0.0295,
+          0.029499999999999995
+        ],
+        "optionletsStdDev": [
+          0.01,
+          0.01414213562373095
+        ]
+      },
+      "inputs": {
+        "engine": "dd",
+        "strike": 0.0295,
+        "vol": 0.01
+      },
+      "name": "npv_dd"
+    },
+    {
+      "expected": {
+        "cap_npv": 8899.654556323268,
+        "cap_optionletsPrice": [
+          3794.656095721919,
+          5104.998460601349
+        ],
+        "floor_npv": 8899.654556323272,
+        "floor_optionletsPrice": [
+          3794.656095721919,
+          5104.998460601352
+        ],
+        "optionletsAtmForward": [
+          0.0295,
+          0.029499999999999995
+        ],
+        "optionletsStdDev": [
+          0.01,
+          0.01414213562373095
+        ]
+      },
+      "inputs": {
+        "engine": "bachelier",
+        "strike": 0.0295,
+        "vol": 0.01
+      },
+      "name": "npv_bachelier"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-20T03:45:50Z",
+  "generated_by": "inflation_cap_floor_cached_value_probe",
+  "test_group": "instruments/inflation_cap_floor_cached_value"
+}
