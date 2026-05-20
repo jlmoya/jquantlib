@@ -227,7 +227,7 @@
   ],
   "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
   "cpp_version": "1.42.1",
-  "generated_at": "2026-05-10T02:12:46Z",
+  "generated_at": "2026-05-20T02:53:07Z",
   "generated_by": "bachelier_implied_vol_probe",
   "test_group": "pricingengines/bachelier-impl/bachelier_implied_vol"
 }

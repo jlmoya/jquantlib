@@ -124,7 +124,18 @@ public abstract class OptionletStripper extends StrippedOptionletBase {
         QL.require(maxCapFloorTenor.ge(capFloorLengths_.get(capFloorLengths_.size() - 1)),
                 "too short (" + maxCapFloorTenor + ") capfloor term vol termVolSurface");
         Period nextCapFloorLength = capFloorLengths_.get(capFloorLengths_.size() - 1).add(indexTenor);
-        while ( nextCapFloorLength.le(maxCapFloorTenor) ) {
+        // Mirrors C++ ql/termstructures/volatility/optionlet/optionletstripper.cpp:68
+        //   while (nextCapFloorLength<=maxCapFloorTenor)
+        // C++ Period::operator<= is defined as !(b<a), which correctly
+        // handles arithmetically-equal periods with different units (e.g.
+        // 360M <= 30Y is TRUE). Java's Period.le delegates to Period.eq
+        // which uses Period.equals (strict length+unit comparison), so
+        // 360M.le(30Y) returns FALSE — the loop exits one tenor too
+        // early, leaving the 30Y caplet un-bootstrapped and causing a
+        // ~5.32e-5 round-trip error at strike=0.02 in
+        // testTermVolatilityStrippingNormalVol. Use !gt to mirror C++.
+        // (Phase 5e.5b-CFC-d-317.)
+        while ( !nextCapFloorLength.gt(maxCapFloorTenor) ) {
             optionletTenors_.add(capFloorLengths_.get(capFloorLengths_.size() - 1));
             capFloorLengths_.add(nextCapFloorLength);
             nextCapFloorLength = nextCapFloorLength.add(indexTenor);

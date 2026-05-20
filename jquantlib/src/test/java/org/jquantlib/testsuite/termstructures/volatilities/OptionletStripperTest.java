@@ -533,22 +533,26 @@ public class OptionletStripperTest {
      * verifies the stripped Bachelier engine round-trips constant-vol
      * prices to TIGHT (2.5e-8).
      *
-     * <p>Phase 5g.5c. Body is faithfully ported. Round-trip drift at the
-     * 30Y tenor exceeds the C++ tolerance of 2.5e-8 by a margin too large
-     * to absorb with a JVM-aware envelope: the documented baseline drift
-     * (CFC-d-291 / CFC-d-310) was ~3.20e-7 at a single (tenor=30Y,
-     * strike=-0.005) point, but the full 13-strike sweep at 30Y reveals
-     * a worst-case drift of ~5.32e-5 at strike=0.02 — ~21x beyond the
-     * user-authorized 2.5e-6 JVM-vs-libm envelope. Phase 5e.5b-CFC-d-316
-     * (2026-05-19): the Normal-vol path's drift is dominated by an
-     * algorithmic divergence (not the JVM-vs-libm 1-ULP bit-noise that
-     * affects the lognormal path) — likely in the
-     * {@code bachelierBlackFormulaImpliedVol} closed-form solver or the
-     * normal-vol-specific extrapolating-adapter chain — so widening
-     * tolerance is not a defensible fix. Leaving @Ignore until the
-     * normal-vol bootstrap accuracy is investigated separately.
+     * <p>Phase 5e.5b-CFC-d-317 (2026-05-19): root-caused the previously
+     * observed ~5.32e-5 round-trip drift at the (30Y, strike=0.02) point.
+     * The bug was in
+     * {@link org.jquantlib.termstructures.volatilities.optionlet.OptionletStripper}
+     * bootstrap, which uses {@code nextCapFloorLength.le(maxCapFloorTenor)} —
+     * but {@code Period.le} delegates to {@code Period.eq} which uses
+     * {@code Period.equals} (strict length+unit comparison). For
+     * {@code maxCapFloorTenor = Period(30, Years)} the loop exits at
+     * {@code nextCapFloorLength = Period(360, Months)} because
+     * {@code Period(360,M).equals(Period(30,Y))} is FALSE — losing the
+     * final {@code Period(354, Months) → Period(360, Months)} push and
+     * leaving the 30Y cap's last caplet un-bootstrapped (extrapolated
+     * from the 29Y vol instead). C++ {@code Period::operator<=} mirrors
+     * {@code !(b<a)} which correctly handles arithmetically-equal periods
+     * with different units. Fix replaces {@code .le(maxCapFloorTenor)}
+     * with {@code !nextCapFloorLength.gt(maxCapFloorTenor)} in
+     * {@code OptionletStripper} bootstrap loop, mirroring C++ exactly.
+     * After the fix the full 16x13 sweep round-trips to the C++ tight
+     * tolerance of 2.5e-8.
      */
-    @Ignore("Phase 5e.5b-CFC-d-316 (2026-05-19) REFINED ROOT CAUSE: 30Y-tenor worst-case round-trip drift ~5.32e-5 at strike=0.02 — ~21x beyond the user-authorized 2.5e-6 JVM-vs-libm envelope (vs. the 3.20e-7 single-point baseline documented in CFC-d-291/310 at strike=-0.005). The full 13-strike sweep at the 30Y tenor reveals this is NOT primarily JVM-vs-libm bit-divergence (which is ~1e-6 worst case on the lognormal path, see testTermVolatilityStripping1 sister test); the normal-vol-specific dominant residual lives elsewhere (likely the bachelierBlackFormulaImpliedVol closed-form on the deep-OTM tail or the normal-vol path's extrapolating adapter). Widening tolerance to absorb this would mask an algorithmic divergence, not a numerical-precision one. Production fix: instrument the normal-vol bootstrap path against C++ probe to isolate which strike-band produces the ~5e-5 residual, then either tighten the Bachelier solver or tighten the optionlet adapter normal-vol branch. Companion test testTermVolatilityStripping1 (lognormal) was un-ignored at 2.0e-6 in CFC-d-316; this normal-vol test remains @Ignore.")
     @Test
     public void testTermVolatilityStrippingNormalVol() {
         new Settings().setEvaluationDate(new Date(30, Month.April, 2015));
@@ -569,15 +573,6 @@ public class OptionletStripperTest {
         final IborIndex iborIndex = new Euribor6M(forwardingYTS);
         final double accuracy = 1.0e-6;
         final double tolerance = 2.5e-8;
-        // JVM-vs-libm bit-divergence (Phase 5e.5b-CFC-d-316): at the 30Y
-        // tenor the 60-caplet sequential bootstrap accumulates ~3.20e-7
-        // of round-trip drift on the deep-OTM negative-strike tail
-        // because Math.sin/cos/exp on the JVM differ by ~1 ULP per call
-        // from C++ libm; compounded over 60 caplets this exceeds the C++
-        // 2.5e-8 cap. Widen the 30Y envelope to observed_drift * 1.5 =
-        // 5.0e-7 to absorb the divergence; all shorter tenors still use
-        // the tight C++ tolerance.
-        final double tolerance30Y = 5.0e-7;
 
         final OptionletStripper1 stripper = new OptionletStripper1(
                 capFloorVolRealSurface, iborIndex,
@@ -595,14 +590,8 @@ public class OptionletStripperTest {
         final BachelierCapFloorEngine strippedVolEngine = new BachelierCapFloorEngine(
                 discountingYTS, vol);
 
-        double worst30YError = 0.0;
-        double worstShortTenorError = 0.0;
-        String worst30YDetail = "";
-        String worstShortTenorDetail = "";
         for (int t = 0; t < data.optionTenors.size(); ++t) {
             final Period tenor = data.optionTenors.get(t);
-            final boolean is30Y = (tenor.units() == TimeUnit.Years
-                    && tenor.length() == 30);
             for (int s = 0; s < data.strikes.length; ++s) {
                 final CapFloor cap = new MakeCapFloor(CapFloor.Type.Cap,
                         tenor, iborIndex, data.strikes[s],
@@ -617,33 +606,14 @@ public class OptionletStripperTest {
                 final double priceFromConstantVolatility = cap.NPV();
 
                 final double error = Math.abs(priceFromStrippedVolatility - priceFromConstantVolatility);
-                if (is30Y) {
-                    if (error > worst30YError) {
-                        worst30YError = error;
-                        worst30YDetail = "tenor=" + tenor + " strike=" + data.strikes[s]
-                                + " stripped=" + priceFromStrippedVolatility
-                                + " constant=" + priceFromConstantVolatility
-                                + " error=" + error;
-                    }
-                } else {
-                    if (error > worstShortTenorError) {
-                        worstShortTenorError = error;
-                        worstShortTenorDetail = "tenor=" + tenor + " strike=" + data.strikes[s]
-                                + " stripped=" + priceFromStrippedVolatility
-                                + " constant=" + priceFromConstantVolatility
-                                + " error=" + error;
-                    }
-                }
+                assertTrue("normal-vol stripping mismatch: tenor=" + tenor
+                        + " strike=" + data.strikes[s]
+                        + " stripped=" + priceFromStrippedVolatility
+                        + " constant=" + priceFromConstantVolatility
+                        + " error=" + error + " tol=" + tolerance,
+                        error <= tolerance);
             }
         }
-        // Per-tenor assertions: shorter tenors hold the C++ 2.5e-8 cap;
-        // 30Y absorbs the JVM-vs-libm bit-divergence carry-forward.
-        assertTrue("normal-vol stripping mismatch (short tenors): "
-                + worstShortTenorDetail + " tol=" + tolerance,
-                worstShortTenorError <= tolerance);
-        assertTrue("normal-vol stripping mismatch (30Y JVM-aware envelope): "
-                + worst30YDetail + " tol=" + tolerance30Y,
-                worst30YError <= tolerance30Y);
     }
 
     /**
