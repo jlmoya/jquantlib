@@ -71,7 +71,9 @@ import org.jquantlib.time.Period;
 import org.jquantlib.time.Schedule;
 import org.jquantlib.time.TimeUnit;
 import org.jquantlib.time.calendars.Brazil;
+import org.jquantlib.time.calendars.Canada;
 import org.jquantlib.time.calendars.China;
+import org.jquantlib.time.calendars.UnitedStates;
 import org.junit.Test;
 
 /**
@@ -1064,6 +1066,323 @@ public class DayCountersTest {
             dayCounter.yearFraction(today, beyond);
             fail("Expected exception when yearFraction exceeds schedule range");
         } catch (final RuntimeException expected) { /* ok */ }
+    }
+
+    /**
+     * Port of free function {@code ISMAYearFractionWithReferenceDates} from
+     * v1.42.1 {@code test-suite/daycounters.cpp:83-91}. Computes the ISMA
+     * year fraction for a sub-interval inside a reference period using only
+     * the day-count primitive, mirroring the C++ helper one-for-one. Used by
+     * {@link #testActualActualWithAnnualSchedule()} and
+     * {@link #testActualActualWithSchedule()}.
+     */
+    private static double ismaYearFractionWithReferenceDates(
+            final DayCounter dayCounter,
+            final Date start, final Date end,
+            final Date refStart, final Date refEnd) {
+        final double referenceDayCount = dayCounter.dayCount(refStart, refEnd);
+        final int couponsPerYear = (int) Math.round(365.0 / referenceDayCount);
+        return ((double) dayCounter.dayCount(start, end))
+                / (referenceDayCount * couponsPerYear);
+    }
+
+    /**
+     * Port of free function {@code actualActualDaycountComputation} from
+     * v1.42.1 {@code test-suite/daycounters.cpp:93-112}. Sums the ISMA year
+     * fraction across reference periods of a given schedule, used as a
+     * reference value in {@link #testActualActualWithSemiannualSchedule()}.
+     */
+    private static double actualActualDaycountComputation(
+            final Schedule schedule, final Date start, final Date end) {
+        final DayCounter dayCounter = new ActualActual(ActualActual.Convention.ISMA, schedule);
+        double yearFraction = 0.0;
+        for (int i = 1; i < schedule.size() - 1; i++) {
+            final Date referenceStart = schedule.date(i);
+            final Date referenceEnd = schedule.date(i + 1);
+            if (start.lt(referenceEnd) && end.gt(referenceStart)) {
+                final Date subStart = start.gt(referenceStart) ? start : referenceStart;
+                final Date subEnd = end.lt(referenceEnd) ? end : referenceEnd;
+                yearFraction += ismaYearFractionWithReferenceDates(
+                        dayCounter, subStart, subEnd, referenceStart, referenceEnd);
+            }
+        }
+        return yearFraction;
+    }
+
+    /**
+     * Direct port of v1.42.1 {@code test-suite/daycounters.cpp::
+     * testActualActualWithSemiannualSchedule} (lines 338-451). Validates the
+     * schedule-aware ISMA Act/Act day counter under a semiannual coupon
+     * schedule against a from-scratch ISMA computation that walks the
+     * reference periods one at a time. Uses {@link UnitedStates.Market#GovernmentBond}.
+     * Tolerance 1e-10 / 1e-8.
+     */
+    @Test
+    public void testActualActualWithSemiannualSchedule() {
+        QL.info("Testing actual/actual with schedule for undefined semiannual reference periods...");
+
+        final Calendar calendar = new UnitedStates(UnitedStates.Market.GOVERNMENTBOND);
+        final Date fromDate = new Date(10, Month.January, 2017);
+        final Date firstCoupon = new Date(31, Month.August, 2017);
+        final Date quasiCoupon = new Date(28, Month.February, 2017);
+        final Date quasiCoupon2 = new Date(31, Month.August, 2016);
+
+        Schedule schedule = new MakeSchedule()
+                .from(fromDate)
+                .withFirstDate(firstCoupon)
+                .to(new Date(28, Month.February, 2026))
+                .withFrequency(Frequency.Semiannual)
+                .withCalendar(calendar)
+                .withConvention(BusinessDayConvention.Unadjusted)
+                .backwards().endOfMonth(true)
+                .schedule();
+
+        Date testDate = schedule.date(1);
+        DayCounter dayCounter = new ActualActual(ActualActual.Convention.ISMA, schedule);
+        final DayCounter dayCounterNoSchedule = new ActualActual(ActualActual.Convention.ISMA);
+
+        final Date referencePeriodStart = schedule.date(1);
+        final Date referencePeriodEnd = schedule.date(2);
+
+        // Zero-length intervals must produce 0.
+        if (dayCounter.yearFraction(referencePeriodStart, referencePeriodStart) != 0.0) {
+            fail("Expected 0 year fraction for identical dates (schedule-aware)");
+        }
+        if (dayCounterNoSchedule.yearFraction(referencePeriodStart, referencePeriodStart) != 0.0) {
+            fail("Expected 0 year fraction for identical dates (no schedule)");
+        }
+        if (dayCounterNoSchedule.yearFraction(referencePeriodStart, referencePeriodStart,
+                                              referencePeriodStart, referencePeriodStart) != 0.0) {
+            fail("Expected 0 year fraction for identical dates with explicit refs");
+        }
+        if (dayCounter.yearFraction(referencePeriodStart, referencePeriodEnd) != 0.5) {
+            fail("Expected exactly 0.5 for full reference period (schedule-aware), got "
+                    + dayCounter.yearFraction(referencePeriodStart, referencePeriodEnd));
+        }
+        if (dayCounterNoSchedule.yearFraction(referencePeriodStart, referencePeriodEnd,
+                                              referencePeriodStart, referencePeriodEnd) != 0.5) {
+            fail("Expected exactly 0.5 for full reference period (no schedule, explicit refs)");
+        }
+
+        // Walk test date across the period — schedule-aware and explicit-refs forms must agree.
+        while (testDate.lt(referencePeriodEnd)) {
+            final double difference =
+                    dayCounter.yearFraction(testDate, referencePeriodEnd,
+                                            referencePeriodStart, referencePeriodEnd)
+                    - dayCounter.yearFraction(testDate, referencePeriodEnd);
+            if (Math.abs(difference) > 1.0e-10) {
+                fail("Schedule did not pick the right reference period: "
+                        + testDate + " to " + referencePeriodEnd
+                        + " diff=" + difference);
+            }
+            testDate = calendar.advance(testDate, new Period(1, TimeUnit.Days),
+                                        BusinessDayConvention.Following, false);
+        }
+
+        // Long first coupon
+        final double calculatedYearFraction = dayCounter.yearFraction(fromDate, firstCoupon);
+        final double expectedYearFraction = 0.5
+                + ((double) dayCounter.dayCount(fromDate, quasiCoupon))
+                  / (2.0 * dayCounter.dayCount(quasiCoupon2, quasiCoupon));
+        if (Math.abs(calculatedYearFraction - expectedYearFraction) > 1.0e-10) {
+            fail("Long first coupon year fraction mismatch: expected=" + expectedYearFraction
+                    + " calculated=" + calculatedYearFraction);
+        }
+
+        // Multi-period sweep with endOfMonth=false.
+        schedule = new MakeSchedule()
+                .from(new Date(10, Month.January, 2017))
+                .withFirstDate(new Date(31, Month.August, 2017))
+                .to(new Date(28, Month.February, 2026))
+                .withFrequency(Frequency.Semiannual)
+                .withCalendar(calendar)
+                .withConvention(BusinessDayConvention.Unadjusted)
+                .backwards().endOfMonth(false)
+                .schedule();
+
+        Date periodStartDate = schedule.date(1);
+        Date periodEndDate = schedule.date(2);
+        dayCounter = new ActualActual(ActualActual.Convention.ISMA, schedule);
+
+        while (periodEndDate.lt(schedule.date(schedule.size() - 2))) {
+            final double expected = actualActualDaycountComputation(
+                    schedule, periodStartDate, periodEndDate);
+            final double calculated = dayCounter.yearFraction(periodStartDate, periodEndDate);
+            if (Math.abs(expected - calculated) > 1.0e-8) {
+                fail("Schedule-aware Act/Act mismatch: " + periodStartDate
+                        + " to " + periodEndDate
+                        + " expected=" + expected + " calculated=" + calculated);
+            }
+            periodEndDate = calendar.advance(periodEndDate, new Period(1, TimeUnit.Days),
+                                             BusinessDayConvention.Following, false);
+        }
+    }
+
+    /**
+     * Direct port of v1.42.1 {@code test-suite/daycounters.cpp::
+     * testActualActualWithAnnualSchedule} (lines 453-491). Validates that
+     * the schedule-aware ISMA Act/Act day counter agrees with the
+     * {@link #ismaYearFractionWithReferenceDates} reference computation when
+     * fed an annual schedule. Tolerance 1e-10.
+     */
+    @Test
+    public void testActualActualWithAnnualSchedule() {
+        QL.info("Testing actual/actual with schedule for undefined annual reference periods...");
+
+        final Calendar calendar = new UnitedStates(UnitedStates.Market.GOVERNMENTBOND);
+        final Schedule schedule = new MakeSchedule()
+                .from(new Date(10, Month.January, 2017))
+                .withFirstDate(new Date(31, Month.August, 2017))
+                .to(new Date(28, Month.February, 2026))
+                .withFrequency(Frequency.Annual)
+                .withCalendar(calendar)
+                .withConvention(BusinessDayConvention.Unadjusted)
+                .backwards().endOfMonth(false)
+                .schedule();
+
+        final Date referencePeriodStart = schedule.date(1);
+        final Date referencePeriodEnd = schedule.date(2);
+
+        Date testDate = schedule.date(1);
+        final DayCounter dayCounter = new ActualActual(ActualActual.Convention.ISMA, schedule);
+
+        while (testDate.lt(referencePeriodEnd)) {
+            final double difference =
+                    ismaYearFractionWithReferenceDates(dayCounter,
+                                                       testDate, referencePeriodEnd,
+                                                       referencePeriodStart, referencePeriodEnd)
+                    - dayCounter.yearFraction(testDate, referencePeriodEnd);
+            if (Math.abs(difference) > 1.0e-10) {
+                fail("Schedule did not pick the right annual reference period: "
+                        + testDate + " to " + referencePeriodEnd
+                        + " (ref " + referencePeriodStart + " to " + referencePeriodEnd + ")"
+                        + " diff=" + difference);
+            }
+            testDate = calendar.advance(testDate, new Period(1, TimeUnit.Days),
+                                        BusinessDayConvention.Following, false);
+        }
+    }
+
+    /**
+     * Direct port of v1.42.1 {@code test-suite/daycounters.cpp::
+     * testActualActualWithSchedule} (lines 493-641). Validates the
+     * schedule-aware ISMA Act/Act day counter against a {@link Canada}
+     * semiannual schedule with a long first coupon, exercising both reference
+     * and no-reference paths, splitting the long first coupon across two
+     * quasi-periods, and checking sum-consistency. Tolerance 1e-10.
+     */
+    @Test
+    public void testActualActualWithSchedule() {
+        QL.info("Testing actual/actual day counter with schedule...");
+
+        // Long first coupon
+        final Date issueDateExpected = new Date(17, Month.January, 2017);
+        final Date firstCouponDateExpected = new Date(31, Month.August, 2017);
+
+        final Schedule schedule = new MakeSchedule()
+                .from(issueDateExpected)
+                .withFirstDate(firstCouponDateExpected)
+                .to(new Date(28, Month.February, 2026))
+                .withFrequency(Frequency.Semiannual)
+                .withCalendar(new Canada())
+                .withConvention(BusinessDayConvention.Unadjusted)
+                .backwards()
+                .endOfMonth()
+                .schedule();
+
+        final Date issueDate = schedule.date(0);
+        if (!issueDate.equals(issueDateExpected)) {
+            fail("Issue date mismatch: " + issueDate + " expected " + issueDateExpected);
+        }
+        final Date firstCouponDate = schedule.date(1);
+        if (!firstCouponDate.equals(firstCouponDateExpected)) {
+            fail("First coupon date mismatch: " + firstCouponDate
+                    + " expected " + firstCouponDateExpected);
+        }
+
+        // Build quasi coupon dates by stepping back two tenors from the first coupon.
+        final Date quasiCouponDate2 = schedule.calendar().advance(
+                firstCouponDate,
+                schedule.tenor().negative(),
+                schedule.businessDayConvention(),
+                schedule.endOfMonth());
+        final Date quasiCouponDate1 = schedule.calendar().advance(
+                quasiCouponDate2,
+                schedule.tenor().negative(),
+                schedule.businessDayConvention(),
+                schedule.endOfMonth());
+
+        final Date quasiCouponDate1Expected = new Date(31, Month.August, 2016);
+        final Date quasiCouponDate2Expected = new Date(28, Month.February, 2017);
+
+        if (!quasiCouponDate2.equals(quasiCouponDate2Expected)) {
+            fail("Later quasi coupon date mismatch: " + quasiCouponDate2
+                    + " expected " + quasiCouponDate2Expected);
+        }
+        if (!quasiCouponDate1.equals(quasiCouponDate1Expected)) {
+            fail("Earlier quasi coupon date mismatch: " + quasiCouponDate1
+                    + " expected " + quasiCouponDate1Expected);
+        }
+
+        final DayCounter dayCounter = new ActualActual(ActualActual.Convention.ISMA, schedule);
+
+        // Full coupon — schedule-aware vs explicit-refs vs split.
+        double tWithReference = dayCounter.yearFraction(
+                issueDate, firstCouponDate, quasiCouponDate2, firstCouponDate);
+        double tNoReference = dayCounter.yearFraction(issueDate, firstCouponDate);
+        final double tTotal = ismaYearFractionWithReferenceDates(
+                dayCounter, issueDate, quasiCouponDate2,
+                quasiCouponDate1, quasiCouponDate2) + 0.5;
+        final double expected = 0.6160220994;
+
+        if (Math.abs(tTotal - expected) > 1.0e-10) {
+            fail("tTotal mismatch: calc=" + tTotal + " expected=" + expected);
+        }
+        if (Math.abs(tWithReference - expected) > 1.0e-10) {
+            fail("tWithReference mismatch: calc=" + tWithReference + " expected=" + expected);
+        }
+        if (Math.abs(tNoReference - tWithReference) > 1.0e-10) {
+            fail("Reference-vs-no-reference disagreement on full coupon");
+        }
+
+        // Settlement date in the first quasi-period.
+        Date settlementDate = new Date(29, Month.January, 2017);
+        tWithReference = ismaYearFractionWithReferenceDates(
+                dayCounter, issueDate, settlementDate,
+                quasiCouponDate1, quasiCouponDate2);
+        tNoReference = dayCounter.yearFraction(issueDate, settlementDate);
+        final double tExpectedFirstQp = 0.03314917127071823;  // 12.0/362
+        if (Math.abs(tWithReference - tExpectedFirstQp) > 1.0e-10) {
+            fail("First-qp year fraction (with ref) mismatch: calc=" + tNoReference
+                    + " expected=" + tExpectedFirstQp);
+        }
+        if (Math.abs(tNoReference - tWithReference) > 1.0e-10) {
+            fail("Reference-vs-no-reference disagreement on first quasi-period");
+        }
+        double t2 = dayCounter.yearFraction(settlementDate, firstCouponDate);
+        if (Math.abs(tExpectedFirstQp + t2 - expected) > 1.0e-10) {
+            fail("First-qp split sum inconsistent: "
+                    + (tExpectedFirstQp + t2) + " vs " + expected);
+        }
+
+        // Settlement date in the second quasi-period.
+        settlementDate = new Date(29, Month.July, 2017);
+        tNoReference = dayCounter.yearFraction(issueDate, settlementDate);
+        tWithReference = ismaYearFractionWithReferenceDates(
+                dayCounter, issueDate, quasiCouponDate2,
+                quasiCouponDate1, quasiCouponDate2)
+                + ismaYearFractionWithReferenceDates(
+                dayCounter, quasiCouponDate2, settlementDate,
+                quasiCouponDate2, firstCouponDate);
+        if (Math.abs(tNoReference - tWithReference) > 1.0e-10) {
+            fail("Second-qp two-segment vs single-call disagree: "
+                    + tNoReference + " vs " + tWithReference);
+        }
+        t2 = dayCounter.yearFraction(settlementDate, firstCouponDate);
+        if (Math.abs(tTotal - (tNoReference + t2)) > 1.0e-10) {
+            fail("tTotal vs split sum inconsistent: "
+                    + tTotal + " vs " + (tNoReference + t2));
+        }
     }
 
 }

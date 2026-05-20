@@ -13,6 +13,7 @@ declarations across the entire JQuantLib testsuite tree.
 | Of those: classified as EXISTING_EQUIVALENT (Java has a same-stem-named test in the corresponding test class) | **8** |
 | Of those: genuinely missing (no name+content alias) | **83** |
 | TwoDimensionalIntegral test ported & passing in this round | +1 |
+| Round A5-C 2026-05-20 reclassifications (distributions all EXISTING_EQUIVALENT in per-distribution test files; daycounters 3 PORTED & 3 BLOCKED on Date/daycount infra) | -8 (5 distributions to EXISTING_EQUIVALENT, 3 daycounters PORTED) |
 
 Method: stem-strip the leading `test`, case-insensitive, partial substring,
 size-similarity gate (length difference < 50% of the longer name). When in
@@ -68,11 +69,21 @@ doubt the audit script counts the test as genuinely missing (conservative).
 
 ### Day counters / dates (2 files, 7 tests)
 
-- **daycounters** (6): `testActualActualWithSemiannualSchedule`,
-  `testActualActualWithAnnualSchedule`, `testActualActualWithSchedule`,
-  `testIntraday`, `testYearFraction2DateBulk`, `testYearFraction2DateRounding`
-  — ActualActual schedule-aware ctor (already in v1.42.1) — port ~150 LOC
-  daycount + 6 test bodies ~250 LOC.
+- **daycounters** (6): updated 2026-05-20 by Round A5-C:
+  - `testActualActualWithSemiannualSchedule` — PORTED & PASSING (A5-C-563).
+  - `testActualActualWithAnnualSchedule` — PORTED & PASSING (A5-C-563).
+  - `testActualActualWithSchedule` — PORTED & PASSING (A5-C-563).
+  - `testIntraday` — BLOCKED (`QL_HIGH_RESOLUTION_DATE` extension; Java Date
+    is day-resolution only).
+  - `testYearFraction2DateBulk` — BLOCKED (needs Actual365Fixed.NoLeap,
+    Actual36525, Actual366, Actual364, Thirty360 Italian/German/ISMA/ISDA/NASD,
+    ActualActual Historical/Actual365/Euro — none of which exist in Java).
+  - `testYearFraction2DateRounding` — BLOCKED (relies on Thirty360 USA impl
+    matching C++ end-of-Feb rule; Java Thirty360.USA routes through BondBasis
+    `ISMA_Impl`, omitting the end-of-Feb adjustment — see
+    `DayCountersTest` header lines 107-118).
+  The free-function helper `ismaYearFractionWithReferenceDates` was also
+  ported as part of A5-C-563 to support the schedule-aware tests.
 
 - **dates** (1): `intraday` — Date intraday hours/minutes/seconds accessors
   ~80 LOC test, requires Date intraday extension (Date.java currently
@@ -81,9 +92,20 @@ doubt the audit script counts the test as genuinely missing (conservative).
 ### Distributions (1 file, 5 tests)
 
 - **distributions** (5): `testNormal`, `testBivariate`, `testPoisson`,
-  `testCumulativePoisson`, `testInverseCumulativePoisson` — body-fill
-  ~80-120 LOC each. The named tests sit in
-  `DistributionsAdditionalTest.java` as 5 still-`@Ignore`d sibling tests.
+  `testCumulativePoisson`, `testInverseCumulativePoisson` —
+  **EXISTING_EQUIVALENT (re-classified by Round A5-C 2026-05-20)**. The
+  audit-script stem-strip missed these because the Java equivalents live in
+  dedicated per-distribution test files rather than in
+  `DistributionsAdditionalTest.java`. The 5 named tests are already covered
+  by:
+  - `testNormal` -> `NormalDistributionTest` +
+    `CumulativeNormalDistributionTest`.
+  - `testBivariate` -> `BivariateNormalDistributionTest`.
+  - `testPoisson` -> `PoissonNormalTest`.
+  - `testCumulativePoisson` -> `CumulativePoissonDistributionTest`.
+  - `testInverseCumulativePoisson` -> `InverseCumulativePoissonTest`.
+  The {@link DistributionsAdditionalTest} header (lines 41-50) already
+  documents this equivalence — no `@Ignore` placeholders exist.
 
 ### Dividends / equity (1 file, 5 tests)
 
