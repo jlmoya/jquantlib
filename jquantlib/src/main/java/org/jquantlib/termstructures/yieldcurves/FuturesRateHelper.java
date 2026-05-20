@@ -297,10 +297,19 @@ public class FuturesRateHelper extends RateHelper {
     public/* Real */double impliedQuote() {
 
         QL.require(termStructure != null, TERMSTRUCT_NOT_SET);
+        // Mirrors C++ v1.42.1 ratehelpers.cpp:156-165 — forwardRate is the simple
+        // forward computed from discount factors over [earliestDate, latestDate]:
+        //   forward = (D(early)/D(late) - 1) / yearFraction
+        // The previous Java expression had a misplaced parenthesis
+        //   D(early) / (D(late) - 1.0) / yearFraction
+        // which produced a numerically very different value and broke the bootstrap.
+        // The non-negativity assertion on convA was also removed: per C++ the
+        // adjustment "has been used in the past to take into account futures
+        // margining vs FRA. Therefore, there's no requirement for it to be
+        // non-negative." (ratehelpers.cpp:160-162).
         final/* Rate */ double forwardRate =
-                termStructure.discount(earliestDate) / (termStructure.discount(latestDate) - 1.0) / yearFraction;
+                (termStructure.discount(earliestDate) / termStructure.discount(latestDate) - 1.0) / yearFraction;
         final/* Rate */ double convA = this.convAdj.empty() ? 0.0 : this.convAdj.currentLink().value();
-        QL.ensure(convA >= 0.0, "Negative (" + convAdj + ") futures convexity adjustment");
         final/* Rate */ double futureRate = forwardRate + convA;
         return 100.0 * (1.0 - futureRate);
     }
