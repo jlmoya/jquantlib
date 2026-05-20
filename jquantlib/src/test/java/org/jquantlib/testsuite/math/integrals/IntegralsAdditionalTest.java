@@ -578,14 +578,46 @@ public class IntegralsAdditionalTest {
      * BLOCKED port of {@code test-suite/integrals.cpp:186}
      * {@code BOOST_AUTO_TEST_CASE(testTanhSinh)}.
      *
-     * <p>Requires {@code org.jquantlib.math.integrals.TanhSinhIntegral} —
-     * not yet ported. C++ source: {@code ql/math/integrals/tanhsinhintegral.hpp}
-     * (wraps {@code boost::math::quadrature::tanh_sinh}).
+     * <p>{@link org.jquantlib.math.integrals.TanhSinhIntegral} was ported in
+     * Phase 1 closure A1-B-retry (commit {@code 73601967}) as a direct Takahasi-Mori 1974
+     * double-exponential quadrature implementation (since C++ wraps Boost.Math which has no
+     * Java equivalent). Verification with this test surfaced an accuracy defect on the
+     * simplest constant case: {@code integrate(f(x)=1, [0,1])} should yield 1.0 but the
+     * Java port diverges. Tracked as A3-style port defect (TODO Phase1-closure-A1-B-retry-fix);
+     * see TanhSinhIntegral.java for direct fix.
      */
-    @Ignore("BLOCKED: TanhSinhIntegral not ported - see integrals.cpp:186")
+    @Ignore("BLOCKED: Java TanhSinhIntegral port has accuracy bug on integrate(1, [0,1]) - needs A3-style fix")
     @Test
     public void testTanhSinh() {
-        fail("TanhSinhIntegral missing in Java port");
+        runIntegratorBattery(new org.jquantlib.math.integrals.TanhSinhIntegral());
+    }
+
+    /**
+     * Helper analogous to C++ {@code testSeveral} for plain
+     * {@link org.jquantlib.math.integrals.Integrator}-style integrators
+     * (TanhSinh, ExpSinh, GaussKronrod, etc.).
+     */
+    private static void runIntegratorBattery(final org.jquantlib.math.integrals.Integrator I) {
+        runIntegratorSingle(I, "f(x) = 0", new Constant(0.0), 0.0, 1.0, 0.0);
+        runIntegratorSingle(I, "f(x) = 1", new Constant(1.0), 0.0, 1.0, 1.0);
+        runIntegratorSingle(I, "f(x) = x", new Identity(), 0.0, 1.0, 0.5);
+        runIntegratorSingle(I, "f(x) = x^2", new Square(), 0.0, 1.0, 1.0 / 3.0);
+        runIntegratorSingle(I, "f(x) = sin(x)", new Sin(), 0.0, Constants.M_PI, 2.0);
+        runIntegratorSingle(I, "f(x) = cos(x)", new Cos(), 0.0, Constants.M_PI, 0.0);
+        runIntegratorSingle(I, "f(x) = Gaussian(x)",
+                new NormalDistribution(), -10.0, 10.0, 1.0);
+    }
+
+    private static void runIntegratorSingle(
+            final org.jquantlib.math.integrals.Integrator I, final String tag,
+            final Ops.DoubleOp f, final double xMin, final double xMax,
+            final double expected) {
+        final double calculated = I.op(f, xMin, xMax);
+        if (Math.abs(calculated - expected) > TOLERANCE) {
+            fail("integrating " + tag
+                    + "\n    calculated: " + calculated
+                    + "\n    expected:   " + expected);
+        }
     }
 
     /**
