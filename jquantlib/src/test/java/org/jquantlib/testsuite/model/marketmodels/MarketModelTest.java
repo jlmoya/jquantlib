@@ -1825,6 +1825,426 @@ public class MarketModelTest {
     }
 
     // ------------------------------------------------------------------
+    // testPathwiseMarketVegas — cpp:3473
+    // ------------------------------------------------------------------
+
+    /** Faithful port of {@code test-suite/marketmodel.cpp:3473} {@code BOOST_AUTO_TEST_CASE(testPathwiseMarketVegas)}. */
+    @Test
+    public void testPathwiseMarketVegas() {
+        final int N = MarketModelTestSetup.todaysForwards.length;
+        final org.jquantlib.model.marketmodels.curvestates.LMMCurveState cs =
+                new org.jquantlib.model.marketmodels.curvestates.LMMCurveState(MarketModelTestSetup.rateTimes);
+        cs.setOnForwardRates(MarketModelTestSetup.todaysForwards);
+
+        final Payoff[] payoffs = new Payoff[N];
+        for (int i = 0; i < N; ++i) {
+            payoffs[i] = new PlainVanillaPayoff(Option.Type.Call, cs.coterminalSwapRate(i));
+        }
+        final MultiStepOptionlets dummyProduct = new MultiStepOptionlets(MarketModelTestSetup.rateTimes,
+                MarketModelTestSetup.accruals, MarketModelTestSetup.paymentTimes, payoffs);
+
+        final double bumpSizeNumericalDifferentiation = 1.0e-6;
+        final org.jquantlib.model.marketmodels.products.pathwise.MarketModelPathwiseCoterminalSwaptionsDeflated swaptionsDeflated =
+                new org.jquantlib.model.marketmodels.products.pathwise.MarketModelPathwiseCoterminalSwaptionsDeflated(
+                        MarketModelTestSetup.rateTimes, cs.coterminalSwapRates());
+        final org.jquantlib.model.marketmodels.products.pathwise.MarketModelPathwiseCoterminalSwaptionsNumericalDeflated swaptionsDeflated2 =
+                new org.jquantlib.model.marketmodels.products.pathwise.MarketModelPathwiseCoterminalSwaptionsNumericalDeflated(
+                        MarketModelTestSetup.rateTimes, cs.coterminalSwapRates(), bumpSizeNumericalDifferentiation);
+
+        final EvolutionDescription evolution = dummyProduct.evolution();
+        final int steps = evolution.numberOfSteps();
+        final int numberRates = evolution.numberOfRates();
+
+        final int pathsToDo = 10; // numerical-differentiation requires equality on each path
+        final int pathsToDoSimulation = MarketModelTestSetup.paths_;
+
+        final double multiplier = 50; // bump-size factor (matches v1.42.1)
+        final double tolerance = 1.0e-6;
+        final double initialNumeraireValue = 0.95;
+
+        final boolean allowFactorwiseBumping = true;
+        final java.util.List<org.jquantlib.model.marketmodels.pathwisegreeks.VolatilityBumpInstrumentJacobian.Cap> caps =
+                new ArrayList<>();
+        final double capStrike = MarketModelTestSetup.todaysForwards[0];
+        for (int i = 0; i + 2 < numberRates; i = i + 3) {
+            caps.add(new org.jquantlib.model.marketmodels.pathwisegreeks.VolatilityBumpInstrumentJacobian.Cap(
+                    i, i + 3, capStrike));
+        }
+        final org.jquantlib.model.marketmodels.products.pathwise.MarketModelPathwiseMultiDeflatedCap.StartAndEnd[] startsAndEnds =
+                new org.jquantlib.model.marketmodels.products.pathwise.MarketModelPathwiseMultiDeflatedCap.StartAndEnd[caps.size()];
+        for (int j = 0; j < caps.size(); ++j) {
+            startsAndEnds[j] = new org.jquantlib.model.marketmodels.products.pathwise.MarketModelPathwiseMultiDeflatedCap.StartAndEnd(
+                    caps.get(j).startIndex, caps.get(j).endIndex);
+        }
+        final org.jquantlib.model.marketmodels.products.pathwise.MarketModelPathwiseMultiDeflatedCap capsDeflated =
+                new org.jquantlib.model.marketmodels.products.pathwise.MarketModelPathwiseMultiDeflatedCap(
+                        MarketModelTestSetup.rateTimes, MarketModelTestSetup.accruals,
+                        MarketModelTestSetup.paymentTimes, capStrike, startsAndEnds);
+
+        final java.util.List<org.jquantlib.model.marketmodels.pathwisegreeks.VolatilityBumpInstrumentJacobian.Swaption> swaptions =
+                new ArrayList<>(numberRates);
+        for (int i = 0; i < numberRates; ++i) {
+            swaptions.add(new org.jquantlib.model.marketmodels.pathwisegreeks.VolatilityBumpInstrumentJacobian.Swaption(
+                    i, numberRates));
+        }
+
+        final MarketModelTestSetup.MarketModelType[] marketModels = { ExponentialCorrelationAbcdVolatility };
+
+        // ===== Block 1: analytic test for swaptions and caps =====
+        for (final MarketModelTestSetup.MarketModelType j : marketModels) {
+            final int[] testedFactors = { Math.min(1, MarketModelTestSetup.todaysForwards.length) };
+            for (final int factors : testedFactors) {
+                final boolean logNormal = true;
+                final MarketModel marketModel = MarketModelTestSetup.makeMarketModel(
+                        logNormal, evolution, factors, j);
+
+                final org.jquantlib.model.marketmodels.pathwisegreeks.VegaBumpCollection possibleBumps =
+                        new org.jquantlib.model.marketmodels.pathwisegreeks.VegaBumpCollection(marketModel, allowFactorwiseBumping);
+                final org.jquantlib.model.marketmodels.pathwisegreeks.OrthogonalizedBumpFinder bumpFinder =
+                        new org.jquantlib.model.marketmodels.pathwisegreeks.OrthogonalizedBumpFinder(
+                                possibleBumps, swaptions, caps, multiplier, tolerance);
+                final List<List<org.jquantlib.math.matrixutilities.Matrix>> theBumps = new ArrayList<>();
+                bumpFinder.getVegaBumps(theBumps);
+
+                // swaptions analytic
+                {
+                    final org.jquantlib.math.matrixutilities.Matrix swaptionVegasMatrix =
+                            new org.jquantlib.math.matrixutilities.Matrix(swaptionsDeflated.numberOfProducts(), theBumps.get(0).size());
+                    for (int i = 0; i < swaptionsDeflated.numberOfProducts(); ++i) {
+                        final org.jquantlib.model.marketmodels.pathwisegreeks.SwaptionPseudoDerivative thisPseudoDerivative =
+                                new org.jquantlib.model.marketmodels.pathwisegreeks.SwaptionPseudoDerivative(
+                                        marketModel, swaptions.get(i).startIndex, swaptions.get(i).endIndex);
+                        for (int jj = 0; jj < theBumps.get(0).size(); ++jj) {
+                            double sum = 0;
+                            for (int k = 0; k < steps; ++k) {
+                                for (int l = 0; l < numberRates; ++l) {
+                                    for (int m = 0; m < factors; ++m) {
+                                        sum += theBumps.get(k).get(jj).get(l, m)
+                                                * thisPseudoDerivative.volatilityDerivative(k).get(l, m);
+                                    }
+                                }
+                            }
+                            swaptionVegasMatrix.set(i, jj, sum);
+                        }
+                    }
+                    int numberDiagonalFailures = 0;
+                    int offDiagonalFailures = 0;
+                    for (int i = 0; i < swaptions.size(); ++i) {
+                        for (int jj = 0; jj < theBumps.get(0).size(); ++jj) {
+                            if (i == jj) {
+                                if (Math.abs(swaptionVegasMatrix.get(i, i) - 0.01) > 1e-8) {
+                                    ++numberDiagonalFailures;
+                                }
+                            } else {
+                                if (Math.abs(swaptionVegasMatrix.get(i, jj)) > 1e-8) {
+                                    ++offDiagonalFailures;
+                                }
+                            }
+                        }
+                    }
+                    if (numberDiagonalFailures + offDiagonalFailures > 0) {
+                        fail("Pathwise market vega analytic test fails for swaptions: " + offDiagonalFailures
+                                + " off-diagonal failures and " + numberDiagonalFailures + " on the diagonal.");
+                    }
+                }
+
+                // caps analytic
+                {
+                    final org.jquantlib.math.matrixutilities.Matrix capsVegasMatrix =
+                            new org.jquantlib.math.matrixutilities.Matrix(caps.size(), theBumps.get(0).size());
+                    for (int i = 0; i < caps.size(); ++i) {
+                        final org.jquantlib.model.marketmodels.pathwisegreeks.CapPseudoDerivative thisPseudoDerivative =
+                                new org.jquantlib.model.marketmodels.pathwisegreeks.CapPseudoDerivative(
+                                        marketModel, caps.get(i).strike, caps.get(i).startIndex, caps.get(i).endIndex,
+                                        initialNumeraireValue);
+                        for (int jj = 0; jj < theBumps.get(0).size(); ++jj) {
+                            double sum = 0;
+                            for (int k = 0; k < steps; ++k) {
+                                for (int l = 0; l < numberRates; ++l) {
+                                    for (int m = 0; m < factors; ++m) {
+                                        sum += theBumps.get(k).get(jj).get(l, m)
+                                                * thisPseudoDerivative.volatilityDerivative(k).get(l, m);
+                                    }
+                                }
+                            }
+                            capsVegasMatrix.set(i, jj, sum);
+                        }
+                    }
+                    int numberDiagonalFailures = 0;
+                    int offDiagonalFailures = 0;
+                    for (int i = 0; i < caps.size(); ++i) {
+                        for (int jj = 0; jj < theBumps.get(0).size(); ++jj) {
+                            if (i + swaptions.size() == jj) {
+                                if (Math.abs(capsVegasMatrix.get(i, jj) - 0.01) > 1e-8) {
+                                    ++numberDiagonalFailures;
+                                }
+                            } else {
+                                if (Math.abs(capsVegasMatrix.get(i, jj)) > 1e-8) {
+                                    ++offDiagonalFailures;
+                                }
+                            }
+                        }
+                    }
+                    if (numberDiagonalFailures + offDiagonalFailures > 0) {
+                        fail("Pathwise market vega analytic test fails for caps: " + offDiagonalFailures
+                                + " off-diagonal failures and " + numberDiagonalFailures + " on the diagonal.");
+                    }
+                }
+            }
+        }
+
+        // ===== Block 2: numerical vs. analytic swaptions on each path =====
+        final int[] numberCashFlowsThisStep1 = new int[swaptionsDeflated.numberOfProducts()];
+        final MarketModelPathwiseMultiProduct.CashFlow[][] cashFlowsGenerated1 =
+                new MarketModelPathwiseMultiProduct.CashFlow[swaptionsDeflated.numberOfProducts()]
+                        [swaptionsDeflated.maxNumberOfCashFlowsPerProductPerStep()];
+        for (int i = 0; i < swaptionsDeflated.numberOfProducts(); ++i) {
+            for (int jj = 0; jj < swaptionsDeflated.maxNumberOfCashFlowsPerProductPerStep(); ++jj) {
+                cashFlowsGenerated1[i][jj] = new MarketModelPathwiseMultiProduct.CashFlow();
+                cashFlowsGenerated1[i][jj].amount = new double[numberRates + 1];
+            }
+        }
+        final int[] numberCashFlowsThisStep2 = new int[swaptionsDeflated.numberOfProducts()];
+        final MarketModelPathwiseMultiProduct.CashFlow[][] cashFlowsGenerated2 =
+                new MarketModelPathwiseMultiProduct.CashFlow[swaptionsDeflated.numberOfProducts()]
+                        [swaptionsDeflated.maxNumberOfCashFlowsPerProductPerStep()];
+        for (int i = 0; i < swaptionsDeflated.numberOfProducts(); ++i) {
+            for (int jj = 0; jj < swaptionsDeflated.maxNumberOfCashFlowsPerProductPerStep(); ++jj) {
+                cashFlowsGenerated2[i][jj] = new MarketModelPathwiseMultiProduct.CashFlow();
+                cashFlowsGenerated2[i][jj].amount = new double[numberRates + 1];
+            }
+        }
+
+        for (final MarketModelTestSetup.MarketModelType j : marketModels) {
+            final int[] testedFactors = { Math.min(1, MarketModelTestSetup.todaysForwards.length) };
+            for (final int factors : testedFactors) {
+                final MTBrownianGeneratorFactory generatorFactory =
+                        new MTBrownianGeneratorFactory(MarketModelTestSetup.seed_);
+                final boolean logNormal = true;
+                final MarketModel marketModel = MarketModelTestSetup.makeMarketModel(
+                        logNormal, evolution, factors, j);
+                final LogNormalFwdRateEuler evolver1 = new LogNormalFwdRateEuler(marketModel,
+                        generatorFactory, swaptionsDeflated.suggestedNumeraires());
+                final LogNormalFwdRateEuler evolver2 = new LogNormalFwdRateEuler(marketModel,
+                        generatorFactory, swaptionsDeflated.suggestedNumeraires());
+
+                for (int p = 0; p < pathsToDo; ++p) {
+                    evolver1.startNewPath();
+                    swaptionsDeflated.reset();
+                    evolver2.startNewPath();
+                    swaptionsDeflated2.reset();
+                    int step = 0;
+                    boolean done;
+                    do {
+                        evolver1.advanceStep();
+                        done = swaptionsDeflated.nextTimeStep(evolver1.currentState(),
+                                numberCashFlowsThisStep1, cashFlowsGenerated1);
+                        evolver2.advanceStep();
+                        final boolean done2 = swaptionsDeflated2.nextTimeStep(evolver2.currentState(),
+                                numberCashFlowsThisStep2, cashFlowsGenerated2);
+                        if (done != done2) {
+                            fail("numerical swaptions derivative and swaptions disagree on termination");
+                        }
+                        for (int prod = 0; prod < swaptionsDeflated.numberOfProducts(); ++prod) {
+                            if (numberCashFlowsThisStep1[prod] != numberCashFlowsThisStep2[prod]) {
+                                fail("numerical swaptions derivative and swaptions disagree on number of cash flows");
+                            }
+                            for (int cf = 0; cf < numberCashFlowsThisStep1[prod]; ++cf) {
+                                for (int rate = 0; rate <= numberRates; ++rate) {
+                                    if (Math.abs(cashFlowsGenerated1[prod][cf].amount[rate]
+                                            - cashFlowsGenerated2[prod][cf].amount[rate]) > tolerance) {
+                                        fail("numerical swaptions derivative and swaptions disagree on cash flow size. cf="
+                                                + cf + " step=" + step + " rate=" + rate);
+                                    }
+                                }
+                            }
+                        }
+                        ++step;
+                    } while (!done);
+                }
+            }
+        }
+
+        // ===== Block 3: full simulation — swaption vegas =====
+        for (final MarketModelTestSetup.MarketModelType j : marketModels) {
+            final int[] testedFactors = { Math.min(1, MarketModelTestSetup.todaysForwards.length) };
+            for (final int factors : testedFactors) {
+                final MTBrownianGeneratorFactory generatorFactory =
+                        new MTBrownianGeneratorFactory(MarketModelTestSetup.seed_);
+                final boolean logNormal = true;
+                final MarketModel marketModel = MarketModelTestSetup.makeMarketModel(
+                        logNormal, evolution, factors, j);
+                final LogNormalFwdRateEuler evolver = new LogNormalFwdRateEuler(marketModel,
+                        generatorFactory, swaptionsDeflated.suggestedNumeraires());
+                final int initialNumeraire = evolver.numeraires()[0];
+                final double initialNumeraireValueB3 =
+                        MarketModelTestSetup.todaysDiscounts[initialNumeraire];
+
+                final org.jquantlib.model.marketmodels.pathwisegreeks.VegaBumpCollection possibleBumps =
+                        new org.jquantlib.model.marketmodels.pathwisegreeks.VegaBumpCollection(marketModel, allowFactorwiseBumping);
+                final org.jquantlib.model.marketmodels.pathwisegreeks.OrthogonalizedBumpFinder bumpFinder =
+                        new org.jquantlib.model.marketmodels.pathwisegreeks.OrthogonalizedBumpFinder(
+                                possibleBumps, swaptions, caps, multiplier, tolerance);
+                final List<List<org.jquantlib.math.matrixutilities.Matrix>> theBumps = new ArrayList<>();
+                bumpFinder.getVegaBumps(theBumps);
+
+                final int sz = swaptionsDeflated.numberOfProducts() * (1 + numberRates + theBumps.get(0).size());
+                final double[] values = new double[sz];
+                final double[] errors = new double[sz];
+                final org.jquantlib.model.marketmodels.PathwiseVegasAccountingEngine accountingEngine =
+                        new org.jquantlib.model.marketmodels.PathwiseVegasAccountingEngine(
+                                evolver, swaptionsDeflated, marketModel, theBumps, initialNumeraireValueB3);
+                accountingEngine.multiplePathValues(values, errors, pathsToDoSimulation);
+
+                final org.jquantlib.math.matrixutilities.Matrix vegasMatrix =
+                        new org.jquantlib.math.matrixutilities.Matrix(swaptionsDeflated.numberOfProducts(), theBumps.get(0).size());
+                final org.jquantlib.math.matrixutilities.Matrix standardErrors =
+                        new org.jquantlib.math.matrixutilities.Matrix(swaptionsDeflated.numberOfProducts(), theBumps.get(0).size());
+                final int entriesPerProduct = 1 + numberRates + theBumps.get(0).size();
+                for (int i = 0; i < swaptionsDeflated.numberOfProducts(); ++i) {
+                    for (int jj = 0; jj < theBumps.get(0).size(); ++jj) {
+                        vegasMatrix.set(i, jj, values[i * entriesPerProduct + numberRates + 1 + jj]);
+                        standardErrors.set(i, jj, errors[i * entriesPerProduct + numberRates + 1 + jj]);
+                    }
+                }
+
+                final double[] impliedVols = new double[swaptions.size()];
+                for (int i = 0; i < swaptions.size(); ++i) {
+                    impliedVols[i] = SwapForwardMappings.swaptionImpliedVolatility(marketModel,
+                            swaptions.get(i).startIndex, swaptions.get(i).endIndex);
+                }
+                final double[] analyticVegas = new double[swaptions.size()];
+                for (int i = 0; i < swaptions.size(); ++i) {
+                    final double swapRate = cs.coterminalSwapRates()[i];
+                    final double annuity = cs.coterminalSwapAnnuity(0, i) * initialNumeraireValueB3;
+                    final double expiry = MarketModelTestSetup.rateTimes[i];
+                    final double sd = impliedVols[i] * Math.sqrt(expiry);
+                    final double vega = BlackFormula.blackFormulaStdDevDerivative(swapRate, swapRate, sd, annuity, 0.0)
+                            * Math.sqrt(expiry);
+                    analyticVegas[i] = vega * 0.01;
+                }
+
+                int numberDiagonalFailures = 0;
+                int offDiagonalFailures = 0;
+                for (int i = 0; i < swaptions.size(); ++i) {
+                    final double thisError = vegasMatrix.get(i, i) - analyticVegas[i];
+                    final double thisErrorInSds = thisError / (standardErrors.get(i, i) + 1e-6);
+                    if (Math.abs(thisErrorInSds) > 4) {
+                        ++numberDiagonalFailures;
+                    }
+                }
+                for (int i = 0; i < swaptions.size(); ++i) {
+                    for (int jj = 0; jj < theBumps.get(0).size(); ++jj) {
+                        if (i != jj) {
+                            final double thisError = vegasMatrix.get(i, jj);
+                            final double thisErrorInSds = thisError / (standardErrors.get(i, jj) + 1e-6);
+                            if (Math.abs(thisErrorInSds) > 3.5) {
+                                ++offDiagonalFailures;
+                            }
+                        }
+                    }
+                }
+                if (offDiagonalFailures + numberDiagonalFailures > 0) {
+                    fail("Pathwise market vega test fails for coterminal swaptions: " + offDiagonalFailures
+                            + " off-diagonal failures and " + numberDiagonalFailures + " on the diagonal.");
+                }
+            }
+        }
+
+        // ===== Block 4: full simulation — cap vegas =====
+        for (final MarketModelTestSetup.MarketModelType j : marketModels) {
+            final int[] testedFactors = { Math.min(2, MarketModelTestSetup.todaysForwards.length) };
+            for (final int factors : testedFactors) {
+                final MTBrownianGeneratorFactory generatorFactory =
+                        new MTBrownianGeneratorFactory(MarketModelTestSetup.seed_);
+                final boolean logNormal = true;
+                final MarketModel marketModel = MarketModelTestSetup.makeMarketModel(
+                        logNormal, evolution, factors, j);
+                final LogNormalFwdRateEuler evolver = new LogNormalFwdRateEuler(marketModel,
+                        generatorFactory, capsDeflated.suggestedNumeraires());
+                final int initialNumeraire = evolver.numeraires()[0];
+                final double initialNumeraireValueB4 =
+                        MarketModelTestSetup.todaysDiscounts[initialNumeraire];
+
+                final org.jquantlib.model.marketmodels.pathwisegreeks.VegaBumpCollection possibleBumps =
+                        new org.jquantlib.model.marketmodels.pathwisegreeks.VegaBumpCollection(marketModel, allowFactorwiseBumping);
+                final org.jquantlib.model.marketmodels.pathwisegreeks.OrthogonalizedBumpFinder bumpFinder =
+                        new org.jquantlib.model.marketmodels.pathwisegreeks.OrthogonalizedBumpFinder(
+                                possibleBumps, swaptions, caps, multiplier, tolerance);
+                final List<List<org.jquantlib.math.matrixutilities.Matrix>> theBumps = new ArrayList<>();
+                bumpFinder.getVegaBumps(theBumps);
+
+                final int sz = capsDeflated.numberOfProducts() * (1 + numberRates + theBumps.get(0).size());
+                final double[] values = new double[sz];
+                final double[] errors = new double[sz];
+                final org.jquantlib.model.marketmodels.PathwiseVegasAccountingEngine accountingEngine =
+                        new org.jquantlib.model.marketmodels.PathwiseVegasAccountingEngine(
+                                evolver, capsDeflated, marketModel, theBumps, initialNumeraireValueB4);
+                accountingEngine.multiplePathValues(values, errors, pathsToDoSimulation);
+
+                final org.jquantlib.math.matrixutilities.Matrix vegasMatrix =
+                        new org.jquantlib.math.matrixutilities.Matrix(capsDeflated.numberOfProducts(), theBumps.get(0).size());
+                final org.jquantlib.math.matrixutilities.Matrix standardErrors =
+                        new org.jquantlib.math.matrixutilities.Matrix(capsDeflated.numberOfProducts(), theBumps.get(0).size());
+                final int entriesPerProduct = 1 + numberRates + theBumps.get(0).size();
+                for (int i = 0; i < capsDeflated.numberOfProducts(); ++i) {
+                    for (int jj = 0; jj < theBumps.get(0).size(); ++jj) {
+                        vegasMatrix.set(i, jj, values[i * entriesPerProduct + numberRates + jj + 1]);
+                        standardErrors.set(i, jj, errors[i * entriesPerProduct + numberRates + jj + 1]);
+                    }
+                }
+
+                final double[] impliedVols = new double[caps.size()];
+                final double[] analyticVegas = new double[caps.size()];
+                for (int i = 0; i < caps.size(); ++i) {
+                    final org.jquantlib.model.marketmodels.pathwisegreeks.CapPseudoDerivative capPseudo =
+                            new org.jquantlib.model.marketmodels.pathwisegreeks.CapPseudoDerivative(
+                                    marketModel, caps.get(i).strike, caps.get(i).startIndex,
+                                    caps.get(i).endIndex, initialNumeraireValueB4);
+                    impliedVols[i] = capPseudo.impliedVolatility();
+                    double vega = 0.0;
+                    for (int jj = caps.get(i).startIndex; jj < caps.get(i).endIndex; ++jj) {
+                        final double forward = cs.forwardRates()[jj];
+                        final double annuity = cs.discountRatio(jj + 1, 0) * initialNumeraireValueB4
+                                * MarketModelTestSetup.accruals[jj];
+                        final double expiry = MarketModelTestSetup.rateTimes[jj];
+                        final double sd = impliedVols[i] * Math.sqrt(expiry);
+                        final double capletVega = BlackFormula.blackFormulaStdDevDerivative(caps.get(i).strike,
+                                forward, sd, annuity, 0.0) * Math.sqrt(expiry);
+                        vega += capletVega;
+                    }
+                    analyticVegas[i] = vega * 0.01;
+                }
+
+                int numberDiagonalFailures = 0;
+                int offDiagonalFailures = 0;
+                for (int i = 0; i < caps.size(); ++i) {
+                    final double thisError = vegasMatrix.get(i, i + swaptions.size()) - analyticVegas[i];
+                    final double thisErrorInSds = thisError / (standardErrors.get(i, i + swaptions.size()) + 1e-6);
+                    if (Math.abs(thisErrorInSds) > 4) {
+                        ++numberDiagonalFailures;
+                    }
+                }
+                for (int i = 0; i < caps.size(); ++i) {
+                    for (int jj = 0; jj < theBumps.get(0).size(); ++jj) {
+                        if (i + swaptions.size() != jj) {
+                            final double thisError = vegasMatrix.get(i, jj);
+                            final double thisErrorInSds = thisError / (standardErrors.get(i, jj) + 1e-6);
+                            if (Math.abs(thisErrorInSds) > 3.5) {
+                                ++offDiagonalFailures;
+                            }
+                        }
+                    }
+                }
+                if (offDiagonalFailures + numberDiagonalFailures > 0) {
+                    fail("Pathwise market vega test fails for caps: " + offDiagonalFailures
+                            + " off-diagonal failures and " + numberDiagonalFailures + " on the diagonal.");
+                }
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------
     // Helper utilities
     // ------------------------------------------------------------------
 
