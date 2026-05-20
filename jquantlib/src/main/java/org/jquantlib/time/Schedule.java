@@ -449,6 +449,31 @@ public class Schedule {
                 dates_.set(i, calendar.adjust(dates_.get(i), convention));
             }
         }
+
+        // Final safety checks to remove extra next-to-last date, if
+        // necessary. It can happen to be equal or later than the end
+        // date due to EOM adjustments (see the Schedule test suite
+        // for an example). Mirrors C++ ql/time/schedule.cpp:390-410
+        // (the dedup block immediately after the EOM interior
+        // adjustment). Phase 1-cert-D5-A.
+        if ( dates_.size() >= 2 && dates_.get(dates_.size() - 2).ge(dates_.get(dates_.size() - 1)) ) {
+            // there might be two dates only, then isRegular_ has size one
+            if ( isRegular_.size() >= 2 ) {
+                isRegular_.set(isRegular_.size() - 2,
+                        Boolean.valueOf(dates_.get(dates_.size() - 2).equals(dates_.get(dates_.size() - 1))));
+            }
+            dates_.set(dates_.size() - 2, dates_.get(dates_.size() - 1));
+            dates_.remove(dates_.size() - 1);
+            if ( !isRegular_.isEmpty() ) {
+                isRegular_.remove(isRegular_.size() - 1);
+            }
+        }
+        if ( dates_.size() >= 2 && dates_.get(1).le(dates_.get(0)) ) {
+            isRegular_.set(1, Boolean.valueOf(dates_.get(1).equals(dates_.get(0))));
+            dates_.set(1, dates_.get(0));
+            dates_.remove(0);
+            isRegular_.remove(0);
+        }
     }
 
     /**
