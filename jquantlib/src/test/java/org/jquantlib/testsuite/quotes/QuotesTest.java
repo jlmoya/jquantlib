@@ -22,9 +22,16 @@
 
 package org.jquantlib.testsuite.quotes;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.ToDoubleFunction;
+
 import org.jquantlib.QL;
+import org.jquantlib.quotes.Handle;
+import org.jquantlib.quotes.MultiCompositeQuote;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.RelinkableHandle;
 import org.jquantlib.quotes.SimpleQuote;
@@ -37,7 +44,7 @@ import org.junit.Test;
  *
  * @author Richard Gomes
  *
- * <h2>Phase1-cert-D5-C-R4 audit (test-suite/quotes.cpp coverage)</h2>
+ * <h2>Phase1-cert-D5-C-R4 + Phase1-closure-A1-553 audit (test-suite/quotes.cpp coverage)</h2>
  * <ul>
  *   <li>{@code testObservable}            — present below.</li>
  *   <li>{@code testObservableHandle}      — present below.</li>
@@ -45,13 +52,9 @@ import org.junit.Test;
  *       exists but the test was never enabled by the original port).</li>
  *   <li>{@code testComposite}             — commented out (CompositeQuote
  *       not ported).</li>
- *   <li>{@code testMultiComposite}        — BLOCKED: requires
- *       {@code org.jquantlib.quotes.MultiCompositeQuote} (variadic
- *       N-Quote composite via array-functor), which has no Java
- *       equivalent.  Estimated 60 LOC for the class + 30 LOC test.
- *       Tracked as Phase 2 follow-up (A4 trigger: new class outside the
- *       61 existing packages — quotes/ exists but MultiCompositeQuote
- *       doesn't).</li>
+ *   <li>{@code testMultiComposite}        — ADDED in Phase 1 closure A1 round
+ *       (commit landing this comment); {@link org.jquantlib.quotes.MultiCompositeQuote}
+ *       ported alongside.</li>
  *   <li>{@code testForwardValueQuoteAndImpliedStdevQuote} — commented
  *       out; ForwardValueQuote and ImpliedStdDevQuote not ported.</li>
  * </ul>
@@ -155,6 +158,68 @@ public class QuotesTest {
 //	                       << "function result is " << y);
 //	    }
 //	}
+
+	/**
+	 * Faithful port of {@code test-suite/quotes.cpp BOOST_AUTO_TEST_CASE(testMultiComposite)}
+	 * (v1.42.1). Verifies that {@link MultiCompositeQuote} applied to an N-handle list with
+	 * {@code addAll}, {@code mulAll}, and {@code norm2} array functors matches direct
+	 * computation across all underlying-quote value updates, and that {@code inputValue(i)}
+	 * exposes the current i-th underlying value.
+	 */
+	@Test
+	public void testMultiComposite() {
+		QL.info("Testing multi composite quotes...");
+
+		@SuppressWarnings("unchecked")
+		final ToDoubleFunction<double[]>[] funcs = new ToDoubleFunction[] {
+			(ToDoubleFunction<double[]>) (a -> {
+				double s = 0.0;
+				for (final double v : a) {
+					s += v;
+				}
+				return s;
+			}),
+			(ToDoubleFunction<double[]>) (a -> {
+				double p = 1.0;
+				for (final double v : a) {
+					p *= v;
+				}
+				return p;
+			}),
+			(ToDoubleFunction<double[]>) (a -> {
+				double s = 0.0;
+				for (final double v : a) {
+					s += v * v;
+				}
+				return Math.sqrt(s);
+			}),
+		};
+
+		for (final ToDoubleFunction<double[]> func : funcs) {
+			final List<SimpleQuote> mes = new ArrayList<SimpleQuote>();
+			final List<Handle<? extends Quote>> handles = new ArrayList<Handle<? extends Quote>>();
+			for (int i = 0; i < 3; i++) {
+				mes.add(new SimpleQuote(i + 1));
+				handles.add(new Handle<SimpleQuote>(mes.get(mes.size() - 1)));
+				final MultiCompositeQuote composite = new MultiCompositeQuote(handles, func);
+				for (int j = 0; j <= i; j++) {
+					mes.get(j).setValue(j * 10 + 1);
+					final double[] args = new double[mes.size()];
+					for (int k = 0; k < mes.size(); k++) {
+						args[k] = mes.get(k).value();
+					}
+					final double x = composite.value();
+					final double y = func.applyAsDouble(args);
+					if (Math.abs(x - y) > 1.0e-10) {
+						fail("composite quote yields " + x + ", function result is " + y);
+					}
+					for (int k = 0; k < mes.size(); k++) {
+						assertEquals(mes.get(k).value(), composite.inputValue(k), 0.0);
+					}
+				}
+			}
+		}
+	}
 
 //	@Test
 //	public void testForwardValueQuoteAndImpliedStdevQuote(){
