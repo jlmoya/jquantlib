@@ -57,7 +57,7 @@ public class DenmarkCalendarTest {
 	public void testCSEYear2004() {
 		final int year = 2004;
     	QL.info("Testing " + exchange.name() + " holiday list for the year " + year + "...");
-        
+
     	final List<Date> expectedHol = new ArrayList<Date>();
 
 		expectedHol.add(new Date(1, January, year));
@@ -74,6 +74,10 @@ public class DenmarkCalendarTest {
 		expectedHol.add(new Date(20, May, year));
 		// whit monday
 		expectedHol.add(new Date(31, May, year));
+		// christmas eve (v1.42.1 always closed)
+		expectedHol.add(new Date(24, December, year));
+		// new year's eve (v1.42.1 always closed)
+		expectedHol.add(new Date(31, December, year));
 
 		// Call the Holiday Check
 		final CalendarUtil cbt = new CalendarUtil();
@@ -251,7 +255,7 @@ public class DenmarkCalendarTest {
 	public void testCSEYear2010() {
 		final int year = 2010;
     	QL.info("Testing " + exchange.name() + " holiday list for the year " + year + "...");
-        
+
     	final List<Date> expectedHol = new ArrayList<Date>();
 
 		expectedHol.add(new Date(1, January, year));
@@ -266,8 +270,14 @@ public class DenmarkCalendarTest {
 		expectedHol.add(new Date(30, April, year));
 		// ascension
 		expectedHol.add(new Date(13, May, year));
+		// day after ascension (v1.42.1 since 2009)
+		expectedHol.add(new Date(14, May, year));
 		// whit monday
 		expectedHol.add(new Date(24, May, year));
+		// christmas eve (v1.42.1 always closed)
+		expectedHol.add(new Date(24, December, year));
+		// new year's eve (v1.42.1 always closed)
+		expectedHol.add(new Date(31, December, year));
 
 		// Call the Holiday Check
 		final CalendarUtil cbt = new CalendarUtil();
@@ -278,7 +288,7 @@ public class DenmarkCalendarTest {
 	public void testCSEYear2012() {
 		final int year = 2012;
     	QL.info("Testing " + exchange.name() + " holiday list for the year " + year + "...");
-        
+
     	final List<Date> expectedHol = new ArrayList<Date>();
 
 		expectedHol.add(new Date(5, April, year));
@@ -291,14 +301,20 @@ public class DenmarkCalendarTest {
 
 		// great prayer day
 		expectedHol.add(new Date(17, May, year));
+		// day after ascension (v1.42.1 since 2009)
+		expectedHol.add(new Date(18, May, year));
 		// ascension
 		expectedHol.add(new Date(28, May, year));
 		// whit monday
 		expectedHol.add(new Date(5, June, year));
+		// christmas eve (v1.42.1 always closed)
+		expectedHol.add(new Date(24, December, year));
 		// christmas
 		expectedHol.add(new Date(25, December, year));
 		// boxing day
 		expectedHol.add(new Date(26, December, year));
+		// new year's eve (v1.42.1 always closed)
+		expectedHol.add(new Date(31, December, year));
 
 		// Call the Holiday Check
 		final CalendarUtil cbt = new CalendarUtil();
@@ -309,7 +325,7 @@ public class DenmarkCalendarTest {
 	public void testCSEYear2011() {
 		final int year = 2011;
     	QL.info("Testing " + exchange.name() + " holiday list for the year " + year + "...");
-        
+
     	final List<Date> expectedHol = new ArrayList<Date>();
 
 		expectedHol.add(new Date(21, April, year));
@@ -322,10 +338,14 @@ public class DenmarkCalendarTest {
 
 		// great prayer day
 		expectedHol.add(new Date(2, June, year));
+		// day after ascension (v1.42.1 since 2009)
+		expectedHol.add(new Date(3, June, year));
 		// ascension
 		expectedHol.add(new Date(13, June, year));
 		// boxing day
 		expectedHol.add(new Date(26, December, year));
+		// Christmas Eve 24-Dec-2011 = Saturday (weekend, omitted)
+		// New Year's Eve 31-Dec-2011 = Saturday (weekend, omitted)
 
 		// Call the Holiday Check
 		final CalendarUtil cbt = new CalendarUtil();

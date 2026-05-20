@@ -37,19 +37,34 @@ import static org.jquantlib.time.Month.*;
  *  <ul>
  *  <li>Saturdays</li>
  *  <li>Sundays</li>
- * <li>Maunday Thursday</li>
+ *  <li>Maunday Thursday</li>
  *  <li>Good Friday</li>
  *  <li>Easter Monday</li>
- *  <li>General Prayer Day, 25 days after Easter Monday</li>
+ *  <li>General Prayer Day, 25 days after Easter Monday (until 2023)</li>
  *  <li>Ascension</li>
+ *  <li>Day after Ascension (since 2009)</li>
  *  <li>Whit (Pentecost) Monday </li>
  *  <li>New Year's Day, JANUARY 1st</li>
  *  <li>Constitution Day, June 5th</li>
+ *  <li>Christmas Eve, December 24th</li>
  *  <li>Christmas, December 25th</li>
  *  <li>Boxing Day, December 26th</li>
+ *  <li>New Year's Eve, December 31st</li>
  *  </ul>
  *
- *  in group calendars
+ * <p>Aligned to C++ QuantLib v1.42.1
+ * ({@code ql/time/calendars/denmark.cpp}). Compared to the legacy 2008-era
+ * JQuantLib rules, the following v1.42.1 changes are folded in:
+ * <ul>
+ *   <li>"Day after Ascension" (em+39) is observed for all years
+ *       {@code y >= 2009} (previously only the one-off 22 May 2009 was
+ *       hardcoded);</li>
+ *   <li>"General Prayer Day" (em+25) is dropped from 2024 onwards
+ *       ({@code y <= 2023}) per the 2023 Danish reform;</li>
+ *   <li>24 December (Christmas Eve) and 31 December (New Year's Eve) are
+ *       always observed as closed (previously only the 2007/2008/2009 special
+ *       cases).</li>
+ * </ul>
  *
  * @author Jia Jia
  * @author Zahid Hussain
@@ -92,28 +107,26 @@ public class Denmark extends Calendar {
                     && (dd != em - 3)
                     // Easter Monday
                     && (dd != em)
-                    // General Prayer Day
-                    && (dd != em + 25)
+                    // General Prayer Day (abolished from 2024)
+                    && !(dd == em + 25 && y <= 2023)
                     // Ascension
                     && (dd != em + 38)
+                    // Day after Ascension (since 2009)
+                    && !(dd == em + 39 && y >= 2009)
                     // Whit Monday
                     && (dd != em + 49)
                     // New Year's Day
                     && (d != 1 || m != January)
                     // Constitution Day, June 5th
                     && (d != 5 || m != June)
-                    // Christmas
+                    // Christmas Eve, December 24th (always closed)
+                    && (d != 24 || m != December)
+                    // Christmas, December 25th
                     && (d != 25 || m != December)
-                    // Boxing Day
+                    // Boxing Day, December 26th
                     && (d != 26 || m != December)
-
-                    // below added according to http://nordic.nasdaqomxtrader.com/trading/tradinghours/
-                    // Christmas eve
-                    && (d != 24 || m != December || (y != 2008 && y != 2009 && y != 2007))
-                    // new year eve
-                    && (d != 31 || m != December || (y != 2008 && y != 2009 && y != 2007))
-
-                    && (d != 22 || m != May || y != 2009);
+                    // New Year's Eve, December 31st (always closed)
+                    && (d != 31 || m != December);
         }
     }
 }
