@@ -59,6 +59,7 @@ import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.exercise.EuropeanExercise;
 import org.jquantlib.exercise.Exercise;
 import org.jquantlib.instruments.AssetOrNothingPayoff;
+import org.jquantlib.instruments.Instrument;
 import org.jquantlib.instruments.CashOrNothingPayoff;
 import org.jquantlib.instruments.DividendVanillaOption;
 import org.jquantlib.instruments.EuropeanOption;
@@ -89,6 +90,9 @@ import org.jquantlib.pricingengines.vanilla.BinomialVanillaEngine;
 import org.jquantlib.pricingengines.vanilla.FdBlackScholesVanillaEngine;
 import org.jquantlib.pricingengines.vanilla.IntegralEngine;
 import org.jquantlib.pricingengines.vanilla.MCEuropeanEngine;
+import org.jquantlib.pricingengines.vanilla.MCEuropeanEngineLowDiscrepancy;
+import org.jquantlib.experimental.variancegamma.FFTEngine;
+import org.jquantlib.experimental.variancegamma.FFTVanillaEngine;
 import org.jquantlib.pricingengines.vanilla.finitedifferences.FDEuropeanEngine;
 import org.jquantlib.processes.BlackScholesMertonProcess;
 import org.jquantlib.processes.GeneralizedBlackScholesProcess;
@@ -1317,18 +1321,49 @@ public class EuropeanOptionTest {
     //      testEngineConsistency(engine,steps,samples,relativeTol);
     //  }
 
-    //  void EuropeanOptionTest::testQmcEngines() {
-    //
-    //      BOOST_MESSAGE("Testing Quasi Monte Carlo European engines "
-    //                    "against analytic results...");
-    //
-    //      EngineType engine = QuasiMonteCarlo;
-    //      Size steps = Null<Size>();
-    //      Size samples = 4095; // 2^12-1
-    //      std::map<std::string,Real> relativeTol;
-    //      relativeTol["value"] = 0.01;
-    //      testEngineConsistency(engine,steps,samples,relativeTol);
-    //  }
+    /**
+     * Faithful port of {@code test-suite/europeanoption.cpp:1282}
+     * {@code BOOST_AUTO_TEST_CASE(testQmcEngines)}. Quasi (low-discrepancy)
+     * Monte Carlo against analytic. Tolerance value = 0.01 (C++).
+     *
+     * <p>Routed through the local helper {@link #testEngineConsistencyMc} with
+     * {@code lowDiscrepancy = true}. Sobol gives a deterministic error of 0
+     * (no seed) and 4095 = 2^12-1 samples per the C++ test.
+     */
+    @Test
+    public void testQmcEngines() {
+        QL.info("Testing Quasi Monte Carlo European engines against analytic results...");
+        // C++: EngineType engine = QuasiMonteCarlo; Size steps = Null<Size>();
+        //      Size samples = 4095; // 2^12-1
+        //      tol["value"] = 0.01;
+        final int samples = 4095;
+        final Map< String, Double > relativeTol = new HashMap< String, Double >(1);
+        relativeTol.put("value", 0.01);
+        testEngineConsistencyMc(samples, /* lowDiscrepancy=*/ true, relativeTol);
+    }
+
+
+    /**
+     * Faithful port of {@code test-suite/europeanoption.cpp:1699}
+     * {@code BOOST_AUTO_TEST_CASE(testFFTEngines)}. FFT-Carr-Madan engine
+     * against analytic. Tolerance value = 0.01 (C++).
+     *
+     * <p>Routed through a local FFT-specific helper because the existing
+     * {@link #testEngineConsistency} helper's engine dispatch does not include the
+     * FFT arm (it lives in the experimental package). The FFT engine prices
+     * each call to {@link Instrument#NPV} via
+     * {@link FFTEngine#precalculate(List)} which must be invoked before the
+     * NPV query.
+     */
+    @Test
+    public void testFFTEngines() {
+        QL.info("Testing FFT European engines against analytic results...");
+        // C++: EngineType engine = FFT; Size steps = Null<Size>(); Size samples = Null<Size>();
+        //      tol["value"] = 0.01;
+        final Map< String, Double > relativeTol = new HashMap< String, Double >(1);
+        relativeTol.put("value", 0.01);
+        testEngineConsistencyFFT(relativeTol);
+    }
 
     //  void EuropeanOptionTest::testPriceCurve() {
     //
@@ -1953,15 +1988,25 @@ public class EuropeanOptionTest {
                     // Mirrors MakeMCEuropeanEngine<PseudoRandom>().withSteps(1)
                     //                                             .withSamples(samples)
                     //                                             .withSeed(42);
+                    // and the LowDiscrepancy variant (no seed in C++ QMC arm).
                     // NULL_SAMPLES = Integer.MAX_VALUE (matches C++ Null<Size>())
-                    final PricingEngine mcEngine = new MCEuropeanEngine(refProcess,
-                            /* timeSteps=*/ 1,
-                            /* timeStepsPerYear=*/ org.jquantlib.pricingengines.McSimulation.NULL_SAMPLES,
-                            /* brownianBridge=*/ false, /* antitheticVariate=*/ false,
-                            /* requiredSamples=*/ samples,
-                            /* requiredTolerance=*/ org.jquantlib.pricingengines.McSimulation.NULL_TOLERANCE,
-                            /* maxSamples=*/ org.jquantlib.pricingengines.McSimulation.NULL_SAMPLES,
-                            /* seed=*/ 42L);
+                    final PricingEngine mcEngine = lowDiscrepancy
+                            ? new MCEuropeanEngineLowDiscrepancy(refProcess,
+                                    /* timeSteps=*/ 1,
+                                    /* timeStepsPerYear=*/ org.jquantlib.pricingengines.McSimulation.NULL_SAMPLES,
+                                    /* brownianBridge=*/ false, /* antitheticVariate=*/ false,
+                                    /* requiredSamples=*/ samples,
+                                    /* requiredTolerance=*/ org.jquantlib.pricingengines.McSimulation.NULL_TOLERANCE,
+                                    /* maxSamples=*/ org.jquantlib.pricingengines.McSimulation.NULL_SAMPLES,
+                                    /* seed=*/ 0L)
+                            : new MCEuropeanEngine(refProcess,
+                                    /* timeSteps=*/ 1,
+                                    /* timeStepsPerYear=*/ org.jquantlib.pricingengines.McSimulation.NULL_SAMPLES,
+                                    /* brownianBridge=*/ false, /* antitheticVariate=*/ false,
+                                    /* requiredSamples=*/ samples,
+                                    /* requiredTolerance=*/ org.jquantlib.pricingengines.McSimulation.NULL_TOLERANCE,
+                                    /* maxSamples=*/ org.jquantlib.pricingengines.McSimulation.NULL_SAMPLES,
+                                    /* seed=*/ 42L);
                     option.setPricingEngine(mcEngine);
 
                     for ( final double u : underlyings ) {
@@ -2018,6 +2063,84 @@ public class EuropeanOptionTest {
         sb.append("    error:            " + error + "\n");
         sb.append("    tolerance:        " + tolerance);
         fail(sb.toString());
+    }
+
+    /**
+     * Local helper mirroring the {@code FFT} arm of the C++
+     * {@code testEngineConsistency} helper (see
+     * {@code test-suite/europeanoption.cpp:178-181}). The FFT Carr-Madan engine
+     * computes a strip of strikes per expiry at once; we drive it option-by-option
+     * (sharing the underlying process) and call
+     * {@link FFTEngine#precalculate(List)} for each before NPV.
+     */
+    private void testEngineConsistencyFFT(final Map< String, Double > tolerance) {
+        final Option.Type[] types = { Option.Type.Call, Option.Type.Put };
+        final double[] strikes = { 75.0, 100.0, 125.0 };
+        final int[] lengths = { 1 };
+        final double[] underlyings = { 100.0 };
+        final double[] qRates = { 0.00, 0.05 };
+        final double[] rRates = { 0.01, 0.05, 0.15 };
+        final double[] vols = { 0.11, 0.50, 1.20 };
+
+        final DayCounter dc = new Actual360();
+        final Date today = Date.todaysDate();
+        new Settings().setEvaluationDate(today);
+
+        final SimpleQuote spot = new SimpleQuote(0.0);
+        final SimpleQuote vol = new SimpleQuote(0.0);
+        final BlackVolTermStructure volTS = Utilities.flatVol(today, vol, dc);
+        final SimpleQuote qRate = new SimpleQuote(0.0);
+        final YieldTermStructure qTS = Utilities.flatRate(today, qRate, dc);
+        final SimpleQuote rRate = new SimpleQuote(0.0);
+        final YieldTermStructure rTS = Utilities.flatRate(today, rRate, dc);
+
+        final BlackScholesMertonProcess process = new BlackScholesMertonProcess(
+                new Handle< Quote >(spot),
+                new Handle< YieldTermStructure >(qTS),
+                new Handle< YieldTermStructure >(rTS),
+                new Handle< BlackVolTermStructure >(volTS));
+
+        for ( final Option.Type type : types ) {
+            for ( final double strike : strikes ) {
+                for ( final int length : lengths ) {
+                    final Date exDate = today.add(length * 360);
+                    final Exercise exercise = new EuropeanExercise(exDate);
+                    final StrikedTypePayoff payoff = new PlainVanillaPayoff(type, strike);
+
+                    final VanillaOption refOption = new EuropeanOption(payoff, exercise);
+                    refOption.setPricingEngine(new AnalyticEuropeanEngine(process));
+
+                    for ( final double u : underlyings ) {
+                        for ( final double m : qRates ) {
+                            for ( final double n : rRates ) {
+                                for ( final double v : vols ) {
+                                    spot.setValue(u);
+                                    qRate.setValue(m);
+                                    rRate.setValue(n);
+                                    vol.setValue(v);
+
+                                    final VanillaOption option = new EuropeanOption(payoff, exercise);
+                                    final FFTVanillaEngine fft = new FFTVanillaEngine(process);
+                                    final List< Instrument > batch = new ArrayList< Instrument >();
+                                    batch.add(option);
+                                    fft.precalculate(batch);
+                                    option.setPricingEngine(fft);
+
+                                    final double expected = refOption.NPV();
+                                    final double calculated = option.NPV();
+                                    final double tol = tolerance.get("value");
+                                    final double error = relativeError(expected, calculated, u);
+                                    if ( error > tol ) {
+                                        REPORT_FAILURE("value", payoff, exercise, u, m, n, today, v,
+                                                expected, calculated, error, tol);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
 }
