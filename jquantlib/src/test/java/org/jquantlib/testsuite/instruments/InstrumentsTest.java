@@ -50,6 +50,22 @@ import org.jquantlib.quotes.SimpleQuote;
 import org.jquantlib.testsuite.util.Flag;
 import org.junit.Test;
 
+/**
+ * Mirrors {@code test-suite/instruments.cpp} (QuantLib v1.42.1).
+ *
+ * <h2>Phase1-cert-D5-C-R4 audit</h2>
+ * <ul>
+ *   <li>{@code testObservable} — present below.</li>
+ *   <li>{@code testCompositeWhenShiftingDates} — BLOCKED: requires
+ *       {@code org.jquantlib.instruments.CompositeInstrument} which is
+ *       not ported.  EuropeanOption / AnalyticEuropeanEngine /
+ *       EuropeanExercise all exist; only the CompositeInstrument
+ *       container is missing.  Estimated 200 LOC for the class plus
+ *       ~50 LOC test.  Tracked as Phase 2 follow-up (A4 trigger: new
+ *       class outside the 61 existing packages — instruments/ exists
+ *       but CompositeInstrument doesn't).</li>
+ * </ul>
+ */
 public class InstrumentsTest {
 
     public InstrumentsTest() {

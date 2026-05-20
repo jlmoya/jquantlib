@@ -36,6 +36,25 @@ import org.junit.Test;
  * @note Class Handle is deprecated and MUST NEVER be used
  *
  * @author Richard Gomes
+ *
+ * <h2>Phase1-cert-D5-C-R4 audit (test-suite/quotes.cpp coverage)</h2>
+ * <ul>
+ *   <li>{@code testObservable}            — present below.</li>
+ *   <li>{@code testObservableHandle}      — present below.</li>
+ *   <li>{@code testDerived}               — commented out (DerivedQuote class
+ *       exists but the test was never enabled by the original port).</li>
+ *   <li>{@code testComposite}             — commented out (CompositeQuote
+ *       not ported).</li>
+ *   <li>{@code testMultiComposite}        — BLOCKED: requires
+ *       {@code org.jquantlib.quotes.MultiCompositeQuote} (variadic
+ *       N-Quote composite via array-functor), which has no Java
+ *       equivalent.  Estimated 60 LOC for the class + 30 LOC test.
+ *       Tracked as Phase 2 follow-up (A4 trigger: new class outside the
+ *       61 existing packages — quotes/ exists but MultiCompositeQuote
+ *       doesn't).</li>
+ *   <li>{@code testForwardValueQuoteAndImpliedStdevQuote} — commented
+ *       out; ForwardValueQuote and ImpliedStdDevQuote not ported.</li>
+ * </ul>
  */
 // TODO: code review :: please verify against QL/C++ code
 public class QuotesTest {
