@@ -103,6 +103,22 @@ import static org.junit.Assert.fail;
  * YearOnYear inflation swap helpers (mirroring the C++ {@code makeHelpers}
  * setup), plus three {@link ConstantYoYOptionletVolatility} surfaces for the
  * three pricer flavours.
+ *
+ * <p><b>Cached-value provenance (A3 carve-out, Phase 5e.5b-CFC-d-321).</b>
+ * The C++ test header in v1.42.1 still carries cached NPVs committed by Chris
+ * Kenyon in 2011 (cap=219.452 / floor=314.641 for Black, cap=9114.61 /
+ * floor=9209.80 for unit-displaced Black, cap=8852.40 / floor=8947.59 for
+ * Bachelier) generated against a much older bootstrap. Running a fresh
+ * v1.42.1 build of {@code inflation_cap_floor_cached_value_probe.cpp} against
+ * the current code (commit {@code 099987f0}) confirms current QuantLib
+ * produces {@code cap_npv == floor_npv} for all three pricers — IDENTICAL to
+ * what JQuantLib produces (Black 262.538/262.538, DD 9162.13/9162.13,
+ * Bachelier 8899.65/8899.65). Per CLAUDE.md ground-truth principle the
+ * cached values used here are sourced from
+ * {@code migration-harness/references/instruments/inflation_cap_floor_cached_value.json}
+ * so the test validates Java matches the actual current C++ behavior, not
+ * the stale 2011-era header literals upstream. Tolerance is TIGHT (1e-8 abs)
+ * since Java is bit-equivalent to C++ v1.42.1 on every NPV.
  */
 public class InflationCapFloorTest {
 
@@ -595,42 +611,41 @@ public class InflationCapFloorTest {
     // testCachedValue — inflationcapfloor.cpp:452-522
     // ===================================================================
     @Test
-    @org.junit.Ignore("UPSTREAM STALE CACHED VALUES — A3 trigger. The Java"
-            + " bootstrap produces non-flat pillars (e.g. 0.02886 at year 3)"
-            + " when the 5% nominal discount curve is supplied (Phase 2v L0 A.4)"
-            + " and the YoYInflationCoupon / pricer / engine convention exactly"
-            + " mirrors C++ v1.42.1 (observationLag=2M anchored on accrualEnd,"
-            + " fixingDate = refPeriodEnd - lag via index.fixingCalendar"
-            + " ModifiedPreceding, engine queries yoyTS.yoyRate(fixingDate))."
-            + " The diagnostic probe migration-harness/cpp/probes/instruments/"
-            + "inflation_cap_floor_cached_value_probe.cpp, built against C++"
-            + " v1.42.1 (commit 099987f0), confirms current QuantLib produces"
-            + " cap_npv = floor_npv = 262.538 for ALL three pricers — IDENTICAL"
-            + " to what Java produces (see references/instruments/"
-            + "inflation_cap_floor_cached_value.json: black 262.538/262.538,"
-            + " dd 9162.13/9162.13, bachelier 8899.65/8899.65). The C++ cached"
-            + " constants (219.452 / 314.641 / 9114.61 / 9209.8 / 8852.4 /"
-            + " 8947.59) were committed by Chris Kenyon in 2011 against a much"
-            + " older bootstrap / curve setup and have not been refreshed."
-            + " The current v1.42.1 test would fail with these cached values"
-            + " (tolerance 0.02 is far below the actual delta of ~43–95). The"
-            + " v1.42.1 cap == floor result (at K=2.95%) is the correct ATM"
-            + " behavior because the pillars are bootstrapped at quote 2.95%"
-            + " for years 1-3 (annual pillars 13-Aug-2008/09/10, the first two"
-            + " quoted at 2.95% and the third at 2.93%) and Linear interpolation"
-            + " across them produces F ≈ K at the year-2 fixing date 13-Jun-2009."
-            + " Java behavior is bit-equivalent to C++ v1.42.1 — there is"
-            + " nothing to fix on the Java side. Carve-out per design §7.5"
-            + " category 'pre-existing wrong test asserts a wrong value';"
-            + " escalation A3 (cross-validation mismatch where v1.42.1 itself"
-            + " is the bug) is not actionable in Phase 1 because the fix lives"
-            + " upstream.")
     public void testCachedValue() {
         // Testing Black yoy inflation cap/floor price against cached values...
+        //
+        // A3 CARVE-OUT (Phase 5e.5b-CFC-d-321): the C++ test-suite header
+        // still carries cached NPVs committed by Chris Kenyon in 2011
+        // (cap=219.452 / floor=314.641 for Black, cap=9114.61 / floor=9209.80
+        // for unit-displaced, cap=8852.40 / floor=8947.59 for Bachelier) that
+        // were generated against a much older bootstrap / curve setup and
+        // have NOT been refreshed. The current v1.42.1 test would itself fail
+        // with those literals (deltas of ~43–95 vs. the tolerance of 0.02 /
+        // 0.22). A clean v1.42.1 build of
+        // {@code migration-harness/cpp/probes/instruments/inflation_cap_floor_cached_value_probe.cpp}
+        // (commit 099987f0ca2c11c505dc4348cdb9ce01a598e1e5, 2026-05-20)
+        // shows current QuantLib produces cap_npv == floor_npv for all three
+        // pricers — IDENTICAL to JQuantLib. The cached constants used below
+        // come from that probe (see references/instruments/
+        // inflation_cap_floor_cached_value.json). At-the-money cap == floor is
+        // the correct behavior at K = 2.95% because the YoY pillars are
+        // bootstrapped at exactly 2.95% for the first two annual buckets and
+        // Linear interpolation yields F ≈ K at the year-2 fixing date
+        // 13-Jun-2009. Per CLAUDE.md ground-truth principle "C++ QuantLib
+        // v1.42.1 is source of truth"; when v1.42.1 itself diverges from its
+        // own cached test data (A3 trigger) the resolution is to refresh from
+        // the live probe so the test validates Java matches actual current
+        // C++ behavior.
 
         final CommonVars vars = new CommonVars();
 
         final List<String> failures = new ArrayList<>();
+
+        // Tight tier: Java is bit-equivalent to C++ v1.42.1 on every NPV in
+        // this scenario; an absolute tolerance of 1e-8 is enough headroom for
+        // accumulated floating-point noise across the bootstrap + pricer
+        // pipeline without masking any real drift.
+        final double tol = 1e-8;
 
         int whichPricer = 0; // black
 
@@ -643,17 +658,17 @@ public class InflationCapFloorTest {
         InflationCapFloor floor = vars.makeYoYCapFloor(
                 InflationCapFloor.Type.Floor, leg, K, 0.01, whichPricer);
 
-        // close to atm prices
-        final double cachedCapNPVblack = 219.452;
-        final double cachedFloorNPVblack = 314.641;
+        // close to atm prices — refreshed from v1.42.1 probe (npv_black)
+        final double cachedCapNPVblack = 262.5380880174304;
+        final double cachedFloorNPVblack = 262.538088017432;
         // N.B. notionals are 1e6.
-        if (Math.abs(cap.NPV() - cachedCapNPVblack) > 0.02) {
+        if (Math.abs(cap.NPV() - cachedCapNPVblack) > tol) {
             failures.add("yoy cap cached NPV wrong: " + cap.NPV()
                     + " should be " + cachedCapNPVblack
                     + " Black pricer; diff was "
                     + Math.abs(cap.NPV() - cachedCapNPVblack));
         }
-        if (Math.abs(floor.NPV() - cachedFloorNPVblack) > 0.02) {
+        if (Math.abs(floor.NPV() - cachedFloorNPVblack) > tol) {
             failures.add("yoy floor cached NPV wrong: " + floor.NPV()
                     + " should be " + cachedFloorNPVblack
                     + " Black pricer; diff was "
@@ -667,17 +682,17 @@ public class InflationCapFloorTest {
         floor = vars.makeYoYCapFloor(
                 InflationCapFloor.Type.Floor, leg, K, 0.01, whichPricer);
 
-        // close to atm prices
-        final double cachedCapNPVdd = 9114.61;
-        final double cachedFloorNPVdd = 9209.8;
+        // close to atm prices — refreshed from v1.42.1 probe (npv_dd)
+        final double cachedCapNPVdd = 9162.13429199816;
+        final double cachedFloorNPVdd = 9162.134291998109;
         // N.B. notionals are 1e6.
-        if (Math.abs(cap.NPV() - cachedCapNPVdd) > 0.22) {
+        if (Math.abs(cap.NPV() - cachedCapNPVdd) > tol) {
             failures.add("yoy cap cached NPV wrong: " + cap.NPV()
                     + " should be " + cachedCapNPVdd
                     + " dd Black pricer; diff was "
                     + Math.abs(cap.NPV() - cachedCapNPVdd));
         }
-        if (Math.abs(floor.NPV() - cachedFloorNPVdd) > 0.22) {
+        if (Math.abs(floor.NPV() - cachedFloorNPVdd) > tol) {
             failures.add("yoy floor cached NPV wrong: " + floor.NPV()
                     + " should be " + cachedFloorNPVdd
                     + " dd Black pricer; diff was "
@@ -691,17 +706,17 @@ public class InflationCapFloorTest {
         floor = vars.makeYoYCapFloor(
                 InflationCapFloor.Type.Floor, leg, K, 0.01, whichPricer);
 
-        // close to atm prices
-        final double cachedCapNPVbac = 8852.4;
-        final double cachedFloorNPVbac = 8947.59;
+        // close to atm prices — refreshed from v1.42.1 probe (npv_bachelier)
+        final double cachedCapNPVbac = 8899.654556323268;
+        final double cachedFloorNPVbac = 8899.654556323272;
         // N.B. notionals are 1e6.
-        if (Math.abs(cap.NPV() - cachedCapNPVbac) > 0.22) {
+        if (Math.abs(cap.NPV() - cachedCapNPVbac) > tol) {
             failures.add("yoy cap cached NPV wrong: " + cap.NPV()
                     + " should be " + cachedCapNPVbac
                     + " bac Black pricer; diff was "
                     + Math.abs(cap.NPV() - cachedCapNPVbac));
         }
-        if (Math.abs(floor.NPV() - cachedFloorNPVbac) > 0.22) {
+        if (Math.abs(floor.NPV() - cachedFloorNPVbac) > tol) {
             failures.add("yoy floor cached NPV wrong: " + floor.NPV()
                     + " should be " + cachedFloorNPVbac
                     + " bac Black pricer; diff was "
