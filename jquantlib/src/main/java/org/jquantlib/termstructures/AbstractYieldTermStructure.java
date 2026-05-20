@@ -279,19 +279,21 @@ abstract public class AbstractYieldTermStructure extends AbstractTermStructure i
     public InterestRate forwardRate(final Date d1, final Date d2, final DayCounter dayCounter, final Compounding comp,
             final Frequency freq, final boolean extrapolate) {
         if ( d1.equals(d2) ) {
+            // Align to C++ v1.42.1: instantaneous forward rate uses a centered
+            // finite difference over [t - dt/2, t + dt/2] with dt = 1e-4.
             /*@Time*/
-            final double t1 = timeFromReference(d1);
+            final double dt = 1.0e-4;
             /*@Time*/
-            final double t2 = t1 + 0.0001;
+            final double t1 = Math.max(timeFromReference(d1) - dt / 2.0, 0.0);
             /*@Time*/
-            final double delta = t2 - t1;
+            final double t2 = t1 + dt;
             /*@DiscountFactor*/
-            final double factor1 = discount(t1, extrapolate);
+            final double factor1 = discount(t1, true);
             /*@DiscountFactor*/
-            final double factor2 = discount(t2, extrapolate);
+            final double factor2 = discount(t2, true);
             /*@CompoundFactor*/
             final double compound = factor1 / factor2;
-            return InterestRate.impliedRate(compound, delta, dayCounter, comp, freq);
+            return InterestRate.impliedRate(compound, dt, dayCounter, comp, freq);
         } else if ( d1.lt(d2) ) {
             /*@DiscountFactor*/
             final double discount1 = discount(d1, extrapolate);
@@ -324,24 +326,28 @@ abstract public class AbstractYieldTermStructure extends AbstractTermStructure i
     /* (non-Javadoc)
      * @see org.jquantlib.termstructures.IYieldTermStructure#forwardRate(double, double, org.jquantlib.termstructures.Compounding, org.jquantlib.time.Frequency, boolean)
      */
-    // FIXME; this method is clearly buggy
     @Override
     public InterestRate forwardRate(final /*@Time*/ double time1, final /*@Time*/ double time2, final Compounding comp,
             final Frequency freq, final boolean extrapolate) {
+        // Align to C++ v1.42.1: when t1 == t2, use a centered finite difference
+        // over [t1 - dt/2, t1 + dt/2] with dt = 1e-4 (matches QuantLib's
+        // YieldTermStructure::forwardRate(Time,Time,...)). For t2 > t1 the
+        // forward rate is computed directly from the discount ratio.
         /*@Time*/
-        final double t1 = time1;
+        double t1 = time1;
         /*@Time*/
         double t2 = time2;
-        if ( t2 == t1 ) {
-            t2 = t1 + 0.0001;
-        }
-        QL.require(t1 <= t2, "time1 must be <= time2"); // TODO: message
-        /*@DiscountFactor*/
-        final double discount1 = discount(t1, extrapolate);
-        /*@DiscountFactor*/
-        final double discount2 = discount(t2, extrapolate);
         /*@CompoundFactor*/
-        final double compound = discount1 / discount2;
+        final double compound;
+        if ( t1 == t2 ) {
+            final double dt = 1.0e-4;
+            t1 = Math.max(t1 - dt / 2.0, 0.0);
+            t2 = t1 + dt;
+            compound = discount(t1, true) / discount(t2, true);
+        } else {
+            QL.require(t2 > t1, "t2 must be > t1");
+            compound = discount(t1, extrapolate) / discount(t2, extrapolate);
+        }
         /*@Time*/
         final double delta = t2 - t1;
         return InterestRate.impliedRate(compound, delta, this.dayCounter(), comp, freq);
