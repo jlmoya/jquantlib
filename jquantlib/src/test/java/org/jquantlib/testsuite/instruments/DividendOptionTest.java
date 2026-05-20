@@ -65,9 +65,15 @@ import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.pricingengines.AnalyticEuropeanEngine;
 import org.jquantlib.pricingengines.PricingEngine;
 import org.jquantlib.pricingengines.vanilla.AnalyticDividendEuropeanEngine;
+import org.jquantlib.pricingengines.vanilla.FdBlackScholesVanillaEngine;
 import org.jquantlib.pricingengines.vanilla.finitedifferences.FDDividendAmericanEngine;
 import org.jquantlib.pricingengines.vanilla.finitedifferences.FDDividendEuropeanEngine;
 import org.jquantlib.pricingengines.vanilla.finitedifferences.FDEngineAdapter;
+import org.jquantlib.daycounters.Actual365Fixed;
+import org.jquantlib.instruments.DividendSchedule;
+import org.jquantlib.cashflow.FixedDividend;
+import org.jquantlib.methods.finitedifferences.schemes.FdmSchemeDesc;
+import static org.junit.Assert.assertTrue;
 import org.jquantlib.processes.BlackScholesMertonProcess;
 import org.jquantlib.processes.GeneralizedBlackScholesProcess;
 import org.jquantlib.quotes.Handle;
@@ -817,6 +823,71 @@ public class DividendOptionTest {
         sb.append("    tolerance:        ").append(tolerance);
     }
 
+    /**
+     * Java port of v1.42.1 {@code test-suite/dividendoption.cpp:testEscrowedDividendModel} (line 951).
+     * <p>
+     * Cross-validates the FdBlackScholesVanillaEngine Escrowed dividend model against the closed-form
+     * AnalyticDividendEuropeanEngine on a European put with two cash dividends. The Escrowed-PDE NPV
+     * and delta must agree with the analytic reference to tolerance 0.0025.
+     */
+    @Test
+    public void testEscrowedDividendModel() {
+        QL.info("Testing finite-difference European engine with the escrowed dividend model...");
+
+        final DayCounter dc = new Actual365Fixed();
+        final Date today = new Date(12, Month.October, 2019);
+        new Settings().setEvaluationDate(today);
+
+        final Handle< Quote > spot = new Handle< Quote >(new SimpleQuote(100.0));
+        final Handle< YieldTermStructure > qTS = new Handle< YieldTermStructure >(Utilities.flatRate(today, 0.063, dc));
+        final Handle< YieldTermStructure > rTS = new Handle< YieldTermStructure >(Utilities.flatRate(today, 0.094, dc));
+        final Handle< BlackVolTermStructure > volTS = new Handle< BlackVolTermStructure >(
+                Utilities.flatVol(today, 0.3, dc));
+
+        final Date maturity = today.add(new Period(1, TimeUnit.Years));
+
+        final BlackScholesMertonProcess process = new BlackScholesMertonProcess(spot, qTS, rTS, volTS);
+
+        final PlainVanillaPayoff payoff = new PlainVanillaPayoff(Option.Type.Put, spot.currentLink().value());
+        final Exercise exercise = new EuropeanExercise(maturity);
+
+        // 2 dividends: 8.3 @ 3 months, 6.8 @ 9 months
+        final List< Date > divDates = new ArrayList<>();
+        divDates.add(today.add(new Period(3, TimeUnit.Months)));
+        divDates.add(today.add(new Period(9, TimeUnit.Months)));
+        final List< Double > divAmounts = new ArrayList<>();
+        divAmounts.add(8.3);
+        divAmounts.add(6.8);
+
+        // Analytic reference (closed-form discounted-spot dividend model).
+        final DividendVanillaOption refOption = new DividendVanillaOption(payoff, exercise, divDates, divAmounts);
+        refOption.setPricingEngine(new AnalyticDividendEuropeanEngine(process));
+
+        final double analyticNPV = refOption.NPV();
+        final double analyticDelta = refOption.delta();
+
+        // FD Escrowed engine (under test).
+        final DividendSchedule divs = new DividendSchedule();
+        for ( int i = 0; i < divDates.size(); i++ ) {
+            divs.add(new FixedDividend(divAmounts.get(i), divDates.get(i)));
+        }
+        final VanillaOption option = new VanillaOption(payoff, exercise);
+        option.setPricingEngine(
+                new FdBlackScholesVanillaEngine(process, divs, null, 50, 200, 1, FdmSchemeDesc.Douglas(),
+                        FdBlackScholesVanillaEngine.CashDividendModel.Escrowed, false, Double.NaN));
+
+        final double pdeNPV = option.NPV();
+        final double pdeDelta = option.delta();
+
+        final double tol = 0.0025;
+
+        assertTrue("NPV escrowed PDE=" + pdeNPV + " vs analytic=" + analyticNPV + " diff=" + Math.abs(pdeNPV - analyticNPV)
+                + " tol=" + tol, Math.abs(pdeNPV - analyticNPV) <= tol);
+
+        assertTrue("Delta escrowed PDE=" + pdeDelta + " vs analytic=" + analyticDelta + " diff=" + Math.abs(
+                pdeDelta - analyticDelta) + " tol=" + tol, Math.abs(pdeDelta - analyticDelta) <= tol);
+    }
+
     // ------------------------------------------------------------------
     // BLOCKED / EXISTING_EQUIVALENT ports from test-suite/dividendoption.cpp (Phase1-D5-B-R3)
     // ------------------------------------------------------------------
@@ -851,13 +922,6 @@ public class DividendOptionTest {
     //   testFdEuropeanWithDividendToday (Spot-only — American American
     //   exercise so no Escrowed branch needed). Unblock = (a) Spot-side
     //   theta-on-T0 exception path (~10 LOC).
-    //
-    // testEscrowedDividendModel (cpp:951)
-    //   BLOCKED. Per D5-B R1 finding (and FdBlackScholesVanillaEngine
-    //   line 211 QL.require): Escrowed dividend model not yet supported in
-    //   Java. C++ test cross-validates the Escrowed PDE NPV/Delta against
-    //   AnalyticDividendEuropeanEngine to 0.0025. Total infra to unblock:
-    //   ~100 LOC for PV-discounted dividend mesher / step-condition.
     //
     // testCashDividendEuropeanEngine (cpp:1024)
     //   BLOCKED. Uses CashDividendEuropeanEngine (not ported to Java —
