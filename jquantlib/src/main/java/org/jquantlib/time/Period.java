@@ -270,27 +270,37 @@ public class Period implements Cloneable {
         if ( scalar == 0 )
             throw new ArithmeticException(DIVISION_BY_ZERO_ERROR);
 
-        if ( this.length % scalar == 0 )
+        if ( this.length % scalar == 0 ) {
             // keep the original units. If the user created a
             // 24-months period, he'll probably want a 12-months one
             // when he halves it.
             this.length /= scalar;
-        else
-            switch ( this.units ) {
+        } else {
+            // C++ v1.42.1 (ql/time/period.cpp:228-257) tries unit-conversion
+            // on a local copy (Years→Months *12, Weeks→Days *7) and only
+            // commits if the converted length divides cleanly. The prior
+            // Java version mutated units/length first and then a second
+            // `length % scalar == 0` check could fail on already-clean
+            // initial divisions, throwing spuriously.
+            TimeUnit u = this.units;
+            int l = this.length;
+            switch ( u ) {
             case Years:
-                this.units = TimeUnit.Months;
-                this.length *= 12;
+                l *= 12;
+                u = TimeUnit.Months;
                 break;
             case Weeks:
-                this.units = TimeUnit.Days;
-                this.length *= 7;
+                l *= 7;
+                u = TimeUnit.Days;
+                break;
+            default:
                 break;
             }
-
-        if ( this.length % scalar == 0 )
-            this.length = this.length / scalar;
-        else
-            throw new LibraryException("cannot be divided by " + scalar);
+            if ( l % scalar != 0 )
+                throw new LibraryException("cannot be divided by " + scalar);
+            this.length = l / scalar;
+            this.units = u;
+        }
 
         return this;
     }
@@ -687,26 +697,35 @@ public class Period implements Cloneable {
     }
 
     public void normalize() {
-        if ( length != 0 )
-            switch ( units ) {
-            case Days:
-                if ( length % 7 == 0 ) {
-                    length /= 7;
-                    units = TimeUnit.Weeks;
-                }
-                break;
-            case Months:
-                if ( length % 12 == 0 ) {
-                    length /= 12;
-                    units = TimeUnit.Years;
-                }
-                break;
-            case Weeks:
-            case Years:
-                break;
-            default:
-                QL.require(false, UNKNOWN_TIME_UNIT); // QA:[RG]::verified
+        // Match C++ v1.42.1 (ql/time/period.cpp:108-132): zero-length periods
+        // collapse their units to Days so that all zero periods normalize to
+        // the same canonical (0, Days) representation. The prior Java version
+        // left units unchanged for length==0, which broke the
+        // testNormalization invariant "periods that compare-equal normalize
+        // to the same (length, units)".
+        if ( length == 0 ) {
+            units = TimeUnit.Days;
+            return;
+        }
+        switch ( units ) {
+        case Days:
+            if ( length % 7 == 0 ) {
+                length /= 7;
+                units = TimeUnit.Weeks;
             }
+            break;
+        case Months:
+            if ( length % 12 == 0 ) {
+                length /= 12;
+                units = TimeUnit.Years;
+            }
+            break;
+        case Weeks:
+        case Years:
+            break;
+        default:
+            QL.require(false, UNKNOWN_TIME_UNIT); // QA:[RG]::verified
+        }
     }
 
 }
