@@ -52,6 +52,7 @@
 
 package org.jquantlib.testsuite.instruments;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.lang.reflect.Constructor;
@@ -62,17 +63,22 @@ import java.util.Map.Entry;
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.daycounters.Actual360;
+import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.exercise.AmericanExercise;
+import org.jquantlib.exercise.EuropeanExercise;
 import org.jquantlib.exercise.Exercise;
 import org.jquantlib.instruments.Option;
 import org.jquantlib.instruments.PlainVanillaPayoff;
 import org.jquantlib.instruments.StrikedTypePayoff;
 import org.jquantlib.instruments.VanillaOption;
 import org.jquantlib.instruments.Option.Type;
+import org.jquantlib.methods.finitedifferences.schemes.FdmSchemeDesc;
+import org.jquantlib.pricingengines.AnalyticEuropeanEngine;
 import org.jquantlib.pricingengines.PricingEngine;
 import org.jquantlib.pricingengines.vanilla.BaroneAdesiWhaleyApproximationEngine;
 import org.jquantlib.pricingengines.vanilla.BjerksundStenslandApproximationEngine;
+import org.jquantlib.pricingengines.vanilla.FdBlackScholesVanillaEngine;
 import org.jquantlib.pricingengines.vanilla.JuQuadraticApproximationEngine;
 import org.jquantlib.pricingengines.vanilla.finitedifferences.FDAmericanEngine;
 import org.jquantlib.pricingengines.vanilla.finitedifferences.FDShoutEngine;
@@ -85,6 +91,7 @@ import org.jquantlib.termstructures.BlackVolTermStructure;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.testsuite.util.Utilities;
 import org.jquantlib.time.Date;
+import org.jquantlib.time.Month;
 import org.jquantlib.time.Period;
 import org.jquantlib.time.TimeUnit;
 import org.junit.Test;
@@ -668,6 +675,151 @@ public class AmericanOptionTest {
         return (int) (t * 360 + 0.5);
     }
 
+
+    /**
+     * Faithful port of {@code test-suite/americanoption.cpp:2174}
+     * {@code BOOST_AUTO_TEST_CASE(testFdEarliestExerciseDate)}.
+     *
+     * <p>Verifies that the FD engine honours the earliest-exercise date on an {@code AmericanExercise}:
+     * a deep ITM American put with a restricted exercise window must be cheaper than full American but
+     * still richer than the European benchmark, and price must rise monotonically with window width.
+     */
+    @Test
+    public void testFdEarliestExerciseDate() {
+        QL.info("Testing that the FD engine respects the earliest date for American exercise...");
+
+        final Date today = new Date(15, Month.January, 2025);
+        new Settings().setEvaluationDate(today);
+        final DayCounter dc = new Actual365Fixed();
+
+        final double S0 = 80.0;
+        final double K = 100.0;
+        final double sigma = 0.25;
+        final double r = 0.05;
+        final double q = 0.0;
+
+        final SimpleQuote spotQuote = new SimpleQuote(S0);
+        final SimpleQuote qQuote = new SimpleQuote(q);
+        final SimpleQuote rQuote = new SimpleQuote(r);
+        final SimpleQuote volQuote = new SimpleQuote(sigma);
+        final Handle<Quote> spot = new Handle<Quote>(spotQuote);
+        final YieldTermStructure qTS = Utilities.flatRate(today, qQuote, dc);
+        final YieldTermStructure rTS = Utilities.flatRate(today, rQuote, dc);
+        final BlackVolTermStructure volTS = Utilities.flatVol(today, volQuote, dc);
+
+        final BlackScholesMertonProcess bsmProcess = new BlackScholesMertonProcess(
+                spot,
+                new Handle<YieldTermStructure>(qTS),
+                new Handle<YieldTermStructure>(rTS),
+                new Handle<BlackVolTermStructure>(volTS));
+
+        final Date maturity = today.add(new Period(1, TimeUnit.Years));
+        final StrikedTypePayoff payoff = new PlainVanillaPayoff(Option.Type.Put, K);
+
+        // Full American exercise
+        final Exercise fullExercise = new AmericanExercise(today, maturity);
+        final VanillaOption fullOption = new VanillaOption(payoff, fullExercise);
+        final PricingEngine fdEngine = new FdBlackScholesVanillaEngine(
+                bsmProcess, 200, 200, 0, FdmSchemeDesc.Douglas());
+        fullOption.setPricingEngine(fdEngine);
+        final double fullPrice = fullOption.NPV();
+
+        // European benchmark
+        final Exercise euroExercise = new EuropeanExercise(maturity);
+        final VanillaOption euroOption = new VanillaOption(payoff, euroExercise);
+        final PricingEngine euroEngine = new AnalyticEuropeanEngine(bsmProcess);
+        euroOption.setPricingEngine(euroEngine);
+        final double euroPrice = euroOption.NPV();
+
+        final double earlyExPremium = fullPrice - euroPrice;
+
+        // Sanity: the early exercise premium should be significant for this deep ITM put with 5% rates
+        assertTrue("early-exercise premium should be > 1.0, got " + earlyExPremium, earlyExPremium > 1.0);
+
+        // Restricted exercise: only last 3 months
+        final Date lateStart = maturity.sub(new Period(3, TimeUnit.Months));
+        final Exercise lateExercise = new AmericanExercise(lateStart, maturity);
+        final VanillaOption lateOption = new VanillaOption(payoff, lateExercise);
+        lateOption.setPricingEngine(fdEngine);
+        final double latePrice = lateOption.NPV();
+
+        // The restricted option should be worth less than full American
+        assertTrue("Restricting exercise window should reduce price: full=" + fullPrice + " late=" + latePrice,
+                fullPrice - latePrice > 0.01);
+
+        // The restricted option should be worth more than European (some early-exercise value remains)
+        assertTrue("Restricted American should exceed European: late=" + latePrice + " euro=" + euroPrice,
+                latePrice > euroPrice + 0.01);
+
+        // Monotonicity: longer exercise window -> higher price
+        final Date midStart = maturity.sub(new Period(6, TimeUnit.Months));
+        final Exercise midExercise = new AmericanExercise(midStart, maturity);
+        final VanillaOption midOption = new VanillaOption(payoff, midExercise);
+        midOption.setPricingEngine(fdEngine);
+        final double midPrice = midOption.NPV();
+
+        assertTrue("Wider window should give higher price: 6M=" + midPrice + " 3M=" + latePrice,
+                midPrice >= latePrice - 1e-8);
+        assertTrue("Full window should give highest price: full=" + fullPrice + " 6M=" + midPrice,
+                fullPrice >= midPrice - 1e-8);
+    }
+
+    /**
+     * Faithful port of {@code test-suite/americanoption.cpp:2257}
+     * {@code BOOST_AUTO_TEST_CASE(testBaroneAdesiWhaleyNegativeRates)}.
+     *
+     * <p>Issue #1291: BAW crashes with a cryptic error when rates are negative. The v1.42.1 engine
+     * throws a clear {@code QL_REQUIRE} message instead. This test asserts both put-with-negative-rate
+     * and call-with-positive-dividend (rates still negative) raise an exception mentioning
+     * "negative interest rates".
+     */
+    @Test
+    public void testBaroneAdesiWhaleyNegativeRates() {
+        QL.info("Testing Barone-Adesi-Whaley engine with negative rates...");
+
+        final Date today = new Settings().evaluationDate();
+        final DayCounter dc = new Actual360();
+
+        final SimpleQuote spot = new SimpleQuote(36.0);
+        final SimpleQuote qRate = new SimpleQuote(0.0);
+        final SimpleQuote rRate = new SimpleQuote(-0.012);
+        final SimpleQuote vol = new SimpleQuote(0.20);
+
+        final BlackScholesMertonProcess stochProcess = new BlackScholesMertonProcess(
+                new Handle<Quote>(spot),
+                new Handle<YieldTermStructure>(Utilities.flatRate(today, qRate, dc)),
+                new Handle<YieldTermStructure>(Utilities.flatRate(today, rRate, dc)),
+                new Handle<BlackVolTermStructure>(Utilities.flatVol(today, vol, dc)));
+
+        final StrikedTypePayoff putPayoff = new PlainVanillaPayoff(Option.Type.Put, 40.0);
+        final Date exDate = today.add(new Period(1, TimeUnit.Years));
+        final Exercise exercise = new AmericanExercise(today, exDate);
+
+        final VanillaOption putOption = new VanillaOption(putPayoff, exercise);
+        putOption.setPricingEngine(new BaroneAdesiWhaleyApproximationEngine(stochProcess));
+
+        try {
+            putOption.NPV();
+            fail("expected QL_REQUIRE failure for negative interest rates on put");
+        } catch (final RuntimeException e) {
+            assertTrue("error message should mention 'negative interest rates'; got: " + e.getMessage(),
+                    e.getMessage() != null && e.getMessage().contains("negative interest rates"));
+        }
+
+        // also verify with a call and positive dividends
+        final StrikedTypePayoff callPayoff = new PlainVanillaPayoff(Option.Type.Call, 40.0);
+        qRate.setValue(0.06);
+        final VanillaOption callOption = new VanillaOption(callPayoff, exercise);
+        callOption.setPricingEngine(new BaroneAdesiWhaleyApproximationEngine(stochProcess));
+
+        try {
+            callOption.NPV();
+            fail("expected QL_REQUIRE failure for negative interest rates on call");
+        } catch (final RuntimeException e) {
+            assertTrue("error message should mention 'negative interest rates'; got: " + e.getMessage(),
+                    e.getMessage() != null && e.getMessage().contains("negative interest rates"));
+        }
+    }
 
     //
     // private inner classes
