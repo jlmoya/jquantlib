@@ -49,7 +49,13 @@ public class Schedule {
     private final boolean fullInterface_;
     private final Calendar calendar_;
     private final BusinessDayConvention convention_;
-    private final BusinessDayConvention terminationDateConvention_;
+    /**
+     * Termination-date BDC. Phase 1-cert-D5-A: relaxed from {@code final} so {@link #until(Date)} and {@link #after(Date)}
+     * can mutate the cloned schedule's convention, mirroring C++ {@code Schedule::until} / {@code Schedule::after}
+     * (ql/time/schedule.cpp:424-491) which assign {@code result.terminationDateConvention_ = Unadjusted} or the original
+     * {@code convention_} depending on whether the truncation date is on-grid.
+     */
+    private BusinessDayConvention terminationDateConvention_;
     private final boolean endOfMonth_;
     private final boolean finalIsRegular_;
     private final List< Date > dates_;
@@ -485,6 +491,116 @@ public class Schedule {
             if ( mVal % 3 != 0 ) { // not a main IMM month
                 final int skip = mVal % 3;
                 result.subAssign(new Period(skip, TimeUnit.Months));
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Private copy constructor used by {@link #until(Date)} and {@link #after(Date)} to build a mutable clone of the
+     * schedule whose dates / isRegular / firstDate / nextToLastDate / terminationDateConvention can be trimmed.
+     *
+     * <p>Mirrors C++ {@code Schedule result = *this;} at ql/time/schedule.cpp:425 and :459.
+     *
+     * <p>Phase 1-cert-D5-A.
+     */
+    private Schedule(final Schedule other) {
+        this.fullInterface_ = other.fullInterface_;
+        this.calendar_ = other.calendar_;
+        this.convention_ = other.convention_;
+        this.terminationDateConvention_ = other.terminationDateConvention_;
+        this.endOfMonth_ = other.endOfMonth_;
+        this.finalIsRegular_ = other.finalIsRegular_;
+        this.dates_ = new ArrayList< Date >(other.dates_);
+        this.isRegular_ = new ArrayList< Boolean >(other.isRegular_);
+        this.tenor_ = other.tenor_;
+        this.rule_ = other.rule_;
+        this.firstDate_ = other.firstDate_;
+        this.nextToLastDate_ = other.nextToLastDate_;
+    }
+
+    /**
+     * Truncate the schedule to a sub-schedule ending at {@code truncationDate}. Mirrors C++ {@code Schedule::until} at
+     * ql/time/schedule.cpp:458-490.
+     *
+     * <p>If {@code truncationDate} is greater than or equal to the last schedule date the schedule is returned as-is.
+     * Otherwise later dates are dropped and {@code truncationDate} appended if not already present (with an irregular
+     * final period). {@code firstDate_} / {@code nextToLastDate_} are reset to null when they fall on or after the
+     * truncation date.
+     *
+     * <p>Phase 1-cert-D5-A — required by Phase-1 certification D5 testTruncation port.
+     */
+    public Schedule until(final Date truncationDate) /* @ReadOnly */ {
+        final Schedule result = new Schedule(this);
+        QL.require(truncationDate.gt(result.dates_.get(0)),
+                "truncation date " + truncationDate + " must be later than schedule first date " + result.dates_.get(0));
+        if ( truncationDate.lt(result.dates_.get(result.dates_.size() - 1)) ) {
+            // remove later dates
+            while ( result.dates_.get(result.dates_.size() - 1).gt(truncationDate) ) {
+                result.dates_.remove(result.dates_.size() - 1);
+                if ( !result.isRegular_.isEmpty() ) {
+                    result.isRegular_.remove(result.isRegular_.size() - 1);
+                }
+            }
+            // add truncationDate if missing
+            if ( !truncationDate.equals(result.dates_.get(result.dates_.size() - 1)) ) {
+                result.dates_.add(truncationDate);
+                result.isRegular_.add(Boolean.FALSE);
+                result.terminationDateConvention_ = BusinessDayConvention.Unadjusted;
+            } else {
+                result.terminationDateConvention_ = this.convention_;
+            }
+
+            if ( result.nextToLastDate_ != null && !result.nextToLastDate_.isNull()
+                    && result.nextToLastDate_.ge(truncationDate) ) {
+                result.nextToLastDate_ = new Date();
+            }
+            if ( result.firstDate_ != null && !result.firstDate_.isNull() && result.firstDate_.ge(truncationDate) ) {
+                result.firstDate_ = new Date();
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Truncate the schedule to a sub-schedule starting at {@code truncationDate}. Mirrors C++ {@code Schedule::after} at
+     * ql/time/schedule.cpp:424-456.
+     *
+     * <p>If {@code truncationDate} is less than or equal to the first schedule date the schedule is returned as-is.
+     * Otherwise earlier dates are dropped and {@code truncationDate} prepended if not already present (with an irregular
+     * leading period). {@code firstDate_} / {@code nextToLastDate_} are reset to null when they fall on or before the
+     * truncation date.
+     *
+     * <p>Phase 1-cert-D5-A — required by Phase-1 certification D5 testTruncation port.
+     */
+    public Schedule after(final Date truncationDate) /* @ReadOnly */ {
+        final Schedule result = new Schedule(this);
+        QL.require(truncationDate.lt(result.dates_.get(result.dates_.size() - 1)),
+                "truncation date " + truncationDate + " must be before the last schedule date "
+                        + result.dates_.get(result.dates_.size() - 1));
+        if ( truncationDate.gt(result.dates_.get(0)) ) {
+            // remove earlier dates
+            while ( result.dates_.get(0).lt(truncationDate) ) {
+                result.dates_.remove(0);
+                if ( !result.isRegular_.isEmpty() ) {
+                    result.isRegular_.remove(0);
+                }
+            }
+            // add truncationDate if missing
+            if ( !truncationDate.equals(result.dates_.get(0)) ) {
+                result.dates_.add(0, truncationDate);
+                result.isRegular_.add(0, Boolean.FALSE);
+                result.terminationDateConvention_ = BusinessDayConvention.Unadjusted;
+            } else {
+                result.terminationDateConvention_ = this.convention_;
+            }
+
+            if ( result.nextToLastDate_ != null && !result.nextToLastDate_.isNull()
+                    && result.nextToLastDate_.le(truncationDate) ) {
+                result.nextToLastDate_ = new Date();
+            }
+            if ( result.firstDate_ != null && !result.firstDate_.isNull() && result.firstDate_.le(truncationDate) ) {
+                result.firstDate_ = new Date();
             }
         }
         return result;
