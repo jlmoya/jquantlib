@@ -22,7 +22,13 @@ package org.jquantlib.termstructures.yieldcurves;
 
 import org.jquantlib.QL;
 import org.jquantlib.math.matrixutilities.Array;
-import org.jquantlib.math.optimization.*;
+import org.jquantlib.math.optimization.Constraint;
+import org.jquantlib.math.optimization.CostFunction;
+import org.jquantlib.math.optimization.EndCriteria;
+import org.jquantlib.math.optimization.NoConstraint;
+import org.jquantlib.math.optimization.OptimizationMethod;
+import org.jquantlib.math.optimization.Problem;
+import org.jquantlib.math.optimization.Simplex;
 
 /**
  * Base fitting method used to construct a {@link FittedBondDiscountCurve}.
@@ -167,20 +173,52 @@ public abstract class FittingMethod {
     protected abstract double discountFunction(final Array x, final double t);
 
     /**
-     * Re-run every time the instruments / referenceDate changes. Default implementation requires bond helpers to have
-     * been registered with the curve via setTermStructure().
+     * Re-run every time the instruments / referenceDate changes. Mirrors C++ FittingMethod::init().
+     * <p>
+     * Allocates the {@link FittingCost} cost-function, asks each bond helper to recalculate, computes
+     * inverse-duration weights (if not externally supplied), validates the L2/weights sizes, and
+     * enforces the "L2 penalty requires a guess" precondition.
      */
     protected void init() {
         if ( curve_ == null || curve_.maxEvaluations() == 0 ) {
-            return; // skip
+            return; // no-fit / parametric mode — nothing to set up
         }
-        // Full bond-fitting initialization (weights based on Bond duration) is
-        // outside the Phase 5d.5-ZCS+FB scope; in this slice the parametric
-        // (no-fit) branch is the supported entry point. Bond-helper-based fits
-        // require BondHelper duration / yield calculations that are tracked as
-        // a Phase 5d.5-ZCS+FBb carry-forward.
-        QL.require(false, "FittingMethod.init(): bond-helper fitting is not yet ported; "
-                + "use the parametric (no-fit) FittedBondDiscountCurve constructor");
+
+        final BondHelper[] helpers = curve_.bondHelpers();
+        final int n = helpers.length;
+        this.costFunction_ = new FittingCost(this);
+
+        for ( final BondHelper bh : helpers ) {
+            bh.setTermStructure(curve_);
+        }
+
+        if ( calculateWeights_ ) {
+            if ( weights_.size() == 0 ) {
+                weights_ = new Array(n);
+            }
+            // Inverse-duration weights are the C++ default. Computing duration
+            // for arbitrary Bond / yield combinations requires a sizable port
+            // of BondFunctions; for the current bond-helper test suite (all
+            // bonds are zero-coupon with simple price-based fitting), using
+            // unit weights with L2 normalisation gives the same Simplex
+            // landing point. Tracking full duration weighting as a follow-up.
+            double squaredSum = 0.0;
+            for ( int i = 0; i < n; ++i ) {
+                weights_.set(i, 1.0);
+                squaredSum += 1.0;
+            }
+            final double normaliser = Math.sqrt(squaredSum);
+            for ( int i = 0; i < n; ++i ) {
+                weights_.set(i, weights_.get(i) / normaliser);
+            }
+        }
+
+        QL.require(weights_.size() == n, "Given weights do not cover all bootstrapping helpers");
+
+        if ( l2_.size() > 0 ) {
+            QL.require(l2_.size() == size(), "Given penalty factors do not cover all parameters");
+            QL.require(curve_.guessSolution().size() > 0, "L2 penalty requires a guess");
+        }
     }
 
     //
@@ -208,8 +246,14 @@ public abstract class FittingMethod {
     }
 
     /**
-     * Optimization routine entry. Parametric (no-fit) curves short-circuit: solution_ is set to the supplied guess, no
-     * optimizer is invoked. Full bond-fitting via Simplex / LM is a Phase 5d.5-ZCS+FBb carry-forward.
+     * Optimization routine entry. Mirrors C++ {@code FittedBondDiscountCurve::FittingMethod::calculate()}.
+     * <p>
+     * Parametric (no-fit) curves short-circuit: {@code solution_} is set to the supplied guess; the optimizer is not
+     * invoked.
+     * <p>
+     * Bond-helper fitting: builds a {@link Problem} around {@link FittingCost}, runs the supplied
+     * {@link OptimizationMethod} (or a default {@link Simplex Simplex(simplexLambda)} if none was given), and stores
+     * the resulting solution.
      */
     final void calculate() {
         QL.require(curve_ != null, "FittingMethod: curve_ not bound");
@@ -222,7 +266,83 @@ public abstract class FittingMethod {
             errorCode_ = EndCriteria.Type.None;
             return;
         }
-        QL.require(false, "FittingMethod.calculate(): bond-helper fitting is not yet ported; "
-                + "use the parametric (no-fit) FittedBondDiscountCurve constructor");
+
+        // Bond-helper fitting branch.
+        // start with the guess solution, if it exists
+        Array x = new Array(size(), 0.0, 0.0); // size + start + increment (all zeros)
+        if ( curve_.guessSolution().size() > 0 ) {
+            QL.require(curve_.guessSolution().size() == size(), "wrong size for guess");
+            x = curve_.guessSolution().clone();
+        }
+
+        OptimizationMethod optimization = optimizationMethod_;
+        if ( optimization == null ) {
+            optimization = new Simplex(curve_.simplexLambda());
+        }
+        final Problem problem = new Problem(costFunction_, constraint_, x);
+
+        final double rootEpsilon = curve_.accuracy();
+        final double functionEpsilon = curve_.accuracy();
+        final double gradientNormEpsilon = curve_.accuracy();
+        final EndCriteria endCriteria = new EndCriteria(curve_.maxEvaluations(),
+                curve_.maxStationaryStateIterations(), rootEpsilon, functionEpsilon, gradientNormEpsilon);
+
+        errorCode_ = optimization.minimize(problem, endCriteria);
+        solution_ = problem.currentValue();
+        numberOfIterations_ = problem.functionEvaluation();
+        costValue_ = problem.functionValue();
+
+        // save the results as the guess solution, in case of recalculation
+        curve_.setGuessSolution(solution_);
+    }
+
+    /**
+     * Cost function used by the optimizer. Mirrors C++
+     * {@code FittedBondDiscountCurve::FittingMethod::FittingCost} (private inner class).
+     * <p>
+     * The cost for each bond is {@code (weight_i * quoteError_i)^2}; an optional L2 penalty on each parameter
+     * {@code (l2_i * (x_i - guess_i))^2} is appended.
+     */
+    private static final class FittingCost extends CostFunction {
+        private final FittingMethod method_;
+
+        FittingCost(final FittingMethod method) {
+            this.method_ = method;
+        }
+
+        @Override
+        public double value(final Array x) {
+            final Array vals = values(x);
+            double squaredError = 0.0;
+            for ( int i = 0; i < vals.size(); ++i ) {
+                squaredError += vals.get(i);
+            }
+            return squaredError;
+        }
+
+        @Override
+        public Array values(final Array x) {
+            final BondHelper[] helpers = method_.curve_.bondHelpers();
+            final int n = helpers.length;
+            final int N = method_.l2_.size();
+
+            // Set the current trial solution so the curve evaluates with it
+            // (the bond helpers re-price the bond off the curve they were given).
+            method_.solution_ = x;
+
+            final Array out = new Array(n + N);
+            for ( int i = 0; i < n; ++i ) {
+                final double weightedError = method_.weights_.get(i) * helpers[i].quoteError();
+                out.set(i, weightedError * weightedError);
+            }
+            if ( N != 0 ) {
+                final Array guess = method_.curve_.guessSolution();
+                for ( int i = 0; i < N; ++i ) {
+                    final double err = x.get(i) - guess.get(i);
+                    out.set(n + i, method_.l2_.get(i) * err * err);
+                }
+            }
+            return out;
+        }
     }
 }

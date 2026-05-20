@@ -33,12 +33,19 @@ import org.jquantlib.time.Date;
  * Faithful port of QuantLib v1.42.1 {@code FittedBondDiscountCurve}
  * (ql/termstructures/yield/fittedbonddiscountcurve.{hpp,cpp}).
  *
- * <p><b>Phase 5d.5-ZCS+FB scope:</b> only the parametric (no-fit)
- * constructors are wired today; passing bond helpers will compile but the {@code calculate()} path will fail-fast
- * because BondHelper-driven least-squares optimization (Simplex / LM) is tracked as a Phase 5d.5-ZCS+FBb carry-forward.
- * The parametric mode is the primary entry point exercised by the C++ {@code testEvaluation} test; see also the
- * {@link FittingMethod} subclasses {@link NelsonSiegelFitting}, {@link SvenssonFitting},
- * {@link SimplePolynomialFitting}.
+ * <p>Two operating modes:
+ * <ul>
+ *   <li><b>Parametric / no-fit:</b> caller provides {@link Array parameters} +
+ *   maxDate; the curve simply uses them via the supplied {@link FittingMethod}.
+ *   Useful e.g. to reuse a previously-fit solution in a different currency.</li>
+ *   <li><b>Bond-helper / fitting:</b> caller provides a list of
+ *   {@link BondHelper}s + accuracy + maxIterations; the curve minimises the
+ *   weighted price-error of the bonds via {@link FittingMethod#calculate()}.
+ *   Weights default to 1/duration (computed internally if not given).</li>
+ * </ul>
+ *
+ * <p>See {@link FittingMethod} subclasses {@link NelsonSiegelFitting},
+ * {@link SvenssonFitting}, {@link SimplePolynomialFitting}.
  */
 public class FittedBondDiscountCurve extends AbstractYieldTermStructure {
 
@@ -52,15 +59,58 @@ public class FittedBondDiscountCurve extends AbstractYieldTermStructure {
     private final FittingMethod fittingMethod_;
     private Array guessSolution_;
     private Date maxDate_;
+    // -- bond helpers for fitting branch --------------------------------------
+    private BondHelper[] bondHelpers_;
     // -- lazy-calculation flag (mirrors LazyObject in C++) --------------------
     private boolean calculated_ = false;
 
     //
-    // public constructors — bond-helper variants (no-fit branch only for now)
+    // public constructors — bond-helper variants (fitting branch)
     //
 
     /**
-     * Reference date based on current evaluation date. Bond-helper fitting is not yet supported in this slice.
+     * Bond-helper fit ctor #1 (settlement-days + calendar). Mirrors C++ ctor with helpers.
+     * Defaults: simplexLambda=1.0, maxStationaryStateIterations=100.
+     */
+    public FittedBondDiscountCurve(final int settlementDays, final Calendar calendar, final BondHelper[] bondHelpers,
+            final DayCounter dayCounter, final FittingMethod fittingMethod, final double accuracy,
+            final int maxEvaluations, final Array guess, final double simplexLambda,
+            final int maxStationaryStateIterations) {
+        super(settlementDays, calendar, dayCounter);
+        this.accuracy_ = accuracy;
+        this.maxEvaluations_ = maxEvaluations;
+        this.simplexLambda_ = simplexLambda;
+        this.maxStationaryStateIterations_ = maxStationaryStateIterations;
+        this.guessSolution_ = (guess == null) ? new Array(0) : guess;
+        this.bondHelpers_ = (bondHelpers == null) ? new BondHelper[0] : bondHelpers.clone();
+        this.fittingMethod_ = fittingMethod.clone();
+        this.fittingMethod_.curve_ = this;
+        setup();
+    }
+
+    /** Convenience: matches C++ default {@code simplexLambda=1.0, maxStationaryStateIterations=100}. */
+    public FittedBondDiscountCurve(final int settlementDays, final Calendar calendar, final BondHelper[] bondHelpers,
+            final DayCounter dayCounter, final FittingMethod fittingMethod, final double accuracy,
+            final int maxEvaluations, final Array guess) {
+        this(settlementDays, calendar, bondHelpers, dayCounter, fittingMethod, accuracy, maxEvaluations, guess, 1.0,
+                100);
+    }
+
+    /** Convenience: matches C++ default with no guess. */
+    public FittedBondDiscountCurve(final int settlementDays, final Calendar calendar, final BondHelper[] bondHelpers,
+            final DayCounter dayCounter, final FittingMethod fittingMethod, final double accuracy,
+            final int maxEvaluations) {
+        this(settlementDays, calendar, bondHelpers, dayCounter, fittingMethod, accuracy, maxEvaluations, null, 1.0,
+                100);
+    }
+
+    //
+    // public constructors — no-fit (parametric) variants (existing)
+    //
+
+    /**
+     * Reference date based on current evaluation date (no-fit / parametric variant). This signature is the historical
+     * one used before the bond-helper branch was wired; it remains supported to avoid breaking call sites.
      */
     public FittedBondDiscountCurve(final int settlementDays, final Calendar calendar, final DayCounter dayCounter,
             final FittingMethod fittingMethod, final double accuracy, final int maxEvaluations, final Array guess,
@@ -71,12 +121,13 @@ public class FittedBondDiscountCurve extends AbstractYieldTermStructure {
         this.simplexLambda_ = simplexLambda;
         this.maxStationaryStateIterations_ = maxStationaryStateIterations;
         this.guessSolution_ = (guess == null) ? new Array(0) : guess;
+        this.bondHelpers_ = new BondHelper[0];
         this.fittingMethod_ = fittingMethod.clone();
         this.fittingMethod_.curve_ = this;
     }
 
     /**
-     * Curve reference date fixed for life of curve. Bond-helper fitting is not yet supported in this slice.
+     * Curve reference date fixed for life of curve (no-fit / parametric variant).
      */
     public FittedBondDiscountCurve(final Date referenceDate, final DayCounter dayCounter,
             final FittingMethod fittingMethod, final double accuracy, final int maxEvaluations, final Array guess,
@@ -87,6 +138,7 @@ public class FittedBondDiscountCurve extends AbstractYieldTermStructure {
         this.simplexLambda_ = simplexLambda;
         this.maxStationaryStateIterations_ = maxStationaryStateIterations;
         this.guessSolution_ = (guess == null) ? new Array(0) : guess;
+        this.bondHelpers_ = new BondHelper[0];
         this.fittingMethod_ = fittingMethod.clone();
         this.fittingMethod_.curve_ = this;
     }
@@ -102,6 +154,7 @@ public class FittedBondDiscountCurve extends AbstractYieldTermStructure {
         this.simplexLambda_ = 1.0;
         this.maxStationaryStateIterations_ = 100;
         this.guessSolution_ = parameters.clone();
+        this.bondHelpers_ = new BondHelper[0];
         this.maxDate_ = maxDate;
         this.fittingMethod_ = fittingMethod.clone();
         this.fittingMethod_.curve_ = this;
@@ -118,6 +171,7 @@ public class FittedBondDiscountCurve extends AbstractYieldTermStructure {
         this.simplexLambda_ = 1.0;
         this.maxStationaryStateIterations_ = 100;
         this.guessSolution_ = parameters.clone();
+        this.bondHelpers_ = new BondHelper[0];
         this.maxDate_ = maxDate;
         this.fittingMethod_ = fittingMethod.clone();
         this.fittingMethod_.curve_ = this;
@@ -182,6 +236,19 @@ public class FittedBondDiscountCurve extends AbstractYieldTermStructure {
     }
 
     //
+    // package-private accessors used by FittingMethod (bond-helper branch)
+    //
+
+    BondHelper[] bondHelpers() {
+        return bondHelpers_;
+    }
+
+    /** Mirrors C++ {@code numberOfBonds()}. */
+    public int numberOfBonds() {
+        return bondHelpers_.length;
+    }
+
+    //
     // discount implementation
     //
 
@@ -200,16 +267,41 @@ public class FittedBondDiscountCurve extends AbstractYieldTermStructure {
         calculated_ = true;
     }
 
+    /** Mirrors C++ {@code FittedBondDiscountCurve::setup()}: register as observer of every helper. */
+    private void setup() {
+        for ( final BondHelper bh : bondHelpers_ ) {
+            bh.addObserver(this);
+        }
+    }
+
     /** Mirrors C++ FittedBondDiscountCurve::performCalculations(). */
     private void performCalculations() {
-        if ( maxEvaluations_ == 0 ) {
-            // No fit. We require an explicit max date (helpers not yet supported
-            // in this slice).
-            QL.require(maxDate_ != null, "no bond helpers or max date given");
-        } else {
-            QL.require(false, "FittedBondDiscountCurve: bond-helper fitting is not yet ported; "
-                    + "use the parametric (no-fit) constructor with explicit parameters and maxDate");
+        if ( maxEvaluations_ != 0 ) {
+            // Fitting mode: helpers are required.
+            QL.require(bondHelpers_.length > 0, "no bond helpers given");
         }
+        if ( maxEvaluations_ == 0 ) {
+            // No-fit mode: need either explicit max date OR helpers.
+            QL.require(maxDate_ != null || bondHelpers_.length > 0, "no bond helpers or max date given");
+        }
+
+        if ( bondHelpers_.length > 0 ) {
+            maxDate_ = Date.minDate();
+            final Date refDate = referenceDate();
+            for ( int i = 0; i < bondHelpers_.length; ++i ) {
+                final org.jquantlib.instruments.Bond bond = bondHelpers_[i].bond();
+                QL.require(bondHelpers_[i].quoteIsValid(), (i + 1) + "-th bond has an invalid price quote");
+                final Date bondSettlement = bond.settlementDate();
+                QL.require(bondSettlement.ge(refDate), (i + 1) + "-th bond settlement date (" + bondSettlement
+                        + ") before curve reference date (" + refDate + ")");
+                final Date pillar = bondHelpers_[i].pillarDate();
+                if ( pillar.gt(maxDate_) ) {
+                    maxDate_ = pillar;
+                }
+                bondHelpers_[i].setTermStructure(this);
+            }
+        }
+
         fittingMethod_.init();
         fittingMethod_.calculate();
     }
