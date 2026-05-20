@@ -88,6 +88,7 @@ import org.jquantlib.pricingengines.vanilla.QdFpAmericanEngine;
 import org.jquantlib.pricingengines.vanilla.QdPlusAmericanEngine;
 import org.jquantlib.pricingengines.vanilla.finitedifferences.FDAmericanEngine;
 import org.jquantlib.pricingengines.vanilla.finitedifferences.FDShoutEngine;
+import org.jquantlib.pricingengines.vanilla.qdfp.QdFpGaussLobattoScheme;
 import org.jquantlib.pricingengines.vanilla.qdfp.QdFpLegendreScheme;
 import org.jquantlib.pricingengines.vanilla.qdfp.QdFpLegendreTanhSinhScheme;
 import org.jquantlib.processes.BlackScholesMertonProcess;
@@ -1221,17 +1222,40 @@ public class AmericanOptionTest {
 
     /**
      * Port of QuantLib v1.42.1 {@code AmericanOption::testQdFpIterationScheme}
-     * (test-suite/americanoption.cpp). Cross-validates QdFpLegendreScheme / QdFpLegendreTanhSinhScheme /
-     * QdFpTanhSinhIterationScheme producing close NPVs.
-     *
-     * <p>TODO: heavy multi-scheme cross-check; requires QdFpAmericanEngine NPV agreement across the three schemes to
-     * 1e-8. The Java engines are in place but the cross-scheme equivalence sweep has not yet been bench-checked
-     * end-to-end; deferred to a follow-up round.
+     * (test-suite/americanoption.cpp lines 1368-1392). Checks the public surface
+     * of each {@link org.jquantlib.pricingengines.vanilla.qdfp.QdFpIterationScheme}
+     * implementation: node counts and that each scheme's integrator integrates
+     * the standard normal density on {@code [-10, 10]} to 1 within {@code tol}.
      */
     @Test
-    @Ignore("Phase1-closure-A1-546: heavy QdFp scheme cross-check; needs reference NPVs from C++ probe")
     public void testQdFpIterationScheme() {
-        QL.info("Testing QdFp iteration schemes (deferred)...");
+        QL.info("Testing Legendre and tanh-sinh iteration scheme for QD+ fixed-point American engine...");
+
+        final double tol = 1e-8;
+        final int l = 32, m = 6, n = 18, p = 36;
+
+        final org.jquantlib.pricingengines.vanilla.qdfp.QdFpIterationScheme[] schemes = {
+                new QdFpLegendreScheme(l, m, n, p),
+                new QdFpLegendreTanhSinhScheme(l, m, n, tol),
+                new org.jquantlib.pricingengines.vanilla.qdfp.QdFpTanhSinhIterationScheme(m, n, tol)
+        };
+
+        final org.jquantlib.math.distributions.NormalDistribution nd =
+                new org.jquantlib.math.distributions.NormalDistribution();
+
+        for (final org.jquantlib.pricingengines.vanilla.qdfp.QdFpIterationScheme scheme : schemes) {
+            org.junit.Assert.assertEquals(n, scheme.getNumberOfChebyshevInterpolationNodes());
+            org.junit.Assert.assertEquals(1, scheme.getNumberOfJacobiNewtonFixedPointSteps());
+            org.junit.Assert.assertEquals(m - 1, scheme.getNumberOfNaiveFixedPointSteps());
+
+            final double fpIntegral = scheme.getFixedPointIntegrator().op(nd, -10.0, 10.0);
+            org.junit.Assert.assertEquals("fixed-point integrator should integrate the std-normal pdf to 1",
+                    1.0, fpIntegral, tol);
+
+            final double bpIntegral = scheme.getExerciseBoundaryToPriceIntegrator().op(nd, -10.0, 10.0);
+            org.junit.Assert.assertEquals("boundary-to-price integrator should integrate the std-normal pdf to 1",
+                    1.0, bpIntegral, tol);
+        }
     }
 
     /**
@@ -1376,43 +1400,259 @@ public class AmericanOptionTest {
 
     /**
      * Port of QuantLib v1.42.1 {@code AmericanOption::testBulkQdFpAmericanEngine}
-     * (test-suite/americanoption.cpp). 300+ PDE cross-validation points; heavy.
+     * (test-suite/americanoption.cpp lines 1579-1685). Andersen-Lake-Offengenden
+     * bulk RMSE cross-check between the fast / accurate / Gauss-Lobatto schemes.
      *
-     * <p>TODO: requires QdFpGaussLobattoScheme + per-test PDE FdBlackScholesVanillaEngine cross-check; deferred to a
-     * follow-up port (heavy compute, ~300 NPVs per scheme).
+     * <p>Uses the abbreviated test grid (T={30,182,365}, rf 4 values, qy 4 values,
+     * S 5 values, vol 3 values) — same as the active C++ code path. The original
+     * paper's full grid (commented out in C++ as "takes too long") is not used.
      */
     @Test
-    @Ignore("Phase1-closure-A1-546: heavy bulk PDE cross-check; needs QdFpGaussLobattoScheme + FD baseline")
     public void testBulkQdFpAmericanEngine() {
-        QL.info("Testing Andersen, Lake and Offengenden bulk examples (deferred)...");
+        QL.info("Testing Andersen, Lake and Offengenden bulk examples...");
+
+        final DayCounter dc = new Actual365Fixed();
+        final Date today = new Date(1, Month.June, 2022);
+        new Settings().setEvaluationDate(today);
+
+        final SimpleQuote spot = new SimpleQuote(1.0);
+        final SimpleQuote rRate = new SimpleQuote(0.0);
+        final SimpleQuote qRate = new SimpleQuote(0.0);
+        final SimpleQuote vol = new SimpleQuote(0.0);
+
+        final int[] T = { 30, 182, 365 };
+        final double[] rf = { 0.02, 0.04, 0.06, 0.1 };
+        final double[] qy = { 0.0, 0.04, 0.08, 0.12 };
+        final double[] S = { 25.0, 75.0, 100.0, 125.0, 200.0 };
+        final double[] sig = { 0.1, 0.25, 0.6 };
+
+        final PlainVanillaPayoff payoff = new PlainVanillaPayoff(Option.Type.Put, 100.0);
+
+        final BlackScholesMertonProcess bsProcess = new BlackScholesMertonProcess(
+                new Handle<Quote>(spot),
+                new Handle<YieldTermStructure>(Utilities.flatRate(today, qRate, dc)),
+                new Handle<YieldTermStructure>(Utilities.flatRate(today, rRate, dc)),
+                new Handle<BlackVolTermStructure>(Utilities.flatVol(today, vol, dc)));
+
+        final QdFpAmericanEngine qdFpFastAmericanEngine = new QdFpAmericanEngine(
+                bsProcess, QdFpAmericanEngine.fastScheme());
+        final QdFpAmericanEngine qdFpAccurateAmericanEngine = new QdFpAmericanEngine(
+                bsProcess, QdFpAmericanEngine.accurateScheme());
+        final QdFpAmericanEngine qdFpGaussLobattoAmericanEngine = new QdFpAmericanEngine(
+                bsProcess, new QdFpGaussLobattoScheme(3, 7, 1e-5));
+
+        final org.jquantlib.math.statistics.IncrementalStatistics statsAccurate =
+                new org.jquantlib.math.statistics.IncrementalStatistics();
+        final org.jquantlib.math.statistics.IncrementalStatistics statsLobatto =
+                new org.jquantlib.math.statistics.IncrementalStatistics();
+
+        for (final int t : T) {
+            final Date maturityDate = today.clone().addAssign(new Period(t, TimeUnit.Days));
+            final VanillaOption option = new VanillaOption(payoff,
+                    new AmericanExercise(today, maturityDate));
+
+            for (final double rVal : rf) {
+                rRate.setValue(rVal);
+                for (final double qVal : qy) {
+                    qRate.setValue(qVal);
+                    for (final double vVal : sig) {
+                        vol.setValue(vVal);
+                        for (final double sVal : S) {
+                            spot.setValue(sVal);
+
+                            option.setPricingEngine(qdFpFastAmericanEngine);
+                            final double fast = option.NPV();
+
+                            option.setPricingEngine(qdFpAccurateAmericanEngine);
+                            final double accurate = option.NPV();
+                            statsAccurate.add(Math.abs(fast - accurate));
+
+                            option.setPricingEngine(qdFpGaussLobattoAmericanEngine);
+                            final double lobatto = option.NPV();
+                            statsLobatto.add(Math.abs(accurate - lobatto));
+                        }
+                    }
+                }
+            }
+        }
+
+        final double tolStdDev = 1e-4;
+        if (statsAccurate.standardDeviation() > tolStdDev) {
+            org.junit.Assert.fail("failed to reproduce low RMSE with fast American engine"
+                    + "\n    RMSE diff: " + statsAccurate.standardDeviation()
+                    + "\n    tol      : " + tolStdDev);
+        }
+
+        if (statsLobatto.standardDeviation() > tolStdDev) {
+            org.junit.Assert.fail("failed to reproduce low RMSE with fast Lobatto American engine"
+                    + "\n    RMSE diff: " + statsLobatto.standardDeviation()
+                    + "\n    tol      : " + tolStdDev);
+        }
+
+        final double tolMax = 2.5e-3;
+        if (statsAccurate.max() > tolMax) {
+            org.junit.Assert.fail("failed to reproduce low max deviation with fast American engine"
+                    + "\n    max diff: " + statsAccurate.max()
+                    + "\n    tol     : " + tolMax);
+        }
+
+        if (statsLobatto.max() > tolMax) {
+            org.junit.Assert.fail("failed to reproduce low max deviation with fast Lobatto American engine"
+                    + "\n    max diff: " + statsLobatto.max()
+                    + "\n    tol     : " + tolMax);
+        }
     }
 
     /**
      * Port of QuantLib v1.42.1 {@code AmericanOption::testQdEngineWithLobattoIntegral}
-     * (test-suite/americanoption.cpp).
+     * (test-suite/americanoption.cpp lines 1687-1752). Cross-checks
+     * {@link QdFpAmericanEngine} with {@code highPrecisionScheme()} against the
+     * same engine wired with {@link QdFpGaussLobattoScheme} at (10, 30, 1e-10).
      *
-     * <p>TODO: requires QdFpGaussLobattoScheme (analogous to QdFpLegendreScheme but with GaussLobattoIntegral instead
-     * of GaussLegendreIntegrator). Deferred — the Java GaussLobattoIntegral exists but the scheme wrapper has not yet
-     * been built.
+     * <p>Self-consistency check: tolerance {@code 1e-11} on the NPV diff between
+     * the two schemes, for both {@code FP_A} and {@code FP_B} fixed-point
+     * equations, across spots near and bracketing the strike.
      */
     @Test
-    @Ignore("Phase1-closure-A1-546: needs QdFpGaussLobattoScheme wrapper class")
     public void testQdEngineWithLobattoIntegral() {
-        QL.info("Testing QdFp engine with Lobatto integral (deferred)...");
+        QL.info("Testing Andersen, Lake and Offengenden with high precision Gauss-Lobatto integration...");
+
+        final DayCounter dc = new Actual365Fixed();
+        final Date today = new Date(5, Month.November, 2022);
+        new Settings().setEvaluationDate(today);
+
+        final SimpleQuote spot = new SimpleQuote(36.0);
+        final double K = 40.0;
+        final double r = 0.075;
+        final double q = 0.01;
+        final double sigma = 0.40;
+        final Date maturityDate = today.clone().addAssign(new Period(2, TimeUnit.Years));
+
+        final BlackScholesMertonProcess bsProcess = new BlackScholesMertonProcess(
+                new Handle<Quote>(spot),
+                new Handle<YieldTermStructure>(Utilities.flatRate(today, q, dc)),
+                new Handle<YieldTermStructure>(Utilities.flatRate(today, r, dc)),
+                new Handle<BlackVolTermStructure>(Utilities.flatVol(today, sigma, dc)));
+
+        final VanillaOption option = new VanillaOption(
+                new PlainVanillaPayoff(Option.Type.Put, K),
+                new AmericanExercise(today, maturityDate));
+
+        final QdFpAmericanEngine.FixedPointEquation[] schemes = {
+                QdFpAmericanEngine.FixedPointEquation.FP_A,
+                QdFpAmericanEngine.FixedPointEquation.FP_B
+        };
+
+        final QdFpGaussLobattoScheme gaussLobattoScheme = new QdFpGaussLobattoScheme(10, 30, 1e-10);
+
+        final double[] spots = { 36.0, 40.0 - 1e-8, 40.0, 40.0 + 1e-8, 50.0 };
+
+        for (final QdFpAmericanEngine.FixedPointEquation scheme : schemes) {
+            final QdFpAmericanEngine highPrecisionEngine = new QdFpAmericanEngine(
+                    bsProcess, QdFpAmericanEngine.highPrecisionScheme(), scheme);
+            final QdFpAmericanEngine lobattoEngine = new QdFpAmericanEngine(
+                    bsProcess, gaussLobattoScheme, scheme);
+
+            for (final double s : spots) {
+                spot.setValue(s);
+
+                option.setPricingEngine(highPrecisionEngine);
+                final double highPrecisionNPV = option.NPV();
+
+                option.setPricingEngine(lobattoEngine);
+                final double lobattoNPV = option.NPV();
+
+                final double diff = Math.abs(lobattoNPV - highPrecisionNPV);
+                final double tol = 1e-11;
+
+                if (diff > tol || Double.isNaN(lobattoNPV)) {
+                    org.junit.Assert.fail("failed to reproduce high precision American option values "
+                            + "with QD+ fixed point and Lobatto integration"
+                            + "\n    FP-Scheme: "
+                            + ((scheme == QdFpAmericanEngine.FixedPointEquation.FP_A) ? "FP-A" : "FP-B")
+                            + "\n    spot     : " + s
+                            + "\n    diff     : " + diff
+                            + "\n    tol      : " + tol);
+                }
+            }
+        }
     }
 
     /**
      * Port of QuantLib v1.42.1 {@code AmericanOption::testQdNegativeDividendYield}
-     * (test-suite/americanoption.cpp). Cross-checks QdPlus + QdFp engines vs FdBlackScholesVanillaEngine for
-     * negative-dividend-yield inputs.
+     * (test-suite/americanoption.cpp lines 1754-1823). Cross-checks
+     * {@link QdPlusAmericanEngine} + {@link QdFpAmericanEngine} engines versus
+     * {@link FdBlackScholesVanillaEngine} for negative-dividend-yield inputs.
      *
-     * <p>TODO: heavy; requires FdBlackScholesVanillaEngine baseline at every (S,r,q,T,vol) tuple. Deferred to a
-     * follow-up port.
+     * <p>Tolerance: {@code 1.5e-2} for QdFp vs FD, {@code 7.5e-2} for QdPlus vs FD.
      */
     @Test
-    @Ignore("Phase1-closure-A1-546: needs FD baseline tuples for negative dividend yield")
     public void testQdNegativeDividendYield() {
-        QL.info("Testing QdFp engine with negative dividend yield (deferred)...");
+        QL.info("Testing Andersen, Lake and Offengenden with positive or zero interest rate "
+                + "and negative dividend yield...");
+
+        final DayCounter dc = new Actual365Fixed();
+        final Date today = new Date(5, Month.December, 2022);
+        new Settings().setEvaluationDate(today);
+        final Date maturityDate = today.clone().addAssign(new Period(18, TimeUnit.Months));
+
+        final double K = 90.0;
+        final SimpleQuote spot = new SimpleQuote(100.0);
+        final SimpleQuote qRate = new SimpleQuote(0.0);
+        final SimpleQuote rRate = new SimpleQuote(0.0);
+
+        final BlackScholesMertonProcess process = new BlackScholesMertonProcess(
+                new Handle<Quote>(spot),
+                new Handle<YieldTermStructure>(Utilities.flatRate(qRate, dc)),
+                new Handle<YieldTermStructure>(Utilities.flatRate(rRate, dc)),
+                new Handle<BlackVolTermStructure>(Utilities.flatVol(0.4, dc)));
+
+        final VanillaOption option = new VanillaOption(
+                new PlainVanillaPayoff(Option.Type.Put, K),
+                new AmericanExercise(today, maturityDate));
+
+        final QdPlusAmericanEngine qdPlusEngine = new QdPlusAmericanEngine(process);
+        final QdFpAmericanEngine qdFpEngine = new QdFpAmericanEngine(process);
+        final FdBlackScholesVanillaEngine fdmEngine = new FdBlackScholesVanillaEngine(
+                process, 800, 200, 0,
+                org.jquantlib.methods.finitedifferences.schemes.FdmSchemeDesc.Douglas());
+
+        final double[] rRates = { 0.025, 0.5, 0.0, 1e-6 };
+        final double[] qRates = { -0.05, -0.1, -0.5, 0.0 };
+
+        for (final double rVal : rRates) {
+            rRate.setValue(rVal);
+            for (final double qVal : qRates) {
+                qRate.setValue(qVal);
+
+                option.setPricingEngine(qdFpEngine);
+                final double qdFpNPV = option.NPV();
+                option.setPricingEngine(qdPlusEngine);
+                final double qdPlusNPV = option.NPV();
+                option.setPricingEngine(fdmEngine);
+                final double fdmNPV = option.NPV();
+
+                final double tol = 1.5e-2;
+                final double diffFdmQdFp = Math.abs(fdmNPV - qdFpNPV);
+
+                if (diffFdmQdFp > tol || Double.isNaN(diffFdmQdFp)) {
+                    org.junit.Assert.fail("failed to reproduce QD+ fixed point values"
+                            + "\n    r        : " + rVal
+                            + "\n    q        : " + qVal
+                            + "\n    diff     : " + diffFdmQdFp
+                            + "\n    tol      : " + tol);
+                }
+
+                final double diffFdmQdPlus = Math.abs(fdmNPV - qdPlusNPV);
+                if (diffFdmQdPlus > 5 * tol || Double.isNaN(diffFdmQdPlus)) {
+                    org.junit.Assert.fail("failed to reproduce QD+ values"
+                            + "\n    r        : " + rVal
+                            + "\n    q        : " + qVal
+                            + "\n    diff     : " + diffFdmQdPlus
+                            + "\n    tol      : " + (5 * tol));
+                }
+            }
+        }
     }
 
     /**
