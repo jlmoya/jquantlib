@@ -51,6 +51,54 @@ import org.junit.Test;
  *
  * @author Srinivas Hasti
  *
+ * <h2>Phase 1 cert D5-A-R4 status of v1.42.1 {@code test-suite/dates.cpp} tests</h2>
+ *
+ * The C++ file ({@code migration-harness/cpp/quantlib/test-suite/dates.cpp},
+ * commit {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}) contains 14 cases.
+ * R3 ported {@code canHash} and {@code nullDate}; legacy Java tests cover
+ * three more. R4 evaluated the remaining 9 and finds:
+ *
+ * <ul>
+ *  <li>{@code immDates} — <b>EXISTING_EQUIVALENT</b>:
+ *      {@link #immDates()} (line 70) is a faithful port already (full
+ *      forward sweep across all dates, IMM nextDate / isIMMdate / code-date
+ *      round-trip checks).</li>
+ *  <li>{@code testConsistency} — <b>EXISTING_EQUIVALENT</b>:
+ *      {@link #consistencyCheck()} (line 128) performs the same
+ *      dayOfYear/month/year/weekday increment invariants across the full
+ *      {@code Date.minDate()..maxDate()} range.</li>
+ *  <li>{@code isoDates} — <b>EXISTING_EQUIVALENT</b>:
+ *      {@link #isoDates()} (line 204) is a literal port (same {@code "2006-01-15"}
+ *      input, same dayOfMonth/month/year asserts).</li>
+ *  <li>{@code parseDates} — <b>BLOCKED</b>: Java
+ *      {@link org.jquantlib.time.DateParser#parse(String, String)} only handles
+ *      {@code dd/mm/yyyy}-style format strings split on {@code "/"}; it cannot
+ *      consume the C++ {@code strftime}-style format strings the test exercises
+ *      ({@code "%Y-%m-%d"}, {@code "%m/%d/%Y"}, {@code "%d/%m/%Y"},
+ *      {@code "%Y%m%d"}). A faithful port requires extending DateParser to
+ *      support the C++ format syntax (production change beyond the cert).</li>
+ *  <li>{@code intraday} — <b>BLOCKED</b>: guarded by C++
+ *      {@code QL_HIGH_RESOLUTION_DATE}; Java {@link org.jquantlib.time.Date} is
+ *      day-resolution only (no hours/minutes/seconds/milliseconds/microseconds
+ *      accessors).</li>
+ *  <li>{@code ecbIsECBcode} / {@code ecbDates} / {@code ecbGetDateFromCode} /
+ *      {@code ecbGetCodeFromDate} / {@code ecbNextCode} — <b>BLOCKED</b>: there
+ *      is no {@code org.jquantlib.time.ECB} class. C++ {@code ql/time/ecb.hpp}
+ *      defines {@code isECBcode}, {@code isECBdate}, {@code knownDates},
+ *      {@code nextDate(s)}, {@code addDate}, {@code removeDate}, {@code date},
+ *      {@code code}, {@code nextCode} — none of these are present in
+ *      {@code org.jquantlib.time}. Activation requires porting the full
+ *      ECB date catalogue (Phase 2 A4 trigger).</li>
+ *  <li>{@code asxDates} / {@code asxDatesSpecific} — <b>BLOCKED</b>:
+ *      similarly there is no {@code org.jquantlib.time.ASX} class.
+ *      C++ {@code ql/time/asx.hpp} defines {@code isASXcode},
+ *      {@code isASXdate}, {@code nextDate}, {@code nextCode}, {@code date},
+ *      {@code code} — all absent.</li>
+ * </ul>
+ *
+ * R4 added no new test methods; the existing ports above and the R3 additions
+ * ({@code canHash}, {@code nullDate}) cover everything possible at the current
+ * production-class baseline.
  */
 public class DatesTest {
 

@@ -70,6 +70,65 @@ import org.junit.Test;
  * @author Richard Gomes
  * @author Daniel Kong
  *
+ * <h2>Phase 1 cert D5-A-R4 status of v1.42.1 {@code test-suite/daycounters.cpp} tests</h2>
+ *
+ * The C++ file ({@code migration-harness/cpp/quantlib/test-suite/daycounters.cpp},
+ * commit {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}) contains 21 cases.
+ * R2/R3 ported the four already covered above
+ * ({@code testActualActual}, {@code testSimple}, {@code testOne},
+ * {@code testBusiness252}, {@code testThirty360_BondBasis},
+ * {@code testThirty360_EurobondBasis}, plus the {@code testActual360IncludeLastDay}
+ * smoke test for the {@code Actual360(includeLastDay)} variant).
+ * R4 evaluated the remaining 15 cases and finds <b>all BLOCKED</b> because
+ * Java QuantLib lacks one or more underlying production classes
+ * (Phase 2 A4 triggers per design §7.3 — additions outside the 61 existing
+ * packages). Specifically:
+ *
+ * <ul>
+ *  <li>{@code testActualActualIsma} / {@code testActualActualWithSemiannualSchedule} /
+ *      {@code testActualActualWithAnnualSchedule} / {@code testActualActualWithSchedule} /
+ *      {@code testActualActualOutOfScheduleRange} — require
+ *      {@code ActualActual(Convention, Schedule)} constructor and a
+ *      schedule-aware {@code ImplISMA}; absent from
+ *      {@link org.jquantlib.daycounters.ActualActual} (which only supports
+ *      reference-period overloads).</li>
+ *  <li>{@code testThirty365} — requires {@code org.jquantlib.daycounters.Thirty365}
+ *      class (absent).</li>
+ *  <li>{@code testThirty360_USA} — Java's
+ *      {@link org.jquantlib.daycounters.Thirty360.Convention#USA} routes to
+ *      {@code Impl_US}, which is wired identically to
+ *      {@link org.jquantlib.daycounters.Thirty360.Convention#BondBasis}
+ *      (no end-of-February rule). The C++ {@code US_Impl::dayCount} (see
+ *      {@code ql/time/daycounters/thirty360.cpp:57-73}) applies an end-of-Feb
+ *      adjustment that {@code BondBasis (ISMA_Impl)} omits, producing different
+ *      numbers (e.g. {@code 28-Feb-2006} to {@code 3-Mar-2006} = 3 days under
+ *      USA, 5 days under BondBasis). Porting against the current Java enum
+ *      mapping would assert against the wrong numbers; a separate
+ *      {@code align(daycounters.Thirty360)} commit to split USA/BondBasis impls
+ *      is required first.</li>
+ *  <li>{@code testThirty360_ISDA} — requires
+ *      {@link org.jquantlib.daycounters.Thirty360.Convention#ISDA} (absent;
+ *      Java enum has only USA/BondBasis/European/EurobondBasis/Italian) plus a
+ *      termination-date constructor.</li>
+ *  <li>{@code testActual365_Canadian} — requires
+ *      {@code Actual365Fixed::Canadian} enum branch (absent).</li>
+ *  <li>{@code testIntraday} — guarded by C++ {@code QL_HIGH_RESOLUTION_DATE};
+ *      Java has no high-resolution {@link org.jquantlib.time.Date}.</li>
+ *  <li>{@code testAct366} / {@code testAct36525} — require
+ *      {@code org.jquantlib.daycounters.Actual366} and
+ *      {@code Actual36525} classes (absent).</li>
+ *  <li>{@code testActualConsistency} — requires {@code Actual366}, {@code Actual364},
+ *      {@code Actual36525}, plus {@code Actual360(true)} (the includeLastDay
+ *      variant is present, but the rest are not).</li>
+ *  <li>{@code testYearFraction2DateBulk} / {@code testYearFraction2DateRounding} —
+ *      require the {@code yearFractionToDate(DayCounter,Date,Time)} helper
+ *      (absent from any Java day-counter or utility class) plus every variant
+ *      listed above plus {@code Thirty360::German/ISMA/NASD}.</li>
+ * </ul>
+ *
+ * Activating these tests is deferred to a future phase that introduces the
+ * required production classes; this header records the BLOCKED reason so the
+ * cert audit can locate them without re-mining C++.
  */
 public class DayCountersTest {
 
