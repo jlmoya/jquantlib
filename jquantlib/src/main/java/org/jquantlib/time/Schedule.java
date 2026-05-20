@@ -183,9 +183,12 @@ public class Schedule {
             switch ( rule_ ) {
             case Backward:
             case Forward:
-                QL.require(firstDate.gt(effectiveDate) && firstDate.lt(terminationDate),
-                        "first date (" + firstDate + ") out of [effective (" + effectiveDate + "), termination ("
-                                + terminationDate + ")] date range"); // TODO: message
+                // Phase 1-cert-D5-A: match C++ schedule.cpp:126-130 which
+                // allows firstDate == terminationDate (right bound inclusive).
+                // Required by testFirstDateOnMaturity.
+                QL.require(firstDate.gt(effectiveDate) && firstDate.le(terminationDate),
+                        "first date (" + firstDate + ") out of effective-termination date range (" + effectiveDate
+                                + ", " + terminationDate + "]"); // TODO: message
                 break;
             case ThirdWednesday:
                 QL.require(IMM.isIMMdate(firstDate, false),
@@ -208,9 +211,12 @@ public class Schedule {
             switch ( rule_ ) {
             case Backward:
             case Forward:
-                QL.require(nextToLastDate.gt(effectiveDate) && nextToLastDate.lt(terminationDate),
+                // Phase 1-cert-D5-A: match C++ schedule.cpp:155-158 which
+                // allows nextToLastDate == effectiveDate (left bound inclusive).
+                // Required by testNextToLastDateOnStart.
+                QL.require(nextToLastDate.ge(effectiveDate) && nextToLastDate.lt(terminationDate),
                         "next to last date (" + nextToLastDate + ") out of [effective (" + effectiveDate
-                                + "), termination (" + terminationDate + ")] date range"); // TODO: message
+                                + "), termination (" + terminationDate + ")) date range"); // TODO: message
                 break;
             case ThirdWednesday:
                 QL.require(IMM.isIMMdate(nextToLastDate, false),
@@ -293,9 +299,18 @@ public class Schedule {
             // mutation that previously caused first-date Preceding-snaps on
             // EOM-flagged backward schedules (e.g. 30-Sep-2017 -> 29-Sep-2017
             // under USGovBond when the seed was 30-Sep-2022).
+            //
+            // Phase 1-cert-D5-A: compute isRegular for the prepended
+            // effectiveDate via {@code nullCalendar.advance(dates_[1], -tenor, ...)
+            // == effectiveDate} (mirrors C++ schedule.cpp:240-244). Required
+            // for testBackwardRegularFirstPeriodWithFirstDate where the
+            // Schedule(start=30-Sep-2017, term=30-Sep-2024, 6M, first=31-Mar-2018,
+            // backward, eom) was incorrectly flagging the first period
+            // irregular even though 30-Sep + 6M == 31-Mar (with eom).
             if ( calendar.adjust(dates_.get(0), convention).ne(calendar.adjust(effectiveDate, convention)) ) {
                 dates_.add(0, effectiveDate);
-                isRegular_.add(0, Boolean.FALSE);
+                final Date probe = nullCalendar.advance(dates_.get(1), tenor_.negative(), convention, endOfMonth);
+                isRegular_.add(0, Boolean.valueOf(probe.equals(effectiveDate)));
             }
             break;
 
@@ -362,6 +377,20 @@ public class Schedule {
             while ( true ) {
                 final Date temp = nullCalendar.advance(seed, tenor_.mul(periods), convention, endOfMonth);
                 if ( temp.gt(exitDate) ) {
+                    // Mirror C++ schedule.cpp:312-322: when the forward loop
+                    // overshoots a non-default nextToLastDate, push the
+                    // nextToLastDate explicitly (dedup-guarded) and compute
+                    // isRegular against an advance-probe. Required by
+                    // testBackwardRegularFirstPeriodWithFirstDate forward
+                    // off-grid nextToLastDate case. Phase 1-cert-D5-A.
+                    if ( nextToLastDate != null && !nextToLastDate.isNull()
+                            && calendar.adjust(dates_.get(dates_.size() - 1), convention)
+                                    .ne(calendar.adjust(nextToLastDate, convention)) ) {
+                        dates_.add(nextToLastDate);
+                        final Date probe = nullCalendar.advance(dates_.get(dates_.size() - 2), tenor_, convention,
+                                endOfMonth);
+                        isRegular_.add(Boolean.valueOf(probe.equals(nextToLastDate)));
+                    }
                     break;
                 } else {
                     // Skip dates that would result in duplicates after BDC
