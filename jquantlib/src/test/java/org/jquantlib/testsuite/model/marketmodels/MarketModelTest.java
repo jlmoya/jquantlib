@@ -65,8 +65,14 @@ import org.jquantlib.model.marketmodels.products.multistep.ExerciseAdapter;
 import org.jquantlib.model.marketmodels.callability.SwapRateTrigger;
 import org.jquantlib.model.marketmodels.callability.NothingExerciseValue;
 import org.jquantlib.model.marketmodels.callability.UpperBoundEngine;
+import org.jquantlib.model.marketmodels.callability.ParametricExerciseAdapter;
+import org.jquantlib.model.marketmodels.callability.TriggeredSwapExercise;
+import org.jquantlib.model.marketmodels.callability.CollectNodeData;
 import org.jquantlib.model.marketmodels.Utilities;
 import org.jquantlib.math.statistics.Statistics;
+import org.jquantlib.math.optimization.Simplex;
+import org.jquantlib.methods.montecarlo.GenericEarlyExercise;
+import org.jquantlib.methods.montecarlo.NodeData;
 
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.daycounters.SimpleDayCounter;
@@ -912,6 +918,168 @@ public class MarketModelTest {
                         @SuppressWarnings("unused") final double delta = uStats.mean();
                         @SuppressWarnings("unused") final double deltaError = uStats.errorEstimate();
                     }
+                }
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // testCallableSwapAnderson — cpp:1710 (BOOST_AUTO_TEST_CASE_TEMPLATE; if_speed(Slow))
+    // ------------------------------------------------------------------
+
+    /** C++ slice<> parametric pack (cpp:1700-1708). */
+    private static final class AndersonSlice {
+        final MarketModelTestSetup.MarketModelType marketModelType;
+        final int testedFactor; // 0 means use todaysForwards.length
+
+        AndersonSlice(final MarketModelTestSetup.MarketModelType mt, final int tf) {
+            this.marketModelType = mt;
+            this.testedFactor = tf;
+        }
+    }
+
+    /** Faithful port of {@code test-suite/marketmodel.cpp:1710}
+     *  {@code BOOST_AUTO_TEST_CASE_TEMPLATE(testCallableSwapAnderson, T, slices)}.
+     *  Iterates over the 6 {@code slice<>} parametric packs inline rather than
+     *  via JUnit parametric tests (Java parametric tests would require a
+     *  separate runner class; the C++ test is a single suite). */
+    @Test
+    public void testCallableSwapAnderson() {
+        org.junit.Assume.assumeTrue("test gated -Dql.slowTests=1 to mirror C++ if_speed(Slow)",
+                System.getProperty("ql.slowTests") != null);
+        MarketModelTestSetup.paths_ = 32767;
+        MarketModelTestSetup.trainingPaths_ = 8191;
+
+        final AndersonSlice[] slices = {
+                new AndersonSlice(ExponentialCorrelationFlatVolatility, 4),
+                new AndersonSlice(ExponentialCorrelationFlatVolatility, 8),
+                new AndersonSlice(ExponentialCorrelationFlatVolatility, 0),
+                new AndersonSlice(ExponentialCorrelationAbcdVolatility, 4),
+                new AndersonSlice(ExponentialCorrelationAbcdVolatility, 8),
+                new AndersonSlice(ExponentialCorrelationAbcdVolatility, 0)
+        };
+
+        for (final AndersonSlice slc : slices) {
+            final MarketModelTestSetup.MarketModelType marketModelType = slc.marketModelType;
+            final int testedFactor = (slc.testedFactor != 0) ? slc.testedFactor
+                    : MarketModelTestSetup.todaysForwards.length;
+
+            final double fixedRate = 0.04;
+
+            // C++ calls setup() once at the top and once inside the loop;
+            // emulate the inner setup() exactly:
+            MarketModelTestSetup.setup();
+            MarketModelTestSetup.paths_ = 32767;
+            MarketModelTestSetup.trainingPaths_ = 8191;
+
+            final MultiStepSwap payerSwap = new MultiStepSwap(MarketModelTestSetup.rateTimes,
+                    MarketModelTestSetup.accruals, MarketModelTestSetup.accruals,
+                    MarketModelTestSetup.paymentTimes, fixedRate, true);
+
+            final MultiStepSwap receiverSwap = new MultiStepSwap(MarketModelTestSetup.rateTimes,
+                    MarketModelTestSetup.accruals, MarketModelTestSetup.accruals,
+                    MarketModelTestSetup.paymentTimes, fixedRate, false);
+
+            final double[] exerciseTimes = Arrays.copyOf(MarketModelTestSetup.rateTimes,
+                    MarketModelTestSetup.rateTimes.length - 1);
+
+            final double[] swapTriggers = filled(exerciseTimes.length, fixedRate);
+            final SwapRateTrigger naifStrategy = new SwapRateTrigger(
+                    MarketModelTestSetup.rateTimes, swapTriggers, exerciseTimes);
+
+            final NothingExerciseValue control = new NothingExerciseValue(MarketModelTestSetup.rateTimes);
+            final NothingExerciseValue nullRebate = new NothingExerciseValue(MarketModelTestSetup.rateTimes);
+
+            final double[] anderTriggers = filled(exerciseTimes.length, fixedRate);
+            final TriggeredSwapExercise parametricForm = new TriggeredSwapExercise(
+                    MarketModelTestSetup.rateTimes, exerciseTimes, anderTriggers);
+
+            final CallSpecifiedMultiProduct dummyProduct = new CallSpecifiedMultiProduct(
+                    receiverSwap, naifStrategy, new ExerciseAdapter(nullRebate));
+
+            final EvolutionDescription evolution = dummyProduct.evolution();
+
+            final int factors = testedFactor;
+            final MarketModelTestSetup.MeasureType[] measures = { Terminal };
+            for (final MarketModelTestSetup.MeasureType measure : measures) {
+                final int[] numeraires = MarketModelTestSetup.makeMeasure(dummyProduct, measure);
+                final boolean logNormal = true;
+                final MarketModel marketModel = MarketModelTestSetup.makeMarketModel(
+                        logNormal, evolution, factors, marketModelType);
+
+                final MarketModelTestSetup.EvolverType[] evolvers = {
+                        MarketModelTestSetup.EvolverType.Pc,
+                        MarketModelTestSetup.EvolverType.Balland,
+                        MarketModelTestSetup.EvolverType.Ipc
+                };
+                final int stop = EvolutionDescription.isInTerminalMeasure(evolution, numeraires) ? 0 : 1;
+                for (int i = 0; i < evolvers.length - stop; ++i) {
+                    final SobolBrownianGeneratorFactory generatorFactory = new SobolBrownianGeneratorFactory(
+                            SobolBrownianGenerator.Ordering.Diagonal, MarketModelTestSetup.seed_);
+                    MarketModelEvolver evolver = MarketModelTestSetup.makeMarketModelEvolver(
+                            marketModel, numeraires, generatorFactory, evolvers[i]);
+                    final String config = MarketModelTestSetup.marketModelTypeToString(marketModelType)
+                            + ", " + factors + " factors, "
+                            + MarketModelTestSetup.measureTypeToString(measure)
+                            + ", " + MarketModelTestSetup.evolverTypeToString(evolvers[i])
+                            + ", MT BGF";
+
+                    // 1. calculate the exercise strategy
+                    final List<List<NodeData>> collectedData = CollectNodeData.collect(
+                            evolver, receiverSwap, parametricForm, nullRebate, control,
+                            MarketModelTestSetup.trainingPaths_);
+                    final Simplex om = new Simplex(0.01);
+                    final org.jquantlib.math.optimization.EndCriteria ec =
+                            new org.jquantlib.math.optimization.EndCriteria(1000, 100, 1e-8, 1e-16, 1e-8);
+                    final int initialNumeraire = evolver.numeraires()[0];
+                    final double initialNumeraireValue = MarketModelTestSetup.todaysDiscounts[initialNumeraire];
+
+                    final List<double[]> parameters = new ArrayList<double[]>();
+                    GenericEarlyExercise.optimize(collectedData, parametricForm, parameters, ec, om);
+                    // C++: firstPassValue * initialNumeraireValue  (only printed)
+
+                    final ParametricExerciseAdapter exerciseStrategy = new ParametricExerciseAdapter(
+                            parametricForm, parameters);
+
+                    final CallSpecifiedMultiProduct bermudanProduct = new CallSpecifiedMultiProduct(
+                            new MultiStepNothing(evolution), exerciseStrategy, payerSwap);
+                    final CallSpecifiedMultiProduct callableProduct = new CallSpecifiedMultiProduct(
+                            receiverSwap, exerciseStrategy, new ExerciseAdapter(nullRebate));
+
+                    final MultiProductComposite allProducts = new MultiProductComposite();
+                    allProducts.add(payerSwap);
+                    allProducts.add(receiverSwap);
+                    allProducts.add(bermudanProduct);
+                    allProducts.add(callableProduct);
+                    allProducts.finalizeComposite();
+
+                    final SequenceStatistics stats = MarketModelTestSetup.simulate(evolver, allProducts);
+                    checkCallableSwap(stats, config);
+
+                    // upper bound
+                    final SobolBrownianGeneratorFactory uFactory = new SobolBrownianGeneratorFactory(
+                            SobolBrownianGenerator.Ordering.Diagonal, MarketModelTestSetup.seed_ + 142);
+                    evolver = MarketModelTestSetup.makeMarketModelEvolver(
+                            marketModel, numeraires, uFactory, evolvers[i]);
+                    final List<MarketModelEvolver> innerEvolvers = new ArrayList<MarketModelEvolver>();
+                    final boolean[] isExerciseTime = Utilities.isInSubset(
+                            evolution.evolutionTimes(), exerciseStrategy.exerciseTimes());
+                    for (int s = 0; s < isExerciseTime.length; ++s) {
+                        if (isExerciseTime[s]) {
+                            final MTBrownianGeneratorFactory iFactory = new MTBrownianGeneratorFactory(
+                                    MarketModelTestSetup.seed_ + s);
+                            final MarketModelEvolver e = MarketModelTestSetup.makeMarketModelEvolver(
+                                    marketModel, numeraires, iFactory, evolvers[i], s);
+                            innerEvolvers.add(e);
+                        }
+                    }
+                    final UpperBoundEngine uEngine = new UpperBoundEngine(evolver, innerEvolvers,
+                            receiverSwap, nullRebate, receiverSwap, nullRebate,
+                            exerciseStrategy, initialNumeraireValue);
+                    final Statistics uStats = new Statistics();
+                    uEngine.multiplePathValues(uStats, 255, 256);
+                    @SuppressWarnings("unused") final double delta = uStats.mean();
+                    @SuppressWarnings("unused") final double deltaError = uStats.errorEstimate();
                 }
             }
         }
