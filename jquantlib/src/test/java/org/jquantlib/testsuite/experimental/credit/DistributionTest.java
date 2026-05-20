@@ -133,11 +133,6 @@ public class DistributionTest {
     }
 
     @Test
-    @org.junit.Ignore("Phase 4m.5: floating-point drift in repeated dx accumulation makes "
-            + "the constant-bucket-size require fail; mirrors a latent C++ issue where "
-            + "(xmax-xmin)/n + ... + (xmax-xmin)/n != xmax-xmin. Defer until callers "
-            + "stabilise their bucket setup or until a Distribution.fromBuckets(...) helper "
-            + "lands.")
     public void convolveTwoUniformDistributions() {
         final Distribution d1 = new Distribution(5, 0.0, 1.0);
         final Distribution d2 = new Distribution(5, 0.0, 1.0);

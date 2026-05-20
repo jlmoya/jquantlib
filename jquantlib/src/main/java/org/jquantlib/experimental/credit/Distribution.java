@@ -97,12 +97,15 @@ public class Distribution {
             cumulativeExcessProbability.add(0.0);
             average.add(0.0);
         }
+        // Use single-multiplication x[i] = xmin + i*dx0 (not accumulated +=)
+        // so dx[i] stays bit-equal across buckets — required by the
+        // constant-bucket-size invariant in convolve()/transform()/etc.
+        // Accumulated addition drifts by O(eps*n) and breaks `dx.get(i).equals(dx.get(i-1))`.
+        final double dx0 = (xmax - xmin) / nBuckets;
         for ( int i = 0; i < nBuckets; i++ ) {
-            dx.set(i, (xmax - xmin) / nBuckets);
-            x.set(i, (i == 0) ? xmin : x.get(i - 1) + dx.get(i - 1));
+            dx.set(i, dx0);
+            x.set(i, xmin + i * dx0);
         }
-        // Match the domain exactly to avoid precision mismatches in locate().
-        dx.set(nBuckets - 1, xmax - x.get(nBuckets - 1));
     }
 
     /** Convolve d1 and d2 (mirrors C++ {@code ManipulateDistribution::convolve}). */
