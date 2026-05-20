@@ -69,6 +69,8 @@ public class GeneralizedBlackScholesProcess extends StochasticProcess1D {
     private final Handle< YieldTermStructure > dividendYield;
     private final Handle< BlackVolTermStructure > blackVolatility;
     private final RelinkableHandle< LocalVolTermStructure > localVolatility;
+    private final Handle< LocalVolTermStructure > externalLocalVolTS;
+    private final boolean hasExternalLocalVol;
     private boolean updated;
 
     /**
@@ -82,6 +84,29 @@ public class GeneralizedBlackScholesProcess extends StochasticProcess1D {
     }
 
     /**
+     * Constructor mirroring the v1.42.1 C++ overload at
+     * {@code blackscholesprocess.hpp:64} taking an explicit local-vol surface.
+     * When supplied, {@link #localVolatility()} returns this surface directly,
+     * bypassing the Dupire derivation from the Black-vol surface. Required by
+     * the AndreasenHuge family (which has its own local-vol adapter that
+     * the Dupire fallback cannot reproduce) and by the barrier-pricing test
+     * harness.
+     *
+     * @param x0          spot quote
+     * @param dividendTS  dividend yield curve
+     * @param riskFreeTS  risk-free curve
+     * @param blackVolTS  Black-vol surface
+     * @param localVolTS  explicit local-vol surface (takes precedence over
+     *                    Dupire-from-Black derivation in {@link #localVolatility()})
+     */
+    public GeneralizedBlackScholesProcess(final Handle< ? extends Quote > x0,
+            final Handle< YieldTermStructure > dividendTS, final Handle< YieldTermStructure > riskFreeTS,
+            final Handle< BlackVolTermStructure > blackVolTS,
+            final Handle< LocalVolTermStructure > localVolTS) {
+        this(x0, dividendTS, riskFreeTS, blackVolTS, new EulerDiscretization(), localVolTS);
+    }
+
+    /**
      * @param discretization is an Object that <b>must</b> implement {@link Discretization}
      *                       <b>and</b> {@link Discretization1D}.
      */
@@ -89,8 +114,24 @@ public class GeneralizedBlackScholesProcess extends StochasticProcess1D {
             final Handle< YieldTermStructure > dividendTS, final Handle< YieldTermStructure > riskFreeTS,
             final Handle< BlackVolTermStructure > blackVolTS,
             final StochasticProcess1D.Discretization1D discretization) {
+        this(x0, dividendTS, riskFreeTS, blackVolTS, discretization, null);
+    }
+
+    /**
+     * Internal ctor that combines the discretization and explicit-local-vol
+     * overloads. {@code externalLocalVolTS == null} matches the historical
+     * (Dupire-fallback) behaviour; non-null pins {@link #localVolatility()}
+     * to the supplied surface.
+     */
+    public GeneralizedBlackScholesProcess(final Handle< ? extends Quote > x0,
+            final Handle< YieldTermStructure > dividendTS, final Handle< YieldTermStructure > riskFreeTS,
+            final Handle< BlackVolTermStructure > blackVolTS,
+            final StochasticProcess1D.Discretization1D discretization,
+            final Handle< LocalVolTermStructure > externalLocalVolTS) {
         super(discretization);
         this.localVolatility = new RelinkableHandle< LocalVolTermStructure >();
+        this.externalLocalVolTS = externalLocalVolTS;
+        this.hasExternalLocalVol = (externalLocalVolTS != null);
         //XXX :: remove
         //
         //                this.localVolatility = new RelinkableHandle<LocalVolTermStructure>(
@@ -143,6 +184,12 @@ public class GeneralizedBlackScholesProcess extends StochasticProcess1D {
     }
 
     public final Handle< LocalVolTermStructure > localVolatility() {
+        // Mirror C++ v1.42.1 blackscholesprocess.cpp:180-182 — if an external
+        // local-vol surface was supplied at construction, return it directly
+        // (bypasses the Dupire-from-Black derivation below).
+        if ( hasExternalLocalVol ) {
+            return externalLocalVolTS;
+        }
         if ( !updated ) {
             final Class< ? extends BlackVolTermStructure > klass = blackVolatility.currentLink().getClass();
 
