@@ -31,6 +31,8 @@
 package org.jquantlib.pricingengines.vanilla;
 
 import org.jquantlib.QL;
+import org.jquantlib.cashflow.FixedDividend;
+import org.jquantlib.exercise.Exercise;
 import org.jquantlib.instruments.DividendSchedule;
 import org.jquantlib.instruments.OneAssetOption;
 import org.jquantlib.instruments.Option;
@@ -43,7 +45,9 @@ import org.jquantlib.methods.finitedifferences.schemes.FdmSchemeDesc;
 import org.jquantlib.methods.finitedifferences.solvers.FdmBlackScholesSolver;
 import org.jquantlib.methods.finitedifferences.solvers.FdmSolverDesc;
 import org.jquantlib.methods.finitedifferences.stepconditions.FdmStepConditionComposite;
+import org.jquantlib.methods.finitedifferences.utilities.EscrowedDividendAdjustment;
 import org.jquantlib.methods.finitedifferences.utilities.FdmBoundaryConditionSet;
+import org.jquantlib.methods.finitedifferences.utilities.FdmEscrowedLogInnerValueCalculator;
 import org.jquantlib.methods.finitedifferences.utilities.FdmInnerValueCalculator;
 import org.jquantlib.methods.finitedifferences.utilities.FdmLogInnerValue;
 import org.jquantlib.methods.finitedifferences.utilities.FdmQuantoHelper;
@@ -208,7 +212,6 @@ public class FdBlackScholesVanillaEngine extends OneAssetOption.EngineImpl {
             final double illegalLocalVolOverwrite) {
         super();
         QL.require(process != null, "null GBS process");
-        QL.require(cashDividendModel == CashDividendModel.Spot, "Escrowed dividend model is not yet supported");
         QL.require(!(localVol && quantoHelper != null), "localVol + quantoHelper combination is not yet supported");
 
         this.process = process;
@@ -267,19 +270,46 @@ public class FdBlackScholesVanillaEngine extends OneAssetOption.EngineImpl {
         final StrikedTypePayoff payoff = (StrikedTypePayoff) a.payoff;
         QL.require(payoff != null, "non-striked payoff given");
 
-        // 0. Cash dividend model — only Spot supported
-        // (spotAdjustment = 0 for Spot model)
-        final double spotAdjustment = 0.0;
-        final DividendSchedule dividendSchedule = dividends;
-
         // Effective process: when a quanto helper is provided, fold the
         // continuous quanto drift adjustment into the dividend yield.
         final GeneralizedBlackScholesProcess effectiveProcess = (quantoHelper != null) ? buildQuantoProcess(
                 payoff.strike()) : process;
 
-        // maturity
+        // maturity / settlement (per v1.42.1)
         final Date exerciseDate = a.exercise.lastDate();
         final double maturity = effectiveProcess.time(exerciseDate);
+        final Date settlementDate = effectiveProcess.riskFreeRate().currentLink().referenceDate();
+
+        // 0. Cash dividend model — Spot or Escrowed (port of v1.42.1
+        // fdblackscholesvanillaengine.cpp lines 109-152)
+        double spotAdjustment = 0.0;
+        DividendSchedule dividendSchedule = new DividendSchedule();
+        EscrowedDividendAdjustment escrowedDivAdj = null;
+
+        switch ( cashDividendModel ) {
+        case Spot:
+            dividendSchedule = dividends;
+            break;
+        case Escrowed:
+            if ( a.exercise.type() != Exercise.Type.European ) {
+                // add dividend dates as stopping times (no amount; pure stopping)
+                for ( final org.jquantlib.cashflow.Dividend cf : dividends ) {
+                    dividendSchedule.add(new FixedDividend(0.0, cf.date()));
+                }
+            }
+            QL.require(quantoHelper == null, "Escrowed dividend model is not supported for Quanto-Options");
+
+            final GeneralizedBlackScholesProcess procRef = effectiveProcess;
+            escrowedDivAdj = new EscrowedDividendAdjustment(dividends, effectiveProcess.riskFreeRate(),
+                    effectiveProcess.dividendYield(), (final Date d) -> procRef.time(d), maturity);
+
+            spotAdjustment = escrowedDivAdj.dividendAdjustment(effectiveProcess.time(settlementDate));
+
+            QL.require(effectiveProcess.x0() + spotAdjustment > 0.0, "spot minus dividends becomes negative");
+            break;
+        default:
+            QL.error("unknown cash dividend model");
+        }
 
         // 1. Mesher
         final Fdm1dMesher equityMesher = new FdmBlackScholesMesher(xGrid, effectiveProcess, maturity, payoff.strike(),
@@ -290,12 +320,24 @@ public class FdBlackScholesVanillaEngine extends OneAssetOption.EngineImpl {
         // 2. Calculator
         final FdmInnerValueCalculator calculator = new FdmLogInnerValue(payoff, mesher, 0);
 
+        // Early-exercise calculator — Escrowed uses spot - PV(future-dividends)
+        final FdmInnerValueCalculator earlyExerciseCalculator;
+        switch ( cashDividendModel ) {
+        case Spot:
+            earlyExerciseCalculator = calculator;
+            break;
+        case Escrowed:
+            earlyExerciseCalculator = new FdmEscrowedLogInnerValueCalculator(escrowedDivAdj, payoff, mesher, 0);
+            break;
+        default:
+            earlyExerciseCalculator = calculator;
+        }
+
         // 3. Step conditions
-        final Date refDate = effectiveProcess.riskFreeRate().currentLink().referenceDate();
         final org.jquantlib.daycounters.DayCounter dc = effectiveProcess.riskFreeRate().currentLink().dayCounter();
 
         final FdmStepConditionComposite conditions = FdmStepConditionComposite.vanillaComposite(dividendSchedule,
-                a.exercise, mesher, calculator, refDate, dc);
+                a.exercise, mesher, earlyExerciseCalculator, settlementDate, dc);
 
         // 4. Boundary conditions (empty)
         final FdmBoundaryConditionSet boundaries = new FdmBoundaryConditionSet();
@@ -346,7 +388,8 @@ public class FdBlackScholesVanillaEngine extends OneAssetOption.EngineImpl {
          */
         Spot,
         /**
-         * Escrowed model: PV of future dividends is subtracted from spot. Deferred to Phase 2m.5.
+         * Escrowed model: PV of future dividends is subtracted from spot via
+         * {@link EscrowedDividendAdjustment}. Not supported with Quanto helper.
          */
         Escrowed
     }

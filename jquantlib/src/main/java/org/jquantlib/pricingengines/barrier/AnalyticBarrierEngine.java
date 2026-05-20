@@ -272,7 +272,10 @@ public class AnalyticBarrierEngine extends BarrierOption.EngineImpl {
         final double y1 = Math.log(barrier() * HS / strike()) / stdDeviation() + muSigma();
         final double N1 = f.op(eta * y1);
         final double N2 = f.op(eta * (y1 - stdDeviation()));
-        return phi * (underlying() * dividendDiscount() * powHS1 * N1 - strike() * riskFreeDiscount() * powHS0 * N2);
+        // v1.42.1 align: when N1 or N2 are zero the corresponding powHS may be infinity (e.g. at very low
+        // vol the lognormal pdf collapses); the limit of 0*inf is 0.
+        return phi * (underlying() * dividendDiscount() * ((N1 == 0.0) ? 0.0 : powHS1 * N1)
+                - strike() * riskFreeDiscount() * ((N2 == 0.0) ? 0.0 : powHS0 * N2));
     }
 
     //TODO: consider change method name to lowercase
@@ -284,7 +287,9 @@ public class AnalyticBarrierEngine extends BarrierOption.EngineImpl {
         final double y2 = Math.log(barrier() / underlying()) / stdDeviation() + muSigma();
         final double N1 = f.op(eta * y2);
         final double N2 = f.op(eta * (y2 - stdDeviation()));
-        return phi * (underlying() * dividendDiscount() * powHS1 * N1 - strike() * riskFreeDiscount() * powHS0 * N2);
+        // v1.42.1 align: 0*inf = 0 (see C() comment).
+        return phi * (underlying() * dividendDiscount() * ((N1 == 0.0) ? 0.0 : powHS1 * N1)
+                - strike() * riskFreeDiscount() * ((N2 == 0.0) ? 0.0 : powHS0 * N2));
     }
 
     //TODO: consider change method name to lowercase
@@ -296,7 +301,8 @@ public class AnalyticBarrierEngine extends BarrierOption.EngineImpl {
             final double y2 = Math.log(barrier() / underlying()) / stdDeviation() + muSigma();
             final double N1 = f.op(eta * (x2 - stdDeviation()));
             final double N2 = f.op(eta * (y2 - stdDeviation()));
-            return rebate() * riskFreeDiscount() * (N1 - powHS0 * N2);
+            // v1.42.1 align: 0*inf = 0.
+            return rebate() * riskFreeDiscount() * (N1 - ((N2 == 0.0) ? 0.0 : powHS0 * N2));
         } else {
             return 0.0;
         }
@@ -318,7 +324,8 @@ public class AnalyticBarrierEngine extends BarrierOption.EngineImpl {
 
             final double N1 = f.op(eta * z);
             final double N2 = f.op(eta * (z - 2.0 * lambda * sigmaSqrtT));
-            return rebate() * (powHSplus * N1 + powHSminus * N2);
+            // v1.42.1 align: 0*inf = 0.
+            return rebate() * (((N1 == 0.0) ? 0.0 : powHSplus * N1) + ((N2 == 0.0) ? 0.0 : powHSminus * N2));
         } else {
             return 0.0;
         }
