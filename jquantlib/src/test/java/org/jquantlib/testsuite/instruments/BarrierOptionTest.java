@@ -840,6 +840,76 @@ public class BarrierOptionTest {
         }
     }
 
+    /**
+     * Java port of v1.42.1 {@code test-suite/barrieroption.cpp:testLowVolatility} (line 1185).
+     * <p>
+     * Validates that the analytic barrier engine returns the deterministic payoff (within 0.5)
+     * when vol is collapsed to 1e-7 (i.e. the lognormal degenerates to its forward). At very low
+     * vol the helper {@code powHS = pow(HS, 2*mu)} can become {@code +inf} while N(.) can become
+     * {@code 0}, producing {@code 0*inf = NaN} in C++. v1.42.1 added explicit
+     * {@code N==0 ? 0 : powHS*N} guards in {@code C/D/E/F} (mirrored in Java since
+     * Phase1-closure-A2-C-555-escrow-naninf).
+     */
+    @Test
+    public void testLowVolatility() {
+        QL.info("Testing barrier options with low volatility value...");
+
+        final DayCounter dc = new Actual365Fixed();
+        final Date today = new Date(11, Month.February, 2018);
+        new Settings().setEvaluationDate(today);
+
+        final Date maturity = today.add(365);  // ~1 year, same as today + Period(1, Years)
+
+        final double spot = 100.0;
+        final double vol = 1e-7;
+
+        final SimpleQuote q = new SimpleQuote(0.0);
+        final SimpleQuote r = new SimpleQuote(0.0);
+        final Handle< Quote > s0 = new Handle< Quote >(new SimpleQuote(spot));
+        final Handle< YieldTermStructure > qTS = new Handle< YieldTermStructure >(Utilities.flatRate(today, q, dc));
+        final Handle< YieldTermStructure > rTS = new Handle< YieldTermStructure >(Utilities.flatRate(today, r, dc));
+        final Handle< BlackVolTermStructure > volTS = new Handle< BlackVolTermStructure >(
+                Utilities.flatVol(today, vol, dc));
+
+        final BlackScholesMertonProcess process = new BlackScholesMertonProcess(s0, qTS, rTS, volTS);
+        final PricingEngine engine = new AnalyticBarrierEngine(process);
+
+        // {strike, optionType, barrier, barrierType, rebate, r, q, expected}
+        final double[][] cases = {
+                // C++ comments retained as references
+                { 105.0, 0, 107.0, 0, 4.0, 0.03, 0.01, 3.0 },  // put UpOut k<H
+                { 109.0, 0, 107.0, 0, 4.0, 0.03, 0.01, 7.0 },  // put UpOut k>H
+                { 100.0, 0, 107.0, 0, 4.0, 0.03, 0.01, 0.0 },  // put UpOut OTM
+                { 99.0,  0, 101.0, 0, 4.0, 0.03, 0.01, 4.0 },  // put knocked out k<H
+                { 105.0, 0, 101.0, 0, 4.0, 0.03, 0.01, 4.0 },  // put knocked out k>H
+                { 105.0, 1, 107.0, 0, 4.0, 0.03, 0.01, 0.0 },  // call UpOut OTM k<H
+                { 109.0, 1, 107.0, 0, 4.0, 0.03, 0.01, 0.0 },  // call UpOut OTM k>H
+                { 100.0, 1, 107.0, 0, 4.0, 0.03, 0.01, 2.0 },  // call UpOut ITM
+                { 105.0, 1, 101.0, 0, 4.0, 0.03, 0.01, 4.0 },  // call knocked out k<H
+        };
+
+        for ( final double[] c : cases ) {
+            r.setValue(c[5]);
+            q.setValue(c[6]);
+            final double strike = c[0];
+            final Option.Type optionType = (c[1] == 1.0) ? Option.Type.Call : Option.Type.Put;
+            final double barrier = c[2];
+            final BarrierType barrierType = BarrierType.UpOut;  // all C++ rows are UpOut
+            final double rebate = c[4];
+            final double expected = c[7];
+
+            final StrikedTypePayoff payoff = new PlainVanillaPayoff(optionType, strike);
+            final Exercise exercise = new EuropeanExercise(maturity);
+            final BarrierOption option = new BarrierOption(barrierType, barrier, rebate, payoff, exercise);
+            option.setPricingEngine(engine);
+
+            final double value = option.NPV();
+            final double diff = Math.abs(value - expected);
+            assertTrue("strike=" + strike + " type=" + optionType + " barrier=" + barrier + " r=" + c[5] + " q=" + c[6]
+                    + " expected=" + expected + " calculated=" + value, !Double.isNaN(value) && diff <= 0.5);
+        }
+    }
+
     // ------------------------------------------------------------------
     // BLOCKED / EXISTING_EQUIVALENT ports from test-suite/barrieroption.cpp (Phase1-D5-B-R3)
     // ------------------------------------------------------------------
@@ -855,16 +925,6 @@ public class BarrierOptionTest {
     //   BLOCKED. Both rely on FdBlackScholesBarrierEngine.withCashDividends
     //   — the discrete-dividend ctor on the missing FD-BS-Barrier engine.
     //   Same blocker as above.
-    //
-    // testLowVolatility (cpp:1185)
-    //   BLOCKED. Java AnalyticBarrierEngine returns NULL_REAL (Double.MAX_VALUE)
-    //   instead of converging to the deterministic payoff when vol→0 (uses
-    //   vol=1e-7). C++ analyticbarrierengine.cpp (v1.42.1) has explicit
-    //   forward-vs-barrier early-return guards that bypass the
-    //   cumulative-normal arithmetic at vol→0; Java port does not. Total
-    //   infra to unblock: ~30 LOC of stdDev→0 degeneracy guards in
-    //   AnalyticBarrierEngine#calculate. The ported test would be ~140
-    //   data rows covering UpOut/UpIn/DownOut/DownIn at low vol.
     //
     // testPerturbative (cpp:1281)
     //   EXISTING_EQUIVALENT: the test is already ported as
