@@ -242,4 +242,28 @@ public class FittedBondDiscountCurveTest {
         assertEquals("Iterations should be zero in parametric mode",
                 0, curve.fitResults().numberOfIterations());
     }
+
+    // ------------------------------------------------------------------
+    // BLOCKED ports from test-suite/fittedbonddiscountcurve.cpp (Phase1-D5-B-R2)
+    // ------------------------------------------------------------------
+    // testEvaluation (cpp:40)
+    //   Uses ExponentialSplinesFitting (not ported to Java yet, ~80 LOC,
+    //   ql/termstructures/yield/nonlinearfittingmethods.hpp lines 92-128).
+    //   Java side covers the salient semantic ("curve works as evaluator
+    //   then rejects past max date") via testEvaluationBeyondMaxDate above
+    //   using NelsonSiegelFitting — i.e. an EXISTING_EQUIVALENT for the
+    //   curve-as-evaluator property; full ExponentialSplines port BLOCKED.
+    //
+    // testRequiredGuess (cpp:224), testGuessSize (cpp:254), testConstraint
+    // (cpp:285)
+    //   All three exercise the BondHelper-driven least-squares path of
+    //   FittedBondDiscountCurve. Java side currently only implements the
+    //   parametric (no-fit) ctors — bond-helper fitting + the generic
+    //   BondHelper rate-helper subclass (the C++ "BondHelper" wrapping any
+    //   Bond as a Quote helper for fitting; ~150 LOC) is tracked as a
+    //   carry-forward (see FittedBondDiscountCurve.java header comment:
+    //   "BondHelper-driven least-squares optimization (Simplex / LM) is
+    //   tracked as a Phase 5d.5-ZCS+FBb carry-forward"). Total infra to
+    //   unblock: ~400 LOC across BondHelper class + bond-helper FBdC ctor
+    //   + L2-penalty / constraint plumbing on FittingMethod.
 }
