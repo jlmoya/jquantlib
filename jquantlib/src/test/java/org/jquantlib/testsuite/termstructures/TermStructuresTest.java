@@ -49,13 +49,19 @@ import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.daycounters.Thirty360;
 import org.jquantlib.indexes.IborIndex;
 import org.jquantlib.math.Closeness;
+import org.jquantlib.math.interpolations.BackwardFlatInterpolation;
+import org.jquantlib.math.interpolations.factories.BackwardFlat;
+import org.jquantlib.math.interpolations.factories.ForwardFlat;
+import org.jquantlib.math.interpolations.factories.Linear;
 import org.jquantlib.math.interpolations.factories.LogLinear;
+import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.RelinkableHandle;
 import org.jquantlib.quotes.SimpleQuote;
 import org.jquantlib.termstructures.AbstractYieldTermStructure;
 import org.jquantlib.termstructures.Compounding;
+import org.jquantlib.termstructures.InterestRate;
 import org.jquantlib.termstructures.IterativeBootstrap;
 import org.jquantlib.termstructures.RateHelper;
 import org.jquantlib.termstructures.YieldTermStructure;
@@ -64,6 +70,7 @@ import org.jquantlib.termstructures.yieldcurves.Discount;
 import org.jquantlib.termstructures.yieldcurves.FlatForward;
 import org.jquantlib.termstructures.yieldcurves.ForwardSpreadedTermStructure;
 import org.jquantlib.termstructures.yieldcurves.ImpliedTermStructure;
+import org.jquantlib.termstructures.yieldcurves.InterpolatedPiecewiseForwardSpreadedTermStructure;
 import org.jquantlib.termstructures.yieldcurves.PiecewiseYieldCurve;
 import org.jquantlib.termstructures.yieldcurves.SwapRateHelper;
 import org.jquantlib.termstructures.yieldcurves.ZeroSpreadedTermStructure;
@@ -489,6 +496,210 @@ public class TermStructuresTest {
                 d, dc, Compounding.Continuous, Frequency.NoFrequency).rate();
         if (Double.isNaN(z) || Double.isInfinite(z)) {
             fail("zeroRate on fresh PiecewiseYieldCurve returned non-finite: " + z);
+        }
+    }
+
+
+    /**
+     * Faithful port of {@code test-suite/termstructures.cpp:320}
+     * {@code BOOST_AUTO_TEST_CASE(testLinearInterpolationSpreadedForwardRate)}.
+     * Tolerance 1e-9 per C++.
+     */
+    @Test
+    public void testLinearInterpolationSpreadedForwardRate() {
+        QL.info("Testing linear interpolation of forward rates between two dates...");
+
+        final DayCounter dc = termStructure.dayCounter();
+        final Date today = new Settings().evaluationDate();
+        final Date settlement = calendar.advance(today, settlementDays, TimeUnit.Days);
+
+        final SimpleQuote spread1 = new SimpleQuote(0.02);
+        final SimpleQuote spread2 = new SimpleQuote(0.03);
+        @SuppressWarnings("unchecked")
+        final Handle<Quote>[] spreads = (Handle<Quote>[]) new Handle<?>[] {
+                new Handle<Quote>(spread1), new Handle<Quote>(spread2) };
+
+        final Date[] spreadDates = new Date[] {
+                calendar.advance(today, 100, TimeUnit.Days),
+                calendar.advance(today, 150, TimeUnit.Days)
+        };
+
+        final Date interpolationDate = calendar.advance(today, 120, TimeUnit.Days);
+
+        final YieldTermStructure spreaded = new InterpolatedPiecewiseForwardSpreadedTermStructure(
+                new Handle<YieldTermStructure>(termStructure), spreads, spreadDates, new Linear());
+
+        final Date d0 = calendar.advance(today, 100, TimeUnit.Days);
+        final Date d1 = calendar.advance(today, 150, TimeUnit.Days);
+        final Date d2 = calendar.advance(today, 120, TimeUnit.Days);
+
+        final double time0 = dc.yearFraction(settlement, d0);
+        final double time1 = dc.yearFraction(settlement, d1);
+        final double time2 = dc.yearFraction(settlement, d2);
+
+        final double m = (0.03 - 0.02) / (time1 - time0);
+
+        final double t = dc.yearFraction(settlement, interpolationDate);
+        final double expectedForward = termStructure.forwardRate(
+                t, t, Compounding.Continuous, Frequency.NoFrequency, true).rate()
+                + (m * (time2 - time0) + 0.02);
+        final double interpolatedForward = spreaded.forwardRate(
+                t, t, Compounding.Continuous, Frequency.NoFrequency, true).rate();
+
+        final double tolerance = 1e-9;
+        if (Math.abs(interpolatedForward - expectedForward) > tolerance) {
+            fail("unable to reproduce interpolated forward rate\n"
+                    + "    calculated: " + interpolatedForward + "\n"
+                    + "    expected:   " + expectedForward);
+        }
+    }
+
+
+    /**
+     * Faithful port of {@code test-suite/termstructures.cpp:373}
+     * {@code BOOST_AUTO_TEST_CASE(testForwardFlatInterpolationSpreadedForwardRate)}.
+     * Tolerance 1e-9 per C++.
+     */
+    @Test
+    public void testForwardFlatInterpolationSpreadedForwardRate() {
+        QL.info("Testing forward flat interpolation of forward rates between two dates...");
+
+        final DayCounter dc = termStructure.dayCounter();
+        final Date today = new Settings().evaluationDate();
+
+        final SimpleQuote spread1 = new SimpleQuote(0.02);
+        final SimpleQuote spread2 = new SimpleQuote(0.03);
+        @SuppressWarnings("unchecked")
+        final Handle<Quote>[] spreads = (Handle<Quote>[]) new Handle<?>[] {
+                new Handle<Quote>(spread1), new Handle<Quote>(spread2) };
+
+        final Date[] spreadDates = new Date[] {
+                calendar.advance(today, 75, TimeUnit.Days),
+                calendar.advance(today, 260, TimeUnit.Days)
+        };
+
+        final Date interpolationDate = calendar.advance(today, 100, TimeUnit.Days);
+
+        final YieldTermStructure spreaded = new InterpolatedPiecewiseForwardSpreadedTermStructure(
+                new Handle<YieldTermStructure>(termStructure), spreads, spreadDates, new ForwardFlat());
+
+        final double t = dc.yearFraction(today, interpolationDate);
+        final double expectedForward = termStructure.forwardRate(
+                t, t, Compounding.Continuous, Frequency.NoFrequency, true).rate()
+                + spread1.value();
+        final double interpolatedForward = spreaded.forwardRate(
+                t, t, Compounding.Continuous, Frequency.NoFrequency, true).rate();
+
+        final double tolerance = 1e-9;
+        if (Math.abs(interpolatedForward - expectedForward) > tolerance) {
+            fail("unable to reproduce interpolated forward rate\n"
+                    + "    calculated: " + interpolatedForward + "\n"
+                    + "    expected:   " + expectedForward);
+        }
+    }
+
+
+    /**
+     * Faithful port of {@code test-suite/termstructures.cpp:416}
+     * {@code BOOST_AUTO_TEST_CASE(testBackwardFlatInterpolationSpreadedForwardRate)}.
+     * Tolerance 1e-9 per C++.
+     */
+    @Test
+    public void testBackwardFlatInterpolationSpreadedForwardRate() {
+        QL.info("Testing backward flat interpolation of forward rates between two dates...");
+
+        final DayCounter dc = termStructure.dayCounter();
+        final Date today = new Settings().evaluationDate();
+
+        final SimpleQuote spread1 = new SimpleQuote(0.02);
+        final SimpleQuote spread2 = new SimpleQuote(0.03);
+        final SimpleQuote spread3 = new SimpleQuote(0.04);
+        @SuppressWarnings("unchecked")
+        final Handle<Quote>[] spreads = (Handle<Quote>[]) new Handle<?>[] {
+                new Handle<Quote>(spread1), new Handle<Quote>(spread2), new Handle<Quote>(spread3) };
+
+        final Date[] spreadDates = new Date[] {
+                calendar.advance(today, 100, TimeUnit.Days),
+                calendar.advance(today, 200, TimeUnit.Days),
+                calendar.advance(today, 300, TimeUnit.Days)
+        };
+
+        final Date interpolationDate = calendar.advance(today, 110, TimeUnit.Days);
+
+        final YieldTermStructure spreaded = new InterpolatedPiecewiseForwardSpreadedTermStructure(
+                new Handle<YieldTermStructure>(termStructure), spreads, spreadDates, new BackwardFlat());
+
+        final double t = dc.yearFraction(today, interpolationDate);
+        final double expectedForward = termStructure.forwardRate(
+                t, t, Compounding.Continuous, Frequency.NoFrequency, true).rate()
+                + spread2.value();
+        final double interpolatedForward = spreaded.forwardRate(
+                t, t, Compounding.Continuous, Frequency.NoFrequency, true).rate();
+
+        final double tolerance = 1e-9;
+        if (Math.abs(interpolatedForward - expectedForward) > tolerance) {
+            fail("unable to reproduce interpolated forward rate\n"
+                    + "    calculated: " + interpolatedForward + "\n"
+                    + "    expected:   " + expectedForward);
+        }
+    }
+
+
+    /**
+     * Faithful port of {@code test-suite/termstructures.cpp:462}
+     * {@code BOOST_AUTO_TEST_CASE(testBackwardFlatInterpolationZeroRate)}.
+     * Tolerance 1e-9 per C++.
+     */
+    @Test
+    public void testBackwardFlatInterpolationZeroRate() {
+        QL.info("Testing backward flat interpolation of zero rates between two dates...");
+
+        final DayCounter dc = termStructure.dayCounter();
+        final Date today = new Settings().evaluationDate();
+        final Date referenceDate = termStructure.referenceDate();
+
+        final SimpleQuote spread1 = new SimpleQuote(0.02);
+        final SimpleQuote spread2 = new SimpleQuote(0.03);
+        final SimpleQuote spread3 = new SimpleQuote(0.04);
+        @SuppressWarnings("unchecked")
+        final Handle<Quote>[] spreads = (Handle<Quote>[]) new Handle<?>[] {
+                new Handle<Quote>(spread1), new Handle<Quote>(spread2), new Handle<Quote>(spread3) };
+
+        final Date[] spreadDates = new Date[] {
+                calendar.advance(today, 100, TimeUnit.Days),
+                calendar.advance(today, 200, TimeUnit.Days),
+                calendar.advance(today, 300, TimeUnit.Days)
+        };
+        final double[] times = new double[spreadDates.length];
+        final double[] spreadValues = new double[spreadDates.length];
+        for (int i = 0; i < spreadDates.length; ++i) {
+            times[i] = dc.yearFraction(referenceDate, spreadDates[i]);
+            spreadValues[i] = spreads[i].currentLink().value();
+        }
+
+        final Date interpolationDate = calendar.advance(today, 110, TimeUnit.Days);
+
+        final YieldTermStructure spreaded = new InterpolatedPiecewiseForwardSpreadedTermStructure(
+                new Handle<YieldTermStructure>(termStructure), spreads, spreadDates, new BackwardFlat());
+
+        final BackwardFlatInterpolation bckFlat = new BackwardFlatInterpolation(
+                new Array(times), new Array(spreadValues));
+        bckFlat.update();
+
+        final double t = dc.yearFraction(today, interpolationDate);
+        final InterestRate nonSpreaded = termStructure.zeroRate(
+                t, Compounding.Continuous, Frequency.NoFrequency, true);
+        final double spreadPrimitive = bckFlat.primitive(t, true) / t;
+        final double expectedZero = nonSpreaded.rate() + spreadPrimitive;
+
+        final double interpolatedZero = spreaded.zeroRate(
+                t, Compounding.Continuous, Frequency.NoFrequency, true).rate();
+
+        final double tolerance = 1e-9;
+        if (Math.abs(interpolatedZero - expectedZero) > tolerance) {
+            fail("unable to reproduce interpolated zero rate\n"
+                    + "    calculated: " + interpolatedZero + "\n"
+                    + "    expected:   " + expectedZero);
         }
     }
 
