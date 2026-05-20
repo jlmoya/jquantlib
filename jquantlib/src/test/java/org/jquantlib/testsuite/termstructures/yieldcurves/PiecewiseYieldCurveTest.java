@@ -1438,32 +1438,62 @@ public class PiecewiseYieldCurveTest {
 	//   Requires (rate, startDate, endDate, ...) SwapRateHelper overload —
 	//   Java has only tenor-based ctors.
 	//
-	// testSwapRateHelperSpotDate intentionally NOT ported: mirrors C++ v1.42.1
-	// test-suite/piecewiseyieldcurve.cpp:1112 BOOST_AUTO_TEST_CASE(testSwapRateHelperSpotDate).
-	// Status: BLOCKED on Java production bug in
+	// testSwapRateHelperSpotDate was BLOCKED on a Java A3 production bug in
 	// org.jquantlib.termstructures.yieldcurves.RelativeDateRateHelper.update():
-	//
-	//   protected Date evaluationDate;   // stores a *reference* to the singleton
-	//                                    // Settings DateProxy, not a snapshot value.
-	//   public void update() {
-	//       final Date newEvaluationDate = new Settings().evaluationDate();  // same proxy
-	//       if (!evaluationDate.equals(newEvaluationDate)) {                 // always false
-	//           ...
-	//           initializeDates();                                            // never called
-	//       }
-	//   }
-	//
-	// After Settings.setEvaluationDate(...) mutates the DateProxy's serial, the
-	// guard sees two references to the same proxy with the same (new) serial and
-	// skips initializeDates(). Consequence: the helper's cached
-	// MakeVanillaSwap-built swap still reflects the construction-time eval date,
-	// not the test's later eval-date change. The C++ ObservableValue<Date> is
-	// value-based and does not have this aliasing problem.
-	//
-	// This is an A3-class divergence (Java implementation bug, not a test fault);
-	// fixing requires storing a value-snapshot of evaluationDate in
-	// RelativeDateRateHelper, which is outside the scope of this test port.
-	// Tracked for follow-up under Phase 2/cert-yield-vanilla remediation.
+	// `evaluationDate` cached the live Settings DateProxy instead of a value
+	// snapshot, so the equality guard never fired after
+	// Settings.setEvaluationDate(...). Fixed in Phase1-closure-A7-C-562-rdrh by
+	// snapshotting via .clone() in the ctor and on each successful guard branch
+	// (mirrors C++ value semantics of bootstraphelper.hpp:127-147). Test is now
+	// ported below — see @Test testSwapRateHelperSpotDate.
+
+	/**
+	 * Faithful port of {@code test-suite/piecewiseyieldcurve.cpp:1112}
+	 * {@code BOOST_AUTO_TEST_CASE(testSwapRateHelperSpotDate)}.
+	 * <p>
+	 * Verifies that after {@link Settings#setEvaluationDate(Date) mutating the
+	 * global evaluation date}, a previously-constructed {@link SwapRateHelper}
+	 * rebuilds its swap and reports the spot-date that is consistent with the
+	 * LIBOR fixing-calendar advance (UK calendar yields Oct-15-2019 even though
+	 * advancing 2 days on the US calendar would land on Oct-16-2019, because
+	 * Oct-14-2019 is Columbus Day in the US).
+	 * <p>
+	 * Regression coverage for the {@code RelativeDateRateHelper.update()}
+	 * DateProxy aliasing bug — without the clone() snapshot, the cached
+	 * {@link MakeVanillaSwap} reflects the construction-time eval date and the
+	 * spot-date check fails.
+	 */
+	@Test
+	public void testSwapRateHelperSpotDate() {
+	    QL.info("Testing SwapRateHelper spot date...");
+
+	    final IborIndex usdLibor3m = new USDLibor(new Period(3, TimeUnit.Months));
+
+	    final SwapRateHelper helper = new SwapRateHelper(
+	            0.02, new Period(5, TimeUnit.Years),
+	            new UnitedStates(UnitedStates.Market.GOVERNMENTBOND),
+	            Frequency.Semiannual, BusinessDayConvention.ModifiedFollowing,
+	            new Thirty360(Thirty360.Convention.BondBasis), usdLibor3m);
+
+	    new Settings().setEvaluationDate(new Date(11, Month.October, 2019));
+
+	    // Advancing 2 days on the US calendar would yield October 16th
+	    // (because October 14th is Columbus Day), but the LIBOR spot is
+	    // calculated advancing on the UK calendar, resulting in October 15th
+	    // which is also a business day for the US calendar.
+	    final Date expected = new Date(15, Month.October, 2019);
+	    final Date calculated = helper.swap().startDate();
+	    if (!calculated.equals(expected)) {
+	        org.junit.Assert.fail("expected spot date: " + expected
+	                + "\ncalculated:         " + calculated);
+	    }
+
+	    // The second sub-check is commented out in the C++ source too (see
+	    // ratehelpers.cpp / piecewiseyieldcurve.cpp:1132-1140): July 3rd 2020
+	    // is a US holiday but not for LIBOR purposes; the schedule build
+	    // currently does not honour that nuance. Mirror the C++ TODO and leave
+	    // it disabled.
+	}
 
 	/**
 	 * Faithful port of {@code test-suite/piecewiseyieldcurve.cpp:1206}
