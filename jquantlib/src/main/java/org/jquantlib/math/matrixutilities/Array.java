@@ -113,6 +113,35 @@ public class Array extends Cells< Address.ArrayAddress > implements Cloneable, I
     }
 
     /**
+     * Builds an Array of <code>size</code> filled according to
+     * \( a_{0} = value,\ a_{i}=a_{i-1}+increment \).
+     *
+     * <p>Faithful Java port of C++ v1.42.1 {@code Array(Size size, Real value, Real increment)}
+     * from {@code ql/math/array.hpp}:
+     * <pre>
+     *   inline Array::Array(Size size, Real value, Real increment)
+     *   : data_(size != 0U ? new Real[size] : (Real*)nullptr), n_(size) {
+     *       for (iterator i=begin(); i!=end(); ++i, value+=increment)
+     *           *i = value;
+     *   }
+     * </pre>
+     *
+     * @param size      is the size of <code>this</code> Array
+     * @param value     is the initial value at index 0
+     * @param increment is added to each successive element
+     */
+    public Array(final int size, final double value, final double increment) {
+        super(1, size, null);
+        this.addr = new DirectArrayRowAddress(this.$, 0, null, 0, size - 1,
+                EnumSet.noneOf(Address.Flags.class), true, 1, size);
+        double v = value;
+        for ( int i = 0; i < size; i++ ) {
+            this.$[i] = v;
+            v += increment;
+        }
+    }
+
+    /**
      * Creates an Array given a double[] array
      *
      * @param $ is a unidimensional array
@@ -1024,6 +1053,63 @@ public class Array extends Cells< Address.ArrayAddress > implements Cloneable, I
         final int offset = addr.isFortran() ? 1 : 0;
         Arrays.sort($, begin() - offset, end() - offset);
         return this;
+    }
+
+    /**
+     * Resizes this Array to {@code n} elements.
+     *
+     * <p>Faithful Java port of C++ v1.42.1 {@code Array::resize(Size n)}
+     * from {@code ql/math/array.hpp}:
+     * <pre>
+     *   inline void Array::resize(Size n) {
+     *       if (n &gt; n_) {
+     *           Array swp(n);
+     *           std::copy(begin(), end(), swp.begin());
+     *           swap(swp);
+     *       }
+     *       else if (n &lt; n_) {
+     *           n_ = n;
+     *       }
+     *   }
+     * </pre>
+     *
+     * <p>Semantics:
+     * <ul>
+     *   <li>{@code n &gt; size()} — allocates a fresh backing buffer of size {@code n},
+     *       copies the existing {@code size()} elements into the new buffer's prefix,
+     *       and zero-fills the new tail (Java {@code new double[n]} default).</li>
+     *   <li>{@code n &lt; size()} — keeps the existing backing buffer; only the
+     *       logical size and address bounds shrink. This mirrors C++ where only
+     *       {@code n_ = n} is set.</li>
+     *   <li>{@code n == size()} — no-op.</li>
+     * </ul>
+     *
+     * <p>Iterator/pointer stability: shrink leaves the backing buffer untouched,
+     * matching the C++ test {@code testArrayResize} expectation that
+     * {@code a.begin()} is unchanged after a same-size or shrinking resize.
+     *
+     * @param n the new size
+     */
+    public void resize(final int n) {
+        if ( n > this.size ) {
+            // Grow: allocate new buffer of size n, copy old elements 0..size-1,
+            // tail is zero-filled by the Java new-array semantics. Then update
+            // addr/size/cols to reflect the new dimension.
+            final double[] swp = new double[n];
+            System.arraycopy(this.$, 0, swp, 0, this.size);
+            this.$ = swp;
+            this.size = n;
+            this.cols = n;
+            this.addr = new DirectArrayRowAddress(this.$, 0, null, 0, n - 1,
+                    this.addr.flags(), true, 1, n);
+        } else if ( n < this.size ) {
+            // Shrink: keep the backing buffer (matches C++ n_=n), update bounds.
+            this.size = n;
+            this.cols = n;
+            this.addr = new DirectArrayRowAddress(this.$, 0, null, 0, n - 1,
+                    this.addr.flags(), true, 1, n);
+        }
+        // n == size: no-op
     }
 
     //

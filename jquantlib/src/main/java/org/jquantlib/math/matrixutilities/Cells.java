@@ -60,9 +60,15 @@ public abstract class Cells< T extends Address > implements Cloneable {
     //
     // protected fields
     //
-    protected final int rows;
-    protected final int cols;
-    protected final int size;
+    // Non-final to support {@link Array#resize(int)} which mirrors C++ v1.42.1
+    // {@code Array::resize(Size)} — that method mutates {@code n_} when shrinking
+    // and replaces the underlying buffer when growing. The Java port updates
+    // {@code size} / {@code cols} accordingly. Fields remain {@code protected};
+    // outside-package code accesses them only via {@link #size()} / {@link #cols()}
+    // and similar accessors which return the current value.
+    protected int rows;
+    protected int cols;
+    protected int size;
 
     //
     // protected fields
