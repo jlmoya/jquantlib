@@ -27,6 +27,8 @@ counterpart — no ground-truth to migrate to.
 log); will be removed in a final sweep commit once the scanner confirms no
 remaining callers.
 
+**RESOLVED:** `0caa11f5` — `stub(QL): delete validateExperimentalMode + all 78 call sites`. Method and all callers gone; `QL.java` now 356 lines, 0 throws. Confirmed by 2026-05-20 Phase 1 certification audit.
+
 ---
 
 ## 2026-04-24 — model.shortrate.calibrationhelpers.CapHelper (line 84)
@@ -40,6 +42,8 @@ machinery, which is itself Phase 2 territory (depends on market-model
 infrastructure still to be filled in).
 
 **User sign-off:** acknowledged during Phase 3 execution.
+
+**RESOLVED:** `8956f3d3` — `stub(model.shortrate.calibrationhelpers): CapHelper unstub + BlackCalibrationHelper port (Phase 2d WI-1)`. CapHelper.java now 178 lines, 0 throws. Confirmed by 2026-05-20 Phase 1 certification audit.
 
 ---
 
@@ -56,6 +60,8 @@ infrastructure.
 
 **User sign-off:** acknowledged during Phase 3 execution.
 
+**RESOLVED:** `4f4c1bae` — `stub(model.shortrate.twofactormodels): G2 model body port (Phase 2e WI-1)`. G2.java now 518 lines, 0 throws. Confirmed by 2026-05-20 Phase 1 certification audit.
+
 ---
 
 ## 2026-04-24 — processes.HestonProcess (line 282)
@@ -70,6 +76,8 @@ below need careful porting from C++ with a specific choice of Broadie-Kaya
 variates). This is a single-algorithm carve-out, not the whole class.
 
 **User sign-off:** acknowledged during Phase 3 execution.
+
+**RESOLVED:** `6eb170f5` — `stub(processes): port HestonProcess QuadraticExponential branch` (Phase 2a). Companion `d0de1e47` ported the QuadraticExponentialMartingale variant. Further BroadieKaya refinement landed at `ce11bec3` (Phase 2f WI-3). HestonProcess.java now 386 lines, 0 throws. Confirmed by 2026-05-20 Phase 1 certification audit.
 
 ---
 
@@ -91,6 +99,8 @@ Java code already matches ground truth. Logged here so future scanner runs
 don't re-surface it for resolution.
 
 **User sign-off:** acknowledged during Phase 3 execution.
+
+**RESOLVED:** N/A — intentionally preserved as v1.42.1 parity. Confirmed by 2026-05-20 Phase 1 certification audit: TreeLattice2D.java line 72 still has `throw new LibraryException("not implemented")` matching C++ `ql/methods/lattices/lattice2d.hpp:52` `Array grid(Time) const override { QL_FAIL("not implemented"); }` exactly.
 
 ---
 
@@ -131,5 +141,7 @@ implementation with a documented loose-tolerance adapter layer.
 
 **User sign-off:** acknowledged during Phase 3 execution; deferred to
 Phase 2 with explicit note about the MINPACK scope.
+
+**RESOLVED:** `efdfecdb` — `stub(math.optimization): fill LevenbergMarquardt.minimize via MINPACK` (Phase 2a). Full MINPACK `lmdif` port landed in `org.jquantlib.math.optimization.minpack`. LevenbergMarquardt.java now 182 lines, 0 throws. Confirmed by 2026-05-20 Phase 1 certification audit.
 
 ---
