@@ -39,12 +39,10 @@ import org.jquantlib.time.TimeUnit;
 import org.jquantlib.time.Weekday;
 import org.jquantlib.time.calendars.BespokeCalendar;
 import org.jquantlib.time.calendars.Brazil;
-import org.jquantlib.time.calendars.China;
 import org.jquantlib.time.calendars.Germany;
 import org.jquantlib.time.calendars.Italy;
 import org.jquantlib.time.calendars.JointCalendar;
 import org.jquantlib.time.calendars.JointCalendar.JointCalendarRule;
-import org.jquantlib.time.calendars.SouthKorea;
 import org.jquantlib.time.calendars.Target;
 import org.jquantlib.time.calendars.UnitedKingdom;
 import org.jquantlib.time.calendars.UnitedStates;
@@ -956,6 +954,103 @@ public class CalendarsTest {
         final List<Date> computed = Calendar.holidayList(c,
                 new Date(1, Month.January, 2003), new Date(31, Month.December, 2004), false);
         checkHolidays(computed, expectedHol);
+    }
+
+    /**
+     * Faithful port of {@code test-suite/calendars.cpp:545}
+     * {@code BOOST_AUTO_TEST_CASE(testUKSettlement)}.
+     *
+     * <p>UK Settlement holiday list for 2004-2007.
+     */
+    @Test
+    public void testUKSettlement() {
+        QL.info("Testing UK settlement holiday list...");
+
+        final List<Date> expectedHol = ukYearsList();
+        final Calendar c = new UnitedKingdom(UnitedKingdom.Market.Settlement);
+        final List<Date> computed = Calendar.holidayList(c,
+                new Date(1, Month.January, 2004), new Date(31, Month.December, 2007), false);
+        checkHolidays(computed, expectedHol);
+    }
+
+    /**
+     * Faithful port of {@code test-suite/calendars.cpp:592}
+     * {@code BOOST_AUTO_TEST_CASE(testUKExchange)}.
+     *
+     * <p>London Stock Exchange holiday list for 2004-2007 (identical to UK
+     * Settlement for these years in v1.42.1).
+     */
+    @Test
+    public void testUKExchange() {
+        QL.info("Testing London Stock Exchange holiday list...");
+
+        final List<Date> expectedHol = ukYearsList();
+        final Calendar c = new UnitedKingdom(UnitedKingdom.Market.Exchange);
+        final List<Date> computed = Calendar.holidayList(c,
+                new Date(1, Month.January, 2004), new Date(31, Month.December, 2007), false);
+        checkHolidays(computed, expectedHol);
+    }
+
+    /**
+     * Faithful port of {@code test-suite/calendars.cpp:639}
+     * {@code BOOST_AUTO_TEST_CASE(testUKMetals)}.
+     *
+     * <p>London Metals Exchange holiday list for 2004-2007 (identical to UK
+     * Settlement for these years in v1.42.1).
+     */
+    @Test
+    public void testUKMetals() {
+        QL.info("Testing London Metals Exchange holiday list...");
+
+        final List<Date> expectedHol = ukYearsList();
+        final Calendar c = new UnitedKingdom(UnitedKingdom.Market.Metals);
+        final List<Date> computed = Calendar.holidayList(c,
+                new Date(1, Month.January, 2004), new Date(31, Month.December, 2007), false);
+        checkHolidays(computed, expectedHol);
+    }
+
+    /**
+     * Shared expected-holiday list for testUKSettlement / testUKExchange /
+     * testUKMetals — v1.42.1 calendars.cpp has identical lists for 2004-2007
+     * across all three UK markets.
+     */
+    private static List<Date> ukYearsList() {
+        return dateList(
+                new Date(1, Month.January, 2004),
+                new Date(9, Month.April, 2004),
+                new Date(12, Month.April, 2004),
+                new Date(3, Month.May, 2004),
+                new Date(31, Month.May, 2004),
+                new Date(30, Month.August, 2004),
+                new Date(27, Month.December, 2004),
+                new Date(28, Month.December, 2004),
+
+                new Date(3, Month.January, 2005),
+                new Date(25, Month.March, 2005),
+                new Date(28, Month.March, 2005),
+                new Date(2, Month.May, 2005),
+                new Date(30, Month.May, 2005),
+                new Date(29, Month.August, 2005),
+                new Date(26, Month.December, 2005),
+                new Date(27, Month.December, 2005),
+
+                new Date(2, Month.January, 2006),
+                new Date(14, Month.April, 2006),
+                new Date(17, Month.April, 2006),
+                new Date(1, Month.May, 2006),
+                new Date(29, Month.May, 2006),
+                new Date(28, Month.August, 2006),
+                new Date(25, Month.December, 2006),
+                new Date(26, Month.December, 2006),
+
+                new Date(1, Month.January, 2007),
+                new Date(6, Month.April, 2007),
+                new Date(9, Month.April, 2007),
+                new Date(7, Month.May, 2007),
+                new Date(28, Month.May, 2007),
+                new Date(27, Month.August, 2007),
+                new Date(25, Month.December, 2007),
+                new Date(26, Month.December, 2007));
     }
 
     /**
