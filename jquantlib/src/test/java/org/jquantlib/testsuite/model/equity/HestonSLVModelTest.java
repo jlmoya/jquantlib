@@ -103,10 +103,17 @@ import org.junit.Test;
 
 /**
  * Phase 5h skeleton port of {@code test-suite/hestonslvmodel.cpp} v1.42.1
- * (2,686 LOC, 15 active test cases — three additional cases are commented
- * out in the C++ source: {@code testFDMCalibration},
- * {@code testBarrierPricingMixedModels}, {@code testForwardSkewSLV},
- * {@code testBarrierPricingMixedModelsMonteCarloVsFdmPricing}).
+ * (2,686 LOC, 15 active test cases). Four additional cases are
+ * {@code //}-commented-out in the C++ source @ {@code 099987f0ca}:
+ * <ul>
+ *   <li>{@code //BOOST_AUTO_TEST_CASE(testFDMCalibration)} — line 1497;</li>
+ *   <li>{@code //BOOST_AUTO_TEST_CASE(testBarrierPricingMixedModels)} — line 1735;</li>
+ *   <li>{@code //BOOST_AUTO_TEST_CASE(testForwardSkewSLV)} — line 2084;</li>
+ *   <li>{@code //BOOST_AUTO_TEST_CASE(testBarrierPricingMixedModelsMonteCarloVsFdmPricing)}
+ *       — line 2503.</li>
+ * </ul>
+ * These four are NOT active upstream tests, so no Java port is required
+ * (Phase1-cert-D5-C-R3 EXISTING_EQUIVALENT: covered by C++-side commented-out).
  *
  * <p>The 15 active tests exercise the Heston Stochastic-Local-Vol (SLV)
  * model and its constituent infrastructure:
