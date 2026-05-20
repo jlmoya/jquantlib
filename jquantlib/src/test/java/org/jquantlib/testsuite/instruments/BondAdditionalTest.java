@@ -860,6 +860,7 @@ public class BondAdditionalTest {
 
         final double yield = BondFunctions.yield(fixedRateBond, cleanPrice,
                 dayCounter, compounding, Frequency.Semiannual, settlement);
+        // Tolerance 1e-4 matches v1.42.1 bonds.cpp ASSERT_CLOSE("yield", ..., 0.015, 1e-4) — 1bp yield precision.
         assertEquals("yield", 0.015, yield, 1e-4);
 
         final InterestRate ir = new InterestRate(yield, dayCounter, compounding,
@@ -867,10 +868,12 @@ public class BondAdditionalTest {
 
         final double duration = BondFunctions.duration(fixedRateBond, ir,
                 CashFlows.Duration.Macaulay, settlement);
+        // Tolerance 1e-3 matches v1.42.1 bonds.cpp ASSERT_CLOSE("duration", ..., 1.022, 1e-3) — 3-decimal-place Macaulay duration.
         assertEquals("duration", 1.022, duration, 1e-3);
 
         final double convexity = BondFunctions.convexity(fixedRateBond, ir, settlement)
                 / 100.0;
+        // Tolerance 1e-3 matches v1.42.1 bonds.cpp ASSERT_CLOSE("convexity", ..., 0.015, 1e-3).
         assertEquals("convexity", 0.015, convexity, 1e-3);
 
         final double accrued = BondFunctions.accruedAmount(fixedRateBond, settlement);

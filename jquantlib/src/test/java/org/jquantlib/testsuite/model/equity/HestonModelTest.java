@@ -2577,6 +2577,7 @@ public class HestonModelTest {
         final double T = 2.0;
         final double strike = 100.0;
 
+        // Tolerance 1e-4 below mirrors v1.42.1 hestonmodel.cpp testOptimalAlphaKmin pattern (QL_CHECK_SMALL on Brent-solved alphaStar, where 1e-4 ≈ Brent default convergence x 100).
         // case 1: kappa - sigma*rho > 0
         HestonProcess process = new HestonProcess(yTS, yTS, spot, 0.1, 1.2, 0.2, 0.2, -0.8);
         HestonModel model = new HestonModel(process);
