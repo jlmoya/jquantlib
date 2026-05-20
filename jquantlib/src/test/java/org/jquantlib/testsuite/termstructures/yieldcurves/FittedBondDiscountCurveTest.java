@@ -24,8 +24,18 @@ import static org.junit.Assert.fail;
 import org.jquantlib.Settings;
 import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.daycounters.DayCounter;
+import org.jquantlib.instruments.bonds.ZeroCouponBond;
 import org.jquantlib.math.matrixutilities.Array;
+import org.jquantlib.math.optimization.Constraint;
+import org.jquantlib.math.optimization.NoConstraint;
+import org.jquantlib.math.optimization.OptimizationMethod;
+import org.jquantlib.math.optimization.PositiveConstraint;
+import org.jquantlib.quotes.Handle;
+import org.jquantlib.quotes.Quote;
+import org.jquantlib.quotes.SimpleQuote;
+import org.jquantlib.termstructures.yieldcurves.BondHelper;
 import org.jquantlib.termstructures.yieldcurves.FittedBondDiscountCurve;
+import org.jquantlib.termstructures.yieldcurves.FittingMethod;
 import org.jquantlib.termstructures.yieldcurves.NelsonSiegelFitting;
 import org.jquantlib.termstructures.yieldcurves.SimplePolynomialFitting;
 import org.jquantlib.termstructures.yieldcurves.SvenssonFitting;
@@ -253,17 +263,148 @@ public class FittedBondDiscountCurveTest {
     //   then rejects past max date") via testEvaluationBeyondMaxDate above
     //   using NelsonSiegelFitting — i.e. an EXISTING_EQUIVALENT for the
     //   curve-as-evaluator property; full ExponentialSplines port BLOCKED.
-    //
-    // testRequiredGuess (cpp:224), testGuessSize (cpp:254), testConstraint
-    // (cpp:285)
-    //   All three exercise the BondHelper-driven least-squares path of
-    //   FittedBondDiscountCurve. Java side currently only implements the
-    //   parametric (no-fit) ctors — bond-helper fitting + the generic
-    //   BondHelper rate-helper subclass (the C++ "BondHelper" wrapping any
-    //   Bond as a Quote helper for fitting; ~150 LOC) is tracked as a
-    //   carry-forward (see FittedBondDiscountCurve.java header comment:
-    //   "BondHelper-driven least-squares optimization (Simplex / LM) is
-    //   tracked as a Phase 5d.5-ZCS+FBb carry-forward"). Total infra to
-    //   unblock: ~400 LOC across BondHelper class + bond-helper FBdC ctor
-    //   + L2-penalty / constraint plumbing on FittingMethod.
+
+    /**
+     * Faithful port of {@code test-suite/fittedbonddiscountcurve.cpp:224}
+     * {@code BOOST_AUTO_TEST_CASE(testRequiredGuess)}. Builds 4
+     * {@link BondHelper}s and a {@link NelsonSiegelFitting} with an L2 penalty
+     * but no guess; the curve must reject {@code discount(3.0)} with the
+     * message "L2 penalty requires a guess".
+     */
+    @Test
+    public void testRequiredGuess() {
+        final Date today = new Settings().evaluationDate();
+        final Target cal = new Target();
+        final ZeroCouponBond bond1 = new ZeroCouponBond(3, cal, 100.0, today.add(new Period(1, TimeUnit.Years)));
+        final ZeroCouponBond bond2 = new ZeroCouponBond(3, cal, 100.0, today.add(new Period(2, TimeUnit.Years)));
+        final ZeroCouponBond bond3 = new ZeroCouponBond(3, cal, 100.0, today.add(new Period(5, TimeUnit.Years)));
+        final ZeroCouponBond bond4 = new ZeroCouponBond(3, cal, 100.0, today.add(new Period(10, TimeUnit.Years)));
+
+        final BondHelper[] helpers = new BondHelper[4];
+        helpers[0] = new BondHelper(new Handle< Quote >(new SimpleQuote(99.0)), bond1);
+        helpers[1] = new BondHelper(new Handle< Quote >(new SimpleQuote(98.0)), bond2);
+        helpers[2] = new BondHelper(new Handle< Quote >(new SimpleQuote(95.0)), bond3);
+        helpers[3] = new BondHelper(new Handle< Quote >(new SimpleQuote(90.0)), bond4);
+
+        final Array weights = new Array(0);
+        final OptimizationMethod optimizer = null;
+        final Array l2 = new Array(new double[] { 0.25, 0.25, 0.25, 0.25 });
+        final NelsonSiegelFitting fittingMethod = new NelsonSiegelFitting(weights, optimizer, l2);
+
+        final double accuracy = 1e-10;
+        final int maxIterations = 10000;
+        final FittedBondDiscountCurve curve = new FittedBondDiscountCurve(0, cal, helpers, new Actual365Fixed(),
+                fittingMethod, accuracy, maxIterations);
+
+        try {
+            curve.discount(3.0);
+            fail("Expected exception 'L2 penalty requires a guess'");
+        } catch ( final RuntimeException expected ) {
+            assertTrue("Exception message should mention L2 penalty: " + expected.getMessage(),
+                    expected.getMessage() != null && expected.getMessage().contains("L2 penalty requires a guess"));
+        }
+    }
+
+    /**
+     * Faithful port of {@code test-suite/fittedbonddiscountcurve.cpp:254}
+     * {@code BOOST_AUTO_TEST_CASE(testGuessSize)}. A guess of size 3 is too
+     * small for a 4-parameter {@link NelsonSiegelFitting}; must fail with
+     * message "wrong size for guess".
+     */
+    @Test
+    public void testGuessSize() {
+        final Date today = new Settings().evaluationDate();
+        final Target cal = new Target();
+        final ZeroCouponBond bond1 = new ZeroCouponBond(3, cal, 100.0, today.add(new Period(1, TimeUnit.Years)));
+        final ZeroCouponBond bond2 = new ZeroCouponBond(3, cal, 100.0, today.add(new Period(2, TimeUnit.Years)));
+        final ZeroCouponBond bond3 = new ZeroCouponBond(3, cal, 100.0, today.add(new Period(5, TimeUnit.Years)));
+        final ZeroCouponBond bond4 = new ZeroCouponBond(3, cal, 100.0, today.add(new Period(10, TimeUnit.Years)));
+
+        final BondHelper[] helpers = new BondHelper[4];
+        helpers[0] = new BondHelper(new Handle< Quote >(new SimpleQuote(99.0)), bond1);
+        helpers[1] = new BondHelper(new Handle< Quote >(new SimpleQuote(98.0)), bond2);
+        helpers[2] = new BondHelper(new Handle< Quote >(new SimpleQuote(95.0)), bond3);
+        helpers[3] = new BondHelper(new Handle< Quote >(new SimpleQuote(90.0)), bond4);
+
+        final NelsonSiegelFitting fittingMethod = new NelsonSiegelFitting();
+        final double accuracy = 1e-10;
+        final int maxIterations = 10000;
+        final Array guess = new Array(new double[] { 0.01, 0.0, 0.0 }); // too few
+
+        final FittedBondDiscountCurve curve = new FittedBondDiscountCurve(0, cal, helpers, new Actual365Fixed(),
+                fittingMethod, accuracy, maxIterations, guess);
+
+        try {
+            curve.discount(3.0);
+            fail("Expected exception 'wrong size for guess'");
+        } catch ( final RuntimeException expected ) {
+            assertTrue("Exception message should mention guess size: " + expected.getMessage(),
+                    expected.getMessage() != null && expected.getMessage().contains("wrong size for guess"));
+        }
+    }
+
+    /**
+     * Faithful port of {@code test-suite/fittedbonddiscountcurve.cpp:285}
+     * {@code BOOST_AUTO_TEST_CASE(testConstraint)}. Defines an in-place
+     * {@code FlatZero} fitting method (1 parameter, discount = exp(-r*t)) and
+     * fits it against 2 premium-priced zero-coupon bonds (expected to land at
+     * a negative rate without constraint, positive with
+     * {@link PositiveConstraint}).
+     */
+    @Test
+    public void testConstraint() {
+        final Date today = new Settings().evaluationDate();
+        final Target cal = new Target();
+        final ZeroCouponBond bond1 = new ZeroCouponBond(3, cal, 100.0, today.add(new Period(1, TimeUnit.Years)));
+        final ZeroCouponBond bond2 = new ZeroCouponBond(3, cal, 100.0, today.add(new Period(2, TimeUnit.Years)));
+
+        final BondHelper[] helpers = new BondHelper[] {
+                new BondHelper(new Handle< Quote >(new SimpleQuote(101.0)), bond1),
+                new BondHelper(new Handle< Quote >(new SimpleQuote(102.0)), bond2),
+        };
+
+        final double accuracy = 1e-10;
+        final int maxIterations = 10000;
+        final Array guess = new Array(new double[] { 0.01 }); // positive feasible-region start
+
+        final FlatZero unconstrainedMethod = new FlatZero(new NoConstraint());
+        final FittedBondDiscountCurve unconstrainedCurve = new FittedBondDiscountCurve(0, cal, helpers,
+                new Actual365Fixed(), unconstrainedMethod, accuracy, maxIterations, guess);
+        assertTrue("Unconstrained fit should produce a negative zero rate (premium-priced bonds)",
+                unconstrainedCurve.fitResults().solution().get(0) < 0.0);
+
+        final FlatZero positiveMethod = new FlatZero(new PositiveConstraint());
+        final FittedBondDiscountCurve positiveCurve = new FittedBondDiscountCurve(0, cal, helpers,
+                new Actual365Fixed(), positiveMethod, accuracy, maxIterations, guess);
+        assertTrue("PositiveConstraint must force the zero rate to be positive",
+                positiveCurve.fitResults().solution().get(0) > 0.0);
+    }
+
+    /**
+     * Local 1-parameter fitting method: discount = exp(-r*t). Used by
+     * {@link #testConstraint} to demonstrate the optimizer's respect for a
+     * user-supplied {@link Constraint}.
+     */
+    private static final class FlatZero extends FittingMethod {
+        FlatZero(final Constraint constraint) {
+            super(true, /* weights=*/ new Array(0), /* optimizer=*/ null, /* l2=*/ new Array(0), 0.0, Double.MAX_VALUE,
+                    constraint);
+        }
+
+        @Override
+        public int size() {
+            return 1;
+        }
+
+        @Override
+        protected double discountFunction(final Array x, final double t) {
+            final double zeroRate = x.get(0);
+            return Math.exp(-zeroRate * t);
+        }
+
+        @Override
+        public FittingMethod clone() {
+            return new FlatZero(constraint());
+        }
+    }
 }
