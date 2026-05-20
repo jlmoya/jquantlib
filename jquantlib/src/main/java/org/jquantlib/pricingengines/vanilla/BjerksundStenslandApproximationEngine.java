@@ -117,8 +117,41 @@ public class BjerksundStenslandApproximationEngine extends VanillaOption.EngineI
         return x * x;
     }
 
+    /**
+     * Complementary error function with deep-tail precision.
+     *
+     * <p>{@link ErrorFunction} saturates {@code erf(x)} at {@code 1 - QL_EPSILON}
+     * once {@code |x| >= 6}, and starts losing precision well before that
+     * (at {@code |x| ~ 4-5} the cancellation in {@code 1 - erf(x)} eats most
+     * of the meaningful digits). For the Bjerksund-Stensland Greeks formulas,
+     * accuracy in the moderate-to-deep tail matters because the small
+     * {@code erfc} is multiplied by very large {@code pow(I/S, ...)*S} factors,
+     * and the tail error bleeds back into the visible vega (observed ~6e-3
+     * mismatch versus bump-FD on a deep-ITM short-dated boundary case before
+     * this fix; ~3e-3 on a long-dated near-ATM low-vol case for thresholds
+     * larger than ~4.5).
+     *
+     * <p>For {@code |x| < 4}, defers to {@code 1 - erf(x)} — cancellation is
+     * at worst ~8 digits, leaving 8 useful digits in the {@code 1e-8} range,
+     * which is amply sufficient. For larger {@code |x|}, uses the continued-fraction
+     * representation
+     * {@code erfc(x) = exp(-x^2) / (sqrt(pi) * (x + 0.5/(x + 1/(x + 1.5/(x + ...)))))}
+     * (100 levels — convergence is ~1 ULP for {@code |x| >= 2}). Matches
+     * the precision of C++ {@code std::erfc} in the engine's operating range.
+     */
     private double erfc(final double x) {
-        return 1.0 - erf.op(x);
+        if (x < -4.0) {
+            // erfc(-x) = 2 - erfc(x)
+            return 2.0 - erfc(-x);
+        }
+        if (x < 4.0) {
+            return 1.0 - erf.op(x);
+        }
+        double cf = x;
+        for (int n = 100; n >= 1; --n) {
+            cf = x + 0.5 * n / cf;
+        }
+        return Math.exp(-x * x) / (cf * M_SQRTPI);
     }
 
     // -----------------------------------------------------------------------

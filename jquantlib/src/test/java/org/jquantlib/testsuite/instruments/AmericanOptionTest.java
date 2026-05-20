@@ -1808,14 +1808,8 @@ public class AmericanOptionTest {
      * 2-D (type x T) outer loop. Each Greek (delta, gamma, strikeSensitivity, vega, theta,
      * rho, dividendRho) is compared against a numerical bump. Slowest test in the file
      * (~ 7680 leaf combinations) — kept faithful to C++.
-     *
-     * <p>Currently @Ignore'd: vega analytical-vs-bump shows ~6e-3 error (tol 5e-4) on a single
-     * deep-ITM short-dated case (type=Call s=110 q=0.08 r=0.2 v=0.1 t=182). Analytical formulas
-     * are byte-faithful to C++ v1.42.1 — needs root-cause investigation in either bump-size
-     * sensitivity or a subtle precision issue in BlackCalculator.vega (Phase1-closure-A2-B-546).
      */
     @Test
-    @Ignore("Phase1-closure-A2-B-546: vega analytical-vs-numerical bump shows ~6e-3 error on 1 corner case; needs follow-up")
     public void testBjerksundStenslandAmericanGreeks() {
         QL.info("Testing Bjerksund-Stensland American Greeks...");
 
