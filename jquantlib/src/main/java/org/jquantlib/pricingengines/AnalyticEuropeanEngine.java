@@ -48,6 +48,8 @@ import org.jquantlib.instruments.OneAssetOption;
 import org.jquantlib.instruments.Option;
 import org.jquantlib.instruments.StrikedTypePayoff;
 import org.jquantlib.processes.GeneralizedBlackScholesProcess;
+import org.jquantlib.quotes.Handle;
+import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.time.Date;
 
 /**
@@ -84,6 +86,7 @@ public class AnalyticEuropeanEngine extends OneAssetOption.EngineImpl {
     //
 
     private final GeneralizedBlackScholesProcess process;
+    private final Handle< YieldTermStructure > discountCurve;
     private final OneAssetOption.ArgumentsImpl a;
     private final OneAssetOption.ResultsImpl r;
     private final Option.GreeksImpl greeks;
@@ -94,12 +97,32 @@ public class AnalyticEuropeanEngine extends OneAssetOption.EngineImpl {
     //
 
     public AnalyticEuropeanEngine(final GeneralizedBlackScholesProcess process) {
+        this(process, new Handle< YieldTermStructure >());
+    }
+
+    /**
+     * Faithful port of C++ v1.42.1
+     * {@code AnalyticEuropeanEngine(ext::shared_ptr<GeneralizedBlackScholesProcess>, Handle<YieldTermStructure>)}
+     * (see {@code ql/pricingengines/vanilla/analyticeuropeanengine.cpp:34}).
+     *
+     * <p>When {@code discountCurve} is non-empty, the engine prices the
+     * payoff with the supplied discount curve, while the forward {@code F = S
+     * * Q / R} is still estimated from {@code process.riskFreeRate()}. This
+     * lets callers split funding/collateral discounting from the spot-forward
+     * estimation curve.
+     */
+    public AnalyticEuropeanEngine(final GeneralizedBlackScholesProcess process,
+            final Handle< YieldTermStructure > discountCurve) {
         this.a = (OneAssetOption.ArgumentsImpl) arguments_;
         this.r = (OneAssetOption.ResultsImpl) results_;
         this.greeks = r.greeks();
         this.moreGreeks = r.moreGreeks();
         this.process = process;
+        this.discountCurve = (discountCurve == null) ? new Handle< YieldTermStructure >() : discountCurve;
         this.process.addObserver(this);
+        if ( !this.discountCurve.empty() ) {
+            this.discountCurve.addObserver(this);
+        }
     }
 
     //
@@ -112,19 +135,31 @@ public class AnalyticEuropeanEngine extends OneAssetOption.EngineImpl {
         final StrikedTypePayoff payoff = (StrikedTypePayoff) a.payoff;
         QL.require(payoff != null, NON_STRIKED_PAYOFF_GIVEN); // TODO: message
 
+        // Mirror C++ v1.42.1 analyticeuropeanengine.cpp:42 — if no discount
+        // curve was supplied, default to the process risk-free curve;
+        // otherwise the supplied curve is used for the BlackCalculator df and
+        // for the rho/rfdc day-counter. The forward-estimation discount
+        // (riskFreeDiscountForFwdEstimation) always comes from the process.
+        final YieldTermStructure discountPtr = discountCurve.empty()
+                ? process.riskFreeRate().currentLink()
+                : discountCurve.currentLink();
+
         /* @Variance */
         final double variance = process.blackVolatility().currentLink()
                 .blackVariance(a.exercise.lastDate(), payoff.strike());
         /* @DiscountFactor */
         final double dividendDiscount = process.dividendYield().currentLink().discount(a.exercise.lastDate());
         /* @DiscountFactor */
-        final double riskFreeDiscount = process.riskFreeRate().currentLink().discount(a.exercise.lastDate());
+        final double df = discountPtr.discount(a.exercise.lastDate());
+        /* @DiscountFactor */
+        final double riskFreeDiscountForFwdEstimation = process.riskFreeRate().currentLink().discount(
+                a.exercise.lastDate());
         /* @Real */
         final double spot = process.stateVariable().currentLink().value();
         QL.require(spot > 0.0, "negative or null underlying given"); // TODO: message
         /* @Real */
-        final double forwardPrice = spot * dividendDiscount / riskFreeDiscount;
-        final BlackCalculator black = new BlackCalculator(payoff, forwardPrice, Math.sqrt(variance), riskFreeDiscount);
+        final double forwardPrice = spot * dividendDiscount / riskFreeDiscountForFwdEstimation;
+        final BlackCalculator black = new BlackCalculator(payoff, forwardPrice, Math.sqrt(variance), df);
 
         r.value = black.value();
         greeks.delta = black.delta(spot);
@@ -132,7 +167,7 @@ public class AnalyticEuropeanEngine extends OneAssetOption.EngineImpl {
         moreGreeks.elasticity = black.elasticity(spot);
         greeks.gamma = black.gamma(spot);
 
-        final DayCounter rfdc = process.riskFreeRate().currentLink().dayCounter();
+        final DayCounter rfdc = discountPtr.dayCounter();
         final DayCounter divdc = process.dividendYield().currentLink().dayCounter();
         final DayCounter voldc = process.blackVolatility().currentLink().dayCounter();
         final Date refDate = process.riskFreeRate().currentLink().referenceDate();
