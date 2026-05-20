@@ -1622,4 +1622,265 @@ public class PiecewiseYieldCurveTest {
 	    }
 	}
 
+	/**
+	 * Faithful port of {@code test-suite/piecewiseyieldcurve.cpp:2109}
+	 * {@code BOOST_AUTO_TEST_CASE(testDepositForDates)}. Exercises the new
+	 * {@link DepositRateHelper#DepositRateHelper(Handle, Date, org.jquantlib.indexes.IborIndex)}
+	 * dated ctor (Phase1-closure-A7-D-562-deposit) — every deposit pinned to the
+	 * same caller-supplied {@code fixingDate}; round-trip via {@code Euribor.fixing(today)}
+	 * to tolerance 1e-9 (matches upstream).
+	 */
+	@Test
+	public void testDepositForDates() {
+	    QL.info("Testing DepositRateHelper with custom fixingDate...");
+
+	    final CommonVars vars = new CommonVars();
+	    final Date fixingDate = vars.calendar.adjust(vars.today);
+	    final RateHelper[] helpers = new RateHelper[vars.deposits];
+	    for (int i = 0; i < vars.deposits; i++) {
+	        final Handle<Quote> r = new Handle<Quote>(vars.rates[i]);
+	        final IborIndex euribor = new Euribor(new Period(depositData[i].n, depositData[i].units),
+	                new Handle<YieldTermStructure>());
+	        helpers[i] = new DepositRateHelper(r, fixingDate, euribor);
+	    }
+
+	    final PiecewiseYieldCurve curve = new PiecewiseYieldCurve(
+	            ZeroYield.class, Linear.class, IterativeBootstrap.class,
+	            vars.settlement, helpers, new Actual365Fixed());
+	    final RelinkableHandle<YieldTermStructure> h = new RelinkableHandle<YieldTermStructure>();
+	    h.linkTo(curve);
+
+	    final double tolerance = 1.0e-9;
+	    for (int i = 0; i < vars.deposits; i++) {
+	        final Euribor index = new Euribor(new Period(depositData[i].n, depositData[i].units), h);
+	        final double expectedRate = depositData[i].rate / 100;
+	        final double estimatedRate = index.fixing(vars.today);
+	        if (Math.abs(expectedRate - estimatedRate) > tolerance) {
+	            throw new RuntimeException(String.format(
+	                    "%d %s deposit (testDepositForDates): expected=%.10f estimated=%.10f",
+	                    depositData[i].n,
+	                    depositData[i].units == TimeUnit.Weeks ? "week(s)" : "month(s)",
+	                    expectedRate, estimatedRate));
+	        }
+	    }
+	}
+
+	/**
+	 * Faithful port of {@code test-suite/piecewiseyieldcurve.cpp:2142}
+	 * {@code BOOST_AUTO_TEST_CASE(testFraForDates)}. Exercises the new dated
+	 * {@link FraRateHelper#FraRateHelper(Handle, Date, Date, org.jquantlib.indexes.IborIndex, org.jquantlib.termstructures.Pillar.Choice, Date, boolean)}
+	 * ctor (Phase1-closure-A7-D-562-fra) with {@code Pillar.LastRelevantDate},
+	 * no custom pillar, and {@code useIndexedCoupon=false} (forecast-rate path).
+	 * Round-trip via {@code ForwardRateAgreement.forwardRate()} to tolerance 1e-9.
+	 */
+	@Test
+	public void testFraForDates() {
+	    QL.info("Testing FraRateHelper with custom dates...");
+
+	    final CommonVars vars = new CommonVars();
+	    final Euribor6M euribor6m = new Euribor6M(new Handle<YieldTermStructure>());
+	    final RateHelper[] helpers = new RateHelper[vars.fras];
+	    for (int i = 0; i < vars.fras; i++) {
+	        final Handle<Quote> r = new Handle<Quote>(vars.fraRates[i]);
+	        final Date startDate = vars.calendar.advance(vars.settlement,
+	                fraData[i].n, fraData[i].units,
+	                euribor6m.businessDayConvention(), euribor6m.endOfMonth());
+	        final Date endDate = vars.calendar.advance(vars.settlement,
+	                fraData[i].n + 3, fraData[i].units,
+	                euribor6m.businessDayConvention(), euribor6m.endOfMonth());
+	        helpers[i] = new FraRateHelper(r, startDate, endDate, euribor6m,
+	                org.jquantlib.termstructures.Pillar.Choice.LastRelevantDate,
+	                null, false);
+	    }
+
+	    final PiecewiseYieldCurve curve = new PiecewiseYieldCurve(
+	            ZeroYield.class, Linear.class, IterativeBootstrap.class,
+	            vars.settlement, helpers, new Actual365Fixed());
+	    final RelinkableHandle<YieldTermStructure> h = new RelinkableHandle<YieldTermStructure>();
+	    h.linkTo(curve);
+	    final Euribor6M euribor6mCurved = new Euribor6M(h);
+
+	    // Round-trip check: with useIndexedCoupon=false the helper bootstraps the curve so that
+	    //   (discount(start)/discount(end)-1)/yearFraction(start,end) == quote
+	    // The Java ForwardRateAgreement.forwardRate() always uses index.fixing() (i.e. the
+	    // useIndexedCoupon=true path), which evaluates over the index's natural tenor and would
+	    // not match. We therefore reproduce the par-coupon approximation directly off the curve
+	    // — equivalent to C++ ForwardRateAgreement::calculateForwardRate() in the
+	    // useIndexedCoupon_==false branch (forwardrateagreement.cpp:102-107 in v1.42.1).
+	    final double tolerance = 1.0e-9;
+	    for (int i = 0; i < vars.fras; i++) {
+	        if (fraData[i].units != TimeUnit.Months) {
+	            throw new RuntimeException(
+	                    "fraData units must be Months (mirrors C++ BOOST_REQUIRE in testFraForDates)");
+	        }
+	        final Date start = vars.calendar.advance(vars.settlement,
+	                fraData[i].n, fraData[i].units,
+	                euribor6mCurved.businessDayConvention(), euribor6mCurved.endOfMonth());
+	        final Date end = vars.calendar.advance(vars.settlement,
+	                fraData[i].n + 3, fraData[i].units,
+	                euribor6mCurved.businessDayConvention(), euribor6mCurved.endOfMonth());
+	        final double dStart = curve.discount(start);
+	        final double dEnd = curve.discount(end);
+	        final double tau = euribor6mCurved.dayCounter().yearFraction(start, end);
+	        final double estimatedRate = (dStart / dEnd - 1.0) / tau;
+	        final double expectedRate = fraData[i].rate / 100;
+	        if (Math.abs(expectedRate - estimatedRate) > tolerance) {
+	            throw new RuntimeException(String.format(
+	                    "#%d FRA (testFraForDates): expected=%.10f estimated=%.10f",
+	                    i + 1, expectedRate, estimatedRate));
+	        }
+	    }
+	}
+
+	/**
+	 * Faithful port of {@code test-suite/piecewiseyieldcurve.cpp:2201}
+	 * {@code BOOST_AUTO_TEST_CASE(testDatedSwapHelpers)}. Exercises the new dated
+	 * {@link SwapRateHelper#SwapRateHelper(Handle, Date, Date, Calendar, Frequency, BusinessDayConvention, DayCounter, IborIndex)}
+	 * ctor (Phase1-closure-A7-D-562-datedswap). Five swaps with explicit start/end
+	 * dates anchored at evaluation date 28-Oct-2024; round-trip via
+	 * {@code MakeVanillaSwap.withEffective/Termination} and compare
+	 * {@code fairRate()} to the market quote at tolerance 1e-9.
+	 */
+	@Test
+	public void testDatedSwapHelpers() {
+	    QL.info("Testing dated swap rate helpers...");
+
+	    final Date today = new Date(28, Month.October, 2024);
+	    new Settings().setEvaluationDate(today);
+
+	    final Date[] startDates = {
+	            new Date(1, Month.November, 2024),
+	            new Date(15, Month.October, 2024),
+	            new Date(28, Month.October, 2024),
+	            new Date(4, Month.November, 2024),
+	            new Date(11, Month.October, 2024) };
+	    final Date[] endDates = {
+	            new Date(1, Month.November, 2025),
+	            new Date(15, Month.October, 2026),
+	            new Date(1, Month.November, 2029),
+	            new Date(4, Month.November, 2034),
+	            new Date(11, Month.October, 2044) };
+	    final double[] rates = { 4.54, 4.63, 4.99, 5.47, 5.89 };
+
+	    final Euribor6M euribor6m = new Euribor6M(new Handle<YieldTermStructure>());
+	    euribor6m.addFixing(new Date(9, Month.October, 2024), 0.0447);
+	    euribor6m.addFixing(new Date(11, Month.October, 2024), 0.0450);
+	    euribor6m.addFixing(new Date(24, Month.October, 2024), 0.0442);
+
+	    final Calendar calendar = new Target();
+	    final Frequency fixedLegFrequency = Frequency.Annual;
+	    final BusinessDayConvention fixedLegConvention = BusinessDayConvention.Unadjusted;
+	    final DayCounter fixedLegDayCounter = new Thirty360(Thirty360.Convention.BondBasis);
+
+	    final RateHelper[] helpers = new RateHelper[rates.length];
+	    for (int i = 0; i < rates.length; i++) {
+	        final Handle<Quote> r = new Handle<Quote>(new SimpleQuote(rates[i] / 100));
+	        helpers[i] = new SwapRateHelper(r, startDates[i], endDates[i], calendar,
+	                fixedLegFrequency, fixedLegConvention, fixedLegDayCounter, euribor6m);
+	    }
+
+	    final PiecewiseYieldCurve curve = new PiecewiseYieldCurve(
+	            ZeroYield.class, Linear.class, IterativeBootstrap.class,
+	            today, helpers, new Actual365Fixed());
+	    final RelinkableHandle<YieldTermStructure> h = new RelinkableHandle<YieldTermStructure>();
+	    h.linkTo(curve);
+	    final Euribor6M euribor6mCurved = new Euribor6M(h);
+
+	    final double tolerance = 1.0e-9;
+	    for (int i = 0; i < rates.length; i++) {
+	        final VanillaSwap swap = new MakeVanillaSwap(new Period(0, TimeUnit.Days), euribor6mCurved, 0.0)
+	                .withEffectiveDate(startDates[i])
+	                .withTerminationDate(endDates[i])
+	                .withFixedLegDayCount(fixedLegDayCounter)
+	                .withFixedLegTenor(new Period(fixedLegFrequency))
+	                .withFixedLegConvention(fixedLegConvention)
+	                .withFixedLegTerminationDateConvention(fixedLegConvention)
+	                .value();
+	        final double expectedRate = rates[i] / 100;
+	        final double estimatedRate = swap.fairRate();
+	        final double error = Math.abs(expectedRate - estimatedRate);
+	        if (error > tolerance) {
+	            throw new RuntimeException(String.format(
+	                    "swap from %s to %s (testDatedSwapHelpers): expected=%.10f estimated=%.10f error=%.3e",
+	                    startDates[i], endDates[i], expectedRate, estimatedRate, error));
+	        }
+	    }
+	}
+
+	/**
+	 * Faithful port of {@code test-suite/piecewiseyieldcurve.cpp:2020}
+	 * {@code BOOST_AUTO_TEST_CASE(testCustomFuturesHelpers)}. Exercises the new
+	 * {@code Futures.Type}-aware FuturesRateHelper ctors (Phase1-closure-A7-D-562-futures)
+	 * with {@code Futures.Type.Custom} so the IMM-date validation is bypassed
+	 * (custom start dates today+60, today+120, today+180). The curve must
+	 * round-trip each forward rate {@code (100-price)/100} to within 1e-8.
+	 */
+	@Test
+	public void testCustomFuturesHelpers() {
+	    QL.info("Testing futures rate helpers with custom dates...");
+
+	    final CommonVars vars = new CommonVars();
+	    new Settings().setEvaluationDate(vars.today);
+
+	    final BusinessDayConvention convention = BusinessDayConvention.ModifiedFollowing;
+	    final boolean endOfMonth = true;
+	    final DayCounter dayCounter = new Actual360();
+
+	    final Date startDate1 = vars.today.add(60);
+	    final double price1 = 97.0;
+	    final int length1 = 2;
+	    final RateHelper h1 = new FuturesRateHelper(price1, startDate1, length1, new Target(),
+	            convention, endOfMonth, dayCounter, 0.0, org.jquantlib.instruments.Futures.Type.Custom);
+
+	    final Date startDate2 = vars.today.add(120);
+	    final Date endDate2 = startDate2.add(45);
+	    final double price2 = 96.5;
+	    final RateHelper h2 = new FuturesRateHelper(price2, startDate2, endDate2, dayCounter, 0.0,
+	            org.jquantlib.instruments.Futures.Type.Custom);
+
+	    final Date startDate3 = vars.today.add(180);
+	    final IborIndex index = new Euribor3M(new Handle<YieldTermStructure>());
+	    final double price3 = 96.0;
+	    final RateHelper h3 = new FuturesRateHelper(price3, startDate3, index, 0.0,
+	            org.jquantlib.instruments.Futures.Type.Custom);
+
+	    final RateHelper[] helpers = new RateHelper[] { h1, h2, h3 };
+	    final PiecewiseYieldCurve curve = new PiecewiseYieldCurve(
+	            ForwardRate.class, BackwardFlat.class, IterativeBootstrap.class,
+	            vars.today, helpers, new Actual360());
+
+	    final double tolerance = 1.0e-8;
+
+	    final Date endDate1 = new Target().advance(startDate1, new Period(length1, TimeUnit.Months),
+	            convention, endOfMonth);
+	    double calculated = curve.forwardRate(startDate1, endDate1, dayCounter,
+	            org.jquantlib.termstructures.Compounding.Simple).rate();
+	    double expected = (100 - price1) / 100;
+	    if (Math.abs(expected - calculated) > tolerance) {
+	        throw new RuntimeException(String.format(
+	                "first helper (testCustomFuturesHelpers): expected=%.10f estimated=%.10f",
+	                expected, calculated));
+	    }
+
+	    calculated = curve.forwardRate(startDate2, endDate2, dayCounter,
+	            org.jquantlib.termstructures.Compounding.Simple).rate();
+	    expected = (100 - price2) / 100;
+	    if (Math.abs(expected - calculated) > tolerance) {
+	        throw new RuntimeException(String.format(
+	                "second helper (testCustomFuturesHelpers): expected=%.10f estimated=%.10f",
+	                expected, calculated));
+	    }
+
+	    final Date endDate3 = index.fixingCalendar().advance(startDate3, index.tenor(),
+	            index.businessDayConvention());
+	    calculated = curve.forwardRate(startDate3, endDate3, dayCounter,
+	            org.jquantlib.termstructures.Compounding.Simple).rate();
+	    expected = (100 - price3) / 100;
+	    if (Math.abs(expected - calculated) > tolerance) {
+	        throw new RuntimeException(String.format(
+	                "third helper (testCustomFuturesHelpers): expected=%.10f estimated=%.10f",
+	                expected, calculated));
+	    }
+	}
+
 }
