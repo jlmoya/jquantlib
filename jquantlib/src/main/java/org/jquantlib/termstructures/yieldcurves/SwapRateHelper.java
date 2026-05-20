@@ -57,6 +57,10 @@ public class SwapRateHelper extends RelativeDateRateHelper {
     protected final IborIndex iborIndex;
     protected final Handle< Quote > spread;
     protected final Period fwdStart;
+    /** Optional caller-supplied effective date (date-based ctor); null otherwise. */
+    protected final Date explicitStartDate;
+    /** Optional caller-supplied termination date (date-based ctor); null otherwise. */
+    protected final Date explicitEndDate;
     protected VanillaSwap swap;
     protected RelinkableHandle< YieldTermStructure > termStructureHandle = new RelinkableHandle< YieldTermStructure >(
             null);
@@ -85,6 +89,8 @@ public class SwapRateHelper extends RelativeDateRateHelper {
         this.iborIndex = swapIndex.iborIndex();
         this.spread = spread;
         this.fwdStart = fwdStart;
+        this.explicitStartDate = null;
+        this.explicitEndDate = null;
 
         this.iborIndex.addObserver(this);
         this.spread.addObserver(this);
@@ -119,6 +125,8 @@ public class SwapRateHelper extends RelativeDateRateHelper {
         this.iborIndex = iborIndex;
         this.spread = spread;
         this.fwdStart = fwdStart;
+        this.explicitStartDate = null;
+        this.explicitEndDate = null;
 
         this.iborIndex.addObserver(this);
         this.spread.addObserver(this);
@@ -153,6 +161,8 @@ public class SwapRateHelper extends RelativeDateRateHelper {
         this.iborIndex = iborIndex;
         this.spread = spread;
         this.fwdStart = fwdStart;
+        this.explicitStartDate = null;
+        this.explicitEndDate = null;
 
         this.iborIndex.addObserver(this);
         this.spread.addObserver(this);
@@ -180,6 +190,67 @@ public class SwapRateHelper extends RelativeDateRateHelper {
         this.iborIndex = swapIndex.iborIndex();
         this.spread = spread;
         this.fwdStart = fwdStart;
+        this.explicitStartDate = null;
+        this.explicitEndDate = null;
+
+        this.iborIndex.addObserver(this);
+        this.spread.addObserver(this);
+
+        initializeDates();
+    }
+
+    /**
+     * Dated SwapRateHelper ctor — mirrors C++ v1.42.1 ratehelpers.hpp:229-246
+     * + ratehelpers.cpp:501-526. Pins both effective and termination dates to
+     * caller-supplied absolutes; super-ctor flag {@code updateDates=false} prevents
+     * recomputation on evaluation-date change.
+     *
+     * @param rate market quote (handle)
+     * @param startDate effective date (absolute, caller-supplied)
+     * @param endDate termination date (absolute, caller-supplied)
+     * @param calendar swap calendar
+     * @param fixedFrequency fixed-leg frequency
+     * @param fixedConvention fixed-leg business-day convention
+     * @param fixedDayCount fixed-leg day-counter
+     * @param iborIndex floating-leg ibor index
+     */
+    public SwapRateHelper(final Handle< Quote > rate,
+            final Date startDate, final Date endDate,
+            final Calendar calendar,
+            final Frequency fixedFrequency,
+            final BusinessDayConvention fixedConvention,
+            final DayCounter fixedDayCount,
+            final IborIndex iborIndex) {
+        this(rate, startDate, endDate, calendar, fixedFrequency, fixedConvention,
+                fixedDayCount, iborIndex, new Handle< Quote >());
+    }
+
+    /**
+     * Dated SwapRateHelper ctor with spread — see
+     * {@link #SwapRateHelper(Handle, Date, Date, Calendar, Frequency, BusinessDayConvention, DayCounter, IborIndex)}.
+     */
+    public SwapRateHelper(final Handle< Quote > rate,
+            final Date startDate, final Date endDate,
+            final Calendar calendar,
+            final Frequency fixedFrequency,
+            final BusinessDayConvention fixedConvention,
+            final DayCounter fixedDayCount,
+            final IborIndex iborIndex,
+            final Handle< Quote > spread) {
+        super(rate, false); // updateDates=false: do NOT recompute dates on evaluation-date change
+        QL.require(fixedFrequency != Frequency.Once,
+                "fixedFrequency == Once is not supported when passing explicit startDate and endDate");
+
+        this.tenor = new Period(0, TimeUnit.Days); // not used when explicit dates supplied
+        this.calendar = calendar;
+        this.fixedConvention = fixedConvention;
+        this.fixedFrequency = fixedFrequency;
+        this.fixedDayCount = fixedDayCount;
+        this.iborIndex = iborIndex;
+        this.spread = spread;
+        this.fwdStart = new Period(0, TimeUnit.Days);
+        this.explicitStartDate = startDate;
+        this.explicitEndDate = endDate;
 
         this.iborIndex.addObserver(this);
         this.spread.addObserver(this);
@@ -201,10 +272,22 @@ public class SwapRateHelper extends RelativeDateRateHelper {
         final IborIndex clonedIborIndex = iborIndex.clone(this.termStructureHandle).currentLink();
 
         // do not pass the spread here, as it might be a Quote i.e. it can dynamically change
-        this.swap = new MakeVanillaSwap(tenor, clonedIborIndex, 0.0, fwdStart).withFixedLegDayCount(fixedDayCount)
-                .withFixedLegTenor(new Period(fixedFrequency)).withFixedLegConvention(fixedConvention)
-                .withFixedLegTerminationDateConvention(fixedConvention).withFixedLegCalendar(calendar)
-                .withFloatingLegCalendar(calendar).value();
+        // Mirrors C++ v1.42.1 ratehelpers.cpp:545-606: when explicit start/end dates are
+        // supplied (dated ctor), feed them to MakeVanillaSwap via withEffective/Termination.
+        MakeVanillaSwap mvs = new MakeVanillaSwap(tenor, clonedIborIndex, 0.0, fwdStart)
+                .withFixedLegDayCount(fixedDayCount)
+                .withFixedLegTenor(new Period(fixedFrequency))
+                .withFixedLegConvention(fixedConvention)
+                .withFixedLegTerminationDateConvention(fixedConvention)
+                .withFixedLegCalendar(calendar)
+                .withFloatingLegCalendar(calendar);
+        if ( this.explicitStartDate != null ) {
+            mvs = mvs.withEffectiveDate(this.explicitStartDate);
+        }
+        if ( this.explicitEndDate != null ) {
+            mvs = mvs.withTerminationDate(this.explicitEndDate);
+        }
+        this.swap = mvs.value();
 
         this.earliestDate = swap.startDate();
 
