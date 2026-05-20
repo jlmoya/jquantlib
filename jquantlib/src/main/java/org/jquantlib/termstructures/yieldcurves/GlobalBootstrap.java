@@ -34,7 +34,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.jquantlib.QL;
-import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.math.interpolations.Interpolation;
 import org.jquantlib.math.interpolations.Interpolation.Interpolator;
 import org.jquantlib.math.matrixutilities.Array;
@@ -217,7 +216,13 @@ public class GlobalBootstrap< Curve extends PiecewiseYieldCurve > implements Boo
                 aliveWeights.add(weights[i]);
             }
         }
-        QL.require(!alive.isEmpty(), "GlobalBootstrap: no alive instruments after baseDate");
+        // Align to v1.42.1 (ql/termstructures/globalbootstrap.hpp:246-254 + :290-294):
+        // C++ does NOT require aliveInstruments_ to be non-empty — when the caller passes
+        // an empty instrument list together with non-empty additionalHelpers /
+        // additionalDates (e.g. the second curve in
+        // testGlobalBootstrapInstrumentWeights@cpp:1742), the bootstrap proceeds and is
+        // anchored on additionalDates + additionalHelpers alone. The downstream
+        // dates.size() >= requiredPoints check below is the actual gate.
 
         // Step 1b: alive additional helpers
         final List< RateHelper > aliveAdditional = new ArrayList<>();
@@ -326,17 +331,15 @@ public class GlobalBootstrap< Curve extends PiecewiseYieldCurve > implements Boo
         QL.require(EndCriteria.succeeded(endType),
                 "global bootstrap failed to minimize to required accuracy: " + endType);
 
-        // Final check — residual must be within accuracy. Mirrors a defensive check from the inflation port.
-        final Array resid = cost.values(problem.currentValue());
-        double maxResid = 0.0;
-        for ( int i = 0; i < resid.size(); ++i ) {
-            maxResid = Math.max(maxResid, Math.abs(resid.get(i)));
-        }
-        if ( maxResid > Math.max(effectiveAccuracy * 1.0e3, 1.0e-6) ) {
-            throw new LibraryException(
-                    "GlobalBootstrap failed to converge: max residual = " + maxResid + " (accuracy = "
-                            + effectiveAccuracy + ", endCriteria = " + endType + ")");
-        }
+        // Align to v1.42.1 (ql/termstructures/globalbootstrap.hpp:425-428): C++ does NOT
+        // perform a post-minimize residual check — the EndCriteria.succeeded(endType)
+        // guard above is the sole convergence gate. The previously inserted defensive
+        // residual check (maxResid > max(accuracy*1e3, 1e-6) → throw) was added during the
+        // initial port and is incorrect for the over-determined case (e.g. two helpers at
+        // the same pillar date with different quotes weighted by instrumentWeights, which
+        // is the explicit purpose of testGlobalBootstrapInstrumentWeights@cpp:1742): the
+        // optimal solution leaves a non-zero residual proportional to the quote spread,
+        // by design. Removed to match upstream.
 
         validCurve = true;
     }
