@@ -48,7 +48,7 @@ import org.jquantlib.processes.GeneralizedBlackScholesProcess;
  *
  * @author JQuantLib
  */
-public final class MCEuropeanEngine extends MCVanillaEngine {
+public class MCEuropeanEngine extends MCVanillaEngine {
 
     public MCEuropeanEngine(final GeneralizedBlackScholesProcess process, final int timeSteps,
             final int timeStepsPerYear, final boolean brownianBridge, final boolean antitheticVariate,
