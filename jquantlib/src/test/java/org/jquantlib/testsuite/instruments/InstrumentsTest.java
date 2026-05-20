@@ -53,17 +53,16 @@ import org.junit.Test;
 /**
  * Mirrors {@code test-suite/instruments.cpp} (QuantLib v1.42.1).
  *
- * <h2>Phase1-cert-D5-C-R4 audit</h2>
+ * <h2>Phase1-cert-D5-C-R4 + Phase1-closure-A1-553-part2 audit</h2>
  * <ul>
  *   <li>{@code testObservable} — present below.</li>
- *   <li>{@code testCompositeWhenShiftingDates} — BLOCKED: requires
- *       {@code org.jquantlib.instruments.CompositeInstrument} which is
- *       not ported.  EuropeanOption / AnalyticEuropeanEngine /
- *       EuropeanExercise all exist; only the CompositeInstrument
- *       container is missing.  Estimated 200 LOC for the class plus
- *       ~50 LOC test.  Tracked as Phase 2 follow-up (A4 trigger: new
- *       class outside the 61 existing packages — instruments/ exists
- *       but CompositeInstrument doesn't).</li>
+ *   <li>{@code testCompositeWhenShiftingDates} — production-side BLOCKED:
+ *       {@link org.jquantlib.instruments.CompositeInstrument} is now ported
+ *       (Phase 1 closure A1-553-part2) but the test surfaces a Java observer-
+ *       chain quirk: after the composite caches NPV=0 (when expired) and the
+ *       evaluation date is rolled back, the LazyObject does not invalidate
+ *       its cache despite `alwaysForwardNotifications()` being set on each
+ *       component. Tracked as A3-style observer-propagation defect; see TODO.</li>
  * </ul>
  */
 public class InstrumentsTest {
