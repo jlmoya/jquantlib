@@ -1271,8 +1271,10 @@ public class PiecewiseYieldCurveTest {
 	//   Same GlobalBootstrap blocker; also needs PiecewiseSpreadYieldCurve
 	//   (Java has none — only InterpolatedPiecewiseZeroSpreadedTermStructure).
 	//
-	// testGlobalBootstrapInstrumentWeights (cpp:1742) — BLOCKED
-	//   Same GlobalBootstrap blocker.
+	// testGlobalBootstrapInstrumentWeights (cpp:1742) — PORTED in Phase1-closure-A6-B-562
+	//   See @Test testGlobalBootstrapInstrumentWeights() below. Required an
+	//   align(GlobalBootstrap) commit to remove two non-upstream defensive guards
+	//   (post-minimize residual check + !alive.isEmpty() assertion).
 	//
 	// testPiecewiseSpreadYieldCurve (cpp:1895) — BLOCKED
 	//   Requires PiecewiseSpreadYieldCurve (not in Java).
