@@ -45,7 +45,11 @@ abstract class QdPutCallParityEngine extends VanillaOption.EngineImpl {
         this.a = (OneAssetOption.ArgumentsImpl) arguments_;
         this.r = (OneAssetOption.ResultsImpl) results_;
         this.process_ = process;
-        this.process_.addObserver(this);
+        // C++ default-constructs a null shared_ptr in the boundary-only test paths; we must
+        // tolerate a null process when only static/boundary methods are used.
+        if (this.process_ != null) {
+            this.process_.addObserver(this);
+        }
     }
 
     /** Calculate the put price (American QD-family engines call this). */
