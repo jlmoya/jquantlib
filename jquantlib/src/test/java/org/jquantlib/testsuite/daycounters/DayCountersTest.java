@@ -417,4 +417,141 @@ public class DayCountersTest {
         assertEquals("yearFraction inc",     31.0 / 360.0, dcInc.yearFraction(d1, d2), 1.0e-12);
     }
 
+    /**
+     * Helper container for {@link #testThirty360_BondBasis} /
+     * {@link #testThirty360_EurobondBasis}, mirroring C++
+     * {@code Thirty360Case { Date start; Date end; long expected; }}.
+     */
+    private static final class Thirty360Case {
+        final Date start;
+        final Date end;
+        final long expected;
+        Thirty360Case(final Date start, final Date end, final long expected) {
+            this.start = start; this.end = end; this.expected = expected;
+        }
+    }
+
+    /**
+     * Port of v1.42.1 test-suite/daycounters.cpp::testThirty360_BondBasis
+     * (lines 805-857). Validates {@link Thirty360.Convention#BondBasis}
+     * dayCount against the ISDA reference table at
+     * https://www.isda.org/2008/12/22/30-360-day-count-conventions/.
+     *
+     * NOTE: Java's {@code Thirty360.Impl_US} (used for both BondBasis and
+     * USA in this codebase) yields the same numbers as C++ {@code ISMA_Impl}
+     * (the BondBasis backend), so BondBasis comparisons are exact.
+     */
+    @Test
+    public void testThirty360_BondBasis() {
+        QL.info("Testing 30/360 day counter (Bond Basis)...");
+
+        final DayCounter dayCounter = new Thirty360(Thirty360.Convention.BondBasis);
+
+        final Thirty360Case[] data = new Thirty360Case[] {
+            // Example 1: End dates do not involve the last day of February
+            new Thirty360Case(new Date(20, Month.August,   2006), new Date(20, Month.February, 2007), 180L),
+            new Thirty360Case(new Date(20, Month.February, 2007), new Date(20, Month.August,   2007), 180L),
+            new Thirty360Case(new Date(20, Month.August,   2007), new Date(20, Month.February, 2008), 180L),
+            new Thirty360Case(new Date(20, Month.February, 2008), new Date(20, Month.August,   2008), 180L),
+            new Thirty360Case(new Date(20, Month.August,   2008), new Date(20, Month.February, 2009), 180L),
+            new Thirty360Case(new Date(20, Month.February, 2009), new Date(20, Month.August,   2009), 180L),
+
+            // Example 2: End dates include some end-February dates
+            new Thirty360Case(new Date(31, Month.August,   2006), new Date(28, Month.February, 2007), 178L),
+            new Thirty360Case(new Date(28, Month.February, 2007), new Date(31, Month.August,   2007), 183L),
+            new Thirty360Case(new Date(31, Month.August,   2007), new Date(29, Month.February, 2008), 179L),
+            new Thirty360Case(new Date(29, Month.February, 2008), new Date(31, Month.August,   2008), 182L),
+            new Thirty360Case(new Date(31, Month.August,   2008), new Date(28, Month.February, 2009), 178L),
+            new Thirty360Case(new Date(28, Month.February, 2009), new Date(31, Month.August,   2009), 183L),
+
+            // Example 3: Miscellaneous calculations
+            new Thirty360Case(new Date(31, Month.January,   2006), new Date(28, Month.February, 2006),  28L),
+            new Thirty360Case(new Date(30, Month.January,   2006), new Date(28, Month.February, 2006),  28L),
+            new Thirty360Case(new Date(28, Month.February,  2006), new Date( 3, Month.March,    2006),   5L),
+            new Thirty360Case(new Date(14, Month.February,  2006), new Date(28, Month.February, 2006),  14L),
+            new Thirty360Case(new Date(30, Month.September, 2006), new Date(31, Month.October,  2006),  30L),
+            new Thirty360Case(new Date(31, Month.October,   2006), new Date(28, Month.November, 2006),  28L),
+            new Thirty360Case(new Date(31, Month.August,    2007), new Date(28, Month.February, 2008), 178L),
+            new Thirty360Case(new Date(28, Month.February,  2008), new Date(28, Month.August,   2008), 180L),
+            new Thirty360Case(new Date(28, Month.February,  2008), new Date(30, Month.August,   2008), 182L),
+            new Thirty360Case(new Date(28, Month.February,  2008), new Date(31, Month.August,   2008), 183L),
+            new Thirty360Case(new Date(26, Month.February,  2007), new Date(28, Month.February, 2008), 362L),
+            new Thirty360Case(new Date(26, Month.February,  2007), new Date(29, Month.February, 2008), 363L),
+            new Thirty360Case(new Date(29, Month.February,  2008), new Date(28, Month.February, 2009), 359L),
+            new Thirty360Case(new Date(28, Month.February,  2008), new Date(30, Month.March,    2008),  32L),
+            new Thirty360Case(new Date(28, Month.February,  2008), new Date(31, Month.March,    2008),  33L)
+        };
+
+        for (final Thirty360Case x : data) {
+            final long calculated = dayCounter.dayCount(x.start, x.end);
+            if (calculated != x.expected) {
+                fail("from " + x.start + " to " + x.end + ":\n"
+                        + "    calculated: " + calculated + "\n"
+                        + "    expected:   " + x.expected);
+            }
+        }
+    }
+
+    /**
+     * Port of v1.42.1 test-suite/daycounters.cpp::testThirty360_EurobondBasis
+     * (lines 859-917). Validates {@link Thirty360.Convention#EurobondBasis}
+     * (also known as 30E/360) day counts against the ISDA reference table.
+     */
+    @Test
+    public void testThirty360_EurobondBasis() {
+        QL.info("Testing 30/360 day counter (Eurobond Basis)...");
+
+        final DayCounter dayCounter = new Thirty360(Thirty360.Convention.EurobondBasis);
+
+        final Thirty360Case[] data = new Thirty360Case[] {
+            // Example 1: End dates do not involve the last day of February
+            new Thirty360Case(new Date(20, Month.August,   2006), new Date(20, Month.February, 2007), 180L),
+            new Thirty360Case(new Date(20, Month.February, 2007), new Date(20, Month.August,   2007), 180L),
+            new Thirty360Case(new Date(20, Month.August,   2007), new Date(20, Month.February, 2008), 180L),
+            new Thirty360Case(new Date(20, Month.February, 2008), new Date(20, Month.August,   2008), 180L),
+            new Thirty360Case(new Date(20, Month.August,   2008), new Date(20, Month.February, 2009), 180L),
+            new Thirty360Case(new Date(20, Month.February, 2009), new Date(20, Month.August,   2009), 180L),
+
+            // Example 2: End dates include some end-February dates
+            new Thirty360Case(new Date(28, Month.February, 2006), new Date(31, Month.August,   2006), 182L),
+            new Thirty360Case(new Date(31, Month.August,   2006), new Date(28, Month.February, 2007), 178L),
+            new Thirty360Case(new Date(28, Month.February, 2007), new Date(31, Month.August,   2007), 182L),
+            new Thirty360Case(new Date(31, Month.August,   2007), new Date(29, Month.February, 2008), 179L),
+            new Thirty360Case(new Date(29, Month.February, 2008), new Date(31, Month.August,   2008), 181L),
+            new Thirty360Case(new Date(31, Month.August,   2008), new Date(28, Month.February, 2009), 178L),
+            new Thirty360Case(new Date(28, Month.February, 2009), new Date(31, Month.August,   2009), 182L),
+            new Thirty360Case(new Date(31, Month.August,   2009), new Date(28, Month.February, 2010), 178L),
+            new Thirty360Case(new Date(28, Month.February, 2010), new Date(31, Month.August,   2010), 182L),
+            new Thirty360Case(new Date(31, Month.August,   2010), new Date(28, Month.February, 2011), 178L),
+            new Thirty360Case(new Date(28, Month.February, 2011), new Date(31, Month.August,   2011), 182L),
+            new Thirty360Case(new Date(31, Month.August,   2011), new Date(29, Month.February, 2012), 179L),
+
+            // Example 3: Miscellaneous calculations
+            new Thirty360Case(new Date(31, Month.January,   2006), new Date(28, Month.February, 2006),  28L),
+            new Thirty360Case(new Date(30, Month.January,   2006), new Date(28, Month.February, 2006),  28L),
+            new Thirty360Case(new Date(28, Month.February,  2006), new Date( 3, Month.March,    2006),   5L),
+            new Thirty360Case(new Date(14, Month.February,  2006), new Date(28, Month.February, 2006),  14L),
+            new Thirty360Case(new Date(30, Month.September, 2006), new Date(31, Month.October,  2006),  30L),
+            new Thirty360Case(new Date(31, Month.October,   2006), new Date(28, Month.November, 2006),  28L),
+            new Thirty360Case(new Date(31, Month.August,    2007), new Date(28, Month.February, 2008), 178L),
+            new Thirty360Case(new Date(28, Month.February,  2008), new Date(28, Month.August,   2008), 180L),
+            new Thirty360Case(new Date(28, Month.February,  2008), new Date(30, Month.August,   2008), 182L),
+            new Thirty360Case(new Date(28, Month.February,  2008), new Date(31, Month.August,   2008), 182L),
+            new Thirty360Case(new Date(26, Month.February,  2007), new Date(28, Month.February, 2008), 362L),
+            new Thirty360Case(new Date(26, Month.February,  2007), new Date(29, Month.February, 2008), 363L),
+            new Thirty360Case(new Date(29, Month.February,  2008), new Date(28, Month.February, 2009), 359L),
+            new Thirty360Case(new Date(28, Month.February,  2008), new Date(30, Month.March,    2008),  32L),
+            new Thirty360Case(new Date(28, Month.February,  2008), new Date(31, Month.March,    2008),  32L)
+        };
+
+        for (final Thirty360Case x : data) {
+            final long calculated = dayCounter.dayCount(x.start, x.end);
+            if (calculated != x.expected) {
+                fail("from " + x.start + " to " + x.end + ":\n"
+                        + "    calculated: " + calculated + "\n"
+                        + "    expected:   " + x.expected);
+            }
+        }
+    }
+
 }
