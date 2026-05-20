@@ -102,4 +102,75 @@ public class SphereCylinderOptimizerTest {
         assertArrayLoose("helperClosest_fullIter", y,
                 REF.getCase("helperClosest_fullIter").expectedArray());
     }
+
+    /**
+     * Port of v1.42.1 {@code test-suite/marketmodel_smmcaplethomocalibration.cpp}
+     * {@code BOOST_AUTO_TEST_CASE(testSphereCylinder)} (lines 512-604).
+     *
+     * <p>Verifies {@link SphereCylinderOptimizer#findClosest} and {@link SphereCylinderOptimizer#findByProjection}
+     * on two configurations:
+     * <ul>
+     *   <li>Case 1: degenerate exact case where (R=1, S=0.5, alpha=1.5, Z=(1/sqrt(3))*3) →
+     *       both methods return (1, 0, 0) with errorTol 1e-12.</li>
+     *   <li>Case 2: (R=5, S=1, alpha=1, Z=(1, 2, sqrt(20))) →
+     *       findClosest returns (1.03306, 0.999453, 4.78893) with errorTol 1e-4,
+     *       findByProjection returns (1, 1, sqrt(23)) with errorTol 1e-4.</li>
+     * </ul>
+     * Java implementation reproduces all six expected values within the C++ tolerances.
+     */
+    @Test
+    public void testSphereCylinder() {
+        // Case 1: degenerate exact case — projection point lies on the intersection circle.
+        {
+            final double R = 1.0;
+            final double S = 0.5;
+            final double alpha = 1.5;
+            final double inv3 = 1.0 / Math.sqrt(3.0);
+            final SphereCylinderOptimizer opt =
+                    new SphereCylinderOptimizer(R, S, alpha, inv3, inv3, inv3);
+            final int maxIterations = 100;
+            final double tolerance = 1e-8;
+            final double[] y = new double[3];
+            opt.findClosest(maxIterations, tolerance, y);
+
+            final double errorTol = 1e-12;
+            assertEquals("Case1 findClosest y1", 1.0, y[0], errorTol);
+            assertEquals("Case1 findClosest y2", 0.0, y[1], errorTol);
+            assertEquals("Case1 findClosest y3", 0.0, y[2], errorTol);
+
+            opt.findByProjection(y);
+            assertEquals("Case1 findByProjection y1", 1.0, y[0], errorTol);
+            assertEquals("Case1 findByProjection y2", 0.0, y[1], errorTol);
+            assertEquals("Case1 findByProjection y3", 0.0, y[2], errorTol);
+        }
+
+        // Case 2: generic — C++ test uses errorTol = 1e-4 (loose by 1bp tier).
+        {
+            final double R = 5.0;
+            final double S = 1.0;
+            final double alpha = 1.0;
+            final double Z1 = 1.0;
+            final double Z2 = 2.0;
+            final double Z3 = Math.sqrt(20.0);
+            final SphereCylinderOptimizer opt =
+                    new SphereCylinderOptimizer(R, S, alpha, Z1, Z2, Z3);
+            final int maxIterations = 100;
+            final double tolerance = 1e-8;
+            final double[] y = new double[3];
+            opt.findClosest(maxIterations, tolerance, y);
+
+            // matches v1.42.1 expected values 1.03306, 0.999453, 4.78893 within 1e-4.
+            // Loose-tier tolerance justified inline: C++ test prescribes 1e-4
+            // (golden-section convergence at 1e-8 limits attainable precision).
+            final double errorTol = 1e-4;
+            assertEquals("Case2 findClosest y1", 1.03306, y[0], errorTol);
+            assertEquals("Case2 findClosest y2", 0.999453, y[1], errorTol);
+            assertEquals("Case2 findClosest y3", 4.78893, y[2], errorTol);
+
+            opt.findByProjection(y);
+            assertEquals("Case2 findByProjection y1", 1.0, y[0], errorTol);
+            assertEquals("Case2 findByProjection y2", 1.0, y[1], errorTol);
+            assertEquals("Case2 findByProjection y3", Math.sqrt(23.0), y[2], errorTol);
+        }
+    }
 }
