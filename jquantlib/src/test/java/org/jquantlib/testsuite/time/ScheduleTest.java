@@ -519,6 +519,279 @@ public class ScheduleTest {
                 new Date(10, Month.August, 1998)));
     }
 
+    //
+    // CDS-rule helpers — mirror C++ schedule.cpp:393-427 (namespace CdsTests).
+    //
+
+    private static Schedule makeCdsSchedule(final Date from, final Date to, final DateGeneration.Rule rule) {
+        return new MakeSchedule()
+                .from(from)
+                .to(to)
+                .withCalendar(new WeekendsOnly())
+                .withTenor(new Period(3, TimeUnit.Months))
+                .withConvention(BusinessDayConvention.Following)
+                .withTerminationDateConvention(BusinessDayConvention.Unadjusted)
+                .withRule(rule)
+                .schedule();
+    }
+
+    /**
+     * Mirror of C++ schedule.cpp:407-427 CdsTests::testCDSConventions: for each input (tradeDate, tenor) the expected
+     * (startDate, endDate) pair must equal both cdsMaturity-derived maturity and schedule.startDate()/endDate().
+     */
+    private static void runCDSConventions(final List<CdsInput> inputs, final DateGeneration.Rule rule) {
+        for (final CdsInput input : inputs) {
+            final Date from = input.from;
+            final Period tenor = input.tenor;
+            final Date maturity = CreditDefaultSwap.cdsMaturity(from, tenor, rule);
+            final Date expEnd = input.expEnd;
+            assertEquals("cdsMaturity(" + from + ", " + tenor + ", " + rule + ")", expEnd, maturity);
+            final Schedule s = makeCdsSchedule(from, maturity, rule);
+            final Date expStart = input.expStart;
+            assertEquals("startDate (" + from + ", " + tenor + ", " + rule + ")", expStart, s.startDate());
+            assertEquals("endDate (" + from + ", " + tenor + ", " + rule + ")", expEnd, s.endDate());
+        }
+    }
+
+    private static final class CdsInput {
+        final Date from;
+        final Period tenor;
+        final Date expStart;
+        final Date expEnd;
+        CdsInput(final Date from, final Period tenor, final Date expStart, final Date expEnd) {
+            this.from = from; this.tenor = tenor; this.expStart = expStart; this.expEnd = expEnd;
+        }
+    }
+
+    /** Faithful port of {@code test-suite/schedule.cpp:430} {@code BOOST_AUTO_TEST_CASE(testCDS2015Convention)}.
+     *  CDS2015 semi-annual rolling convention — tests cdsMaturity + makeCdsSchedule for trade dates 12-Dec-2016,
+     *  1-Mar-2017, 20-Mar-2017 with 5Y tenor. */
+    @Test
+    public void testCDS2015Convention() {
+        final DateGeneration.Rule rule = DateGeneration.Rule.CDS2015;
+        final Period tenor = new Period(5, TimeUnit.Years);
+
+        // From September 20th 2016 to March 19th 2017 of the next year, end date is December 20th 2021 for a 5 year CDS.
+        Date tradeDate = new Date(12, Month.December, 2016);
+        Date maturity = CreditDefaultSwap.cdsMaturity(tradeDate, tenor, rule);
+        Date expStart = new Date(20, Month.September, 2016);
+        Date expMaturity = new Date(20, Month.December, 2021);
+        assertEquals(expMaturity, maturity);
+        Schedule s = makeCdsSchedule(tradeDate, maturity, rule);
+        assertEquals(expStart, s.startDate());
+        assertEquals(expMaturity, s.endDate());
+
+        // 12 Dec 2016 + 5Y = 12 Dec 2021, constructor uses next allowable CDS date i.e. 20 Dec 2021 — same as above.
+        maturity = tradeDate.add(tenor);
+        s = makeCdsSchedule(tradeDate, maturity, rule);
+        assertEquals(expStart, s.startDate());
+        assertEquals(expMaturity, s.endDate());
+
+        // Trade date 1 Mar 2017, cdsMaturity gives the same maturity.
+        tradeDate = new Date(1, Month.March, 2017);
+        maturity = CreditDefaultSwap.cdsMaturity(tradeDate, tenor, rule);
+        assertEquals(expMaturity, maturity);
+        s = makeCdsSchedule(tradeDate, maturity, rule);
+        expStart = new Date(20, Month.December, 2016);
+        assertEquals(expStart, s.startDate());
+        assertEquals(expMaturity, s.endDate());
+
+        // 1 Mar 2017 + 5Y = 1 Mar 2022 — constructor uses 20 Mar 2022; update expected.
+        maturity = tradeDate.add(tenor);
+        s = makeCdsSchedule(tradeDate, maturity, rule);
+        assertEquals(expStart, s.startDate());
+        expMaturity = new Date(20, Month.March, 2022);
+        assertEquals(expMaturity, s.endDate());
+
+        // From 20-Mar-2017 to 19-Sep-2017, end is 20-Jun-2022 for a 5Y CDS.
+        tradeDate = new Date(20, Month.March, 2017);
+        maturity = CreditDefaultSwap.cdsMaturity(tradeDate, tenor, rule);
+        expStart = new Date(20, Month.March, 2017);
+        expMaturity = new Date(20, Month.June, 2022);
+        assertEquals(expMaturity, maturity);
+        s = makeCdsSchedule(tradeDate, maturity, rule);
+        assertEquals(expStart, s.startDate());
+        assertEquals(expMaturity, s.endDate());
+    }
+
+    /** Faithful port of {@code test-suite/schedule.cpp:487} {@code BOOST_AUTO_TEST_CASE(testCDS2015ConventionGrid)}.
+     *  ISDA-spec grid of 72 (tradeDate, tenor) -> (startDate, endDate) inputs for CDS2015. */
+    @Test
+    public void testCDS2015ConventionGrid() {
+        final Period p3M = new Period(3, TimeUnit.Months);
+        final Period p6M = new Period(6, TimeUnit.Months);
+        final Period p9M = new Period(9, TimeUnit.Months);
+        final Period p1Y = new Period(1, TimeUnit.Years);
+        final Period p5Y = new Period(5, TimeUnit.Years);
+        final Period p0M = new Period(0, TimeUnit.Months);
+        final List<CdsInput> inputs = new ArrayList<CdsInput>();
+        // 3M tenor block
+        inputs.add(new CdsInput(new Date(19, Month.March, 2016), p3M, new Date(21, Month.December, 2015), new Date(20, Month.March, 2016)));
+        inputs.add(new CdsInput(new Date(20, Month.March, 2016), p3M, new Date(21, Month.December, 2015), new Date(20, Month.September, 2016)));
+        inputs.add(new CdsInput(new Date(21, Month.March, 2016), p3M, new Date(21, Month.March, 2016), new Date(20, Month.September, 2016)));
+        inputs.add(new CdsInput(new Date(19, Month.June, 2016), p3M, new Date(21, Month.March, 2016), new Date(20, Month.September, 2016)));
+        inputs.add(new CdsInput(new Date(20, Month.June, 2016), p3M, new Date(20, Month.June, 2016), new Date(20, Month.September, 2016)));
+        inputs.add(new CdsInput(new Date(21, Month.June, 2016), p3M, new Date(20, Month.June, 2016), new Date(20, Month.September, 2016)));
+        inputs.add(new CdsInput(new Date(19, Month.September, 2016), p3M, new Date(20, Month.June, 2016), new Date(20, Month.September, 2016)));
+        inputs.add(new CdsInput(new Date(20, Month.September, 2016), p3M, new Date(20, Month.September, 2016), new Date(20, Month.March, 2017)));
+        inputs.add(new CdsInput(new Date(21, Month.September, 2016), p3M, new Date(20, Month.September, 2016), new Date(20, Month.March, 2017)));
+        inputs.add(new CdsInput(new Date(19, Month.December, 2016), p3M, new Date(20, Month.September, 2016), new Date(20, Month.March, 2017)));
+        inputs.add(new CdsInput(new Date(20, Month.December, 2016), p3M, new Date(20, Month.December, 2016), new Date(20, Month.March, 2017)));
+        inputs.add(new CdsInput(new Date(21, Month.December, 2016), p3M, new Date(20, Month.December, 2016), new Date(20, Month.March, 2017)));
+        // 6M tenor block
+        inputs.add(new CdsInput(new Date(19, Month.March, 2016), p6M, new Date(21, Month.December, 2015), new Date(20, Month.June, 2016)));
+        inputs.add(new CdsInput(new Date(20, Month.March, 2016), p6M, new Date(21, Month.December, 2015), new Date(20, Month.December, 2016)));
+        inputs.add(new CdsInput(new Date(21, Month.March, 2016), p6M, new Date(21, Month.March, 2016), new Date(20, Month.December, 2016)));
+        inputs.add(new CdsInput(new Date(19, Month.June, 2016), p6M, new Date(21, Month.March, 2016), new Date(20, Month.December, 2016)));
+        inputs.add(new CdsInput(new Date(20, Month.June, 2016), p6M, new Date(20, Month.June, 2016), new Date(20, Month.December, 2016)));
+        inputs.add(new CdsInput(new Date(21, Month.June, 2016), p6M, new Date(20, Month.June, 2016), new Date(20, Month.December, 2016)));
+        inputs.add(new CdsInput(new Date(19, Month.September, 2016), p6M, new Date(20, Month.June, 2016), new Date(20, Month.December, 2016)));
+        inputs.add(new CdsInput(new Date(20, Month.September, 2016), p6M, new Date(20, Month.September, 2016), new Date(20, Month.June, 2017)));
+        inputs.add(new CdsInput(new Date(21, Month.September, 2016), p6M, new Date(20, Month.September, 2016), new Date(20, Month.June, 2017)));
+        inputs.add(new CdsInput(new Date(19, Month.December, 2016), p6M, new Date(20, Month.September, 2016), new Date(20, Month.June, 2017)));
+        inputs.add(new CdsInput(new Date(20, Month.December, 2016), p6M, new Date(20, Month.December, 2016), new Date(20, Month.June, 2017)));
+        inputs.add(new CdsInput(new Date(21, Month.December, 2016), p6M, new Date(20, Month.December, 2016), new Date(20, Month.June, 2017)));
+        // 9M tenor block
+        inputs.add(new CdsInput(new Date(19, Month.March, 2016), p9M, new Date(21, Month.December, 2015), new Date(20, Month.September, 2016)));
+        inputs.add(new CdsInput(new Date(20, Month.March, 2016), p9M, new Date(21, Month.December, 2015), new Date(20, Month.March, 2017)));
+        inputs.add(new CdsInput(new Date(21, Month.March, 2016), p9M, new Date(21, Month.March, 2016), new Date(20, Month.March, 2017)));
+        inputs.add(new CdsInput(new Date(19, Month.June, 2016), p9M, new Date(21, Month.March, 2016), new Date(20, Month.March, 2017)));
+        inputs.add(new CdsInput(new Date(20, Month.June, 2016), p9M, new Date(20, Month.June, 2016), new Date(20, Month.March, 2017)));
+        inputs.add(new CdsInput(new Date(21, Month.June, 2016), p9M, new Date(20, Month.June, 2016), new Date(20, Month.March, 2017)));
+        inputs.add(new CdsInput(new Date(19, Month.September, 2016), p9M, new Date(20, Month.June, 2016), new Date(20, Month.March, 2017)));
+        inputs.add(new CdsInput(new Date(20, Month.September, 2016), p9M, new Date(20, Month.September, 2016), new Date(20, Month.September, 2017)));
+        inputs.add(new CdsInput(new Date(21, Month.September, 2016), p9M, new Date(20, Month.September, 2016), new Date(20, Month.September, 2017)));
+        inputs.add(new CdsInput(new Date(19, Month.December, 2016), p9M, new Date(20, Month.September, 2016), new Date(20, Month.September, 2017)));
+        inputs.add(new CdsInput(new Date(20, Month.December, 2016), p9M, new Date(20, Month.December, 2016), new Date(20, Month.September, 2017)));
+        inputs.add(new CdsInput(new Date(21, Month.December, 2016), p9M, new Date(20, Month.December, 2016), new Date(20, Month.September, 2017)));
+        // 1Y tenor block
+        inputs.add(new CdsInput(new Date(19, Month.March, 2016), p1Y, new Date(21, Month.December, 2015), new Date(20, Month.December, 2016)));
+        inputs.add(new CdsInput(new Date(20, Month.March, 2016), p1Y, new Date(21, Month.December, 2015), new Date(20, Month.June, 2017)));
+        inputs.add(new CdsInput(new Date(21, Month.March, 2016), p1Y, new Date(21, Month.March, 2016), new Date(20, Month.June, 2017)));
+        inputs.add(new CdsInput(new Date(19, Month.June, 2016), p1Y, new Date(21, Month.March, 2016), new Date(20, Month.June, 2017)));
+        inputs.add(new CdsInput(new Date(20, Month.June, 2016), p1Y, new Date(20, Month.June, 2016), new Date(20, Month.June, 2017)));
+        inputs.add(new CdsInput(new Date(21, Month.June, 2016), p1Y, new Date(20, Month.June, 2016), new Date(20, Month.June, 2017)));
+        inputs.add(new CdsInput(new Date(19, Month.September, 2016), p1Y, new Date(20, Month.June, 2016), new Date(20, Month.June, 2017)));
+        inputs.add(new CdsInput(new Date(20, Month.September, 2016), p1Y, new Date(20, Month.September, 2016), new Date(20, Month.December, 2017)));
+        inputs.add(new CdsInput(new Date(21, Month.September, 2016), p1Y, new Date(20, Month.September, 2016), new Date(20, Month.December, 2017)));
+        inputs.add(new CdsInput(new Date(19, Month.December, 2016), p1Y, new Date(20, Month.September, 2016), new Date(20, Month.December, 2017)));
+        inputs.add(new CdsInput(new Date(20, Month.December, 2016), p1Y, new Date(20, Month.December, 2016), new Date(20, Month.December, 2017)));
+        inputs.add(new CdsInput(new Date(21, Month.December, 2016), p1Y, new Date(20, Month.December, 2016), new Date(20, Month.December, 2017)));
+        // 5Y tenor block
+        inputs.add(new CdsInput(new Date(19, Month.March, 2016), p5Y, new Date(21, Month.December, 2015), new Date(20, Month.December, 2020)));
+        inputs.add(new CdsInput(new Date(20, Month.March, 2016), p5Y, new Date(21, Month.December, 2015), new Date(20, Month.June, 2021)));
+        inputs.add(new CdsInput(new Date(21, Month.March, 2016), p5Y, new Date(21, Month.March, 2016), new Date(20, Month.June, 2021)));
+        inputs.add(new CdsInput(new Date(19, Month.June, 2016), p5Y, new Date(21, Month.March, 2016), new Date(20, Month.June, 2021)));
+        inputs.add(new CdsInput(new Date(20, Month.June, 2016), p5Y, new Date(20, Month.June, 2016), new Date(20, Month.June, 2021)));
+        inputs.add(new CdsInput(new Date(21, Month.June, 2016), p5Y, new Date(20, Month.June, 2016), new Date(20, Month.June, 2021)));
+        inputs.add(new CdsInput(new Date(19, Month.September, 2016), p5Y, new Date(20, Month.June, 2016), new Date(20, Month.June, 2021)));
+        inputs.add(new CdsInput(new Date(20, Month.September, 2016), p5Y, new Date(20, Month.September, 2016), new Date(20, Month.December, 2021)));
+        inputs.add(new CdsInput(new Date(21, Month.September, 2016), p5Y, new Date(20, Month.September, 2016), new Date(20, Month.December, 2021)));
+        inputs.add(new CdsInput(new Date(19, Month.December, 2016), p5Y, new Date(20, Month.September, 2016), new Date(20, Month.December, 2021)));
+        inputs.add(new CdsInput(new Date(20, Month.December, 2016), p5Y, new Date(20, Month.December, 2016), new Date(20, Month.December, 2021)));
+        inputs.add(new CdsInput(new Date(21, Month.December, 2016), p5Y, new Date(20, Month.December, 2016), new Date(20, Month.December, 2021)));
+        // 0M tenor block (subset — see C++ schedule.cpp:561-566)
+        inputs.add(new CdsInput(new Date(20, Month.March, 2016), p0M, new Date(21, Month.December, 2015), new Date(20, Month.June, 2016)));
+        inputs.add(new CdsInput(new Date(21, Month.March, 2016), p0M, new Date(21, Month.March, 2016), new Date(20, Month.June, 2016)));
+        inputs.add(new CdsInput(new Date(19, Month.June, 2016), p0M, new Date(21, Month.March, 2016), new Date(20, Month.June, 2016)));
+        inputs.add(new CdsInput(new Date(20, Month.September, 2016), p0M, new Date(20, Month.September, 2016), new Date(20, Month.December, 2016)));
+        inputs.add(new CdsInput(new Date(21, Month.September, 2016), p0M, new Date(20, Month.September, 2016), new Date(20, Month.December, 2016)));
+        inputs.add(new CdsInput(new Date(19, Month.December, 2016), p0M, new Date(20, Month.September, 2016), new Date(20, Month.December, 2016)));
+        runCDSConventions(inputs, DateGeneration.Rule.CDS2015);
+    }
+
+    /** Faithful port of {@code test-suite/schedule.cpp:572} {@code BOOST_AUTO_TEST_CASE(testCDSConventionGrid)}.
+     *  ISDA-spec grid for the pre-2015 CDS convention. */
+    @Test
+    public void testCDSConventionGrid() {
+        final Period p3M = new Period(3, TimeUnit.Months);
+        final Period p6M = new Period(6, TimeUnit.Months);
+        final Period p9M = new Period(9, TimeUnit.Months);
+        final Period p1Y = new Period(1, TimeUnit.Years);
+        final Period p5Y = new Period(5, TimeUnit.Years);
+        final Period p0M = new Period(0, TimeUnit.Months);
+        final List<CdsInput> inputs = new ArrayList<CdsInput>();
+        // 3M
+        inputs.add(new CdsInput(new Date(19, Month.March, 2016), p3M, new Date(21, Month.December, 2015), new Date(20, Month.June, 2016)));
+        inputs.add(new CdsInput(new Date(20, Month.March, 2016), p3M, new Date(21, Month.December, 2015), new Date(20, Month.September, 2016)));
+        inputs.add(new CdsInput(new Date(21, Month.March, 2016), p3M, new Date(21, Month.March, 2016), new Date(20, Month.September, 2016)));
+        inputs.add(new CdsInput(new Date(19, Month.June, 2016), p3M, new Date(21, Month.March, 2016), new Date(20, Month.September, 2016)));
+        inputs.add(new CdsInput(new Date(20, Month.June, 2016), p3M, new Date(20, Month.June, 2016), new Date(20, Month.December, 2016)));
+        inputs.add(new CdsInput(new Date(21, Month.June, 2016), p3M, new Date(20, Month.June, 2016), new Date(20, Month.December, 2016)));
+        inputs.add(new CdsInput(new Date(19, Month.September, 2016), p3M, new Date(20, Month.June, 2016), new Date(20, Month.December, 2016)));
+        inputs.add(new CdsInput(new Date(20, Month.September, 2016), p3M, new Date(20, Month.September, 2016), new Date(20, Month.March, 2017)));
+        inputs.add(new CdsInput(new Date(21, Month.September, 2016), p3M, new Date(20, Month.September, 2016), new Date(20, Month.March, 2017)));
+        inputs.add(new CdsInput(new Date(19, Month.December, 2016), p3M, new Date(20, Month.September, 2016), new Date(20, Month.March, 2017)));
+        inputs.add(new CdsInput(new Date(20, Month.December, 2016), p3M, new Date(20, Month.December, 2016), new Date(20, Month.June, 2017)));
+        inputs.add(new CdsInput(new Date(21, Month.December, 2016), p3M, new Date(20, Month.December, 2016), new Date(20, Month.June, 2017)));
+        // 6M
+        inputs.add(new CdsInput(new Date(19, Month.March, 2016), p6M, new Date(21, Month.December, 2015), new Date(20, Month.September, 2016)));
+        inputs.add(new CdsInput(new Date(20, Month.March, 2016), p6M, new Date(21, Month.December, 2015), new Date(20, Month.December, 2016)));
+        inputs.add(new CdsInput(new Date(21, Month.March, 2016), p6M, new Date(21, Month.March, 2016), new Date(20, Month.December, 2016)));
+        inputs.add(new CdsInput(new Date(19, Month.June, 2016), p6M, new Date(21, Month.March, 2016), new Date(20, Month.December, 2016)));
+        inputs.add(new CdsInput(new Date(20, Month.June, 2016), p6M, new Date(20, Month.June, 2016), new Date(20, Month.March, 2017)));
+        inputs.add(new CdsInput(new Date(21, Month.June, 2016), p6M, new Date(20, Month.June, 2016), new Date(20, Month.March, 2017)));
+        inputs.add(new CdsInput(new Date(19, Month.September, 2016), p6M, new Date(20, Month.June, 2016), new Date(20, Month.March, 2017)));
+        inputs.add(new CdsInput(new Date(20, Month.September, 2016), p6M, new Date(20, Month.September, 2016), new Date(20, Month.June, 2017)));
+        inputs.add(new CdsInput(new Date(21, Month.September, 2016), p6M, new Date(20, Month.September, 2016), new Date(20, Month.June, 2017)));
+        inputs.add(new CdsInput(new Date(19, Month.December, 2016), p6M, new Date(20, Month.September, 2016), new Date(20, Month.June, 2017)));
+        inputs.add(new CdsInput(new Date(20, Month.December, 2016), p6M, new Date(20, Month.December, 2016), new Date(20, Month.September, 2017)));
+        inputs.add(new CdsInput(new Date(21, Month.December, 2016), p6M, new Date(20, Month.December, 2016), new Date(20, Month.September, 2017)));
+        // 9M
+        inputs.add(new CdsInput(new Date(19, Month.March, 2016), p9M, new Date(21, Month.December, 2015), new Date(20, Month.December, 2016)));
+        inputs.add(new CdsInput(new Date(20, Month.March, 2016), p9M, new Date(21, Month.December, 2015), new Date(20, Month.March, 2017)));
+        inputs.add(new CdsInput(new Date(21, Month.March, 2016), p9M, new Date(21, Month.March, 2016), new Date(20, Month.March, 2017)));
+        inputs.add(new CdsInput(new Date(19, Month.June, 2016), p9M, new Date(21, Month.March, 2016), new Date(20, Month.March, 2017)));
+        inputs.add(new CdsInput(new Date(20, Month.June, 2016), p9M, new Date(20, Month.June, 2016), new Date(20, Month.June, 2017)));
+        inputs.add(new CdsInput(new Date(21, Month.June, 2016), p9M, new Date(20, Month.June, 2016), new Date(20, Month.June, 2017)));
+        inputs.add(new CdsInput(new Date(19, Month.September, 2016), p9M, new Date(20, Month.June, 2016), new Date(20, Month.June, 2017)));
+        inputs.add(new CdsInput(new Date(20, Month.September, 2016), p9M, new Date(20, Month.September, 2016), new Date(20, Month.September, 2017)));
+        inputs.add(new CdsInput(new Date(21, Month.September, 2016), p9M, new Date(20, Month.September, 2016), new Date(20, Month.September, 2017)));
+        inputs.add(new CdsInput(new Date(19, Month.December, 2016), p9M, new Date(20, Month.September, 2016), new Date(20, Month.September, 2017)));
+        inputs.add(new CdsInput(new Date(20, Month.December, 2016), p9M, new Date(20, Month.December, 2016), new Date(20, Month.December, 2017)));
+        inputs.add(new CdsInput(new Date(21, Month.December, 2016), p9M, new Date(20, Month.December, 2016), new Date(20, Month.December, 2017)));
+        // 1Y
+        inputs.add(new CdsInput(new Date(19, Month.March, 2016), p1Y, new Date(21, Month.December, 2015), new Date(20, Month.March, 2017)));
+        inputs.add(new CdsInput(new Date(20, Month.March, 2016), p1Y, new Date(21, Month.December, 2015), new Date(20, Month.June, 2017)));
+        inputs.add(new CdsInput(new Date(21, Month.March, 2016), p1Y, new Date(21, Month.March, 2016), new Date(20, Month.June, 2017)));
+        inputs.add(new CdsInput(new Date(19, Month.June, 2016), p1Y, new Date(21, Month.March, 2016), new Date(20, Month.June, 2017)));
+        inputs.add(new CdsInput(new Date(20, Month.June, 2016), p1Y, new Date(20, Month.June, 2016), new Date(20, Month.September, 2017)));
+        inputs.add(new CdsInput(new Date(21, Month.June, 2016), p1Y, new Date(20, Month.June, 2016), new Date(20, Month.September, 2017)));
+        inputs.add(new CdsInput(new Date(19, Month.September, 2016), p1Y, new Date(20, Month.June, 2016), new Date(20, Month.September, 2017)));
+        inputs.add(new CdsInput(new Date(20, Month.September, 2016), p1Y, new Date(20, Month.September, 2016), new Date(20, Month.December, 2017)));
+        inputs.add(new CdsInput(new Date(21, Month.September, 2016), p1Y, new Date(20, Month.September, 2016), new Date(20, Month.December, 2017)));
+        inputs.add(new CdsInput(new Date(19, Month.December, 2016), p1Y, new Date(20, Month.September, 2016), new Date(20, Month.December, 2017)));
+        inputs.add(new CdsInput(new Date(20, Month.December, 2016), p1Y, new Date(20, Month.December, 2016), new Date(20, Month.March, 2018)));
+        inputs.add(new CdsInput(new Date(21, Month.December, 2016), p1Y, new Date(20, Month.December, 2016), new Date(20, Month.March, 2018)));
+        // 5Y
+        inputs.add(new CdsInput(new Date(19, Month.March, 2016), p5Y, new Date(21, Month.December, 2015), new Date(20, Month.March, 2021)));
+        inputs.add(new CdsInput(new Date(20, Month.March, 2016), p5Y, new Date(21, Month.December, 2015), new Date(20, Month.June, 2021)));
+        inputs.add(new CdsInput(new Date(21, Month.March, 2016), p5Y, new Date(21, Month.March, 2016), new Date(20, Month.June, 2021)));
+        inputs.add(new CdsInput(new Date(19, Month.June, 2016), p5Y, new Date(21, Month.March, 2016), new Date(20, Month.June, 2021)));
+        inputs.add(new CdsInput(new Date(20, Month.June, 2016), p5Y, new Date(20, Month.June, 2016), new Date(20, Month.September, 2021)));
+        inputs.add(new CdsInput(new Date(21, Month.June, 2016), p5Y, new Date(20, Month.June, 2016), new Date(20, Month.September, 2021)));
+        inputs.add(new CdsInput(new Date(19, Month.September, 2016), p5Y, new Date(20, Month.June, 2016), new Date(20, Month.September, 2021)));
+        inputs.add(new CdsInput(new Date(20, Month.September, 2016), p5Y, new Date(20, Month.September, 2016), new Date(20, Month.December, 2021)));
+        inputs.add(new CdsInput(new Date(21, Month.September, 2016), p5Y, new Date(20, Month.September, 2016), new Date(20, Month.December, 2021)));
+        inputs.add(new CdsInput(new Date(19, Month.December, 2016), p5Y, new Date(20, Month.September, 2016), new Date(20, Month.December, 2021)));
+        inputs.add(new CdsInput(new Date(20, Month.December, 2016), p5Y, new Date(20, Month.December, 2016), new Date(20, Month.March, 2022)));
+        inputs.add(new CdsInput(new Date(21, Month.December, 2016), p5Y, new Date(20, Month.December, 2016), new Date(20, Month.March, 2022)));
+        // 0M
+        inputs.add(new CdsInput(new Date(19, Month.March, 2016), p0M, new Date(21, Month.December, 2015), new Date(20, Month.March, 2016)));
+        inputs.add(new CdsInput(new Date(20, Month.March, 2016), p0M, new Date(21, Month.December, 2015), new Date(20, Month.June, 2016)));
+        inputs.add(new CdsInput(new Date(21, Month.March, 2016), p0M, new Date(21, Month.March, 2016), new Date(20, Month.June, 2016)));
+        inputs.add(new CdsInput(new Date(19, Month.June, 2016), p0M, new Date(21, Month.March, 2016), new Date(20, Month.June, 2016)));
+        inputs.add(new CdsInput(new Date(20, Month.June, 2016), p0M, new Date(20, Month.June, 2016), new Date(20, Month.September, 2016)));
+        inputs.add(new CdsInput(new Date(21, Month.June, 2016), p0M, new Date(20, Month.June, 2016), new Date(20, Month.September, 2016)));
+        inputs.add(new CdsInput(new Date(19, Month.September, 2016), p0M, new Date(20, Month.June, 2016), new Date(20, Month.September, 2016)));
+        inputs.add(new CdsInput(new Date(20, Month.September, 2016), p0M, new Date(20, Month.September, 2016), new Date(20, Month.December, 2016)));
+        inputs.add(new CdsInput(new Date(21, Month.September, 2016), p0M, new Date(20, Month.September, 2016), new Date(20, Month.December, 2016)));
+        inputs.add(new CdsInput(new Date(19, Month.December, 2016), p0M, new Date(20, Month.September, 2016), new Date(20, Month.December, 2016)));
+        inputs.add(new CdsInput(new Date(20, Month.December, 2016), p0M, new Date(20, Month.December, 2016), new Date(20, Month.March, 2017)));
+        inputs.add(new CdsInput(new Date(21, Month.December, 2016), p0M, new Date(20, Month.December, 2016), new Date(20, Month.March, 2017)));
+        runCDSConventions(inputs, DateGeneration.Rule.CDS);
+    }
+
     /** Faithful port of {@code test-suite/schedule.cpp:366}
      *  {@code BOOST_AUTO_TEST_CASE(testEffectiveDateWithEomAdjustment)}.
      *  Forward EOM schedule must not move the effective date to end-of-month when effective and first dates are in
