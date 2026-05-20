@@ -98,8 +98,12 @@ public class AnalyticDividendEuropeanEngine extends DividendVanillaOption.Engine
         double riskless = 0.0;
         for ( int i = 0; i < a.cashFlow.size(); i++ ) {
             final CashFlow cashflow = a.cashFlow.get(i);
-            if ( cashflow.date().gt(settlementDate) ) {
-                riskless += cashflow.amount() * process.riskFreeRate().currentLink().discount(cashflow.date());
+            if ( cashflow.date().ge(settlementDate) && cashflow.date().le(a.exercise.lastDate()) ) {
+                // v1.42.1 align: divide rTS.discount by qTS.discount so that the dividend
+                // PV is in spot units net of the dividend yield (matches C++
+                // analyticdividendeuropeanengine.cpp lines 27-30).
+                riskless += cashflow.amount() * process.riskFreeRate().currentLink().discount(cashflow.date())
+                        / process.dividendYield().currentLink().discount(cashflow.date());
             }
         }
 
