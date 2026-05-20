@@ -35,7 +35,13 @@ using namespace QuantLib;
 namespace {
 struct Datum { Date date; Rate rate; };
 
-std::vector<ext::shared_ptr<BootstrapHelper<YoYInflationTermStructure> > > makeHelpers(
+// Type alias flattens the chained template close-brackets so static C++ parsers
+// without the QL include-path can still tokenize the function signature.
+typedef BootstrapHelper<YoYInflationTermStructure> YoYHelperT;
+typedef ext::shared_ptr<YoYHelperT>                YoYHelperPtr;
+typedef std::vector<YoYHelperPtr>                  YoYHelperList;
+
+YoYHelperList makeHelpers(
         const std::vector<Datum>& iiData,
         const ext::shared_ptr<YoYInflationIndex>& ii,
         CPI::InterpolationType interpolation,
@@ -44,7 +50,7 @@ std::vector<ext::shared_ptr<BootstrapHelper<YoYInflationTermStructure> > > makeH
         const BusinessDayConvention& bdc,
         const DayCounter& dc,
         const Handle<YieldTermStructure>& discount) {
-    std::vector<ext::shared_ptr<BootstrapHelper<YoYInflationTermStructure> > > v;
+    YoYHelperList v;
     for (Datum d : iiData) {
         Handle<Quote> q(ext::make_shared<SimpleQuote>(d.rate/100.0));
         v.push_back(ext::make_shared<YearOnYearInflationSwapHelper>(
