@@ -1008,31 +1008,447 @@ public class DividendOptionTest {
     }
 
     // ------------------------------------------------------------------
-    // BLOCKED / EXISTING_EQUIVALENT ports from test-suite/dividendoption.cpp (Phase1-D5-B-R3)
+    // EXISTING_EQUIVALENT carry-over note (Phase1-D5-B-R3 retained)
     // ------------------------------------------------------------------
     // testFdEuropeanGreeks (cpp:722, gated by *precondition(if_speed(Fast)))
     //   EXISTING_EQUIVALENT: covered by {@link #testFdEuropeanGreeks} above.
     //   The Java existing test uses FDDividendEuropeanEngine (the legacy
     //   Java engine) rather than FdBlackScholesVanillaEngine with the
     //   Spot/Escrowed cash-dividend-model switch from v1.42.1 — the Spot
-    //   path is functionally equivalent; the Escrowed sweep is not
-    //   exercised (Escrowed model not yet supported by Java
-    //   FdBlackScholesVanillaEngine, see line 211 QL.require).
-    //
-    // testCashDividendEuropeanEngine (cpp:1024)
-    //   BLOCKED. Uses CashDividendEuropeanEngine (not ported to Java —
-    //   no class under jquantlib/src/main/java/org/jquantlib/pricingengines/).
-    //   Corresponds to C++
-    //   ql/pricingengines/vanilla/cashdividendeuropeanengine.{hpp,cpp},
-    //   which wraps AnalyticEuropeanEngine + dividend-discounted forward
-    //   to compute analytic European-with-cash-dividends prices. Total
-    //   infra to unblock: ~80 LOC port of CashDividendEuropeanEngine.
-    //
-    // testCashDividendEuropeanEngineWithManyDividends (cpp:1124)
-    //   BLOCKED. Same blocker as testCashDividendEuropeanEngine
-    //   (CashDividendEuropeanEngine missing).
-    //
-    // testCashDividendEuropeanEngineWithSingleDividends (cpp:1215)
-    //   BLOCKED. Same blocker as testCashDividendEuropeanEngine.
+    //   path is functionally equivalent.
+
+    /**
+     * Faithful port of v1.42.1 {@code test-suite/dividendoption.cpp:testCashDividendEuropeanEngine} (line 1024).
+     * <p>
+     * Cross-validates the new {@link org.jquantlib.pricingengines.vanilla.CashDividendEuropeanEngine}
+     * against the FD-PDE {@link FdBlackScholesVanillaEngine}, for both {@code Spot} and
+     * {@code Escrowed} cash-dividend models, on a grid of (call/put) x (two maturities) x
+     * (four strikes). Tolerance: 0.005 absolute.
+     */
+    @Test
+    public void testCashDividendEuropeanEngine() {
+        QL.info("Testing cash-dividend European engine with finite-difference European engine...");
+
+        final DayCounter dc = new Actual365Fixed();
+        final Date today = new Date(1, Month.January, 2024);
+        new Settings().setEvaluationDate(today);
+
+        final Date[] rDates = new Date[] {
+                today, new Date(1, Month.May, 2024), new Date(1, Month.November, 2024), new Date(1, Month.January, 2027)
+        };
+        final double[] rRates = new double[] { 0.3, 0.15, 0.1, 0.15 };
+        final Handle< YieldTermStructure > rTS = new Handle< YieldTermStructure >(
+                new org.jquantlib.termstructures.yieldcurves.InterpolatedZeroCurve<
+                        org.jquantlib.math.interpolations.factories.Linear >(
+                        org.jquantlib.math.interpolations.factories.Linear.class, rDates, rRates, dc));
+
+        final Date[] qDates = new Date[] {
+                today, new Date(1, Month.May, 2024), new Date(1, Month.November, 2025), new Date(1, Month.January, 2027)
+        };
+        final double[] qRates = new double[] { 0.05, 0.03, 0.1, 0.05 };
+        final Handle< YieldTermStructure > qTS = new Handle< YieldTermStructure >(
+                new org.jquantlib.termstructures.yieldcurves.InterpolatedZeroCurve<
+                        org.jquantlib.math.interpolations.factories.Linear >(
+                        org.jquantlib.math.interpolations.factories.Linear.class, qDates, qRates, dc));
+
+        final Date[] vDates = new Date[] {
+                new Date(2, Month.January, 2024), new Date(1, Month.July, 2024),
+                new Date(1, Month.August, 2024), new Date(1, Month.January, 2027)
+        };
+        final double[] vVols = new double[] { 0.3, 0.4, 0.42, 0.5 };
+        final org.jquantlib.termstructures.volatilities.BlackVarianceCurve vCurve =
+                new org.jquantlib.termstructures.volatilities.BlackVarianceCurve(today, vDates, vVols, dc);
+        vCurve.setInterpolation();
+        final Handle< BlackVolTermStructure > vTS = new Handle< BlackVolTermStructure >(vCurve);
+
+        final Handle< Quote > spot = new Handle< Quote >(new SimpleQuote(100.0));
+        final BlackScholesMertonProcess process = new BlackScholesMertonProcess(spot, qTS, rTS, vTS);
+
+        final List< Date > dividendDates = new ArrayList<>();
+        dividendDates.add(new Date(1, Month.April, 2024));
+        dividendDates.add(new Date(1, Month.November, 2024));
+        dividendDates.add(new Date(1, Month.October, 2024));
+        dividendDates.add(new Date(1, Month.April, 2026));
+        dividendDates.add(new Date(27, Month.March, 2028));
+        dividendDates.add(new Date(1, Month.October, 2023));
+        final List< Double > dividendAmounts = new ArrayList<>();
+        dividendAmounts.add(4.0);
+        dividendAmounts.add(10.0);
+        dividendAmounts.add(2.0);
+        dividendAmounts.add(5.0);
+        dividendAmounts.add(25.0);
+        dividendAmounts.add(15.0);
+
+        final DividendSchedule dividendSchedule = new DividendSchedule();
+        for ( int i = 0; i < dividendDates.size(); i++ ) {
+            dividendSchedule.add(new org.jquantlib.cashflow.FixedDividend(dividendAmounts.get(i), dividendDates.get(i)));
+        }
+
+        final double tol = 0.005;
+        for ( final org.jquantlib.pricingengines.vanilla.CashDividendEuropeanEngine.CashDividendModel cashDivModel
+                : new org.jquantlib.pricingengines.vanilla.CashDividendEuropeanEngine.CashDividendModel[] {
+                        org.jquantlib.pricingengines.vanilla.CashDividendEuropeanEngine.CashDividendModel.Spot,
+                        org.jquantlib.pricingengines.vanilla.CashDividendEuropeanEngine.CashDividendModel.Escrowed
+                } ) {
+
+            final FdBlackScholesVanillaEngine.CashDividendModel fdModel =
+                    (cashDivModel == org.jquantlib.pricingengines.vanilla.CashDividendEuropeanEngine.CashDividendModel.Spot)
+                            ? FdBlackScholesVanillaEngine.CashDividendModel.Spot
+                            : FdBlackScholesVanillaEngine.CashDividendModel.Escrowed;
+
+            final PricingEngine cashDivEngine = new org.jquantlib.pricingengines.vanilla.CashDividendEuropeanEngine(
+                    process, dividendSchedule, cashDivModel);
+
+            for ( final Option.Type optionType : new Option.Type[] { Option.Type.Call, Option.Type.Put } ) {
+                for ( final Date maturityDate : new Date[] {
+                        new Date(1, Month.April, 2026), new Date(1, Month.January, 2027) } ) {
+                    // The Java FdBlackScholesVanillaEngine throws on dividends past maturity, so build
+                    // a per-maturity filtered schedule (C++ engine filters internally).
+                    final DividendSchedule fdDivs = new DividendSchedule();
+                    for ( final org.jquantlib.cashflow.Dividend d : dividendSchedule ) {
+                        if ( d.date().ge(today) && d.date().le(maturityDate) ) {
+                            fdDivs.add(d);
+                        }
+                    }
+                    final PricingEngine fdEngine = new FdBlackScholesVanillaEngine(process, fdDivs, null, 100, 800, 0,
+                            FdmSchemeDesc.Douglas(), fdModel, false, Double.NaN);
+
+                    for ( final double strike : new double[] { 50, 100, 125, 175 } ) {
+                        final VanillaOption option = new VanillaOption(new PlainVanillaPayoff(optionType, strike),
+                                new EuropeanExercise(maturityDate));
+
+                        option.setPricingEngine(fdEngine);
+                        final double fdNPV = option.NPV();
+
+                        option.setPricingEngine(cashDivEngine);
+                        final double cdNPV = option.NPV();
+
+                        final double diff = Math.abs(fdNPV - cdNPV);
+                        if ( diff > tol ) {
+                            fail("Failed to compare European option prices with CashDividendEuropeanEngine and "
+                                    + "FdBlackScholesVanillaEngine\n  Strike: " + strike + "\n  Type: " + optionType
+                                    + "\n  Maturity: " + maturityDate + "\n  Model: " + cashDivModel + "\n  FDM NPV: "
+                                    + fdNPV + "\n  CD NPV: " + cdNPV + "\n  diff: " + diff + "\n  tol: " + tol);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Faithful port of v1.42.1 {@code test-suite/dividendoption.cpp:testCashDividendEuropeanEngineWithManyDividends}
+     * (line 1124). Cross-validates {@link org.jquantlib.pricingengines.vanilla.CashDividendEuropeanEngine}
+     * against the FD-PDE engine on a heavy schedule (~250 dividends 1-5 days apart with random amounts).
+     * Tolerance: 0.04 absolute.
+     */
+    @Test
+    public void testCashDividendEuropeanEngineWithManyDividends() {
+        QL.info("Testing cash-dividend European engine with many dividends...");
+
+        final DayCounter dc = new Actual365Fixed();
+        final Date today = new Date(9, Month.November, 2025);
+        new Settings().setEvaluationDate(today);
+
+        final Date maturityDate = today.add(new Period(2, TimeUnit.Years));
+        final Handle< Quote > spot = new Handle< Quote >(new SimpleQuote(100.0));
+
+        final Handle< YieldTermStructure > qTS = new Handle< YieldTermStructure >(Utilities.flatRate(today, 0.05, dc));
+
+        final Date[] rDates = new Date[] { today, new Date(1, Month.May, 2026), new Date(1, Month.November, 2027),
+                new Date(1, Month.January, 2032) };
+        final double[] rRates = new double[] { 0.05, 0.075, 0.04, 0.06 };
+        final Handle< YieldTermStructure > rTS = new Handle< YieldTermStructure >(
+                new org.jquantlib.termstructures.yieldcurves.InterpolatedZeroCurve<
+                        org.jquantlib.math.interpolations.factories.Linear >(
+                        org.jquantlib.math.interpolations.factories.Linear.class, rDates, rRates, dc));
+
+        final Date[] vDates = new Date[] { new Date(2, Month.January, 2026), new Date(1, Month.July, 2026),
+                new Date(1, Month.August, 2027), new Date(1, Month.January, 2032) };
+        final double[] vVols = new double[] { 0.3, 0.4, 0.42, 0.5 };
+        final org.jquantlib.termstructures.volatilities.BlackVarianceCurve vCurve =
+                new org.jquantlib.termstructures.volatilities.BlackVarianceCurve(today, vDates, vVols, dc);
+        vCurve.setInterpolation();
+        final Handle< BlackVolTermStructure > vTS = new Handle< BlackVolTermStructure >(vCurve);
+
+        final BlackScholesMertonProcess process = new BlackScholesMertonProcess(
+                new Handle< Quote >(new SimpleQuote(100.0)), qTS, rTS, vTS);
+
+        final VanillaOption option = new VanillaOption(new PlainVanillaPayoff(Option.Type.Call, 110.0),
+                new EuropeanExercise(maturityDate));
+
+        final org.jquantlib.math.randomnumbers.MersenneTwisterUniformRng rng =
+                new org.jquantlib.math.randomnumbers.MersenneTwisterUniformRng(1234L);
+        final List< Date > dividendDates = new ArrayList<>();
+        final List< Double > dividendAmounts = new ArrayList<>();
+        // Start with a single dividend at today - 1 month (sentinel; outside the [settlement,maturity] window).
+        dividendDates.add(today.sub(new Period(1, TimeUnit.Months)));
+        dividendAmounts.add(1.0);
+
+        final Date hardCap = maturityDate.add(new Period(1, TimeUnit.Months));
+        while ( dividendDates.get(dividendDates.size() - 1).lt(hardCap) ) {
+            final long step = (rng.nextInt32() % 5L) + 1L;
+            dividendDates.add(dividendDates.get(dividendDates.size() - 1).add(new Period((int) step, TimeUnit.Days)));
+            dividendAmounts.add(0.1 * rng.next().value());
+        }
+
+        final DividendSchedule divs = new DividendSchedule();
+        for ( int i = 0; i < dividendDates.size(); i++ ) {
+            divs.add(new org.jquantlib.cashflow.FixedDividend(dividendAmounts.get(i), dividendDates.get(i)));
+        }
+
+        option.setPricingEngine(new FdBlackScholesVanillaEngine(process, divs, null, 10, 500, 0,
+                FdmSchemeDesc.Douglas(), FdBlackScholesVanillaEngine.CashDividendModel.Spot, false, Double.NaN));
+        final double expected = option.NPV();
+
+        option.setPricingEngine(new org.jquantlib.pricingengines.vanilla.CashDividendEuropeanEngine(process, divs,
+                org.jquantlib.pricingengines.vanilla.CashDividendEuropeanEngine.CashDividendModel.Spot));
+        final double calculated = option.NPV();
+
+        final double tol = 0.04;
+        final double diff = Math.abs(expected - calculated);
+        if ( diff > tol ) {
+            fail("Failed to compare European option prices with many dividends, CashDividendEuropeanEngine and "
+                    + "FdBlackScholesVanillaEngine\n  FDM: " + expected + "\n  CD: " + calculated + "\n  diff: " + diff
+                    + "\n  tol: " + tol);
+        }
+    }
+
+    /**
+     * Faithful port of v1.42.1
+     * {@code test-suite/dividendoption.cpp:testCashDividendEuropeanEngineWithSingleDividends} (line 1215).
+     * Cross-validates {@link org.jquantlib.pricingengines.vanilla.CashDividendEuropeanEngine} against the
+     * FD-PDE engine for a single dividend on 6 dates (around settlement and around maturity) and both
+     * {@code Spot}/{@code Escrowed} models. Tolerance: 0.001 absolute.
+     */
+    @Test
+    public void testCashDividendEuropeanEngineWithSingleDividends() {
+        QL.info("Testing cash-dividend European engine with single dividend...");
+
+        final DayCounter dc = new Actual365Fixed();
+        final Date today = new Date(11, Month.November, 2025);
+        new Settings().setEvaluationDate(today);
+
+        final Date maturityDate = today.add(new Period(18, TimeUnit.Months));
+
+        final BlackScholesMertonProcess process = new BlackScholesMertonProcess(
+                new Handle< Quote >(new SimpleQuote(100.0)),
+                new Handle< YieldTermStructure >(Utilities.flatRate(today, 0.05, dc)),
+                new Handle< YieldTermStructure >(Utilities.flatRate(today, 0.025, dc)),
+                new Handle< BlackVolTermStructure >(Utilities.flatVol(today, 0.3, dc)));
+
+        final Exercise exercise = new EuropeanExercise(maturityDate);
+        final double divAmount = 5.0;
+
+        for ( final Date divDate : new Date[] {
+                today.sub(new Period(1, TimeUnit.Days)),
+                today,
+                today.add(new Period(1, TimeUnit.Days)),
+                today.add(new Period(6, TimeUnit.Months)),
+                maturityDate,
+                maturityDate.add(new Period(1, TimeUnit.Days)) } ) {
+
+            for ( final org.jquantlib.pricingengines.vanilla.CashDividendEuropeanEngine.CashDividendModel cashDivModel
+                    : new org.jquantlib.pricingengines.vanilla.CashDividendEuropeanEngine.CashDividendModel[] {
+                            org.jquantlib.pricingengines.vanilla.CashDividendEuropeanEngine.CashDividendModel.Spot,
+                            org.jquantlib.pricingengines.vanilla.CashDividendEuropeanEngine.CashDividendModel.Escrowed
+                    } ) {
+
+                final FdBlackScholesVanillaEngine.CashDividendModel fdModel =
+                        (cashDivModel == org.jquantlib.pricingengines.vanilla.CashDividendEuropeanEngine.CashDividendModel.Spot)
+                                ? FdBlackScholesVanillaEngine.CashDividendModel.Spot
+                                : FdBlackScholesVanillaEngine.CashDividendModel.Escrowed;
+
+                final DividendSchedule divs = new DividendSchedule();
+                divs.add(new org.jquantlib.cashflow.FixedDividend(divAmount, divDate));
+
+                // The C++ FdBlackScholesVanillaEngine filters dividends to [settlement,maturity]; the Java
+                // engine throws on a dividend past maturity, so pass a filtered schedule here.
+                // CashDividendEuropeanEngine filters internally and accepts the full schedule.
+                final DividendSchedule fdDivs = new DividendSchedule();
+                if ( divDate.ge(today) && divDate.le(maturityDate) ) {
+                    fdDivs.add(new org.jquantlib.cashflow.FixedDividend(divAmount, divDate));
+                }
+
+                final PricingEngine fdEngine = new FdBlackScholesVanillaEngine(process, fdDivs, null, 200, 400, 0,
+                        FdmSchemeDesc.Douglas(), fdModel, false, Double.NaN);
+
+                final PricingEngine cashDivEngine = new org.jquantlib.pricingengines.vanilla.CashDividendEuropeanEngine(
+                        process, divs, cashDivModel);
+
+                for ( final Option.Type optionType : new Option.Type[] { Option.Type.Call, Option.Type.Put } ) {
+                    final VanillaOption option = new VanillaOption(new PlainVanillaPayoff(optionType, 95.0), exercise);
+
+                    option.setPricingEngine(fdEngine);
+                    final double expected = option.NPV();
+
+                    option.setPricingEngine(cashDivEngine);
+                    final double calculated = option.NPV();
+
+                    final double tol = 0.001;
+                    final double diff = Math.abs(expected - calculated);
+                    if ( diff > tol ) {
+                        fail("Failed to compare European option prices with CashDividendEuropeanEngine and "
+                                + "FdBlackScholesVanillaEngine\n  Type: " + optionType + "\n  DivDate: " + divDate
+                                + "\n  Model: " + cashDivModel + "\n  FDM: " + expected + "\n  CD: " + calculated
+                                + "\n  diff: " + diff + "\n  tol: " + tol);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Faithful port of v1.42.1 {@code test-suite/dividendoption.cpp:testZeroStrikeCallWithCashDividends} (line 1292).
+     * <p>
+     * Validates that a zero-strike European call priced with the FD Escrowed model and the
+     * {@link org.jquantlib.pricingengines.vanilla.CashDividendEuropeanEngine} (Spot default) both
+     * recover the closed-form value {@code spot * Dq - dividend * Dr(divDate)/Dq(divDate) * Dq(T)},
+     * and that an American counterpart equals {@code spot} exactly (no optimal early-exercise).
+     * Tolerance: 1e-3 absolute.
+     */
+    @Test
+    public void testZeroStrikeCallWithCashDividends() {
+        QL.info("Testing zero strike call with cash dividend model...");
+
+        final DayCounter dc = new Actual365Fixed();
+        final Date today = new Date(26, Month.October, 2025);
+        new Settings().setEvaluationDate(today);
+
+        final Date maturityDate = today.add(new Period(1, TimeUnit.Years));
+        final Handle< Quote > spot = new Handle< Quote >(new SimpleQuote(100.0));
+
+        final Handle< YieldTermStructure > qTS = new Handle< YieldTermStructure >(Utilities.flatRate(today, 0.063, dc));
+        final Handle< YieldTermStructure > rTS = new Handle< YieldTermStructure >(Utilities.flatRate(today, 0.094, dc));
+
+        final BlackScholesMertonProcess process = new BlackScholesMertonProcess(
+                new Handle< Quote >(new SimpleQuote(100.0)), qTS, rTS,
+                new Handle< BlackVolTermStructure >(Utilities.flatVol(today, 0.3, dc)));
+
+        final VanillaOption europeanOption = new VanillaOption(new PlainVanillaPayoff(Option.Type.Call, 0.0),
+                new EuropeanExercise(maturityDate));
+
+        final double dividend = 5.0;
+
+        for ( final Date dividendDate : new Date[] { today, new Date(1, Month.January, 2026), maturityDate } ) {
+            final DividendSchedule divs = new DividendSchedule();
+            divs.add(new org.jquantlib.cashflow.FixedDividend(dividend, dividendDate));
+
+            final PricingEngine fdEngine = new FdBlackScholesVanillaEngine(process, divs, null, 100, 400, 0,
+                    FdmSchemeDesc.Douglas(), FdBlackScholesVanillaEngine.CashDividendModel.Escrowed, false, Double.NaN);
+
+            europeanOption.setPricingEngine(fdEngine);
+            final double europeanCalculated = europeanOption.NPV();
+            final double europeanExpected = process.x0() * qTS.currentLink().discount(maturityDate)
+                    - dividend * rTS.currentLink().discount(dividendDate)
+                            / qTS.currentLink().discount(dividendDate) * qTS.currentLink().discount(maturityDate);
+
+            final double tol = 1e-3;
+            final double europeanFdmDiff = Math.abs(europeanCalculated - europeanExpected);
+            if ( europeanFdmDiff > tol ) {
+                fail("Failed to calculate zero strike European call price with escrowed dividend model\n  FDM: "
+                        + europeanCalculated + "\n  expected: " + europeanExpected + "\n  diff: " + europeanFdmDiff
+                        + "\n  tol: " + tol);
+            }
+
+            europeanOption.setPricingEngine(
+                    new org.jquantlib.pricingengines.vanilla.CashDividendEuropeanEngine(process, divs));
+            final double europeanCdCalculated = europeanOption.NPV();
+            final double europeanCdDiff = Math.abs(europeanCdCalculated - europeanExpected);
+
+            if ( europeanCdDiff > tol ) {
+                fail("Failed to calculate zero strike European call price with spot dividend model\n  semi-analytic: "
+                        + europeanCdCalculated + "\n  expected: " + europeanExpected + "\n  diff: " + europeanCdDiff
+                        + "\n  tol: " + tol);
+            }
+
+            final VanillaOption americanOption = new VanillaOption(new PlainVanillaPayoff(Option.Type.Call, 0.0),
+                    new AmericanExercise(today, maturityDate));
+            americanOption.setPricingEngine(fdEngine);
+
+            final double americanCalculated = americanOption.NPV();
+            final double americanExpected = process.x0();
+            final double americanDiff = Math.abs(americanCalculated - americanExpected);
+
+            if ( americanDiff > tol ) {
+                fail("Failed to calculate zero strike American call price with escrowed dividend model\n  FDM: "
+                        + americanCalculated + "\n  expected: " + americanExpected + "\n  diff: " + americanDiff
+                        + "\n  tol: " + tol);
+            }
+        }
+    }
+
+    /**
+     * Faithful port of v1.42.1 {@code test-suite/dividendoption.cpp:testAmericanOptionsWithEscrowedDividends}
+     * (line 1385).
+     * <p>
+     * Cross-validates the Escrowed-dividend FD American option price against the Spot-dividend
+     * FD American option price using an adjusted volatility designed to match the two PV-perspectives.
+     * Tolerance: 0.1 absolute, sweep over (call/put) x (4 dividend dates).
+     */
+    @Test
+    public void testAmericanOptionsWithEscrowedDividends() {
+        QL.info("Testing American option with escrowed dividend model...");
+
+        final DayCounter dc = new Actual365Fixed();
+        final Date today = new Date(26, Month.October, 2025);
+        new Settings().setEvaluationDate(today);
+
+        final Date maturityDate = today.add(new Period(18, TimeUnit.Months));
+        final double maturityTime = dc.yearFraction(today, maturityDate);
+
+        final Handle< Quote > spot = new Handle< Quote >(new SimpleQuote(100.0));
+
+        final Handle< YieldTermStructure > qTS = new Handle< YieldTermStructure >(Utilities.flatRate(today, 0.05, dc));
+        final Handle< YieldTermStructure > rTS = new Handle< YieldTermStructure >(Utilities.flatRate(today, 0.15, dc));
+
+        final double v = 0.3;
+        final SimpleQuote vol = new SimpleQuote(v);
+        final Handle< BlackVolTermStructure > volTS = new Handle< BlackVolTermStructure >(Utilities.flatVol(vol, dc));
+
+        final BlackScholesMertonProcess process = new BlackScholesMertonProcess(
+                new Handle< Quote >(new SimpleQuote(100.0)), qTS, rTS, volTS);
+
+        final double dividend = 5.0;
+
+        for ( final Option.Type optionType : new Option.Type[] { Option.Type.Call, Option.Type.Put } ) {
+            for ( final Date dividendDate : new Date[] {
+                    today, new Date(1, Month.January, 2026), new Date(1, Month.January, 2027), maturityDate } ) {
+
+                final DividendSchedule divs = new DividendSchedule();
+                divs.add(new org.jquantlib.cashflow.FixedDividend(dividend, dividendDate));
+
+                final PricingEngine escrowedEngine = new FdBlackScholesVanillaEngine(process, divs, null, 100, 400, 0,
+                        FdmSchemeDesc.Douglas(), FdBlackScholesVanillaEngine.CashDividendModel.Escrowed, false,
+                        Double.NaN);
+                final PricingEngine spotEngine = new FdBlackScholesVanillaEngine(process, divs, null, 100, 400, 0,
+                        FdmSchemeDesc.Douglas(), FdBlackScholesVanillaEngine.CashDividendModel.Spot, false,
+                        Double.NaN);
+
+                final VanillaOption option = new VanillaOption(new PlainVanillaPayoff(optionType, 95.0),
+                        new AmericanExercise(today, maturityDate));
+
+                vol.setValue(v);
+                option.setPricingEngine(escrowedEngine);
+                final double escrowedNPV = option.NPV();
+
+                final double s0 = 100.0;
+                final double adjustedVar = (v * v * dc.yearFraction(today, dividendDate)
+                        * Math.pow((s0 - dividend) / s0, 2.0)
+                        + v * v * dc.yearFraction(dividendDate, maturityDate)) / maturityTime;
+                vol.setValue(Math.sqrt(adjustedVar));
+                option.setPricingEngine(spotEngine);
+                final double spotNPV = option.NPV();
+
+                final double tol = 0.1;
+                final double diff = Math.abs(spotNPV - escrowedNPV);
+                if ( diff > tol ) {
+                    fail("Failed to compare American option prices with cash- and escrowed dividend model\n  Type: "
+                            + optionType + "\n  div date: " + dividendDate + "\n  escrowed NPV: " + escrowedNPV
+                            + "\n  cash NPV: " + spotNPV + "\n  diff: " + diff + "\n  tol: " + tol);
+                }
+            }
+        }
+    }
 
 }
