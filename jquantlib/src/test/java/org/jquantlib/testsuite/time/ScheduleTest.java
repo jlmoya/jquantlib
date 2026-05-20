@@ -1077,4 +1077,141 @@ public class ScheduleTest {
                 new Date(16, Month.March, 2023)));
     }
 
+    /** Faithful port of {@code test-suite/schedule.cpp:927}
+     *  {@code BOOST_AUTO_TEST_CASE(testCDS2015ZeroMonthsMatured)}.
+     *  A 0M-tenor CDS2015 must return a null Date() for all sampled trade dates from 20-Dec-2015 through 20-Dec-2016
+     *  (i.e. the CDS is matured). */
+    @Test
+    public void testCDS2015ZeroMonthsMatured() {
+        final DateGeneration.Rule rule = DateGeneration.Rule.CDS2015;
+        final Period tenor = new Period(0, TimeUnit.Months);
+        final List<Date> inputs = Arrays.asList(
+                new Date(20, Month.December, 2015),
+                new Date(15, Month.February, 2016),
+                new Date(19, Month.March, 2016),
+                new Date(20, Month.June, 2016),
+                new Date(15, Month.August, 2016),
+                new Date(19, Month.September, 2016),
+                new Date(20, Month.December, 2016));
+        for (final Date input : inputs) {
+            assertEquals("cdsMaturity for matured 0M CDS at " + input, new Date(),
+                    CreditDefaultSwap.cdsMaturity(input, tenor, rule));
+        }
+    }
+
+    /** Faithful port of {@code test-suite/schedule.cpp:950} {@code BOOST_AUTO_TEST_CASE(testDateConstructor)}.
+     *  Schedule(vector<Date>) + Schedule(vector<Date>, cal, conv, termConv, tenor, rule, eom, isRegular) constructors. */
+    @Test
+    public void testDateConstructor() {
+        final List<Date> dates = Arrays.asList(
+                new Date(16, Month.May, 2015),
+                new Date(18, Month.May, 2015),
+                new Date(18, Month.May, 2016),
+                new Date(31, Month.December, 2017));
+
+        // schedule without any additional information
+        final Schedule schedule1 = new Schedule(dates);
+        assertEquals("schedule1 size", dates.size(), schedule1.size());
+        for (int i = 0; i < dates.size(); ++i) {
+            assertEquals("schedule1 at " + i, dates.get(i), schedule1.date(i));
+        }
+        assertEquals("schedule1 calendar should be NullCalendar", new NullCalendar().name(),
+                schedule1.calendar().name());
+        assertEquals("schedule1 convention should be Unadjusted",
+                BusinessDayConvention.Unadjusted, schedule1.businessDayConvention());
+
+        // schedule with metadata
+        final List<Boolean> regular = Arrays.asList(Boolean.FALSE, Boolean.TRUE, Boolean.FALSE);
+        final Schedule schedule2 = new Schedule(dates, new Target(),
+                BusinessDayConvention.Following, BusinessDayConvention.ModifiedPreceding,
+                new Period(1, TimeUnit.Years), DateGeneration.Rule.Backward, true, regular);
+        for (int i = 1; i < dates.size(); ++i) {
+            assertEquals("schedule2 isRegular at " + i, regular.get(i - 1).booleanValue(), schedule2.isRegular(i));
+        }
+        assertEquals("schedule2 calendar should be TARGET", new Target().name(), schedule2.calendar().name());
+        assertEquals("schedule2 convention should be Following",
+                BusinessDayConvention.Following, schedule2.businessDayConvention());
+        assertEquals("schedule2 termination convention should be ModifiedPreceding",
+                BusinessDayConvention.ModifiedPreceding, schedule2.terminationDateBusinessDayConvention());
+        assertEquals("schedule2 tenor should be 1Y",
+                new Period(1, TimeUnit.Years), schedule2.tenor());
+        assertEquals("schedule2 rule should be Backward",
+                DateGeneration.Rule.Backward, schedule2.rule());
+        assertTrue("schedule2 end of month flag should be true", schedule2.endOfMonth());
+    }
+
+    /** Faithful port of {@code test-suite/schedule.cpp:1007} {@code BOOST_AUTO_TEST_CASE(testFourWeeksTenor)}.
+     *  A 4-week tenor must construct without throwing. */
+    @Test
+    public void testFourWeeksTenor() {
+        try {
+            new MakeSchedule()
+                    .from(new Date(13, Month.January, 2016))
+                    .to(new Date(4, Month.May, 2016))
+                    .withCalendar(new Target())
+                    .withTenor(new Period(4, TimeUnit.Weeks))
+                    .withConvention(BusinessDayConvention.Following)
+                    .forwards()
+                    .schedule();
+        } catch (final Exception e) {
+            fail("A four-weeks tenor caused an exception: " + e.getMessage());
+        }
+    }
+
+    /** Faithful port of {@code test-suite/schedule.cpp:1024} {@code BOOST_AUTO_TEST_CASE(testOnceFrequency)}.
+     *  A {@link Frequency#Once}-frequency schedule must contain exactly the effective and termination dates. */
+    @Test
+    public void testOnceFrequency() {
+        final Schedule s = new MakeSchedule()
+                .from(new Date(13, Month.January, 2016))
+                .to(new Date(13, Month.January, 2019))
+                .withFrequency(Frequency.Once)
+                .forwards()
+                .schedule();
+        assertEquals("Once-frequency schedule size", 2, s.size());
+        assertEquals(new Date(13, Month.January, 2016), s.date(0));
+        assertEquals(new Date(13, Month.January, 2019), s.date(1));
+    }
+
+    /** Faithful port of {@code test-suite/schedule.cpp:1039} {@code BOOST_AUTO_TEST_CASE(testScheduleAlwaysHasAStartDate)}.
+     *  MakeSchedule variations (with/without firstDate; effective on/off the grid) must always seat the effective date
+     *  as the schedule's first element. */
+    @Test
+    public void testScheduleAlwaysHasAStartDate() {
+        final Calendar calendar = new UnitedStates(UnitedStates.Market.GOVERNMENTBOND);
+        Schedule schedule = new MakeSchedule()
+                .from(new Date(10, Month.January, 2017))
+                .withFirstDate(new Date(31, Month.August, 2017))
+                .to(new Date(28, Month.February, 2026))
+                .withFrequency(Frequency.Semiannual)
+                .withCalendar(calendar)
+                .withConvention(BusinessDayConvention.Unadjusted)
+                .backwards().endOfMonth(false)
+                .schedule();
+        assertEquals("The first element should always be the start date",
+                new Date(10, Month.January, 2017), schedule.date(0));
+
+        schedule = new MakeSchedule()
+                .from(new Date(10, Month.January, 2017))
+                .to(new Date(28, Month.February, 2026))
+                .withFrequency(Frequency.Semiannual)
+                .withCalendar(calendar)
+                .withConvention(BusinessDayConvention.Unadjusted)
+                .backwards().endOfMonth(false)
+                .schedule();
+        assertEquals("The first element should always be the start date",
+                new Date(10, Month.January, 2017), schedule.date(0));
+
+        schedule = new MakeSchedule()
+                .from(new Date(31, Month.August, 2017))
+                .to(new Date(28, Month.February, 2026))
+                .withFrequency(Frequency.Semiannual)
+                .withCalendar(calendar)
+                .withConvention(BusinessDayConvention.Unadjusted)
+                .backwards().endOfMonth(false)
+                .schedule();
+        assertEquals("The first element should always be the start date",
+                new Date(31, Month.August, 2017), schedule.date(0));
+    }
+
 }
