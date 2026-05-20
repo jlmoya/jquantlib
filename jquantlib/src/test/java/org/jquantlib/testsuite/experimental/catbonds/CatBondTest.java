@@ -327,9 +327,14 @@ public class CatBondTest {
 
     // -----------------------------------------------------------------------
     // testCatBondWithProportionalNotional
+    //   Faithful port of test-suite/catbonds.cpp:509 (v1.42.1)
+    //   testCatBondWithDoomOnceInTenYearsProportional.  Renamed locally to
+    //   align with the existing test naming pattern in this file
+    //   (`testCatBondWith*`) but exercises the same scenario:
     //   ProportionalNotionalRisk: attachment=500, exhaustion=1500.
     //   Event loss = 1000 → 50% notional remains → expectedLoss = 0.05 per path
-    //   that has event (10% probability) → mean expectedLoss = 0.05
+    //   that has event (10% probability) → mean expectedLoss = 0.05.
+    //   Phase1-cert-D5-C-R4 audit confirms EXISTING_EQUIVALENT.
     // -----------------------------------------------------------------------
     @Test
     public void testCatBondWithProportionalNotional() {

@@ -86,6 +86,15 @@ public class AsianOptionTest {
     }
 
 
+    /**
+     * Faithful port of test-suite/asianoptions.cpp:376 testAnalyticDiscreteGeometricAveragePrice.
+     * <p>
+     * Renamed locally (drops the "Price" suffix) but semantically identical:
+     * same Clewlow/Strickland p.118-123 inputs, same engine
+     * (AnalyticDiscreteGeometricAveragePriceAsianEngine), same expected NPV
+     * 5.3425606635 with 1e-10 tolerance.  Phase1-cert-D5-C-R4 audit confirms
+     * EXISTING_EQUIVALENT — no separate port required.
+     */
     @Test
     public void testAnalyticDiscreteGeometricAverage() {
 
