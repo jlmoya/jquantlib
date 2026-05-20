@@ -87,15 +87,23 @@ public abstract class RelativeDateRateHelper extends RateHelper {
     public RelativeDateRateHelper(/*@Real*/ final double d, final boolean updateDates) {
         super(d);
         this.updateDates = updateDates;
-        this.evaluationDate = new Settings().evaluationDate();
-        this.evaluationDate.addObserver(this);
+        // Register as observer of the live evaluation-date proxy, but cache a
+        // *value* snapshot via clone() so the update() guard does not alias the
+        // proxy. Without the clone the cached reference would mutate in
+        // lock-step with Settings.setEvaluationDate(), silently skipping
+        // re-initializeDates() — see C++ v1.42.1 bootstraphelper.hpp:215-218.
+        final Date live = new Settings().evaluationDate();
+        live.addObserver(this);
+        this.evaluationDate = live.clone();
     }
 
     public RelativeDateRateHelper(final Handle< Quote > quote, final boolean updateDates) {
         super(quote);
         this.updateDates = updateDates;
-        this.evaluationDate = new Settings().evaluationDate();
-        this.evaluationDate.addObserver(this);
+        // See ctor (double, boolean) note: clone-snapshot for proxy aliasing.
+        final Date live = new Settings().evaluationDate();
+        live.addObserver(this);
+        this.evaluationDate = live.clone();
     }
 
     //XXX
@@ -126,7 +134,9 @@ public abstract class RelativeDateRateHelper extends RateHelper {
         if ( this.updateDates ) {
             final Date newEvaluationDate = new Settings().evaluationDate();
             if ( !evaluationDate.equals(newEvaluationDate) ) {
-                evaluationDate = newEvaluationDate;
+                // Take a value snapshot via clone — re-assigning the live proxy
+                // here would silently break the next-update guard.
+                evaluationDate = newEvaluationDate.clone();
                 initializeDates();
             }
         }
