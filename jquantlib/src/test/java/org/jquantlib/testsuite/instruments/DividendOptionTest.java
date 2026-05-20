@@ -817,4 +817,62 @@ public class DividendOptionTest {
         sb.append("    tolerance:        ").append(tolerance);
     }
 
+    // ------------------------------------------------------------------
+    // BLOCKED / EXISTING_EQUIVALENT ports from test-suite/dividendoption.cpp (Phase1-D5-B-R3)
+    // ------------------------------------------------------------------
+    // testFdEuropeanGreeks (cpp:722, gated by *precondition(if_speed(Fast)))
+    //   EXISTING_EQUIVALENT: covered by {@link #testFdEuropeanGreeks} above.
+    //   The Java existing test uses FDDividendEuropeanEngine (the legacy
+    //   Java engine) rather than FdBlackScholesVanillaEngine with the
+    //   Spot/Escrowed cash-dividend-model switch from v1.42.1 — the Spot
+    //   path is functionally equivalent; the Escrowed sweep is not
+    //   exercised (Escrowed model not yet supported by Java
+    //   FdBlackScholesVanillaEngine, see line 211 QL.require).
+    //
+    // testFdEuropeanWithDividendToday (cpp:922)
+    //   BLOCKED. Uses MakeFdBlackScholesVanillaEngine with cash dividends
+    //   on today's date, exercising both Spot and Escrowed cash-dividend
+    //   models. The test asserts that calling option.theta() throws for
+    //   Spot (dividend on today's date triggers a stopping-time = 0
+    //   collision with the theta-snapshot rollback) and does NOT throw
+    //   for Escrowed (PV-discounted dividends don't sit on a grid node).
+    //   Java FdBlackScholesVanillaEngine returns NaN for theta in the
+    //   stopping-time = 0 case (Fdm2DimSolver.thetaAt:141-143) rather than
+    //   throwing, so the "throws/no-throws" semantic from C++ cannot be
+    //   asserted faithfully. The Escrowed branch is additionally blocked
+    //   by the Escrowed-not-supported guard (FdBlackScholesVanillaEngine
+    //   line 211). Total infra to unblock: (a) Spot-side theta-on-T0
+    //   exception path (~10 LOC), (b) Escrowed model port (Phase 2m.5
+    //   carry-forward, ~100 LOC for PV-discounted dividend mesher
+    //   adjustment).
+    //
+    // testFdAmericanWithDividendToday (cpp:937)
+    //   BLOCKED. Same theta-throws semantic divergence as
+    //   testFdEuropeanWithDividendToday (Spot-only — American American
+    //   exercise so no Escrowed branch needed). Unblock = (a) Spot-side
+    //   theta-on-T0 exception path (~10 LOC).
+    //
+    // testEscrowedDividendModel (cpp:951)
+    //   BLOCKED. Per D5-B R1 finding (and FdBlackScholesVanillaEngine
+    //   line 211 QL.require): Escrowed dividend model not yet supported in
+    //   Java. C++ test cross-validates the Escrowed PDE NPV/Delta against
+    //   AnalyticDividendEuropeanEngine to 0.0025. Total infra to unblock:
+    //   ~100 LOC for PV-discounted dividend mesher / step-condition.
+    //
+    // testCashDividendEuropeanEngine (cpp:1024)
+    //   BLOCKED. Uses CashDividendEuropeanEngine (not ported to Java —
+    //   no class under jquantlib/src/main/java/org/jquantlib/pricingengines/).
+    //   Corresponds to C++
+    //   ql/pricingengines/vanilla/cashdividendeuropeanengine.{hpp,cpp},
+    //   which wraps AnalyticEuropeanEngine + dividend-discounted forward
+    //   to compute analytic European-with-cash-dividends prices. Total
+    //   infra to unblock: ~80 LOC port of CashDividendEuropeanEngine.
+    //
+    // testCashDividendEuropeanEngineWithManyDividends (cpp:1124)
+    //   BLOCKED. Same blocker as testCashDividendEuropeanEngine
+    //   (CashDividendEuropeanEngine missing).
+    //
+    // testCashDividendEuropeanEngineWithSingleDividends (cpp:1215)
+    //   BLOCKED. Same blocker as testCashDividendEuropeanEngine.
+
 }
