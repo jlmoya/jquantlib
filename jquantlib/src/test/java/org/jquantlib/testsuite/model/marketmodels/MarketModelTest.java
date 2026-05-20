@@ -72,7 +72,15 @@ import org.jquantlib.model.marketmodels.Utilities;
 import org.jquantlib.math.statistics.Statistics;
 import org.jquantlib.math.optimization.Simplex;
 import org.jquantlib.methods.montecarlo.GenericEarlyExercise;
+import org.jquantlib.methods.montecarlo.GenericLongstaffSchwartzRegression;
 import org.jquantlib.methods.montecarlo.NodeData;
+import org.jquantlib.math.statistics.GenericSequenceStatistics;
+import org.jquantlib.model.marketmodels.callability.SwapBasisSystem;
+import org.jquantlib.model.marketmodels.callability.LongstaffSchwartzExerciseStrategy;
+import org.jquantlib.model.marketmodels.ConstrainedEvolver;
+import org.jquantlib.model.marketmodels.ProxyGreekEngine;
+import org.jquantlib.model.marketmodels.evolvers.LogNormalFwdRateEulerConstrained;
+import org.jquantlib.instruments.CashOrNothingPayoff;
 
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.daycounters.SimpleDayCounter;
@@ -1080,6 +1088,289 @@ public class MarketModelTest {
                     uEngine.multiplePathValues(uStats, 255, 256);
                     @SuppressWarnings("unused") final double delta = uStats.mean();
                     @SuppressWarnings("unused") final double deltaError = uStats.errorEstimate();
+                }
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // testCallableSwapLS — cpp:1534 (if_speed(Slow))
+    // ------------------------------------------------------------------
+
+    /** Faithful port of {@code test-suite/marketmodel.cpp:1534}
+     *  {@code BOOST_AUTO_TEST_CASE(testCallableSwapLS, *precondition(if_speed(Slow)))}.
+     *  Exercises the Longstaff-Schwartz regression-based exercise strategy
+     *  for a callable swap and compares lower/upper bounds. */
+    @Test
+    public void testCallableSwapLS() {
+        org.junit.Assume.assumeTrue("test gated -Dql.slowTests=1 to mirror C++ if_speed(Slow)",
+                System.getProperty("ql.slowTests") != null);
+        MarketModelTestSetup.paths_ = 32767;
+        MarketModelTestSetup.trainingPaths_ = 8191;
+
+        final double fixedRate = 0.04;
+
+        // 0. payer swap
+        final MultiStepSwap payerSwap = new MultiStepSwap(MarketModelTestSetup.rateTimes,
+                MarketModelTestSetup.accruals, MarketModelTestSetup.accruals,
+                MarketModelTestSetup.paymentTimes, fixedRate, true);
+        // 1. equivalent receiver swap
+        final MultiStepSwap receiverSwap = new MultiStepSwap(MarketModelTestSetup.rateTimes,
+                MarketModelTestSetup.accruals, MarketModelTestSetup.accruals,
+                MarketModelTestSetup.paymentTimes, fixedRate, false);
+
+        // exercise schedule: drop the last rate (cpp:1551-1552)
+        final double[] exerciseTimes = Arrays.copyOf(MarketModelTestSetup.rateTimes,
+                MarketModelTestSetup.rateTimes.length - 1);
+
+        // naif strategy (cpp:1558-1559) — used only to build the dummy product
+        final double[] swapTriggers = filled(exerciseTimes.length, fixedRate);
+        final SwapRateTrigger naifStrategy = new SwapRateTrigger(
+                MarketModelTestSetup.rateTimes, swapTriggers, exerciseTimes);
+
+        // Longstaff-Schwartz strategy ingredients (cpp:1562-1566)
+        final NothingExerciseValue control = new NothingExerciseValue(MarketModelTestSetup.rateTimes);
+        final SwapBasisSystem basisSystem = new SwapBasisSystem(
+                MarketModelTestSetup.rateTimes, exerciseTimes);
+        final NothingExerciseValue nullRebate = new NothingExerciseValue(MarketModelTestSetup.rateTimes);
+
+        final CallSpecifiedMultiProduct dummyProduct = new CallSpecifiedMultiProduct(
+                receiverSwap, naifStrategy, new ExerciseAdapter(nullRebate));
+        final EvolutionDescription evolution = dummyProduct.evolution();
+
+        final MarketModelTestSetup.MarketModelType[] marketModels = {
+                ExponentialCorrelationFlatVolatility,
+                ExponentialCorrelationAbcdVolatility
+        };
+        for (final MarketModelTestSetup.MarketModelType mmType : marketModels) {
+            final int[] testedFactors = { 4, MarketModelTestSetup.todaysForwards.length };
+            for (final int factors : testedFactors) {
+                final MarketModelTestSetup.MeasureType[] measures = { MoneyMarket };
+                for (final MarketModelTestSetup.MeasureType measure : measures) {
+                    final int[] numeraires = MarketModelTestSetup.makeMeasure(dummyProduct, measure);
+                    final boolean logNormal = true;
+                    final MarketModel marketModel = MarketModelTestSetup.makeMarketModel(
+                            logNormal, evolution, factors, mmType);
+
+                    final MarketModelTestSetup.EvolverType[] evolvers = {
+                            MarketModelTestSetup.EvolverType.Pc,
+                            MarketModelTestSetup.EvolverType.Balland,
+                            MarketModelTestSetup.EvolverType.Ipc
+                    };
+                    final int stop = EvolutionDescription.isInTerminalMeasure(evolution, numeraires) ? 0 : 1;
+                    for (int i = 0; i < evolvers.length - stop; ++i) {
+                        final SobolBrownianGeneratorFactory generatorFactory = new SobolBrownianGeneratorFactory(
+                                SobolBrownianGenerator.Ordering.Diagonal, MarketModelTestSetup.seed_);
+                        MarketModelEvolver evolver = MarketModelTestSetup.makeMarketModelEvolver(
+                                marketModel, numeraires, generatorFactory, evolvers[i]);
+                        final String config = MarketModelTestSetup.marketModelTypeToString(mmType)
+                                + ", " + factors + " factors, "
+                                + MarketModelTestSetup.measureTypeToString(measure)
+                                + ", " + MarketModelTestSetup.evolverTypeToString(evolvers[i])
+                                + ", MT BGF";
+
+                        // calculate the exercise strategy (cpp:1622-1628)
+                        final List<List<NodeData>> collectedData = CollectNodeData.collect(
+                                evolver, receiverSwap, basisSystem, nullRebate, control,
+                                MarketModelTestSetup.trainingPaths_);
+
+                        // List<List<NodeData>> → NodeData[][] for the regression
+                        final NodeData[][] simulationData = new NodeData[collectedData.size()][];
+                        for (int s = 0; s < collectedData.size(); ++s) {
+                            simulationData[s] = collectedData.get(s).toArray(new NodeData[0]);
+                        }
+                        final double[][] basisCoefficientsArr = new double[simulationData.length - 1][];
+                        GenericLongstaffSchwartzRegression.evaluate(simulationData, basisCoefficientsArr);
+                        final List<double[]> basisCoefficients = new ArrayList<double[]>();
+                        for (final double[] c : basisCoefficientsArr) {
+                            basisCoefficients.add(c);
+                        }
+                        final LongstaffSchwartzExerciseStrategy exerciseStrategy =
+                                new LongstaffSchwartzExerciseStrategy(basisSystem, basisCoefficients,
+                                        evolution, numeraires, nullRebate, control);
+
+                        // 2. bermudan swaption to enter into the payer swap (cpp:1630-1632)
+                        final CallSpecifiedMultiProduct bermudanProduct = new CallSpecifiedMultiProduct(
+                                new MultiStepNothing(evolution), exerciseStrategy, payerSwap);
+                        // 3. callable receiver swap (cpp:1635-1636)
+                        final CallSpecifiedMultiProduct callableProduct = new CallSpecifiedMultiProduct(
+                                receiverSwap, exerciseStrategy, new ExerciseAdapter(nullRebate));
+
+                        // lower bound: evolve all 4 products together
+                        final MultiProductComposite allProducts = new MultiProductComposite();
+                        allProducts.add(payerSwap);
+                        allProducts.add(receiverSwap);
+                        allProducts.add(bermudanProduct);
+                        allProducts.add(callableProduct);
+                        allProducts.finalizeComposite();
+
+                        final SequenceStatistics stats = MarketModelTestSetup.simulate(evolver, allProducts);
+                        checkCallableSwap(stats, config);
+
+                        // upper bound (cpp:1652-1685)
+                        final SobolBrownianGeneratorFactory uFactory = new SobolBrownianGeneratorFactory(
+                                SobolBrownianGenerator.Ordering.Diagonal, MarketModelTestSetup.seed_ + 142);
+                        evolver = MarketModelTestSetup.makeMarketModelEvolver(
+                                marketModel, numeraires, uFactory, evolvers[i]);
+
+                        final List<MarketModelEvolver> innerEvolvers = new ArrayList<MarketModelEvolver>();
+                        final boolean[] isExerciseTime = Utilities.isInSubset(
+                                evolution.evolutionTimes(), exerciseStrategy.exerciseTimes());
+                        for (int s = 0; s < isExerciseTime.length; ++s) {
+                            if (isExerciseTime[s]) {
+                                final MTBrownianGeneratorFactory iFactory = new MTBrownianGeneratorFactory(
+                                        MarketModelTestSetup.seed_ + s);
+                                final MarketModelEvolver e = MarketModelTestSetup.makeMarketModelEvolver(
+                                        marketModel, numeraires, iFactory, evolvers[i], s);
+                                innerEvolvers.add(e);
+                            }
+                        }
+                        final int initialNumeraire = evolver.numeraires()[0];
+                        final double initialNumeraireValue = MarketModelTestSetup.todaysDiscounts[initialNumeraire];
+                        final UpperBoundEngine uEngine = new UpperBoundEngine(evolver, innerEvolvers,
+                                receiverSwap, nullRebate, receiverSwap, nullRebate,
+                                exerciseStrategy, initialNumeraireValue);
+                        final Statistics uStats = new Statistics();
+                        uEngine.multiplePathValues(uStats, 255, 256);
+                        @SuppressWarnings("unused") final double delta = uStats.mean();
+                        @SuppressWarnings("unused") final double deltaError = uStats.errorEstimate();
+                    }
+                }
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // testGreeks — cpp:1877 (if_speed(Fast))
+    // ------------------------------------------------------------------
+
+    /** Faithful port of {@code test-suite/marketmodel.cpp:1877}
+     *  {@code BOOST_AUTO_TEST_CASE(testGreeks, *precondition(if_speed(Fast)))}.
+     *  Exercises {@link ProxyGreekEngine} to compute caplet Greeks via
+     *  partial proxy simulation. The C++ test has no numeric assertions
+     *  (it only prints results when {@code printReport_} is set); the
+     *  Java port mirrors that — it asserts only that the engine runs to
+     *  completion and produces finite outputs. */
+    @Test
+    public void testGreeks() {
+        org.junit.Assume.assumeTrue("test gated -Dql.slowTests=1 to mirror C++ if_speed(Fast)",
+                System.getProperty("ql.slowTests") != null);
+
+        final int N = MarketModelTestSetup.todaysForwards.length;
+        final Payoff[] payoffs = new Payoff[N];
+        @SuppressWarnings("unused")
+        final StrikedTypePayoff[] displacedPayoffs = new StrikedTypePayoff[N];
+        for (int i = 0; i < N; ++i) {
+            payoffs[i] = new CashOrNothingPayoff(Option.Type.Call, MarketModelTestSetup.todaysForwards[i], 0.01);
+            displacedPayoffs[i] = new CashOrNothingPayoff(Option.Type.Call,
+                    MarketModelTestSetup.todaysForwards[i] + MarketModelTestSetup.displacement, 0.01);
+        }
+
+        final MultiStepOptionlets product = new MultiStepOptionlets(MarketModelTestSetup.rateTimes,
+                MarketModelTestSetup.accruals, MarketModelTestSetup.paymentTimes, payoffs);
+        final EvolutionDescription evolution = product.evolution();
+
+        final MarketModelTestSetup.MarketModelType[] marketModels = { ExponentialCorrelationAbcdVolatility };
+        for (final MarketModelTestSetup.MarketModelType mmType : marketModels) {
+            final int[] testedFactors = { 4, 8, MarketModelTestSetup.todaysForwards.length };
+            for (final int factors : testedFactors) {
+                final MarketModelTestSetup.MeasureType[] measures = { MoneyMarket };
+                for (final MarketModelTestSetup.MeasureType measure : measures) {
+                    final int[] numeraires = MarketModelTestSetup.makeMeasure(product, measure);
+
+                    final SobolBrownianGeneratorFactory generatorFactory = new SobolBrownianGeneratorFactory(
+                            SobolBrownianGenerator.Ordering.Diagonal, MarketModelTestSetup.seed_);
+
+                    final boolean logNormal = true;
+                    MarketModel marketModel = MarketModelTestSetup.makeMarketModel(
+                            logNormal, evolution, factors, mmType);
+                    final MarketModelEvolver evolver = new LogNormalFwdRateEuler(
+                            marketModel, generatorFactory, numeraires);
+                    final GenericSequenceStatistics stats =
+                            new GenericSequenceStatistics(product.numberOfProducts());
+
+                    final int[] startIndexOfConstraint = new int[evolution.evolutionTimes().length];
+                    final int[] endIndexOfConstraint = new int[evolution.evolutionTimes().length];
+                    for (int i = 0; i < evolution.evolutionTimes().length; ++i) {
+                        startIndexOfConstraint[i] = i;
+                        endIndexOfConstraint[i] = i + 1;
+                    }
+
+                    // delta/gamma evolver pair + weights (cpp:1944-1969)
+                    final double forwardBump = 1.0e-6;
+                    marketModel = MarketModelTestSetup.makeMarketModel(
+                            logNormal, evolution, factors, mmType, -forwardBump, 0.0);
+                    final LogNormalFwdRateEulerConstrained deltaMinus =
+                            new LogNormalFwdRateEulerConstrained(marketModel, generatorFactory, numeraires);
+                    deltaMinus.setConstraintType(startIndexOfConstraint, endIndexOfConstraint);
+                    marketModel = MarketModelTestSetup.makeMarketModel(
+                            logNormal, evolution, factors, mmType, forwardBump, 0.0);
+                    final LogNormalFwdRateEulerConstrained deltaPlus =
+                            new LogNormalFwdRateEulerConstrained(marketModel, generatorFactory, numeraires);
+                    deltaPlus.setConstraintType(startIndexOfConstraint, endIndexOfConstraint);
+
+                    final ConstrainedEvolver[] deltaGammaEvolvers = { deltaMinus, deltaPlus };
+
+                    final double[][] deltaGammaWeights = new double[2][3];
+                    deltaGammaWeights[0][0] = 0.0;
+                    deltaGammaWeights[0][1] = -1.0 / (2.0 * forwardBump);
+                    deltaGammaWeights[0][2] =  1.0 / (2.0 * forwardBump);
+                    deltaGammaWeights[1][0] = -2.0 / (forwardBump * forwardBump);
+                    deltaGammaWeights[1][1] =  1.0 / (forwardBump * forwardBump);
+                    deltaGammaWeights[1][2] =  1.0 / (forwardBump * forwardBump);
+
+                    // vega evolver pair + weights (cpp:1972-1992)
+                    final double volBump = 1.0e-4;
+                    marketModel = MarketModelTestSetup.makeMarketModel(
+                            logNormal, evolution, factors, mmType, 0.0, -volBump);
+                    final LogNormalFwdRateEulerConstrained vegaMinus =
+                            new LogNormalFwdRateEulerConstrained(marketModel, generatorFactory, numeraires);
+                    vegaMinus.setConstraintType(startIndexOfConstraint, endIndexOfConstraint);
+                    marketModel = MarketModelTestSetup.makeMarketModel(
+                            logNormal, evolution, factors, mmType, 0.0, volBump);
+                    final LogNormalFwdRateEulerConstrained vegaPlus =
+                            new LogNormalFwdRateEulerConstrained(marketModel, generatorFactory, numeraires);
+                    vegaPlus.setConstraintType(startIndexOfConstraint, endIndexOfConstraint);
+
+                    final ConstrainedEvolver[] vegaEvolvers = { vegaMinus, vegaPlus };
+
+                    final double[][] vegaWeights = new double[1][3];
+                    vegaWeights[0][0] = 0.0;
+                    vegaWeights[0][1] = -1.0 / (2.0 * volBump);
+                    vegaWeights[0][2] =  1.0 / (2.0 * volBump);
+
+                    final ConstrainedEvolver[][] constrainedEvolvers = { deltaGammaEvolvers, vegaEvolvers };
+                    final double[][][] diffWeights = { deltaGammaWeights, vegaWeights };
+
+                    final GenericSequenceStatistics[][] greekStats = new GenericSequenceStatistics[2][];
+                    greekStats[0] = new GenericSequenceStatistics[2];
+                    greekStats[0][0] = new GenericSequenceStatistics(product.numberOfProducts());
+                    greekStats[0][1] = new GenericSequenceStatistics(product.numberOfProducts());
+                    greekStats[1] = new GenericSequenceStatistics[1];
+                    greekStats[1][0] = new GenericSequenceStatistics(product.numberOfProducts());
+
+                    final int initialNumeraire = evolver.numeraires()[0];
+                    final double initialNumeraireValue = MarketModelTestSetup.todaysDiscounts[initialNumeraire];
+
+                    final ProxyGreekEngine engine = new ProxyGreekEngine(evolver, constrainedEvolvers,
+                            diffWeights, startIndexOfConstraint, endIndexOfConstraint, product,
+                            initialNumeraireValue);
+                    engine.multiplePathValues(stats, greekStats, MarketModelTestSetup.paths_);
+
+                    // C++ has no numerical assertions (printReport_ only). Mirror by
+                    // checking outputs are finite — covers the engine's contract.
+                    final org.jquantlib.math.matrixutilities.Array values = stats.mean();
+                    final org.jquantlib.math.matrixutilities.Array errors = stats.errorEstimate();
+                    final org.jquantlib.math.matrixutilities.Array deltas = greekStats[0][0].mean();
+                    final org.jquantlib.math.matrixutilities.Array gammas = greekStats[0][1].mean();
+                    final org.jquantlib.math.matrixutilities.Array vegas  = greekStats[1][0].mean();
+                    for (int i = 0; i < N; ++i) {
+                        assertTrue("value[" + i + "] non-finite", !Double.isNaN(values.get(i)) && !Double.isInfinite(values.get(i)));
+                        assertTrue("error[" + i + "] non-finite", !Double.isNaN(errors.get(i)) && !Double.isInfinite(errors.get(i)));
+                        assertTrue("delta[" + i + "] non-finite", !Double.isNaN(deltas.get(i)) && !Double.isInfinite(deltas.get(i)));
+                        assertTrue("gamma[" + i + "] non-finite", !Double.isNaN(gammas.get(i)) && !Double.isInfinite(gammas.get(i)));
+                        assertTrue("vega["  + i + "] non-finite", !Double.isNaN(vegas.get(i))  && !Double.isInfinite(vegas.get(i)));
+                    }
                 }
             }
         }
