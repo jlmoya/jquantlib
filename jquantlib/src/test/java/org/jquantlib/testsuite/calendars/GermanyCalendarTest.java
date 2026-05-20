@@ -39,8 +39,8 @@ public class GermanyCalendarTest {
 	@Test
 	public void testGermanyYear2004() {
 		final int year = 2004;
-		QL.info("Testing Germany holiday list for the year " + year + " as recognized by markets Frankfurt Stock Exchange, Xetra, Eurex ...");
-        
+		QL.info("Testing Germany holiday list for the year " + year + " as recognized by markets Frankfurt Stock Exchange, Xetra ...");
+
     	final List<Date> expectedHol = new ArrayList<Date>();
 
 		//new years day
@@ -53,8 +53,6 @@ public class GermanyCalendarTest {
 		//expectedHol.add(new Date(25,DECEMBER,year));
 		//boxing day
 		//expectedHol.add(new Date(26,DECEMBER,year));
-		//new years eve
-		expectedHol.add(new Date(31,December,year));
 
 		//good friday
 		expectedHol.add(new Date(9,April,year));
@@ -62,10 +60,15 @@ public class GermanyCalendarTest {
 		expectedHol.add(new Date(12,April,year));
 
 
-		// Call the Holiday Check
+		// Call the Holiday Check — Frankfurt/Xetra do NOT close on 31 Dec
+		// per C++ v1.42.1 ql/time/calendars/germany.cpp.
 		final CalendarUtil cbt = new CalendarUtil();
 		cbt.checkHolidayList(expectedHol, cFrankfurt, year);
 		cbt.checkHolidayList(expectedHol, cXetra, year);
+
+		QL.info("Testing Germany holiday list for the year " + year + " as recognized by Eurex ...");
+		// Eurex adds New Year's Eve
+		expectedHol.add(new Date(31,December,year));
 		cbt.checkHolidayList(expectedHol, cEurex, year);
 
 		QL.info("Testing Germany holiday list for the year " + year + " as recognized by Settlement ...");
@@ -175,8 +178,8 @@ public class GermanyCalendarTest {
 	@Test
 	public void testGermanyYear2007() {
 		final int year = 2007;
-		QL.info("Testing Germany holiday list for the year " + year + " as recognized by markets Frankfurt Stock Exchange, Xetra, Eurex ...");
-        
+		QL.info("Testing Germany holiday list for the year " + year + " as recognized by markets Frankfurt Stock Exchange, Xetra ...");
+
     	final List<Date> expectedHol = new ArrayList<Date>();
 
 		//new years day
@@ -189,18 +192,21 @@ public class GermanyCalendarTest {
 		expectedHol.add(new Date(25,December,year));
 		//boxing day
 		expectedHol.add(new Date(26,December,year));
-		//new years eve
-		expectedHol.add(new Date(31,December,year));
 
 		//good friday
 		expectedHol.add(new Date(6,April,year));
 		//easter monday
 		expectedHol.add(new Date(9,April,year));
 
-		// Call the Holiday Check
+		// Call the Holiday Check — Frankfurt/Xetra do NOT close on 31 Dec
+		// per C++ v1.42.1 ql/time/calendars/germany.cpp.
 		final CalendarUtil cbt = new CalendarUtil();
 		cbt.checkHolidayList(expectedHol, cFrankfurt, year);
 		cbt.checkHolidayList(expectedHol, cXetra, year);
+
+		QL.info("Testing Germany holiday list for the year " + year + " as recognized by Eurex ...");
+		// Eurex adds New Year's Eve
+		expectedHol.add(new Date(31,December,year));
 		cbt.checkHolidayList(expectedHol, cEurex, year);
 
 		QL.info("Testing Germany holiday list for the year " + year + " as recognized by Settlement ...");
@@ -222,8 +228,8 @@ public class GermanyCalendarTest {
 	@Test
 	public void testGermanyYear2008() {
 		final int year = 2008;
-		QL.info("Testing Germany holiday list for the year " + year + " as recognized by markets Frankfurt Stock Exchange, Xetra, Eurex ...");
-        
+		QL.info("Testing Germany holiday list for the year " + year + " as recognized by markets Frankfurt Stock Exchange, Xetra ...");
+
     	final List<Date> expectedHol = new ArrayList<Date>();
 
 		//new years day
@@ -236,18 +242,21 @@ public class GermanyCalendarTest {
 		expectedHol.add(new Date(25,December,year));
 		//boxing day
 		expectedHol.add(new Date(26,December,year));
-		//new years eve
-		expectedHol.add(new Date(31,December,year));
 
 		//good friday
 		expectedHol.add(new Date(21,March,year));
 		//easter monday
 		expectedHol.add(new Date(24,March,year));
 
-		// Call the Holiday Check
+		// Call the Holiday Check — Frankfurt/Xetra do NOT close on 31 Dec
+		// per C++ v1.42.1 ql/time/calendars/germany.cpp.
 		final CalendarUtil cbt = new CalendarUtil();
 		cbt.checkHolidayList(expectedHol, cFrankfurt, year);
 		cbt.checkHolidayList(expectedHol, cXetra, year);
+
+		QL.info("Testing Germany holiday list for the year " + year + " as recognized by Eurex ...");
+		// Eurex adds New Year's Eve
+		expectedHol.add(new Date(31,December,year));
 		cbt.checkHolidayList(expectedHol, cEurex, year);
 
 		QL.info("Testing Germany holiday list for the year " + year + " as recognized by Settlement ...");
@@ -267,8 +276,8 @@ public class GermanyCalendarTest {
 	@Test
 	public void testGermanyYear2009() {
 		final int year = 2009;
-		QL.info("Testing Germany holiday list for the year " + year + " as recognized by markets Frankfurt Stock Exchange, Xetra, Eurex ...");
-        
+		QL.info("Testing Germany holiday list for the year " + year + " as recognized by markets Frankfurt Stock Exchange, Xetra ...");
+
     	final List<Date> expectedHol = new ArrayList<Date>();
 
 		//new years day
@@ -281,18 +290,21 @@ public class GermanyCalendarTest {
 		expectedHol.add(new Date(25,December,year));
 		//boxing day
 		//expectedHol.add(new Date(26,DECEMBER,year));
-		//new years eve
-		expectedHol.add(new Date(31,December,year));
 
 		//good friday
 		expectedHol.add(new Date(10,April,year));
 		//easter monday
 		expectedHol.add(new Date(13,April,year));
 
-		// Call the Holiday Check
+		// Call the Holiday Check — Frankfurt/Xetra do NOT close on 31 Dec
+		// per C++ v1.42.1 ql/time/calendars/germany.cpp.
 		final CalendarUtil cbt = new CalendarUtil();
 		cbt.checkHolidayList(expectedHol, cFrankfurt, year);
 		cbt.checkHolidayList(expectedHol, cXetra, year);
+
+		QL.info("Testing Germany holiday list for the year " + year + " as recognized by Eurex ...");
+		// Eurex adds New Year's Eve
+		expectedHol.add(new Date(31,December,year));
 		cbt.checkHolidayList(expectedHol, cEurex, year);
 
 		QL.info("Testing Germany holiday list for the year " + year + " as recognized by Settlement ...");
@@ -312,8 +324,8 @@ public class GermanyCalendarTest {
 	@Test
 	public void testGermanyYear2010() {
 		final int year = 2010;
-		QL.info("Testing Germany holiday list for the year " + year + " as recognized by markets Frankfurt Stock Exchange, Xetra, Eurex ...");
-        
+		QL.info("Testing Germany holiday list for the year " + year + " as recognized by markets Frankfurt Stock Exchange, Xetra ...");
+
     	final List<Date> expectedHol = new ArrayList<Date>();
 
 		//new years day
@@ -326,18 +338,21 @@ public class GermanyCalendarTest {
 		//expectedHol.add(new Date(25,DECEMBER,year));
 		//boxing day
 		//expectedHol.add(new Date(26,DECEMBER,year));
-		//new years eve
-		expectedHol.add(new Date(31,December,year));
 
 		//good friday
 		expectedHol.add(new Date(2,April,year));
 		//easter monday
 		expectedHol.add(new Date(5,April,year));
 
-		// Call the Holiday Check
+		// Call the Holiday Check — Frankfurt/Xetra do NOT close on 31 Dec
+		// per C++ v1.42.1 ql/time/calendars/germany.cpp.
 		final CalendarUtil cbt = new CalendarUtil();
 		cbt.checkHolidayList(expectedHol, cFrankfurt, year);
 		cbt.checkHolidayList(expectedHol, cXetra, year);
+
+		QL.info("Testing Germany holiday list for the year " + year + " as recognized by Eurex ...");
+		// Eurex adds New Year's Eve
+		expectedHol.add(new Date(31,December,year));
 		cbt.checkHolidayList(expectedHol, cEurex, year);
 
 		QL.info("Testing Germany holiday list for the year " + year + " as recognized by Settlement ...");
@@ -402,8 +417,8 @@ public class GermanyCalendarTest {
 	@Test
 	public void testGermanyYear2012() {
 		final int year = 2012;
-		QL.info("Testing Germany holiday list for the year " + year + " as recognized by markets Frankfurt Stock Exchange, Xetra, Eurex ...");
-        
+		QL.info("Testing Germany holiday list for the year " + year + " as recognized by markets Frankfurt Stock Exchange, Xetra ...");
+
     	final List<Date> expectedHol = new ArrayList<Date>();
 
 		//new years day
@@ -416,18 +431,21 @@ public class GermanyCalendarTest {
 		expectedHol.add(new Date(25,December,year));
 		//boxing day
 		expectedHol.add(new Date(26,December,year));
-		//new years eve
-		expectedHol.add(new Date(31,December,year));
 
 		//good friday
 		expectedHol.add(new Date(6,April,year));
 		//easter monday
 		expectedHol.add(new Date(9,April,year));
 
-		// Call the Holiday Check
+		// Call the Holiday Check — Frankfurt/Xetra do NOT close on 31 Dec
+		// per C++ v1.42.1 ql/time/calendars/germany.cpp.
 		final CalendarUtil cbt = new CalendarUtil();
 		cbt.checkHolidayList(expectedHol, cFrankfurt, year);
 		cbt.checkHolidayList(expectedHol, cXetra, year);
+
+		QL.info("Testing Germany holiday list for the year " + year + " as recognized by Eurex ...");
+		// Eurex adds New Year's Eve
+		expectedHol.add(new Date(31,December,year));
 		cbt.checkHolidayList(expectedHol, cEurex, year);
 
 		QL.info("Testing Germany holiday list for the year " + year + " as recognized by Settlement ...");

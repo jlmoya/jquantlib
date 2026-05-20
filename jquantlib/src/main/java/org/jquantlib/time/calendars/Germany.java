@@ -235,9 +235,11 @@ public class Germany extends Calendar {
                     // Christmas
                     && (d != 25 || m != December)
                     // Christmas Day
-                    && (d != 26 || m != December)
-                    // New Year's Eve
-                    && (d != 31 || m != December);
+                    && (d != 26 || m != December);
+            // NOTE: Frankfurt Stock Exchange does NOT close on New Year's Eve
+            // (31 Dec). See C++ v1.42.1 ql/time/calendars/germany.cpp
+            // FrankfurtStockExchangeImpl (no 31 December rule). The Eurex
+            // calendar is the only Germany variant with a 31 December closure.
         }
 
     }
@@ -270,9 +272,11 @@ public class Germany extends Calendar {
                     // Christmas
                     && (d != 25 || m != December)
                     // Christmas Day
-                    && (d != 26 || m != December)
-                    // New Year's Eve
-                    && (d != 31 || m != December);
+                    && (d != 26 || m != December);
+            // NOTE: Xetra does NOT close on New Year's Eve (31 Dec). See C++
+            // v1.42.1 ql/time/calendars/germany.cpp XetraImpl (no 31 December
+            // rule). The Eurex calendar is the only Germany variant with a
+            // 31 December closure.
         }
 
     }
