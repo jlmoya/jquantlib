@@ -24,6 +24,7 @@ package org.jquantlib;
 
 import org.jquantlib.time.Date;
 
+import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -248,6 +249,31 @@ public class Settings {
 
     private static class DateProxy extends Date {
 
+        /**
+         * Reflective handle to the private {@code Date.timeOfDayNanos} field,
+         * used to propagate intraday metadata (mirrors C++
+         * {@code QL_HIGH_RESOLUTION_DATE}) across
+         * {@link #assign(Date) DateProxy.assign(Date)} re-anchors. Phase
+         * 5e.5b-CFC-d-314 — required so that
+         * {@code Settings.evaluationDate() = now_with_intraday} preserves the
+         * sub-day component (otherwise C++ test-suite/fdheston.cpp
+         * {@code testFdmHestonIntradayPricing} reports constant gamma across
+         * all 10 intraday timestamps because the term-structure reference date
+         * silently collapses to midnight). Plain reflective access avoids
+         * touching {@link Date} itself (a foundation class on a hot path).
+         */
+        private static final Field TIME_OF_DAY_NANOS_FIELD;
+
+        static {
+            try {
+                final Field f = Date.class.getDeclaredField("timeOfDayNanos");
+                f.setAccessible(true);
+                TIME_OF_DAY_NANOS_FIELD = f;
+            } catch (final NoSuchFieldException e) {
+                throw new ExceptionInInitializerError(e);
+            }
+        }
+
         // outside world cannot instantiate
         private DateProxy() {
             super();
@@ -264,10 +290,23 @@ public class Settings {
             // Align with C++ QuantLib v1.42.1 (settings.hpp:141-145):
             // 'if (value() != d) ObservableValue<Date>::operator=(d);'
             // — suppress notifications when assigning the same date.
-            if ( super.serialNumber() == date.serialNumber() ) {
+            //
+            // Phase 5e.5b-CFC-d-314: also propagate the intraday
+            // timeOfDayNanos payload so that QL_HIGH_RESOLUTION_DATE
+            // semantics are preserved across re-anchors. Identity on the
+            // C++ side is full date-time (day + hh:mm:ss.SSSS), so the
+            // notification guard must compare both components.
+            final long newSerial = date.serialNumber();
+            final long newTimeOfDay = date.timeOfDayNanos();
+            if ( super.serialNumber() == newSerial && super.timeOfDayNanos() == newTimeOfDay ) {
                 return this;
             }
-            super.assign(date.serialNumber());
+            super.assign(newSerial);
+            try {
+                TIME_OF_DAY_NANOS_FIELD.setLong(this, newTimeOfDay);
+            } catch (final IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
             super.notifyObservers();
             return this;
         }

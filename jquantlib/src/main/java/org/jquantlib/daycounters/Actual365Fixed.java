@@ -81,7 +81,19 @@ public class Actual365Fixed extends DayCounter {
         @Override
         public /*@Time*/ double yearFraction(final Date dateStart, final Date dateEnd, final Date refPeriodStart,
                 final Date refPeriodEnd) /* @ReadOnly */ {
-            return /*@Time*/ dayCount(dateStart, dateEnd) / 365.0;
+            // Phase 5e.5b-CFC-d-314: mirror C++
+            // ql/time/daycounters/actual365fixed.hpp:55-58 verbatim:
+            //   return daysBetween(d1, d2) / 365.0;
+            // where the free function daysBetween(d1, d2) is
+            // (d2-d1) + d2.fractionOfDay() - d1.fractionOfDay()
+            // (ql/time/date.cpp:719-722). For day-only Dates the fraction
+            // terms are both 0 and the result is identical to the prior
+            // integer-only branch; for intraday Dates this preserves the
+            // sub-day component as required by C++ test-suite
+            // testFdmHestonIntradayPricing.
+            final long days = dayCount(dateStart, dateEnd);
+            final double fractional = dateEnd.fractionOfDay() - dateStart.fractionOfDay();
+            return ((double) days + fractional) / 365.0;
         }
 
     }
