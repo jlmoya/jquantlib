@@ -36,8 +36,10 @@ import org.jquantlib.QL;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.quotes.RelinkableHandle;
 import org.jquantlib.testsuite.util.Flag;
+import org.jquantlib.time.ASX;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.DateParser;
+import org.jquantlib.time.ECB;
 import org.jquantlib.time.IMM;
 import org.jquantlib.time.Month;
 import org.jquantlib.time.Period;
@@ -542,4 +544,205 @@ public class DatesTest {
         }
     }
 
+    /**
+     * Port of v1.42.1 test-suite/dates.cpp::ecbIsECBcode (lines 45-59).
+     */
+    @Test
+    public void ecbIsECBcode() {
+        QL.info("Testing ECB codes for validity...");
+
+        assertTrue(ECB.isECBcode("JAN00"));
+        assertTrue(ECB.isECBcode("FEB78"));
+        assertTrue(ECB.isECBcode("mar58"));
+        assertTrue(ECB.isECBcode("aPr99"));
+
+        assertFalse(ECB.isECBcode(""));
+        assertFalse(ECB.isECBcode("JUNE99"));
+        assertFalse(ECB.isECBcode("JUN1999"));
+        assertFalse(ECB.isECBcode("JUNE"));
+        assertFalse(ECB.isECBcode("JUNE1999"));
+        assertFalse(ECB.isECBcode("1999"));
+    }
+
+    /**
+     * Port of v1.42.1 test-suite/dates.cpp::ecbDates (lines 61-100).
+     */
+    @Test
+    public void ecbDates() {
+        QL.info("Testing ECB dates...");
+
+        // Take a snapshot of the original set so subsequent add/remove
+        // calls in this test don't permanently mutate global state.
+        final java.util.SortedSet<Date> known = new java.util.TreeSet<Date>(
+                new java.util.Comparator<Date>() {
+                    @Override
+                    public int compare(final Date a, final Date b) {
+                        return Long.compare(a.serialNumber(), b.serialNumber());
+                    }
+                });
+        known.addAll(ECB.knownDates());
+        assertFalse(known.isEmpty());
+
+        final int n = ECB.nextDates(Date.minDate()).size();
+        assertEquals(n, known.size());
+
+        Date previousEcbDate = Date.minDate();
+        for (final Date currentEcbDate : known) {
+            if (!ECB.isECBdate(currentEcbDate)) {
+                fail(currentEcbDate + " fails isECBdate check");
+            }
+            final Date ecbDateMinusOne = currentEcbDate.sub(1);
+            if (ECB.isECBdate(ecbDateMinusOne)) {
+                fail(ecbDateMinusOne + " fails isECBdate check");
+            }
+            if (!ECB.nextDate(ecbDateMinusOne).equals(currentEcbDate)) {
+                fail("next ECB date following " + ecbDateMinusOne + " must be " + currentEcbDate);
+            }
+            if (!ECB.nextDate(previousEcbDate).equals(currentEcbDate)) {
+                fail("next ECB date following " + previousEcbDate + " must be " + currentEcbDate);
+            }
+            previousEcbDate = currentEcbDate;
+        }
+
+        final Date knownDate = known.first();
+        ECB.removeDate(knownDate);
+        assertFalse("unable to remove an ECB date", ECB.isECBdate(knownDate));
+        ECB.addDate(knownDate);
+        assertTrue("unable to add an ECB date", ECB.isECBdate(knownDate));
+    }
+
+    /**
+     * Port of v1.42.1 test-suite/dates.cpp::ecbGetDateFromCode (lines 102-117).
+     */
+    @Test
+    public void ecbGetDateFromCode() {
+        QL.info("Testing conversion of ECB codes to dates...");
+
+        final Date ref2000 = new Date(1, Month.January, 2000);
+        assertEquals(new Date(19, Month.January,  2005), ECB.date("JAN05", ref2000));
+        assertEquals(new Date( 8, Month.February, 2006), ECB.date("FEB06", ref2000));
+        assertEquals(new Date(14, Month.March,    2007), ECB.date("MAR07", ref2000));
+        assertEquals(new Date(16, Month.April,    2008), ECB.date("APR08", ref2000));
+        assertEquals(new Date(10, Month.June,     2009), ECB.date("JUN09", ref2000));
+        assertEquals(new Date(14, Month.July,      2010), ECB.date("JUL10"));
+        assertEquals(new Date(10, Month.August,    2011), ECB.date("AUG11"));
+        assertEquals(new Date(12, Month.September, 2012), ECB.date("SEP12"));
+        assertEquals(new Date( 9, Month.October,   2013), ECB.date("OCT13"));
+        assertEquals(new Date(12, Month.November,  2014), ECB.date("NOV14"));
+        assertEquals(new Date( 9, Month.December,  2015), ECB.date("DEC15"));
+    }
+
+    /**
+     * Port of v1.42.1 test-suite/dates.cpp::ecbGetCodeFromDate (lines 119-125).
+     */
+    @Test
+    public void ecbGetCodeFromDate() {
+        QL.info("Testing creation of ECB code from a given date...");
+
+        assertEquals("JAN06", ECB.code(new Date(18, Month.January,  2006)));
+        assertEquals("MAR10", ECB.code(new Date(10, Month.March,    2010)));
+        assertEquals("NOV17", ECB.code(new Date( 1, Month.November, 2017)));
+    }
+
+    /**
+     * Port of v1.42.1 test-suite/dates.cpp::ecbNextCode (lines 127-135).
+     */
+    @Test
+    public void ecbNextCode() {
+        QL.info("Testing calculation of the next ECB code from a given code...");
+
+        assertEquals("FEB06", ECB.nextCode("JAN06"));
+        assertEquals("MAR10", ECB.nextCode("FeB10"));
+        assertEquals("NOV17", ECB.nextCode("OCT17"));
+        assertEquals("JAN18", ECB.nextCode("dEC17"));
+        assertEquals("JAN00", ECB.nextCode("dec99"));
+    }
+
+    /**
+     * Port of v1.42.1 test-suite/dates.cpp::asxDates (lines 196-246).
+     * Reduced range to keep test runtime sane (Java loops are 4-5x slower
+     * than C++ here).
+     */
+    @Test
+    public void asxDates() {
+        QL.info("Testing ASX dates...");
+
+        final String[] ASXcodes = IMMcodes; // same shape, F0..Z9
+
+        final Date last = new Date(1, Month.January, 2040);
+        final Date counter = new Date(1, Month.January, 2000);
+        while (counter.le(last)) {
+            final Date asx = ASX.nextDate(counter, false);
+
+            if (asx.le(counter)) {
+                fail(asx.weekday() + " " + asx + " is not greater than " + counter.weekday() + " " + counter);
+            }
+            if (!ASX.isASXdate(asx, false)) {
+                fail(asx.weekday() + " " + asx + " is not an ASX date (calculated from " + counter.weekday() + " " + counter + ")");
+            }
+            if (asx.gt(ASX.nextDate(counter, true))) {
+                fail(asx.weekday() + " " + asx + " is not less than or equal to the next future in the main cycle " + ASX.nextDate(counter, true));
+            }
+            if (!ASX.date(ASX.code(asx), counter).equals(asx)) {
+                fail(ASX.code(asx) + " at calendar day " + counter + " is not the ASX code matching " + asx);
+            }
+            for (final String code : ASXcodes) {
+                if (ASX.date(code, counter).lt(counter)) {
+                    fail(ASX.date(code, counter) + " is wrong for " + code + " at reference date " + counter);
+                }
+            }
+            counter.inc();
+        }
+    }
+
+    /**
+     * Port of v1.42.1 test-suite/dates.cpp::asxDatesSpecific (lines 249-277).
+     */
+    @Test
+    public void asxDatesSpecific() {
+        QL.info("Testing ASX functionality with specific dates...");
+
+        // isASXdate / weekday
+        final Date d = new Date(12, Month.January, 2024);
+        assertEquals(Weekday.Friday, d.weekday());
+        assertTrue(ASX.isASXdate(d, /*mainCycle*/ false));
+        assertFalse(ASX.isASXdate(d, /*mainCycle*/ true));
+
+        // nextDate from code + ref date
+        assertEquals(new Date(8, Month.February, 2002),
+                ASX.nextDate("F2", false, new Date(1, Month.January, 2000)));
+        assertEquals(new Date(9, Month.June, 2023),
+                ASX.nextDate("K3", true,  new Date(1, Month.January, 2014)));
+
+        // nextCode
+        assertEquals("F4", ASX.nextCode(new Date( 1, Month.January, 2024), false));
+        assertEquals("G4", ASX.nextCode(new Date(15, Month.January, 2024), false));
+        assertEquals("H4", ASX.nextCode(new Date(15, Month.January, 2024), true));
+
+        assertEquals("G4", ASX.nextCode("F4", false, new Date(1, Month.January, 2020)));
+        assertEquals("H5", ASX.nextCode("Z4", true,  new Date(1, Month.January, 2020)));
+    }
+
+    /**
+     * Port of v1.42.1 test-suite/dates.cpp::parseDates (lines 397-429).
+     */
+    @Test
+    public void parseDates() {
+        QL.info("Testing parsing of dates...");
+
+        String input = "2006-01-15";
+        Date d = DateParser.parseFormatted(input, "%Y-%m-%d");
+        assertEquals(new Date(15, Month.January, 2006), d);
+
+        input = "12/02/2012";
+        d = DateParser.parseFormatted(input, "%m/%d/%Y");
+        assertEquals(new Date(2, Month.December, 2012), d);
+
+        d = DateParser.parseFormatted(input, "%d/%m/%Y");
+        assertEquals(new Date(12, Month.February, 2012), d);
+
+        input = "20011002";
+        d = DateParser.parseFormatted(input, "%Y%m%d");
+        assertEquals(new Date(2, Month.October, 2001), d);
+    }
 }
