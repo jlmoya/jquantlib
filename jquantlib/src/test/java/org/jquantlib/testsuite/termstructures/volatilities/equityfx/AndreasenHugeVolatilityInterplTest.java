@@ -22,6 +22,54 @@ import org.junit.Test;
  * grid location (ODE-integration not involved for pair-based constructor, but
  * floating-point sinh accumulation gives ~1e-10).
  *
+ * <h2>C++ v1.42.1 {@code test-suite/andreasenhugevolatilityinterpl.cpp}
+ * (13 BOOST cases) port status — Phase1-cert-D5-C-R3</h2>
+ * <ul>
+ *   <li>{@code testAndreasenHugePut} (line 389) — <b>BLOCKED</b>: requires
+ *       full CalibrationSet calibrator round-trip + FdBlackScholesVanillaEngine
+ *       per-option re-pricing (heavy ~30s/test); the Java AndreasenHuge
+ *       calibrator currently diverges from C++ on the
+ *       {@code (Linear, CallPut)} variant
+ *       (returns 0.4554 vs seeded 0.30 in a 1-option ATM smoke test —
+ *       see A3 carve-out below), so all multi-combination calibration
+ *       harness tests need the Java production fix first.</li>
+ *   <li>{@code testAndreasenHugeCall} (line 406) — <b>BLOCKED</b>: same
+ *       calibrator-divergence root cause as testAndreasenHugePut.</li>
+ *   <li>{@code testAndreasenHugeCallPut} (line 423) — <b>BLOCKED</b>: same.</li>
+ *   <li>{@code testLinearInterpolation} (line 441) — <b>BLOCKED</b>: same.</li>
+ *   <li>{@code testPiecewiseConstantInterpolation} (line 457) —
+ *       <b>BLOCKED</b>: same.</li>
+ *   <li>{@code testTimeDependentInterestRates} (line 473) — <b>BLOCKED</b>:
+ *       same; additionally requires {@code ZeroCurve} (Java has only
+ *       {@code InterpolatedZeroCurve}) and Heston cross-pricer setup.</li>
+ *   <li>{@code testSingleOptionCalibration} (line 557) — <b>BLOCKED</b>:
+ *       Java production divergence — Linear+CallPut combination in
+ *       {@link org.jquantlib.termstructures.volatilities.equityfx.AndreasenHugeVolatilityInterpl}
+ *       gives 0.4554 vs 0.30 expected; A3-style finding (Java bug, not
+ *       v1.42.1 bug). Needs preceding {@code align(termstructures.volatilities.equityfx)}
+ *       commit before this test can land green.</li>
+ *   <li>{@code testArbitrageFree} (line 616) — <b>BLOCKED</b>: heavy
+ *       calibration + iterated weekly grid sweep over Borovkova +
+ *       arbitrage data sets; depends on the calibrator fix above.</li>
+ *   <li>{@code testBarrierOptionPricing} (line 703) — <b>BLOCKED</b>:
+ *       requires {@code FdBlackScholesBarrierEngine} — not in Java
+ *       (only {@code FdBlackScholesVanillaEngine} present).</li>
+ *   <li>{@code testPeterAndFabiensExample} (line 807) — <b>BLOCKED</b>:
+ *       SABR-data calibration + per-strike LV/IV cross check; depends on
+ *       calibrator fix.</li>
+ *   <li>{@code testDifferentOptimizers} (line 853) — <b>BLOCKED</b>:
+ *       sweeps {Simplex, BFGS, LM} optimizers across calibrator; depends
+ *       on calibrator fix.</li>
+ *   <li>{@code testMovingReferenceDate} (line 882) — <b>BLOCKED</b>:
+ *       calibrator + 1-day shift; depends on calibrator fix.</li>
+ *   <li>{@code testFlatVolCalibration} (line 957) — <b>BLOCKED</b>:
+ *       flat-vol regression check; depends on calibrator fix.</li>
+ * </ul>
+ *
+ * <p>Aggregate Phase1-cert-D5-C-R3: 0 ADDED / 0 EXISTING_EQUIVALENT /
+ * 13 BLOCKED (all hinge on Java AndreasenHugeVolatilityInterpl calibrator
+ * Linear+CallPut divergence + missing FdBlackScholesBarrierEngine).
+ *
  * @author Phase 2m Track D test
  */
 public class AndreasenHugeVolatilityInterplTest {
