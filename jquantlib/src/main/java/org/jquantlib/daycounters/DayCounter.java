@@ -44,7 +44,11 @@ import org.jquantlib.QL;
 import org.jquantlib.lang.annotation.QualityAssurance;
 import org.jquantlib.lang.annotation.QualityAssurance.Quality;
 import org.jquantlib.lang.annotation.QualityAssurance.Version;
+import org.jquantlib.math.Closeness;
+import org.jquantlib.math.Constants;
 import org.jquantlib.time.Date;
+import org.jquantlib.time.Period;
+import org.jquantlib.time.TimeUnit;
 
 /**
  * This interface provides methods for determining the length of a time period according to given market convention,
@@ -186,6 +190,59 @@ public class DayCounter {
     @Override
     public String toString() {
         return (impl == null) ? "null" : impl.name();
+    }
+
+    /**
+     * Inverse of a day counter: find the {@link Date} {@code D} such that
+     * {@code dayCounter.yearFraction(referenceDate, D) == t} (or as close as
+     * possible to it given day-resolution dates).
+     *
+     * <p>Port of v1.42.1 {@code yearFractionToDate}
+     * ({@code ql/time/daycounters/yearfractiontodate.{hpp,cpp}}).
+     *
+     * <p>Uses a two-step Newton-style guess based on {@code t * 365.25 days},
+     * then narrows by scanning forward/backward in Years, Months, Days
+     * units, finally choosing the day that minimises {@code |yf - t|}.
+     */
+    public static Date yearFractionToDate(
+            final DayCounter dayCounter, final Date referenceDate, final double tInput) {
+        double t = tInput;
+        Date guessDate = referenceDate.add(new Period(
+                (int) Math.round(t * 365.25), TimeUnit.Days));
+        double guessTime = dayCounter.yearFraction(referenceDate, guessDate);
+
+        guessDate = guessDate.add(new Period(
+                (int) Math.round((t - guessTime) * 365.25), TimeUnit.Days));
+        guessTime = dayCounter.yearFraction(referenceDate, guessDate);
+
+        if (Closeness.isCloseEnough(guessTime, t)) {
+            return guessDate;
+        }
+
+        final int searchDirection = (t >= guessTime) ? 1 : -1;
+        t += searchDirection * 100.0 * Constants.QL_EPSILON;
+
+        Date nextDate;
+        final TimeUnit[] units = { TimeUnit.Years, TimeUnit.Months, TimeUnit.Days };
+        for (final TimeUnit u : units) {
+            while (true) {
+                nextDate = guessDate.add(new Period(searchDirection, u));
+                if (searchDirection * (dayCounter.yearFraction(referenceDate, nextDate) - t) < 0.0) {
+                    guessDate = nextDate;
+                } else {
+                    break;
+                }
+            }
+        }
+
+        guessTime = dayCounter.yearFraction(referenceDate, guessDate);
+        final Date oneStep = guessDate.add(new Period(searchDirection, TimeUnit.Days));
+        if (Closeness.isCloseEnough(guessTime, t)
+                || Math.abs(dayCounter.yearFraction(referenceDate, oneStep) - t)
+                        > Math.abs(guessTime - t)) {
+            return guessDate;
+        }
+        return oneStep;
     }
 
     //
