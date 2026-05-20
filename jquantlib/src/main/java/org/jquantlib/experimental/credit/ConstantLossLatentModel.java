@@ -22,11 +22,14 @@ package org.jquantlib.experimental.credit;
 
 import org.jquantlib.QL;
 import org.jquantlib.experimental.math.CopulaPolicy;
+import org.jquantlib.quotes.Handle;
+import org.jquantlib.quotes.Quote;
 import org.jquantlib.time.Date;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
 
 /**
  * Constant deterministic loss-amount default latent model.
@@ -55,6 +58,19 @@ public class ConstantLossLatentModel< P extends CopulaPolicy > extends DefaultLa
     public ConstantLossLatentModel(final double correlSqr, final List< Double > recoveries, final int nVariables,
             final P copula, final IntegrationType integralType) {
         super(correlSqr, nVariables, copula, integralType);
+        QL.require(recoveries.size() == nVariables, "Incompatible model and recovery sizes.");
+        this.recoveries_ = new ArrayList<>(recoveries);
+    }
+
+    /**
+     * Reactive single-factor constructor — mirrors C++
+     * {@code ConstantLossLatentmodel(const Handle<Quote>& mktCorrel, …)}. Subscribes to {@code singleFactorCorrel} so
+     * weight / copula rebuilds happen on every quote tick.
+     */
+    public ConstantLossLatentModel(final Handle< Quote > singleFactorCorrel, final List< Double > recoveries,
+            final int nVariables, final P copula, final IntegrationType integralType,
+            final Function< List< List< Double > >, P > copulaFactory) {
+        super(singleFactorCorrel, nVariables, copula, integralType, copulaFactory);
         QL.require(recoveries.size() == nVariables, "Incompatible model and recovery sizes.");
         this.recoveries_ = new ArrayList<>(recoveries);
     }

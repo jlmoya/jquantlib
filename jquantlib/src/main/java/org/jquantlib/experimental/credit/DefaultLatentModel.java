@@ -22,11 +22,14 @@ package org.jquantlib.experimental.credit;
 
 import org.jquantlib.QL;
 import org.jquantlib.experimental.math.CopulaPolicy;
+import org.jquantlib.quotes.Handle;
+import org.jquantlib.quotes.Quote;
 import org.jquantlib.time.Date;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Function;
 
 /**
  * Default event Latent Model.
@@ -70,6 +73,19 @@ public class DefaultLatentModel< P extends CopulaPolicy > extends LatentModel< P
     public DefaultLatentModel(final double correlSqr, final int nVariables, final P copula,
             final IntegrationType integralType) {
         super(correlSqr, nVariables, copula);
+        this.integration_ = LatentModel.createLMIntegration(1, integralType);
+    }
+
+    /**
+     * Reactive single-factor constructor — mirrors C++
+     * {@code DefaultLatentModel(const Handle<Quote>& singleFactorCorrel, Size nVariables, …)}.
+     *
+     * <p>Forwards to {@link LatentModel#LatentModel(Handle, int, CopulaPolicy, Function)} so the quote-observer wiring
+     * fires on every update.
+     */
+    public DefaultLatentModel(final Handle< Quote > singleFactorCorrel, final int nVariables, final P copula,
+            final IntegrationType integralType, final Function< List< List< Double > >, P > copulaFactory) {
+        super(singleFactorCorrel, nVariables, copula, copulaFactory);
         this.integration_ = LatentModel.createLMIntegration(1, integralType);
     }
 
