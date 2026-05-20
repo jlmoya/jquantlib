@@ -193,6 +193,21 @@ public class JointCalendar extends Calendar {
                 throw new LibraryException(UNKNOWN_MARKET);
             }
         }
+
+        /**
+         * Per-instance sharing key: each JointCalendar Impl wraps a unique
+         * set of underlying child calendars and rule, so added/removed
+         * holidays on one JointCalendar must NOT alias sibling instances.
+         * <p>
+         * Mirrors C++ v1.42.1 ql/time/calendars/jointcalendar.cpp:127-128,
+         * which calls {@code new JointCalendar::Impl(c1, c2, r)} per
+         * construction (each instance owns its own Impl, not a static-shared
+         * one as in {@code TARGET}/{@code UnitedStates}).
+         */
+        @Override
+        public Object sharingKey() {
+            return this;
+        }
     }
 
 }

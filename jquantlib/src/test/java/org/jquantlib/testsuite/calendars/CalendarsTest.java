@@ -42,7 +42,8 @@ import org.jquantlib.time.calendars.JointCalendar.JointCalendarRule;
 import org.jquantlib.time.calendars.Target;
 import org.jquantlib.time.calendars.UnitedKingdom;
 import org.jquantlib.time.calendars.UnitedStates;
-import org.junit.Ignore;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 /**
@@ -73,8 +74,6 @@ import org.junit.Test;
  *       (includeFirst, includeLast) combinations</li>
  * </ul>
  *
- * Phase 5c.5 deferrals (other v1.42.1 test cases): see @Ignore methods.
- *
  * @author Jose Moya
  */
 public class CalendarsTest {
@@ -84,22 +83,35 @@ public class CalendarsTest {
     }
 
     /**
+     * Resets shared TARGET / UnitedStates(NYSE) holiday state before every
+     * test in this class. Phase 5e.5b-CFC-d-305: with the static-shared
+     * {@link Calendar.Impl} refactor every {@code addHoliday}/{@code
+     * removeHoliday} now leaks across instances of the same concrete
+     * calendar subclass (matching C++ v1.42.1). Without per-test cleanup,
+     * one test's mutation can poison another test's "wrong assumption"
+     * pre-conditions. {@link Calendar#resetAddedAndRemovedHolidays} mirrors
+     * C++ {@code Calendar::resetAddedAndRemovedHolidays}
+     * (ql/time/calendar.cpp:79-82).
+     */
+    @Before
+    public void resetCalendarState() {
+        new Target().resetAddedAndRemovedHolidays();
+        new UnitedStates(UnitedStates.Market.NYSE).resetAddedAndRemovedHolidays();
+    }
+
+    @After
+    public void resetCalendarStateAfter() {
+        new Target().resetAddedAndRemovedHolidays();
+        new UnitedStates(UnitedStates.Market.NYSE).resetAddedAndRemovedHolidays();
+    }
+
+    /**
      * Tests calendar modification: addHoliday / removeHoliday on a single
      * calendar instance and isolation from other calendar types. Mirrors
-     * test-suite/calendars.cpp:73-131 except for cross-instance state
-     * sharing, which is deferred (see {@code testModifiedCalendarsShared}).
-     *
-     * Phase 5c.5 deferrals:
-     * <ul>
-     *   <li>The C++ test asserts that {@code addHoliday}/{@code removeHoliday}
-     *       on one TARGET instance affects subsequently-constructed TARGET
-     *       instances (C++ stores per-class added/removed sets statically;
-     *       Java's {@code Impl.addedHolidays} / {@code removedHolidays} are
-     *       per-instance fields).</li>
-     *   <li>The C++ test exercises {@code addedHolidays()} / {@code
-     *       removedHolidays()} accessors which are absent from Java
-     *       {@link Calendar}.</li>
-     * </ul>
+     * test-suite/calendars.cpp:73-131. With the Phase 5e.5b-CFC-d-305
+     * shared-Impl refactor, the cross-instance assertions now exercise
+     * static-shared state per concrete calendar subclass; see also
+     * {@link #testModifiedCalendarsShared}.
      */
     @Test
     public void testModifiedCalendars() {
@@ -597,23 +609,78 @@ public class CalendarsTest {
         }
     }
 
-    @Ignore("Design divergence — Java Calendar stores added/removed holidays per-instance; C++ shares via static shared_ptr<Impl>")
+    /**
+     * Tests cross-instance state sharing for concrete calendar subclasses,
+     * mirroring v1.42.1 test-suite/calendars.cpp:111-130. In C++ each
+     * concrete calendar constructor installs a {@code static
+     * ext::shared_ptr<Impl>}, so a fresh {@code TARGET} reflects mutations
+     * made through a sibling {@code TARGET} instance. The Phase
+     * 5e.5b-CFC-d-305 Java refactor aligns by routing {@code
+     * addedHolidays}/{@code removedHolidays} through static maps keyed by
+     * {@code Impl.sharingKey()} (default: {@code getClass()}).
+     */
     @Test
     public void testModifiedCalendarsShared() {
-        // Mirrors test-suite/calendars.cpp:111-115 — assertions that a fresh
-        // TARGET instance reflects modifications made through another TARGET
-        // instance.
-        //
-        // In C++ v1.42.1 the concrete calendar constructors (e.g.
-        // TARGET::TARGET) install a {@code static shared_ptr<Impl>} so every
-        // instance of the subclass shares one Impl (including its
-        // added/removed-holiday sets). The Java port creates a fresh
-        // {@code Impl} per {@code new Target()}, so per-instance addHoliday /
-        // removeHoliday calls do NOT propagate to sibling instances. Aligning
-        // would require rewriting every concrete calendar subclass in the
-        // {@code time.calendars} package to install a process-wide singleton
-        // Impl (with the attendant thread-safety story) — a Phase 2+
-        // structural change, not a stub fill. Callers that need shared state
-        // should keep and pass the same calendar instance around.
+        QL.info("Testing cross-instance calendar modification sharing...");
+
+        final Calendar c1 = new Target();
+        final Calendar c2 = new UnitedStates(UnitedStates.Market.NYSE);
+        final Date d1 = new Date(1, Month.May, 2004);    // holiday for both
+        final Date d2 = new Date(26, Month.April, 2004); // business day
+
+        assertTrue("wrong assumption — c1.isHoliday(d1)", c1.isHoliday(d1));
+        assertTrue("wrong assumption — c1.isBusinessDay(d2)", c1.isBusinessDay(d2));
+        assertTrue("wrong assumption — c2.isHoliday(d1)", c2.isHoliday(d1));
+        assertTrue("wrong assumption — c2.isBusinessDay(d2)", c2.isBusinessDay(d2));
+
+        // modify the TARGET calendar through c1
+        c1.removeHoliday(d1);
+        c1.addHoliday(d2);
+
+        // accessors via c1 must reflect the change
+        final java.util.Set<Date> added = c1.addedHolidays();
+        final java.util.Set<Date> removed = c1.removedHolidays();
+        assertFalse("did not expect to find " + d1 + " in addedHolidays", added.contains(d1));
+        assertTrue("expected to find " + d2 + " in addedHolidays", added.contains(d2));
+        assertTrue("expected to find " + d1 + " in removedHolidays", removed.contains(d1));
+        assertFalse("did not expect to find " + d2 + " in removedHolidays", removed.contains(d2));
+
+        if (c1.isHoliday(d1)) {
+            fail(d1 + " still a holiday for original TARGET instance");
+        }
+        if (c1.isBusinessDay(d2)) {
+            fail(d2 + " still a business day for original TARGET instance");
+        }
+
+        // C++ test-suite/calendars.cpp:111-115 — any fresh TARGET instance
+        // should reflect the mutation made through c1 (shared static Impl).
+        final Calendar c3 = new Target();
+        if (c3.isHoliday(d1)) {
+            fail(d1 + " still a holiday for generic TARGET instance");
+        }
+        if (c3.isBusinessDay(d2)) {
+            fail(d2 + " still a business day for generic TARGET instance");
+        }
+
+        // ...but the unrelated NYSE calendar must remain untouched
+        if (c2.isBusinessDay(d1)) {
+            fail(d1 + " business day for New York");
+        }
+        if (c2.isHoliday(d2)) {
+            fail(d2 + " holiday for New York");
+        }
+
+        // C++ test-suite/calendars.cpp:122-130 — restore the original
+        // holiday set through c3 (sibling instance); c1 must observe the
+        // restoration.
+        c3.addHoliday(d1);
+        c3.removeHoliday(d2);
+
+        if (c1.isBusinessDay(d1)) {
+            fail(d1 + " still a business day after c3 re-add");
+        }
+        if (c1.isHoliday(d2)) {
+            fail(d2 + " still a holiday after c3 re-remove");
+        }
     }
 }

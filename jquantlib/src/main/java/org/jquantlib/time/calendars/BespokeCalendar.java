@@ -119,5 +119,20 @@ public class BespokeCalendar extends Calendar {
         void addWeekend(final Weekday w) {
             weekendMask |= (1 << w.value());
         }
+
+        /**
+         * Per-instance sharing key: each BespokeCalendar Impl carries its own
+         * weekend mask + holidays state and must NOT share added/removed
+         * holiday sets with sibling BespokeCalendar instances.
+         * <p>
+         * Mirrors C++ v1.42.1 ql/time/calendars/bespokecalendar.cpp:45-49,
+         * which calls {@code make_shared<BespokeCalendar::Impl>(name)} per
+         * construction (each instance owns its own Impl, not a static-shared
+         * one as in {@code TARGET}/{@code UnitedStates}).
+         */
+        @Override
+        public Object sharingKey() {
+            return this;
+        }
     }
 }

@@ -48,6 +48,7 @@ import org.jquantlib.lang.annotation.QualityAssurance.Version;
 import org.jquantlib.lang.exceptions.LibraryException;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * This class provides methods for determining whether a date is a business day or a holiday for a given market, and for
@@ -70,6 +71,32 @@ public class Calendar {
     public static final String UKNOWN_BUSINESS_DAY_CONVENTION = "Unknown business day convention";
 
     //
+    // private static fields — shared holiday state keyed by Impl.sharingKey()
+    //
+    // Mirrors C++ v1.42.1 ql/time/calendars/*.cpp which install per-subclass
+    // function-local statics (e.g. {@code TARGET::TARGET} stores a
+    // {@code static ext::shared_ptr<Calendar::Impl>}). All instances of the
+    // same concrete calendar share one Impl — including {@code addedHolidays}
+    // and {@code removedHolidays} sets. The Java port keeps {@code Impl} as
+    // a per-instance field but routes the mutable holiday sets through these
+    // static maps so that {@code new Target().addHoliday(d)} is visible to
+    // any subsequent {@code new Target()} instance, matching the C++ test
+    // {@code testModifiedCalendarsShared}.
+    //
+    // The sharing key defaults to {@code Impl.getClass()} (per-Impl-subclass
+    // sharing). BespokeCalendar and JointCalendar override
+    // {@link Impl#sharingKey()} to return a per-instance object so their
+    // per-instance state is not aliased across siblings (mirrors C++:
+    // {@code bespokeImpl_ = ext::make_shared<...>(name)} and
+    // {@code impl_ = ext::shared_ptr<...>(new JointCalendar::Impl(...))} —
+    // both per-instance).
+    //
+    private static final Map< Object, Set< Date > > sharedAddedHolidays =
+            new ConcurrentHashMap< Object, Set< Date > >();
+    private static final Map< Object, Set< Date > > sharedRemovedHolidays =
+            new ConcurrentHashMap< Object, Set< Date > >();
+
+    //
     // protected fields
     //
 
@@ -86,6 +113,47 @@ public class Calendar {
 
     public Calendar() {
         // empty!
+    }
+
+    //
+    // package-private helpers — resolve shared holiday sets for an Impl
+    //
+
+    /**
+     * Returns the shared added-holiday {@link Set} for the given {@link Impl},
+     * keyed by {@link Impl#sharingKey()}. Lazily initialized; thread-safe.
+     */
+    static Set< Date > addedHolidaysFor(final Impl impl) {
+        final Object key = impl.sharingKey();
+        Set< Date > s = sharedAddedHolidays.get(key);
+        if ( s == null ) {
+            // Use a synchronized HashSet so concurrent add/remove from
+            // multiple threads (the JVM-side equivalent of C++'s
+            // single-threaded shared_ptr Impl semantics) are safe.
+            final Set< Date > created = Collections.synchronizedSet(new HashSet< Date >());
+            s = sharedAddedHolidays.putIfAbsent(key, created);
+            if ( s == null ) {
+                s = created;
+            }
+        }
+        return s;
+    }
+
+    /**
+     * Returns the shared removed-holiday {@link Set} for the given {@link Impl},
+     * keyed by {@link Impl#sharingKey()}. Lazily initialized; thread-safe.
+     */
+    static Set< Date > removedHolidaysFor(final Impl impl) {
+        final Object key = impl.sharingKey();
+        Set< Date > s = sharedRemovedHolidays.get(key);
+        if ( s == null ) {
+            final Set< Date > created = Collections.synchronizedSet(new HashSet< Date >());
+            s = sharedRemovedHolidays.putIfAbsent(key, created);
+            if ( s == null ) {
+                s = created;
+            }
+        }
+        return s;
     }
 
     //
@@ -139,9 +207,9 @@ public class Calendar {
      * Returns <tt>true</tt> if the date is a business day for the given market.
      */
     public boolean isBusinessDay(final Date d) /* @ReadOnly */ {
-        if ( impl.addedHolidays.contains(d) )
+        if ( addedHolidaysFor(impl).contains(d) )
             return false;
-        if ( impl.removedHolidays.contains(d) )
+        if ( removedHolidaysFor(impl).contains(d) )
             return true;
         return impl.isBusinessDay(d);
     }
@@ -206,12 +274,14 @@ public class Calendar {
      *
      */
     public void addHoliday(final Date d) {
+        final Set< Date > added = addedHolidaysFor(impl);
+        final Set< Date > removed = removedHolidaysFor(impl);
         // if d was a genuine holiday previously removed, revert the change
-        impl.removedHolidays.remove(d);
+        removed.remove(d);
         // if it's already a holiday, leave the calendar alone.
         // Otherwise, add it.
         if ( impl.isBusinessDay(d) ) {
-            impl.addedHolidays.add(d);
+            added.add(d);
         }
     }
 
@@ -222,12 +292,14 @@ public class Calendar {
      * silently.
      */
     public void removeHoliday(final Date d) {
+        final Set< Date > added = addedHolidaysFor(impl);
+        final Set< Date > removed = removedHolidaysFor(impl);
         // if d was an artificially-added holiday, revert the change
-        impl.addedHolidays.remove(d);
+        added.remove(d);
         // if it's already a business day, leave the calendar alone.
         // Otherwise, add it.
         if ( !impl.isBusinessDay(d) ) {
-            impl.removedHolidays.add(d);
+            removed.add(d);
         }
     }
 
@@ -238,7 +310,14 @@ public class Calendar {
      * Mirrors C++ v1.42.1 ql/time/calendar.hpp:94 / 217-221.
      */
     public Set< Date > addedHolidays() /* @ReadOnly */ {
-        return Collections.unmodifiableSet(new TreeSet< Date >(impl.addedHolidays));
+        final Set< Date > shared = addedHolidaysFor(impl);
+        // Synchronize on the shared set during the snapshot copy to avoid
+        // ConcurrentModificationException if another thread is mutating it
+        // concurrently. Collections.synchronizedSet documents external
+        // synchronization for compound operations such as iteration.
+        synchronized ( shared ) {
+            return Collections.unmodifiableSet(new TreeSet< Date >(shared));
+        }
     }
 
     /**
@@ -248,7 +327,29 @@ public class Calendar {
      * Mirrors C++ v1.42.1 ql/time/calendar.hpp:97 / 223-227.
      */
     public Set< Date > removedHolidays() /* @ReadOnly */ {
-        return Collections.unmodifiableSet(new TreeSet< Date >(impl.removedHolidays));
+        final Set< Date > shared = removedHolidaysFor(impl);
+        synchronized ( shared ) {
+            return Collections.unmodifiableSet(new TreeSet< Date >(shared));
+        }
+    }
+
+    /**
+     * Clears all dates artificially added or removed from the calendar.
+     * <p>
+     * Mirrors C++ v1.42.1 ql/time/calendar.cpp:79-82
+     * ({@code Calendar::resetAddedAndRemovedHolidays}). Useful in tests that
+     * mutate shared per-class state and need to restore a known-clean
+     * baseline before subsequent tests run.
+     */
+    public void resetAddedAndRemovedHolidays() {
+        final Set< Date > added = addedHolidaysFor(impl);
+        final Set< Date > removed = removedHolidaysFor(impl);
+        synchronized ( added ) {
+            added.clear();
+        }
+        synchronized ( removed ) {
+            removed.clear();
+        }
     }
 
     /**
@@ -473,9 +574,6 @@ public class Calendar {
 
     protected abstract class Impl {
 
-        private final Set< Date > addedHolidays = new HashSet< Date >();
-        private final Set< Date > removedHolidays = new HashSet< Date >();
-
         protected Impl() {
             // only extended classes can instantiate
         }
@@ -485,6 +583,26 @@ public class Calendar {
         public abstract boolean isBusinessDay(final Date d);
 
         public abstract boolean isWeekend(Weekday w);
+
+        /**
+         * Returns the key used to look up shared added/removed-holiday sets in
+         * the {@link Calendar}-level static cache. Default: {@code getClass()}
+         * — all instances of the same concrete {@link Impl} subclass share
+         * one pair of holiday sets, mirroring C++ v1.42.1's per-subclass
+         * function-local static {@code ext::shared_ptr<Impl>} pattern
+         * (e.g. {@code TARGET::TARGET}, {@code UnitedStates::UnitedStates}).
+         * <p>
+         * Subclasses that need per-instance (non-shared) semantics should
+         * override this method to return {@code this} (or any per-instance
+         * object). Used by {@link org.jquantlib.time.calendars.BespokeCalendar}
+         * and {@link org.jquantlib.time.calendars.JointCalendar}, whose C++
+         * counterparts use {@code make_shared<Impl>(args)} /
+         * {@code new ::Impl(args)} per construction (per-instance Impl, no
+         * static sharing).
+         */
+        public Object sharingKey() {
+            return getClass();
+        }
 
     }
 
