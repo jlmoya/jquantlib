@@ -84,6 +84,23 @@ public class MethodOfLinesScheme {
      * <p>
      * Mirrors C++ {@code MethodOfLinesScheme::step}. Integrates the ODE {@code dy/dt = -L(y)} from {@code t} to
      * {@code max(0, t-dt)} using an adaptive Cash-Karp Runge-Kutta stepper.
+     *
+     * <h3>Java/C++ divergence note</h3>
+     * C++ {@code MethodOfLinesScheme::step} never calls {@code bcSet_.setTime(t)} (it relies on its callers
+     * having constructed {@code FdmDirichletBoundary} instances whose value is fixed at construction time and
+     * whose {@code setTime} is a no-op). In Java we lack a constant-Dirichlet variant — all engines (e.g.,
+     * {@link org.jquantlib.pricingengines.barrier.FdBlackScholesBarrierEngine},
+     * {@link org.jquantlib.pricingengines.barrier.FdHestonBarrierEngine}) construct
+     * {@link org.jquantlib.methods.finitedifferences.utilities.FdmTimeDepDirichletBoundary} with a constant
+     * lambda. That class only populates its {@code values_} buffer inside {@code setTime(t)}; without an
+     * explicit {@code setTime} call the buffer remains zero-initialised and {@code applyAfterSolving}
+     * silently writes zero into the boundary cells (e.g. drops the rebate to ~3.5e-5 on the discrete-dividend
+     * barrier test). We therefore inject {@code bcSet.setTime(...)} calls here — once inside the ODE RHS so
+     * any time-dependent lambdas (e.g. discount-factor boundaries) see the right argument at each substep,
+     * and once before the final {@code applyAfterSolving} so the boundary cells carry the destination-time
+     * value. For constant lambdas this is a no-op; for time-dependent ones it matches the semantics other
+     * schemes (Hundsdorfer/Douglas/Crank-Nicolson/CraigSneyd) already obtain through their explicit
+     * {@code bcSet.setTime(tPrev)} call.
      */
     public void step(final Array a, final double t) {
         QL.require(t - dt > -1e-8, "a step towards negative time given");
@@ -101,6 +118,11 @@ public class MethodOfLinesScheme {
         final double[] v = rk.solve((s, u) -> applyOde(s, u), u0, tFrom, tTo);
 
         final Array y = fromDoubleArray(v);
+        // Java carve-out vs C++ (see step()'s doc-comment): refresh the boundary buffer at the destination
+        // time before writing it into the result. C++ relies on constant Dirichlet whose values are baked in;
+        // Java's FdmTimeDepDirichletBoundary needs setTime to populate values_ — otherwise applyAfterSolving
+        // overwrites the boundary cells with zero.
+        bcSet.setTime(tTo);
         bcSet.applyAfterSolving(y);
 
         a.fill(y);
@@ -112,6 +134,10 @@ public class MethodOfLinesScheme {
      */
     private double[] applyOde(final double t, final double[] u) {
         map.setTime(t, t + 0.0001);
+        // Java carve-out vs C++ (see step()'s doc-comment): refresh the boundary buffer at the current ODE
+        // sub-step time so any time-dependent boundary lambda (discount-factor / yield-curve based) sees
+        // the right argument. For constant lambdas this is a no-op.
+        bcSet.setTime(t);
         bcSet.applyBeforeApplying(map);
 
         final Array arr = fromDoubleArray(u);

@@ -1109,24 +1109,26 @@ public class BarrierOptionTest {
                 FdmSchemeDesc.Hundsdorfer());
         final PricingEngine trBDF2 = new FdBlackScholesBarrierEngine(bsProcess, dividends, 100, 100, 0,
                 FdmSchemeDesc.TrBDF2());
+        final PricingEngine methodOfLines = new FdBlackScholesBarrierEngine(bsProcess, dividends, 100, 100, 0,
+                FdmSchemeDesc.MethodOfLines());
 
         final HestonProcess hestonProc = new HestonProcess(rTS, qTS, s0, v * v, 1.0, v * v, 0.005, 0.0);
         final HestonModel hestonModel = new HestonModel(hestonProc);
         final PricingEngine hestonEngine = new FdHestonBarrierEngine(hestonModel, hestonProc, dividends, 50, 101, 3, 0,
                 FdmSchemeDesc.Hundsdorfer(), 1.0);
 
-        // A3 carve-out: MethodOfLines scheme on FdBlackScholesBarrierEngine + discrete dividends + Dirichlet
-        // barrier converges to ~3.5e-5 (vs. expected 4.877) for DownOut on this case. The C++ test uses MOL
-        // and passes; the Java MOL scheme + FdmDividendHandler + FdmTimeDepDirichletBoundary combination
-        // appears to mis-evaluate the rebate boundary at the discrete-dividend stopping time. The other 6
-        // engines (Douglas, CrankNicolson, TrBDF2, CraigSneyd, Hundsdorfer, FdHeston) all reproduce within
-        // tolerance — investigation pending (#A3-MOL-barrier-dividend).
-        final PricingEngine[] engines = { douglas, crankNicolson, trBDF2, craigSneyd, hundsdorfer, hestonEngine };
-        // FdHestonBarrierEngine sits at engine-index 5 in this list. Its FD-vs-FD reference (29.154, 4.765 for
-        // i=2/3) was computed by C++ v1.42.1 with a slightly different time-stepping arithmetic; Java drifts by
-        // ~1e-3 on the UpIn case under the same (50, 101, 3) Heston grid. Use a per-engine tolerance bump for
-        // Heston-only — matches v1.42.1 spirit but accommodates Java FdHeston FD-convergence drift on coarse grids.
-        final int hestonEngineIdx = 5;
+        // MOL re-included (#A3-MOL-barrier-dividend resolved by Phase1-closure-A4-E-559):
+        // MethodOfLinesScheme.step() now refreshes the time-dep Dirichlet boundary buffer (setTime) before
+        // applyAfterSolving, matching the (constant-Dirichlet) semantics C++ relies on without explicit
+        // setTime. See MethodOfLinesScheme.step() doc-comment for the Java/C++ divergence rationale.
+        final PricingEngine[] engines = { douglas, crankNicolson, trBDF2, craigSneyd, hundsdorfer, methodOfLines,
+                hestonEngine };
+        // FdHestonBarrierEngine sits at engine-index 6 (after adding MOL at index 5). Its FD-vs-FD reference
+        // (29.154, 4.765 for i=2/3) was computed by C++ v1.42.1 with a slightly different time-stepping
+        // arithmetic; Java drifts by ~1e-3 on the UpIn case under the same (50, 101, 3) Heston grid. Use a
+        // per-engine tolerance bump for Heston-only — matches v1.42.1 spirit but accommodates Java FdHeston
+        // FD-convergence drift on coarse grids.
+        final int hestonEngineIdx = 6;
         final double hestonRelTol = 5e-4;
 
         final StrikedTypePayoff payoff = new PlainVanillaPayoff(Option.Type.Put, strike);
