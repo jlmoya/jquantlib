@@ -310,6 +310,47 @@ public class PeriodTest {
      * Java's {@link Period#normalize()} is in-place; we use a local helper
      * {@code normalized(Period)} which clones-and-normalizes.
      */
+    /**
+     * Faithful port of {@code test-suite/period.cpp:BOOST_AUTO_TEST_CASE(testFrequencyComputation)}
+     * (v1.42.1). Round-trips frequency → period → frequency for each canonical
+     * frequency value, verifies {@code OtherFrequency} cannot be converted to a
+     * period, and checks {@code Period(count, unit).frequency()} for every
+     * representative count/unit pairing.
+     */
+    @Test
+    public void testFrequencyComputation() {
+        QL.info("Testing computation of frequency from period...");
+
+        // frequency -> period -> frequency == initial frequency?
+        for (final Frequency f : new Frequency[] {
+                Frequency.NoFrequency, Frequency.Once, Frequency.Annual,
+                Frequency.Semiannual, Frequency.EveryFourthMonth, Frequency.Quarterly,
+                Frequency.Bimonthly, Frequency.Monthly, Frequency.EveryFourthWeek,
+                Frequency.Biweekly, Frequency.Weekly, Frequency.Daily}) {
+            assertEquals(f, new Period(f).frequency());
+        }
+
+        // OtherFrequency cannot be constructed as a Period — must throw.
+        try {
+            new Period(Frequency.OtherFrequency).frequency();
+            fail("Period(OtherFrequency).frequency() should throw");
+        } catch (final Exception expected) {
+            // expected — C++ raises QuantLib::Error
+        }
+
+        // Period(count, timeUnit).frequency() table
+        assertEquals(Frequency.Annual,           new Period(1, TimeUnit.Years).frequency());
+        assertEquals(Frequency.Semiannual,       new Period(6, TimeUnit.Months).frequency());
+        assertEquals(Frequency.EveryFourthMonth, new Period(4, TimeUnit.Months).frequency());
+        assertEquals(Frequency.Quarterly,        new Period(3, TimeUnit.Months).frequency());
+        assertEquals(Frequency.Bimonthly,        new Period(2, TimeUnit.Months).frequency());
+        assertEquals(Frequency.Monthly,          new Period(1, TimeUnit.Months).frequency());
+        assertEquals(Frequency.EveryFourthWeek,  new Period(4, TimeUnit.Weeks).frequency());
+        assertEquals(Frequency.Biweekly,         new Period(2, TimeUnit.Weeks).frequency());
+        assertEquals(Frequency.Weekly,           new Period(1, TimeUnit.Weeks).frequency());
+        assertEquals(Frequency.Daily,            new Period(1, TimeUnit.Days).frequency());
+    }
+
     @Test
     public void testNormalization() {
         QL.info("Testing period normalization...");

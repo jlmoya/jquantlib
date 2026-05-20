@@ -126,10 +126,15 @@ public class Period implements Cloneable {
      */
     public Period(final Frequency f) {
         switch ( f ) {
-        case Once:
         case NoFrequency:
             // same as Period()
             units = TimeUnit.Days;
+            length = 0;
+            break;
+        case Once:
+            // C++ v1.42.1 distinguishes Once (0 Years) from NoFrequency (0 Days)
+            // so that frequency() can round-trip via the units sentinel.
+            units = TimeUnit.Years;
             length = 0;
             break;
         case Annual:
@@ -472,8 +477,11 @@ public class Period implements Cloneable {
         // unsigned version
         final int length = Math.abs(this.length);
 
-        if ( length == 0 )
-            return Frequency.NoFrequency;
+        if ( length == 0 ) {
+            // C++ v1.42.1 distinguishes Once (length=0, units=Years) from
+            // NoFrequency (length=0, units=Days/anything else) via units sentinel.
+            return units == TimeUnit.Years ? Frequency.Once : Frequency.NoFrequency;
+        }
 
         switch ( units ) {
         case Years:
