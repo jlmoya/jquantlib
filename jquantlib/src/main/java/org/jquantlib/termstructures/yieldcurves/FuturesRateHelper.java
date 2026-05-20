@@ -26,6 +26,7 @@ package org.jquantlib.termstructures.yieldcurves;
 import org.jquantlib.QL;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.indexes.IborIndex;
+import org.jquantlib.instruments.Futures;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.SimpleQuote;
@@ -190,6 +191,100 @@ public class FuturesRateHelper extends RateHelper {
         final Calendar cal = i.fixingCalendar();
         latestDate = cal.advance(immDate, i.tenor(), i.businessDayConvention());
         yearFraction = i.dayCounter().yearFraction(earliestDate, latestDate);
+    }
+
+    //
+    // Futures.Type-aware ctors — mirror C++ v1.42.1 ratehelpers.hpp:53-72
+    // + ratehelpers.cpp:69-154. The {@code type} argument controls the start-date
+    // validation: Futures.IMM enforces isIMMdate, Futures.ASX enforces isASXdate,
+    // Futures.Custom accepts any date (caller-supplied schedule).
+    //
+
+    /**
+     * Mirrors C++ ratehelpers.hpp:53-61 — {@code (price, startDate, lengthInMonths, calendar,
+     * convention, endOfMonth, dayCounter, convAdj, type)}. With {@code type=Custom}, no
+     * IMM/ASX date check is performed.
+     */
+    public FuturesRateHelper(final /* Real */ double price, final Date startDate,
+            final /* Natural */ int lengthInMonths,
+            final Calendar calendar, final BusinessDayConvention convention, final boolean endOfMonth,
+            final DayCounter dayCounter, final /* Rate */ double convAdj, final Futures.Type type) {
+        super(price);
+        this.convAdj = new Handle< Quote >(new SimpleQuote(convAdj));
+
+        checkStartDate(startDate, type);
+
+        earliestDate = startDate;
+        latestDate = calendar.advance(startDate, new Period(lengthInMonths, TimeUnit.Months), convention, endOfMonth);
+        yearFraction = dayCounter.yearFraction(earliestDate, latestDate);
+    }
+
+    /**
+     * Mirrors C++ ratehelpers.hpp:62-67 — {@code (price, startDate, endDate, dayCounter, convAdj, type)}.
+     * With {@code type=Custom}, {@code maturityDate = endDate} directly; {@code endDate=null}
+     * is not supported in this Java overload (use the {@code IborIndex} ctor instead).
+     */
+    public FuturesRateHelper(final /* Real */ double price, final Date startDate, final Date endDate,
+            final DayCounter dayCounter, final /* Rate */ double convAdj, final Futures.Type type) {
+        super(price);
+        this.convAdj = new Handle< Quote >(new SimpleQuote(convAdj));
+
+        checkStartDate(startDate, type);
+
+        switch (type) {
+        case IMM:
+            // C++ supports endDate=Date(); we require an explicit endDate here for simplicity.
+            QL.require(endDate != null && endDate.gt(startDate),
+                    "end date (" + endDate + ") must be greater than start date (" + startDate + ")");
+            latestDate = endDate;
+            break;
+        case ASX:
+            QL.require(endDate != null && endDate.gt(startDate),
+                    "end date (" + endDate + ") must be greater than start date (" + startDate + ")");
+            latestDate = endDate;
+            break;
+        case Custom:
+            QL.require(endDate != null && endDate.gt(startDate),
+                    "end date (" + endDate + ") must be greater than start date (" + startDate + ")");
+            latestDate = endDate;
+            break;
+        default:
+            throw new IllegalArgumentException("unsupported futures type (" + type + ")");
+        }
+        earliestDate = startDate;
+        yearFraction = dayCounter.yearFraction(earliestDate, latestDate);
+    }
+
+    /**
+     * Mirrors C++ ratehelpers.hpp:68-72 — {@code (price, startDate, iborIndex, convAdj, type)}.
+     */
+    public FuturesRateHelper(final /* Real */ double price, final Date startDate, final IborIndex index,
+            final /* Rate */ double convAdj, final Futures.Type type) {
+        super(price);
+        this.convAdj = new Handle< Quote >(new SimpleQuote(convAdj));
+
+        checkStartDate(startDate, type);
+
+        earliestDate = startDate;
+        final Calendar cal = index.fixingCalendar();
+        latestDate = cal.advance(startDate, index.tenor(), index.businessDayConvention());
+        yearFraction = index.dayCounter().yearFraction(earliestDate, latestDate);
+    }
+
+    /** Mirrors C++ ratehelpers.cpp:45-58 namespace-local CheckDate(). */
+    private static void checkStartDate(final Date startDate, final Futures.Type type) {
+        switch (type) {
+        case IMM:
+            QL.require(IMM.isIMMdate(startDate, false), startDate + " is not a valid IMM date");
+            break;
+        case ASX:
+            QL.require(ASX.isASXdate(startDate, false), startDate + " is not a valid ASX date");
+            break;
+        case Custom:
+            break;
+        default:
+            throw new IllegalArgumentException("unknown futures type (" + type + ")");
+        }
     }
 
     /**
