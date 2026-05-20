@@ -18,16 +18,21 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.jquantlib.Settings;
+import org.jquantlib.cashflow.BlackIborCouponPricer;
+import org.jquantlib.cashflow.PricerSetter;
 import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.daycounters.DayCounter;
+import org.jquantlib.indexes.Euribor;
 import org.jquantlib.indexes.Euribor3M;
 import org.jquantlib.indexes.Euribor6M;
+import org.jquantlib.indexes.IborIndex;
 import org.jquantlib.indexes.InterestRateIndex;
 import org.jquantlib.instruments.FloatFloatSwap;
 import org.jquantlib.instruments.VanillaSwap;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.pricingengines.swap.DiscountingSwapEngine;
 import org.jquantlib.quotes.Handle;
+import org.jquantlib.quotes.RelinkableHandle;
 import org.jquantlib.termstructures.Compounding;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.termstructures.yieldcurves.FlatForward;
@@ -425,6 +430,180 @@ public class FloatFloatSwapTest {
         if (got != want) {
             failures.add(String.format(
                     "[%s.%s] got=%d  want=%d", caseName, field, got, want));
+        }
+    }
+
+    // -------------------------------------------------------------------
+    // v1.42.1 test-suite/floatfloatswap.cpp direct ports (Phase1-cert-D5-D-R2)
+    // -------------------------------------------------------------------
+
+    /**
+     * Mirror of v1.42.1 {@code CommonVars} (test-suite/floatfloatswap.cpp).
+     * TARGET calendar, today=adjust(eval), settlement=today+2BD,
+     * flat 5% Actual365Fixed yield from settlement, 3M and 6M Euribor indices.
+     */
+    private static final class CommonVars {
+        final Date today, settlement;
+        final double nominal = 100.0;
+        final Calendar calendar = new Target();
+        final RelinkableHandle<YieldTermStructure> termStructure = new RelinkableHandle<YieldTermStructure>();
+        final IborIndex index1, index2;
+        final int settlementDays = 2;
+        final DiscountingSwapEngine engine;
+
+        CommonVars() {
+            new Settings().setEvaluationDate(new Date(15, Month.January, 2026));
+            this.today = calendar.adjust(new Settings().evaluationDate());
+            this.settlement = calendar.advance(today, settlementDays, TimeUnit.Days);
+            termStructure.linkTo(new FlatForward(settlement, 0.05, new Actual365Fixed()));
+            this.index1 = new Euribor(new Period(3, TimeUnit.Months), termStructure);
+            this.index2 = new Euribor(new Period(6, TimeUnit.Months), termStructure);
+            this.engine = new DiscountingSwapEngine(termStructure);
+        }
+
+        FloatFloatSwap makeSwap(final VanillaSwap.Type type,
+                                final double spread1, final double spread2) {
+            return makeSwap(type, spread1, spread2, 10);
+        }
+
+        FloatFloatSwap makeSwap(final VanillaSwap.Type type,
+                                final double spread1, final double spread2,
+                                final int lengthInYears) {
+            final Date maturity = calendar.advance(settlement, lengthInYears, TimeUnit.Years,
+                    BusinessDayConvention.ModifiedFollowing, false);
+            final Schedule schedule1 = new Schedule(settlement, maturity, index1.tenor(),
+                    calendar,
+                    BusinessDayConvention.ModifiedFollowing, BusinessDayConvention.ModifiedFollowing,
+                    DateGeneration.Rule.Forward, false);
+            final Schedule schedule2 = new Schedule(settlement, maturity, index2.tenor(),
+                    calendar,
+                    BusinessDayConvention.ModifiedFollowing, BusinessDayConvention.ModifiedFollowing,
+                    DateGeneration.Rule.Forward, false);
+
+            final FloatFloatSwap sw = new FloatFloatSwap(type, nominal, nominal,
+                    schedule1, index1, index1.dayCounter(),
+                    schedule2, index2, index2.dayCounter(),
+                    false, false,
+                    1.0, spread1, FloatFloatSwap.NULL_REAL, FloatFloatSwap.NULL_REAL,
+                    1.0, spread2, FloatFloatSwap.NULL_REAL, FloatFloatSwap.NULL_REAL);
+            sw.setPricingEngine(engine);
+
+            final BlackIborCouponPricer pricer = new BlackIborCouponPricer();
+            PricerSetter.setCouponPricer(sw.leg1(), pricer);
+            PricerSetter.setCouponPricer(sw.leg2(), pricer);
+
+            return sw;
+        }
+    }
+
+    /**
+     * Direct port of v1.42.1 {@code BOOST_AUTO_TEST_CASE(testFairSpread1)}
+     * (test-suite/floatfloatswap.cpp): re-pricing with the fair spread on
+     * leg 1 must produce a near-zero NPV (tol 1e-10), across Payer/Receiver
+     * and a sweep of leg-2 spreads.
+     */
+    @Test
+    public void testFairSpread1() {
+        final CommonVars vars = new CommonVars();
+        final VanillaSwap.Type[] types = { VanillaSwap.Type.Payer, VanillaSwap.Type.Receiver };
+        final double[] spread2Values = { -0.002, 0.0, 0.002, 0.005 };
+
+        for (final VanillaSwap.Type type : types) {
+            for (final double spread2 : spread2Values) {
+                final FloatFloatSwap sw = vars.makeSwap(type, 0.0, spread2);
+                final double fair = sw.fairSpread1();
+                final FloatFloatSwap sw2 = vars.makeSwap(type, fair, spread2);
+                final double npv = sw2.NPV();
+                if (Math.abs(npv) > 1.0e-10) {
+                    throw new AssertionError(
+                            "recalculating with fair spread on leg 1:"
+                            + " type=" + type + " spread2=" + spread2
+                            + " fair=" + fair + " NPV=" + npv);
+                }
+            }
+        }
+    }
+
+    /**
+     * Direct port of v1.42.1 {@code BOOST_AUTO_TEST_CASE(testFairSpread2)}.
+     * Mirror of {@link #testFairSpread1} on leg 2.
+     */
+    @Test
+    public void testFairSpread2() {
+        final CommonVars vars = new CommonVars();
+        final VanillaSwap.Type[] types = { VanillaSwap.Type.Payer, VanillaSwap.Type.Receiver };
+        final double[] spread1Values = { -0.002, 0.0, 0.002, 0.005 };
+
+        for (final VanillaSwap.Type type : types) {
+            for (final double spread1 : spread1Values) {
+                final FloatFloatSwap sw = vars.makeSwap(type, spread1, 0.0);
+                final double fair = sw.fairSpread2();
+                final FloatFloatSwap sw2 = vars.makeSwap(type, spread1, fair);
+                final double npv = sw2.NPV();
+                if (Math.abs(npv) > 1.0e-10) {
+                    throw new AssertionError(
+                            "recalculating with fair spread on leg 2:"
+                            + " type=" + type + " spread1=" + spread1
+                            + " fair=" + fair + " NPV=" + npv);
+                }
+            }
+        }
+    }
+
+    /**
+     * Direct port of v1.42.1
+     * {@code BOOST_AUTO_TEST_CASE(testPayerReceiverSymmetry)}: a
+     * payer-direction FloatFloatSwap and a receiver-direction one with the
+     * same parameters must have NPV summing to zero (tol 1e-10).
+     */
+    @Test
+    public void testPayerReceiverSymmetry() {
+        final CommonVars vars = new CommonVars();
+        final double spread1 = 0.001;
+        final double spread2 = 0.003;
+
+        final FloatFloatSwap payer = vars.makeSwap(VanillaSwap.Type.Payer, spread1, spread2);
+        final FloatFloatSwap receiver = vars.makeSwap(VanillaSwap.Type.Receiver, spread1, spread2);
+
+        final double sum = payer.NPV() + receiver.NPV();
+        if (Math.abs(sum) > 1.0e-10) {
+            throw new AssertionError(
+                    "payer and receiver NPVs do not cancel: payer=" + payer.NPV()
+                    + " receiver=" + receiver.NPV() + " sum=" + sum);
+        }
+    }
+
+    /**
+     * Direct port of v1.42.1
+     * {@code BOOST_AUTO_TEST_CASE(testFairSpreadPayerReceiverConsistency)}:
+     * fair spreads on either leg must be identical for a payer-direction
+     * and receiver-direction swap with the same parameters (tol 1e-10).
+     */
+    @Test
+    public void testFairSpreadPayerReceiverConsistency() {
+        final CommonVars vars = new CommonVars();
+        final double spread2 = 0.002;
+
+        final FloatFloatSwap payer = vars.makeSwap(VanillaSwap.Type.Payer, 0.0, spread2);
+        final FloatFloatSwap receiver = vars.makeSwap(VanillaSwap.Type.Receiver, 0.0, spread2);
+
+        final double fairPayer1 = payer.fairSpread1();
+        final double fairReceiver1 = receiver.fairSpread1();
+        if (Math.abs(fairPayer1 - fairReceiver1) > 1.0e-10) {
+            throw new AssertionError(
+                    "fair spread on leg 1 differs between payer and receiver:"
+                    + " payer=" + fairPayer1 + " receiver=" + fairReceiver1);
+        }
+
+        final FloatFloatSwap payer2 = vars.makeSwap(VanillaSwap.Type.Payer, spread2, 0.0);
+        final FloatFloatSwap receiver2 = vars.makeSwap(VanillaSwap.Type.Receiver, spread2, 0.0);
+
+        final double fairPayer2 = payer2.fairSpread2();
+        final double fairReceiver2 = receiver2.fairSpread2();
+        if (Math.abs(fairPayer2 - fairReceiver2) > 1.0e-10) {
+            throw new AssertionError(
+                    "fair spread on leg 2 differs between payer and receiver:"
+                    + " payer=" + fairPayer2 + " receiver=" + fairReceiver2);
         }
     }
 }
