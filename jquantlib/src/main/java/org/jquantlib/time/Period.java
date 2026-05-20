@@ -342,7 +342,11 @@ public class Period implements Cloneable {
      * @return <code>true</code> if <code>this</code> is equal to <code>another</code>, <code>false</code> otherwise
      */
     public boolean eq(final Period another) {
-        return this.equals(another);
+        // Arithmetic equality (matches C++ operator==): !lt(a,b) && !lt(b,a).
+        // Period.lt has the Months↔Years and Days↔Weeks unit-conversion
+        // specializations; equals() does strict unit+length comparison, which
+        // would return false for e.g. Period(360,Months) vs Period(30,Years).
+        return !this.lt(another) && !another.lt(this);
     }
 
     /**
@@ -352,7 +356,7 @@ public class Period implements Cloneable {
      * @return <code>true</code> if <code>this</code> is not equal to <code>another</code>, <code>false</code> otherwise
      */
     public boolean neq(final Period another) {
-        return !this.equals(another);
+        return !this.eq(another);
     }
 
     /**
@@ -373,7 +377,11 @@ public class Period implements Cloneable {
      * otherwise
      */
     public boolean le(final Period another) {
-        return this.lt(another) || this.eq(another);
+        // C++ operator<=(a, b) = !(b < a); delegates to Period.lt which has
+        // the unit-conversion arithmetic specializations (Months↔Years,
+        // Days↔Weeks). Prior implementation `lt(another) || eq(another)`
+        // missed arithmetic equality cases because eq used strict equals.
+        return !another.lt(this);
     }
 
     /**
@@ -384,7 +392,7 @@ public class Period implements Cloneable {
      * otherwise
      */
     public boolean ge(final Period another) {
-        return another.le(this);
+        return !this.lt(another);
     }
 
     /**
