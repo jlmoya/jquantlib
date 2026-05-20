@@ -180,6 +180,10 @@ public class Bfgs extends LineSearchBasedMethod {
         int iterationNumber = 0;
         // dimension line search
         lineSearch_.setSearchDirection(new Array(x_.size()));
+        // Prime lineSearch_.gradient_ to an empty Array so that ArmijoLineSearch's
+        // first-call branch `gradient_.empty() ? qpO : -gradient_·d` works in
+        // Java; in C++ the default-constructed Array is non-null with size 0.
+        lineSearch_.gradient_ = new Array(0);
         boolean done = false;
 
         // function and squared norm of gradient values
