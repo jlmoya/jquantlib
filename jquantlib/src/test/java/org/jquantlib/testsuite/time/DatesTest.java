@@ -412,19 +412,86 @@ public class DatesTest {
         final Date tomorrow1 = Date.todaysDate().add(1);
         final Date tomorrow2 = Date.todaysDate().add(1);
         final Date manyana = Date.todaysDate().add(123);
-        
+
         assertFalse(today.equals(null));
         assertEquals(today, today);
         assertFalse(today.equals(tomorrow1));
-        assertEquals(tomorrow1, tomorrow2);      
-        
+        assertEquals(tomorrow1, tomorrow2);
+
         HashSet<Date> testSet = new HashSet<Date>();
         testSet.add(today);
         testSet.add(tomorrow1);
-               
+
         assertTrue(testSet.contains(today));
-        assertFalse(testSet.contains(manyana));      
+        assertFalse(testSet.contains(manyana));
 
     }
-    
+
+    /**
+     * Port of v1.42.1 test-suite/dates.cpp::canHash (lines 506-545).
+     *
+     * For every pair (i,j) in a 500x500 grid of dates starting 1-Jan-2020:
+     *  - equal dates must have equal hash codes
+     *  - unequal dates must have unequal hash codes (Date uses serialNumber)
+     * Also verifies HashSet membership.
+     */
+    @Test
+    public void canHash() {
+        QL.info("Testing hashing of dates...");
+
+        final Date startDate = new Date(1, Month.January, 2020);
+        final int nbTests = 500;
+
+        for (int i = 0; i < nbTests; ++i) {
+            for (int j = 0; j < nbTests; ++j) {
+                final Date lhs = startDate.clone().addAssign(i);
+                final Date rhs = startDate.clone().addAssign(j);
+
+                if (lhs.equals(rhs) && lhs.hashCode() != rhs.hashCode()) {
+                    fail("Equal dates are expected to have same hash value\n"
+                            + " lhs = " + lhs + "\n"
+                            + " rhs = " + rhs + "\n"
+                            + " hash(lhs) = " + lhs.hashCode() + "\n"
+                            + " hash(rhs) = " + rhs.hashCode());
+                }
+
+                if (!lhs.equals(rhs) && lhs.hashCode() == rhs.hashCode()) {
+                    fail("Different dates are expected to have different hash value\n"
+                            + " lhs = " + lhs + "\n"
+                            + " rhs = " + rhs + "\n"
+                            + " hash(lhs) = " + lhs.hashCode() + "\n"
+                            + " hash(rhs) = " + rhs.hashCode());
+                }
+            }
+        }
+
+        // Check Date can be used as HashSet key (C++ unordered_set equivalent).
+        final HashSet<Date> set = new HashSet<Date>();
+        set.add(startDate);
+        if (!set.contains(startDate)) {
+            fail("Expected to find date " + startDate + " in HashSet");
+        }
+    }
+
+    /**
+     * Port of v1.42.1 test-suite/dates.cpp::nullDate (lines 547-556).
+     *
+     * Verifies a null/default Date can call serialNumber() and hashCode()
+     * without throwing.
+     */
+    @Test
+    public void nullDate() {
+        QL.info("Testing null date for working serial number and hash...");
+
+        final Date nullDate = new Date();
+
+        // BOOST_CHECK_NO_THROW equivalent: simply call the methods.
+        try {
+            nullDate.serialNumber();
+            nullDate.hashCode();
+        } catch (final RuntimeException e) {
+            fail("null Date.serialNumber()/hashCode() unexpectedly threw: " + e);
+        }
+    }
+
 }
