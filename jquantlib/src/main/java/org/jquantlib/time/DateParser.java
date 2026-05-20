@@ -96,4 +96,79 @@ public class DateParser {
         return date;
     }
 
+    /**
+     * Convert a date string given a C-style {@code strftime(3)} format.
+     *
+     * <p>Port of v1.42.1 {@code DateParser::parseFormatted}
+     * ({@code ql/utilities/dataparsers.cpp:90-104}). Supports the format
+     * specifiers exercised by the C++ test-suite:
+     * <ul>
+     *  <li>{@code %Y} — 4-digit year</li>
+     *  <li>{@code %m} — 2-digit month (1-12)</li>
+     *  <li>{@code %d} — 2-digit day (1-31)</li>
+     * </ul>
+     * Any literal characters in the format (e.g. {@code '-'}, {@code '/'}) must
+     * match the corresponding positions in the input.
+     *
+     * <p>This implementation builds an equivalent
+     * {@link java.text.SimpleDateFormat} pattern by token-substitution, then
+     * delegates to it. {@code SimpleDateFormat} is lenient by default; for
+     * formats without separators (e.g. {@code "%Y%m%d"}) the lenient parser
+     * correctly consumes 4+2+2 digit blocks.
+     *
+     * @param str  the date string
+     * @param fmt  the strftime-style format
+     * @return parsed {@link Date}
+     */
+    public static Date parseFormatted(final String str, final String fmt) {
+        final StringBuilder pattern = new StringBuilder();
+        int i = 0;
+        while (i < fmt.length()) {
+            final char c = fmt.charAt(i);
+            if (c == '%' && i + 1 < fmt.length()) {
+                final char tok = fmt.charAt(i + 1);
+                switch (tok) {
+                case 'Y':
+                    pattern.append("yyyy");
+                    break;
+                case 'm':
+                    pattern.append("MM");
+                    break;
+                case 'd':
+                    pattern.append("dd");
+                    break;
+                case '%':
+                    pattern.append('%');
+                    break;
+                default:
+                    QL.require(false, "unsupported strftime specifier '%" + tok + "' in format: " + fmt);
+                }
+                i += 2;
+            } else {
+                // literal: escape SimpleDateFormat metacharacters
+                if (Character.isLetter(c)) {
+                    pattern.append('\'').append(c).append('\'');
+                } else {
+                    pattern.append(c);
+                }
+                i++;
+            }
+        }
+
+        final java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat(pattern.toString());
+        sdf.setLenient(false);
+        final java.util.Date parsed;
+        try {
+            parsed = sdf.parse(str);
+        } catch (final java.text.ParseException ex) {
+            throw new IllegalArgumentException("unable to parse '" + str + "' with format '" + fmt + "': " + ex.getMessage(), ex);
+        }
+        final java.util.Calendar cal = java.util.Calendar.getInstance();
+        cal.setTime(parsed);
+        final int day = cal.get(java.util.Calendar.DAY_OF_MONTH);
+        final int month = cal.get(java.util.Calendar.MONTH) + 1; // Calendar.MONTH is 0-based
+        final int year = cal.get(java.util.Calendar.YEAR);
+        return new Date(day, Month.valueOf(month), year);
+    }
+
 }
