@@ -39,6 +39,7 @@ import org.jquantlib.time.TimeUnit;
 import org.jquantlib.time.Weekday;
 import org.jquantlib.time.calendars.BespokeCalendar;
 import org.jquantlib.time.calendars.Brazil;
+import org.jquantlib.time.calendars.Denmark;
 import org.jquantlib.time.calendars.Germany;
 import org.jquantlib.time.calendars.Italy;
 import org.jquantlib.time.calendars.JointCalendar;
@@ -1137,6 +1138,76 @@ public class CalendarsTest {
         final Calendar c = new Brazil();
         final List<Date> computed = Calendar.holidayList(c,
                 new Date(1, Month.January, 2005), new Date(31, Month.December, 2006), false);
+        checkHolidays(computed, expectedHol);
+    }
+
+    /**
+     * Faithful port of {@code test-suite/calendars.cpp:1343}
+     * {@code BOOST_AUTO_TEST_CASE(testDenmark)}.
+     *
+     * <p>Denmark holiday list for 2020-2022. Exercises (relative to the legacy
+     * 2008-era JQuantLib Denmark rules):
+     * <ul>
+     *   <li>"Day after Ascension" (em+39) — observed since 2009.
+     *       Visible at 22-May-2020, 14-May-2021, 27-May-2022.</li>
+     *   <li>"General Prayer Day" (em+25) — still active for 2020-2022 (the
+     *       2024+ removal does not affect this window).</li>
+     *   <li>24-Dec / 31-Dec — always closed when a weekday. Visible at
+     *       24-Dec-2020 (Thu), 31-Dec-2020 (Thu), 24-Dec-2021 (Fri),
+     *       31-Dec-2021 (Fri).</li>
+     * </ul>
+     */
+    @Test
+    public void testDenmark() {
+        QL.info("Testing Denmark holiday list...");
+
+        final List<Date> expectedHol = dateList(
+                new Date(1, Month.January, 2020),
+                new Date(9, Month.April, 2020),
+                new Date(10, Month.April, 2020),
+                new Date(13, Month.April, 2020),
+                new Date(8, Month.May, 2020),
+                new Date(21, Month.May, 2020),
+                new Date(22, Month.May, 2020),
+                new Date(1, Month.June, 2020),
+                new Date(5, Month.June, 2020),
+                new Date(24, Month.December, 2020),
+                new Date(25, Month.December, 2020),
+                // Saturday: (26, December, 2020) skipped
+                new Date(31, Month.December, 2020),
+
+                new Date(1, Month.January, 2021),
+                new Date(1, Month.April, 2021),
+                new Date(2, Month.April, 2021),
+                new Date(5, Month.April, 2021),
+                new Date(30, Month.April, 2021),
+                new Date(13, Month.May, 2021),
+                new Date(14, Month.May, 2021),
+                new Date(24, Month.May, 2021),
+                // Saturday: (5, June, 2021) skipped
+                new Date(24, Month.December, 2021),
+                // Saturday: (25, December, 2021) skipped
+                // Sunday: (26, December, 2021) skipped
+                new Date(31, Month.December, 2021),
+
+                // Saturday: (1, January, 2022) skipped
+                new Date(14, Month.April, 2022),
+                new Date(15, Month.April, 2022),
+                new Date(18, Month.April, 2022),
+                new Date(13, Month.May, 2022),
+                new Date(26, Month.May, 2022),
+                new Date(27, Month.May, 2022),
+                // Sunday: (5, June, 2022) skipped
+                new Date(6, Month.June, 2022),
+                // Saturday: (24, December, 2022) skipped
+                // Sunday: (25, December, 2022) skipped
+                new Date(26, Month.December, 2022)
+                // Saturday: (31, December, 2022) skipped
+                );
+
+        final Calendar c = new Denmark();
+        final List<Date> computed = Calendar.holidayList(c,
+                new Date(1, Month.January, 2020), new Date(31, Month.December, 2022), false);
         checkHolidays(computed, expectedHol);
     }
 
