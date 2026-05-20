@@ -22,6 +22,9 @@
 
 package org.jquantlib.daycounters;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.jquantlib.QL;
 import org.jquantlib.lang.annotation.QualityAssurance;
 import org.jquantlib.lang.annotation.QualityAssurance.Quality;
@@ -30,6 +33,7 @@ import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Month;
 import org.jquantlib.time.Period;
+import org.jquantlib.time.Schedule;
 import org.jquantlib.time.TimeUnit;
 
 /**
@@ -56,10 +60,28 @@ public class ActualActual extends DayCounter {
     //
 
     public ActualActual(final ActualActual.Convention c) {
+        this(c, null);
+    }
+
+    /**
+     * Schedule-aware constructor — port of v1.42.1
+     * {@code ActualActual(Convention, Schedule)} from
+     * {@code ql/time/daycounters/actualactual.{hpp,cpp}}.
+     *
+     * <p>For ISMA/Bond conventions with a non-empty schedule, the
+     * schedule-aware {@link SchedISMA_Impl} is selected; otherwise the
+     * legacy reference-period-based {@link ImplISMA} is used. ISDA/AFB
+     * are unaffected by the schedule.
+     */
+    public ActualActual(final ActualActual.Convention c, final Schedule schedule) {
         switch ( c ) {
         case ISMA:
         case Bond:
-            super.impl = new ImplISMA();
+            if (schedule != null && !schedule.empty()) {
+                super.impl = new SchedISMA_Impl(schedule);
+            } else {
+                super.impl = new ImplISMA();
+            }
             break;
         case ISDA:
         case Historical:
@@ -253,6 +275,132 @@ public class ActualActual extends DayCounter {
             return sum + dayCount(dateStart, newD2) / den;
         }
 
+    }
+
+    /**
+     * Schedule-aware ISMA implementation — port of v1.42.1
+     * {@code ActualActual::ISMA_Impl}
+     * ({@code ql/time/daycounters/actualactual.cpp:148-182}).
+     *
+     * <p>Decomposes the [d1,d2] interval over the schedule's coupon (or
+     * notional) period dates, summing
+     * {@code dayCount(max(d1,perStart), min(d2,perEnd)) /
+     *        (referenceDayCount * couponsPerYear)} over each touching
+     * period.
+     */
+    private final class SchedISMA_Impl extends DayCounter.Impl {
+
+        private final Schedule schedule;
+
+        SchedISMA_Impl(final Schedule schedule) {
+            this.schedule = schedule;
+        }
+
+        @Override
+        public String name() /* @ReadOnly */ {
+            return "Actual/Actual (ISMA)";
+        }
+
+        @Override
+        public double yearFraction(final Date d1, final Date d2,
+                final Date refPeriodStart, final Date refPeriodEnd) /* @ReadOnly */ {
+            if (d1.equals(d2)) {
+                return 0.0;
+            }
+            if (d1.gt(d2)) {
+                return -yearFraction(d2, d1, refPeriodStart, refPeriodEnd);
+            }
+
+            final List<Date> couponDates = getPeriodDatesIncludingQuasiPayments();
+            Date firstDate = couponDates.get(0);
+            Date lastDate = couponDates.get(0);
+            for (int i = 1; i < couponDates.size(); i++) {
+                final Date c = couponDates.get(i);
+                if (c.lt(firstDate)) {
+                    firstDate = c;
+                }
+                if (c.gt(lastDate)) {
+                    lastDate = c;
+                }
+            }
+            QL.require(d1.ge(firstDate) && d2.le(lastDate),
+                    "Dates out of range of schedule: date 1: " + d1 +
+                    ", date 2: " + d2 + ", first date: " + firstDate +
+                    ", last date: " + lastDate);
+
+            double yearFractionSum = 0.0;
+            for (int i = 0; i < couponDates.size() - 1; i++) {
+                final Date startReferencePeriod = couponDates.get(i);
+                final Date endReferencePeriod = couponDates.get(i + 1);
+                if (d1.lt(endReferencePeriod) && d2.gt(startReferencePeriod)) {
+                    final Date a = d1.gt(startReferencePeriod) ? d1 : startReferencePeriod;
+                    final Date b = d2.lt(endReferencePeriod) ? d2 : endReferencePeriod;
+                    yearFractionSum += yearFractionWithReferenceDates(
+                            a, b, startReferencePeriod, endReferencePeriod);
+                }
+            }
+            return yearFractionSum;
+        }
+
+        private List<Date> getPeriodDatesIncludingQuasiPayments() {
+            // C++: ql/time/daycounters/actualactual.cpp:49-101
+            final Date issueDate = schedule.date(0);
+            final List<Date> newDates = new ArrayList<Date>(schedule.dates());
+
+            if (!schedule.hasIsRegular() || !schedule.isRegular(1)) {
+                final Date firstCoupon = schedule.date(1);
+                final Period negTenor = new Period(-schedule.tenor().length(), schedule.tenor().units());
+                final Date notionalFirstCoupon = schedule.calendar().advance(
+                        firstCoupon, negTenor,
+                        schedule.businessDayConvention(),
+                        schedule.endOfMonth());
+                newDates.set(0, notionalFirstCoupon);
+
+                if (notionalFirstCoupon.gt(issueDate)) {
+                    final Date priorNotionalCoupon = schedule.calendar().advance(
+                            notionalFirstCoupon, negTenor,
+                            schedule.businessDayConvention(),
+                            schedule.endOfMonth());
+                    newDates.add(0, priorNotionalCoupon);
+                }
+            }
+
+            if (!schedule.hasIsRegular() || !schedule.isRegular(schedule.size() - 1)) {
+                final Date secondToLast = schedule.date(schedule.size() - 2);
+                final Date notionalLastCoupon = schedule.calendar().advance(
+                        secondToLast, schedule.tenor(),
+                        schedule.businessDayConvention(),
+                        schedule.endOfMonth());
+
+                newDates.set(newDates.size() - 1, notionalLastCoupon);
+
+                if (notionalLastCoupon.lt(schedule.endDate())) {
+                    final Date nextNotionalCoupon = schedule.calendar().advance(
+                            notionalLastCoupon, schedule.tenor(),
+                            schedule.businessDayConvention(),
+                            schedule.endOfMonth());
+                    newDates.add(nextNotionalCoupon);
+                }
+            }
+            return newDates;
+        }
+
+        private double yearFractionWithReferenceDates(
+                final Date d1, final Date d2, final Date d3, final Date d4) {
+            QL.require(d1.le(d2),
+                    "This function is only correct if d1 <= d2  d1: " + d1 + " d2: " + d2);
+
+            double referenceDayCount = dayCount(d3, d4);
+            int couponsPerYear;
+            if (referenceDayCount < 16) {
+                couponsPerYear = 1;
+                referenceDayCount = dayCount(d1, d1.add(Period.ONE_YEAR_FORWARD));
+            } else {
+                final int months = (int) Math.round(12.0 * referenceDayCount / 365.0);
+                couponsPerYear = (int) Math.round(12.0 / months);
+            }
+            return ((double) dayCount(d1, d2)) / (referenceDayCount * couponsPerYear);
+        }
     }
 
 }
