@@ -36,7 +36,9 @@ import org.jquantlib.model.marketmodels.evolvers.LogNormalFwdRatePc;
 import org.jquantlib.model.marketmodels.evolvers.NormalFwdRatePc;
 import org.jquantlib.model.marketmodels.models.AbcdVol;
 import org.jquantlib.model.marketmodels.models.FlatVol;
+import org.jquantlib.instruments.PlainVanillaPayoff;
 import org.jquantlib.pricingengines.BlackCalculator;
+import org.jquantlib.pricingengines.BlackFormula;
 import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
@@ -556,6 +558,77 @@ public final class MarketModelTestSetup {
                   .append("; discrepancy = ").append(disc).append('\n');
             }
             throw new AssertionError("checkForwardsAndOptionlets failed: " + sb);
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // checkNormalForwardsAndOptionlets() — cpp:589-651
+    // ------------------------------------------------------------------
+
+    /**
+     * Port of v1.42.1 {@code checkNormalForwardsAndOptionlets} (cpp:589-651).
+     *
+     * <p>Same as {@link #checkForwardsAndOptionlets} except the caplets use
+     * the {@link BlackFormula#bachelierBlackFormula bachelierBlackFormula}
+     * (normal model) instead of {@link BlackCalculator} (lognormal model).
+     */
+    public static void checkNormalForwardsAndOptionlets(final GenericSequenceStatistics stats,
+            final double[] forwardStrikes,
+            final List<PlainVanillaPayoff> displacedPayoffs,
+            final String config) {
+
+        final org.jquantlib.math.matrixutilities.Array resultsArr = stats.mean();
+        final org.jquantlib.math.matrixutilities.Array errorsArr = stats.errorEstimate();
+
+        final int N = todaysForwards.length;
+        final double[] expectedForwards = new double[N];
+        final double[] expectedCaplets = new double[N];
+        final double[] forwardStdDevs = new double[N];
+        final double[] capletStdDev = new double[N];
+        double minError = Double.MAX_VALUE;
+        double maxError = -Double.MAX_VALUE;
+
+        for (int i = 0; i < N; ++i) {
+            expectedForwards[i] = (todaysForwards[i] - forwardStrikes[i])
+                    * accruals[i] * todaysDiscounts[i + 1];
+            forwardStdDevs[i] = (resultsArr.get(i) - expectedForwards[i]) / errorsArr.get(i);
+            if (forwardStdDevs[i] > maxError) {
+                maxError = forwardStdDevs[i];
+            } else if (forwardStdDevs[i] < minError) {
+                minError = forwardStdDevs[i];
+            }
+            final double expiry = rateTimes[i];
+            expectedCaplets[i] = BlackFormula.bachelierBlackFormula(displacedPayoffs.get(i),
+                    todaysForwards[i] + displacement,
+                    normalVols[i] * Math.sqrt(expiry),
+                    todaysDiscounts[i + 1] * accruals[i]);
+            capletStdDev[i] = (resultsArr.get(i + N) - expectedCaplets[i]) / errorsArr.get(i + N);
+            if (capletStdDev[i] > maxError) {
+                maxError = capletStdDev[i];
+            } else if (capletStdDev[i] < minError) {
+                minError = capletStdDev[i];
+            }
+        }
+
+        final double errorThreshold = 2.50;
+        if (minError > 0.0 || maxError < 0.0
+                || minError < -errorThreshold || maxError > errorThreshold) {
+            final StringBuilder sb = new StringBuilder(config).append('\n');
+            for (int i = 0; i < N; ++i) {
+                sb.append(i + 1).append(" forward: ")
+                  .append(resultsArr.get(i)).append(" +- ").append(errorsArr.get(i))
+                  .append("; expected: ").append(expectedForwards[i])
+                  .append("; discrepancy = ").append(forwardStdDevs[i]).append('\n');
+            }
+            for (int i = 0; i < N; ++i) {
+                final double e = errorsArr.get(i + N);
+                final double disc = (resultsArr.get(i + N) - expectedCaplets[i]) / (e == 0.0 ? 1.0 : e);
+                sb.append(i + 1).append(" caplet: ")
+                  .append(resultsArr.get(i + N)).append(" +- ").append(e)
+                  .append("; expected: ").append(expectedCaplets[i])
+                  .append("; discrepancy = ").append(disc).append('\n');
+            }
+            throw new AssertionError("checkNormalForwardsAndOptionlets failed: " + sb);
         }
     }
 
