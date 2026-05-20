@@ -865,6 +865,143 @@ public class CalendarsTest {
     }
 
     /**
+     * Faithful port of {@code test-suite/calendars.cpp:471}
+     * {@code BOOST_AUTO_TEST_CASE(testGermanyFrankfurt)}.
+     *
+     * <p>Frankfurt Stock Exchange holiday list for 2003-2004.
+     */
+    @Test
+    public void testGermanyFrankfurt() {
+        QL.info("Testing Frankfurt Stock Exchange holiday list...");
+
+        final List<Date> expectedHol = dateList(
+                new Date(1, Month.January, 2003),
+                new Date(18, Month.April, 2003),
+                new Date(21, Month.April, 2003),
+                new Date(1, Month.May, 2003),
+                new Date(24, Month.December, 2003),
+                new Date(25, Month.December, 2003),
+                new Date(26, Month.December, 2003),
+
+                new Date(1, Month.January, 2004),
+                new Date(9, Month.April, 2004),
+                new Date(12, Month.April, 2004),
+                new Date(24, Month.December, 2004));
+
+        final Calendar c = new Germany(Germany.Market.FrankfurtStockExchange);
+        final List<Date> computed = Calendar.holidayList(c,
+                new Date(1, Month.January, 2003), new Date(31, Month.December, 2004), false);
+        checkHolidays(computed, expectedHol);
+    }
+
+    /**
+     * Faithful port of {@code test-suite/calendars.cpp:495}
+     * {@code BOOST_AUTO_TEST_CASE(testGermanyEurex)}.
+     *
+     * <p>Eurex holiday list for 2003-2004. Eurex differs from FrankfurtStockExchange
+     * by also closing on 31 December.
+     */
+    @Test
+    public void testGermanyEurex() {
+        QL.info("Testing Eurex holiday list...");
+
+        final List<Date> expectedHol = dateList(
+                new Date(1, Month.January, 2003),
+                new Date(18, Month.April, 2003),
+                new Date(21, Month.April, 2003),
+                new Date(1, Month.May, 2003),
+                new Date(24, Month.December, 2003),
+                new Date(25, Month.December, 2003),
+                new Date(26, Month.December, 2003),
+                new Date(31, Month.December, 2003),
+
+                new Date(1, Month.January, 2004),
+                new Date(9, Month.April, 2004),
+                new Date(12, Month.April, 2004),
+                new Date(24, Month.December, 2004),
+                new Date(31, Month.December, 2004));
+
+        final Calendar c = new Germany(Germany.Market.Eurex);
+        final List<Date> computed = Calendar.holidayList(c,
+                new Date(1, Month.January, 2003), new Date(31, Month.December, 2004), false);
+        checkHolidays(computed, expectedHol);
+    }
+
+    /**
+     * Faithful port of {@code test-suite/calendars.cpp:521}
+     * {@code BOOST_AUTO_TEST_CASE(testGermanyXetra)}.
+     *
+     * <p>Xetra holiday list for 2003-2004. Xetra differs from Eurex by
+     * <b>not</b> closing on 31 December.
+     */
+    @Test
+    public void testGermanyXetra() {
+        QL.info("Testing Xetra holiday list...");
+
+        final List<Date> expectedHol = dateList(
+                new Date(1, Month.January, 2003),
+                new Date(18, Month.April, 2003),
+                new Date(21, Month.April, 2003),
+                new Date(1, Month.May, 2003),
+                new Date(24, Month.December, 2003),
+                new Date(25, Month.December, 2003),
+                new Date(26, Month.December, 2003),
+
+                new Date(1, Month.January, 2004),
+                new Date(9, Month.April, 2004),
+                new Date(12, Month.April, 2004),
+                new Date(24, Month.December, 2004));
+
+        final Calendar c = new Germany(Germany.Market.Xetra);
+        final List<Date> computed = Calendar.holidayList(c,
+                new Date(1, Month.January, 2003), new Date(31, Month.December, 2004), false);
+        checkHolidays(computed, expectedHol);
+    }
+
+    /**
+     * Faithful port of {@code test-suite/calendars.cpp:686}
+     * {@code BOOST_AUTO_TEST_CASE(testItalyExchange)}.
+     *
+     * <p>Milan Stock Exchange holiday list for 2002-2004.
+     */
+    @Test
+    public void testItalyExchange() {
+        QL.info("Testing Milan Stock Exchange holiday list...");
+
+        final List<Date> expectedHol = dateList(
+                new Date(1, Month.January, 2002),
+                new Date(29, Month.March, 2002),
+                new Date(1, Month.April, 2002),
+                new Date(1, Month.May, 2002),
+                new Date(15, Month.August, 2002),
+                new Date(24, Month.December, 2002),
+                new Date(25, Month.December, 2002),
+                new Date(26, Month.December, 2002),
+                new Date(31, Month.December, 2002),
+
+                new Date(1, Month.January, 2003),
+                new Date(18, Month.April, 2003),
+                new Date(21, Month.April, 2003),
+                new Date(1, Month.May, 2003),
+                new Date(15, Month.August, 2003),
+                new Date(24, Month.December, 2003),
+                new Date(25, Month.December, 2003),
+                new Date(26, Month.December, 2003),
+                new Date(31, Month.December, 2003),
+
+                new Date(1, Month.January, 2004),
+                new Date(9, Month.April, 2004),
+                new Date(12, Month.April, 2004),
+                new Date(24, Month.December, 2004),
+                new Date(31, Month.December, 2004));
+
+        final Calendar c = new Italy(Italy.Market.Exchange);
+        final List<Date> computed = Calendar.holidayList(c,
+                new Date(1, Month.January, 2002), new Date(31, Month.December, 2004), false);
+        checkHolidays(computed, expectedHol);
+    }
+
+    /**
      * Faithful port of {@code test-suite/calendars.cpp:1313}
      * {@code BOOST_AUTO_TEST_CASE(testBrazil)}.
      *
