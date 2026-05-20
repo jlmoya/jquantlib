@@ -1219,6 +1219,9 @@ public class PiecewiseYieldCurveTest {
 
 	// =====================================================================
 	// Phase1-cert-D5-B-R4 — BLOCKED tests from v1.42.1 piecewiseyieldcurve.cpp
+	// (Re-verified 2026-05-20 by Round A6-A; see
+	// docs/migration/phase1-closure-remaining.md piecewiseyieldcurve bullet
+	// for the current cross-checked status.)
 	// =====================================================================
 	// The following tests are NOT ported; rationale documented per test below.
 	// Tracked for follow-up in Phase 2 / cert-yield-vanilla remediation.

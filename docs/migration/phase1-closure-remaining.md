@@ -53,16 +53,71 @@ doubt the audit script counts the test as genuinely missing (conservative).
 
 ### Bond curves (2 files, 15 tests)
 
-- **piecewiseyieldcurve** (14): `testDefaultInstantiation`,
-  `testSwapRateHelperSpotDate`, `testGlobalBootstrap`,
-  `testGlobalBootstrapPenalty`, `testGlobalBootstrapVariables`,
-  `testMultiCurveTwoPiecewiseYieldCurves`,
-  `testMultiCurvePiecewiseYieldCurveAndSpreadedCurve`,
-  `testGlobalBootstrapInstrumentWeights`, `testPiecewiseSpreadYieldCurve`,
-  `testCustomFuturesHelpers`, `testSwapHelpersWithOnceFrequency`,
-  `testDepositForDates`, `testFraForDates`, `testDatedSwapHelpers`
-  — GlobalBootstrap not ported (~800 LOC), SpreadedCurve helpers partial,
-  others are body-fill ~80-150 LOC each.
+- **piecewiseyieldcurve** (14): updated 2026-05-20 by Round A6-A worktree A
+  audit — all 14 tests are **BLOCKED** on missing Java API (not body-fill).
+  Per-test rationale already documented in the `PiecewiseYieldCurveTest`
+  class header (block tagged "Phase1-cert-D5-B-R4 — BLOCKED tests from
+  v1.42.1 piecewiseyieldcurve.cpp"); A6-A re-verified each blocker against
+  current Java sources:
+  - `testDefaultInstantiation` — missing `MonotonicLogCubic`, `KrugerLog`,
+    `ConvexMonotone` interpolator factories (Java has `LogLinear`,
+    `LogCubic`, `BackwardFlat`, `ForwardFlat` only — 3 of 7 needed).
+  - `testSwapRateHelperSpotDate` — A3-class divergence in Java's
+    `RelativeDateRateHelper.update()`: stores a reference to the singleton
+    `Settings` `DateProxy` rather than a value-snapshot, so the
+    "did eval-date change" guard never trips and `initializeDates()` is
+    never re-invoked after a `Settings.setEvaluationDate(...)`. The test
+    explicitly mutates eval-date after helper construction and reads
+    `helper.swap().startDate()`, which is the exact pattern this bug
+    breaks. Fix is a value-snapshot refactor of `RelativeDateRateHelper`
+    (outside scope of test port).
+  - `testGlobalBootstrap`, `testGlobalBootstrapPenalty`,
+    `testGlobalBootstrapVariables`, `testGlobalBootstrapInstrumentWeights`
+    — require `GlobalBootstrap<Curve>` for yield curves; Java has
+    `GlobalBootstrap` only for inflation (`org.jquantlib.termstructures
+    .inflation.GlobalBootstrap`) and `org.jquantlib.termstructures
+    .yieldcurves.GlobalBootstrap` is only a stub. Effort: ~800 LOC plus
+    additional-helpers / additional-dates / cost-function plumbing. Handled
+    by Round A6 worktree B; see B's report.
+  - `testMultiCurveTwoPiecewiseYieldCurves`,
+    `testMultiCurvePiecewiseYieldCurveAndSpreadedCurve` — depend on
+    `MultiCurve` class (not present in Java; uses
+    `addBootstrappedCurve` / `addNonBootstrappedCurve` API for
+    multi-curve simultaneous bootstrap) plus `GlobalBootstrap` and
+    `IborIborBasisSwapRateHelper`; the spreaded variant additionally needs
+    `ZeroSpreadedTermStructure` integration.
+  - `testPiecewiseSpreadYieldCurve` — requires `PiecewiseSpreadYieldCurve`
+    (not in Java; only `InterpolatedPiecewiseZeroSpreadedTermStructure`
+    exists, which does not bootstrap helpers as spreads onto a base curve).
+  - `testCustomFuturesHelpers` — requires `Futures::Custom` enum, plus the
+    `FuturesRateHelper(price, startDate, length, calendar, ..., type)` and
+    `FuturesRateHelper(price, startDate, endDate, dayCounter, ..., type)`
+    overloads; Java has only IMM-date based ctors with no `Futures.Type`
+    parameter.
+  - `testSwapHelpersWithOnceFrequency` — requires the `SwapRateHelper`
+    overload that propagates a `paymentFrequency` to the floating leg
+    (Java's ctors derive floating frequency from index tenor) and the
+    `OISRateHelper(..., paymentFrequency)` overload, plus the `Estr`
+    overnight index (Java has `Eonia` and partial `OvernightIndex`, no
+    `Estr`).
+  - `testDepositForDates` — requires the
+    `DepositRateHelper(quote, fixingDate, IborIndex)` overload; Java only
+    exposes `(quote, Period, fixingDays, calendar, ...)`,
+    `(rate, Period, ...)`, and `(quote, IborIndex)` ctors.
+  - `testFraForDates` — requires the
+    `FraRateHelper(quote, startDate, endDate, index, Pillar::LastRelevantDate,
+    customPillarDate, useIndexedCoupon)` overload; Java has only
+    `monthsToStart` and `Period periodToStart` variants and no `Pillar`
+    enum nor `useIndexedCoupon` flag.
+  - `testDatedSwapHelpers` — requires the
+    `SwapRateHelper(quote, startDate, endDate, calendar, fixedFreq,
+    fixedConvention, fixedDayCounter, index)` overload (dated rather than
+    tenor-based); Java has only tenor-based ctors.
+
+  Per the A6-A re-audit, **0 of 10 non-GlobalBootstrap tests are
+  body-fillable** in the current Java codebase. Net body-fill effort
+  estimate revised from "10 × ~80-150 LOC" to "API completion across 7
+  helper/interpolator classes ~600-900 LOC + 10 × ~80-150 LOC tests."
 
 - **fittedbonddiscountcurve** (1): `testEvaluation` — body-fill,
   ~100 LOC.
