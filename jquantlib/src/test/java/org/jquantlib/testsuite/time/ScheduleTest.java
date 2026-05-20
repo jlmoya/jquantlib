@@ -404,4 +404,144 @@ public class ScheduleTest {
         assertTrue("last period should be regular", s.isRegular(2));
     }
 
+    /** Faithful port of {@code test-suite/schedule.cpp:245}
+     *  {@code BOOST_AUTO_TEST_CASE(testForwardDatesWithEomAdjustment)}.
+     *  Forward EOM schedule on USGovBond must not adjust the last date when termination convention is Unadjusted. */
+    @Test
+    public void testForwardDatesWithEomAdjustment() {
+        final Schedule s = new MakeSchedule()
+                .from(new Date(31, Month.August, 1996))
+                .to(new Date(15, Month.September, 1997))
+                .withCalendar(new UnitedStates(UnitedStates.Market.GOVERNMENTBOND))
+                .withTenor(new Period(6, TimeUnit.Months))
+                .withConvention(BusinessDayConvention.Unadjusted)
+                .withTerminationDateConvention(BusinessDayConvention.Unadjusted)
+                .forwards()
+                .endOfMonth()
+                .schedule();
+        checkDates(s, Arrays.asList(
+                new Date(31, Month.August, 1996),
+                new Date(28, Month.February, 1997),
+                new Date(31, Month.August, 1997),
+                new Date(15, Month.September, 1997)));
+    }
+
+    /** Faithful port of {@code test-suite/schedule.cpp:269}
+     *  {@code BOOST_AUTO_TEST_CASE(testBackwardDatesWithEomAdjustment)}.
+     *  Backward EOM schedule on USGovBond must not adjust the first date when termination convention is Unadjusted. */
+    @Test
+    public void testBackwardDatesWithEomAdjustment() {
+        final Schedule s = new MakeSchedule()
+                .from(new Date(22, Month.August, 1996))
+                .to(new Date(31, Month.August, 1997))
+                .withCalendar(new UnitedStates(UnitedStates.Market.GOVERNMENTBOND))
+                .withTenor(new Period(6, TimeUnit.Months))
+                .withConvention(BusinessDayConvention.Unadjusted)
+                .withTerminationDateConvention(BusinessDayConvention.Unadjusted)
+                .backwards()
+                .endOfMonth()
+                .schedule();
+        checkDates(s, Arrays.asList(
+                new Date(22, Month.August, 1996),
+                new Date(31, Month.August, 1996),
+                new Date(28, Month.February, 1997),
+                new Date(31, Month.August, 1997)));
+    }
+
+    /** Faithful port of {@code test-suite/schedule.cpp:293}
+     *  {@code BOOST_AUTO_TEST_CASE(testDoubleFirstDateWithEomAdjustment)}.
+     *  Backward EOM schedule must not duplicate the first date when ModifiedFollowing/Following BDCs are used. */
+    @Test
+    public void testDoubleFirstDateWithEomAdjustment() {
+        final Schedule s = new MakeSchedule()
+                .from(new Date(22, Month.August, 1996))
+                .to(new Date(31, Month.August, 1997))
+                .withCalendar(new UnitedStates(UnitedStates.Market.GOVERNMENTBOND))
+                .withTenor(new Period(6, TimeUnit.Months))
+                .withConvention(BusinessDayConvention.ModifiedFollowing)
+                .withTerminationDateConvention(BusinessDayConvention.Following)
+                .backwards()
+                .endOfMonth()
+                .schedule();
+        checkDates(s, Arrays.asList(
+                new Date(22, Month.August, 1996),
+                new Date(30, Month.August, 1996),
+                new Date(28, Month.February, 1997),
+                new Date(2, Month.September, 1997)));
+    }
+
+    /** Faithful port of {@code test-suite/schedule.cpp:317}
+     *  {@code BOOST_AUTO_TEST_CASE(testFirstDateWithEomAdjustment)}.
+     *  Forward EOM schedule with explicit firstDate(28-Feb-1997) on USGovBond. */
+    @Test
+    public void testFirstDateWithEomAdjustment() {
+        final Schedule schedule = new MakeSchedule()
+                .from(new Date(10, Month.August, 1996))
+                .to(new Date(10, Month.August, 1998))
+                .withFirstDate(new Date(28, Month.February, 1997))
+                .withCalendar(new UnitedStates(UnitedStates.Market.GOVERNMENTBOND))
+                .withTenor(new Period(6, TimeUnit.Months))
+                .withConvention(BusinessDayConvention.ModifiedFollowing)
+                .withTerminationDateConvention(BusinessDayConvention.ModifiedFollowing)
+                .forwards()
+                .endOfMonth()
+                .schedule();
+        checkDates(schedule, Arrays.asList(
+                new Date(12, Month.August, 1996),
+                new Date(28, Month.February, 1997),
+                new Date(29, Month.August, 1997),
+                new Date(27, Month.February, 1998),
+                new Date(10, Month.August, 1998)));
+    }
+
+    /** Faithful port of {@code test-suite/schedule.cpp:341}
+     *  {@code BOOST_AUTO_TEST_CASE(testNextToLastWithEomAdjustment)}.
+     *  Backward EOM schedule with explicit nextToLastDate(28-Feb-1998) on USGovBond. */
+    @Test
+    public void testNextToLastWithEomAdjustment() {
+        final Schedule schedule = new MakeSchedule()
+                .from(new Date(10, Month.August, 1996))
+                .to(new Date(10, Month.August, 1998))
+                .withNextToLastDate(new Date(28, Month.February, 1998))
+                .withCalendar(new UnitedStates(UnitedStates.Market.GOVERNMENTBOND))
+                .withTenor(new Period(6, TimeUnit.Months))
+                .withConvention(BusinessDayConvention.ModifiedFollowing)
+                .withTerminationDateConvention(BusinessDayConvention.ModifiedFollowing)
+                .backwards()
+                .endOfMonth()
+                .schedule();
+        checkDates(schedule, Arrays.asList(
+                new Date(12, Month.August, 1996),
+                new Date(30, Month.August, 1996),
+                new Date(28, Month.February, 1997),
+                new Date(29, Month.August, 1997),
+                new Date(27, Month.February, 1998),
+                new Date(10, Month.August, 1998)));
+    }
+
+    /** Faithful port of {@code test-suite/schedule.cpp:366}
+     *  {@code BOOST_AUTO_TEST_CASE(testEffectiveDateWithEomAdjustment)}.
+     *  Forward EOM schedule must not move the effective date to end-of-month when effective and first dates are in
+     *  the same month. */
+    @Test
+    public void testEffectiveDateWithEomAdjustment() {
+        final Schedule s = new MakeSchedule()
+                .from(new Date(16, Month.January, 2023))
+                .to(new Date(16, Month.March, 2023))
+                .withFirstDate(new Date(31, Month.January, 2023))
+                .withCalendar(new NullCalendar())
+                .withTenor(new Period(1, TimeUnit.Months))
+                .withConvention(BusinessDayConvention.Unadjusted)
+                .withTerminationDateConvention(BusinessDayConvention.Unadjusted)
+                .forwards()
+                .endOfMonth()
+                .schedule();
+        // check that the effective date is not moved at the end of the month
+        checkDates(s, Arrays.asList(
+                new Date(16, Month.January, 2023),
+                new Date(31, Month.January, 2023),
+                new Date(28, Month.February, 2023),
+                new Date(16, Month.March, 2023)));
+    }
+
 }
