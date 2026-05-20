@@ -103,6 +103,38 @@ import org.junit.Test;
 /**
  * @author Srinivas Hasti
  * @author Richard Gomes
+ *
+ * Phase1-cert-D5-B-R4 audit notes (v1.42.1 piecewiseyieldcurve.cpp coverage):
+ * <ul>
+ *   <li>{@link #testLogLinearDiscountConsistency} ← EXISTING_EQUIVALENT for
+ *       C++ cpp:674 {@code testLogLinearDiscountConsistency}.</li>
+ *   <li>{@link #testLinearDiscountConsistency} ← EXISTING_EQUIVALENT for
+ *       C++ cpp:685 {@code testLinearDiscountConsistency}.</li>
+ *   <li>{@link #testLinearZeroConsistency} ← EXISTING_EQUIVALENT for
+ *       C++ cpp:696 {@code testLinearZeroConsistency}.</li>
+ *   <li>{@link #testSplineZeroConsistency} ← EXISTING_EQUIVALENT for
+ *       C++ cpp:707 {@code testSplineZeroConsistency}.</li>
+ *   <li>{@link #testLinearForwardConsistency} ← EXISTING_EQUIVALENT for
+ *       C++ cpp:726 {@code testLinearForwardConsistency}.</li>
+ *   <li>{@link #testFlatForwardConsistency} ← EXISTING_EQUIVALENT for
+ *       C++ cpp:737 {@code testFlatForwardConsistency}.</li>
+ *   <li>{@link #testObservability} ← EXISTING_EQUIVALENT for C++ cpp:830
+ *       {@code testObservability}.</li>
+ *   <li>{@link #testLiborFixing} ← EXISTING_EQUIVALENT for C++ cpp:875
+ *       {@code testLiborFixing}.</li>
+ *   <li>{@link #testJpyLibor} ← EXISTING_EQUIVALENT for C++ cpp:962
+ *       {@code testJpyLibor}.</li>
+ *   <li>{@link #testLogLinearZeroConsistency} — Java-extra (no upstream
+ *       C++ counterpart); kept for backward-compat with prior JQuantLib
+ *       behavior verification.</li>
+ *   <li>{@code testLogCubicDiscountConsistency} + {@code testSplineForwardConsistency}
+ *       — removed in lockstep with upstream {@code //Unstable} comments at
+ *       cpp:656 / cpp:748.</li>
+ * </ul>
+ * Newly ported in Phase1-cert-D5-B-R4: {@link #testParFraRegression},
+ * {@link #testCA365Futures}, {@link #testSwapRateHelperLastRelevantDate},
+ * {@link #testBadPreviousCurve} (gated), {@link #testConstructionWithExplicitBootstrap}.
+ * BLOCKED tests are documented at the bottom of the class.
  */
 public class PiecewiseYieldCurveTest {
 
@@ -1184,6 +1216,97 @@ public class PiecewiseYieldCurveTest {
 	    curve.discount(1.0);
 	}
 
+	// =====================================================================
+	// Phase1-cert-D5-B-R4 — BLOCKED tests from v1.42.1 piecewiseyieldcurve.cpp
+	// =====================================================================
+	// The following tests are NOT ported; rationale documented per test below.
+	// Tracked for follow-up in Phase 2 / cert-yield-vanilla remediation.
+	//
+	// testConvexMonotoneForwardConsistency (cpp:770) — BLOCKED
+	//   Requires ConvexMonotone interpolator (org.jquantlib.math.interpolations
+	//   .ConvexMonotoneInterpolation), not yet ported to Java. See commented-out
+	//   placeholder above. Effort: ~600 LOC for ConvexMonotoneHelper +
+	//   ConvexMonotoneInterpolation + ConvexMonotone factory.
+	//
+	// testLocalBootstrapConsistency (cpp:781) — BLOCKED
+	//   Requires ConvexMonotone interpolator (see above) plus LocalBootstrap is
+	//   only partially wired in Java (the BlackOrBachelier flow). Effort:
+	//   blocked on ConvexMonotone.
+	//
+	// testDefaultInstantiation (cpp:1067) — BLOCKED
+	//   Compile-only test that instantiates PiecewiseYieldCurve with
+	//   SplineLogCubic, MonotonicLogCubic, KrugerLog, ForwardFlat,
+	//   and ConvexMonotone. Java is missing MonotonicLogCubic, KrugerLog,
+	//   and ConvexMonotone factories. Effort: ~200 LOC across interpolator
+	//   factory ports; not strictly load-bearing since tested instantiations
+	//   exercise no runtime invariant.
+	//
+	// testLargeRates (cpp:1231) — BLOCKED
+	//   Java's IterativeBootstrap constructor only accepts a Curve class
+	//   parameter; the C++ overload taking (accuracy, minValue, maxValue,
+	//   maxRetries) — needed to override the default maxValue=3.0 search
+	//   bound — has no Java counterpart. Production-port effort: ~50 LOC
+	//   added to IterativeBootstrap + propagation through PiecewiseYieldCurve.
+	//
+	// testGlobalBootstrap (cpp:1304) — BLOCKED
+	//   Requires GlobalBootstrap<Curve> for yield curves (Java only has
+	//   GlobalBootstrap for inflation). Also depends on the additional-helpers
+	//   / additional-dates / cost-function customization scaffold which Java
+	//   has not yet ported. Effort: ~800 LOC for GlobalBootstrap-for-yield +
+	//   AdditionalHelpers / AdditionalDates plumbing.
+	//
+	// testGlobalBootstrapPenalty (cpp:1386) — BLOCKED
+	//   Same blocker as testGlobalBootstrap; adds a penalty-function variant
+	//   on top.
+	//
+	// testGlobalBootstrapVariables (cpp:1484) — BLOCKED
+	//   Same blocker; additionally needs SimpleQuoteVariables and
+	//   FuturesConvAdjustmentQuote (Java has neither).
+	//
+	// testMultiCurveTwoPiecewiseYieldCurves (cpp:1545) — BLOCKED
+	//   Same GlobalBootstrap blocker.
+	//
+	// testMultiCurvePiecewiseYieldCurveAndSpreadedCurve (cpp:1684) — BLOCKED
+	//   Same GlobalBootstrap blocker; also needs PiecewiseSpreadYieldCurve
+	//   (Java has none — only InterpolatedPiecewiseZeroSpreadedTermStructure).
+	//
+	// testGlobalBootstrapInstrumentWeights (cpp:1742) — BLOCKED
+	//   Same GlobalBootstrap blocker.
+	//
+	// testPiecewiseSpreadYieldCurve (cpp:1895) — BLOCKED
+	//   Requires PiecewiseSpreadYieldCurve (not in Java).
+	//
+	// testIterativeBootstrapRetries (cpp:1907) — BLOCKED
+	//   Requires FxSwapRateHelper (not in Java) plus the
+	//   IterativeBootstrap(accuracy, minValue, maxValue, maxAttempts) ctor
+	//   overload (Java has only the curve-class ctor).
+	//
+	// testCustomFuturesHelpers (cpp:2020) — BLOCKED
+	//   Requires Futures::Custom enum + the (price, startDate, length,
+	//   calendar, ...) and (price, startDate, endDate, ...) FuturesRateHelper
+	//   overloads, plus convexity-adjustment plumbing — Java has only the
+	//   IMM-date based overloads.
+	//
+	// testSwapHelpersWithOnceFrequency (cpp:2094) — BLOCKED
+	//   Requires the (rate, tenor, calendar, fixedFreq, ..., index, Frequency)
+	//   SwapRateHelper ctor that propagates a paymentFrequency to the
+	//   floating leg — Java's SwapRateHelper ctors assume the floating leg
+	//   frequency is derived from the index tenor. Also needs Estr OIS index
+	//   (Java has Eonia and partial OvernightIndex).
+	//
+	// testDepositForDates (cpp:2109) — BLOCKED
+	//   Requires (rate, fixingDate, index) DepositRateHelper overload — Java
+	//   has only (rate, tenor, ...) and (rate, index) variants.
+	//
+	// testFraForDates (cpp:2142) — BLOCKED
+	//   Requires (rate, startDate, endDate, index, Pillar::LastRelevantDate,
+	//   customPillarDate, useIndexedCoupon) FraRateHelper overload — Java
+	//   has only month-offset and period-offset variants.
+	//
+	// testDatedSwapHelpers (cpp:2201) — BLOCKED
+	//   Requires (rate, startDate, endDate, ...) SwapRateHelper overload —
+	//   Java has only tenor-based ctors.
+	//
 	// testSwapRateHelperSpotDate intentionally NOT ported: mirrors C++ v1.42.1
 	// test-suite/piecewiseyieldcurve.cpp:1112 BOOST_AUTO_TEST_CASE(testSwapRateHelperSpotDate).
 	// Status: BLOCKED on Java production bug in
