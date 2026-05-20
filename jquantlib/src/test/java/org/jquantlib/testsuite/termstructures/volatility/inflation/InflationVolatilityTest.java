@@ -65,7 +65,6 @@ import org.jquantlib.time.Period;
 import org.jquantlib.time.TimeUnit;
 import org.jquantlib.time.calendars.Target;
 import org.jquantlib.util.Pair;
-import org.junit.Assume;
 import org.junit.Test;
 
 import static org.junit.Assert.fail;
@@ -93,11 +92,14 @@ import static org.junit.Assert.fail;
  *       Full-precision reference values are produced by the harness
  *       probe
  *       {@code migration-harness/cpp/probes/experimental/inflation/k_interpolated_yoy_optionlet_vol_surface_probe.cpp}.
- *       The Java port currently triggers a recursion in
- *       {@code PiecewiseYoYOptionletVolatility.calculate()} — see the
- *       diagnostic in the test body and the {@link Assume#assumeTrue}
- *       skip path. Out-of-scope to fix in this task (touching
- *       {@code PiecewiseYoYOptionletVolatility} is restricted).</li>
+ *       <b>Active since Phase 5e.5b-CFC-d-315</b> after the
+ *       {@code PiecewiseYoYOptionletVolatility.performCalculations()}
+ *       bootstrap was aligned with C++ {@code IterativeBootstrap}
+ *       (firstSolver=Brent for {@code !validData}, solver=FDNS for
+ *       {@code validData}, bracket-widening retry) plus a
+ *       {@code notifyObservers()} call that mirrors C++
+ *       {@code YoYOptionletHelper::impliedQuote()}'s
+ *       {@code yoyCapFloor_->deepUpdate()} invalidation hook.</li>
  *   <li>{@code testYoYPriceSurfaceToATM} — exercises ATM YoY swap-rate
  *       extraction via {@code atmYoYRate()} which internally bootstraps a
  *       {@code PiecewiseYoYInflationCurve}. Phase 2y A.1 fixed the
@@ -395,36 +397,29 @@ public class InflationVolatilityTest {
      * {@link StackOverflowError} that previously gated this test is
      * gone.
      *
-     * <p><b>Remaining blocker: bootstrap solver divergence.</b>
-     * Post-fix, the bootstrap now fails with
-     * "{@code could not bootstrap pillar 1: root not bracketed}".
-     * Root cause: Java's
+     * <p><b>Bootstrap solver alignment landed (Phase 5e.5b-CFC-d-315).</b>
      * {@code PiecewiseYoYOptionletVolatility.performCalculations()}
-     * drives the bootstrap directly with a {@link
-     * org.jquantlib.math.solvers1D.Brent} solver, whereas C++
-     * {@code IterativeBootstrap}
-     * ({@code ql/termstructures/iterativebootstrap.hpp:222-365})
-     * uses {@code FiniteDifferenceNewtonSafe} as
-     * {@code firstSolver_} on the first iteration (when
-     * {@code !validData}), plus a {@code maxAttempts}
-     * bracket-widening retry loop and {@code dontThrow}/fallback
-     * machinery. The narrower Brent-only path can't find a valid
-     * bracket on the first guess of pillar 1 with the data this test
-     * supplies.
+     * now mirrors C++ {@code IterativeBootstrap::calculate()}
+     * ({@code ql/termstructures/iterativebootstrap.hpp:222-365}): on
+     * the first iteration ({@code !validData}) it drives the bootstrap
+     * with {@link org.jquantlib.math.solvers1D.Brent} as
+     * {@code firstSolver_}; subsequent iterations ({@code validData})
+     * use {@link org.jquantlib.math.solvers1D.FiniteDifferenceNewtonSafe}
+     * as {@code solver_}; per-pillar {@code maxAttempts} bracket
+     * widening retries (with {@code minFactor_=2}, {@code maxFactor_=2})
+     * recover from initial brackets that don't span the root. In
+     * addition, {@code BootstrapErrorFn.op()} now calls
+     * {@code notifyObservers()} after writing to {@code data_[i]} to
+     * mirror C++ {@code YoYOptionletHelper::impliedQuote()}'s
+     * {@code yoyCapFloor_->deepUpdate()} call
+     * ({@code yoyoptionlethelpers.cpp:68-71}) — without this, the
+     * helper's cached {@code Instrument.NPV} was stale across solver
+     * iterations and {@code quoteError(min) = quoteError(max)},
+     * yielding the "{@code root not bracketed}" error regardless of
+     * the bracket width.
      *
-     * <p>Fixing this requires porting (or wiring up) the
-     * {@code IterativeBootstrap} solver-selection / retry logic into
-     * {@code PiecewiseYoYOptionletVolatility.performCalculations()}
-     * — a follow-up {@code align(experimental.inflation.PiecewiseYoYOptionletVolatility)}
-     * task. For now we faithfully construct the K-surface (no
-     * recursion any more), catch the bootstrap's bracketing
-     * {@link RuntimeException}, and skip via {@link
-     * Assume#assumeTrue(String, boolean)} with the refined
-     * diagnostic. This keeps the test active (and ready to assert
-     * against the harness reference values once the bootstrap solver
-     * is aligned) without forcing a hard failure.
-     *
-     * <p>Reference values (for use once the bootstrap solver is aligned):
+     * <p>Reference values (1e-7 tolerance, matching the Brent solver
+     * tolerance inside the stripper):
      * <pre>
      *   K = {-0.01, 0.00, 0.005, 0.01, 0.015, 0.02, 0.025, 0.03, 0.035, 0.04, 0.05}
      *   volATyear1 = {0.0129027, 0.0094241, 0.0083862, 0.0073982,
@@ -477,11 +472,11 @@ public class InflationVolatilityTest {
         // Construct the K-interpolated surface. The constructor calls
         // performCalculations() → stripper.initialize(...) which builds
         // a PiecewiseYoYOptionletVolatility per strike. Phase 5e.5b-CFC-d-313
-        // fixed the prior infinite recursion (BEFORE-style lazy guard); the
-        // bootstrap now reaches the Brent solver but fails to bracket on
-        // pillar 1 because the Java port doesn't yet ship the
-        // FiniteDifferenceNewtonSafe+retry path of C++ IterativeBootstrap
-        // (see Javadoc above).
+        // fixed the prior infinite recursion (BEFORE-style lazy guard);
+        // Phase 5e.5b-CFC-d-315 ported the IterativeBootstrap solver
+        // selection + bracket-widening retry + notifyObservers()
+        // deepUpdate-equivalent into the bootstrap loop. Both blockers are
+        // now defensive fail() guards (see below) rather than skip paths.
         KInterpolatedYoYOptionletVolatilitySurface<Linear> yoySurf = null;
         StackOverflowError caughtRecursion = null;
         RuntimeException caughtBootstrap = null;
@@ -496,41 +491,29 @@ public class InflationVolatilityTest {
             caughtBootstrap = re;
         }
 
-        // The recursion path is now closed (Phase 5e.5b-CFC-d-313); this guard
-        // remains as a regression net in case the lazy guard regresses.
-        Assume.assumeTrue(
-                "Regression: PiecewiseYoYOptionletVolatility.calculate() lost "
-                + "the BEFORE-style calculated_ guard aligned with C++ "
-                + "LazyObject (ql/patterns/lazyobject.hpp:256-270) in Phase "
-                + "5e.5b-CFC-d-313. The stripper's bootstrap re-enters the "
-                + "curve's volatilityImpl via the pricer during NPV evaluation "
-                + "and recurses indefinitely without the BEFORE-style guard.",
-                caughtRecursion == null);
-
-        // Refined blocker (post-recursion-fix): the Java
-        // PiecewiseYoYOptionletVolatility.performCalculations() uses a plain
-        // Brent solver where C++ IterativeBootstrap
-        // (ql/termstructures/iterativebootstrap.hpp:222-365) uses
-        // FiniteDifferenceNewtonSafe as firstSolver_ on the first iteration
-        // plus a maxAttempts bracket-widening retry loop. The narrower
-        // Brent-only path can't bracket pillar 1 with this test's data and
-        // raises "could not bootstrap pillar 1: root not bracketed".
-        Assume.assumeTrue(
-                "Java port blocker (post Phase 5e.5b-CFC-d-313 recursion fix): "
-                + "PiecewiseYoYOptionletVolatility.performCalculations() drives "
-                + "the bootstrap with a plain Brent solver where C++ "
-                + "IterativeBootstrap (ql/termstructures/iterativebootstrap.hpp:"
-                + "222-365) uses FiniteDifferenceNewtonSafe as firstSolver_ on "
-                + "the first iteration plus a maxAttempts bracket-widening "
-                + "retry loop and dontThrow/fallback machinery. The narrower "
-                + "Brent path fails with \"could not bootstrap pillar 1: root "
-                + "not bracketed\" on this test's data. Fix requires porting "
-                + "the IterativeBootstrap solver-selection / retry logic into "
-                + "the Java bootstrap loop; deferred to a follow-up "
-                + "align(experimental.inflation.PiecewiseYoYOptionletVolatility) "
-                + "task. Observed message: "
-                + (caughtBootstrap == null ? "<none>" : caughtBootstrap.getMessage()),
-                caughtBootstrap == null);
+        // Defensive: both legacy blockers (BEFORE-style recursion guard from
+        // Phase 5e.5b-CFC-d-313 and the IterativeBootstrap solver-selection /
+        // deepUpdate alignment from Phase 5e.5b-CFC-d-315) are landed; any
+        // regression here surfaces as a hard failure rather than a silent
+        // skip.
+        if (caughtRecursion != null) {
+            fail("Regression: PiecewiseYoYOptionletVolatility.calculate() "
+                    + "lost the BEFORE-style calculated_ guard aligned with "
+                    + "C++ LazyObject (ql/patterns/lazyobject.hpp:256-270) "
+                    + "from Phase 5e.5b-CFC-d-313. The stripper's bootstrap "
+                    + "re-enters the curve's volatilityImpl via the pricer "
+                    + "during NPV evaluation and recurses indefinitely "
+                    + "without the BEFORE-style guard.");
+        }
+        if (caughtBootstrap != null) {
+            fail("Regression: PiecewiseYoYOptionletVolatility.performCalculations() "
+                    + "lost the IterativeBootstrap solver-selection + "
+                    + "bracket-widening retry + deepUpdate-equivalent "
+                    + "notifyObservers() alignment from Phase "
+                    + "5e.5b-CFC-d-315 (mirrors C++ iterativebootstrap.hpp:"
+                    + "222-365 and yoyoptionlethelpers.cpp:68-71). Observed: "
+                    + caughtBootstrap.getMessage());
+        }
 
         // Reference slices produced by
         // migration-harness/cpp/probes/experimental/inflation/k_interpolated_yoy_optionlet_vol_surface_probe.cpp.

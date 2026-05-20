@@ -33,6 +33,7 @@ import org.jquantlib.QL;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.math.interpolations.Interpolation.Interpolator;
 import org.jquantlib.math.solvers1D.Brent;
+import org.jquantlib.math.solvers1D.FiniteDifferenceNewtonSafe;
 import org.jquantlib.time.*;
 
 import java.util.ArrayList;
@@ -66,6 +67,24 @@ public class PiecewiseYoYOptionletVolatility< I extends Interpolator >
 
     /** Maximum bootstrap iterations (matches C++ {@code Traits::maxIterations} = 25). */
     private static final int MAX_ITERATIONS = 25;
+
+    /**
+     * Maximum number of bracket-widening retries per pillar per iteration.
+     * <p>C++ {@code IterativeBootstrap} default is {@code maxAttempts_=1}
+     * (i.e. no retries); we use a higher default here because the
+     * traits' static ±0.02 bracket around the prior pillar can fail
+     * to span the root when the YoY caplet pricer is highly non-linear
+     * (see {@code testYoYPriceSurfaceToVol}). The retry is gated by
+     * widening factors {@code minFactor_=2} / {@code maxFactor_=2}
+     * exactly as in C++ {@code iterativebootstrap.hpp:283-286}.
+     */
+    private static final int MAX_ATTEMPTS = 5;
+
+    /** Widening factor for the lower bracket on retry (mirrors C++ {@code minFactor_=2.0}). */
+    private static final double MIN_FACTOR = 2.0;
+
+    /** Widening factor for the upper bracket on retry (mirrors C++ {@code maxFactor_=2.0}). */
+    private static final double MAX_FACTOR = 2.0;
 
     private final List< YoYOptionletHelper > instruments_;
     private final double accuracy_;
@@ -206,6 +225,15 @@ public class PiecewiseYoYOptionletVolatility< I extends Interpolator >
      *   <li>{@code maxValueAfter(i)}: {@code data[i-1] + 0.02}</li>
      *   <li>{@code guess}: {@code 0.005} for first pillar, else {@code 0.002}</li>
      * </ul>
+     *
+     * <p>Solver selection mirrors C++
+     * {@code iterativebootstrap.hpp:319-323}: {@link Brent} as
+     * {@code firstSolver_} when {@code !validData} (first iteration),
+     * {@link FiniteDifferenceNewtonSafe} as {@code solver_} when
+     * {@code validData} (subsequent iterations). A bracket-widening
+     * retry loop mirrors {@code iterativebootstrap.hpp:281-344}
+     * ({@code maxAttempts_} attempts with {@code min *= MIN_FACTOR} /
+     * {@code max *= MAX_FACTOR} per retry).
      */
     protected void performCalculations() {
         final int n = instruments_.size();
@@ -254,38 +282,96 @@ public class PiecewiseYoYOptionletVolatility< I extends Interpolator >
         this.data_ = dataArr.clone();
         setupInterpolation();
 
-        final Brent solver = new Brent();
+        // C++ iterativebootstrap.hpp:115-116:
+        //   Brent firstSolver_;                 // first iteration (!validData)
+        //   FiniteDifferenceNewtonSafe solver_; // subsequent iterations (validData)
+        final Brent firstSolver = new Brent();
+        final FiniteDifferenceNewtonSafe solver = new FiniteDifferenceNewtonSafe();
 
+        boolean validData = false;
         for ( int iteration = 0; iteration < MAX_ITERATIONS; ++iteration ) {
             final double[] previousData = dataArr.clone();
+
+            // Per-pillar bracket cache + attempt counter
+            // (mirrors C++ minValues/maxValues/attempts vectors).
+            final double[] minValues = new double[n + 1];
+            final double[] maxValues = new double[n + 1];
+            final int[] attempts = new int[n + 1];
+            for ( int i = 0; i < n + 1; ++i ) {
+                minValues[i] = Double.NaN;
+                maxValues[i] = Double.NaN;
+                attempts[i] = 1;
+            }
 
             for ( int i = 1; i < n + 1; ++i ) {
                 final YoYOptionletHelper instrument = instruments_.get(i - 1);
 
-                // Guess: prior iteration's value if any, else traits guess.
-                double guess = dataArr[i];
-                if ( iteration == 0 && i == 1 ) {
-                    guess = 0.005;  // traits::guess for first pillar
-                } else if ( iteration == 0 && i > 1 ) {
-                    guess = 0.002;  // traits::guess fallback (no extrapolation here)
+                // Bracket: traits::minValueAfter / maxValueAfter on first attempt,
+                // widened on retries (mirrors C++ iterativebootstrap.hpp:273-286).
+                double min;
+                double max;
+                if ( Double.isNaN(minValues[i]) ) {
+                    // First attempt on this pillar in this iteration.
+                    min = Math.max(0.0, dataArr[i - 1] - 0.02);
+                    max = dataArr[i - 1] + 0.02;
+                } else {
+                    // Retry: widen. Negative min enlarges; positive shrinks toward 0.
+                    final double pm = minValues[i];
+                    min = (pm < 0.0 ? pm * MIN_FACTOR : pm / MIN_FACTOR);
+                    // Positive max enlarges; negative shrinks toward 0.
+                    final double pM = maxValues[i];
+                    max = (pM > 0.0 ? pM * MAX_FACTOR : pM / MAX_FACTOR);
+                    // Clamp min at 0 (vol cannot be negative).
+                    if ( min < 0.0 ) {
+                        min = 0.0;
+                    }
+                }
+                minValues[i] = min;
+                maxValues[i] = max;
+
+                // Guess: traits::guess. C++: validData → prior iteration's value;
+                // else 0.005 for i==1, 0.002 thereafter.
+                double guess;
+                if ( validData ) {
+                    guess = dataArr[i];
+                } else if ( i == 1 ) {
+                    guess = 0.005;
+                } else {
+                    guess = 0.002;
                 }
 
-                // Bracket: traits::minValueAfter / maxValueAfter.
-                final double min = Math.max(0.0, dataArr[i - 1] - 0.02);
-                final double max = dataArr[i - 1] + 0.02;
-                if ( guess <= min || guess >= max ) {
-                    guess = (min + max) / 2.0;
+                // adjust guess if out of bracket (mirrors C++ iterativebootstrap.hpp:290-293)
+                if ( guess >= max ) {
+                    guess = max - (max - min) / 5.0;
+                } else if ( guess <= min ) {
+                    guess = min + (max - min) / 5.0;
                 }
 
                 final int idx = i;
+                final BootstrapErrorFn errFn = new BootstrapErrorFn(instrument, idx);
                 try {
-                    final double r = solver.solve(new BootstrapErrorFn(instrument, idx), accuracy_, guess, min, max);
+                    final double r;
+                    if ( validData ) {
+                        r = solver.solve(errFn, accuracy_, guess, min, max);
+                    } else {
+                        r = firstSolver.solve(errFn, accuracy_, guess, min, max);
+                    }
                     dataArr[i] = r;
                     // updateGuess: vols[i] = level
                     this.data_[i] = r;
                     setupInterpolation();
                 } catch ( final RuntimeException re ) {
-                    throw new RuntimeException("could not bootstrap pillar " + i + ": " + re.getMessage(), re);
+                    // Retry with widened bracket if attempts remain
+                    // (mirrors C++ iterativebootstrap.hpp:337-344).
+                    if ( attempts[i] < MAX_ATTEMPTS ) {
+                        attempts[i]++;
+                        i--;  // retry same pillar with widened bracket
+                        continue;
+                    }
+                    throw new RuntimeException(
+                            "could not bootstrap pillar " + i + " (after " + attempts[i] + " attempts, bracket=[" + min
+                                    + "," + max + "]): " + re.getMessage(),
+                            re);
                 }
             }
 
@@ -294,12 +380,14 @@ public class PiecewiseYoYOptionletVolatility< I extends Interpolator >
             for ( int i = 1; i < n + 1; ++i ) {
                 improvement = Math.max(improvement, Math.abs(dataArr[i] - previousData[i]));
             }
-            if ( improvement <= accuracy_ ) {
+            if ( validData && improvement <= accuracy_ ) {
                 break;
             }
             QL.require(iteration + 1 < MAX_ITERATIONS,
                     "convergence not reached after " + (iteration + 1) + " iterations; last improvement " + improvement
                             + ", required accuracy " + accuracy_);
+            // Subsequent iterations have valid data to seed the FDNS solver.
+            validData = true;
         }
     }
 
@@ -353,6 +441,13 @@ public class PiecewiseYoYOptionletVolatility< I extends Interpolator >
             // updateGuess: vols[i] = level.
             data_[i] = guess;
             setupInterpolation();
+            // Mirror C++ YoYOptionletHelper::impliedQuote() (yoyoptionlethelpers.cpp:68-71)
+            // which calls yoyCapFloor_->deepUpdate() before NPV() to invalidate
+            // cached pricing under the new vol surface. The Java helper does not
+            // expose the cap/floor; we instead fire notifyObservers() on the
+            // surface (this) to propagate the change through the Handle to the
+            // engine and on to the cap/floor's calculated flag.
+            notifyObservers();
             return instrument.quoteError();
         }
     }
