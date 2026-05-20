@@ -26,6 +26,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.jquantlib.QL;
 import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Calendar;
@@ -36,9 +39,12 @@ import org.jquantlib.time.TimeUnit;
 import org.jquantlib.time.Weekday;
 import org.jquantlib.time.calendars.BespokeCalendar;
 import org.jquantlib.time.calendars.Brazil;
+import org.jquantlib.time.calendars.China;
 import org.jquantlib.time.calendars.Germany;
+import org.jquantlib.time.calendars.Italy;
 import org.jquantlib.time.calendars.JointCalendar;
 import org.jquantlib.time.calendars.JointCalendar.JointCalendarRule;
+import org.jquantlib.time.calendars.SouthKorea;
 import org.jquantlib.time.calendars.Target;
 import org.jquantlib.time.calendars.UnitedKingdom;
 import org.jquantlib.time.calendars.UnitedStates;
@@ -683,4 +689,223 @@ public class CalendarsTest {
             fail(d2 + " still a holiday after c3 re-remove");
         }
     }
+
+    //
+    // ============================================================================
+    // C++ v1.42.1 calendars.cpp test-case ports — Phase 1 D5-A Round 2
+    // ============================================================================
+    //
+
+    /** Builds a List&lt;Date&gt; from a varargs Date[]; mirrors the C++ vector init. */
+    private static List<Date> dateList(final Date... ds) {
+        final List<Date> out = new ArrayList<Date>(ds.length);
+        for (final Date d : ds) {
+            out.add(d);
+        }
+        return out;
+    }
+
+    /**
+     * Asserts that {@code computed} equals {@code expected} as ordered holiday
+     * lists. Mirrors {@code checkHolidays} from test-suite/calendars.cpp
+     * (which compares two {@code std::vector<Date>} item by item).
+     */
+    private static void checkHolidays(final List<Date> computed, final List<Date> expected) {
+        // First check for unexpected (computed without expected match)
+        for (final Date d : computed) {
+            if (!expected.contains(d)) {
+                fail("unexpected holiday found: " + d);
+            }
+        }
+        // Then check for missing (expected without computed match)
+        for (final Date d : expected) {
+            if (!computed.contains(d)) {
+                fail("expected holiday not found: " + d);
+            }
+        }
+        // Ensure cardinality matches (covers duplicates)
+        assertEquals("holiday list size mismatch", expected.size(), computed.size());
+    }
+
+    /**
+     * Faithful port of {@code test-suite/calendars.cpp:373} {@code BOOST_AUTO_TEST_CASE(testSOFR)}.
+     *
+     * <p>SOFR fixing calendar extends GovernmentBond with full Good Friday
+     * closure (no NFP carve-out). Asserts Good Fridays 2017..2031 are
+     * holidays for the SOFR calendar.
+     */
+    @Test
+    public void testSOFR() {
+        QL.info("Testing holidays for SOFR...");
+
+        final Calendar sofr = new UnitedStates(UnitedStates.Market.SOFR);
+
+        final Date[] goodFridays = {
+                new Date(14, Month.April, 2017),
+                new Date(30, Month.March, 2018),
+                new Date(19, Month.April, 2019),
+                new Date(10, Month.April, 2020),
+                new Date(2, Month.April, 2021),
+                new Date(15, Month.April, 2022),
+                new Date(7, Month.April, 2023),
+                new Date(29, Month.March, 2024),
+                new Date(18, Month.April, 2025),
+                new Date(3, Month.April, 2026),
+                new Date(26, Month.March, 2027),
+                new Date(14, Month.April, 2028),
+                new Date(30, Month.March, 2029),
+                new Date(19, Month.April, 2030),
+                new Date(11, Month.April, 2031),
+        };
+        for (final Date gf : goodFridays) {
+            assertTrue(gf + " should be a holiday for SOFR", sofr.isHoliday(gf));
+        }
+    }
+
+    /**
+     * Faithful port of {@code test-suite/calendars.cpp:386}
+     * {@code BOOST_AUTO_TEST_CASE(testUSFederalReserveJuneteenth)}.
+     *
+     * <p>Juneteenth observance for the US Federal Reserve calendar — observed
+     * since 2022; moved to Monday if Sunday; <b>not</b> moved to Friday if
+     * Saturday (unlike NYSE/Settlement/GovernmentBond).
+     */
+    @Test
+    public void testUSFederalReserveJuneteenth() {
+        QL.info("Testing holiday occurrence of Juneteenth for US Federal Reserve calendar...");
+
+        final Calendar fedCalendar = new UnitedStates(UnitedStates.Market.FederalReserve);
+
+        final List<Date> expectedHol = new ArrayList<Date>();
+        // Sunday, moved to Monday 20th: (19, June, 2022) skipped
+        expectedHol.add(new Date(20, Month.June, 2022));
+        expectedHol.add(new Date(19, Month.June, 2023));
+        expectedHol.add(new Date(19, Month.June, 2024));
+        expectedHol.add(new Date(19, Month.June, 2025));
+        // Saturday: (19, June, 2026) skipped
+        expectedHol.add(new Date(19, Month.June, 2027));
+        expectedHol.add(new Date(19, Month.June, 2028));
+        expectedHol.add(new Date(19, Month.June, 2029));
+        expectedHol.add(new Date(19, Month.June, 2030));
+        expectedHol.add(new Date(19, Month.June, 2031));
+        // Saturday: (19, June, 2032) skipped
+        // Sunday, moved to Monday 20th: (19, June, 2033) skipped
+        expectedHol.add(new Date(20, Month.June, 2033));
+
+        for (final Date holiday : expectedHol) {
+            assertTrue(holiday + " should be a holiday for " + fedCalendar.name(),
+                    fedCalendar.isHoliday(holiday));
+        }
+
+        final Date notMovedToFriday = new Date(18, Month.June, 2027);
+        assertFalse(notMovedToFriday + " should not be a holiday for " + fedCalendar.name(),
+                fedCalendar.isHoliday(notMovedToFriday));
+    }
+
+    /**
+     * Faithful port of {@code test-suite/calendars.cpp:416}
+     * {@code BOOST_AUTO_TEST_CASE(testTARGET)}.
+     *
+     * <p>TARGET holiday list for 1999-2006 (the C++ pre-Eurex era).
+     */
+    @Test
+    public void testTARGET() {
+        QL.info("Testing TARGET holiday list...");
+
+        final List<Date> expectedHol = dateList(
+                new Date(1, Month.January, 1999),
+                new Date(31, Month.December, 1999),
+
+                new Date(21, Month.April, 2000),
+                new Date(24, Month.April, 2000),
+                new Date(1, Month.May, 2000),
+                new Date(25, Month.December, 2000),
+                new Date(26, Month.December, 2000),
+
+                new Date(1, Month.January, 2001),
+                new Date(13, Month.April, 2001),
+                new Date(16, Month.April, 2001),
+                new Date(1, Month.May, 2001),
+                new Date(25, Month.December, 2001),
+                new Date(26, Month.December, 2001),
+                new Date(31, Month.December, 2001),
+
+                new Date(1, Month.January, 2002),
+                new Date(29, Month.March, 2002),
+                new Date(1, Month.April, 2002),
+                new Date(1, Month.May, 2002),
+                new Date(25, Month.December, 2002),
+                new Date(26, Month.December, 2002),
+
+                new Date(1, Month.January, 2003),
+                new Date(18, Month.April, 2003),
+                new Date(21, Month.April, 2003),
+                new Date(1, Month.May, 2003),
+                new Date(25, Month.December, 2003),
+                new Date(26, Month.December, 2003),
+
+                new Date(1, Month.January, 2004),
+                new Date(9, Month.April, 2004),
+                new Date(12, Month.April, 2004),
+
+                new Date(25, Month.March, 2005),
+                new Date(28, Month.March, 2005),
+                new Date(26, Month.December, 2005),
+
+                new Date(14, Month.April, 2006),
+                new Date(17, Month.April, 2006),
+                new Date(1, Month.May, 2006),
+                new Date(25, Month.December, 2006),
+                new Date(26, Month.December, 2006));
+
+        final Calendar c = new Target();
+        final List<Date> computed = Calendar.holidayList(c,
+                new Date(1, Month.January, 1999), new Date(31, Month.December, 2006), false);
+        checkHolidays(computed, expectedHol);
+    }
+
+    /**
+     * Faithful port of {@code test-suite/calendars.cpp:1313}
+     * {@code BOOST_AUTO_TEST_CASE(testBrazil)}.
+     *
+     * <p>Brazil settlement holiday list for 2005-2006 (default Brazil() ctor —
+     * settlement market).
+     */
+    @Test
+    public void testBrazil() {
+        QL.info("Testing Brazil holiday list...");
+
+        final List<Date> expectedHol = dateList(
+                // (1, January, 2005) - Saturday
+                new Date(7, Month.February, 2005),
+                new Date(8, Month.February, 2005),
+                new Date(25, Month.March, 2005),
+                new Date(21, Month.April, 2005),
+                // (1, May, 2005) - Sunday
+                new Date(26, Month.May, 2005),
+                new Date(7, Month.September, 2005),
+                new Date(12, Month.October, 2005),
+                new Date(2, Month.November, 2005),
+                new Date(15, Month.November, 2005),
+                // (25, December, 2005) - Sunday
+
+                // (1, January, 2006) - Sunday
+                new Date(27, Month.February, 2006),
+                new Date(28, Month.February, 2006),
+                new Date(14, Month.April, 2006),
+                new Date(21, Month.April, 2006),
+                new Date(1, Month.May, 2006),
+                new Date(15, Month.June, 2006),
+                new Date(7, Month.September, 2006),
+                new Date(12, Month.October, 2006),
+                new Date(2, Month.November, 2006),
+                new Date(15, Month.November, 2006),
+                new Date(25, Month.December, 2006));
+
+        final Calendar c = new Brazil();
+        final List<Date> computed = Calendar.holidayList(c,
+                new Date(1, Month.January, 2005), new Date(31, Month.December, 2006), false);
+        checkHolidays(computed, expectedHol);
+    }
+
 }
