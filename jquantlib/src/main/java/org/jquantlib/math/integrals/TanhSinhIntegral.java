@@ -149,11 +149,26 @@ public class TanhSinhIntegral extends Integrator {
         final double c1 = 0.5 * (b - a);
         final double c2 = 0.5 * (a + b);
 
-        // Refinement level 0: step h0, single midpoint (t = 0 ⇒ x = 0).
+        // Refinement level 0: step h0 = 1. Grid is t = 0, ±1, ±2, …, ±jMax0
+        // (the integer-multiples of h0 inside [-tMax, tMax]).
         double h = 1.0;
         // Center node contributes f(c2) with weight π/2.
         double sum = 0.5 * Math.PI * f.op(c2);
         increaseNumberOfEvaluations(1);
+        // Add the remaining integer-spaced nodes for level 0 (both ±t).
+        // These are j = 1, 2, …, jMax0 — and at subsequent refinement passes
+        // they correspond to even-j nodes (j_k = 2^k · j_0) of the finer grid.
+        final int jMax0 = (int) Math.ceil(tMax_ / h);
+        for (int j = 1; j <= jMax0; ++j) {
+            final double t = j * h;
+            final double[] xw = nodeWeight(t);
+            final double x = xw[0];
+            final double w = xw[1];
+            final double up = c1 * x + c2;
+            final double um = -c1 * x + c2;
+            sum += w * (f.op(up) + f.op(um));
+            increaseNumberOfEvaluations(2);
+        }
 
         double prevEstimate = sum * h * c1;
 

@@ -586,7 +586,6 @@ public class IntegralsAdditionalTest {
      * Java port diverges. Tracked as A3-style port defect (TODO Phase1-closure-A1-B-retry-fix);
      * see TanhSinhIntegral.java for direct fix.
      */
-    @Ignore("BLOCKED: Java TanhSinhIntegral port has accuracy bug on integrate(1, [0,1]) - needs A3-style fix")
     @Test
     public void testTanhSinh() {
         runIntegratorBattery(new org.jquantlib.math.integrals.TanhSinhIntegral());

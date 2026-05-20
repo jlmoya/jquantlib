@@ -1127,7 +1127,7 @@ public class AmericanOptionTest {
      * test tolerance with justification or apply an algorithm fix.
      */
     @Test
-    @Ignore("Phase1-closure-A1-546: ~8e-5 NPV drift on deep-American 10y put; investigate solver/interp precision")
+    @Ignore("Phase1-closure-A3-B-v2-556: separate xMax NaN dispatch issue at spot=0 (unrelated to TanhSinh fix); follow-up")
     public void testQdAmericanEngines() {
         QL.info("Testing QD+ American option pricing...");
 
@@ -1236,7 +1236,6 @@ public class AmericanOptionTest {
      * Deferred pending precision investigation.
      */
     @Test
-    @Ignore("Phase1-closure-A1-546: ~2.6e-6 NPV drift on tightest precision cases; precision investigation pending")
     public void testAndersenLakeHighPrecisionExample() {
         QL.info("Testing Andersen, Lake and Offengenden high precision example...");
 
