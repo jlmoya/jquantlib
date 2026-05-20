@@ -55,4 +55,15 @@ public class LmExtLinearExponentialVolModel extends LmLinearExponentialVolatilit
     public double integratedVariance(final int i, final int j, final double u, final Array x) {
         return arguments_.get(i + 4).get(0.0) * arguments_.get(j + 4).get(0.0) * super.integratedVariance(i, j, u, x);
     }
+
+    /**
+     * Convenience overload of {@link #integratedVariance(int, int, double, Array)} matching the C++ default
+     * argument {@code x = {}} on the v1.42.1 signature
+     * {@code Real integratedVariance(Size i, Size j, Time u, const Array& x = {})}.
+     *
+     * <p>Java has no default arguments, so callers that ignore {@code x} must use this 3-arg form.
+     */
+    public double integratedVariance(final int i, final int j, final double u) {
+        return integratedVariance(i, j, u, new Array(0));
+    }
 }
