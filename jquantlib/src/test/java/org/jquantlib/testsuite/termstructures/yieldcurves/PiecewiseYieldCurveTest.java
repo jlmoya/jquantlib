@@ -1330,11 +1330,53 @@ public class PiecewiseYieldCurveTest {
 	//   FuturesConvAdjustmentQuote (Java has neither).
 	//
 	// testMultiCurveTwoPiecewiseYieldCurves (cpp:1545) — BLOCKED
-	//   Same GlobalBootstrap blocker.
+	//   Audit (Phase1-closure-A7-H-562): besides the GlobalBootstrap split,
+	//   this requires the full MultiCurve coordinator family — none of
+	//   which is in Java today:
+	//     * MultiCurve (ql/termstructures/multicurve.{hpp,cpp}, ~185 LOC):
+	//         Observer that owns its member curves via shared ownership and
+	//         routes update() to all of them; offers addBootstrappedCurve /
+	//         addNonBootstrappedCurve which (1) link the caller's internal
+	//         RelinkableHandle to the curve via a null-deleter shared_ptr so
+	//         the handle does not co-own the curve (avoids cycles), and (2)
+	//         return an external Handle whose shared_ptr aliases the MultiCurve
+	//         itself so all members stay alive until the MultiCurve dies.
+	//         The null-deleter aliasing-ctor pattern has no direct Java
+	//         analog — needs careful re-design of RelinkableHandle.linkTo()
+	//         and the external-Handle ownership story.
+	//     * MultiCurveBootstrap + MultiCurveBootstrapContributor +
+	//       MultiCurveBootstrapProvider (ql/termstructures/globalbootstrap.hpp,
+	//       ~65 LOC + the 5-method Contributor protocol):
+	//         The Contributor protocol splits the monolithic GlobalBootstrap
+	//         calculate() into five virtuals — setParentBootstrapper,
+	//         setupCostFunction, setCostFunctionArgument, evaluateCostFunction,
+	//         setToValid — and the MultiCurveBootstrap drives them as a
+	//         single concatenated Levenberg-Marquardt problem across all
+	//         contributors plus their observers.
+	//     * GlobalBootstrap (Java org.jquantlib.termstructures.yieldcurves.
+	//       GlobalBootstrap, currently 423 LOC) must implement
+	//       MultiCurveBootstrapContributor and short-circuit its local
+	//       calculate() when a parentBootstrapper_ is set (delegating to the
+	//       parent's runMultiCurveBootstrap()). This is the very gap called
+	//       out in the existing Javadoc: "MultiCurveBootstrap parent-
+	//       coordinator path is not ported — none of the v1.42.1 yield-curve
+	//       tests exercise it." That comment must be retracted as part of
+	//       any port.
+	//     * PiecewiseYieldCurve (Java) must implement MultiCurveBootstrap-
+	//       Provider and expose its bootstrap as a MultiCurveBootstrap-
+	//       Contributor* (or Java equivalent).
+	//   Effort estimate: ~600+ LOC of new infra with delicate observer /
+	//   shared-ownership semantics on top of the ~800 LOC GlobalBootstrap-
+	//   for-yield port already pending. Out of scope for a single sub-task.
 	//
 	// testMultiCurvePiecewiseYieldCurveAndSpreadedCurve (cpp:1684) — BLOCKED
-	//   Same GlobalBootstrap blocker; also needs PiecewiseSpreadYieldCurve
-	//   (Java has none — only InterpolatedPiecewiseZeroSpreadedTermStructure).
+	//   Same MultiCurve blockers as testMultiCurveTwoPiecewiseYieldCurves,
+	//   plus needs PiecewiseSpreadYieldCurve (Java absent) which in turn
+	//   depends on SpreadBootstrapTraits and InterpolatedSpreadDiscountCurve
+	//   (also Java-absent, ~229 LOC). Java's existing
+	//   InterpolatedPiecewiseZeroSpreadedTermStructure is *not* a substitute
+	//   — it spreads a zero-rate over an existing base curve rather than
+	//   bootstrapping a spread from instruments.
 	//
 	// testGlobalBootstrapInstrumentWeights (cpp:1742) — PORTED in Phase1-closure-A6-B-562
 	//   See @Test testGlobalBootstrapInstrumentWeights() below. Required an
@@ -1342,7 +1384,28 @@ public class PiecewiseYieldCurveTest {
 	//   (post-minimize residual check + !alive.isEmpty() assertion).
 	//
 	// testPiecewiseSpreadYieldCurve (cpp:1895) — BLOCKED
-	//   Requires PiecewiseSpreadYieldCurve (not in Java).
+	//   Audit (Phase1-closure-A7-H-562): Java has no PiecewiseSpreadYieldCurve.
+	//   The C++ class (ql/termstructures/yield/piecewisespreadyieldcurve.hpp,
+	//   38 LOC) is a thin template wrapper:
+	//     PiecewiseSpreadYieldCurve<Traits, Interpolator, Bootstrap> extends
+	//     PiecewiseYieldCurve<SpreadTraits<Traits>, Interpolator, Bootstrap>.
+	//   The wrapper itself is trivial, but it pulls in two prerequisites
+	//   absent from Java:
+	//     * detail::SpreadTraits<Traits> (ql/termstructures/yield/
+	//       spreadbootstraptraits.hpp, 27 LOC; the only specialisation
+	//       provided in v1.42.1 is SpreadTraits<Discount>): a Traits class
+	//       whose interpolated curve type is InterpolatedSpreadDiscountCurve.
+	//     * InterpolatedSpreadDiscountCurve<Interpolator> (ql/termstructures/
+	//       yield/spreaddiscountcurve.hpp, 229 LOC): an interpolated curve
+	//       that holds a base YieldTermStructure handle and multiplies its
+	//       discount factors by an interpolated spread-multiplier function.
+	//       This is *not* the same as Java's existing
+	//       InterpolatedPiecewiseZeroSpreadedTermStructure, which spreads a
+	//       zero rate rather than a discount-factor multiplier.
+	//   The test also drives the bootstrap with both IterativeBootstrap and
+	//   GlobalBootstrap, so the latter (still absent for yield curves in
+	//   Java) is a hard dependency. Total effort: ~350 LOC of new infra
+	//   on top of the GlobalBootstrap-for-yield port.
 	//
 	// testIterativeBootstrapRetries (cpp:1907) — BLOCKED
 	//   Requires FxSwapRateHelper (not in Java) plus the
