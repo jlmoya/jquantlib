@@ -47,11 +47,14 @@ import org.junit.Test;
  *
  * <p>Phase 5b deferred (skeleton): testSqrt / testHighamSqrt / testSVD / testQRSolve /
  * testOrthogonalProjection (covered by separate Java OrthogonalProjectionsTest) /
- * testCholeskyDecomposition / testMoorePenroseInverse / testIterativeSolvers
+ * testMoorePenroseInverse / testIterativeSolvers
  * (separate IterativeSolversTest exists) / testInitializers / testSparseMatrixMemory
  * (Java has no SparseMatrix) / testOperators / testPrincipalMatrixSqrt /
  * testCholeskySolverFor / testCholeskySolverForIncomplete / testHouseholderTransformation /
  * testHouseholderReflection.
+ *
+ * <p>Phase1-cert-D5-C-R2: ported {@code testCholeskyDecomposition} against the
+ * 11x11 semidefinite test matrix; round-trip {@code L*L^T = m} to 1.0e-12.
  */
 public class MatricesAdditionalTest {
 
@@ -515,6 +518,86 @@ public class MatricesAdditionalTest {
                         fail("principal sqrt squared deviates at (" + i + "," + j
                                 + "); n=" + n);
                     }
+                }
+            }
+        }
+    }
+
+    /**
+     * Faithful port of {@code test-suite/matrices.cpp:509}
+     * {@code BOOST_AUTO_TEST_CASE(testCholeskyDecomposition)}. Verifies the
+     * flexible Cholesky decomposition (semidefinite-safe) against an 11x11
+     * symmetric positive-semidefinite matrix with strongly clustered
+     * eigenvalues (down to {@code ~5.8e-19}). After
+     * {@code L = CholeskyDecomposition(m, true)}, the round-trip
+     * {@code L * L^T} must reproduce {@code m} to within 1.0e-12 absolute
+     * elementwise, and no entry may be NaN. Matrix values are copied
+     * verbatim from C++ source so this is cross-validated against v1.42.1
+     * without a probe.
+     */
+    @Test
+    public void testCholeskyDecomposition() {
+        QL.info("Testing Cholesky Decomposition...");
+        // The eigenvalues of this matrix are
+        // 0.0438523; 0.0187376; 0.000245617; 0.000127656; 8.35899e-05; 6.14215e-05;
+        // 1.94241e-05; 1.14417e-06; 9.79481e-18; 1.31141e-18; 5.81155e-19
+        final double[][] tmp = {
+            { 6.4e-05, 5.28e-05, 2.28e-05, 0.00032, 0.00036, 6.4e-05,
+              6.3968010664e-06, 7.2e-05, 7.19460269899e-06, 1.2e-05,
+              1.19970004999e-06 },
+            { 5.28e-05, 0.000121, 1.045e-05, 0.00044, 0.000165, 2.2e-05,
+              2.19890036657e-06, 1.65e-05, 1.64876311852e-06, 1.1e-05,
+              1.09972504583e-06 },
+            { 2.28e-05, 1.045e-05, 9.025e-05, 0.0, 0.0001425, 9.5e-06,
+              9.49525158294e-07, 2.85e-05, 2.84786356835e-06, 4.75e-06,
+              4.74881269789e-07 },
+            { 0.00032, 0.00044, 0.0, 0.04, 0.009, 0.0008, 7.996001333e-05,
+              0.0006, 5.99550224916e-05, 0.0001, 9.99750041661e-06 },
+            { 0.00036, 0.000165, 0.0001425, 0.009, 0.0225, 0.0003,
+              2.99850049987e-05, 0.001125, 0.000112415667172, 0.000225,
+              2.24943759374e-05 },
+            { 6.4e-05, 2.2e-05, 9.5e-06, 0.0008, 0.0003, 0.0001,
+              9.99500166625e-06, 7.5e-05, 7.49437781145e-06, 2e-05,
+              1.99950008332e-06 },
+            { 6.3968010664e-06, 2.19890036657e-06, 9.49525158294e-07,
+              7.996001333e-05, 2.99850049987e-05, 9.99500166625e-06,
+              9.99000583083e-07, 7.49625124969e-06, 7.49063187129e-07,
+              1.99900033325e-06, 1.99850066645e-07 },
+            { 7.2e-05, 1.65e-05, 2.85e-05, 0.0006, 0.001125, 7.5e-05,
+              7.49625124969e-06, 0.000225, 2.24831334343e-05, 1.5e-05,
+              1.49962506249e-06 },
+            { 7.19460269899e-06, 1.64876311852e-06, 2.84786356835e-06,
+              5.99550224916e-05, 0.000112415667172, 7.49437781145e-06,
+              7.49063187129e-07, 2.24831334343e-05, 2.24662795123e-06,
+              1.49887556229e-06, 1.49850090584e-07 },
+            { 1.2e-05, 1.1e-05, 4.75e-06, 0.0001, 0.000225, 2e-05,
+              1.99900033325e-06, 1.5e-05, 1.49887556229e-06, 2.5e-05,
+              2.49937510415e-06 },
+            { 1.19970004999e-06, 1.09972504583e-06, 4.74881269789e-07,
+              9.99750041661e-06, 2.24943759374e-05, 1.99950008332e-06,
+              1.99850066645e-07, 1.49962506249e-06, 1.49850090584e-07,
+              2.49937510415e-06, 2.49875036451e-07 }
+        };
+
+        final Matrix m = new Matrix(tmp);
+        // flexible=true: collapse zero pivots in the semidefinite case.
+        final Matrix c =
+                org.jquantlib.math.matrixutilities.CholeskyDecomposition
+                        .CholeskyDecomposition(m, true);
+        final Matrix m2 = c.mul(c.transpose());
+
+        final double tol = 1.0e-12;
+        for (int i = 0; i < 11; i++) {
+            for (int j = 0; j < 11; j++) {
+                final double m2ij = m2.get(i, j);
+                if (Double.isNaN(m2ij)) {
+                    fail("Failed to verify Cholesky decomposition at (i,j)=("
+                            + i + "," + j + "), replicated value is NaN");
+                }
+                if (Math.abs(m.get(i, j) - m2ij) > tol) {
+                    fail("Failed to verify Cholesky decomposition at (i,j)=("
+                            + i + "," + j + "), original value is "
+                            + m.get(i, j) + ", replicated value is " + m2ij);
                 }
             }
         }
