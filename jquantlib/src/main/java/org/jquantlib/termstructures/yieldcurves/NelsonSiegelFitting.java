@@ -56,6 +56,11 @@ public class NelsonSiegelFitting extends FittingMethod {
         this(weights, null, new Array(0), 0.0, Double.MAX_VALUE, new NoConstraint());
     }
 
+    /** C++ default-defaults overload: {@code (weights, optimizer, l2)}. */
+    public NelsonSiegelFitting(final Array weights, final OptimizationMethod optimizationMethod, final Array l2) {
+        this(weights, optimizationMethod, l2, 0.0, Double.MAX_VALUE, new NoConstraint());
+    }
+
     public NelsonSiegelFitting(final Array weights, final OptimizationMethod optimizationMethod, final Array l2,
             final double minCutoffTime, final double maxCutoffTime, final Constraint constraint) {
         super(true, weights, optimizationMethod, l2, minCutoffTime, maxCutoffTime, constraint);

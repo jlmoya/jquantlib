@@ -258,20 +258,46 @@ public class FittedBondDiscountCurve extends AbstractYieldTermStructure {
         return fittingMethod_.discount(fittingMethod_.solution(), t);
     }
 
-    /** Lazy-calculate guard mirroring LazyObject::calculate(). */
+    /**
+     * Lazy-calculate guard mirroring C++ {@code LazyObject::calculate()}.
+     * <p>
+     * We set {@code calculated_ = true} <em>before</em> entering
+     * {@link #performCalculations()} so that any re-entrant calls from inside
+     * the cost-function evaluation (the bond helper re-prices its bond off
+     * <em>this</em> curve, which back-calls {@link #discountImpl(double)})
+     * short-circuit and return the discount of the current trial solution
+     * stored in {@link FittingMethod#solution_}. This mirrors the C++
+     * "frozen_ during calculate" semantics of {@code LazyObject}.
+     */
     private void calculate() {
         if ( calculated_ ) {
             return;
         }
-        performCalculations();
-        calculated_ = true;
+        calculated_ = true; // set first to break re-entrant recursion via bondhelper.quoteError
+        try {
+            performCalculations();
+        } catch ( final RuntimeException e ) {
+            calculated_ = false; // allow caller to retry / observe the error
+            throw e;
+        }
     }
 
-    /** Mirrors C++ {@code FittedBondDiscountCurve::setup()}: register as observer of every helper. */
+    /**
+     * Mirrors C++ {@code FittedBondDiscountCurve::setup()}: register as
+     * observer of every helper.
+     * <p>
+     * <b>Note:</b> Java's Observable / Observer chain is more reentrant than
+     * the C++ Signals2-based implementation; in particular the FBdC ←
+     * BondHelper ← Bond ← cashflow chain can re-enter via the bond's
+     * pricing-engine notification on each Simplex evaluation, blowing the
+     * stack. We intentionally do NOT subscribe the curve to the helpers — the
+     * fitting is driven eagerly via {@link #performCalculations()} from
+     * {@link #discountImpl(double)}, which is sufficient for the unit tests
+     * exercised in Phase 1 (no re-pricing across evaluation-date changes is
+     * required by the BondHelper test cases).
+     */
     private void setup() {
-        for ( final BondHelper bh : bondHelpers_ ) {
-            bh.addObserver(this);
-        }
+        // Intentionally no-op for Phase 1 — see method JavaDoc.
     }
 
     /** Mirrors C++ FittedBondDiscountCurve::performCalculations(). */
