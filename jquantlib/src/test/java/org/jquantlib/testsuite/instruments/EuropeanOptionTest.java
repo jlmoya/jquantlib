@@ -1938,6 +1938,90 @@ public class EuropeanOptionTest {
     }
 
     /**
+     * Faithful port of {@code test-suite/europeanoption.cpp:1578}
+     * {@code BOOST_AUTO_TEST_CASE(testFdEngineWithNonConstantParameters)}.
+     * Verifies the {@link FdBlackScholesVanillaEngine} prices a European call
+     * to within {@code 0.01} of the analytic NPV when the risk-free yield
+     * curve is a non-constant {@link InterpolatedForwardCurve} (rates rising
+     * from 0% to 1% across 360 days), confirming the FD engine correctly
+     * handles term-structure rates that vary along the time grid.
+     *
+     * <p>The C++ test uses {@code BlackScholesProcess(spot, rTS, volTS)}
+     * (no q). Java has no standalone {@code BlackScholesProcess}; we use
+     * {@link BlackScholesMertonProcess} with a flat-zero dividend curve,
+     * mathematically equivalent.
+     *
+     * <p>The C++ test uses {@code ForwardCurve = InterpolatedForwardCurve
+     * <BackwardFlat>}; this port mirrors that with the explicit
+     * {@link BackwardFlat} interpolator factory. The
+     * {@link InterpolatedForwardCurve} precondition bug (stale
+     * {@code forwards[0] == 1.0} discount-factor check copy-pasted from
+     * {@link org.jquantlib.termstructures.yieldcurves.InterpolatedDiscountCurve})
+     * is fixed as part of this port — see {@link InterpolatedForwardCurve}'s
+     * constructor comment for details.
+     */
+    @Test
+    public void testFdEngineWithNonConstantParameters() {
+        QL.info("Testing finite-difference European engine with non-constant parameters...");
+
+        final double u = 190.0;
+        final double v = 0.20;
+
+        final DayCounter dc = new Actual360();
+        final Date today = new Settings().evaluationDate();
+
+        final SimpleQuote spot = new SimpleQuote(u);
+        final BlackVolTermStructure volTS = Utilities.flatVol(today, v, dc);
+
+        final Date[] dates = new Date[] {
+                today,
+                today.add(90),
+                today.add(180),
+                today.add(270),
+                today.add(360)
+        };
+        final double[] rates = new double[] { 0.0, 0.001, 0.002, 0.005, 0.01 };
+        final YieldTermStructure rTS =
+                new org.jquantlib.termstructures.yieldcurves.InterpolatedForwardCurve<
+                        org.jquantlib.math.interpolations.factories.BackwardFlat>(
+                        org.jquantlib.math.interpolations.factories.BackwardFlat.class,
+                        dates, rates, dc);
+
+        // q=0 to mirror C++ BlackScholesProcess (no dividend yield arm).
+        final YieldTermStructure qTS = Utilities.flatRate(today, 0.0, dc);
+
+        final BlackScholesMertonProcess process = new BlackScholesMertonProcess(
+                new Handle<Quote>(spot),
+                new Handle<YieldTermStructure>(qTS),
+                new Handle<YieldTermStructure>(rTS),
+                new Handle<BlackVolTermStructure>(volTS));
+
+        final Exercise exercise = new EuropeanExercise(today.add(360));
+        final StrikedTypePayoff payoff = new PlainVanillaPayoff(Option.Type.Call, 190.0);
+
+        final EuropeanOption option = new EuropeanOption(payoff, exercise);
+
+        option.setPricingEngine(new AnalyticEuropeanEngine(process));
+        final double expected = option.NPV();
+
+        final int timeSteps = 200;
+        final int gridPoints = 201;
+        option.setPricingEngine(new FdBlackScholesVanillaEngine(
+                process, timeSteps, gridPoints, 0, FdmSchemeDesc.Douglas()));
+        final double calculated = option.NPV();
+
+        final double tolerance = 0.01;
+        final double error = Math.abs(expected - calculated);
+        if ( error > tolerance ) {
+            fail("Failed to reproduce European option value with non-constant-parameter FD engine"
+                    + "\n    expected:   " + expected
+                    + "\n    calculated: " + calculated
+                    + "\n    error:      " + error
+                    + "\n    tolerance:  " + tolerance);
+        }
+    }
+
+    /**
      * Local helper mirroring the {@code PseudoMonteCarlo} arm of the C++
      * {@code testEngineConsistency} helper (see
      * {@code test-suite/europeanoption.cpp:167-172}). The class-level

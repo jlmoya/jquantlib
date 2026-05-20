@@ -103,10 +103,22 @@ public class InterpolatedForwardCurve< I extends Interpolator > extends ForwardR
         QL.require(classI != null, "Generic type for Interpolation is null");
         this.classI = classI;
 
+        // Phase1-closure-A7-J align: mirror v1.42.1 InterpolatedForwardCurve::initialize
+        // (forwardcurve.hpp:243-254) + setupTimes (interpolatedcurve.hpp:100-115).
+        // Previously the Java port carried three copy-paste errors from
+        // InterpolatedDiscountCurve:
+        //   1) `forwards[0] == 1.0` — a discount-factor precondition that has
+        //      no meaning for forward *rates* (rates are typically <<1.0).
+        //   2) `data[0] > 0` inside the loop — also discount-curve semantics
+        //      ("Negative discount"); C++ has no negative-forward check.
+        //   3) `Closeness.isClose(times[i], times[i-1])` — logic *inverted*
+        //      vs. C++ `!close(...)` (require dates to *differ* in year
+        //      fraction, not coincide).
+        // See ConvertibleBondAdditionalTest class javadoc for the original
+        // bug-report breadcrumb.
         QL.require(dates.length != 0, "Dates cannot be empty"); // TODO: message
         QL.require(forwards.length != 0, "forwards cannot be empty"); // TODO: message
         QL.require(dates.length == forwards.length, "Dates must be the same size as forwards"); // TODO: message
-        QL.require(forwards[0] == 1.0, "Initial discount factor must be 1.0"); // TODO: message
 
         this.dates = dates; // TODO: clone() ?
         this.data = forwards; // TODO: clone() ?
@@ -115,9 +127,8 @@ public class InterpolatedForwardCurve< I extends Interpolator > extends ForwardR
 
         for ( int i = 1; i < dates.length; ++i ) {
             QL.require(dates[i].gt(dates[i - 1]), "Dates must be in ascending order"); // TODO: message
-            QL.require(data[0] > 0, "Negative discount"); // TODO: message
             times[i] = dc.yearFraction(dates[0], dates[i]);
-            QL.require(Closeness.isClose(times[i], times[i - 1]),
+            QL.require(!Closeness.isClose(times[i], times[i - 1]),
                     "two dates correspond to the same time under this curve's day count convention"); // TODO: message
         }
 
