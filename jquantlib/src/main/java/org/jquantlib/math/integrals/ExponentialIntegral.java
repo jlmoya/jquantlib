@@ -147,9 +147,20 @@ public final class ExponentialIntegral {
         }
     }
 
-    /** sign(x): -1 / 0 / +1. */
+    /** sign(x): -1 / 0 / +1. Mirrors boost::math::sign which returns 0 for ±0.0
+     *  (computed as {@code (x > 0) - (x < 0)}). Note that {@link Double#compare}
+     *  treats {@code -0.0 < +0.0} and would return -1 for {@code -0.0}, breaking
+     *  callers like {@link #Ei} that pass {@code z.imag()} which may legitimately
+     *  be a signed zero produced by {@code Complex.neg()} of a positive-real
+     *  argument. */
     private static double sign(final double x) {
-        return Double.compare(x, 0.0);
+        if (x > 0.0) {
+            return 1.0;
+        }
+        if (x < 0.0) {
+            return -1.0;
+        }
+        return 0.0;
     }
 
     /**
