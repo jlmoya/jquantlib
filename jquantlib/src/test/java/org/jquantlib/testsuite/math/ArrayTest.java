@@ -1261,6 +1261,66 @@ public class ArrayTest {
         }
     }
 
+    /**
+     * Faithful port of {@code test-suite/array.cpp:195}
+     * {@code BOOST_AUTO_TEST_CASE(testArrayResize)}.
+     *
+     * <p>Exercises {@link Array#Array(int, double, double)} (the
+     * arithmetic-progression constructor) and {@link Array#resize(int)} for the
+     * three branches: grow, shrink, and same-size. Iterator stability is
+     * checked via backing-buffer identity ({@code a.$}) since the Java
+     * {@link Array#begin()} returns an int offset, not a pointer; mirroring the
+     * C++ {@code const_iterator iter = a.begin(); a.resize(a.size()); BOOST_CHECK(iter == a.begin());}
+     * expectation that a same-size or shrinking resize leaves storage in place.
+     */
+    @Test
+    public void testArrayResize() {
+        final double tol = 10.0 * 2.2204460492503131e-16;
+
+        // Construct with arithmetic-progression: a[i] = 1 + i for i in 0..9
+        final Array a = new Array(10, 1.0, 1.0);
+        assertTrue("initial size", a.size() == 10);
+        for (int i = 0; i < 10; i++) {
+            if (Math.abs(a.get(i) - (1.0 + i)) > tol) {
+                fail("a[" + i + "] expected " + (1.0 + i) + " got " + a.get(i));
+            }
+        }
+
+        // Shrink: 10 -> 5. Buffer should remain the same reference (matches
+        // C++ n_=n semantics where storage is not reallocated on shrink).
+        final double[] bufBeforeShrink = a.$;
+        a.resize(5);
+        assertTrue("size after shrink", a.size() == 5);
+        assertTrue("shrink should preserve backing buffer", a.$ == bufBeforeShrink);
+        for (int i = 0; i < 5; i++) {
+            if (Math.abs(a.get(i) - (1.0 + i)) > tol) {
+                fail("post-shrink a[" + i + "] expected " + (1.0 + i) + " got " + a.get(i));
+            }
+        }
+
+        // Grow: 5 -> 15. Buffer must be reallocated (length grows), prefix
+        // 0..4 is preserved.
+        a.resize(15);
+        assertTrue("size after grow", a.size() == 15);
+        for (int i = 0; i < 5; i++) {
+            if (Math.abs(a.get(i) - (1.0 + i)) > tol) {
+                fail("post-grow a[" + i + "] expected " + (1.0 + i) + " got " + a.get(i));
+            }
+        }
+
+        // Same-size resize: must not reallocate the buffer. This mirrors the
+        // C++ check `iter == a.begin()` after `a.resize(a.size())`.
+        final double[] bufBeforeNoop = a.$;
+        a.resize(a.size());
+        assertTrue("no-op resize must preserve backing buffer", a.$ == bufBeforeNoop);
+
+        // Shrink again: 15 -> 10. Buffer reference preserved.
+        a.resize(10);
+        assertTrue("size after second shrink", a.size() == 10);
+        assertTrue("second shrink must preserve backing buffer", a.$ == bufBeforeNoop);
+    }
+
+
     @Test
     public void swap() {
         swap(jFlags, jFlags);
