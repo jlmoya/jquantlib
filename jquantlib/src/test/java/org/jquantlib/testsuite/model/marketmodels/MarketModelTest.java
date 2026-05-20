@@ -2260,33 +2260,28 @@ public class MarketModelTest {
                         innerEngine.multiplePathValues(values, errors, pathsToDoSimulation);
 
                         // engine-vs-engine mean agreement (C++ cpp:3340 strict tol=1E-8).
-                        // A3-style finding: Java PathwiseVegasOuterAccountingEngine (landed in
-                        // Phase 3k.5 as a deferred items batch, never validated path-for-path vs
-                        // C++) only accumulates the INDIRECT V·J vega contribution and is missing
-                        // the DIRECT fullDerivatives·J contribution that the INNER
-                        // PathwiseVegasAccountingEngine sums in. Observed maxDiff ~4.7e-7 (well
-                        // above the C++ 1e-8 tol). Tolerance held at 1e-8 per CLAUDE.md "never
-                        // loosen" — gating this sub-block on -Dql.outerEngineFixed=1 so the
-                        // analytic-vs-MC half of Block 6 still runs and validates each engine
-                        // against its analytic reference independently.
-                        if (System.getProperty("ql.outerEngineFixed") != null) {
-                            final double tol = 1.0e-8;
-                            int numberMeanFailures = 0;
-                            double maxDiff = 0.0;
-                            for (int i = 0; i < values.length; ++i) {
-                                final double diff = Math.abs(values[i] - values2[i]);
-                                if (diff > maxDiff) {
-                                    maxDiff = diff;
-                                }
-                                if (diff > tol) {
-                                    ++numberMeanFailures;
-                                }
+                        // Fixed in Phase1-closure-A5-D-fix-561: the OUTER engine's elementary-vega
+                        // computation had a transposed inner-index (r/k swapped) so the Jacobian
+                        // contraction summed over the wrong axis of the all-elements Jacobian
+                        // (B[k][r][f] instead of B[r][k][f]). C++ pathwiseaccountingengine.cpp:1076
+                        // is sum_r V_[nextIndex][r] * jacobiansThisPaths_[j][r][k][f] — the outer
+                        // index of B is the rate-being-differentiated, not the elementary-vega rate.
+                        final double tol = 1.0e-8;
+                        int numberMeanFailures = 0;
+                        double maxDiff = 0.0;
+                        for (int i = 0; i < values.length; ++i) {
+                            final double diff = Math.abs(values[i] - values2[i]);
+                            if (diff > maxDiff) {
+                                maxDiff = diff;
                             }
-                            if (numberMeanFailures > 0) {
-                                fail("Comparison of Pathwise vegas accounting engine and PathwiseVegasOuterAccountingEngine "
-                                        + "yields discrepancies: " + numberMeanFailures + " out of " + values.length
-                                        + " (maxDiff=" + maxDiff + ")");
+                            if (diff > tol) {
+                                ++numberMeanFailures;
                             }
+                        }
+                        if (numberMeanFailures > 0) {
+                            fail("Comparison of Pathwise vegas accounting engine and PathwiseVegasOuterAccountingEngine "
+                                    + "yields discrepancies: " + numberMeanFailures + " out of " + values.length
+                                    + " (maxDiff=" + maxDiff + ")");
                         }
 
                         // analytic-vs-MC cross-check on caps

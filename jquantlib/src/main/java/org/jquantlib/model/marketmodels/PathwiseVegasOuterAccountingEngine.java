@@ -381,6 +381,10 @@ public class PathwiseVegasOuterAccountingEngine {
         }
 
         // ---- Compute elementary vegas ----
+        // C++: elementary_vegas_ThisPath_[i][j][k][f] = sum_r V_[i][nextIndex][r] * jacobiansThisPaths_[j][r][k][f]
+        // where jacobiansThisPaths_[j] is List<Matrix>, with outer index = rate-being-differentiated (r),
+        // and each Matrix's [k][f] element is d(newRate_r)/d(pseudoRoot[k][f]).
+        // evMat is indexed [k][f] = which pseudoRoot element is being bumped (elementary vega index).
         for ( int i = 0; i < numberProducts_; ++i ) {
             final Matrix Vi = V_.get(i);
             final List< Matrix > productEV = elementaryVegasThisPath_.get(i);
@@ -389,11 +393,12 @@ public class PathwiseVegasOuterAccountingEngine {
                 final List< Matrix > stepJacs = jacobiansThisPaths_.get(j);
                 final Matrix evMat = productEV.get(j);
                 for ( int k = 0; k < numberRates_; ++k ) {
-                    final Matrix jacK = stepJacs.get(k); // [numberRates][factors]
                     for ( int f = 0; f < factors_; ++f ) {
                         double sensitivity = 0.0;
                         for ( int r = 0; r < numberRates_; ++r ) {
-                            sensitivity += Vi.get(nextIndex, r) * jacK.get(r, f);
+                            // jacR = B[r], where B[r][k][f] = d(newRate_r) / d(pseudoRoot[k][f])
+                            final Matrix jacR = stepJacs.get(r);
+                            sensitivity += Vi.get(nextIndex, r) * jacR.get(k, f);
                         }
                         evMat.set(k, f, sensitivity);
                     }
