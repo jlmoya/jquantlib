@@ -35,7 +35,7 @@ using namespace QuantLib;
 namespace {
 struct Datum { Date date; Rate rate; };
 
-std::vector<ext::shared_ptr<BootstrapHelper<YoYInflationTermStructure>>> makeHelpers(
+std::vector<ext::shared_ptr<BootstrapHelper<YoYInflationTermStructure> > > makeHelpers(
         const std::vector<Datum>& iiData,
         const ext::shared_ptr<YoYInflationIndex>& ii,
         CPI::InterpolationType interpolation,
@@ -44,7 +44,7 @@ std::vector<ext::shared_ptr<BootstrapHelper<YoYInflationTermStructure>>> makeHel
         const BusinessDayConvention& bdc,
         const DayCounter& dc,
         const Handle<YieldTermStructure>& discount) {
-    std::vector<ext::shared_ptr<BootstrapHelper<YoYInflationTermStructure>>> v;
+    std::vector<ext::shared_ptr<BootstrapHelper<YoYInflationTermStructure> > > v;
     for (Datum d : iiData) {
         Handle<Quote> q(ext::make_shared<SimpleQuote>(d.rate/100.0));
         v.push_back(ext::make_shared<YearOnYearInflationSwapHelper>(
