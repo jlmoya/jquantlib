@@ -27,9 +27,7 @@ import static org.junit.Assert.assertTrue;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.jquantlib.QL;
 import org.jquantlib.instruments.CreditDefaultSwap;
@@ -1212,6 +1210,227 @@ public class ScheduleTest {
                 .schedule();
         assertEquals("The first element should always be the start date",
                 new Date(31, Month.August, 2017), schedule.date(0));
+    }
+
+    /** Faithful port of {@code test-suite/schedule.cpp:1075} {@code BOOST_AUTO_TEST_CASE(testShortEomSchedule)}.
+     *  A 1-week short EOM schedule must construct without throwing (seg-faulted in 1.15) and emit exactly the two
+     *  endpoint dates. */
+    @Test
+    public void testShortEomSchedule() {
+        Schedule s = null;
+        try {
+            s = new MakeSchedule()
+                    .from(new Date(21, Month.February, 2019))
+                    .to(new Date(28, Month.February, 2019))
+                    .withCalendar(new Target())
+                    .withTenor(new Period(1, TimeUnit.Years))
+                    .withConvention(BusinessDayConvention.ModifiedFollowing)
+                    .withTerminationDateConvention(BusinessDayConvention.ModifiedFollowing)
+                    .backwards()
+                    .endOfMonth(true)
+                    .schedule();
+        } catch (final Exception e) {
+            fail("Short EOM schedule must not throw: " + e.getMessage());
+        }
+        assertEquals("Short EOM schedule must have 2 dates", 2, s.size());
+        assertEquals(new Date(21, Month.February, 2019), s.date(0));
+        assertEquals(new Date(28, Month.February, 2019), s.date(1));
+    }
+
+    /** Faithful port of {@code test-suite/schedule.cpp:1093} {@code BOOST_AUTO_TEST_CASE(testFirstDateOnMaturity)}.
+     *  A Quarterly schedule whose firstDate equals the maturity must produce a 2-date schedule under both Backward
+     *  and Forward generation. */
+    @Test
+    public void testFirstDateOnMaturity() {
+        Schedule schedule = new MakeSchedule()
+                .from(new Date(20, Month.September, 2016))
+                .to(new Date(20, Month.December, 2016))
+                .withFirstDate(new Date(20, Month.December, 2016))
+                .withFrequency(Frequency.Quarterly)
+                .withCalendar(new UnitedStates(UnitedStates.Market.GOVERNMENTBOND))
+                .withConvention(BusinessDayConvention.Unadjusted)
+                .backwards()
+                .schedule();
+        final List<Date> expected = Arrays.asList(
+                new Date(20, Month.September, 2016),
+                new Date(20, Month.December, 2016));
+        checkDates(schedule, expected);
+
+        schedule = new MakeSchedule()
+                .from(new Date(20, Month.September, 2016))
+                .to(new Date(20, Month.December, 2016))
+                .withFirstDate(new Date(20, Month.December, 2016))
+                .withFrequency(Frequency.Quarterly)
+                .withCalendar(new UnitedStates(UnitedStates.Market.GOVERNMENTBOND))
+                .withConvention(BusinessDayConvention.Unadjusted)
+                .forwards()
+                .schedule();
+        checkDates(schedule, expected);
+    }
+
+    /** Faithful port of {@code test-suite/schedule.cpp:1122} {@code BOOST_AUTO_TEST_CASE(testNextToLastDateOnStart)}.
+     *  A Quarterly schedule whose nextToLastDate equals the effective date must produce a 2-date schedule under
+     *  Backward generation. */
+    @Test
+    public void testNextToLastDateOnStart() {
+        Schedule schedule = new MakeSchedule()
+                .from(new Date(20, Month.September, 2016))
+                .to(new Date(20, Month.December, 2016))
+                .withNextToLastDate(new Date(20, Month.September, 2016))
+                .withFrequency(Frequency.Quarterly)
+                .withCalendar(new UnitedStates(UnitedStates.Market.GOVERNMENTBOND))
+                .withConvention(BusinessDayConvention.Unadjusted)
+                .backwards()
+                .schedule();
+        final List<Date> expected = Arrays.asList(
+                new Date(20, Month.September, 2016),
+                new Date(20, Month.December, 2016));
+        checkDates(schedule, expected);
+
+        schedule = new MakeSchedule()
+                .from(new Date(20, Month.September, 2016))
+                .to(new Date(20, Month.December, 2016))
+                .withNextToLastDate(new Date(20, Month.September, 2016))
+                .withFrequency(Frequency.Quarterly)
+                .withCalendar(new UnitedStates(UnitedStates.Market.GOVERNMENTBOND))
+                .withConvention(BusinessDayConvention.Unadjusted)
+                .backwards()
+                .schedule();
+        checkDates(schedule, expected);
+    }
+
+    /** Faithful port of {@code test-suite/schedule.cpp:1151} {@code BOOST_AUTO_TEST_CASE(testTruncation)}.
+     *  Schedule.until(Date) and Schedule.after(Date) — verifies date-vector trimming + final/leading period
+     *  isRegular_ flag updates against the Japan-calendar 30-Sep-2009 -> 15-Jun-2020 forward EOM 6M schedule. */
+    @Test
+    public void testTruncation() {
+        final Schedule s = new MakeSchedule()
+                .from(new Date(30, Month.September, 2009))
+                .to(new Date(15, Month.June, 2020))
+                .withCalendar(new Japan())
+                .withTenor(new Period(6, TimeUnit.Months))
+                .withConvention(BusinessDayConvention.ModifiedFollowing)
+                .withTerminationDateConvention(BusinessDayConvention.ModifiedFollowing)
+                .forwards()
+                .endOfMonth()
+                .schedule();
+
+        // Until
+        Schedule t = s.until(new Date(1, Month.January, 2014));
+        List<Date> expected = Arrays.asList(
+                new Date(30, Month.September, 2009),
+                new Date(31, Month.March, 2010),
+                new Date(30, Month.September, 2010),
+                new Date(31, Month.March, 2011),
+                new Date(30, Month.September, 2011),
+                new Date(30, Month.March, 2012),
+                new Date(28, Month.September, 2012),
+                new Date(29, Month.March, 2013),
+                new Date(30, Month.September, 2013),
+                new Date(1, Month.January, 2014));
+        checkDates(t, expected);
+        assertFalse("until: last isRegular should be false",
+                t.isRegular().get(t.isRegular().size() - 1).booleanValue());
+
+        // Until, with truncation date falling on a schedule date
+        t = s.until(new Date(30, Month.September, 2013));
+        expected = Arrays.asList(
+                new Date(30, Month.September, 2009),
+                new Date(31, Month.March, 2010),
+                new Date(30, Month.September, 2010),
+                new Date(31, Month.March, 2011),
+                new Date(30, Month.September, 2011),
+                new Date(30, Month.March, 2012),
+                new Date(28, Month.September, 2012),
+                new Date(29, Month.March, 2013),
+                new Date(30, Month.September, 2013));
+        checkDates(t, expected);
+        assertTrue("until on-grid: last isRegular should be true",
+                t.isRegular().get(t.isRegular().size() - 1).booleanValue());
+
+        // After
+        t = s.after(new Date(1, Month.January, 2014));
+        expected = Arrays.asList(
+                new Date(1, Month.January, 2014),
+                new Date(31, Month.March, 2014),
+                new Date(30, Month.September, 2014),
+                new Date(31, Month.March, 2015),
+                new Date(30, Month.September, 2015),
+                new Date(31, Month.March, 2016),
+                new Date(30, Month.September, 2016),
+                new Date(31, Month.March, 2017),
+                new Date(29, Month.September, 2017),
+                new Date(30, Month.March, 2018),
+                new Date(28, Month.September, 2018),
+                new Date(29, Month.March, 2019),
+                new Date(30, Month.September, 2019),
+                new Date(31, Month.March, 2020),
+                new Date(15, Month.June, 2020));
+        checkDates(t, expected);
+        assertFalse("after: first isRegular should be false",
+                t.isRegular().get(0).booleanValue());
+
+        // After, with truncation date falling on a schedule date
+        t = s.after(new Date(28, Month.September, 2018));
+        expected = Arrays.asList(
+                new Date(28, Month.September, 2018),
+                new Date(29, Month.March, 2019),
+                new Date(30, Month.September, 2019),
+                new Date(31, Month.March, 2020),
+                new Date(15, Month.June, 2020));
+        checkDates(t, expected);
+        assertTrue("after on-grid: first isRegular should be true",
+                t.isRegular().get(0).booleanValue());
+    }
+
+    /** Faithful port of {@code test-suite/schedule.cpp:1229}
+     *  {@code BOOST_AUTO_TEST_CASE(testBackwardRegularFirstPeriodWithFirstDate)}.
+     *  Reproduces issue #405: Backward generation with firstDate + endOfMonth incorrectly marked the first period
+     *  irregular even when effectiveDate + tenor == firstDate. */
+    @Test
+    public void testBackwardRegularFirstPeriodWithFirstDate() {
+        final NullCalendar calendar = new NullCalendar();
+
+        // Regular first period: Sep 30 + 6M = Mar 31 (with endOfMonth)
+        final Schedule backward = new Schedule(
+                new Date(30, Month.September, 2017),
+                new Date(30, Month.September, 2024),
+                new Period(Frequency.Semiannual),
+                calendar, BusinessDayConvention.Unadjusted, BusinessDayConvention.Unadjusted,
+                DateGeneration.Rule.Backward, true,
+                new Date(31, Month.March, 2018), new Date());
+        assertTrue("First period should be regular (effectiveDate + 6M == firstDate)", backward.isRegular(1));
+
+        // Forward generation should agree
+        final Schedule forward = new Schedule(
+                new Date(30, Month.September, 2017),
+                new Date(30, Month.September, 2024),
+                new Period(Frequency.Semiannual),
+                calendar, BusinessDayConvention.Unadjusted, BusinessDayConvention.Unadjusted,
+                DateGeneration.Rule.Forward, true,
+                new Date(31, Month.March, 2018), new Date());
+        assertTrue("Forward first period should also be regular", forward.isRegular(1));
+
+        // Genuinely irregular first period: effective date does NOT align with firstDate by one tenor
+        final Schedule irregular = new Schedule(
+                new Date(3, Month.September, 2017),
+                new Date(30, Month.September, 2024),
+                new Period(Frequency.Semiannual),
+                calendar, BusinessDayConvention.Unadjusted, BusinessDayConvention.Unadjusted,
+                DateGeneration.Rule.Backward, true,
+                new Date(31, Month.March, 2018), new Date());
+        assertFalse("First period should be irregular (effectiveDate + 6M != firstDate)", irregular.isRegular(1));
+
+        // Forward nextToLastDate: off-grid nextToLastDate triggers the insertion path and should be marked irregular
+        final Schedule forwardNTLIrreg = new Schedule(
+                new Date(30, Month.September, 2017),
+                new Date(30, Month.September, 2024),
+                new Period(Frequency.Semiannual),
+                calendar, BusinessDayConvention.Unadjusted, BusinessDayConvention.Unadjusted,
+                DateGeneration.Rule.Forward, true,
+                new Date(), new Date(15, Month.March, 2024));
+        final int n = forwardNTLIrreg.size();
+        assertFalse("Period ending at off-grid nextToLastDate should be irregular", forwardNTLIrreg.isRegular(n - 2));
     }
 
 }
