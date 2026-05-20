@@ -186,6 +186,72 @@ public class OptimizerTest {
     }
 
 
+    /**
+     * Faithful port of {@code test-suite/optimizers.cpp:346}
+     * {@code BOOST_AUTO_TEST_CASE(nestedOptimizationTest)}.
+     *
+     * <p>Exercises a nested-optimization pattern where the outer optimizer's
+     * cost function itself instantiates and runs an inner LevenbergMarquardt
+     * solve. The test is essentially a smoke test: it asserts the run
+     * completes without throwing — there is no expected value to compare
+     * because the inner solve returns a dummy {@code Array(1, 0)} and the
+     * outer cost function's {@code value()} always returns {@code 1.0}.
+     *
+     * <p>Tolerance tier: exact (no numerical comparison — the test passes
+     * if {@code minimize()} returns normally without throwing).
+     */
+    @Test
+    public void testNestedOptimization() {
+        System.out.println("::::: " + this.getClass().getSimpleName()
+                + "#testNestedOptimization :::::");
+        System.out.println("Testing nested optimizations... ");
+
+        final OptimizationBasedCostFunction outerCost =
+                new OptimizationBasedCostFunction();
+        final NoConstraint constraint = new NoConstraint();
+        final Array initialValues = new Array(new double[] { 0.0 });
+        final Problem problem = new Problem(outerCost, constraint, initialValues);
+
+        final LevenbergMarquardt optimizationMethod = new LevenbergMarquardt();
+        final EndCriteria endCriteria = new EndCriteria(1000, 100, 1e-5, 1e-5, 1e-5);
+        // Should complete without throwing — that is the assertion.
+        optimizationMethod.minimize(problem, endCriteria);
+    }
+
+    /**
+     * Outer cost function whose {@code values()} runs a nested
+     * LevenbergMarquardt solve on a 1-D polynomial. Matches the C++ helper
+     * {@code OptimizationBasedCostFunction} in
+     * {@code test-suite/optimizers.cpp:89}.
+     */
+    private class OptimizationBasedCostFunction extends CostFunction {
+        @Override
+        public double value(final Array x) {
+            return 1.0;
+        }
+
+        @Override
+        public Array values(final Array x) {
+            // dummy nested optimization
+            final List<Double> coefficients = new ArrayList<Double>();
+            coefficients.add(1.0);
+            coefficients.add(1.0);
+            coefficients.add(1.0);
+            final OneDimensionalPolynomDegreeN innerCost =
+                    new OneDimensionalPolynomDegreeN(coefficients);
+            final NoConstraint constraint = new NoConstraint();
+            final Array innerInit = new Array(new double[] { 100.0 });
+            final Problem innerProblem =
+                    new Problem(innerCost, constraint, innerInit);
+            final LevenbergMarquardt innerMethod = new LevenbergMarquardt();
+            final EndCriteria innerEnd =
+                    new EndCriteria(1000, 100, 1e-5, 1e-5, 1e-5);
+            innerMethod.minimize(innerProblem, innerEnd);
+            // dummy result
+            return new Array(new double[] { 0.0 });
+        }
+    }
+
     private class OneDimensionalPolynomDegreeN extends CostFunction {
 
         private final List<Double> coefficients_;
