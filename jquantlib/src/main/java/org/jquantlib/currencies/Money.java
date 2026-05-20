@@ -139,13 +139,25 @@ public class Money implements Cloneable {
         return !(this.equals(money));
     }
 
+    /**
+     * Returns {@code true} iff this > money (using the active conversion
+     * policy when the currencies differ).
+     * <p>
+     * Aligns with C++ v1.42.1 {@code operator>(Money,Money)} which is
+     * {@code m1.value() > m2.value()} after converting m2 to m1's currency.
+     * Equivalent to {@code money.less(this)}.
+     */
     public boolean greater(final Money money) {
-        return money.greater(this);
-
+        return money.less(this);
     }
 
+    /**
+     * Returns {@code true} iff this >= money.  Equivalent to
+     * {@code money.lessEquals(this)}; mirrors C++ v1.42.1
+     * {@code operator>=(Money,Money)}.
+     */
     public boolean greaterEqual(final Money money) {
-        return money.greaterEqual(this);
+        return money.lessEquals(this);
     }
 
     // FIXME: suspicious....
@@ -248,12 +260,17 @@ public class Money implements Cloneable {
             tmp1.convertToBase();
             final Money tmp2 = money.clone();
             tmp2.convertToBase();
-            // recursive
-            return this.div(tmp2);
+            // recurse on the converted lhs (aligns with C++ v1.42.1 money.hpp
+            // operator/(Money,Money); previously recursed on `this`, which
+            // could leave the lhs in its original currency and yield wrong
+            // ratios).
+            return tmp1.div(tmp2);
         } else if ( conversionType == Money.ConversionType.AutomatedConversion ) {
+            // Convert rhs to lhs's currency (matches C++ AutomatedConversion).
+            // Previously the call was tmp.convertTo(money.currency()), a
+            // no-op that left the operands in different currencies.
             final Money tmp = money.clone();
-            tmp.convertTo(money.currency());
-            // recursive
+            tmp.convertTo(this.currency());
             return this.div(tmp);
         } else
             throw new LibraryException("currency mismatch and no conversion specified"); // TODO: message
@@ -287,13 +304,16 @@ public class Money implements Cloneable {
         if ( this.currency().eq(money.currency()) )
             return value() < money.value();
         else if ( conversionType == Money.ConversionType.BaseCurrencyConversion ) {
+            // Clone both sides to avoid mutating the caller-supplied operand
+            // (previous code re-used `money` directly, mutating it via
+            // convertToBase).
             final Money tmp1 = this.clone();
             tmp1.convertToBase();
-            final Money tmp2 = money;
+            final Money tmp2 = money.clone();
             tmp2.convertToBase();
             return tmp1.less(tmp2);
         } else if ( conversionType == Money.ConversionType.AutomatedConversion ) {
-            final Money tmp = money;
+            final Money tmp = money.clone();
             tmp.convertTo(currency());
             return this.less(tmp);
         } else
@@ -304,15 +324,17 @@ public class Money implements Cloneable {
         if ( currency().eq(money.currency()) )
             return value() <= money.value();
         else if ( conversionType == Money.ConversionType.BaseCurrencyConversion ) {
+            // Clone the rhs and recurse via lessEquals (not less) to honor the
+            // C++ v1.42.1 semantics of operator<=.
             final Money tmp1 = this.clone();
             tmp1.convertToBase();
-            final Money tmp2 = money;
+            final Money tmp2 = money.clone();
             tmp2.convertToBase();
-            return tmp1.less(tmp2);
+            return tmp1.lessEquals(tmp2);
         } else if ( conversionType == Money.ConversionType.AutomatedConversion ) {
             final Money tmp = money.clone();
             tmp.convertTo(this.currency());
-            return this.less(tmp);
+            return this.lessEquals(tmp);
         } else
             throw new LibraryException("currency mismatch and no conversion specified"); // TODO: message
     }
@@ -338,13 +360,14 @@ public class Money implements Cloneable {
         if ( currency().eq(money.currency()) )
             return Closeness.isCloseEnough(value(), money.value(), n);
         else if ( conversionType == Money.ConversionType.BaseCurrencyConversion ) {
+            // Clone the rhs (previous code mutated the caller's Money).
             final Money tmp1 = this.clone();
             tmp1.convertToBase();
-            final Money tmp2 = money;
+            final Money tmp2 = money.clone();
             tmp2.convertToBase();
             return tmp1.close_enough(tmp2, n);
         } else if ( conversionType == Money.ConversionType.AutomatedConversion ) {
-            final Money tmp = money;
+            final Money tmp = money.clone();
             tmp.convertTo(currency());
             return this.close_enough(tmp, n);
         } else
