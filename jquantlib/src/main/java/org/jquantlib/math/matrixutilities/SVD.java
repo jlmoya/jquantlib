@@ -583,4 +583,25 @@ public class SVD {
         return r;
     }
 
+    /**
+     * Least-squares solver for the original matrix {@code A}. Mirrors C++
+     * {@code SVD::solveFor} (ql/math/matrixutilities/svd.cpp v1.42.1):
+     * builds the truncated pseudo-inverse {@code V * W * Uᵀ} (where {@code W}
+     * is diagonal with {@code 1/sᵢ} on the first {@code rank()} entries and
+     * zero elsewhere) and applies it to {@code b}.
+     *
+     * @param b right-hand side of length {@code m}
+     * @return the minimum-norm least-squares solution to {@code A x = b}
+     * @see "ql/math/matrixutilities/svd.cpp" v1.42.1 line 528
+     */
+    public Array solveFor(final Array b) {
+        final Matrix W = new Matrix(n, n);
+        final int numericalRank = this.rank();
+        for ( int i = 0; i < numericalRank; i++ ) {
+            W.set(i, i, 1.0 / s.$[s.addr.op(i)]);
+        }
+        final Matrix inverse = V().mul(W).mul(U().transpose());
+        return inverse.mul(b);
+    }
+
 }
