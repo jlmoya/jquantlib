@@ -320,16 +320,19 @@ public class AndreasenHugeVolatilityInterpl extends LazyObject {
         minError = Double.MAX_VALUE;
         maxError = 0.0;
 
-        // Initial boundary payoffs in log-fwd coordinates, normalized by spot
+        // Initial boundary payoffs in log-fwd coordinates, normalized by spot.
+        // Mirrors C++ v1.42.1: npvPuts[i] = PlainVanillaPayoff(Put, strike)(1.0)
+        //                                = max(strike - 1.0, 0.0)
+        //                     npvCalls[i] = PlainVanillaPayoff(Call, strike)(1.0)
+        //                                 = max(1.0 - strike, 0.0)
+        // where strike = exp(gridPoint) is the fwd-normalized strike and the
+        // "underlying" is 1.0 (because everything is normalized by the forward).
         Array npvPuts = new Array(nGridPoints);
         Array npvCalls = new Array(nGridPoints);
         for ( int i = 0; i < nGridPoints; ++i ) {
             final double strike = Math.exp(gridPoints[i]); // log-fwd strike
-            npvPuts.set(i, Math.max(strike, 1.0) - strike); // put payoff at spot=1 in fwd-normalized
-            // Actually the C++ uses PlainVanillaPayoff(Put/Call, strike)(1.0)
-            // which evaluates the payoff at underlying=1.0
-            npvPuts.set(i, Math.max(1.0 - strike, 0.0)); // Put payoff
-            npvCalls.set(i, Math.max(strike - 1.0, 0.0)); // Call payoff
+            npvPuts.set(i, Math.max(strike - 1.0, 0.0)); // Put payoff at S=1
+            npvCalls.set(i, Math.max(1.0 - strike, 0.0)); // Call payoff at S=1
         }
 
         for ( int i = 0; i < expiries.size(); ++i ) {
