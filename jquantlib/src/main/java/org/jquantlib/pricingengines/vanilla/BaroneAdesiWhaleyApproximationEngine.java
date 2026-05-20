@@ -101,6 +101,12 @@ public class BaroneAdesiWhaleyApproximationEngine extends VanillaOption.EngineIm
     static double criticalPrice(final StrikedTypePayoff payoff, final double /*@DiscountFactor*/ riskFreeDiscount,
             final double /*@DiscountFactor*/ dividendDiscount, final double variance, final double tolerance) {
 
+        // Mirror C++ v1.42.1 baroneadesiwhaleyengine.cpp:45-48 — fail clearly for negative interest rates,
+        // which manifest as riskFreeDiscount > 1.0 (issue #1291).
+        QL.require(riskFreeDiscount <= 1.0,
+                "the Barone-Adesi-Whaley approximation is not applicable with negative interest rates "
+                + "(risk-free discount factor: " + riskFreeDiscount + ")");
+
         // Calculation of seed value, Si
         final double /*@Real*/ n = 2.0 * Math.log(dividendDiscount / riskFreeDiscount) / (variance);
         final double /*@Real*/ m = -2.0 * Math.log(riskFreeDiscount) / (variance);
