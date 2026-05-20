@@ -40,7 +40,10 @@ import org.jquantlib.math.integrals.ExponentialIntegral;
 import org.jquantlib.math.integrals.GaussJacobiPolynomial;
 import org.jquantlib.math.integrals.GaussLegendreIntegration;
 import org.jquantlib.math.integrals.GaussianQuadrature;
+import org.jquantlib.math.integrals.Integrator;
 import org.jquantlib.math.integrals.SegmentIntegral;
+import org.jquantlib.math.integrals.TrapezoidIntegral;
+import org.jquantlib.math.integrals.TwoDimensionalIntegral;
 import org.jquantlib.math.matrixutilities.Array;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -648,19 +651,44 @@ public class IntegralsAdditionalTest {
     }
 
     /**
-     * BLOCKED port of {@code test-suite/integrals.cpp:246}
+     * Port of {@code test-suite/integrals.cpp:246}
      * {@code BOOST_AUTO_TEST_CASE(testTwoDimensionalIntegration)}.
      *
-     * <p>Requires {@code org.jquantlib.math.integrals.TwoDimensionalIntegral}
-     * — not yet ported. C++ source:
-     * {@code ql/math/integrals/twodimensionalintegral.hpp}. Java has the
-     * tensor-product {@code MultidimIntegral} but it does not accept two
-     * distinct outer/inner integrators.
+     * <p>C++:
+     * <pre>
+     *   const Real calculated = TwoDimensionalIntegral(
+     *       ext::shared_ptr&lt;Integrator&gt;(new TrapezoidIntegral&lt;Default&gt;(tolerance, maxEvaluations)),
+     *       ext::shared_ptr&lt;Integrator&gt;(new TrapezoidIntegral&lt;Default&gt;(tolerance, maxEvaluations)))(
+     *       std::multiplies&lt;&gt;(),
+     *       std::make_pair(0.0, 0.0), std::make_pair(1.0, 2.0));
+     *   const Real expected = 1.0;
+     * </pre>
+     *
+     * <p>Integrand {@code f(x, y) = x*y}; integral over
+     * {@code [0,1] x [0,2]} is {@code (1/2)(1)(2) = 1.0}. Mirrors v1.42.1.
      */
-    @Ignore("BLOCKED: TwoDimensionalIntegral not ported - see integrals.cpp:246")
     @Test
     public void testTwoDimensionalIntegration() {
-        fail("TwoDimensionalIntegral missing in Java port");
+        final int maxEvaluations = 1000;
+        final Integrator innerX = new TrapezoidIntegral<TrapezoidIntegral.Default>(
+                TrapezoidIntegral.Default.class, TOLERANCE, maxEvaluations);
+        final Integrator innerY = new TrapezoidIntegral<TrapezoidIntegral.Default>(
+                TrapezoidIntegral.Default.class, TOLERANCE, maxEvaluations);
+        final TwoDimensionalIntegral integral = new TwoDimensionalIntegral(innerX, innerY);
+
+        final double calculated = integral.op(new Ops.BinaryDoubleOp() {
+            @Override
+            public double op(final double x, final double y) {
+                return x * y;
+            }
+        }, 0.0, 0.0, 1.0, 2.0);
+
+        final double expected = 1.0;
+        if (Math.abs(calculated - expected) > TOLERANCE) {
+            fail("two dimensional integration:"
+                    + "\n    calculated: " + calculated
+                    + "\n    expected:   " + expected);
+        }
     }
 
     /**
