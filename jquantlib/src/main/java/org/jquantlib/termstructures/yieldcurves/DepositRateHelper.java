@@ -127,6 +127,39 @@ public class DepositRateHelper extends RelativeDateRateHelper {
         initializeDates();
     }
 
+    /**
+     * Date-based ctor — mirrors C++ v1.42.1 ratehelpers.hpp:103-105
+     * {@code DepositRateHelper(rate, fixingDate, iborIndex)}. The caller-supplied
+     * {@code fixingDate} is used verbatim and is not recomputed on evaluation-date
+     * changes (super-ctor flag {@code updateDates=false}). Useful when the user
+     * wants the deposit pillar pinned to a specific historical or near-spot date.
+     *
+     * @param rate market quote
+     * @param fixingDate caller-supplied fixing date (absolute)
+     * @param i template IborIndex (cloned with helper's relinkable term-structure handle)
+     */
+    public DepositRateHelper(final Handle< Quote > rate, final Date fixingDate, final IborIndex i) {
+        super(rate, false); // updateDates=false: do NOT recompute earliestDate on evaluation-date change
+        this.fixingDate = fixingDate;
+        this.iborIndex = new IborIndex("no-fix", // never take fixing into account
+                i.tenor(), i.fixingDays(), new Currency(), i.fixingCalendar(), i.businessDayConvention(),
+                i.endOfMonth(), i.dayCounter(), this.termStructureHandle);
+        initializeDates();
+    }
+
+    /**
+     * Date-based ctor — double-rate overload of {@link #DepositRateHelper(Handle, Date, IborIndex)}.
+     * Mirrors C++ v1.42.1 ratehelpers.hpp:103-105 with {@code rate} expressed as a plain double.
+     */
+    public DepositRateHelper(final /*@Rate*/ double rate, final Date fixingDate, final IborIndex i) {
+        super(rate, false);
+        this.fixingDate = fixingDate;
+        this.iborIndex = new IborIndex("no-fix",
+                i.tenor(), i.fixingDays(), new Currency(), i.fixingCalendar(), i.businessDayConvention(),
+                i.endOfMonth(), i.dayCounter(), this.termStructureHandle);
+        initializeDates();
+    }
+
     //
     // public methods 
     //
@@ -153,16 +186,26 @@ public class DepositRateHelper extends RelativeDateRateHelper {
 
     /**
      * Overrides the abstract method defined in the super class: RelativeDateRateHelper
-     * {@link RelativeDateRateHelper#initializeDates()}
+     * {@link RelativeDateRateHelper#initializeDates()}.
+     * <p>
+     * Mirrors C++ v1.42.1 ratehelpers.cpp:227-240. When {@code updateDates==true}
+     * (default), {@code earliestDate} is the spot date relative to the evaluation
+     * date and {@code fixingDate} is derived from it. When {@code updateDates==false}
+     * (date-based ctor), {@code fixingDate} is taken as caller-supplied and
+     * {@code earliestDate} is derived from it via {@code iborIndex.valueDate}.
      */
     @Override
     protected void initializeDates() {
-        earliestDate = this.iborIndex.fixingCalendar()
-                .advance(evaluationDate, this.iborIndex.fixingDays(), TimeUnit.Days);
-
+        if ( this.updateDates ) {
+            // Default path: spot-date relative to evaluation date.
+            earliestDate = this.iborIndex.fixingCalendar()
+                    .advance(evaluationDate, this.iborIndex.fixingDays(), TimeUnit.Days);
+            this.fixingDate = this.iborIndex.fixingDate(earliestDate);
+        } else {
+            // Date-based path: caller-supplied fixingDate; derive earliestDate from it.
+            this.earliestDate = this.iborIndex.valueDate(this.fixingDate);
+        }
         this.latestDate = this.iborIndex.maturityDate(earliestDate);
-        this.fixingDate = this.iborIndex.fixingDate(earliestDate);
-
     }
 
     //

@@ -45,6 +45,14 @@ public abstract class RelativeDateRateHelper extends RateHelper {
 
     protected Date evaluationDate;
 
+    /**
+     * Mirrors C++ v1.42.1 {@code RelativeDateRateHelper::updateDates_} (ratehelpers.hpp:47).
+     * When {@code false}, the helper uses caller-supplied absolute dates and skips
+     * recomputation on each {@link #update()} call. Default {@code true} preserves
+     * the historical Java behavior (recompute on evaluation-date change).
+     */
+    protected boolean updateDates = true;
+
     //    //
     //    // protected constructors
     //    //
@@ -63,20 +71,31 @@ public abstract class RelativeDateRateHelper extends RateHelper {
     //
 
     public RelativeDateRateHelper(/*@Real*/ final double d) {
-        super(d);
-
-        this.evaluationDate = new Settings().evaluationDate();
-        this.evaluationDate.addObserver(this);
-        // XXX:registerWith
-        //registerWith(this.evaluationDate);
+        this(d, true);
     }
 
     public RelativeDateRateHelper(final Handle< Quote > quote) {
-        super(quote);
+        this(quote, true);
+    }
+
+    /**
+     * Mirrors C++ v1.42.1 {@code RelativeDateRateHelper(rate, updateDates)} overload
+     * (ratehelpers.hpp:42). {@code updateDates=false} is used by date-based helper
+     * ctors (e.g. {@code DepositRateHelper(quote, fixingDate, ibor)}) so that
+     * {@link #update()} does not overwrite the caller-supplied absolute date.
+     */
+    public RelativeDateRateHelper(/*@Real*/ final double d, final boolean updateDates) {
+        super(d);
+        this.updateDates = updateDates;
         this.evaluationDate = new Settings().evaluationDate();
         this.evaluationDate.addObserver(this);
-        // XXX:registerWith
-        //registerWith(this.evaluationDate);
+    }
+
+    public RelativeDateRateHelper(final Handle< Quote > quote, final boolean updateDates) {
+        super(quote);
+        this.updateDates = updateDates;
+        this.evaluationDate = new Settings().evaluationDate();
+        this.evaluationDate.addObserver(this);
     }
 
     //XXX
@@ -101,12 +120,16 @@ public abstract class RelativeDateRateHelper extends RateHelper {
     @Override
     //XXX::OBS public void update(final Observable o, final Object arg) {
     public void update() {
-        final Date newEvaluationDate = new Settings().evaluationDate();
-        if ( !evaluationDate.equals(newEvaluationDate) ) {
-            evaluationDate = newEvaluationDate;
-            initializeDates();
+        // Mirrors C++ v1.42.1 RelativeDateRateHelper::update() (ratehelpers.cpp).
+        // When updateDates_ is false (date-based ctors), absolute caller-supplied
+        // dates must not be overwritten on evaluation-date change.
+        if ( this.updateDates ) {
+            final Date newEvaluationDate = new Settings().evaluationDate();
+            if ( !evaluationDate.equals(newEvaluationDate) ) {
+                evaluationDate = newEvaluationDate;
+                initializeDates();
+            }
         }
-        //XXX::OBS super.update(o, arg);
         super.update();
     }
 
