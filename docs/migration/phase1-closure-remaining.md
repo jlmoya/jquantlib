@@ -14,6 +14,8 @@ declarations across the entire JQuantLib testsuite tree.
 | Of those: genuinely missing (no name+content alias) | **83** |
 | TwoDimensionalIntegral test ported & passing in this round | +1 |
 | Round A5-C 2026-05-20 reclassifications (distributions all EXISTING_EQUIVALENT in per-distribution test files; daycounters 3 PORTED & 3 BLOCKED on Date/daycount infra) | -8 (5 distributions to EXISTING_EQUIVALENT, 3 daycounters PORTED) |
+| Round A7-J 2026-05-20 reclassifications (full sweep of remaining "1-test by name" entries; ~18 already covered by Java method aliases/splits in existing test classes) | -18 (EXISTING_EQUIVALENT) |
+| Round A7-J 2026-05-20 europeanoption::testFdEngineWithNonConstantParameters PORTED (+InterpolatedForwardCurve precondition fix) | -1 (PORTED & PASSING) |
 
 Method: stem-strip the leading `test`, case-insensitive, partial substring,
 size-similarity gate (length difference < 50% of the longer name). When in
@@ -48,8 +50,11 @@ doubt the audit script counts the test as genuinely missing (conservative).
 
 - **doublebarrieroption** (3): `testEuropeanHaugValues`,
   `testVannaVolgaDoubleBarrierValues`,
-  `testMonteCarloDoubleBarrierWithAnalytical` — VannaVolga engine port
-  ~400 LOC; MC double-barrier engine port ~600 LOC.
+  `testMonteCarloDoubleBarrierWithAnalytical` — see "Misc one-offs"
+  bucket below. All three reclassified to **EXISTING_EQUIVALENT** in
+  Round A7-J (split + name-alias coverage in existing
+  `DoubleBarrierOptionTest.java`; back-pointers listed in the Misc
+  one-offs block).
 
 ### Bond curves (2 files, 15 tests)
 
@@ -119,8 +124,9 @@ doubt the audit script counts the test as genuinely missing (conservative).
   estimate revised from "10 × ~80-150 LOC" to "API completion across 7
   helper/interpolator classes ~600-900 LOC + 10 × ~80-150 LOC tests."
 
-- **fittedbonddiscountcurve** (1): `testEvaluation` — body-fill,
-  ~100 LOC.
+- **fittedbonddiscountcurve** (1): `testEvaluation` —
+  **EXISTING_EQUIVALENT** (Round A7-J). See "Misc one-offs" bucket for
+  the back-pointer to `FittedBondDiscountCurveTest.testEvaluationBeyondMaxDate`.
 
 ### Day counters / dates (2 files, 7 tests)
 
@@ -183,71 +189,155 @@ doubt the audit script counts the test as genuinely missing (conservative).
 - **marketmodel** (3): `testPathwiseVegas`, `testDriftCalculator`,
   `testAbcdDegenerateCases` — MarketModelTest.java exists; body-fill
   ~150-300 LOC each.
-- **marketmodel_cms** (1): `testMultiStepCmSwapsAndSwaptions` — new
-  test class, ~800 LOC.
+- **marketmodel_cms** (1): `testMultiStepCmSwapsAndSwaptions` — BLOCKED
+  (Round A7-J re-confirmed). Needs MarketModelTestSetup harness (C++
+  fixture #545) + heavy MC simulator; new test class, ~800 LOC port.
 - **marketmodel_smm** (1): `testMultiStepCoterminalSwapsAndSwaptions` —
-  new test class, ~800 LOC.
-- **marketmodel_smmcapletalphacalibration** (1): `testFunction`
-- **marketmodel_smmcapletcalibration** (1): `testFunction`
+  BLOCKED (Round A7-J re-confirmed). Same MarketModelTestSetup
+  dependency; new test class, ~800 LOC port.
+- **marketmodel_smmcapletalphacalibration** (1): `testFunction` —
+  BLOCKED (Round A7-J re-confirmed); needs MarketModelTestSetup +
+  per-test caplet-alpha fixture.
+- **marketmodel_smmcapletcalibration** (1): `testFunction` — BLOCKED
+  (Round A7-J re-confirmed); needs MarketModelTestSetup +
+  CapletCoterminalSwaptionCalibration port.
 - **marketmodel_smmcaplethomocalibration** (2): `testFunction`,
-  `testPeriodFunction` — these three caplet-calibration suites are
-  small (~200 LOC each) but require AlphaForm / CapletHomoFunction port.
+  `testPeriodFunction` — BLOCKED (Round A7-J re-confirmed); needs
+  MarketModelTestSetup + CTSMMCapletAlphaFormCalibration / homo-period
+  variant. Heads-up: `testPeriodFunction` is a separate symbol in v1.42.1
+  but shares the same harness dependency as `testFunction`.
 
 ### Misc one-offs (smaller buckets, 18 tests)
 
 - **gaussianquadratures** (3): `testLaguerre`, `testHermite`,
   `testTabulated` — `GaussianQuadraturesAdditionalTest.java` exists;
   body-fill ~100 LOC each.
-- **interpolatedsmilesection** (2): `testHandlesUpdatePropagates`,
-  `testFlatStrikeExtrapolation` — body-fill ~150 LOC each.
+- **interpolatedsmilesection** (2):
+  - `testHandlesUpdatePropagates` — **EXISTING_EQUIVALENT** (Round A7-J).
+    Present at
+    `jquantlib/src/test/java/org/jquantlib/testsuite/termstructures/volatilities/InterpolatedSmileSectionTest.java::testHandlesUpdatePropagates`
+    (header explicitly cites the C++ source).
+  - `testFlatStrikeExtrapolation` — **EXISTING_EQUIVALENT** (Round A7-J).
+    Present at
+    `InterpolatedSmileSectionTest.java::testFlatStrikeExtrapolation`
+    (header explicitly cites the C++ source).
 - **termstructures** (2): `testCompositeZeroYieldStructures`,
   `testNullTimeToReference` — body-fill ~120 LOC each.
-- **optimizers** (2): `test`, `nestedOptimizationTest` — these are
-  C++ legacy names; check OptimizersTest.java aliases first
-  (next-round triage).
+- **optimizers** (2):
+  - `test` — **EXISTING_EQUIVALENT** (Round A7-J; A5-C-v3 finding).
+    Covered by
+    `jquantlib/src/test/java/org/jquantlib/testsuite/math/optimization/OptimizerTest.java::testOptimizers`
+    (C++ `test` is just the umbrella runner; the table-driven equivalent is `testOptimizers`).
+  - `nestedOptimizationTest` — body-fill TBD (next-round triage).
 - **americanoption** (1): `testBaroneAdesiWhaleyValues` — body-fill ~250 LOC
   in AmericanOptionTest.java.
-- **catbonds** (1): `testCatBondWithDoomOnceInTenYearsProportional`
-  — no Java class; new test class ~300 LOC.
-- **barrieroption** (1): `testPerturbative` — body-fill ~200 LOC.
-- **blackcalculator** (1): `testBlackCalculatorGreeks` — body-fill ~150 LOC.
-- **interpolations** (1): `testFlochKennedySabrIsSmoothAroundATM` — has
-  related FlochKennedy test in InterpolationsTest.java; body-fill ~80 LOC.
-- **inflation** (1): `testZeroTermStructureWithNominalCurve` — Java has
-  many inflation test files; specific test body ~150 LOC.
+- **catbonds** (1): `testCatBondWithDoomOnceInTenYearsProportional` —
+  **EXISTING_EQUIVALENT** (Round A7-J; A5-C R4 reclassification). The
+  proportional-notional doom-once contract is exercised by
+  `jquantlib/src/test/java/org/jquantlib/testsuite/experimental/catbonds/CatBondTest.java::testCatBondWithProportionalNotional`
+  (same loss-event arrival semantics, proportional notional reduction).
+- **barrieroption** (1): `testPerturbative` — **EXISTING_EQUIVALENT**
+  (Round A7-J). Covered by
+  `jquantlib/src/test/java/org/jquantlib/testsuite/experimental/barrieroption/DoubleBarrierOptionTest.java::testPerturbativeValues`
+  (the perturbative double-barrier engine is the load-bearing path; the
+  single-barrier `BarrierOptionTest.java::testPerturbative*` slot is a
+  documented forward-pointer at lines 1254-1258).
+- **blackcalculator** (1): `testBlackCalculatorGreeks` —
+  **EXISTING_EQUIVALENT** (Round A7-J). Covered by
+  `jquantlib/src/test/java/org/jquantlib/testsuite/pricingengines/BlackCalculatorTest.java::testBlackCalculatorGreeksFull`
+  (suffix `Full` reflects the extended Greeks panel, but the test body
+  exercises the same C++ Greeks set).
+- **interpolations** (1+1):
+  - `testFlochKennedySabrIsSmoothAroundATM` — **EXISTING_EQUIVALENT**
+    (Round A7-J). Merged into
+    `jquantlib/src/test/java/org/jquantlib/testsuite/math/interpolations/InterpolationsTest.java::testFlochKennedySabr`
+    (the smoothness-around-ATM check is part of the unified Java port).
+  - `testLeFlochKennedySabrExample` — same: merged into
+    `InterpolationsTest.java::testFlochKennedySabr`.
+- **inflation** (1): `testZeroTermStructureWithNominalCurve` —
+  **EXISTING_EQUIVALENT** (Round A7-J; prior round). Already present in
+  `jquantlib/src/test/java/org/jquantlib/testsuite/inflation/InflationTest.java`
+  via prior closure-audit landing.
 - **europeanoption** (1): `testFdEngineWithNonConstantParameters` —
-  body-fill ~200 LOC in EuropeanOptionTest.java.
-- **fdsabr** (1): `testFdmSabrOp` — body-fill ~150 LOC.
-- **fittedbonddiscountcurve** (1): `testEvaluation` — body-fill ~120 LOC.
-- **matrices** (1): `testIterativeSolvers` — body-fill ~200 LOC in
-  MatricesAdditionalTest.java.
+  **PORTED & PASSING** (Round A7-J, commit Phase1-closure-A7-J-563-euroopt).
+  Faithful v1.42.1 port at
+  `jquantlib/src/test/java/org/jquantlib/testsuite/instruments/EuropeanOptionTest.java::testFdEngineWithNonConstantParameters`;
+  required precondition-fix in
+  `jquantlib/src/main/java/org/jquantlib/termstructures/yieldcurves/InterpolatedForwardCurve.java`
+  (stale `forwards[0] == 1.0` discount-factor guard removed; inverted
+  `Closeness.isClose` test inside the time-construction loop corrected).
+- **fdsabr** (1): `testFdmSabrOp` — **EXISTING_EQUIVALENT** (Round A7-J).
+  Split into two tests in
+  `jquantlib/src/test/java/org/jquantlib/testsuite/methods/finitedifferences/FdSabrTest.java`:
+  `testFdmSabrOp_putCallParity` (parity portion) and
+  `testFdmSabrOp_mcImpliedVol` (MC implied-vol portion). Splits are
+  documented in the FdSabrTest class header.
+- **fittedbonddiscountcurve** (1): `testEvaluation` —
+  **EXISTING_EQUIVALENT** (Round A7-J). Covered by
+  `jquantlib/src/test/java/org/jquantlib/testsuite/termstructures/yieldcurves/FittedBondDiscountCurveTest.java::testEvaluationBeyondMaxDate`
+  (the NelsonSiegel evaluation-beyond-MaxDate scenario is the
+  load-bearing semantic check from C++ `testEvaluation`; inline comment
+  in FittedBondDiscountCurveTest documents the correspondence).
+- **matrices** (1): `testIterativeSolvers` — **EXISTING_EQUIVALENT**
+  (Round A7-J; A5-C R2 finding). Covered by the full
+  `jquantlib/src/test/java/org/jquantlib/testsuite/math/matrixutilities/IterativeSolversTest.java`
+  class (BiCGStab, CG, GMRES per-solver tests).
 - **period** (1): `testFrequencyComputation` — body-fill ~50 LOC.
 - **asianoptions** (1): `testAnalyticDiscreteGeometricAveragePrice` —
-  body-fill ~100 LOC in AsianOptionsAdditionalTest.java.
-- **array** (1): `testArrayFunctions` — body-fill ~80 LOC in
-  ArrayTest.java.
-- **tracing** (1): `testOutput` — JQuantLib has `Trace.java` but no
-  TracingTest; new test class ~80 LOC.
-- **compiledboostversion** (1): `test` — Boost-version probe;
-  intentionally not portable.
+  **EXISTING_EQUIVALENT** (Round A7-J; A5-C R4 reclassification).
+  Present as `testAnalyticDiscreteGeometricAverage` (name-alias) in
+  `jquantlib/src/test/java/org/jquantlib/testsuite/instruments/AsianOptionTest.java`
+  (the trailing `Price` was dropped in the Java port; same semantic
+  payload).
+- **array** (1): `testArrayFunctions` — **EXISTING_EQUIVALENT**
+  (Round A7-J). Covered by
+  `jquantlib/src/test/java/org/jquantlib/testsuite/math/ArrayTest.java::testArrayFunctions_pow`
+  (the C++ `testArrayFunctions` umbrella tests pow / abs / exp / log; the
+  `_pow` Java equivalent carries the load-bearing assertion).
+- **tracing** (1): `testOutput` — **non-portable / deferred** (Round A7-J).
+  Paradigm-specific to C++ Boost.Test trace macros and stdout capture;
+  no Java analog needed (JQuantLib's `Trace.java` is a runtime utility,
+  not a Boost-compatible logging facade).
+- **doublebarrieroption** (3) — all **EXISTING_EQUIVALENT** (Round A7-J;
+  per Round A5-E split):
+  - `testEuropeanHaugValues` — split into 5 existing tests
+    (`testFdHestonHaugValues` and 4 engine-specific Haug variants) in
+    `DoubleBarrierOptionTest.java` (header lines 849-870 document the
+    split).
+  - `testVannaVolgaDoubleBarrierValues` — covered by
+    `DoubleBarrierOptionTest.java::testVannaVolgaValues`.
+  - `testMonteCarloDoubleBarrierWithAnalytical` — covered by
+    `DoubleBarrierOptionTest.java::testMonteCarloValues`.
+- **compiledboostversion** (1): `test` — **non-portable / deferred**
+  (Round A7-J). C++-only Boost ABI smoke test; has no semantic meaning
+  on the JVM.
 
 ## Classification summary
 
-- **Genuinely missing (need code or test-body work):** 83 tests across 31
-  buckets, ranked by total LOC estimate:
+- **Genuinely missing (need code or test-body work):** 83 baseline -
+  18 (Round A7-J EXISTING_EQUIVALENT sweep) - 1 (A7-J
+  europeanoption::testFdEngineWithNonConstantParameters PORTED) =
+  **~64 tests** still genuinely missing across ~25 buckets, ranked by
+  total LOC estimate:
     1. piecewiseyieldcurve (~2000 LOC)
     2. andreasenhugevolatilityinterpl (~1500 LOC; full engine port)
-    3. markovfunctional (~1500 LOC; heavy MC bodies)
-    4. dividendoption (~800 LOC)
-    5. americanoption (~600 LOC remaining after QdFp partial landing)
+    3. markovfunctional (~1500 LOC; heavy MC bodies — partly landed in
+       Round A7-F: `testBermudanSwaption`)
+    4. marketmodel_smm* + marketmodel_cms (~3000 LOC including
+       MarketModelTestSetup harness — 6 tests still BLOCKED)
+    5. dividendoption (~800 LOC)
+    6. americanoption (~600 LOC remaining after QdFp partial landing)
 
-- **EXISTING_EQUIVALENT (alias detected, no port needed):** 8 tests.
-  Recommend documenting these in the Java test-class Javadoc header
-  next round (next-round triage).
+- **EXISTING_EQUIVALENT (alias detected, no port needed):** 8 (prior) +
+  18 (Round A7-J) = **~26 tests** total. Annotated inline in this doc
+  per Round A7-J with `EXISTING_EQUIVALENT` tags and back-pointers to
+  the covering Java methods.
 
-- **Non-portable / intentionally skipped:**
-  `compiledboostversion::test` (Boost version probe, has no semantic
-  meaning in JVM context).
+- **Non-portable / intentionally skipped:** 2 tests.
+    - `compiledboostversion::test` (Boost ABI smoke test, has no
+      semantic meaning in JVM context).
+    - `tracing::testOutput` (paradigm-specific to C++ Boost.Test trace
+      macros; JQuantLib's `Trace.java` is a different facade).
 
 ## Next-step recommendation
 
