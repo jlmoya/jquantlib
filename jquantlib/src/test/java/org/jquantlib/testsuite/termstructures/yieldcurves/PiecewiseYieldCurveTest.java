@@ -48,10 +48,14 @@ import org.jquantlib.instruments.bonds.FixedRateBond;
 import org.jquantlib.math.interpolations.CubicInterpolation;
 import org.jquantlib.math.interpolations.Interpolation.Interpolator;
 import org.jquantlib.math.interpolations.factories.BackwardFlat;
+import org.jquantlib.math.interpolations.factories.ConvexMonotone;
 import org.jquantlib.math.interpolations.factories.Cubic;
+import org.jquantlib.math.interpolations.factories.ForwardFlat;
+import org.jquantlib.math.interpolations.factories.KrugerLog;
 import org.jquantlib.math.interpolations.factories.Linear;
 import org.jquantlib.math.interpolations.factories.LogCubic;
 import org.jquantlib.math.interpolations.factories.LogLinear;
+import org.jquantlib.math.interpolations.factories.MonotonicLogCubic;
 import org.jquantlib.pricingengines.PricingEngine;
 import org.jquantlib.pricingengines.bond.DiscountingBondEngine;
 import org.jquantlib.pricingengines.swap.DiscountingSwapEngine;
@@ -1217,6 +1221,65 @@ public class PiecewiseYieldCurveTest {
 	    curve.discount(1.0);
 	}
 
+	/**
+	 * testDefaultInstantiation — port of v1.42.1
+	 * test-suite/piecewiseyieldcurve.cpp:1067 BOOST_AUTO_TEST_CASE.
+	 * <p>
+	 * Compile-only test: instantiates {@link PiecewiseYieldCurve} with every
+	 * yield-curve interpolator factory that has a default ctor in C++.
+	 * The C++ source exercises seven combinations:
+	 * <ul>
+	 *   <li>{@code Discount + LogLinear}</li>
+	 *   <li>{@code Discount + SplineLogCubic} (inline subclass of {@code LogCubic})</li>
+	 *   <li>{@code Discount + MonotonicLogCubic}</li>
+	 *   <li>{@code Discount + KrugerLog}</li>
+	 *   <li>{@code ForwardRate + BackwardFlat}</li>
+	 *   <li>{@code ForwardRate + ForwardFlat}</li>
+	 *   <li>{@code ForwardRate + ConvexMonotone}</li>
+	 * </ul>
+	 * Since Java uses class tokens instead of templates, factories without a
+	 * no-arg constructor (the {@code SplineLogCubic} case) are passed through
+	 * the {@code Interpolator}-bearing overload of {@code PiecewiseYieldCurve}.
+	 * Bootstrap is lazy in Java just as in C++, so no curve method is invoked.
+	 */
+	@Test
+	public void testDefaultInstantiation() {
+	    QL.info("Testing instantiation of curves without passing an interpolator...");
+
+	    final CommonVars vars = new CommonVars();
+
+	    final LogCubic splineLogCubic = new LogCubic(
+	            CubicInterpolation.DerivativeApprox.Spline, false,
+	            CubicInterpolation.BoundaryCondition.SecondDerivative, 0.0,
+	            CubicInterpolation.BoundaryCondition.SecondDerivative, 0.0);
+
+	    // no actual tests at runtime; this verifies all these instantiations
+	    // construct without throwing (no NPE / reflective failure for the
+	    // newly-ported interpolator factories).
+	    new PiecewiseYieldCurve(
+	            Discount.class, LogLinear.class, IterativeBootstrap.class,
+	            vars.settlement, vars.instruments, new Actual360());
+	    new PiecewiseYieldCurve(
+	            Discount.class, LogCubic.class, IterativeBootstrap.class,
+	            vars.settlement, vars.instruments, new Actual360(),
+	            new Handle[0], new Date[0], 1.0e-12, splineLogCubic);
+	    new PiecewiseYieldCurve(
+	            Discount.class, MonotonicLogCubic.class, IterativeBootstrap.class,
+	            vars.settlement, vars.instruments, new Actual360());
+	    new PiecewiseYieldCurve(
+	            Discount.class, KrugerLog.class, IterativeBootstrap.class,
+	            vars.settlement, vars.instruments, new Actual360());
+	    new PiecewiseYieldCurve(
+	            ForwardRate.class, BackwardFlat.class, IterativeBootstrap.class,
+	            vars.settlement, vars.instruments, new Actual360());
+	    new PiecewiseYieldCurve(
+	            ForwardRate.class, ForwardFlat.class, IterativeBootstrap.class,
+	            vars.settlement, vars.instruments, new Actual360());
+	    new PiecewiseYieldCurve(
+	            ForwardRate.class, ConvexMonotone.class, IterativeBootstrap.class,
+	            vars.settlement, vars.instruments, new Actual360());
+	}
+
 	// =====================================================================
 	// Phase1-cert-D5-B-R4 — BLOCKED tests from v1.42.1 piecewiseyieldcurve.cpp
 	// (Re-verified 2026-05-20 by Round A6-A; see
@@ -1237,13 +1300,12 @@ public class PiecewiseYieldCurveTest {
 	//   only partially wired in Java (the BlackOrBachelier flow). Effort:
 	//   blocked on ConvexMonotone.
 	//
-	// testDefaultInstantiation (cpp:1067) — BLOCKED
-	//   Compile-only test that instantiates PiecewiseYieldCurve with
-	//   SplineLogCubic, MonotonicLogCubic, KrugerLog, ForwardFlat,
-	//   and ConvexMonotone. Java is missing MonotonicLogCubic, KrugerLog,
-	//   and ConvexMonotone factories. Effort: ~200 LOC across interpolator
-	//   factory ports; not strictly load-bearing since tested instantiations
-	//   exercise no runtime invariant.
+	// testDefaultInstantiation (cpp:1067) — PORTED in Phase1-closure-A7-B-562
+	//   See @Test testDefaultInstantiation() above. Required infra ports of
+	//   MonotonicLogCubic + KrugerLog factories and a faithful port of
+	//   ConvexMonotoneInterpolation + ConvexMonotone factory (the latter at
+	//   ~730 LOC mirroring the C++ detail::SectionHelper hierarchy and the
+	//   ConvexMonotoneImpl::update() Hagan/West machinery).
 	//
 	// testLargeRates (cpp:1231) — BLOCKED
 	//   Java's IterativeBootstrap constructor only accepts a Curve class
