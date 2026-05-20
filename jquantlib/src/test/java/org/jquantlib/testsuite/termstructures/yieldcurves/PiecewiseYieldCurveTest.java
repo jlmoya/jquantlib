@@ -71,6 +71,7 @@ import org.jquantlib.termstructures.yieldcurves.FlatForward;
 import org.jquantlib.termstructures.yieldcurves.ForwardRate;
 import org.jquantlib.termstructures.yieldcurves.FraRateHelper;
 import org.jquantlib.termstructures.yieldcurves.FuturesRateHelper;
+import org.jquantlib.termstructures.yieldcurves.GlobalBootstrap;
 import org.jquantlib.termstructures.yieldcurves.PiecewiseYieldCurve;
 import org.jquantlib.termstructures.yieldcurves.SwapRateHelper;
 import org.jquantlib.termstructures.yieldcurves.Traits;
@@ -1446,6 +1447,111 @@ public class PiecewiseYieldCurveTest {
 	                String.format("%s swap: estimated=%.10f expected=%.10f error=%.2e tol=%.2e",
 	                              tenor, estimatedRate, expectedRate, error, tolerance));
 	        }
+	    }
+	}
+
+	/**
+	 * Faithful port of {@code test-suite/piecewiseyieldcurve.cpp:1742}
+	 * {@code BOOST_AUTO_TEST_CASE(testGlobalBootstrapInstrumentWeights)}.
+	 * <p>
+	 * Verifies that {@link GlobalBootstrap} produces equivalent curves whether the
+	 * over-determined helper set is handled via per-instrument weights ({@code w1},
+	 * {@code w2}) or via the additional-helpers / additional-dates / additional-penalties
+	 * scaffold using the same weights. Two 6-month deposits at different rates share a
+	 * single pillar date; the weighted residual is the only thing that distinguishes the
+	 * two equivalent formulations.
+	 * <p>
+	 * Java mapping notes:
+	 * <ul>
+	 *   <li>C++ {@code CommonVars(Date(23, Oct, 2025))} → {@link CommonVars} default ctor
+	 *       (today is irrelevant; the only date that matters is the curve reference =
+	 *       {@code vars.today}).</li>
+	 *   <li>C++ {@code GlobalBootstrap<CurveType>(1E-10, nullptr, nullptr, {w1, w2})} →
+	 *       Java {@code new GlobalBootstrap(PiecewiseYieldCurve.class, 1.0e-10, null, null, new double[]{w1, w2})}.</li>
+	 *   <li>C++ {@code GlobalBootstrap<CurveType>(helpers, addDates, addPenalties, 1E-10)}
+	 *       → Java full constructor with {@code additionalHelpers = helpers},
+	 *       {@code additionalDatesProvider = addDates}, {@code additionalPenalties = addPenalties}.</li>
+	 *   <li>C++ {@code curve->discount(0.3)} → Java {@code curve.discount(0.3)} (time-based).</li>
+	 * </ul>
+	 */
+	@Test
+	public void testGlobalBootstrapInstrumentWeights() {
+	    QL.info("Testing global-bootstrap instrument weights...");
+
+	    final CommonVars vars = new CommonVars();
+
+	    // build a curve with overdetermined helper set: two 6M deposits at 1% and 2%
+	    final RateHelper[] helpers = new RateHelper[2];
+	    helpers[0] = new DepositRateHelper(0.01, new Period(6, TimeUnit.Months), 2,
+	            new Target(), BusinessDayConvention.ModifiedFollowing, true, new Actual360());
+	    helpers[1] = new DepositRateHelper(0.02, new Period(6, TimeUnit.Months), 2,
+	            new Target(), BusinessDayConvention.ModifiedFollowing, true, new Actual360());
+
+	    // curve1 uses traditional helpers with weights w1 and w2
+	    final double w1 = 0.1;
+	    final double w2 = 0.9;
+
+	    final GlobalBootstrap bootstrap1 = new GlobalBootstrap(
+	            PiecewiseYieldCurve.class, 1.0e-10, null, null, new double[]{w1, w2});
+	    final YieldTermStructure curve1 = new PiecewiseYieldCurve(
+	            Discount.class, LogLinear.class, GlobalBootstrap.class,
+	            vars.today, helpers, new Actual360(),
+	            new Handle/*<Quote>*/[0], new Date[0], 1.0e-10, new LogLinear(), bootstrap1);
+
+	    // curve2 uses custom dates and penalties using the same weights;
+	    // the "main" helper list is empty and the same 2 deposits are passed via
+	    // additionalHelpers.
+	    final RateHelper[] empty = new RateHelper[0];
+
+	    // Capture pillar dates for the additionalDatesProvider lambda. In Java they are
+	    // not lazily computed (no need for thunk semantics): the helpers were already
+	    // initializeDates()-ed at construction time.
+	    final Date pillar0 = helpers[0].latestDate();
+	    final Date pillar1 = helpers[1].latestDate();
+	    final java.util.List<Date> addDatesList = new java.util.ArrayList<Date>();
+	    addDatesList.add(pillar0);
+	    addDatesList.add(pillar1);
+
+	    final java.util.List<RateHelper> addHelpersList = new java.util.ArrayList<RateHelper>();
+	    addHelpersList.add(helpers[0]);
+	    addHelpersList.add(helpers[1]);
+
+	    final GlobalBootstrap.AdditionalDatesProvider addDates = new GlobalBootstrap.AdditionalDatesProvider() {
+	        @Override
+	        public java.util.List<Date> get() {
+	            return addDatesList;
+	        }
+	    };
+	    final GlobalBootstrap.AdditionalPenalties addPenalties = new GlobalBootstrap.AdditionalPenalties() {
+	        @Override
+	        public org.jquantlib.math.matrixutilities.Array evaluate(final double[] times, final double[] data) {
+	            final org.jquantlib.math.matrixutilities.Array errors =
+	                    new org.jquantlib.math.matrixutilities.Array(2);
+	            errors.set(0, w1 * helpers[0].quoteError());
+	            errors.set(1, w2 * helpers[1].quoteError());
+	            return errors;
+	        }
+	    };
+
+	    final GlobalBootstrap bootstrap2 = new GlobalBootstrap(
+	            PiecewiseYieldCurve.class, 1.0e-10, null, null, null,
+	            addHelpersList, addDates, addPenalties);
+	    final YieldTermStructure curve2 = new PiecewiseYieldCurve(
+	            Discount.class, LogLinear.class, GlobalBootstrap.class,
+	            vars.today, empty, new Actual360(),
+	            new Handle/*<Quote>*/[0], new Date[0], 1.0e-10, new LogLinear(), bootstrap2);
+
+	    // check that both approaches result in the same curve at t=0.3
+	    final double d1 = curve1.discount(0.3);
+	    final double d2 = curve2.discount(0.3);
+	    // C++ tolerance: 1E-13 (close-fraction). Java uses absolute-vs-relative; we mirror C++
+	    // by checking abs(d1-d2)/abs(d1) <= 1e-13.
+	    final double relErr = Math.abs(d1 - d2) / Math.abs(d1);
+	    final double tolerance = 1.0e-13;
+	    if (relErr > tolerance) {
+	        throw new RuntimeException(String.format(
+	                "GlobalBootstrap weighted-vs-penalty mismatch at t=0.3: curve1=%.16f curve2=%.16f relErr=%.2e tol=%.2e",
+	                d1, d2, relErr, tolerance));
 	    }
 	}
 
