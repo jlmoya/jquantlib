@@ -140,11 +140,17 @@ public class HestonSLVFDMModel extends LazyObject {
     /**
      * Build the variance mesher.
      *
-     * <p>Approximate port: the C++ helper uses a multi-critical-point
-     * {@code Concentrating1dMesher} (3 cPoints: lower, v0, upper) which the Java {@link Concentrating1dMesher} does not
-     * yet expose (single-point variant only). Until that overload lands we use the single-point variant centred at
-     * {@code v0} — this anchors the grid around the Heston long-run variance but loses fine boundary control. Phase
-     * 5h.5-SLV-c carry-forward.
+     * <p>Mirrors C++ v1.42.1
+     * {@code hestonslvfdmmodel.cpp::varianceMesher} (lines 53-121): a
+     * multi-critical-point {@link Concentrating1dMesher} with three cPoints
+     * (lower / v0 / upper, with {@code requireCPoint=true} on v0) and a
+     * tolerance of {@code 1e-8}. The bounds are scanned over 11 evenly spaced
+     * times in {@code [t0, t1]} using the SquareRootProcessRNDCalculator's
+     * inverse CDF, then clamped to {@code params.vMin}. For the {@code Log}
+     * trafo the cPoints sit in log-variance space; for {@code Plain} and
+     * {@code Power} they sit in plain variance space. Phase 5e.5b-CFC-d-308:
+     * un-blocks {@code testLocalVolsvSLVPropDensity} by providing the proper
+     * boundary-density concentration that the single-cPoint variant lacked.
      */
     private static Fdm1dMesher buildVarianceMesher(final SquareRootProcessRNDCalculator rnd, final double t0,
             final double t1, final int vGrid, final double v0, final HestonSLVFokkerPlanckFdmParams params) {
@@ -167,7 +173,14 @@ public class HestonSLVFDMModel extends LazyObject {
             ub = upperBound;
             v0Center = v0;
         }
-        return new Concentrating1dMesher(lb, ub, vGrid, v0Center, params.v0Density);
+
+        final List< Concentrating1dMesher.CPointSpec > cPoints =
+                new ArrayList< Concentrating1dMesher.CPointSpec >(3);
+        cPoints.add(new Concentrating1dMesher.CPointSpec(lb, params.vLowerBoundDensity, false));
+        cPoints.add(new Concentrating1dMesher.CPointSpec(v0Center, params.v0Density, true));
+        cPoints.add(new Concentrating1dMesher.CPointSpec(ub, params.vUpperBoundDensity, false));
+
+        return new Concentrating1dMesher(lb, ub, vGrid, cPoints, 1.0e-8);
     }
 
     /** Integrate the joint pdf over the mesher with a power-Jacobian for Power trafo. */

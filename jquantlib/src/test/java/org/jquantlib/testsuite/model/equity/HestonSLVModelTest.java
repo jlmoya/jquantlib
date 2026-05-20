@@ -1655,16 +1655,6 @@ public class HestonSLVModelTest {
      * Boost-equivalent PDF at deep-tail v). Investigation/un-ignore deferred;
      * not a LocalVolSurface regression.
      */
-    @Ignore("Phase 5e.5b-CFC-d-249 — LocalVolSurface realigned (forward-aware "
-            + "time derivative + C++ strike-perturbation stencil dy=(|y|>0.001)?y*1e-4:1e-6, "
-            + "Phase 5e.5b-CFC-d-225). HestonSLVFDMModel calibration now runs "
-            + "end-to-end (no NPE, no Library exception escapes NoExceptLocalVolSurface), "
-            + "but the first density sample at t=0.215, v=2.5e-6 (the vMin floor) "
-            + "misses the closed-form RND by expected=205.006, calculated=193.435 "
-            + "(|Δ|=11.57, |Δ/exp|=5.6%) — exceeds C++ disjunctive tol "
-            + "(|Δ|<=0.01 OR |Δ/exp|<=0.04). Residual likely in HestonSLVFDMModel "
-            + "rescale-step variance-mesher rebuild or SquareRootProcessRNDCalculator "
-            + "deep-tail PDF, NOT in LocalVolSurface (which is now C++-aligned).")
     @Test
     public void testLocalVolsvSLVPropDensity() {
         final Date todaysDate = new Date(5, Month.October, 2015);
