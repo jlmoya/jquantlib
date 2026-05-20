@@ -62,6 +62,7 @@ import java.util.Map.Entry;
 
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
+import org.jquantlib.cashflow.FixedDividend;
 import org.jquantlib.daycounters.Actual360;
 import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.daycounters.DayCounter;
@@ -69,6 +70,7 @@ import org.jquantlib.daycounters.Thirty360;
 import org.jquantlib.exercise.AmericanExercise;
 import org.jquantlib.exercise.EuropeanExercise;
 import org.jquantlib.exercise.Exercise;
+import org.jquantlib.instruments.DividendSchedule;
 import org.jquantlib.instruments.Option;
 import org.jquantlib.instruments.PlainVanillaPayoff;
 import org.jquantlib.instruments.StrikedTypePayoff;
@@ -79,6 +81,7 @@ import org.jquantlib.pricingengines.AnalyticEuropeanEngine;
 import org.jquantlib.pricingengines.PricingEngine;
 import org.jquantlib.pricingengines.vanilla.BaroneAdesiWhaleyApproximationEngine;
 import org.jquantlib.pricingengines.vanilla.BjerksundStenslandApproximationEngine;
+import org.jquantlib.pricingengines.vanilla.FdBlackScholesShoutEngine;
 import org.jquantlib.pricingengines.vanilla.FdBlackScholesVanillaEngine;
 import org.jquantlib.pricingengines.vanilla.JuQuadraticApproximationEngine;
 import org.jquantlib.pricingengines.vanilla.QdFpAmericanEngine;
@@ -768,6 +771,179 @@ public class AmericanOptionTest {
                 midPrice >= latePrice - 1e-8);
         assertTrue("Full window should give highest price: full=" + fullPrice + " 6M=" + midPrice,
                 fullPrice >= midPrice - 1e-8);
+    }
+
+    /** Faithful port of {@code test-suite/americanoption.cpp:562} {@code BOOST_AUTO_TEST_CASE(testFDShoutNPV)}. */
+    @Test
+    public void testFDShoutNPV() {
+        QL.info("Testing finite-differences shout option pricing...");
+
+        final DayCounter dc = new Actual365Fixed();
+        final Date today = new Date(4, Month.February, 2021);
+        new Settings().setEvaluationDate(today);
+
+        final SimpleQuote spotQuote = new SimpleQuote(100.0);
+        final Handle<Quote> spot = new Handle<Quote>(spotQuote);
+        final YieldTermStructure qTS = Utilities.flatRate(today, new SimpleQuote(0.03), dc);
+        final YieldTermStructure rTS = Utilities.flatRate(today, new SimpleQuote(0.06), dc);
+        final BlackVolTermStructure volTS = Utilities.flatVol(today, new SimpleQuote(0.25), dc);
+
+        final BlackScholesMertonProcess process = new BlackScholesMertonProcess(
+                spot,
+                new Handle<YieldTermStructure>(qTS),
+                new Handle<YieldTermStructure>(rTS),
+                new Handle<BlackVolTermStructure>(volTS));
+
+        final Date maturityDate = today.add(new Period(5, TimeUnit.Years));
+
+        // strike, type, expected
+        final double[][] descs = {
+                { 105.0, 0.0, 19.136 }, // Put
+                { 105.0, 1.0, 28.211 }, // Call
+                { 120.0, 0.0, 28.02 },  // Put
+                {  80.0, 1.0, 40.785 }, // Call
+        };
+
+        final FdBlackScholesShoutEngine engine = new FdBlackScholesShoutEngine(
+                process, 400, 200, 0, FdmSchemeDesc.Douglas());
+
+        for (final double[] desc : descs) {
+            final double strike = desc[0];
+            final Option.Type type = (desc[1] == 1.0) ? Option.Type.Call : Option.Type.Put;
+            final double expected = desc[2];
+
+            final VanillaOption option = new VanillaOption(
+                    new PlainVanillaPayoff(type, strike),
+                    new AmericanExercise(today, maturityDate));
+            option.setPricingEngine(engine);
+
+            final double calculated = option.NPV();
+            final double tol = 2.0e-2; // matches v1.42.1 FDM grid tolerance (400x200)
+            final double diff = Math.abs(calculated - expected);
+            if (diff > tol) {
+                fail("failed to reproduce known shout option price for "
+                        + "\n    strike:     " + strike
+                        + "\n    option type:" + ((type == Option.Type.Call) ? "Call" : "Put")
+                        + "\n    calculated: " + calculated
+                        + "\n    expected:   " + expected
+                        + "\n    difference: " + diff
+                        + "\n    tolerance:  " + tol);
+            }
+        }
+    }
+
+    /** Faithful port of {@code test-suite/americanoption.cpp:619} {@code BOOST_AUTO_TEST_CASE(testZeroVolFDShoutNPV)}. */
+    @Test
+    public void testZeroVolFDShoutNPV() {
+        QL.info("Testing zero volatility shout option pricing with discrete dividends...");
+
+        final DayCounter dc = new Actual365Fixed();
+        final Date today = new Date(14, Month.February, 2021);
+        new Settings().setEvaluationDate(today);
+
+        final SimpleQuote spotQuote = new SimpleQuote(100.0);
+        final Handle<Quote> spot = new Handle<Quote>(spotQuote);
+        final YieldTermStructure qTS = Utilities.flatRate(today, new SimpleQuote(0.03), dc);
+        final YieldTermStructure rTS = Utilities.flatRate(today, new SimpleQuote(0.07), dc);
+        final BlackVolTermStructure volTS = Utilities.flatVol(today, new SimpleQuote(1.0e-6), dc);
+
+        final BlackScholesMertonProcess process = new BlackScholesMertonProcess(
+                spot,
+                new Handle<YieldTermStructure>(qTS),
+                new Handle<YieldTermStructure>(rTS),
+                new Handle<BlackVolTermStructure>(volTS));
+
+        final Date maturityDate = today.add(new Period(1, TimeUnit.Years));
+        final Date dividendDate = today.add(new Period(3, TimeUnit.Months));
+        final double dividendAmount = 10.0;
+
+        final DividendSchedule dividends = new DividendSchedule();
+        dividends.add(new FixedDividend(dividendAmount, dividendDate));
+
+        final VanillaOption option = new VanillaOption(
+                new PlainVanillaPayoff(Option.Type.Put, 100.0),
+                new AmericanExercise(today, maturityDate));
+        option.setPricingEngine(new FdBlackScholesVanillaEngine(
+                process, dividends, 50, 50, 0, FdmSchemeDesc.Douglas()));
+        final double americanNPV = option.NPV();
+
+        final VanillaOption option2 = new VanillaOption(
+                new PlainVanillaPayoff(Option.Type.Put, 100.0),
+                new AmericanExercise(today, maturityDate));
+        option2.setPricingEngine(new FdBlackScholesShoutEngine(
+                process, dividends, 50, 50, 0, FdmSchemeDesc.Douglas()));
+        final double shoutNPV = option2.NPV();
+
+        final double df = rTS.discount(maturityDate) / rTS.discount(dividendDate);
+        final double tol = 1.0e-3;
+        final double diff = Math.abs(americanNPV - shoutNPV / df);
+
+        if (diff > tol) {
+            fail("failed to reproduce American option NPV with shout option pricing engine for "
+                    + "\n    calculated: " + (shoutNPV / df)
+                    + "\n    expected  : " + americanNPV
+                    + "\n    difference: " + diff
+                    + "\n    tolerance:  " + tol);
+        }
+    }
+
+    /** Faithful port of {@code test-suite/americanoption.cpp:675} {@code BOOST_AUTO_TEST_CASE(testLargeDividendShoutNPV)}. */
+    @Test
+    public void testLargeDividendShoutNPV() {
+        QL.info("Testing zero strike shout option pricing with discrete dividends...");
+
+        final DayCounter dc = new Actual365Fixed();
+        final Date today = new Date(21, Month.February, 2021);
+        new Settings().setEvaluationDate(today);
+
+        final double s0 = 100.0;
+        final double vol = 0.25;
+
+        final SimpleQuote spotQuote = new SimpleQuote(s0);
+        final Handle<Quote> spot = new Handle<Quote>(spotQuote);
+        final YieldTermStructure qTS = Utilities.flatRate(today, new SimpleQuote(0.00), dc);
+        final YieldTermStructure rTS = Utilities.flatRate(today, new SimpleQuote(0.00), dc);
+        final BlackVolTermStructure vTS = Utilities.flatVol(today, new SimpleQuote(vol), dc);
+
+        final BlackScholesMertonProcess process = new BlackScholesMertonProcess(
+                spot,
+                new Handle<YieldTermStructure>(qTS),
+                new Handle<YieldTermStructure>(rTS),
+                new Handle<BlackVolTermStructure>(vTS));
+
+        final Date maturityDate = today.add(new Period(6, TimeUnit.Months));
+        final Date dividendDate = today.add(new Period(3, TimeUnit.Months));
+        final double divAmount = 30.0;
+
+        final DividendSchedule dividends = new DividendSchedule();
+        dividends.add(new FixedDividend(divAmount, dividendDate));
+
+        final double strike = 80.0;
+        final VanillaOption option = new VanillaOption(
+                new PlainVanillaPayoff(Option.Type.Call, strike),
+                new AmericanExercise(today, maturityDate));
+        option.setPricingEngine(new FdBlackScholesShoutEngine(
+                process, dividends, 100, 400, 0, FdmSchemeDesc.Douglas()));
+        final double calculated = option.NPV();
+
+        final VanillaOption refOption = new VanillaOption(
+                new PlainVanillaPayoff(Option.Type.Call, strike),
+                new AmericanExercise(today, dividendDate));
+        refOption.setPricingEngine(new FdBlackScholesShoutEngine(
+                process, 100, 400, 0, FdmSchemeDesc.Douglas()));
+        final double expected = refOption.NPV()
+                * rTS.discount(maturityDate) / rTS.discount(dividendDate);
+
+        final double tol = 5.0e-2; // matches v1.42.1 — large-dividend FD cross-check tolerance
+        final double diff = Math.abs(expected - calculated);
+
+        if (diff > tol) {
+            fail("failed to reproduce American option NPV with shout option pricing engine for "
+                    + "\n    calculated: " + calculated
+                    + "\n    expected  : " + expected
+                    + "\n    difference: " + diff
+                    + "\n    tolerance:  " + tol);
+        }
     }
 
     /**
