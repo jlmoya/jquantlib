@@ -41,10 +41,14 @@ import org.jquantlib.instruments.BarrierType;
 import org.jquantlib.instruments.Option;
 import org.jquantlib.instruments.PlainVanillaPayoff;
 import org.jquantlib.instruments.StrikedTypePayoff;
+import org.jquantlib.methods.finitedifferences.schemes.FdmSchemeDesc;
 import org.jquantlib.methods.lattices.CoxRossRubinstein;
+import org.jquantlib.model.equity.HestonModel;
 import org.jquantlib.pricingengines.BlackFormula;
 import org.jquantlib.pricingengines.barrier.AnalyticDoubleBarrierEngine;
+import org.jquantlib.pricingengines.barrier.FdHestonDoubleBarrierEngine;
 import org.jquantlib.processes.BlackScholesMertonProcess;
+import org.jquantlib.processes.HestonProcess;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.SimpleQuote;
@@ -53,7 +57,6 @@ import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.termstructures.volatilities.BlackVarianceCurve;
 import org.jquantlib.testsuite.util.Utilities;
 import org.jquantlib.time.Date;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -291,6 +294,93 @@ public class DoubleBarrierOptionTest {
     public void testIkedaKunitomoValues() {
         QL.info("Testing AnalyticDoubleBarrierEngine (Ikeda/Kunitomo) against Haug's values...");
         runEngineCheck("Ikeda/Kunitomo", IKEDA_VALUES, EngineKind.IKEDA);
+    }
+
+    /**
+     * Mirrors the FdHestonDoubleBarrierEngine sub-block of
+     * {@code QuantLib::testEuropeanHaugValues} (v1.42.1
+     * {@code test-suite/doublebarrieroption.cpp:148}) — specifically the
+     * {@code if (barrierType == KnockOut) { ... FdHestonDoubleBarrierEngine ... }}
+     * branch at C++ lines 360-381.
+     *
+     * <p>The Heston parameters {@code (v0, kappa, theta, sigma, rho) =
+     * (v^2, 1.0, v^2, 0.001, 0.0)} make the Heston process degenerate to
+     * a near-deterministic Black-Scholes process (tiny vol-of-vol,
+     * stationary variance), so the BS Haug reference values apply.
+     * Tolerance {@code 0.025} matches C++ {@code tol = 0.025} ("error one
+     * order of magnitude lower than plain binomial").
+     *
+     * <p>The other 4 engines in C++ testEuropeanHaugValues (Ikeda/Kunitomo,
+     * SuoWang, Binomial CRR, Binomial Derman-Kani) are already covered by
+     * {@link #testIkedaKunitomoValues}, {@link #testSuoWangValues},
+     * {@link #testBinomialCRRValues}, {@link #testBinomialDermanKaniValues}.
+     */
+    @Test
+    public void testFdHestonHaugValues() {
+        QL.info("Testing FdHestonDoubleBarrierEngine against Haug's values "
+                + "(small-sigma Heston degenerate to BS)...");
+
+        final DayCounter dc = new Actual360();
+        final Date today = Date.todaysDate();
+        new Settings().setEvaluationDate(today);
+
+        final SimpleQuote spot = new SimpleQuote(0.0);
+        final SimpleQuote qRate = new SimpleQuote(0.0);
+        final YieldTermStructure qTS = Utilities.flatRate(today, qRate, dc);
+        final SimpleQuote rRate = new SimpleQuote(0.0);
+        final YieldTermStructure rTS = Utilities.flatRate(today, rRate, dc);
+        final SimpleQuote vol = new SimpleQuote(0.0);
+        final BlackVolTermStructure volTS = Utilities.flatVol(today, vol, dc);
+
+        // Subset of IKEDA_VALUES restricted to KnockOut (matching C++
+        // `if (barrierType == DoubleBarrier::KnockOut)` filter).
+        final HaugDouble[] fdHestonValues = new HaugDouble[] {
+                new HaugDouble(DoubleBarrierType.KnockOut, 80.0, 120.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.25, 0.15, 3.7516, 0.025),
+                new HaugDouble(DoubleBarrierType.KnockOut, 80.0, 120.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.25, 0.25, 2.6387, 0.025),
+                new HaugDouble(DoubleBarrierType.KnockOut, 80.0, 120.0, Option.Type.Put,  100, 100.0, 0.0, 0.1, 0.25, 0.15, 1.8600, 0.025),
+                new HaugDouble(DoubleBarrierType.KnockOut, 90.0, 110.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.25, 0.15, 1.2055, 0.025),
+                new HaugDouble(DoubleBarrierType.KnockOut, 90.0, 110.0, Option.Type.Put,  100, 100.0, 0.0, 0.1, 0.25, 0.15, 0.9473, 0.025),
+        };
+
+        for (final HaugDouble value : fdHestonValues) {
+            final Date exDate = today.add(timeToDays(value.t));
+            final Exercise exercise = new EuropeanExercise(exDate);
+
+            spot.setValue(value.s);
+            qRate.setValue(value.q);
+            rRate.setValue(value.r);
+            vol.setValue(value.v);
+
+            final StrikedTypePayoff payoff = new PlainVanillaPayoff(value.type, value.strike);
+            final DoubleBarrierOption opt = new DoubleBarrierOption(
+                    value.barrierType, value.barrierLo, value.barrierHi,
+                    0.0, payoff, exercise);
+
+            // C++ params: (rTS, qTS, spot, v^2, 1.0, v^2, 0.001, 0.0)
+            final double v2 = value.v * value.v;
+            final HestonProcess hestonProcess = new HestonProcess(
+                    new Handle<YieldTermStructure>(rTS),
+                    new Handle<YieldTermStructure>(qTS),
+                    new Handle<Quote>(spot),
+                    v2, 1.0, v2, 0.001, 0.0);
+            final HestonModel hestonModel = new HestonModel(hestonProcess);
+
+            // C++ grid: (tGrid=251, xGrid=76, vGrid=3)
+            opt.setPricingEngine(new FdHestonDoubleBarrierEngine(
+                    hestonModel, hestonProcess,
+                    251, 76, 3, 0,
+                    FdmSchemeDesc.Hundsdorfer()));
+
+            final double calculated = opt.NPV();
+            final double expected = value.result;
+            final double error = Math.abs(calculated - expected);
+            final String msg = String.format(
+                    "FdHeston(KO) mismatch: barrier=[%.0f,%.0f] type=%s strike=%.1f s=%.1f vol=%.2f t=%.2f -> "
+                            + "expected=%.4f calculated=%.4f error=%.4g (tol=%.4g)",
+                    value.barrierLo, value.barrierHi, value.type, value.strike,
+                    value.s, value.v, value.t, expected, calculated, error, value.tol);
+            assertTrue(msg, error <= value.tol);
+        }
     }
 
     /** Vanna/Volga FX-option fixture — one row from C++ {@code testVannaVolgaDoubleBarrierValues}. */
@@ -752,4 +842,29 @@ public class DoubleBarrierOptionTest {
             assertTrue(msg, error <= value.tol);
         }
     }
+
+    // ------------------------------------------------------------------
+    // EXISTING_EQUIVALENT ports from test-suite/doublebarrieroption.cpp (Phase1-D5-B-R3)
+    // ------------------------------------------------------------------
+    // testEuropeanHaugValues (cpp:148): EXISTING_EQUIVALENT — the C++ test
+    //   bundles 5 engines (Ikeda/Kunitomo, SuoWang, Binomial CRR, Binomial
+    //   Derman-Kani, FdHestonDoubleBarrierEngine for KO only). Java splits
+    //   them into separate test methods:
+    //     - testIkedaKunitomoValues
+    //     - testSuoWangValues
+    //     - testBinomialCRRValues
+    //     - testBinomialDermanKaniValues
+    //     - testFdHestonHaugValues (added Phase1-D5-B-R3 — KO subset).
+    //
+    // testVannaVolgaDoubleBarrierValues (cpp:385): EXISTING_EQUIVALENT —
+    //   covered by {@link #testVannaVolgaValues} above. The fixture and
+    //   tolerances are identical to C++ (1e-4 inner SuoWang, 5e-3 inner
+    //   Ikeda-Kunitomo).
+    //
+    // testMonteCarloDoubleBarrierWithAnalytical (cpp:525): EXISTING_EQUIVALENT —
+    //   covered by {@link #testMonteCarloValues} above. The MC vs analytical
+    //   cross-check is preserved, with the loose 1e-2 tolerance that C++
+    //   uses (gated by *precondition(if_speed(Fast)) in C++; Java treats
+    //   the @Test as always-on since MC is fast enough on JVM HotSpot).
+
 }
