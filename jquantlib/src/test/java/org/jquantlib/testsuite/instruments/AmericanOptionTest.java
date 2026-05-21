@@ -2083,6 +2083,129 @@ public class AmericanOptionTest {
         }
     }
 
+    /**
+     * Faithful port of {@code test-suite/americanoption.cpp:803}
+     * {@code BOOST_AUTO_TEST_CASE(testTodayIsDividendDate)}.
+     *
+     * <p>Verifies the FD Black-Scholes vanilla engine when the evaluation date coincides with a dividend
+     * date. In that case the stopping-time of the first step condition is exactly 0.0, and the C++
+     * {@code Fdm1DimSolver::thetaAt(...)} returns {@code Null<Real>()} so that
+     * {@code OneAssetOption::theta()} raises QL_REQUIRE. Java mirrors via
+     * {@link org.jquantlib.math.Constants#NULL_REAL}: {@code option.theta()} must throw.
+     *
+     * <p>Then the dividend date is shifted by one day; both NPV and theta must be well-defined and the
+     * Spot vs Escrowed models must agree on NPV to {@code 5e-2}.
+     *
+     * <p>Tolerance tier: loose ({@code 5e-2}) — matches C++ source.
+     */
+    @Test
+    public void testTodayIsDividendDate() {
+        System.out.println("::::: " + this.getClass().getSimpleName()
+                + "#testTodayIsDividendDate :::::");
+        System.out.println("Testing escrowed vs spot dividend model on dividend dates for American options...");
+
+        final DayCounter dc = new Actual360();
+        final Date today = new Date(27, Month.February, 2021);
+        new Settings().setEvaluationDate(today);
+
+        final SimpleQuote vol = new SimpleQuote(0.3);
+
+        final GeneralizedBlackScholesProcess process = new BlackScholesMertonProcess(
+                new Handle<Quote>(new SimpleQuote(100.0)),
+                new Handle<YieldTermStructure>(Utilities.flatRate(0.05, dc)),
+                new Handle<YieldTermStructure>(Utilities.flatRate(0.07, dc)),
+                new Handle<BlackVolTermStructure>(Utilities.flatVol(vol, dc)));
+
+        final Date maturityDate = today.add(new Period(12, TimeUnit.Months));
+        final Date divDate1 = today.clone();
+        final Date divDate2 = today.add(new Period(11, TimeUnit.Months));
+        final double divAmount = 5.0;
+
+        DividendSchedule dividends = new DividendSchedule();
+        dividends.add(new FixedDividend(divAmount, divDate1));
+        dividends.add(new FixedDividend(divAmount, divDate2));
+
+        final double strike = 90.0;
+        final VanillaOption option = new VanillaOption(
+                new PlainVanillaPayoff(Option.Type.Put, strike),
+                new AmericanExercise(today, maturityDate));
+
+        // --- spot engine (today == divDate[0]) — theta() must throw
+        PricingEngine spotEngine = new FdBlackScholesVanillaEngine(
+                process, dividends, 100, 400, 0, FdmSchemeDesc.Douglas());
+        option.setPricingEngine(spotEngine);
+
+        double spotNpv = option.NPV();
+        final double spotDelta = option.delta();
+        try {
+            option.theta();
+            fail("option.theta() must throw when today is a dividend date (spot engine)");
+        } catch (final RuntimeException expected) {
+            // matches C++ BOOST_CHECK_THROW(option.theta(), QuantLib::Error)
+        }
+
+        vol.setValue(100.0 / 95.0 * 0.3);
+
+        PricingEngine escrowedEngine = new FdBlackScholesVanillaEngine(
+                process, dividends, null, 100, 400, 0, FdmSchemeDesc.Douglas(),
+                FdBlackScholesVanillaEngine.CashDividendModel.Escrowed, false, Double.NaN);
+        option.setPricingEngine(escrowedEngine);
+
+        double escrowedNpv = option.NPV();
+        final double escrowedDelta = option.delta();
+        try {
+            option.theta();
+            fail("option.theta() must throw when today is a dividend date (escrowed engine)");
+        } catch (final RuntimeException expected) {
+            // matches C++ BOOST_CHECK_THROW(option.theta(), QuantLib::Error)
+        }
+
+        double diffNpv = Math.abs(escrowedNpv - spotNpv);
+        final double tol = 5e-2;
+
+        if (diffNpv > tol) {
+            fail("failed to compare American option NPV with escrowed and spot dividend model"
+                    + " escrowed=" + escrowedNpv + " spot=" + spotNpv + " diff=" + diffNpv + " tol=" + tol);
+        }
+
+        final double diffDelta = Math.abs(escrowedDelta - spotDelta);
+        if (diffDelta > tol) {
+            fail("failed to compare American option Delta with escrowed and spot dividend model"
+                    + " escrowed=" + escrowedDelta + " spot=" + spotDelta + " diff=" + diffDelta + " tol=" + tol);
+        }
+
+        // --- shift the first dividend by one day; theta() should now succeed
+        final Date divDate1Shifted = today.add(1);
+        dividends = new DividendSchedule();
+        dividends.add(new FixedDividend(divAmount, divDate1Shifted));
+        dividends.add(new FixedDividend(divAmount, divDate2));
+
+        spotEngine = new FdBlackScholesVanillaEngine(
+                process, dividends, 100, 400, 0, FdmSchemeDesc.Douglas());
+        escrowedEngine = new FdBlackScholesVanillaEngine(
+                process, dividends, null, 100, 400, 0, FdmSchemeDesc.Douglas(),
+                FdBlackScholesVanillaEngine.CashDividendModel.Escrowed, false, Double.NaN);
+
+        vol.setValue(0.3);
+        option.setPricingEngine(spotEngine);
+        spotNpv = option.NPV();
+
+        vol.setValue(100.0 / 95.0 * 0.3);
+        option.setPricingEngine(escrowedEngine);
+        escrowedNpv = option.NPV();
+        try {
+            option.theta();
+        } catch (final RuntimeException unexpected) {
+            fail("option.theta() must not throw when no dividend on today: " + unexpected);
+        }
+
+        diffNpv = Math.abs(escrowedNpv - spotNpv);
+        if (diffNpv > tol) {
+            fail("failed to compare American option NPV (post-shift) with escrowed and spot dividend model"
+                    + " escrowed=" + escrowedNpv + " spot=" + spotNpv + " diff=" + diffNpv + " tol=" + tol);
+        }
+    }
+
     /** Helper — assert close relative (mirrors C++ QL_CHECK_CLOSE). */
     private static void assertCloseRel(final String name, final double expected, final double actual,
             final double tol) {

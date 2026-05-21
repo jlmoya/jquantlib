@@ -19,6 +19,7 @@
  */
 package org.jquantlib.methods.finitedifferences.solvers;
 
+import org.jquantlib.math.Constants;
 import org.jquantlib.math.interpolations.MonotonicNaturalCubicInterpolation;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.methods.finitedifferences.operators.FdmLinearOpComposite;
@@ -100,12 +101,13 @@ public class Fdm1DimSolver extends LazyObject {
 
     /**
      * Finite-difference theta estimate at {@code x}: difference between the snapshot at {@link #thetaCondition}'s
-     * target time and the present value, divided by the snapshot time. Returns {@link Double#NaN} (matching C++
-     * {@code Null<Real>()}) if the first stopping time is exactly zero.
+     * target time and the present value, divided by the snapshot time. Returns {@link Constants#NULL_REAL} (matching
+     * C++ {@code Null<Real>()}) if the first stopping time is exactly zero, so downstream consumers
+     * (e.g. {@link org.jquantlib.instruments.OneAssetOption#theta()}) raise the C++ "theta not provided" error.
      */
     public double thetaAt(final double xq) {
         if ( !conditions.stoppingTimes().isEmpty() && conditions.stoppingTimes().get(0) == 0.0 ) {
-            return Double.NaN;
+            return Constants.NULL_REAL;
         }
         calculate();
         final Array snapshot = thetaCondition.getValues();
