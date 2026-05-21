@@ -1227,8 +1227,6 @@ public class AndreasenHugeVolatilityInterplTest {
      * doesn't. Loosening the spec to 1e-2 would mask the gap; left
      * {@code @Ignore}'d with this audit trail.
      */
-    @Ignore("A3: Java Bfgs converges to ~0.65 vs C++ 1e-4 on AH SABR slice "
-            + "(see JavaDoc above; Phase1-closure-A7-A-563 finding)")
     @Test
     public void testDifferentOptimizers() {
         final double[] params = sabrParameters();
