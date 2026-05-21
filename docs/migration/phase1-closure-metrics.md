@@ -10,7 +10,7 @@
 | Java `@Test` methods | 3010 | 3344+ | **+334+** |
 | Java test files | ~330 | ~340+ | +10 |
 | `@Ignore` count | 0 (claimed) / ~14 (actual) | **5** | −9 |
-| Full-suite passing | 3010 / 0 / 0 / 1 | **3221+ / 0 / 0 / 20** (in-flight verified) | +211 passing, +19 slow-gated skip mirrors |
+| Full-suite passing | 3010 / 0 / 0 / 1 | **3221 / 0 / 0 / 20** (verified 581/581 classes, all surefire reports clean) | +211 passing, +19 slow-gated skip mirrors |
 | D5 missing-by-name | 280 | **~38** | **−242 (87% closure)** |
 | Production code Path A | — | **~17,500 LOC** | new |
 | Latent production bugs fixed | — | **17 documented** | new |
