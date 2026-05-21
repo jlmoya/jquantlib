@@ -1,7 +1,12 @@
 /*
- Copyright (C) 2026 Jose Moya
+ Copyright (C) 2026 Jose Moya. JQuantLib migration Phase 1.1 Round 1
+ — D5-E worktree, SMM calibration closure.
 
  This source code is release under the BSD License.
+
+ This file is a faithful Java port of v1.42.1
+ test-suite/marketmodel_smmcapletcalibration.cpp
+ @ 099987f0ca2c11c505dc4348cdb9ce01a598e1e5.
 
  This file is part of JQuantLib, a free-software/open-source library
  for financial quantitative analysts and developers - http://jquantlib.org/
@@ -9,29 +14,46 @@
  JQuantLib is free software: you can redistribute it and/or modify it
  under the terms of the JQuantLib license.
  */
-
 package org.jquantlib.testsuite.model.marketmodels.models;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.jquantlib.QL;
+import org.jquantlib.Settings;
+import org.jquantlib.daycounters.SimpleDayCounter;
 import org.jquantlib.math.matrixutilities.Matrix;
 import org.jquantlib.model.marketmodels.EvolutionDescription;
+import org.jquantlib.model.marketmodels.MarketModel;
 import org.jquantlib.model.marketmodels.PiecewiseConstantCorrelation;
+import org.jquantlib.model.marketmodels.correlations.CotSwapFromFwdCorrelation;
+import org.jquantlib.model.marketmodels.correlations.ExponentialForwardCorrelation;
 import org.jquantlib.model.marketmodels.curvestates.LMMCurveState;
 import org.jquantlib.model.marketmodels.models.CTSMMCapletOriginalCalibration;
+import org.jquantlib.model.marketmodels.models.CotSwapToFwdAdapter;
 import org.jquantlib.model.marketmodels.models.PiecewiseConstantAbcdVariance;
 import org.jquantlib.model.marketmodels.models.PiecewiseConstantVariance;
+import org.jquantlib.model.marketmodels.models.PseudoRootFacade;
+import org.jquantlib.time.BusinessDayConvention;
+import org.jquantlib.time.Calendar;
+import org.jquantlib.time.Date;
+import org.jquantlib.time.DateGeneration;
+import org.jquantlib.time.Frequency;
+import org.jquantlib.time.Period;
+import org.jquantlib.time.Schedule;
+import org.jquantlib.time.TimeUnit;
+import org.jquantlib.time.calendars.NullCalendar;
+import org.junit.Before;
 import org.junit.Test;
 
 /**
- * Smoke tests for {@link CTSMMCapletOriginalCalibration} — Phase 3j B.4.
- *
- * <p>Calibration has many moving parts; these tests just verify the
- * call returns and produces finite output for a small grid.
+ * Faithful Java port of v1.42.1
+ * {@code test-suite/marketmodel_smmcapletcalibration.cpp}
+ * @ 099987f0ca2c11c505dc4348cdb9ce01a598e1e5.
  */
 public class CTSMMCapletOriginalCalibrationTest {
 
@@ -39,65 +61,153 @@ public class CTSMMCapletOriginalCalibrationTest {
         QL.info("::::: " + this.getClass().getSimpleName() + " :::::");
     }
 
-    private static PiecewiseConstantCorrelation constCorr(final int numRates,
-                                                           final double[] times,
-                                                           final double rho) {
-        final Matrix m = new Matrix(numRates, numRates);
-        for (int i = 0; i < numRates; ++i) {
-            for (int j = 0; j < numRates; ++j) {
-                m.set(i, j, i == j ? 1.0 : rho);
-            }
+    private double[] rateTimes_;
+    private double[] todaysForwards_;
+    private double[] todaysSwaps_;
+    private int numberOfFactors_;
+    private double alpha_;
+    private double displacement_;
+    private double[] capletVols_;
+    private double a_, b_, c_, d_;
+    private double longTermCorrelation_;
+    private double beta_;
+
+    @Before
+    public void setup() {
+        // Times (cpp:87-104)
+        final Calendar calendar = new NullCalendar();
+        final Date todaysDate = new Settings().evaluationDate();
+        final Date endDate = todaysDate.add(new Period(66, TimeUnit.Months));
+        final Schedule dates = new Schedule(todaysDate, endDate,
+                new Period(Frequency.Semiannual),
+                calendar, BusinessDayConvention.Following,
+                BusinessDayConvention.Following,
+                DateGeneration.Rule.Backward, false);
+        final SimpleDayCounter dayCounter = new SimpleDayCounter();
+        rateTimes_ = new double[dates.size() - 1];
+        for (int i = 1; i < dates.size(); ++i) {
+            rateTimes_[i - 1] = dayCounter.yearFraction(todaysDate, dates.dates().get(i));
         }
-        return new PiecewiseConstantCorrelation() {
-            @Override public List<Double> times() {
-                final List<Double> t = new ArrayList<>();
-                for (final double v : times) t.add(v);
-                return t;
-            }
-            @Override public List<Double> rateTimes() { return times(); }
-            @Override public List<Matrix> correlations() {
-                final List<Matrix> out = new ArrayList<>();
-                for (int k = 0; k < times.length; ++k) out.add(m);
-                return out;
-            }
-            @Override public int numberOfRates() { return numRates; }
+        final double[] accruals = new double[rateTimes_.length - 1];
+        for (int i = 1; i < rateTimes_.length; ++i) {
+            accruals[i - 1] = rateTimes_[i] - rateTimes_[i - 1];
+        }
+
+        // Rates & displacement (cpp:105-117)
+        todaysForwards_ = new double[accruals.length];
+        numberOfFactors_ = 3;
+        alpha_ = -0.05;
+        displacement_ = 0.0;
+        for (int i = 0; i < todaysForwards_.length; ++i) {
+            todaysForwards_[i] = 0.03 + 0.0025 * i;
+        }
+        final LMMCurveState cs = new LMMCurveState(rateTimes_);
+        cs.setOnForwardRates(todaysForwards_);
+        todaysSwaps_ = cs.coterminalSwapRates();
+
+        // Abcd & vols (cpp:154-183)
+        a_ = 0.0;
+        b_ = 0.17;
+        c_ = 1.0;
+        d_ = 0.10;
+        final double[] mktCapletVols = {
+                0.1640, 0.1740, 0.1840, 0.1940, 0.1840,
+                0.1740, 0.1640, 0.1540, 0.1440, 0.1340376439125532
         };
+        capletVols_ = new double[todaysSwaps_.length];
+        for (int i = 0; i < todaysSwaps_.length; ++i) {
+            capletVols_[i] = mktCapletVols[i];
+        }
+
+        longTermCorrelation_ = 0.5;
+        beta_ = 0.2;
     }
 
-    /** Smoke test: 3-rate calibration. */
+    private static List<Double> doubleArrayToList(final double[] in) {
+        final List<Double> out = new ArrayList<>(in.length);
+        for (final double v : in) {
+            out.add(v);
+        }
+        return out;
+    }
+
+    /** Faithful port of v1.42.1 {@code testFunction} (cpp:213-333). */
     @Test
-    public void testThreeRateSmoke() {
-        final double[] rateTimes = {1.0, 2.0, 3.0, 4.0};
-        final EvolutionDescription ev = new EvolutionDescription(rateTimes);
-        final PiecewiseConstantCorrelation corr = constCorr(3, ev.evolutionTimes(), 0.7);
+    public void testFunction() {
+        final int numberOfRates = todaysForwards_.length;
+        final EvolutionDescription evolution = new EvolutionDescription(rateTimes_);
 
-        final List<PiecewiseConstantVariance> vars = new ArrayList<>();
-        for (int i = 0; i < 3; ++i) {
-            vars.add(new PiecewiseConstantAbcdVariance(0.05, 0.1, 0.5, 0.05, i, rateTimes));
+        final PiecewiseConstantCorrelation fwdCorr = new ExponentialForwardCorrelation(
+                doubleArrayToList(rateTimes_), longTermCorrelation_, beta_);
+
+        final LMMCurveState cs = new LMMCurveState(rateTimes_);
+        cs.setOnForwardRates(todaysForwards_);
+
+        final PiecewiseConstantCorrelation corr = new CotSwapFromFwdCorrelation(
+                fwdCorr, cs, displacement_);
+
+        final List<PiecewiseConstantVariance> swapVariances = new ArrayList<>(numberOfRates);
+        for (int i = 0; i < numberOfRates; ++i) {
+            swapVariances.add(new PiecewiseConstantAbcdVariance(a_, b_, c_, d_, i, rateTimes_));
         }
-        final double lastSwaptionVol = vars.get(2).totalVolatility(2);
-        final double[] mktCapletVols = {0.20, 0.18, lastSwaptionVol};
 
-        final LMMCurveState cs = new LMMCurveState(rateTimes);
-        cs.setOnForwardRates(new double[]{0.04, 0.04, 0.04});
+        final double[] alpha = new double[numberOfRates];
+        Arrays.fill(alpha, alpha_);
+        final boolean lowestRoot = true;
+        final boolean useFullApprox = false;
 
-        final double[] alpha = {0.0, 0.0, 0.0};
+        final CTSMMCapletOriginalCalibration calibrator =
+                new CTSMMCapletOriginalCalibration(evolution, corr, swapVariances,
+                        capletVols_, cs, displacement_, alpha, lowestRoot, useFullApprox);
 
-        final CTSMMCapletOriginalCalibration calib =
-                new CTSMMCapletOriginalCalibration(ev, corr, vars, mktCapletVols, cs, 0.0,
-                        alpha, true /*lowestRoot*/, false /*useFullApprox*/);
+        final int maxIterations = 2;
+        final double capletTolerance = 0.0001;
+        final int innerMaxIterations = 50;
+        final double innerTolerance = 1e-9;
 
-        // We don't strictly require calibrated == true (the iterative scheme may
-        // not converge for this contrived setup); we just verify the call returns
-        // without throwing and inspectors then return finite values.
-        try {
-            calib.calibrate(2 /*nFactors*/, 5 /*maxIter*/, 1e-2 /*tol*/, 100, 1e-8);
-        } catch (final RuntimeException ex) {
-            // a RuntimeException can occur for unfit setup; that's acceptable
-            // for a smoke test of the algorithmic plumbing.
-            return;
+        // C++ passes capletTolerance/10 to calibrate. Mirror that.
+        final boolean result = calibrator.calibrate(numberOfFactors_, maxIterations,
+                capletTolerance / 10.0, innerMaxIterations, innerTolerance);
+        assertTrue("calibration failed", result);
+
+        final List<Matrix> swapPseudoRoots = calibrator.swapPseudoRoots();
+        final double[] displacementsArr = new double[numberOfRates];
+        Arrays.fill(displacementsArr, displacement_);
+        final MarketModel smm = new PseudoRootFacade(swapPseudoRoots, rateTimes_,
+                cs.coterminalSwapRates(), displacementsArr);
+        final CotSwapToFwdAdapter flmm = new CotSwapToFwdAdapter(smm);
+        final Matrix capletTotCovariance = flmm.totalCovariance(numberOfRates - 1);
+
+        final double[] capletVols = new double[numberOfRates];
+        for (int i = 0; i < numberOfRates; ++i) {
+            capletVols[i] = Math.sqrt(capletTotCovariance.get(i, i) / rateTimes_[i]);
         }
-        assertTrue("capletRmsError finite", Double.isFinite(calib.capletRmsError()));
-        assertTrue("swaptionRmsError finite", Double.isFinite(calib.swaptionRmsError()));
+
+        // Check perfect swaption fit (cpp:307-320)
+        final double swapTolerance = 1e-14;
+        Matrix swapTerminalCovariance = new Matrix(numberOfRates, numberOfRates);
+        for (int i = 0; i < numberOfRates; ++i) {
+            final double expSwaptionVol = swapVariances.get(i).totalVolatility(i);
+            swapTerminalCovariance = swapTerminalCovariance.add(
+                    swapPseudoRoots.get(i).mul(swapPseudoRoots.get(i).transpose()));
+            final double swaptionVol = Math.sqrt(swapTerminalCovariance.get(i, i) / rateTimes_[i]);
+            final double error = Math.abs(swaptionVol - expSwaptionVol);
+            if (error > swapTolerance) {
+                fail(String.format(
+                        "failed to reproduce swaption %d vol: expected=%.16f realized=%.16f error=%.3e tol=%.3e",
+                        i + 1, expSwaptionVol, swaptionVol, error, swapTolerance));
+            }
+        }
+
+        // Check caplet fit (cpp:322-332)
+        for (int i = 0; i < numberOfRates; ++i) {
+            final double error = Math.abs(capletVols[i] - capletVols_[i]);
+            if (error > capletTolerance) {
+                fail(String.format(
+                        "failed to reproduce caplet %d vol: expected=%.6f realized=%.6f pcterr=%.3e error=%.3e tol=%.3e",
+                        i + 1, capletVols_[i], capletVols[i],
+                        error / capletVols_[i], error, capletTolerance));
+            }
+        }
     }
 }
