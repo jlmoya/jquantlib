@@ -61,6 +61,21 @@ public class SwapRateHelper extends RelativeDateRateHelper {
     protected final Date explicitStartDate;
     /** Optional caller-supplied termination date (date-based ctor); null otherwise. */
     protected final Date explicitEndDate;
+    /**
+     * Exogenous discounting curve handle (may be empty).
+     * <p>
+     * Mirrors C++ v1.42.1 {@code SwapRateHelper::discountHandle_} (ratehelpers.hpp:281).
+     * When non-empty, {@link #initializeDates()} feeds this handle to
+     * {@link MakeVanillaSwap#withDiscountingTermStructure} so that the swap is
+     * priced under an exogenous discount curve different from the bootstrapped
+     * one. When empty, {@link #setTermStructure} routes the bootstrapping curve
+     * itself into {@code discountRelinkableHandle}, matching the QuantLib default
+     * single-curve behavior.
+     */
+    protected final Handle< YieldTermStructure > discountHandle;
+    /** Relinkable proxy fed to MakeVanillaSwap; tracks {@link #discountHandle} or the bootstrap curve. */
+    protected final RelinkableHandle< YieldTermStructure > discountRelinkableHandle =
+            new RelinkableHandle< YieldTermStructure >(null);
     protected VanillaSwap swap;
     protected RelinkableHandle< YieldTermStructure > termStructureHandle = new RelinkableHandle< YieldTermStructure >(
             null);
@@ -91,6 +106,7 @@ public class SwapRateHelper extends RelativeDateRateHelper {
         this.fwdStart = fwdStart;
         this.explicitStartDate = null;
         this.explicitEndDate = null;
+        this.discountHandle = new Handle< YieldTermStructure >();
 
         this.iborIndex.addObserver(this);
         this.spread.addObserver(this);
@@ -127,6 +143,7 @@ public class SwapRateHelper extends RelativeDateRateHelper {
         this.fwdStart = fwdStart;
         this.explicitStartDate = null;
         this.explicitEndDate = null;
+        this.discountHandle = new Handle< YieldTermStructure >();
 
         this.iborIndex.addObserver(this);
         this.spread.addObserver(this);
@@ -163,9 +180,56 @@ public class SwapRateHelper extends RelativeDateRateHelper {
         this.fwdStart = fwdStart;
         this.explicitStartDate = null;
         this.explicitEndDate = null;
+        this.discountHandle = new Handle< YieldTermStructure >();
 
         this.iborIndex.addObserver(this);
         this.spread.addObserver(this);
+
+        initializeDates();
+    }
+
+    /**
+     * Tenor-based SwapRateHelper ctor with exogenous discounting curve —
+     * mirrors C++ v1.42.1 ratehelpers.hpp:210-228 + ratehelpers.cpp:476-499.
+     * The {@code discountingCurve} handle is wired to MakeVanillaSwap via
+     * {@link MakeVanillaSwap#withDiscountingTermStructure} in {@link #initializeDates()}.
+     *
+     * @param rate market quote (handle)
+     * @param tenor swap tenor
+     * @param calendar swap calendar
+     * @param fixedFrequency fixed-leg frequency
+     * @param fixedConvention fixed-leg business-day convention
+     * @param fixedDayCount fixed-leg day-counter
+     * @param iborIndex floating-leg ibor index
+     * @param spread floating-leg spread quote (may be empty)
+     * @param fwdStart forward-start period
+     * @param discountingCurve exogenous discount-curve handle (may be empty)
+     */
+    public SwapRateHelper(final Handle< Quote > rate, final Period tenor, final Calendar calendar,
+            final Frequency fixedFrequency, final BusinessDayConvention fixedConvention, final DayCounter fixedDayCount,
+            final IborIndex iborIndex, final Handle< Quote > spread, final Period fwdStart,
+            final Handle< YieldTermStructure > discountingCurve) {
+        super(rate);
+
+        this.tenor = tenor;
+        this.calendar = calendar;
+        this.fixedConvention = fixedConvention;
+        this.fixedFrequency = fixedFrequency;
+        this.fixedDayCount = fixedDayCount;
+        this.iborIndex = iborIndex;
+        this.spread = spread;
+        this.fwdStart = fwdStart;
+        this.explicitStartDate = null;
+        this.explicitEndDate = null;
+        this.discountHandle = discountingCurve == null
+                ? new Handle< YieldTermStructure >()
+                : discountingCurve;
+
+        this.iborIndex.addObserver(this);
+        this.spread.addObserver(this);
+        if ( !this.discountHandle.empty() ) {
+            this.discountHandle.addObserver(this);
+        }
 
         initializeDates();
     }
@@ -192,6 +256,7 @@ public class SwapRateHelper extends RelativeDateRateHelper {
         this.fwdStart = fwdStart;
         this.explicitStartDate = null;
         this.explicitEndDate = null;
+        this.discountHandle = new Handle< YieldTermStructure >();
 
         this.iborIndex.addObserver(this);
         this.spread.addObserver(this);
@@ -251,6 +316,7 @@ public class SwapRateHelper extends RelativeDateRateHelper {
         this.fwdStart = new Period(0, TimeUnit.Days);
         this.explicitStartDate = startDate;
         this.explicitEndDate = endDate;
+        this.discountHandle = new Handle< YieldTermStructure >();
 
         this.iborIndex.addObserver(this);
         this.spread.addObserver(this);
@@ -277,6 +343,8 @@ public class SwapRateHelper extends RelativeDateRateHelper {
         // Mirror C++ v1.42.1 ratehelpers.cpp:556 — when fixedFrequency == Once
         // the fixed leg uses the swap tenor itself as a single coupon, rather
         // than Period(Once) (which would be 0 Years).
+        // Also wires the (possibly relinkable) discountRelinkableHandle so an exogenous
+        // discounting curve can be picked up via setTermStructure() when discountHandle is empty.
         final Period fixedLegTenor = (fixedFrequency == Frequency.Once) ? tenor : new Period(fixedFrequency);
         MakeVanillaSwap mvs = new MakeVanillaSwap(tenor, clonedIborIndex, 0.0, fwdStart)
                 .withFixedLegDayCount(fixedDayCount)
@@ -284,7 +352,8 @@ public class SwapRateHelper extends RelativeDateRateHelper {
                 .withFixedLegConvention(fixedConvention)
                 .withFixedLegTerminationDateConvention(fixedConvention)
                 .withFixedLegCalendar(calendar)
-                .withFloatingLegCalendar(calendar);
+                .withFloatingLegCalendar(calendar)
+                .withDiscountingTermStructure(this.discountRelinkableHandle);
         if ( this.explicitStartDate != null ) {
             mvs = mvs.withEffectiveDate(this.explicitStartDate);
         }
@@ -315,7 +384,18 @@ public class SwapRateHelper extends RelativeDateRateHelper {
      */
     @Override
     public void setTermStructure(final YieldTermStructure t) {
+        // do not set the relinkable handle as an observer (matches C++ v1.42.1
+        // ratehelpers.cpp:608-622); observer=false guarantees we don't get
+        // notifications from the bootstrap curve mid-iteration.
         this.termStructureHandle.linkTo(t, false);
+        // Route the exogenous discount handle into the relinkable handle that
+        // backs the swap pricing engine. When no exogenous curve was provided,
+        // fall back to the bootstrap curve itself (single-curve default).
+        if ( this.discountHandle.empty() ) {
+            this.discountRelinkableHandle.linkTo(t, false);
+        } else {
+            this.discountRelinkableHandle.linkTo(this.discountHandle.currentLink(), false);
+        }
         super.setTermStructure(t);
     }
 
