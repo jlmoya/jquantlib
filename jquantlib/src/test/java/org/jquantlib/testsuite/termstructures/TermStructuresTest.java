@@ -704,6 +704,41 @@ public class TermStructuresTest {
     }
 
 
+    /**
+     * Faithful port of {@code test-suite/termstructures.cpp:600}
+     * {@code BOOST_AUTO_TEST_CASE(testNullTimeToReference)}. When the
+     * day-count between the reference date and the query date is exactly
+     * zero (e.g. Aug 30 -> Aug 31 under Thirty360 BondBasis), the zero
+     * rate must collapse to the input flat rate without division-by-zero
+     * blow-up. Tolerance 1e-10 per C++.
+     *
+     * <p>Phase 1 closure Round A8-E.
+     */
+    @Test
+    public void testNullTimeToReference() {
+        QL.info("Testing zero-rate calculation for null time-to-reference...");
+
+        final double rate = 0.02;
+        final DayCounter dayCount = new Thirty360(Thirty360.Convention.BondBasis);
+        final FlatForward curve = new FlatForward(
+                new Date(30, org.jquantlib.time.Month.August, 2023), rate, dayCount);
+
+        // The time between August 30th and 31st is null for the 30/360
+        // day-count convention.
+        final double expected = rate;
+        final double calculated = curve.zeroRate(
+                new Date(31, org.jquantlib.time.Month.August, 2023),
+                dayCount, Compounding.Continuous).rate();
+        final double tolerance = 1.0e-10;
+
+        if (Math.abs(calculated - expected) > tolerance) {
+            fail("unable to reproduce zero yield rate from curve\n"
+                    + "    calculated: " + calculated + "\n"
+                    + "    expected:   " + expected);
+        }
+    }
+
+
     //
     // private inner classes
     //
