@@ -76,8 +76,11 @@ import org.jquantlib.time.Date;
  *       expected positivity invariants on discount-curve fits, this port detects {@link Discount}-typed traits and
  *       internally applies {@code exp(x)} when writing to the curve and {@code log(x)} when reading from it
  *       (identity for {@link ZeroYield}/{@link ForwardRate}).</li>
- *   <li>{@code MultiCurveBootstrap} parent-coordinator path is not ported — none of the v1.42.1 yield-curve tests
- *       exercise it.</li>
+ *   <li>{@link MultiCurveBootstrap} parent-coordinator path is ported as of Phase 1.1-A2-MC: when a parent is
+ *       wired via {@link #setParentBootstrapper(MultiCurveBootstrap)}, {@link #calculate()} short-circuits and
+ *       delegates to {@link MultiCurveBootstrap#runMultiCurveBootstrap()}; the parent drives this instance through
+ *       the {@link MultiCurveBootstrapContributor} 5-method protocol (setup / setArg / evaluate / setToValid).
+ *       The single-curve {@code calculate()} code path is unchanged.</li>
  *   <li>{@link AdditionalBootstrapVariables} (model-parameter optimisation) is ported as of Phase 1.1-A-562-sqv;
  *       see {@link SimpleQuoteVariables} for the concrete implementation. When non-null, the variables-supplied
  *       guesses are appended to the curve-pillar guesses and {@link AdditionalBootstrapVariables#update(Array)}
@@ -89,7 +92,7 @@ import org.jquantlib.time.Date;
  * @see PiecewiseYieldCurve
  * @see Traits
  */
-public class GlobalBootstrap< Curve extends PiecewiseYieldCurve > implements Bootstrap< Curve > {
+public class GlobalBootstrap< Curve extends PiecewiseYieldCurve > implements Bootstrap< Curve >, MultiCurveBootstrapContributor {
 
     //
     // private fields
@@ -107,6 +110,21 @@ public class GlobalBootstrap< Curve extends PiecewiseYieldCurve > implements Boo
 
     private Curve ts;
     private boolean validCurve = false;
+
+    //
+    // MultiCurveBootstrapContributor state — populated by setupCostFunction(); consumed by
+    // setCostFunctionArgument / evaluateCostFunction when this contributor is being driven by a parent
+    // MultiCurveBootstrap. Untouched on the single-curve path (calculate() runs the same logic with local
+    // variables and never reads these). Mirrors the mutable state on the C++ template
+    // (ql/termstructures/globalbootstrap.hpp:148-156).
+    //
+    private MultiCurveBootstrap parentBootstrapper = null;
+    private List< RateHelper > mcAlive = null;
+    private List< Double > mcAliveWeights = null;
+    private double[] mcTimes = null;
+    private boolean mcIsDiscountTraits = false;
+    private boolean mcIsSimpleZeroTraits = false;
+    private int mcCurvePillars = 0;
 
     //
     // SAM interfaces — Java stand-ins for the C++ std::function callbacks.
@@ -214,6 +232,13 @@ public class GlobalBootstrap< Curve extends PiecewiseYieldCurve > implements Boo
 
     @Override
     public void calculate() {
+
+        if ( parentBootstrapper != null ) {
+            // Multi-curve path: delegate to the parent coordinator, which drives this contributor through the
+            // 5-method MultiCurveBootstrapContributor protocol below. Mirrors C++ globalbootstrap.hpp:405-412.
+            parentBootstrapper.runMultiCurveBootstrap();
+            return;
+        }
 
         final double curveAccuracy = ts.accuracy();
         final double effectiveAccuracy = !Double.isNaN(this.accuracy) ? this.accuracy : curveAccuracy;
@@ -385,6 +410,212 @@ public class GlobalBootstrap< Curve extends PiecewiseYieldCurve > implements Boo
         // by design. Removed to match upstream.
 
         validCurve = true;
+    }
+
+    //
+    // MultiCurveBootstrapContributor — multi-curve path. Each protocol method is independent: setupCostFunction()
+    // runs steps 1-8 of calculate() (sets up alive lists, dates, times, interpolation, initial guess) and stashes
+    // the per-step state needed by setCostFunctionArgument / evaluateCostFunction in the mc* instance fields above.
+    // No code is shared with the single-curve calculate() path — that monolithic method is preserved verbatim, so
+    // any future regression risk is contained to the multi-curve path. Mirrors C++ globalbootstrap.hpp:319-403.
+    //
+
+    @Override
+    public void setParentBootstrapper(final MultiCurveBootstrap parent) {
+        this.parentBootstrapper = parent;
+    }
+
+    @Override
+    public void setToValid() {
+        this.validCurve = true;
+    }
+
+    /**
+     * Mirror of C++ {@code GlobalBootstrap<Curve>::setupCostFunction()} (globalbootstrap.hpp:319-376). Initialises
+     * the curve's pillar dates / times / data / interpolation, populates the {@code mc*} cached fields, and
+     * returns the optimiser's initial guess vector.
+     */
+    @Override
+    public Array setupCostFunction() {
+
+        final Traits traits = ts.traits();
+        final Interpolator interpolator = ts.interpolator();
+        final RateHelper[] instruments = ts.instruments();
+
+        // Step 1: alive instruments + weights
+        final Date firstDate = traits.initialDate(ts);
+        final List< RateHelper > alive = new ArrayList<>();
+        final List< Double > aliveWeights = new ArrayList<>();
+        final double[] weights = instrumentWeights != null ? instrumentWeights
+                : filledWith(instruments.length, 1.0);
+        for ( int i = 0; i < instruments.length; ++i ) {
+            if ( instruments[i].latestDate().gt(firstDate) ) {
+                alive.add(instruments[i]);
+                aliveWeights.add(weights[i]);
+            }
+        }
+
+        // Step 1b: alive additional helpers
+        final List< RateHelper > aliveAdditional = new ArrayList<>();
+        for ( final RateHelper rh : additionalHelpers ) {
+            if ( rh.latestDate().gt(firstDate) ) {
+                aliveAdditional.add(rh);
+            }
+        }
+
+        // Step 2: additional dates (filtered to > firstDate)
+        List< Date > addDates = additionalDatesProvider != null ? additionalDatesProvider.get() : new ArrayList<>();
+        if ( addDates == null ) {
+            addDates = new ArrayList<>();
+        }
+        final List< Date > filteredDates = new ArrayList<>();
+        for ( final Date d : addDates ) {
+            if ( d.gt(firstDate) ) {
+                filteredDates.add(d);
+            }
+        }
+
+        // Step 3: dates vector
+        final List< Date > dateList = new ArrayList<>();
+        dateList.add(firstDate);
+        for ( final RateHelper rh : alive ) {
+            dateList.add(rh.latestDate());
+        }
+        dateList.addAll(filteredDates);
+        dateList.sort(Date::compareTo);
+        final List< Date > uniqueDates = new ArrayList<>();
+        Date prev = null;
+        for ( final Date d : dateList ) {
+            if ( prev == null || !d.eq(prev) ) {
+                uniqueDates.add(d);
+                prev = d;
+            }
+        }
+
+        QL.require(uniqueDates.size() >= interpolator.requiredPoints(),
+                "GlobalBootstrap: not enough curve points (" + uniqueDates.size()
+                        + ") for interpolation requiring at least " + interpolator.requiredPoints());
+
+        // Step 4: build times[]
+        final int nDates = uniqueDates.size();
+        final Date[] dates = uniqueDates.toArray(new Date[nDates]);
+        final double[] times = new double[nDates];
+        for ( int i = 0; i < nDates; ++i ) {
+            times[i] = ts.timeFromReference(dates[i]);
+        }
+        ts.setDates(dates);
+        ts.setTimes(times);
+
+        // Step 5: initial data
+        double[] data;
+        if ( !validCurve || ts.data().length != nDates ) {
+            data = new double[nDates];
+            Arrays.fill(data, traits.initialValue(ts));
+            ts.setData(data);
+            validCurve = false;
+        } else {
+            data = ts.data();
+        }
+
+        // Step 6: wire helpers
+        for ( final RateHelper rh : alive ) {
+            QL.require(rh.quoteIsValid(),
+                    "instrument has an invalid quote (pillar: " + rh.latestDate() + ")");
+            rh.setTermStructure(ts);
+        }
+        for ( final RateHelper rh : aliveAdditional ) {
+            QL.require(rh.quoteIsValid(),
+                    "additional instrument has an invalid quote (pillar: " + rh.latestDate() + ")");
+            rh.setTermStructure(ts);
+        }
+
+        // Step 7: install interpolation
+        if ( !validCurve ) {
+            ts.setInterpolation(interpolator.interpolate(new Array(times), new Array(data)));
+        }
+
+        // Step 8: initial guess — same transform / additional-variables logic as single-curve calculate().
+        final boolean isDiscount = traits instanceof Discount;
+        final boolean isSimpleZero = traits instanceof SimpleZeroYield;
+        final int nVars = nDates - 1;
+        final Array additionalGuesses = additionalVariables != null ? additionalVariables.initialize(validCurve)
+                : new Array(0);
+        final int nAdditional = additionalGuesses.size();
+        final Array guess = new Array(nVars + nAdditional);
+        for ( int i = 0; i < nVars; ++i ) {
+            final double initVal = traits.initialValue(ts);
+            traits.updateGuess(data, initVal, i + 1);
+            final double xVar;
+            if ( isDiscount ) {
+                xVar = Math.log(initVal);
+            } else if ( isSimpleZero ) {
+                xVar = Math.log(initVal - SimpleZeroYield.transformOffset(times[i + 1]));
+            } else {
+                xVar = initVal;
+            }
+            guess.set(i, xVar);
+        }
+        for ( int i = 0; i < nAdditional; ++i ) {
+            guess.set(nVars + i, additionalGuesses.get(i));
+        }
+
+        // Stash cached state for the per-step protocol methods.
+        this.mcAlive = alive;
+        this.mcAliveWeights = aliveWeights;
+        this.mcTimes = times;
+        this.mcIsDiscountTraits = isDiscount;
+        this.mcIsSimpleZeroTraits = isSimpleZero;
+        this.mcCurvePillars = nVars;
+        return guess;
+    }
+
+    /** Mirror of C++ {@code GlobalBootstrap<Curve>::setCostFunctionArgument()} (globalbootstrap.hpp:378-389). */
+    @Override
+    public void setCostFunctionArgument(final Array x) {
+        final Traits traits = ts.traits();
+        final Interpolation interpolation = ts.interpolation();
+        final double[] data = ts.data();
+        for ( int i = 0; i < mcCurvePillars; ++i ) {
+            final double v;
+            if ( mcIsDiscountTraits ) {
+                v = Math.exp(x.get(i));
+            } else if ( mcIsSimpleZeroTraits ) {
+                v = Math.exp(x.get(i)) + SimpleZeroYield.transformOffset(mcTimes[i + 1]);
+            } else {
+                v = x.get(i);
+            }
+            traits.updateGuess(data, v, i + 1);
+        }
+        interpolation.update();
+        // Push the trailing additional-variables slice back into their backing state.
+        // Mirrors C++ globalbootstrap.hpp:386-389: Array(x.begin() + nCurvePillars, x.end()).
+        if ( additionalVariables != null && x.size() > mcCurvePillars ) {
+            final Array suffix = new Array(x.size() - mcCurvePillars);
+            for ( int i = 0; i < suffix.size(); ++i ) {
+                suffix.set(i, x.get(mcCurvePillars + i));
+            }
+            additionalVariables.update(suffix);
+        }
+    }
+
+    /** Mirror of C++ {@code GlobalBootstrap<Curve>::evaluateCostFunction()} (globalbootstrap.hpp:391-403). */
+    @Override
+    public Array evaluateCostFunction() {
+        Array addErrors = null;
+        int addSize = 0;
+        if ( additionalPenalties != null ) {
+            addErrors = additionalPenalties.evaluate(mcTimes, ts.data());
+            addSize = addErrors == null ? 0 : addErrors.size();
+        }
+        final int n = mcAlive.size();
+        final Array result = new Array(n + addSize);
+        for ( int i = 0; i < n; ++i ) {
+            result.set(i, mcAlive.get(i).quoteError() * mcAliveWeights.get(i));
+        }
+        for ( int i = 0; i < addSize; ++i ) {
+            result.set(n + i, addErrors.get(i));
+        }
+        return result;
     }
 
     //
