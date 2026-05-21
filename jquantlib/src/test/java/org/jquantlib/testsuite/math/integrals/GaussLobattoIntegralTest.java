@@ -22,6 +22,10 @@ import org.junit.Test;
 
 public class GaussLobattoIntegralTest {
 
+    /** C++-name alias for `integrals.cpp::testGaussLobatto`. */
+    @Test
+    public void testGaussLobatto() { integralsMatchCpp(); }
+
     @Test
     public void integralsMatchCpp() {
         final ReferenceReader reader =

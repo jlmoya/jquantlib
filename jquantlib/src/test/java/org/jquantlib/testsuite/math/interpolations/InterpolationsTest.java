@@ -848,6 +848,14 @@ public class InterpolationsTest {
      * <p>Tolerance: 1e-8 for ATM reproduction (matches C++) and 1e-5 for
      * the smoothness sweep around ATM (matches C++).
      */
+    /** C++-name alias for `interpolations.cpp::testFlochKennedySabrIsSmoothAroundATM`. */
+    @Test
+    public void testFlochKennedySabrIsSmoothAroundATM() { testFlochKennedySabr(); }
+
+    /** C++-name alias for `interpolations.cpp::testLeFlochKennedySabrExample`. */
+    @Test
+    public void testLeFlochKennedySabrExample() { testFlochKennedySabr(); }
+
     @Test
     public void testFlochKennedySabr() {
         QL.info("Testing FlochKennedy SABR (smoothness around ATM and "

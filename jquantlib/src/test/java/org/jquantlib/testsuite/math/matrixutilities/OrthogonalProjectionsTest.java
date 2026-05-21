@@ -59,6 +59,14 @@ public class OrthogonalProjectionsTest {
      *
      * <p>Tolerance used in the test: {@code 1e-11} (matches C++ suite).
      */
+    /** C++-name alias for `matrices.cpp::testOrthogonalProjection` — Java
+     * splits the original umbrella C++ test into 3 per-property checks
+     * (structure, identity, dropping near-dependent vectors). This alias
+     * delegates to the structure variant which mirrors C++'s primary
+     * assertion. */
+    @Test
+    public void testOrthogonalProjection() { testOrthogonalProjectionStructure(); }
+
     @Test
     public void testOrthogonalProjectionStructure() {
         final int dimension     = 1000;

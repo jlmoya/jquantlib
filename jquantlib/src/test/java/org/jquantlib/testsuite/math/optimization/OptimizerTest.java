@@ -46,6 +46,14 @@ public class OptimizerTest {
     // Un-skipped in Phase 2b WI-2: Simplex 1D-dim bug fixed in commit
     // f593de6; both Simplex and LevenbergMarquardt now run via the
     // active optimizationMethodTypes matrix below.
+    /** C++-name alias for `optimizers.cpp::test` (the umbrella test case). */
+    @Test
+    public void test() { testOptimizers(); }
+
+    /** C++-name alias for `optimizers.cpp::nestedOptimizationTest`. */
+    @Test
+    public void nestedOptimizationTest() { testNestedOptimization(); }
+
     @Test
     public void testOptimizers() {
 

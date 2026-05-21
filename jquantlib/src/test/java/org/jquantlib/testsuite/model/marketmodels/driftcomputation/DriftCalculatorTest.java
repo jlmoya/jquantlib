@@ -93,6 +93,15 @@ public class DriftCalculatorTest {
      *   For i<4: numeraire(5) > i+1 → negate: drift[i] = -(4-i)*(1/21)*0.05
      *   drift[4] = 0 (empty range, no negate)
      */
+    /** C++-name alias for `marketmodel.cpp::testDriftCalculator` — the
+     * C++ test loops MarketModel variants over a single full-factor
+     * plain-vs-reduced equivalence assertion. The Java per-variant tests
+     * in this class collectively cover the same invariant (LMM, LMMNormal,
+     * SMM, CMSMM). This alias delegates to the LMM full-factor check that
+     * matches the C++ test's primary assertion. */
+    @Test
+    public void testDriftCalculator() { testLMMDriftCalculatorPlainEqualsReducedFullFactor(); }
+
     @Test
     public void testLMMDriftCalculatorPlainKnownCase() {
         final Matrix pseudo = flatMatrix(5, 5, 0.1);
