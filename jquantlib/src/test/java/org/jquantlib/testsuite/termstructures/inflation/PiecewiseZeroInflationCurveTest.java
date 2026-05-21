@@ -72,15 +72,14 @@ public class PiecewiseZeroInflationCurveTest {
 
         final Date refDate = cal.adjust(evalDate, bdc);
 
-        // Build UKRPI. Note: this Java A.1 helper's impliedQuote() formula
-        // (closed-form ZCIIS fair-rate from the curve) does NOT require
-        // historical fixings — those are needed only when forecasting through
-        // the index itself. The C++ probe seeds fixings for symmetry; we skip
-        // here because Java InflationIndex.addFixings has an unrelated NPE bug
-        // when bootstrapping a fresh index (TimeSeries.get returns null and
-        // autoboxes, see Index.java:146). That bug is independent of this
-        // sub-layer and will be addressed separately.
+        // Build UKRPI and seed UKRPI fixings exactly as the C++ probe does
+        // (zero_inflation_curve_probe.cpp:49-69). The bootstrap requires the
+        // baseFixing at startDate - swapObsLag = May 1, 2007 to compute
+        // ZCIIS fair-rate; missing it would raise "Missing RPI fixing".
+        // Phase1-closure-A8-A-563: the Index.addFixings NPE that originally
+        // blocked this seeding has been resolved (see Index.java:146-178).
         final UKRPI ukRpi = new UKRPI(freq, false, false);
+        seedUkRpiFixings(ukRpi);
 
         final Date baseDate = InflationTermStructure
                 .inflationPeriod(refDate.sub(swapObsLag), freq).first();
@@ -202,5 +201,35 @@ public class PiecewiseZeroInflationCurveTest {
 
     private static String fmtL(final String name, final long expected, final long actual) {
         return name + ": expected=" + expected + " actual=" + actual;
+    }
+
+    /**
+     * Seed UKRPI historical fixings matching the C++ probe
+     * (migration-harness/cpp/probes/termstructures/inflation/
+     * zero_inflation_curve_probe.cpp:49-69). Covers 2005-01 through 2007-07
+     * monthly with synthetic real-world-ish values around 200.
+     */
+    private static void seedUkRpiFixings(final UKRPI ukRpi) {
+        final Date[] dates = {
+                new Date(1, Month.January,   2005), new Date(1, Month.February,  2005), new Date(1, Month.March,     2005),
+                new Date(1, Month.April,     2005), new Date(1, Month.May,       2005), new Date(1, Month.June,      2005),
+                new Date(1, Month.July,      2005), new Date(1, Month.August,    2005), new Date(1, Month.September, 2005),
+                new Date(1, Month.October,   2005), new Date(1, Month.November,  2005), new Date(1, Month.December,  2005),
+                new Date(1, Month.January,   2006), new Date(1, Month.February,  2006), new Date(1, Month.March,     2006),
+                new Date(1, Month.April,     2006), new Date(1, Month.May,       2006), new Date(1, Month.June,      2006),
+                new Date(1, Month.July,      2006), new Date(1, Month.August,    2006), new Date(1, Month.September, 2006),
+                new Date(1, Month.October,   2006), new Date(1, Month.November,  2006), new Date(1, Month.December,  2006),
+                new Date(1, Month.January,   2007), new Date(1, Month.February,  2007), new Date(1, Month.March,     2007),
+                new Date(1, Month.April,     2007), new Date(1, Month.May,       2007), new Date(1, Month.June,      2007),
+                new Date(1, Month.July,      2007),
+        };
+        final double[] vals = {
+                189.9, 189.9, 190.5, 191.6, 192.0, 192.2, 192.2, 192.6, 193.1, 193.3, 193.6, 194.1,
+                193.4, 194.2, 195.0, 196.5, 197.7, 198.5, 198.5, 199.2, 200.1, 200.4, 201.1, 202.7,
+                201.6, 203.1, 204.4, 205.4, 206.2, 207.3, 206.1
+        };
+        for (int i = 0; i < dates.length; ++i) {
+            ukRpi.addFixing(dates[i], vals[i]);
+        }
     }
 }
