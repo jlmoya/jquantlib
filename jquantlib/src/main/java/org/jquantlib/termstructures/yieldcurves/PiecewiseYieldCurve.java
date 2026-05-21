@@ -68,7 +68,7 @@ import java.util.List;
  * @category yieldtermstructures
  */
 public class PiecewiseYieldCurve< T extends Traits, I extends Interpolator, B extends Bootstrap > extends LazyObject
-        implements PiecewiseCurve< I > {
+        implements PiecewiseCurve< I >, MultiCurveBootstrapProvider {
 
     //=============================================================================================
     //                                      Translation Notes                                    //
@@ -505,6 +505,20 @@ public class PiecewiseYieldCurve< T extends Traits, I extends Interpolator, B ex
     public void performCalculations() /* @ReadOnly */ {
         // just delegate to the bootstrapper
         bootstrap.calculate();
+    }
+
+    //
+    // implements MultiCurveBootstrapProvider — exposes the inner bootstrap as a MultiCurveBootstrapContributor
+    // when the curve is bootstrapped with a compatible bootstrapper (currently {@link GlobalBootstrap}).
+    // Returns null otherwise (e.g. when wired with IterativeBootstrap, which does not participate in the
+    // multi-curve protocol). Mirrors C++ multicurve.cpp:37-43 dynamic_pointer_cast<MultiCurveBootstrapProvider>.
+    //
+
+    @Override
+    public MultiCurveBootstrapContributor multiCurveBootstrapContributor() {
+        return bootstrap instanceof MultiCurveBootstrapContributor
+                ? (MultiCurveBootstrapContributor) bootstrap
+                : null;
     }
 
     //
