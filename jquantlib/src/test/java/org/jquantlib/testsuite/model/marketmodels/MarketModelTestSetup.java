@@ -30,6 +30,7 @@ import org.jquantlib.model.marketmodels.PiecewiseConstantCorrelation;
 import org.jquantlib.model.marketmodels.browniangenerators.MTBrownianGeneratorFactory;
 import org.jquantlib.model.marketmodels.correlations.ExponentialForwardCorrelation;
 import org.jquantlib.model.marketmodels.correlations.TimeHomogeneousForwardCorrelation;
+import org.jquantlib.model.marketmodels.evolvers.LogNormalCotSwapRatePc;
 import org.jquantlib.model.marketmodels.evolvers.LogNormalFwdRateBalland;
 import org.jquantlib.model.marketmodels.evolvers.LogNormalFwdRateIpc;
 import org.jquantlib.model.marketmodels.evolvers.LogNormalFwdRatePc;
@@ -410,7 +411,7 @@ public final class MarketModelTestSetup {
     // EvolverType enum (cpp:420)
     // ------------------------------------------------------------------
 
-    public enum EvolverType { Ipc, Balland, Pc, NormalPc }
+    public enum EvolverType { Ipc, Balland, Pc, NormalPc, CotSwapPc }
 
     /** Port of v1.42.1 {@code evolverTypeToString} (cpp:422-435). */
     public static String evolverTypeToString(final EvolverType type) {
@@ -423,6 +424,8 @@ public final class MarketModelTestSetup {
             return "predictor corrector";
           case NormalPc:
             return "predictor corrector for normal case";
+          case CotSwapPc:
+            return "coterminal swap rate predictor corrector";
           default:
             throw new IllegalArgumentException("unknown MarketModelEvolver type");
         }
@@ -459,6 +462,8 @@ public final class MarketModelTestSetup {
             return new LogNormalFwdRatePc(marketModel, generatorFactory, numeraires, initialStep);
           case NormalPc:
             return new NormalFwdRatePc(marketModel, generatorFactory, numeraires, initialStep);
+          case CotSwapPc:
+            return new LogNormalCotSwapRatePc(marketModel, generatorFactory, numeraires, initialStep);
           default:
             throw new IllegalArgumentException("unknown MarketModelEvolver type");
         }
