@@ -38,10 +38,12 @@ import org.jquantlib.math.integrals.GaussJacobiPolynomial;
 import org.jquantlib.math.integrals.GaussLaguerreCosinePolynomial;
 import org.jquantlib.math.integrals.GaussLaguerrePolynomial;
 import org.jquantlib.math.integrals.GaussLaguerreSinePolynomial;
+import org.jquantlib.math.integrals.GaussLaguerreIntegration;
 import org.jquantlib.math.integrals.GaussLegendreIntegration;
 import org.jquantlib.math.integrals.GaussianQuadrature;
 import org.jquantlib.math.integrals.MomentBasedGaussianPolynomial;
 import org.jquantlib.math.integrals.MultiDimGaussianIntegration;
+import org.jquantlib.math.integrals.TabulatedGaussLegendre;
 import org.junit.Test;
 
 /**
@@ -51,9 +53,13 @@ import org.junit.Test;
  * <p>The C++ file has 10 test cases. Java already covers the foundational
  * Hermite/Laguerre/Tabulated path:
  * <ul>
- *   <li>{@code testHermite} -> {@code GaussHermiteIntegrationTest}.</li>
- *   <li>{@code testLaguerre} (basic) -> {@code GaussLaguerreIntegrationTest}.</li>
- *   <li>{@code testTabulated} -> {@code TabulatedGaussLegendreTest}.</li>
+ *   <li>{@code testHermite} -> {@code GaussHermiteIntegrationTest} (extended
+ *       cross-validation). A faithful name-aliased port now also lives
+ *       in this class — Round A8-E-quad.</li>
+ *   <li>{@code testLaguerre} (basic) -> {@code GaussLaguerreIntegrationTest}.
+ *       Same: name-aliased port added in Round A8-E-quad.</li>
+ *   <li>{@code testTabulated} -> {@code TabulatedGaussLegendreTest::testPolynomials}.
+ *       Same: name-aliased port added in Round A8-E-quad.</li>
  * </ul>
  *
  * <p>Phase 5e.5b-CFC-d-90: un-ignored {@code testJacobi},
@@ -97,6 +103,26 @@ public class GaussianQuadraturesAdditionalTest {
         }
     }
 
+    // Overload for GaussLaguerreIntegration (does NOT extend GaussianQuadrature
+    // in the Java port — see Phase 2j.5 Track C.1 note).
+    private static void testSingle(final GaussLaguerreIntegration I, final String tag,
+                                   final Ops.DoubleOp f, final double expected) {
+        final double calculated = I.op(f);
+        if (Math.abs(calculated - expected) > TOL) {
+            fail("integrating " + tag
+                    + "\n    calculated: " + calculated
+                    + "\n    expected:   " + expected);
+        }
+    }
+
+    private static void testSingleLaguerre(final GaussLaguerreIntegration I) {
+        // Mirror of testSingleLaguerre() in test-suite/gaussianquadratures.cpp:119.
+        testSingle(I, "f(x) = exp(-x)",   x -> Math.exp(-x),     1.0);
+        testSingle(I, "f(x) = x*exp(-x)", x -> x * Math.exp(-x), 1.0);
+        final NormalDistribution n = new NormalDistribution();
+        testSingle(I, "f(x) = Gaussian(x)", n::op, 0.5);
+    }
+
     private static void testSingleJacobi(final GaussianQuadrature I) {
         testSingle(I, "f(x) = 1",   x -> 1.0, 2.0);
         testSingle(I, "f(x) = x",   x -> x,   0.0);
@@ -110,6 +136,61 @@ public class GaussianQuadraturesAdditionalTest {
     }
 
     // ---- ports of remaining C++ BOOST_AUTO_TEST_CASE methods ----------------------
+
+    @Test
+    public void testLaguerre() {
+        QL.info("Testing Gauss-Laguerre integration...");
+
+        // C++ test-suite/gaussianquadratures.cpp:169 — verbatim port.
+        testSingleLaguerre(new GaussLaguerreIntegration(16));
+        testSingleLaguerre(new GaussLaguerreIntegration(150, 0.01));
+
+        testSingle(new GaussLaguerreIntegration(16, 1.0), "f(x) = x*exp(-x)",
+                   x -> x * Math.exp(-x), 1.0);
+        testSingle(new GaussLaguerreIntegration(32, 0.9), "f(x) = x*exp(-x)",
+                   x -> x * Math.exp(-x), 1.0);
+    }
+
+    @Test
+    public void testHermite() {
+        QL.info("Testing Gauss-Hermite integration...");
+
+        // C++ test-suite/gaussianquadratures.cpp:181 — verbatim port.
+        final NormalDistribution n = new NormalDistribution();
+        testSingle(new GaussHermiteIntegration(16), "f(x) = Gaussian(x)",
+                   n::op, 1.0);
+        testSingle(new GaussHermiteIntegration(16, 0.5), "f(x) = x*Gaussian(x)",
+                   x -> x * n.op(x), 0.0);
+        testSingle(new GaussHermiteIntegration(64, 0.9), "f(x) = x*x*Gaussian(x)",
+                   x -> x * x * n.op(x), 1.0);
+    }
+
+    @Test
+    public void testTabulated() {
+        QL.info("Testing tabulated Gauss-Legendre integration...");
+
+        // C++ test-suite/gaussianquadratures.cpp:201 — verbatim port.
+        testSingleTabulated(x -> x,             "f(x) = x",   0.0,       1.0e-13);
+        testSingleTabulated(x -> x * x,         "f(x) = x^2", 2.0 / 3.0, 1.0e-13);
+        testSingleTabulated(x -> x * x * x,     "f(x) = x^3", 0.0,       1.0e-13);
+        testSingleTabulated(x -> x * x * x * x, "f(x) = x^4", 2.0 / 5.0, 1.0e-13);
+    }
+
+    private static void testSingleTabulated(final Ops.DoubleOp f, final String tag,
+                                            final double expected, final double tolerance) {
+        final int[] order = { 6, 7, 12, 20 };
+        final TabulatedGaussLegendre quad = new TabulatedGaussLegendre();
+        for (final int i : order) {
+            quad.setOrder(i);
+            final double realised = quad.evaluate(f);
+            if (Math.abs(realised - expected) > tolerance) {
+                fail(" integrating " + tag
+                        + "\n    order " + i
+                        + "\n    realised: " + realised
+                        + "\n    expected: " + expected);
+            }
+        }
+    }
 
     @Test
     public void testJacobi() {
