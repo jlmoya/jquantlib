@@ -695,16 +695,15 @@ public class AndreasenHugeVolatilityInterpl extends LazyObject {
             return new Array(v);
         }
 
-        @Override
-        public double value(final Array x) {
-            final Array v = values(x);
-            double sum = 0.0;
-            for ( int i = 0; i < v.size(); ++i ) {
-                final double vi = v.get(i);
-                sum += vi * vi;
-            }
-            return sum;
-        }
+        // Note: value(x) intentionally NOT overridden — defer to the base
+        // CostFunction implementation which returns sqrt(sum(v²)/N), matching
+        // C++ v1.42.1 (AndreasenHugeCostFunction in
+        // ql/termstructures/volatility/equityfx/andreasenhugevolatilityinterpl.cpp
+        // only overrides values()). The previous Java override returned
+        // sum-of-squares, which inflated gradient magnitudes by ~N (and
+        // squared the scale) — harmless for LM (uses values() directly) and
+        // tolerable for Simplex, but it made BFGS Armijo line-search step
+        // shrink to ~1e-94 on the AH SABR 20Y surface (Phase1-closure-A8-C).
 
         // ---- helpers -------------------------------------------------------
 
@@ -796,15 +795,9 @@ public class AndreasenHugeVolatilityInterpl extends LazyObject {
             }
         }
 
-        @Override
-        public double value(final Array x) {
-            final Array v = values(x);
-            double sum = 0.0;
-            for ( int i = 0; i < v.size(); ++i ) {
-                final double vi = v.get(i);
-                sum += vi * vi;
-            }
-            return sum;
-        }
+        // Note: value(x) intentionally NOT overridden — see AHCostFunction
+        // for the same alignment rationale (Phase1-closure-A8-C). The C++
+        // CombinedCostFunction in v1.42.1 also only overrides values(),
+        // letting the base class' RMS value() drive the scalar cost.
     }
 }

@@ -73,8 +73,15 @@ public class ArmijoLineSearch extends LineSearch {
 
         // Initialize gradient
         gradient_ = new Array(P.currentValue().size());
-        // Compute new point
-        xtd_ = P.currentValue();
+        // Compute new point — clone() to mirror C++ Array's copy semantics
+        // for `Array xtd_ = P.currentValue();` (C++ returns const Array& and
+        // copy-constructs into xtd_). Java's reference-assignment would
+        // alias xtd_ with P.currentValue_ and let update()'s in-place
+        // addAssign mutate the problem's stored current value across
+        // iterations (Phase1-closure-A8-C — caused BFGS Armijo to evaluate
+        // accumulated-step xtd_ values, with f rising monotonically and
+        // step shrinking to ~1e-94).
+        xtd_ = P.currentValue().clone();
         t = update(xtd_, searchDirection_, t, constraint);
         // Compute fucntion value at the new point
         qt_ = P.value(xtd_);
@@ -87,8 +94,8 @@ public class ArmijoLineSearch extends LineSearch {
                 t *= beta_;
                 // Store old value of the function
                 qtold = qt_;
-                // New point value
-                xtd_ = P.currentValue();
+                // New point value — clone() per the alias-fix above.
+                xtd_ = P.currentValue().clone();
                 t = update(xtd_, searchDirection_, t, constraint);
 
                 // Compute function value at the new point

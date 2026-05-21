@@ -96,9 +96,25 @@ public abstract class CostFunction {
     //
 
     /**
-     * Method to overload to compute the cost function value in {@latex$ x }
+     * Method to overload to compute the cost function value in {@latex$ x }.
+     *
+     * <p>Default implementation matches C++ v1.42.1
+     * {@code ql/math/optimization/costfunction.hpp:38} — RMS over
+     * {@link #values}: {@code sqrt(sum(v[i]²)/N)}. Subclasses may override
+     * for a custom scalar reduction, but the default is what the optimizers
+     * expect (BFGS in particular is sensitive to the magnitude of
+     * {@code value}, since its line search uses {@code ||g||²} of the
+     * finite-difference gradient).
      */
-    public abstract double value(final Array x) /* @ReadOnly */;
+    public double value(final Array x) /* @ReadOnly */ {
+        final Array v = values(x);
+        double sum = 0.0;
+        for (int i = 0; i < v.size(); ++i) {
+            final double vi = v.get(i);
+            sum += vi * vi;
+        }
+        return Math.sqrt(sum / v.size());
+    }
 
     /**
      * Method to overload to compute the cost function values in {@latex$ x }
