@@ -77,6 +77,7 @@ import org.jquantlib.termstructures.yieldcurves.FraRateHelper;
 import org.jquantlib.termstructures.yieldcurves.FuturesRateHelper;
 import org.jquantlib.termstructures.yieldcurves.GlobalBootstrap;
 import org.jquantlib.termstructures.yieldcurves.PiecewiseYieldCurve;
+import org.jquantlib.termstructures.yieldcurves.SimpleZeroYield;
 import org.jquantlib.termstructures.yieldcurves.SwapRateHelper;
 import org.jquantlib.termstructures.yieldcurves.Traits;
 import org.jquantlib.termstructures.yieldcurves.ZeroYield;
@@ -1314,16 +1315,13 @@ public class PiecewiseYieldCurveTest {
 	//   bound — has no Java counterpart. Production-port effort: ~50 LOC
 	//   added to IterativeBootstrap + propagation through PiecewiseYieldCurve.
 	//
-	// testGlobalBootstrap (cpp:1304) — BLOCKED
-	//   Requires GlobalBootstrap<Curve> for yield curves (Java only has
-	//   GlobalBootstrap for inflation). Also depends on the additional-helpers
-	//   / additional-dates / cost-function customization scaffold which Java
-	//   has not yet ported. Effort: ~800 LOC for GlobalBootstrap-for-yield +
-	//   AdditionalHelpers / AdditionalDates plumbing.
+	// testGlobalBootstrap (cpp:1304) — PORTED in Phase1.1-A-562
+	//   See @Test testGlobalBootstrap() below. Required port of SimpleZeroYield
+	//   trait class + InterpolatedSimpleZeroCurve (see Phase1.1-A-562-simplezero).
 	//
-	// testGlobalBootstrapPenalty (cpp:1386) — BLOCKED
-	//   Same blocker as testGlobalBootstrap; adds a penalty-function variant
-	//   on top.
+	// testGlobalBootstrapPenalty (cpp:1386) — PORTED in Phase1.1-A-562
+	//   See @Test testGlobalBootstrapPenalty() below. Exercises both the
+	//   non-penalty and gradient-penalty branches of GlobalBootstrap.
 	//
 	// testGlobalBootstrapVariables (cpp:1484) — BLOCKED
 	//   Same blocker; additionally needs SimpleQuoteVariables and
@@ -1712,6 +1710,147 @@ public class PiecewiseYieldCurveTest {
 	        throw new RuntimeException(String.format(
 	                "GlobalBootstrap weighted-vs-penalty mismatch at t=0.3: curve1=%.16f curve2=%.16f relErr=%.2e tol=%.2e",
 	                d1, d2, relErr, tolerance));
+	    }
+	}
+
+	/**
+	 * Faithful port of {@code test-suite/piecewiseyieldcurve.cpp:1304}
+	 * {@code BOOST_AUTO_TEST_CASE(testGlobalBootstrap)}.
+	 * <p>
+	 * Builds a yield curve with the {@link SimpleZeroYield} trait + Linear
+	 * interpolation + {@link GlobalBootstrap} fed by deposits, FRAs, and swaps;
+	 * passes 7 additional FRA helpers + 7 corresponding additional dates +
+	 * a 5-element cost-function residual lambda that constrains the curve at
+	 * a 5-point interior using linear interpolation between the first and last
+	 * additional helpers. Verifies pillar dates and 32 zero rates at 0.01 bp
+	 * tolerance against C++ reference data.
+	 */
+	@Test
+	public void testGlobalBootstrap() {
+	    QL.info("Testing global bootstrap...");
+
+	    final Date today = new Date(26, Month.September, 2019);
+	    new Settings().setEvaluationDate(today);
+
+	    // market rates (in %)
+	    final double[] refMktRate = {-0.373,   -0.388,   -0.402,   -0.418,   -0.431,  -0.441,   -0.45,
+	                                 -0.457,   -0.463,   -0.469,   -0.461,   -0.463,  -0.479,   -0.4511,
+	                                 -0.45418, -0.439,   -0.4124,  -0.37703, -0.3335, -0.28168, -0.22725,
+	                                 -0.1745,  -0.12425, -0.07746, 0.0385,   0.1435,  0.17525,  0.17275,
+	                                 0.1515,   0.1225,   0.095,    0.0644};
+
+	    final Date[] refDate = {
+	        new Date(31, Month.March, 2020), new Date(30, Month.April, 2020),
+	        new Date(29, Month.May, 2020),   new Date(30, Month.June, 2020),
+	        new Date(31, Month.July, 2020),  new Date(31, Month.August, 2020),
+	        new Date(30, Month.September, 2020), new Date(30, Month.October, 2020),
+	        new Date(30, Month.November, 2020), new Date(31, Month.December, 2020),
+	        new Date(29, Month.January, 2021), new Date(26, Month.February, 2021),
+	        new Date(31, Month.March, 2021), new Date(30, Month.September, 2021),
+	        new Date(30, Month.September, 2022), new Date(29, Month.September, 2023),
+	        new Date(30, Month.September, 2024), new Date(30, Month.September, 2025),
+	        new Date(30, Month.September, 2026), new Date(30, Month.September, 2027),
+	        new Date(29, Month.September, 2028), new Date(28, Month.September, 2029),
+	        new Date(30, Month.September, 2030), new Date(30, Month.September, 2031),
+	        new Date(29, Month.September, 2034), new Date(30, Month.September, 2039),
+	        new Date(30, Month.September, 2044), new Date(30, Month.September, 2049),
+	        new Date(30, Month.September, 2054), new Date(30, Month.September, 2059),
+	        new Date(30, Month.September, 2064), new Date(30, Month.September, 2069)};
+
+	    final double[] refZeroRate = {
+	        -0.00373354, -0.00381005, -0.00387689, -0.00394124, -0.00407706, -0.00413633, -0.00411935,
+	        -0.00416370, -0.00420557, -0.00424431, -0.00427824, -0.00430977, -0.00434401, -0.00445243,
+	        -0.00448506, -0.00433690, -0.00407401, -0.00372752, -0.00330050, -0.00279139, -0.00225477,
+	        -0.00173422, -0.00123688, -0.00077237,  0.00038554,  0.00144248,  0.00175995,  0.00172873,
+	         0.00150782,  0.00121145,  0.000933912, 0.000628946};
+
+	    // build ql helpers
+	    final IborIndex index = new Euribor(new Period(6, TimeUnit.Months));
+	    final java.util.List<RateHelper> helpersList = new java.util.ArrayList<RateHelper>();
+	    helpersList.add(new DepositRateHelper(refMktRate[0] / 100.0, new Period(6, TimeUnit.Months), 2,
+	            new Target(), BusinessDayConvention.ModifiedFollowing, true, new Actual360()));
+	    for (int i = 0; i < 12; ++i) {
+	        helpersList.add(new FraRateHelper(refMktRate[1 + i] / 100.0, i + 1, index));
+	    }
+	    final int[] swapTenors = {2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 15, 20, 25, 30, 35, 40, 45, 50};
+	    for (int i = 0; i < 19; ++i) {
+	        helpersList.add(new SwapRateHelper(refMktRate[13 + i] / 100.0,
+	                new Period(swapTenors[i], TimeUnit.Years),
+	                new Target(), Frequency.Annual, BusinessDayConvention.ModifiedFollowing,
+	                new Thirty360(Thirty360.Convention.BondBasis), index));
+	    }
+	    final RateHelper[] helpers = helpersList.toArray(new RateHelper[0]);
+
+	    // 7 additional FRA helpers (months 12..18 at -0.4%)
+	    final java.util.List<RateHelper> additionalHelpers = new java.util.ArrayList<RateHelper>();
+	    for (int i = 0; i < 7; ++i) {
+	        additionalHelpers.add(new FraRateHelper(-0.004, 12 + i, index));
+	    }
+
+	    // additionalDates: 5 dates monthly from settl+1M..settl+5M, plus two before-ref dates
+	    // (today-1, today-2) — the latter MUST be filtered out by GlobalBootstrap.initialize().
+	    final GlobalBootstrap.AdditionalDatesProvider addDates = new GlobalBootstrap.AdditionalDatesProvider() {
+	        @Override
+	        public java.util.List<Date> get() {
+	            final Calendar cal = new Target();
+	            final Date settl = cal.advance(today, 2, TimeUnit.Days);
+	            final java.util.List<Date> dates = new java.util.ArrayList<Date>();
+	            for (int i = 0; i < 5; ++i) {
+	                dates.add(cal.advance(settl, 1 + i, TimeUnit.Months));
+	            }
+	            // Add dates before the referenceDate and not in sorted order (must be skipped).
+	            dates.add(0, today.sub(1));
+	            dates.add(today.sub(2));
+	            return dates;
+	        }
+	    };
+
+	    // additionalErrors: linear interpolation residual between additionalHelpers[0] and [6].
+	    // Mirrors C++ struct additionalErrors (piecewiseyieldcurve.cpp:1268-1283).
+	    final GlobalBootstrap.AdditionalPenalties addErrors = new GlobalBootstrap.AdditionalPenalties() {
+	        @Override
+	        public org.jquantlib.math.matrixutilities.Array evaluate(final double[] times, final double[] data) {
+	            final org.jquantlib.math.matrixutilities.Array errors =
+	                    new org.jquantlib.math.matrixutilities.Array(5);
+	            final double a = additionalHelpers.get(0).impliedQuote();
+	            final double b = additionalHelpers.get(6).impliedQuote();
+	            for (int k = 0; k < 5; ++k) {
+	                errors.set(k, (5.0 - k) / 6.0 * a + (1.0 + k) / 6.0 * b
+	                        - additionalHelpers.get(1 + k).impliedQuote());
+	            }
+	            return errors;
+	        }
+	    };
+
+	    final GlobalBootstrap bootstrap = new GlobalBootstrap(
+	            PiecewiseYieldCurve.class, 1.0e-12, null, null, null,
+	            additionalHelpers, addDates, addErrors);
+
+	    final PiecewiseYieldCurve curve = new PiecewiseYieldCurve(
+	            SimpleZeroYield.class, Linear.class, GlobalBootstrap.class,
+	            2, new Target(), helpers, new Actual365Fixed(),
+	            new Handle/*<Quote>*/[0], new Date[0], 1.0e-12, new Linear(), bootstrap);
+	    curve.enableExtrapolation();
+
+	    // check expected pillar dates
+	    for (int i = 0; i < refDate.length; ++i) {
+	        if (!refDate[i].eq(helpers[i].latestDate())) {
+	            throw new RuntimeException(String.format(
+	                    "pillar #%d mismatch: expected %s, got %s",
+	                    i, refDate[i], helpers[i].latestDate()));
+	        }
+	    }
+
+	    // check expected zero rates — 0.01 basis points tolerance
+	    final double tol = 1.0e-6;
+	    for (int i = 0; i < refZeroRate.length; ++i) {
+	        final double z = curve.zeroRate(refDate[i], new Actual360(),
+	                org.jquantlib.termstructures.Compounding.Continuous).rate();
+	        if (Math.abs(refZeroRate[i] - z) > tol) {
+	            throw new RuntimeException(String.format(
+	                    "zero rate #%d mismatch at %s: expected %.10f, got %.10f, diff %.2e (tol %.2e)",
+	                    i, refDate[i], refZeroRate[i], z, refZeroRate[i] - z, tol));
+	        }
 	    }
 	}
 
