@@ -54,6 +54,26 @@ public class UnitedStatesCalendarTest {
         System.out.println("::::: " + this.getClass().getSimpleName() + " :::::");
     }
 
+    /** C++-name alias for `calendars.cpp::testUSNewYorkStockExchange`. The
+     * C++ test checks NYSE holidays for 2004 (a representative year);
+     * Java's per-year tests provide year-by-year coverage. This alias
+     * delegates to the 2004 check, matching the C++ test's scope. */
+    @Test
+    public void testUSNewYorkStockExchange() { testUnitedStatesNYSEYear2004(); }
+
+    /** C++-name alias for `calendars.cpp::testUSGovernmentBondMarket`. */
+    @Test
+    public void testUSGovernmentBondMarket() { testUnitedStatesGBondYear2004(); }
+
+    /* C++-name alias for `calendars.cpp::testUSSettlement` — NOT PORTED.
+     * Java's per-year settlement tests (`testUnitedStatesSettlementYear20XX`)
+     * lack `@Test` annotations, hiding a real bug: the JQuantLib
+     * `UnitedStates(Settlement)` calendar produces a holiday list that
+     * diverges from C++ v1.42.1 (e.g. Friday-Jan-2-2004 observance,
+     * Monday-Jul-5-2004 substitution, Dec-31-2004 New Year's Eve). Fixing
+     * the calendar requires per-rule alignment with `ql/time/calendars/unitedstates.cpp`.
+     * Tracked as Phase 1.2 carve-out — see TODO #566. */
+
     // 2004 - leap-year in the past
     @Test
     public void testUnitedStatesNYSEYear2004() {
