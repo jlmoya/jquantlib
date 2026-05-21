@@ -94,3 +94,40 @@ That doc carries the next-action plan if/when the project decides to drive
 the residual to 0 (vs. accepting them as documented carve-outs covering
 `if_speed(Slow)` gates, EXISTING_EQUIVALENT reclassifications, and the
 remaining BLOCKED entries).
+
+---
+
+## Round A7+ status (post-A6)
+
+After A6's documentation freeze (main `234394c3`), Path A continued with
+sub-rounds A7-B through A7-J (and an A8-D documentation-only refresh).
+Net delta: +129 @Test methods (3213 → 3342), 6 additional latent
+production bugs found+fixed, residual missing-by-name halved (75–80 → 36).
+
+| Sub-round | Status | Highlights |
+|-----------|--------|------------|
+| **A7-B** | **DONE** | 3 interpolator factories (`MonotonicLogCubic`, `KrugerLog`) + `ConvexMonotone` port (~730 LOC). Closes the `piecewiseyieldcurve::testDefaultInstantiation` interpolator gap. |
+| **A7-C** | **DONE** | `RelativeDateRateHelper` `DateProxy` aliasing fix (align `13d96dc4`) + `testSwapRateHelperSpotDate` port (`0c5e74ad`). |
+| **A7-D** | **DONE** | 4 helper ctor overloads (dated-swap, dated-FRA, `Pillar`-aware FRA, dated-deposit) + `FuturesRateHelper` price-conversion bug fix. |
+| **A7-E** | **DONE** | `Math.erfc` deep-tail (`|x| > ~6`) align using asymptotic expansion — unblocks Black-Scholes vega bumping on deep-OTM strikes. |
+| **A7-F** | **DONE** | `testBermudanSwaption` port into MarkovFunctional test class (~400 LOC, full v1.42.1 expected NPVs). |
+| **A7-G** | **DONE** | 5 dividend tests + `CashDividendEuropeanEngine` port (~270 LOC) — closes the entire `dividendoption.cpp` missing-by-name bucket. |
+| **A7-J** | **DONE** | `EuropeanOptionTest::testFdEngineWithNonConstantParameters` port (commit `8dd4d1b8`) + `InterpolatedForwardCurve` precondition fix (stale `forwards[0]==1.0` discount-factor guard removed; inverted `Closeness.isClose` corrected). Plus full sweep of remaining "1-test by name" entries → ~18 reclassified as `EXISTING_EQUIVALENT` (commit `7a9807ee`). |
+| **inline** | **DONE** | `Period.frequency()` `Once`-vs-`NoFrequency` distinction fix (folded into the SwapRateHelper/OIS work). |
+| **A8-D** | **DONE** | Documentation refresh (this doc + `phase1-certification-report.md` Round A7+ delta + README badge + `phase1-closure-remaining.md`). No production code changes in A8-D. |
+
+### Items deferred to Phase 1.1
+
+- TODO **#562** (PiecewiseYieldCurve full `GlobalBootstrap` + `MultiCurve`
+  infra) is *in_progress*. Substantially advanced through A7-B/C/D
+  (interpolator factories, RelativeDateRateHelper fix, 4 ctor overloads
+  landed). Only `MultiCurve` class + the 4 remaining `GlobalBootstrap`
+  test bodies (`testGlobalBootstrap`, `testGlobalBootstrapPenalty`,
+  `testGlobalBootstrapVariables`, `testGlobalBootstrapInstrumentWeights`)
+  are **deferred to Phase 1.1**.
+- TODO **#563** is a pre-existing inflation `NullPointerException` in a
+  CapFloor-class A3 carve-out, not introduced by any Path A landing.
+  **Deferred to Phase 1.1.**
+
+Both #562 and #563 are tracked for the Phase 1.1 plan; neither blocks the
+Phase 1 closure proposal (D5 GREEN with documented small carve-outs).
