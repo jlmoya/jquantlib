@@ -1034,6 +1034,256 @@ public class MarkovFunctionalTest {
     // -----------------------------------------------------------------------
 
     // -----------------------------------------------------------------------
+    //  Phase 1 closure A7-I R563 — port v1.42.1 testVanillaEngines
+    //  (markovfunctional.cpp:1120-1399). Compares Black engine NPVs vs
+    //  Gaussian1dSwaptionEngine/Gaussian1dCapFloorEngine NPVs across the cube
+    //  of {basket1 swaption, basket2 caplet} × {flat termstructures, md0
+    //  termstructures} × strikes/expiries from modelOutputs. C++ tol1=1e-4 abs.
+    //  Slow-gated to mirror C++ {@code if_speed(Slow)}.
+    // -----------------------------------------------------------------------
+
+    /**
+     * Mirrors C++ {@code testVanillaEngines} (markovfunctional.cpp:1120-1399).
+     *
+     * <p>The "real termstructures" baskets carry a smile correction term
+     * {@code marketCallPremium_ - marketRawCallPremium_} that compensates for
+     * the Sabr-cube re-fit; the test sums that into the difference before
+     * comparing to {@code tol1 = 1e-4} absolute, matching C++ exactly.
+     */
+    @Test
+    public void testVanillaEngines() {
+        Assume.assumeTrue("test gated -Dql.slowTests=1 to mirror C++ if_speed(Slow)",
+                System.getProperty("ql.slowTests") != null);
+
+        final double tol1 = 0.0001; // 1bp tolerance
+
+        final Date referenceDate = new Date(14, Month.November, 2012);
+        new Settings().setEvaluationDate(referenceDate);
+
+        final Handle<YieldTermStructure> flatYts_ = flatYts();
+        final Handle<YieldTermStructure> md0Yts_ = md0Yts();
+        final Handle<SwaptionVolatilityStructure> flatSwaptionVts_ = flatSwaptionVts();
+        final Handle<SwaptionVolatilityStructure> md0SwaptionVts_ = md0SwaptionVts();
+        final Handle<OptionletVolatilityStructure> flatOptionletVts_ = flatOptionletVts();
+        final Handle<OptionletVolatilityStructure> md0OptionletVts_ = md0OptionletVts();
+
+        final SwapIndex swapIndexBase = new EuriborSwapIsdaFixA(
+                new Period(1, TimeUnit.Years));
+
+        final List<Date> volStepDates = new ArrayList<Date>();
+        final double[] vols = new double[]{1.0};
+        final double[] money = new double[]{
+                0.1, 0.25, 0.50, 0.75, 1.0, 1.25, 1.50, 2.0, 5.0};
+
+        final Target target = new Target();
+
+        // Calibration Basket 1 / flat yts, vts -------------------------------
+        final IborIndex iborIndex1 = new Euribor(new Period(6, TimeUnit.Months), flatYts_);
+        final MarkovFunctional mf1 = new MarkovFunctional(
+                flatYts_, 0.01, volStepDates, vols, flatSwaptionVts_,
+                expiriesCalBasket1(referenceDate), tenorsCalBasket1(),
+                swapIndexBase,
+                new MarkovFunctional.ModelSettings()
+                        .withYGridPoints(64)
+                        .withYStdDevs(7.0)
+                        .withGaussHermitePoints(32)
+                        .withDigitalGap(1e-5)
+                        .withMarketRateAccuracy(1e-7)
+                        .withLowerRateBound(0.0)
+                        .withUpperRateBound(2.0)
+                        .withSmileMoneynessCheckpoints(money));
+        final MarkovFunctional.ModelOutputs outputs1 = mf1.modelOutputs();
+        final PricingEngine mfSwaptionEngine1 = new Gaussian1dSwaptionEngine(mf1, 64, 7.0);
+        final PricingEngine blackSwaptionEngine1 = new BlackSwaptionEngine(
+                flatYts_, flatSwaptionVts_);
+
+        for (int i = 0; i < outputs1.expiries_.size(); i++) {
+            for (int j = 0; j < outputs1.smileStrikes_.get(0).size(); j++) {
+                final double strike = outputs1.smileStrikes_.get(i).get(j);
+                final VanillaSwap underlyingCall = new MakeVanillaSwap(
+                        outputs1.tenors_.get(i), iborIndex1, strike)
+                        .withEffectiveDate(target.advance(
+                                outputs1.expiries_.get(i), 2, TimeUnit.Days))
+                        .receiveFixed(false).value();
+                final VanillaSwap underlyingPut = new MakeVanillaSwap(
+                        outputs1.tenors_.get(i), iborIndex1, strike)
+                        .withEffectiveDate(target.advance(
+                                outputs1.expiries_.get(i), 2, TimeUnit.Days))
+                        .receiveFixed(true).value();
+                final Exercise exercise = new EuropeanExercise(outputs1.expiries_.get(i));
+                final Swaption swaptionC = new Swaption(underlyingCall, exercise);
+                final Swaption swaptionP = new Swaption(underlyingPut, exercise);
+                swaptionC.setPricingEngine(blackSwaptionEngine1);
+                swaptionP.setPricingEngine(blackSwaptionEngine1);
+                final double blackPriceCall = swaptionC.NPV();
+                final double blackPricePut = swaptionP.NPV();
+                swaptionC.setPricingEngine(mfSwaptionEngine1);
+                swaptionP.setPricingEngine(mfSwaptionEngine1);
+                final double mfPriceCall = swaptionC.NPV();
+                final double mfPricePut = swaptionP.NPV();
+                if (Math.abs(blackPriceCall - mfPriceCall) > tol1) {
+                    fail("Basket 1 / flat termstructures: Call premium market ("
+                            + blackPriceCall + ") does not match model premium ("
+                            + mfPriceCall + ")");
+                }
+                if (Math.abs(blackPricePut - mfPricePut) > tol1) {
+                    fail("Basket 1 / flat termstructures: Put premium market ("
+                            + blackPricePut + ") does not match model premium ("
+                            + mfPricePut + ")");
+                }
+            }
+        }
+
+        // Calibration Basket 2 / flat yts, vts -------------------------------
+        final IborIndex iborIndex2 = new Euribor(new Period(6, TimeUnit.Months), flatYts_);
+        final MarkovFunctional mf2 = new MarkovFunctional(
+                flatYts_, 0.01, volStepDates, vols, flatOptionletVts_,
+                expiriesCalBasket2(referenceDate), iborIndex2,
+                new MarkovFunctional.ModelSettings()
+                        .withYGridPoints(64)
+                        .withYStdDevs(7.0)
+                        .withGaussHermitePoints(16)
+                        .withDigitalGap(1e-5)
+                        .withMarketRateAccuracy(1e-7)
+                        .withLowerRateBound(0.0)
+                        .withUpperRateBound(2.0)
+                        .withSmileMoneynessCheckpoints(money));
+        mf2.modelOutputs(); // touch — parity with C++
+        final PricingEngine blackCapFloorEngine2 = new BlackCapFloorEngine(
+                flatYts_, flatOptionletVts_);
+        final PricingEngine mfCapFloorEngine2 = new Gaussian1dCapFloorEngine(mf2, 64, 7.0);
+        final List<CapFloor> c2 = new ArrayList<CapFloor>();
+        final double[] strikesBasket2Flat = new double[]{
+                0.01, 0.02, 0.03, 0.04, 0.05, 0.07, 0.10};
+        for (final double s : strikesBasket2Flat) {
+            c2.add(new MakeCapFloor(CapFloor.Type.Cap,
+                    new Period(5, TimeUnit.Years), iborIndex2, s).value());
+        }
+        for (final double s : strikesBasket2Flat) {
+            c2.add(new MakeCapFloor(CapFloor.Type.Floor,
+                    new Period(5, TimeUnit.Years), iborIndex2, s).value());
+        }
+        for (final CapFloor cf : c2) {
+            cf.setPricingEngine(blackCapFloorEngine2);
+            final double blackPrice = cf.NPV();
+            cf.setPricingEngine(mfCapFloorEngine2);
+            final double mfPrice = cf.NPV();
+            if (Math.abs(blackPrice - mfPrice) > tol1) {
+                fail("Basket 2 / flat termstructures: Cap/Floor premium market ("
+                        + blackPrice + ") does not match model premium ("
+                        + mfPrice + ")");
+            }
+        }
+
+        // Calibration Basket 1 / real yts, vts -------------------------------
+        final IborIndex iborIndex3 = new Euribor(new Period(6, TimeUnit.Months), md0Yts_);
+        final MarkovFunctional mf3 = new MarkovFunctional(
+                md0Yts_, 0.01, volStepDates, vols, md0SwaptionVts_,
+                expiriesCalBasket1(referenceDate), tenorsCalBasket1(),
+                swapIndexBase,
+                new MarkovFunctional.ModelSettings()
+                        .withYGridPoints(64)
+                        .withYStdDevs(7.0)
+                        .withGaussHermitePoints(32)
+                        .withDigitalGap(1e-5)
+                        .withMarketRateAccuracy(1e-7)
+                        .withLowerRateBound(0.0)
+                        .withUpperRateBound(2.0)
+                        .withSmileMoneynessCheckpoints(money));
+        final PricingEngine mfSwaptionEngine3 = new Gaussian1dSwaptionEngine(mf3, 64, 7.0);
+        final PricingEngine blackSwaptionEngine3 = new BlackSwaptionEngine(
+                md0Yts_, md0SwaptionVts_);
+        final MarkovFunctional.ModelOutputs outputs3 = mf3.modelOutputs();
+
+        for (int i = 0; i < outputs3.expiries_.size(); i++) {
+            for (int j = 0; j < outputs3.smileStrikes_.get(0).size(); j++) {
+                final double strike = outputs3.smileStrikes_.get(i).get(j);
+                final VanillaSwap underlyingCall = new MakeVanillaSwap(
+                        outputs3.tenors_.get(i), iborIndex3, strike)
+                        .withEffectiveDate(target.advance(
+                                outputs3.expiries_.get(i), 2, TimeUnit.Days))
+                        .receiveFixed(false).value();
+                final VanillaSwap underlyingPut = new MakeVanillaSwap(
+                        outputs3.tenors_.get(i), iborIndex3, strike)
+                        .withEffectiveDate(target.advance(
+                                outputs3.expiries_.get(i), 2, TimeUnit.Days))
+                        .receiveFixed(true).value();
+                final Exercise exercise = new EuropeanExercise(outputs3.expiries_.get(i));
+                final Swaption swaptionC = new Swaption(underlyingCall, exercise);
+                final Swaption swaptionP = new Swaption(underlyingPut, exercise);
+                swaptionC.setPricingEngine(blackSwaptionEngine3);
+                swaptionP.setPricingEngine(blackSwaptionEngine3);
+                final double blackPriceCall = swaptionC.NPV();
+                final double blackPricePut = swaptionP.NPV();
+                swaptionC.setPricingEngine(mfSwaptionEngine3);
+                swaptionP.setPricingEngine(mfSwaptionEngine3);
+                final double mfPriceCall = swaptionC.NPV();
+                final double mfPricePut = swaptionP.NPV();
+                final double smileCorrectionCall =
+                        outputs3.marketCallPremium_.get(i).get(j)
+                                - outputs3.marketRawCallPremium_.get(i).get(j);
+                final double smileCorrectionPut =
+                        outputs3.marketPutPremium_.get(i).get(j)
+                                - outputs3.marketRawPutPremium_.get(i).get(j);
+                if (Math.abs(blackPriceCall - mfPriceCall + smileCorrectionCall) > tol1) {
+                    fail("Basket 1 / real termstructures: Call premium market ("
+                            + blackPriceCall + ") does not match model premium ("
+                            + mfPriceCall + ")");
+                }
+                if (Math.abs(blackPricePut - mfPricePut + smileCorrectionPut) > tol1) {
+                    fail("Basket 1 / real termstructures: Put premium market ("
+                            + blackPricePut + ") does not match model premium ("
+                            + mfPricePut + ")");
+                }
+            }
+        }
+
+        // Calibration Basket 2 / real yts, vts -------------------------------
+        final IborIndex iborIndex4 = new Euribor(new Period(6, TimeUnit.Months), md0Yts_);
+        final MarkovFunctional mf4 = new MarkovFunctional(
+                md0Yts_, 0.01, volStepDates, vols, md0OptionletVts_,
+                expiriesCalBasket2(referenceDate), iborIndex4,
+                new MarkovFunctional.ModelSettings()
+                        .withYGridPoints(64)
+                        .withYStdDevs(7.0)
+                        .withGaussHermitePoints(32)
+                        .withDigitalGap(1e-5)
+                        .withMarketRateAccuracy(1e-7)
+                        .withLowerRateBound(0.0)
+                        .withUpperRateBound(2.0)
+                        .withSmileMoneynessCheckpoints(money));
+        mf4.modelOutputs(); // touch — parity with C++
+
+        final PricingEngine blackCapFloorEngine4 = new BlackCapFloorEngine(
+                md0Yts_, md0OptionletVts_);
+        final PricingEngine mfCapFloorEngine4 = new Gaussian1dCapFloorEngine(mf4, 64, 7.0);
+
+        // C++ excludes strike 0.10 because the caplet stripper fails for it.
+        final double[] strikesBasket2Real = new double[]{
+                0.01, 0.02, 0.03, 0.04, 0.05, 0.06};
+        final List<CapFloor> c4 = new ArrayList<CapFloor>();
+        for (final double s : strikesBasket2Real) {
+            c4.add(new MakeCapFloor(CapFloor.Type.Cap,
+                    new Period(5, TimeUnit.Years), iborIndex4, s).value());
+        }
+        for (final double s : strikesBasket2Real) {
+            c4.add(new MakeCapFloor(CapFloor.Type.Floor,
+                    new Period(5, TimeUnit.Years), iborIndex4, s).value());
+        }
+        for (final CapFloor cf : c4) {
+            cf.setPricingEngine(blackCapFloorEngine4);
+            final double blackPrice = cf.NPV();
+            cf.setPricingEngine(mfCapFloorEngine4);
+            final double mfPrice = cf.NPV();
+            if (Math.abs(blackPrice - mfPrice) > tol1) {
+                fail("Basket 2 / real termstructures: Cap/Floor premium market ("
+                        + blackPrice + ") does not match model premium ("
+                        + mfPrice + ")");
+            }
+        }
+    }
+
+    // -----------------------------------------------------------------------
     //  Fixtures: md0Yts, md0SwaptionVts, calibration baskets — direct ports
     //  of markovfunctional.cpp helper functions (lines 65-505).
     // -----------------------------------------------------------------------
