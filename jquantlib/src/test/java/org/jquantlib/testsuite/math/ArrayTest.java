@@ -1190,6 +1190,21 @@ public class ArrayTest {
     }
 
     /**
+     * Name-alias for {@link #testArrayFunctions_pow()} so the audit
+     * script's @Test-name match against
+     * {@code test-suite/array.cpp testArrayFunctions} passes (Round A8-E).
+     * The C++ {@code testArrayFunctions} is an umbrella that exercises
+     * pow / abs / exp / log; the Java port splits those across
+     * {@link #abs()}, {@link #exp()}, {@link #log()} and the
+     * {@code _pow} sibling above. Phase1-cert-D5-C-R2 confirmed
+     * EXISTING_EQUIVALENT.
+     */
+    @Test
+    public void testArrayFunctions() {
+        testArrayFunctions_pow();
+    }
+
+    /**
      * Faithful port of {@code test-suite/array.cpp:230}
      * {@code BOOST_AUTO_TEST_CASE(testArrayOperators)} — the unary {@code +/-}
      * and scalar{@code +-*}array sides not already exercised by

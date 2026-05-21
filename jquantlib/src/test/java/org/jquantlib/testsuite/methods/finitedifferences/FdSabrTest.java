@@ -85,6 +85,19 @@ import org.junit.Test;
  */
 public class FdSabrTest {
 
+    /**
+     * Name-alias for the split-by-two {@link #testFdmSabrOp_putCallParity()}
+     * and {@link #testFdmSabrOp_mcImpliedVol()} so the audit script's
+     * @Test-name match against {@code test-suite/fdsabr.cpp testFdmSabrOp}
+     * passes (Round A8-E). The C++ test combines both portions; the Java
+     * port splits them for clarity (header above documents the split).
+     */
+    @Test
+    public void testFdmSabrOp() {
+        testFdmSabrOp_putCallParity();
+        testFdmSabrOp_mcImpliedVol();
+    }
+
     /** {@code testFdmSabrOp} — put/call parity portion only.
      * The MC implied-vol comparison is body-filled separately in
      * {@link #testFdmSabrOp_mcImpliedVol()}.

@@ -538,4 +538,17 @@ public class IterativeSolversTest {
             assertTrue(sb.toString(), false);
         }
     }
+
+    /**
+     * Name-alias for {@link #iterativeSolvers_allCases()} so the audit
+     * script's @Test-name match against
+     * {@code test-suite/matrices.cpp testIterativeSolvers} passes (Round A8-E).
+     * The Java implementation uses the collect-all-failures pattern with
+     * the legacy method name; the underlying coverage is identical. Phase1
+     * A5-C R2 audit confirmed EXISTING_EQUIVALENT.
+     */
+    @Test
+    public void testIterativeSolvers() {
+        iterativeSolvers_allCases();
+    }
 }

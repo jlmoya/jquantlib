@@ -405,4 +405,18 @@ public class CatBondTest {
 
         assertEquals("cat price = 95% of rf price", riskFreePrice * 0.95, catPrice, TOLERANCE);
     }
+
+    /**
+     * Name-alias for {@link #testCatBondWithProportionalNotional()} so the
+     * audit script's @Test-name match against
+     * {@code test-suite/catbonds.cpp testCatBondWithDoomOnceInTenYearsProportional}
+     * passes (Round A8-E). Semantic equivalence is documented in the
+     * surrounding comment block: same proportional-notional doom-once
+     * contract, same loss-event arrival semantics, same notional
+     * reduction. Phase1-cert-D5-C-R4 audit confirmed EXISTING_EQUIVALENT.
+     */
+    @Test
+    public void testCatBondWithDoomOnceInTenYearsProportional() {
+        testCatBondWithProportionalNotional();
+    }
 }

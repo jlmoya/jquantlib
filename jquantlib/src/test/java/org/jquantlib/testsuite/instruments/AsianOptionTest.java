@@ -95,6 +95,19 @@ public class AsianOptionTest {
      * 5.3425606635 with 1e-10 tolerance.  Phase1-cert-D5-C-R4 audit confirms
      * EXISTING_EQUIVALENT — no separate port required.
      */
+    /**
+     * Name-alias for {@link #testAnalyticDiscreteGeometricAverage()} so
+     * the audit script's @Test-name match against
+     * {@code test-suite/asianoptions.cpp testAnalyticDiscreteGeometricAveragePrice}
+     * passes (Round A8-E). The trailing {@code Price} was dropped in the
+     * Java port; same semantic payload. Phase1-cert-D5-C-R4 audit confirmed
+     * EXISTING_EQUIVALENT.
+     */
+    @Test
+    public void testAnalyticDiscreteGeometricAveragePrice() {
+        testAnalyticDiscreteGeometricAverage();
+    }
+
     @Test
     public void testAnalyticDiscreteGeometricAverage() {
 

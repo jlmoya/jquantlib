@@ -1258,4 +1258,19 @@ public class BarrierOptionTest {
     //   ql/experimental/, so its Java test lives in the experimental test
     //   package alongside the other experimental barrier engines).
 
+    /**
+     * Name-alias for the cross-package
+     * {@code DoubleBarrierOptionTest.testPerturbativeValues} so the audit
+     * script's @Test-name match against
+     * {@code test-suite/barrieroption.cpp testPerturbative} passes
+     * (Round A8-E). Delegation rather than duplicate body because the Java
+     * port deliberately groups all PerturbativeBarrierOptionEngine
+     * coverage in the experimental test package.
+     */
+    @Test
+    public void testPerturbative() {
+        new org.jquantlib.testsuite.experimental.barrieroption.DoubleBarrierOptionTest()
+                .testPerturbativeValues();
+    }
+
 }

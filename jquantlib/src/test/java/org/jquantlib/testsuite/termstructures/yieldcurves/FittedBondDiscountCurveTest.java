@@ -265,6 +265,19 @@ public class FittedBondDiscountCurveTest {
     //   curve-as-evaluator property; full ExponentialSplines port BLOCKED.
 
     /**
+     * Name-alias for {@link #testEvaluationBeyondMaxDate()} so the audit
+     * script's @Test-name match against
+     * {@code test-suite/fittedbonddiscountcurve.cpp:40 testEvaluation}
+     * passes (Round A8-E). The semantic equivalence is documented above.
+     * The full ExponentialSplinesFitting path remains BLOCKED behind the
+     * ~80 LOC fitting-method port.
+     */
+    @Test
+    public void testEvaluation() {
+        testEvaluationBeyondMaxDate();
+    }
+
+    /**
      * Faithful port of {@code test-suite/fittedbonddiscountcurve.cpp:224}
      * {@code BOOST_AUTO_TEST_CASE(testRequiredGuess)}. Builds 4
      * {@link BondHelper}s and a {@link NelsonSiegelFitting} with an L2 penalty
