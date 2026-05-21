@@ -60,6 +60,7 @@ import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.daycounters.SimpleDayCounter;
 import org.jquantlib.daycounters.Thirty360;
 import org.jquantlib.daycounters.Thirty365;
+import org.jquantlib.math.Closeness;
 import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
@@ -1385,4 +1386,105 @@ public class DayCountersTest {
         }
     }
 
+    /**
+     * Faithful port of {@code test-suite/daycounters.cpp::testYearFraction2DateBulk} (lines 1315-1365).
+     *
+     * <p>Round-trips {@code dc.yearFraction(d1, d2)} through {@link DayCounter#yearFractionToDate} and
+     * asserts the recovered yearFraction matches the original via {@link Closeness#isCloseEnough} — sweep
+     * runs over a 1090-day window and the full canonical day-counter portfolio.
+     *
+     * <p>Tolerance tier: exact ({@code Closeness.isCloseEnough}, ~42 ULP).
+     */
+    @Test
+    public void testYearFraction2DateBulk() {
+        QL.info("Testing bulk dates for YearFractionToDate ...");
+
+        final DayCounter[] dayCounters = {
+                new Actual365Fixed(),
+                new Actual365Fixed(Actual365Fixed.Convention.NoLeap),
+                new Actual360(),
+                new Actual360(true),
+                new Actual36525(),
+                new Actual36525(true),
+                new Actual364(),
+                new Actual366(),
+                new Actual366(true),
+                new ActualActual(ActualActual.Convention.ISDA),
+                new ActualActual(ActualActual.Convention.ISMA),
+                new ActualActual(ActualActual.Convention.Bond),
+                new ActualActual(ActualActual.Convention.Historical),
+                new ActualActual(ActualActual.Convention.Actual365),
+                new ActualActual(ActualActual.Convention.AFB),
+                new ActualActual(ActualActual.Convention.Euro),
+                new Business252(),
+                new Thirty360(Thirty360.Convention.USA),
+                new Thirty360(Thirty360.Convention.BondBasis),
+                new Thirty360(Thirty360.Convention.European),
+                new Thirty360(Thirty360.Convention.EurobondBasis),
+                new Thirty360(Thirty360.Convention.Italian),
+                new Thirty360(Thirty360.Convention.German),
+                new Thirty360(Thirty360.Convention.ISMA),
+                new Thirty360(Thirty360.Convention.ISDA),
+                new Thirty360(Thirty360.Convention.NASD),
+                new Thirty365(),
+                new SimpleDayCounter()
+        };
+
+        final Date base = new Date(1, Month.January, 2020);
+        for (final DayCounter dc : dayCounters) {
+            for (int i = -360; i < 730; ++i) {
+                final Date today = base.add(new Period(i, TimeUnit.Days));
+                final Date target = today.add(new Period(i, TimeUnit.Days));
+
+                final double t = dc.yearFraction(today, target);
+                final Date time2Date = DayCounter.yearFractionToDate(dc, today, t);
+                final double tNew = dc.yearFraction(today, time2Date);
+
+                if (!Closeness.isCloseEnough(t, tNew)) {
+                    fail("\ntoday      : " + today
+                            + "\ntarget     : " + target
+                            + "\ninverse    : " + time2Date
+                            + "\ntime diff  : " + (t - tNew)
+                            + "\nday counter: " + dc.name());
+                }
+            }
+        }
+    }
+
+    /**
+     * Faithful port of {@code test-suite/daycounters.cpp::testYearFraction2DateRounding} (lines 1367-1384).
+     *
+     * <p>For each offset in {@code [0, 0.4999]} the inverse must round DOWN to {@code d2}; for offsets in
+     * {@code [0.5, 1.0]} it must round UP to {@code d2 + 1 day}.
+     */
+    @Test
+    public void testYearFraction2DateRounding() {
+        QL.info("Testing YearFractionToDate rounding to closer date...");
+
+        final DayCounter[] dayCounters = {
+                new Thirty360(Thirty360.Convention.USA),
+                new Actual360()
+        };
+        final Date d1 = new Date(1, Month.February, 2023);
+        final Date d2 = new Date(17, Month.February, 2124);
+
+        for (final DayCounter dc : dayCounters) {
+            final double t = dc.yearFraction(d1, d2);
+            for (double offset = 0.0; offset < 1.0 + 1e-10; offset += 0.05) {
+                final Date inv = DayCounter.yearFractionToDate(dc, d1, t + offset / 360.0);
+                if (offset < 0.4999) {
+                    if (!inv.equals(d2)) {
+                        fail("rounding mismatch dc=" + dc.name() + " offset=" + offset
+                                + " inv=" + inv + " expected=" + d2);
+                    }
+                } else {
+                    final Date d2Plus = d2.add(new Period(1, TimeUnit.Days));
+                    if (!inv.equals(d2Plus)) {
+                        fail("rounding mismatch dc=" + dc.name() + " offset=" + offset
+                                + " inv=" + inv + " expected=" + d2Plus);
+                    }
+                }
+            }
+        }
+    }
 }
