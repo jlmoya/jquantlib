@@ -28,6 +28,8 @@ import org.jquantlib.currencies.Currency;
 import org.jquantlib.lang.annotation.Rate;
 import org.jquantlib.lang.annotation.Real;
 import org.jquantlib.lang.annotation.Time;
+import org.jquantlib.math.Closeness;
+import org.jquantlib.math.Constants;
 import org.jquantlib.math.transcendental.JQuantMath;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.termstructures.InflationTermStructure;
@@ -116,10 +118,17 @@ public class ZeroInflationIndex extends InflationIndex {
         final Date latestNeededDate = InflationTermStructure.inflationPeriod(fixingDate, frequency).first();
 
         if ( latestNeededDate.lt(latestPossible.first()) ) {
-            // strictly historical: must be in stored fixings
-            @Real
-            double pastFixing = IndexManager.getInstance().getHistory(name()).get(fixingDate);
-            QL.require(!(Double.isNaN(pastFixing)), "Missing " + name() + " fixing for " + fixingDate);
+            // strictly historical: must be in stored fixings. Mirrors C++
+            // ZeroInflationIndex::pastFixing (inflationindex.cpp:189-194):
+            // the lookup key is the inflation-period start, not the raw
+            // fixingDate, and a missing entry is reported as a QL_REQUIRE
+            // failure rather than an NPE. TimeSeries.get returns null for
+            // missing keys (C++ returns Null<Real>() sentinel).
+            final Double pastFixing = IndexManager.getInstance().getHistory(name()).get(latestNeededDate);
+            QL.require(pastFixing != null
+                    && !Double.isNaN(pastFixing)
+                    && !Closeness.isClose(pastFixing, Constants.NULL_REAL),
+                    "Missing " + name() + " fixing for " + latestNeededDate);
             return pastFixing;
         }
         if ( latestNeededDate.gt(latestPossible.second()) ) {
@@ -127,9 +136,11 @@ public class ZeroInflationIndex extends InflationIndex {
             return forecastFixing(fixingDate);
         }
         // Boundary range — try stored fixings first; fall back to forecast
-        // when missing (mirrors C++ inflationindex.cpp:197-220).
-        final Double f = IndexManager.getInstance().getHistory(name()).get(fixingDate);
-        if ( f != null && !Double.isNaN(f) ) {
+        // when missing (mirrors C++ inflationindex.cpp:197-220). C++ keys the
+        // lookup by latestNeededDate (the inflation-period start), not the raw
+        // fixingDate.
+        final Double f = IndexManager.getInstance().getHistory(name()).get(latestNeededDate);
+        if ( f != null && !Double.isNaN(f) && !Closeness.isClose(f, Constants.NULL_REAL) ) {
             return f;
         }
         return forecastFixing(fixingDate);
