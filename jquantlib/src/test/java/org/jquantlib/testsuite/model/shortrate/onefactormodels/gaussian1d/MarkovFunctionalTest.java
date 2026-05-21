@@ -18,11 +18,14 @@ import org.jquantlib.exercise.BermudanExercise;
 import org.jquantlib.exercise.EuropeanExercise;
 import org.jquantlib.exercise.Exercise;
 import org.jquantlib.indexes.EURLibor6M;
+import org.jquantlib.indexes.Euribor;
 import org.jquantlib.indexes.Euribor6M;
 import org.jquantlib.indexes.EurLiborSwapIsdaFixA;
 import org.jquantlib.indexes.EuriborSwapIsdaFixA;
 import org.jquantlib.indexes.IborIndex;
 import org.jquantlib.indexes.SwapIndex;
+import org.jquantlib.instruments.CapFloor;
+import org.jquantlib.instruments.MakeCapFloor;
 import org.jquantlib.instruments.MakeVanillaSwap;
 import org.jquantlib.instruments.Option;
 import org.jquantlib.instruments.Swaption;
@@ -36,6 +39,9 @@ import org.jquantlib.model.VolatilityType;
 import org.jquantlib.model.shortrate.onefactormodels.gaussian1d.MarkovFunctional;
 import org.jquantlib.pricingengines.BlackFormula;
 import org.jquantlib.pricingengines.PricingEngine;
+import org.jquantlib.pricingengines.capfloor.BlackCapFloorEngine;
+import org.jquantlib.pricingengines.capfloor.gaussian1d.Gaussian1dCapFloorEngine;
+import org.jquantlib.pricingengines.swaption.BlackSwaptionEngine;
 import org.jquantlib.pricingengines.swaption.gaussian1d.Gaussian1dSwaptionEngine;
 import org.jquantlib.processes.MfStateProcess;
 import org.jquantlib.quotes.Handle;
@@ -49,8 +55,12 @@ import org.jquantlib.termstructures.volatilities.InterpolatedSmileSection;
 import org.jquantlib.termstructures.volatilities.KahaleSmileSection;
 import org.jquantlib.termstructures.volatilities.SmileSection;
 import org.jquantlib.termstructures.volatilities.SmileSectionUtils;
+import org.jquantlib.termstructures.volatilities.capfloor.CapFloorTermVolSurface;
 import org.jquantlib.termstructures.volatilities.optionlet.ConstantOptionletVolatility;
+import org.jquantlib.termstructures.volatilities.optionlet.OptionletStripper;
+import org.jquantlib.termstructures.volatilities.optionlet.OptionletStripper1;
 import org.jquantlib.termstructures.volatilities.optionlet.OptionletVolatilityStructure;
+import org.jquantlib.termstructures.volatilities.optionlet.StrippedOptionletAdapter;
 import org.jquantlib.termstructures.volatilities.swaption.ConstantSwaptionVolatility;
 import org.jquantlib.termstructures.volatilities.swaption.SabrSwaptionVolatilityCube;
 import org.jquantlib.termstructures.volatilities.swaption.SwaptionVolatilityMatrix;
@@ -70,6 +80,7 @@ import org.jquantlib.time.Period;
 import org.jquantlib.time.TimeUnit;
 import org.jquantlib.time.calendars.Target;
 import org.json.JSONObject;
+import org.junit.Assume;
 import org.junit.Test;
 
 /**
@@ -831,6 +842,198 @@ public class MarkovFunctionalTest {
     }
 
     // -----------------------------------------------------------------------
+    //  Phase 1 closure A7-I R563 — port v1.42.1 testCalibrationOneInstrumentSet
+    //  (markovfunctional.cpp:892-1118). Builds 4 MarkovFunctional models across
+    //  the cartesian product {basket1 swaption, basket2 caplet} ×
+    //  {flat termstructures, md0 termstructures} and verifies that, after
+    //  numeraire calibration, modelOutputs() reports market zerorate / call
+    //  / put premia matching the market values to 1bp absolute.
+    //  Slow-gated to mirror C++ {@code if_speed(Slow)}.
+    // -----------------------------------------------------------------------
+
+    /**
+     * Mirrors C++ {@code testCalibrationOneInstrumentSet}
+     * (markovfunctional.cpp:892-1118).
+     *
+     * <p>For each of 4 calibration scenarios, builds a {@link MarkovFunctional}
+     * and reads {@link MarkovFunctional#modelOutputs()} after the (internal)
+     * numeraire calibration. C++ tolerances:
+     * <ul>
+     *   <li>{@code tol0 = 1e-4} for {@code marketZerorate_} vs
+     *       {@code modelZerorate_} (1bp on zero rates implied by the smile
+     *       calibration of the numeraire);</li>
+     *   <li>{@code tol1 = 1e-4} for {@code marketCallPremium_} /
+     *       {@code marketPutPremium_} vs the corresponding {@code modelXxxPremium_}
+     *       (1bp on call/put premia).</li>
+     * </ul>
+     * Both are absolute tolerances matching C++; the test does not loosen
+     * either tier.
+     */
+    @Test
+    public void testCalibrationOneInstrumentSet() {
+        Assume.assumeTrue("test gated -Dql.slowTests=1 to mirror C++ if_speed(Slow)",
+                System.getProperty("ql.slowTests") != null);
+
+        final double tol0 = 0.0001; // 1bp tolerance market/model zero rate
+        final double tol1 = 0.0001; // 1bp tolerance market/model call/put premia
+
+        final Date referenceDate = new Date(14, Month.November, 2012);
+        new Settings().setEvaluationDate(referenceDate);
+
+        final Handle<YieldTermStructure> flatYts_ = flatYts();
+        final Handle<YieldTermStructure> md0Yts_ = md0Yts();
+        final Handle<SwaptionVolatilityStructure> flatSwaptionVts_ = flatSwaptionVts();
+        final Handle<SwaptionVolatilityStructure> md0SwaptionVts_ = md0SwaptionVts();
+        final Handle<OptionletVolatilityStructure> flatOptionletVts_ = flatOptionletVts();
+        final Handle<OptionletVolatilityStructure> md0OptionletVts_ = md0OptionletVts();
+
+        final SwapIndex swapIndexBase = new EuriborSwapIsdaFixA(
+                new Period(1, TimeUnit.Years));
+        final IborIndex iborIndex = new Euribor(new Period(6, TimeUnit.Months));
+
+        final List<Date> volStepDates = new ArrayList<Date>();
+        final double[] vols = new double[]{1.0};
+
+        // use a grid with fewer points for smile arbitrage
+        // testing and model outputs than the default grid
+        final double[] money = new double[]{
+                0.1, 0.25, 0.50, 0.75, 1.0, 1.25, 1.50, 2.0, 5.0};
+
+        // Calibration Basket 1 / flat yts, vts -------------------------------
+        final MarkovFunctional mf1 = new MarkovFunctional(
+                flatYts_, 0.01, volStepDates, vols, flatSwaptionVts_,
+                expiriesCalBasket1(referenceDate), tenorsCalBasket1(),
+                swapIndexBase,
+                new MarkovFunctional.ModelSettings()
+                        .withYGridPoints(64)
+                        .withYStdDevs(7.0)
+                        .withGaussHermitePoints(32)
+                        .withDigitalGap(1e-5)
+                        .withMarketRateAccuracy(1e-7)
+                        .withLowerRateBound(0.0)
+                        .withUpperRateBound(2.0)
+                        .withAdjustments(MarkovFunctional.KAHALE_SMILE
+                                | MarkovFunctional.SMILE_EXPONENTIAL_EXTRAPOLATION)
+                        .withSmileMoneynessCheckpoints(money));
+        final MarkovFunctional.ModelOutputs outputs1 = mf1.modelOutputs();
+        checkZerorates(outputs1, tol0, "Basket 1 / flat termstructures");
+        checkPremia(outputs1, tol1, "Basket 1 / flat termstructures");
+
+        // Calibration Basket 2 / flat yts, vts -------------------------------
+        final MarkovFunctional mf2 = new MarkovFunctional(
+                flatYts_, 0.01, volStepDates, vols, flatOptionletVts_,
+                expiriesCalBasket2(referenceDate), iborIndex,
+                new MarkovFunctional.ModelSettings()
+                        .withYGridPoints(64)
+                        .withYStdDevs(7.0)
+                        .withGaussHermitePoints(32)
+                        .withDigitalGap(1e-5)
+                        .withMarketRateAccuracy(1e-7)
+                        .withLowerRateBound(0.0)
+                        .withUpperRateBound(2.0)
+                        .withAdjustments(MarkovFunctional.ADJUST_NONE)
+                        .withSmileMoneynessCheckpoints(money));
+        final MarkovFunctional.ModelOutputs outputs2 = mf2.modelOutputs();
+        checkZerorates(outputs2, tol0, "Basket 2 / flat termstructures");
+        checkPremia(outputs2, tol1, "Basket 2 / flat termstructures");
+
+        // Calibration Basket 1 / real yts, vts -------------------------------
+        final MarkovFunctional mf3 = new MarkovFunctional(
+                md0Yts_, 0.01, volStepDates, vols, md0SwaptionVts_,
+                expiriesCalBasket1(referenceDate), tenorsCalBasket1(),
+                swapIndexBase,
+                new MarkovFunctional.ModelSettings()
+                        .withYGridPoints(128) // use more points to increase accuracy
+                        .withYStdDevs(7.0)
+                        .withGaussHermitePoints(64)
+                        .withDigitalGap(1e-5)
+                        .withMarketRateAccuracy(1e-7)
+                        .withLowerRateBound(0.0)
+                        .withUpperRateBound(2.0)
+                        .withSmileMoneynessCheckpoints(money));
+        final MarkovFunctional.ModelOutputs outputs3 = mf3.modelOutputs();
+        checkZerorates(outputs3, tol0, "Basket 1 / real termstructures");
+        checkPremia(outputs3, tol1, "Basket 1 / real termstructures");
+
+        // Calibration Basket 2 / real yts, vts -------------------------------
+        final MarkovFunctional mf4 = new MarkovFunctional(
+                md0Yts_, 0.01, volStepDates, vols, md0OptionletVts_,
+                expiriesCalBasket2(referenceDate), iborIndex,
+                new MarkovFunctional.ModelSettings()
+                        .withYGridPoints(64)
+                        .withYStdDevs(7.0)
+                        .withGaussHermitePoints(32)
+                        .withDigitalGap(1e-5)
+                        .withMarketRateAccuracy(1e-7)
+                        .withLowerRateBound(0.0)
+                        .withUpperRateBound(2.0)
+                        .withSmileMoneynessCheckpoints(money));
+        final MarkovFunctional.ModelOutputs outputs4 = mf4.modelOutputs();
+        checkZerorates(outputs4, tol0, "Basket 2 / real termstructures");
+        checkPremia(outputs4, tol1, "Basket 2 / real termstructures");
+    }
+
+    private static void checkZerorates(final MarkovFunctional.ModelOutputs out,
+            final double tol, final String tag) {
+        for (int i = 0; i < out.expiries_.size(); i++) {
+            final double m = out.marketZerorate_.get(i);
+            final double mo = out.modelZerorate_.get(i);
+            if (Math.abs(m - mo) > tol) {
+                fail(tag + ": Market zero rate (" + m
+                        + ") and model zero rate (" + mo + ") do not agree.");
+            }
+        }
+    }
+
+    private static void checkPremia(final MarkovFunctional.ModelOutputs out,
+            final double tol, final String tag) {
+        for (int i = 0; i < out.expiries_.size(); i++) {
+            for (int j = 0; j < out.smileStrikes_.get(i).size(); j++) {
+                final double mc = out.marketCallPremium_.get(i).get(j);
+                final double moc = out.modelCallPremium_.get(i).get(j);
+                if (Math.abs(mc - moc) > tol) {
+                    fail(tag + ": Market call premium (" + mc
+                            + ") does not match model premium (" + moc + ")");
+                }
+                final double mp = out.marketPutPremium_.get(i).get(j);
+                final double mop = out.modelPutPremium_.get(i).get(j);
+                if (Math.abs(mp - mop) > tol) {
+                    fail(tag + ": Market put premium (" + mp
+                            + ") does not match model premium (" + mop + ")");
+                }
+            }
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    //  Phase 1 closure A7-I R563 — port v1.42.1 testCalibrationTwoInstrumentSets
+    //  BLOCKED on missing Java infra: the Java {@link MarkovFunctional} extends
+    //  {@link org.jquantlib.model.shortrate.onefactormodels.gaussian1d.Gaussian1dModel}
+    //  which extends {@link org.jquantlib.util.LazyObject}, NOT
+    //  {@link org.jquantlib.model.CalibratedModel}. C++ inherits {@code
+    //  CalibratedModel::calibrate(...)} via {@code Gaussian1dModel : CalibratedModel}
+    //  and uses it to drive the secondary {@code LevenbergMarquardt} loop over
+    //  {@code SwaptionHelper}s. Without that surface in Java, {@code mf.calibrate(...)}
+    //  doesn't resolve at compile time, and the test cannot be written without
+    //  a production change.
+    //
+    //  Promotion path (outside this test-porting batch):
+    //   1. Refactor {@code Gaussian1dModel} so it composes (or extends) a
+    //      {@code CalibratedModel} surface — exposing {@code calibrate(List<CalibrationHelper>,
+    //      OptimizationMethod, EndCriteria, Constraint, double[])} with the same
+    //      semantics as {@link org.jquantlib.model.CalibratedModel#calibrate}.
+    //      The Java port already mirrors the CalibratedModel surrogates ({@code params()},
+    //      {@code setParams(...)}, {@code arguments_}, {@code constraint_}) but does not
+    //      expose the calibration loop.
+    //   2. Port {@code MarkovFunctional}'s {@code constraint()} / {@code generateArguments()}
+    //      so the LM driver can re-tabulate the numeraire surface inside the
+    //      cost-function evaluation.
+    //   3. Re-port this test once {@code mf.calibrate(...)} compiles.
+    //
+    //  Tracking: defer to a follow-up phase (model-infra, not test-port).
+    // -----------------------------------------------------------------------
+
+    // -----------------------------------------------------------------------
     //  Fixtures: md0Yts, md0SwaptionVts, calibration baskets — direct ports
     //  of markovfunctional.cpp helper functions (lines 65-505).
     // -----------------------------------------------------------------------
@@ -1166,5 +1369,168 @@ public class MarkovFunctionalTest {
             res.add(new Period(n, TimeUnit.Years));
         }
         return res;
+    }
+
+    /**
+     * Java port of C++ {@code flatYts()} (markovfunctional.cpp:65-71).
+     * Flat 3% yield term structure on TARGET / Actual365Fixed.
+     */
+    private static Handle<YieldTermStructure> flatYts() {
+        return new Handle<YieldTermStructure>(new FlatForward(
+                0, new Target(), 0.03, new Actual365Fixed()));
+    }
+
+    /**
+     * Java port of C++ {@code flatSwaptionVts()} (markovfunctional.cpp:73-81).
+     * Flat 20% (shifted-lognormal) ATM swaption vol on TARGET / ModifiedFollowing.
+     */
+    private static Handle<SwaptionVolatilityStructure> flatSwaptionVts() {
+        return new Handle<SwaptionVolatilityStructure>(
+                new ConstantSwaptionVolatility(
+                        0, new Target(),
+                        BusinessDayConvention.ModifiedFollowing,
+                        0.20, new Actual365Fixed()));
+    }
+
+    /**
+     * Java port of C++ {@code flatOptionletVts()} (markovfunctional.cpp:83-91).
+     * Flat 20% optionlet vol on TARGET / ModifiedFollowing.
+     */
+    private static Handle<OptionletVolatilityStructure> flatOptionletVts() {
+        return new Handle<OptionletVolatilityStructure>(
+                new ConstantOptionletVolatility(
+                        0, new Target(),
+                        BusinessDayConvention.ModifiedFollowing,
+                        0.20, new Actual365Fixed()));
+    }
+
+    /**
+     * Java port of C++ {@code expiriesCalBasket1()} (markovfunctional.cpp:439-448).
+     * 5 yearly expiries 1y..5y from the reference date — CMS10y swaption basket.
+     */
+    private static List<Date> expiriesCalBasket1(final Date referenceDate) {
+        final List<Date> res = new ArrayList<Date>();
+        final Target t = new Target();
+        for (int i = 1; i <= 5; i++) {
+            res.add(t.advance(referenceDate, new Period(i, TimeUnit.Years)));
+        }
+        return res;
+    }
+
+    /**
+     * Java port of C++ {@code tenorsCalBasket1()} (markovfunctional.cpp:450-455).
+     * 5 × 10y constant tenors — CMS10y swaption basket.
+     */
+    private static List<Period> tenorsCalBasket1() {
+        final List<Period> res = new ArrayList<Period>();
+        for (int i = 0; i < 5; i++) {
+            res.add(new Period(10, TimeUnit.Years));
+        }
+        return res;
+    }
+
+    /**
+     * Java port of C++ {@code expiriesCalBasket2()} (markovfunctional.cpp:459-477).
+     * 10 semi-annual expiries 6m..60m from the reference date — 6m caplet basket.
+     */
+    private static List<Date> expiriesCalBasket2(final Date referenceDate) {
+        final List<Date> res = new ArrayList<Date>();
+        final Target t = new Target();
+        for (int n : new int[]{6, 12, 18, 24, 30, 36, 42, 48, 54, 60}) {
+            res.add(t.advance(referenceDate, new Period(n, TimeUnit.Months)));
+        }
+        return res;
+    }
+
+    /**
+     * Java port of C++ {@code md0OptionletVts()} (markovfunctional.cpp:356-435).
+     * Builds the EUR 6m caplet vol surface as of 14.11.2012 from a 16×12
+     * (option tenors × strikes) cap vol matrix wrapped in a
+     * {@link CapFloorTermVolSurface}, stripped via {@link OptionletStripper1}
+     * driven by a {@link Euribor 6m} index off {@link #md0Yts()}, and exposed
+     * to consumers via a {@link StrippedOptionletAdapter}. The last strike
+     * (10%) is intentionally dropped because it causes bootstrap exceptions
+     * (C++ inline comment, line 365-366).
+     */
+    private static Handle<OptionletVolatilityStructure> md0OptionletVts() {
+        final int nOptTen = 16;
+        final int nStrikes = 12;
+
+        final List<Period> optionTenors = new ArrayList<Period>();
+        for (final Period p : new Period[]{
+                new Period(1, TimeUnit.Years),  new Period(18, TimeUnit.Months),
+                new Period(2, TimeUnit.Years),  new Period(3, TimeUnit.Years),
+                new Period(4, TimeUnit.Years),  new Period(5, TimeUnit.Years),
+                new Period(6, TimeUnit.Years),  new Period(7, TimeUnit.Years),
+                new Period(8, TimeUnit.Years),  new Period(9, TimeUnit.Years),
+                new Period(10, TimeUnit.Years), new Period(12, TimeUnit.Years),
+                new Period(15, TimeUnit.Years), new Period(20, TimeUnit.Years),
+                new Period(25, TimeUnit.Years), new Period(30, TimeUnit.Years)}) {
+            optionTenors.add(p);
+        }
+
+        final double[] strikes = new double[]{
+                0.0025, 0.0050, 0.0100, 0.0150, 0.0200, 0.0225,
+                0.0250, 0.0300, 0.0350, 0.0400, 0.0500, 0.0600};
+
+        // C++ stores the matrix transposed: volsa[strike][optTen]; we then
+        // copy into vols[optTen][strike]. We mirror the literal C++ layout
+        // (13 strike rows × 16 expiries) and then drop the 13th row since
+        // we only ship 12 strikes — but the C++ literally allocates 13 rows
+        // and only fills the first 12 via the i<nStrikes loop. To match
+        // C++ bit-for-bit we replicate the same 12-row sub-view.
+        final double[][] volsa = new double[][]{
+                {1.3378, 1.3032, 1.2514, 1.081,  1.019,  0.961,
+                 0.907,  0.862,  0.822,  0.788,  0.758,  0.709,
+                 0.66,   0.619,  0.597,  0.579},
+                {1.1882, 1.1057, 0.9823, 0.879,  0.828,  0.779,
+                 0.736,  0.7,    0.67,   0.644,  0.621,  0.582,
+                 0.544,  0.513,  0.496,  0.482},
+                {1.1646, 1.0356, 0.857,  0.742,  0.682,  0.626,
+                 0.585,  0.553,  0.527,  0.506,  0.488,  0.459,
+                 0.43,   0.408,  0.396,  0.386},
+                {1.1932, 1.0364, 0.8291, 0.691,  0.618,  0.553,
+                 0.509,  0.477,  0.452,  0.433,  0.417,  0.391,
+                 0.367,  0.35,   0.342,  0.335},
+                {1.2233, 1.0489, 0.8268, 0.666,  0.582,  0.51,
+                 0.463,  0.43,   0.405,  0.387,  0.372,  0.348,
+                 0.326,  0.312,  0.306,  0.301},
+                {1.2369, 1.0555, 0.8283, 0.659,  0.57,   0.495,
+                 0.447,  0.414,  0.388,  0.37,   0.355,  0.331,
+                 0.31,   0.298,  0.293,  0.289},
+                {1.2498, 1.0622, 0.8307, 0.653,  0.56,   0.483,
+                 0.434,  0.4,    0.374,  0.356,  0.341,  0.318,
+                 0.297,  0.286,  0.282,  0.279},
+                {1.2719, 1.0747, 0.8368, 0.646,  0.546,  0.465,
+                 0.415,  0.38,   0.353,  0.335,  0.32,   0.296,
+                 0.277,  0.268,  0.265,  0.263},
+                {1.2905, 1.0858, 0.8438, 0.643,  0.536,  0.453,
+                 0.403,  0.367,  0.339,  0.32,   0.305,  0.281,
+                 0.262,  0.255,  0.254,  0.252},
+                {1.3063, 1.0953, 0.8508, 0.642,  0.53,   0.445,
+                 0.395,  0.358,  0.329,  0.31,   0.294,  0.271,
+                 0.252,  0.246,  0.246,  0.244},
+                {1.332,  1.1108, 0.8631, 0.642,  0.521,  0.436,
+                 0.386,  0.348,  0.319,  0.298,  0.282,  0.258,
+                 0.24,   0.237,  0.237,  0.236},
+                {1.3513, 1.1226, 0.8732, 0.645,  0.517,  0.43,
+                 0.381,  0.344,  0.314,  0.293,  0.277,  0.252,
+                 0.235,  0.233,  0.234,  0.233}};
+
+        final Matrix vols = new Matrix(nOptTen, nStrikes);
+        for (int i = 0; i < nStrikes; i++) {
+            for (int j = 0; j < nOptTen; j++) {
+                vols.set(j, i, volsa[i][j]);
+            }
+        }
+
+        final IborIndex iborIndex = new Euribor(new Period(6, TimeUnit.Months), md0Yts());
+        final CapFloorTermVolSurface cf = new CapFloorTermVolSurface(
+                0, new Target(), BusinessDayConvention.ModifiedFollowing,
+                optionTenors, strikes, vols, new Actual365Fixed());
+        final OptionletStripper stripper = new OptionletStripper1(cf, iborIndex);
+
+        return new Handle<OptionletVolatilityStructure>(
+                new StrippedOptionletAdapter(stripper));
     }
 }
