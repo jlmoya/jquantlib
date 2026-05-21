@@ -174,6 +174,16 @@ public class AmericanOptionTest {
 
     }
 
+    /** C++-name alias for {@link #testBaroneAdesiWhaley()} — mirrors
+     * {@code americanoption.cpp::testBaroneAdesiWhaleyValues}. */
+    @Test
+    public void testBaroneAdesiWhaleyValues() { testBaroneAdesiWhaley(); }
+
+    /** C++-name alias for {@link #testJu()} — mirrors
+     * {@code americanoption.cpp::testJuValues}. */
+    @Test
+    public void testJuValues() { testJu(); }
+
     @Test
     public void testBaroneAdesiWhaley() {
         QL.info("Testing Barone-Adesi and Whaley approximation for American options...");

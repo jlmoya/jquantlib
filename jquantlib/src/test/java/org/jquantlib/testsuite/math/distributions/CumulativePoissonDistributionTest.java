@@ -41,6 +41,10 @@ public class CumulativePoissonDistributionTest {
         QL.info("::::: " + this.getClass().getSimpleName() + " :::::");
     }
 
+    /** C++-name alias for `distributions.cpp::testCumulativePoisson`. */
+    @Test
+    public void testCumulativePoisson() { testCumulativePoissonDistribution(); }
+
     @Test
     public void testCumulativePoissonDistribution() {
 

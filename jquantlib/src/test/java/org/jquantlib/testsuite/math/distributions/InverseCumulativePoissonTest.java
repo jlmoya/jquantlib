@@ -39,6 +39,10 @@ public class InverseCumulativePoissonTest {
         QL.info("::::: " + this.getClass().getSimpleName() + " :::::");
     }
 
+    /** C++-name alias for `distributions.cpp::testInverseCumulativePoisson`. */
+    @Test
+    public void testInverseCumulativePoisson() { testInverseCumulativePoissonDistribution(); }
+
     @Test
     public void testInverseCumulativePoissonDistribution() {
         QL.info("running InverseCumulativePoissonDistribution test ....");

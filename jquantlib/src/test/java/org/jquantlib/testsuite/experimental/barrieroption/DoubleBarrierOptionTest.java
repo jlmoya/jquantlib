@@ -265,6 +265,22 @@ public class DoubleBarrierOptionTest {
             new HaugDouble(DoubleBarrierType.KnockIn, 80.0, 120.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.25, 0.25, 3.6158, 0.28),
     };
 
+    /** C++-name alias group — `doublebarrieroption.cpp` consolidates 5
+     * engines into single test cases; Java splits per engine for clarity.
+     * Each alias here invokes the FdHestonHaug-engine variant as the
+     * representative for the C++ name (Haug values are engine-agnostic). */
+    @Test
+    public void testEuropeanHaugValues() { testFdHestonHaugValues(); }
+
+    /** C++-name alias for `testMonteCarloDoubleBarrierWithAnalytical` —
+     * Java's `testMonteCarloValues` is the MC engine's Haug-values check. */
+    @Test
+    public void testMonteCarloDoubleBarrierWithAnalytical() { testMonteCarloValues(); }
+
+    /** C++-name alias for `testVannaVolgaDoubleBarrierValues`. */
+    @Test
+    public void testVannaVolgaDoubleBarrierValues() { testVannaVolgaValues(); }
+
     @Test
     public void testSuoWangValues() {
         QL.info("Testing SuoWangDoubleBarrierEngine against Haug's values...");

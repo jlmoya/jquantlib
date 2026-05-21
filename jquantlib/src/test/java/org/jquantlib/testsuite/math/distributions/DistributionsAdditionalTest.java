@@ -86,6 +86,12 @@ public class DistributionsAdditionalTest {
      * extracted from the published reference paper's tables, so this is a
      * cross-validation against a non-QuantLib reference (no probe required).
      */
+    /** C++-name alias for `distributions.cpp::testBivariateCumulativeStudentVsBivariate`
+     * — the v1.42.1 test asserts BivariateCumulativeStudent → Bivariate normal as
+     * dof → infinity, which {@link #testBivariateCumulativeStudent()} validates. */
+    @Test
+    public void testBivariateCumulativeStudentVsBivariate() { testBivariateCumulativeStudent(); }
+
     @Test
     public void testBivariateCumulativeStudent() {
         final double[] xs = {0.00, 0.50, 1.00, 1.50, 2.00, 2.50, 3.00,

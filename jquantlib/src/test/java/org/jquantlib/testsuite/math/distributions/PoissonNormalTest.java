@@ -40,6 +40,10 @@ public class PoissonNormalTest {
         QL.info("::::: "+this.getClass().getSimpleName()+" :::::");
     }
 
+    /** C++-name alias for `distributions.cpp::testPoisson`. */
+    @Test
+    public void testPoisson() { testPoissonDistribution(); }
+
     @Test
     public void testPoissonDistribution() {
 

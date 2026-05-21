@@ -37,6 +37,10 @@ public class BivariateNormalDistributionTest {
 		QL.info("::::: "+this.getClass().getSimpleName()+" :::::");
 	}
 
+	/** C++-name alias for `distributions.cpp::testBivariate`. */
+	@Test
+	public void testBivariate() { testBivariateAtZero(); testHaugValues(); }
+
 	@Test
 	public void testBivariateAtZero() {
 

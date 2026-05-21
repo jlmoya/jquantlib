@@ -37,6 +37,10 @@ public class NormalDistributionTest {
 		QL.info("::::: "+this.getClass().getSimpleName()+" :::::");
 	}
 
+	/** C++-name alias for `distributions.cpp::testNormal`. */
+	@Test
+	public void testNormal() { testNormalDistribution(); }
+
 	@Test
 	public void testNormalDistribution() {
 
