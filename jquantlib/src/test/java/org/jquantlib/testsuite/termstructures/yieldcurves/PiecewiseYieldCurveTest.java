@@ -1855,6 +1855,145 @@ public class PiecewiseYieldCurveTest {
 	}
 
 	/**
+	 * Faithful port of {@code test-suite/piecewiseyieldcurve.cpp:1386}
+	 * {@code BOOST_AUTO_TEST_CASE(testGlobalBootstrapPenalty)}.
+	 * <p>
+	 * Builds a yield curve with {@link ForwardRate} + {@link BackwardFlat} +
+	 * {@link GlobalBootstrap} fed by the same instrument set as
+	 * {@link #testGlobalBootstrap()}. First constructs the curve <em>without</em>
+	 * any penalty (no additional helpers, no additional dates, no penalty lambda)
+	 * and verifies 32 zero rates against {@code refZeroRateNP}. Then re-constructs
+	 * the curve with a gradient-penalty lambda
+	 * <pre>errors[i] = 0.01 * (data[i+1] - data[i]) / (times[i+1] - times[i])</pre>
+	 * and verifies 32 zero rates against {@code refZeroRateGP}.
+	 */
+	@Test
+	public void testGlobalBootstrapPenalty() {
+	    QL.info("Testing global bootstrap with gradient penalty...");
+
+	    new Settings().setEvaluationDate(new Date(26, Month.September, 2019));
+
+	    final double[] refMktRate = {-0.373,   -0.388,   -0.402,   -0.418,   -0.431,  -0.441,   -0.45,
+	                                 -0.457,   -0.463,   -0.469,   -0.461,   -0.463,  -0.479,   -0.4511,
+	                                 -0.45418, -0.439,   -0.4124,  -0.37703, -0.3335, -0.28168, -0.22725,
+	                                 -0.1745,  -0.12425, -0.07746, 0.0385,   0.1435,  0.17525,  0.17275,
+	                                 0.1515,   0.1225,   0.095,    0.0644};
+
+	    final Date[] refDate = {
+	        new Date(31, Month.March, 2020), new Date(30, Month.April, 2020),
+	        new Date(29, Month.May, 2020),   new Date(30, Month.June, 2020),
+	        new Date(31, Month.July, 2020),  new Date(31, Month.August, 2020),
+	        new Date(30, Month.September, 2020), new Date(30, Month.October, 2020),
+	        new Date(30, Month.November, 2020), new Date(31, Month.December, 2020),
+	        new Date(29, Month.January, 2021), new Date(26, Month.February, 2021),
+	        new Date(31, Month.March, 2021), new Date(30, Month.September, 2021),
+	        new Date(30, Month.September, 2022), new Date(29, Month.September, 2023),
+	        new Date(30, Month.September, 2024), new Date(30, Month.September, 2025),
+	        new Date(30, Month.September, 2026), new Date(30, Month.September, 2027),
+	        new Date(29, Month.September, 2028), new Date(28, Month.September, 2029),
+	        new Date(30, Month.September, 2030), new Date(30, Month.September, 2031),
+	        new Date(29, Month.September, 2034), new Date(30, Month.September, 2039),
+	        new Date(30, Month.September, 2044), new Date(30, Month.September, 2049),
+	        new Date(30, Month.September, 2054), new Date(30, Month.September, 2059),
+	        new Date(30, Month.September, 2064), new Date(30, Month.September, 2069)};
+
+	    final double[] refZeroRateNP = {
+	        -0.00373354, -0.00386194, -0.00395205, -0.00403303, -0.00408033, -0.00410875, -0.00411935,
+	        -0.00419161, -0.00424817, -0.00429923, -0.00428029, -0.00429178, -0.00434401, -0.00445243,
+	        -0.00448506, -0.0043369, -0.00407401, -0.00372752, -0.0033005, -0.00279139, -0.00225477,
+	        -0.00173422, -0.00123688, -0.00077236, 0.00038550, 0.00144208, 0.00175947, 0.00172834,
+	        0.00150757, 0.00121131, 0.00093384, 0.00062891};
+
+	    final double[] refZeroRateGP = {
+	        -0.00377892, -0.00386127, -0.00394737, -0.00402914, -0.00409541, -0.00413252, -0.00415463,
+	        -0.00419484, -0.00424238, -0.00427875, -0.00429712, -0.00431898, -0.00436027, -0.00445297,
+	        -0.00448502, -0.00433694, -0.00407406, -0.00372755, -0.00330018, -0.00279133, -0.00225491,
+	        -0.00173429, -0.00123643, -0.00077298, 0.00038547, 0.00144206, 0.00175948, 0.00172834,
+	        0.00150756, 0.00121135, 0.00093379, 0.00062895};
+
+	    // build ql helpers — same as testGlobalBootstrap
+	    final IborIndex index = new Euribor(new Period(6, TimeUnit.Months));
+	    final java.util.List<RateHelper> helpersList = new java.util.ArrayList<RateHelper>();
+	    helpersList.add(new DepositRateHelper(refMktRate[0] / 100.0, new Period(6, TimeUnit.Months), 2,
+	            new Target(), BusinessDayConvention.ModifiedFollowing, true, new Actual360()));
+	    for (int i = 0; i < 12; ++i) {
+	        helpersList.add(new FraRateHelper(refMktRate[1 + i] / 100.0, i + 1, index));
+	    }
+	    final int[] swapTenors = {2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 15, 20, 25, 30, 35, 40, 45, 50};
+	    for (int i = 0; i < swapTenors.length; ++i) {
+	        helpersList.add(new SwapRateHelper(refMktRate[13 + i] / 100.0,
+	                new Period(swapTenors[i], TimeUnit.Years),
+	                new Target(), Frequency.Annual, BusinessDayConvention.ModifiedFollowing,
+	                new Thirty360(Thirty360.Convention.BondBasis), index));
+	    }
+	    final RateHelper[] helpers = helpersList.toArray(new RateHelper[0]);
+
+	    // Part 1: build the curve without penalties — ForwardRate + BackwardFlat
+	    final GlobalBootstrap bootstrapNP = new GlobalBootstrap(
+	            PiecewiseYieldCurve.class, 1.0e-12, null, null, null,
+	            new java.util.ArrayList<RateHelper>(), null, null);
+	    final PiecewiseYieldCurve curveNP = new PiecewiseYieldCurve(
+	            ForwardRate.class, BackwardFlat.class, GlobalBootstrap.class,
+	            2, new Target(), helpers, new Actual365Fixed(),
+	            new Handle/*<Quote>*/[0], new Date[0], 1.0e-12, new BackwardFlat(), bootstrapNP);
+	    curveNP.enableExtrapolation();
+
+	    // check expected pillar dates
+	    for (int i = 0; i < refDate.length; ++i) {
+	        if (!refDate[i].eq(helpers[i].latestDate())) {
+	            throw new RuntimeException(String.format(
+	                    "no-penalty pillar #%d mismatch: expected %s, got %s",
+	                    i, refDate[i], helpers[i].latestDate()));
+	        }
+	    }
+
+	    final double tol = 1.0e-6;
+	    for (int i = 0; i < refZeroRateNP.length; ++i) {
+	        final double z = curveNP.zeroRate(refDate[i], new Actual360(),
+	                org.jquantlib.termstructures.Compounding.Continuous).rate();
+	        if (Math.abs(refZeroRateNP[i] - z) > tol) {
+	            throw new RuntimeException(String.format(
+	                    "no-penalty zero rate #%d mismatch at %s: expected %.10f, got %.10f, diff %.2e (tol %.2e)",
+	                    i, refDate[i], refZeroRateNP[i], z, refZeroRateNP[i] - z, tol));
+	        }
+	    }
+
+	    // Part 2: rebuild with gradient-penalty lambda.
+	    // errors[i] = 0.01 * (data[i+1] - data[i]) / (times[i+1] - times[i])
+	    final GlobalBootstrap.AdditionalPenalties gradientPenalty = new GlobalBootstrap.AdditionalPenalties() {
+	        @Override
+	        public org.jquantlib.math.matrixutilities.Array evaluate(final double[] times, final double[] data) {
+	            final org.jquantlib.math.matrixutilities.Array errors =
+	                    new org.jquantlib.math.matrixutilities.Array(times.length - 1);
+	            for (int i = 0; i < times.length - 1; ++i) {
+	                errors.set(i, 0.01 * (data[i + 1] - data[i]) / (times[i + 1] - times[i]));
+	            }
+	            return errors;
+	        }
+	    };
+
+	    // The penalty lambda is the ONLY non-trivial bit; no additional helpers, no additional dates.
+	    final GlobalBootstrap bootstrapGP = new GlobalBootstrap(
+	            PiecewiseYieldCurve.class, 1.0e-12, null, null, null,
+	            new java.util.ArrayList<RateHelper>(), null, gradientPenalty);
+	    final PiecewiseYieldCurve curveGP = new PiecewiseYieldCurve(
+	            ForwardRate.class, BackwardFlat.class, GlobalBootstrap.class,
+	            2, new Target(), helpers, new Actual365Fixed(),
+	            new Handle/*<Quote>*/[0], new Date[0], 1.0e-12, new BackwardFlat(), bootstrapGP);
+	    curveGP.enableExtrapolation();
+
+	    for (int i = 0; i < refZeroRateGP.length; ++i) {
+	        final double z = curveGP.zeroRate(refDate[i], new Actual360(),
+	                org.jquantlib.termstructures.Compounding.Continuous).rate();
+	        if (Math.abs(refZeroRateGP[i] - z) > tol) {
+	            throw new RuntimeException(String.format(
+	                    "gradient-penalty zero rate #%d mismatch at %s: expected %.10f, got %.10f, diff %.2e (tol %.2e)",
+	                    i, refDate[i], refZeroRateGP[i], z, refZeroRateGP[i] - z, tol));
+	        }
+	    }
+	}
+
+	/**
 	 * Faithful port of {@code test-suite/piecewiseyieldcurve.cpp:2109}
 	 * {@code BOOST_AUTO_TEST_CASE(testDepositForDates)}. Exercises the new
 	 * {@link DepositRateHelper#DepositRateHelper(Handle, Date, org.jquantlib.indexes.IborIndex)}
