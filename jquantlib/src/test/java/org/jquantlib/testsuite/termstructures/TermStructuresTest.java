@@ -705,6 +705,136 @@ public class TermStructuresTest {
 
 
     /**
+     * Faithful port of {@code test-suite/termstructures.cpp:536}
+     * {@code BOOST_AUTO_TEST_CASE(testCompositeZeroYieldStructures)}.
+     * Builds two zero-yield curves from dated forward arrays, composes them
+     * via subtraction, and asserts the resulting zero rates match C++ to
+     * 1e-10 absolute on a set of probe dates.
+     *
+     * <p>Phase 1.2 closure — exercises the new
+     * {@link org.jquantlib.termstructures.yieldcurves.CompositeZeroYieldStructure}
+     * with a SAM-style {@link
+     * org.jquantlib.termstructures.yieldcurves.CompositeZeroYieldStructure.BinaryFunction}
+     * implementing subtraction ({@code (a, b) -> a - b}).
+     */
+    @Test
+    public void testCompositeZeroYieldStructures() {
+        QL.info("Testing composite zero yield structures...");
+
+        new org.jquantlib.Settings().setEvaluationDate(
+                new Date(10, org.jquantlib.time.Month.November, 2017));
+
+        // First curve
+        Date[] dates1 = new Date[] {
+                new Date(10, org.jquantlib.time.Month.November, 2017),
+                new Date(13, org.jquantlib.time.Month.November, 2017),
+                new Date(12, org.jquantlib.time.Month.February, 2018),
+                new Date(10, org.jquantlib.time.Month.May, 2018),
+                new Date(10, org.jquantlib.time.Month.August, 2018),
+                new Date(12, org.jquantlib.time.Month.November, 2018),
+                new Date(21, org.jquantlib.time.Month.December, 2018),
+                new Date(15, org.jquantlib.time.Month.January, 2020),
+                new Date(31, org.jquantlib.time.Month.March, 2021),
+                new Date(28, org.jquantlib.time.Month.February, 2023),
+                new Date(21, org.jquantlib.time.Month.December, 2026),
+                new Date(31, org.jquantlib.time.Month.January, 2030),
+                new Date(28, org.jquantlib.time.Month.February, 2031),
+                new Date(31, org.jquantlib.time.Month.March, 2036),
+                new Date(28, org.jquantlib.time.Month.February, 2041),
+                new Date(28, org.jquantlib.time.Month.February, 2048),
+                new Date(31, org.jquantlib.time.Month.December, 2141)
+        };
+
+        double[] rates1 = new double[] {
+                0.0655823213132524, 0.0655823213132524, 0.0699455024156877,
+                0.0799107139233497, 0.0813931951022577, 0.0841615820666691,
+                0.0501297919004145, 0.0823483583439658, 0.0860720030924466,
+                0.0922887604375688, 0.10588902278996,   0.117021968693922,
+                0.109824660896137,  0.109231572878364,  0.119218123236241,
+                0.128647300167664,  0.0506086995288751
+        };
+
+        final YieldTermStructure termStructure1 =
+                new org.jquantlib.termstructures.yieldcurves.InterpolatedForwardCurve<
+                        org.jquantlib.math.interpolations.factories.BackwardFlat>(
+                                org.jquantlib.math.interpolations.factories.BackwardFlat.class,
+                                dates1, rates1, new org.jquantlib.daycounters.Actual365Fixed(),
+                                new NullCalendar());
+
+        // Second curve
+        Date[] dates2 = new Date[] {
+                new Date(10, org.jquantlib.time.Month.November, 2017),
+                new Date(13, org.jquantlib.time.Month.November, 2017),
+                new Date(11, org.jquantlib.time.Month.December, 2017),
+                new Date(12, org.jquantlib.time.Month.February, 2018),
+                new Date(10, org.jquantlib.time.Month.May, 2018),
+                new Date(31, org.jquantlib.time.Month.January, 2022),
+                new Date(7,  org.jquantlib.time.Month.December, 2023),
+                new Date(31, org.jquantlib.time.Month.January, 2025),
+                new Date(31, org.jquantlib.time.Month.March, 2028),
+                new Date(7,  org.jquantlib.time.Month.December, 2033),
+                new Date(1,  org.jquantlib.time.Month.February, 2038),
+                new Date(2,  org.jquantlib.time.Month.April, 2046),
+                new Date(2,  org.jquantlib.time.Month.January, 2051),
+                new Date(31, org.jquantlib.time.Month.December, 2141)
+        };
+
+        double[] rates2 = new double[] {
+                0.056656806197189,  0.056656806197189,  0.0419541633454473,
+                0.0286681050019797, 0.0148840226959593, 0.0246680238374363,
+                0.0255349067810599, 0.0298907184711927, 0.0263943927922053,
+                0.0291924526539802, 0.0270049276163556, 0.028775807327614,
+                0.0293567711641792, 0.010518655099659
+        };
+
+        final YieldTermStructure termStructure2 =
+                new org.jquantlib.termstructures.yieldcurves.InterpolatedForwardCurve<
+                        org.jquantlib.math.interpolations.factories.BackwardFlat>(
+                                org.jquantlib.math.interpolations.factories.BackwardFlat.class,
+                                dates2, rates2, new org.jquantlib.daycounters.Actual365Fixed(),
+                                new NullCalendar());
+
+        // C++: typedef Real(*binary_f)(Real, Real); CompositeZeroYieldStructure<binary_f>(..., sub);
+        // The C++ test uses subtraction (sub at termstructures.cpp:119).
+        final org.jquantlib.termstructures.yieldcurves.CompositeZeroYieldStructure compoundCurve =
+                new org.jquantlib.termstructures.yieldcurves.CompositeZeroYieldStructure(
+                        new Handle<YieldTermStructure>(termStructure1),
+                        new Handle<YieldTermStructure>(termStructure2),
+                        (a, b) -> a - b);
+
+        Date[] probeDates = new Date[] {
+                new Date(10, org.jquantlib.time.Month.November, 2017),
+                new Date(15, org.jquantlib.time.Month.December, 2017),
+                new Date(15, org.jquantlib.time.Month.June, 2018),
+                new Date(15, org.jquantlib.time.Month.September, 2029),
+                new Date(15, org.jquantlib.time.Month.September, 2038),
+                new Date(15, org.jquantlib.time.Month.March, 2046),
+                new Date(15, org.jquantlib.time.Month.December, 2141)
+        };
+
+        double[] expectedRates = new double[] {
+                0.00892551511527986, 0.0278755322562788, 0.0512001768603456,
+                0.0729941474263546,  0.0778333309498459, 0.0828451659139004,
+                0.0503573807521742
+        };
+
+        final double tolerance = 1.0e-10;
+        for (int i = 0; i < probeDates.length; ++i) {
+            final double actual = compoundCurve.zeroRate(probeDates[i],
+                    new org.jquantlib.daycounters.Actual365Fixed(),
+                    Compounding.Continuous).rate();
+            final double expected = expectedRates[i];
+
+            if (Math.abs(actual - expected) > tolerance) {
+                fail("unable to reproduce zero yield rate from composite input curve\n"
+                        + String.format("    calculated: %.10f%n", actual)
+                        + String.format("    expected:   %.10f", expected));
+            }
+        }
+    }
+
+
+    /**
      * Faithful port of {@code test-suite/termstructures.cpp:600}
      * {@code BOOST_AUTO_TEST_CASE(testNullTimeToReference)}. When the
      * day-count between the reference date and the query date is exactly
