@@ -1323,9 +1323,10 @@ public class PiecewiseYieldCurveTest {
 	//   See @Test testGlobalBootstrapPenalty() below. Exercises both the
 	//   non-penalty and gradient-penalty branches of GlobalBootstrap.
 	//
-	// testGlobalBootstrapVariables (cpp:1484) — BLOCKED
-	//   Same blocker; additionally needs SimpleQuoteVariables and
-	//   FuturesConvAdjustmentQuote (Java has neither).
+	// testGlobalBootstrapVariables (cpp:1484) — PORTED in Phase1.1-A-562
+	//   See @Test testGlobalBootstrapVariables() below. Required port of
+	//   SimpleQuoteVariables + AdditionalBootstrapVariables wiring into
+	//   GlobalBootstrap, plus FuturesConvAdjustmentQuote.
 	//
 	// testMultiCurveTwoPiecewiseYieldCurves (cpp:1545) — BLOCKED
 	//   Audit (Phase1-closure-A7-H-562): besides the GlobalBootstrap split,
@@ -2251,6 +2252,162 @@ public class PiecewiseYieldCurveTest {
 	        throw new RuntimeException(String.format(
 	                "third helper (testCustomFuturesHelpers): expected=%.10f estimated=%.10f",
 	                expected, calculated));
+	    }
+	}
+
+	/**
+	 * Faithful port of {@code test-suite/piecewiseyieldcurve.cpp:1484}
+	 * {@code BOOST_AUTO_TEST_CASE(testGlobalBootstrapVariables)}.
+	 *
+	 * <p>Exercises the new {@link org.jquantlib.termstructures.yieldcurves.AdditionalBootstrapVariables}
+	 * surface on {@link GlobalBootstrap} via the concrete
+	 * {@link org.jquantlib.termstructures.yieldcurves.SimpleQuoteVariables}, with futures-rate helpers
+	 * whose convexity adjustment is driven by the new
+	 * {@link org.jquantlib.quotes.FuturesConvAdjustmentQuote} (Hull-White {@code convexityBias}, with
+	 * an unknown vol quote optimised jointly with the curve data).
+	 *
+	 * <p>Test design (C++ piecewiseyieldcurve.cpp:1484-1543):
+	 * <ol>
+	 *   <li>Build {@code curve} with the full deposit + swap helper list.</li>
+	 *   <li>Build {@code curveFutures} where the first swap is REMOVED from the main helper list and
+	 *       passed as an additional helper; futures helpers are inserted; the additional-penalty
+	 *       term is {@code 1e4 * firstSwap.quoteError()}; and the unknown Hull-White vol is jointly
+	 *       optimised via {@code SimpleQuoteVariables}.</li>
+	 *   <li>Assert that pillar dates differ (different helper sets).</li>
+	 *   <li>Assert that {@code curve.discount(pillar)} ≈ {@code curveFutures.discount(pillar)} at every
+	 *       deposit/swap pillar, tolerance 1e-6.</li>
+	 * </ol>
+	 *
+	 * <p>Java mapping:
+	 * <ul>
+	 *   <li>{@code CommonVars(Date(25, Sep, 2019))} → Java {@code CommonVars()} (uses today). The C++
+	 *       comment notes "fixed evaluationDate to make the test stable... It works for any date,
+	 *       but the tolerance varies"; today is fine at 1e-6 tolerance.</li>
+	 *   <li>{@code Curve = PiecewiseYieldCurve<Discount, LogLinear, GlobalBootstrap>}.</li>
+	 *   <li>{@code Curve::bootstrap_type({firstSwap}, nullptr, penalties, 1e-12, nullptr, nullptr,
+	 *       make_shared<SimpleQuoteVariables>(...))} → Java 9-arg GlobalBootstrap ctor.</li>
+	 *   <li>{@code makeQuoteHandle(0.03)} → {@code new Handle<Quote>(new SimpleQuote(0.03))}.</li>
+	 *   <li>Inline {@code immFutRates} mirrors C++ {@code immFutData} at
+	 *       {@code piecewiseyieldcurve.cpp:114}.</li>
+	 * </ul>
+	 */
+	@Test
+	public void testGlobalBootstrapVariables() {
+	    QL.info("Testing global-bootstrap with additional optimisation variables...");
+
+	    final CommonVars vars = new CommonVars();
+
+	    // C++ Curve = PiecewiseYieldCurve<Discount, LogLinear, GlobalBootstrap>.
+	    final GlobalBootstrap bootstrap1 = new GlobalBootstrap(PiecewiseYieldCurve.class);
+	    final PiecewiseYieldCurve curve = new PiecewiseYieldCurve(
+	            Discount.class, LogLinear.class, GlobalBootstrap.class,
+	            vars.settlement, vars.instruments, new Actual365Fixed(),
+	            new Handle/*<Quote>*/[0], new Date[0], 1.0e-12, new LogLinear(), bootstrap1);
+
+	    // Build helpers list without the first swap (which becomes an additional helper) and with
+	    // futures inserted in its place. C++ piecewiseyieldcurve.cpp:1497-1499.
+	    final java.util.List<RateHelper> helpersList = new java.util.ArrayList<RateHelper>();
+	    for (final RateHelper rh : vars.instruments) {
+	        helpersList.add(rh);
+	    }
+	    final RateHelper firstSwap = helpersList.get(vars.deposits);
+	    helpersList.remove(vars.deposits);
+
+	    final Euribor3M euribor3m = new Euribor3M(new Handle<YieldTermStructure>());
+
+	    // We will optimise vol as an additional variable during bootstrapping.
+	    final SimpleQuote vol = new SimpleQuote();
+	    final Handle<Quote> mr = new Handle<Quote>(new SimpleQuote(0.03));
+
+	    // immFutData (cpp:114) — only the count matters here (3 IMM futures at price 100 - rate).
+	    final int immFuts = 3;
+	    final double[] immFutRates = { 4.581, 4.573, 4.557 };
+
+	    Date immDate = vars.today;
+	    for (int i = 0; i < immFuts; i++) {
+	        final SimpleQuote priceQuote = new SimpleQuote(100.0 - immFutRates[i]);
+	        final Handle<Quote> r = new Handle<Quote>(priceQuote);
+	        immDate = IMM.nextDate(immDate);
+	        // If the fixing is before today, jump forward by one future maturity.
+	        if (euribor3m.fixingDate(immDate).lt(vars.today)) {
+	            immDate = IMM.nextDate(immDate);
+	        }
+	        final org.jquantlib.quotes.FuturesConvAdjustmentQuote convAdj =
+	                new org.jquantlib.quotes.FuturesConvAdjustmentQuote(euribor3m, immDate, r,
+	                        new Handle<Quote>(vol), mr);
+	        // registerAsObserver = false on the convAdj handle so the FuturesRateHelpers do not
+	        // depend on the convAdj quote: otherwise the curve would be invalidated every time the
+	        // optimiser updates vol, breaking bootstrapping. Mirrors C++ piecewiseyieldcurve.cpp:1514-1518.
+	        final Handle<Quote> convAdjHandle = new Handle<Quote>(convAdj, false);
+	        helpersList.add(new FuturesRateHelper(r, immDate, euribor3m, convAdjHandle));
+	    }
+
+	    final RateHelper[] helpers = helpersList.toArray(new RateHelper[helpersList.size()]);
+
+	    // Additional helpers: just the removed first swap.
+	    final java.util.List<RateHelper> addHelpers = new java.util.ArrayList<RateHelper>();
+	    addHelpers.add(firstSwap);
+
+	    // Additional penalties: [ 1e4 * firstSwap.quoteError() ]. The C++ lambda captures firstSwap by
+	    // reference; the Java equivalent is an inner-class closure.
+	    final GlobalBootstrap.AdditionalPenalties penalties = new GlobalBootstrap.AdditionalPenalties() {
+	        @Override
+	        public org.jquantlib.math.matrixutilities.Array evaluate(final double[] times, final double[] data) {
+	            final org.jquantlib.math.matrixutilities.Array a =
+	                    new org.jquantlib.math.matrixutilities.Array(1);
+	            a.set(0, 1e4 * firstSwap.quoteError());
+	            return a;
+	        }
+	    };
+
+	    // SimpleQuoteVariables: optimise vol with initial guess 1.0 and lower bound 0.0 (positivity
+	    // via exp/log transform).
+	    final java.util.List<SimpleQuote> volQuotes = new java.util.ArrayList<SimpleQuote>();
+	    volQuotes.add(vol);
+	    final java.util.List<Double> volInit = new java.util.ArrayList<Double>();
+	    volInit.add(1.0);
+	    final java.util.List<Double> volLowerBounds = new java.util.ArrayList<Double>();
+	    volLowerBounds.add(0.0);
+	    final org.jquantlib.termstructures.yieldcurves.SimpleQuoteVariables sqv =
+	            new org.jquantlib.termstructures.yieldcurves.SimpleQuoteVariables(volQuotes, volInit, volLowerBounds);
+
+	    final GlobalBootstrap bootstrap2 = new GlobalBootstrap(
+	            PiecewiseYieldCurve.class, 1.0e-12, null, null, null,
+	            addHelpers, /*additionalDatesProvider=*/null, penalties, sqv);
+	    final PiecewiseYieldCurve curveFutures = new PiecewiseYieldCurve(
+	            Discount.class, LogLinear.class, GlobalBootstrap.class,
+	            vars.settlement, helpers, new Actual365Fixed(),
+	            new Handle/*<Quote>*/[0], new Date[0], 1.0e-12, new LogLinear(), bootstrap2);
+
+	    // Trigger bootstrap on both curves.
+	    curve.discount(vars.settlement);
+	    curveFutures.discount(vars.settlement);
+
+	    // (1) Pillars must differ: futures replaced the first swap pillar with multiple IMM pillars.
+	    final Date[] dates1 = curve.dates();
+	    final Date[] dates2 = curveFutures.dates();
+	    boolean equalDates = dates1.length == dates2.length;
+	    if (equalDates) {
+	        for (int i = 0; i < dates1.length; i++) {
+	            if (!dates1[i].eq(dates2[i])) { equalDates = false; break; }
+	        }
+	    }
+	    if (equalDates) {
+	        throw new RuntimeException("GlobalBootstrap variables: pillar dates unexpectedly identical");
+	    }
+
+	    // (2) Deposit + swap rates must match at every helper pillar (tolerance 1e-6 per C++).
+	    final double tolerance = 1.0e-6;
+	    for (final RateHelper rh : vars.instruments) {
+	        final Date pillar = rh.latestDate();
+	        final double d1 = curve.discount(pillar);
+	        final double d2 = curveFutures.discount(pillar);
+	        final double relErr = Math.abs(d1 - d2) / Math.abs(d1);
+	        if (relErr > tolerance) {
+	            throw new RuntimeException(String.format(
+	                    "GlobalBootstrap variables mismatch at pillar %s: curve=%.16f curveFutures=%.16f relErr=%.2e tol=%.2e",
+	                    pillar, d1, d2, relErr, tolerance));
+	        }
 	    }
 	}
 
