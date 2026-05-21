@@ -296,8 +296,10 @@ public class PiecewiseYieldCurve< T extends Traits, I extends Interpolator, B ex
             return new InterpolatedForwardCurve(classI, referenceDate, dayCounter, interpolator);
         else if ( classT == ZeroYield.class )
             return new InterpolatedZeroCurve(classI, referenceDate, dayCounter, interpolator);
+        else if ( classT == SimpleZeroYield.class )
+            return new InterpolatedSimpleZeroCurve(classI, referenceDate, dayCounter, interpolator);
         else
-            throw new LibraryException("only Discount, ForwardRate and ZeroYield are supported"); // TODO: message
+            throw new LibraryException("only Discount, ForwardRate, ZeroYield and SimpleZeroYield are supported");
     }
 
     static private Traits.Curve constructBaseClass(final Class< ? > classT, final Class< ? > classI,
@@ -309,8 +311,10 @@ public class PiecewiseYieldCurve< T extends Traits, I extends Interpolator, B ex
             return new InterpolatedForwardCurve(classI, settlementDays, calendar, dayCounter, interpolator);
         else if ( classT == ZeroYield.class )
             return new InterpolatedZeroCurve(classI, settlementDays, calendar, dayCounter, interpolator);
+        else if ( classT == SimpleZeroYield.class )
+            return new InterpolatedSimpleZeroCurve(classI, settlementDays, calendar, dayCounter, interpolator);
         else
-            throw new LibraryException("only Discount, ForwardRate and ZeroYield are supported"); // TODO: message
+            throw new LibraryException("only Discount, ForwardRate, ZeroYield and SimpleZeroYield are supported");
     }
 
     static private Traits constructTraits(final Class< ? > classT) {

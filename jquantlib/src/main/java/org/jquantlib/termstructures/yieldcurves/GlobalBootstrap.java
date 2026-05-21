@@ -306,8 +306,10 @@ public class GlobalBootstrap< Curve extends PiecewiseYieldCurve > implements Boo
         }
 
         // Step 8: initial guess for the optimiser — one variable per curve pillar i=1..n-1 (data[0] is the anchor,
-        // controlled by Traits::initialValue). Apply transformInverse for Discount traits (log); identity otherwise.
+        // controlled by Traits::initialValue). Apply transformInverse for Discount (log) and SimpleZeroYield
+        // (log(x - offset(t_i))); identity otherwise.
         final boolean isDiscountTraits = traits instanceof Discount;
+        final boolean isSimpleZeroTraits = traits instanceof SimpleZeroYield;
         final int nVars = nDates - 1;
         final Array guess = new Array(nVars);
         for ( int i = 0; i < nVars; ++i ) {
@@ -317,13 +319,22 @@ public class GlobalBootstrap< Curve extends PiecewiseYieldCurve > implements Boo
             // from a flat seed.
             final double initVal = traits.initialValue(ts);
             traits.updateGuess(data, initVal, i + 1);
-            guess.set(i, isDiscountTraits ? Math.log(initVal) : initVal);
+            final double xVar;
+            if ( isDiscountTraits ) {
+                xVar = Math.log(initVal);
+            } else if ( isSimpleZeroTraits ) {
+                // transformInverse: log(initVal - (-1/t + 1E-8))
+                xVar = Math.log(initVal - SimpleZeroYield.transformOffset(times[i + 1]));
+            } else {
+                xVar = initVal;
+            }
+            guess.set(i, xVar);
         }
 
         // Step 9: cost function — for each alive helper, residual = quoteError * weight; followed by additional
         // penalties if a provider is supplied.
-        final CostFunction cost = new GlobalCostFunction(ts, alive, aliveWeights, isDiscountTraits, times,
-                additionalPenalties);
+        final CostFunction cost = new GlobalCostFunction(ts, alive, aliveWeights, isDiscountTraits, isSimpleZeroTraits,
+                times, additionalPenalties);
 
         final NoConstraint noConstraint = new NoConstraint();
         final Problem problem = new Problem(cost, noConstraint, guess);
@@ -363,18 +374,20 @@ public class GlobalBootstrap< Curve extends PiecewiseYieldCurve > implements Boo
         private final List< RateHelper > alive;
         private final List< Double > aliveWeights;
         private final boolean isDiscountTraits;
+        private final boolean isSimpleZeroTraits;
         private final double[] times;
         private final AdditionalPenalties additionalPenalties;
         private final Traits traits;
         private final Interpolation interpolation;
 
         GlobalCostFunction(final PiecewiseYieldCurve curve, final List< RateHelper > alive,
-                final List< Double > aliveWeights, final boolean isDiscountTraits, final double[] times,
-                final AdditionalPenalties additionalPenalties) {
+                final List< Double > aliveWeights, final boolean isDiscountTraits, final boolean isSimpleZeroTraits,
+                final double[] times, final AdditionalPenalties additionalPenalties) {
             this.curve = curve;
             this.alive = alive;
             this.aliveWeights = aliveWeights;
             this.isDiscountTraits = isDiscountTraits;
+            this.isSimpleZeroTraits = isSimpleZeroTraits;
             this.times = times;
             this.additionalPenalties = additionalPenalties;
             this.traits = curve.traits();
@@ -394,9 +407,17 @@ public class GlobalBootstrap< Curve extends PiecewiseYieldCurve > implements Boo
         @Override
         public Array values(final Array x) {
             // Update curve data: for i=0..n-2, data[i+1] = transformDirect(x[i]).
+            // Discount: exp(x); SimpleZeroYield: exp(x) + (-1/t + 1E-8); identity otherwise.
             final double[] data = curve.data();
             for ( int i = 0; i < x.size(); ++i ) {
-                final double v = isDiscountTraits ? Math.exp(x.get(i)) : x.get(i);
+                final double v;
+                if ( isDiscountTraits ) {
+                    v = Math.exp(x.get(i));
+                } else if ( isSimpleZeroTraits ) {
+                    v = Math.exp(x.get(i)) + SimpleZeroYield.transformOffset(times[i + 1]);
+                } else {
+                    v = x.get(i);
+                }
                 traits.updateGuess(data, v, i + 1);
             }
             interpolation.update();
