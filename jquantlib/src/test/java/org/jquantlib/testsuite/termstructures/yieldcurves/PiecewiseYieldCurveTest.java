@@ -1372,13 +1372,35 @@ public class PiecewiseYieldCurveTest {
 	//   for-yield port already pending. Out of scope for a single sub-task.
 	//
 	// testMultiCurvePiecewiseYieldCurveAndSpreadedCurve (cpp:1684) — BLOCKED
-	//   Same MultiCurve blockers as testMultiCurveTwoPiecewiseYieldCurves,
-	//   plus needs PiecewiseSpreadYieldCurve (Java absent) which in turn
-	//   depends on SpreadBootstrapTraits and InterpolatedSpreadDiscountCurve
-	//   (also Java-absent, ~229 LOC). Java's existing
-	//   InterpolatedPiecewiseZeroSpreadedTermStructure is *not* a substitute
-	//   — it spreads a zero-rate over an existing base curve rather than
-	//   bootstrapping a spread from instruments.
+	//   Audit (Phase1.2-A1): the MultiCurve infrastructure is now in place
+	//   (Phase1.1-A2-MC family), and the SwapRateHelper(rate, ..., discountingCurve)
+	//   overload has been ported (Phase1.2-A1-SRH commit) so the test body can be
+	//   wired. However a full port reveals a residual Java-only blocker on top of
+	//   the C++ semantics: Java's LazyObject.update() resets calculated=false on
+	//   every observer notification (LazyObject.java:272), so when the LM
+	//   inner-loop calls swap.recalculate() inside evaluateCostFunction the swap
+	//   notifies its observers (the SwapRateHelper, and transitively the
+	//   PiecewiseYieldCurve under bootstrap), which immediately invalidates the
+	//   curve's calculated flag. The very next discount() lookup on the curve
+	//   (e.g. via ZeroSpreadedTermStructure inside the swap pricing engine) then
+	//   re-enters PiecewiseYieldCurve.performCalculations -> bootstrap.calculate
+	//   -> runMultiCurveBootstrap, blowing the stack on StackOverflowError. C++
+	//   does not exhibit this because its LazyObject uses an RAII `updating_`
+	//   flag plus a `validity_` mechanism that gates re-entry by source: a curve
+	//   under bootstrap is marked valid mid-iteration so re-entrant reads use
+	//   the cached interpolation. Closing this gap requires a port of the C++
+	//   LazyObject.setValidity() semantics (or equivalent: a per-bootstrap
+	//   freeze flag toggled by GlobalBootstrap.setupCostFunction /
+	//   evaluateCostFunction frames) — estimated ~30-50 LOC on LazyObject /
+	//   GlobalBootstrap, but cross-cutting enough to merit a dedicated
+	//   sub-task. Until that lands, this two-curve cyclic bootstrap cannot
+	//   converge in Java even though all the wiring (MultiCurve,
+	//   addNonBootstrappedCurve, SwapRateHelper discountingCurve overload,
+	//   ZeroSpreadedTermStructure) is present and correct.
+	//   Also still needs PiecewiseSpreadYieldCurve (Java absent) per the
+	//   original audit, but the C++ test itself does not require it — it uses
+	//   ZeroSpreadedTermStructure directly. The Spread* prerequisites remain a
+	//   prerequisite only for testPiecewiseSpreadYieldCurve below.
 	//
 	// testGlobalBootstrapInstrumentWeights (cpp:1742) — PORTED in Phase1-closure-A6-B-562
 	//   See @Test testGlobalBootstrapInstrumentWeights() below. Required an
