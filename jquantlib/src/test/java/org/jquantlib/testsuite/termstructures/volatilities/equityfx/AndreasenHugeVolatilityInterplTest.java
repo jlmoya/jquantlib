@@ -102,20 +102,20 @@ import org.junit.Test;
  *       Cross-checks AH-local-vol vs Dupire-from-Heston-blackVol barrier prices.</li>
  *   <li>{@code testPeterAndFabiensExample} (line 807) — <b>ADDED</b>
  *       (A4-A-549-rest): SABR-data calibration + per-strike vol cross check.</li>
- *   <li>{@code testDifferentOptimizers} (line 853) — <b>ADDED+@Ignore (A3)</b>
- *       (Phase1-closure-A7-A-563): the new
- *       {@link org.jquantlib.math.optimization.Bfgs} optimizer (faithful
- *       port of v1.42.1 {@code ql/math/optimization/bfgs.{hpp,cpp}}) is
- *       landed and compiles, but the AH calibrator under {@code Bfgs +
- *       ArmijoLineSearch + CostFunction.gradient (finite-difference,
- *       eps=1e-8)} stalls at avg-error ~0.65 on the SABR 20Y slice
- *       vs the C++ test's {@code 1e-4} threshold. The BFGS algorithm
- *       and inverse-Hessian update are line-for-line equivalent to
- *       v1.42.1; the convergence gap stems from Java's finite-difference
- *       gradient noise interacting with Armijo's step-shrink — C++ has
- *       the same FD path but the floating-point accumulation differs
- *       enough that C++ BFGS finds the basin while Java BFGS does not.
- *       LM and Simplex still pass.</li>
+ *   <li>{@code testDifferentOptimizers} (line 853) — <b>ADDED-PASSING</b>
+ *       (Phase1-closure-A7-A-563 + Phase1-closure-A8-C-bfgs): all three
+ *       arms ({@link org.jquantlib.math.optimization.LevenbergMarquardt},
+ *       {@link org.jquantlib.math.optimization.Bfgs},
+ *       {@link org.jquantlib.math.optimization.Simplex Simplex(0.2)})
+ *       converge under the {@code 1e-4} spec ceiling. Originally landed
+ *       {@code @Ignore} (A7-A-563) with a misdiagnosed FD-noise
+ *       hypothesis; the real cause was a Java-only reference-aliasing
+ *       bug in {@link org.jquantlib.math.optimization.ArmijoLineSearch}
+ *       (xtd_ was aliased to {@code Problem.currentValue_} instead of
+ *       being a fresh copy) compounded with two stale
+ *       {@link org.jquantlib.math.optimization.CostFunction#value
+ *       value()} overrides that pre-dated v1.42.1's default RMS impl.
+ *       Fixed and un-Ignore'd in A8-C.</li>
  *   <li>{@code testMovingReferenceDate} (line 882) — <b>ADDED</b>
  *       (Phase1-closure-A3-A-549): direct port of the reference-date tracking
  *       check.</li>
@@ -126,12 +126,11 @@ import org.junit.Test;
  *       LevenbergMarquardt + tridiagonal-solve numerics.</li>
  * </ul>
  *
- * <p>Aggregate after Phase1-closure-A7-A-563:
- * 11 ADDED-PASSING / 2 ADDED-@Ignore (A3) / 0 EXISTING_EQUIVALENT / 0 BLOCKED
- * (testTimeDependentInterestRates landed via new ZeroCurve infra;
- * testDifferentOptimizers landed via new Bfgs infra but @Ignore'd with
- * A3 audit trail — Java BFGS converges differently from C++ BFGS on the
- * AH cost surface despite line-for-line algorithm equivalence).
+ * <p>Aggregate after Phase1-closure-A8-C-bfgs:
+ * 12 ADDED-PASSING / 1 ADDED-@Ignore (A3 — testFlatVolCalibration) /
+ * 0 EXISTING_EQUIVALENT / 0 BLOCKED (testDifferentOptimizers un-Ignore'd
+ * in A8-C after the ArmijoLineSearch aliasing + CostFunction.value()
+ * defaults landed in math.optimization).
  *
  * @author Phase 2m Track D test
  */
@@ -1214,18 +1213,21 @@ public class AndreasenHugeVolatilityInterplTest {
      * and asserts the average calibration error stays under {@code 1e-4}
      * for every optimizer (matches C++ line 875).
      *
-     * <p><strong>@Ignore — A3 finding (Phase1-closure-A7-A-563):</strong>
-     * Java {@link org.jquantlib.math.optimization.Bfgs} (line-for-line port
-     * of v1.42.1 {@code ql/math/optimization/bfgs.{hpp,cpp}}) stalls at
-     * avg-error ~0.65 on the AH cost surface vs the C++ spec's {@code 1e-4}.
-     * LM and Simplex(0.2) both pass. Root cause: Java's finite-difference
-     * gradient ({@code CostFunction.gradient}, central-diff with
-     * {@code eps=1e-8}) noise interacting with {@code ArmijoLineSearch}'s
-     * step-shrink. C++ has the same FP path on paper but the BLAS-vector
-     * accumulation in {@code Boost.uBLAS} differs enough from Java's
-     * element-wise loop that C++ BFGS finds the basin while Java BFGS
-     * doesn't. Loosening the spec to 1e-2 would mask the gap; left
-     * {@code @Ignore}'d with this audit trail.
+     * <p><strong>A8-C un-Ignore note:</strong> originally landed
+     * {@code @Ignore} (A7-A-563) with the BFGS arm stalling at avg-error
+     * ~0.65 and the (incorrect) hypothesis that Java's FD gradient noise
+     * interacting with Armijo was the culprit. Investigation in A8-C
+     * found a Java-only reference-aliasing bug in
+     * {@link org.jquantlib.math.optimization.ArmijoLineSearch} —
+     * {@code xtd_ = P.currentValue()} was reference-assigning instead of
+     * copying, so the in-place {@code update(xtd_, ...)} mutated the
+     * problem's stored x and Armijo's per-shrink probe stepped from the
+     * previously-accepted point. Combined with two stale
+     * {@link org.jquantlib.math.optimization.CostFunction#value value()}
+     * overrides in AH inner classes (sum-of-squares vs v1.42.1's RMS),
+     * Armijo's step shrank to ~1e-94 before bailing. Both are aligned
+     * to v1.42.1 in the preceding A8-C-bfgs align commit; BFGS now
+     * converges to avg-error well under 1e-4.
      */
     @Test
     public void testDifferentOptimizers() {
