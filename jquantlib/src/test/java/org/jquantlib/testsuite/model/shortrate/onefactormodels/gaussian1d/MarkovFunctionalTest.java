@@ -14,6 +14,7 @@ import java.util.List;
 import org.jquantlib.Settings;
 import org.jquantlib.daycounters.Actual360;
 import org.jquantlib.daycounters.Actual365Fixed;
+import org.jquantlib.daycounters.Thirty360;
 import org.jquantlib.exercise.BermudanExercise;
 import org.jquantlib.exercise.EuropeanExercise;
 import org.jquantlib.exercise.Exercise;
@@ -25,6 +26,7 @@ import org.jquantlib.indexes.EuriborSwapIsdaFixA;
 import org.jquantlib.indexes.IborIndex;
 import org.jquantlib.indexes.SwapIndex;
 import org.jquantlib.instruments.CapFloor;
+import org.jquantlib.instruments.Instrument;
 import org.jquantlib.instruments.MakeCapFloor;
 import org.jquantlib.instruments.MakeVanillaSwap;
 import org.jquantlib.instruments.Option;
@@ -34,7 +36,11 @@ import org.jquantlib.math.interpolations.factories.Linear;
 import org.jquantlib.math.interpolations.factories.LogLinear;
 import org.jquantlib.math.matrixutilities.Matrix;
 import org.jquantlib.math.optimization.EndCriteria;
+import org.jquantlib.math.optimization.LevenbergMarquardt;
+import org.jquantlib.math.optimization.NoConstraint;
 import org.jquantlib.math.optimization.OptimizationMethod;
+import org.jquantlib.model.CalibrationHelper;
+import org.jquantlib.model.shortrate.calibrationhelpers.SwaptionHelper;
 import org.jquantlib.model.VolatilityType;
 import org.jquantlib.model.shortrate.onefactormodels.gaussian1d.MarkovFunctional;
 import org.jquantlib.pricingengines.BlackFormula;
@@ -1006,31 +1012,238 @@ public class MarkovFunctionalTest {
     }
 
     // -----------------------------------------------------------------------
-    //  Phase 1 closure A7-I R563 — port v1.42.1 testCalibrationTwoInstrumentSets
-    //  BLOCKED on missing Java infra: the Java {@link MarkovFunctional} extends
-    //  {@link org.jquantlib.model.shortrate.onefactormodels.gaussian1d.Gaussian1dModel}
-    //  which extends {@link org.jquantlib.util.LazyObject}, NOT
-    //  {@link org.jquantlib.model.CalibratedModel}. C++ inherits {@code
-    //  CalibratedModel::calibrate(...)} via {@code Gaussian1dModel : CalibratedModel}
-    //  and uses it to drive the secondary {@code LevenbergMarquardt} loop over
-    //  {@code SwaptionHelper}s. Without that surface in Java, {@code mf.calibrate(...)}
-    //  doesn't resolve at compile time, and the test cannot be written without
-    //  a production change.
-    //
-    //  Promotion path (outside this test-porting batch):
-    //   1. Refactor {@code Gaussian1dModel} so it composes (or extends) a
-    //      {@code CalibratedModel} surface — exposing {@code calibrate(List<CalibrationHelper>,
-    //      OptimizationMethod, EndCriteria, Constraint, double[])} with the same
-    //      semantics as {@link org.jquantlib.model.CalibratedModel#calibrate}.
-    //      The Java port already mirrors the CalibratedModel surrogates ({@code params()},
-    //      {@code setParams(...)}, {@code arguments_}, {@code constraint_}) but does not
-    //      expose the calibration loop.
-    //   2. Port {@code MarkovFunctional}'s {@code constraint()} / {@code generateArguments()}
-    //      so the LM driver can re-tabulate the numeraire surface inside the
-    //      cost-function evaluation.
-    //   3. Re-port this test once {@code mf.calibrate(...)} compiles.
-    //
-    //  Tracking: defer to a follow-up phase (model-infra, not test-port).
+    //  Phase 1 closure A8-B R563 — port v1.42.1 testCalibrationTwoInstrumentSets
+    //  (markovfunctional.cpp:1401-1639). Smoke test: drive the secondary
+    //  LevenbergMarquardt loop over SwaptionHelper instruments to verify that
+    //  the new {@code Gaussian1dModel.calibrate(...)} surface (CalibratedModel
+    //  composition delegate from align(model.Gaussian1dModel) — same batch)
+    //  completes without throwing. C++ uses {@code BOOST_TEST_MESSAGE} for
+    //  all discrepancy reports rather than {@code BOOST_CHECK}, i.e. the test
+    //  is also a smoke test in C++ — it logs deviations but does not fail.
+    //  Fast-gated per C++ {@code *precondition(if_speed(Fast))}.
+    // -----------------------------------------------------------------------
+
+    /**
+     * Mirrors C++ {@code testCalibrationTwoInstrumentSets} (markovfunctional.cpp:1401-1639).
+     *
+     * <p>Builds two {@link MarkovFunctional} instances (flat and md0 termstructures),
+     * primary-calibrates each via the Gaussian1dSwaptionEngine, then runs a
+     * secondary calibration over four coterminal SwaptionHelpers driven by
+     * {@link LevenbergMarquardt}. The C++ test uses {@code BOOST_TEST_MESSAGE}
+     * for all reporting, so the only failure mode tested here is that the
+     * {@link MarkovFunctional#calibrate} surface resolves and runs to
+     * completion. Discrepancies (vs Black engine) are logged via {@code
+     * System.out} for informational purposes only — matching C++ semantics
+     * exactly (Phase 1 closure A8-B-563).
+     *
+     * <p><strong>Fast-gated</strong> via {@code -Dql.fastTests=1} to mirror C++
+     * {@code *precondition(if_speed(Fast))}. The full secondary calibration
+     * (two LM loops × 4 helpers × ~1000 iterations of full numeraire
+     * tabulation per evaluation) is multi-minute wall time — exclude from
+     * default builds.
+     */
+    @Test
+    public void testCalibrationTwoInstrumentSets() {
+        Assume.assumeTrue("test gated -Dql.fastTests=1 to mirror C++ if_speed(Fast)",
+                System.getProperty("ql.fastTests") != null);
+
+        final double tol1 = 0.1; // 0.1 times vega tolerance (C++ markovfunctional.cpp:1403-1404)
+
+        final Date referenceDate = new Date(14, Month.November, 2012);
+        new Settings().setEvaluationDate(referenceDate);
+
+        final Handle<YieldTermStructure> flatYts_ = flatYts();
+        final Handle<YieldTermStructure> md0Yts_ = md0Yts();
+        final Handle<SwaptionVolatilityStructure> flatSwaptionVts_ = flatSwaptionVts();
+        final Handle<SwaptionVolatilityStructure> md0SwaptionVts_ = md0SwaptionVts();
+
+        final SwapIndex swapIndexBase = new EuriborSwapIsdaFixA(
+                new Period(1, TimeUnit.Years));
+
+        final List<Date> volStepDates = new ArrayList<Date>();
+        volStepDates.add(new Target().advance(referenceDate, new Period(1, TimeUnit.Years)));
+        volStepDates.add(new Target().advance(referenceDate, new Period(2, TimeUnit.Years)));
+        volStepDates.add(new Target().advance(referenceDate, new Period(3, TimeUnit.Years)));
+        volStepDates.add(new Target().advance(referenceDate, new Period(4, TimeUnit.Years)));
+
+        final double[] vols = new double[]{1.0, 1.0, 1.0, 1.0, 1.0};
+        final double[] money = new double[]{
+                0.1, 0.25, 0.50, 0.75, 1.0, 1.25, 1.50, 2.0, 5.0};
+
+        final OptimizationMethod om = new LevenbergMarquardt();
+        final EndCriteria ec = new EndCriteria(1000, 500, 1e-2, 1e-2, 1e-2);
+
+        // ──────────────────────────────────────────────────────────────────
+        // Calibration Basket 1 / flat yts, vts / Secondary set = coterminals
+        // ──────────────────────────────────────────────────────────────────
+
+        final IborIndex iborIndex1 = new Euribor(new Period(6, TimeUnit.Months), flatYts_);
+
+        final double[] calibrationHelperVols1 = new double[]{0.20, 0.20, 0.20, 0.20};
+
+        final List<CalibrationHelper> calibrationHelper1 = new ArrayList<CalibrationHelper>();
+        calibrationHelper1.add(new SwaptionHelper(
+                new Period(1, TimeUnit.Years), new Period(4, TimeUnit.Years),
+                new Handle<Quote>(new SimpleQuote(calibrationHelperVols1[0])),
+                iborIndex1, new Period(1, TimeUnit.Years), new Thirty360(),
+                new Actual360(), flatYts_));
+        calibrationHelper1.add(new SwaptionHelper(
+                new Period(2, TimeUnit.Years), new Period(3, TimeUnit.Years),
+                new Handle<Quote>(new SimpleQuote(calibrationHelperVols1[1])),
+                iborIndex1, new Period(1, TimeUnit.Years), new Thirty360(),
+                new Actual360(), flatYts_));
+        calibrationHelper1.add(new SwaptionHelper(
+                new Period(3, TimeUnit.Years), new Period(2, TimeUnit.Years),
+                new Handle<Quote>(new SimpleQuote(calibrationHelperVols1[2])),
+                iborIndex1, new Period(1, TimeUnit.Years), new Thirty360(),
+                new Actual360(), flatYts_));
+        calibrationHelper1.add(new SwaptionHelper(
+                new Period(4, TimeUnit.Years), new Period(1, TimeUnit.Years),
+                new Handle<Quote>(new SimpleQuote(calibrationHelperVols1[3])),
+                iborIndex1, new Period(1, TimeUnit.Years), new Thirty360(),
+                new Actual360(), flatYts_));
+
+        final MarkovFunctional mf1 = new MarkovFunctional(
+                flatYts_, 0.01, volStepDates, vols, flatSwaptionVts_,
+                expiriesCalBasket1(referenceDate), tenorsCalBasket1(),
+                swapIndexBase,
+                new MarkovFunctional.ModelSettings()
+                        .withYGridPoints(64)
+                        .withYStdDevs(7.0)
+                        .withGaussHermitePoints(32)
+                        .withDigitalGap(1e-5)
+                        .withMarketRateAccuracy(1e-7)
+                        .withLowerRateBound(0.0)
+                        .withUpperRateBound(2.0)
+                        .withSmileMoneynessCheckpoints(money));
+
+        final PricingEngine mfSwaptionEngine1 = new Gaussian1dSwaptionEngine(mf1, 64, 7.0);
+        for (final CalibrationHelper h : calibrationHelper1) {
+            ((SwaptionHelper) h).setPricingEngine(mfSwaptionEngine1);
+        }
+
+        // Drive secondary calibration via the freshly hoisted
+        // Gaussian1dModel.calibrate(...) surface (Phase 1 closure A8-B).
+        // Smoke validate — completion without exception is the assertion.
+        // Mirrors C++ MarkovFunctional::calibrate override (markovfunctional.hpp:340)
+        // which fixes vols[0] so that #free-params (4) == #instruments (4) —
+        // LevenbergMarquardt requires equal or more functions than free parameters.
+        final boolean[] fixFirstVol1 = new boolean[]{true, false, false, false, false};
+        mf1.calibrate(calibrationHelper1, om, ec, new NoConstraint(), null, fixFirstVol1);
+
+        // C++ uses BOOST_TEST_MESSAGE (informational only); we mirror by
+        // logging to System.out without failing the test.
+        for (int i = 0; i < calibrationHelper1.size(); i++) {
+            final SwaptionHelper sh = (SwaptionHelper) calibrationHelper1.get(i);
+            final Swaption swp = sh.swaption();
+            final BlackSwaptionEngine blackEngine = new BlackSwaptionEngine(flatYts_, calibrationHelperVols1[i]);
+            swp.setPricingEngine(blackEngine);
+            final double blackPrice = swp.NPV();
+            final Object vegaObj = ((Instrument.ResultsImpl) blackEngine.getResults())
+                    .additionalResults().get("vega");
+            final double blackVega = vegaObj instanceof Number ? ((Number) vegaObj).doubleValue() : 0.0;
+            swp.setPricingEngine(mfSwaptionEngine1);
+            final double mfPrice = swp.NPV();
+            if (blackVega > 0.0 && Math.abs(blackPrice - mfPrice) / blackVega > tol1) {
+                System.out.println("Basket 1 / flat yts, vts: Secondary instrument set "
+                        + "calibration deviation for instrument #" + i
+                        + " black premium=" + blackPrice
+                        + " model premium=" + mfPrice
+                        + " (vega=" + blackVega + ")");
+            }
+        }
+
+        // ──────────────────────────────────────────────────────────────────
+        // Calibration Basket 1 / real yts, vts / Secondary set = coterminals
+        // ──────────────────────────────────────────────────────────────────
+
+        final IborIndex iborIndex2 = new Euribor(new Period(6, TimeUnit.Months), md0Yts_);
+
+        final MarkovFunctional mf2 = new MarkovFunctional(
+                md0Yts_, 0.01, volStepDates, vols, md0SwaptionVts_,
+                expiriesCalBasket1(referenceDate), tenorsCalBasket1(),
+                swapIndexBase,
+                new MarkovFunctional.ModelSettings()
+                        .withYGridPoints(64)
+                        .withYStdDevs(7.0)
+                        .withGaussHermitePoints(32)
+                        .withDigitalGap(1e-5)
+                        .withMarketRateAccuracy(1e-7)
+                        .withLowerRateBound(0.0)
+                        .withUpperRateBound(2.0)
+                        .withSmileMoneynessCheckpoints(money));
+
+        // ATM-strike vols from the SabrSwaptionVolatilityCube.
+        final SabrSwaptionVolatilityCube cube =
+                (SabrSwaptionVolatilityCube) md0SwaptionVts_.currentLink();
+        final double[] calibrationHelperVols2 = new double[]{
+                md0SwaptionVts_.currentLink().volatility(
+                        new Period(1, TimeUnit.Years), new Period(4, TimeUnit.Years),
+                        cube.atmStrike(new Period(1, TimeUnit.Years), new Period(4, TimeUnit.Years))),
+                md0SwaptionVts_.currentLink().volatility(
+                        new Period(2, TimeUnit.Years), new Period(3, TimeUnit.Years),
+                        cube.atmStrike(new Period(2, TimeUnit.Years), new Period(3, TimeUnit.Years))),
+                md0SwaptionVts_.currentLink().volatility(
+                        new Period(3, TimeUnit.Years), new Period(2, TimeUnit.Years),
+                        cube.atmStrike(new Period(3, TimeUnit.Years), new Period(2, TimeUnit.Years))),
+                md0SwaptionVts_.currentLink().volatility(
+                        new Period(4, TimeUnit.Years), new Period(1, TimeUnit.Years),
+                        cube.atmStrike(new Period(4, TimeUnit.Years), new Period(1, TimeUnit.Years)))};
+
+        final List<CalibrationHelper> calibrationHelper2 = new ArrayList<CalibrationHelper>();
+        calibrationHelper2.add(new SwaptionHelper(
+                new Period(1, TimeUnit.Years), new Period(4, TimeUnit.Years),
+                new Handle<Quote>(new SimpleQuote(calibrationHelperVols2[0])),
+                iborIndex2, new Period(1, TimeUnit.Years), new Thirty360(),
+                new Actual360(), md0Yts_));
+        calibrationHelper2.add(new SwaptionHelper(
+                new Period(2, TimeUnit.Years), new Period(3, TimeUnit.Years),
+                new Handle<Quote>(new SimpleQuote(calibrationHelperVols2[1])),
+                iborIndex2, new Period(1, TimeUnit.Years), new Thirty360(),
+                new Actual360(), md0Yts_));
+        calibrationHelper2.add(new SwaptionHelper(
+                new Period(3, TimeUnit.Years), new Period(2, TimeUnit.Years),
+                new Handle<Quote>(new SimpleQuote(calibrationHelperVols2[2])),
+                iborIndex2, new Period(1, TimeUnit.Years), new Thirty360(),
+                new Actual360(), md0Yts_));
+        calibrationHelper2.add(new SwaptionHelper(
+                new Period(4, TimeUnit.Years), new Period(1, TimeUnit.Years),
+                new Handle<Quote>(new SimpleQuote(calibrationHelperVols2[3])),
+                iborIndex2, new Period(1, TimeUnit.Years), new Thirty360(),
+                new Actual360(), md0Yts_));
+
+        final PricingEngine mfSwaptionEngine2 = new Gaussian1dSwaptionEngine(mf2, 64, 7.0);
+        for (final CalibrationHelper h : calibrationHelper2) {
+            ((SwaptionHelper) h).setPricingEngine(mfSwaptionEngine2);
+        }
+
+        final boolean[] fixFirstVol2 = new boolean[]{true, false, false, false, false};
+        mf2.calibrate(calibrationHelper2, om, ec, new NoConstraint(), null, fixFirstVol2);
+
+        for (int i = 0; i < calibrationHelper2.size(); i++) {
+            final SwaptionHelper sh = (SwaptionHelper) calibrationHelper2.get(i);
+            final Swaption swp = sh.swaption();
+            final BlackSwaptionEngine blackEngine = new BlackSwaptionEngine(md0Yts_, calibrationHelperVols2[i]);
+            swp.setPricingEngine(blackEngine);
+            final double blackPrice = swp.NPV();
+            final Object vegaObj = ((Instrument.ResultsImpl) blackEngine.getResults())
+                    .additionalResults().get("vega");
+            final double blackVega = vegaObj instanceof Number ? ((Number) vegaObj).doubleValue() : 0.0;
+            swp.setPricingEngine(mfSwaptionEngine2);
+            final double mfPrice = swp.NPV();
+            if (blackVega > 0.0 && Math.abs(blackPrice - mfPrice) / blackVega > tol1) {
+                System.out.println("Basket 1 / real yts, vts: Secondary instrument set "
+                        + "calibration deviation for instrument #" + i
+                        + " black premium=" + blackPrice
+                        + " model premium=" + mfPrice
+                        + " (vega=" + blackVega + ")");
+            }
+        }
+
+        // No tolerance assertion — C++ uses BOOST_TEST_MESSAGE throughout.
+        // Test passes if both calibrate() calls complete without throwing.
+        assertTrue("testCalibrationTwoInstrumentSets completed", true);
+    }
     // -----------------------------------------------------------------------
 
     // -----------------------------------------------------------------------
