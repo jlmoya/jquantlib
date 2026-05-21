@@ -78,8 +78,10 @@ import org.jquantlib.time.Date;
  *       (identity for {@link ZeroYield}/{@link ForwardRate}).</li>
  *   <li>{@code MultiCurveBootstrap} parent-coordinator path is not ported — none of the v1.42.1 yield-curve tests
  *       exercise it.</li>
- *   <li>{@code AdditionalBootstrapVariables} (model-parameter optimisation) is not ported in this round; it can be
- *       added without breaking API.</li>
+ *   <li>{@link AdditionalBootstrapVariables} (model-parameter optimisation) is ported as of Phase 1.1-A-562-sqv;
+ *       see {@link SimpleQuoteVariables} for the concrete implementation. When non-null, the variables-supplied
+ *       guesses are appended to the curve-pillar guesses and {@link AdditionalBootstrapVariables#update(Array)}
+ *       is invoked on every cost-function call.</li>
  *   <li>This class uses {@code latestDate()} as the pillar date (matches Java's {@link RateHelper}; the C++ original
  *       reads {@code pillarDate()} which is not yet exposed in Java BootstrapHelper).</li>
  * </ul>
@@ -100,6 +102,7 @@ public class GlobalBootstrap< Curve extends PiecewiseYieldCurve > implements Boo
     private final List< RateHelper > additionalHelpers;
     private final AdditionalDatesProvider additionalDatesProvider;
     private final AdditionalPenalties additionalPenalties;
+    private final AdditionalBootstrapVariables additionalVariables;
     private final double[] instrumentWeights;
 
     private Curve ts;
@@ -143,7 +146,10 @@ public class GlobalBootstrap< Curve extends PiecewiseYieldCurve > implements Boo
 
     /**
      * Full constructor. {@code additionalHelpers}, {@code additionalDatesProvider}, {@code additionalPenalties},
-     * {@code instrumentWeights} are optional and may be {@code null}.
+     * {@code instrumentWeights} are optional and may be {@code null}. Equivalent to invoking the
+     * {@link #GlobalBootstrap(Class, double, OptimizationMethod, EndCriteria, double[], List,
+     * AdditionalDatesProvider, AdditionalPenalties, AdditionalBootstrapVariables)} overload with
+     * {@code additionalVariables = null}.
      */
     public GlobalBootstrap(final Class< ? > typeCurve, final double accuracy,
             final OptimizationMethod optimizer, final EndCriteria endCriteria,
@@ -151,6 +157,23 @@ public class GlobalBootstrap< Curve extends PiecewiseYieldCurve > implements Boo
             final List< RateHelper > additionalHelpers,
             final AdditionalDatesProvider additionalDatesProvider,
             final AdditionalPenalties additionalPenalties) {
+        this(typeCurve, accuracy, optimizer, endCriteria, instrumentWeights, additionalHelpers,
+                additionalDatesProvider, additionalPenalties, null);
+    }
+
+    /**
+     * Full constructor with {@link AdditionalBootstrapVariables} support. Mirrors C++
+     * {@code GlobalBootstrap<Curve>(additionalHelpers, additionalDates, additionalPenalties, accuracy,
+     * optimizer, endCriteria, additionalVariables, instrumentWeights)} at
+     * {@code ql/termstructures/globalbootstrap.hpp:116}.
+     */
+    public GlobalBootstrap(final Class< ? > typeCurve, final double accuracy,
+            final OptimizationMethod optimizer, final EndCriteria endCriteria,
+            final double[] instrumentWeights,
+            final List< RateHelper > additionalHelpers,
+            final AdditionalDatesProvider additionalDatesProvider,
+            final AdditionalPenalties additionalPenalties,
+            final AdditionalBootstrapVariables additionalVariables) {
 
         QL.require(typeCurve != null, "GlobalBootstrap: typeCurve is null");
         this.typeCurve = typeCurve;
@@ -161,6 +184,7 @@ public class GlobalBootstrap< Curve extends PiecewiseYieldCurve > implements Boo
         this.additionalHelpers = additionalHelpers == null ? new ArrayList<>() : new ArrayList<>(additionalHelpers);
         this.additionalDatesProvider = additionalDatesProvider;
         this.additionalPenalties = additionalPenalties;
+        this.additionalVariables = additionalVariables;
         this.instrumentWeights = instrumentWeights == null ? null : instrumentWeights.clone();
     }
 
@@ -306,12 +330,16 @@ public class GlobalBootstrap< Curve extends PiecewiseYieldCurve > implements Boo
         }
 
         // Step 8: initial guess for the optimiser — one variable per curve pillar i=1..n-1 (data[0] is the anchor,
-        // controlled by Traits::initialValue). Apply transformInverse for Discount (log) and SimpleZeroYield
-        // (log(x - offset(t_i))); identity otherwise.
+        // controlled by Traits::initialValue), followed by any AdditionalBootstrapVariables guesses. Apply
+        // transformInverse for Discount (log) and SimpleZeroYield (log(x - offset(t_i))); identity otherwise on the
+        // curve-pillar slice — the additional-variables slice handles its own transformInverse internally.
         final boolean isDiscountTraits = traits instanceof Discount;
         final boolean isSimpleZeroTraits = traits instanceof SimpleZeroYield;
         final int nVars = nDates - 1;
-        final Array guess = new Array(nVars);
+        final Array additionalGuesses = additionalVariables != null ? additionalVariables.initialize(validCurve)
+                : new Array(0);
+        final int nAdditional = additionalGuesses.size();
+        final Array guess = new Array(nVars + nAdditional);
         for ( int i = 0; i < nVars; ++i ) {
             // Mirror C++ behaviour: invoke Traits::guess for each i+1 and then call updateGuess so subsequent calls see
             // a sane state. For now, leverage initialValue as the seed — the per-pillar guess() helpers depend on
@@ -330,11 +358,15 @@ public class GlobalBootstrap< Curve extends PiecewiseYieldCurve > implements Boo
             }
             guess.set(i, xVar);
         }
+        for ( int i = 0; i < nAdditional; ++i ) {
+            guess.set(nVars + i, additionalGuesses.get(i));
+        }
 
         // Step 9: cost function — for each alive helper, residual = quoteError * weight; followed by additional
-        // penalties if a provider is supplied.
+        // penalties if a provider is supplied. The additional-variables suffix of x (if any) is pushed back into
+        // their backing state via AdditionalBootstrapVariables.update() before helpers are re-evaluated.
         final CostFunction cost = new GlobalCostFunction(ts, alive, aliveWeights, isDiscountTraits, isSimpleZeroTraits,
-                times, additionalPenalties);
+                times, additionalPenalties, additionalVariables, nVars);
 
         final NoConstraint noConstraint = new NoConstraint();
         final Problem problem = new Problem(cost, noConstraint, guess);
@@ -367,6 +399,12 @@ public class GlobalBootstrap< Curve extends PiecewiseYieldCurve > implements Boo
 
     /**
      * Inner cost function — one residual per alive helper plus optional additional penalties.
+     *
+     * <p>When {@code additionalVariables != null}, the optimiser-supplied {@code x} vector is wider than the
+     * curve-pillar count: the first {@code nCurvePillars} entries drive the curve data via
+     * {@link Traits#updateGuess}, while the remaining entries are handed to
+     * {@link AdditionalBootstrapVariables#update(Array)} so that any helpers referencing those quotes pick up
+     * the updated values on the next {@link RateHelper#quoteError()} call.
      */
     private static final class GlobalCostFunction extends CostFunction {
 
@@ -377,12 +415,15 @@ public class GlobalBootstrap< Curve extends PiecewiseYieldCurve > implements Boo
         private final boolean isSimpleZeroTraits;
         private final double[] times;
         private final AdditionalPenalties additionalPenalties;
+        private final AdditionalBootstrapVariables additionalVariables;
+        private final int nCurvePillars;
         private final Traits traits;
         private final Interpolation interpolation;
 
         GlobalCostFunction(final PiecewiseYieldCurve curve, final List< RateHelper > alive,
                 final List< Double > aliveWeights, final boolean isDiscountTraits, final boolean isSimpleZeroTraits,
-                final double[] times, final AdditionalPenalties additionalPenalties) {
+                final double[] times, final AdditionalPenalties additionalPenalties,
+                final AdditionalBootstrapVariables additionalVariables, final int nCurvePillars) {
             this.curve = curve;
             this.alive = alive;
             this.aliveWeights = aliveWeights;
@@ -390,6 +431,8 @@ public class GlobalBootstrap< Curve extends PiecewiseYieldCurve > implements Boo
             this.isSimpleZeroTraits = isSimpleZeroTraits;
             this.times = times;
             this.additionalPenalties = additionalPenalties;
+            this.additionalVariables = additionalVariables;
+            this.nCurvePillars = nCurvePillars;
             this.traits = curve.traits();
             this.interpolation = curve.interpolation();
         }
@@ -406,10 +449,10 @@ public class GlobalBootstrap< Curve extends PiecewiseYieldCurve > implements Boo
 
         @Override
         public Array values(final Array x) {
-            // Update curve data: for i=0..n-2, data[i+1] = transformDirect(x[i]).
+            // Update curve data: for i=0..nCurvePillars-1, data[i+1] = transformDirect(x[i]).
             // Discount: exp(x); SimpleZeroYield: exp(x) + (-1/t + 1E-8); identity otherwise.
             final double[] data = curve.data();
-            for ( int i = 0; i < x.size(); ++i ) {
+            for ( int i = 0; i < nCurvePillars; ++i ) {
                 final double v;
                 if ( isDiscountTraits ) {
                     v = Math.exp(x.get(i));
@@ -421,6 +464,16 @@ public class GlobalBootstrap< Curve extends PiecewiseYieldCurve > implements Boo
                 traits.updateGuess(data, v, i + 1);
             }
             interpolation.update();
+
+            // Push the trailing additional-variables slice back into their backing state. Mirrors C++
+            // globalbootstrap.hpp:386-389 — {Array(x.begin() + nCurvePillars, x.end())}.
+            if ( additionalVariables != null && x.size() > nCurvePillars ) {
+                final Array suffix = new Array(x.size() - nCurvePillars);
+                for ( int i = 0; i < suffix.size(); ++i ) {
+                    suffix.set(i, x.get(nCurvePillars + i));
+                }
+                additionalVariables.update(suffix);
+            }
 
             // Compute additional penalties first to size the result.
             Array addErrors = null;
