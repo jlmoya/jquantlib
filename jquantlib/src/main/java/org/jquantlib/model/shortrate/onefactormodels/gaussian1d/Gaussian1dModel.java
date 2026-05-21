@@ -45,7 +45,14 @@ import org.jquantlib.math.Constants;
 import org.jquantlib.math.ErrorFunction;
 import org.jquantlib.math.interpolations.CubicInterpolation;
 import org.jquantlib.math.matrixutilities.Array;
+import org.jquantlib.math.optimization.Constraint;
+import org.jquantlib.math.optimization.EndCriteria;
+import org.jquantlib.math.optimization.NoConstraint;
+import org.jquantlib.math.optimization.OptimizationMethod;
 import org.jquantlib.math.transcendental.JQuantMath;
+import org.jquantlib.model.CalibratedModel;
+import org.jquantlib.model.CalibrationHelper;
+import org.jquantlib.model.Parameter;
 import org.jquantlib.model.shortrate.onefactormodels.TermStructureConsistentModel;
 import org.jquantlib.processes.StochasticProcess1D;
 import org.jquantlib.quotes.Handle;
@@ -69,6 +76,14 @@ import java.util.Map;
  * Java has no multiple class inheritance, so this port extends {@link LazyObject} and holds the yield term structure as
  * a field, exposing {@link #termStructure()} to mirror the {@code TermStructureConsistentModel} accessor. (See decision
  * in {@code docs/migration/phase2j-design.md}.)
+ * <p>
+ * <strong>CalibratedModel surface (Phase 1 closure A8-B):</strong> C++ {@code MarkovFunctional}
+ * inherits from BOTH {@code Gaussian1dModel} and {@code CalibratedModel} via multiple inheritance and thereby exposes
+ * {@code CalibratedModel::calibrate(helpers, method, endCriteria, ...)} on every {@code Gaussian1dModel} concrete
+ * subclass. Java has no multiple class inheritance, so this port embeds a private {@link CalibratedModel} delegate and
+ * forwards {@link #calibrate}, {@link #params}, {@link #constraint}, {@link #setParams} through it. Subclasses register
+ * their {@link Parameter}s via {@link #addArgument(Parameter)} and override {@link #setParams(Array)} to apply the
+ * optimizer-proposed values back to model state.
  * <p>
  * The only methods that must be implemented by subclasses are {@link #numeraireImpl} and {@link #zerobondImpl}, both
  * consuming the standardized state variable {@code y} (zero mean, unit variance). All non-virtual public methods
@@ -101,6 +116,20 @@ public abstract class Gaussian1dModel extends LazyObject implements TermStructur
     /** Cached "enforces today's historic fixings" flag. */
     protected boolean enforcesTodaysHistoricFixings_;
 
+    /**
+     * {@link CalibratedModel} composition delegate (Phase 1 closure A8-B).
+     * <p>
+     * C++ exposes {@code CalibratedModel::calibrate} on every Gaussian1dModel subclass via the
+     * {@code MarkovFunctional : public Gaussian1dModel, public CalibratedModel} multiple-inheritance edge.
+     * Java has no multiple class inheritance, so we embed an anonymous CalibratedModel that:
+     * <ul>
+     *   <li>holds the {@code arguments_} list (subclasses register parameters via {@link #addArgument});</li>
+     *   <li>delegates {@code setParams(Array)} back to {@link Gaussian1dModel#setParams(Array)} so the optimizer
+     *       round-trip writes into the outer model's parameter slots correctly.</li>
+     * </ul>
+     */
+    private final CalibratedModelDelegate calibratedDelegate_;
+
     //
     // ──────────────────────────────────────────────────────────────────────
     //   Constructor (protected — concrete subclasses register with TS)
@@ -114,6 +143,7 @@ public abstract class Gaussian1dModel extends LazyObject implements TermStructur
         // and BlackKarasinski). Settings.evaluationDate() observable registration is
         // the responsibility of concrete subclasses — see Gsr constructor (WI-1.3).
         termStructure_.addObserver(this);
+        this.calibratedDelegate_ = new CalibratedModelDelegate();
     }
 
     //
@@ -620,6 +650,128 @@ public abstract class Gaussian1dModel extends LazyObject implements TermStructur
             swapCache_.put(key, cached);
         }
         return cached;
+    }
+
+    //
+    // ──────────────────────────────────────────────────────────────────────
+    //   CalibratedModel surface (composition delegate — Phase 1 closure A8-B)
+    // ──────────────────────────────────────────────────────────────────────
+    //
+
+    /**
+     * Registers a {@link Parameter} with the embedded {@link CalibratedModel} delegate. Subclasses (e.g. {@code
+     * MarkovFunctional}) call this in their {@code initialize()} step after constructing each calibratable parameter so
+     * that {@link #params()}, {@link #constraint()}, and {@link #calibrate} see the parameter via the delegate.
+     */
+    protected final void addArgument(final Parameter p) {
+        calibratedDelegate_.addArgumentInternal(p);
+    }
+
+    /**
+     * Replaces the parameter at slot {@code idx} on the delegate (subclasses regenerating their parameter list in
+     * {@code initialize()} should use this rather than {@link #addArgument} to preserve slot positions across
+     * recalibrations).
+     */
+    protected final void setArgument(final int idx, final Parameter p) {
+        calibratedDelegate_.setArgumentInternal(idx, p);
+    }
+
+    /** @return the current parameter vector, concatenated across all registered {@link Parameter}s. */
+    public Array params() {
+        return calibratedDelegate_.params();
+    }
+
+    /** @return the calibration constraint (composite test over all registered parameter constraints). */
+    public Constraint constraint() {
+        return calibratedDelegate_.constraint();
+    }
+
+    /** @return end-criteria result from the most recent {@link #calibrate} invocation. */
+    public EndCriteria.Type endCriteria() {
+        return calibratedDelegate_.endCriteria();
+    }
+
+    /**
+     * Default {@code setParams} implementation — writes the new values back to each registered parameter slot
+     * in order, mirroring {@link CalibratedModel#setParams(Array)}. Concrete subclasses (e.g. {@code MarkovFunctional})
+     * override this when they need to trigger additional state updates (recalibration of numeraire tabulation etc.).
+     */
+    public void setParams(final Array params) {
+        calibratedDelegate_.setParamsBase(params);
+    }
+
+    /**
+     * Calibrate to a set of market instruments. Mirrors C++ {@code CalibratedModel::calibrate(helpers, method, ec,
+     * constraint, weights)} (inherited by {@code MarkovFunctional} via multiple inheritance in v1.42.1).
+     */
+    public void calibrate(final List< CalibrationHelper > instruments, final OptimizationMethod method,
+            final EndCriteria endCriteria, final Constraint additionalConstraint, final double[] weights) {
+        calibratedDelegate_.calibrate(instruments, method, endCriteria, additionalConstraint, weights);
+    }
+
+    /** Convenience overload — uses an empty {@link NoConstraint} and all-ones weights. */
+    public void calibrate(final List< CalibrationHelper > instruments, final OptimizationMethod method,
+            final EndCriteria endCriteria) {
+        calibrate(instruments, method, endCriteria, new NoConstraint(), null);
+    }
+
+    /**
+     * Calibrate with a subset of parameters held fixed. Mirrors C++ {@code CalibratedModel::calibrate(..., const
+     * std::vector<bool>& fixParameters)}.
+     */
+    public void calibrate(final List< CalibrationHelper > instruments, final OptimizationMethod method,
+            final EndCriteria endCriteria, final Constraint additionalConstraint, final double[] weights,
+            final boolean[] fixParameters) {
+        calibratedDelegate_.calibrate(instruments, method, endCriteria, additionalConstraint, weights, fixParameters);
+    }
+
+    //
+    // ──────────────────────────────────────────────────────────────────────
+    //   Inner class — CalibratedModel composition delegate
+    // ──────────────────────────────────────────────────────────────────────
+    //
+
+    /**
+     * Private {@link CalibratedModel} subclass whose {@code setParams(Array)} forwards back to the outer
+     * {@link Gaussian1dModel#setParams(Array)}. Subclasses register their parameters via {@link #addArgument} and
+     * override the outer's {@code setParams} to apply the optimizer-proposed values.
+     */
+    private final class CalibratedModelDelegate extends CalibratedModel {
+
+        CalibratedModelDelegate() {
+            super(0); // start empty; subclasses grow via addArgumentInternal
+        }
+
+        /** Direct access to the protected arguments_ list — used by {@link Gaussian1dModel#addArgument}. */
+        void addArgumentInternal(final Parameter p) {
+            this.arguments_.add(p);
+        }
+
+        /** Replace a slot in-place (preserves index positions across reinitialization). */
+        void setArgumentInternal(final int idx, final Parameter p) {
+            while ( this.arguments_.size() <= idx ) {
+                this.arguments_.add(p);
+            }
+            this.arguments_.set(idx, p);
+        }
+
+        /**
+         * Forward to the outer {@link Gaussian1dModel#setParams(Array)}, which subclasses override to apply the
+         * optimizer's proposed values and trigger recalculation.
+         */
+        @Override
+        public void setParams(final Array params) {
+            Gaussian1dModel.this.setParams(params);
+        }
+
+        /**
+         * Default implementation that writes the parameter vector slot-by-slot. Exposed package-private for the
+         * outer's default {@link Gaussian1dModel#setParams(Array)} so subclasses that do <strong>not</strong>
+         * override can still get the C++ {@code CalibratedModel::setParams} round-trip.
+         */
+        void setParamsBase(final Array params) {
+            super.setParams(params);
+        }
     }
 
 }

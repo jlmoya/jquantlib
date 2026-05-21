@@ -127,8 +127,11 @@ public class MarkovFunctional extends Gaussian1dModel {
     // ──────────────────────────────────────────────────────────────────────
     //   ModelOutputs — diagnostics
     // ──────────────────────────────────────────────────────────────────────
-    /** CalibratedModel-surrogate args: arguments_[0] == sigma_. */
-    private final List< Parameter > arguments_;
+    // Note: arguments_ is now owned by the CalibratedModel composition delegate
+    // on the base {@link Gaussian1dModel}; subclasses register via {@link
+    // Gaussian1dModel#addArgument} / {@link Gaussian1dModel#setArgument} (Phase 1
+    // closure A8-B). The previous local {@code List<Parameter> arguments_}
+    // shadow was removed when {@code calibrate(...)} was hoisted to Gaussian1dModel.
 
     // ──────────────────────────────────────────────────────────────────────
     //   Fields (mirror C++ private members)
@@ -177,7 +180,10 @@ public class MarkovFunctional extends Gaussian1dModel {
         this.modelSettings_ = modelSettings == null ? new ModelSettings() : modelSettings;
         this.modelSettings_.validate();
         this.capletCalibrated_ = false;
-        this.arguments_ = newArgumentsSlots();
+        // arguments_ slot for sigma_ is created on the Gaussian1dModel composition
+        // delegate during initialize() (after sigma_ is built); seed a placeholder
+        // here so the slot index 0 is reserved.
+        addArgument(new NullParameter());
         this.volstepdates_ = new ArrayList< Date >(volstepdates);
         this.volatilities_ = volatilities.clone();
         this.swaptionVol_ = swaptionVol;
@@ -206,7 +212,10 @@ public class MarkovFunctional extends Gaussian1dModel {
         this.modelSettings_ = modelSettings == null ? new ModelSettings() : modelSettings;
         this.modelSettings_.validate();
         this.capletCalibrated_ = true;
-        this.arguments_ = newArgumentsSlots();
+        // arguments_ slot for sigma_ is created on the Gaussian1dModel composition
+        // delegate during initialize() (after sigma_ is built); seed a placeholder
+        // here so the slot index 0 is reserved.
+        addArgument(new NullParameter());
         this.volstepdates_ = new ArrayList< Date >(volstepdates);
         this.volatilities_ = volatilities.clone();
         this.swaptionVol_ = new Handle< SwaptionVolatilityStructure >();
@@ -219,12 +228,6 @@ public class MarkovFunctional extends Gaussian1dModel {
         this.reversion_ = new ConstantParameter(reversion, new NoConstraint());
 
         initialize();
-    }
-
-    private static List< Parameter > newArgumentsSlots() {
-        final List< Parameter > a = new ArrayList< Parameter >(1);
-        a.add(new NullParameter());
-        return a;
     }
 
     private static double[] arrayCopy(final Array a) {
@@ -416,7 +419,10 @@ public class MarkovFunctional extends Gaussian1dModel {
         for ( int i = 0; i < sigma_.size(); i++ ) {
             sigma_.setParam(i, volatilities_[i]);
         }
-        arguments_.set(0, sigma_);
+        // Register sigma_ as argument slot 0 on the Gaussian1dModel CalibratedModel delegate.
+        // Equivalent to C++ MarkovFunctional::initialize() lines that populate arguments_[0]
+        // (CalibratedModel base inherited via multiple inheritance from MarkovFunctional in C++).
+        setArgument(0, sigma_);
 
         stateProcess_ = new MfStateProcess(reversion_.get(0.0), volsteptimesArray_, arrayCopy(sigma_.params()));
 
