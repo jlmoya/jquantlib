@@ -16,6 +16,14 @@ declarations across the entire JQuantLib testsuite tree.
 | Round A5-C 2026-05-20 reclassifications (distributions all EXISTING_EQUIVALENT in per-distribution test files; daycounters 3 PORTED & 3 BLOCKED on Date/daycount infra) | -8 (5 distributions to EXISTING_EQUIVALENT, 3 daycounters PORTED) |
 | Round A7-J 2026-05-20 reclassifications (full sweep of remaining "1-test by name" entries; ~18 already covered by Java method aliases/splits in existing test classes) | -18 (EXISTING_EQUIVALENT) |
 | Round A7-J 2026-05-20 europeanoption::testFdEngineWithNonConstantParameters PORTED (+InterpolatedForwardCurve precondition fix) | -1 (PORTED & PASSING) |
+| Round A7-G 2026-05-20 5 dividend tests + CashDividendEuropeanEngine PORTED | -5 (PORTED & PASSING) |
+| Round A7-F 2026-05-20 testBermudanSwaption (markovfunctional) PORTED | -1 (PORTED & PASSING) |
+| Round A7-B 2026-05-20 piecewiseyieldcurve::testDefaultInstantiation unblocked (MonotonicLogCubic + KrugerLog + ConvexMonotone factories) | -1 (PORTED & PASSING) |
+| Round A7-C 2026-05-20 piecewiseyieldcurve::testSwapRateHelperSpotDate PORTED (RelativeDateRateHelper DateProxy align) | -1 (PORTED & PASSING) |
+| Round A7-D 2026-05-20 dated-swap / dated-FRA / Pillar-FRA / dated-deposit helper ctors landed → testDatedSwapHelpers + testFraForDates + testDepositForDates PORTABLE in follow-up | -3 (UNBLOCKED) |
+| **Current count (re-audit, A8-D, cross-class fuzzy)** | **~36** still missing-by-name |
+| Current TOTAL @Test methods in suite | **3342** |
+| Current @Ignore count | **5** |
 
 Method: stem-strip the leading `test`, case-insensitive, partial substring,
 size-similarity gate (length difference < 50% of the longer name). When in
@@ -23,13 +31,20 @@ doubt the audit script counts the test as genuinely missing (conservative).
 
 ## Top-5 still-genuinely-missing buckets by test count
 
+(Re-audited 2026-05-20 at main tip `7a9807ee+`, cross-class fuzzy methodology.)
+
 | C++ file | Missing count | Java class candidate |
 |----------|---------------|----------------------|
-| piecewiseyieldcurve | 14 | PiecewiseYieldCurveTest.java |
-| andreasenhugevolatilityinterpl | 10 | AndreasenHugeVolatilityInterplTest.java |
-| americanoption | 8 | AmericanOptionTest.java |
-| daycounters | 6 | DayCountersTest.java |
-| distributions | 5 | DistributionsAdditionalTest.java |
+| piecewiseyieldcurve | 7 | PiecewiseYieldCurveTest.java |
+| gaussianquadratures | 3 | GaussianQuadraturesAdditionalTest.java |
+| calendars | 3 | (per-calendar test files) |
+| americanoption | 3 | AmericanOptionTest.java |
+| daycounters | 2 | DayCountersTest.java |
+
+Smaller buckets (1–2 entries each): `doublebarrieroption`, `quotes`,
+`interpolatedsmilesection`, `termstructures`, plus singletons across
+`optimizers`, `marketmodel`, `marketmodel_smm*`, `tracing`,
+`interpolations`, `period`, `compiledboostversion`, `inflation`.
 
 ## Full breakdown by file
 
@@ -314,19 +329,29 @@ doubt the audit script counts the test as genuinely missing (conservative).
 
 ## Classification summary
 
-- **Genuinely missing (need code or test-body work):** 83 baseline -
-  18 (Round A7-J EXISTING_EQUIVALENT sweep) - 1 (A7-J
-  europeanoption::testFdEngineWithNonConstantParameters PORTED) =
-  **~64 tests** still genuinely missing across ~25 buckets, ranked by
-  total LOC estimate:
-    1. piecewiseyieldcurve (~2000 LOC)
-    2. andreasenhugevolatilityinterpl (~1500 LOC; full engine port)
-    3. markovfunctional (~1500 LOC; heavy MC bodies — partly landed in
-       Round A7-F: `testBermudanSwaption`)
-    4. marketmodel_smm* + marketmodel_cms (~3000 LOC including
-       MarketModelTestSetup harness — 6 tests still BLOCKED)
-    5. dividendoption (~800 LOC)
-    6. americanoption (~600 LOC remaining after QdFp partial landing)
+(Updated 2026-05-20 at main tip `7a9807ee+`, post Round A7+; cross-class
+fuzzy methodology re-audit.)
+
+- **Genuinely missing (need code or test-body work):** ~**36 tests**
+  still genuinely missing across ~20 buckets, ranked by total LOC
+  estimate:
+    1. piecewiseyieldcurve (7) — `MultiCurve` infra + 4 remaining
+       `GlobalBootstrap` test bodies + `testSwapHelpersWithOnceFrequency`
+       (needs `Estr` index + `paymentFrequency` overload).
+       **Deferred to Phase 1.1 (TODO #562 in_progress).**
+    2. andreasenhugevolatilityinterpl — partial; remaining tests
+       require ~1500 LOC engine completion.
+    3. markovfunctional — 3 remaining (`testCalibrationOneInstrumentSet`,
+       `testVanillaEngines`, `testCalibrationTwoInstrumentSets`) after
+       Round A7-F landed `testBermudanSwaption`.
+    4. marketmodel_smm* + marketmodel_cms — 6 tests still BLOCKED on
+       full MarketModelTestSetup harness completion (~3000 LOC).
+    5. americanoption (3 remaining) — Ju 1999 closed-form +
+       BjerksundStensland Greeks + QdNegativeDividendYield.
+    6. Small body-fill bucket: gaussianquadratures (3), calendars (3),
+       daycounters (2), doublebarrieroption (2), quotes (2),
+       interpolatedsmilesection (2), termstructures (2), and ~10
+       singletons.
 
 - **EXISTING_EQUIVALENT (alias detected, no port needed):** 8 (prior) +
   18 (Round A7-J) = **~26 tests** total. Annotated inline in this doc
@@ -339,11 +364,18 @@ doubt the audit script counts the test as genuinely missing (conservative).
     - `tracing::testOutput` (paradigm-specific to C++ Boost.Test trace
       macros; JQuantLib's `Trace.java` is a different facade).
 
+- **Deferred to Phase 1.1:** the `MultiCurve` infra + 4
+  `GlobalBootstrap` test bodies (#562 in_progress) and the pre-existing
+  inflation `NullPointerException` in the CapFloor-class A3 carve-out
+  (#563).
+
 ## Next-step recommendation
 
-Round A5+ should attack the bottom-of-bucket (high-LOC) items in
-dispatched-parallel mode: `piecewiseyieldcurve`,
-`andreasenhugevolatilityinterpl`, and `markovfunctional` are each
-multi-day standalone ports best run in dedicated worktrees. The
-~30 small body-fill tests (≤150 LOC) total ~3500 LOC and could be
-absorbed into ~5-7 parallel sub-agents at typical body-fill density.
+Phase 1.1 should attack the bottom-of-bucket high-LOC items in
+dispatched-parallel mode: `piecewiseyieldcurve` (MultiCurve + 4
+GlobalBootstrap test bodies — TODO #562 in_progress),
+`andreasenhugevolatilityinterpl` (remaining engine machinery), the
+3 remaining `markovfunctional` tests, and the 6 BLOCKED
+`marketmodel_smm*` / `marketmodel_cms` tests. The ~15 small
+body-fill tests across the remaining buckets total ~2000 LOC and could
+be absorbed into ~3–4 parallel sub-agents at typical body-fill density.
