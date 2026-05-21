@@ -274,9 +274,13 @@ public class SwapRateHelper extends RelativeDateRateHelper {
         // do not pass the spread here, as it might be a Quote i.e. it can dynamically change
         // Mirrors C++ v1.42.1 ratehelpers.cpp:545-606: when explicit start/end dates are
         // supplied (dated ctor), feed them to MakeVanillaSwap via withEffective/Termination.
+        // Mirror C++ v1.42.1 ratehelpers.cpp:556 — when fixedFrequency == Once
+        // the fixed leg uses the swap tenor itself as a single coupon, rather
+        // than Period(Once) (which would be 0 Years).
+        final Period fixedLegTenor = (fixedFrequency == Frequency.Once) ? tenor : new Period(fixedFrequency);
         MakeVanillaSwap mvs = new MakeVanillaSwap(tenor, clonedIborIndex, 0.0, fwdStart)
                 .withFixedLegDayCount(fixedDayCount)
-                .withFixedLegTenor(new Period(fixedFrequency))
+                .withFixedLegTenor(fixedLegTenor)
                 .withFixedLegConvention(fixedConvention)
                 .withFixedLegTerminationDateConvention(fixedConvention)
                 .withFixedLegCalendar(calendar)

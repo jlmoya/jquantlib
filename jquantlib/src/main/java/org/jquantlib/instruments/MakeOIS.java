@@ -298,11 +298,26 @@ public class MakeOIS {
             endDate = startDate.add(swapTenor_);
         }
 
-        final Schedule fixedSchedule = new Schedule(startDate, endDate, new Period(paymentFrequency_), fixedCalendar_,
-                paymentAdjustment_, paymentAdjustment_, rule_, useEOM, new Date(), new Date());
+        // Mirror C++ makeois.cpp:102-117 - when paymentFrequency is Once
+        // or rule is Zero, force the schedule into a single-coupon shape
+        // (Period(Once) + DateGeneration.Zero). Without this, Schedule
+        // would loop forever advancing a 0-length period.
+        Frequency effectivePaymentFrequency;
+        DateGeneration.Rule effectiveRule;
+        if ( paymentFrequency_ == Frequency.Once || rule_ == DateGeneration.Rule.Zero ) {
+            effectivePaymentFrequency = Frequency.Once;
+            effectiveRule = DateGeneration.Rule.Zero;
+        } else {
+            effectivePaymentFrequency = paymentFrequency_;
+            effectiveRule = rule_;
+        }
 
-        final Schedule overnightSchedule = new Schedule(startDate, endDate, new Period(paymentFrequency_),
-                overnightCalendar_, paymentAdjustment_, paymentAdjustment_, rule_, useEOM, new Date(), new Date());
+        final Schedule fixedSchedule = new Schedule(startDate, endDate, new Period(effectivePaymentFrequency),
+                fixedCalendar_, paymentAdjustment_, paymentAdjustment_, effectiveRule, useEOM, new Date(), new Date());
+
+        final Schedule overnightSchedule = new Schedule(startDate, endDate, new Period(effectivePaymentFrequency),
+                overnightCalendar_, paymentAdjustment_, paymentAdjustment_, effectiveRule, useEOM, new Date(),
+                new Date());
 
         // Default paymentCalendar -> overnight calendar (matches C++ where an
         // unset paymentCalendar_ falls back to the overnight schedule's
