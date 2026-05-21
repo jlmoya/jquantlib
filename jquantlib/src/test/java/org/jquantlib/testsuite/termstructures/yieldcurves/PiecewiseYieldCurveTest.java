@@ -2527,4 +2527,60 @@ public class PiecewiseYieldCurveTest {
 	    }
 	}
 
+
+ 
+    /**
+     * Faithful port of {@code test-suite/piecewiseyieldcurve.cpp:2094}
+     * {@code BOOST_AUTO_TEST_CASE(testSwapHelpersWithOnceFrequency)}. The test is
+     * a smoke check that {@link SwapRateHelper} and
+     * {@link org.jquantlib.termstructures.yieldcurves.OISRateHelper} accept
+     * {@code Frequency.Once} on the fixed / payment leg respectively
+     * (C++ uses {@code BOOST_CHECK_NO_THROW}).
+     *
+     * <p>Phase 1.2 closure — exercises:
+     * <ul>
+     *   <li>{@link SwapRateHelper} initializeDates with fixedFrequency == Once
+     *       (uses the swap tenor as the single fixed-leg coupon — mirrors
+     *       v1.42.1 ratehelpers.cpp:556).</li>
+     *   <li>{@link org.jquantlib.termstructures.yieldcurves.OISRateHelper}
+     *       with paymentFrequency == Once (translates to a single-coupon
+     *       schedule via DateGeneration.Zero — mirrors v1.42.1
+     *       makeois.cpp:104-117).</li>
+     *   <li>{@link org.jquantlib.indexes.ibor.Estr} index (new in Phase 1.2).</li>
+     * </ul>
+     */
+    @Test
+    public void testSwapHelpersWithOnceFrequency() {
+        QL.info("Testing single-coupon swap rate helpers...");
+
+        final IborIndex index = new IborIndex("TestIndex", new Period(4, TimeUnit.Weeks), 1,
+                new org.jquantlib.currencies.America.MXNCurrency(),
+                new org.jquantlib.time.calendars.Mexico(), BusinessDayConvention.Following, false,
+                new Actual360());
+
+        final Handle< Quote > r = new Handle< Quote >(new SimpleQuote(0.02));
+
+        // BOOST_CHECK_NO_THROW: must not throw
+        try {
+            new SwapRateHelper(r, new Period(4, TimeUnit.Weeks),
+                    new org.jquantlib.time.calendars.Mexico(),
+                    Frequency.Once, BusinessDayConvention.Following, new Actual360(), index);
+        } catch (final Throwable t) {
+            throw new RuntimeException(
+                    "SwapRateHelper with Once fixed-leg frequency must not throw", t);
+        }
+
+        try {
+            new org.jquantlib.termstructures.yieldcurves.OISRateHelper(2, new Period(4, TimeUnit.Weeks), r,
+                    new org.jquantlib.indexes.ibor.Estr(),
+                    new Handle< YieldTermStructure >(),
+                    false /* telescopicValueDates */, 0 /* paymentLag */,
+                    BusinessDayConvention.Following, Frequency.Once,
+                    null /* paymentCalendar -> defaults to index calendar */,
+                    org.jquantlib.cashflow.RateAveraging.Type.Compound);
+        } catch (final Throwable t) {
+            throw new RuntimeException(
+                    "OISRateHelper with Once payment frequency must not throw", t);
+        }
+    }
 }
