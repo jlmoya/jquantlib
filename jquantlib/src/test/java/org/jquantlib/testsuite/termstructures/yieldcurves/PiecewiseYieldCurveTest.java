@@ -76,6 +76,9 @@ import org.jquantlib.termstructures.yieldcurves.ForwardRate;
 import org.jquantlib.termstructures.yieldcurves.FraRateHelper;
 import org.jquantlib.termstructures.yieldcurves.FuturesRateHelper;
 import org.jquantlib.termstructures.yieldcurves.GlobalBootstrap;
+import org.jquantlib.termstructures.yieldcurves.MultiCurve;
+import org.jquantlib.termstructures.yieldcurves.MultiCurveBootstrapContributor;
+import org.jquantlib.termstructures.yieldcurves.MultiCurveBootstrapProvider;
 import org.jquantlib.termstructures.yieldcurves.PiecewiseYieldCurve;
 import org.jquantlib.termstructures.yieldcurves.SimpleZeroYield;
 import org.jquantlib.termstructures.yieldcurves.SwapRateHelper;
@@ -2407,6 +2410,119 @@ public class PiecewiseYieldCurveTest {
 	            throw new RuntimeException(String.format(
 	                    "GlobalBootstrap variables mismatch at pillar %s: curve=%.16f curveFutures=%.16f relErr=%.2e tol=%.2e",
 	                    pillar, d1, d2, relErr, tolerance));
+	        }
+	    }
+	}
+
+	/**
+	 * Round-trip wiring test for the MultiCurve coordinator family (Phase1.1-A2-MC).
+	 * <p>
+	 * Constructs a single GlobalBootstrap-driven PiecewiseYieldCurve, attaches it to a
+	 * MultiCurve via {@code addBootstrappedCurve}, and verifies:
+	 * <ol>
+	 *   <li>{@link MultiCurveBootstrapProvider#multiCurveBootstrapContributor()} returns a non-null
+	 *       {@link MultiCurveBootstrapContributor} (the inner GlobalBootstrap).</li>
+	 *   <li>{@code MultiCurve.addBootstrappedCurve()} returns a non-empty external {@link Handle} and
+	 *       links the internal {@link RelinkableHandle} (its {@code empty()} flips to {@code false}).</li>
+	 *   <li>Reading {@code curve.discount(pillar)} for every helper pillar triggers the multi-curve
+	 *       bootstrap path (via {@code parentBootstrapper.runMultiCurveBootstrap()}) and yields the same
+	 *       result, to {@code 1e-10} relative tolerance, as a directly-constructed identical curve
+	 *       bootstrapped through the single-curve path. This proves the protocol methods
+	 *       (setupCostFunction / setCostFunctionArgument / evaluateCostFunction / setToValid) drive the
+	 *       LM problem to the same convergence as the monolithic single-curve calculate().</li>
+	 * </ol>
+	 * <p>
+	 * Narrower than the full C++ testMultiCurveTwoPiecewiseYieldCurves (cpp:1545), which requires
+	 * IborIborBasisSwapRateHelper + DiscountingSwapEngine + per-tenor index plumbing for two
+	 * coupled curves. This test exercises just the coordinator wiring on a one-curve cycle, leaving
+	 * the two-curve coupled-bootstrap case for a later test (which would also need additional helpers).
+	 */
+	@Test
+	public void testMultiCurveCoordinatorRoundTrip() {
+	    QL.info("Testing MultiCurve coordinator round-trip with single GlobalBootstrap curve...");
+
+	    final Date today = new Date(26, Month.September, 2019);
+	    new Settings().setEvaluationDate(today);
+
+	    final IborIndex index = new Euribor(new Period(6, TimeUnit.Months));
+	    final java.util.List<RateHelper> helpersList = new java.util.ArrayList<RateHelper>();
+	    helpersList.add(new DepositRateHelper(-0.373 / 100.0, new Period(6, TimeUnit.Months), 2,
+	            new Target(), BusinessDayConvention.ModifiedFollowing, true, new Actual360()));
+	    helpersList.add(new FraRateHelper(-0.388 / 100.0, 1, index));
+	    helpersList.add(new FraRateHelper(-0.402 / 100.0, 2, index));
+	    helpersList.add(new FraRateHelper(-0.418 / 100.0, 3, index));
+	    helpersList.add(new SwapRateHelper(0.1435 / 100.0, new Period(5, TimeUnit.Years),
+	            new Target(), Frequency.Annual, BusinessDayConvention.ModifiedFollowing,
+	            new Thirty360(Thirty360.Convention.BondBasis), index));
+	    final RateHelper[] helpers = helpersList.toArray(new RateHelper[0]);
+
+	    // (A) Direct single-curve bootstrap — reference values.
+	    final GlobalBootstrap refBoot = new GlobalBootstrap(PiecewiseYieldCurve.class, 1.0e-10);
+	    final PiecewiseYieldCurve refCurve = new PiecewiseYieldCurve(
+	            SimpleZeroYield.class, Linear.class, GlobalBootstrap.class,
+	            2, new Target(), helpers, new Actual365Fixed(),
+	            new Handle/*<Quote>*/[0], new Date[0], 1.0e-10, new Linear(), refBoot);
+	    refCurve.enableExtrapolation();
+	    final double[] refDiscounts = new double[helpers.length];
+	    for (int i = 0; i < helpers.length; ++i) {
+	        refDiscounts[i] = refCurve.discount(helpers[i].latestDate());
+	    }
+
+	    // (B) Multi-curve coordinator path — same instrument set, different RateHelper instances
+	    //     since helpers carry curve-handle state and cannot be shared across two curves.
+	    final java.util.List<RateHelper> helpersList2 = new java.util.ArrayList<RateHelper>();
+	    helpersList2.add(new DepositRateHelper(-0.373 / 100.0, new Period(6, TimeUnit.Months), 2,
+	            new Target(), BusinessDayConvention.ModifiedFollowing, true, new Actual360()));
+	    helpersList2.add(new FraRateHelper(-0.388 / 100.0, 1, index));
+	    helpersList2.add(new FraRateHelper(-0.402 / 100.0, 2, index));
+	    helpersList2.add(new FraRateHelper(-0.418 / 100.0, 3, index));
+	    helpersList2.add(new SwapRateHelper(0.1435 / 100.0, new Period(5, TimeUnit.Years),
+	            new Target(), Frequency.Annual, BusinessDayConvention.ModifiedFollowing,
+	            new Thirty360(Thirty360.Convention.BondBasis), index));
+	    final RateHelper[] helpers2 = helpersList2.toArray(new RateHelper[0]);
+
+	    final GlobalBootstrap mcBoot = new GlobalBootstrap(PiecewiseYieldCurve.class, 1.0e-10);
+	    final PiecewiseYieldCurve mcCurve = new PiecewiseYieldCurve(
+	            SimpleZeroYield.class, Linear.class, GlobalBootstrap.class,
+	            2, new Target(), helpers2, new Actual365Fixed(),
+	            new Handle/*<Quote>*/[0], new Date[0], 1.0e-10, new Linear(), mcBoot);
+	    mcCurve.enableExtrapolation();
+
+	    // (1) Provider returns the contributor.
+	    final MultiCurveBootstrapProvider provider = (MultiCurveBootstrapProvider) mcCurve;
+	    final MultiCurveBootstrapContributor contrib = provider.multiCurveBootstrapContributor();
+	    if (contrib == null) {
+	        throw new RuntimeException("multiCurveBootstrapContributor() returned null for a GlobalBootstrap-wired PiecewiseYieldCurve");
+	    }
+	    if (contrib != mcBoot) {
+	        throw new RuntimeException("multiCurveBootstrapContributor() returned a different contributor than the bootstrap instance");
+	    }
+
+	    // (2) MultiCurve wires the internal handle.
+	    final RelinkableHandle<YieldTermStructure> intHandle = new RelinkableHandle<YieldTermStructure>();
+	    if (!intHandle.empty()) {
+	        throw new RuntimeException("internal handle must start empty");
+	    }
+	    final MultiCurve multiCurve = new MultiCurve(1.0e-10);
+	    final Handle<YieldTermStructure> extHandle = multiCurve.addBootstrappedCurve(intHandle, mcCurve);
+	    if (intHandle.empty()) {
+	        throw new RuntimeException("internal handle should be linked after addBootstrappedCurve");
+	    }
+	    if (extHandle.empty()) {
+	        throw new RuntimeException("external handle returned by addBootstrappedCurve is empty");
+	    }
+
+	    // (3) Multi-curve bootstrap matches single-curve to 1e-10 rel tolerance at every pillar.
+	    //     The first discount() call triggers the bootstrap (which now goes through the parent
+	    //     coordinator path since setParentBootstrapper has been called by MultiCurveBootstrap.add).
+	    final double tol = 1.0e-10;
+	    for (int i = 0; i < helpers2.length; ++i) {
+	        final double mcD = mcCurve.discount(helpers2[i].latestDate());
+	        final double relErr = Math.abs(mcD - refDiscounts[i]) / Math.abs(refDiscounts[i]);
+	        if (relErr > tol) {
+	            throw new RuntimeException(String.format(
+	                    "MultiCurve coordinator round-trip mismatch at pillar #%d (%s): single=%.16e multi=%.16e relErr=%.2e tol=%.2e",
+	                    i, helpers2[i].latestDate(), refDiscounts[i], mcD, relErr, tol));
 	        }
 	    }
 	}
