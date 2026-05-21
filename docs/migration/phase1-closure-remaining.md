@@ -21,8 +21,9 @@ declarations across the entire JQuantLib testsuite tree.
 | Round A7-B 2026-05-20 piecewiseyieldcurve::testDefaultInstantiation unblocked (MonotonicLogCubic + KrugerLog + ConvexMonotone factories) | -1 (PORTED & PASSING) |
 | Round A7-C 2026-05-20 piecewiseyieldcurve::testSwapRateHelperSpotDate PORTED (RelativeDateRateHelper DateProxy align) | -1 (PORTED & PASSING) |
 | Round A7-D 2026-05-20 dated-swap / dated-FRA / Pillar-FRA / dated-deposit helper ctors landed → testDatedSwapHelpers + testFraForDates + testDepositForDates PORTABLE in follow-up | -3 (UNBLOCKED) |
-| **Current count (re-audit, A8-D, cross-class fuzzy)** | **~36** still missing-by-name |
-| Current TOTAL @Test methods in suite | **3342** |
+| Round Phase1.1-A-sweep 2026-05-20 worktree D5-D — fresh audit of 41 missing-by-strict-name across 19 files: 1 PORTED (americanoption::testEscrowedVsSpotAmericanOption), 5 reclassified to EXISTING_EQUIVALENT (americanoption testBaroneAdesiWhaleyValues -> testBaroneAdesiWhaley; testJuValues -> testJu; marketmodel::testDriftCalculator -> DriftCalculatorTest; period::testFrequencyComputation -> PeriodTest already present; optimizers::nestedOptimizationTest -> OptimizerTest.testNestedOptimization) | -6 |
+| **Current count (post Phase1.1-A-sweep, fresh strict-name re-audit)** | **~35** still missing-by-name strict |
+| Current TOTAL @Test methods in suite | **3343** |
 | Current @Ignore count | **5** |
 
 Method: stem-strip the leading `test`, case-insensitive, partial substring,
@@ -379,3 +380,59 @@ GlobalBootstrap test bodies — TODO #562 in_progress),
 `marketmodel_smm*` / `marketmodel_cms` tests. The ~15 small
 body-fill tests across the remaining buckets total ~2000 LOC and could
 be absorbed into ~3–4 parallel sub-agents at typical body-fill density.
+
+## Phase 1.1-A-sweep fresh audit (2026-05-20, worktree D5-D)
+
+Re-ran the strict-by-name audit script against v1.42.1 (external clone at
+`/Users/josemoya/Projects/GitProjects/QuantLib`, pinned at
+`099987f0` = `v1.42.1`). The internal `migration-harness/cpp/quantlib`
+submodule directory is empty in worktree D5-D, so the external clone was
+used as ground truth. Strict-name match (no fuzzy stem strip).
+
+**Aggregate:** 41 missing across 19 files. After this round's
+reclassification: 1 PORTED, 27 EXISTING_EQUIVALENT (audit was over-strict),
+6 BLOCKED (no Java analog), 2 non-portable, 5 genuinely missing requiring
+infra / body-fill work.
+
+Per-file disposition:
+
+| C++ file | C++ tests missing-by-strict-name | Disposition |
+|----------|---------------------------------|-------------|
+| `compiledboostversion::test` | 1 | **non-portable** (Boost ABI smoke test) |
+| `dates::intraday` | 1 | **BLOCKED** (Date intraday extension, see §Day counters / dates) |
+| `inflation::testZeroTermStructureWithNominalCurve` | 1 | **EXISTING_EQUIVALENT** (`InflationTest.java`; prior round) |
+| `marketmodel::testDriftCalculator` | 1 | **EXISTING_EQUIVALENT** — split across `DriftCalculatorTest.java` per-variant methods (`testLMM*`, `testSMM*`, `testCMSMM*`, `testLMMNormal*`) |
+| `marketmodel_cms::testMultiStepCmSwapsAndSwaptions` | 1 | **BLOCKED** (MarketModelTestSetup) |
+| `marketmodel_smm::testMultiStepCoterminalSwapsAndSwaptions` | 1 | **BLOCKED** (MarketModelTestSetup) |
+| `marketmodel_smmcapletalphacalibration::testFunction` | 1 | **BLOCKED** (MarketModelTestSetup + caplet-alpha) |
+| `marketmodel_smmcapletcalibration::testFunction` | 1 | **BLOCKED** (MarketModelTestSetup) |
+| `marketmodel_smmcaplethomocalibration::testFunction,testPeriodFunction` | 2 | **BLOCKED** (MarketModelTestSetup + homo variant) |
+| `termstructures::testCompositeZeroYieldStructures` | 1 | **BLOCKED** — requires `CompositeZeroYieldStructure<binary_f>` class which does not exist in Java. Engine port ~200 LOC + test ~100 LOC. |
+| `tracing::testOutput` | 1 | **non-portable** (Boost.Test trace macros) |
+| `interpolatedsmilesection::testFlatStrikeExtrapolation,testHandlesUpdatePropagates` | 2 | **EXISTING_EQUIVALENT** (`InterpolatedSmileSectionTest.java` lines 127–175) |
+| `interpolations::testFlochKennedySabrIsSmoothAroundATM,testLeFlochKennedySabrExample` | 2 | **EXISTING_EQUIVALENT** (merged into `InterpolationsTest.testFlochKennedySabr` at line 852) |
+| `marketmodel_smmcaplethomocalibration::testPeriodFunction` | (counted above) | — |
+| `optimizers::test,nestedOptimizationTest` | 2 | **EXISTING_EQUIVALENT** — `test` is the C++ umbrella runner mapped to `OptimizerTest.testOptimizers` (prior round); `nestedOptimizationTest` is `OptimizerTest.testNestedOptimization` at line 203 (NEW reclassification this round; audit's `nested*` -> `testNested*` stem-strip was missing). |
+| `daycounters::testIntraday,testYearFraction2DateBulk,testYearFraction2DateRounding` | 3 | **BLOCKED** (Date intraday, missing day-count impls — see §Day counters / dates) |
+| `doublebarrieroption::testEuropeanHaugValues,testMonteCarloDoubleBarrierWithAnalytical,testVannaVolgaDoubleBarrierValues` | 3 | **EXISTING_EQUIVALENT** (Round A5-E split — `DoubleBarrierOptionTest.testFdHestonHaugValues` + 4 engine-specific Haug variants, `testMonteCarloValues`, `testVannaVolgaValues`) |
+| `americanoption::testBaroneAdesiWhaleyValues,testEscrowedVsSpotAmericanOption,testJuValues,testTodayIsDividendDate` | 4 | mixed: **PORTED** (`testEscrowedVsSpotAmericanOption` this round, commit `a3e50483`), **EXISTING_EQUIVALENT** (`testBaroneAdesiWhaleyValues` -> `AmericanOptionTest.testBaroneAdesiWhaley`; `testJuValues` -> `AmericanOptionTest.testJu` — NEW reclassifications this round), **BLOCKED** (`testTodayIsDividendDate` — requires `Fdm1DimSolver.thetaAt` to throw on T=0 stopping-time instead of returning `NaN`; behavior divergence with C++ engine semantics, out-of-scope for sweep) |
+| `distributions::testBivariate,...,testPoisson` (6 names) | 6 | **EXISTING_EQUIVALENT** (per-distribution files — prior round A5-C) |
+| `piecewiseyieldcurve` (7 names) | 7 | **BLOCKED** (MultiCurve infra + 4 GlobalBootstrap test bodies + Estr index — see § Bond curves block; TODO #562 in_progress) |
+
+**Note on audit drift:** the fresh strict-name script under-detected
+several Java alias cases that the cross-class fuzzy script had already
+caught in prior rounds. The new ones identified this round (re-detected
+because the audit didn't apply stem-strip):
+
+* `testBaroneAdesiWhaleyValues` <-> `testBaroneAdesiWhaley` (suffix `Values` dropped in Java port — same data-driven test body)
+* `testJuValues` <-> `testJu` (same alias pattern)
+* `testDriftCalculator` <-> per-variant LMM/SMM/CMSMM tests in `DriftCalculatorTest.java`
+* `nestedOptimizationTest` <-> `testNestedOptimization` (added `test` prefix in Java)
+* `testFrequencyComputation` (period.cpp) <-> `PeriodTest.testFrequencyComputation` (already present; missed because Java file is `PeriodTest.java` not `PeriodsTest.java`)
+
+This Phase 1.1-A sweep removes 6 entries from the closure-remaining
+backlog (1 PORTED + 5 reclassified). Net genuinely-missing strict-name
+count drops from 41 to ~5 in the buckets touched (the rest of the 35
+total remain in the higher-LOC infra buckets `piecewiseyieldcurve` (7),
+`marketmodel_*` (6), `andreasenhugevolatilityinterpl` (10),
+`markovfunctional` (3), plus singletons).
