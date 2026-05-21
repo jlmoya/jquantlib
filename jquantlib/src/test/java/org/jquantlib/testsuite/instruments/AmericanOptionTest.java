@@ -1996,6 +1996,83 @@ public class AmericanOptionTest {
         }
     }
 
+    /**
+     * Faithful port of {@code test-suite/americanoption.cpp:732}
+     * {@code BOOST_AUTO_TEST_CASE(testEscrowedVsSpotAmericanOption)}.
+     *
+     * <p>Compares the FD-Black-Scholes vanilla engine for an American option under the Spot vs Escrowed
+     * cash-dividend model. With the volatility rescaled by {@code S/(S-D)}, the two models must agree on
+     * both NPV and Delta within {@code 1e-2}.
+     *
+     * <p>Tolerance tier: loose ({@code 1e-2}) — matches C++ source.
+     */
+    @Test
+    public void testEscrowedVsSpotAmericanOption() {
+        System.out.println("::::: " + this.getClass().getSimpleName()
+                + "#testEscrowedVsSpotAmericanOption :::::");
+        System.out.println("Testing escrowed vs spot dividend model for American options...");
+
+        final DayCounter dc = new Actual360();
+        final Date today = new Date(27, Month.February, 2021);
+        new Settings().setEvaluationDate(today);
+
+        final SimpleQuote vol = new SimpleQuote(0.3);
+
+        final GeneralizedBlackScholesProcess process = new BlackScholesMertonProcess(
+                new Handle<Quote>(new SimpleQuote(100.0)),
+                new Handle<YieldTermStructure>(Utilities.flatRate(0.08, dc)),
+                new Handle<YieldTermStructure>(Utilities.flatRate(0.04, dc)),
+                new Handle<BlackVolTermStructure>(Utilities.flatVol(vol, dc)));
+
+        final Date maturityDate = today.add(new Period(12, TimeUnit.Months));
+        final Date divDate = today.add(new Period(10, TimeUnit.Months));
+        final double divAmount = 10.0;
+
+        final DividendSchedule dividends = new DividendSchedule();
+        dividends.add(new FixedDividend(divAmount, divDate));
+
+        final double strike = 100.0;
+        final VanillaOption option = new VanillaOption(
+                new PlainVanillaPayoff(Option.Type.Call, strike),
+                new AmericanExercise(today, maturityDate));
+
+        // Spot dividend model — equivalent C++:
+        //   MakeFdBlackScholesVanillaEngine(process).withTGrid(100).withXGrid(400)
+        //     .withCashDividends(dividendDates, dividendAmounts)
+        //     .withCashDividendModel(FdBlackScholesVanillaEngine::Spot)
+        // (The C++ test omits .withCashDividendModel(...) for the first engine,
+        //  which defaults to Spot — same as the Java ctor here.)
+        option.setPricingEngine(
+                new FdBlackScholesVanillaEngine(process, dividends, 100, 400, 0, FdmSchemeDesc.Douglas()));
+
+        final double spotNpv = option.NPV();
+        final double spotDelta = option.delta();
+
+        // Rescale vol per C++: vol = (S/(S-D)) * vol = (100/90)*0.3
+        vol.setValue(100.0 / 90.0 * 0.3);
+
+        option.setPricingEngine(
+                new FdBlackScholesVanillaEngine(process, dividends, null, 100, 400, 0, FdmSchemeDesc.Douglas(),
+                        FdBlackScholesVanillaEngine.CashDividendModel.Escrowed, false, Double.NaN));
+
+        final double escrowedNpv = option.NPV();
+        final double escrowedDelta = option.delta();
+
+        final double diffNpv = Math.abs(escrowedNpv - spotNpv);
+        final double tol = 1e-2;
+
+        if (diffNpv > tol) {
+            fail("failed to compare American option NPV with escrowed and spot dividend model"
+                    + " escrowed=" + escrowedNpv + " spot=" + spotNpv + " diff=" + diffNpv + " tol=" + tol);
+        }
+
+        final double diffDelta = Math.abs(escrowedDelta - spotDelta);
+        if (diffDelta > tol) {
+            fail("failed to compare American option Delta with escrowed and spot dividend model"
+                    + " escrowed=" + escrowedDelta + " spot=" + spotDelta + " diff=" + diffDelta + " tol=" + tol);
+        }
+    }
+
     /** Helper — assert close relative (mirrors C++ QL_CHECK_CLOSE). */
     private static void assertCloseRel(final String name, final double expected, final double actual,
             final double tol) {
