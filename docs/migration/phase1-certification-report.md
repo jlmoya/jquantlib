@@ -463,4 +463,87 @@ DONE with the appropriate cross-references.
 
 ---
 
+## Path A Round 7+ closure delta (added 2026-05-20, post-A6)
+
+Following the Round A6 documentation freeze (main tip `234394c3`,
+badges said `3213 methods / 0 fail`), Path A continued with Rounds A7-B
+through A7-J in 4 parallel worktrees. Current main tip is `7a9807ee+`
+(at A8-D dispatch); badges have been refreshed to `3342 methods / 0 fail`.
+
+### Headline state delta (A6 → A7+ tip)
+
+| Metric | Post-A6 (`234394c3`) | Current (`7a9807ee+`) | Delta |
+|---|---|---|---|
+| Net @Test methods | ~3213 | **3342** | **+129** |
+| @Ignore count | ~5 | 5 | flat |
+| Latent production bugs found+fixed via Path A | 6 | **12+** | +6 |
+| Missing-by-name (cross-class fuzzy methodology) | ~75–80 | **~36** | **−40+** |
+
+### Round A7 sub-round summary
+
+| Sub-round | Focus | Highlights |
+|-----------|-------|------------|
+| **A7-B** | 3 interpolator factories + ConvexMonotone | ~730 LOC; closes the `MonotonicLogCubic` / `KrugerLog` / `ConvexMonotone` interpolator gap from the piecewiseyieldcurve `testDefaultInstantiation` blocker. |
+| **A7-C** | `RelativeDateRateHelper` aliasing fix | `align` commit `13d96dc4` corrects `DateProxy` aliasing in `update()` to match v1.42.1 value-snapshot semantics. Unblocks `testSwapRateHelperSpotDate` (ported at `0c5e74ad`). |
+| **A7-D** | 4 ctor overloads + `FuturesRateHelper` bug fix | Adds the dated-swap, dated-FRA, `Pillar`-aware FRA, and dated-deposit helper ctors. Surfaces and fixes a `FuturesRateHelper` price-conversion bug along the way. |
+| **A7-E** | Deep-tail erfc fix → BS vega unblock | `align` to `Math.erfc` deep-tail (|x| > ~6) correctness; unblocks Black-Scholes vega bumping where strikes lie deep OTM/ITM. |
+| **A7-F** | `testBermudanSwaption` port | MarkovFunctional Bermudan swaption test body (~400 LOC) ported with v1.42.1 expected NPVs. |
+| **A7-G** | 5 dividend tests + `CashDividendEuropeanEngine` | ~270 LOC for the engine plus 5 test bodies (`testCashDividendEuropeanEngine`, `testCashDividendEuropeanEngineWithManyDividends`, `testCashDividendEuropeanEngineWithSingleDividends`, `testZeroStrikeCallWithCashDividends`, `testAmericanOptionsWithEscrowedDividends`). |
+| **A7-J** | `testFdEngineWithNonConstantParameters` + `InterpolatedForwardCurve` align | Ported the v1.42.1 FD-with-non-constant-parameters test (`EuropeanOptionTest`, commit `8dd4d1b8`); required `InterpolatedForwardCurve` precondition fix (stale `forwards[0] == 1.0` discount-factor guard removed; inverted `Closeness.isClose` check inside the time-construction loop corrected). |
+| **inline** | `Period` Once-vs-NoFreq distinction | Sub-fix folded into the SwapRateHelper/OIS work — `Period.frequency()` now correctly distinguishes `Once` (annual-equivalent) from `NoFrequency` (zero), matching v1.42.1 `period.cpp` semantics. |
+
+### Cumulative latent production bugs found+fixed via Path A faithful porting (12+)
+
+Adding to the six A1–A6 bugs already enumerated above:
+
+| # | Bug | Surfaced by | Round |
+|---|-----|-------------|-------|
+| g | `RelativeDateRateHelper.update()` aliased the `Settings` `DateProxy` singleton instead of snapshotting its value → eval-date change guard never tripped | `testSwapRateHelperSpotDate` (`piecewiseyieldcurve.cpp`) | A7-C |
+| h | `FuturesRateHelper` price-conversion bug (per-ctor-overload sweep) | `testCustomFuturesHelpers` audit | A7-D |
+| i | `Math.erfc` deep-tail (`|x| > ~6`) returned 0 instead of asymptotic-expansion value, breaking deep-OTM vega bumping | BS vega tests on deep-OTM strikes | A7-E |
+| j | `Period.frequency()` conflated `Once` with `NoFrequency` (both returned 0) instead of `Once → 1`, breaking once-frequency swap helpers | `testSwapHelpersWithOnceFrequency` partial | inline |
+| k | `InterpolatedForwardCurve` had a stale `forwards[0] == 1.0` discount-factor precondition + an inverted `Closeness.isClose` check inside the time-construction loop | `testFdEngineWithNonConstantParameters` | A7-J |
+| l | `CashDividendEuropeanEngine` was a stub — dispatch path missing — silently routed cash-dividend Europeans through the wrong engine giving non-v1.42.1 NPVs | `dividendoption.cpp` test family | A7-G |
+
+(Audit-script artifact `phase1-closure-remaining.md` carries the
+per-test back-pointers in the Round A7-J reclassification list. Each fix
+is a tightly-scoped `align(...)` commit with v1.42.1 line references in
+the commit message.)
+
+### Residual missing-by-name (re-audited 2026-05-20 post-A7+)
+
+The post-A7 cross-class fuzzy audit (same methodology as the A4-C audit
+script) now reports **~36 missing-by-name** entries, down from 75–80 at
+A6 freeze. The remaining buckets are dominated by:
+
+- `piecewiseyieldcurve` (7) — `MultiCurve` infra + 4 `GlobalBootstrap`
+  test bodies; deferred to Phase 1.1.
+- `gaussianquadratures` (3), `calendars` (3), `americanoption` (3),
+  `daycounters` (2), `doublebarrieroption` (2), `quotes` (2),
+  `interpolatedsmilesection` (2), `termstructures` (2) — mostly
+  body-fill in the 100–250 LOC range.
+- Singletons across `optimizers`, `marketmodel*`, `tracing`,
+  `interpolations`, `period`, etc.
+
+Two of the residual entries (`compiledboostversion::test`,
+`tracing::testOutput`) remain non-portable.
+
+D5 status revision proposal: **GREEN with documented small carve-outs**
+is now defensible after Path A Round A7+. The next certification cycle
+should fold the A7+ delta into the headline D5 narrative.
+
+### Items deferred to Phase 1.1
+
+- TODO **#562** (PiecewiseYieldCurve full GlobalBootstrap + MultiCurve
+  infra) is *in_progress*: substantially advanced through A7-B/C/D, but
+  the `MultiCurve` class + the 4 remaining `GlobalBootstrap` test bodies
+  (`testGlobalBootstrap`, `testGlobalBootstrapPenalty`,
+  `testGlobalBootstrapVariables`, `testGlobalBootstrapInstrumentWeights`)
+  are deferred to **Phase 1.1**.
+- TODO **#563** (pre-existing inflation `NullPointerException` in a
+  CapFloor-class A3 carve-out) is deferred to **Phase 1.1**; not caused
+  by any Path A landing.
+
+---
+
 *End of report.*
