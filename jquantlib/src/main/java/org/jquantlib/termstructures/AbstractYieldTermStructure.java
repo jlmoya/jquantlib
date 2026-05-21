@@ -218,17 +218,30 @@ abstract public class AbstractYieldTermStructure extends AbstractTermStructure i
     @Override
     public final InterestRate zeroRate(final Date d, final DayCounter dayCounter, final Compounding comp,
             final Frequency freq, final boolean extrapolate) {
-        if ( d == referenceDate() ) {
+        // v1.42.1 yieldtermstructure.cpp:98 — branch on timeFromReference(d)
+        // == 0 rather than d == referenceDate(). The two are NOT equivalent:
+        // under day-counters whose yearFraction returns 0 for non-equal
+        // adjacent dates (e.g. Aug 30 -> Aug 31 under Thirty360 BondBasis),
+        // the legacy Java test (`d == referenceDate()`) routed through the
+        // d-based impliedRate path which calls timeFromReference internally
+        // and ended up with t=0, blowing up impliedRate to 0.0. The C++
+        // implementation falls back to the small-time epsilon dt = 0.0001
+        // whenever t collapses to zero, regardless of which dates produced
+        // it.
+        /*@Time*/
+        final double t = timeFromReference(d);
+        if ( t == 0.0 ) {
             /*@Time*/
-            final double t = 0.0001;
+            final double dt = 0.0001;
             /*@CompoundFactor*/
-            final double compound = 1 / discount(t, extrapolate); // 1/discount(t,extrapolate)
-            return InterestRate.impliedRate(compound, t, dayCounter, comp, freq);
-        } else {
-            /*@CompoundFactor*/
-            final double compound = 1 / discount(d, extrapolate); // 1/discount(d,extrapolate)
-            return InterestRate.impliedRate(compound, referenceDate(), d, dayCounter, comp, freq);
+            final double compound = 1 / discount(dt, extrapolate);
+            // t has been calculated with a possibly different daycounter
+            // but the difference should not matter for very small times
+            return InterestRate.impliedRate(compound, dt, dayCounter, comp, freq);
         }
+        /*@CompoundFactor*/
+        final double compound = 1 / discount(d, extrapolate); // 1/discount(d,extrapolate)
+        return InterestRate.impliedRate(compound, referenceDate(), d, dayCounter, comp, freq);
     }
 
     /* (non-Javadoc)
