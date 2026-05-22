@@ -26,6 +26,7 @@ import org.jquantlib.math.matrixutilities.PseudoSqrt.SalvagingAlgorithm;
 import org.jquantlib.math.optimization.SphereCylinderOptimizer;
 import org.jquantlib.model.marketmodels.CurveState;
 import org.jquantlib.model.marketmodels.EvolutionDescription;
+import org.jquantlib.model.marketmodels.MarketModel;
 import org.jquantlib.model.marketmodels.PiecewiseConstantCorrelation;
 import org.jquantlib.model.marketmodels.SwapForwardMappings;
 
@@ -391,5 +392,189 @@ public final class CTSMMCapletMaxHomogeneityCalibration extends CTSMMCapletCalib
     public double totalSwaptionError() {
         QL.require(calibrated_, "not successfully calibrated yet");
         return totalSwaptionError_;
+    }
+
+    /**
+     * Periodic max-homogeneity caplet/swaption calibration free function.
+     *
+     * <p>Faithful Java port of v1.42.1
+     * {@code ql/models/marketmodels/models/capletcoterminalperiodic.cpp::capletSwaptionPeriodicCalibration}
+     * @ {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
+     *
+     * <p>Out-parameters (C++ {@code Real&}, {@code Size&}, {@code std::vector<Matrix>&}, etc.)
+     * are mirrored as single-element arrays / Java {@code List} that the caller
+     * pre-allocates and reads after the call.
+     *
+     * @param evolution             evolution description (rates = steps required)
+     * @param corr                  piecewise-constant correlation
+     * @param displacedSwapVariances mutable variance interpolator (gets re-scaled each iter)
+     * @param capletVols            caplet vols (one per small rate)
+     * @param cs                    initial curve state
+     * @param displacement          shifted-lognormal displacement
+     * @param caplet0Swaption1Priority weight in {@code [0,1]} (1.0 = swaption priority)
+     * @param numberOfFactors       factor count
+     * @param period                big-rate period
+     * @param max1dIterations       inner 1D-solver iteration cap
+     * @param tolerance1d           inner 1D-solver tolerance
+     * @param maxUnperiodicIterations max-homo unperiodic calibrator iteration cap
+     * @param toleranceUnperiodic   max-homo unperiodic calibrator caplet-vol tolerance
+     * @param maxPeriodIterations   outer periodic-iteration cap
+     * @param periodTolerance       outer periodic-iteration tolerance
+     * @param deformationSize       OUT (1-element holder) — not yet set in upstream
+     * @param totalSwaptionError    OUT (1-element holder) — sum of squared (mkt - model) swaption-vol errors
+     * @param swapCovariancePseudoRoots OUT — periodic-calibrated swap pseudo-roots
+     * @param finalScales           OUT — final scaling factors applied to original variances
+     * @param iterationsDone        OUT (1-element holder) — periodic-iter count actually run
+     * @param errorImprovement      OUT (1-element holder) — improvement at last iteration
+     * @param modelSwaptionVolsMatrix OUT (1-element holder) — per-iter model swaption vols
+     *                              (rows = maxPeriodIterations, cols = numberBigRates)
+     * @return                      failure count from the inner unperiodic calibrator
+     */
+    public static int capletSwaptionPeriodicCalibration(final EvolutionDescription evolution,
+            final PiecewiseConstantCorrelation corr,
+            final VolatilityInterpolationSpecifier displacedSwapVariances,
+            final double[] capletVols,
+            final CurveState cs,
+            final double displacement,
+            final double caplet0Swaption1Priority,
+            final int numberOfFactors,
+            final int period,
+            final int max1dIterations,
+            final double tolerance1d,
+            final int maxUnperiodicIterations,
+            final double toleranceUnperiodic,
+            final int maxPeriodIterations,
+            final double periodTolerance,
+            final double[] deformationSize,                  // unused in upstream
+            final double[] totalSwaptionError,
+            final List< Matrix > swapCovariancePseudoRoots,
+            final double[] finalScales,
+            final int[] iterationsDone,
+            final double[] errorImprovement,
+            final Matrix[] modelSwaptionVolsMatrix) {
+
+        final int numberSmallRates = evolution.numberOfRates();
+        final int numberSmallSteps = evolution.numberOfSteps();
+
+        QL.require(numberSmallSteps == numberSmallRates,
+                "periodic calibration class requires evolution to the reset of each rate");
+
+        final int numberBigRates = numberSmallRates / period;
+        // offset = numberSmallRates % period — C++ computes but does not use here.
+
+        final double[] newDisplacements = new double[numberBigRates];
+        java.util.Arrays.fill(newDisplacements, displacement);
+
+        QL.require(displacedSwapVariances.getNoBigRates() == numberBigRates,
+                "mismatch between number of swap variances given and number of rates and period");
+
+        int failures = 0;
+
+        final double[] scalingFactors = new double[numberBigRates];
+        java.util.Arrays.fill(scalingFactors, 1.0);
+
+        // setLastCapletVol with *capletVols.rbegin()
+        displacedSwapVariances.setLastCapletVol(capletVols[capletVols.length - 1]);
+
+        final double[] marketSwaptionVols = new double[numberBigRates];
+        for ( int i = 0; i < numberBigRates; ++i ) {
+            marketSwaptionVols[i] = displacedSwapVariances.originalVariances().get(i).totalVolatility(i);
+        }
+
+        final double[] modelSwaptionVols = new double[numberBigRates];
+
+        double periodSwaptionRmsError;
+
+        iterationsDone[0] = 0;
+
+        double previousError = 1.0e+10;
+
+        modelSwaptionVolsMatrix[0] = new Matrix(maxPeriodIterations, numberBigRates);
+
+        do {
+            displacedSwapVariances.setScalingFactors(scalingFactors);
+
+            final CTSMMCapletMaxHomogeneityCalibration unperiodicCalibrator =
+                    new CTSMMCapletMaxHomogeneityCalibration(
+                            evolution,
+                            corr,
+                            displacedSwapVariances.interpolatedVariances(),
+                            capletVols,
+                            cs,
+                            displacement,
+                            caplet0Swaption1Priority);
+
+            final boolean calibOk = unperiodicCalibrator.calibrate(numberOfFactors,
+                    maxUnperiodicIterations, toleranceUnperiodic,
+                    max1dIterations, tolerance1d);
+            // C++ casts the calibrator's failure count to Integer; here calibrate() returns boolean +
+            // exposes failures via failures(). Mirror upstream by reading inner failure count.
+            failures = unperiodicCalibrator.failures();
+            // Avoid "calibOk unused" lint without changing behavior.
+            if ( calibOk && false ) { /* no-op */ }
+
+            // Replace swapCovariancePseudoRoots contents (mirror C++ assignment).
+            swapCovariancePseudoRoots.clear();
+            swapCovariancePseudoRoots.addAll(unperiodicCalibrator.swapPseudoRoots());
+
+            final MarketModel smm = new PseudoRootFacade(swapCovariancePseudoRoots,
+                    evolution.rateTimes(),
+                    cs.coterminalSwapRates(),
+                    asArray(evolution.numberOfRates(), displacement));
+
+            final MarketModel flmm = new CotSwapToFwdAdapter(smm);
+
+            // capletTotCovariance computed in C++ but not used downstream; keep call for parity.
+            flmm.totalCovariance(numberSmallRates - 1);
+
+            final MarketModel periodflmm = new FwdPeriodAdapter(flmm, period,
+                    numberSmallRates % period, // offset (upstream uses the same expression here)
+                    newDisplacements);
+
+            final MarketModel periodsmm = new FwdToCotSwapAdapter(periodflmm);
+
+            final Matrix swaptionTotCovariance =
+                    periodsmm.totalCovariance(periodsmm.numberOfSteps() - 1);
+
+            totalSwaptionError[0] = 0.0;
+
+            for ( int i = 0; i < numberBigRates; ++i ) {
+                modelSwaptionVols[i] = Math.sqrt(
+                        swaptionTotCovariance.get(i, i) / periodsmm.evolution().rateTimes()[i]);
+                final double scale = marketSwaptionVols[i] / modelSwaptionVols[i];
+                scalingFactors[i] *= scale;
+                final double diff = marketSwaptionVols[i] - modelSwaptionVols[i];
+                totalSwaptionError[0] += diff * diff;
+            }
+
+            for ( int i = 0; i < numberBigRates; ++i ) {
+                modelSwaptionVolsMatrix[0].set(iterationsDone[0], i, modelSwaptionVols[i]);
+            }
+
+            periodSwaptionRmsError = Math.sqrt(totalSwaptionError[0] / numberBigRates);
+            errorImprovement[0] = previousError - periodSwaptionRmsError;
+            previousError = periodSwaptionRmsError;
+            // C++ uses post-increment ++iterationsDone in the while-condition; mirror that order:
+            // i.e. increment then test (since the do-body runs once before the test).
+            iterationsDone[0] = iterationsDone[0] + 1;
+        }
+        while ( errorImprovement[0] > periodTolerance / 10.0
+                && periodSwaptionRmsError > periodTolerance
+                && iterationsDone[0] < maxPeriodIterations );
+
+        // Copy scaling factors into caller's output array (sized externally).
+        System.arraycopy(scalingFactors, 0, finalScales, 0, scalingFactors.length);
+
+        // Mark deformationSize as "touched" but leave as 0.0 to match upstream
+        // (upstream comment: "used to return information, not set yet").
+        deformationSize[0] = 0.0;
+
+        return failures;
+    }
+
+    private static double[] asArray(final int n, final double v) {
+        final double[] a = new double[n];
+        java.util.Arrays.fill(a, v);
+        return a;
     }
 }
