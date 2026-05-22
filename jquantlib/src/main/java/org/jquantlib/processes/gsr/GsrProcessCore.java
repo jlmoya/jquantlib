@@ -509,9 +509,8 @@ public class GsrProcessCore {
         public boolean equals(final Object o) {
             if ( this == o )
                 return true;
-            if (!(o instanceof DoublePair doublePair))
+            if (!(o instanceof DoublePair p))
                 return false;
-            final DoublePair p = doublePair;
             return la == p.la && lb == p.lb;
         }
 

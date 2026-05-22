@@ -149,6 +149,14 @@ public class CapHelper extends BlackCalibrationHelper {
         // BlackCapFloorEngine with vol = SimpleQuote(sigma), price the
         // cap, then restore engine_. Phase 2e WI-2 unstub.
         final Handle< Quote > vol = new Handle< Quote >(new SimpleQuote(sigma));
+        // ShiftedLognormal arm: Java BlackCapFloorEngine doesn't yet take a
+        // displacement ctor argument; ConstantOptionletVolatility doesn't yet
+        // carry VolatilityType / displacement either. shift_ is therefore
+        // unused in Java today (it is captured on the helper for forward
+        // compatibility). All current call-sites pass shift_ = 0.0 so this
+        // preserves correctness.
+        // Normal arm: Phase 2f WI-1 — BachelierCapFloorEngine is now real;
+        // mirror C++ caphelper.cpp lines 78-86.
         final PricingEngine engine = switch (volatilityType_) {
             case ShiftedLognormal -> new BlackCapFloorEngine(termStructure_, vol, new Actual365Fixed());
             case Normal -> new BachelierCapFloorEngine(termStructure_, vol, new Actual365Fixed());

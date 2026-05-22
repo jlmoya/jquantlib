@@ -509,6 +509,8 @@ public class CreditDefaultSwap extends Instrument {
 
         final Handle< DefaultProbabilityTermStructure > probability = new Handle< DefaultProbabilityTermStructure >(
                 new FlatHazardRate(0, new NullCalendar(), new Handle< Quote >(flatRate), dayCounter));
+        // Phase 3d L1: ISDA arm wires IsdaCdsEngine with C++ defaults (Taylor /
+        // HalfDayBias / Piecewise, includeSettlementDateFlows=false).
         final PricingEngine engine = switch (model) {
             case Midpoint -> new MidPointCdsEngine(probability, recoveryRate, discountCurve);
             case ISDA -> new org.jquantlib.pricingengines.credit.IsdaCdsEngine(probability, recoveryRate, discountCurve,
@@ -556,6 +558,7 @@ public class CreditDefaultSwap extends Instrument {
 
         final Handle< DefaultProbabilityTermStructure > probability = new Handle< DefaultProbabilityTermStructure >(
                 new FlatHazardRate(0, new NullCalendar(), new Handle< Quote >(flatRate), dayCounter));
+        // Phase 3d L1: ISDA arm wires IsdaCdsEngine with C++ defaults.
         final PricingEngine engine = switch (model) {
             case Midpoint -> new MidPointCdsEngine(probability, conventionalRecovery, discountCurve);
             case ISDA -> new org.jquantlib.pricingengines.credit.IsdaCdsEngine(probability, conventionalRecovery,
