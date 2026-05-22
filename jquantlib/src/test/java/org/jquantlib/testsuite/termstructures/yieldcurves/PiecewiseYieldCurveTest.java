@@ -81,6 +81,8 @@ import org.jquantlib.termstructures.yieldcurves.GlobalBootstrap;
 import org.jquantlib.termstructures.yieldcurves.MultiCurve;
 import org.jquantlib.termstructures.yieldcurves.MultiCurveBootstrapContributor;
 import org.jquantlib.termstructures.yieldcurves.MultiCurveBootstrapProvider;
+import org.jquantlib.termstructures.yieldcurves.InterpolatedSpreadDiscountCurve;
+import org.jquantlib.termstructures.yieldcurves.PiecewiseSpreadYieldCurve;
 import org.jquantlib.termstructures.yieldcurves.PiecewiseYieldCurve;
 import org.jquantlib.termstructures.yieldcurves.SimpleZeroYield;
 import org.jquantlib.termstructures.yieldcurves.SwapRateHelper;
@@ -2898,6 +2900,209 @@ public class PiecewiseYieldCurveTest {
         } catch (final Throwable t) {
             throw new RuntimeException(
                     "OISRateHelper with Once payment frequency must not throw", t);
+        }
+    }
+
+
+    /**
+     * Faithful port of {@code test-suite/piecewiseyieldcurve.cpp:1785}
+     * {@code testPiecewiseSpreadYieldCurveImpl<IterativeBootstrap>()}.
+     *
+     * <p>Phase 1.4 closure. Exercises {@link PiecewiseSpreadYieldCurve} +
+     * {@link InterpolatedSpreadDiscountCurve} +
+     * {@link org.jquantlib.termstructures.yieldcurves.SpreadBootstrapTraits}: a
+     * spread curve is bootstrapped on top of a previously built base curve so that
+     * its discount factors are {@code baseCurve.discount(t) * spread(t)} where
+     * {@code spread(t)} is interpolated (LogLinear) between the bootstrapped
+     * pillars.
+     *
+     * <p>Verifies:
+     * <ol>
+     *   <li>Repricing: every swap helper used to bootstrap the spread curve must
+     *       reprice to its market quote (1e-9 tolerance).</li>
+     *   <li>Curve shape: instantaneous forward rates between pillars differ from
+     *       the pillar-to-pillar average by at least 1e-4 — confirms the spread
+     *       interpolation is not flat (would be the symptom of forgotten
+     *       {@code interpolation.update()}).</li>
+     *   <li>Extrapolation preserves a constant spread vs the base curve beyond
+     *       the last pillar (1e-9).</li>
+     *   <li>Accessors: dates / times / data / nodes all return helpers.length+1
+     *       elements, with index 0 = (settlement, 0.0, 1.0).</li>
+     *   <li>Round-trip: a manually constructed
+     *       {@link InterpolatedSpreadDiscountCurve} fed the same base curve and
+     *       {@code curve.dates()} / {@code curve.data()} reproduces the
+     *       bootstrapped discount factors at integer-year offsets (1e-9).</li>
+     * </ol>
+     */
+    @Test
+    public void testPiecewiseSpreadYieldCurve() {
+        QL.info("Testing PiecewiseSpreadYieldCurve...");
+
+        // Fix evaluation date for stability (mirrors C++ CommonVars vars(Date(23, Sep, 2019)).)
+        new Settings().setEvaluationDate(new Date(23, Month.September, 2019));
+
+        final CommonVars vars = new CommonVars();
+        final DayCounter dc = new Actual365Fixed();
+
+        // First, build the base curve. We can use any bootstrapping and interpolation.
+        final PiecewiseYieldCurve baseCurveImpl = new PiecewiseYieldCurve(
+                Discount.class, LogLinear.class, IterativeBootstrap.class,
+                vars.settlement, vars.instruments, dc,
+                new Handle/*<Quote>*/[0], new Date[0], 1.0e-12, new LogLinear());
+        baseCurveImpl.enableExtrapolation();
+        final Handle< YieldTermStructure > baseCurve = new Handle< YieldTermStructure >(baseCurveImpl);
+
+        // Now build the curve with fewer benchmarks as a spread to the base.
+        final Datum[] swapDataLocal = new Datum[] {
+                new Datum( 1, TimeUnit.Years, 4.44),
+                new Datum( 3, TimeUnit.Years, 4.55),
+                new Datum( 6, TimeUnit.Years, 4.81),
+                new Datum( 9, TimeUnit.Years, 5.01),
+                new Datum(15, TimeUnit.Years, 5.25),
+                new Datum(30, TimeUnit.Years, 5.36)
+        };
+
+        final RateHelper[] helpers = new RateHelper[swapDataLocal.length];
+        IborIndex euribor3m = new Euribor3M();
+        for (int i = 0; i < swapDataLocal.length; i++) {
+            final Handle< Quote > r = new Handle< Quote >(new SimpleQuote(swapDataLocal[i].rate / 100.0));
+            helpers[i] = new SwapRateHelper(r, new Period(swapDataLocal[i].n, swapDataLocal[i].units),
+                    vars.calendar, vars.fixedLegFrequency, vars.fixedLegConvention, vars.fixedLegDayCounter,
+                    euribor3m);
+        }
+
+        // Spread curve uses LogLinear interpolation to give piecewise-constant spreads.
+        final PiecewiseSpreadYieldCurve< LogLinear, IterativeBootstrap > curve =
+                new PiecewiseSpreadYieldCurve< LogLinear, IterativeBootstrap >(
+                        LogLinear.class, IterativeBootstrap.class, baseCurve, helpers, new LogLinear());
+        curve.enableExtrapolation();
+        final Handle< YieldTermStructure > curveHandle = new Handle< YieldTermStructure >(curve);
+
+        // (1) Check that we reprice the swaps.
+        final double tolerance = 1.0e-9;
+        euribor3m = new Euribor3M(curveHandle);
+        for (int i = 0; i < swapDataLocal.length; i++) {
+            final VanillaSwap swap = new MakeVanillaSwap(new Period(swapDataLocal[i].n, swapDataLocal[i].units),
+                    euribor3m, 0.0)
+                    .withEffectiveDate(vars.settlement)
+                    .withFixedLegDayCount(vars.fixedLegDayCounter)
+                    .withFixedLegTenor(new Period(vars.fixedLegFrequency))
+                    .withFixedLegConvention(vars.fixedLegConvention)
+                    .withFixedLegTerminationDateConvention(vars.fixedLegConvention)
+                    .value();
+            final double expectedRate = swapDataLocal[i].rate / 100.0;
+            final double estimatedRate = swap.fairRate();
+            final double error = Math.abs(expectedRate - estimatedRate);
+            if (error > tolerance) {
+                throw new RuntimeException(String.format(
+                        "%d year(s) swap: estimated=%.10f expected=%.10f error=%.2e tol=%.2e",
+                        swapDataLocal[i].n, estimatedRate, expectedRate, error, tolerance));
+            }
+        }
+
+        // (2) Check that the curve has shape between pillars.
+        Date prev = vars.settlement;
+        for (int i = 0; i < helpers.length; i++) {
+            final Date pillar = helpers[i].latestDate();
+            final double rate1 = curve.forwardRate(prev, pillar, dc, Compounding.Continuous, Frequency.Annual, true)
+                    .rate();
+            // mid point: prev + (pillar - prev)/2
+            final int halfDays = (int) ((pillar.serialNumber() - prev.serialNumber()) / 2L);
+            final Date midpoint = prev.add(halfDays);
+            final double rate2 = curve.forwardRate(prev, midpoint, dc, Compounding.Continuous, Frequency.Annual, true)
+                    .rate();
+            if (Math.abs(rate1 - rate2) <= 1e-4) {
+                throw new RuntimeException(String.format(
+                        "spread curve appears flat between %s and %s: rate1=%.8f rate2=%.8f (mid %s)",
+                        prev, pillar, rate1, rate2, midpoint));
+            }
+            prev = pillar;
+        }
+
+        // (3) Check that extrapolation preserves constant spread.
+        final Date maxDate = curve.maxDate();
+        if (!maxDate.equals(baseCurveImpl.maxDate())) {
+            throw new RuntimeException(String.format(
+                    "spread curve maxDate %s != base curve maxDate %s", maxDate, baseCurveImpl.maxDate()));
+        }
+        final Date maxDateMinus1Y = vars.calendar.advance(maxDate, new Period(-1, TimeUnit.Years));
+        final Date maxDatePlus1Y = vars.calendar.advance(maxDate, new Period( 1, TimeUnit.Years));
+        final double rate1 = curve.forwardRate(maxDateMinus1Y, maxDate, dc, Compounding.Continuous, Frequency.Annual,
+                true).rate();
+        final double rate2 = curve.forwardRate(maxDate, maxDatePlus1Y, dc, Compounding.Continuous, Frequency.Annual,
+                true).rate();
+        final double baseRate1 = baseCurveImpl.forwardRate(maxDateMinus1Y, maxDate, dc, Compounding.Continuous,
+                Frequency.Annual, true).rate();
+        final double baseRate2 = baseCurveImpl.forwardRate(maxDate, maxDatePlus1Y, dc, Compounding.Continuous,
+                Frequency.Annual, true).rate();
+        final double spreadDelta = Math.abs((rate1 - baseRate1) - (rate2 - baseRate2));
+        if (spreadDelta > 1e-9) {
+            throw new RuntimeException(String.format(
+                    "spread is not constant beyond last pillar: pre-spread=%.10f post-spread=%.10f delta=%.2e",
+                    rate1 - baseRate1, rate2 - baseRate2, spreadDelta));
+        }
+
+        // (4) Check accessors.
+        if (curve.dates().length != helpers.length + 1) {
+            throw new RuntimeException("dates count " + curve.dates().length + " != helpers + 1");
+        }
+        if (curve.times().length != helpers.length + 1) {
+            throw new RuntimeException("times count " + curve.times().length + " != helpers + 1");
+        }
+        if (curve.data().length != helpers.length + 1) {
+            throw new RuntimeException("data count " + curve.data().length + " != helpers + 1");
+        }
+        final java.util.List< org.jquantlib.util.Pair< Date, Double > > nodes = curve.nodes();
+        if (nodes.size() != helpers.length + 1) {
+            throw new RuntimeException("nodes size " + nodes.size() + " != helpers + 1");
+        }
+        if (!curve.dates()[0].equals(vars.settlement)) {
+            throw new RuntimeException("first date " + curve.dates()[0] + " != settlement " + vars.settlement);
+        }
+        if (curve.times()[0] != 0.0) {
+            throw new RuntimeException("first time " + curve.times()[0] + " != 0.0");
+        }
+        if (curve.data()[0] != 1.0) {
+            throw new RuntimeException("first data " + curve.data()[0] + " != 1.0");
+        }
+        if (!nodes.get(0).first().equals(vars.settlement) || nodes.get(0).second() != 1.0) {
+            throw new RuntimeException("first node " + nodes.get(0) + " != (settlement, 1.0)");
+        }
+        for (int i = 0; i < helpers.length; i++) {
+            if (!curve.dates()[i + 1].equals(helpers[i].latestDate())) {
+                throw new RuntimeException(String.format(
+                        "dates[%d] = %s != pillarDate(helpers[%d]) = %s", i + 1, curve.dates()[i + 1], i,
+                        helpers[i].latestDate()));
+            }
+            final double expectedTime = curve.timeFromReference(helpers[i].latestDate());
+            if (Math.abs(curve.times()[i + 1] - expectedTime) > 1e-14) {
+                throw new RuntimeException(String.format(
+                        "times[%d] = %.16f != %f", i + 1, curve.times()[i + 1], expectedTime));
+            }
+            if (!nodes.get(i + 1).first().equals(curve.dates()[i + 1])
+                    || nodes.get(i + 1).second() != curve.data()[i + 1]) {
+                throw new RuntimeException(String.format(
+                        "node[%d] = %s != (%s, %f)", i + 1, nodes.get(i + 1), curve.dates()[i + 1],
+                        curve.data()[i + 1]));
+            }
+        }
+
+        // (5) Check that we can rebuild the curve from raw data (SpreadDiscountCurve constructor).
+        final InterpolatedSpreadDiscountCurve< LogLinear > rawCurve =
+                new InterpolatedSpreadDiscountCurve< LogLinear >(
+                        LogLinear.class, curve.baseCurve(), curve.dates(), curve.data(), new LogLinear());
+        rawCurve.enableExtrapolation();
+
+        final int maxSwapYears = swapDataLocal[swapDataLocal.length - 1].n;
+        for (int i = 0; i < maxSwapYears + 3; i++) {
+            final Date d = vars.settlement.add(new Period(i, TimeUnit.Years));
+            final double d1 = curve.discount(d);
+            final double d2 = rawCurve.discount(d);
+            if (Math.abs(d1 - d2) > 1e-9) {
+                throw new RuntimeException(String.format(
+                        "round-trip discount mismatch at %dY (%s): bootstrap=%.10f raw=%.10f err=%.2e",
+                        i, d, d1, d2, Math.abs(d1 - d2)));
+            }
         }
     }
 }
