@@ -64,9 +64,11 @@ import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.RelinkableHandle;
 import org.jquantlib.quotes.SimpleQuote;
 import org.jquantlib.termstructures.Bootstrap;
+import org.jquantlib.termstructures.Compounding;
 import org.jquantlib.termstructures.IterativeBootstrap;
 import org.jquantlib.termstructures.RateHelper;
 import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.termstructures.yieldcurves.ZeroSpreadedTermStructure;
 import org.jquantlib.termstructures.yieldcurves.BMASwapRateHelper;
 import org.jquantlib.termstructures.yieldcurves.DepositRateHelper;
 import org.jquantlib.termstructures.yieldcurves.Discount;
@@ -2710,6 +2712,94 @@ public class PiecewiseYieldCurveTest {
 	        if ( Math.abs(swap.NPV()) > tolerance ) {
 	            throw new RuntimeException(String.format("6M vanilla swap %dY NPV=%.2e > tol=%.2e",
 	                    i, swap.NPV(), tolerance));
+	        }
+	    }
+	}
+
+
+	/**
+	 * Faithful port of C++ {@code test-suite/piecewiseyieldcurve.cpp:1684}
+	 * {@code BOOST_AUTO_TEST_CASE(testMultiCurvePiecewiseYieldCurveAndSpreadedCurve)}.
+	 *
+	 * <p>Phase 1.3 closure (D5-A-MCSpread). Exercises the {@link MultiCurve}
+	 * coordinator with one bootstrapped curve (3M) and a non-bootstrapped
+	 * {@link ZeroSpreadedTermStructure} (OIS = 3M + constant spread).
+	 *
+	 * <p>This is the canonical {@code addNonBootstrappedCurve} test: the OIS
+	 * curve is the discount curve used by the 3M swap helpers, which forces a
+	 * cyclic dependency that the previous Phase 1.2 audit (see comments above)
+	 * could not resolve because Java's LazyObject.update() blew the stack via
+	 * a re-entrant observer cycle. The {@code updating_} re-entry guard ported
+	 * in Phase1.1-A2-MC* breaks the cycle, allowing the LM to converge.
+	 *
+	 * <p>Verifies:
+	 * <ol>
+	 *   <li>{@code curveois.zeroRate(1Y) - curve3m.zeroRate(1Y) ~= spread} (1e-10).</li>
+	 *   <li>Every 1Y..10Y vanilla swap (Euribor3M floating, Thirty360 annual fixed)
+	 *       prices to zero when discounted on the OIS curve.</li>
+	 * </ol>
+	 */
+	@Test
+	public void testMultiCurvePiecewiseYieldCurveAndSpreadedCurve() {
+	    QL.info("Testing multicurve bootstrap with piecewise yield curve and spreaded curve...");
+
+	    final Date today = new Date(23, Month.October, 2025);
+	    new Settings().setEvaluationDate(today);
+
+	    final double accuracy = 1.0e-10;
+
+	    final RelinkableHandle< YieldTermStructure > intcurveois = new RelinkableHandle< YieldTermStructure >();
+	    final RelinkableHandle< YieldTermStructure > intcurve3m = new RelinkableHandle< YieldTermStructure >();
+
+	    final IborIndex euribor3m = new Euribor3M(intcurve3m);
+
+	    final java.util.List< RateHelper > helpers3m = new java.util.ArrayList< RateHelper >();
+	    final Handle< Quote > q = new Handle< Quote >(new SimpleQuote(0.03));
+	    final Handle< Quote > b = new Handle< Quote >(new SimpleQuote(-0.01));
+
+	    for ( int i = 1; i <= 10; ++i ) {
+	        helpers3m.add(new SwapRateHelper(q, new Period(i, TimeUnit.Years),
+	                euribor3m.fixingCalendar(), Frequency.Annual, BusinessDayConvention.Following,
+	                new Thirty360(Thirty360.Convention.BondBasis), euribor3m,
+	                new Handle< Quote >(), new Period(0, TimeUnit.Days), intcurveois));
+	    }
+
+	    final MultiCurve multiCurve = new MultiCurve(accuracy);
+
+	    final GlobalBootstrap boot3m = new GlobalBootstrap(PiecewiseYieldCurve.class, accuracy);
+	    final PiecewiseYieldCurve ptr3m = new PiecewiseYieldCurve(
+	            Discount.class, LogLinear.class, GlobalBootstrap.class,
+	            today, helpers3m.toArray(new RateHelper[0]), new Actual360(),
+	            new Handle/*<Quote>*/[0], new Date[0], accuracy, new LogLinear(), boot3m);
+	    final Handle< YieldTermStructure > curve3m = multiCurve.addBootstrappedCurve(intcurve3m, ptr3m);
+
+	    final YieldTermStructure ptrois = new ZeroSpreadedTermStructure(intcurve3m, b);
+	    final Handle< YieldTermStructure > curveois = multiCurve.addNonBootstrappedCurve(intcurveois, ptrois);
+
+	    // (1) spread ois vs 3m at 1Y, continuous compounding
+	    final double tolerance = 1.0e-10;
+	    final double ois1y = curveois.currentLink().zeroRate(1.0, Compounding.Continuous, Frequency.NoFrequency, true).rate();
+	    final double e3m1y = curve3m.currentLink().zeroRate(1.0, Compounding.Continuous, Frequency.NoFrequency, true).rate();
+	    final double diff = ois1y - e3m1y;
+	    if ( Math.abs(diff - b.currentLink().value()) > tolerance ) {
+	        throw new RuntimeException(String.format(
+	                "zeroRate(1Y) spread mismatch: ois-3m=%.16e expected=%.16e err=%.2e tol=%.2e",
+	                diff, b.currentLink().value(), Math.abs(diff - b.currentLink().value()), tolerance));
+	    }
+
+	    // (2) every 1..10Y vanilla swap prices to zero on the OIS curve
+	    for ( int i = 1; i <= 10; ++i ) {
+	        final VanillaSwap swap = new MakeVanillaSwap(new Period(i, TimeUnit.Years), euribor3m, q.currentLink().value())
+	                .withSettlementDays(euribor3m.fixingDays())
+	                .withFixedLegDayCount(new Thirty360(Thirty360.Convention.BondBasis))
+	                .withFixedLegTenor(new Period(1, TimeUnit.Years))
+	                .withFixedLegConvention(BusinessDayConvention.Following)
+	                .withFixedLegTerminationDateConvention(BusinessDayConvention.Following)
+	                .value();
+	        swap.setPricingEngine(new DiscountingSwapEngine(curveois));
+	        if ( Math.abs(swap.NPV()) > tolerance ) {
+	            throw new RuntimeException(String.format(
+	                    "Spreaded vanilla swap %dY NPV=%.2e > tol=%.2e", i, swap.NPV(), tolerance));
 	        }
 	    }
 	}

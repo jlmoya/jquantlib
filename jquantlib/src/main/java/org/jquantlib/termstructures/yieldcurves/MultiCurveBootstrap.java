@@ -145,6 +145,27 @@ public class MultiCurveBootstrap {
                     o.update();
                 }
 
+                // Re-arm the calculated flag on every contributor's curve.
+                // The o.update() above can cascade back into the bootstrapped
+                // curves (via MultiCurve.update() if the non-bootstrapped curve
+                // is observed by the MultiCurve), flipping their calculated
+                // flag to false. Without this re-arming, the next discount()
+                // lookup against the curve (via the spread chain inside
+                // evaluateCostFunction's swap.recalculate) re-enters
+                // bootstrap.calculate → runMultiCurveBootstrap → SOE.
+                // Mirrors the protective semantics of C++ globalbootstrap.hpp
+                // setupCostFunction's setCalculated(true), held across the
+                // entire LM iteration. Phase 1.3 closure (D5-A-MCSpread).
+                for ( final MultiCurveBootstrapContributor c2 : contributors ) {
+                    if ( c2 instanceof org.jquantlib.termstructures.yieldcurves.GlobalBootstrap ) {
+                        final org.jquantlib.util.LazyObject lo =
+                                ((org.jquantlib.termstructures.yieldcurves.GlobalBootstrap) c2).ts();
+                        if ( lo != null ) {
+                            lo.setCalculated(true);
+                        }
+                    }
+                }
+
                 // collect residuals
                 final List< Array > results = new ArrayList<>(contributors.size());
                 int totalLen = 0;

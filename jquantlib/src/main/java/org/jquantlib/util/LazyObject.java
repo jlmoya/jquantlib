@@ -150,6 +150,18 @@ public abstract class LazyObject implements Observer, Observable {
     }
 
     /**
+     * Force-set the {@code calculated} flag. Mirrors C++ {@code LazyObject::setCalculated(bool c)}
+     * (ql/patterns/lazyobject.hpp:46). Required by {@code GlobalBootstrap::setupCostFunction()}
+     * during multi-curve bootstrap to prevent the curve from being re-entered while its bootstrap
+     * cost function is being evaluated (the LM iteration triggers observer chains that, without
+     * this guard, reset {@code calculated} and cause infinite recursion).
+     * <p>Phase 1.3 closure (D5-A-MCSpread). Public + non-final to mirror C++ availability.
+     */
+    public void setCalculated(final boolean c) {
+        this.calculated = c;
+    }
+
+    /**
      * This method constrains the object to return the presently cached results on successive invocations, even if
      * arguments upon which they depend should change.
      */

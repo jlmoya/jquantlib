@@ -431,12 +431,33 @@ public class GlobalBootstrap< Curve extends PiecewiseYieldCurve > implements Boo
     }
 
     /**
+     * Read-only accessor for the term-structure this bootstrap operates on. Used by
+     * {@link MultiCurveBootstrap} to re-arm the curve's {@code calculated} flag during the
+     * LM iteration when observer chains cascade through {@link MultiCurve#update()} and
+     * inadvertently invalidate the bootstrap state. Phase 1.3 closure (D5-A-MCSpread).
+     */
+    public Curve ts() {
+        return ts;
+    }
+
+    /**
      * Mirror of C++ {@code GlobalBootstrap<Curve>::setupCostFunction()} (globalbootstrap.hpp:319-376). Initialises
      * the curve's pillar dates / times / data / interpolation, populates the {@code mc*} cached fields, and
      * returns the optimiser's initial guess vector.
      */
     @Override
     public Array setupCostFunction() {
+
+        // Mirror C++ globalbootstrap.hpp:324 — `ts_->setCalculated(true)`.
+        // For multi-curve bootstrap, calculate() is never triggered for non-main
+        // contributors, so we have to manually mark the curve as calculated.
+        // For single-curve bootstrap, LazyObject.calculate() has already done
+        // this; calling setCalculated(true) again is a no-op. Without this,
+        // observer-cycles (e.g. SwapRateHelper.impliedQuote → swap.recalculate →
+        // notifyObservers → curve.update() → calculated=false → curve.maxDate()
+        // → calculate() → bootstrap re-entry → StackOverflowError) are not
+        // broken. See cpp:globalbootstrap.hpp:319-324.
+        ts.setCalculated(true);
 
         final Traits traits = ts.traits();
         final Interpolator interpolator = ts.interpolator();
