@@ -35,10 +35,15 @@ import java.util.List;
  * <p>
  * This cash flow pays a predetermined amount at a given date.
  *
+ * <p>JDK 25 sealed (JEP 409): permits the two v1.42.1 dividend kinds —
+ * {@link FixedDividend} (absolute amount) and {@link FractionalDividend} (percentage of nominal /
+ * underlying).</p>
+ *
  * @author Daniel Kong
  */
 @SuppressWarnings( "PMD.AbstractNaming" )
-public abstract class Dividend extends CashFlow {
+public abstract sealed class Dividend extends CashFlow
+        permits FixedDividend, FractionalDividend {
 
     protected Date date;
 

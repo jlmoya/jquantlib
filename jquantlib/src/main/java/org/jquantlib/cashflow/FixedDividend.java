@@ -32,7 +32,7 @@ import org.jquantlib.time.Date;
  * @author Daniel Kong
  */
 
-public class FixedDividend extends Dividend {
+public final class FixedDividend extends Dividend {
 
     protected double amount;
 
