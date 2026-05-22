@@ -297,17 +297,32 @@ public class Date implements Observable, Comparable< Date >, Serializable, Clone
                 final int hours, final int minutes, final int seconds,
                 final int millisec, final int microsec) {
         this(fromDMY(day, month, year));
-        QL.require(hours >= 0 && hours < 24, "hours outside [0,23]");
-        QL.require(minutes >= 0 && minutes < 60, "minutes outside [0,59]");
-        QL.require(seconds >= 0 && seconds < 60, "seconds outside [0,59]");
-        QL.require(millisec >= 0 && millisec < 1000, "millisec outside [0,999]");
-        QL.require(microsec >= 0 && microsec < 1000, "microsec outside [0,999]");
-        this.timeOfDayNanos =
+        // Phase 1.3 D5-D-intraday relaxation: C++ boost time_duration
+        // (ql/time/date.cpp:540-548) tolerates fields > their natural
+        // modular bound — fields beyond their range carry over into the
+        // higher unit (e.g. 1234ms becomes 1s + 234ms). Java mirrors via
+        // direct timeOfDayNanos accumulation plus floorMod normalization;
+        // any overflow into >=24h carries the serialNumber forward.
+        QL.require(hours >= 0, "hours must be >= 0");
+        QL.require(minutes >= 0, "minutes must be >= 0");
+        QL.require(seconds >= 0, "seconds must be >= 0");
+        QL.require(millisec >= 0, "millisec must be >= 0");
+        QL.require(microsec >= 0, "microsec must be >= 0");
+        final long totalNanos =
                 ((long) hours) * 3_600_000_000_000L
               + ((long) minutes) * 60_000_000_000L
               + ((long) seconds) * 1_000_000_000L
               + ((long) millisec) * 1_000_000L
               + ((long) microsec) * 1_000L;
+        final long dayCarry = Math.floorDiv(totalNanos, NANOS_PER_DAY);
+        this.timeOfDayNanos = Math.floorMod(totalNanos, NANOS_PER_DAY);
+        if (dayCarry != 0L) {
+            this.serialNumber += dayCarry;
+            // Re-check after carry; intraday overflow must stay in range.
+            QL.ensure(serialNumber >= minimumSerialNumber()
+                    && serialNumber <= maximumSerialNumber(),
+                    "Date's serial number outside allowed range after intraday carry");
+        }
     }
 
     /** Intraday-aware constructor with default milli/microseconds (=0). */
@@ -815,7 +830,14 @@ public class Date implements Observable, Comparable< Date >, Serializable, Clone
      */
     //-- Date& operator+=(const Period&);
     public Date addAssign(final Period period) {
-        serialNumber = advance(this, period.length(), period.units());
+        if ( isIntradayUnit(period.units()) ) {
+            final long[] result = advanceIntraday(this.serialNumber, this.timeOfDayNanos,
+                    period.length(), period.units());
+            this.serialNumber = result[0];
+            this.timeOfDayNanos = result[1];
+        } else {
+            this.serialNumber = advance(this, period.length(), period.units());
+        }
         checkSerialNumber();
         delegatedObservable.notifyObservers();
         return this;
@@ -841,7 +863,14 @@ public class Date implements Observable, Comparable< Date >, Serializable, Clone
      */
     //-- Date& operator-=(const Period&);
     public Date subAssign(final Period period) {
-        serialNumber = advance(this, -1 * period.length(), period.units());
+        if ( isIntradayUnit(period.units()) ) {
+            final long[] result = advanceIntraday(this.serialNumber, this.timeOfDayNanos,
+                    -1 * period.length(), period.units());
+            this.serialNumber = result[0];
+            this.timeOfDayNanos = result[1];
+        } else {
+            this.serialNumber = advance(this, -1 * period.length(), period.units());
+        }
         checkSerialNumber();
         delegatedObservable.notifyObservers();
         return this;
@@ -888,6 +917,13 @@ public class Date implements Observable, Comparable< Date >, Serializable, Clone
      */
     //-- Date operator+(const Period&) const;
     public Date add(final Period period) /* @ReadOnly */ {
+        if ( isIntradayUnit(period.units()) ) {
+            final long[] result = advanceIntraday(this.serialNumber, this.timeOfDayNanos,
+                    period.length(), period.units());
+            final Date d = new Date(result[0]);
+            d.timeOfDayNanos = result[1];
+            return d;
+        }
         return new Date(advance(this, period.length(), period.units()));
     }
 
@@ -908,6 +944,13 @@ public class Date implements Observable, Comparable< Date >, Serializable, Clone
      */
     //-- Date operator-(const Period&) const;
     public Date sub(final Period period) /* @ReadOnly */ {
+        if ( isIntradayUnit(period.units()) ) {
+            final long[] result = advanceIntraday(this.serialNumber, this.timeOfDayNanos,
+                    -1 * period.length(), period.units());
+            final Date d = new Date(result[0]);
+            d.timeOfDayNanos = result[1];
+            return d;
+        }
         return new Date(advance(this, -1 * period.length(), period.units()));
     }
 
@@ -1142,6 +1185,85 @@ public class Date implements Observable, Comparable< Date >, Serializable, Clone
     private void checkSerialNumber() {
         QL.ensure((serialNumber >= minimumSerialNumber()) && (serialNumber <= maximumSerialNumber()),
                 "Date's serial number is outside allowed range"); // TODO: message
+    }
+
+    /**
+     * Whether the given unit is sub-day (Hours/Minutes/Seconds/Milliseconds/
+     * Microseconds). Phase 1.3 D5-D-intraday: helper for the day-vs-intraday
+     * dispatch in Date.add/sub/addAssign/subAssign(Period).
+     */
+    private static boolean isIntradayUnit(final TimeUnit u) {
+        switch (u) {
+        case Hours:
+        case Minutes:
+        case Seconds:
+        case Milliseconds:
+        case Microseconds:
+            return true;
+        default:
+            return false;
+        }
+    }
+
+    /**
+     * Advance (serialNumber, timeOfDayNanos) by {@code n} sub-day units,
+     * propagating any overflow/underflow into the serialNumber via day
+     * carry. Mirrors C++ {@code advance(ptime& dt, n, units)} for sub-day
+     * cases (ql/time/date.cpp:490-504, QL_HIGH_RESOLUTION_DATE branch).
+     *
+     * <p>Returns a 2-element array {@code [newSerialNumber, newTimeOfDayNanos]}.
+     */
+    private static long[] advanceIntraday(final long sn, final long tod,
+                                          final int n, final TimeUnit units) {
+        final long delta;
+        switch (units) {
+        case Hours:
+            delta = (long) n * 3_600_000_000_000L;
+            break;
+        case Minutes:
+            delta = (long) n * 60_000_000_000L;
+            break;
+        case Seconds:
+            delta = (long) n * 1_000_000_000L;
+            break;
+        case Milliseconds:
+            delta = (long) n * 1_000_000L;
+            break;
+        case Microseconds:
+            delta = (long) n * 1_000L;
+            break;
+        default:
+            throw new LibraryException("undefined time units");
+        }
+        long total = tod + delta;
+        long dayCarry = Math.floorDiv(total, NANOS_PER_DAY);
+        long newTod = Math.floorMod(total, NANOS_PER_DAY);
+        return new long[] { sn + dayCarry, newTod };
+    }
+
+    /**
+     * Underlying tick resolution. Mirrors C++ {@code Date::ticksPerSecond()}
+     * (ql/time/date.cpp:616-618). For Java's nanosecond-backed
+     * {@link #timeOfDayNanos} the resolution is 1_000_000_000.
+     */
+    public static long ticksPerSecond() {
+        return 1_000_000_000L;
+    }
+
+    /**
+     * Phase 1.3 D5-D-intraday: timeOfDayNanos-aware equality.
+     *
+     * <p>Unlike {@link #equals}, which is deliberately day-only to preserve
+     * Calendar.holiday lookup semantics (see {@link #timeOfDayNanos} javadoc),
+     * this method compares both {@link #serialNumber} <i>and</i>
+     * {@link #timeOfDayNanos}. Use this in code that needs full intraday
+     * resolution comparison (mirrors C++ {@code operator==} under
+     * {@code QL_HIGH_RESOLUTION_DATE}).
+     */
+    public boolean equalsExact(final Date other) {
+        if (other == null) return false;
+        return this.serialNumber == other.serialNumber
+                && this.timeOfDayNanos == other.timeOfDayNanos;
     }
 
     private long advance(final Date date, final int n, final TimeUnit units) {
