@@ -303,12 +303,12 @@ public final class BondFunctions {
      */
     public static double yield(final Bond bond, final Price price, final DayCounter dayCounter,
             final Compounding compounding, final Frequency frequency) {
-        return yield(bond, price, dayCounter, compounding, frequency, new Date(), 1.0e-10, 100, 0.05);
+        return BondFunctions.yield(bond, price, dayCounter, compounding, frequency, new Date(), 1.0e-10, 100, 0.05);
     }
 
     public static double yield(final Bond bond, final Price price, final DayCounter dayCounter,
             final Compounding compounding, final Frequency frequency, final Date settlement) {
-        return yield(bond, price, dayCounter, compounding, frequency, settlement, 1.0e-10, 100, 0.05);
+        return BondFunctions.yield(bond, price, dayCounter, compounding, frequency, settlement, 1.0e-10, 100, 0.05);
     }
 
     public static double yield(final Bond bond, final Price price, final DayCounter dayCounter,

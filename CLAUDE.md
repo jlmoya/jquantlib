@@ -53,7 +53,7 @@ Default: autonomous work. Pause only for these triggers (full list in design §7
 
 - **Two `gh` accounts on this machine.** `jlmoya` owns the repo; `Jose-Moya_ETSUN` is the default. Run `gh auth switch -u jlmoya` before any `gh` call that touches `jlmoya/jquantlib`.
 - **Remote URL is SSH** (`git@github.com:jlmoya/jquantlib.git`) — HTTPS prompts for interactive password in non-TTY shells.
-- **Maven scoping:** prefer `mvn -pl jquantlib test` (inner `jquantlib` module), not `mvn test` at the repo root (pulls in `jquantlib-contrib`, `-helpers`, `-samples`).
+- **Maven scoping:** prefer `mvn -pl jquantlib test` (inner `jquantlib` module), not `mvn test` at the repo root (pulls in `-helpers` and `-samples` too).
 - **C++ clone location:** `/Users/josemoya/Projects/GitProjects/QuantLib`. The `migration-harness/cpp/quantlib/` submodule is independent; don't conflate them.
 - **`maven-central` branch on origin** is a release-staging branch — do not touch.
 

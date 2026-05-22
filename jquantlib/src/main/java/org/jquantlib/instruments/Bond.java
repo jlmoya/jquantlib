@@ -438,7 +438,7 @@ public class Bond extends Instrument {
 
     public/* @Rate */double yield(final DayCounter dc, final Compounding comp, final Frequency freq) {
 
-        return yield(dc, comp, freq, 1.0e-8, 100);
+        return this.yield(dc, comp, freq, 1.0e-8, 100);
     }
 
     /**
@@ -535,7 +535,7 @@ public class Bond extends Instrument {
     public/* @Real */double yield(final /* @Real */double cleanPrice, final DayCounter dc, final Compounding comp,
             final Frequency freq) {
 
-        return yield(cleanPrice, dc, comp, freq, new Date(), 1.0e-8, 100);
+        return this.yield(cleanPrice, dc, comp, freq, new Date(), 1.0e-8, 100);
     }
 
     /**
@@ -551,7 +551,7 @@ public class Bond extends Instrument {
     public/* @Real */double yield(final /* @Real */double cleanPrice, final DayCounter dc, final Compounding comp,
             final Frequency freq, final Date settlementDate) {
 
-        return yield(cleanPrice, dc, comp, freq, settlementDate, 1.0e-8, 100);
+        return this.yield(cleanPrice, dc, comp, freq, settlementDate, 1.0e-8, 100);
     }
 
     /**
@@ -567,7 +567,7 @@ public class Bond extends Instrument {
     public/* @Real */double yield(final /* @Real */double cleanPrice, final DayCounter dc, final Compounding comp,
             final Frequency freq, final Date settlementDate, final /* @Real */double accuracy) {
 
-        return yield(cleanPrice, dc, comp, freq, settlementDate, accuracy, 100);
+        return this.yield(cleanPrice, dc, comp, freq, settlementDate, accuracy, 100);
     }
 
     /**

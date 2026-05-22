@@ -11,12 +11,12 @@
 
     <name>jquantlib (root reactor)</name>
     <description>Repo-root aggregator. Lists jquantlib-parent, which in turn
-        aggregates all four code modules (jquantlib, jquantlib-contrib,
-        jquantlib-helpers, jquantlib-samples). This indirection lets `mvn`
-        invocations from the repo root see the full reactor while preserving the
-        existing `cd jquantlib-parent` workflow. This pom intentionally carries
-        no plugin or dependency config — all build configuration is inherited by
-        each module from jquantlib-parent.</description>
+        aggregates all three code modules (jquantlib, jquantlib-helpers,
+        jquantlib-samples). This indirection lets `mvn` invocations from the
+        repo root see the full reactor while preserving the existing
+        `cd jquantlib-parent` workflow. This pom intentionally carries no plugin
+        or dependency config — all build configuration is inherited by each
+        module from jquantlib-parent.</description>
 
     <modules>
         <module>jquantlib-parent</module>
