@@ -151,9 +151,19 @@ public class AverageBMALeg {
             if ( i == n - 1 && !schedule.isRegular(i + 1) )
                 refEnd = calendar.adjust(start.add(schedule.tenor()), paymentAdjustment);
 
+            // Mirrors v1.42.1 averagebmacoupon.cpp:241-245 detail::get(vec, i, default):
+            // returns vec[i] if i < vec.size(), otherwise the default. The previous
+            // Java code (notionals.get(i) != 0.0 ? ...) crashed on empty gearings /
+            // spreads arrays — they are size-0 unless explicitly set by withGearings /
+            // withSpreads, in which case the array is also commonly size 1 and any
+            // i >= 1 access threw ArrayIndexOutOfBoundsException. The C++ original
+            // never accesses out-of-bounds and always falls back to a sane default.
+            final double couponNotional = i < notionals.size() ? notionals.get(i) : notionals.last();
+            final double couponGearing = i < gearings.size() ? gearings.get(i) : 1.0;
+            final double couponSpread = i < spreads.size() ? spreads.get(i) : 0.0;
             AverageBMACoupon coupon = new AverageBMACoupon(paymentDate,
-                    notionals.get(i) != 0.0 ? notionals.get(i) : notionals.last(), start, end, index,
-                    gearings.get(i) != 0.0 ? gearings.get(i) : 1.0, spreads.get(i) != 0.0 ? spreads.get(i) : 0.0,
+                    couponNotional, start, end, index,
+                    couponGearing, couponSpread,
                     refStart, refEnd, paymentDayCounter);
 
             cashflows.add(coupon);
