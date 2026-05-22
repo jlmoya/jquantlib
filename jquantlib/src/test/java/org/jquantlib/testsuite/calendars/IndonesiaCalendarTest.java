@@ -68,7 +68,7 @@ public class IndonesiaCalendarTest {
     public void testIndonesiaYear2009() {
         final int year = 2009;
         QL.info("Testing Indonesia's holiday list for the year " + year + "...");
-        final List<Date> expectedHol = new Vector<Date>();
+        final List<Date> expectedHol = new Vector<>();
         // New Year
         expectedHol.add(new Date(1, January, year));
         expectedHol.add(new Date(2, January, year));
@@ -106,7 +106,7 @@ public class IndonesiaCalendarTest {
     public void testIndonesiaYear2008() {
         final int year = 2008;
         QL.info("Testing Indonesia's holiday list for the year " + year + "...");
-        final List<Date> expectedHol = new Vector<Date>();
+        final List<Date> expectedHol = new Vector<>();
         // New Year
         expectedHol.add(new Date(1, January, year));
         expectedHol.add(new Date(10, January, year));
@@ -154,7 +154,7 @@ public class IndonesiaCalendarTest {
     public void testIndonesiaYear2007() {
         final int year = 2007;
         QL.info("Testing Indonesia's holiday list for the year " + year + "...");
-        final List<Date> expectedHol = new Vector<Date>();
+        final List<Date> expectedHol = new Vector<>();
         // New Year
         expectedHol.add(new Date(1, January, year));
 
@@ -221,7 +221,7 @@ public class IndonesiaCalendarTest {
     public void testIndonesiaYear2006() {
         final int year = 2006;
         QL.info("Testing Indonesia's holiday list for the year " + year + "...");
-        final List<Date> expectedHol = new Vector<Date>();
+        final List<Date> expectedHol = new Vector<>();
         // New Year -- weekend in yr 2006
         // expectedHol.add(new Date(1,JANUARY,year));
 
@@ -272,7 +272,7 @@ public class IndonesiaCalendarTest {
     public void testIndonesiaYear2005() {
         final int year = 2005;
         QL.info("Testing Indonesia's holiday list for the year " + year + "...");
-        final List<Date> expectedHol = new Vector<Date>();
+        final List<Date> expectedHol = new Vector<>();
         // New Year -- weekend in yr 2005
         // expectedHol.add(new Date(1,JANUARY,year));
 

@@ -69,7 +69,7 @@ public class BrazilCalendarTest {
        	final int year = 2004;
     	QL.info("Testing " + Brazil.Market.BOVESPA + " holiday list for the year " + year + "...");
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
     	expectedHol.add(new Date(1,January,year));
     	expectedHol.add(new Date(23,February,year));
@@ -94,7 +94,7 @@ public class BrazilCalendarTest {
         final int year = 2005;
         QL.info("Testing " + Brazil.Market.BOVESPA + " holiday list for the year " + year + "...");
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
         expectedHol.add(new Date(25,January,year));
         expectedHol.add(new Date(7,February,year));
@@ -117,7 +117,7 @@ public class BrazilCalendarTest {
         final int year = 2006;
         QL.info("Testing " + Brazil.Market.BOVESPA + " holiday list for the year " + year + "...");
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
         expectedHol.add(new Date(25,January,year));
         expectedHol.add(new Date(27,February,year));
@@ -142,7 +142,7 @@ public class BrazilCalendarTest {
     	final int year = 2007;
     	QL.info("Testing " + Brazil.Market.BOVESPA + " holiday list for the year " + year + "...");
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
     	expectedHol.add(new Date(1,January,year));
     	expectedHol.add(new Date(25,January,year));
@@ -168,7 +168,7 @@ public class BrazilCalendarTest {
       	final int year = 2008;
       	QL.info("Testing " + Brazil.Market.BOVESPA + " holiday list for the year " + year + "...");
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
     	expectedHol.add(new Date(1,January,year));
     	expectedHol.add(new Date(25,January,year));
@@ -197,7 +197,7 @@ public class BrazilCalendarTest {
     	final int year = 2009;
     	QL.info("Testing " + Brazil.Market.BOVESPA + " holiday list for the year " + year + "...");
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
     	expectedHol.add(new Date(1,January,year));
     	expectedHol.add(new Date(23,February,year));
@@ -225,7 +225,7 @@ public class BrazilCalendarTest {
         final int year = 2010;
         QL.info("Testing " + Brazil.Market.BOVESPA + " holiday list for the year " + year + "...");
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
         expectedHol.add(new Date(1,January,year));
         expectedHol.add(new Date(25,January,year));
@@ -251,7 +251,7 @@ public class BrazilCalendarTest {
         final int year = 2011;
         QL.info("Testing " + Brazil.Market.BOVESPA + " holiday list for the year " + year + "...");
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
         expectedHol.add(new Date(25,January,year));
         expectedHol.add(new Date(7,March,year));
@@ -272,7 +272,7 @@ public class BrazilCalendarTest {
     	final int year = 2012;
     	QL.info("Testing " + Brazil.Market.BOVESPA + " holiday list for the year " + year + "...");
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
     	expectedHol.add(new Date(25,January,year));
     	expectedHol.add(new Date(20,February,year));
@@ -296,7 +296,7 @@ public class BrazilCalendarTest {
         final int year = 2004;
         QL.info("Testing " + Brazil.Market.SETTLEMENT + " holiday list for the year " + year + "...");
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
         expectedHol.add(new Date(1,January,year));
         expectedHol.add(new Date(23,February,year));
@@ -320,7 +320,7 @@ public class BrazilCalendarTest {
         final int year = 2005;
         QL.info("Testing " + Brazil.Market.SETTLEMENT + " holiday list for the year " + year + "...");
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
         expectedHol.add(new Date(7,February,year));
         expectedHol.add(new Date(8,February,year));
@@ -342,7 +342,7 @@ public class BrazilCalendarTest {
         final int year = 2006;
         QL.info("Testing " + Brazil.Market.SETTLEMENT + " holiday list for the year " + year + "...");
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
         expectedHol.add(new Date(27,February,year));
         expectedHol.add(new Date(28,February,year));
@@ -366,7 +366,7 @@ public class BrazilCalendarTest {
         final int year = 2007;
         QL.info("Testing " + Brazil.Market.SETTLEMENT + " holiday list for the year " + year + "...");
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
         expectedHol.add(new Date(1,January,year));
         expectedHol.add(new Date(19,February,year));
@@ -390,7 +390,7 @@ public class BrazilCalendarTest {
         final int year = 2008;
         QL.info("Testing " + Brazil.Market.SETTLEMENT + " holiday list for the year " + year + "...");
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
         expectedHol.add(new Date(1,January,year));
         expectedHol.add(new Date(4,February,year));
@@ -411,7 +411,7 @@ public class BrazilCalendarTest {
         final int year = 2009;
         QL.info("Testing " + Brazil.Market.SETTLEMENT + " holiday list for the year " + year + "...");
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
         expectedHol.add(new Date(1,January,year));
         expectedHol.add(new Date(23,February,year));
@@ -435,7 +435,7 @@ public class BrazilCalendarTest {
         final int year = 2010;
         QL.info("Testing " + Brazil.Market.SETTLEMENT + " holiday list for the year " + year + "...");
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
         expectedHol.add(new Date(1,January,year));
         expectedHol.add(new Date(15,February,year));
@@ -458,7 +458,7 @@ public class BrazilCalendarTest {
         final int year = 2011;
         QL.info("Testing " + Brazil.Market.SETTLEMENT + " holiday list for the year " + year + "...");
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
         expectedHol.add(new Date(7,March,year));
         expectedHol.add(new Date(8,March,year));
@@ -480,7 +480,7 @@ public class BrazilCalendarTest {
         final int year = 2012;
         QL.info("Testing " + Brazil.Market.SETTLEMENT + " holiday list for the year " + year + "...");
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
         expectedHol.add(new Date(20,February,year));
         expectedHol.add(new Date(21,February,year));

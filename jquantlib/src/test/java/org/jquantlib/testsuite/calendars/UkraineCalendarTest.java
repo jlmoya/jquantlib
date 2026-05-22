@@ -60,7 +60,7 @@ public class UkraineCalendarTest {
        	final int year = 2004;
     	QL.info("Testing " + Ukraine.Market.USE + " holidays list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
     	expectedHol.add(new Date(1,January,year));
     	expectedHol.add(new Date(7,January,year));
@@ -85,7 +85,7 @@ public class UkraineCalendarTest {
        	final int year = 2005;
     	QL.info("Testing " + Ukraine.Market.USE + " holidays list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
     	expectedHol.add(new Date(3,January,year));// New Year's Day 
     	expectedHol.add(new Date(7,January,year));//Orthodox Christmas 
@@ -109,7 +109,7 @@ public class UkraineCalendarTest {
        	final int year = 2006;
     	QL.info("Testing " + Ukraine.Market.USE + " holidays list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
     	expectedHol.add(new Date(2,January,year));
     	expectedHol.add(new Date(9,January,year));
@@ -135,7 +135,7 @@ public class UkraineCalendarTest {
        	final int year = 2007;
     	QL.info("Testing " + Ukraine.Market.USE + " holidays list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
     	expectedHol.add(new Date(1,January,year));
     	expectedHol.add(new Date(8,January,year));
@@ -162,7 +162,7 @@ public class UkraineCalendarTest {
        	final int year = 2008;
     	QL.info("Testing " + Ukraine.Market.USE + " holidays list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
     	expectedHol.add(new Date(1,January,year));
     	expectedHol.add(new Date(7,January,year));
@@ -187,7 +187,7 @@ public class UkraineCalendarTest {
        	final int year = 2009;
     	QL.info("Testing " + Ukraine.Market.USE + " holidays list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
     	expectedHol.add(new Date(1,January,year));
     	expectedHol.add(new Date(7,January,year));
@@ -211,7 +211,7 @@ public class UkraineCalendarTest {
        	final int year = 2010;
     	QL.info("Testing " + Ukraine.Market.USE + " holidays list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
     	expectedHol.add(new Date(1,January,year));
     	expectedHol.add(new Date(7,January,year));
@@ -236,7 +236,7 @@ public class UkraineCalendarTest {
        	final int year = 2011;
     	QL.info("Testing " + Ukraine.Market.USE + " holidays list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
     	expectedHol.add(new Date(3,January,year));
     	expectedHol.add(new Date(7,January,year));
@@ -261,7 +261,7 @@ public class UkraineCalendarTest {
        	final int year = 2012;
     	QL.info("Testing " + Ukraine.Market.USE + " holidays list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
     	expectedHol.add(new Date(2,January,year));
     	expectedHol.add(new Date(9,January,year));

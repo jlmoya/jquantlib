@@ -68,7 +68,7 @@ public class ArgentinaCalendarTest {
 		QL.info("Testing " + Argentina.Market.MERVAL
 				+ " holiday list for the year " + year + "...");
 		
-		final List<Date> expectedHol = new ArrayList<Date>();
+		final List<Date> expectedHol = new ArrayList<>();
 
 		expectedHol.add(new Date(1, January, year));
 //		expectedHol.add(new Date(24, MARCH, year));
@@ -99,7 +99,7 @@ public class ArgentinaCalendarTest {
 		QL.info("Testing " + Argentina.Market.MERVAL
 				+ " holiday list for the year " + year + "...");
 		
-		final List<Date> expectedHol = new ArrayList<Date>();
+		final List<Date> expectedHol = new ArrayList<>();
 
 		expectedHol.add(new Date(24, March, year));
 		expectedHol.add(new Date(25, March, year));
@@ -124,7 +124,7 @@ public class ArgentinaCalendarTest {
 		QL.info("Testing " + Argentina.Market.MERVAL
 				+ " holiday list for the year " + year + "...");
 		
-		final List<Date> expectedHol = new ArrayList<Date>();
+		final List<Date> expectedHol = new ArrayList<>();
 
 //		expectedHol.add(new Date(24, MARCH, year));
 		expectedHol.add(new Date(13, April, year));
@@ -170,7 +170,7 @@ public class ArgentinaCalendarTest {
 		QL.info("Testing " + Argentina.Market.MERVAL
 				+ " holiday list for the year " + year + "...");
 		
-		final List<Date> expectedHol = new ArrayList<Date>();
+		final List<Date> expectedHol = new ArrayList<>();
 
 		expectedHol.add(new Date(1, January, year));
 		// expectedHol.add(new Date(24,MARCH,year));
@@ -202,7 +202,7 @@ public class ArgentinaCalendarTest {
 		QL.info("Testing " + Argentina.Market.MERVAL
 				+ " holiday list for the year " + year + "...");
 		
-		final List<Date> expectedHol = new ArrayList<Date>();
+		final List<Date> expectedHol = new ArrayList<>();
 
 		expectedHol.add(new Date(1, January, year));
 		expectedHol.add(new Date(20, March, year));
@@ -233,7 +233,7 @@ public class ArgentinaCalendarTest {
 		QL.info("Testing " + Argentina.Market.MERVAL
 				+ " holiday list for the year " + year + "...");
 		
-		final List<Date> expectedHol = new ArrayList<Date>();
+		final List<Date> expectedHol = new ArrayList<>();
 
 		expectedHol.add(new Date(1, January, year));
 //		expectedHol.add(new Date(24, MARCH, year));
@@ -266,7 +266,7 @@ public class ArgentinaCalendarTest {
 		QL.info("Testing " + Argentina.Market.MERVAL
 				+ " holiday list for the year " + year + "...");
 		
-		final List<Date> expectedHol = new ArrayList<Date>();
+		final List<Date> expectedHol = new ArrayList<>();
 
 		expectedHol.add(new Date(1, January, year));
 //		expectedHol.add(new Date(24, MARCH, year));
@@ -293,7 +293,7 @@ public class ArgentinaCalendarTest {
 		QL.info("Testing " + Argentina.Market.MERVAL
 				+ " holiday list for the year " + year + "...");
 		
-		final List<Date> expectedHol = new ArrayList<Date>();
+		final List<Date> expectedHol = new ArrayList<>();
 
 //		expectedHol.add(new Date(24, MARCH, year));
 		expectedHol.add(new Date(21, April, year));
@@ -318,7 +318,7 @@ public class ArgentinaCalendarTest {
 		QL.info("Testing " + Argentina.Market.MERVAL
 				+ " holiday list for the year " + year + "...");
 		
-		final List<Date> expectedHol = new ArrayList<Date>();
+		final List<Date> expectedHol = new ArrayList<>();
 
 		// expectedHol.add(DateFactory.getDateUtil().getDate(1,JANUARY,year));
 		// --> Sunday
@@ -347,7 +347,7 @@ public class ArgentinaCalendarTest {
 //		QL.info("Testing " + Argentina.Market.SETTLEMENT
 //				+ " holiday list for the year " + year + "...");
 //		
-//		final List<Date> expectedHol = new ArrayList<Date>();
+//		final List<Date> expectedHol = new ArrayList<>();
 //
 //		expectedHol.add(new Date(1, JANUARY, year));
 //		expectedHol.add(new Date(2, APRIL, year));
@@ -374,7 +374,7 @@ public class ArgentinaCalendarTest {
 //		QL.info("Testing " + Argentina.Market.SETTLEMENT
 //				+ " holiday list for the year " + year + "...");
 //		
-//		final List<Date> expectedHol = new ArrayList<Date>();
+//		final List<Date> expectedHol = new ArrayList<>();
 //
 //		expectedHol.add(new Date(24, MARCH, year));
 //		expectedHol.add(new Date(25, MARCH, year));
@@ -397,7 +397,7 @@ public class ArgentinaCalendarTest {
 //		QL.info("Testing " + Argentina.Market.SETTLEMENT
 //				+ " holiday list for the year " + year + "...");
 //		
-//		final List<Date> expectedHol = new ArrayList<Date>();
+//		final List<Date> expectedHol = new ArrayList<>();
 //
 //		expectedHol.add(new Date(13, APRIL, year));
 //		expectedHol.add(new Date(14, APRIL, year));
@@ -421,7 +421,7 @@ public class ArgentinaCalendarTest {
 //		QL.info("Testing " + Argentina.Market.SETTLEMENT
 //				+ " holiday list for the year " + year + "...");
 //		
-//		final List<Date> expectedHol = new ArrayList<Date>();
+//		final List<Date> expectedHol = new ArrayList<>();
 //
 //		expectedHol.add(new Date(1, JANUARY, year));
 //		expectedHol.add(new Date(2, APRIL, year));
@@ -449,7 +449,7 @@ public class ArgentinaCalendarTest {
 //		QL.info("Testing " + Argentina.Market.SETTLEMENT
 //				+ " holiday list for the year " + year + "...");
 //		
-//		final List<Date> expectedHol = new ArrayList<Date>();
+//		final List<Date> expectedHol = new ArrayList<>();
 //
 //		expectedHol.add(new Date(1, JANUARY, year));
 //		expectedHol.add(new Date(20, MARCH, year));
@@ -475,7 +475,7 @@ public class ArgentinaCalendarTest {
 //		QL.info("Testing " + Argentina.Market.SETTLEMENT
 //				+ " holiday list for the year " + year + "...");
 //		
-//		final List<Date> expectedHol = new ArrayList<Date>();
+//		final List<Date> expectedHol = new ArrayList<>();
 //
 //		expectedHol.add(new Date(1, JANUARY, year));
 //		expectedHol.add(new Date(2, APRIL, year));
@@ -504,7 +504,7 @@ public class ArgentinaCalendarTest {
 //		QL.info("Testing " + Argentina.Market.SETTLEMENT
 //				+ " holiday list for the year " + year + "...");
 //		
-//		final List<Date> expectedHol = new ArrayList<Date>();
+//		final List<Date> expectedHol = new ArrayList<>();
 //
 //		expectedHol.add(new Date(1, JANUARY, year));
 //		expectedHol.add(new Date(1, APRIL, year));
@@ -530,7 +530,7 @@ public class ArgentinaCalendarTest {
 //		QL.info("Testing " + Argentina.Market.SETTLEMENT
 //				+ " holiday list for the year " + year + "...");
 //		
-//		final List<Date> expectedHol = new ArrayList<Date>();
+//		final List<Date> expectedHol = new ArrayList<>();
 //
 //		expectedHol.add(new Date(21, APRIL, year));
 //		expectedHol.add(new Date(22, APRIL, year));
@@ -553,7 +553,7 @@ public class ArgentinaCalendarTest {
 //		QL.info("Testing " + Argentina.Market.SETTLEMENT
 //				+ " holiday list for the year " + year + "...");
 //		
-//		final List<Date> expectedHol = new ArrayList<Date>();
+//		final List<Date> expectedHol = new ArrayList<>();
 //
 //		// expectedHol.add(DateFactory.getDateUtil().getDate(1,JANUARY,year));
 //		// --> Sunday

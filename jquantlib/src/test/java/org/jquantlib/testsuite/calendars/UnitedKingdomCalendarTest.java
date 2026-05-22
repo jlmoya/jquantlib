@@ -62,7 +62,7 @@ public class UnitedKingdomCalendarTest {
         int year = 2004;
         System.out.println("Testing " + metals.name() + " holiday list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // First JANUARY was a Thursday
         expectedHol.add(new Date(1, January, year));
@@ -93,7 +93,7 @@ public class UnitedKingdomCalendarTest {
         int year = 2005;
         System.out.println("Testing " + metals.name() + " holiday list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // First JANUARY was a Saturday
         expectedHol.add(new Date(3, January, year));
@@ -124,7 +124,7 @@ public class UnitedKingdomCalendarTest {
         int year = 2006;
         System.out.println("Testing " + metals.name() + " holiday list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // First JANUARY was a Sunday
         expectedHol.add(new Date(2, January, year));
@@ -156,7 +156,7 @@ public class UnitedKingdomCalendarTest {
         int year = 2007;
         System.out.println("Testing " + metals.name() + " holiday list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // First JANUARY was a Monday
         expectedHol.add(new Date(1, January, year));
@@ -188,7 +188,7 @@ public class UnitedKingdomCalendarTest {
         int year = 2008;
         System.out.println("Testing " + metals.name() + " holiday list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // First JANUARY was a Tuesday
         expectedHol.add(new Date(1, January, year));
@@ -220,7 +220,7 @@ public class UnitedKingdomCalendarTest {
         int year = 2009;
         System.out.println("Testing " + metals.name() + " holiday list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // First JANUARY will be a Thursday
         expectedHol.add(new Date(1, January, year));
@@ -252,7 +252,7 @@ public class UnitedKingdomCalendarTest {
         int year = 2010;
         System.out.println("Testing " + metals.name() + " holiday list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // First JANUARY will be a Friday
         expectedHol.add(new Date(1, January, year));
@@ -283,7 +283,7 @@ public class UnitedKingdomCalendarTest {
         int year = 2004;
         System.out.println("Testing " + settlement.name() + " holiday list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         expectedHol.add(new Date(1, January, year));
         // Let's check the first weekend
@@ -319,7 +319,7 @@ public class UnitedKingdomCalendarTest {
         int year = 2005;
         System.out.println("Testing " + settlement.name() + " holiday list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // First JANUARY was a Saturday
         expectedHol.add(new Date(3, January, year));
@@ -349,7 +349,7 @@ public class UnitedKingdomCalendarTest {
         int year = 2006;
         System.out.println("Testing " + settlement.name() + " holiday list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // First JANUARY was a Sunday
         expectedHol.add(new Date(2, January, year));
@@ -381,7 +381,7 @@ public class UnitedKingdomCalendarTest {
         int year = 2007;
         System.out.println("Testing " + settlement.name() + " holiday list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // First JANUARY was a Monday
         expectedHol.add(new Date(1, January, year));
@@ -414,7 +414,7 @@ public class UnitedKingdomCalendarTest {
         int year = 2008;
         System.out.println("Testing " + settlement.name() + " holiday list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // First JANUARY was a Tuesday
         expectedHol.add(new Date(1, January, year));
@@ -446,7 +446,7 @@ public class UnitedKingdomCalendarTest {
         int year = 2009;
         System.out.println("Testing " + settlement.name() + " holiday list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // First JANUARY will be a Thursday
         expectedHol.add(new Date(1, January, year));
@@ -478,7 +478,7 @@ public class UnitedKingdomCalendarTest {
         int year = 2010;
         System.out.println("Testing " + settlement.name() + " holiday list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // First JANUARY will be a Friday
         expectedHol.add(new Date(1, January, year));
@@ -508,7 +508,7 @@ public class UnitedKingdomCalendarTest {
         int year = 2004;
         System.out.println("Testing " + exchange.name() + " holiday list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // First JANUARY was a Thursday
         expectedHol.add(new Date(1, January, year));
@@ -545,7 +545,7 @@ public class UnitedKingdomCalendarTest {
         int year = 2005;
         System.out.println("Testing " + exchange.name() + " holiday list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // First JANUARY was a Saturday
         expectedHol.add(new Date(3, January, year));
@@ -577,7 +577,7 @@ public class UnitedKingdomCalendarTest {
         int year = 2006;
         System.out.println("Testing " + exchange.name() + " holiday list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // First JANUARY was a Sunday
         expectedHol.add(new Date(2, January, year));
@@ -609,7 +609,7 @@ public class UnitedKingdomCalendarTest {
         int year = 2007;
         System.out.println("Testing " + exchange.name() + " holiday list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // First JANUARY was a Monday
         expectedHol.add(new Date(1, January, year));
@@ -641,7 +641,7 @@ public class UnitedKingdomCalendarTest {
         int year = 2008;
         System.out.println("Testing " + exchange.name() + " holiday list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // First JANUARY was a Tuesday
         expectedHol.add(new Date(1, January, year));
@@ -673,7 +673,7 @@ public class UnitedKingdomCalendarTest {
         int year = 2009;
         System.out.println("Testing " + exchange.name() + " holiday list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // First JANUARY will be a Thursday
         expectedHol.add(new Date(1, January, year));
@@ -705,7 +705,7 @@ public class UnitedKingdomCalendarTest {
         int year = 2010;
         System.out.println("Testing " + exchange.name() + " holiday list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // First JANUARY will be a Friday
         expectedHol.add(new Date(1, January, year));

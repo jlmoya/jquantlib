@@ -72,7 +72,7 @@ public class HongKongCalendarTest {
 
         final Calendar c = new HongKong(HongKong.Market.HKEx);
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         expectedHol.add(new Date(1,January,year));    // The first day of JANUARY
 //        expectedHol.add(new Date(26,JANUARY,year));   // Lunar New Year's Day
@@ -117,7 +117,7 @@ public class HongKongCalendarTest {
 
         final Calendar c = new HongKong(HongKong.Market.HKEx);
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
 		expectedHol.add(new Date(1,January,year));    // The first day of JANUARY
     	expectedHol.add(new Date(7,February,year));   // Lunar New Year's Day
@@ -163,7 +163,7 @@ public class HongKongCalendarTest {
 
         final Calendar c = new HongKong(HongKong.Market.HKEx);
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         expectedHol.add(new Date(1,January,year));    // The first day of JANUARY
         expectedHol.add(new Date(1,May,year));        // Labour Day
@@ -211,7 +211,7 @@ public class HongKongCalendarTest {
 
         final Calendar c = new HongKong(HongKong.Market.HKEx);
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         expectedHol.add(new Date(1,January,year));    // The first day of JANUARY
         expectedHol.add(new Date(1,May,year));        // Labour Day
@@ -264,7 +264,7 @@ public class HongKongCalendarTest {
 
         final Calendar c = new HongKong(HongKong.Market.HKEx);
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         expectedHol.add(new Date(1,January,year));    // The first day of JANUARY
         expectedHol.add(new Date(1,May,year));        // Labour Day
@@ -322,7 +322,7 @@ public class HongKongCalendarTest {
 
         final Calendar c = new HongKong(HongKong.Market.HKEx);
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         expectedHol.add(new Date(1,January,year));    // The first day of JANUARY
         expectedHol.add(new Date(1,May,year));        // Labour Day

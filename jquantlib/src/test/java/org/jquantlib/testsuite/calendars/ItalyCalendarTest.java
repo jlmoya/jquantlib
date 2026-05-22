@@ -41,7 +41,7 @@ public class ItalyCalendarTest {
 		final int year = 2004;
 		QL.info("Testing Italy holiday list for the year " + year);
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
 		expectedHol.add(new Date(1,January,year));
 
@@ -73,7 +73,7 @@ public class ItalyCalendarTest {
 		final int year = 2006;
 		QL.info("Testing Italy holiday list for the year " + year);
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
 		final Date goodFriday = new Date(14,April,year);
 		expectedHol.add(goodFriday);
@@ -103,7 +103,7 @@ public class ItalyCalendarTest {
 		final int year = 2007;
 		QL.info("Testing Italy holiday list for the year " + year);
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
 		expectedHol.add(new Date(1,January,year));
 		final Date goodFriday = new Date(6,April,year);
@@ -137,7 +137,7 @@ public class ItalyCalendarTest {
 		final int year = 2008;
 		QL.info("Testing Italy holiday list for the year " + year);
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
 		expectedHol.add(new Date(1,January,year));
 		final Date goodFriday = new Date(21,March,year);
@@ -172,7 +172,7 @@ public class ItalyCalendarTest {
 		final int year = 2009;
 		QL.info("Testing Italy holiday list for the year " + year);
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
 		expectedHol.add(new Date(1,January,year));
 		final Date goodFriday = new Date(10,April,year);
@@ -205,7 +205,7 @@ public class ItalyCalendarTest {
 		final int year = 2010;
 		QL.info("Testing Italy holiday list for the year " + year);
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
 		expectedHol.add(new Date(1,January,year));
 		final Date goodFriday = new Date(2,April,year);
@@ -237,7 +237,7 @@ public class ItalyCalendarTest {
 		final int year = 2011;
 		QL.info("Testing Italy holiday list for the year " + year);
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
 		final Date goodFriday = new Date(22,April,year);
 		expectedHol.add(goodFriday);
@@ -265,7 +265,7 @@ public class ItalyCalendarTest {
 		final int year = 2012;
 		QL.info("Testing Italy holiday list for the year " + year);
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
 		final Date goodFriday = new Date(6,April,year);
 		expectedHol.add(goodFriday);

@@ -110,7 +110,7 @@ public class SwitzerlandCalendarTest {
 		final int year = 2004;
 		QL.info("Testing " + c.name() + " holiday list for the year " + year + "...");
 
-		final List<Date> expectedHol = new Vector<Date>();
+		final List<Date> expectedHol = new Vector<>();
 
 		expectedHol.add(new Date(1,January,year));
 		expectedHol.add(new Date(2,January,year));
@@ -137,7 +137,7 @@ public class SwitzerlandCalendarTest {
 		final int year = 2005;
 		QL.info("Testing " + c.name() + " holiday list for the year " + year + "...");
 
-		final List<Date> expectedHol = new Vector<Date>();
+		final List<Date> expectedHol = new Vector<>();
 
     	expectedHol.add(new Date(25,March,year));
     	expectedHol.add(new Date(28,March,year));
@@ -156,7 +156,7 @@ public class SwitzerlandCalendarTest {
 		final int year = 2006;
 		QL.info("Testing " + c.name() + " holiday list for the year " + year + "...");
 
-		final List<Date> expectedHol = new Vector<Date>();
+		final List<Date> expectedHol = new Vector<>();
 
 		expectedHol.add(new Date(2,January,year));
     	expectedHol.add(new Date(14,April,year));
@@ -178,7 +178,7 @@ public class SwitzerlandCalendarTest {
 		final int year = 2007;
 		QL.info("Testing " + c.name() + " holiday list for the year " + year + "...");
 
-		final List<Date> expectedHol = new Vector<Date>();
+		final List<Date> expectedHol = new Vector<>();
 
 		expectedHol.add(new Date(1,January,year));
 		expectedHol.add(new Date(2,January,year));
@@ -207,7 +207,7 @@ public class SwitzerlandCalendarTest {
 		final int year = 2008;
 		QL.info("Testing " + c.name() + " holiday list for the year " + year + "...");
 
-		final List<Date> expectedHol = new Vector<Date>();
+		final List<Date> expectedHol = new Vector<>();
 
 		expectedHol.add(new Date(1,January,year));
 		expectedHol.add(new Date(2,January,year));
@@ -235,7 +235,7 @@ public class SwitzerlandCalendarTest {
 		final int year = 2009;
 		QL.info("Testing " + c.name() + " holiday list for the year " + year + "...");
 
-		final List<Date> expectedHol = new Vector<Date>();
+		final List<Date> expectedHol = new Vector<>();
 
 		expectedHol.add(new Date(1,January,year));
 		expectedHol.add(new Date(2,January,year));
@@ -264,7 +264,7 @@ public class SwitzerlandCalendarTest {
 		final int year = 2010;
 		QL.info("Testing " + c.name() + " holiday list for the year " + year + "...");
 
-		final List<Date> expectedHol = new Vector<Date>();
+		final List<Date> expectedHol = new Vector<>();
 
 		expectedHol.add(new Date(1,January,year));
     	expectedHol.add(new Date(2,April,year));
@@ -288,7 +288,7 @@ public class SwitzerlandCalendarTest {
 		final int year = 2011;
 		QL.info("Testing " + c.name() + " holiday list for the year " + year + "...");
 
-		final List<Date> expectedHol = new Vector<Date>();
+		final List<Date> expectedHol = new Vector<>();
 
     	expectedHol.add(new Date(22,April,year));
     	expectedHol.add(new Date(25,April,year));
@@ -306,7 +306,7 @@ public class SwitzerlandCalendarTest {
 		final int year = 2012;
 		QL.info("Testing " + c.name() + " holiday list for the year " + year + "...");
 
-		final List<Date> expectedHol = new Vector<Date>();
+		final List<Date> expectedHol = new Vector<>();
 
 		// expectedHol.add(DateFactory.getDateUtil().getDate(1,JANUARY,year)); --> Sunday
 		expectedHol.add(new Date(2,January,year));

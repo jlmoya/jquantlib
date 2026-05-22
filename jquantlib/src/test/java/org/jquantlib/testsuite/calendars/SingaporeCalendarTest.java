@@ -64,7 +64,7 @@ public class SingaporeCalendarTest {
 
         
       	final Calendar c = new Singapore(Singapore.Market.SGX);
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
     	//New year's day
     	expectedHol.add(new Date(1,January,year));
@@ -112,7 +112,7 @@ public class SingaporeCalendarTest {
 
         
       	final Calendar c = new Singapore(Singapore.Market.SGX);
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
     	//New year's day -- weekend in yr 2005
     	//expectedHol.add(new Date(1,JANUARY,year));
@@ -157,7 +157,7 @@ public class SingaporeCalendarTest {
 
         
       	final Calendar c = new Singapore(Singapore.Market.SGX);
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
     	//New year's day -- weekend in 2006
     	//expectedHol.add(new Date(1,JANUARY,year));
@@ -218,7 +218,7 @@ public class SingaporeCalendarTest {
 
         
       	final Calendar c = new Singapore(Singapore.Market.SGX);
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
     	//New year's day
     	expectedHol.add(new Date(1,January,year));
@@ -282,7 +282,7 @@ public class SingaporeCalendarTest {
 
         
       	final Calendar c = new Singapore(Singapore.Market.SGX);
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
     	//New year's day
     	expectedHol.add(new Date(1,January,year));
@@ -344,7 +344,7 @@ public class SingaporeCalendarTest {
 
         
       	final Calendar c = new Singapore(Singapore.Market.SGX);
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
     	//New year's day
     	expectedHol.add(new Date(1,January,year));
@@ -391,7 +391,7 @@ public class SingaporeCalendarTest {
 //
 //        
 //      	final Calendar c = Singapore.getCalendar(Singapore.Market.SGX);
-//    	final List<Date> expectedHol = new ArrayList<Date>();
+//    	final List<Date> expectedHol = new ArrayList<>();
 //
 //    	//New year's day
 //    	expectedHol.add(new Date(1,JANUARY,year));
@@ -413,7 +413,7 @@ public class SingaporeCalendarTest {
 //
 //        
 //      	final Calendar c = Singapore.getCalendar(Singapore.Market.SGX);
-//    	final List<Date> expectedHol = new ArrayList<Date>();
+//    	final List<Date> expectedHol = new ArrayList<>();
 //
 //    	expectedHol.add(new Date(22,APRIL,year));
 //    	// National Day --
@@ -432,7 +432,7 @@ public class SingaporeCalendarTest {
 //
 //        
 //      	final Calendar c = Singapore.getCalendar(Singapore.Market.SGX);
-//    	final List<Date> expectedHol = new ArrayList<Date>();
+//    	final List<Date> expectedHol = new ArrayList<>();
 //
 //    	expectedHol.add(new Date(6,APRIL,year));
 //    	//labour day

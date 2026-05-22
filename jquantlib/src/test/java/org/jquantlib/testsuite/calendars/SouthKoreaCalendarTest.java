@@ -75,7 +75,7 @@ public class SouthKoreaCalendarTest {
     @Before
     public void setup() {
         c = new SouthKorea(SouthKorea.Market.KRX);
-        expectedHol = new Vector<Date>();
+        expectedHol = new Vector<>();
     }
 
     // 2004 - year in the past

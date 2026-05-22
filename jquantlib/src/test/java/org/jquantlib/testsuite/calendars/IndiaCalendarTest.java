@@ -68,7 +68,7 @@ public class IndiaCalendarTest {
     public void testIndiaNseHolidaysYear2005() {
         final int year = 2005;
         QL.info("Testing " + India.Market.NSE + " holidays list for the year " + year + "...");
-        final List<Date> expectedHol = new Vector<Date>();
+        final List<Date> expectedHol = new Vector<>();
 
         expectedHol.add(new Date(21, January, year));
         expectedHol.add(new Date(26, January, year));
@@ -93,7 +93,7 @@ public class IndiaCalendarTest {
 
         final int year = 2006;
         QL.info("Testing " + India.Market.NSE + " holidays list for the year " + year + "...");
-        final List<Date> expectedHol = new Vector<Date>();
+        final List<Date> expectedHol = new Vector<>();
 
         expectedHol.add(new Date(11, January, year));
         expectedHol.add(new Date(26, January, year));
@@ -119,7 +119,7 @@ public class IndiaCalendarTest {
     public void testIndiaNseHolidaysYear2007() {
         final int year = 2007;
         QL.info("Testing " + India.Market.NSE + " holidays list for the year " + year + "...");
-        final List<Date> expectedHol = new Vector<Date>();
+        final List<Date> expectedHol = new Vector<>();
 
         expectedHol.add(new Date(1, January, year));
         expectedHol.add(new Date(26, January, year));
@@ -146,7 +146,7 @@ public class IndiaCalendarTest {
     public void testIndiaNseHolidaysYear2008() {
         final int year = 2008;
         QL.info("Testing " + India.Market.NSE + " holidays list for the year " + year + "...");
-        final List<Date> expectedHol = new Vector<Date>();
+        final List<Date> expectedHol = new Vector<>();
 
         expectedHol.add(new Date(6, March, year));
         expectedHol.add(new Date(20, March, year));
@@ -177,7 +177,7 @@ public class IndiaCalendarTest {
     public void testIndiaNseHolidaysYear2009() {
         final int year = 2009;
         QL.info("Testing " + India.Market.NSE + " holidays list for the year " + year + "...");
-        final List<Date> expectedHol = new Vector<Date>();
+        final List<Date> expectedHol = new Vector<>();
         expectedHol.add(new Date(8, January, year));   // Moharram
         expectedHol.add(new Date(26, January, year));  // Republic Day
         expectedHol.add(new Date(23, February, year)); // Mahashivratri

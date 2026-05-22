@@ -43,7 +43,7 @@ public class MexicoCalendarTest {
     public void setUp() {
 //    	settlementCalendar = new Mexico(Market.SETTLEMENT);
     	bmvCalendar = new Mexico(Market.BMV);
-        expectedHol = new Vector<Date>();
+        expectedHol = new Vector<>();
     }
 
 //    @Test

@@ -77,7 +77,7 @@ public class NewZealandCalendarTest {
         final int year = 2012;
     	QL.info("Testing " + exchange.name() + " holidays list for the year " + year + "...");
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
 		// Sun: expectedHol.add(new Date( 1,JANUARY,year));   // New Year's Day
 		expectedHol.add(new Date( 2,January,year));   // New Years Day observed
@@ -122,7 +122,7 @@ public class NewZealandCalendarTest {
         final int year = 2011;
     	QL.info("Testing " + exchange.name() + " holidays list for the year " + year + "...");
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
 		// Sat: expectedHol.add(new Date( 1,JANUARY,year));   // New Year's Day
 		expectedHol.add(new Date( 3,January,year));   // New Years Day observed
@@ -168,7 +168,7 @@ public class NewZealandCalendarTest {
         final int year = 2010;
     	QL.info("Testing " + exchange.name() + " holidays list for the year " + year + "...");
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
 		expectedHol.add(new Date( 1,January,year));   // New Year's Day
 		expectedHol.add(new Date( 4,January,year));   // Day after New Years Day
@@ -210,7 +210,7 @@ public class NewZealandCalendarTest {
         final int year = 2009;
     	QL.info("Testing " + exchange.name() + " holidays list for the year " + year + "...");
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
 		expectedHol.add(new Date( 1,January,year));   // New Year's Day
 		expectedHol.add(new Date( 2,January,year));   // Day after New Years Day
@@ -249,7 +249,7 @@ public class NewZealandCalendarTest {
       	final int year = 2008;
     	QL.info("Testing " + exchange.name() + " holidays list for the year " + year + "...");
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
 		expectedHol.add(new Date( 1,January,year));   // New Year's Day
 		expectedHol.add(new Date( 2,January,year));   // Day after New Years Day
@@ -291,7 +291,7 @@ public class NewZealandCalendarTest {
         final int year = 2007;
     	QL.info("Testing " + exchange.name() + " holidays list for the year " + year + "...");
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
 		expectedHol.add(new Date( 1,January,year));   // New Year's Day
 		expectedHol.add(new Date( 2,January,year));   // Day after New Years Day
@@ -334,7 +334,7 @@ public class NewZealandCalendarTest {
         final int year = 2006;
     	QL.info("Testing " + exchange.name() + " holidays list for the year " + year + "...");
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
 		// expectedHol.add(new Date( 1,JANUARY,year));   // New Year's Day
 		expectedHol.add(new Date( 2,January,year));   // New Year's Day observed
@@ -379,7 +379,7 @@ public class NewZealandCalendarTest {
         final int year = 2005;
     	QL.info("Testing " + exchange.name() + " holidays list for the year " + year + "...");
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
 		// expectedHol.add(new Date( 1,JANUARY,year));   // New Year's Day
 		expectedHol.add(new Date( 3,January,year));   // Day after New Years Day
@@ -425,7 +425,7 @@ public class NewZealandCalendarTest {
         final int year = 2004;
     	QL.info("Testing " + exchange.name() + " holidays list for the year " + year + "...");
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
 		expectedHol.add(new Date( 1,January,year));   // New Year's Day
 		expectedHol.add(new Date( 2,January,year));   // Day after New Years Day

@@ -58,7 +58,7 @@ public class DenmarkCalendarTest {
 		final int year = 2004;
     	QL.info("Testing " + exchange.name() + " holiday list for the year " + year + "...");
 
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
 		expectedHol.add(new Date(1, January, year));
 		// maunday thursday
@@ -89,7 +89,7 @@ public class DenmarkCalendarTest {
 		final int year = 2005;
     	QL.info("Testing " + exchange.name() + " holiday list for the year " + year + "...");
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
 		expectedHol.add(new Date(24, March, year));
 		// good friday
@@ -116,7 +116,7 @@ public class DenmarkCalendarTest {
 		final int year = 2006;
     	QL.info("Testing " + exchange.name() + " holiday list for the year " + year + "...");
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
 		expectedHol.add(new Date(13, April, year));
 		// maunday thursday
@@ -145,7 +145,7 @@ public class DenmarkCalendarTest {
 		final int year = 2007;
     	QL.info("Testing " + exchange.name() + " holiday list for the year " + year + "...");
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
 		expectedHol.add(new Date(1, January, year));
 		// maunday thursday
@@ -183,7 +183,7 @@ public class DenmarkCalendarTest {
 		final int year = 2008;
     	QL.info("Testing " + exchange.name() + " holiday list for the year " + year + "...");
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
 		expectedHol.add(new Date(1, January, year));
 		// maunday thursday
@@ -220,7 +220,7 @@ public class DenmarkCalendarTest {
 		final int year = 2009;
     	QL.info("Testing " + exchange.name() + " holiday list for the year " + year + "...");
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
 		expectedHol.add(new Date(1, January, year));
 		// maunday thursday
@@ -256,7 +256,7 @@ public class DenmarkCalendarTest {
 		final int year = 2010;
     	QL.info("Testing " + exchange.name() + " holiday list for the year " + year + "...");
 
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
 		expectedHol.add(new Date(1, January, year));
 		// maunday thursday
@@ -289,7 +289,7 @@ public class DenmarkCalendarTest {
 		final int year = 2012;
     	QL.info("Testing " + exchange.name() + " holiday list for the year " + year + "...");
 
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
 		expectedHol.add(new Date(5, April, year));
 		// maunday thursday
@@ -326,7 +326,7 @@ public class DenmarkCalendarTest {
 		final int year = 2011;
     	QL.info("Testing " + exchange.name() + " holiday list for the year " + year + "...");
 
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
 		expectedHol.add(new Date(21, April, year));
 		// maunday thursday

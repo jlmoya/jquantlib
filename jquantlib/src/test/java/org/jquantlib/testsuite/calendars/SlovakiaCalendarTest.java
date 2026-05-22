@@ -62,7 +62,7 @@ public class SlovakiaCalendarTest {
 
         
       	final Calendar c = new Slovakia(Slovakia.Market.BSSE);
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
 		expectedHol.add(new Date(1,January,year));
 //		expectedHol.add(new Date(2,JANUARY,year));
@@ -128,7 +128,7 @@ public class SlovakiaCalendarTest {
 
         
       	final Calendar c = new Slovakia(Slovakia.Market.BSSE);
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
 		//expectedHol.add(new Date(1,JANUARY,year));
 		//expectedHol.add(new Date(2,JANUARY,year));
@@ -169,7 +169,7 @@ public class SlovakiaCalendarTest {
 
         
       	final Calendar c = new Slovakia(Slovakia.Market.BSSE);
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
 		//expectedHol.add(new Date(1,JANUARY,year));
 //		expectedHol.add(new Date(2,JANUARY,year));
@@ -236,7 +236,7 @@ public class SlovakiaCalendarTest {
 
         
       	final Calendar c = new Slovakia(Slovakia.Market.BSSE);
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
     	expectedHol.add(new Date(1,January,year));
 //    	expectedHol.add(new Date(2,JANUARY,year));
@@ -302,7 +302,7 @@ public class SlovakiaCalendarTest {
 
         
       	final Calendar c = new Slovakia(Slovakia.Market.BSSE);
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
     	expectedHol.add(new Date(1,January,year));
 //    	expectedHol.add(new Date(2,JANUARY,year));
@@ -342,7 +342,7 @@ public class SlovakiaCalendarTest {
 
         
       	final Calendar c = new Slovakia(Slovakia.Market.BSSE);
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
     	expectedHol.add(new Date(1,January,year));
 //    	expectedHol.add(new Date(2,JANUARY,year));
@@ -380,7 +380,7 @@ public class SlovakiaCalendarTest {
 
         
       	final Calendar c = new Slovakia(Slovakia.Market.BSSE);
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
     	expectedHol.add(new Date(1,January,year));
     	//expectedHol.add(new Date(2,JANUARY,year));
@@ -418,7 +418,7 @@ public class SlovakiaCalendarTest {
 
         
       	final Calendar c = new Slovakia(Slovakia.Market.BSSE);
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
 		//expectedHol.add(new Date(1,JANUARY,year));
 		//expectedHol.add(new Date(2,JANUARY,year));
@@ -457,7 +457,7 @@ public class SlovakiaCalendarTest {
 
         
       	final Calendar c = new Slovakia(Slovakia.Market.BSSE);
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
 		//expectedHol.add(new Date(1,JANUARY,year));
 //		expectedHol.add(new Date(2,JANUARY,year));

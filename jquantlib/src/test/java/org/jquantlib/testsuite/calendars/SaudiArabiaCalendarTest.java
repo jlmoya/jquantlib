@@ -58,7 +58,7 @@ public class SaudiArabiaCalendarTest {
       	final int year = 2004;
       	QL.info("Testing SaudiArabia's holiday list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
 		// Eid Al-Adha -- 5 is on Thu,6 is on Fri, weekend in yr 2004
 		expectedHol.add(new Date(1,February,year));
@@ -82,7 +82,7 @@ public class SaudiArabiaCalendarTest {
       	final int year = 2005;
       	QL.info("Testing SaudiArabia's holiday list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
 		// Eid Al-Adha -- 21 is on Fri, weekend in yr 2005
 		expectedHol.add(new Date(22,January,year));
@@ -106,7 +106,7 @@ public class SaudiArabiaCalendarTest {
       	final int year = 2006;
       	QL.info("Testing SaudiArabia's holiday list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
     	//National Day
     	expectedHol.add(new Date(23,September,year));
@@ -122,7 +122,7 @@ public class SaudiArabiaCalendarTest {
       	final int year = 2007;
       	QL.info("Testing SaudiArabia's holiday list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
     	//National Day
     	expectedHol.add(new Date(23,September,year));
@@ -138,7 +138,7 @@ public class SaudiArabiaCalendarTest {
       	final int year = 2008;
       	QL.info("Testing SaudiArabia's holiday list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
     	//National Day
     	expectedHol.add(new Date(23,September,year));
@@ -154,7 +154,7 @@ public class SaudiArabiaCalendarTest {
       	final int year = 2009;
       	QL.info("Testing SaudiArabia's holiday list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
     	//National Day
     	expectedHol.add(new Date(23,September,year));
@@ -170,7 +170,7 @@ public class SaudiArabiaCalendarTest {
       	final int year = 2010;
       	QL.info("Testing SaudiArabia's holiday list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
     	//National Day - On a Thursday and hence a weekend
     	//expectedHol.add(new Date(23,SEPTEMBER,year));
@@ -186,7 +186,7 @@ public class SaudiArabiaCalendarTest {
       	final int year = 2011;
       	QL.info("Testing SaudiArabia's holiday list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
     	//National Day On a Friday and hence a weekend
     	//expectedHol.add(new Date(23,SEPTEMBER,year));
@@ -202,7 +202,7 @@ public class SaudiArabiaCalendarTest {
       	final int year = 2012;
       	QL.info("Testing SaudiArabia's holiday list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
     	//National Day
     	expectedHol.add(new Date(23,September,year));

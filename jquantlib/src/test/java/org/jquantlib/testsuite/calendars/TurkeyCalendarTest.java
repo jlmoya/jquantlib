@@ -63,7 +63,7 @@ public class TurkeyCalendarTest {
        	final int year = 2004;
     	QL.info("Testing " + exchange.name() + " holidays list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
     	expectedHol.add(new Date(1,January,year));
     	expectedHol.add(new Date(2,February,year));
@@ -89,7 +89,7 @@ public class TurkeyCalendarTest {
        	final int year = 2005;
     	QL.info("Testing " + exchange.name() + " holidays list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
     	expectedHol.add(new Date(19,January,year));
     	expectedHol.add(new Date(20,January,year));
@@ -113,7 +113,7 @@ public class TurkeyCalendarTest {
        	final int year = 2006;
     	QL.info("Testing " + exchange.name() + " holidays list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
     	expectedHol.add(new Date(9,January,year));
     	expectedHol.add(new Date(10,January,year));
@@ -139,7 +139,7 @@ public class TurkeyCalendarTest {
        	final int year = 2007;
     	QL.info("Testing " + exchange.name() + " holidays list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
     	expectedHol.add(new Date(1,January,year));
     	expectedHol.add(new Date(2,January,year));
@@ -167,7 +167,7 @@ public class TurkeyCalendarTest {
        	final int year = 2008;
     	QL.info("Testing " + exchange.name() + " holidays list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
     	expectedHol.add(new Date(1,January,year));
     	expectedHol.add(new Date(23,April,year));
@@ -196,7 +196,7 @@ public class TurkeyCalendarTest {
        	final int year = 2009;
     	QL.info("Testing " + exchange.name() + " holidays list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
     	expectedHol.add(new Date(1,January,year));
     	expectedHol.add(new Date(23,April,year));
@@ -216,7 +216,7 @@ public class TurkeyCalendarTest {
        	final int year = 2010;
     	QL.info("Testing " + exchange.name() + " holidays list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
     	expectedHol.add(new Date(1,January,year));
     	expectedHol.add(new Date(23,April,year));
@@ -237,7 +237,7 @@ public class TurkeyCalendarTest {
        	final int year = 2011;
     	QL.info("Testing " + exchange.name() + " holidays list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
     	expectedHol.add(new Date(19,May,year));
     	expectedHol.add(new Date(30,August,year));
@@ -255,7 +255,7 @@ public class TurkeyCalendarTest {
        	final int year = 2012;
     	QL.info("Testing " + exchange.name() + " holidays list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
     	expectedHol.add(new Date(23,April,year));
     	expectedHol.add(new Date(30,August,year));

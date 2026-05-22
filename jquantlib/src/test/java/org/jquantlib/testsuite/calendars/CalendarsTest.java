@@ -703,7 +703,7 @@ public class CalendarsTest {
 
     /** Builds a List&lt;Date&gt; from a varargs Date[]; mirrors the C++ vector init. */
     private static List<Date> dateList(final Date... ds) {
-        final List<Date> out = new ArrayList<Date>(ds.length);
+        final List<Date> out = new ArrayList<>(ds.length);
         for (final Date d : ds) {
             out.add(d);
         }
@@ -781,7 +781,7 @@ public class CalendarsTest {
 
         final Calendar fedCalendar = new UnitedStates(UnitedStates.Market.FederalReserve);
 
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
         // Sunday, moved to Monday 20th: (19, June, 2022) skipped
         expectedHol.add(new Date(20, Month.June, 2022));
         expectedHol.add(new Date(19, Month.June, 2023));

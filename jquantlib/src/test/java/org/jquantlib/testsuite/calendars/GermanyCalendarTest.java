@@ -41,7 +41,7 @@ public class GermanyCalendarTest {
 		final int year = 2004;
 		QL.info("Testing Germany holiday list for the year " + year + " as recognized by markets Frankfurt Stock Exchange, Xetra ...");
 
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
 		//new years day
 		expectedHol.add(new Date(1,January,year));
@@ -90,7 +90,7 @@ public class GermanyCalendarTest {
 		final int year = 2005;
 		QL.info("Testing Germany holiday list for the year " + year + " as recognized by markets Frankfurt Stock Exchange, Xetra, Eurex ...");
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
 		//new years day
 		//expectedHol.add(new Date(1,JANUARY,year));
@@ -135,7 +135,7 @@ public class GermanyCalendarTest {
 		final int year = 2006;
 		QL.info("Testing Germany holiday list for the year " + year + " as recognized by markets Frankfurt Stock Exchange, Xetra, Eurex ...");
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
 		//new years day
 		//expectedHol.add(new Date(1,JANUARY,year));
@@ -180,7 +180,7 @@ public class GermanyCalendarTest {
 		final int year = 2007;
 		QL.info("Testing Germany holiday list for the year " + year + " as recognized by markets Frankfurt Stock Exchange, Xetra ...");
 
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
 		//new years day
 		expectedHol.add(new Date(1,January,year));
@@ -230,7 +230,7 @@ public class GermanyCalendarTest {
 		final int year = 2008;
 		QL.info("Testing Germany holiday list for the year " + year + " as recognized by markets Frankfurt Stock Exchange, Xetra ...");
 
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
 		//new years day
 		expectedHol.add(new Date(1,January,year));
@@ -278,7 +278,7 @@ public class GermanyCalendarTest {
 		final int year = 2009;
 		QL.info("Testing Germany holiday list for the year " + year + " as recognized by markets Frankfurt Stock Exchange, Xetra ...");
 
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
 		//new years day
 		expectedHol.add(new Date(1,January,year));
@@ -326,7 +326,7 @@ public class GermanyCalendarTest {
 		final int year = 2010;
 		QL.info("Testing Germany holiday list for the year " + year + " as recognized by markets Frankfurt Stock Exchange, Xetra ...");
 
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
 		//new years day
 		expectedHol.add(new Date(1,January,year));
@@ -374,7 +374,7 @@ public class GermanyCalendarTest {
 		final int year = 2011;
 		QL.info("Testing Germany holiday list for the year " + year + " as recognized by markets Frankfurt Stock Exchange, Xetra, Eurex ...");
         
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
 		//new years day
 		//expectedHol.add(new Date(1,JANUARY,year));
@@ -419,7 +419,7 @@ public class GermanyCalendarTest {
 		final int year = 2012;
 		QL.info("Testing Germany holiday list for the year " + year + " as recognized by markets Frankfurt Stock Exchange, Xetra ...");
 
-    	final List<Date> expectedHol = new ArrayList<Date>();
+    	final List<Date> expectedHol = new ArrayList<>();
 
 		//new years day
 		//expectedHol.add(new Date(1,JANUARY,year));

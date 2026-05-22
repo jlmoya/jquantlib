@@ -63,7 +63,7 @@ public class TaiwanCalendarTest {
        	final int year = 2002;
         QL.info("Testing " + exchange.name() + " holidays list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
     	expectedHol.add(new Date(1,January,year));
     	expectedHol.add(new Date(11,February,year));
@@ -88,7 +88,7 @@ public class TaiwanCalendarTest {
        	final int year = 2003;
     	QL.info("Testing " + Taiwan.Market.TSEC + " holidays list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
     	expectedHol.add(new Date(1,January,year));
     	expectedHol.add(new Date(31,January,year));
@@ -114,7 +114,7 @@ public class TaiwanCalendarTest {
        	final int year = 2004;
     	QL.info("Testing " + Taiwan.Market.TSEC + " holidays list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
     	expectedHol.add(new Date(1,January,year));
     	expectedHol.add(new Date(21,January,year));
@@ -136,7 +136,7 @@ public class TaiwanCalendarTest {
        	final int year = 2005;
     	QL.info("Testing " + Taiwan.Market.TSEC + " holidays list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
 //    	expectedHol.add(new Date(4,FEBRUARY,year));
     	expectedHol.add(new Date(7,February,year));
@@ -161,7 +161,7 @@ public class TaiwanCalendarTest {
        	final int year = 2006;
     	QL.info("Testing " + Taiwan.Market.TSEC + " holidays list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
     	expectedHol.add(new Date(30,January,year));
     	expectedHol.add(new Date(31,January,year));
@@ -187,7 +187,7 @@ public class TaiwanCalendarTest {
        	final int year = 2007;
     	QL.info("Testing " + Taiwan.Market.TSEC + " holidays list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
     	expectedHol.add(new Date(1,January,year));
     	expectedHol.add(new Date(19,February,year));
@@ -217,7 +217,7 @@ public class TaiwanCalendarTest {
        	final int year = 2008;
     	QL.info("Testing " + Taiwan.Market.TSEC + " holidays list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
     	expectedHol.add(new Date(1,January,year));
     	expectedHol.add(new Date(4,February,year));
@@ -243,7 +243,7 @@ public class TaiwanCalendarTest {
        	final int year = 2009;
     	QL.info("Testing " + Taiwan.Market.TSEC + " holidays list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
     	expectedHol.add(new Date(1,January,year));
     	expectedHol.add(new Date(1,May,year));
@@ -260,7 +260,7 @@ public class TaiwanCalendarTest {
        	final int year = 2010;
     	QL.info("Testing " + Taiwan.Market.TSEC + " holidays list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
     	expectedHol.add(new Date(1,January,year));
 
@@ -276,7 +276,7 @@ public class TaiwanCalendarTest {
        	final int year = 2011;
     	QL.info("Testing " + Taiwan.Market.TSEC + " holidays list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
     	expectedHol.add(new Date(28,February,year));
     	expectedHol.add(new Date(10,October,year));
@@ -293,7 +293,7 @@ public class TaiwanCalendarTest {
        	final int year = 2012;
     	QL.info("Testing " + Taiwan.Market.TSEC + " holidays list for the year " + year + "...");
         
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
     	expectedHol.add(new Date(28,February,year));
     	expectedHol.add(new Date(1,May,year));

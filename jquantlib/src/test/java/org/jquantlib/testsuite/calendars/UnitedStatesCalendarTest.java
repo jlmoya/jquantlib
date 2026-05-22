@@ -77,7 +77,7 @@ public class UnitedStatesCalendarTest {
         final int year = 2004;
         System.out.println("Testing " + UnitedStates.Market.NYSE + " holiday list for the year " + year + "...");
 
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // JANUARY 1 was a Thursday
         expectedHol.add(new Date(1, January, year));
@@ -118,7 +118,7 @@ public class UnitedStatesCalendarTest {
         final int year = 2005;
         System.out.println("Testing " + UnitedStates.Market.NYSE + " holiday list for the year " + year + "...");
 
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // JANUARY 1 was a Saturday
 
@@ -153,7 +153,7 @@ public class UnitedStatesCalendarTest {
         final int year = 2006;
         System.out.println("Testing " + UnitedStates.Market.NYSE + " holiday list for the year " + year + "...");
 
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // JANUARY 1 was a Sunday
         expectedHol.add(new Date(2, January, year));
@@ -188,7 +188,7 @@ public class UnitedStatesCalendarTest {
         final int year = 2007;
         System.out.println("Testing " + UnitedStates.Market.NYSE + " holiday list for the year " + year + "...");
 
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // JANUARY 1 was a Monday
         expectedHol.add(new Date(1, January, year));
@@ -224,7 +224,7 @@ public class UnitedStatesCalendarTest {
         final int year = 2008;
         System.out.println("Testing " + UnitedStates.Market.NYSE + " holiday list for the year " + year + "...");
 
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // JANUARY 1 was a Tuesday
         expectedHol.add(new Date(1, January, year));
@@ -260,7 +260,7 @@ public class UnitedStatesCalendarTest {
         final int year = 2009;
         System.out.println("Testing " + UnitedStates.Market.NYSE + " holiday list for the year " + year + "...");
 
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // JANUARY 1 will be a Wednesday
         expectedHol.add(new Date(1, January, year));
@@ -295,7 +295,7 @@ public class UnitedStatesCalendarTest {
         final int year = 2010;
         System.out.println("Testing " + UnitedStates.Market.NYSE + " holiday list for the year " + year + "...");
 
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // JANUARY 1 will be a Friday
         expectedHol.add(new Date(1, January, year));
@@ -330,7 +330,7 @@ public class UnitedStatesCalendarTest {
         final int year = 2004;
         System.out.println("Testing " + UnitedStates.Market.GOVERNMENTBOND + " holiday list for the year " + year + "...");
 
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // JANUARY 1 was a Thursday
         expectedHol.add(new Date(1, January, year));
@@ -368,7 +368,7 @@ public class UnitedStatesCalendarTest {
         final int year = 2005;
         System.out.println("Testing " + UnitedStates.Market.GOVERNMENTBOND + " holiday list for the year " + year + "...");
 
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // Martin Luther King's birthday, third Monday in JANUARY (since 1998)
         expectedHol.add(new Date(17, January, year));
@@ -404,7 +404,7 @@ public class UnitedStatesCalendarTest {
         final int year = 2006;
         System.out.println("Testing " + UnitedStates.Market.GOVERNMENTBOND + " holiday list for the year " + year + "...");
 
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // JANUARY 1 was a Sunday
         expectedHol.add(new Date(2, January, year));
@@ -442,7 +442,7 @@ public class UnitedStatesCalendarTest {
         final int year = 2007;
         System.out.println("Testing " + UnitedStates.Market.GOVERNMENTBOND + " holiday list for the year " + year + "...");
 
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // JANUARY 1 was a Monday
         expectedHol.add(new Date(1, January, year));
@@ -478,7 +478,7 @@ public class UnitedStatesCalendarTest {
         final int year = 2008;
         System.out.println("Testing " + UnitedStates.Market.GOVERNMENTBOND + " holiday list for the year " + year + "...");
 
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // JANUARY 1 was a Tuesday
         expectedHol.add(new Date(1, January, year));
@@ -518,7 +518,7 @@ public class UnitedStatesCalendarTest {
         final int year = 2009;
         System.out.println("Testing " + UnitedStates.Market.GOVERNMENTBOND + " holiday list for the year " + year + "...");
 
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // JANUARY 1 will be a Wednesday
         expectedHol.add(new Date(1, January, year));
@@ -556,7 +556,7 @@ public class UnitedStatesCalendarTest {
         final int year = 2010;
         System.out.println("Testing " + UnitedStates.Market.GOVERNMENTBOND + " holiday list for the year " + year + "...");
 
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // JANUARY 1 will be a Friday
         expectedHol.add(new Date(1, January, year));
@@ -595,7 +595,7 @@ public class UnitedStatesCalendarTest {
         final int year = 2004;
         System.out.println("Testing " + UnitedStates.Market.NERC + " holiday list for the year " + year + "...");
 
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // JANUARY 1 was a Thursday
         expectedHol.add(new Date(1, January, year));
@@ -622,7 +622,7 @@ public class UnitedStatesCalendarTest {
         final int year = 2005;
         System.out.println("Testing " + UnitedStates.Market.NERC + " holiday list for the year " + year + "...");
 
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // Memorial Day, last Monday in May
         expectedHol.add(new Date(30, May, year));
@@ -647,7 +647,7 @@ public class UnitedStatesCalendarTest {
         final int year = 2006;
         System.out.println("Testing " + UnitedStates.Market.NERC + " holiday list for the year " + year + "...");
 
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // JANUARY 1 was a Sunday
         expectedHol.add(new Date(2, January, year));
@@ -674,7 +674,7 @@ public class UnitedStatesCalendarTest {
         final int year = 2007;
         System.out.println("Testing " + UnitedStates.Market.NERC + " holiday list for the year " + year + "...");
 
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // JANUARY 1 was a Monday
         expectedHol.add(new Date(1, January, year));
@@ -701,7 +701,7 @@ public class UnitedStatesCalendarTest {
         final int year = 2008;
         System.out.println("Testing " + UnitedStates.Market.NERC + " holiday list for the year " + year + "...");
 
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // JANUARY 1 was a Tuesday
         expectedHol.add(new Date(1, January, year));
@@ -728,7 +728,7 @@ public class UnitedStatesCalendarTest {
         final int year = 2009;
         System.out.println("Testing " + UnitedStates.Market.NERC + " holiday list for the year " + year + "...");
 
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // JANUARY 1 will be a Wednesday
         expectedHol.add(new Date(1, January, year));
@@ -755,7 +755,7 @@ public class UnitedStatesCalendarTest {
         final int year = 2010;
         System.out.println("Testing " + UnitedStates.Market.NERC + " holiday list for the year " + year + "...");
 
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // JANUARY 1 will be a Friday
         expectedHol.add(new Date(1, January, year));
@@ -805,7 +805,7 @@ public class UnitedStatesCalendarTest {
         final int year = 2004;
         System.out.println("Testing " + UnitedStates.Market.SETTLEMENT + " holiday list for the year " + year + "...");
 
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // New Year's Day — January 1 was a Thursday
         expectedHol.add(new Date(1, January, year));
@@ -845,7 +845,7 @@ public class UnitedStatesCalendarTest {
         final int year = 2005;
         System.out.println("Testing " + UnitedStates.Market.SETTLEMENT + " holiday list for the year " + year + "...");
 
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // Martin Luther King's birthday, third Monday in JANUARY (since 1998)
         expectedHol.add(new Date(17, January, year));
@@ -879,7 +879,7 @@ public class UnitedStatesCalendarTest {
         final int year = 2006;
         System.out.println("Testing " + UnitedStates.Market.SETTLEMENT + " holiday list for the year " + year + "...");
 
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // JANUARY 1 was a Sunday
         expectedHol.add(new Date(2, January, year));
@@ -917,7 +917,7 @@ public class UnitedStatesCalendarTest {
         final int year = 2007;
         System.out.println("Testing " + UnitedStates.Market.SETTLEMENT + " holiday list for the year " + year + "...");
 
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // JANUARY 1 was a Monday
         expectedHol.add(new Date(1, January, year));
@@ -956,7 +956,7 @@ public class UnitedStatesCalendarTest {
         final int year = 2008;
         System.out.println("Testing " + UnitedStates.Market.SETTLEMENT + " holiday list for the year " + year + "...");
 
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // JANUARY 1 was a Tuesday
         expectedHol.add(new Date(1, January, year));
@@ -997,7 +997,7 @@ public class UnitedStatesCalendarTest {
         final int year = 2009;
         System.out.println("Testing " + UnitedStates.Market.SETTLEMENT + " holiday list for the year " + year + "...");
 
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // JANUARY 1 will be a Wednesday
         expectedHol.add(new Date(1, January, year));
@@ -1036,7 +1036,7 @@ public class UnitedStatesCalendarTest {
         final int year = 2010;
         System.out.println("Testing " + UnitedStates.Market.SETTLEMENT + " holiday list for the year " + year + "...");
 
-        final List<Date> expectedHol = new ArrayList<Date>();
+        final List<Date> expectedHol = new ArrayList<>();
 
         // JANUARY 1 will be a Friday
         expectedHol.add(new Date(1, January, year));
@@ -1138,7 +1138,7 @@ public class UnitedStatesCalendarTest {
 //	public void testUSSettlement() {
 //		QL.info("Testing US settlement holiday list...");
 //		final CalendarUtil cbt = new CalendarUtil();
-//	    final List<Date> expectedHol = new ArrayList<Date>();
+//	    final List<Date> expectedHol = new ArrayList<>();
 //	    int year = 2004;
 //
 //	    expectedHol.add(new Date(1, January,year));
@@ -1181,7 +1181,7 @@ public class UnitedStatesCalendarTest {
 //	    QL.info("Testing US government bond market holiday list...");
 //	    final CalendarUtil cbt = new CalendarUtil();
 //	    final int year = 2004;
-//	    final List<Date> expectedHol = new ArrayList<Date>();
+//	    final List<Date> expectedHol = new ArrayList<>();
 //	    expectedHol.add(new Date(1,January,year));
 //	    expectedHol.add(new Date(19,January,year));
 //	    expectedHol.add(new Date(16,February,year));
@@ -1205,7 +1205,7 @@ public class UnitedStatesCalendarTest {
 //
 //	    final CalendarUtil cbt = new CalendarUtil();
 //	    final Calendar c = new UnitedStates(UnitedStates.Market.NYSE);
-//	    final List<Date> expectedHol = new ArrayList<Date>();
+//	    final List<Date> expectedHol = new ArrayList<>();
 //
 //	    int year = 2004;
 //	    expectedHol.add(new Date(1,January,year));
@@ -1250,7 +1250,7 @@ public class UnitedStatesCalendarTest {
 //	    cbt.checkHolidayList(expectedHol, c, year);
 //
 //
-//	    final List<Date> histClose = new ArrayList<Date>();
+//	    final List<Date> histClose = new ArrayList<>();
 //	    histClose.add(new Date(11,June,2004));     // Reagan's funeral
 //	    histClose.add(new Date(14,September,2001));// September 11, 2001
 //	    histClose.add(new Date(13,September,2001));// September 11, 2001
@@ -1297,7 +1297,7 @@ public class UnitedStatesCalendarTest {
 //		final int year = 2004;
 //		QL.info("Testing United States holiday list for the year " + year + " as recognized by markets Frankfurt Stock Exchange, Xetra, Eurex ...");
 //
-//        final List<Date> expectedHol = new ArrayList<Date>();
+//        final List<Date> expectedHol = new ArrayList<>();
 //
 //		//new years day
 //		expectedHol.add(new Date(1,January,year));
@@ -1353,7 +1353,7 @@ public class UnitedStatesCalendarTest {
 //		final int year = 2005;
 //		QL.info("Testing United States holiday list for the year " + year + " as recognized by markets Frankfurt Stock Exchange, Xetra, Eurex ...");
 //
-//        final List<Date> expectedHol = new ArrayList<Date>();
+//        final List<Date> expectedHol = new ArrayList<>();
 //
 //		//new years day (following monday)
 //		//expectedHol.add(new Date(1,JANUARY,year));
@@ -1400,7 +1400,7 @@ public class UnitedStatesCalendarTest {
 //		final int year = 2006;
 //		QL.info("Testing United States holiday list for the year " + year + " as recognized by markets Frankfurt Stock Exchange, Xetra, Eurex ...");
 //
-//        final List<Date> expectedHol = new ArrayList<Date>();
+//        final List<Date> expectedHol = new ArrayList<>();
 //
 //		//new years day (following monday)
 //		expectedHol.add(new Date(2,January,year));
@@ -1447,7 +1447,7 @@ public class UnitedStatesCalendarTest {
 //		final int year = 2007;
 //		QL.info("Testing United States holiday list for the year " + year + " as recognized by markets Frankfurt Stock Exchange, Xetra, Eurex ...");
 //
-//        final List<Date> expectedHol = new ArrayList<Date>();
+//        final List<Date> expectedHol = new ArrayList<>();
 //
 //		//new years day
 //		expectedHol.add(new Date(1,January,year));
@@ -1501,7 +1501,7 @@ public class UnitedStatesCalendarTest {
 //		final int year = 2008;
 //		QL.info("Testing United States holiday list for the year " + year + " as recognized by markets Frankfurt Stock Exchange, Xetra, Eurex ...");
 //
-//        final List<Date> expectedHol = new ArrayList<Date>();
+//        final List<Date> expectedHol = new ArrayList<>();
 //
 //		//new years day
 //		expectedHol.add(new Date(1,January,year));
@@ -1548,7 +1548,7 @@ public class UnitedStatesCalendarTest {
 //		final int year = 2009;
 //		QL.info("Testing United States holiday list for the year " + year + " as recognized by markets Frankfurt Stock Exchange, Xetra, Eurex ...");
 //
-//        final List<Date> expectedHol = new ArrayList<Date>();
+//        final List<Date> expectedHol = new ArrayList<>();
 //
 //		//new years day
 //		expectedHol.add(new Date(1,January,year));
@@ -1594,7 +1594,7 @@ public class UnitedStatesCalendarTest {
 //		final int year = 2010;
 //		QL.info("Testing United States holiday list for the year " + year + " as recognized by markets Frankfurt Stock Exchange, Xetra, Eurex ...");
 //
-//        final List<Date> expectedHol = new ArrayList<Date>();
+//        final List<Date> expectedHol = new ArrayList<>();
 //
 //		//new years day
 //		expectedHol.add(new Date(1,January,year));
@@ -1644,7 +1644,7 @@ public class UnitedStatesCalendarTest {
 //		final int year = 2011;
 //		QL.info("Testing United States holiday list for the year " + year + " as recognized by markets Frankfurt Stock Exchange, Xetra, Eurex ...");
 //
-//        final List<Date> expectedHol = new ArrayList<Date>();
+//        final List<Date> expectedHol = new ArrayList<>();
 //
 //		//new years day
 //		//expectedHol.add(new Date(1,JANUARY,year));
@@ -1689,7 +1689,7 @@ public class UnitedStatesCalendarTest {
 //		final int year = 2012;
 //		QL.info("Testing United States holiday list for the year " + year + " as recognized by markets Frankfurt Stock Exchange, Xetra, Eurex ...");
 //
-//        final List<Date> expectedHol = new ArrayList<Date>();
+//        final List<Date> expectedHol = new ArrayList<>();
 //
 //		//new years day (following monday)
 //		expectedHol.add(new Date(2,January,year));
