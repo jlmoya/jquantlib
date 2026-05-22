@@ -228,6 +228,12 @@ public class PiecewiseZeroInflationCurveTest {
                 193.4, 194.2, 195.0, 196.5, 197.7, 198.5, 198.5, 199.2, 200.1, 200.4, 201.1, 202.7,
                 201.6, 203.1, 204.4, 205.4, 206.2, 207.3, 206.1
         };
+        // IndexManager static map persists across the test JVM — a prior test
+        // (e.g. InflationTest using UKRPI) may have already seeded these
+        // dates, triggering "duplicated fixing provided". Clear our own
+        // history before re-seeding to ensure a fresh state regardless of
+        // test ordering in the full suite.
+        ukRpi.clearFixings();
         for (int i = 0; i < dates.length; ++i) {
             ukRpi.addFixing(dates[i], vals[i]);
         }
