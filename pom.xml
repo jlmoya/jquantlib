@@ -1,0 +1,25 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.jquantlib</groupId>
+    <artifactId>jquantlib-aggregator</artifactId>
+    <version>1.0.0</version>
+    <packaging>pom</packaging>
+
+    <name>jquantlib (root reactor)</name>
+    <description>Repo-root aggregator. Lists jquantlib-parent, which in turn
+        aggregates all four code modules (jquantlib, jquantlib-contrib,
+        jquantlib-helpers, jquantlib-samples). This indirection lets `mvn`
+        invocations from the repo root see the full reactor while preserving the
+        existing `cd jquantlib-parent` workflow. This pom intentionally carries
+        no plugin or dependency config — all build configuration is inherited by
+        each module from jquantlib-parent.</description>
+
+    <modules>
+        <module>jquantlib-parent</module>
+    </modules>
+
+</project>
