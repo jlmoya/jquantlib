@@ -164,6 +164,7 @@ jquantlib/                              ← this repo root
 │   │   └── math/transcendental/       ← Phase 2i-2n (JQuantMath, ExpKernel, LogKernel, SinCosKernel, PowKernel, Dint64, Qint64)
 │   └── src/test/java/                 ← JUnit 4 tests cross-validated against probes
 ├── jquantlib-helpers/                  ← helper classes
+├── jquantlib-contrib/                  ← third-party contributions
 ├── jquantlib-samples/                  ← sample applications
 ├── jquantlib-parent/                   ← parent POM
 │
@@ -246,6 +247,7 @@ mvn clean verify install
 | `jquantlib-parent` | Parent POM for unified build |
 | `jquantlib` | Main module — actively being ported (mirrors QuantLib/C++) |
 | `jquantlib-helpers` | Helper classes |
+| `jquantlib-contrib` | Third-party contributions |
 | `jquantlib-samples` | Sample code |
 
 ## Contributing
