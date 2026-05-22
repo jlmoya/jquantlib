@@ -32,12 +32,10 @@
     <distributionManagement>
         <repository>
             <id>nexus-releases</id>
-            <!-- <url>http://localhost:8081/repository/maven-releases/</url> -->
             <url>http://localhost:7910/repository/maven-releases/</url>
         </repository>
         <snapshotRepository>
             <id>nexus-snapshots</id>
-            <!-- <url>http://localhost:8081/repository/maven-snapshots/</url> -->
             <url>http://localhost:7910/repository/maven-snapshots/</url>
         </snapshotRepository>
     </distributionManagement>
@@ -185,8 +183,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${maven-compiler-plugin.version}</version>
                 <configuration>
-                    <source>11</source>
-                    <target>11</target>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
                 </configuration>
             </plugin>
         </plugins>
