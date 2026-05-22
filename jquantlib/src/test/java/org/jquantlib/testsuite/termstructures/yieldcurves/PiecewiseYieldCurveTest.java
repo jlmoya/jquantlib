@@ -1283,16 +1283,21 @@ public class PiecewiseYieldCurveTest {
 	// The following tests are NOT ported; rationale documented per test below.
 	// Tracked for follow-up in Phase 2 / cert-yield-vanilla remediation.
 	//
-	// testConvexMonotoneForwardConsistency (cpp:770) — BLOCKED
-	//   Requires ConvexMonotone interpolator (org.jquantlib.math.interpolations
-	//   .ConvexMonotoneInterpolation), not yet ported to Java. See commented-out
-	//   placeholder above. Effort: ~600 LOC for ConvexMonotoneHelper +
-	//   ConvexMonotoneInterpolation + ConvexMonotone factory.
+	// testConvexMonotoneForwardConsistency (cpp:770) — PORTED in Phase1.3-D5-A-CM.
+	//   ConvexMonotone interpolator was ported in Phase 1.1-A-562; the test was
+	//   unblocked by un-commenting + re-annotating the placeholder body. See
+	//   @Test testConvexMonotoneForwardConsistency() above.
 	//
-	// testLocalBootstrapConsistency (cpp:781) — BLOCKED
-	//   Requires ConvexMonotone interpolator (see above) plus LocalBootstrap is
-	//   only partially wired in Java (the BlackOrBachelier flow). Effort:
-	//   blocked on ConvexMonotone.
+	// testLocalBootstrapConsistency (cpp:781) — BLOCKED (Phase 1.3 partial — D5-A scope)
+	//   Requires (1) ConvexMonotone.localInterpolate() — Java factory has only the
+	//   single-pass interpolate() variant; the local variant in cpp uses
+	//   getExistingHelpers() to incrementally extend the interpolation as more
+	//   pillars come in (~45 LOC factory + integration with
+	//   ConvexMonotoneInterpolation constructor that takes preExistingHelpers).
+	//   And (2) completion of the body of LocalBootstrap.calculate() (the cpp
+	//   loop currently lives in a FIXME-fenced commented block in
+	//   org.jquantlib.termstructures.LocalBootstrap.calculate()). Effort: ~200 LOC
+	//   total (factory + bootstrap loop + tests). Deferred to Phase 1.4.
 	//
 	// testDefaultInstantiation (cpp:1067) — PORTED in Phase1-closure-A7-B-562
 	//   See @Test testDefaultInstantiation() above. Required infra ports of
@@ -1321,7 +1326,15 @@ public class PiecewiseYieldCurveTest {
 	//   SimpleQuoteVariables + AdditionalBootstrapVariables wiring into
 	//   GlobalBootstrap, plus FuturesConvAdjustmentQuote.
 	//
-	// testMultiCurveTwoPiecewiseYieldCurves (cpp:1545) — BLOCKED
+	// testMultiCurveTwoPiecewiseYieldCurves (cpp:1545) — PORTED in Phase1.3-D5-A-MC2.
+	//   See @Test testMultiCurveTwoPiecewiseYieldCurves() below. The required
+	//   LazyObject.updating_ re-entry guard was already in place; the test wires
+	//   the full IborIborBasisSwapRateHelper + MultiCurve coordinator chain at
+	//   1e-10 tolerance.
+	//
+	// DEPRECATED audit notes preserved below (for traceability):
+	//
+	// _DEPRECATED_testMultiCurveTwoPiecewiseYieldCurves (cpp:1545) — was BLOCKED
 	//   Audit (Phase1-closure-A7-H-562): besides the GlobalBootstrap split,
 	//   this requires the full MultiCurve coordinator family — none of
 	//   which is in Java today:
@@ -1361,7 +1374,20 @@ public class PiecewiseYieldCurveTest {
 	//   shared-ownership semantics on top of the ~800 LOC GlobalBootstrap-
 	//   for-yield port already pending. Out of scope for a single sub-task.
 	//
-	// testMultiCurvePiecewiseYieldCurveAndSpreadedCurve (cpp:1684) — BLOCKED
+	// testMultiCurvePiecewiseYieldCurveAndSpreadedCurve (cpp:1684) — PORTED in Phase1.3-D5-A-MCSpread.
+	//   See @Test testMultiCurvePiecewiseYieldCurveAndSpreadedCurve() below.
+	//   Required: (1) port C++ LazyObject::setCalculated(bool) → added to Java
+	//   LazyObject; (2) call ts.setCalculated(true) in GlobalBootstrap.setupCostFunction
+	//   mirroring cpp:globalbootstrap.hpp:324; (3) re-arm setCalculated(true) on
+	//   every contributor's curve after o.update() in MultiCurveBootstrap.values()
+	//   because the observer cascade through MultiCurve.update() flips calculated
+	//   to false (this is more aggressive than the C++ pattern, which is a sufficient
+	//   adaptation for Java's observer model). All three landed in
+	//   Phase1.3-D5-A-MCSpread infra commit.
+	//
+	// DEPRECATED audit notes preserved below (for traceability):
+	//
+	// _DEPRECATED_testMultiCurvePiecewiseYieldCurveAndSpreadedCurve (cpp:1684) — was BLOCKED
 	//   Audit (Phase1.2-A1): the MultiCurve infrastructure is now in place
 	//   (Phase1.1-A2-MC family), and the SwapRateHelper(rate, ..., discountingCurve)
 	//   overload has been ported (Phase1.2-A1-SRH commit) so the test body can be
@@ -1397,7 +1423,22 @@ public class PiecewiseYieldCurveTest {
 	//   align(GlobalBootstrap) commit to remove two non-upstream defensive guards
 	//   (post-minimize residual check + !alive.isEmpty() assertion).
 	//
-	// testPiecewiseSpreadYieldCurve (cpp:1895) — BLOCKED
+	// testPiecewiseSpreadYieldCurve (cpp:1895) — BLOCKED (Phase 1.3 partial — D5-A scope)
+	//   Re-audited in Phase1.3-D5-A: scope of new infra is unchanged. ~270 LOC
+	//   of new infra needed: SpreadBootstrapTraits<Discount> (~30 LOC),
+	//   InterpolatedSpreadDiscountCurve<Interpolator> (~230 LOC, spreaddiscountcurve.hpp
+	//   mirror — extends YieldTermStructure + InterpolatedCurve, multiplies a base
+	//   discount factor by an interpolated spread), PiecewiseSpreadYieldCurve
+	//   wrapper (~10 LOC). Plus integration of the new traits class into
+	//   PiecewiseYieldCurve.constructBaseClass() switch and IsAssignableFrom
+	//   routing. Deferred to Phase 1.4. NB: GlobalBootstrap-for-yield
+	//   prerequisite is now in place (Phase1.1-A-562), so the cpp testfn calling
+	//   testPiecewiseSpreadYieldCurveImpl<GlobalBootstrap>() second is unblocked
+	//   modulo the Spread infra. The dependency is *only* on the Spread classes.
+	//
+	// DEPRECATED audit notes preserved below (for traceability):
+	//
+	// _DEPRECATED_testPiecewiseSpreadYieldCurve (cpp:1895) — was BLOCKED
 	//   Audit (Phase1-closure-A7-H-562): Java has no PiecewiseSpreadYieldCurve.
 	//   The C++ class (ql/termstructures/yield/piecewisespreadyieldcurve.hpp,
 	//   38 LOC) is a thin template wrapper:
