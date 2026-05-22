@@ -104,11 +104,11 @@ public class YoYOptionletHelper extends BootstrapHelper< YoYOptionletVolatilityS
         // that fix the capfloor
         final CashFlow firstCF = yoyCapFloor_.yoyLeg().get(0);
         final CashFlow lastCF = yoyCapFloor_.yoyLeg().get(yoyCapFloor_.yoyLeg().size() - 1);
-        if ( firstCF instanceof YoYInflationCoupon ) {
-            this.earliestDate = ((YoYInflationCoupon) firstCF).fixingDate();
+        if (firstCF instanceof YoYInflationCoupon yic) {
+            this.earliestDate = yic.fixingDate();
         }
-        if ( lastCF instanceof YoYInflationCoupon ) {
-            this.latestDate = ((YoYInflationCoupon) lastCF).fixingDate();
+        if (lastCF instanceof YoYInflationCoupon yic) {
+            this.latestDate = yic.fixingDate();
         }
 
         // Each reprice resets the inflation surface in the pricer ...
