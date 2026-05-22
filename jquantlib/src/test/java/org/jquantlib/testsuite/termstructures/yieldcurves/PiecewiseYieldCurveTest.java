@@ -802,34 +802,22 @@ public class PiecewiseYieldCurveTest {
 	// Cubic spline + ForwardRate is intrinsically unstable per upstream QuantLib; C++ commented this test out and
 	// never resurrected it. Deleted in JQuantLib to match upstream removal (Phase 5e.5b-CFC-d-198).
 
-//	@Ignore
-//	@Test
-//	public void testConvexMonotoneForwardConsistency() {
-//	    QL.info("Testing consistency of convex monotone forward-rate curve...");
-//
-//	    CommonVars vars = new CommonVars();
-//	    
-//	    testCurveConsistency(ForwardRate.class, ConvexMonotone.class, IterativeBootstrap.class, vars);
-//	    testBMACurveConsistency(ForwardRate.class, ConvexMonotone.class, IterativeBootstrap.class, vars);
-//	}
+	/**
+	 * Faithful port of C++ {@code test-suite/piecewiseyieldcurve.cpp:770}
+	 * {@code BOOST_AUTO_TEST_CASE(testConvexMonotoneForwardConsistency)}.
+	 * <p>Phase 1.3 closure (D5-A): unblocked once {@link ConvexMonotone} factory and
+	 * {@link org.jquantlib.math.interpolations.ConvexMonotoneInterpolation} were
+	 * ported in Phase 1.1-A-562 family.
+	 */
+	@Test
+	public void testConvexMonotoneForwardConsistency() {
+	    QL.info("Testing consistency of convex monotone forward-rate curve...");
 
+	    CommonVars vars = new CommonVars();
 
-//	@Ignore
-//	@Test
-//	public void testLocalBootstrapConsistency() {
-//	    QL.info("Testing consistency of local-bootstrap algorithm...");
-//
-//	    final CommonVars vars = new CommonVars();
-//	    
-//	    testCurveConsistency(
-//	    		ForwardRate.class, ConvexMonotone.class, LocalBootstrap.class, 
-//	            vars, 
-//	            new ConvexMonotone(), 1.0e-7);
-//	    testBMACurveConsistency(
-//	    		ForwardRate.class, ConvexMonotone.class, LocalBootstrap.class, 
-//	            vars, 
-//	            new ConvexMonotone(), 1.0e-7);
-//	}
+	    testCurveConsistency(ForwardRate.class, ConvexMonotone.class, IterativeBootstrap.class, vars);
+	    testBMACurveConsistency(ForwardRate.class, ConvexMonotone.class, IterativeBootstrap.class, vars);
+	}
 
 
 	@Test
