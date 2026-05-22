@@ -268,8 +268,8 @@ public class CallableBond extends Bond {
         final Leg cfs = cashflows();
         final CashFlow redemptionCf = redemption();
 
-        arguments.couponDates = new ArrayList< Date >();
-        arguments.couponAmounts = new ArrayList< Double >();
+        arguments.couponDates = new ArrayList<>();
+        arguments.couponAmounts = new ArrayList<>();
 
         // C++ skips cashflows.size()-1 (i.e. excludes the last) on the
         // assumption that the redemption is the last cash flow. JQuantLib's
@@ -292,8 +292,8 @@ public class CallableBond extends Bond {
             }
         }
 
-        arguments.callabilityPrices = new ArrayList< Double >();
-        arguments.callabilityDates = new ArrayList< Date >();
+        arguments.callabilityPrices = new ArrayList<>();
+        arguments.callabilityDates = new ArrayList<>();
 
         arguments.paymentDayCounter = paymentDayCounter_;
         arguments.frequency = frequency_;

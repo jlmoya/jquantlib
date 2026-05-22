@@ -76,7 +76,7 @@ public class HestonSLVMCModel extends LazyObject {
 
     public HestonSLVMCModel(final Handle< LocalVolTermStructure > localVol, final Handle< HestonModel > hestonModel,
             final BrownianGeneratorFactory brownianGeneratorFactory, final Date endDate) {
-        this(localVol, hestonModel, brownianGeneratorFactory, endDate, 365, 201, 1 << 15, new ArrayList< Date >(), 1.0);
+        this(localVol, hestonModel, brownianGeneratorFactory, endDate, 365, 201, 1 << 15, new ArrayList<>(), 1.0);
     }
 
     public HestonSLVMCModel(final Handle< LocalVolTermStructure > localVol, final Handle< HestonModel > hestonModel,
@@ -90,8 +90,8 @@ public class HestonSLVMCModel extends LazyObject {
         this.nBins = nBins;
         this.calibrationPaths = calibrationPaths;
         this.mandatoryDates = (mandatoryDates != null)
-                ? new ArrayList< Date >(mandatoryDates)
-                : new ArrayList< Date >();
+                ? new ArrayList<>(mandatoryDates)
+                : new ArrayList<>();
         this.mixingFactor = mixingFactor;
 
         if ( !hestonModel.empty() )
@@ -105,7 +105,7 @@ public class HestonSLVMCModel extends LazyObject {
         final DayCounter dc = proc.riskFreeRate().currentLink().dayCounter();
         final Date refDate = proc.riskFreeRate().currentLink().referenceDate();
 
-        final List< Double > gridTimes = new ArrayList< Double >(this.mandatoryDates.size() + 1);
+        final List< Double > gridTimes = new ArrayList<>(this.mandatoryDates.size() + 1);
         for ( final Date d : this.mandatoryDates ) {
             gridTimes.add(Double.valueOf(dc.yearFraction(refDate, d)));
         }
@@ -143,7 +143,7 @@ public class HestonSLVMCModel extends LazyObject {
 
         // Allocate leverage matrix and per-time strike vectors.
         final Matrix L = new Matrix(nBins, timeGrid.size());
-        final List< double[] > vStrikes = new ArrayList< double[] >(timeGrid.size());
+        final List< double[] > vStrikes = new ArrayList<>(timeGrid.size());
 
         // Strikes initially: spot ± dx*nBins/2 with dx = spot * sqrt(eps).
         for ( int i = 0; i < timeGrid.size(); ++i ) {

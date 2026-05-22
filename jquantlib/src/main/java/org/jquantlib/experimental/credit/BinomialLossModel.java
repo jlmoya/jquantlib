@@ -276,7 +276,7 @@ public class BinomialLossModel< P extends CopulaPolicy > extends DefaultLossMode
 
     @Override
     public Map< Double, Double > lossDistribution(final Date d) {
-        final TreeMap< Double, Double > dist = new TreeMap<>();
+        final var dist = new TreeMap< Double, Double >();
         final double[] lossPts = lossPoints(d);
         final double[] values = expectedDistribution(d);
         double sum = 0.0;
@@ -289,7 +289,7 @@ public class BinomialLossModel< P extends CopulaPolicy > extends DefaultLossMode
 
     @Override
     public double percentile(final Date d, final double perc) {
-        final TreeMap< Double, Double > dist = new TreeMap<>(lossDistribution(d));
+        final var dist = new TreeMap< Double, Double >(lossDistribution(d));
         final Map.Entry< Double, Double > first = dist.firstEntry();
         if ( first.getValue() >= perc ) {
             return first.getKey();
@@ -323,7 +323,7 @@ public class BinomialLossModel< P extends CopulaPolicy > extends DefaultLossMode
         if ( d.equals(new Settings().evaluationDate()) ) {
             return 0.0;
         }
-        final TreeMap< Double, Double > dist = new TreeMap<>(lossDistribution(d));
+        final var dist = new TreeMap< Double, Double >(lossDistribution(d));
         final Iterator< Map.Entry< Double, Double > > it = dist.entrySet().iterator();
         Map.Entry< Double, Double > cur = null;
         Map.Entry< Double, Double > prev = null;

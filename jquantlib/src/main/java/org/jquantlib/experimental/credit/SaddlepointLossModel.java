@@ -844,7 +844,7 @@ public class SaddlepointLossModel< P extends CopulaPolicy > extends DefaultLossM
      */
     @Override
     public Map< Double, Double > lossDistribution(final Date d) {
-        final TreeMap< Double, Double > distrib = new TreeMap<>();
+        final var distrib = new TreeMap< Double, Double >();
         final double numPts = 500.0;
         for ( double lossFraction = 1.0 / numPts; lossFraction < 0.45; lossFraction += 1.0 / numPts ) {
             final double absLoss = lossFraction * remainingNotional_;

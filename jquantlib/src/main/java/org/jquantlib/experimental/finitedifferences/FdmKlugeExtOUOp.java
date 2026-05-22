@@ -181,7 +181,7 @@ public class FdmKlugeExtOUOp implements FdmLinearOpComposite {
     public List<Matrix> toMatrixDecomp() {
         final List<Matrix> klugeDecomp = klugeOp_.toMatrixDecomp();
         // klugeDecomp = [ouMatX, dyMatY, integroMixed]
-        final List<Matrix> ret = new ArrayList<Matrix>(4);
+        final List<Matrix> ret = new ArrayList<>(4);
         ret.add(klugeDecomp.get(0));                       // X
         ret.add(klugeDecomp.get(1));                       // Y
         ret.add(ouOp_.toMatrixDecomp().get(0));            // U
@@ -203,7 +203,7 @@ public class FdmKlugeExtOUOp implements FdmLinearOpComposite {
     @Override
     public List<SparseMatrix> toSparseMatrixDecomp() {
         final List<SparseMatrix> klugeDecomp = klugeOp_.toSparseMatrixDecomp();
-        final List<SparseMatrix> ret = new ArrayList<SparseMatrix>(4);
+        final List<SparseMatrix> ret = new ArrayList<>(4);
         ret.add(klugeDecomp.get(0));                              // X
         ret.add(klugeDecomp.get(1));                              // Y
         ret.add(ouOp_.toSparseMatrixDecomp().get(0));             // U

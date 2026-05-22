@@ -107,7 +107,7 @@ public final class UnitOfMeasureConversionManager {
             return UnitOfMeasureConversion.chain(lookup(commodityType, source, link),
                     directLookup(commodityType, link, target));
         }
-        return smartLookup(commodityType, source, target, new ArrayList< String >());
+        return smartLookup(commodityType, source, target, new ArrayList<>());
     }
 
     // ---- match helpers ----

@@ -204,7 +204,7 @@ public class FdSimpleKlugeExtOUVPPEngine
                 swingExercise.exerciseTimes(rTS_.dayCounter(),
                                             rTS_.referenceDate());
         final List<Double> exerciseTimes =
-                new ArrayList<Double>(exerciseTimesArr.length);
+                new ArrayList<>(exerciseTimesArr.length);
         for (final double t : exerciseTimesArr) {
             exerciseTimes.add(t);
         }
@@ -265,7 +265,7 @@ public class FdSimpleKlugeExtOUVPPEngine
         // 4. Step conditions.
         final FdmStepConditionComposite.Conditions stepConditions =
                 new FdmStepConditionComposite.Conditions();
-        final List<List<Double>> stoppingTimes = new ArrayList<List<Double>>();
+        final List<List<Double>> stoppingTimes = new ArrayList<>();
 
         // 4.1 Bermudan-exercise step condition.
         stoppingTimes.add(exerciseTimes);

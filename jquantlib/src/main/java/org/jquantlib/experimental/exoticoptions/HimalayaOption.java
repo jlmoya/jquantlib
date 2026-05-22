@@ -68,7 +68,7 @@ public class HimalayaOption extends MultiAssetOption {
         super(new PlainVanillaPayoff(Option.Type.Call, strike),
                 new EuropeanExercise(fixingDates.get(fixingDates.size() - 1)));
         // defensive copy to mirror C++ store-by-value semantics
-        this.fixingDates_ = new ArrayList< Date >(fixingDates);
+        this.fixingDates_ = new ArrayList<>(fixingDates);
     }
 
     @Override
@@ -78,7 +78,7 @@ public class HimalayaOption extends MultiAssetOption {
         QL.require(HimalayaOption.ArgumentsImpl.class.isAssignableFrom(args.getClass()),
                 ReflectConstants.WRONG_ARGUMENT_TYPE);
         final HimalayaOption.ArgumentsImpl arguments = (HimalayaOption.ArgumentsImpl) args;
-        arguments.fixingDates = new ArrayList< Date >(fixingDates_);
+        arguments.fixingDates = new ArrayList<>(fixingDates_);
     }
 
     //

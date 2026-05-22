@@ -96,7 +96,7 @@ public class MCPagodaEngine extends PagodaOption.EngineImpl {
      */
     protected TimeGrid timeGrid() {
         final PagodaOption.ArgumentsImpl a = arguments_;
-        final List< Double > fixingTimes = new ArrayList< Double >(a.fixingDates.size());
+        final List< Double > fixingTimes = new ArrayList<>(a.fixingDates.size());
         double prev = -1.0;
         for ( int i = 0; i < a.fixingDates.size(); i++ ) {
             final Date d = a.fixingDates.get(i);

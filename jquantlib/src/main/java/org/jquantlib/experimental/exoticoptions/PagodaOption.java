@@ -65,7 +65,7 @@ public class PagodaOption extends MultiAssetOption {
     public PagodaOption(final List< Date > fixingDates, final double roof, final double fraction) {
         super(new NullPayoff(), new EuropeanExercise(fixingDates.get(fixingDates.size() - 1)));
         // defensive copy mirroring C++ store-by-value semantics
-        this.fixingDates_ = new ArrayList< Date >(fixingDates);
+        this.fixingDates_ = new ArrayList<>(fixingDates);
         this.roof_ = roof;
         this.fraction_ = fraction;
     }
@@ -77,7 +77,7 @@ public class PagodaOption extends MultiAssetOption {
         QL.require(PagodaOption.ArgumentsImpl.class.isAssignableFrom(args.getClass()),
                 ReflectConstants.WRONG_ARGUMENT_TYPE);
         final PagodaOption.ArgumentsImpl arguments = (PagodaOption.ArgumentsImpl) args;
-        arguments.fixingDates = new ArrayList< Date >(fixingDates_);
+        arguments.fixingDates = new ArrayList<>(fixingDates_);
         arguments.roof = roof_;
         arguments.fraction = fraction_;
     }

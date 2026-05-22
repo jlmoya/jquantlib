@@ -387,7 +387,7 @@ public class InterpolatedYoYCapFloorTermPriceSurface< I2D extends Interpolation2
         for ( long i = 1; i <= nYears; i++ ) {
             final Date maturity = nominalTS_.currentLink().referenceDate().add(new Period((int) i, TimeUnit.Years));
             final Quote sq = new SimpleQuote(atmYoYSwapRate(maturity, true));
-            final Handle< Quote > quote = new Handle<>(sq);
+            final var quote = new Handle< Quote >(sq);
             // Pass the surface's nominal yield handle to the helper so the
             // internal YYIIS discounts with the real InterpolatedZeroCurve
             // rather than the helper's FlatForward(0) fallback. Mirrors C++
@@ -405,7 +405,7 @@ public class InterpolatedYoYCapFloorTermPriceSurface< I2D extends Interpolation2
 
         final double baseYoYRate = atmYoYSwapRate(referenceDate(), true);
 
-        final PiecewiseYoYInflationCurve< Linear > pYITS = new PiecewiseYoYInflationCurve<>(Linear.class,
+        final var pYITS = new PiecewiseYoYInflationCurve< Linear >(Linear.class,
                 nominalTS_.currentLink().referenceDate(), baseDate, baseYoYRate, yoyIndex_.frequency(), dayCounter(),
                 yyHelpers);
         // Force lazy bootstrap to run now (mirrors C++ pYITS->recalculate()).

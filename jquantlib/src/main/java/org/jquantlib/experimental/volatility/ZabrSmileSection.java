@@ -166,7 +166,7 @@ public class ZabrSmileSection extends SmileSection {
         // ----- init() — strike grid (zabrsmilesection.hpp lines 154-195)
         final double[] tmp = (moneyness == null || moneyness.length == 0) ? DEFAULT_MONEYNESS : moneyness;
 
-        final List< Double > strikesList = new ArrayList< Double >();
+        final List< Double > strikesList = new ArrayList<>();
         double lastF = 0.0;
         boolean firstStrike = true;
         for ( final double i : tmp ) {

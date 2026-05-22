@@ -98,7 +98,7 @@ public class IrregularSwap extends Swap {
         }
 
         // Fixed leg (index 0)
-        final List< Leg > legList = new ArrayList< Leg >();
+        final List< Leg > legList = new ArrayList<>();
         legList.add(fixLeg);
         legList.add(floatLeg);
         this.legs = legList;

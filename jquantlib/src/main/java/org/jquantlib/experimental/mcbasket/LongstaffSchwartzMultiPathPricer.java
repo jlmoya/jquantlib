@@ -76,7 +76,7 @@ public class LongstaffSchwartzMultiPathPricer extends PathPricer< Object > {
     protected final List< Handle< YieldTermStructure > > forwardTermStructures_;
     protected final Array dF_;
     /** Calibration-time storage of per-path information. */
-    protected final List< PathInfo > paths_ = new ArrayList< PathInfo >();
+    protected final List< PathInfo > paths_ = new ArrayList<>();
     protected final int polynomialOrder_;
     protected final PolynomialType polynomialType_;
     protected boolean calibrationPhase_ = true;
@@ -148,7 +148,7 @@ public class LongstaffSchwartzMultiPathPricer extends PathPricer< Object > {
         public PathInfo(final int numberOfTimes) {
             this.payments = new Array(numberOfTimes);
             this.exercises = new Array(numberOfTimes);
-            this.states = new ArrayList< Array >(numberOfTimes);
+            this.states = new ArrayList<>(numberOfTimes);
             for ( int i = 0; i < numberOfTimes; ++i ) {
                 states.add(new Array(0));
             }

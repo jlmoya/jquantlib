@@ -127,7 +127,7 @@ public class FdSimpleExtOUJumpSwingEngine
 
         // 2. Mesher
         final double[] exTimesArr = swingExercise.exerciseTimes(rTS_.dayCounter(), rTS_.referenceDate());
-        final List< Double > exerciseTimes = new ArrayList< Double >(exTimesArr.length);
+        final List< Double > exerciseTimes = new ArrayList<>(exTimesArr.length);
         for ( final double t : exTimesArr ) {
             exerciseTimes.add(t);
         }
@@ -150,7 +150,7 @@ public class FdSimpleExtOUJumpSwingEngine
         final FdmInnerValueCalculator calculator = new FdmZeroInnerValue();
 
         // 4. Step conditions — Bermudan-style swing on axis 2.
-        final List< List< Double > > stoppingTimes = new ArrayList< List< Double > >();
+        final List< List< Double > > stoppingTimes = new ArrayList<>();
         stoppingTimes.add(exerciseTimes);
 
         final FdmInnerValueCalculator exerciseCalculator = new FdmExtOUJumpModelInnerValue(a.payoff, mesher, shape_);

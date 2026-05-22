@@ -84,7 +84,7 @@ public abstract class FFTEngine extends VanillaOption.EngineImpl {
     /**
      * Cached precomputed prices, keyed first by expiry date then by payoff identity. Mirrors C++ {@code resultMap_}.
      */
-    private final Map< Date, Map< StrikedTypePayoff, Double > > resultMap_ = new HashMap< Date, Map< StrikedTypePayoff, Double > >();
+    private final Map< Date, Map< StrikedTypePayoff, Double > > resultMap_ = new HashMap<>();
 
     protected FFTEngine(final StochasticProcess1D process, final double logStrikeSpacing) {
         super();
@@ -149,7 +149,7 @@ public abstract class FFTEngine extends VanillaOption.EngineImpl {
      */
     protected void calculateUncached(final StrikedTypePayoff payoff, final Exercise exercise) {
         final VanillaOption option = new VanillaOption(payoff, exercise);
-        final List< Instrument > optionList = new ArrayList< Instrument >(1);
+        final List< Instrument > optionList = new ArrayList<>(1);
         optionList.add(option);
 
         final FFTEngine tempEngine = clone1();
@@ -169,7 +169,7 @@ public abstract class FFTEngine extends VanillaOption.EngineImpl {
         // Group payoffs by expiry date.
         resultMap_.clear();
 
-        final Map< Date, List< StrikedTypePayoff > > payoffMap = new HashMap< Date, List< StrikedTypePayoff > >();
+        final Map< Date, List< StrikedTypePayoff > > payoffMap = new HashMap<>();
 
         for ( final Instrument inst : optionList ) {
             QL.require(inst instanceof VanillaOption, "instrument must be option");
@@ -180,7 +180,7 @@ public abstract class FFTEngine extends VanillaOption.EngineImpl {
             final Date expiry = option.exercise().lastDate();
             List< StrikedTypePayoff > bucket = payoffMap.get(expiry);
             if ( bucket == null ) {
-                bucket = new ArrayList< StrikedTypePayoff >();
+                bucket = new ArrayList<>();
                 payoffMap.put(expiry, bucket);
             }
             bucket.add(payoff);
@@ -258,7 +258,7 @@ public abstract class FFTEngine extends VanillaOption.EngineImpl {
             // damping (Carr-Madan) — and convert call -> put via parity
             // when needed: P = C - S0 * div + K * df.
             final LinearInterpolation interp = new LinearInterpolation(new Array(strikes), new Array(prices));
-            final Map< StrikedTypePayoff, Double > bucket = new HashMap< StrikedTypePayoff, Double >();
+            final Map< StrikedTypePayoff, Double > bucket = new HashMap<>();
             for ( final StrikedTypePayoff p : payoffs ) {
                 final double callPrice = interp.op(p.strike());
                 final double price;

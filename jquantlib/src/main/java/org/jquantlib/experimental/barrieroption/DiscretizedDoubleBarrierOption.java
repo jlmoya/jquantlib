@@ -76,7 +76,7 @@ public class DiscretizedDoubleBarrierOption extends DiscretizedAsset {
         QL.require(!arguments_.exercise.dates().isEmpty(), "specify at least one stopping date");
 
         final int n = arguments_.exercise.dates().size();
-        this.stoppingTimes_ = new ArrayList< Double >(n);
+        this.stoppingTimes_ = new ArrayList<>(n);
         for ( int i = 0; i < n; ++i ) {
             double t = process.time(arguments_.exercise.date(i));
             if ( !grid.empty() ) {

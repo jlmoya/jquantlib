@@ -143,7 +143,7 @@ public class YoYOptionletHelper extends BootstrapHelper< YoYOptionletVolatilityS
         // Wrap the surface in a Handle and reset the vol on the pricer.
         // The C++ uses null_deleter (own=false) because the helper owns
         // the lifecycle; Java GC handles this naturally.
-        final Handle< YoYOptionletVolatilitySurface > volSurf = new Handle<>(v);
+        final var volSurf = new Handle< YoYOptionletVolatilitySurface >(v);
         pricer_.setVolatility(volSurf);
     }
 }

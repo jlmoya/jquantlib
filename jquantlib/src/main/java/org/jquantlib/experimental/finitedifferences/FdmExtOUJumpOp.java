@@ -233,7 +233,7 @@ public class FdmExtOUJumpOp implements FdmLinearOpComposite {
         QL.require(bcSet_ == null || bcSet_.size() == 0,
                 "boundary conditions are not supported");
 
-        final List<Matrix> ret = new ArrayList<Matrix>(3);
+        final List<Matrix> ret = new ArrayList<>(3);
         ret.add(ouOp_.toMatrixDecomp().get(0));
         ret.add(dyMap_.toMatrix());
         // Convert sparse integro to dense to satisfy the dense-decomp contract.
@@ -267,7 +267,7 @@ public class FdmExtOUJumpOp implements FdmLinearOpComposite {
         QL.require(bcSet_ == null || bcSet_.size() == 0,
                 "boundary conditions are not supported");
 
-        final List<SparseMatrix> ret = new ArrayList<SparseMatrix>(3);
+        final List<SparseMatrix> ret = new ArrayList<>(3);
         ret.add(ouOp_.toSparseMatrixDecomp().get(0));
         ret.add(dyMap_.toSparseMatrix());
         ret.add(integroPart_);

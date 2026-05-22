@@ -274,7 +274,7 @@ public class DiscountingPerpetualFuturesEngine extends PerpetualFutures.EngineIm
 
         } else {
             // ---------- continuous-time case ----------
-            final TrapezoidIntegral< TrapezoidIntegral.Default > integrator = new TrapezoidIntegral<>(
+            final var integrator = new TrapezoidIntegral< TrapezoidIntegral.Default >(
                     TrapezoidIntegral.Default.class, 1.0e-6, 30);
             final double fundingRateXMax = fundingRateInterp.xMax();
 

@@ -44,7 +44,7 @@ public class DiscretizedCallableFixedRateBond extends DiscretizedAsset {
     public DiscretizedCallableFixedRateBond(final CallableBondArgumentsImpl args,
             final Handle< YieldTermStructure > termStructure) {
         this.arguments_ = args;
-        this.adjustedCallabilityPrices_ = new ArrayList< Double >(args.callabilityPrices);
+        this.adjustedCallabilityPrices_ = new ArrayList<>(args.callabilityPrices);
 
         final org.jquantlib.daycounters.DayCounter dc = termStructure.currentLink().dayCounter();
         final Date referenceDate = termStructure.currentLink().referenceDate();
@@ -57,12 +57,12 @@ public class DiscretizedCallableFixedRateBond extends DiscretizedAsset {
             couponAdjustments_[i] = CouponAdjustment.post;
         }
 
-        this.couponTimes_ = new ArrayList< Double >(args.couponDates.size());
+        this.couponTimes_ = new ArrayList<>(args.couponDates.size());
         for ( int i = 0; i < args.couponDates.size(); i++ ) {
             couponTimes_.add(dc.yearFraction(referenceDate, args.couponDates.get(i)));
         }
 
-        this.callabilityTimes_ = new ArrayList< Double >(args.callabilityDates.size());
+        this.callabilityTimes_ = new ArrayList<>(args.callabilityDates.size());
         for ( int i = 0; i < args.callabilityDates.size(); i++ ) {
             final Date callabilityDate = args.callabilityDates.get(i);
             double callabilityTime = dc.yearFraction(referenceDate, callabilityDate);
@@ -125,7 +125,7 @@ public class DiscretizedCallableFixedRateBond extends DiscretizedAsset {
 
     @Override
     public List< Double > mandatoryTimes() {
-        final List< Double > times = new ArrayList< Double >();
+        final List< Double > times = new ArrayList<>();
         if ( redemptionTime_ >= 0.0 ) {
             times.add(redemptionTime_);
         }

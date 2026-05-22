@@ -77,17 +77,17 @@ public class HestonSLVFDMModel extends LazyObject {
     private final List< Date > mandatoryDates;
     private final double mixingFactor;
     private final boolean logging;
-    private final List< LogEntry > logEntries = new ArrayList< LogEntry >();
+    private final List< LogEntry > logEntries = new ArrayList<>();
     private LocalVolTermStructure leverageFunction;
 
     public HestonSLVFDMModel(final Handle< LocalVolTermStructure > localVol, final Handle< HestonModel > hestonModel,
             final Date endDate, final HestonSLVFokkerPlanckFdmParams params) {
-        this(localVol, hestonModel, endDate, params, false, new ArrayList< Date >(), 1.0);
+        this(localVol, hestonModel, endDate, params, false, new ArrayList<>(), 1.0);
     }
 
     public HestonSLVFDMModel(final Handle< LocalVolTermStructure > localVol, final Handle< HestonModel > hestonModel,
             final Date endDate, final HestonSLVFokkerPlanckFdmParams params, final boolean logging) {
-        this(localVol, hestonModel, endDate, params, logging, new ArrayList< Date >(), 1.0);
+        this(localVol, hestonModel, endDate, params, logging, new ArrayList<>(), 1.0);
     }
 
     public HestonSLVFDMModel(final Handle< LocalVolTermStructure > localVol, final Handle< HestonModel > hestonModel,
@@ -99,8 +99,8 @@ public class HestonSLVFDMModel extends LazyObject {
         this.params = params;
         this.logging = logging;
         this.mandatoryDates = (mandatoryDates != null)
-                ? new ArrayList< Date >(mandatoryDates)
-                : new ArrayList< Date >();
+                ? new ArrayList<>(mandatoryDates)
+                : new ArrayList<>();
         this.mixingFactor = mixingFactor;
 
         if ( !hestonModel.empty() )
@@ -175,7 +175,7 @@ public class HestonSLVFDMModel extends LazyObject {
         }
 
         final List< Concentrating1dMesher.CPointSpec > cPoints =
-                new ArrayList< Concentrating1dMesher.CPointSpec >(3);
+                new ArrayList<>(3);
         cPoints.add(new Concentrating1dMesher.CPointSpec(lb, params.vLowerBoundDensity, false));
         cPoints.add(new Concentrating1dMesher.CPointSpec(v0Center, params.v0Density, true));
         cPoints.add(new Concentrating1dMesher.CPointSpec(ub, params.vUpperBoundDensity, false));
@@ -425,7 +425,7 @@ public class HestonSLVFDMModel extends LazyObject {
         final double minDt = 1.0 / params.tMinStepsPerYear;
 
         double tIdx = 0.0;
-        final List< Double > times = new ArrayList< Double >();
+        final List< Double > times = new ArrayList<>();
         times.add(Double.valueOf(tIdx));
         while ( tIdx < T ) {
             final double decayFactor = Math.exp(-params.tStepNumberDecay * tIdx);
@@ -450,8 +450,8 @@ public class HestonSLVFDMModel extends LazyObject {
         final TransformationType trafoType = params.trafoType;
 
         // Per-time-step 1d meshers along x and v.
-        final List< Fdm1dMesher > xMesher = new ArrayList< Fdm1dMesher >(timeGrid.size());
-        final List< Fdm1dMesher > vMesher = new ArrayList< Fdm1dMesher >(timeGrid.size());
+        final List< Fdm1dMesher > xMesher = new ArrayList<>(timeGrid.size());
+        final List< Fdm1dMesher > vMesher = new ArrayList<>(timeGrid.size());
         xMesher.add(localVolRND.mesher(0.0));
         final double[] vSeed = new double[vGrid];
         Arrays.fill(vSeed, v0);
@@ -484,7 +484,7 @@ public class HestonSLVFDMModel extends LazyObject {
         }
 
         // Per-time strike vectors: vStrikes[i][j] = exp(xMesher[i].locations()[j]).
-        final List< double[] > vStrikes = new ArrayList< double[] >(timeGrid.size());
+        final List< double[] > vStrikes = new ArrayList<>(timeGrid.size());
         for ( int i = 0; i < timeGrid.size(); ++i ) {
             final double[] xs = xMesher.get(i).locations();
             final double[] strikes = new double[xGrid];

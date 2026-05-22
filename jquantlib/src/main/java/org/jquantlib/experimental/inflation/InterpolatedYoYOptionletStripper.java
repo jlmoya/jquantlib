@@ -149,7 +149,7 @@ public class InterpolatedYoYOptionletStripper< I extends Interpolator > extends 
 
         // create a "fake index" based on Generic, this should work
         // provided that the lag and frequency are correct
-        final Handle< YoYInflationTermStructure > hYoY = new Handle<>(s.YoYTS());
+        final var hYoY = new Handle< YoYInflationTermStructure >(s.YoYTS());
         final YoYInflationIndex anIndex = new YYGenericCPI(frequency_, false, lag_,
                 new org.jquantlib.currencies.Currency(), hYoY);
 
@@ -192,7 +192,7 @@ public class InterpolatedYoYOptionletStripper< I extends Interpolator > extends 
                         ? s.capPrice(Tp, K)
                         : s.floorPrice(Tp, K);
 
-                final Handle< Quote > quote1 = new Handle<>(new SimpleQuote(nextPrice));
+                final var quote1 = new Handle< Quote >(new SimpleQuote(nextPrice));
 
                 // helper should be an integer number of periods away,
                 // this is enforced by rounding
@@ -217,7 +217,7 @@ public class InterpolatedYoYOptionletStripper< I extends Interpolator > extends 
             final double minStrike = K - eps;
             final double maxStrike = K + eps;
 
-            final PiecewiseYoYOptionletVolatility< I > testPW = new PiecewiseYoYOptionletVolatility<>(classI,
+            final var testPW = new PiecewiseYoYOptionletVolatility< I >(classI,
                     settlementDays, cal, bdc, dc, lag_, frequency_, indexIsInterpolated_, minStrike, maxStrike,
                     baseYoYVolatility, helpers);
             testPW.recalculate();
@@ -285,10 +285,10 @@ public class InterpolatedYoYOptionletStripper< I extends Interpolator > extends 
             vvec_[0] = guess - slope_ * (tvec_[1] - tvec_[0]) * guess;
 
             // could have Interpolator1D instead of Linear
-            final InterpolatedYoYOptionletVolatilityCurve< Linear > vCurve = new InterpolatedYoYOptionletVolatilityCurve<>(
+            final var vCurve = new InterpolatedYoYOptionletVolatilityCurve< Linear >(
                     Linear.class, 0, new Target(), BusinessDayConvention.ModifiedFollowing, new Actual365Fixed(),
                     surf_.observationLag(), surf_.frequency(), indexIsInterpolated_, dvec_, vvec_, -1.0, 3.0);
-            final Handle< YoYOptionletVolatilitySurface > hCurve = new Handle<>(vCurve);
+            final var hCurve = new Handle< YoYOptionletVolatilitySurface >(vCurve);
             p_.setVolatility(hCurve);
             // hopefully this gets to the pricer ... then
             return priceToMatch_ - capfloor_.NPV();

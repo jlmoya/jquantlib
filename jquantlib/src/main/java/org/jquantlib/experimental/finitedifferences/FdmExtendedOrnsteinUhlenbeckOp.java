@@ -163,7 +163,7 @@ public class FdmExtendedOrnsteinUhlenbeckOp implements FdmLinearOpComposite {
 
     @Override
     public List<Matrix> toMatrixDecomp() {
-        final List<Matrix> ret = new ArrayList<Matrix>(1);
+        final List<Matrix> ret = new ArrayList<>(1);
         ret.add(mapX_.toMatrix());
         return Collections.unmodifiableList(ret);
     }
@@ -180,7 +180,7 @@ public class FdmExtendedOrnsteinUhlenbeckOp implements FdmLinearOpComposite {
      */
     @Override
     public List<SparseMatrix> toSparseMatrixDecomp() {
-        final List<SparseMatrix> ret = new ArrayList<SparseMatrix>(1);
+        final List<SparseMatrix> ret = new ArrayList<>(1);
         ret.add(mapX_.toSparseMatrix());
         return Collections.unmodifiableList(ret);
     }

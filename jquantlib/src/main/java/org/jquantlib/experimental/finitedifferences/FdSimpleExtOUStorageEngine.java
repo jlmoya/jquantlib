@@ -175,14 +175,14 @@ public class FdSimpleExtOUStorageEngine
             //   { capacity }
             //   union { level, capacity - level | level = 0, dy, 2dy, ..., <= capacity }
             // then sort + dedupe by "close-enough" tolerance.
-            final List< Double > storageValues = new ArrayList< Double >();
+            final List< Double > storageValues = new ArrayList<>();
             storageValues.add(arguments_.capacity);
             for ( double level = 0.0; level <= arguments_.capacity; level += arguments_.changeRate ) {
                 storageValues.add(level);
                 storageValues.add(arguments_.capacity - level);
             }
             // Close-enough-aware ordered set (C++ LessButNotCloseEnough).
-            final TreeSet< Double > ordered = new TreeSet< Double >(new Comparator< Double >() {
+            final var ordered = new TreeSet< Double >(new Comparator< Double >() {
                 @Override
                 public int compare(final Double a, final Double b) {
                     if ( Closeness.isCloseEnough(a.doubleValue(), b.doubleValue(), 100) ) {
@@ -210,10 +210,10 @@ public class FdSimpleExtOUStorageEngine
 
         // 4. Step conditions
         final FdmStepConditionComposite.Conditions stepConditions = new FdmStepConditionComposite.Conditions();
-        final List< List< Double > > stoppingTimes = new ArrayList< List< Double > >();
+        final List< List< Double > > stoppingTimes = new ArrayList<>();
 
         // 4.1 Bermudan exercise times
-        final List< Double > exerciseTimes = new ArrayList< Double >();
+        final List< Double > exerciseTimes = new ArrayList<>();
         for ( final Date d : arguments_.exercise.dates() ) {
             final double t = rTS_.dayCounter().yearFraction(refDate, d);
             QL.require(t >= 0.0, "exercise dates must not contain past date");
