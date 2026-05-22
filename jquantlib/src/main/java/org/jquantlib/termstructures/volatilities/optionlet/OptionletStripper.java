@@ -117,8 +117,8 @@ public abstract class OptionletStripper extends StrippedOptionletBase {
         final List< Period > termTenors = termVolSurface.optionTenors();
         final Period maxCapFloorTenor = termTenors.get(termTenors.size() - 1);
 
-        this.optionletTenors_ = new ArrayList< Period >();
-        this.capFloorLengths_ = new ArrayList< Period >();
+        this.optionletTenors_ = new ArrayList<>();
+        this.capFloorLengths_ = new ArrayList<>();
         optionletTenors_.add(indexTenor);
         capFloorLengths_.add(optionletTenors_.get(optionletTenors_.size() - 1).add(indexTenor));
         QL.require(maxCapFloorTenor.ge(capFloorLengths_.get(capFloorLengths_.size() - 1)),
@@ -142,12 +142,12 @@ public abstract class OptionletStripper extends StrippedOptionletBase {
         }
         this.nOptionletTenors_ = optionletTenors_.size();
 
-        this.optionletVolatilities_ = new ArrayList< List< Double > >(nOptionletTenors_);
-        this.optionletStrikes_ = new ArrayList< List< Double > >(nOptionletTenors_);
+        this.optionletVolatilities_ = new ArrayList<>(nOptionletTenors_);
+        this.optionletStrikes_ = new ArrayList<>(nOptionletTenors_);
         final double[] surfStrikes = termVolSurface.strikes();
         for ( int i = 0; i < nOptionletTenors_; ++i ) {
-            final List< Double > volRow = new ArrayList< Double >(nStrikes_);
-            final List< Double > strikeRow = new ArrayList< Double >(nStrikes_);
+            final List< Double > volRow = new ArrayList<>(nStrikes_);
+            final List< Double > strikeRow = new ArrayList<>(nStrikes_);
             for ( int j = 0; j < nStrikes_; ++j ) {
                 volRow.add(0.0);
                 strikeRow.add(surfStrikes[j]);
@@ -167,7 +167,7 @@ public abstract class OptionletStripper extends StrippedOptionletBase {
     //
 
     private static < T > List< T > newFilledList(final int n, final T initial) {
-        final List< T > out = new ArrayList< T >(n);
+        final List< T > out = new ArrayList<>(n);
         for ( int i = 0; i < n; ++i ) {
             out.add(initial);
         }

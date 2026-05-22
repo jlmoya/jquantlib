@@ -83,7 +83,7 @@ public class AnalyticDiscreteGeometricAverageStrikeAsianEngine extends DiscreteA
         final DayCounter divdc = process.dividendYield().currentLink().dayCounter();
         final DayCounter voldc = process.blackVolatility().currentLink().dayCounter();
 
-        final List< Double > fixingTimes = new ArrayList< Double >();
+        final List< Double > fixingTimes = new ArrayList<>();
         for ( int i = 0; i < a.fixingDates.size(); i++ ) {
             final Date fixingDate = a.fixingDates.get(i);
             // C++ uses `fixingDate >= arguments_.fixingDates[0]` — the first

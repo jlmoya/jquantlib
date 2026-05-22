@@ -300,7 +300,7 @@ public class China extends Calendar {
     private static final Set<Date> IB_WORKING_WEEKENDS = buildIbWorkingWeekends();
 
     private static Set<Date> buildIbWorkingWeekends() {
-        return new HashSet<Date>(Arrays.asList(
+        return new HashSet<>(Arrays.asList(
                 // 2005
                 new Date(5, February, 2005),
                 new Date(6, February, 2005),

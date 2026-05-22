@@ -88,7 +88,7 @@ public class OptionletStripper2 extends OptionletStripper {
         this.atmCapFloorStrikes_ = newFilledList(nOptionExpiries_, 0.0);
         this.atmCapFloorPrices_ = newFilledList(nOptionExpiries_, 0.0);
         this.spreadsVolImplied_ = newFilledList(nOptionExpiries_, 0.0);
-        this.caps_ = new ArrayList< CapFloor >(Collections.nCopies(nOptionExpiries_, null));
+        this.caps_ = new ArrayList<>(Collections.nCopies(nOptionExpiries_, null));
 
         stripper1_.addObserver(this);
         atmCapFloorTermVolCurve_.addObserver(this);
@@ -101,7 +101,7 @@ public class OptionletStripper2 extends OptionletStripper {
     //
 
     private static < T > List< T > newFilledList(final int n, final T initial) {
-        final List< T > out = new ArrayList< T >(n);
+        final List< T > out = new ArrayList<>(n);
         for ( int i = 0; i < n; ++i ) {
             out.add(initial);
         }
@@ -142,8 +142,8 @@ public class OptionletStripper2 extends OptionletStripper {
         copyList(stripper1_.optionletFixingTimes(), optionletTimes_);
         copyList(stripper1_.atmOptionletRates(), atmOptionletRate_);
         for ( int i = 0; i < optionletTimes_.size(); ++i ) {
-            optionletStrikes_.set(i, new ArrayList< Double >(stripper1_.optionletStrikes(i)));
-            optionletVolatilities_.set(i, new ArrayList< Double >(stripper1_.optionletVolatilities(i)));
+            optionletStrikes_.set(i, new ArrayList<>(stripper1_.optionletStrikes(i)));
+            optionletVolatilities_.set(i, new ArrayList<>(stripper1_.optionletVolatilities(i)));
         }
 
         final List< Period > optionExpiriesTenors = atmCapFloorTermVolCurve_.currentLink().optionTenors();

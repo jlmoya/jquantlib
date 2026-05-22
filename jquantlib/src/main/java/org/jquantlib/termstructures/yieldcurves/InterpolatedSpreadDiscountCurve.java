@@ -199,7 +199,7 @@ public class InterpolatedSpreadDiscountCurve< I extends Interpolator > extends A
 
     @Override
     public List< Pair< Date, Double > > nodes() {
-        final List< Pair< Date, Double > > result = new ArrayList< Pair< Date, Double > >();
+        final List< Pair< Date, Double > > result = new ArrayList<>();
         if ( dates == null ) {
             return result;
         }

@@ -141,7 +141,7 @@ public abstract class MCLongstaffSchwartzEngine extends MCVanillaEngine {
     protected TimeGrid timeGrid() {
         final OneAssetOption.ArgumentsImpl a = (OneAssetOption.ArgumentsImpl) arguments_;
         final Exercise exercise = a.exercise;
-        final List< Double > requiredTimes = new ArrayList< Double >();
+        final List< Double > requiredTimes = new ArrayList<>();
         if ( exercise.type() == Exercise.Type.American ) {
             final Date last = exercise.lastDate();
             requiredTimes.add(process_.time(last));

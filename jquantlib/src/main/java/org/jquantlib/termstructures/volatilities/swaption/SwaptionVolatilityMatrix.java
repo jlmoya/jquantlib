@@ -156,10 +156,10 @@ public class SwaptionVolatilityMatrix extends SwaptionVolatilityDiscrete {
         // Wrap each cell in a SimpleQuote (parity with C++ which builds
         // dummy Handle<Quote> objects for generic handle-based recompute).
         this.volHandles_ = new ArrayList< List< Handle< ? extends Quote > > >(vols.rows());
-        this.shiftValues_ = new ArrayList< List< Double > >(vols.rows());
+        this.shiftValues_ = new ArrayList<>(vols.rows());
         for ( int i = 0; i < vols.rows(); ++i ) {
-            final List< Handle< ? extends Quote > > rowH = new ArrayList< Handle< ? extends Quote > >(vols.columns());
-            final List< Double > rowS = new ArrayList< Double >(vols.columns());
+            final List< Handle< ? extends Quote > > rowH = new ArrayList<>(vols.columns());
+            final List< Double > rowS = new ArrayList<>(vols.columns());
             for ( int j = 0; j < vols.columns(); ++j ) {
                 rowH.add(new Handle< Quote >(new SimpleQuote(vols.get(i, j))));
                 rowS.add(shifts != null && shifts.rows() > 0 ? shifts.get(i, j) : 0.0);
@@ -183,10 +183,10 @@ public class SwaptionVolatilityMatrix extends SwaptionVolatilityDiscrete {
                 shifts == null ? 0 : shifts.columns());
 
         this.volHandles_ = new ArrayList< List< Handle< ? extends Quote > > >(vols.rows());
-        this.shiftValues_ = new ArrayList< List< Double > >(vols.rows());
+        this.shiftValues_ = new ArrayList<>(vols.rows());
         for ( int i = 0; i < vols.rows(); ++i ) {
-            final List< Handle< ? extends Quote > > rowH = new ArrayList< Handle< ? extends Quote > >(vols.columns());
-            final List< Double > rowS = new ArrayList< Double >(vols.columns());
+            final List< Handle< ? extends Quote > > rowH = new ArrayList<>(vols.columns());
+            final List< Double > rowS = new ArrayList<>(vols.columns());
             for ( int j = 0; j < vols.columns(); ++j ) {
                 rowH.add(new Handle< Quote >(new SimpleQuote(vols.get(i, j))));
                 rowS.add(shifts != null && shifts.rows() > 0 ? shifts.get(i, j) : 0.0);
@@ -216,10 +216,10 @@ public class SwaptionVolatilityMatrix extends SwaptionVolatilityDiscrete {
                 shifts == null ? 0 : shifts.columns());
 
         this.volHandles_ = new ArrayList< List< Handle< ? extends Quote > > >(vols.rows());
-        this.shiftValues_ = new ArrayList< List< Double > >(vols.rows());
+        this.shiftValues_ = new ArrayList<>(vols.rows());
         for ( int i = 0; i < vols.rows(); ++i ) {
-            final List< Handle< ? extends Quote > > rowH = new ArrayList< Handle< ? extends Quote > >(vols.columns());
-            final List< Double > rowS = new ArrayList< Double >(vols.columns());
+            final List< Handle< ? extends Quote > > rowH = new ArrayList<>(vols.columns());
+            final List< Double > rowS = new ArrayList<>(vols.columns());
             for ( int j = 0; j < vols.columns(); ++j ) {
                 rowH.add(new Handle< Quote >(new SimpleQuote(vols.get(i, j))));
                 rowS.add(shifts != null && shifts.rows() > 0 ? shifts.get(i, j) : 0.0);

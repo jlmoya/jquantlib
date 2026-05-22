@@ -305,7 +305,7 @@ public class BlackVolatilitySurfaceDelta extends BlackVolatilityTermStructure {
         }
 
         // Mirror C++ comp: skip insertion of strikes already "close" to one stored.
-        final TreeMap< Double, Double > smileMap = new TreeMap< Double, Double >();
+        final var smileMap = new TreeMap< Double, Double >();
         int i = 0;
         double atmLevel = 1.0;
 
@@ -352,7 +352,7 @@ public class BlackVolatilitySurfaceDelta extends BlackVolatilityTermStructure {
         QL.require(!smileMap.isEmpty(),
                 "BlackVolatilitySurfaceDelta::blackVolSmile(" + t + "): no strikes given, this is unexpected.");
 
-        final List< Double > strikesList = new ArrayList< Double >(smileMap.keySet());
+        final List< Double > strikesList = new ArrayList<>(smileMap.keySet());
         final double[] strikes = new double[strikesList.size()];
         final double[] stdDevs = new double[strikesList.size()];
         int k = 0;

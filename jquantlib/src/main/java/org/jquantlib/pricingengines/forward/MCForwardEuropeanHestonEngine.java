@@ -168,7 +168,7 @@ public class MCForwardEuropeanHestonEngine extends ForwardVanillaOption.EngineIm
             throw new RuntimeException("time steps not specified");
         }
 
-        final List< Double > mandatory = new ArrayList< Double >();
+        final List< Double > mandatory = new ArrayList<>();
         mandatory.add(t1);
         mandatory.add(t2);
         return new TimeGrid(mandatory, totalSteps);

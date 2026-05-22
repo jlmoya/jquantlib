@@ -274,7 +274,7 @@ public class Gaussian1dFloatFloatSwaptionEngine extends FloatFloatSwaption.Engin
 
         // ── Build event-date list (union of exercise + leg1 + leg2 fixing) ───
         final List< Date > exDates = exercise.dates();
-        final TreeSet< Date > eventSet = new TreeSet< Date >(new java.util.Comparator< Date >() {
+        final var eventSet = new TreeSet< Date >(new java.util.Comparator< Date >() {
             @Override
             public int compare(final Date a, final Date b) {
                 return a.compareTo(b);
@@ -289,7 +289,7 @@ public class Gaussian1dFloatFloatSwaptionEngine extends FloatFloatSwaption.Engin
         // Drop events <= (expiry - (includeExerciseOnExpiry ? 1 : 0))
         // i.e., upper_bound(expiry - 1) when including, upper_bound(expiry) when not.
         final Date threshold = expiry.add(includeExerciseOnExpiry ? -1 : 0);
-        final List< Date > events = new ArrayList< Date >();
+        final List< Date > events = new ArrayList<>();
         for ( final Date d : eventSet ) {
             if ( d.gt(threshold) )
                 events.add(d);
@@ -322,9 +322,9 @@ public class Gaussian1dFloatFloatSwaptionEngine extends FloatFloatSwaption.Engin
                 "index2 must be IborIndex or SwapIndex (SwapSpreadIndex not supported in JQuantLib)");
 
         // Pre-build hash sets for membership tests (mirrors std::find usage)
-        final Set< Date > exSet = new HashSet< Date >(exDates);
-        final Set< Date > leg1FixSet = new HashSet< Date >(args.leg1FixingDates);
-        final Set< Date > leg2FixSet = new HashSet< Date >(args.leg2FixingDates);
+        final Set< Date > exSet = new HashSet<>(exDates);
+        final Set< Date > leg1FixSet = new HashSet<>(args.leg1FixingDates);
+        final Set< Date > leg2FixSet = new HashSet<>(args.leg2FixingDates);
 
         Date expiry0;
         double event0Time;

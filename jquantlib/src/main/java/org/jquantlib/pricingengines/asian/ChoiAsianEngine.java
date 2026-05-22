@@ -104,7 +104,7 @@ public class ChoiAsianEngine extends DiscreteAveragingAsianOption.EngineImpl {
         final PlainVanillaPayoff payoff = (PlainVanillaPayoff) a.payoff;
 
         // local working copy of the fixing dates (sorted ascending)
-        final List< Date > fixingDates = new ArrayList< Date >(a.fixingDates);
+        final List< Date > fixingDates = new ArrayList<>(a.fixingDates);
         Collections.sort(fixingDates);
 
         int futureFixings = fixingDates.size();
@@ -174,7 +174,7 @@ public class ChoiAsianEngine extends DiscreteAveragingAsianOption.EngineImpl {
                     new FlatForward(rRefDate, 0.0, rDc));
 
             // Build one Generalized-BS process per future fixing
-            final List< GeneralizedBlackScholesProcess > processes = new ArrayList< GeneralizedBlackScholesProcess >(
+            final List< GeneralizedBlackScholesProcess > processes = new ArrayList<>(
                     futureFixings);
             final double tLast = fixingTimes[futureFixings - 1];
             for ( int i = 0; i < futureFixings; ++i ) {

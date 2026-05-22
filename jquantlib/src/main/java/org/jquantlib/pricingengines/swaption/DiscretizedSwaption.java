@@ -97,11 +97,11 @@ public class DiscretizedSwaption extends DiscretizedOption {
         final int nFloat = floatLeg.size();
 
         // Start from each coupon's accrualStartDate (a.k.a. reset date).
-        final List< Date > snappedFixed = new ArrayList< Date >(nFixed);
+        final List< Date > snappedFixed = new ArrayList<>(nFixed);
         for ( int i = 0; i < nFixed; i++ ) {
             snappedFixed.add(((FixedRateCoupon) fixedLeg.get(i)).accrualStartDate());
         }
-        final List< Date > snappedFloat = new ArrayList< Date >(nFloat);
+        final List< Date > snappedFloat = new ArrayList<>(nFloat);
         for ( int i = 0; i < nFloat; i++ ) {
             snappedFloat.add(((FloatingRateCoupon) floatLeg.get(i)).accrualStartDate());
         }

@@ -70,7 +70,7 @@ public class FDVanillaEngine {
         this.gridPoints = gridPoints;
         this.timeDependent = timeDependent;
         this.intrinsicValues = new SampledCurve(gridPoints);
-        bcS = new Vector< BoundaryCondition< TridiagonalOperator > >();
+        bcS = new Vector<>();
     }
 
     //

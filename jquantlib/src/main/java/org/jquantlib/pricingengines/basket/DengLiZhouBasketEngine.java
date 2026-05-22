@@ -78,7 +78,7 @@ public class DengLiZhouBasketEngine extends BasketOption.Engine {
                 "process and correlation matrix must have the same size.");
 
         this.n = processes.size();
-        this.processes = new ArrayList< GeneralizedBlackScholesProcess >(processes);
+        this.processes = new ArrayList<>(processes);
         this.rho = rho.clone();
 
         for ( final GeneralizedBlackScholesProcess p : this.processes ) {
@@ -312,7 +312,7 @@ public class DengLiZhouBasketEngine extends BasketOption.Engine {
         final PlainVanillaPayoff payoff = (PlainVanillaPayoff) avgPayoff.basePayoff();
 
         // Tuples: (weight, original_index, spot, dq, v)
-        final List< Tuple > p = new ArrayList< Tuple >(n + 1);
+        final List< Tuple > p = new ArrayList<>(n + 1);
         for ( int i = 0; i < n; ++i ) {
             p.add(new Tuple(weights[i], i, s[i], dq[i], v[i]));
         }

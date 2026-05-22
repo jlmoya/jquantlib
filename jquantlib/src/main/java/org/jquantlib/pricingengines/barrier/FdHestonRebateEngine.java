@@ -168,7 +168,7 @@ public class FdHestonRebateEngine extends BarrierOption.EngineImpl {
         // 4. Boundary conditions: Dirichlet at the barrier with constant rebate.
         //    C++ Dirichlet boundary uses a constant value (the rebate);
         //    we use FdmTimeDepDirichletBoundary with a constant lambda.
-        final List< BoundaryCondition< FdmLinearOp > > bcList = new ArrayList< BoundaryCondition< FdmLinearOp > >();
+        final List< BoundaryCondition< FdmLinearOp > > bcList = new ArrayList<>();
         final double rebateValue = args.rebate;
         if ( barrier == BarrierType.DownOut || barrier == BarrierType.DownIn ) {
             bcList.add(new FdmTimeDepDirichletBoundary(mesher, t -> rebateValue, /*direction=*/0,

@@ -107,8 +107,8 @@ public class AndreasenHugeVolatilityInterpl extends LazyObject {
         this.optimizationMethod = optimizationMethod;
         this.endCriteria = endCriteria;
 
-        final TreeSet< Double > strikeSet = new TreeSet<>();
-        final TreeSet< Date > expirySet = new TreeSet<>();
+        final var strikeSet = new TreeSet< Double >();
+        final var expirySet = new TreeSet< Date >();
 
         this.calibrationSet = new ArrayList<>(calibrationSet.size());
 

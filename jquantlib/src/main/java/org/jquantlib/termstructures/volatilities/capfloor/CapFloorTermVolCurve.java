@@ -79,13 +79,13 @@ public class CapFloorTermVolCurve extends CapFloorTermVolatilityStructure {
             final List< Period > optionTenors, final List< Handle< ? extends Quote > > vols, final DayCounter dc) {
         super(settlementDays, cal, bdc, dc);
         this.nOptionTenors_ = optionTenors.size();
-        this.optionTenors_ = new ArrayList< Period >(optionTenors);
-        this.optionDates_ = new ArrayList< Date >(nOptionTenors_);
+        this.optionTenors_ = new ArrayList<>(optionTenors);
+        this.optionDates_ = new ArrayList<>(nOptionTenors_);
         for ( int i = 0; i < nOptionTenors_; ++i ) {
             this.optionDates_.add(null);
         }
         this.optionTimes_ = new double[nOptionTenors_];
-        this.volHandles_ = new ArrayList< Handle< ? extends Quote > >(vols);
+        this.volHandles_ = new ArrayList<>(vols);
         this.vols_ = new double[vols.size()];
         checkInputs();
         initializeOptionDatesAndTimes();
@@ -100,13 +100,13 @@ public class CapFloorTermVolCurve extends CapFloorTermVolatilityStructure {
             final List< Period > optionTenors, final List< Handle< ? extends Quote > > vols, final DayCounter dc) {
         super(settlementDate, cal, bdc, dc);
         this.nOptionTenors_ = optionTenors.size();
-        this.optionTenors_ = new ArrayList< Period >(optionTenors);
-        this.optionDates_ = new ArrayList< Date >(nOptionTenors_);
+        this.optionTenors_ = new ArrayList<>(optionTenors);
+        this.optionDates_ = new ArrayList<>(nOptionTenors_);
         for ( int i = 0; i < nOptionTenors_; ++i ) {
             this.optionDates_.add(null);
         }
         this.optionTimes_ = new double[nOptionTenors_];
-        this.volHandles_ = new ArrayList< Handle< ? extends Quote > >(vols);
+        this.volHandles_ = new ArrayList<>(vols);
         this.vols_ = new double[vols.size()];
         checkInputs();
         initializeOptionDatesAndTimes();
@@ -121,14 +121,14 @@ public class CapFloorTermVolCurve extends CapFloorTermVolatilityStructure {
             final List< Period > optionTenors, final double[] vols, final DayCounter dc) {
         super(settlementDate, cal, bdc, dc);
         this.nOptionTenors_ = optionTenors.size();
-        this.optionTenors_ = new ArrayList< Period >(optionTenors);
-        this.optionDates_ = new ArrayList< Date >(nOptionTenors_);
+        this.optionTenors_ = new ArrayList<>(optionTenors);
+        this.optionDates_ = new ArrayList<>(nOptionTenors_);
         for ( int i = 0; i < nOptionTenors_; ++i ) {
             this.optionDates_.add(null);
         }
         this.optionTimes_ = new double[nOptionTenors_];
         this.vols_ = vols.clone();
-        this.volHandles_ = new ArrayList< Handle< ? extends Quote > >(vols.length);
+        this.volHandles_ = new ArrayList<>(vols.length);
         for ( int i = 0; i < vols.length; ++i ) {
             this.volHandles_.add(new Handle< Quote >(new SimpleQuote(vols[i])));
         }
@@ -144,14 +144,14 @@ public class CapFloorTermVolCurve extends CapFloorTermVolatilityStructure {
             final List< Period > optionTenors, final double[] vols, final DayCounter dc) {
         super(settlementDays, cal, bdc, dc);
         this.nOptionTenors_ = optionTenors.size();
-        this.optionTenors_ = new ArrayList< Period >(optionTenors);
-        this.optionDates_ = new ArrayList< Date >(nOptionTenors_);
+        this.optionTenors_ = new ArrayList<>(optionTenors);
+        this.optionDates_ = new ArrayList<>(nOptionTenors_);
         for ( int i = 0; i < nOptionTenors_; ++i ) {
             this.optionDates_.add(null);
         }
         this.optionTimes_ = new double[nOptionTenors_];
         this.vols_ = vols.clone();
-        this.volHandles_ = new ArrayList< Handle< ? extends Quote > >(vols.length);
+        this.volHandles_ = new ArrayList<>(vols.length);
         for ( int i = 0; i < vols.length; ++i ) {
             this.volHandles_.add(new Handle< Quote >(new SimpleQuote(vols[i])));
         }

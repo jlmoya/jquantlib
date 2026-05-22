@@ -95,7 +95,7 @@ public abstract class FDDividendEngineBase extends FDMultiPeriodEngine {
         QL.require(DividendVanillaOption.ArgumentsImpl.class.isAssignableFrom(args.getClass()),
                 ReflectConstants.WRONG_ARGUMENT_TYPE); // QA:[RG]::verified
         final DividendVanillaOption.ArgumentsImpl arguments = (DividendVanillaOption.ArgumentsImpl) args;
-        final List< Event > events = new ArrayList< Event >(arguments.cashFlow.size());
+        final List< Event > events = new ArrayList<>(arguments.cashFlow.size());
         for ( final Dividend cashFlow : arguments.cashFlow ) {
             events.add(cashFlow);
         }

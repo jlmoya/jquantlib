@@ -114,7 +114,7 @@ public final class ECB {
                 45322, 45364, 45399, 45455, 45497, 45553,
                 45588, 45644
         };
-        final SortedSet<Date> set = new TreeSet<Date>(new java.util.Comparator<Date>() {
+        final SortedSet<Date> set = new TreeSet<>(new java.util.Comparator<Date>() {
             @Override
             public int compare(final Date a, final Date b) {
                 return Long.compare(a.serialNumber(), b.serialNumber());

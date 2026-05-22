@@ -45,7 +45,7 @@ public class LfmHullWhiteParameterization extends LfmCovarianceParameterization 
             final OptionletVolatilityStructure capletVol, final Matrix correlation, final int factors) {
         super(process.size(), factors);
         this.diffusion_ = new Matrix(size_ - 1, factors());
-        this.fixingTimes_ = new ArrayList< Double >(process.fixingTimes());
+        this.fixingTimes_ = new ArrayList<>(process.fixingTimes());
 
         // sqrtCorr defaults to ones-matrix of shape (size-1, factors) when
         // correlation is empty (single-factor case).
@@ -82,7 +82,7 @@ public class LfmHullWhiteParameterization extends LfmCovarianceParameterization 
         // Bootstrap the per-period instantaneous lambdas from the cap variance
         // strip (lfmhullwhiteparam.cpp:62-87). lambda[i-1] is the constant
         // sigma_i for the active step on the i-th rate.
-        final List< Double > lambda = new ArrayList< Double >();
+        final List< Double > lambda = new ArrayList<>();
         final List< Double > fixingTimes = process.fixingTimes();
         final List< Date > fixingDates = process.fixingDates();
 

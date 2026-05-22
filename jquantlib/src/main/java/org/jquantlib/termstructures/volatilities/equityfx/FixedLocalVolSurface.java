@@ -82,18 +82,18 @@ public class FixedLocalVolSurface extends LocalVolTermStructure {
 
         this.maxDate_ = dates.get(dates.size() - 1);
         this.localVolMatrix_ = localVolMatrix;
-        this.times_ = new ArrayList< Double >(dates.size());
+        this.times_ = new ArrayList<>(dates.size());
         for ( final Date d : dates ) {
             this.times_.add(timeFromReference(d));
         }
         // Same strike vector for every date — but we need an Array per date so
         // that downstream interpolators can be indexed uniformly.
         final double[] sharedStrikes = strikes.clone();
-        this.strikes_ = new ArrayList< double[] >(dates.size());
+        this.strikes_ = new ArrayList<>(dates.size());
         for ( int i = 0; i < dates.size(); ++i ) {
             this.strikes_.add(sharedStrikes);
         }
-        this.localVolInterpol_ = new ArrayList< Interpolation >(dates.size());
+        this.localVolInterpol_ = new ArrayList<>(dates.size());
         for ( int i = 0; i < dates.size(); ++i ) {
             this.localVolInterpol_.add(null);
         }
@@ -117,17 +117,17 @@ public class FixedLocalVolSurface extends LocalVolTermStructure {
         QL.require(times[0] >= 0.0, "cannot have times[0] < 0");
 
         this.maxDate_ = yearFractionToDate(dayCounter, referenceDate, times[times.length - 1]);
-        this.times_ = new ArrayList< Double >(times.length);
+        this.times_ = new ArrayList<>(times.length);
         for ( final double t : times ) {
             this.times_.add(Double.valueOf(t));
         }
         this.localVolMatrix_ = localVolMatrix;
         final double[] sharedStrikes = strikes.clone();
-        this.strikes_ = new ArrayList< double[] >(times.length);
+        this.strikes_ = new ArrayList<>(times.length);
         for ( int i = 0; i < times.length; ++i ) {
             this.strikes_.add(sharedStrikes);
         }
-        this.localVolInterpol_ = new ArrayList< Interpolation >(times.length);
+        this.localVolInterpol_ = new ArrayList<>(times.length);
         for ( int i = 0; i < times.length; ++i ) {
             this.localVolInterpol_.add(null);
         }
@@ -152,16 +152,16 @@ public class FixedLocalVolSurface extends LocalVolTermStructure {
         QL.require(times.length == strikes.size(), "need strikes for every time step");
 
         this.maxDate_ = yearFractionToDate(dayCounter, referenceDate, times[times.length - 1]);
-        this.times_ = new ArrayList< Double >(times.length);
+        this.times_ = new ArrayList<>(times.length);
         for ( final double t : times ) {
             this.times_.add(Double.valueOf(t));
         }
         this.localVolMatrix_ = localVolMatrix;
-        this.strikes_ = new ArrayList< double[] >(times.length);
+        this.strikes_ = new ArrayList<>(times.length);
         for ( final double[] s : strikes ) {
             this.strikes_.add(s.clone());
         }
-        this.localVolInterpol_ = new ArrayList< Interpolation >(times.length);
+        this.localVolInterpol_ = new ArrayList<>(times.length);
         for ( int i = 0; i < times.length; ++i ) {
             this.localVolInterpol_.add(null);
         }

@@ -89,7 +89,7 @@ public class AnalyticPerformanceEngine extends OneAssetOption.EngineImpl {
         QL.require(a.payoff instanceof PercentageStrikePayoff, "wrong payoff given");
         final PercentageStrikePayoff moneyness = (PercentageStrikePayoff) a.payoff;
 
-        final List< Date > resetDates = new ArrayList< Date >(a.resetDates);
+        final List< Date > resetDates = new ArrayList<>(a.resetDates);
         resetDates.add(a.exercise.lastDate());
 
         final double underlying = process.stateVariable().currentLink().value();

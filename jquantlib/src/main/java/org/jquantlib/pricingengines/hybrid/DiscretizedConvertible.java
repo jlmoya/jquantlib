@@ -111,19 +111,19 @@ public class DiscretizedConvertible extends DiscretizedAsset {
         final DayCounter dayCounter = this.process.riskFreeRate().currentLink().dayCounter();
         final Date bondSettlement = this.arguments.settlementDate;
 
-        stoppingTimes = new ArrayList< Double >(this.arguments.exercise.dates().size());
+        stoppingTimes = new ArrayList<>(this.arguments.exercise.dates().size());
         for ( int i = 0; i < this.arguments.exercise.dates().size(); ++i )
             stoppingTimes.add(dayCounter.yearFraction(bondSettlement, this.arguments.exercise.date(i)));
 
-        callabilityTimes = new ArrayList< Double >(this.arguments.callabilityDates.size());
+        callabilityTimes = new ArrayList<>(this.arguments.callabilityDates.size());
         for ( int i = 0; i < this.arguments.callabilityDates.size(); ++i )
             callabilityTimes.add(dayCounter.yearFraction(bondSettlement, this.arguments.callabilityDates.get(i)));
 
-        couponTimes = new ArrayList< Double >(this.arguments.couponDates.size());
+        couponTimes = new ArrayList<>(this.arguments.couponDates.size());
         for ( int i = 0; i < this.arguments.couponDates.size(); ++i )
             couponTimes.add(dayCounter.yearFraction(bondSettlement, this.arguments.couponDates.get(i)));
 
-        dividendTimes = new ArrayList< Double >(this.arguments.dividendDates.size());
+        dividendTimes = new ArrayList<>(this.arguments.dividendDates.size());
         for ( int i = 0; i < this.arguments.dividendDates.size(); ++i )
             dividendTimes.add(dayCounter.yearFraction(bondSettlement, this.arguments.dividendDates.get(i)));
 
@@ -175,7 +175,7 @@ public class DiscretizedConvertible extends DiscretizedAsset {
     @Override
     public List< Double > mandatoryTimes() {
 
-        final List< Double > result = new ArrayList< Double >();
+        final List< Double > result = new ArrayList<>();
         Std.copy(stoppingTimes, 0, stoppingTimes.size(), result);
         Std.copy(callabilityTimes, 0, callabilityTimes.size(), result);
         Std.copy(couponTimes, 0, couponTimes.size(), result);

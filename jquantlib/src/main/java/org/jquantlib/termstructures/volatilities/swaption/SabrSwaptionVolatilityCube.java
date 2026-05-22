@@ -230,7 +230,7 @@ public class SabrSwaptionVolatilityCube extends SwaptionVolatilityCube {
         final java.util.TreeSet< Date > s = new java.util.TreeSet< Date >();
         s.addAll(a);
         s.addAll(b);
-        return new ArrayList< Date >(s);
+        return new ArrayList<>(s);
     }
 
     private static List< Period > mergeAndSortPeriods(final List< Period > a, final List< Period > b) {
@@ -240,7 +240,7 @@ public class SabrSwaptionVolatilityCube extends SwaptionVolatilityCube {
             m.put(periodKey(p), p);
         for ( final Period p : b )
             m.put(periodKey(p), p);
-        return new ArrayList< Period >(m.values());
+        return new ArrayList<>(m.values());
     }
 
     //
@@ -300,7 +300,7 @@ public class SabrSwaptionVolatilityCube extends SwaptionVolatilityCube {
      * layer per SABR parameter.
      */
     private void setParameterGuess() {
-        parametersGuess_ = new Cube(new ArrayList< Date >(optionDates_), new ArrayList< Period >(swapTenors_),
+        parametersGuess_ = new Cube(new ArrayList<>(optionDates_), new ArrayList<>(swapTenors_),
                 Arrays.copyOf(optionTimes_, optionTimes_.length), Arrays.copyOf(swapLengths_, swapLengths_.length),
                 N_PARAMS, true, backwardFlat_);
         for ( int i = 0; i < N_PARAMS; ++i ) {
@@ -322,7 +322,7 @@ public class SabrSwaptionVolatilityCube extends SwaptionVolatilityCube {
         setParameterGuess();
 
         // Build the market vol cube: atmVol + volSpread at every (i, j, k).
-        marketVolCube_ = new Cube(new ArrayList< Date >(optionDates_), new ArrayList< Period >(swapTenors_),
+        marketVolCube_ = new Cube(new ArrayList<>(optionDates_), new ArrayList<>(swapTenors_),
                 Arrays.copyOf(optionTimes_, optionTimes_.length), Arrays.copyOf(swapLengths_, swapLengths_.length),
                 nStrikes_);
         for ( int j = 0; j < nOptionTenors_; ++j ) {
@@ -407,8 +407,8 @@ public class SabrSwaptionVolatilityCube extends SwaptionVolatilityCube {
                 final double atmForward = atmStrike(optionDates.get(j), swapTenorsLocal.get(k));
                 final double shiftTmp = atmVolShift(optionTimes[j], swapLengths[k]);
 
-                final List< Double > strikesList = new ArrayList< Double >(nStrikes_);
-                final List< Double > volsList = new ArrayList< Double >(nStrikes_);
+                final List< Double > strikesList = new ArrayList<>(nStrikes_);
+                final List< Double > volsList = new ArrayList<>(nStrikes_);
                 for ( int i = 0; i < nStrikes_; ++i ) {
                     final double strike = atmForward + strikeSpreads_.get(i);
                     if ( strike + shiftTmp >= cutoffStrike_ ) {
@@ -522,9 +522,9 @@ public class SabrSwaptionVolatilityCube extends SwaptionVolatilityCube {
     private void createSparseSmiles() {
         final double[] optionTimes = sparseParameters_.optionTimes();
         final double[] swapLengths = sparseParameters_.swapLengths();
-        sparseSmiles_ = new ArrayList< List< SmileSection > >(optionTimes.length);
+        sparseSmiles_ = new ArrayList<>(optionTimes.length);
         for ( int i = 0; i < optionTimes.length; ++i ) {
-            final List< SmileSection > row = new ArrayList< SmileSection >(swapLengths.length);
+            final List< SmileSection > row = new ArrayList<>(swapLengths.length);
             for ( int k = 0; k < swapLengths.length; ++k ) {
                 row.add(smileSection(optionTimes[i], swapLengths[k], sparseParameters_));
             }
@@ -673,8 +673,8 @@ public class SabrSwaptionVolatilityCube extends SwaptionVolatilityCube {
 
             this.optionTimes_ = Arrays.copyOf(optionTimes, optionTimes.length);
             this.swapLengths_ = Arrays.copyOf(swapLengths, swapLengths.length);
-            this.optionDates_ = new ArrayList< Date >(optionDates);
-            this.swapTenors_ = new ArrayList< Period >(swapTenors);
+            this.optionDates_ = new ArrayList<>(optionDates);
+            this.swapTenors_ = new ArrayList<>(swapTenors);
             this.nLayers_ = nLayers;
             this.extrapolation_ = extrapolation;
             this.backwardFlat_ = backwardFlat;
@@ -690,8 +690,8 @@ public class SabrSwaptionVolatilityCube extends SwaptionVolatilityCube {
         Cube(final Cube o) {
             this.optionTimes_ = Arrays.copyOf(o.optionTimes_, o.optionTimes_.length);
             this.swapLengths_ = Arrays.copyOf(o.swapLengths_, o.swapLengths_.length);
-            this.optionDates_ = new ArrayList< Date >(o.optionDates_);
-            this.swapTenors_ = new ArrayList< Period >(o.swapTenors_);
+            this.optionDates_ = new ArrayList<>(o.optionDates_);
+            this.swapTenors_ = new ArrayList<>(o.swapTenors_);
             this.nLayers_ = o.nLayers_;
             this.extrapolation_ = o.extrapolation_;
             this.backwardFlat_ = o.backwardFlat_;

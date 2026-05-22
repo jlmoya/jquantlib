@@ -56,8 +56,8 @@ public class TimeHomogeneousForwardCorrelation extends PiecewiseConstantCorrelat
     public TimeHomogeneousForwardCorrelation(final Matrix fwdCorrelation, final List< Double > rateTimes) {
         this.numberOfRates_ = rateTimes == null || rateTimes.isEmpty() ? 0 : rateTimes.size() - 1;
         this.fwdCorrelation_ = fwdCorrelation;
-        this.rateTimes_ = new ArrayList< Double >(rateTimes);
-        this.times_ = new ArrayList< Double >(numberOfRates_);
+        this.rateTimes_ = new ArrayList<>(rateTimes);
+        this.times_ = new ArrayList<>(numberOfRates_);
 
         ExponentialForwardCorrelation.checkIncreasingTimes(this.rateTimes_);
         QL.require(numberOfRates_ >= 1, "Rate times must contain at least two values");
@@ -81,7 +81,7 @@ public class TimeHomogeneousForwardCorrelation extends PiecewiseConstantCorrelat
      */
     public static List< Matrix > evolvedMatrices(final Matrix fwdCorrelation) {
         final int numberOfRates = fwdCorrelation.rows();
-        final List< Matrix > correlations = new ArrayList< Matrix >(numberOfRates);
+        final List< Matrix > correlations = new ArrayList<>(numberOfRates);
         for ( int k = 0; k < numberOfRates; ++k ) {
             correlations.add(new Matrix(numberOfRates, numberOfRates));
         }

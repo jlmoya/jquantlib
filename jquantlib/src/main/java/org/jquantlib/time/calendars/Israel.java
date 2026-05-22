@@ -418,7 +418,7 @@ public class Israel extends Calendar {
     );
 
     private static Set<Date> buildSet(final Date... dates) {
-        return new HashSet<Date>(Arrays.asList(dates));
+        return new HashSet<>(Arrays.asList(dates));
     }
 
     private static boolean isPurim(final Date d)            { return PURIM.contains(d); }

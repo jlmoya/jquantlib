@@ -149,12 +149,12 @@ public class Gsr extends Gaussian1dModel {
         QL.require(termStructure != null && !termStructure.empty(), "yield term structure handle is empty");
 
         this.arguments_ = newArgumentsSlots();
-        this.volstepdates_ = new ArrayList< Date >(volstepdates);
-        this.volatilities_ = new ArrayList< Handle< Quote > >(volatilities.length);
+        this.volstepdates_ = new ArrayList<>(volstepdates);
+        this.volatilities_ = new ArrayList<>(volatilities.length);
         for ( int i = 0; i < volatilities.length; i++ ) {
             volatilities_.add(new Handle< Quote >(new SimpleQuote(volatilities[i])));
         }
-        this.reversions_ = new ArrayList< Handle< Quote > >(1);
+        this.reversions_ = new ArrayList<>(1);
         reversions_.add(new Handle< Quote >(new SimpleQuote(reversion)));
 
         initialize(T);
@@ -173,12 +173,12 @@ public class Gsr extends Gaussian1dModel {
         QL.require(termStructure != null && !termStructure.empty(), "yield term structure handle is empty");
 
         this.arguments_ = newArgumentsSlots();
-        this.volstepdates_ = new ArrayList< Date >(volstepdates);
-        this.volatilities_ = new ArrayList< Handle< Quote > >(volatilities.length);
+        this.volstepdates_ = new ArrayList<>(volstepdates);
+        this.volatilities_ = new ArrayList<>(volatilities.length);
         for ( int i = 0; i < volatilities.length; i++ ) {
             volatilities_.add(new Handle< Quote >(new SimpleQuote(volatilities[i])));
         }
-        this.reversions_ = new ArrayList< Handle< Quote > >(reversions.length);
+        this.reversions_ = new ArrayList<>(reversions.length);
         for ( int i = 0; i < reversions.length; i++ ) {
             reversions_.add(new Handle< Quote >(new SimpleQuote(reversions[i])));
         }
@@ -199,9 +199,9 @@ public class Gsr extends Gaussian1dModel {
         QL.require(termStructure != null && !termStructure.empty(), "yield term structure handle is empty");
 
         this.arguments_ = newArgumentsSlots();
-        this.volstepdates_ = new ArrayList< Date >(volstepdates);
-        this.volatilities_ = new ArrayList< Handle< Quote > >(volatilities);
-        this.reversions_ = new ArrayList< Handle< Quote > >(1);
+        this.volstepdates_ = new ArrayList<>(volstepdates);
+        this.volatilities_ = new ArrayList<>(volatilities);
+        this.reversions_ = new ArrayList<>(1);
         reversions_.add(reversion);
 
         initialize(T);
@@ -220,15 +220,15 @@ public class Gsr extends Gaussian1dModel {
         QL.require(termStructure != null && !termStructure.empty(), "yield term structure handle is empty");
 
         this.arguments_ = newArgumentsSlots();
-        this.volstepdates_ = new ArrayList< Date >(volstepdates);
-        this.volatilities_ = new ArrayList< Handle< Quote > >(volatilities);
-        this.reversions_ = new ArrayList< Handle< Quote > >(reversions);
+        this.volstepdates_ = new ArrayList<>(volstepdates);
+        this.volatilities_ = new ArrayList<>(volatilities);
+        this.reversions_ = new ArrayList<>(reversions);
 
         initialize(T);
     }
 
     private static List< Parameter > newArgumentsSlots() {
-        final List< Parameter > a = new ArrayList< Parameter >(2);
+        final List< Parameter > a = new ArrayList<>(2);
         // Pre-fill slots so set(0,...) / set(1,...) work in initialize().
         a.add(new NullParameter());
         a.add(new NullParameter());

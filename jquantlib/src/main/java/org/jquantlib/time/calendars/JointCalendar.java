@@ -118,7 +118,7 @@ public class JointCalendar extends Calendar {
         private final List< Calendar > calendars_;
 
         private Impl(final JointCalendarRule rule, final Calendar... calendars) {
-            this.calendars_ = new ArrayList< Calendar >(calendars.length);
+            this.calendars_ = new ArrayList<>(calendars.length);
             Collections.addAll(this.calendars_, calendars);
             this.rule_ = rule;
         }

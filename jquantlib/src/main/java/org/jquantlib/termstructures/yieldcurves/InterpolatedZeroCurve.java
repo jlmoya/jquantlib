@@ -214,7 +214,7 @@ public class InterpolatedZeroCurve< I extends Interpolator > extends ZeroYieldSt
 
     @Override
     public List< Pair< Date, Double > > nodes() {
-        final List< Pair< Date, Double > > nodes = new ArrayList< Pair< Date, Double > >();
+        final List< Pair< Date, Double > > nodes = new ArrayList<>();
         for ( int i = 0; i < dates.length; ++i ) {
             nodes.add(new Pair< Date, Double >(dates[i], data[i]));
         }

@@ -78,14 +78,14 @@ public abstract class DefaultProbabilityTermStructure extends AbstractTermStruct
     //
 
     public DefaultProbabilityTermStructure(final DayCounter dc) {
-        this(dc, new ArrayList< Handle< Quote > >(), new ArrayList< Date >());
+        this(dc, new ArrayList<>(), new ArrayList<>());
     }
 
     public DefaultProbabilityTermStructure(final DayCounter dc, final List< Handle< Quote > > jumps,
             final List< Date > jumpDates) {
         super(dc);
-        this.jumps = (jumps != null) ? new ArrayList<>(jumps) : new ArrayList< Handle< Quote > >();
-        this.jumpDates = (jumpDates != null) ? new ArrayList<>(jumpDates) : new ArrayList< Date >();
+        this.jumps = (jumps != null) ? new ArrayList<>(jumps) : new ArrayList<>();
+        this.jumpDates = (jumpDates != null) ? new ArrayList<>(jumpDates) : new ArrayList<>();
         this.jumpTimes = new ArrayList<>(this.jumpDates.size());
         for ( int i = 0; i < this.jumpDates.size(); ++i ) {
             this.jumpTimes.add(0.0);
@@ -98,14 +98,14 @@ public abstract class DefaultProbabilityTermStructure extends AbstractTermStruct
     }
 
     public DefaultProbabilityTermStructure(final Date referenceDate, final Calendar cal, final DayCounter dc) {
-        this(referenceDate, cal, dc, new ArrayList< Handle< Quote > >(), new ArrayList< Date >());
+        this(referenceDate, cal, dc, new ArrayList<>(), new ArrayList<>());
     }
 
     public DefaultProbabilityTermStructure(final Date referenceDate, final Calendar cal, final DayCounter dc,
             final List< Handle< Quote > > jumps, final List< Date > jumpDates) {
         super(referenceDate, cal, dc);
-        this.jumps = (jumps != null) ? new ArrayList<>(jumps) : new ArrayList< Handle< Quote > >();
-        this.jumpDates = (jumpDates != null) ? new ArrayList<>(jumpDates) : new ArrayList< Date >();
+        this.jumps = (jumps != null) ? new ArrayList<>(jumps) : new ArrayList<>();
+        this.jumpDates = (jumpDates != null) ? new ArrayList<>(jumpDates) : new ArrayList<>();
         this.jumpTimes = new ArrayList<>(this.jumpDates.size());
         for ( int i = 0; i < this.jumpDates.size(); ++i ) {
             this.jumpTimes.add(0.0);
@@ -118,14 +118,14 @@ public abstract class DefaultProbabilityTermStructure extends AbstractTermStruct
     }
 
     public DefaultProbabilityTermStructure(final @Natural int settlementDays, final Calendar cal, final DayCounter dc) {
-        this(settlementDays, cal, dc, new ArrayList< Handle< Quote > >(), new ArrayList< Date >());
+        this(settlementDays, cal, dc, new ArrayList<>(), new ArrayList<>());
     }
 
     public DefaultProbabilityTermStructure(final @Natural int settlementDays, final Calendar cal, final DayCounter dc,
             final List< Handle< Quote > > jumps, final List< Date > jumpDates) {
         super(settlementDays, cal, dc);
-        this.jumps = (jumps != null) ? new ArrayList<>(jumps) : new ArrayList< Handle< Quote > >();
-        this.jumpDates = (jumpDates != null) ? new ArrayList<>(jumpDates) : new ArrayList< Date >();
+        this.jumps = (jumps != null) ? new ArrayList<>(jumps) : new ArrayList<>();
+        this.jumpDates = (jumpDates != null) ? new ArrayList<>(jumpDates) : new ArrayList<>();
         this.jumpTimes = new ArrayList<>(this.jumpDates.size());
         for ( int i = 0; i < this.jumpDates.size(); ++i ) {
             this.jumpTimes.add(0.0);

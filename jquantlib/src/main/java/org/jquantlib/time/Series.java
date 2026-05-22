@@ -62,7 +62,7 @@ public class Series< K, V > implements NavigableMap< K, V > {
         this.classK = classK;
         this.classV = classV;
 
-        this.delegate = new TreeMap< K, V >();
+        this.delegate = new TreeMap<>();
     }
 
     //

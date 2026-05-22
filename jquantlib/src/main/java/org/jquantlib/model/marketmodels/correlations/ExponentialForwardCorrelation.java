@@ -60,16 +60,16 @@ public class ExponentialForwardCorrelation extends PiecewiseConstantCorrelation 
     private final List< Matrix > correlations_;
 
     public ExponentialForwardCorrelation(final List< Double > rateTimes) {
-        this(rateTimes, 0.5, 0.2, 1.0, new ArrayList< Double >());
+        this(rateTimes, 0.5, 0.2, 1.0, new ArrayList<>());
     }
 
     public ExponentialForwardCorrelation(final List< Double > rateTimes, final double longTermCorr, final double beta) {
-        this(rateTimes, longTermCorr, beta, 1.0, new ArrayList< Double >());
+        this(rateTimes, longTermCorr, beta, 1.0, new ArrayList<>());
     }
 
     public ExponentialForwardCorrelation(final List< Double > rateTimes, final double longTermCorr, final double beta,
             final double gamma) {
-        this(rateTimes, longTermCorr, beta, gamma, new ArrayList< Double >());
+        this(rateTimes, longTermCorr, beta, gamma, new ArrayList<>());
     }
 
     public ExponentialForwardCorrelation(final List< Double > rateTimes, final double longTermCorr, final double beta,
@@ -78,7 +78,7 @@ public class ExponentialForwardCorrelation extends PiecewiseConstantCorrelation 
         this.longTermCorr_ = longTermCorr;
         this.beta_ = beta;
         this.gamma_ = gamma;
-        this.rateTimes_ = new ArrayList< Double >(rateTimes);
+        this.rateTimes_ = new ArrayList<>(rateTimes);
 
         QL.require(numberOfRates_ > 1, "Rate times must contain at least two values");
 
@@ -86,14 +86,14 @@ public class ExponentialForwardCorrelation extends PiecewiseConstantCorrelation 
 
         // corrTimes must include all rateTimes but the last
         if ( times == null || times.isEmpty() ) {
-            this.times_ = new ArrayList< Double >(rateTimes_.subList(0, rateTimes_.size() - 1));
+            this.times_ = new ArrayList<>(rateTimes_.subList(0, rateTimes_.size() - 1));
         } else {
-            this.times_ = new ArrayList< Double >(times);
+            this.times_ = new ArrayList<>(times);
             checkIncreasingTimes(this.times_);
         }
 
         if ( Closeness.isClose(gamma, 1.0) ) {
-            final List< Double > temp = new ArrayList< Double >(rateTimes_.subList(0, rateTimes_.size() - 1));
+            final List< Double > temp = new ArrayList<>(rateTimes_.subList(0, rateTimes_.size() - 1));
             QL.require(this.times_.equals(temp), "corr times must be equal to (all) rate times (but the last)");
             final Matrix c = exponentialCorrelations(rateTimes_, longTermCorr_, beta_, 1.0, 0.0);
             this.correlations_ = TimeHomogeneousForwardCorrelation.evolvedMatrices(c);
@@ -102,7 +102,7 @@ public class ExponentialForwardCorrelation extends PiecewiseConstantCorrelation 
             QL.require(this.times_.get(this.times_.size() - 1) <= rateTimes_.get(numberOfRates_),
                     "last corr time " + this.times_.get(this.times_.size() - 1) + " is after next-to-last rate time "
                             + rateTimes_.get(numberOfRates_));
-            this.correlations_ = new ArrayList< Matrix >(this.times_.size());
+            this.correlations_ = new ArrayList<>(this.times_.size());
             double time = this.times_.get(0) / 2.0;
             this.correlations_.add(exponentialCorrelations(rateTimes_, longTermCorr_, beta_, gamma_, time));
             for ( int k = 1; k < this.times_.size(); ++k ) {
@@ -169,7 +169,7 @@ public class ExponentialForwardCorrelation extends PiecewiseConstantCorrelation 
      */
     public static Matrix exponentialCorrelations(final double[] rateTimes, final double longTermCorr, final double beta,
             final double gamma, final double time) {
-        final List< Double > list = new ArrayList< Double >(rateTimes.length);
+        final List< Double > list = new ArrayList<>(rateTimes.length);
         for ( final double t : rateTimes ) {
             list.add(t);
         }

@@ -126,7 +126,7 @@ public class TreeSwaptionEngine extends Swaption.EngineImpl {
             lattice = model_.tree(grid);
         }
 
-        final List< Double > stoppingTimes = new ArrayList< Double >(args.exercise.dates().size());
+        final List< Double > stoppingTimes = new ArrayList<>(args.exercise.dates().size());
         for ( int i = 0; i < args.exercise.dates().size(); i++ ) {
             stoppingTimes.add(dayCounter.yearFraction(referenceDate, args.exercise.date(i)));
         }

@@ -96,10 +96,10 @@ public class TimeGrid {
         QL.require(!mandatoryPoints.isEmpty(), "empty time sequence");
 
         // Sort + dedup using close_enough.
-        final List< Double > sorted = new ArrayList< Double >(mandatoryPoints);
+        final List< Double > sorted = new ArrayList<>(mandatoryPoints);
         java.util.Collections.sort(sorted);
         QL.require(sorted.get(0) >= 0.0, "negative times not allowed");
-        final List< Double > mts = new ArrayList< Double >();
+        final List< Double > mts = new ArrayList<>();
         mts.add(sorted.get(0));
         for ( int i = 1; i < sorted.size(); i++ ) {
             if ( !Closeness.isCloseEnough(sorted.get(i), mts.get(mts.size() - 1)) ) {
@@ -108,7 +108,7 @@ public class TimeGrid {
         }
 
         // Build times: prepend 0 if not already present.
-        final List< Double > tList = new ArrayList< Double >();
+        final List< Double > tList = new ArrayList<>();
         if ( mts.get(0) > 0.0 ) {
             tList.add(0.0);
         }
@@ -158,7 +158,7 @@ public class TimeGrid {
         // (even though I'm not sure that I agree.)
         QL.require(mandatoryTimes.first() < 0.0, "negative times not allowed"); // TODO: message
 
-        final List< Double > unique = new ArrayList< Double >();
+        final List< Double > unique = new ArrayList<>();
         double prev = this.mandatoryTimes.get(0);
         unique.add(prev);
         for ( int i = 1; i < this.mandatoryTimes.size(); i++ ) {
@@ -196,10 +196,10 @@ public class TimeGrid {
         QL.require(!mandatoryPoints.isEmpty(), "empty mandatory-times vector");
 
         // Sort + dedup.
-        final List< Double > sorted = new ArrayList< Double >(mandatoryPoints);
+        final List< Double > sorted = new ArrayList<>(mandatoryPoints);
         java.util.Collections.sort(sorted);
         QL.require(sorted.get(0) >= 0.0, "negative times not allowed");
-        final List< Double > mts = new ArrayList< Double >();
+        final List< Double > mts = new ArrayList<>();
         mts.add(sorted.get(0));
         for ( int i = 1; i < sorted.size(); i++ ) {
             if ( !Closeness.isCloseEnough(sorted.get(i), mts.get(mts.size() - 1)) ) {
@@ -228,7 +228,7 @@ public class TimeGrid {
             dtMax = last / steps;
         }
 
-        final List< Double > tList = new ArrayList< Double >();
+        final List< Double > tList = new ArrayList<>();
         double periodBegin = 0.0;
         tList.add(periodBegin);
         for ( int idx = 0; idx < mts.size(); idx++ ) {

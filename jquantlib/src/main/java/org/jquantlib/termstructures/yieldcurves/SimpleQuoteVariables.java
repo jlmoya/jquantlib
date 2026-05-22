@@ -80,12 +80,12 @@ public class SimpleQuoteVariables implements AdditionalBootstrapVariables {
 
     /** Convenience ctor — no initial guesses, no lower bounds (identity transform). */
     public SimpleQuoteVariables(final List< SimpleQuote > quotes) {
-        this(quotes, new ArrayList< Double >(), new ArrayList< Double >());
+        this(quotes, new ArrayList<>(), new ArrayList<>());
     }
 
     /** Convenience ctor — no lower bounds. */
     public SimpleQuoteVariables(final List< SimpleQuote > quotes, final List< Double > initialGuesses) {
-        this(quotes, initialGuesses, new ArrayList< Double >());
+        this(quotes, initialGuesses, new ArrayList<>());
     }
 
     /**
@@ -100,11 +100,11 @@ public class SimpleQuoteVariables implements AdditionalBootstrapVariables {
      */
     public SimpleQuoteVariables(final List< SimpleQuote > quotes, final List< Double > initialGuesses,
             final List< Double > lowerBounds) {
-        this.quotes_ = new ArrayList< SimpleQuote >(quotes);
-        this.initialGuesses_ = initialGuesses == null ? new ArrayList< Double >()
-                : new ArrayList< Double >(initialGuesses);
-        this.lowerBounds_ = lowerBounds == null ? new ArrayList< Double >()
-                : new ArrayList< Double >(lowerBounds);
+        this.quotes_ = new ArrayList<>(quotes);
+        this.initialGuesses_ = initialGuesses == null ? new ArrayList<>()
+                : new ArrayList<>(initialGuesses);
+        this.lowerBounds_ = lowerBounds == null ? new ArrayList<>()
+                : new ArrayList<>(lowerBounds);
         QL.require(this.initialGuesses_.size() <= this.quotes_.size(), "too many initialGuesses");
         QL.require(this.lowerBounds_.size() <= this.quotes_.size(), "too many lowerBounds");
     }

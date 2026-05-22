@@ -122,7 +122,7 @@ public class CapHelper extends BlackCalibrationHelper {
         // termStructure parameter is Java-specific carryover and is not
         // used by the Cap constructor in C++ v1.42.1.
         cap_ = new CapFloor(CapFloor.Type.Cap, floatingLeg,
-                new ArrayList< Double >(Collections.singletonList(Double.valueOf(fairRate))), termStructure_, null);
+                new ArrayList<>(Collections.singletonList(Double.valueOf(fairRate))), termStructure_, null);
 
         super.performCalculations(); // sets marketValue_ from blackPrice
     }

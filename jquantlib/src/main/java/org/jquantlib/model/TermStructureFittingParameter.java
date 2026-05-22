@@ -73,8 +73,8 @@ public class TermStructureFittingParameter extends Parameter {
         //
 
         public NumericalImpl(final Handle< YieldTermStructure > termStructure) {
-            this.times = new ArrayList< Double >();
-            this.values = new ArrayList< Double >();
+            this.times = new ArrayList<>();
+            this.values = new ArrayList<>();
             this.termStructure = termStructure;
         }
 

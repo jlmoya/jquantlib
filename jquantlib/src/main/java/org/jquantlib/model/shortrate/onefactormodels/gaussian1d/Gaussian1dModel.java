@@ -108,7 +108,7 @@ public abstract class Gaussian1dModel extends LazyObject implements TermStructur
      * In C++ the cache is keyed on (index name, fixing serial, tenor units, tenor length). We use a String key with the
      * same components.
      */
-    private final Map< String, VanillaSwap > swapCache_ = new HashMap< String, VanillaSwap >();
+    private final Map< String, VanillaSwap > swapCache_ = new HashMap<>();
     /** State process — protected so subclasses can install their own. */
     protected StochasticProcess1D stateProcess_;
     /** Cached evaluation date (refreshed in performCalculations). */

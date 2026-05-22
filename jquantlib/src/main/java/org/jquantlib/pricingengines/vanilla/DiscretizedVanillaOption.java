@@ -76,7 +76,7 @@ public class DiscretizedVanillaOption extends DiscretizedAsset {
         this.a = (VanillaOption.ArgumentsImpl) arguments;
         this.process = process;
         final int size = a.exercise.size();
-        this.stoppingTimes = new ArrayList< Double >();
+        this.stoppingTimes = new ArrayList<>();
         for ( int i = 0; i < size; ++i ) {
             stoppingTimes.add(i, process.time(a.exercise.date(i)));
             if ( !grid.empty() ) {

@@ -61,8 +61,8 @@ public class LiborForwardModel extends CalibratedModel implements AffineModel {
         super(paramCount(volaModel) + paramCount(corrModel));
         this.process_ = process;
         this.covarProxy_ = new LfmCovarianceProxy(volaModel, corrModel);
-        this.f_ = new ArrayList< Double >(process.size());
-        this.accrualPeriod_ = new ArrayList< Double >(process.size());
+        this.f_ = new ArrayList<>(process.size());
+        this.accrualPeriod_ = new ArrayList<>(process.size());
 
         // Mirror C++ ctor body: copy the volatility and correlation
         // parameters into the CalibratedModel arguments_ list.
@@ -109,8 +109,8 @@ public class LiborForwardModel extends CalibratedModel implements AffineModel {
         // Splice the flat parameter array back into vola/corr param lists.
         // Mirror C++: copy [begin, begin+k) -> vola.setParams, [k, end) -> corr.setParams.
         final int k = paramCount(covarProxy_.volatilityModel());
-        final List< Parameter > volaParams = new ArrayList< Parameter >(arguments_.subList(0, k));
-        final List< Parameter > corrParams = new ArrayList< Parameter >(arguments_.subList(k, arguments_.size()));
+        final List< Parameter > volaParams = new ArrayList<>(arguments_.subList(0, k));
+        final List< Parameter > corrParams = new ArrayList<>(arguments_.subList(k, arguments_.size()));
         covarProxy_.volatilityModel().setParams(volaParams);
         covarProxy_.correlationModel().setParams(corrParams);
 
@@ -216,12 +216,12 @@ public class LiborForwardModel extends CalibratedModel implements AffineModel {
         final int size = process_.size() / 2;
         final Matrix volatilities = new Matrix(size, size);
 
-        final List< Date > exercises = new ArrayList< Date >(size);
+        final List< Date > exercises = new ArrayList<>(size);
         for ( int i = 1; i <= size; ++i ) {
             exercises.add(process_.fixingDates().get(i));
         }
 
-        final List< Period > lengths = new ArrayList< Period >(size);
+        final List< Period > lengths = new ArrayList<>(size);
         for ( int i = 0; i < size; ++i ) {
             lengths.add(new Period((i + 1) * index.tenor().length(), index.tenor().units()));
         }

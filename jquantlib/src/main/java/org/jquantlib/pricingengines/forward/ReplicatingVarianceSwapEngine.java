@@ -144,7 +144,7 @@ public class ReplicatingVarianceSwapEngine extends VarianceSwap.EngineImpl {
         final VarianceSwap.ArgumentsImpl a = (VarianceSwap.ArgumentsImpl) arguments_;
         final VarianceSwap.ResultsImpl r = (VarianceSwap.ResultsImpl) results_;
 
-        final List< WeightedPayoff > optionWeights = new ArrayList< WeightedPayoff >();
+        final List< WeightedPayoff > optionWeights = new ArrayList<>();
         computeOptionWeights(callStrikes_, Option.Type.Call, optionWeights);
         computeOptionWeights(putStrikes_, Option.Type.Put, optionWeights);
 

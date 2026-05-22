@@ -87,12 +87,12 @@ public class StrippedOptionlet extends StrippedOptionletBase {
         this.type_ = type;
         this.displacement_ = displacement;
         this.nOptionletDates_ = optionletDates.size();
-        this.optionletDates_ = new ArrayList< Date >(optionletDates);
-        this.optionletTimes_ = new ArrayList< Double >(nOptionletDates_);
-        this.optionletAtmRates_ = new ArrayList< Double >(nOptionletDates_);
-        this.optionletStrikes_ = new ArrayList< List< Double > >(strikes);
+        this.optionletDates_ = new ArrayList<>(optionletDates);
+        this.optionletTimes_ = new ArrayList<>(nOptionletDates_);
+        this.optionletAtmRates_ = new ArrayList<>(nOptionletDates_);
+        this.optionletStrikes_ = new ArrayList<>(strikes);
         this.optionletVolQuotes_ = v;
-        this.optionletVolatilities_ = new ArrayList< List< Double > >(nOptionletDates_);
+        this.optionletVolatilities_ = new ArrayList<>(nOptionletDates_);
 
         for ( int i = 0; i < nOptionletDates_; ++i ) {
             optionletTimes_.add(0.0);
@@ -100,7 +100,7 @@ public class StrippedOptionlet extends StrippedOptionletBase {
         }
         checkInputs();
         for ( int i = 0; i < nOptionletDates_; ++i ) {
-            final List< Double > row = new ArrayList< Double >(strikes.get(i).size());
+            final List< Double > row = new ArrayList<>(strikes.get(i).size());
             for ( int j = 0; j < strikes.get(i).size(); ++j ) {
                 row.add(0.0);
             }
@@ -143,9 +143,9 @@ public class StrippedOptionlet extends StrippedOptionletBase {
     //
 
     private static List< List< Double > > broadcast(final List< Double > strikes, final int n) {
-        final List< List< Double > > out = new ArrayList< List< Double > >(n);
+        final List< List< Double > > out = new ArrayList<>(n);
         for ( int i = 0; i < n; ++i ) {
-            out.add(new ArrayList< Double >(strikes));
+            out.add(new ArrayList<>(strikes));
         }
         return out;
     }

@@ -92,9 +92,9 @@ public class Calendar {
     // both per-instance).
     //
     private static final Map< Object, Set< Date > > sharedAddedHolidays =
-            new ConcurrentHashMap< Object, Set< Date > >();
+            new ConcurrentHashMap<>();
     private static final Map< Object, Set< Date > > sharedRemovedHolidays =
-            new ConcurrentHashMap< Object, Set< Date > >();
+            new ConcurrentHashMap<>();
 
     //
     // protected fields
@@ -130,7 +130,7 @@ public class Calendar {
             // Use a synchronized HashSet so concurrent add/remove from
             // multiple threads (the JVM-side equivalent of C++'s
             // single-threaded shared_ptr Impl semantics) are safe.
-            final Set< Date > created = Collections.synchronizedSet(new HashSet< Date >());
+            final Set< Date > created = Collections.synchronizedSet(new HashSet<>());
             s = sharedAddedHolidays.putIfAbsent(key, created);
             if ( s == null ) {
                 s = created;
@@ -147,7 +147,7 @@ public class Calendar {
         final Object key = impl.sharingKey();
         Set< Date > s = sharedRemovedHolidays.get(key);
         if ( s == null ) {
-            final Set< Date > created = Collections.synchronizedSet(new HashSet< Date >());
+            final Set< Date > created = Collections.synchronizedSet(new HashSet<>());
             s = sharedRemovedHolidays.putIfAbsent(key, created);
             if ( s == null ) {
                 s = created;
@@ -169,7 +169,7 @@ public class Calendar {
         QL.require(to.gt(from),
                 "'from' date (" + from + ") must be earlier than 'to' date (" + to + ")");
 
-        final List< Date > result = new ArrayList< Date >();
+        final List< Date > result = new ArrayList<>();
         for ( Date d = from.clone(); d.le(to); d = d.add(1) ) {
             if ( c.isHoliday(d) && (includeWeekEnds || !c.isWeekend(d.weekday())) ) {
                 result.add(d);
@@ -316,7 +316,7 @@ public class Calendar {
         // concurrently. Collections.synchronizedSet documents external
         // synchronization for compound operations such as iteration.
         synchronized ( shared ) {
-            return Collections.unmodifiableSet(new TreeSet< Date >(shared));
+            return Collections.unmodifiableSet(new TreeSet<>(shared));
         }
     }
 
@@ -329,7 +329,7 @@ public class Calendar {
     public Set< Date > removedHolidays() /* @ReadOnly */ {
         final Set< Date > shared = removedHolidaysFor(impl);
         synchronized ( shared ) {
-            return Collections.unmodifiableSet(new TreeSet< Date >(shared));
+            return Collections.unmodifiableSet(new TreeSet<>(shared));
         }
     }
 

@@ -272,8 +272,8 @@ public class ChoiBasketEngine extends BasketOption.Engine {
         // Build n one-asset BlackProcess-like processes whose forward = fwd[i]
         // and whose total stdDev to maturity = vStar1[i].
         final Array vStar1Final = vStar1;
-        final List< SimpleQuote > quotes = new ArrayList< SimpleQuote >(n_);
-        final List< GeneralizedBlackScholesProcess > p1d = new ArrayList< GeneralizedBlackScholesProcess >(n_);
+        final List< SimpleQuote > quotes = new ArrayList<>(n_);
+        final List< GeneralizedBlackScholesProcess > p1d = new ArrayList<>(n_);
         for ( int i = 0; i < n_; ++i ) {
             final SimpleQuote q = new SimpleQuote(fwd[i]);
             quotes.add(q);
@@ -433,8 +433,8 @@ public class ChoiBasketEngine extends BasketOption.Engine {
             }
 
             // cache (order -> abscissae/weights)
-            final Map< Integer, double[] > n2x = new HashMap< Integer, double[] >();
-            final Map< Integer, double[] > n2w = new HashMap< Integer, double[] >();
+            final Map< Integer, double[] > n2x = new HashMap<>();
+            final Map< Integer, double[] > n2w = new HashMap<>();
             for ( int j = 0; j < m; ++j ) {
                 final Integer key = Integer.valueOf(ns[j]);
                 if ( !n2x.containsKey(key) ) {

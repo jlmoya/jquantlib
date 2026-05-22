@@ -88,7 +88,7 @@ public abstract class FDMultiPeriodEngine extends FDVanillaEngine {
     public FDMultiPeriodEngine(final GeneralizedBlackScholesProcess process, final int gridPoints, final int timeSteps,
             final boolean timeDependent) {
         super(process, gridPoints, timeSteps, timeDependent);
-        this.stoppingTimes = new ArrayList< Double >();
+        this.stoppingTimes = new ArrayList<>();
         this.timeStepPerPeriod = timeSteps;
     }
 

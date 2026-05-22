@@ -150,7 +150,7 @@ public class FdHestonBarrierEngine extends BarrierOption.EngineImpl {
         // 3. Step conditions (only dividends if any; European exercise so no
         //    early-exercise condition).
         final FdmStepConditionComposite.Conditions stepConditions = new FdmStepConditionComposite.Conditions();
-        final List< List< Double > > stoppingTimes = new ArrayList< List< Double > >();
+        final List< List< Double > > stoppingTimes = new ArrayList<>();
 
         if ( !dividends.isEmpty() ) {
             final FdmDividendHandler dividendCondition = new FdmDividendHandler(dividends, mesher,
@@ -159,7 +159,7 @@ public class FdHestonBarrierEngine extends BarrierOption.EngineImpl {
                     /*equityDirection=*/0);
             stepConditions.add(dividendCondition);
             // exclude times after maturity, mirror C++.
-            final List< Double > divTimes = new ArrayList< Double >();
+            final List< Double > divTimes = new ArrayList<>();
             for ( final double t : dividendCondition.dividendTimes() ) {
                 divTimes.add(Math.min(maturity, t));
             }
@@ -170,7 +170,7 @@ public class FdHestonBarrierEngine extends BarrierOption.EngineImpl {
 
         // 4. Boundary conditions: Dirichlet at the barrier with constant rebate.
         //    Both Down{In,Out} take Lower; both Up{In,Out} take Upper.
-        final List< BoundaryCondition< FdmLinearOp > > bcList = new ArrayList< BoundaryCondition< FdmLinearOp > >();
+        final List< BoundaryCondition< FdmLinearOp > > bcList = new ArrayList<>();
         final double rebateValue = args.rebate;
         if ( barrier == BarrierType.DownOut || barrier == BarrierType.DownIn ) {
             bcList.add(new FdmTimeDepDirichletBoundary(mesher, t -> rebateValue, /*direction=*/0,

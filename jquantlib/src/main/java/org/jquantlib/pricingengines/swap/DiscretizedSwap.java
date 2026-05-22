@@ -379,7 +379,7 @@ public class DiscretizedSwap extends DiscretizedAsset {
 
     @Override
     public List</*@Time*/ Double> mandatoryTimes() {
-        final List<Double> times = new ArrayList<Double>();
+        final List<Double> times = new ArrayList<>();
         for (final double t : fixedResetTimes_) {
             if (t >= 0.0) {
                 times.add(t);

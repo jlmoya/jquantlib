@@ -79,7 +79,7 @@ public class FdHestonHullWhiteVanillaEngine
     private final FdmSchemeDesc schemeDesc;
     private final boolean controlVariate;
     /** Cached results per strike, populated on first calculate() after caching is enabled. */
-    private final List< CachedResult > cachedResults = new ArrayList< CachedResult >();
+    private final List< CachedResult > cachedResults = new ArrayList<>();
     /** Cached strikes (multi-strike acceleration). Empty = single-strike mode. */
     private double[] strikes = new double[0];
 

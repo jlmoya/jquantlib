@@ -135,9 +135,9 @@ public class TurnbullWakemanAsianEngine extends DiscreteAveragingAsianOption.Eng
         // Expected value of the non-accrued portion of the average prices
         // In general, m will equal n below if there is no accrued. If accrued, m > n.
         double EA = 0.0;
-        final List< Double > forwards = new ArrayList< Double >();
-        final List< Double > times = new ArrayList< Double >();
-        final List< Double > spotVars = new ArrayList< Double >();
+        final List< Double > forwards = new ArrayList<>();
+        final List< Double > times = new ArrayList<>();
+        final List< Double > spotVars = new ArrayList<>();
         final double spot = process.stateVariable().currentLink().value();
 
         for ( final Date fd : a.fixingDates ) {

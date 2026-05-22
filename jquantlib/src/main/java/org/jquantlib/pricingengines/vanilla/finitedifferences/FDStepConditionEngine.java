@@ -53,7 +53,7 @@ public abstract class FDStepConditionEngine extends FDVanillaEngine {
     public FDStepConditionEngine(final GeneralizedBlackScholesProcess process, final int timeSteps,
             final int gridPoints, final boolean timeDependent) {
         super(process, timeSteps, gridPoints, timeDependent);
-        this.controlBCs = new ArrayList< BoundaryCondition< TridiagonalOperator > >();
+        this.controlBCs = new ArrayList<>();
         this.controlPrices = new SampledCurve(gridPoints);
     }
 
@@ -70,8 +70,8 @@ public abstract class FDStepConditionEngine extends FDVanillaEngine {
         initializeBoundaryConditions();
         initializeStepCondition();
 
-        final List< TridiagonalOperator > operatorSet = new ArrayList< TridiagonalOperator >();
-        List< Array > arraySet = new ArrayList< Array >();
+        final List< TridiagonalOperator > operatorSet = new ArrayList<>();
+        List< Array > arraySet = new ArrayList<>();
         final BoundaryConditionSet< BoundaryCondition< TridiagonalOperator > > bcSet = new BoundaryConditionSet< BoundaryCondition< TridiagonalOperator > >();
         final StepConditionSet< Array > conditionSet = new StepConditionSet< Array >();
 

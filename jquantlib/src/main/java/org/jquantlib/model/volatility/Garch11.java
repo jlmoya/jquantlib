@@ -114,7 +114,7 @@ public class Garch11 implements VolatilityCompositor {
     public static TimeSeries< Double > calculate(final TimeSeries< Double > quoteSeries, final double alpha,
             final double beta, final double omega) {
         final TimeSeries< Double > retval = new TimeSeries< Double >(Double.class);
-        final List< Date > dates = new ArrayList< Date >(quoteSeries.navigableKeySet());
+        final List< Date > dates = new ArrayList<>(quoteSeries.navigableKeySet());
         if ( dates.isEmpty() ) {
             return retval;
         }

@@ -238,7 +238,7 @@ public class Gaussian1dSwaptionEngine extends Swaption.EngineImpl {
      */
     @SuppressWarnings( "unused" )
     private static List< double[] > emptyProbabilityVectors() {
-        return new ArrayList< double[] >();
+        return new ArrayList<>();
     }
 
     public Gaussian1dModel model() {

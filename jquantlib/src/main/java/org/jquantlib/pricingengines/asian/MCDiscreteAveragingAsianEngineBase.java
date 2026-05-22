@@ -84,7 +84,7 @@ public abstract class MCDiscreteAveragingAsianEngineBase< PathType > extends Dis
     /** Mirrors C++ {@code MCDiscreteAveragingAsianEngineBase::timeGrid()}. */
     protected TimeGrid timeGrid() {
         final DiscreteAveragingAsianOption.ArgumentsImpl a = (DiscreteAveragingAsianOption.ArgumentsImpl) arguments_;
-        final List< Double > fixingTimes = new ArrayList< Double >();
+        final List< Double > fixingTimes = new ArrayList<>();
         for ( int i = 0; i < a.fixingDates.size(); i++ ) {
             final double t = process_.time(a.fixingDates.get(i));
             if ( t >= 0 ) {

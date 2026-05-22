@@ -72,7 +72,7 @@ public class StrippedOptionletAdapter extends OptionletVolatilityStructure {
         super(s.settlementDays(), s.calendar(), s.businessDayConvention(), s.dayCounter());
         this.optionletStripper_ = s;
         this.nInterpolations_ = s.optionletMaturities();
-        this.strikeInterpolations_ = new ArrayList< Interpolation >(nInterpolations_);
+        this.strikeInterpolations_ = new ArrayList<>(nInterpolations_);
         for ( int i = 0; i < nInterpolations_; ++i ) {
             strikeInterpolations_.add(null);
         }
@@ -149,7 +149,7 @@ public class StrippedOptionletAdapter extends OptionletVolatilityStructure {
         // For each maturity i, evaluate the strike-axis interpolator at
         // the requested strike (with extrapolation), then linearly interpolate
         // those values along the time axis.
-        final List< Double > vol = new ArrayList< Double >(nInterpolations_);
+        final List< Double > vol = new ArrayList<>(nInterpolations_);
         for ( int i = 0; i < nInterpolations_; ++i ) {
             vol.add(strikeInterpolations_.get(i).op(strike, true));
         }

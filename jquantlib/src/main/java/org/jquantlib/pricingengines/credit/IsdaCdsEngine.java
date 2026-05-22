@@ -305,7 +305,7 @@ public class IsdaCdsEngine extends CreditDefaultSwap.Engine {
         final List< Date > yDates = extractYieldDates(disc);
         final List< Date > cDates = extractCreditDates(prob);
 
-        final TreeSet< Date > nodeSet = new TreeSet<>();
+        final var nodeSet = new TreeSet< Date >();
         nodeSet.addAll(yDates);
         nodeSet.addAll(cDates);
         final List< Date > nodes = new ArrayList<>(nodeSet);

@@ -114,7 +114,7 @@ public abstract class TwoFactorModel extends ShortRateModel {
             correlation.set(1, 1, 1.0);
             correlation.set(0, 1, correlation_);
             correlation.set(1, 0, correlation_);
-            final ArrayList< StochasticProcess1D > processes = new ArrayList< StochasticProcess1D >();
+            final var processes = new ArrayList< StochasticProcess1D >();
             processes.add(0, xProcess_);
             processes.add(1, xProcess_);
             return (new StochasticProcessArray(processes, correlation));

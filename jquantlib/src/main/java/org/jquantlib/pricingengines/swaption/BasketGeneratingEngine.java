@@ -162,7 +162,7 @@ public abstract class BasketGeneratingEngine {
         // Java SwapIndex has no exogenousDiscount — always treat as false
         // (no separate discounting curve check needed)
 
-        final List< BlackCalibrationHelper > result = new ArrayList< BlackCalibrationHelper >();
+        final List< BlackCalibrationHelper > result = new ArrayList<>();
 
         final Date today = new Settings().evaluationDate();
 

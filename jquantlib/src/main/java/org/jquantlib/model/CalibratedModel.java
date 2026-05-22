@@ -62,7 +62,7 @@ public abstract class CalibratedModel implements Observer, Observable {
     protected EndCriteria.Type shortRateEndCriteria_;
 
     public CalibratedModel(final int nArguments) {
-        this.arguments_ = new ArrayList< Parameter >(nArguments);
+        this.arguments_ = new ArrayList<>(nArguments);
         // Pre-fill the slots with NullParameter so subclasses can use
         // arguments_.set(i, ...) per the C++ Parameter& reference-binding
         // pattern. Phase 2b WI-3 indirection: without pre-fill, set(i, ...)

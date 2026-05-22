@@ -94,8 +94,8 @@ public abstract class SwaptionVolatilityDiscrete extends SwaptionVolatilityStruc
         this.bdc_ = bdc;
         this.moving_ = true;
         this.nOptionTenors_ = optionTenors.size();
-        this.optionTenors_ = new ArrayList< Period >(optionTenors);
-        this.optionDates_ = new ArrayList< Date >(nOptionTenors_);
+        this.optionTenors_ = new ArrayList<>(optionTenors);
+        this.optionDates_ = new ArrayList<>(nOptionTenors_);
         for ( int i = 0; i < nOptionTenors_; ++i ) {
             this.optionDates_.add(null);
         }
@@ -105,7 +105,7 @@ public abstract class SwaptionVolatilityDiscrete extends SwaptionVolatilityStruc
         this.optionInterpolatorDatesAsReal_ = new double[nOptionTenors_ + 1];
 
         this.nSwapTenors_ = swapTenors.size();
-        this.swapTenors_ = new ArrayList< Period >(swapTenors);
+        this.swapTenors_ = new ArrayList<>(swapTenors);
         this.swapLengths_ = new double[nSwapTenors_];
 
         checkOptionTenors();
@@ -126,8 +126,8 @@ public abstract class SwaptionVolatilityDiscrete extends SwaptionVolatilityStruc
         this.bdc_ = bdc;
         this.moving_ = false;
         this.nOptionTenors_ = optionTenors.size();
-        this.optionTenors_ = new ArrayList< Period >(optionTenors);
-        this.optionDates_ = new ArrayList< Date >(nOptionTenors_);
+        this.optionTenors_ = new ArrayList<>(optionTenors);
+        this.optionDates_ = new ArrayList<>(nOptionTenors_);
         for ( int i = 0; i < nOptionTenors_; ++i ) {
             this.optionDates_.add(null);
         }
@@ -137,7 +137,7 @@ public abstract class SwaptionVolatilityDiscrete extends SwaptionVolatilityStruc
         this.optionInterpolatorDatesAsReal_ = new double[nOptionTenors_ + 1];
 
         this.nSwapTenors_ = swapTenors.size();
-        this.swapTenors_ = new ArrayList< Period >(swapTenors);
+        this.swapTenors_ = new ArrayList<>(swapTenors);
         this.swapLengths_ = new double[nSwapTenors_];
 
         checkOptionTenors();
@@ -159,18 +159,18 @@ public abstract class SwaptionVolatilityDiscrete extends SwaptionVolatilityStruc
         // optionTenors are not used in this branch (initialised to placeholders
         // so size() agrees with C++ semantics where the vector exists but is
         // never populated).
-        this.optionTenors_ = new ArrayList< Period >(nOptionTenors_);
+        this.optionTenors_ = new ArrayList<>(nOptionTenors_);
         for ( int i = 0; i < nOptionTenors_; ++i ) {
             this.optionTenors_.add(null);
         }
-        this.optionDates_ = new ArrayList< Date >(optionDates);
+        this.optionDates_ = new ArrayList<>(optionDates);
         this.optionTimes_ = new double[nOptionTenors_];
         this.optionDatesAsReal_ = new double[nOptionTenors_];
         this.optionInterpolatorTimes_ = new double[nOptionTenors_ + 1];
         this.optionInterpolatorDatesAsReal_ = new double[nOptionTenors_ + 1];
 
         this.nSwapTenors_ = swapTenors.size();
-        this.swapTenors_ = new ArrayList< Period >(swapTenors);
+        this.swapTenors_ = new ArrayList<>(swapTenors);
         this.swapLengths_ = new double[nSwapTenors_];
 
         checkOptionDates(referenceDate);

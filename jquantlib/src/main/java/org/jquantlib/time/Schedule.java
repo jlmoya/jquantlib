@@ -84,7 +84,7 @@ public class Schedule {
 
     public Schedule(final List< Date > dates, final Calendar calendar, final BusinessDayConvention convention) {
         this.dates_ = dates;
-        this.isRegular_ = new ArrayList< Boolean >(); // TODO: use a data structure backed by primitive types instead
+        this.isRegular_ = new ArrayList<>(); // TODO: use a data structure backed by primitive types instead
 
         this.calendar_ = calendar;
         this.convention_ = convention;
@@ -112,7 +112,7 @@ public class Schedule {
             final BusinessDayConvention terminationDateConvention, final Period tenor, final DateGeneration.Rule rule,
             final boolean endOfMonth, final List< Boolean > isRegular) {
         this.dates_ = dates;
-        this.isRegular_ = (isRegular == null) ? new ArrayList< Boolean >() : new ArrayList< Boolean >(isRegular);
+        this.isRegular_ = (isRegular == null) ? new ArrayList<>() : new ArrayList<>(isRegular);
 
         this.calendar_ = calendar;
         this.convention_ = convention;
@@ -152,8 +152,8 @@ public class Schedule {
             final BusinessDayConvention convention, final BusinessDayConvention terminationDateConvention,
             final DateGeneration.Rule rule, final boolean endOfMonth, final Date firstDate, final Date nextToLastDate) {
 
-        this.dates_ = new ArrayList< Date >(); // TODO: use a data structure backed by primitive types instead
-        this.isRegular_ = new ArrayList< Boolean >(); // TODO: use a data structure backed by primitive types instead
+        this.dates_ = new ArrayList<>(); // TODO: use a data structure backed by primitive types instead
+        this.isRegular_ = new ArrayList<>(); // TODO: use a data structure backed by primitive types instead
 
         this.fullInterface_ = true;
         this.tenor_ = tenor;
@@ -565,8 +565,8 @@ public class Schedule {
         this.terminationDateConvention_ = other.terminationDateConvention_;
         this.endOfMonth_ = other.endOfMonth_;
         this.finalIsRegular_ = other.finalIsRegular_;
-        this.dates_ = new ArrayList< Date >(other.dates_);
-        this.isRegular_ = new ArrayList< Boolean >(other.isRegular_);
+        this.dates_ = new ArrayList<>(other.dates_);
+        this.isRegular_ = new ArrayList<>(other.isRegular_);
         this.tenor_ = other.tenor_;
         this.rule_ = other.rule_;
         this.firstDate_ = other.firstDate_;
@@ -819,7 +819,7 @@ public class Schedule {
     // FIXME: http://bugs.jquantlib.org/view.php?id=67
     private Iterator< Date > std_lower_bound(final Date date) {
 
-        final List< Date > ldates = new ArrayList< Date >();
+        final List< Date > ldates = new ArrayList<>();
 
         if ( dates_.size() > 0 ) {
             int index = -1;

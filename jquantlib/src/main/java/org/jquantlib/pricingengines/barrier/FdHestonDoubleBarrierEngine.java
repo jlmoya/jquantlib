@@ -168,12 +168,12 @@ public class FdHestonDoubleBarrierEngine extends DoubleBarrierOption.EngineImpl 
         final FdmLogInnerValue calculator = new FdmLogInnerValue(payoff, mesher, 0);
 
         // 3. Step conditions — European exercise, no dividends in C++ either.
-        final FdmStepConditionComposite conditions = new FdmStepConditionComposite(new ArrayList< List< Double > >(),
+        final FdmStepConditionComposite conditions = new FdmStepConditionComposite(new ArrayList<>(),
                 new FdmStepConditionComposite.Conditions());
 
         // 4. Boundary conditions: Dirichlet at both barriers, value = rebate.
         final double rebate = args.rebate;
-        final List< BoundaryCondition< FdmLinearOp > > bcList = new ArrayList< BoundaryCondition< FdmLinearOp > >();
+        final List< BoundaryCondition< FdmLinearOp > > bcList = new ArrayList<>();
         bcList.add(new FdmTimeDepDirichletBoundary(mesher, t -> rebate, /*direction=*/0, BoundaryCondition.Side.Lower));
         bcList.add(new FdmTimeDepDirichletBoundary(mesher, t -> rebate, /*direction=*/0, BoundaryCondition.Side.Upper));
         final FdmBoundaryConditionSet boundaries = new FdmBoundaryConditionSet(Collections.unmodifiableList(bcList));

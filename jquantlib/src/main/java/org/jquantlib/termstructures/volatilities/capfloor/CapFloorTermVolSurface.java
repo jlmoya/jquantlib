@@ -78,7 +78,7 @@ public class CapFloorTermVolSurface extends CapFloorTermVolatilityStructure {
             final List< List< Handle< ? extends Quote > > > vols, final DayCounter dc) {
         super(settlementDays, cal, bdc, dc);
         this.nOptionTenors_ = optionTenors.size();
-        this.optionTenors_ = new ArrayList< Period >(optionTenors);
+        this.optionTenors_ = new ArrayList<>(optionTenors);
         this.optionDates_ = newNullList(nOptionTenors_);
         this.optionTimes_ = new double[nOptionTenors_];
         this.nStrikes_ = strikes.length;
@@ -99,7 +99,7 @@ public class CapFloorTermVolSurface extends CapFloorTermVolatilityStructure {
             final List< List< Handle< ? extends Quote > > > vols, final DayCounter dc) {
         super(settlementDate, cal, bdc, dc);
         this.nOptionTenors_ = optionTenors.size();
-        this.optionTenors_ = new ArrayList< Period >(optionTenors);
+        this.optionTenors_ = new ArrayList<>(optionTenors);
         this.optionDates_ = newNullList(nOptionTenors_);
         this.optionTimes_ = new double[nOptionTenors_];
         this.nStrikes_ = strikes.length;
@@ -119,7 +119,7 @@ public class CapFloorTermVolSurface extends CapFloorTermVolatilityStructure {
             final List< Period > optionTenors, final double[] strikes, final Matrix volatilities, final DayCounter dc) {
         super(settlementDate, cal, bdc, dc);
         this.nOptionTenors_ = optionTenors.size();
-        this.optionTenors_ = new ArrayList< Period >(optionTenors);
+        this.optionTenors_ = new ArrayList<>(optionTenors);
         this.optionDates_ = newNullList(nOptionTenors_);
         this.optionTimes_ = new double[nOptionTenors_];
         this.nStrikes_ = strikes.length;
@@ -135,7 +135,7 @@ public class CapFloorTermVolSurface extends CapFloorTermVolatilityStructure {
         // Handle<Quote> objects to allow generic handle-based recompute later).
         this.volHandles_ = new ArrayList< List< Handle< ? extends Quote > > >(volatilities.rows());
         for ( int i = 0; i < volatilities.rows(); ++i ) {
-            final List< Handle< ? extends Quote > > row = new ArrayList< Handle< ? extends Quote > >(
+            final List< Handle< ? extends Quote > > row = new ArrayList<>(
                     volatilities.columns());
             for ( int j = 0; j < volatilities.columns(); ++j ) {
                 row.add(new Handle< Quote >(new SimpleQuote(volatilities.get(i, j))));
@@ -154,7 +154,7 @@ public class CapFloorTermVolSurface extends CapFloorTermVolatilityStructure {
             final List< Period > optionTenors, final double[] strikes, final Matrix volatilities, final DayCounter dc) {
         super(settlementDays, cal, bdc, dc);
         this.nOptionTenors_ = optionTenors.size();
-        this.optionTenors_ = new ArrayList< Period >(optionTenors);
+        this.optionTenors_ = new ArrayList<>(optionTenors);
         this.optionDates_ = newNullList(nOptionTenors_);
         this.optionTimes_ = new double[nOptionTenors_];
         this.nStrikes_ = strikes.length;
@@ -167,7 +167,7 @@ public class CapFloorTermVolSurface extends CapFloorTermVolatilityStructure {
         }
         this.volHandles_ = new ArrayList< List< Handle< ? extends Quote > > >(volatilities.rows());
         for ( int i = 0; i < volatilities.rows(); ++i ) {
-            final List< Handle< ? extends Quote > > row = new ArrayList< Handle< ? extends Quote > >(
+            final List< Handle< ? extends Quote > > row = new ArrayList<>(
                     volatilities.columns());
             for ( int j = 0; j < volatilities.columns(); ++j ) {
                 row.add(new Handle< Quote >(new SimpleQuote(volatilities.get(i, j))));
@@ -192,7 +192,7 @@ public class CapFloorTermVolSurface extends CapFloorTermVolatilityStructure {
     //
 
     private static List< Date > newNullList(final int n) {
-        final List< Date > out = new ArrayList< Date >(n);
+        final List< Date > out = new ArrayList<>(n);
         for ( int i = 0; i < n; ++i ) {
             out.add(null);
         }

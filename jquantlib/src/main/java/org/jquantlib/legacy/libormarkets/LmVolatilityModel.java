@@ -44,7 +44,7 @@ public abstract class LmVolatilityModel {
 
     public LmVolatilityModel(final int size, final int nArguments) {
         this.size_ = size;
-        this.arguments_ = new ArrayList< Parameter >(nArguments);
+        this.arguments_ = new ArrayList<>(nArguments);
         for ( int i = 0; i < nArguments; ++i ) {
             this.arguments_.add(new Parameter());
         }

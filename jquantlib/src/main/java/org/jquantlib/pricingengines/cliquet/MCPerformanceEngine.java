@@ -114,7 +114,7 @@ public class MCPerformanceEngine extends OneAssetOption.EngineImpl {
      */
     protected TimeGrid timeGrid() {
         final CliquetOption.ArgumentsImpl a = (CliquetOption.ArgumentsImpl) arguments_;
-        final List< Double > fixingTimes = new ArrayList< Double >(a.resetDates.size() + 1);
+        final List< Double > fixingTimes = new ArrayList<>(a.resetDates.size() + 1);
         for ( int i = 0; i < a.resetDates.size(); i++ ) {
             fixingTimes.add(process_.time(a.resetDates.get(i)));
         }

@@ -134,7 +134,7 @@ public class AnalyticDiscreteGeometricAveragePriceAsianEngine extends DiscreteAv
         final DayCounter voldc = process.blackVolatility().currentLink().dayCounter();
 
         // TODO: consider double[] instead
-        final List< Double > fixingTimes = new ArrayList< Double >();
+        final List< Double > fixingTimes = new ArrayList<>();
         /*@Size*/
         int i;
         for ( i = 0; i < a.fixingDates.size(); i++ ) {

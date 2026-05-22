@@ -122,7 +122,7 @@ public class MarkovFunctional extends Gaussian1dModel {
     // ──────────────────────────────────────────────────────────────────────
     //   CalibrationPoint (mirrors C++ struct)
     // ──────────────────────────────────────────────────────────────────────
-    private final List< CubicInterpolation > numeraire_ = new ArrayList< CubicInterpolation >();
+    private final List< CubicInterpolation > numeraire_ = new ArrayList<>();
 
     // ──────────────────────────────────────────────────────────────────────
     //   ModelOutputs — diagnostics
@@ -137,7 +137,7 @@ public class MarkovFunctional extends Gaussian1dModel {
     //   Fields (mirror C++ private members)
     // ──────────────────────────────────────────────────────────────────────
     private final List< Date > volstepdates_;
-    private final List< Double > volsteptimes_ = new ArrayList< Double >();
+    private final List< Double > volsteptimes_ = new ArrayList<>();
     private final double[] volatilities_;
     private final Handle< SwaptionVolatilityStructure > swaptionVol_;
     private final Handle< OptionletVolatilityStructure > capletVol_;
@@ -150,10 +150,10 @@ public class MarkovFunctional extends Gaussian1dModel {
      * C++ uses {@code std::map<Date, CalibrationPoint>} (sorted by Date key). {@link TreeMap} mirrors this exactly —
      * A20 discipline.
      */
-    private final TreeMap< Date, CalibrationPoint > calibrationPoints_ = new TreeMap< Date, CalibrationPoint >();
-    private final List< Double > times_ = new ArrayList< Double >();
-    private final List< int[] > arbitrageIndices_ = new ArrayList< int[] >(); // pairs (left, right)
-    private final List< int[] > forcedArbitrageIndices_ = new ArrayList< int[] >();
+    private final TreeMap< Date, CalibrationPoint > calibrationPoints_ = new TreeMap<>();
+    private final List< Double > times_ = new ArrayList<>();
+    private final List< int[] > arbitrageIndices_ = new ArrayList<>(); // pairs (left, right)
+    private final List< int[] > forcedArbitrageIndices_ = new ArrayList<>();
     private Matrix discreteNumeraire_;
     private final Parameter reversion_;
     private Parameter sigma_;
@@ -184,13 +184,13 @@ public class MarkovFunctional extends Gaussian1dModel {
         // delegate during initialize() (after sigma_ is built); seed a placeholder
         // here so the slot index 0 is reserved.
         addArgument(new NullParameter());
-        this.volstepdates_ = new ArrayList< Date >(volstepdates);
+        this.volstepdates_ = new ArrayList<>(volstepdates);
         this.volatilities_ = volatilities.clone();
         this.swaptionVol_ = swaptionVol;
         this.capletVol_ = new Handle< OptionletVolatilityStructure >();
-        this.swaptionExpiries_ = new ArrayList< Date >(swaptionExpiries);
-        this.swaptionTenors_ = new ArrayList< Period >(swaptionTenors);
-        this.capletExpiries_ = new ArrayList< Date >();
+        this.swaptionExpiries_ = new ArrayList<>(swaptionExpiries);
+        this.swaptionTenors_ = new ArrayList<>(swaptionTenors);
+        this.capletExpiries_ = new ArrayList<>();
         this.swapIndexBase_ = swapIndexBase;
         this.iborIndex_ = swapIndexBase.iborIndex();
         this.reversion_ = new ConstantParameter(reversion, new NoConstraint());
@@ -216,13 +216,13 @@ public class MarkovFunctional extends Gaussian1dModel {
         // delegate during initialize() (after sigma_ is built); seed a placeholder
         // here so the slot index 0 is reserved.
         addArgument(new NullParameter());
-        this.volstepdates_ = new ArrayList< Date >(volstepdates);
+        this.volstepdates_ = new ArrayList<>(volstepdates);
         this.volatilities_ = volatilities.clone();
         this.swaptionVol_ = new Handle< SwaptionVolatilityStructure >();
         this.capletVol_ = capletVol;
-        this.swaptionExpiries_ = new ArrayList< Date >();
-        this.swaptionTenors_ = new ArrayList< Period >();
-        this.capletExpiries_ = new ArrayList< Date >(capletExpiries);
+        this.swaptionExpiries_ = new ArrayList<>();
+        this.swaptionTenors_ = new ArrayList<>();
+        this.capletExpiries_ = new ArrayList<>(capletExpiries);
         this.swapIndexBase_ = null;
         this.iborIndex_ = iborIndex;
         this.reversion_ = new ConstantParameter(reversion, new NoConstraint());
@@ -272,7 +272,7 @@ public class MarkovFunctional extends Gaussian1dModel {
     /** Mirrors C++ {@code arbitrageIndices()} — list of (left, right) pairs as int[2]. */
     public List< int[] > arbitrageIndices() {
         calculate();
-        return new ArrayList< int[] >(arbitrageIndices_);
+        return new ArrayList<>(arbitrageIndices_);
     }
 
     public void forceArbitrageIndices(final List< int[] > indices) {
@@ -311,15 +311,15 @@ public class MarkovFunctional extends Gaussian1dModel {
                 modelOutputs_.annuity_.add(e.getValue().annuity_);
                 // marketVega population skipped (Java SmileSection.vega not yet ported);
                 // placeholder empty list per case to keep shape consistent.
-                modelOutputs_.marketVega_.add(new ArrayList< Double >());
+                modelOutputs_.marketVega_.add(new ArrayList<>());
                 // smileStrikes / market*Premium population deferred — exposed as empty lists.
-                modelOutputs_.smileStrikes_.add(new ArrayList< Double >());
-                modelOutputs_.marketCallPremium_.add(new ArrayList< Double >());
-                modelOutputs_.marketPutPremium_.add(new ArrayList< Double >());
-                modelOutputs_.modelCallPremium_.add(new ArrayList< Double >());
-                modelOutputs_.modelPutPremium_.add(new ArrayList< Double >());
-                modelOutputs_.marketRawCallPremium_.add(new ArrayList< Double >());
-                modelOutputs_.marketRawPutPremium_.add(new ArrayList< Double >());
+                modelOutputs_.smileStrikes_.add(new ArrayList<>());
+                modelOutputs_.marketCallPremium_.add(new ArrayList<>());
+                modelOutputs_.marketPutPremium_.add(new ArrayList<>());
+                modelOutputs_.modelCallPremium_.add(new ArrayList<>());
+                modelOutputs_.modelPutPremium_.add(new ArrayList<>());
+                modelOutputs_.marketRawCallPremium_.add(new ArrayList<>());
+                modelOutputs_.marketRawPutPremium_.add(new ArrayList<>());
             }
 
             modelOutputs_.dirty_ = false;
@@ -1183,8 +1183,8 @@ public class MarkovFunctional extends Gaussian1dModel {
     }
 
     static final class CalibrationPoint {
-        final List< Date > paymentDates_ = new ArrayList< Date >();
-        final List< Double > yearFractions_ = new ArrayList< Double >();
+        final List< Date > paymentDates_ = new ArrayList<>();
+        final List< Double > yearFractions_ = new ArrayList<>();
         boolean isCaplet_;
         Period tenor_;
         double atm_ = Constants.NULL_REAL;
@@ -1200,23 +1200,23 @@ public class MarkovFunctional extends Gaussian1dModel {
     // ──────────────────────────────────────────────────────────────────────
 
     public static final class ModelOutputs {
-        public final List< Date > expiries_ = new ArrayList< Date >();
-        public final List< Period > tenors_ = new ArrayList< Period >();
-        public final List< Double > atm_ = new ArrayList< Double >();
-        public final List< Double > annuity_ = new ArrayList< Double >();
-        public final List< Double > adjustmentFactors_ = new ArrayList< Double >();
-        public final List< Double > digitalsAdjustmentFactors_ = new ArrayList< Double >();
-        public final List< String > messages_ = new ArrayList< String >();
-        public final List< List< Double > > smileStrikes_ = new ArrayList< List< Double > >();
-        public final List< List< Double > > marketRawCallPremium_ = new ArrayList< List< Double > >();
-        public final List< List< Double > > marketRawPutPremium_ = new ArrayList< List< Double > >();
-        public final List< List< Double > > marketCallPremium_ = new ArrayList< List< Double > >();
-        public final List< List< Double > > marketPutPremium_ = new ArrayList< List< Double > >();
-        public final List< List< Double > > modelCallPremium_ = new ArrayList< List< Double > >();
-        public final List< List< Double > > modelPutPremium_ = new ArrayList< List< Double > >();
-        public final List< List< Double > > marketVega_ = new ArrayList< List< Double > >();
-        public final List< Double > marketZerorate_ = new ArrayList< Double >();
-        public final List< Double > modelZerorate_ = new ArrayList< Double >();
+        public final List< Date > expiries_ = new ArrayList<>();
+        public final List< Period > tenors_ = new ArrayList<>();
+        public final List< Double > atm_ = new ArrayList<>();
+        public final List< Double > annuity_ = new ArrayList<>();
+        public final List< Double > adjustmentFactors_ = new ArrayList<>();
+        public final List< Double > digitalsAdjustmentFactors_ = new ArrayList<>();
+        public final List< String > messages_ = new ArrayList<>();
+        public final List< List< Double > > smileStrikes_ = new ArrayList<>();
+        public final List< List< Double > > marketRawCallPremium_ = new ArrayList<>();
+        public final List< List< Double > > marketRawPutPremium_ = new ArrayList<>();
+        public final List< List< Double > > marketCallPremium_ = new ArrayList<>();
+        public final List< List< Double > > marketPutPremium_ = new ArrayList<>();
+        public final List< List< Double > > modelCallPremium_ = new ArrayList<>();
+        public final List< List< Double > > modelPutPremium_ = new ArrayList<>();
+        public final List< List< Double > > marketVega_ = new ArrayList<>();
+        public final List< Double > marketZerorate_ = new ArrayList<>();
+        public final List< Double > modelZerorate_ = new ArrayList<>();
         public boolean dirty_ = true;
         public ModelSettings settings_;
     }

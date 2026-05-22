@@ -134,7 +134,7 @@ public class AmericanBasketPathPricer implements EarlyExercisePathPricer< MultiP
         // base multi-variate basis system: dim=assetNumber, total-degree<=order
         final List< Ops.ObjectToDouble< Array > > raw = LsmBasisSystem.multiPathBasisSystem(assetNumber_,
                 polynomialOrder, polynomialType);
-        this.v_ = new ArrayList< Ops.Op< Array, Double > >(raw.size() + 1);
+        this.v_ = new ArrayList<>(raw.size() + 1);
         for ( final Ops.ObjectToDouble< Array > b : raw ) {
             v_.add(new Ops.Op< Array, Double >() {
                 @Override

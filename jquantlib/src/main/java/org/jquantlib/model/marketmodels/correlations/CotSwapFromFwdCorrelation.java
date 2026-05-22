@@ -65,7 +65,7 @@ public class CotSwapFromFwdCorrelation extends PiecewiseConstantCorrelation {
                                      final double displacement) {
         this.fwdCorr_ = fwdCorr;
         this.numberOfRates_ = fwdCorr.numberOfRates();
-        this.swapCorrMatrices_ = new ArrayList<Matrix>(fwdCorr.correlations().size());
+        this.swapCorrMatrices_ = new ArrayList<>(fwdCorr.correlations().size());
 
         QL.require(numberOfRates_ == curveState.numberOfRates(),
                 "mismatch between number of rates in fwdCorr (" + numberOfRates_
