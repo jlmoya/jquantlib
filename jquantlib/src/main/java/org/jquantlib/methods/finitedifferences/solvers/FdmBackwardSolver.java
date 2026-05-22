@@ -68,7 +68,7 @@ public class FdmBackwardSolver {
         // empty stoppingTimes, empty Conditions list.
         this.condition = (condition != null)
                 ? condition
-                : new FdmStepConditionComposite(new ArrayList< List< Double > >(),
+                : new FdmStepConditionComposite(new ArrayList<>(),
                         new FdmStepConditionComposite.Conditions());
         this.schemeDesc = schemeDesc;
     }
@@ -256,7 +256,7 @@ public class FdmBackwardSolver {
         QL.require(from >= to, "trying to roll back from " + from + " to " + to);
 
         // Sort + dedup, matching C++ constructor body.
-        final List< Double > stoppingTimes = new ArrayList< Double >(new TreeSet< Double >(rawStoppingTimes));
+        final List< Double > stoppingTimes = new ArrayList<>(new TreeSet<>(rawStoppingTimes));
 
         final double dt = (from - to) / steps;
         double t = from;

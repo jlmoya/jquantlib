@@ -61,9 +61,9 @@ public class TrinomialTree extends Tree {
 
     public static final Branches branches = Branches.TRINOMIAL;
 
-    protected Vector< Branching > branchings_ = new Vector< Branching >();
+    protected Vector< Branching > branchings_ = new Vector<>();
     protected double x0_;
-    protected Vector< Double > dx_ = new Vector< Double >();
+    protected Vector< Double > dx_ = new Vector<>();
     protected TimeGrid timeGrid_;
 
     public TrinomialTree(final StochasticProcess1D process, final TimeGrid timeGrid) {
@@ -153,8 +153,8 @@ public class TrinomialTree extends Tree {
 
     private static class Branching {
 
-        private final Vector< Integer > k_ = new Vector< Integer >();
-        private final Vector< Vector< Double > > probs_ = new Vector< Vector< Double > >(3);
+        private final Vector< Integer > k_ = new Vector<>();
+        private final Vector< Vector< Double > > probs_ = new Vector<>(3);
         private int kMin_, jMin_, kMax_, jMax_;
 
         public Branching() {
@@ -165,9 +165,9 @@ public class TrinomialTree extends Tree {
             // made probs_ grow as 3*N entries and probability(i, b) only
             // ever return the b-th column of the FIRST node (and throw on
             // any other index). See trinomialtree.hpp ctor at line 105-107.
-            probs_.add(new Vector< Double >());
-            probs_.add(new Vector< Double >());
-            probs_.add(new Vector< Double >());
+            probs_.add(new Vector<>());
+            probs_.add(new Vector<>());
+            probs_.add(new Vector<>());
             kMin_ = Integer.MAX_VALUE;
             jMin_ = Integer.MAX_VALUE;
             kMax_ = Integer.MIN_VALUE;

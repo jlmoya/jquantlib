@@ -187,7 +187,7 @@ public class FdmHestonHullWhiteOp implements FdmLinearOpComposite {
 
     @Override
     public List< Matrix > toMatrixDecomp() {
-        final List< Matrix > ret = new ArrayList< Matrix >(4);
+        final List< Matrix > ret = new ArrayList<>(4);
         ret.add(dxMap.getMap().toMatrix());
         ret.add(dyMap.toMatrix());
         ret.add(hullWhiteOp.toMatrixDecomp().get(0));

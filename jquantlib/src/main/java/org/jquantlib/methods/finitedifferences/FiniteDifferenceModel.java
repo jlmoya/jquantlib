@@ -44,15 +44,15 @@ public class FiniteDifferenceModel< S extends Operator, T extends MixedScheme< S
         this.classT = classT;
         this.evolver = getEvolver(L, bcs);
         // This takes care of removing duplicates
-        final Set< Double > times = new HashSet< Double >(stoppingTimes);
-        this.stoppingTimes = new ArrayList< Double >(times);
+        final Set< Double > times = new HashSet<>(stoppingTimes);
+        this.stoppingTimes = new ArrayList<>(times);
         // Now sort
         Collections.sort(stoppingTimes);
     }
 
     public FiniteDifferenceModel(final Class< ? extends Operator > classS, final Class< ? extends MixedScheme > classT,
             final S L, final List< BoundaryCondition< S > > bcs) {
-        this(classS, classT, L, bcs, new ArrayList< Double >());
+        this(classS, classT, L, bcs, new ArrayList<>());
     }
 
     public FiniteDifferenceModel(final Class< ? extends Operator > classS, final Class< ? extends MixedScheme > classT,
@@ -61,8 +61,8 @@ public class FiniteDifferenceModel< S extends Operator, T extends MixedScheme< S
         this.classT = classT;
         this.evolver = evolver;
         // This takes care of removing duplicates
-        final Set< Double > times = new HashSet< Double >(stoppingTimes);
-        this.stoppingTimes = new ArrayList< Double >(times);
+        final Set< Double > times = new HashSet<>(stoppingTimes);
+        this.stoppingTimes = new ArrayList<>(times);
         // Now sort
         Collections.sort(stoppingTimes);
     }

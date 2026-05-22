@@ -149,7 +149,7 @@ public final class FdmG2Op implements FdmLinearOpComposite {
 
     @Override
     public List< Matrix > toMatrixDecomp() {
-        final List< Matrix > ret = new ArrayList< Matrix >(3);
+        final List< Matrix > ret = new ArrayList<>(3);
         ret.add(mapX.toMatrix());
         ret.add(mapY.toMatrix());
         ret.add(corrMap.toMatrix());

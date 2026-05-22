@@ -86,7 +86,7 @@ public class ConvergenceStatistics {
     public ConvergenceStatistics(final DoublingConvergenceSteps rule) {
         this.statistics = new Statistics();
         this.samplingRule = rule;
-        this.table = new ArrayList< Pair< Integer, Double > >();
+        this.table = new ArrayList<>();
         reset();
     }
 

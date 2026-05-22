@@ -139,7 +139,7 @@ public class FdmHestonVarianceMesher extends Fdm1dMesher {
         if (!degenerate) {
             try {
                 // Collect (v, p) pairs from all tAvgSteps time slices
-                final List<double[]> grid = new ArrayList<double[]>(size * tAvgSteps);
+                final List<double[]> grid = new ArrayList<>(size * tAvgSteps);
 
                 for (int l = 1; l <= tAvgSteps; ++l) {
                     final double t   = (maturity * l) / tAvgSteps;

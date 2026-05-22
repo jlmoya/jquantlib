@@ -127,7 +127,7 @@ public class GeneralStatistics {
      * resets the data to a null set
      */
     public void reset() {
-        samples = new ArrayList< ComparablePair< Double, Double > >();
+        samples = new ArrayList<>();
         sorted = true;
     }
 

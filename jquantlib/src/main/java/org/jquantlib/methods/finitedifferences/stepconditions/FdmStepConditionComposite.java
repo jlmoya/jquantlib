@@ -74,7 +74,7 @@ public class FdmStepConditionComposite implements StepCondition< Array > {
      */
     public FdmStepConditionComposite(final List< List< Double > > stoppingTimes, final Conditions conditions) {
         this.conditions_ = conditions;
-        final TreeSet< Double > all = new TreeSet<>();
+        final var all = new TreeSet< Double >();
         for ( final List< Double > v : stoppingTimes ) {
             all.addAll(v);
         }

@@ -27,7 +27,7 @@ import java.util.List;
  *
  */
 public class BoundaryConditionSet< T extends BoundaryCondition< ? extends Operator > > {
-    private final List< List< T > > bcSet = new ArrayList< List< T > >();
+    private final List< List< T > > bcSet = new ArrayList<>();
 
     public void push_back(List< T > a) {
         bcSet.add(a);

@@ -244,7 +244,7 @@ public class Concentrating1dMesher extends Fdm1dMesher {
         odeSolution.enableExtrapolation();
 
         // ensure required points are part of the grid
-        final List< double[] > w = new ArrayList< double[] >();
+        final List< double[] > w = new ArrayList<>();
         w.add(new double[] { 0.0, 0.0 });
 
         for ( int i = 0; i < n; ++i ) {
@@ -275,7 +275,7 @@ public class Concentrating1dMesher extends Fdm1dMesher {
                 return Double.compare(a[0], b[0]);
             }
         });
-        final List< double[] > wUnique = new ArrayList< double[] >();
+        final List< double[] > wUnique = new ArrayList<>();
         wUnique.add(w.get(0));
         for ( int i = 1; i < w.size(); ++i ) {
             // C++ std::unique with binary predicate close_enough(p1.first, p2.first, 1000)

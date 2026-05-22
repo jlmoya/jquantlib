@@ -77,7 +77,7 @@ public class LongstaffSchwartzPathPricer< PathType, StateType > extends PathPric
 
     protected final EarlyExercisePathPricer< PathType, StateType > pathPricer_;
     protected final IncrementalStatistics exerciseProbability_ = new IncrementalStatistics();
-    protected final List< PathType > paths_ = new ArrayList< PathType >();
+    protected final List< PathType > paths_ = new ArrayList<>();
     protected final List< ? extends Ops.Op< StateType, Double > > v_;
     protected final int len_;
     protected boolean calibrationPhase_ = true;
@@ -178,8 +178,8 @@ public class LongstaffSchwartzPathPricer< PathType, StateType > extends PathPric
         for ( int i = len_ - 2; i > 0; --i ) {
             // Collect in-the-money sub-population: states (homogeneous
             // type) and discounted prices.
-            final List< StateType > xList = new ArrayList< StateType >(n);
-            final List< Double > yList = new ArrayList< Double >(n);
+            final List< StateType > xList = new ArrayList<>(n);
+            final List< Double > yList = new ArrayList<>(n);
 
             for ( int j = 0; j < n; ++j ) {
                 exercise[j] = pathPricer_.operator(paths_.get(j), i);
@@ -238,7 +238,7 @@ public class LongstaffSchwartzPathPricer< PathType, StateType > extends PathPric
         final StateType first = xList.get(0);
 
         if ( first instanceof Double ) {
-            final List< Ops.DoubleOp > basisDouble = new ArrayList< Ops.DoubleOp >(v_.size());
+            final List< Ops.DoubleOp > basisDouble = new ArrayList<>(v_.size());
             for ( final Ops.Op< StateType, Double > bf : v_ ) {
                 basisDouble.add(new Ops.DoubleOp() {
                     @Override
@@ -255,7 +255,7 @@ public class LongstaffSchwartzPathPricer< PathType, StateType > extends PathPric
         }
 
         if ( first instanceof Array ) {
-            final List< Ops.ObjectToDouble< Array > > basisArr = new ArrayList< Ops.ObjectToDouble< Array > >(
+            final List< Ops.ObjectToDouble< Array > > basisArr = new ArrayList<>(
                     v_.size());
             for ( final Ops.Op< StateType, Double > bf : v_ ) {
                 basisArr.add(new Ops.ObjectToDouble< Array >() {
@@ -306,7 +306,7 @@ public class LongstaffSchwartzPathPricer< PathType, StateType > extends PathPric
             final MultiPath src = (MultiPath) path;
             // Snapshot every component path's values.
             final int n = src.assetNumber();
-            final List< Path > copies = new ArrayList< Path >(n);
+            final List< Path > copies = new ArrayList<>(n);
             for ( int a = 0; a < n; ++a ) {
                 final Path p = src.get(a);
                 copies.add(new Path(p.timeGrid(), p.values().clone()));

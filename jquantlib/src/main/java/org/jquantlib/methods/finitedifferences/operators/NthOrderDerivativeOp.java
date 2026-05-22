@@ -64,7 +64,7 @@ public class NthOrderDerivativeOp implements FdmLinearOp {
 
         // Unique sorted x-values along the direction.
         final Array meshLocations = mesher.locations(direction);
-        final TreeSet< Double > tmp = new TreeSet<>();
+        final var tmp = new TreeSet< Double >();
         for ( int i = 0; i < meshLocations.size(); ++i ) {
             tmp.add(meshLocations.get(i));
         }

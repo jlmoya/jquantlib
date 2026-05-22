@@ -39,14 +39,14 @@ public class StandardSystemFiniteDifferenceModel {
         this.evolver = new StandardSystemFiniteDifferenceModelParallelEvolver(L, bcs);
         // This takes care of removing duplicates
         final Set< Double > times = new HashSet(stoppingTimes);
-        this.stoppingTimes = new ArrayList< Double >(times);
+        this.stoppingTimes = new ArrayList<>(times);
         // Now sort
         Collections.sort(stoppingTimes);
     }
 
     public StandardSystemFiniteDifferenceModel(final List< TridiagonalOperator > L,
             final BoundaryConditionSet< BoundaryCondition< TridiagonalOperator > > bcs) {
-        this(L, bcs, new ArrayList< Double >());
+        this(L, bcs, new ArrayList<>());
     }
 
     public ParallelEvolver< TridiagonalOperator, CrankNicolson< TridiagonalOperator > > getEvolver() {

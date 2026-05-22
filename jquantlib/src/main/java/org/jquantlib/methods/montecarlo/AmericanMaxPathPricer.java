@@ -91,7 +91,7 @@ public final class AmericanMaxPathPricer implements EarlyExercisePathPricer< Mul
      * {@code Ops.Op<Array, Double>} (the type {@link EarlyExercisePathPricer} declares).
      */
     private static List< Ops.Op< Array, Double > > adaptToOpList(final List< Ops.ObjectToDouble< Array > > src) {
-        final List< Ops.Op< Array, Double > > dst = new ArrayList< Ops.Op< Array, Double > >(src.size());
+        final List< Ops.Op< Array, Double > > dst = new ArrayList<>(src.size());
         for ( final Ops.ObjectToDouble< Array > b : src ) {
             dst.add(new Ops.Op< Array, Double >() {
                 @Override

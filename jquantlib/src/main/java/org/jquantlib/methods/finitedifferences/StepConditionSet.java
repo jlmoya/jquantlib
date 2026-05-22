@@ -28,7 +28,7 @@ import java.util.List;
  */
 public class StepConditionSet< T > {
 
-    private final List< StepCondition< T > > stepConditions = new ArrayList< StepCondition< T > >();
+    private final List< StepCondition< T > > stepConditions = new ArrayList<>();
 
     public void applyTo(List< T > a, /* Time */double t) {
         for ( int i = 0; i < stepConditions.size(); i++ ) {

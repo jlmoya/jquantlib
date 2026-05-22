@@ -95,7 +95,7 @@ public class DifferentialEvolution extends OptimizationMethod {
      * {@code shuffledPop1/2} states).
      */
     private static List< Candidate > copyOf(final List< Candidate > src) {
-        final List< Candidate > dst = new ArrayList< Candidate >(src.size());
+        final List< Candidate > dst = new ArrayList<>(src.size());
         for ( final Candidate c : src ) {
             dst.add(c.copy());
         }
@@ -147,7 +147,7 @@ public class DifferentialEvolution extends OptimizationMethod {
         currGenSizeWeights_ = filled(configuration().populationMembers, configuration().stepsizeWeight);
         currGenCrossover_ = filled(configuration().populationMembers, configuration().crossoverProbability);
 
-        final List< Candidate > population = new ArrayList< Candidate >(configuration().populationMembers);
+        final List< Candidate > population = new ArrayList<>(configuration().populationMembers);
         if ( !configuration().initialPopulation.isEmpty() ) {
             for ( int i = 0; i < configuration().initialPopulation.size(); ++i ) {
                 final Candidate c = new Candidate();
@@ -232,7 +232,7 @@ public class DifferentialEvolution extends OptimizationMethod {
                 final Array delta = shuffledPop1.get(popIter).values.sub(population.get(popIter).values);
                 population.get(popIter).values = bestMemberEver_.values.add(delta.mul(weight));
             }
-            mirrorPopulation = new ArrayList< Candidate >(population.size());
+            mirrorPopulation = new ArrayList<>(population.size());
             for ( int i = 0; i < population.size(); ++i ) {
                 mirrorPopulation.add(bestMemberEver_.copy());
             }
@@ -360,8 +360,8 @@ public class DifferentialEvolution extends OptimizationMethod {
         final Array mutationProbabilities = getMutationProbabilities(population);
 
         final int dim = population.get(0).values.size();
-        final List< Array > crossoverMask = new ArrayList< Array >(population.size());
-        final List< Array > invCrossoverMask = new ArrayList< Array >(population.size());
+        final List< Array > crossoverMask = new ArrayList<>(population.size());
+        final List< Array > invCrossoverMask = new ArrayList<>(population.size());
         for ( int i = 0; i < population.size(); ++i ) {
             crossoverMask.add(filled(dim, 1.0));
             invCrossoverMask.add(filled(dim, 1.0));
@@ -575,7 +575,7 @@ public class DifferentialEvolution extends OptimizationMethod {
         public long seed = 0L;
         public boolean applyBounds = true;
         public boolean crossoverIsAdaptive = false;
-        public List< Array > initialPopulation = new ArrayList< Array >();
+        public List< Array > initialPopulation = new ArrayList<>();
         public Array upperBound = new Array(0);
         public Array lowerBound = new Array(0);
 
@@ -605,7 +605,7 @@ public class DifferentialEvolution extends OptimizationMethod {
         }
 
         public Configuration withInitialPopulation(final List< Array > c) {
-            this.initialPopulation = new ArrayList< Array >(c);
+            this.initialPopulation = new ArrayList<>(c);
             this.populationMembers = c.size();
             return this;
         }

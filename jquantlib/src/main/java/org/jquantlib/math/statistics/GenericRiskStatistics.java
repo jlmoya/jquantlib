@@ -118,7 +118,7 @@ public class GenericRiskStatistics extends GaussianStatistics {
     public /*@Real*/ double regret(final /*@Real*/ double target) /*@ReadOnly*/ {
         // average over the range below the target
 
-        final List< Ops.DoubleOp > functions = new ArrayList< Ops.DoubleOp >();
+        final List< Ops.DoubleOp > functions = new ArrayList<>();
         functions.add(new Square());
         functions.add(new Bind2nd(new Minus(), target));
         final Expression comp = new Expression(functions);

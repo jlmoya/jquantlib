@@ -121,13 +121,13 @@ public class LocalVolRNDCalculator extends RiskNeutralDensityCalculator {
         this.qTS = qTS;
         // C++: TimeGrid(localVol->maxTime(), tGrid) — uniform [0, T] in tGrid steps.
         this.timeGrid = new TimeGrid(localVol.maxTime(), tGrid);
-        this.xm = new ArrayList< Fdm1dMesher >(tGrid);
+        this.xm = new ArrayList<>(tGrid);
         for ( int i = 0; i < tGrid; ++i ) {
             this.xm.add(null);
         }
         this.pm = new Matrix(tGrid, xGrid);
-        this.rescaleTimeSteps = new ArrayList< Integer >();
-        this.pFct = new ArrayList< NaturalCubicInterpolation >(tGrid);
+        this.rescaleTimeSteps = new ArrayList<>();
+        this.pFct = new ArrayList<>(tGrid);
         for ( int i = 0; i < tGrid; ++i ) {
             this.pFct.add(null);
         }
@@ -167,13 +167,13 @@ public class LocalVolRNDCalculator extends RiskNeutralDensityCalculator {
         this.rTS = rTS;
         this.qTS = qTS;
         this.timeGrid = timeGrid;
-        this.xm = new ArrayList< Fdm1dMesher >(tGrid);
+        this.xm = new ArrayList<>(tGrid);
         for ( int i = 0; i < tGrid; ++i ) {
             this.xm.add(null);
         }
         this.pm = new Matrix(tGrid, xGrid);
-        this.rescaleTimeSteps = new ArrayList< Integer >();
-        this.pFct = new ArrayList< NaturalCubicInterpolation >(tGrid);
+        this.rescaleTimeSteps = new ArrayList<>();
+        this.pFct = new ArrayList<>(tGrid);
         for ( int i = 0; i < tGrid; ++i ) {
             this.pFct.add(null);
         }
@@ -350,7 +350,7 @@ public class LocalVolRNDCalculator extends RiskNeutralDensityCalculator {
     /** Indices of the time steps where the mesh was rescaled (debugging hook). */
     public List< Integer > rescaleTimeSteps() {
         calculate();
-        return new ArrayList< Integer >(rescaleTimeSteps);
+        return new ArrayList<>(rescaleTimeSteps);
     }
 
     /** Force re-evaluation on next access. */

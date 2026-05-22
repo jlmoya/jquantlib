@@ -72,7 +72,7 @@ public abstract class TreeLattice extends Lattice {
         this.n = n;
         if ( n <= 0 )
             throw new IllegalStateException("there is no zeronomial lattice!");
-        statePrices = new Vector< Array >();
+        statePrices = new Vector<>();
         statePrices.add(new Array(1).fill(1.0));//ZH: Verified with QL097
         statePricesLimit = 0;
     }

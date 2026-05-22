@@ -76,8 +76,8 @@ public class SparseILUPreconditioner {
             L_.set(i, i, 1.0);
         }
 
-        final TreeSet< Integer > lBandSet = new TreeSet<>();
-        final TreeSet< Integer > uBandSet = new TreeSet<>();
+        final var lBandSet = new TreeSet< Integer >();
+        final var uBandSet = new TreeSet< Integer >();
 
         // levs is a sparse matrix of level-of-fill integers (mirrors the C++
         // boost::numeric::ublas::compressed_matrix<Integer> levs(n,n)).

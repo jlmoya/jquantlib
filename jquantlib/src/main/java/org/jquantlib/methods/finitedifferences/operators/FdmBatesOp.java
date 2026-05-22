@@ -228,7 +228,7 @@ public class FdmBatesOp implements FdmLinearOpComposite {
             f.set(j, i, r.get(iter.index()));
         }
 
-        final List< LinearInterpolation > interpl = new ArrayList< LinearInterpolation >(nv);
+        final List< LinearInterpolation > interpl = new ArrayList<>(nv);
         for ( int j = 0; j < nv; ++j ) {
             final double[] yRow = new double[nx];
             for ( int i = 0; i < nx; ++i ) {

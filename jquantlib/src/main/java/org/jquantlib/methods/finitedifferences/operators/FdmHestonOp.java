@@ -183,7 +183,7 @@ public class FdmHestonOp implements FdmLinearOpComposite {
 
     @Override
     public List< Matrix > toMatrixDecomp() {
-        final List< Matrix > ret = new ArrayList< Matrix >(3);
+        final List< Matrix > ret = new ArrayList<>(3);
         ret.add(dxMap.getMap().toMatrix());
         ret.add(dyMap.getMap().toMatrix());
         ret.add(correlationMap.toMatrix());

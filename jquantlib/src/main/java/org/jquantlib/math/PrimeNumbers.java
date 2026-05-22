@@ -49,7 +49,7 @@ public class PrimeNumbers {
     // optional additional precomputed primes
     final long[] firstPrimes = { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47 };
 
-    private final ArrayList< Long > primeNumbers = new ArrayList< Long >();
+    private final ArrayList< Long > primeNumbers = new ArrayList<>();
 
     //  int was chosen because as a parameter if we are calculating.
     //  more than 2Billion Prime numbers with this algorithm,

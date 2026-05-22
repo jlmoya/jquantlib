@@ -149,7 +149,7 @@ public class Simplex extends OptimizationMethod {
 
         // Initialize vertices of the simplex
         final int n = x_.size();
-        vertices_ = new ArrayList< Array >(n + 1);
+        vertices_ = new ArrayList<>(n + 1);
         for ( int i = 0; i <= n; i++ ) {
             vertices_.add(new Array(x_));
         }

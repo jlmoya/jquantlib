@@ -59,7 +59,7 @@ public class ConvexMonotoneInterpolation extends AbstractInterpolation {
             final double quadraticity, final double monotonicity,
             final boolean forcePositive, final boolean flatFinalPeriod) {
         this(vx, vy, quadraticity, monotonicity, forcePositive, flatFinalPeriod,
-                new TreeMap<Double, SectionHelper>());
+                new TreeMap<>());
     }
 
     public ConvexMonotoneInterpolation(final Array vx, final Array vy,
@@ -430,7 +430,7 @@ public class ConvexMonotoneInterpolation extends AbstractInterpolation {
 
     private final class ConvexMonotoneImpl extends AbstractInterpolation.Impl {
 
-        private final NavigableMap<Double, SectionHelper> sectionHelpers = new TreeMap<Double, SectionHelper>();
+        private final NavigableMap<Double, SectionHelper> sectionHelpers = new TreeMap<>();
         private final NavigableMap<Double, SectionHelper> preSectionHelpers;
         private SectionHelper extrapolationHelper;
         private final boolean forcePositive;
@@ -457,11 +457,11 @@ public class ConvexMonotoneInterpolation extends AbstractInterpolation {
             this.monotonicity = monotonicity;
             this.forcePositive = forcePositive;
             this.constantLastPeriod = constantLastPeriod;
-            this.preSectionHelpers = new TreeMap<Double, SectionHelper>(preExistingHelpers);
+            this.preSectionHelpers = new TreeMap<>(preExistingHelpers);
         }
 
         Map<Double, SectionHelper> getExistingHelpers() {
-            final NavigableMap<Double, SectionHelper> retArray = new TreeMap<Double, SectionHelper>(sectionHelpers);
+            final NavigableMap<Double, SectionHelper> retArray = new TreeMap<>(sectionHelpers);
             if (constantLastPeriod) {
                 retArray.remove(vx.get((int) vx.size() - 1));
             }

@@ -233,7 +233,7 @@ public class FdmBlackScholesOp implements FdmLinearOpComposite {
 
     @Override
     public List< Matrix > toMatrixDecomp() {
-        final List< Matrix > ret = new ArrayList< Matrix >(1);
+        final List< Matrix > ret = new ArrayList<>(1);
         ret.add(mapT.toMatrix());
         return Collections.unmodifiableList(ret);
     }

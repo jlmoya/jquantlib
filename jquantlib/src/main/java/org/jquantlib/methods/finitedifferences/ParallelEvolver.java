@@ -44,7 +44,7 @@ public abstract class ParallelEvolver< S extends Operator, T extends MixedScheme
             final List< S > L, final BoundaryConditionSet< BoundaryCondition< S > > bcs) {
         this.classS = classS;
         this.classT = classT;
-        evolvers = new Vector< T >(L.size());
+        evolvers = new Vector<>(L.size());
         for ( int i = 0; i < L.size(); i++ )
             evolvers.add(getEvolver(L.get(i), bcs.get(i)));
     }

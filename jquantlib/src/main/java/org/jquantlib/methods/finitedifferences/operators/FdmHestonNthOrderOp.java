@@ -279,7 +279,7 @@ public class FdmHestonNthOrderOp implements FdmLinearOpComposite {
     @Override
     public List< Matrix > toMatrixDecomp() {
         // Composite is non-splitting — return as a single-element decomp.
-        return Collections.unmodifiableList(new ArrayList< Matrix >(Collections.singletonList(toMatrix())));
+        return Collections.unmodifiableList(new ArrayList<>(Collections.singletonList(toMatrix())));
     }
 
     @Override

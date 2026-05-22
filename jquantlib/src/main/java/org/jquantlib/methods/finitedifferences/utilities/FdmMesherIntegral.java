@@ -48,7 +48,7 @@ public class FdmMesherIntegral {
     private final List< Fdm1dMesher > meshers;
     private final Integrator1d integrator1d;
     public FdmMesherIntegral(final FdmMesherComposite mesher, final Integrator1d integrator1d) {
-        this.meshers = new ArrayList< Fdm1dMesher >(mesher.getFdm1dMeshers());
+        this.meshers = new ArrayList<>(mesher.getFdm1dMeshers());
         this.integrator1d = integrator1d;
     }
 
@@ -73,7 +73,7 @@ public class FdmMesherIntegral {
         }
 
         // Build a sub-integral over directions 0..N-2.
-        final List< Fdm1dMesher > subMeshers = new ArrayList< Fdm1dMesher >(meshers.subList(0, meshers.size() - 1));
+        final List< Fdm1dMesher > subMeshers = new ArrayList<>(meshers.subList(0, meshers.size() - 1));
         final FdmMesherIntegral subMesherIntegral = new FdmMesherIntegral(subMeshers, integrator1d);
 
         // Compute the size of one slice (product of all sub-direction sizes).
