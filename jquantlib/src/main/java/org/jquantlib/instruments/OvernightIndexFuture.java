@@ -188,14 +188,11 @@ public class OvernightIndexFuture extends Instrument {
     }
 
     private double rate() {
-        switch ( averagingMethod_ ) {
-        case Simple:
-            return averagedRate();
-        case Compound:
-            return compoundedRate();
-        default:
-            throw new LibraryException("unknown compounding convention (" + averagingMethod_ + ")");
-        }
+        return switch (averagingMethod_) {
+            case Simple -> averagedRate();
+            case Compound -> compoundedRate();
+            default -> throw new LibraryException("unknown compounding convention (" + averagingMethod_ + ")");
+        };
     }
 
     public double convexityAdjustment() {

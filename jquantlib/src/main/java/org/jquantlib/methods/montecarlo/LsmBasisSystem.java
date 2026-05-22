@@ -123,24 +123,16 @@ public final class LsmBasisSystem {
 
     /** Single-variable basis factory; mirrors C++ switch on PolynomialType. */
     private static Ops.DoubleOp makeBasis(final int i, final PolynomialType type) {
-        switch ( type ) {
-        case Monomial:
-            return new MonomialFct(i);
-        case Laguerre:
-            return new WeightedPoly(i, new GaussLaguerrePolynomial());
-        case Hermite:
-            return new WeightedPoly(i, new GaussHermitePolynomial());
-        case Hyperbolic:
-            return new WeightedPoly(i, new GaussHyperbolicPolynomial());
-        case Legendre:
-            return new WeightedPoly(i, new GaussLegendrePolynomial());
-        case Chebyshev:
-            return new WeightedPoly(i, new GaussChebyshevPolynomial());
-        case Chebyshev2nd:
-            return new WeightedPoly(i, new GaussChebyshev2ndPolynomial());
-        default:
-            throw new RuntimeException("unknown regression type");
-        }
+        return switch (type) {
+            case Monomial -> new MonomialFct(i);
+            case Laguerre -> new WeightedPoly(i, new GaussLaguerrePolynomial());
+            case Hermite -> new WeightedPoly(i, new GaussHermitePolynomial());
+            case Hyperbolic -> new WeightedPoly(i, new GaussHyperbolicPolynomial());
+            case Legendre -> new WeightedPoly(i, new GaussLegendrePolynomial());
+            case Chebyshev -> new WeightedPoly(i, new GaussChebyshevPolynomial());
+            case Chebyshev2nd -> new WeightedPoly(i, new GaussChebyshev2ndPolynomial());
+            default -> throw new RuntimeException("unknown regression type");
+        };
     }
 
     // ------------------------------------------------------------------------

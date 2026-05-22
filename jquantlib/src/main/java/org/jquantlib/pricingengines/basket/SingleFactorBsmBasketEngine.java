@@ -286,18 +286,13 @@ public class SingleFactorBsmBasketEngine extends BasketOption.Engine {
                 xInit = 0.0;
             }
 
-            switch ( strategy ) {
-            case Brent:
-                return new Brent().solve(this, xTol, xInit, 1.0);
-            case Newton:
-                return new Newton().solve(this, xTol, xInit, 1.0);
-            case Ridder:
-                return new Ridder().solve(this, xTol, xInit, 1.0);
-            case Halley:
-                return new Halley().solve(this, xTol, xInit, 1.0);
-            default:
-                throw new IllegalArgumentException("unknown strategy type");
-            }
+            return switch (strategy) {
+                case Brent -> new Brent().solve(this, xTol, xInit, 1.0);
+                case Newton -> new Newton().solve(this, xTol, xInit, 1.0);
+                case Ridder -> new Ridder().solve(this, xTol, xInit, 1.0);
+                case Halley -> new Halley().solve(this, xTol, xInit, 1.0);
+                default -> throw new IllegalArgumentException("unknown strategy type");
+            };
         }
 
         public enum Strategy {Ridder, Newton, Brent, Halley}

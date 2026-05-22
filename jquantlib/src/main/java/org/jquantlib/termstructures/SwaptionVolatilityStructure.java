@@ -227,14 +227,11 @@ public abstract class SwaptionVolatilityStructure extends AbstractTermStructure 
      */
     public double swapLength(final Period p) {
         QL.require(p.length() > 0, "non-positive swap tenor (" + p + ") given");
-        switch ( p.units() ) {
-        case Months:
-            return p.length() / 12.0;
-        case Years:
-            return p.length();
-        default:
-            throw new IllegalArgumentException("invalid TimeUnit (" + p.units() + ") for swap length");
-        }
+        return switch (p.units()) {
+            case Months -> p.length() / 12.0;
+            case Years -> p.length();
+            default -> throw new IllegalArgumentException("invalid TimeUnit (" + p.units() + ") for swap length");
+        };
     }
 
     /**

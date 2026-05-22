@@ -140,13 +140,10 @@ public class BondHelper extends RateHelper {
     public double impliedQuote() {
         QL.require(this.termStructure != null, "term structure not set");
         this.bond_.recalculate();
-        switch ( priceType_ ) {
-            case Clean:
-                return bond_.cleanPrice();
-            case Dirty:
-                return bond_.dirtyPrice();
-            default:
-                throw new IllegalStateException("This price type isn't implemented.");
-        }
+        return switch (priceType_) {
+            case Clean -> bond_.cleanPrice();
+            case Dirty -> bond_.dirtyPrice();
+            default -> throw new IllegalStateException("This price type isn't implemented.");
+        };
     }
 }

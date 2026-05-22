@@ -1215,26 +1215,14 @@ public class Date implements Observable, Comparable< Date >, Serializable, Clone
      */
     private static long[] advanceIntraday(final long sn, final long tod,
                                           final int n, final TimeUnit units) {
-        final long delta;
-        switch (units) {
-        case Hours:
-            delta = (long) n * 3_600_000_000_000L;
-            break;
-        case Minutes:
-            delta = (long) n * 60_000_000_000L;
-            break;
-        case Seconds:
-            delta = (long) n * 1_000_000_000L;
-            break;
-        case Milliseconds:
-            delta = (long) n * 1_000_000L;
-            break;
-        case Microseconds:
-            delta = (long) n * 1_000L;
-            break;
-        default:
-            throw new LibraryException("undefined time units");
-        }
+        final long delta = switch (units) {
+            case Hours -> (long) n * 3_600_000_000_000L;
+            case Minutes -> (long) n * 60_000_000_000L;
+            case Seconds -> (long) n * 1_000_000_000L;
+            case Milliseconds -> (long) n * 1_000_000L;
+            case Microseconds -> (long) n * 1_000L;
+            default -> throw new LibraryException("undefined time units");
+        };
         long total = tod + delta;
         long dayCarry = Math.floorDiv(total, NANOS_PER_DAY);
         long newTod = Math.floorMod(total, NANOS_PER_DAY);

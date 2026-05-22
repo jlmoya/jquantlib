@@ -85,17 +85,11 @@ final class LookbackPathPricers {
         public Double op(final Path path) {
             QL.require(!path.empty(), "the path cannot be empty");
             final double[] v = path.values();
-            final double underlying;
-            switch ( payoff_.optionType() ) {
-            case Put:
-                underlying = min(v, 1, v.length);
-                break;
-            case Call:
-                underlying = max(v, 1, v.length);
-                break;
-            default:
-                throw new LibraryException("unknown option type");
-            }
+            final double underlying = switch (payoff_.optionType()) {
+                case Put -> min(v, 1, v.length);
+                case Call -> max(v, 1, v.length);
+                default -> throw new LibraryException("unknown option type");
+            };
             return payoff_.get(underlying) * discount_;
         }
     }
@@ -122,17 +116,11 @@ final class LookbackPathPricers {
             final TimeGrid grid = path.timeGrid();
             final int startIndex = grid.closestIndex(lookbackStart_);
             final double[] v = path.values();
-            final double underlying;
-            switch ( payoff_.optionType() ) {
-            case Put:
-                underlying = min(v, startIndex + 1, v.length);
-                break;
-            case Call:
-                underlying = max(v, startIndex + 1, v.length);
-                break;
-            default:
-                throw new LibraryException("unknown option type");
-            }
+            final double underlying = switch (payoff_.optionType()) {
+                case Put -> min(v, startIndex + 1, v.length);
+                case Call -> max(v, startIndex + 1, v.length);
+                default -> throw new LibraryException("unknown option type");
+            };
             return payoff_.get(underlying) * discount_;
         }
     }
@@ -155,17 +143,11 @@ final class LookbackPathPricers {
             QL.require(!path.empty(), "the path cannot be empty");
             final double[] v = path.values();
             final double terminalPrice = path.back();
-            final double strike;
-            switch ( payoff_.optionType() ) {
-            case Call:
-                strike = min(v, 1, v.length);
-                break;
-            case Put:
-                strike = max(v, 1, v.length);
-                break;
-            default:
-                throw new LibraryException("unknown option type");
-            }
+            final double strike = switch (payoff_.optionType()) {
+                case Call -> min(v, 1, v.length);
+                case Put -> max(v, 1, v.length);
+                default -> throw new LibraryException("unknown option type");
+            };
             return payoff_.get(terminalPrice, strike) * discount_;
         }
     }
@@ -192,17 +174,11 @@ final class LookbackPathPricers {
             final int endIndex = grid.closestIndex(lookbackEnd_);
             final double[] v = path.values();
             final double terminalPrice = path.back();
-            final double strike;
-            switch ( payoff_.optionType() ) {
-            case Call:
-                strike = min(v, 1, endIndex + 1);
-                break;
-            case Put:
-                strike = max(v, 1, endIndex + 1);
-                break;
-            default:
-                throw new LibraryException("unknown option type");
-            }
+            final double strike = switch (payoff_.optionType()) {
+                case Call -> min(v, 1, endIndex + 1);
+                case Put -> max(v, 1, endIndex + 1);
+                default -> throw new LibraryException("unknown option type");
+            };
             return payoff_.get(terminalPrice, strike) * discount_;
         }
     }

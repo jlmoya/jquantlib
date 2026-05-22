@@ -221,18 +221,11 @@ public class AnalyticDiscreteGeometricAveragePriceAsianHestonEngine extends Disc
         final Integrand integrand = new Integrand(startTime, expiryTime, kStar, fixingTimes, tauK, adjustedStrike,
                 xiRightLimit_);
         final double term2 = integrator_.op(integrand) / Math.PI;
-
-        final double value;
-        switch ( payoff.optionType() ) {
-        case Call:
-            value = expiryDcf * prefactor * (term1 + term2);
-            break;
-        case Put:
-            value = expiryDcf * prefactor * (-term1 + term2);
-            break;
-        default:
-            throw new IllegalArgumentException("unknown option type");
-        }
+        final double value = switch (payoff.optionType()) {
+            case Call -> expiryDcf * prefactor * (term1 + term2);
+            case Put -> expiryDcf * prefactor * (-term1 + term2);
+            default -> throw new IllegalArgumentException("unknown option type");
+        };
 
         final DiscreteAveragingAsianOption.ResultsImpl res = (DiscreteAveragingAsianOption.ResultsImpl) results_;
         res.value = value;

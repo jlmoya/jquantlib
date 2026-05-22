@@ -145,20 +145,12 @@ public class VanillaOption extends OneAssetOption {
         final GeneralizedBlackScholesProcess newProcess = ImpliedVolatilityHelper.clone(process, volQuote);
 
         // engines are built-in for the time being
-        final PricingEngine engine;
-        switch ( exercise.type() ) {
-        case European:
-            engine = new AnalyticEuropeanEngine(newProcess);
-            break;
-        case American:
-            engine = new FDAmericanEngine(newProcess);
-            break;
-        case Bermudan:
-            engine = new FDBermudanEngine(newProcess);
-            break;
-        default:
-            throw new LibraryException(UNKNOWN_EXERCISE_TYPE);
-        }
+        final PricingEngine engine = switch (exercise.type()) {
+            case European -> new AnalyticEuropeanEngine(newProcess);
+            case American -> new FDAmericanEngine(newProcess);
+            case Bermudan -> new FDBermudanEngine(newProcess);
+            default -> throw new LibraryException(UNKNOWN_EXERCISE_TYPE);
+        };
 
         return ImpliedVolatilityHelper.calculate(this, engine, volQuote, price, accuracy, maxEvaluations, minVol,
                 maxVol);

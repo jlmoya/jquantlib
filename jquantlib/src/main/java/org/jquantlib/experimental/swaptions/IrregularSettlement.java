@@ -37,14 +37,11 @@ public final class IrregularSettlement {
 
         @Override
         public String toString() {
-            switch ( this ) {
-            case Physical:
-                return "Delivery";
-            case Cash:
-                return "Cash";
-            default:
-                throw new LibraryException("unknown IrregularSettlement.Type(" + ordinal() + ")");
-            }
+            return switch (this) {
+                case Physical -> "Delivery";
+                case Cash -> "Cash";
+                default -> throw new LibraryException("unknown IrregularSettlement.Type(" + ordinal() + ")");
+            };
         }
     }
 }

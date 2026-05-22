@@ -140,18 +140,11 @@ public class CallableBond extends Bond {
             final Handle< YieldTermStructure > discountCurve, final double accuracy, final int maxEvaluations,
             final double minVol, final double maxVol) {
         QL.require(!isExpired(), "instrument expired");
-
-        final double dirtyTargetPrice;
-        switch ( targetPrice.type() ) {
-        case Dirty:
-            dirtyTargetPrice = targetPrice.amount();
-            break;
-        case Clean:
-            dirtyTargetPrice = targetPrice.amount() + accruedAmount();
-            break;
-        default:
-            throw new IllegalArgumentException("unknown price type");
-        }
+        final double dirtyTargetPrice = switch (targetPrice.type()) {
+            case Dirty -> targetPrice.amount();
+            case Clean -> targetPrice.amount() + accruedAmount();
+            default -> throw new IllegalArgumentException("unknown price type");
+        };
 
         final double targetValue = dirtyTargetPrice * faceAmount_ / 100.0;
         final double guess = 0.5 * (minVol + maxVol);

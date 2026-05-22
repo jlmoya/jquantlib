@@ -233,18 +233,13 @@ public class ZabrSwaptionVolatilityCube extends SwaptionVolatilityCube {
     //
 
     private static long periodKey(final Period p) {
-        switch ( p.units() ) {
-        case Days:
-            return p.length();
-        case Weeks:
-            return 7L * p.length();
-        case Months:
-            return 30L * p.length();
-        case Years:
-            return 365L * p.length();
-        default:
-            return p.length();
-        }
+        return switch (p.units()) {
+            case Days -> p.length();
+            case Weeks -> 7L * p.length();
+            case Months -> 30L * p.length();
+            case Years -> 365L * p.length();
+            default -> p.length();
+        };
     }
 
     //
@@ -638,18 +633,13 @@ public class ZabrSwaptionVolatilityCube extends SwaptionVolatilityCube {
         SHORT_MATURITY_LOGNORMAL, SHORT_MATURITY_NORMAL, LOCAL_VOLATILITY, FULL_FD;
 
         ZabrSmileSection.Evaluation toEvaluation() {
-            switch ( this ) {
-            case SHORT_MATURITY_LOGNORMAL:
-                return ZabrSmileSection.Evaluation.ShortMaturityLognormal;
-            case SHORT_MATURITY_NORMAL:
-                return ZabrSmileSection.Evaluation.ShortMaturityNormal;
-            case LOCAL_VOLATILITY:
-                return ZabrSmileSection.Evaluation.LocalVolatility;
-            case FULL_FD:
-                return ZabrSmileSection.Evaluation.FullFd;
-            default:
-                throw new IllegalStateException("unknown kernel");
-            }
+            return switch (this) {
+                case SHORT_MATURITY_LOGNORMAL -> ZabrSmileSection.Evaluation.ShortMaturityLognormal;
+                case SHORT_MATURITY_NORMAL -> ZabrSmileSection.Evaluation.ShortMaturityNormal;
+                case LOCAL_VOLATILITY -> ZabrSmileSection.Evaluation.LocalVolatility;
+                case FULL_FD -> ZabrSmileSection.Evaluation.FullFd;
+                default -> throw new IllegalStateException("unknown kernel");
+            };
         }
     }
 

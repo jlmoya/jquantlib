@@ -321,17 +321,11 @@ public class FdBlackScholesVanillaEngine extends OneAssetOption.EngineImpl {
         final FdmInnerValueCalculator calculator = new FdmLogInnerValue(payoff, mesher, 0);
 
         // Early-exercise calculator — Escrowed uses spot - PV(future-dividends)
-        final FdmInnerValueCalculator earlyExerciseCalculator;
-        switch ( cashDividendModel ) {
-        case Spot:
-            earlyExerciseCalculator = calculator;
-            break;
-        case Escrowed:
-            earlyExerciseCalculator = new FdmEscrowedLogInnerValueCalculator(escrowedDivAdj, payoff, mesher, 0);
-            break;
-        default:
-            earlyExerciseCalculator = calculator;
-        }
+        final FdmInnerValueCalculator earlyExerciseCalculator = switch (cashDividendModel) {
+            case Spot -> calculator;
+            case Escrowed -> new FdmEscrowedLogInnerValueCalculator(escrowedDivAdj, payoff, mesher, 0);
+            default -> calculator;
+        };
 
         // 3. Step conditions
         final org.jquantlib.daycounters.DayCounter dc = effectiveProcess.riskFreeRate().currentLink().dayCounter();

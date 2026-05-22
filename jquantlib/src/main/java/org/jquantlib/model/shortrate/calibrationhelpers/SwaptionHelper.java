@@ -288,21 +288,15 @@ public class SwaptionHelper extends BlackCalibrationHelper {
         // {@code SwaptionHelper::blackPrice} which constructs either a
         // BlackSwaptionEngine or a BachelierSwaptionEngine depending on the
         // helper's volatilityType_.
-        final Handle< SwaptionVolatilityStructure > volSurface;
-        switch ( volatilityType_ ) {
-        case ShiftedLognormal:
-            volSurface = new Handle< SwaptionVolatilityStructure >(
+        final Handle< SwaptionVolatilityStructure > volSurface = switch (volatilityType_) {
+            case ShiftedLognormal -> new Handle< SwaptionVolatilityStructure >(
                     new ConstantSwaptionVolatility(0, new NullCalendar(), BusinessDayConvention.Following, vol,
                             new Actual365Fixed(), VolatilityType.ShiftedLognormal, shift_));
-            break;
-        case Normal:
-            volSurface = new Handle< SwaptionVolatilityStructure >(
+            case Normal -> new Handle< SwaptionVolatilityStructure >(
                     new ConstantSwaptionVolatility(0, new NullCalendar(), BusinessDayConvention.Following, vol,
                             new Actual365Fixed(), VolatilityType.Normal, 0.0));
-            break;
-        default:
-            throw new IllegalStateException("unknown volatility type");
-        }
+            default -> throw new IllegalStateException("unknown volatility type");
+        };
         final PricingEngine engine = new BlackSwaptionEngine(termStructure_, volSurface);
         swaption_.setPricingEngine(engine);
         final double value = swaption_.NPV();

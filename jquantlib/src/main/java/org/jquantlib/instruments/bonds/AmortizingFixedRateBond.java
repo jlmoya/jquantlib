@@ -149,18 +149,13 @@ public class AmortizingFixedRateBond extends Bond {
     // ----- internal helpers (mirrors anonymous-namespace helpers in C++) -----
 
     private static int[] daysMinMax(final Period p) {
-        switch ( p.units() ) {
-        case Days:
-            return new int[] { p.length(), p.length() };
-        case Weeks:
-            return new int[] { 7 * p.length(), 7 * p.length() };
-        case Months:
-            return new int[] { 28 * p.length(), 31 * p.length() };
-        case Years:
-            return new int[] { 365 * p.length(), 366 * p.length() };
-        default:
-            throw new LibraryException("unknown time unit (" + p.units() + ")");
-        }
+        return switch (p.units()) {
+            case Days -> new int[] { p.length(), p.length() };
+            case Weeks -> new int[] { 7 * p.length(), 7 * p.length() };
+            case Months -> new int[] { 28 * p.length(), 31 * p.length() };
+            case Years -> new int[] { 365 * p.length(), 366 * p.length() };
+            default -> throw new LibraryException("unknown time unit (" + p.units() + ")");
+        };
     }
 
     private static boolean isSubPeriod(final Period subPeriod, final Period superPeriod, final int[] numSubPeriodsOut) {

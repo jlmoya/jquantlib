@@ -89,14 +89,11 @@ public class ExtendedCoxIngersollRoss extends CoxIngersollRoss {
         final double discountT = termstructureConsistentModel.termStructure().currentLink().discount(t);
         final double discountS = termstructureConsistentModel.termStructure().currentLink().discount(s);
         if ( t < Constants.QL_EPSILON )
-            switch ( type ) {
-            case Call:
-                return Math.max(discountS - strike, 0);
-            case Put:
-                return Math.max(strike - discountS, 0);
-            default:
-                throw new LibraryException(Option.Type.UNKNOWN_OPTION_TYPE);
-            }
+            return switch (type) {
+                case Call -> Math.max(discountS - strike, 0);
+                case Put -> Math.max(strike - discountS, 0);
+                default -> throw new LibraryException(Option.Type.UNKNOWN_OPTION_TYPE);
+            };
         final double sigma2 = sigma() * sigma();
         final double h = Math.sqrt(k() * k() + 2 * sigma2);
         final double r0 = termstructureConsistentModel.termStructure().currentLink()

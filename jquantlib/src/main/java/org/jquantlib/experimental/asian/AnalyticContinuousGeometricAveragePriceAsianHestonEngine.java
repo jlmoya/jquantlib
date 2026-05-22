@@ -161,18 +161,11 @@ public class AnalyticContinuousGeometricAveragePriceAsianHestonEngine
         // Term 2 — Gauss-Legendre integral over xi
         final Integrand integrand = new Integrand(T, summationCutoff_, strike, xiRightLimit_);
         final double term2 = integrator_.op(integrand) / Math.PI;
-
-        final double value;
-        switch ( payoff.optionType() ) {
-        case Call:
-            value = expiryDcf * (term1 + term2);
-            break;
-        case Put:
-            value = expiryDcf * (-term1 + term2);
-            break;
-        default:
-            throw new IllegalArgumentException("unknown option type");
-        }
+        final double value = switch (payoff.optionType()) {
+            case Call -> expiryDcf * (term1 + term2);
+            case Put -> expiryDcf * (-term1 + term2);
+            default -> throw new IllegalArgumentException("unknown option type");
+        };
 
         final ContinuousAveragingAsianOption.ResultsImpl res = results_;
         res.value = value;

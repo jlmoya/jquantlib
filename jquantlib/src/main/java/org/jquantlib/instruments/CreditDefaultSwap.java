@@ -509,23 +509,14 @@ public class CreditDefaultSwap extends Instrument {
 
         final Handle< DefaultProbabilityTermStructure > probability = new Handle< DefaultProbabilityTermStructure >(
                 new FlatHazardRate(0, new NullCalendar(), new Handle< Quote >(flatRate), dayCounter));
-
-        final PricingEngine engine;
-        switch ( model ) {
-        case Midpoint:
-            engine = new MidPointCdsEngine(probability, recoveryRate, discountCurve);
-            break;
-        case ISDA:
-            // Phase 3d L1: wire IsdaCdsEngine with C++ defaults (Taylor /
-            // HalfDayBias / Piecewise, includeSettlementDateFlows=false).
-            engine = new org.jquantlib.pricingengines.credit.IsdaCdsEngine(probability, recoveryRate, discountCurve,
+        final PricingEngine engine = switch (model) {
+            case Midpoint -> new MidPointCdsEngine(probability, recoveryRate, discountCurve);
+            case ISDA -> new org.jquantlib.pricingengines.credit.IsdaCdsEngine(probability, recoveryRate, discountCurve,
                     Boolean.FALSE, org.jquantlib.pricingengines.credit.IsdaCdsEngine.NumericalFix.Taylor,
                     org.jquantlib.pricingengines.credit.IsdaCdsEngine.AccrualBias.HalfDayBias,
                     org.jquantlib.pricingengines.credit.IsdaCdsEngine.ForwardsInCouponPeriod.Piecewise);
-            break;
-        default:
-            throw new IllegalArgumentException("unknown CDS pricing model: " + model);
-        }
+            default -> throw new IllegalArgumentException("unknown CDS pricing model: " + model);
+        };
 
         setupArguments(engine.getArguments());
         final CreditDefaultSwap.ResultsImpl res = (CreditDefaultSwap.ResultsImpl) engine.getResults();
@@ -565,22 +556,14 @@ public class CreditDefaultSwap extends Instrument {
 
         final Handle< DefaultProbabilityTermStructure > probability = new Handle< DefaultProbabilityTermStructure >(
                 new FlatHazardRate(0, new NullCalendar(), new Handle< Quote >(flatRate), dayCounter));
-
-        final PricingEngine engine;
-        switch ( model ) {
-        case Midpoint:
-            engine = new MidPointCdsEngine(probability, conventionalRecovery, discountCurve);
-            break;
-        case ISDA:
-            // Phase 3d L1: wire IsdaCdsEngine with C++ defaults.
-            engine = new org.jquantlib.pricingengines.credit.IsdaCdsEngine(probability, conventionalRecovery,
+        final PricingEngine engine = switch (model) {
+            case Midpoint -> new MidPointCdsEngine(probability, conventionalRecovery, discountCurve);
+            case ISDA -> new org.jquantlib.pricingengines.credit.IsdaCdsEngine(probability, conventionalRecovery,
                     discountCurve, Boolean.FALSE, org.jquantlib.pricingengines.credit.IsdaCdsEngine.NumericalFix.Taylor,
                     org.jquantlib.pricingengines.credit.IsdaCdsEngine.AccrualBias.HalfDayBias,
                     org.jquantlib.pricingengines.credit.IsdaCdsEngine.ForwardsInCouponPeriod.Piecewise);
-            break;
-        default:
-            throw new IllegalArgumentException("unknown CDS pricing model: " + model);
-        }
+            default -> throw new IllegalArgumentException("unknown CDS pricing model: " + model);
+        };
 
         setupArguments(engine.getArguments());
         final CreditDefaultSwap.ResultsImpl res = (CreditDefaultSwap.ResultsImpl) engine.getResults();

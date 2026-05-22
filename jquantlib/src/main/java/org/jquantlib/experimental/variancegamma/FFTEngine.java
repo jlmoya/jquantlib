@@ -261,17 +261,11 @@ public abstract class FFTEngine extends VanillaOption.EngineImpl {
             final Map< StrikedTypePayoff, Double > bucket = new HashMap<>();
             for ( final StrikedTypePayoff p : payoffs ) {
                 final double callPrice = interp.op(p.strike());
-                final double price;
-                switch ( p.optionType() ) {
-                case Call:
-                    price = callPrice;
-                    break;
-                case Put:
-                    price = callPrice - process_.x0() * div + p.strike() * df;
-                    break;
-                default:
-                    throw new IllegalStateException("Invalid option type");
-                }
+                final double price = switch (p.optionType()) {
+                    case Call -> callPrice;
+                    case Put -> callPrice - process_.x0() * div + p.strike() * df;
+                    default -> throw new IllegalStateException("Invalid option type");
+                };
                 bucket.put(p, Double.valueOf(price));
             }
             resultMap_.put(expiryDate, bucket);

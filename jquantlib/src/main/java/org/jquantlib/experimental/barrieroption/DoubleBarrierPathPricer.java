@@ -108,14 +108,11 @@ final class DoubleBarrierPathPricer extends PathPricer< Path > {
         if ( isOptionActive ) {
             return payoff_.get(terminalPrice) * discounts_[discounts_.length - 1];
         } else {
-            switch ( barrierType_ ) {
-            case KnockOut:
-                return rebate_ * discounts_[knockNode];
-            case KnockIn:
-                return rebate_ * discounts_[discounts_.length - 1];
-            default:
-                throw new LibraryException("unknown barrier type");
-            }
+            return switch (barrierType_) {
+                case KnockOut -> rebate_ * discounts_[knockNode];
+                case KnockIn -> rebate_ * discounts_[discounts_.length - 1];
+                default -> throw new LibraryException("unknown barrier type");
+            };
         }
     }
 }

@@ -250,18 +250,13 @@ public class SabrSwaptionVolatilityCube extends SwaptionVolatilityCube {
 
     private static long periodKey(final Period p) {
         // Approximate ordering: convert to days. Days = length * (units->days).
-        switch ( p.units() ) {
-        case Days:
-            return p.length();
-        case Weeks:
-            return 7L * p.length();
-        case Months:
-            return 30L * p.length();
-        case Years:
-            return 365L * p.length();
-        default:
-            return p.length();
-        }
+        return switch (p.units()) {
+            case Days -> p.length();
+            case Weeks -> 7L * p.length();
+            case Months -> 30L * p.length();
+            case Years -> 365L * p.length();
+            default -> p.length();
+        };
     }
 
     private static int lowerBound(final double[] a, final double v) {

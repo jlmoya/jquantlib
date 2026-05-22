@@ -416,14 +416,11 @@ public class YearOnYearInflationSwap extends Swap {
         }
 
         public static Type valueOf(final int v) {
-            switch ( v ) {
-            case -1:
-                return Receiver;
-            case 1:
-                return Payer;
-            default:
-                throw new LibraryException("value must be -1 (Receiver) or 1 (Payer)");
-            }
+            return switch (v) {
+                case -1 -> Receiver;
+                case 1 -> Payer;
+                default -> throw new LibraryException("value must be -1 (Receiver) or 1 (Payer)");
+            };
         }
 
         public int toInteger() {

@@ -214,59 +214,41 @@ public class Std {
         } // dummy implementation
 
         public Double op(Double t1) {
-            switch ( op ) {
-            case Plus:
-                return ++t1;
-            case Sub:
-                return --t1;
-            default:
-                throw new LibraryException("Unsupported operation");
-            }
+            return switch (op) {
+                case Plus -> ++t1;
+                case Sub -> --t1;
+                default -> throw new LibraryException("Unsupported operation");
+            };
         }
 
         public Double op(Double t1, Double t2) {
-            switch ( op ) {
-            case Plus:
-                return t1 + t2;
-            case Sub:
-                return t1 - t2;
-            case Div:
-                return t1 / t2;
-            case Mult:
-                return t1 * t2;
-            default:
-                throw new LibraryException("Unsupported operation");
-            }
+            return switch (op) {
+                case Plus -> t1 + t2;
+                case Sub -> t1 - t2;
+                case Div -> t1 / t2;
+                case Mult -> t1 * t2;
+                default -> throw new LibraryException("Unsupported operation");
+            };
         }
 
         public Integer op(Integer t1, Integer t2) {
-            switch ( op ) {
-            case Plus:
-                return t1 + t2;
-            case Sub:
-                return t1 - t2;
-            case Div:
-                return t1 / t2;
-            case Mult:
-                return t1 * t2;
-            default:
-                throw new LibraryException("Unsupported operation");
-            }
+            return switch (op) {
+                case Plus -> t1 + t2;
+                case Sub -> t1 - t2;
+                case Div -> t1 / t2;
+                case Mult -> t1 * t2;
+                default -> throw new LibraryException("Unsupported operation");
+            };
         }
 
         public Long op(Long t1, Long t2) {
-            switch ( op ) {
-            case Plus:
-                return t1 + t2;
-            case Sub:
-                return t1 - t2;
-            case Div:
-                return t1 / t2;
-            case Mult:
-                return t1 * t2;
-            default:
-                throw new LibraryException("Unsupported operation");
-            }
+            return switch (op) {
+                case Plus -> t1 + t2;
+                case Sub -> t1 - t2;
+                case Div -> t1 / t2;
+                case Mult -> t1 * t2;
+                default -> throw new LibraryException("Unsupported operation");
+            };
         }
     }
 

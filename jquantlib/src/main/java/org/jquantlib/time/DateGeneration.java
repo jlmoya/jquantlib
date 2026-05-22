@@ -118,30 +118,19 @@ public class DateGeneration {
 
         @Override
         public String toString() {
-            switch ( rule ) {
-            case 1:
-                return "Backward";
-            case 2:
-                return "Forward";
-            case 3:
-                return "Zero";
-            case 4:
-                return "ThirdWednesday";
-            case 5:
-                return "Twentieth";
-            case 6:
-                return "TwentiethIMM";
-            case 7:
-                return "OldCDS";
-            case 8:
-                return "CDS";
-            case 9:
-                return "CDS2015";
-            case 10:
-                return "ThirdWednesdayInclusive";
-            default:
-                throw new LibraryException(UNKNOWN_DATE_GENERATION_RULE);
-            }
+            return switch (rule) {
+                case 1 -> "Backward";
+                case 2 -> "Forward";
+                case 3 -> "Zero";
+                case 4 -> "ThirdWednesday";
+                case 5 -> "Twentieth";
+                case 6 -> "TwentiethIMM";
+                case 7 -> "OldCDS";
+                case 8 -> "CDS";
+                case 9 -> "CDS2015";
+                case 10 -> "ThirdWednesdayInclusive";
+                default -> throw new LibraryException(UNKNOWN_DATE_GENERATION_RULE);
+            };
         }
 
     }

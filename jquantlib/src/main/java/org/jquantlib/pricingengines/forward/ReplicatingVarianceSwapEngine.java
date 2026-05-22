@@ -151,17 +151,11 @@ public class ReplicatingVarianceSwapEngine extends VarianceSwap.EngineImpl {
         r.variance = computeReplicatingPortfolio(optionWeights);
 
         final double riskFreeDiscount = process_.riskFreeRate().currentLink().discount(a.maturityDate);
-        final double multiplier;
-        switch ( a.position ) {
-        case Long:
-            multiplier = +1.0;
-            break;
-        case Short:
-            multiplier = -1.0;
-            break;
-        default:
-            throw new RuntimeException("Unknown position");
-        }
+        final double multiplier = switch (a.position) {
+            case Long -> +1.0;
+            case Short -> -1.0;
+            default -> throw new RuntimeException("Unknown position");
+        };
         r.value = multiplier * riskFreeDiscount * a.notional * (r.variance - a.strike);
 
         // Mirror C++ additionalResults["optionWeights"]

@@ -14563,23 +14563,13 @@ public final class LatticeRule {
         QL.require(n >= 1024 && n <= Math.pow(2.9, 20),
                 "N must be between 2 to 10 and 2 to the 20 for these lattice rules ");
         final double[] z = new double[ruleLength];
-        final double[] src;
-        switch ( name ) {
-        case A:
-            src = LATTICE_A;
-            break;
-        case B:
-            src = LATTICE_B;
-            break;
-        case C:
-            src = LATTICE_C;
-            break;
-        case D:
-            src = LATTICE_D;
-            break;
-        default:
-            throw new IllegalStateException("unknown lattice rule requested");
-        }
+        final double[] src = switch (name) {
+            case A -> LATTICE_A;
+            case B -> LATTICE_B;
+            case C -> LATTICE_C;
+            case D -> LATTICE_D;
+            default -> throw new IllegalStateException("unknown lattice rule requested");
+        };
         System.arraycopy(src, 0, z, 0, ruleLength);
         return z;
     }

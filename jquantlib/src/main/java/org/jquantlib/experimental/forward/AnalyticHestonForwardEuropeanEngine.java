@@ -156,18 +156,12 @@ public class AnalyticHestonForwardEuropeanEngine extends ForwardVanillaOption.En
         }
 
         final double F = s0_.currentLink().value() / expiryRatio;
-        final double value;
-        switch ( payoff.optionType() ) {
-        case Call:
-            value = expiryDcf * (F * p1p2hat[0] - moneyness * s0_.currentLink().value() * p1p2hat[1] / resetRatio);
-            break;
-        case Put:
-            value = expiryDcf * (moneyness * s0_.currentLink().value() * (1.0 - p1p2hat[1]) / resetRatio - F * (1.0
+        final double value = switch (payoff.optionType()) {
+            case Call -> expiryDcf * (F * p1p2hat[0] - moneyness * s0_.currentLink().value() * p1p2hat[1] / resetRatio);
+            case Put -> expiryDcf * (moneyness * s0_.currentLink().value() * (1.0 - p1p2hat[1]) / resetRatio - F * (1.0
                     - p1p2hat[0]));
-            break;
-        default:
-            throw new IllegalArgumentException("unknown option type");
-        }
+            default -> throw new IllegalArgumentException("unknown option type");
+        };
 
         final ForwardVanillaOption.ResultsImpl res = (ForwardVanillaOption.ResultsImpl) results_;
         res.value = value;

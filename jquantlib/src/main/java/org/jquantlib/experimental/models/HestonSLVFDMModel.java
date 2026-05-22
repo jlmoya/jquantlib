@@ -111,16 +111,12 @@ public class HestonSLVFDMModel extends LazyObject {
 
     /** Map params.greensAlgorithm enum to FdmHestonGreensFct.Algorithm. */
     private static FdmHestonGreensFct.Algorithm greensFctAlgorithm(final GreensFctAlgorithm a) {
-        switch ( a ) {
-        case ZeroCorrelation:
-            return FdmHestonGreensFct.Algorithm.ZeroCorrelation;
-        case Gaussian:
-            return FdmHestonGreensFct.Algorithm.Gaussian;
-        case SemiAnalytical:
-            return FdmHestonGreensFct.Algorithm.SemiAnalytical;
-        default:
-            throw new IllegalArgumentException("unknown algorithm: " + a);
-        }
+        return switch (a) {
+            case ZeroCorrelation -> FdmHestonGreensFct.Algorithm.ZeroCorrelation;
+            case Gaussian -> FdmHestonGreensFct.Algorithm.Gaussian;
+            case SemiAnalytical -> FdmHestonGreensFct.Algorithm.SemiAnalytical;
+            default -> throw new IllegalArgumentException("unknown algorithm: " + a);
+        };
     }
 
     private static Array arrayOf(final double[] xs) {
@@ -284,94 +280,75 @@ public class HestonSLVFDMModel extends LazyObject {
 
     /** Build a scheme wrapper from the descriptor. */
     private static FdmScheme fdmSchemeFactory(final FdmSchemeDesc desc, final FdmLinearOpComposite op) {
-        switch ( desc.type ) {
-        case HundsdorferType:
-            return new FdmScheme() {
+        return switch (desc.type) {
+            case HundsdorferType -> new FdmScheme() {
                 final HundsdorferScheme s = new HundsdorferScheme(desc.theta, desc.mu, op);
-
                 @Override
                 public void step(final Array a, final double t) {
                     s.step(a, t);
                 }
-
                 @Override
                 public void setStep(final double dt) {
                     s.setStep(dt);
                 }
             };
-        case DouglasType:
-            return new FdmScheme() {
+            case DouglasType -> new FdmScheme() {
                 final DouglasScheme s = new DouglasScheme(desc.theta, op);
-
                 @Override
                 public void step(final Array a, final double t) {
                     s.step(a, t);
                 }
-
                 @Override
                 public void setStep(final double dt) {
                     s.setStep(dt);
                 }
             };
-        case CraigSneydType:
-            return new FdmScheme() {
+            case CraigSneydType -> new FdmScheme() {
                 final CraigSneydScheme s = new CraigSneydScheme(desc.theta, desc.mu, op);
-
                 @Override
                 public void step(final Array a, final double t) {
                     s.step(a, t);
                 }
-
                 @Override
                 public void setStep(final double dt) {
                     s.setStep(dt);
                 }
             };
-        case ModifiedCraigSneydType:
-            return new FdmScheme() {
+            case ModifiedCraigSneydType -> new FdmScheme() {
                 final ModifiedCraigSneydScheme s = new ModifiedCraigSneydScheme(desc.theta, desc.mu, op);
-
                 @Override
                 public void step(final Array a, final double t) {
                     s.step(a, t);
                 }
-
                 @Override
                 public void setStep(final double dt) {
                     s.setStep(dt);
                 }
             };
-        case ImplicitEulerType:
-            return new FdmScheme() {
+            case ImplicitEulerType -> new FdmScheme() {
                 final ImplicitEulerScheme s = new ImplicitEulerScheme(op);
-
                 @Override
                 public void step(final Array a, final double t) {
                     s.step(a, t);
                 }
-
                 @Override
                 public void setStep(final double dt) {
                     s.setStep(dt);
                 }
             };
-        case ExplicitEulerType:
-            return new FdmScheme() {
+            case ExplicitEulerType -> new FdmScheme() {
                 final ExplicitEulerScheme s = new ExplicitEulerScheme(op);
-
                 @Override
                 public void step(final Array a, final double t) {
                     s.step(a, t);
                 }
-
                 @Override
                 public void setStep(final double dt) {
                     s.setStep(dt);
                 }
             };
-        default:
-            throw new IllegalArgumentException("Unknown scheme type: " + desc.type);
-        }
+            default -> throw new IllegalArgumentException("Unknown scheme type: " + desc.type);
+        };
     }
 
     /** Returns the Heston model's underlying process. */

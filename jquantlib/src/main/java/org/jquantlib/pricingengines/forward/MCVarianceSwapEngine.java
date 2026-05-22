@@ -178,17 +178,11 @@ public class MCVarianceSwapEngine extends VarianceSwap.EngineImpl {
         r.variance = this.simulation_.sampleAccumulator().mean();
 
         final double riskFreeDiscount = process_.riskFreeRate().currentLink().discount(a.maturityDate);
-        final double multiplier;
-        switch ( a.position ) {
-        case Long:
-            multiplier = +1.0;
-            break;
-        case Short:
-            multiplier = -1.0;
-            break;
-        default:
-            throw new RuntimeException("Unknown position");
-        }
+        final double multiplier = switch (a.position) {
+            case Long -> +1.0;
+            case Short -> -1.0;
+            default -> throw new RuntimeException("Unknown position");
+        };
         final double m = multiplier * riskFreeDiscount * a.notional;
 
         r.value = m * (r.variance - a.strike);

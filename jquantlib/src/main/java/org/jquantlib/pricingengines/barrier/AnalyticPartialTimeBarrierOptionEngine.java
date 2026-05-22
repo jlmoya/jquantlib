@@ -68,18 +68,13 @@ public class AnalyticPartialTimeBarrierOptionEngine extends PartialTimeBarrierOp
     }
 
     private static BarrierType getSymmetricBarrierType(final BarrierType bt) {
-        switch ( bt ) {
-        case UpIn:
-            return BarrierType.DownIn;
-        case DownIn:
-            return BarrierType.UpIn;
-        case UpOut:
-            return BarrierType.DownOut;
-        case DownOut:
-            return BarrierType.UpOut;
-        default:
-            throw new LibraryException("unknown barrier type");
-        }
+        return switch (bt) {
+            case UpIn -> BarrierType.DownIn;
+            case DownIn -> BarrierType.UpIn;
+            case UpOut -> BarrierType.DownOut;
+            case DownOut -> BarrierType.UpOut;
+            default -> throw new LibraryException("unknown barrier type");
+        };
     }
 
     @Override

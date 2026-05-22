@@ -193,18 +193,13 @@ public class MakeVanillaSwap {
     }
 
     private static long approxDays(final Period p) {
-        switch ( p.units() ) {
-        case Days:
-            return p.length();
-        case Weeks:
-            return 7L * p.length();
-        case Months:
-            return 30L * p.length();
-        case Years:
-            return 365L * p.length();
-        default:
-            return p.length();
-        }
+        return switch (p.units()) {
+            case Days -> p.length();
+            case Weeks -> 7L * p.length();
+            case Months -> 30L * p.length();
+            case Years -> 365L * p.length();
+            default -> p.length();
+        };
     }
 
     public VanillaSwap value() /* @ReadOnly */ {

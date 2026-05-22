@@ -67,18 +67,12 @@ public class FdmVPPStepConditionFactory {
     }
 
     public Fdm1dMesher stateMesher() {
-        final int nStates;
-        switch (type_) {
-            case Vanilla:
-                nStates = 2 * args_.tMinUp + args_.tMinDown;
-                break;
-            case StartLimit:
-                nStates = FdmVPPStartLimitStepCondition.nStates(
+        final int nStates = switch (type_) {
+            case Vanilla -> 2 * args_.tMinUp + args_.tMinDown;
+            case StartLimit -> FdmVPPStartLimitStepCondition.nStates(
                         args_.tMinUp, args_.tMinDown, args_.nStarts);
-                break;
-            default:
-                throw new IllegalStateException("vpp type is not supported");
-        }
+            default -> throw new IllegalStateException("vpp type is not supported");
+        };
 
         return new Uniform1dMesher(0.0, 1.0, nStates);
     }

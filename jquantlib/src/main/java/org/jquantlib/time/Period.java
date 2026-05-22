@@ -693,28 +693,18 @@ public class Period implements Cloneable {
      * @return maximum days
      */
     private int getMaxDays() {
-        switch ( this.units() ) {
-        case Years:
-            return this.length() * 366;
-        case Months:
-            return this.length() * 31;
-        case Weeks:
-            return this.length() * 7;
-        case Days:
-            return this.length();
-        case Hours:
-            return Math.max(1, this.length() / 24 + 1);
-        case Minutes:
-            return Math.max(1, this.length() / 1440 + 1);
-        case Seconds:
-            return Math.max(1, this.length() / 86400 + 1);
-        case Milliseconds:
-            return Math.max(1, this.length() / 86_400_000 + 1);
-        case Microseconds:
-            return Math.max(1, (int) ((long) this.length() / 86_400_000_000L + 1L));
-        default:
-            throw new LibraryException(UNKNOWN_TIME_UNIT);
-        }
+        return switch (this.units()) {
+            case Years -> this.length() * 366;
+            case Months -> this.length() * 31;
+            case Weeks -> this.length() * 7;
+            case Days -> this.length();
+            case Hours -> Math.max(1, this.length() / 24 + 1);
+            case Minutes -> Math.max(1, this.length() / 1440 + 1);
+            case Seconds -> Math.max(1, this.length() / 86400 + 1);
+            case Milliseconds -> Math.max(1, this.length() / 86_400_000 + 1);
+            case Microseconds -> Math.max(1, (int) ((long) this.length() / 86_400_000_000L + 1L));
+            default -> throw new LibraryException(UNKNOWN_TIME_UNIT);
+        };
 
     }
 

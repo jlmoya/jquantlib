@@ -156,18 +156,13 @@ public abstract class BaseCorrelationTermStructure extends CorrelationTermStruct
 
     private static int toDays(final Period p) {
         // Coarse comparison is enough for monotonicity validation; use rough day counts.
-        switch ( p.units() ) {
-        case Days:
-            return p.length();
-        case Weeks:
-            return p.length() * 7;
-        case Months:
-            return p.length() * 30;
-        case Years:
-            return p.length() * 365;
-        default:
-            return p.length();
-        }
+        return switch (p.units()) {
+            case Days -> p.length();
+            case Weeks -> p.length() * 7;
+            case Months -> p.length() * 30;
+            case Years -> p.length() * 365;
+            default -> p.length();
+        };
     }
 
     @Override

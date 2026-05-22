@@ -148,29 +148,21 @@ public class FdmSquareRootFwdOp implements FdmLinearOpComposite {
     }
 
     public double lowerBoundaryFactor(final TransformationType type) {
-        switch ( type ) {
-        case Plain:
-            return f0Plain();
-        case Power:
-            return f0Power();
-        case Log:
-            return f0Log();
-        default:
-            throw new IllegalArgumentException("unknown transform");
-        }
+        return switch (type) {
+            case Plain -> f0Plain();
+            case Power -> f0Power();
+            case Log -> f0Log();
+            default -> throw new IllegalArgumentException("unknown transform");
+        };
     }
 
     public double upperBoundaryFactor(final TransformationType type) {
-        switch ( type ) {
-        case Plain:
-            return f1Plain();
-        case Power:
-            return f1Power();
-        case Log:
-            return f1Log();
-        default:
-            throw new IllegalArgumentException("unknown transform");
-        }
+        return switch (type) {
+            case Plain -> f1Plain();
+            case Power -> f1Power();
+            case Log -> f1Log();
+            default -> throw new IllegalArgumentException("unknown transform");
+        };
     }
 
     private double f0Plain() {
@@ -276,16 +268,12 @@ public class FdmSquareRootFwdOp implements FdmLinearOpComposite {
 
     /** Returns {alpha, beta, gamma}. */
     private double[] getCoeff(final int n) {
-        switch ( transform ) {
-        case Plain:
-            return getCoeffPlain(n);
-        case Power:
-            return getCoeffPower(n);
-        case Log:
-            return getCoeffLog(n);
-        default:
-            throw new IllegalArgumentException("unknown transform");
-        }
+        return switch (transform) {
+            case Plain -> getCoeffPlain(n);
+            case Power -> getCoeffPower(n);
+            case Log -> getCoeffLog(n);
+            default -> throw new IllegalArgumentException("unknown transform");
+        };
     }
 
     private double[] getCoeffPlain(final int n) {

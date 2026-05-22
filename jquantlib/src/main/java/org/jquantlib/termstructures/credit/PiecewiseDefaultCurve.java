@@ -197,16 +197,12 @@ public class PiecewiseDefaultCurve< I extends Interpolator > extends DefaultProb
         final int mod10 = n % 10;
         if ( mod100 >= 11 && mod100 <= 13 )
             return n + "th";
-        switch ( mod10 ) {
-        case 1:
-            return n + "st";
-        case 2:
-            return n + "nd";
-        case 3:
-            return n + "rd";
-        default:
-            return n + "th";
-        }
+        return switch (mod10) {
+            case 1 -> n + "st";
+            case 2 -> n + "nd";
+            case 3 -> n + "rd";
+            default -> n + "th";
+        };
     }
 
     //
@@ -460,19 +456,15 @@ public class PiecewiseDefaultCurve< I extends Interpolator > extends DefaultProb
     }
 
     private DefaultProbabilityTermStructure buildBaseCurve(final Date[] ds, final double[] vals) {
-        switch ( flavor ) {
-        case HAZARD_RATE:
-            return new InterpolatedHazardRateCurve< I >(classI, ds, vals, dayCounter(),
+        return switch (flavor) {
+            case HAZARD_RATE -> new InterpolatedHazardRateCurve< I >(classI, ds, vals, dayCounter(),
                     new org.jquantlib.time.calendars.NullCalendar(), interpolator);
-        case SURVIVAL_PROBABILITY:
-            return new InterpolatedSurvivalProbabilityCurve< I >(classI, ds, vals, dayCounter(),
+            case SURVIVAL_PROBABILITY -> new InterpolatedSurvivalProbabilityCurve< I >(classI, ds, vals, dayCounter(),
                     new org.jquantlib.time.calendars.NullCalendar(), interpolator);
-        case DEFAULT_DENSITY:
-            return new InterpolatedDefaultDensityCurve< I >(classI, ds, vals, dayCounter(),
+            case DEFAULT_DENSITY -> new InterpolatedDefaultDensityCurve< I >(classI, ds, vals, dayCounter(),
                     new org.jquantlib.time.calendars.NullCalendar(), interpolator);
-        default:
-            throw new LibraryException("unknown flavor: " + flavor);
-        }
+            default -> throw new LibraryException("unknown flavor: " + flavor);
+        };
     }
 
     private void rebuildBaseCurve() {
@@ -526,16 +518,12 @@ public class PiecewiseDefaultCurve< I extends Interpolator > extends DefaultProb
         HAZARD_RATE, SURVIVAL_PROBABILITY, DEFAULT_DENSITY;
 
         ProbabilityTraits.Traits traits() {
-            switch ( this ) {
-            case HAZARD_RATE:
-                return new ProbabilityTraits.HazardRate();
-            case SURVIVAL_PROBABILITY:
-                return new ProbabilityTraits.SurvivalProbability();
-            case DEFAULT_DENSITY:
-                return new ProbabilityTraits.DefaultDensity();
-            default:
-                throw new LibraryException("unknown flavor");
-            }
+            return switch (this) {
+                case HAZARD_RATE -> new ProbabilityTraits.HazardRate();
+                case SURVIVAL_PROBABILITY -> new ProbabilityTraits.SurvivalProbability();
+                case DEFAULT_DENSITY -> new ProbabilityTraits.DefaultDensity();
+                default -> throw new LibraryException("unknown flavor");
+            };
         }
     }
 
