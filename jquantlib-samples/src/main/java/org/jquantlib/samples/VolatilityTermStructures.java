@@ -267,7 +267,7 @@ public class VolatilityTermStructures implements Runnable {
                 strikeAxis, volatilityMatrix, new Actual365Fixed(),
                 Extrapolation.InterpolatorDefaultExtrapolation,
                 Extrapolation.InterpolatorDefaultExtrapolation);
-        ((BlackVarianceSurface)varianceSurface).setInterpolation(null);
+        ((BlackVarianceSurface)varianceSurface).setInterpolation((org.jquantlib.math.interpolations.Interpolation2D.Interpolator2D) null);
 
         //As the surface has been set up to do interpolations so let's start calculating the volatilities for strikes
         //and maturities lying between the points as mentioned by strikesAxis and dateAxis.

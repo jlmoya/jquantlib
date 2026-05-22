@@ -36,7 +36,7 @@ import org.jquantlib.math.randomnumbers.RandomNumberGenerator;
 import org.jquantlib.math.randomnumbers.RandomSequenceGenerator;
 import org.jquantlib.math.statistics.Statistics;
 import org.jquantlib.methods.montecarlo.MonteCarloModel;
-import org.jquantlib.methods.montecarlo.SingleVariate;
+import org.jquantlib.methods.montecarlo.Path;
 import org.jquantlib.pricingengines.BlackCalculator;
 import org.jquantlib.processes.BlackScholesMertonProcess;
 import org.jquantlib.processes.StochasticProcess1D;
@@ -116,7 +116,7 @@ public class ReplicationError {
 
         final boolean brownianBridge = false;
 
-        final MonteCarloModel<SingleVariate, RandomNumberGenerator, Statistics> MCSimulation = new MonteCarloModel<SingleVariate, RandomNumberGenerator, Statistics>();
+        final MonteCarloModel<Path> MCSimulation = new MonteCarloModel<Path>(null, null, new Statistics(), false);
 
         // the model simulates nSamples paths
         MCSimulation.addSamples(nSamples);

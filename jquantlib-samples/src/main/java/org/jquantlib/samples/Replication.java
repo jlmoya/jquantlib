@@ -55,8 +55,6 @@ public class Replication implements Runnable {
     @Override
     public void run() {
 
-        QL.validateExperimentalMode();
-
         QL.info("::::: " + this.getClass().getSimpleName() + " :::::");
 
         final String fmt = "%-45s %-15s %-15s\n";

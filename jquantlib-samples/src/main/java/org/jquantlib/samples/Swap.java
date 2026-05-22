@@ -1,7 +1,5 @@
 package org.jquantlib.samples;
 
-import org.jquantlib.QL;
-
 public class Swap implements Runnable {
 
     public static void main(final String[] args) {
@@ -10,7 +8,6 @@ public class Swap implements Runnable {
 
     @Override
     public void run() {
-        QL.validateExperimentalMode();
     }
 
 }

@@ -25,8 +25,6 @@ public class SobolChartSample implements Runnable {
 
     @Override
     public void run() {
-        QL.validateExperimentalMode();
-
         QL.info("::::: " + this.getClass().getSimpleName() + " :::::");
 
         final SobolChartFrame frame = new SobolChartFrame("Sobol Chart Sample");

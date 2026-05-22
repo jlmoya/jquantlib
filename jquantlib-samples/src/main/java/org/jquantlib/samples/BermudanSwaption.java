@@ -48,8 +48,6 @@ public class BermudanSwaption implements Runnable {
     @Override
     public void run() {
 
-        QL.validateExperimentalMode();
-
         QL.info("::::: " + this.getClass().getSimpleName() + " :::::");
 
         final StopClock clock = new StopClock();

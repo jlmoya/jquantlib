@@ -75,8 +75,6 @@ public class FRA implements Runnable {
     @Override
     public void run() {
 
-        QL.validateExperimentalMode();
-
         QL.info("::::: " + this.getClass().getSimpleName() + " :::::");
 
         /*********************
