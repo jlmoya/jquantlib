@@ -6,11 +6,8 @@
 
  This file is a faithful Java port of v1.42.1
  test-suite/marketmodel_smmcaplethomocalibration.cpp::testFunction
- @ 099987f0ca2c11c505dc4348cdb9ce01a598e1e5.
- The {@code testPeriodFunction} sibling remains BLOCKED on the Java-side
- absence of {@code capletSwaptionPeriodicCalibration} (and its
- {@code VolatilityInterpolationSpecifierAbcd} driver). {@code
- testSphereCylinder} is already covered by
+ and ::testPeriodFunction @ 099987f0ca2c11c505dc4348cdb9ce01a598e1e5.
+ {@code testSphereCylinder} is already covered by
  {@link org.jquantlib.testsuite.math.optimization.SphereCylinderOptimizerTest}.
 
  This file is part of JQuantLib, a free-software/open-source library
@@ -40,9 +37,12 @@ import org.jquantlib.model.marketmodels.correlations.ExponentialForwardCorrelati
 import org.jquantlib.model.marketmodels.curvestates.LMMCurveState;
 import org.jquantlib.model.marketmodels.models.CTSMMCapletMaxHomogeneityCalibration;
 import org.jquantlib.model.marketmodels.models.CotSwapToFwdAdapter;
+import org.jquantlib.model.marketmodels.models.FwdPeriodAdapter;
+import org.jquantlib.model.marketmodels.models.FwdToCotSwapAdapter;
 import org.jquantlib.model.marketmodels.models.PiecewiseConstantAbcdVariance;
 import org.jquantlib.model.marketmodels.models.PiecewiseConstantVariance;
 import org.jquantlib.model.marketmodels.models.PseudoRootFacade;
+import org.jquantlib.model.marketmodels.models.VolatilityInterpolationSpecifierAbcd;
 import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
@@ -206,6 +206,141 @@ public class CTSMMCapletMaxHomogeneityCalibrationTest {
                         "failed to reproduce caplet %d vol: expected=%.6f realized=%.6f pcterr=%.3e error=%.3e tol=%.3e",
                         i + 1, capletVols_[i], capletVols[i],
                         error / capletVols_[i], error, capletTolerance));
+            }
+        }
+    }
+
+    /**
+     * Faithful Java port of v1.42.1
+     * {@code test-suite/marketmodel_smmcaplethomocalibration.cpp::testPeriodFunction}
+     * @ {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
+     *
+     * <p>Drives the {@code capletSwaptionPeriodicCalibration} free function via
+     * {@link VolatilityInterpolationSpecifierAbcd}, then verifies caplet fit
+     * (tolerance {@code 1e-4}) and perfect swaption fit (tolerance {@code 2e-5}).
+     */
+    @Test
+    public void testPeriodFunction() {
+        final int numberOfRates = todaysForwards_.length;
+        final int period = 2;
+        final int offset = numberOfRates % period;
+        final int numberBigRates = numberOfRates / period;
+
+        final EvolutionDescription evolution = new EvolutionDescription(rateTimes_);
+
+        final double[] bigRateTimes = new double[numberBigRates + 1];
+        for (int i = 0; i <= numberBigRates; ++i) {
+            bigRateTimes[i] = rateTimes_[i * period + offset];
+        }
+
+        final PiecewiseConstantCorrelation fwdCorr = new ExponentialForwardCorrelation(
+                doubleArrayToList(rateTimes_), longTermCorrelation_, beta_);
+
+        final LMMCurveState cs = new LMMCurveState(rateTimes_);
+        cs.setOnForwardRates(todaysForwards_);
+
+        final PiecewiseConstantCorrelation corr = new CotSwapFromFwdCorrelation(
+                fwdCorr, cs, displacement_);
+
+        final List<PiecewiseConstantAbcdVariance> swapVariances = new ArrayList<>(numberBigRates);
+        for (int i = 0; i < numberBigRates; ++i) {
+            swapVariances.add(new PiecewiseConstantAbcdVariance(a_, b_, c_, d_, i, bigRateTimes));
+        }
+
+        // varianceInterpolator: long-rate variances + small-rate time grid
+        final VolatilityInterpolationSpecifierAbcd varianceInterpolator =
+                new VolatilityInterpolationSpecifierAbcd(period, offset, swapVariances, rateTimes_);
+
+        // create calibrator (cpp:394-407)
+        final double caplet0Swaption1Priority = 1.0;
+
+        // calibration controls (cpp:402-408)
+        final int maxUnperiodicIterations = 10;
+        final double toleranceUnperiodic = 1e-5; // i.e. 1 bp
+        final int max1dIterations = 100;
+        final double tolerance1d = 1e-8;
+        final int maxPeriodIterations = 30;
+        final double periodTolerance = 1e-5;
+
+        // out-params
+        final List<Matrix> swapPseudoRoots = new ArrayList<>();
+        final double[] deformationSize = new double[1];
+        final double[] totalSwaptionError = new double[1];
+        final double[] finalScales = new double[numberBigRates];
+        final int[] iterationsDone = new int[1];
+        final double[] errorImprovement = new double[1];
+        final Matrix[] modelSwaptionVolsMatrix = new Matrix[1];
+
+        // call free function (cpp:427-450)
+        CTSMMCapletMaxHomogeneityCalibration.capletSwaptionPeriodicCalibration(
+                evolution,
+                corr,
+                varianceInterpolator,
+                capletVols_,
+                cs,
+                displacement_,
+                caplet0Swaption1Priority,
+                numberOfFactors_,
+                period,
+                max1dIterations,
+                tolerance1d,
+                maxUnperiodicIterations,
+                toleranceUnperiodic,
+                maxPeriodIterations,
+                periodTolerance,
+                deformationSize,
+                totalSwaptionError,
+                swapPseudoRoots,
+                finalScales,
+                iterationsDone,
+                errorImprovement,
+                modelSwaptionVolsMatrix);
+
+        // Build smm + flmm (cpp:453-459)
+        final double[] displacementsAll = new double[numberOfRates];
+        Arrays.fill(displacementsAll, displacement_);
+        final org.jquantlib.model.marketmodels.MarketModel smm =
+                new PseudoRootFacade(swapPseudoRoots, rateTimes_,
+                        cs.coterminalSwapRates(), displacementsAll);
+        final org.jquantlib.model.marketmodels.MarketModel flmm = new CotSwapToFwdAdapter(smm);
+        final Matrix capletTotCovariance = flmm.totalCovariance(numberOfRates - 1);
+
+        // Check caplet fit (cpp:464-482)
+        final double[] capletVols = new double[numberOfRates];
+        for (int i = 0; i < numberOfRates; ++i) {
+            capletVols[i] = Math.sqrt(capletTotCovariance.get(i, i) / rateTimes_[i]);
+        }
+        final double capletTolerance = 1e-4; // i.e. 1 bp
+        for (int i = 0; i < numberOfRates; ++i) {
+            final double error = Math.abs(capletVols[i] - capletVols_[i]);
+            if (error > capletTolerance) {
+                fail(String.format(
+                        "failed to reproduce caplet %d vol: expected=%.6f realized=%.6f pcterr=%.3e error=%.3e tol=%.3e",
+                        i + 1, capletVols_[i], capletVols[i],
+                        error / capletVols_[i], error, capletTolerance));
+            }
+        }
+
+        // Check perfect swaption fit (cpp:486-509)
+        final double[] adaptedDisplacements = new double[numberBigRates];
+        Arrays.fill(adaptedDisplacements, displacement_);
+        final org.jquantlib.model.marketmodels.MarketModel adaptedFlmm =
+                new FwdPeriodAdapter(flmm, period, offset, adaptedDisplacements);
+        final org.jquantlib.model.marketmodels.MarketModel adaptedSmm = new FwdToCotSwapAdapter(adaptedFlmm);
+
+        final double swapTolerance = 2e-5;
+        final Matrix swapTerminalCovariance =
+                adaptedSmm.totalCovariance(adaptedSmm.numberOfSteps() - 1);
+
+        for (int i = 0; i < numberBigRates; ++i) {
+            final double expSwaptionVol = swapVariances.get(i).totalVolatility(i);
+            final double time = adaptedSmm.evolution().rateTimes()[i];
+            final double swaptionVol = Math.sqrt(swapTerminalCovariance.get(i, i) / time);
+            final double error = Math.abs(swaptionVol - expSwaptionVol);
+            if (error > swapTolerance) {
+                fail(String.format(
+                        "failed to reproduce swaption %d vol: expected=%.6f realized=%.6f error=%.3e tol=%.3e",
+                        i, expSwaptionVol, swaptionVol, error, swapTolerance));
             }
         }
     }
