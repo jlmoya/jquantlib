@@ -71,21 +71,51 @@ Verification: per-test mvn after each record conversion.
 Verification: full `mvn test -pl ../jquantlib clean test` per sealed family added.
 
 ### Wave 5 — Virtual threads + structured concurrency (~2-3 sessions)
-- Replace `Executors.newFixedThreadPool(...)` in MC simulators with `Executors.newVirtualThreadPerTaskExecutor()`
-- Adopt `StructuredTaskScope` (JEP 462 → 480 in 25) for new fork-join sites
-- Targets: `MonteCarloModel`, `MCEuropeanEngine`, `MCAmerican*`, `MCHeston*`, `MCBates*`, `LiborMarketModelTest.testCalibration`
 
-**Risk:** medium. Virtual threads have different scheduling — MC convergence is sample-order
-dependent in some tests. Need careful regression on MC-heavy tests.
+**Survey 2026-05-22 — material correction:** JQuantLib has **0 existing
+Executor / ForkJoin / parallelStream usage** in production code. There is
+nothing to "replace" with virtual threads — W5 would be **adding** parallelism
+to currently-sequential code, not migrating existing concurrency.
+
+Revised scope:
+- Introduce virtual threads to MC simulators (~36 MC* files identified)
+- Use `StructuredTaskScope` (JEP 480 in JDK 25) for the new fork-join pattern
+- Targets: `MonteCarloModel.calculate()` main loop — parallel path generation
+- Deterministic seed splitting via SplitMix64 so MC results stay byte-identical
+  across runs regardless of execution order
+
+**Risk:** medium-high. MC convergence + cached test values depend on the
+exact sample sequence. Reproducibility requires careful seed splitting
+(each virtual thread gets a deterministic sub-seed). If implemented
+correctly, results are identical to sequential. If not, the entire MC
+test family (~50+ tests) needs re-baselining.
+
+**Recommendation:** Treat W5 as a separate performance project after W1-4
+land. Net-new feature, not a migration.
 
 ### Wave 6 — Vector API (incubator) + FFM API (~3-5 sessions)
-- Vector API: batch math in JQuantMath (already correctly-rounded — may not win much)
-  AND in MC path generation (high-volume independent SIMD ops)
-- FFM API: any native interop? JQuantLib is pure-Java per project docs, so likely N/A
-- Vectorize: `AdaptiveRungeKutta` array ops, `Array.assign(Array)` arithmetic, MC step loops
 
-**Risk:** highest. Vector API is incubator on JDK 25 (stable target is JDK 26+). Performance
-work may not be worth the API churn risk. Reassess after Waves 1-5 complete.
+**Survey 2026-05-22:** 219 files use `Math.exp`, 278 use `Math.sqrt`, 68
+use `JQuantMath.*` (correctly-rounded). Phase 2n's Math.* → JQuantMath.*
+migration covered transcendentals but did not exhaustively sweep all
+call sites — many `Math.exp/log/sqrt` remain in batch contexts (Array
+arithmetic, MC step loops).
+
+Revised W6 scope:
+- Vector API: vectorize `Array.assign(Array)` arithmetic kernels first
+  (element-wise add/mul/sub over large doubles arrays — biggest win,
+  no transcendental complexity)
+- Then MC step loops once W5 introduces parallel paths
+- Skip JQuantMath vectorization — correctly-rounded transcendentals
+  with Vector API need careful design (NEON doesn't have correctly-rounded
+  intrinsics; would have to fall back to scalar fast paths)
+- FFM API: JQuantLib is pure-Java; no native interop. SKIP.
+
+**Risk:** highest. Vector API is **incubator on JDK 25** (stable target
+JDK 26+). Performance work may not be worth the API churn risk.
+
+**Recommendation:** Reassess after Waves 1-5 complete. May defer to JDK 26
+when Vector API exits incubator.
 
 ---
 
