@@ -45,10 +45,16 @@ package org.jquantlib.time;
 /**
  * Time units
  *
+ * <p>Phase 1.3 D5-D-intraday: extended with {@code Hours}, {@code Minutes},
+ * {@code Seconds}, {@code Milliseconds}, {@code Microseconds} to mirror
+ * C++ v1.42.1 {@code ql/time/timeunit.hpp:37-46}. The sub-day units are
+ * only used by intraday-aware Date arithmetic
+ * ({@link Period} + {@link Date} {@code QL_HIGH_RESOLUTION_DATE} branch).
+ *
  * @author Richard Gomes
  */
 public enum TimeUnit {
-    Days, Weeks, Months, Years;
+    Days, Weeks, Months, Years, Hours, Minutes, Seconds, Milliseconds, Microseconds;
 
     /**
      * Returns the name of time unit in long format (e.g. "week")
@@ -81,10 +87,20 @@ public enum TimeUnit {
     }
 
     /**
-     * Output time units in short format (e.g. "W")
+     * Output time units in short format (e.g. "W"). Mirrors C++ short-period
+     * formatter (ql/time/period.cpp:421-441): sub-day units render as
+     * lowercase {@code "h"/"m"/"s"} (no millisecond/microsecond letters in
+     * the C++ formatter, so we fall back to {@code "ms"/"us"}).
      */
     private String getShortFormatString() {
-        return String.valueOf(toString().charAt(0));
+        switch (this) {
+            case Hours:        return "h";
+            case Minutes:      return "min"; // disambiguate from Months "M"
+            case Seconds:      return "s";
+            case Milliseconds: return "ms";
+            case Microseconds: return "us";
+            default:           return String.valueOf(toString().charAt(0));
+        }
     }
 
 }

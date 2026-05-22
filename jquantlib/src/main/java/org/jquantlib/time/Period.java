@@ -207,7 +207,18 @@ public class Period implements Cloneable {
                     break;
                 case Weeks:
                 case Days:
-                    throw new IllegalArgumentException(INCOMPATIBLE_TIME_UNIT);
+                case Hours:
+                case Minutes:
+                case Seconds:
+                case Milliseconds:
+                case Microseconds:
+                    // Phase 1.3 D5-D-intraday: mirror C++
+                    // ql/time/period.cpp:151-156 QL_REQUIRE
+                    // p.length()==0 fall-through (zero-length sub/different
+                    // unit absorbs into this; otherwise INCOMPATIBLE).
+                    if ( another.length() != 0 )
+                        throw new IllegalArgumentException(INCOMPATIBLE_TIME_UNIT);
+                    break;
                 default:
                     throw new LibraryException(UNKNOWN_TIME_UNIT);
                 }
@@ -219,7 +230,14 @@ public class Period implements Cloneable {
                     break;
                 case Weeks:
                 case Days:
-                    throw new IllegalArgumentException(INCOMPATIBLE_TIME_UNIT);
+                case Hours:
+                case Minutes:
+                case Seconds:
+                case Milliseconds:
+                case Microseconds:
+                    if ( another.length() != 0 )
+                        throw new IllegalArgumentException(INCOMPATIBLE_TIME_UNIT);
+                    break;
                 default:
                     throw new LibraryException(UNKNOWN_TIME_UNIT);
                 }
@@ -232,7 +250,14 @@ public class Period implements Cloneable {
                     break;
                 case Years:
                 case Months:
-                    throw new IllegalArgumentException(INCOMPATIBLE_TIME_UNIT);
+                case Hours:
+                case Minutes:
+                case Seconds:
+                case Milliseconds:
+                case Microseconds:
+                    if ( another.length() != 0 )
+                        throw new IllegalArgumentException(INCOMPATIBLE_TIME_UNIT);
+                    break;
                 default:
                     throw new LibraryException(UNKNOWN_TIME_UNIT);
                 }
@@ -244,10 +269,27 @@ public class Period implements Cloneable {
                     break;
                 case Years:
                 case Months:
-                    throw new IllegalArgumentException(INCOMPATIBLE_TIME_UNIT);
+                case Hours:
+                case Minutes:
+                case Seconds:
+                case Milliseconds:
+                case Microseconds:
+                    if ( another.length() != 0 )
+                        throw new IllegalArgumentException(INCOMPATIBLE_TIME_UNIT);
+                    break;
                 default:
                     throw new LibraryException(UNKNOWN_TIME_UNIT);
                 }
+                break;
+            case Hours:
+            case Minutes:
+            case Seconds:
+            case Milliseconds:
+            case Microseconds:
+                // Phase 1.3 D5-D-intraday: sub-day units never auto-convert
+                // (mirror C++ QL_REQUIRE pattern). Only zero-length absorbs.
+                if ( another.length() != 0 )
+                    throw new IllegalArgumentException(INCOMPATIBLE_TIME_UNIT);
                 break;
             default:
                 throw new LibraryException(UNKNOWN_TIME_UNIT);
@@ -629,6 +671,16 @@ public class Period implements Cloneable {
             return this.length() * 7;
         case Days:
             return this.length();
+        case Hours:
+        case Minutes:
+        case Seconds:
+        case Milliseconds:
+        case Microseconds:
+            // Phase 1.3 D5-D-intraday: sub-day periods round down to 0 days
+            // for cross-unit lt() comparison. C++ uses operator< on dateTime
+            // for intraday Dates so this path is normally bypassed; we
+            // include the entries for completeness.
+            return 0;
         default:
             throw new LibraryException(UNKNOWN_TIME_UNIT);
         }
@@ -650,6 +702,16 @@ public class Period implements Cloneable {
             return this.length() * 7;
         case Days:
             return this.length();
+        case Hours:
+            return Math.max(1, this.length() / 24 + 1);
+        case Minutes:
+            return Math.max(1, this.length() / 1440 + 1);
+        case Seconds:
+            return Math.max(1, this.length() / 86400 + 1);
+        case Milliseconds:
+            return Math.max(1, this.length() / 86_400_000 + 1);
+        case Microseconds:
+            return Math.max(1, (int) ((long) this.length() / 86_400_000_000L + 1L));
         default:
             throw new LibraryException(UNKNOWN_TIME_UNIT);
         }
