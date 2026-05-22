@@ -88,6 +88,35 @@ public interface Interpolation extends Extrapolator, Ops.DoubleOp {
 
         Interpolation interpolate(final Array vx, final Array vy);
 
+        /**
+         * Localised-interpolation entry point used by
+         * {@link org.jquantlib.termstructures.LocalBootstrap}.
+         * Mirrors the C++ {@code QuantLib::ConvexMonotone::localInterpolate}
+         * template overload from
+         * {@code ql/math/interpolations/convexmonotoneinterpolation.hpp}.
+         * <p>
+         * Default implementation throws {@link UnsupportedOperationException}
+         * to mirror the C++ "no-such-method" compile-time error for
+         * interpolators that do not support local interpolation.
+         */
+        default Interpolation localInterpolate(final Array vx, final Array vy,
+                final int localisation, final Interpolation prevInterpolation,
+                final int finalSize) {
+            throw new UnsupportedOperationException(
+                    "localInterpolate not supported by " + getClass().getName());
+        }
+
+        /**
+         * Data-array size adjustment for local-bootstrap data offsets.
+         * Mirrors the C++ {@code static const Size dataSizeAdjustment}
+         * compile-time trait. Default is 0; {@link
+         * org.jquantlib.math.interpolations.factories.ConvexMonotone} overrides
+         * to 1.
+         */
+        default int dataSizeAdjustment() /*@ReadOnly*/ {
+            return 0;
+        }
+
     }
 
 }

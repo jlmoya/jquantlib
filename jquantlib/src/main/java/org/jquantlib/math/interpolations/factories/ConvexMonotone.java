@@ -74,4 +74,47 @@ public class ConvexMonotone implements Interpolation.Interpolator {
                 forcePositive, false);
     }
 
+    @Override
+    public int dataSizeAdjustment() {
+        return dataSizeAdjustment;
+    }
+
+    /**
+     * Faithful port of v1.42.1
+     * {@code ConvexMonotone::localInterpolate(...)} from
+     * {@code ql/math/interpolations/convexmonotoneinterpolation.hpp:109-152}.
+     * <p>
+     * Two regimes:
+     * <ul>
+     *   <li>First call ({@code length - localisation == 1}): build the
+     *       interpolation from scratch on the {@code [xBegin,xEnd)} slice,
+     *       with {@code flatFinalPeriod = (length != finalSize)}.</li>
+     *   <li>Subsequent calls: copy the existing {@link
+     *       ConvexMonotoneInterpolation#getExistingHelpers()} map from
+     *       {@code prevInterpolation} into the new interpolation, again with
+     *       {@code flatFinalPeriod = (length != finalSize)}.</li>
+     * </ul>
+     */
+    @Override
+    public Interpolation localInterpolate(final Array vx, final Array vy,
+            final int localisation, final Interpolation prevInterpolation,
+            final int finalSize) {
+        final int length = vx.size();
+        final boolean flatFinalPeriod = (length != finalSize);
+        if (length - localisation == 1) {
+            // First call — no pre-existing helpers.
+            return new ConvexMonotoneInterpolation(vx, vy, quadraticity, monotonicity,
+                    forcePositive, flatFinalPeriod);
+        }
+        // Subsequent calls — extract helpers from the previous interpolation.
+        final java.util.Map<Double, ConvexMonotoneInterpolation.SectionHelper> existing;
+        if (prevInterpolation instanceof ConvexMonotoneInterpolation) {
+            existing = ((ConvexMonotoneInterpolation) prevInterpolation).getExistingHelpers();
+        } else {
+            existing = new java.util.TreeMap<>();
+        }
+        return new ConvexMonotoneInterpolation(vx, vy, quadraticity, monotonicity,
+                forcePositive, flatFinalPeriod, existing);
+    }
+
 }
