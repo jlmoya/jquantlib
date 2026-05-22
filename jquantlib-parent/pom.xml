@@ -164,8 +164,8 @@
                 <version>${maven.surefire.plugin}</version>
                 <configuration>
                     <argLine>
-                        -Xmx4g
-                        -XX:MaxMetaspaceSize=512m
+                        -Xmx6g
+                        -XX:MaxMetaspaceSize=1g
                     </argLine>
                 </configuration>
             </plugin>

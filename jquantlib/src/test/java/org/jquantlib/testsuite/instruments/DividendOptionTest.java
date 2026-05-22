@@ -929,16 +929,19 @@ public class DividendOptionTest {
 
         // Theta behaviour — C++ throws for Spot (dividend-at-T0 hits a stopping-time = 0 / theta-rollback edge)
         // and is expected to return a finite value for Escrowed (PV-discounted dividends don't pin a grid node).
-        // Java Fdm2DimSolver returns NaN where C++ throws — investigation pending (#557-like A3).
-        // We assert non-NaN for both branches here so the test is meaningful while the divergence is investigated.
-        final double thetaValue = option.theta();
+        // Java now mirrors C++ as of Phase 1.2-C (Fdm1DimSolver T=0 NaN → NULL_REAL fix, commit f89df992):
+        // option.theta() on Spot throws "theta not provided" (was: returned NaN). Escrowed remains finite.
         switch ( model ) {
             case Spot:
-                // C++ asserts theta throws; Java currently returns either NaN or a finite value. We do NOT fail
-                // when NaN is returned (matches the documented divergence); for finite values we accept them.
-                // The intent is to ensure the underlying NPV machinery still runs without throwing on Spot.
+                try {
+                    final double t = option.theta();
+                    fail("Spot model theta() at T=0 should throw, got " + t);
+                } catch (final RuntimeException expected) {
+                    // expected — see comment above; mirrors C++ QL_REQUIRE(theta_ != Null<Real>())
+                }
                 break;
             case Escrowed:
+                final double thetaValue = option.theta();
                 assertTrue("Escrowed theta should be finite (non-NaN), got " + thetaValue, !Double.isNaN(thetaValue));
                 break;
             default:
