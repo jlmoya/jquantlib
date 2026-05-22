@@ -128,36 +128,11 @@ public class EuropeanOptionTest {
     }
 
 
-    private static class EuropeanOptionData {
-        private final Option.Type type;            // option type
-        private final /*@Real*/ double strike;    // option strike price
-        private final double s;                    // spot // FIXME: any specific @annotation?
-        private final /*@Real*/ double  q;        // dividend
-        private final /*@Rate*/ double  r;         // risk-free rate
-        private final /*@Time*/ double  t;         // time to maturity
-        private final /*@Volatility*/ double v;    // volatility
-        private final /*@Real*/ double result;    // expected result
-        private final double tol;                  // tolerance // FIXME: any specific @annotation?
-
-        public EuropeanOptionData(
-                final Option.Type type,
-                /*@Real*/ final double strike,
-                final double s, /*@Real*/ final double  q,
-                /*@Rate*/ final double  r,
-                /*@Time*/ final double  t,
-                /*@Volatility*/ final double v,
-                /*@Real*/ final double result,
-                final double tol) {
-            this.type = type;
-            this.strike = strike;
-            this.s = s;
-            this.q = q;
-            this.r = r;
-            this.t = t;
-            this.v = v;
-            this.result = result;
-            this.tol = tol;
-        }
+    private record EuropeanOptionData(Option.Type type, /*@Real*/ double strike,
+                                      double s, /*@Real*/ double q,
+                                      /*@Rate*/ double r, /*@Time*/ double t,
+                                      /*@Volatility*/ double v, /*@Real*/ double result,
+                                      double tol) {
 
         @Override
         public String toString() {
@@ -377,14 +352,14 @@ public class EuropeanOptionTest {
 
             QL.debug(values[i].toString());
 
-            final StrikedTypePayoff payoff = new PlainVanillaPayoff(values[i].type, values[i].strike);
-            final Date exDate = today.add( timeToDays(values[i].t) );
+            final StrikedTypePayoff payoff = new PlainVanillaPayoff(values[i].type(), values[i].strike());
+            final Date exDate = today.add( timeToDays(values[i].t()) );
             final Exercise exercise = new EuropeanExercise(exDate);
 
-            spot.setValue(values[i].s);
-            qRate.setValue(values[i].q);
-            rRate.setValue(values[i].r);
-            vol.setValue(values[i].v);
+            spot.setValue(values[i].s());
+            qRate.setValue(values[i].q());
+            rRate.setValue(values[i].r());
+            vol.setValue(values[i].v());
 
 
             final BlackScholesMertonProcess stochProcess = new BlackScholesMertonProcess(
@@ -399,34 +374,34 @@ public class EuropeanOptionTest {
             option.setPricingEngine(engine);
 
             final double calculated = option.NPV();
-            final double error = Math.abs(calculated-values[i].result);
-            final double tolerance = values[i].tol;
+            final double error = Math.abs(calculated-values[i].result());
+            final double tolerance = values[i].tol();
 
             final StringBuilder sb = new StringBuilder();
             sb.append("error ").append(error).append(" .gt. tolerance ").append(tolerance).append('\n');
             sb.append("    calculated ").append(calculated).append('\n');
-            sb.append("    type ").append(values[i].type).append('\n');
-            sb.append("    strike ").append(values[i].strike).append('\n');
-            sb.append("    s ").append(values[i].s).append('\n');
-            sb.append("    q ").append(values[i].q).append('\n');
-            sb.append("    r ").append(values[i].r).append('\n');
-            sb.append("    t ").append(values[i].t).append('\n');
-            sb.append("    v ").append(values[i].v).append('\n');
-            sb.append("    result ").append(values[i].result).append('\n');
-            sb.append("    tol ").append(values[i].tol); // .append('\n');
+            sb.append("    type ").append(values[i].type()).append('\n');
+            sb.append("    strike ").append(values[i].strike()).append('\n');
+            sb.append("    s ").append(values[i].s()).append('\n');
+            sb.append("    q ").append(values[i].q()).append('\n');
+            sb.append("    r ").append(values[i].r()).append('\n');
+            sb.append("    t ").append(values[i].t()).append('\n');
+            sb.append("    v ").append(values[i].v()).append('\n');
+            sb.append("    result ").append(values[i].result()).append('\n');
+            sb.append("    tol ").append(values[i].tol()); // .append('\n');
 
             if (error<=tolerance) {
                 QL.info(" error="+error);
             } else {
                 fail(exercise + " " + payoff.optionType() + " option with " + payoff + " payoff:\n"
-                        + "    spot value:       " + values[i].s + "\n"
+                        + "    spot value:       " + values[i].s() + "\n"
                         + "    strike:           " + payoff.strike() + "\n"
-                        + "    dividend yield:   " + values[i].q + "\n"
-                        + "    risk-free rate:   " + values[i].r + "\n"
+                        + "    dividend yield:   " + values[i].q() + "\n"
+                        + "    risk-free rate:   " + values[i].r() + "\n"
                         + "    reference date:   " + today + "\n"
-                        + "    maturity:         " + values[i].t + "\n"
-                        + "    volatility:       " + values[i].v + "\n\n"
-                        + "    expected:         " + values[i].result + "\n"
+                        + "    maturity:         " + values[i].t() + "\n"
+                        + "    volatility:       " + values[i].v() + "\n\n"
+                        + "    expected:         " + values[i].result() + "\n"
                         + "    calculated:       " + calculated + "\n"
                         + "    error:            " + error + "\n"
                         + "    tolerance:        " + tolerance);
@@ -485,13 +460,13 @@ public class EuropeanOptionTest {
 
         // testing delta 1
         i++;
-        payoff = new PlainVanillaPayoff(values[i].type, values[i].strike);
-        exDate = today.add(timeToDays(values[i].t));
+        payoff = new PlainVanillaPayoff(values[i].type(), values[i].strike());
+        exDate = today.add(timeToDays(values[i].t()));
         exercise = new EuropeanExercise(exDate);
-        spot.setValue(values[i].s);
-        qRate.setValue(values[i].q);
-        rRate.setValue(values[i].r);
-        vol.setValue(values[i].v);
+        spot.setValue(values[i].s());
+        qRate.setValue(values[i].q());
+        rRate.setValue(values[i].r());
+        vol.setValue(values[i].v());
 
         final BlackScholesMertonProcess stochProcess = new BlackScholesMertonProcess(
                 new Handle<Quote>(spot),
@@ -504,213 +479,213 @@ public class EuropeanOptionTest {
         option.setPricingEngine(engine);
 
         calculated = option.delta();
-        error = Math.abs(calculated - values[i].result);
+        error = Math.abs(calculated - values[i].result());
 
         if (error > tolerance) {
-            REPORT_FAILURE("delta", payoff, exercise, values[i].s, values[i].q, values[i].r, today, values[i].v,
-                    values[i].result, calculated, error, tolerance);
+            REPORT_FAILURE("delta", payoff, exercise, values[i].s(), values[i].q(), values[i].r(), today, values[i].v(),
+                    values[i].result(), calculated, error, tolerance);
         }
 
         //testing delta 2
         i++;
-        payoff = new PlainVanillaPayoff(values[i].type, values[i].strike);
-        exDate = today.add(timeToDays(values[i].t));
+        payoff = new PlainVanillaPayoff(values[i].type(), values[i].strike());
+        exDate = today.add(timeToDays(values[i].t()));
         exercise = new EuropeanExercise(exDate);
-        spot.setValue(values[i].s);
-        qRate.setValue(values[i].q);
-        rRate.setValue(values[i].r);
-        vol.setValue(values[i].v);
+        spot.setValue(values[i].s());
+        qRate.setValue(values[i].q());
+        rRate.setValue(values[i].r());
+        vol.setValue(values[i].v());
 
         option = new EuropeanOption(payoff, exercise);
         option.setPricingEngine(engine);
 
         calculated = option.delta();
-        error = Math.abs(calculated - values[i].result);
+        error = Math.abs(calculated - values[i].result());
         if(error>tolerance) {
-            REPORT_FAILURE("delta", payoff, exercise, values[i].s, values[i].q, values[i].r, today, values[i].v,
-                    values[i].result, calculated, error, tolerance);
+            REPORT_FAILURE("delta", payoff, exercise, values[i].s(), values[i].q(), values[i].r(), today, values[i].v(),
+                    values[i].result(), calculated, error, tolerance);
         }
 
         //testing elasticity
         i++;
-        payoff = new PlainVanillaPayoff(values[i].type, values[i].strike);
-        exDate = today.add(timeToDays(values[i].t));
+        payoff = new PlainVanillaPayoff(values[i].type(), values[i].strike());
+        exDate = today.add(timeToDays(values[i].t()));
         exercise = new EuropeanExercise(exDate);
-        spot.setValue(values[i].s);
-        qRate.setValue(values[i].q);
-        rRate.setValue(values[i].r);
-        vol.setValue(values[i].v);
+        spot.setValue(values[i].s());
+        qRate.setValue(values[i].q());
+        rRate.setValue(values[i].r());
+        vol.setValue(values[i].v());
 
         option = new EuropeanOption(payoff, exercise);
         option.setPricingEngine(engine);
 
         calculated = option.elasticity();
-        error = Math.abs(Math.abs(calculated - values[i].result));
+        error = Math.abs(Math.abs(calculated - values[i].result()));
         if(error>tolerance) {
-            REPORT_FAILURE("elasticity", payoff, exercise, values[i].s, values[i].q, values[i].r, today, values[i].v,
-                    values[i].result, calculated, error, tolerance);
+            REPORT_FAILURE("elasticity", payoff, exercise, values[i].s(), values[i].q(), values[i].r(), today, values[i].v(),
+                    values[i].result(), calculated, error, tolerance);
         }
 
         // testing gamma 1
         i++;
-        payoff = new PlainVanillaPayoff(values[i].type, values[i].strike);
-        exDate = today.add(timeToDays(values[i].t));
+        payoff = new PlainVanillaPayoff(values[i].type(), values[i].strike());
+        exDate = today.add(timeToDays(values[i].t()));
         exercise = new EuropeanExercise(exDate);
-        spot.setValue(values[i].s);
-        qRate.setValue(values[i].q);
-        rRate.setValue(values[i].r);
-        vol.setValue(values[i].v);
+        spot.setValue(values[i].s());
+        qRate.setValue(values[i].q());
+        rRate.setValue(values[i].r());
+        vol.setValue(values[i].v());
 
         option = new EuropeanOption(payoff, exercise);
         option.setPricingEngine(engine);
 
         calculated = option.gamma();
-        error = Math.abs(Math.abs(calculated - values[i].result));
+        error = Math.abs(Math.abs(calculated - values[i].result()));
         if(error>tolerance) {
-            REPORT_FAILURE("gamma", payoff, exercise, values[i].s, values[i].q, values[i].r, today, values[i].v,
-                    values[i].result, calculated, error, tolerance);
+            REPORT_FAILURE("gamma", payoff, exercise, values[i].s(), values[i].q(), values[i].r(), today, values[i].v(),
+                    values[i].result(), calculated, error, tolerance);
         }
 
         // testing gamma 2
         i++;
-        payoff = new PlainVanillaPayoff(values[i].type, values[i].strike);
-        exDate = today.add(timeToDays(values[i].t));
+        payoff = new PlainVanillaPayoff(values[i].type(), values[i].strike());
+        exDate = today.add(timeToDays(values[i].t()));
         exercise = new EuropeanExercise(exDate);
-        spot.setValue(values[i].s);
-        qRate.setValue(values[i].q);
-        rRate.setValue(values[i].r);
-        vol.setValue(values[i].v);
+        spot.setValue(values[i].s());
+        qRate.setValue(values[i].q());
+        rRate.setValue(values[i].r());
+        vol.setValue(values[i].v());
 
         option = new EuropeanOption(payoff, exercise);
         option.setPricingEngine(engine);
 
         calculated = option.gamma();
-        error = Math.abs(Math.abs(calculated - values[i].result));
+        error = Math.abs(Math.abs(calculated - values[i].result()));
         if(error>tolerance) {
-            REPORT_FAILURE("gamma", payoff, exercise, values[i].s, values[i].q, values[i].r, today, values[i].v,
-                    values[i].result, calculated, error, tolerance);
+            REPORT_FAILURE("gamma", payoff, exercise, values[i].s(), values[i].q(), values[i].r(), today, values[i].v(),
+                    values[i].result(), calculated, error, tolerance);
         }
 
         //testing vega 1
         i++;
-        payoff = new PlainVanillaPayoff(values[i].type, values[i].strike);
-        exDate = today.add(timeToDays(values[i].t));
+        payoff = new PlainVanillaPayoff(values[i].type(), values[i].strike());
+        exDate = today.add(timeToDays(values[i].t()));
         exercise = new EuropeanExercise(exDate);
-        spot.setValue(values[i].s);
-        qRate.setValue(values[i].q);
-        rRate.setValue(values[i].r);
-        vol.setValue(values[i].v);
+        spot.setValue(values[i].s());
+        qRate.setValue(values[i].q());
+        rRate.setValue(values[i].r());
+        vol.setValue(values[i].v());
 
         option = new EuropeanOption(payoff, exercise);
         option.setPricingEngine(engine);
 
         calculated = option.vega();
-        error = Math.abs(Math.abs(calculated - values[i].result));
+        error = Math.abs(Math.abs(calculated - values[i].result()));
         if(error>tolerance) {
-            REPORT_FAILURE("vega", payoff, exercise, values[i].s, values[i].q, values[i].r, today, values[i].v,
-                    values[i].result, calculated, error, tolerance);
+            REPORT_FAILURE("vega", payoff, exercise, values[i].s(), values[i].q(), values[i].r(), today, values[i].v(),
+                    values[i].result(), calculated, error, tolerance);
         }
 
         //testing vega 2
         i++;
-        payoff = new PlainVanillaPayoff(values[i].type, values[i].strike);
-        exDate = today.add(timeToDays(values[i].t));
+        payoff = new PlainVanillaPayoff(values[i].type(), values[i].strike());
+        exDate = today.add(timeToDays(values[i].t()));
         exercise = new EuropeanExercise(exDate);
-        spot.setValue(values[i].s);
-        qRate.setValue(values[i].q);
-        rRate.setValue(values[i].r);
-        vol.setValue(values[i].v);
+        spot.setValue(values[i].s());
+        qRate.setValue(values[i].q());
+        rRate.setValue(values[i].r());
+        vol.setValue(values[i].v());
 
         option = new EuropeanOption(payoff, exercise);
         option.setPricingEngine(engine);
 
         calculated = option.vega();
-        error = Math.abs(Math.abs(calculated - values[i].result));
+        error = Math.abs(Math.abs(calculated - values[i].result()));
         if(error>tolerance) {
-            REPORT_FAILURE("vega", payoff, exercise, values[i].s, values[i].q, values[i].r, today, values[i].v,
-                    values[i].result, calculated, error, tolerance);
+            REPORT_FAILURE("vega", payoff, exercise, values[i].s(), values[i].q(), values[i].r(), today, values[i].v(),
+                    values[i].result(), calculated, error, tolerance);
         }
 
         //testing theta
         i++;
-        payoff = new PlainVanillaPayoff(values[i].type, values[i].strike);
-        exDate = today.add(timeToDays(values[i].t));
+        payoff = new PlainVanillaPayoff(values[i].type(), values[i].strike());
+        exDate = today.add(timeToDays(values[i].t()));
         exercise = new EuropeanExercise(exDate);
-        spot.setValue(values[i].s);
-        qRate.setValue(values[i].q);
-        rRate.setValue(values[i].r);
-        vol.setValue(values[i].v);
+        spot.setValue(values[i].s());
+        qRate.setValue(values[i].q());
+        rRate.setValue(values[i].r());
+        vol.setValue(values[i].v());
 
         option = new EuropeanOption(payoff, exercise);
         option.setPricingEngine(engine);
 
         calculated = option.theta();
-        error = Math.abs(Math.abs(calculated - values[i].result));
+        error = Math.abs(Math.abs(calculated - values[i].result()));
         if(error>tolerance) {
-            REPORT_FAILURE("theta", payoff, exercise, values[i].s, values[i].q, values[i].r, today, values[i].v,
-                    values[i].result, calculated, error, tolerance);
+            REPORT_FAILURE("theta", payoff, exercise, values[i].s(), values[i].q(), values[i].r(), today, values[i].v(),
+                    values[i].result(), calculated, error, tolerance);
         }
 
 
         //testing theta per day
         i++;
-        payoff = new PlainVanillaPayoff(values[i].type, values[i].strike);
-        exDate = today.add(timeToDays(values[i].t));
+        payoff = new PlainVanillaPayoff(values[i].type(), values[i].strike());
+        exDate = today.add(timeToDays(values[i].t()));
         exercise = new EuropeanExercise(exDate);
-        spot.setValue(values[i].s);
-        qRate.setValue(values[i].q);
-        rRate.setValue(values[i].r);
-        vol.setValue(values[i].v);
+        spot.setValue(values[i].s());
+        qRate.setValue(values[i].q());
+        rRate.setValue(values[i].r());
+        vol.setValue(values[i].v());
 
         option = new EuropeanOption(payoff, exercise);
         option.setPricingEngine(engine);
 
         calculated = option.thetaPerDay();
-        error = Math.abs(Math.abs(calculated - values[i].result));
+        error = Math.abs(Math.abs(calculated - values[i].result()));
         if(error>tolerance) {
-            REPORT_FAILURE("theta per day", payoff, exercise, values[i].s, values[i].q, values[i].r, today, values[i].v,
-                    values[i].result, calculated, error, tolerance);
+            REPORT_FAILURE("theta per day", payoff, exercise, values[i].s(), values[i].q(), values[i].r(), today, values[i].v(),
+                    values[i].result(), calculated, error, tolerance);
         }
 
 
         //testing rho
         i++;
-        payoff = new PlainVanillaPayoff(values[i].type, values[i].strike);
-        exDate = today.add(timeToDays(values[i].t));
+        payoff = new PlainVanillaPayoff(values[i].type(), values[i].strike());
+        exDate = today.add(timeToDays(values[i].t()));
         exercise = new EuropeanExercise(exDate);
-        spot.setValue(values[i].s);
-        qRate.setValue(values[i].q);
-        rRate.setValue(values[i].r);
-        vol.setValue(values[i].v);
+        spot.setValue(values[i].s());
+        qRate.setValue(values[i].q());
+        rRate.setValue(values[i].r());
+        vol.setValue(values[i].v());
 
         option = new EuropeanOption(payoff, exercise);
         option.setPricingEngine(engine);
 
         calculated = option.rho();
-        error = Math.abs(Math.abs(calculated - values[i].result));
+        error = Math.abs(Math.abs(calculated - values[i].result()));
         if(error>tolerance) {
-            REPORT_FAILURE("rho", payoff, exercise, values[i].s, values[i].q, values[i].r, today, values[i].v,
-                    values[i].result, calculated, error, tolerance);
+            REPORT_FAILURE("rho", payoff, exercise, values[i].s(), values[i].q(), values[i].r(), today, values[i].v(),
+                    values[i].result(), calculated, error, tolerance);
         }
 
         //testing dividend rho
         i++;
-        payoff = new PlainVanillaPayoff(values[i].type, values[i].strike);
-        exDate = today.add(timeToDays(values[i].t));
+        payoff = new PlainVanillaPayoff(values[i].type(), values[i].strike());
+        exDate = today.add(timeToDays(values[i].t()));
         exercise = new EuropeanExercise(exDate);
-        spot.setValue(values[i].s);
-        qRate.setValue(values[i].q);
-        rRate.setValue(values[i].r);
-        vol.setValue(values[i].v);
+        spot.setValue(values[i].s());
+        qRate.setValue(values[i].q());
+        rRate.setValue(values[i].r());
+        vol.setValue(values[i].v());
 
         option = new EuropeanOption(payoff, exercise);
         option.setPricingEngine(engine);
 
         calculated = option.dividendRho();
-        error = Math.abs(Math.abs(calculated - values[i].result));
+        error = Math.abs(Math.abs(calculated - values[i].result()));
         if(error>tolerance) {
-            REPORT_FAILURE("dividend rho", payoff, exercise, values[i].s, values[i].q, values[i].r, today, values[i].v,
-                    values[i].result, calculated, error, tolerance);
+            REPORT_FAILURE("dividend rho", payoff, exercise, values[i].s(), values[i].q(), values[i].r(), today, values[i].v(),
+                    values[i].result(), calculated, error, tolerance);
         }
     }
 
@@ -1397,13 +1372,13 @@ public class EuropeanOptionTest {
     //      for (Size i=0; i<LENGTH(values); i++) {
     //
     //          boost::shared_ptr<StrikedTypePayoff> payoff(new
-    //              PlainVanillaPayoff(values[i].type, values[i].strike));
-    //          Date exDate = today + timeToDays(values[i].t);
+    //              PlainVanillaPayoff(values[i].type(), values[i].strike()));
+    //          Date exDate = today + timeToDays(values[i].t());
     //          boost::shared_ptr<Exercise> exercise(new EuropeanExercise(exDate));
     //
-    //          spot ->setValue(values[i].s);
-    //          qRate->setValue(values[i].q);
-    //          rRate->setValue(values[i].r);
+    //          spot ->setValue(values[i].s());
+    //          qRate->setValue(values[i].q());
+    //          rRate->setValue(values[i].r());
     //          vol  ->setValue(values[i].v);
     //
     //          boost::shared_ptr<StochasticProcess> stochProcess(new
@@ -1415,9 +1390,9 @@ public class EuropeanOptionTest {
     //          EuropeanOption option(stochProcess, payoff, exercise, engine);
     //          SampledCurve price_curve = option.result<SampledCurve>("priceCurve");
     //          if (price_curve.empty()) {
-    //              REPORT_FAILURE("no price curve", payoff, exercise, values[i].s,
-    //                             values[i].q, values[i].r, today,
-    //                             values[i].v, values[i].result, 0.0,
+    //              REPORT_FAILURE("no price curve", payoff, exercise, values[i].s(),
+    //                             values[i].q(), values[i].r(), today,
+    //                             values[i].v(), values[i].result(), 0.0,
     //                             0.0, 0.0);
     //              continue;
     //          }
@@ -1441,8 +1416,8 @@ public class EuropeanOptionTest {
     //              if (error>tolerance) {
     //                  REPORT_FAILURE("price curve error", payoff, exercise,
     //                                 price_curve.gridValue(i),
-    //                                 values[i].q, values[i].r, today,
-    //                                 values[i].v,
+    //                                 values[i].q(), values[i].r(), today,
+    //                                 values[i].v(),
     //                                 price_curve.value(i), calculated,
     //                                 error, tolerance);
     //                  break;

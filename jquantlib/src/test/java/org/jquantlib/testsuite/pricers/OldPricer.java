@@ -42,36 +42,10 @@ public class OldPricer {
         QL.info("::::: "+this.getClass().getSimpleName()+" :::::");
     }
 
-    private static class BatchData {
-        Option.Type type;
-        double underlying;
-        double strike;
-        double dividendYield;
-        double riskFreeRate;
-        double first;
-        double length;
-        int fixings;
-        double volatility;
-        boolean controlVariate;
-        double result;
-        public BatchData(final Type type, final double underlying, final double strike,
-                final double dividendYield, final double riskFreeRate, final double first,
-                final double length, final int fixings, final double volatility,
-                final boolean controlVariate, final double result) {
-            super();
-            this.type = type;
-            this.underlying = underlying;
-            this.strike = strike;
-            this.dividendYield = dividendYield;
-            this.riskFreeRate = riskFreeRate;
-            this.first = first;
-            this.length = length;
-            this.fixings = fixings;
-            this.volatility = volatility;
-            this.controlVariate = controlVariate;
-            this.result = result;
-        }
-    };
+    private record BatchData(Option.Type type, double underlying, double strike,
+                             double dividendYield, double riskFreeRate, double first,
+                             double length, int fixings, double volatility,
+                             boolean controlVariate, double result) {}
 
     /* @Test public*/ void testMcSingleFactorPricers() {
 
@@ -126,16 +100,16 @@ public class OldPricer {
 
 
         for (final BatchData element : cases5) {
-            final int dt = (int) element.length/(element.fixings-1);
-            final double[] timeIncrements = new double[element.fixings];
-            for (int i=0; i<element.fixings; i++) {
-                timeIncrements[i] = i*dt + element.first;
+            final int dt = (int) element.length()/(element.fixings()-1);
+            final double[] timeIncrements = new double[element.fixings()];
+            for (int i=0; i<element.fixings(); i++) {
+                timeIncrements[i] = i*dt + element.first();
             }
 
             final Date today = Date.todaysDate();
-            final YieldTermStructure yeildStructureRiskFree =  org.jquantlib.testsuite.util.Utilities.flatRate(today,element.riskFreeRate, dc);
-            final YieldTermStructure yeildStructureDividentYield =  org.jquantlib.testsuite.util.Utilities.flatRate(today,element.dividendYield, dc);
-            final YieldTermStructure yeildStructureVolatility =  org.jquantlib.testsuite.util.Utilities.flatRate(today,element.volatility, dc);
+            final YieldTermStructure yeildStructureRiskFree =  org.jquantlib.testsuite.util.Utilities.flatRate(today,element.riskFreeRate(), dc);
+            final YieldTermStructure yeildStructureDividentYield =  org.jquantlib.testsuite.util.Utilities.flatRate(today,element.dividendYield(), dc);
+            final YieldTermStructure yeildStructureVolatility =  org.jquantlib.testsuite.util.Utilities.flatRate(today,element.volatility(), dc);
 
             // TODO: Complete the test case when we have MonteCarlo
 

@@ -153,13 +153,8 @@ public class DayCountersTest {
         QL.info("::::: "+this.getClass().getSimpleName()+" :::::");
     }
 
-    private static class SingleCase {
-        private final ActualActual.Convention convention;
-        private final Date start;
-        private final Date end;
-        private final Date refStart;
-        private final Date refEnd;
-        private final /*@Time*/ double  result;
+    private record SingleCase(ActualActual.Convention convention, Date start, Date end,
+                              Date refStart, Date refEnd, /*@Time*/ double result) {
 
         public SingleCase(
                 final ActualActual.Convention convention,
@@ -169,28 +164,12 @@ public class DayCountersTest {
             this(convention, start, end, new Date(), new Date(), result);
         }
 
-        public SingleCase(
-                final ActualActual.Convention convention,
-                final Date start,
-                final Date end,
-                final Date refStart,
-                final Date refEnd,
-                final /*@Time*/ double result) {
-            this.convention = convention;
-            this.start = start;
-            this.end = end;
-            this.refStart = refStart;
-            this.refEnd = refEnd;
-            this.result = result;
-        }
-
-        private String dumpDate(final Date date) {
+        private static String dumpDate(final Date date) {
             if (date == null || date.isNull())
                 return "null";
             else
                 return date.isoDate().toString();
         }
-
 
         @Override
         public String toString() {
@@ -294,27 +273,27 @@ public class DayCountersTest {
         };
 
         for (int i=0; i<testCases.length-1; i++) {
-            final ActualActual dayCounter =  new ActualActual(testCases[i].convention);
-            final Date d1 = testCases[i].start;
-            final Date d2 = testCases[i].end;
-            final Date rd1 = testCases[i].refStart;
-            final Date rd2 = testCases[i].refEnd;
+            final ActualActual dayCounter =  new ActualActual(testCases[i].convention());
+            final Date d1 = testCases[i].start();
+            final Date d2 = testCases[i].end();
+            final Date rd1 = testCases[i].refStart();
+            final Date rd2 = testCases[i].refEnd();
 
             QL.info(testCases[i].toString());
 
             /*@Time*/ final double  calculated = dayCounter.yearFraction(d1, d2, rd1, rd2);
 
-            if (abs(calculated-testCases[i].result) > 1.0e-10) {
+            if (abs(calculated-testCases[i].result()) > 1.0e-10) {
                 final String period = "period: " + d1 + " to " + d2;
                 String refPeriod = "";
-                if (testCases[i].convention == ActualActual.Convention.ISMA) {
+                if (testCases[i].convention() == ActualActual.Convention.ISMA) {
                     refPeriod = "referencePeriod: " + rd1 + " to " + rd2;
                 }
                 fail(dayCounter.name() + ":\n"
                         + period + "\n"
                         + refPeriod + "\n"
                         + "    calculated: " + calculated + "\n"
-                        + "    expected:   " + testCases[i].result);
+                        + "    expected:   " + testCases[i].result());
             }
         }
     }
