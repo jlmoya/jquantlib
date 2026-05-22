@@ -67,7 +67,7 @@ public class NoExceptLocalVolSurfaceTest {
         final Handle<BlackVolTermStructure> blackTS = flatBlackVol(today, vol, dc);
         final Handle<YieldTermStructure> rTS = flatRate(today, 0.05, dc);
         final Handle<YieldTermStructure> qTS = flatRate(today, 0.02, dc);
-        final Handle<Quote> spot = new Handle<>(new SimpleQuote(100.0));
+        final var spot = new Handle<Quote>(new SimpleQuote(100.0));
 
         final LocalVolSurface base =
                 new LocalVolSurface(blackTS, rTS, qTS, spot);
@@ -124,7 +124,7 @@ public class NoExceptLocalVolSurfaceTest {
         final Handle<BlackVolTermStructure> blackTS = flatBlackVol(today, 0.20, dc);
         final Handle<YieldTermStructure> rTS = flatRate(today, 0.05, dc);
         final Handle<YieldTermStructure> qTS = flatRate(today, 0.02, dc);
-        final Handle<Quote> spot = new Handle<>(new SimpleQuote(100.0));
+        final var spot = new Handle<Quote>(new SimpleQuote(100.0));
 
         final double overwrite = 0.42;
         final NoExceptLocalVolSurface alwaysThrows =

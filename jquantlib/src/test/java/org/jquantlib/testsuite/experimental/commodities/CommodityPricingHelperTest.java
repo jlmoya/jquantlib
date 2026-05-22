@@ -47,7 +47,7 @@ public class CommodityPricingHelperTest {
         final Date end = new Date(1, Month.April, 2026);
         final CommodityType wti = new CommodityType("WTI", "WTI");
         final Quantity q = new Quantity(wti, new BarrelUnitOfMeasure(), 1000.0);
-        final List<PricingPeriod> out = new ArrayList<PricingPeriod>();
+        final List<PricingPeriod> out = new ArrayList<>();
         CommodityPricingHelper.createPricingPeriods(start, end, q,
                 DeliverySchedule.Monthly, QuantityPeriodicity.PerMonth,
                 trailingPaymentTerm(), out);
@@ -75,7 +75,7 @@ public class CommodityPricingHelperTest {
         final CommodityType wti = new CommodityType("WTI", "WTI");
         // perDay quantity = 100 BBL/day.
         final Quantity dailyQty = new Quantity(wti, new BarrelUnitOfMeasure(), 100.0);
-        final List<PricingPeriod> out = new ArrayList<PricingPeriod>();
+        final List<PricingPeriod> out = new ArrayList<>();
         CommodityPricingHelper.createPricingPeriods(start, end, dailyQty,
                 DeliverySchedule.Daily, QuantityPeriodicity.PerDay,
                 trailingPaymentTerm(), out);
@@ -101,7 +101,7 @@ public class CommodityPricingHelperTest {
         final Date end = new Date(1, Month.April, 2026);
         final CommodityType wti = new CommodityType("WTI", "WTI");
         final Quantity q = new Quantity(wti, new BarrelUnitOfMeasure(), 100.0);
-        final List<PricingPeriod> out = new ArrayList<PricingPeriod>();
+        final List<PricingPeriod> out = new ArrayList<>();
         try {
             CommodityPricingHelper.createPricingPeriods(start, end, q,
                     DeliverySchedule.Monthly, QuantityPeriodicity.PerDay,
@@ -118,7 +118,7 @@ public class CommodityPricingHelperTest {
         final Date end = new Date(1, Month.April, 2026);
         final CommodityType wti = new CommodityType("WTI", "WTI");
         final Quantity q = new Quantity(wti, new BarrelUnitOfMeasure(), 100.0);
-        final List<PricingPeriod> out = new ArrayList<PricingPeriod>();
+        final List<PricingPeriod> out = new ArrayList<>();
         try {
             CommodityPricingHelper.createPricingPeriods(start, end, q,
                     DeliverySchedule.Daily, QuantityPeriodicity.PerMonth,
@@ -137,7 +137,7 @@ public class CommodityPricingHelperTest {
         final Date end = new Date(1, Month.April, 2026);
         final CommodityType wti = new CommodityType("WTI", "WTI");
         final Quantity q = new Quantity(wti, new BarrelUnitOfMeasure(), 1.0);
-        final List<PricingPeriod> out = new ArrayList<PricingPeriod>();
+        final List<PricingPeriod> out = new ArrayList<>();
         CommodityPricingHelper.createPricingPeriods(start, end, q,
                 DeliverySchedule.Yearly, QuantityPeriodicity.PerYear,
                 trailingPaymentTerm(), out);

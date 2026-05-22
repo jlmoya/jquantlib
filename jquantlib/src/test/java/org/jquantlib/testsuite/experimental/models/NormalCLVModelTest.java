@@ -77,12 +77,12 @@ public class NormalCLVModelTest {
         final double qRate = 0.05;
         final double vol   = 0.25;
 
-        final Handle<Quote> spot = new Handle<>(new SimpleQuote(s0));
-        final Handle<YieldTermStructure> qTS = new Handle<>(
+        final var spot = new Handle<Quote>(new SimpleQuote(s0));
+        final var qTS = new Handle<YieldTermStructure>(
                 new FlatForward(today, new Handle<Quote>(new SimpleQuote(qRate)), dc));
-        final Handle<YieldTermStructure> rTS = new Handle<>(
+        final var rTS = new Handle<YieldTermStructure>(
                 new FlatForward(today, new Handle<Quote>(new SimpleQuote(rRate)), dc));
-        final Handle<BlackVolTermStructure> volTS = new Handle<>(
+        final var volTS = new Handle<BlackVolTermStructure>(
                 new BlackConstantVol(today, new NullCalendar(),
                         new Handle<Quote>(new SimpleQuote(vol)), dc));
 
@@ -123,12 +123,12 @@ public class NormalCLVModelTest {
         final double qRate = 0.02;
         final double vol   = 0.20;
 
-        final Handle<Quote> spot = new Handle<>(new SimpleQuote(s0));
-        final Handle<YieldTermStructure> qTS = new Handle<>(
+        final var spot = new Handle<Quote>(new SimpleQuote(s0));
+        final var qTS = new Handle<YieldTermStructure>(
                 new FlatForward(today, new Handle<Quote>(new SimpleQuote(qRate)), dc));
-        final Handle<YieldTermStructure> rTS = new Handle<>(
+        final var rTS = new Handle<YieldTermStructure>(
                 new FlatForward(today, new Handle<Quote>(new SimpleQuote(rRate)), dc));
-        final Handle<BlackVolTermStructure> volTS = new Handle<>(
+        final var volTS = new Handle<BlackVolTermStructure>(
                 new BlackConstantVol(today, new NullCalendar(),
                         new Handle<Quote>(new SimpleQuote(vol)), dc));
 
@@ -167,12 +167,12 @@ public class NormalCLVModelTest {
         final double qRate = 0.01;
         final double vol   = 0.25;
 
-        final Handle<Quote> spot = new Handle<>(new SimpleQuote(s0));
-        final Handle<YieldTermStructure> qTS = new Handle<>(
+        final var spot = new Handle<Quote>(new SimpleQuote(s0));
+        final var qTS = new Handle<YieldTermStructure>(
                 new FlatForward(today, new Handle<Quote>(new SimpleQuote(qRate)), dc));
-        final Handle<YieldTermStructure> rTS = new Handle<>(
+        final var rTS = new Handle<YieldTermStructure>(
                 new FlatForward(today, new Handle<Quote>(new SimpleQuote(rRate)), dc));
-        final Handle<BlackVolTermStructure> volTS = new Handle<>(
+        final var volTS = new Handle<BlackVolTermStructure>(
                 new BlackConstantVol(today, new NullCalendar(),
                         new Handle<Quote>(new SimpleQuote(vol)), dc));
 
@@ -221,12 +221,12 @@ public class NormalCLVModelTest {
         final double qRate = 0.02;
         final double vol   = 0.20;
 
-        final Handle<Quote> spot = new Handle<>(new SimpleQuote(s0));
-        final Handle<YieldTermStructure> qTS = new Handle<>(
+        final var spot = new Handle<Quote>(new SimpleQuote(s0));
+        final var qTS = new Handle<YieldTermStructure>(
                 new FlatForward(today, new Handle<Quote>(new SimpleQuote(qRate)), dc));
-        final Handle<YieldTermStructure> rTS = new Handle<>(
+        final var rTS = new Handle<YieldTermStructure>(
                 new FlatForward(today, new Handle<Quote>(new SimpleQuote(rRate)), dc));
-        final Handle<BlackVolTermStructure> volTS = new Handle<>(
+        final var volTS = new Handle<BlackVolTermStructure>(
                 new BlackConstantVol(today, new NullCalendar(),
                         new Handle<Quote>(new SimpleQuote(vol)), dc));
 
@@ -281,12 +281,12 @@ public class NormalCLVModelTest {
         final double qRate = 0.05;
         final double vol   = 0.25;
 
-        final Handle<Quote> spot = new Handle<>(new SimpleQuote(s0));
-        final Handle<YieldTermStructure> qTS = new Handle<>(
+        final var spot = new Handle<Quote>(new SimpleQuote(s0));
+        final var qTS = new Handle<YieldTermStructure>(
                 new FlatForward(today, new Handle<Quote>(new SimpleQuote(qRate)), dc));
-        final Handle<YieldTermStructure> rTS = new Handle<>(
+        final var rTS = new Handle<YieldTermStructure>(
                 new FlatForward(today, new Handle<Quote>(new SimpleQuote(rRate)), dc));
-        final Handle<BlackVolTermStructure> volTS = new Handle<>(
+        final var volTS = new Handle<BlackVolTermStructure>(
                 new BlackConstantVol(today, new NullCalendar(),
                         new Handle<Quote>(new SimpleQuote(vol)), dc));
 
@@ -352,10 +352,10 @@ public class NormalCLVModelTest {
         final double sigma = 0.4;
         final double rho   = -0.75;
 
-        final Handle<Quote> spot = new Handle<>(new SimpleQuote(s0));
-        final Handle<YieldTermStructure> qTS = new Handle<>(
+        final var spot = new Handle<Quote>(new SimpleQuote(s0));
+        final var qTS = new Handle<YieldTermStructure>(
                 new FlatForward(today, new Handle<Quote>(new SimpleQuote(qRate)), dc));
-        final Handle<YieldTermStructure> rTS = new Handle<>(
+        final var rTS = new Handle<YieldTermStructure>(
                 new FlatForward(today, new Handle<Quote>(new SimpleQuote(rRate)), dc));
 
         final HestonProcess process = new HestonProcess(rTS, qTS, spot,
@@ -364,7 +364,7 @@ public class NormalCLVModelTest {
         // HestonBlackVolSurface routes implied-vol queries through
         // HestonModel; the GBSMRNDCalculator (used by NormalCLVModel.cdf)
         // then applies Breeden-Litzenberger via that surface.
-        final Handle<BlackVolTermStructure> hestonVolTS = new Handle<>(
+        final var hestonVolTS = new Handle<BlackVolTermStructure>(
                 new HestonBlackVolSurface(new HestonModel(process)));
 
         // C++ passes an empty OU process pointer; Java requires non-null,
@@ -423,13 +423,13 @@ public class NormalCLVModelTest {
         final double rRate = 0.03;
         final double qRate = 0.0;
 
-        final Handle<Quote> spot = new Handle<>(new SimpleQuote(s0));
-        final Handle<YieldTermStructure> qTS = new Handle<>(
+        final var spot = new Handle<Quote>(new SimpleQuote(s0));
+        final var qTS = new Handle<YieldTermStructure>(
                 new FlatForward(today, new Handle<Quote>(new SimpleQuote(qRate)), dc));
-        final Handle<YieldTermStructure> rTS = new Handle<>(
+        final var rTS = new Handle<YieldTermStructure>(
                 new FlatForward(today, new Handle<Quote>(new SimpleQuote(rRate)), dc));
 
-        final Handle<BlackVolTermStructure> sabrVol = new Handle<>(
+        final var sabrVol = new Handle<BlackVolTermStructure>(
                 new SABRVolTermStructure(alpha, beta, gamma, rho, s0, rRate, today, dc));
 
         final GeneralizedBlackScholesProcess bsProcess =
@@ -548,12 +548,12 @@ public class NormalCLVModelTest {
         final double rRate = 0.10;
         final double qRate = 0.04;
 
-        final Handle<Quote> spot = new Handle<>(new SimpleQuote(s0));
-        final Handle<YieldTermStructure> qTS = new Handle<>(
+        final var spot = new Handle<Quote>(new SimpleQuote(s0));
+        final var qTS = new Handle<YieldTermStructure>(
                 new FlatForward(today, new Handle<Quote>(new SimpleQuote(qRate)), dc));
-        final Handle<YieldTermStructure> rTS = new Handle<>(
+        final var rTS = new Handle<YieldTermStructure>(
                 new FlatForward(today, new Handle<Quote>(new SimpleQuote(rRate)), dc));
-        final Handle<BlackVolTermStructure> vTS = new Handle<>(
+        final var vTS = new Handle<BlackVolTermStructure>(
                 new BlackConstantVol(today, new NullCalendar(),
                         new Handle<Quote>(new SimpleQuote(vol)), dc));
 

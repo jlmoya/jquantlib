@@ -162,7 +162,7 @@ public class VppTest {
                 speed, vol, x0G, linear,
                 ExtendedOrnsteinUhlenbeckProcess.Discretization.Trapezodial, 1.0e-4);
 
-        final List<StochasticProcess1D> processes = new ArrayList<StochasticProcess1D>(2);
+        final List<StochasticProcess1D> processes = new ArrayList<>(2);
         processes.add(grProcess);
         processes.add(eouProcess);
 
@@ -277,7 +277,7 @@ public class VppTest {
                 settlementDate.add(new Period(12, TimeUnit.Months));
 
         // Daily exercise dates from settlement+1 until maturityDate.
-        final List<Date> exerciseDatesList = new ArrayList<Date>();
+        final List<Date> exerciseDatesList = new ArrayList<>();
         exerciseDatesList.add(settlementDate.add(new Period(1, TimeUnit.Days)));
         while (exerciseDatesList.get(exerciseDatesList.size() - 1).lt(maturityDate)) {
             final Date last = exerciseDatesList.get(exerciseDatesList.size() - 1);
@@ -660,9 +660,9 @@ public class VppTest {
 
         // Build (time, log-spot) shape arrays mirroring C++ vpp.cpp:585-599.
         final List<FdmExpExtOUInnerValueCalculator.ShapePoint> fuelShapePts =
-                new ArrayList<FdmExpExtOUInnerValueCalculator.ShapePoint>(nHours);
+                new ArrayList<>(nHours);
         final List<FdmExpExtOUInnerValueCalculator.ShapePoint> powerShapePts =
-                new ArrayList<FdmExpExtOUInnerValueCalculator.ShapePoint>(nHours);
+                new ArrayList<>(nHours);
 
         for (int i = 0; i < nHours; ++i) {
             final double t = (i + 1) / (365.0 * 24.0);

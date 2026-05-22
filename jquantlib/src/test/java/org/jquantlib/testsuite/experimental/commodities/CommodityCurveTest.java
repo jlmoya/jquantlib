@@ -79,7 +79,7 @@ public class CommodityCurveTest {
                 new BarrelUnitOfMeasure(),
                 new NullCalendar(),
                 dates(), prices());
-        final double p = c.price(new Date(1, Month.January, 2026), new ArrayList<ExchangeContract>(), 0);
+        final double p = c.price(new Date(1, Month.January, 2026), new ArrayList<>(), 0);
         assertEquals(70.0, p, TIGHT);
     }
 
@@ -109,7 +109,7 @@ public class CommodityCurveTest {
                 new NullCalendar(),
                 1000.0,
                 fwd,
-                new ArrayList<ExchangeContract>(),
+                new ArrayList<>(),
                 0);
         assertEquals("WTI-IDX", idx.name());
         assertEquals("USD", idx.currency().code());
@@ -139,7 +139,7 @@ public class CommodityCurveTest {
                 new NullCalendar(),
                 1.0,
                 fwd,
-                new ArrayList<ExchangeContract>(),
+                new ArrayList<>(),
                 0);
         // Conversion BBL -> GAL = 42; curve at first knot = 70.
         assertEquals(70.0 * 42.0,
@@ -153,7 +153,7 @@ public class CommodityCurveTest {
                 new America.USDCurrency(),
                 new BarrelUnitOfMeasure(),
                 new NullCalendar(),
-                1.0, null, new ArrayList<ExchangeContract>(), 0);
+                1.0, null, new ArrayList<>(), 0);
         assertTrue(idx.empty());
         assertEquals(new Date(), idx.lastQuoteDate());
     }

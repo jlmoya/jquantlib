@@ -109,7 +109,7 @@ public class RandomDefaultLMTest {
             final List<KeyCurvePair> probabilities = new ArrayList<>();
             probabilities.add(new KeyCurvePair(k, curveH));
             final Issuer issuer = new Issuer(probabilities,
-                    new TreeSet<DefaultEvent>(Issuer.EARLIER_THAN));
+                    new TreeSet<>(Issuer.EARLIER_THAN));
             pool.add(n, issuer, k);
         }
         return new Basket(today, names, notionals, pool, 0.0, 1.0);
@@ -133,9 +133,9 @@ public class RandomDefaultLMTest {
         // Very high hazard rate → most paths produce defaults within horizon.
         final Basket basket = buildBasket(0.50);  // lambda = 50% / year
         final DefaultLatentModel<GaussianCopulaPolicy> model = buildModel(Math.sqrt(0.20));
-        final FactorSampler<GaussianCopulaPolicy> sampler = new FactorSampler<>(
+        final var sampler = new FactorSampler<GaussianCopulaPolicy>(
                 new SobolRsg(model.copula().numFactors(), 42), model.copula());
-        final RandomDefaultLM<GaussianCopulaPolicy> mc = new RandomDefaultLM<>(
+        final var mc = new RandomDefaultLM<GaussianCopulaPolicy>(
                 model, sampler, /*recoveries=*/null, /*nSims=*/500, /*accuracy=*/1.0e-4);
         mc.setBasket(basket);
         mc.calculate();
@@ -164,9 +164,9 @@ public class RandomDefaultLMTest {
         final Basket basket = buildBasket(lambda);
         // Build a zero-correlation model: w = 0 → all idiosyncratic.
         final DefaultLatentModel<GaussianCopulaPolicy> model = buildModel(0.0);
-        final FactorSampler<GaussianCopulaPolicy> sampler = new FactorSampler<>(
+        final var sampler = new FactorSampler<GaussianCopulaPolicy>(
                 new SobolRsg(model.copula().numFactors(), 42), model.copula());
-        final RandomDefaultLM<GaussianCopulaPolicy> mc = new RandomDefaultLM<>(
+        final var mc = new RandomDefaultLM<GaussianCopulaPolicy>(
                 model, sampler, /*recoveries=*/null, /*nSims=*/2000, /*accuracy=*/1.0e-4);
         mc.setBasket(basket);
 
@@ -191,9 +191,9 @@ public class RandomDefaultLMTest {
     public void expectedTrancheLossNonNegativeAndBounded() {
         final Basket basket = buildBasket(0.10);
         final DefaultLatentModel<GaussianCopulaPolicy> model = buildModel(Math.sqrt(0.20));
-        final FactorSampler<GaussianCopulaPolicy> sampler = new FactorSampler<>(
+        final var sampler = new FactorSampler<GaussianCopulaPolicy>(
                 new SobolRsg(model.copula().numFactors(), 42), model.copula());
-        final RandomDefaultLM<GaussianCopulaPolicy> mc = new RandomDefaultLM<>(
+        final var mc = new RandomDefaultLM<GaussianCopulaPolicy>(
                 model, sampler, /*recoveries=*/null, /*nSims=*/500, /*accuracy=*/1.0e-4);
         mc.setBasket(basket);
 
@@ -214,15 +214,15 @@ public class RandomDefaultLMTest {
         final Basket basket2 = buildBasket(0.10);
         final DefaultLatentModel<GaussianCopulaPolicy> model1 = buildModel(Math.sqrt(0.20));
         final DefaultLatentModel<GaussianCopulaPolicy> model2 = buildModel(Math.sqrt(0.20));
-        final FactorSampler<GaussianCopulaPolicy> s1 = new FactorSampler<>(
+        final var s1 = new FactorSampler<GaussianCopulaPolicy>(
                 new SobolRsg(model1.copula().numFactors(), 42), model1.copula());
-        final FactorSampler<GaussianCopulaPolicy> s2 = new FactorSampler<>(
+        final var s2 = new FactorSampler<GaussianCopulaPolicy>(
                 new SobolRsg(model2.copula().numFactors(), 42), model2.copula());
 
         // Same seed → same defaults; only recovery differs.
-        final RandomDefaultLM<GaussianCopulaPolicy> mcLowRR = new RandomDefaultLM<>(
+        final var mcLowRR = new RandomDefaultLM<GaussianCopulaPolicy>(
                 model1, s1, /*recoveries=*/Arrays.asList(0.0, 0.0, 0.0), 200, 1.0e-4);
-        final RandomDefaultLM<GaussianCopulaPolicy> mcHighRR = new RandomDefaultLM<>(
+        final var mcHighRR = new RandomDefaultLM<GaussianCopulaPolicy>(
                 model2, s2, /*recoveries=*/Arrays.asList(0.6, 0.6, 0.6), 200, 1.0e-4);
         mcLowRR.setBasket(basket1);
         mcHighRR.setBasket(basket2);
@@ -246,9 +246,9 @@ public class RandomDefaultLMTest {
     public void lossDistributionIsMonotoneNonDecreasing() {
         final Basket basket = buildBasket(0.10);
         final DefaultLatentModel<GaussianCopulaPolicy> model = buildModel(Math.sqrt(0.20));
-        final FactorSampler<GaussianCopulaPolicy> sampler = new FactorSampler<>(
+        final var sampler = new FactorSampler<GaussianCopulaPolicy>(
                 new SobolRsg(model.copula().numFactors(), 42), model.copula());
-        final RandomDefaultLM<GaussianCopulaPolicy> mc = new RandomDefaultLM<>(
+        final var mc = new RandomDefaultLM<GaussianCopulaPolicy>(
                 model, sampler, /*recoveries=*/null, /*nSims=*/500, /*accuracy=*/1.0e-4);
         mc.setBasket(basket);
 
@@ -277,9 +277,9 @@ public class RandomDefaultLMTest {
     public void expectedShortfallExceedsPercentile() {
         final Basket basket = buildBasket(0.30);  // bigger lambda for more loss
         final DefaultLatentModel<GaussianCopulaPolicy> model = buildModel(Math.sqrt(0.20));
-        final FactorSampler<GaussianCopulaPolicy> sampler = new FactorSampler<>(
+        final var sampler = new FactorSampler<GaussianCopulaPolicy>(
                 new SobolRsg(model.copula().numFactors(), 42), model.copula());
-        final RandomDefaultLM<GaussianCopulaPolicy> mc = new RandomDefaultLM<>(
+        final var mc = new RandomDefaultLM<GaussianCopulaPolicy>(
                 model, sampler, /*recoveries=*/null, /*nSims=*/500, /*accuracy=*/1.0e-4);
         mc.setBasket(basket);
 
@@ -298,9 +298,9 @@ public class RandomDefaultLMTest {
     public void percentileMonotoneInP() {
         final Basket basket = buildBasket(0.30);
         final DefaultLatentModel<GaussianCopulaPolicy> model = buildModel(Math.sqrt(0.20));
-        final FactorSampler<GaussianCopulaPolicy> sampler = new FactorSampler<>(
+        final var sampler = new FactorSampler<GaussianCopulaPolicy>(
                 new SobolRsg(model.copula().numFactors(), 42), model.copula());
-        final RandomDefaultLM<GaussianCopulaPolicy> mc = new RandomDefaultLM<>(
+        final var mc = new RandomDefaultLM<GaussianCopulaPolicy>(
                 model, sampler, /*recoveries=*/null, /*nSims=*/500, /*accuracy=*/1.0e-4);
         mc.setBasket(basket);
 
@@ -317,9 +317,9 @@ public class RandomDefaultLMTest {
     public void splitVaRLevelSumsToTotalLoss() {
         final Basket basket = buildBasket(0.30);
         final DefaultLatentModel<GaussianCopulaPolicy> model = buildModel(Math.sqrt(0.20));
-        final FactorSampler<GaussianCopulaPolicy> sampler = new FactorSampler<>(
+        final var sampler = new FactorSampler<GaussianCopulaPolicy>(
                 new SobolRsg(model.copula().numFactors(), 42), model.copula());
-        final RandomDefaultLM<GaussianCopulaPolicy> mc = new RandomDefaultLM<>(
+        final var mc = new RandomDefaultLM<GaussianCopulaPolicy>(
                 model, sampler, /*recoveries=*/null, /*nSims=*/500, /*accuracy=*/1.0e-4);
         mc.setBasket(basket);
 

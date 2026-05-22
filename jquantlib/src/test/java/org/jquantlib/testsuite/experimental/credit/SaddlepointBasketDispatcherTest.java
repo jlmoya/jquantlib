@@ -104,7 +104,7 @@ public class SaddlepointBasketDispatcherTest {
             final List<KeyCurvePair> probabilities = new ArrayList<>();
             probabilities.add(new KeyCurvePair(k, curveH));
             final Issuer issuer = new Issuer(probabilities,
-                    new TreeSet<DefaultEvent>(Issuer.EARLIER_THAN));
+                    new TreeSet<>(Issuer.EARLIER_THAN));
             pool.add(n, issuer, k);
         }
         return new Basket(today, names, notionals, pool, attach, detach);
@@ -136,8 +136,7 @@ public class SaddlepointBasketDispatcherTest {
     public void modelConstructs_andResetsCacheOnSetBasket() {
         final ConstantLossLatentModel<GaussianCopulaPolicy> cllm =
                 buildModel(Math.sqrt(0.20), 0.40, 3);
-        final SaddlepointLossModel<GaussianCopulaPolicy> m =
-                new SaddlepointLossModel<>(cllm);
+        final var m = new SaddlepointLossModel<GaussianCopulaPolicy>(cllm);
         final Basket b = buildBasket(0.05, 0.0, 1.0);
         b.setLossModel(m);
         // Trigger calculations so resetModel runs (LazyObject pattern).
@@ -160,8 +159,7 @@ public class SaddlepointBasketDispatcherTest {
         // EL = sum(N_i * (1 - rr_i) * pdef_i) at horizon date.
         final ConstantLossLatentModel<GaussianCopulaPolicy> cllm =
                 buildModel(Math.sqrt(0.20), 0.40, 3);
-        final SaddlepointLossModel<GaussianCopulaPolicy> m =
-                new SaddlepointLossModel<>(cllm);
+        final var m = new SaddlepointLossModel<GaussianCopulaPolicy>(cllm);
         final Basket b = buildBasket(0.05, 0.0, 1.0);
         b.setLossModel(m);
         // Trigger lazy compute (registers basket on the model)
@@ -188,8 +186,7 @@ public class SaddlepointBasketDispatcherTest {
     public void probOverPortfLoss_isMonotonicallyDecreasing() {
         final ConstantLossLatentModel<GaussianCopulaPolicy> cllm =
                 buildModel(Math.sqrt(0.20), 0.40, 3);
-        final SaddlepointLossModel<GaussianCopulaPolicy> m =
-                new SaddlepointLossModel<>(cllm);
+        final var m = new SaddlepointLossModel<GaussianCopulaPolicy>(cllm);
         final Basket b = buildBasket(0.05, 0.0, 1.0);
         b.setLossModel(m);
         // Trigger lazy compute (registers basket on the model)
@@ -217,8 +214,7 @@ public class SaddlepointBasketDispatcherTest {
         // pattern; exercises the 1-D objective (K'(s) - target).
         final ConstantLossLatentModel<GaussianCopulaPolicy> cllm =
                 buildModel(Math.sqrt(0.20), 0.40, 3);
-        final SaddlepointLossModel<GaussianCopulaPolicy> m =
-                new SaddlepointLossModel<>(cllm);
+        final var m = new SaddlepointLossModel<GaussianCopulaPolicy>(cllm);
         final Basket b = buildBasket(0.05, 0.0, 1.0);
         b.setLossModel(m);
         b.expectedTrancheLoss(today);
@@ -245,8 +241,7 @@ public class SaddlepointBasketDispatcherTest {
     public void saddlePercObjFunction_isCallable() {
         final ConstantLossLatentModel<GaussianCopulaPolicy> cllm =
                 buildModel(Math.sqrt(0.20), 0.40, 3);
-        final SaddlepointLossModel<GaussianCopulaPolicy> m =
-                new SaddlepointLossModel<>(cllm);
+        final var m = new SaddlepointLossModel<GaussianCopulaPolicy>(cllm);
         final Basket b = buildBasket(0.05, 0.0, 1.0);
         b.setLossModel(m);
         // Trigger lazy compute (registers basket on the model)

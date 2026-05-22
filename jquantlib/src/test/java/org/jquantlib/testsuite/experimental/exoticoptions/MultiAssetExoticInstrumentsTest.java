@@ -45,7 +45,7 @@ import org.junit.Test;
 public class MultiAssetExoticInstrumentsTest {
 
     private static List<Date> threeFixings() {
-        final List<Date> dates = new ArrayList<Date>();
+        final List<Date> dates = new ArrayList<>();
         dates.add(new Date(15, Month.January,  2027));
         dates.add(new Date(15, Month.July,     2027));
         dates.add(new Date(15, Month.January,  2028));

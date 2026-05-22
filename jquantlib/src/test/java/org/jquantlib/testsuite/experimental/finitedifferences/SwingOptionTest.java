@@ -354,7 +354,7 @@ public class SwingOptionTest {
 
         // Monthly exercise dates starting one month from settlement, up to
         // (but not exceeding) maturity. Mirrors the C++ while-loop.
-        final List<Date> exerciseDates = new ArrayList<Date>();
+        final List<Date> exerciseDates = new ArrayList<>();
         exerciseDates.add(settlementDate.add(new Period(1, TimeUnit.Months)));
         while (exerciseDates.get(exerciseDates.size() - 1).lt(maturityDate)) {
             final Date last = exerciseDates.get(exerciseDates.size() - 1);
@@ -473,7 +473,7 @@ public class SwingOptionTest {
                 new VanillaForwardPayoff(Option.Type.Put, strike);
 
         // Monthly exercise dates.
-        final List<Date> exerciseDates = new ArrayList<Date>();
+        final List<Date> exerciseDates = new ArrayList<>();
         exerciseDates.add(settlementDate.add(new Period(1, TimeUnit.Months)));
         while (exerciseDates.get(exerciseDates.size() - 1).lt(maturityDate)) {
             final Date last = exerciseDates.get(exerciseDates.size() - 1);
@@ -484,7 +484,7 @@ public class SwingOptionTest {
                 new SwingExercise(exerciseDates.toArray(new Date[0]));
 
         // Exercise times + grid (60 sub-steps spanning the exercise calendar).
-        final List<Double> exerciseTimes = new ArrayList<Double>();
+        final List<Double> exerciseTimes = new ArrayList<>();
         for (int i = 0; i < exerciseDates.size(); ++i) {
             exerciseTimes.add(
                     dayCounter.yearFraction(settlementDate, exerciseDates.get(i)));
@@ -698,7 +698,7 @@ public class SwingOptionTest {
         final double ps = Math.log(f0)
                 - sig * sig / (4.0 * alpha) * (1.0 - Math.exp(-2.0 * alpha * t))
                 - lambda / beta * Math.log((eta - Math.exp(-beta * t)) / (eta - 1.0));
-        final List<ShapePoint> shape = new ArrayList<ShapePoint>();
+        final List<ShapePoint> shape = new ArrayList<>();
         shape.add(new ShapePoint(t, ps));
 
         // ----- Richardson-extrapolated PDE price -------------------------

@@ -75,7 +75,7 @@ public class TCopulaPolicyTest {
     public void rejectsLowDof() {
         final TCopulaPolicy.InitTraits traits = new TCopulaPolicy.InitTraits(2, 5);
         try {
-            new TCopulaPolicy(new ArrayList<List<Double>>(), traits);
+            new TCopulaPolicy(new ArrayList<>(), traits);
             fail("Expected exception for tOrder <= 2");
         } catch (final Exception e) {
             // expected
@@ -86,7 +86,7 @@ public class TCopulaPolicyTest {
     public void varianceFactorsMatchClosedForm() {
         // varianceFactors_[i] = sqrt((nu_i - 2) / nu_i)
         final TCopulaPolicy.InitTraits traits = new TCopulaPolicy.InitTraits(5, 7, 9);
-        final TCopulaPolicy p = new TCopulaPolicy(new ArrayList<List<Double>>(), traits);
+        final TCopulaPolicy p = new TCopulaPolicy(new ArrayList<>(), traits);
         final List<Double> vf = p.varianceFactors();
         assertEquals(Math.sqrt(3.0 / 5.0), vf.get(0), TIGHT);
         assertEquals(Math.sqrt(5.0 / 7.0), vf.get(1), TIGHT);

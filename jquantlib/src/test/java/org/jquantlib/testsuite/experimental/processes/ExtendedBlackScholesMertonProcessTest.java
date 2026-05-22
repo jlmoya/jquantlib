@@ -56,12 +56,12 @@ public class ExtendedBlackScholesMertonProcessTest {
     private static ExtendedBlackScholesMertonProcess build(final Discretization disc) {
         final Date today = Date.todaysDate();
         final Actual365Fixed dc = new Actual365Fixed();
-        final Handle<SimpleQuote> spot = new Handle<>(new SimpleQuote(100.0));
-        final Handle<YieldTermStructure> r = new Handle<>(
+        final var spot = new Handle<SimpleQuote>(new SimpleQuote(100.0));
+        final var r = new Handle<YieldTermStructure>(
                 new FlatForward(today, 0.04, dc));
-        final Handle<YieldTermStructure> q = new Handle<>(
+        final var q = new Handle<YieldTermStructure>(
                 new FlatForward(today, 0.02, dc));
-        final Handle<BlackVolTermStructure> vol = new Handle<>(
+        final var vol = new Handle<BlackVolTermStructure>(
                 new BlackConstantVol(today, new NullCalendar(), 0.20, dc));
         return new ExtendedBlackScholesMertonProcess(spot, q, r, vol, disc);
     }

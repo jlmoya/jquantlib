@@ -73,7 +73,7 @@ public class EnergyInstrumentsTest {
                 new NullCalendar(),
                 1000.0,
                 null,
-                new ArrayList<ExchangeContract>(),
+                new ArrayList<>(),
                 0);
     }
 
@@ -102,7 +102,7 @@ public class EnergyInstrumentsTest {
                 new NullCalendar(),
                 new America.USDCurrency(),
                 new America.USDCurrency(),
-                new ArrayList<PricingPeriod>(),
+                new ArrayList<>(),
                 new CommodityType("WTI", "WTI"),
                 new Commodity.SecondaryCosts());
         assertTrue(s.isExpired());

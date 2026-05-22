@@ -48,7 +48,7 @@ public class PagodaOptionTest {
 
         final DayCounter dc = new Actual360();
         final Calendar cal = new NullCalendar();
-        final List<Date> fixingDates = new ArrayList<Date>(4);
+        final List<Date> fixingDates = new ArrayList<>(4);
         for (int i = 1; i <= 4; ++i) {
             fixingDates.add(today.add(i * 90));
         }
@@ -61,7 +61,7 @@ public class PagodaOptionTest {
         final Handle<YieldTermStructure> riskFreeRate =
                 new Handle<YieldTermStructure>(new FlatForward(today, 0.05, dc));
 
-        final List<StochasticProcess1D> processes = new ArrayList<StochasticProcess1D>(4);
+        final List<StochasticProcess1D> processes = new ArrayList<>(4);
         processes.add(makeBsm(today, 0.15, 0.01, 0.30, riskFreeRate, dc, cal));
         processes.add(makeBsm(today, 0.20, 0.05, 0.35, riskFreeRate, dc, cal));
         processes.add(makeBsm(today, 0.35, 0.04, 0.25, riskFreeRate, dc, cal));

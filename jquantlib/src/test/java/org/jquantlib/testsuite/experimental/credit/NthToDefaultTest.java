@@ -196,7 +196,7 @@ public class NthToDefaultTest {
         for (int i = 0; i < names; ++i) {
             final List<KeyCurvePair> curves = new ArrayList<>(1);
             curves.add(new KeyCurvePair(poolKey, probabilities.get(i)));
-            final Issuer issuer = new Issuer(curves, new TreeSet<DefaultEvent>(Issuer.EARLIER_THAN));
+            final Issuer issuer = new Issuer(curves, new TreeSet<>(Issuer.EARLIER_THAN));
             thePool.add(namesIds.get(i), issuer, poolKey);
         }
         @SuppressWarnings("unused")

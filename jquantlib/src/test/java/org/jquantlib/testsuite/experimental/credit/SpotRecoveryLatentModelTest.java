@@ -61,8 +61,7 @@ public class SpotRecoveryLatentModelTest {
             factorWeights.add(wr);
             final List<Double> recoveries = Arrays.asList(0.40);  // unused for kernel
             final GaussianCopulaPolicy copula = new GaussianCopulaPolicy(factorWeights);
-            final SpotRecoveryLatentModel<GaussianCopulaPolicy> model =
-                    new SpotRecoveryLatentModel<>(factorWeights, recoveries, modelA,
+            final var model = new SpotRecoveryLatentModel<GaussianCopulaPolicy>(factorWeights, recoveries, modelA,
                             copula, LatentModel.IntegrationType.GaussianQuadrature);
 
             final double actual = model.expCondRecoveryInvPinvRR(invP, invRR, 0, m);
@@ -79,8 +78,7 @@ public class SpotRecoveryLatentModelTest {
         }
         final List<Double> rr = Arrays.asList(0.4, 0.4, 0.4, 0.4);
         final GaussianCopulaPolicy copula = new GaussianCopulaPolicy(w);
-        final SpotRecoveryLatentModel<GaussianCopulaPolicy> m =
-                new SpotRecoveryLatentModel<>(w, rr, 1.0, copula,
+        final var m = new SpotRecoveryLatentModel<GaussianCopulaPolicy>(w, rr, 1.0, copula,
                         LatentModel.IntegrationType.GaussianQuadrature);
         assertEquals(4, m.numNames());
         assertEquals(8, m.size());
@@ -103,8 +101,7 @@ public class SpotRecoveryLatentModelTest {
         w.add(Arrays.asList(0.5));   // name 0 recovery
         final List<Double> recoveries = Arrays.asList(0.40);
         final GaussianCopulaPolicy copula = new GaussianCopulaPolicy(w);
-        final SpotRecoveryLatentModel<GaussianCopulaPolicy> model =
-                new SpotRecoveryLatentModel<>(w, recoveries, 1.0, copula,
+        final var model = new SpotRecoveryLatentModel<GaussianCopulaPolicy>(w, recoveries, 1.0, copula,
                         LatentModel.IntegrationType.GaussianQuadrature);
         final double invP = -1.5;   // arbitrary inv-cumul value
         final double invRR = 0.2;

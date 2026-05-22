@@ -46,10 +46,10 @@ public class DumasParametricVolSurfaceTest {
         final DayCounter dc = new Actual365Fixed();
         final Date today = new Date(15, Month.January, 2026);
 
-        final Handle<Quote> spot = new Handle<>(new SimpleQuote(100.0));
-        final Handle<YieldTermStructure> rTS = new Handle<>(
+        final var spot = new Handle<Quote>(new SimpleQuote(100.0));
+        final var rTS = new Handle<YieldTermStructure>(
                 new FlatForward(today, new Handle<Quote>(new SimpleQuote(0.015)), dc));
-        final Handle<YieldTermStructure> qTS = new Handle<>(
+        final var qTS = new Handle<YieldTermStructure>(
                 new FlatForward(today, new Handle<Quote>(new SimpleQuote(0.025)), dc));
 
         final DumasParametricVolSurface skewed =
@@ -81,10 +81,10 @@ public class DumasParametricVolSurfaceTest {
     public void testZeroTimeReturnsB1() {
         final DayCounter dc = new Actual365Fixed();
         final Date today = new Date(15, Month.January, 2026);
-        final Handle<Quote> spot = new Handle<>(new SimpleQuote(100.0));
-        final Handle<YieldTermStructure> rTS = new Handle<>(
+        final var spot = new Handle<Quote>(new SimpleQuote(100.0));
+        final var rTS = new Handle<YieldTermStructure>(
                 new FlatForward(today, new Handle<Quote>(new SimpleQuote(0.015)), dc));
-        final Handle<YieldTermStructure> qTS = new Handle<>(
+        final var qTS = new Handle<YieldTermStructure>(
                 new FlatForward(today, new Handle<Quote>(new SimpleQuote(0.025)), dc));
 
         final DumasParametricVolSurface s =
@@ -101,10 +101,10 @@ public class DumasParametricVolSurfaceTest {
     public void testStrikeRange() {
         final DayCounter dc = new Actual365Fixed();
         final Date today = new Date(15, Month.January, 2026);
-        final Handle<Quote> spot = new Handle<>(new SimpleQuote(100.0));
-        final Handle<YieldTermStructure> rTS = new Handle<>(
+        final var spot = new Handle<Quote>(new SimpleQuote(100.0));
+        final var rTS = new Handle<YieldTermStructure>(
                 new FlatForward(today, new Handle<Quote>(new SimpleQuote(0.015)), dc));
-        final Handle<YieldTermStructure> qTS = new Handle<>(
+        final var qTS = new Handle<YieldTermStructure>(
                 new FlatForward(today, new Handle<Quote>(new SimpleQuote(0.025)), dc));
         final DumasParametricVolSurface s =
                 new DumasParametricVolSurface(0.25, 0.03, 0.005, -0.02, -0.005,

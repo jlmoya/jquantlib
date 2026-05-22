@@ -60,7 +60,7 @@ public class EnergyFuturePerformCalculationsTest {
                 new NullCalendar(),
                 1000.0,
                 null,
-                new ArrayList<ExchangeContract>(),
+                new ArrayList<>(),
                 0);
     }
 

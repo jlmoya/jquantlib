@@ -62,7 +62,7 @@ public class EverestOptionTest {
 
         // C++ uses a single dummyUnderlying = SimpleQuote(1.0) for all four
         // processes; replicate by passing 1.0 to each makeBsm call.
-        final List<StochasticProcess1D> processes = new ArrayList<StochasticProcess1D>(4);
+        final List<StochasticProcess1D> processes = new ArrayList<>(4);
         processes.add(makeBsm(today, 1.0, 0.01, 0.30, riskFreeRate, dc, cal));
         processes.add(makeBsm(today, 1.0, 0.05, 0.35, riskFreeRate, dc, cal));
         processes.add(makeBsm(today, 1.0, 0.04, 0.25, riskFreeRate, dc, cal));

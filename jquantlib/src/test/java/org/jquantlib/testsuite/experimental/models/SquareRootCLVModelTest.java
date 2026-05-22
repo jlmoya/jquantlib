@@ -55,12 +55,12 @@ public class SquareRootCLVModelTest {
     private static GeneralizedBlackScholesProcess makeFlatBSProcess(
             final Date today, final double s0, final double r,
             final double q, final double vol, final DayCounter dc) {
-        final Handle<Quote> spot = new Handle<>(new SimpleQuote(s0));
-        final Handle<YieldTermStructure> qTS = new Handle<>(
+        final var spot = new Handle<Quote>(new SimpleQuote(s0));
+        final var qTS = new Handle<YieldTermStructure>(
                 new FlatForward(today, new Handle<Quote>(new SimpleQuote(q)), dc));
-        final Handle<YieldTermStructure> rTS = new Handle<>(
+        final var rTS = new Handle<YieldTermStructure>(
                 new FlatForward(today, new Handle<Quote>(new SimpleQuote(r)), dc));
-        final Handle<BlackVolTermStructure> volTS = new Handle<>(
+        final var volTS = new Handle<BlackVolTermStructure>(
                 new BlackConstantVol(today, new NullCalendar(),
                         new Handle<Quote>(new SimpleQuote(vol)), dc));
         return new GeneralizedBlackScholesProcess(spot, qTS, rTS, volTS);
@@ -259,17 +259,17 @@ public class SquareRootCLVModelTest {
         final double maturity = dc.yearFraction(todaysDate, maturityDate);
 
         final double s0 = 100.0;
-        final Handle<Quote> spot = new Handle<>(new SimpleQuote(s0));
+        final var spot = new Handle<Quote>(new SimpleQuote(s0));
 
         final double r   = 0.08;
         final double q   = 0.03;
         final double vol = 0.30;
 
-        final Handle<YieldTermStructure> rTS = new Handle<>(
+        final var rTS = new Handle<YieldTermStructure>(
                 new FlatForward(todaysDate, new Handle<Quote>(new SimpleQuote(r)), dc));
-        final Handle<YieldTermStructure> qTS = new Handle<>(
+        final var qTS = new Handle<YieldTermStructure>(
                 new FlatForward(todaysDate, new Handle<Quote>(new SimpleQuote(q)), dc));
-        final Handle<BlackVolTermStructure> volTS = new Handle<>(
+        final var volTS = new Handle<BlackVolTermStructure>(
                 new BlackConstantVol(todaysDate, new NullCalendar(),
                         new Handle<Quote>(new SimpleQuote(vol)), dc));
 
@@ -367,14 +367,14 @@ public class SquareRootCLVModelTest {
         final DayCounter dc = new Actual365Fixed();
 
         final double s0 = 100.0;
-        final Handle<Quote> spot = new Handle<>(new SimpleQuote(s0));
+        final var spot = new Handle<Quote>(new SimpleQuote(s0));
 
         final double r = 0.05;
         final double q = 0.02;
 
-        final Handle<YieldTermStructure> rTS = new Handle<>(
+        final var rTS = new Handle<YieldTermStructure>(
                 new FlatForward(todaysDate, new Handle<Quote>(new SimpleQuote(r)), dc));
-        final Handle<YieldTermStructure> qTS = new Handle<>(
+        final var qTS = new Handle<YieldTermStructure>(
                 new FlatForward(todaysDate, new Handle<Quote>(new SimpleQuote(q)), dc));
 
         // SABR parameters from C++ test.
@@ -383,7 +383,7 @@ public class SquareRootCLVModelTest {
         final double rho   = -0.9;
         final double gamma = 0.8;
 
-        final Handle<BlackVolTermStructure> sabrVol = new Handle<>(
+        final var sabrVol = new Handle<BlackVolTermStructure>(
                 new SABRVolTermStructure(alpha, beta, gamma, rho, s0, r, todaysDate, dc));
 
         final GeneralizedBlackScholesProcess bsProcess =

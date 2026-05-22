@@ -44,8 +44,7 @@ public class InterpolatedAffineHazardRateCurveTest {
         // CIR with very small initial rate so the affine bond contribution
         // doesn't dominate the deterministic part.
         final CoxIngersollRoss model = new CoxIngersollRoss(0.001, 0.001, 0.1, 0.05);
-        final InterpolatedAffineHazardRateCurve<BackwardFlat> curve =
-                new InterpolatedAffineHazardRateCurve<>(BackwardFlat.class, dates, hazardRates,
+        final var curve = new InterpolatedAffineHazardRateCurve<BackwardFlat>(BackwardFlat.class, dates, hazardRates,
                         new Actual365Fixed(), model);
 
         // Reference date is dates[0]
@@ -90,8 +89,7 @@ public class InterpolatedAffineHazardRateCurveTest {
         };
         final double[] hazardRates = { 0.01, 0.02, 0.03 };
         final CoxIngersollRoss model = new CoxIngersollRoss(0.01, 0.01, 0.1, 0.05);
-        final InterpolatedAffineHazardRateCurve<BackwardFlat> curve =
-                new InterpolatedAffineHazardRateCurve<>(BackwardFlat.class, dates, hazardRates,
+        final var curve = new InterpolatedAffineHazardRateCurve<BackwardFlat>(BackwardFlat.class, dates, hazardRates,
                         new Actual365Fixed(), model);
         // survivalProbability(today) should be model.discountBond(0,0,...) = 1
         assertEquals(1.0, curve.survivalProbability(today), 1.0e-12);
@@ -108,8 +106,7 @@ public class InterpolatedAffineHazardRateCurveTest {
         };
         final double[] hazardRates = { 0.01, 0.02, 0.03, 0.04 };
         final CoxIngersollRoss model = new CoxIngersollRoss(0.001, 0.001, 0.1, 0.05);
-        final InterpolatedAffineHazardRateCurve<BackwardFlat> curve =
-                new InterpolatedAffineHazardRateCurve<>(BackwardFlat.class, dates, hazardRates,
+        final var curve = new InterpolatedAffineHazardRateCurve<BackwardFlat>(BackwardFlat.class, dates, hazardRates,
                         new Actual365Fixed(), model);
 
         double prev = 1.0;
@@ -135,8 +132,7 @@ public class InterpolatedAffineHazardRateCurveTest {
         };
         final double[] hazardRates = { 0.01, 0.02, 0.03 };
         final CoxIngersollRoss model = new CoxIngersollRoss(0.001, 0.001, 0.1, 0.05);
-        final InterpolatedAffineHazardRateCurve<BackwardFlat> curve =
-                new InterpolatedAffineHazardRateCurve<>(BackwardFlat.class, dates, hazardRates,
+        final var curve = new InterpolatedAffineHazardRateCurve<BackwardFlat>(BackwardFlat.class, dates, hazardRates,
                         new Actual365Fixed(), model);
         // At time 0, BackwardFlat returns the first y value
         assertEquals(0.01, curve.hazardRate(today, true), 1.0e-12);

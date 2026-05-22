@@ -49,7 +49,7 @@ public class FactorSamplerTest {
         assertTrue("copula must have at least 1 factor", dim >= 1);
 
         final SobolRsg rsg = new SobolRsg(dim, 42);
-        final FactorSampler<GaussianCopulaPolicy> sampler = new FactorSampler<>(rsg, copula);
+        final var sampler = new FactorSampler<GaussianCopulaPolicy>(rsg, copula);
         assertEquals(dim, sampler.dimension());
 
         final Sample<double[]> s = sampler.nextSequence();
@@ -64,7 +64,7 @@ public class FactorSamplerTest {
         final int dim = copula.numFactors();
 
         final SobolRsg rsg = new SobolRsg(dim, 42);
-        final FactorSampler<GaussianCopulaPolicy> sampler = new FactorSampler<>(rsg, copula);
+        final var sampler = new FactorSampler<GaussianCopulaPolicy>(rsg, copula);
 
         // Draw N samples; first component should be ~ N(0,1) when the copula
         // is gaussian (since allFactorCumulInverter is the inverse of the
@@ -107,8 +107,8 @@ public class FactorSamplerTest {
         final GaussianCopulaPolicy copula = new GaussianCopulaPolicy(w);
         final int dim = copula.numFactors();
 
-        final FactorSampler<GaussianCopulaPolicy> a = new FactorSampler<>(new SobolRsg(dim, 17), copula);
-        final FactorSampler<GaussianCopulaPolicy> b = new FactorSampler<>(new SobolRsg(dim, 17), copula);
+        final var a = new FactorSampler<GaussianCopulaPolicy>(new SobolRsg(dim, 17), copula);
+        final var b = new FactorSampler<GaussianCopulaPolicy>(new SobolRsg(dim, 17), copula);
 
         for (int i = 0; i < 20; ++i) {
             final double[] va = a.nextSequence().value();

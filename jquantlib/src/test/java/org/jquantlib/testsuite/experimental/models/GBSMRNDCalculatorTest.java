@@ -53,12 +53,12 @@ public class GBSMRNDCalculatorTest {
         final double vol   = 0.25;
         final double t     = 0.5;  // 6 months
 
-        final Handle<Quote> spot = new Handle<>(new SimpleQuote(s0));
-        final Handle<YieldTermStructure> qTS = new Handle<>(
+        final var spot = new Handle<Quote>(new SimpleQuote(s0));
+        final var qTS = new Handle<YieldTermStructure>(
                 new FlatForward(today, new Handle<Quote>(new SimpleQuote(qRate)), dc));
-        final Handle<YieldTermStructure> rTS = new Handle<>(
+        final var rTS = new Handle<YieldTermStructure>(
                 new FlatForward(today, new Handle<Quote>(new SimpleQuote(rRate)), dc));
-        final Handle<BlackVolTermStructure> volTS = new Handle<>(
+        final var volTS = new Handle<BlackVolTermStructure>(
                 new BlackConstantVol(today, new NullCalendar(),
                         new Handle<Quote>(new SimpleQuote(vol)), dc));
 
@@ -98,12 +98,12 @@ public class GBSMRNDCalculatorTest {
         final double qRate = 0.02;
         final double vol   = 0.20;
 
-        final Handle<Quote> spot = new Handle<>(new SimpleQuote(s0));
-        final Handle<YieldTermStructure> qTS = new Handle<>(
+        final var spot = new Handle<Quote>(new SimpleQuote(s0));
+        final var qTS = new Handle<YieldTermStructure>(
                 new FlatForward(today, new Handle<Quote>(new SimpleQuote(qRate)), dc));
-        final Handle<YieldTermStructure> rTS = new Handle<>(
+        final var rTS = new Handle<YieldTermStructure>(
                 new FlatForward(today, new Handle<Quote>(new SimpleQuote(rRate)), dc));
-        final Handle<BlackVolTermStructure> volTS = new Handle<>(
+        final var volTS = new Handle<BlackVolTermStructure>(
                 new BlackConstantVol(today, new NullCalendar(),
                         new Handle<Quote>(new SimpleQuote(vol)), dc));
 
@@ -134,12 +134,12 @@ public class GBSMRNDCalculatorTest {
         final double qRate = 0.03;
         final double vol   = 0.30;
 
-        final Handle<Quote> spot = new Handle<>(new SimpleQuote(s0));
-        final Handle<YieldTermStructure> qTS = new Handle<>(
+        final var spot = new Handle<Quote>(new SimpleQuote(s0));
+        final var qTS = new Handle<YieldTermStructure>(
                 new FlatForward(today, new Handle<Quote>(new SimpleQuote(qRate)), dc));
-        final Handle<YieldTermStructure> rTS = new Handle<>(
+        final var rTS = new Handle<YieldTermStructure>(
                 new FlatForward(today, new Handle<Quote>(new SimpleQuote(rRate)), dc));
-        final Handle<BlackVolTermStructure> volTS = new Handle<>(
+        final var volTS = new Handle<BlackVolTermStructure>(
                 new BlackConstantVol(today, new NullCalendar(),
                         new Handle<Quote>(new SimpleQuote(vol)), dc));
 

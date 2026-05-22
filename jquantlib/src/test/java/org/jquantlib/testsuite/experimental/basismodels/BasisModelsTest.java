@@ -171,7 +171,7 @@ public class BasisModelsTest {
     private static Handle<OptionletVolatilityStructure> getOptionletTS() {
         final Date today = new Settings().evaluationDate();
         final Target target = new Target();
-        final List<Date> dates = new ArrayList<Date>(CAPLET_TERMS.length);
+        final List<Date> dates = new ArrayList<>(CAPLET_TERMS.length);
         for (Period t : CAPLET_TERMS) {
             dates.add(target.advance(today, t, BusinessDayConvention.Following));
         }
@@ -191,15 +191,15 @@ public class BasisModelsTest {
                 new ArrayList<List<Handle<? extends Quote>>>(capletVolsData.length);
         for (double[] row : capletVolsData) {
             final List<Handle<? extends Quote>> rowH =
-                    new ArrayList<Handle<? extends Quote>>(row.length);
+                    new ArrayList<>(row.length);
             for (double v : row) {
                 rowH.add(new Handle<Quote>(new SimpleQuote(v)));
             }
             capletVolQuotes.add(rowH);
         }
         // Same strikes for all maturities
-        final List<List<Double>> strikesAll = new ArrayList<List<Double>>(dates.size());
-        final List<Double> strikeRow = new ArrayList<Double>(CAPLET_STRIKES.length);
+        final List<List<Double>> strikesAll = new ArrayList<>(dates.size());
+        final List<Double> strikeRow = new ArrayList<>(CAPLET_STRIKES.length);
         for (double s : CAPLET_STRIKES) {
             strikeRow.add(s);
         }
@@ -231,14 +231,14 @@ public class BasisModelsTest {
                 new ArrayList<List<Handle<? extends Quote>>>(swaptionVolsData.length);
         for (double[] row : swaptionVolsData) {
             final List<Handle<? extends Quote>> rowH =
-                    new ArrayList<Handle<? extends Quote>>(row.length);
+                    new ArrayList<>(row.length);
             for (double v : row) {
                 rowH.add(new Handle<Quote>(new SimpleQuote(v)));
             }
             volH.add(rowH);
         }
-        final List<Period> optT = new ArrayList<Period>(SWAPTION_VTS_TERMS.length);
-        final List<Period> swpT = new ArrayList<Period>(SWAPTION_VTS_TERMS.length);
+        final List<Period> optT = new ArrayList<>(SWAPTION_VTS_TERMS.length);
+        final List<Period> swpT = new ArrayList<>(SWAPTION_VTS_TERMS.length);
         for (Period p : SWAPTION_VTS_TERMS) {
             optT.add(p);
             swpT.add(p);

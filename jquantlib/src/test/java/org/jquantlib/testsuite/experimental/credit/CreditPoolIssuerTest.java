@@ -242,7 +242,7 @@ public class CreditPoolIssuerTest {
     @Test
     public void issuerDefaultedBetweenFindsMatchingEvent() {
         final Currency usd = new America.USDCurrency();
-        final TreeSet<DefaultEvent> events = new TreeSet<>(Issuer.EARLIER_THAN);
+        final var events = new TreeSet<DefaultEvent>(Issuer.EARLIER_THAN);
         events.add(new BankruptcyEvent(new Date(15, Month.June, 2008),
                 usd, Seniority.SnrFor, new Date(), 0.4));
         final Issuer issuer = new Issuer(new ArrayList<>(), events);

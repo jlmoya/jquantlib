@@ -123,7 +123,7 @@ public class CallableBondTest {
         }
 
         List<Date> evenYears() {
-            final List<Date> dates = new ArrayList<Date>();
+            final List<Date> dates = new ArrayList<>();
             for (int i = 2; i < 10; i += 2) {
                 dates.add(calendar.advance(issueDate(), new Period(i, TimeUnit.Years),
                         BusinessDayConvention.Following));
@@ -132,7 +132,7 @@ public class CallableBondTest {
         }
 
         List<Date> oddYears() {
-            final List<Date> dates = new ArrayList<Date>();
+            final List<Date> dates = new ArrayList<>();
             for (int i = 1; i < 10; i += 2) {
                 dates.add(calendar.advance(issueDate(), new Period(i, TimeUnit.Years),
                         BusinessDayConvention.Following));
@@ -554,7 +554,7 @@ public class CallableBondTest {
             // Build truncated schedule for the fixed-rate equivalent. The
             // callable's effective horizon is the snapped-to-coupon call date;
             // build an arbitrary-date Schedule that runs from issue to callDate.
-            final List<Date> truncatedDates = new ArrayList<Date>();
+            final List<Date> truncatedDates = new ArrayList<>();
             for (int k = 0; k < schedule.size(); k++) {
                 final Date d = schedule.date(k);
                 if (d.le(callDate)) {
@@ -748,7 +748,7 @@ public class CallableBondTest {
         final PricingEngine engine = new TreeCallableFixedRateBondEngine(vars.model, timeSteps,
                 termStructure);
 
-        final List<Date> dates = new ArrayList<Date>();
+        final List<Date> dates = new ArrayList<>();
         dates.add(new Date(20, Month.February, 2020));
         dates.add(new Date(15, Month.August, 2020));
         dates.add(new Date(25, Month.September, 2021));

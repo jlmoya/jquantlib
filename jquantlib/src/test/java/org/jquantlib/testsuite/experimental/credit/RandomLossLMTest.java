@@ -82,7 +82,7 @@ public class RandomLossLMTest {
             final List<KeyCurvePair> probabilities = new ArrayList<>();
             probabilities.add(new KeyCurvePair(k, curveH));
             final Issuer issuer = new Issuer(probabilities,
-                    new TreeSet<DefaultEvent>(Issuer.EARLIER_THAN));
+                    new TreeSet<>(Issuer.EARLIER_THAN));
             pool.add(n, issuer, k);
         }
         return new Basket(today, names, notionals, pool, 0.0, 1.0);
@@ -108,9 +108,9 @@ public class RandomLossLMTest {
         final Basket basket = buildBasket(0.50);
         final SpotRecoveryLatentModel<GaussianCopulaPolicy> spot =
                 buildSpotModel(Math.sqrt(0.20), Math.sqrt(0.20));
-        final FactorSampler<GaussianCopulaPolicy> sampler = new FactorSampler<>(
+        final var sampler = new FactorSampler<GaussianCopulaPolicy>(
                 new SobolRsg(spot.copula().numFactors(), 42), spot.copula());
-        final RandomLossLM<GaussianCopulaPolicy> mc = new RandomLossLM<>(
+        final var mc = new RandomLossLM<GaussianCopulaPolicy>(
                 spot, sampler, /*nSims=*/300, /*accuracy=*/1.0e-4);
         mc.setBasket(basket);
         mc.calculate();
@@ -131,9 +131,9 @@ public class RandomLossLMTest {
         final Basket basket = buildBasket(0.50);
         final SpotRecoveryLatentModel<GaussianCopulaPolicy> spot =
                 buildSpotModel(Math.sqrt(0.20), Math.sqrt(0.20));
-        final FactorSampler<GaussianCopulaPolicy> sampler = new FactorSampler<>(
+        final var sampler = new FactorSampler<GaussianCopulaPolicy>(
                 new SobolRsg(spot.copula().numFactors(), 42), spot.copula());
-        final RandomLossLM<GaussianCopulaPolicy> mc = new RandomLossLM<>(
+        final var mc = new RandomLossLM<GaussianCopulaPolicy>(
                 spot, sampler, /*nSims=*/300, /*accuracy=*/1.0e-4);
         mc.setBasket(basket);
         mc.calculate();
@@ -156,9 +156,9 @@ public class RandomLossLMTest {
         final Basket basket = buildBasket(1.0);  // very high default rate
         final SpotRecoveryLatentModel<GaussianCopulaPolicy> spot =
                 buildSpotModel(Math.sqrt(0.20), Math.sqrt(0.20));
-        final FactorSampler<GaussianCopulaPolicy> sampler = new FactorSampler<>(
+        final var sampler = new FactorSampler<GaussianCopulaPolicy>(
                 new SobolRsg(spot.copula().numFactors(), 42), spot.copula());
-        final RandomLossLM<GaussianCopulaPolicy> mc = new RandomLossLM<>(
+        final var mc = new RandomLossLM<GaussianCopulaPolicy>(
                 spot, sampler, /*nSims=*/500, /*accuracy=*/1.0e-4);
         mc.setBasket(basket);
         mc.calculate();
@@ -178,9 +178,9 @@ public class RandomLossLMTest {
         final Basket basket = buildBasket(0.30);
         final SpotRecoveryLatentModel<GaussianCopulaPolicy> spot =
                 buildSpotModel(Math.sqrt(0.20), Math.sqrt(0.20));
-        final FactorSampler<GaussianCopulaPolicy> sampler = new FactorSampler<>(
+        final var sampler = new FactorSampler<GaussianCopulaPolicy>(
                 new SobolRsg(spot.copula().numFactors(), 42), spot.copula());
-        final RandomLossLM<GaussianCopulaPolicy> mc = new RandomLossLM<>(
+        final var mc = new RandomLossLM<GaussianCopulaPolicy>(
                 spot, sampler, /*nSims=*/300, /*accuracy=*/1.0e-4);
         mc.setBasket(basket);
         final Date oneYear = today.add(new Period(1, TimeUnit.Years));

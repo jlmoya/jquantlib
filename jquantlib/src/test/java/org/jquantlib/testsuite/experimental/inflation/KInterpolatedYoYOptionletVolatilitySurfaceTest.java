@@ -76,21 +76,20 @@ public class KInterpolatedYoYOptionletVolatilitySurfaceTest {
                 new Date(13, Month.August, 2010),
         };
         final double[] nodeRates = {0.025, 0.027, 0.031};
-        final InterpolatedYoYInflationCurve<Linear> yoyCurve =
-                new InterpolatedYoYInflationCurve<>(Linear.class, refDate,
+        final var yoyCurve = new InterpolatedYoYInflationCurve<Linear>(Linear.class, refDate,
                         nodeDates, nodeRates, freq, dc);
         yoyCurve.enableExtrapolation();
-        final Handle<YoYInflationTermStructure> ts = new Handle<>(yoyCurve);
+        final var ts = new Handle<YoYInflationTermStructure>(yoyCurve);
         final YYUKRPI yyIndex = new YYUKRPI(freq, false, false, ts);
 
         final FlatForward nominalCurve = new FlatForward(refDate, 0.05, dc,
                 Compounding.Compounded, Frequency.Annual);
-        final Handle<YieldTermStructure> nominalTS = new Handle<>(nominalCurve);
+        final var nominalTS = new Handle<YieldTermStructure>(nominalCurve);
 
         final YoYOptionletVolatilitySurface vs0 =
                 new ConstantYoYOptionletVolatility(0.20, 0, cal, bdc, dc,
                         observationLag, freq, false);
-        final Handle<YoYOptionletVolatilitySurface> hVS = new Handle<>(vs0);
+        final var hVS = new Handle<YoYOptionletVolatilitySurface>(vs0);
 
         final YoYInflationBlackCapFloorEngine engine =
                 new YoYInflationBlackCapFloorEngine(yyIndex, hVS, nominalTS);
@@ -103,8 +102,7 @@ public class KInterpolatedYoYOptionletVolatilitySurfaceTest {
         // Stub stripper that records initialize() and serves a fixed slice.
         final RecordingStripper stripper = new RecordingStripper();
 
-        final KInterpolatedYoYOptionletVolatilitySurface<Linear> kSurf =
-                new KInterpolatedYoYOptionletVolatilitySurface<>(Linear.class,
+        final var kSurf = new KInterpolatedYoYOptionletVolatilitySurface<Linear>(Linear.class,
                         0, cal, bdc, dc, observationLag,
                         fakeSurf, engine, stripper, /*slope*/ -0.5);
 

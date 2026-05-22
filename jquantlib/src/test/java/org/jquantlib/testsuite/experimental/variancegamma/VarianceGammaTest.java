@@ -160,7 +160,7 @@ public class VarianceGammaTest {
             // covered by VarianceGammaEngineTest#testVarianceGammaAllCases
             // and would only duplicate a slow Gauss-Lobatto integral
             // sweep.)
-            final List<Instrument> optionList = new ArrayList<Instrument>();
+            final List<Instrument> optionList = new ArrayList<>();
             for (int j = 0; j < options.length; j++) {
                 // Mirror C++ {@code today + timeToDays(t)} from
                 // test-suite/utilities.hpp — the default in that helper

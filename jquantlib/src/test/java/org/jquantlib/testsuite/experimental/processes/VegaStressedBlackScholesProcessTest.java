@@ -57,12 +57,12 @@ public class VegaStressedBlackScholesProcessTest {
         final Calendar cal = new NullCalendar();
         final Actual365Fixed dc = new Actual365Fixed();
 
-        final Handle<SimpleQuote> spot = new Handle<>(new SimpleQuote(100.0));
-        final Handle<YieldTermStructure> r = new Handle<>(
+        final var spot = new Handle<SimpleQuote>(new SimpleQuote(100.0));
+        final var r = new Handle<YieldTermStructure>(
                 new FlatForward(today, 0.04, dc));
-        final Handle<YieldTermStructure> q = new Handle<>(
+        final var q = new Handle<YieldTermStructure>(
                 new FlatForward(today, 0.02, dc));
-        final Handle<BlackVolTermStructure> vol = new Handle<>(
+        final var vol = new Handle<BlackVolTermStructure>(
                 new BlackConstantVol(today, cal, 0.20, dc));
 
         // Stress region [0,2]x[50,150], stress = 0.05
@@ -88,12 +88,12 @@ public class VegaStressedBlackScholesProcessTest {
         final Date today = Date.todaysDate();
         final Actual365Fixed dc = new Actual365Fixed();
 
-        final Handle<SimpleQuote> spot = new Handle<>(new SimpleQuote(100.0));
-        final Handle<YieldTermStructure> r = new Handle<>(
+        final var spot = new Handle<SimpleQuote>(new SimpleQuote(100.0));
+        final var r = new Handle<YieldTermStructure>(
                 new FlatForward(today, 0.04, dc));
-        final Handle<YieldTermStructure> q = new Handle<>(
+        final var q = new Handle<YieldTermStructure>(
                 new FlatForward(today, 0.02, dc));
-        final Handle<BlackVolTermStructure> vol = new Handle<>(
+        final var vol = new Handle<BlackVolTermStructure>(
                 new BlackConstantVol(today, new NullCalendar(), 0.20, dc));
 
         final VegaStressedBlackScholesProcess vs = new VegaStressedBlackScholesProcess(
@@ -123,12 +123,12 @@ public class VegaStressedBlackScholesProcessTest {
         // Sanity: instance is-a GeneralizedBlackScholesProcess
         final Date today = Date.todaysDate();
         final Actual365Fixed dc = new Actual365Fixed();
-        final Handle<SimpleQuote> spot = new Handle<>(new SimpleQuote(100.0));
-        final Handle<YieldTermStructure> r = new Handle<>(
+        final var spot = new Handle<SimpleQuote>(new SimpleQuote(100.0));
+        final var r = new Handle<YieldTermStructure>(
                 new FlatForward(today, 0.04, dc));
-        final Handle<YieldTermStructure> q = new Handle<>(
+        final var q = new Handle<YieldTermStructure>(
                 new FlatForward(today, 0.02, dc));
-        final Handle<BlackVolTermStructure> vol = new Handle<>(
+        final var vol = new Handle<BlackVolTermStructure>(
                 new BlackConstantVol(today, new NullCalendar(), 0.20, dc));
 
         final VegaStressedBlackScholesProcess vs = new VegaStressedBlackScholesProcess(

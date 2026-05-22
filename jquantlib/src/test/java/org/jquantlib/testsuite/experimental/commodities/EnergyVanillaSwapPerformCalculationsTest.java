@@ -62,7 +62,7 @@ public class EnergyVanillaSwapPerformCalculationsTest {
                 new NullCalendar(),
                 1.0,                                 // lotQuantity = 1 to keep sums small
                 null,                                // no forward curve
-                new ArrayList<ExchangeContract>(),
+                new ArrayList<>(),
                 0);
     }
 
@@ -94,7 +94,7 @@ public class EnergyVanillaSwapPerformCalculationsTest {
 
         // Payment date the next day (eval+4) -> ge(eval+2) -> uses term-structure
         // discount, but with a 0% flat curve the discount is 1.0.
-        final List<PricingPeriod> periods = new ArrayList<PricingPeriod>();
+        final List<PricingPeriod> periods = new ArrayList<>();
         periods.add(new PricingPeriod(
                 new Date(16, Month.January, 2026),
                 new Date(18, Month.January, 2026),
@@ -166,7 +166,7 @@ public class EnergyVanillaSwapPerformCalculationsTest {
         idx.addFixing(new Date(17, Month.January, 2026), 72.0, true);
         idx.addFixing(new Date(18, Month.January, 2026), 71.0, true);
 
-        final List<PricingPeriod> periods = new ArrayList<PricingPeriod>();
+        final List<PricingPeriod> periods = new ArrayList<>();
         periods.add(new PricingPeriod(
                 new Date(16, Month.January, 2026),
                 new Date(18, Month.January, 2026),
@@ -205,7 +205,7 @@ public class EnergyVanillaSwapPerformCalculationsTest {
         // Single-day period to keep the math trivial.
         idx.addFixing(new Date(15, Month.January, 2026), 70.0, true);
 
-        final List<PricingPeriod> periods = new ArrayList<PricingPeriod>();
+        final List<PricingPeriod> periods = new ArrayList<>();
         periods.add(new PricingPeriod(
                 new Date(15, Month.January, 2026),
                 new Date(15, Month.January, 2026),

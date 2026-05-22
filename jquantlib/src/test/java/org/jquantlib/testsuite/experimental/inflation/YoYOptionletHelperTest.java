@@ -83,11 +83,10 @@ public class YoYOptionletHelperTest {
                 new Date(13, Month.August, 2017)
         };
         final double[] nodeRates = {0.025, 0.027, 0.029, 0.031, 0.034, 0.036};
-        final InterpolatedYoYInflationCurve<Linear> yoyCurve =
-                new InterpolatedYoYInflationCurve<>(Linear.class, refDate,
+        final var yoyCurve = new InterpolatedYoYInflationCurve<Linear>(Linear.class, refDate,
                         nodeDates, nodeRates, freq, dc);
         yoyCurve.enableExtrapolation();
-        final Handle<YoYInflationTermStructure> ts = new Handle<>(yoyCurve);
+        final var ts = new Handle<YoYInflationTermStructure>(yoyCurve);
         final YYUKRPI yyIndex = new YYUKRPI(freq, false, false, ts);
 
         // Seed historic fixings (mirrors probe + InflationCapFloorEnginesTest)
@@ -116,14 +115,14 @@ public class YoYOptionletHelperTest {
         // Nominal curve (flat 5%)
         final FlatForward nominalCurve = new FlatForward(refDate, 0.05, dc,
                 Compounding.Compounded, Frequency.Annual);
-        final Handle<YieldTermStructure> nominalTS = new Handle<>(nominalCurve);
+        final var nominalTS = new Handle<YieldTermStructure>(nominalCurve);
 
         // Flat 20% vol surface (reusable)
         final double flatVol = 0.20;
         final YoYOptionletVolatilitySurface volSurface =
                 new ConstantYoYOptionletVolatility(flatVol, 0, cal, bdc, dc,
                         observationLag, freq, /*indexIsInterpolated*/ false);
-        final Handle<YoYOptionletVolatilitySurface> hVS = new Handle<>(volSurface);
+        final var hVS = new Handle<YoYOptionletVolatilitySurface>(volSurface);
 
         // Black cap/floor engine
         final YoYInflationBlackCapFloorEngine blackEngine =
@@ -146,7 +145,7 @@ public class YoYOptionletHelperTest {
             final double notional = inputs.getDouble("notional");
             final int fixingDays = inputs.getInt("fixingDays");
 
-            final Handle<Quote> dummyQuote = new Handle<>(new SimpleQuote(1.0));
+            final var dummyQuote = new Handle<Quote>(new SimpleQuote(1.0));
 
             final YoYOptionletHelper helper = new YoYOptionletHelper(
                     dummyQuote, notional, type, observationLag, dc, cal,
@@ -199,26 +198,25 @@ public class YoYOptionletHelperTest {
                 new Date(13, Month.August, 2010),
         };
         final double[] nodeRates = {0.025, 0.027, 0.031};
-        final InterpolatedYoYInflationCurve<Linear> yoyCurve =
-                new InterpolatedYoYInflationCurve<>(Linear.class, refDate,
+        final var yoyCurve = new InterpolatedYoYInflationCurve<Linear>(Linear.class, refDate,
                         nodeDates, nodeRates, freq, dc);
         yoyCurve.enableExtrapolation();
-        final Handle<YoYInflationTermStructure> ts = new Handle<>(yoyCurve);
+        final var ts = new Handle<YoYInflationTermStructure>(yoyCurve);
         final YYUKRPI yyIndex = new YYUKRPI(freq, false, false, ts);
 
         final FlatForward nominalCurve = new FlatForward(refDate, 0.05, dc,
                 Compounding.Compounded, Frequency.Annual);
-        final Handle<YieldTermStructure> nominalTS = new Handle<>(nominalCurve);
+        final var nominalTS = new Handle<YieldTermStructure>(nominalCurve);
 
         final YoYOptionletVolatilitySurface volSurface =
                 new ConstantYoYOptionletVolatility(0.20, 0, cal, bdc, dc,
                         observationLag, freq, false);
-        final Handle<YoYOptionletVolatilitySurface> hVS = new Handle<>(volSurface);
+        final var hVS = new Handle<YoYOptionletVolatilitySurface>(volSurface);
 
         final YoYInflationBlackCapFloorEngine engine =
                 new YoYInflationBlackCapFloorEngine(yyIndex, hVS, nominalTS);
 
-        final Handle<Quote> dummyQuote = new Handle<>(new SimpleQuote(1.0));
+        final var dummyQuote = new Handle<Quote>(new SimpleQuote(1.0));
         final YoYOptionletHelper helper = YoYOptionletHelpers.makeHelper(
                 dummyQuote, 10000.0, InflationCapFloor.Type.Cap,
                 observationLag, dc, cal, 0, yyIndex,

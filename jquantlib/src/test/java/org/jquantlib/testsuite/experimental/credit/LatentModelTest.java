@@ -173,8 +173,7 @@ public class LatentModelTest {
                 Arrays.asList(0.3, 0.4),
                 Arrays.asList(0.5, 0.2));
         final GaussianCopulaPolicy copula = new GaussianCopulaPolicy(weights);
-        final LatentModel<GaussianCopulaPolicy> lm =
-                new LatentModel<>(weights, copula);
+        final var lm = new LatentModel<GaussianCopulaPolicy>(weights, copula);
 
         if (!Tolerance.exact(lm.size(), exp.getInt("size"))) {
             failures.add("size: java=" + lm.size() + " cpp=" + exp.getInt("size"));
@@ -224,8 +223,7 @@ public class LatentModelTest {
         final List<List<Double>> weights = Arrays.asList(
                 Arrays.asList(0.3, 0.4),
                 Arrays.asList(0.5, 0.2));
-        final LatentModel<GaussianCopulaPolicy> lm =
-                new LatentModel<>(weights, new GaussianCopulaPolicy(weights));
+        final var lm = new LatentModel<GaussianCopulaPolicy>(weights, new GaussianCopulaPolicy(weights));
         final double[] allFactors = {0.5, -0.3, 1.2, -0.8};
 
         final double y0 = lm.latentVarValue(allFactors, 0);
@@ -252,8 +250,7 @@ public class LatentModelTest {
             weights.add(new ArrayList<>(Arrays.asList(correlSqr)));
         }
         final GaussianCopulaPolicy copula = new GaussianCopulaPolicy(weights);
-        final LatentModel<GaussianCopulaPolicy> lm =
-                new LatentModel<>(correlSqr, nVariables, copula);
+        final var lm = new LatentModel<GaussianCopulaPolicy>(correlSqr, nVariables, copula);
 
         if (!Tolerance.exact(lm.size(), exp.getInt("size"))) {
             failures.add("size: java=" + lm.size() + " cpp=" + exp.getInt("size"));

@@ -78,15 +78,13 @@ public class PoolLossModelSmokeTest {
 
     @Test
     public void homogeneousPoolLossModel_construction_oneFactor() {
-        final HomogeneousPoolLossModel<GaussianCopulaPolicy> m =
-                new HomogeneousPoolLossModel<>(oneFactorCLLM(5), 10);
+        final var m = new HomogeneousPoolLossModel<GaussianCopulaPolicy>(oneFactorCLLM(5), 10);
         assertNotNull(m);
     }
 
     @Test
     public void inhomogeneousPoolLossModel_construction_oneFactor() {
-        final InhomogeneousPoolLossModel<GaussianCopulaPolicy> m =
-                new InhomogeneousPoolLossModel<>(oneFactorCLLM(5), 20);
+        final var m = new InhomogeneousPoolLossModel<GaussianCopulaPolicy>(oneFactorCLLM(5), 20);
         assertNotNull(m);
     }
 

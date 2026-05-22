@@ -89,7 +89,7 @@ public class HestonSLVModelSmokeTest {
         final HestonSLVFDMModel m = new HestonSLVFDMModel(
                 buildLocalVol(), buildHestonModel(),
                 new Date(15, Month.May, 2027),
-                p, false, new ArrayList<Date>(), 1.0);
+                p, false, new ArrayList<>(), 1.0);
         assertNotNull(m);
         assertNotNull(m.logEntries());
     }

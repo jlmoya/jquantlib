@@ -72,11 +72,10 @@ public class PiecewiseYoYOptionletVolatilityTest {
                 new Date(13, Month.August, 2010),
         };
         final double[] nodeRates = {0.025, 0.027, 0.031};
-        final InterpolatedYoYInflationCurve<Linear> yoyCurve =
-                new InterpolatedYoYInflationCurve<>(Linear.class, refDate,
+        final var yoyCurve = new InterpolatedYoYInflationCurve<Linear>(Linear.class, refDate,
                         nodeDates, nodeRates, freq, dc);
         yoyCurve.enableExtrapolation();
-        final Handle<YoYInflationTermStructure> ts = new Handle<>(yoyCurve);
+        final var ts = new Handle<YoYInflationTermStructure>(yoyCurve);
         final YYUKRPI yyIndex = new YYUKRPI(freq, false, false, ts);
 
         // Seed historic fixings
@@ -91,18 +90,18 @@ public class PiecewiseYoYOptionletVolatilityTest {
 
         final FlatForward nominalCurve = new FlatForward(refDate, 0.05, dc,
                 Compounding.Compounded, Frequency.Annual);
-        final Handle<YieldTermStructure> nominalTS = new Handle<>(nominalCurve);
+        final var nominalTS = new Handle<YieldTermStructure>(nominalCurve);
 
         final YoYOptionletVolatilitySurface volSurface =
                 new ConstantYoYOptionletVolatility(0.20, 0, cal, bdc, dc,
                         observationLag, freq, false);
-        final Handle<YoYOptionletVolatilitySurface> hVS = new Handle<>(volSurface);
+        final var hVS = new Handle<YoYOptionletVolatilitySurface>(volSurface);
         final YoYInflationBlackCapFloorEngine engine =
                 new YoYInflationBlackCapFloorEngine(yyIndex, hVS, nominalTS);
 
         // Build a tiny single-helper bootstrap target.
         // Use a self-consistent quote (the price under a flat 20% vol).
-        final Handle<Quote> q = new Handle<>(new SimpleQuote(32.12067640146455));  // cap n=2 K=0.03 from probe
+        final var q = new Handle<Quote>(new SimpleQuote(32.12067640146455));  // cap n=2 K=0.03 from probe
         final YoYOptionletHelper helper = new YoYOptionletHelper(
                 q, 10000.0, InflationCapFloor.Type.Cap,
                 observationLag, dc, cal, 0, yyIndex,
@@ -112,8 +111,7 @@ public class PiecewiseYoYOptionletVolatilityTest {
         // alone does not run the bootstrap — we don't call calculate()
         // here because that would re-pivot the engine vol, and we only
         // want to verify the API surface.
-        final PiecewiseYoYOptionletVolatility<Linear> pw =
-                new PiecewiseYoYOptionletVolatility<>(
+        final var pw = new PiecewiseYoYOptionletVolatility<Linear>(
                         Linear.class, 0, cal, bdc, dc, observationLag, freq,
                         /*indexIsInterpolated*/ false,
                         /*minStrike*/ 0.025,

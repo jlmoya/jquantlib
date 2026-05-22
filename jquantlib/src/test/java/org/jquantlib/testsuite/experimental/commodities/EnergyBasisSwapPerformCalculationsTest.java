@@ -60,7 +60,7 @@ public class EnergyBasisSwapPerformCalculationsTest {
                 new NullCalendar(),
                 1.0,
                 null,
-                new ArrayList<ExchangeContract>(),
+                new ArrayList<>(),
                 0);
     }
 
@@ -92,7 +92,7 @@ public class EnergyBasisSwapPerformCalculationsTest {
         pay.addFixing(d1, 60.0, true); pay.addFixing(d2, 62.0, true);
         receive.addFixing(d1, 70.0, true); receive.addFixing(d2, 72.0, true);
 
-        final List<PricingPeriod> periods = new ArrayList<PricingPeriod>();
+        final List<PricingPeriod> periods = new ArrayList<>();
         periods.add(new PricingPeriod(d1, d2,
                 new Date(18, Month.January, 2026),
                 new Quantity(new CommodityType("WTI", "WTI"),
@@ -145,7 +145,7 @@ public class EnergyBasisSwapPerformCalculationsTest {
         pay.addFixing(d1, 60.0, true); pay.addFixing(d2, 62.0, true);
         receive.addFixing(d1, 70.0, true); receive.addFixing(d2, 72.0, true);
 
-        final List<PricingPeriod> periods = new ArrayList<PricingPeriod>();
+        final List<PricingPeriod> periods = new ArrayList<>();
         periods.add(new PricingPeriod(d1, d2,
                 new Date(18, Month.January, 2026),
                 new Quantity(new CommodityType("WTI", "WTI"),
@@ -190,7 +190,7 @@ public class EnergyBasisSwapPerformCalculationsTest {
         pay.addFixing(d1, 60.0, true); pay.addFixing(d2, 62.0, true);
         receive.addFixing(d1, 70.0, true); receive.addFixing(d2, 72.0, true);
 
-        final List<PricingPeriod> periods = new ArrayList<PricingPeriod>();
+        final List<PricingPeriod> periods = new ArrayList<>();
         periods.add(new PricingPeriod(d1, d2,
                 new Date(18, Month.January, 2026),
                 new Quantity(new CommodityType("WTI", "WTI"),
@@ -239,26 +239,26 @@ public class EnergyBasisSwapPerformCalculationsTest {
                 new BarrelUnitOfMeasure(),
                 new NullCalendar(),
                 1.0, emptyCurve,
-                new ArrayList<ExchangeContract>(), 0);
+                new ArrayList<>(), 0);
         final CommodityIndex pay = new CommodityIndex("WTI-PAY-D",
                 new CommodityType("WTI", "WTI"),
                 new America.USDCurrency(),
                 new BarrelUnitOfMeasure(),
                 new NullCalendar(),
                 1.0, emptyCurve,
-                new ArrayList<ExchangeContract>(), 0);
+                new ArrayList<>(), 0);
         final CommodityIndex receive = new CommodityIndex("WTI-RCV-D",
                 new CommodityType("WTI", "WTI"),
                 new America.USDCurrency(),
                 new BarrelUnitOfMeasure(),
                 new NullCalendar(),
                 1.0, emptyCurve,
-                new ArrayList<ExchangeContract>(), 0);
+                new ArrayList<>(), 0);
         seedHistory(spread); seedHistory(pay); seedHistory(receive);
         // pay and receive have empty fixings AND empty forward curve.
 
         final Date d1 = new Date(16, Month.January, 2026);
-        final List<PricingPeriod> periods = new ArrayList<PricingPeriod>();
+        final List<PricingPeriod> periods = new ArrayList<>();
         periods.add(new PricingPeriod(d1, d1,
                 new Date(17, Month.January, 2026),
                 new Quantity(new CommodityType("WTI", "WTI"),

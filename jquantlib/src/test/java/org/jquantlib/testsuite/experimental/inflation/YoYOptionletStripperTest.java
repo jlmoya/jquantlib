@@ -28,8 +28,7 @@ public class YoYOptionletStripperTest {
 
     @Test
     public void interpolatedYoYOptionletStripper_constructs() {
-        final InterpolatedYoYOptionletStripper<Linear> stripper =
-                new InterpolatedYoYOptionletStripper<>(Linear.class);
+        final var stripper = new InterpolatedYoYOptionletStripper<Linear>(Linear.class);
         assertNotNull("InterpolatedYoYOptionletStripper should construct",
                 stripper);
         assertTrue("Should be a YoYOptionletStripper",
@@ -40,8 +39,7 @@ public class YoYOptionletStripperTest {
     public void strikesBeforeInitialize_throws() {
         // Without initialize(...), the underlying surface is null;
         // strikes() should throw a NullPointerException.
-        final InterpolatedYoYOptionletStripper<Linear> stripper =
-                new InterpolatedYoYOptionletStripper<>(Linear.class);
+        final var stripper = new InterpolatedYoYOptionletStripper<Linear>(Linear.class);
         stripper.strikes();
     }
 }

@@ -96,7 +96,7 @@ public class CPICapFloorEnginesTest {
         // Nominal yield curve — FlatForward 5%
         final FlatForward nominalTSimpl = new FlatForward(evaluationDate, 0.05,
                 dcNominal, Compounding.Continuous, Frequency.Annual);
-        final Handle<YieldTermStructure> nominalUK = new Handle<>(nominalTSimpl);
+        final var nominalUK = new Handle<YieldTermStructure>(nominalTSimpl);
 
         // ZCIIS data
         final Period observationLag = new Period(2, TimeUnit.Months);
@@ -119,7 +119,7 @@ public class CPICapFloorEnginesTest {
         final List<ZeroCouponInflationSwapHelper> helpers = new ArrayList<>();
         for (int i = 0; i < zciisRates.length; i++) {
             final Quote q = new SimpleQuote(zciisRates[i] / 100.0);
-            final Handle<Quote> qh = new Handle<>(q);
+            final var qh = new Handle<Quote>(q);
             helpers.add(new ZeroCouponInflationSwapHelper(qh, observationLag,
                     zciisDates[i], cal, bdc, dcZCIIS, ii));
         }
@@ -128,8 +128,7 @@ public class CPICapFloorEnginesTest {
         final Date lastFixDate = ii.timeSeries().lastKey();
         final Date baseDate = org.jquantlib.termstructures.InflationTermStructure
                 .inflationPeriod(lastFixDate, ii.frequency()).first();
-        final PiecewiseZeroInflationCurve<Linear> pCPIts =
-                new PiecewiseZeroInflationCurve<>(Linear.class, evaluationDate,
+        final var pCPIts = new PiecewiseZeroInflationCurve<Linear>(Linear.class, evaluationDate,
                         baseDate, ii.frequency(), dcZCIIS, helpers);
         pCPIts.dates();   // trigger bootstrap
 
@@ -173,12 +172,11 @@ public class CPICapFloorEnginesTest {
             for (int j = 0; j < cfMaturities.length; j++)
                 fPrice.set(i, j, fPriceData[j][i] / 10000.0);
 
-        final InterpolatedCPICapFloorTermPriceSurface<Bilinear> surf =
-                new InterpolatedCPICapFloorTermPriceSurface<>(Bilinear.class,
+        final var surf = new InterpolatedCPICapFloorTermPriceSurface<Bilinear>(Bilinear.class,
                         1.0, baseZeroRate, observationLag, cal, bdc, dcZCIIS,
                         ii2, CPI.InterpolationType.Flat, nominalUK,
                         cStrikes, fStrikes, cfMaturities, cPrice, fPrice);
-        final Handle<CPICapFloorTermPriceSurface> surfH = new Handle<>(surf);
+        final var surfH = new Handle<CPICapFloorTermPriceSurface>(surf);
         final InterpolatingCPICapFloorEngine engine =
                 new InterpolatingCPICapFloorEngine(surfH);
 

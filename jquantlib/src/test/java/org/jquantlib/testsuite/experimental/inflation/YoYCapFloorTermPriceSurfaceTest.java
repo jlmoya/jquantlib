@@ -73,7 +73,7 @@ public class YoYCapFloorTermPriceSurfaceTest {
         final DayCounter dc = new Actual365Fixed();
         final FlatForward euriborTS = new FlatForward(eval, 0.045, dc,
                 Compounding.Continuous, Frequency.Annual);
-        final Handle<YieldTermStructure> nominalEUR = new Handle<>(euriborTS);
+        final var nominalEUR = new Handle<YieldTermStructure>(euriborTS);
 
         // YoY index on EU HICP — built directly via YoYInflationIndex
         // (Java has no YYEUHICP wrapper; mirrors C++ YoYInflationIndex(make_shared<EUHICP>())
@@ -113,14 +113,13 @@ public class YoYCapFloorTermPriceSurfaceTest {
         final Date[] curveDates = dList.toArray(new Date[0]);
         final double[] curveRates = new double[rList.size()];
         for (int i = 0; i < rList.size(); i++) curveRates[i] = rList.get(i);
-        final InterpolatedYoYInflationCurve<Linear> pYTSEU =
-                new InterpolatedYoYInflationCurve<>(Linear.class, eval,
+        final var pYTSEU = new InterpolatedYoYInflationCurve<Linear>(Linear.class, eval,
                         curveDates, curveRates, Frequency.Monthly,
                         new Actual365Fixed());
         // Re-create yoyIndex with this curve (cannot relink Handle without
         // RelinkableHandle, but we need to build the index linked to the
         // curve before passing to the surface).
-        final Handle<YoYInflationTermStructure> yoyEU = new Handle<>(pYTSEU);
+        final var yoyEU = new Handle<YoYInflationTermStructure>(pYTSEU);
         final YoYInflationIndex yoyIndexEUlinked = new YoYInflationIndex(
                 "YY_EUHICP", new EURegion(), false, false, /*ratio*/ false,
                 Frequency.Monthly, new Period(3, TimeUnit.Months),

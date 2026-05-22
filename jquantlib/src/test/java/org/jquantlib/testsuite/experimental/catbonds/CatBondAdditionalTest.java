@@ -124,7 +124,7 @@ public class CatBondAdditionalTest {
                 new Date(2, Month.January, 2015),
                 new Date(2, Month.January, 2018));
 
-        final ArrayList<DateRealPair> path = new ArrayList<DateRealPair>();
+        final var path = new ArrayList<DateRealPair>();
         double sum = 0.0;
         double sumSquares = 0.0;
         double poissonSum = 0.0;
@@ -238,7 +238,7 @@ public class CatBondAdditionalTest {
         // → every simulated path has zero events →
         // DigitalNotionalRisk never triggers → notional stays at par.
         final CatRisk noCatRisk = new EventSet(
-                new ArrayList<DateRealPair>(),
+                new ArrayList<>(),
                 new Date(1, Month.January, 2000),
                 new Date(31, Month.December, 2010));
 
@@ -414,7 +414,7 @@ public class CatBondAdditionalTest {
 
         // Risk-free control: empty EventSet → no events on every path.
         final CatRisk noCatRisk = new EventSet(
-                new ArrayList<DateRealPair>(),
+                new ArrayList<>(),
                 new Date(1, Month.January, 2000),
                 new Date(31, Month.December, 2010));
 

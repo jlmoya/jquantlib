@@ -132,7 +132,7 @@ public class CrossCurrencyRateHelpersTest {
             baseOvernightIndex = new Eonia(baseCcyIdxHandle);
             quoteOvernightIndex = new Sofr(quoteCcyIdxHandle);
 
-            basisData = new ArrayList<XccyTestDatum>();
+            basisData = new ArrayList<>();
             basisData.add(new XccyTestDatum( 1, TimeUnit.Years,  -14.5));
             basisData.add(new XccyTestDatum(18, TimeUnit.Months, -18.5));
             basisData.add(new XccyTestDatum( 2, TimeUnit.Years,  -20.5));
@@ -165,7 +165,7 @@ public class CrossCurrencyRateHelpersTest {
                 final Handle<YieldTermStructure> collateralHandle,
                 final boolean isFxBaseCurrencyCollateralCurrency,
                 final boolean isBasisOnFxBaseCurrencyLeg) {
-            final List<RateHelper> out = new ArrayList<RateHelper>(data.size());
+            final List<RateHelper> out = new ArrayList<>(data.size());
             for (final XccyTestDatum d : data) {
                 out.add(constantNotionalXccyRateHelper(
                         d, collateralHandle, isFxBaseCurrencyCollateralCurrency,
@@ -204,7 +204,7 @@ public class CrossCurrencyRateHelpersTest {
                 final Frequency paymentFrequency,
                 final int paymentLag,
                 final boolean useOvernightIndex) {
-            final List<RateHelper> out = new ArrayList<RateHelper>(data.size());
+            final List<RateHelper> out = new ArrayList<>(data.size());
             for (final XccyTestDatum d : data) {
                 out.add(resettingXccyRateHelper(
                         d, collateralHandle, isFxBaseCurrencyCollateralCurrency,
@@ -453,7 +453,7 @@ public class CrossCurrencyRateHelpersTest {
         QL.info("::::: CrossCurrencyRateHelpersTest::"
                 + "testExceptionWhenInstrumentTenorShorterThanIndexFrequency :::::");
         final CommonVars vars = new CommonVars();
-        final List<XccyTestDatum> data = new ArrayList<XccyTestDatum>();
+        final List<XccyTestDatum> data = new ArrayList<>();
         data.add(new XccyTestDatum(1, TimeUnit.Months, 10.0));
         final Handle<YieldTermStructure> collateralHandle =
                 new Handle<YieldTermStructure>();
@@ -548,7 +548,7 @@ public class CrossCurrencyRateHelpersTest {
                     {20, 0.028}
             };
 
-            final List<RateHelper> helpers = new ArrayList<RateHelper>(quotes.length);
+            final List<RateHelper> helpers = new ArrayList<>(quotes.length);
             for (final double[] q : quotes) {
                 final Period tenor = new Period((int) q[0], TimeUnit.Years);
                 final Handle<Quote> qh = new Handle<Quote>(new SimpleQuote(q[1]));
@@ -608,7 +608,7 @@ public class CrossCurrencyRateHelpersTest {
                     {20, 0.028}
             };
 
-            final List<RateHelper> helpers = new ArrayList<RateHelper>(quotes.length);
+            final List<RateHelper> helpers = new ArrayList<>(quotes.length);
             for (final double[] q : quotes) {
                 final Period tenor = new Period((int) q[0], TimeUnit.Years);
                 final Handle<Quote> qh = new Handle<Quote>(new SimpleQuote(q[1]));

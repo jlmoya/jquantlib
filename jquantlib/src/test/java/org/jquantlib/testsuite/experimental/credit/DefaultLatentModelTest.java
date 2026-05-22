@@ -73,8 +73,7 @@ public class DefaultLatentModelTest {
             factorWeights.add(row);
         }
         final GaussianCopulaPolicy copula = new GaussianCopulaPolicy(factorWeights);
-        final DefaultLatentModel<GaussianCopulaPolicy> model =
-                new DefaultLatentModel<>(factorWeights, copula,
+        final var model = new DefaultLatentModel<GaussianCopulaPolicy>(factorWeights, copula,
                         LatentModel.IntegrationType.GaussianQuadrature);
         final double prob = 0.05;
         final double invY = model.inverseCumulativeY(prob, 0);
@@ -105,8 +104,7 @@ public class DefaultLatentModelTest {
         final List<List<Double>> factorWeights = new ArrayList<>();
         factorWeights.add(new ArrayList<>(Arrays.asList(0.3, 0.4)));
         final GaussianCopulaPolicy copula = new GaussianCopulaPolicy(factorWeights);
-        final DefaultLatentModel<GaussianCopulaPolicy> model =
-                new DefaultLatentModel<>(factorWeights, copula,
+        final var model = new DefaultLatentModel<GaussianCopulaPolicy>(factorWeights, copula,
                         LatentModel.IntegrationType.GaussianQuadrature);
         final double prob = 0.10;
         final double invY = model.inverseCumulativeY(prob, 0);
@@ -136,8 +134,7 @@ public class DefaultLatentModelTest {
         final List<List<Double>> factorWeights = new ArrayList<>();
         factorWeights.add(new ArrayList<>(Collections.singletonList(Math.sqrt(0.50))));
         final GaussianCopulaPolicy copula = new GaussianCopulaPolicy(factorWeights);
-        final DefaultLatentModel<GaussianCopulaPolicy> model =
-                new DefaultLatentModel<>(factorWeights, copula,
+        final var model = new DefaultLatentModel<GaussianCopulaPolicy>(factorWeights, copula,
                         LatentModel.IntegrationType.GaussianQuadrature);
         final Case c = REF.getCase("cond_def_low_prob_extreme_neg_m");
         final double prob = c.inputs().getDouble("prob");
@@ -164,8 +161,7 @@ public class DefaultLatentModelTest {
         factorWeights.add(new ArrayList<>(Collections.singletonList(0.5)));
         final List<Double> recoveries = Arrays.asList(0.40, 0.40, 0.40);
         final GaussianCopulaPolicy copula = new GaussianCopulaPolicy(factorWeights);
-        final ConstantLossLatentModel<GaussianCopulaPolicy> m =
-                new ConstantLossLatentModel<>(factorWeights, recoveries, copula,
+        final var m = new ConstantLossLatentModel<GaussianCopulaPolicy>(factorWeights, recoveries, copula,
                         LatentModel.IntegrationType.GaussianQuadrature);
         assertEquals(3, m.size());
         assertEquals(1, m.numFactors());

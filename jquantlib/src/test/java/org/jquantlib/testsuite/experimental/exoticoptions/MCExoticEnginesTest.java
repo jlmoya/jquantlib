@@ -88,7 +88,7 @@ public class MCExoticEnginesTest {
                                                     final double rho,
                                                     final DayCounter dc,
                                                     final Calendar cal) {
-        final List<StochasticProcess1D> processes = new ArrayList<StochasticProcess1D>();
+        final List<StochasticProcess1D> processes = new ArrayList<>();
         for (int i = 0; i < n; i++) {
             processes.add(makeBsm(today, 100.0, 0.05, 0.02, 0.20, dc, cal));
         }
@@ -112,7 +112,7 @@ public class MCExoticEnginesTest {
         final StochasticProcessArray array = makeArray(today, 3, 0.0, dc, cal);
 
         // 3 fixing dates over 1 year
-        final List<Date> fixings = new ArrayList<Date>();
+        final List<Date> fixings = new ArrayList<>();
         fixings.add(today.add(120));
         fixings.add(today.add(240));
         fixings.add(today.add(365));
@@ -178,7 +178,7 @@ public class MCExoticEnginesTest {
         final StochasticProcessArray array = makeArray(today, 2, 0.0, dc, cal);
 
         // 4 fixing dates over 1 year
-        final List<Date> fixings = new ArrayList<Date>();
+        final List<Date> fixings = new ArrayList<>();
         fixings.add(today.add(90));
         fixings.add(today.add(180));
         fixings.add(today.add(270));

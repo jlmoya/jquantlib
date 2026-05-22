@@ -69,7 +69,7 @@ public class LatentModelHandleQuoteTest {
         final Handle<Quote> h = quoteHandle(rho);
         final GaussianCopulaPolicy seedCopula = new GaussianCopulaPolicy(
                 singleFactorWeights(Math.sqrt(rho), 5));
-        final LatentModel<GaussianCopulaPolicy> m = new LatentModel<>(
+        final var m = new LatentModel<GaussianCopulaPolicy>(
                 h, 5, seedCopula, gaussianFactory());
 
         assertNotNull(m);
@@ -93,7 +93,7 @@ public class LatentModelHandleQuoteTest {
         final Handle<Quote> h = new Handle<Quote>(q);
         final GaussianCopulaPolicy seedCopula = new GaussianCopulaPolicy(
                 singleFactorWeights(Math.sqrt(rhoInit), 4));
-        final LatentModel<GaussianCopulaPolicy> m = new LatentModel<>(
+        final var m = new LatentModel<GaussianCopulaPolicy>(
                 h, 4, seedCopula, gaussianFactory());
 
         // Initial: idiosync = √(1 − 0.20) = √0.80 ≈ 0.8944
@@ -118,7 +118,7 @@ public class LatentModelHandleQuoteTest {
         final Handle<Quote> h = new Handle<Quote>(q);
         final GaussianCopulaPolicy seedCopula = new GaussianCopulaPolicy(
                 singleFactorWeights(Math.sqrt(0.20), 3));
-        final LatentModel<GaussianCopulaPolicy> m = new LatentModel<>(
+        final var m = new LatentModel<GaussianCopulaPolicy>(
                 h, 3, seedCopula, gaussianFactory());
 
         final AtomicInteger notifyCount = new AtomicInteger(0);
@@ -138,7 +138,7 @@ public class LatentModelHandleQuoteTest {
 
     @Test
     public void emptyHandle_rejected() {
-        final Handle<Quote> emptyHandle = new Handle<>();
+        final var emptyHandle = new Handle<Quote>();
         try {
             new LatentModel<>(emptyHandle, 3, new GaussianCopulaPolicy(),
                     gaussianFactory());
@@ -167,7 +167,7 @@ public class LatentModelHandleQuoteTest {
         final Handle<Quote> h = new Handle<Quote>(q);
         final GaussianCopulaPolicy seedCopula = new GaussianCopulaPolicy(
                 singleFactorWeights(Math.sqrt(0.25), 2));
-        final LatentModel<GaussianCopulaPolicy> m = new LatentModel<>(
+        final var m = new LatentModel<GaussianCopulaPolicy>(
                 h, 2, seedCopula, gaussianFactory());
 
         assertNotNull(m.cachedMktFactor());
@@ -178,7 +178,7 @@ public class LatentModelHandleQuoteTest {
     public void noQuoteCtor_cachedMktFactorIsNull() {
         // A LatentModel built without the Handle<Quote> ctor has no cached
         // quote — the field stays null.
-        final LatentModel<GaussianCopulaPolicy> m = new LatentModel<>(
+        final var m = new LatentModel<GaussianCopulaPolicy>(
                 singleFactorWeights(Math.sqrt(0.20), 3),
                 new GaussianCopulaPolicy(singleFactorWeights(Math.sqrt(0.20), 3)));
         assertEquals(null, m.cachedMktFactor());
