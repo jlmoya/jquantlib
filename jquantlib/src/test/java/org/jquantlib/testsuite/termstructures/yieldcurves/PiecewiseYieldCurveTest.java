@@ -2538,7 +2538,183 @@ public class PiecewiseYieldCurveTest {
 	}
 
 
- 
+	/**
+	 * Faithful port of C++ {@code test-suite/piecewiseyieldcurve.cpp:1545}
+	 * {@code BOOST_AUTO_TEST_CASE(testMultiCurveTwoPiecewiseYieldCurves)}.
+	 *
+	 * <p>Phase 1.3 closure (D5-A-MC2). Exercises the {@link MultiCurve}
+	 * coordinator with two coupled {@link PiecewiseYieldCurve}s (3M and 6M
+	 * Euribor forecast curves) bootstrapped jointly across:
+	 * <ul>
+	 *   <li>FRAs on Euribor3M</li>
+	 *   <li>{@link org.jquantlib.experimental.termstructures.IborIborBasisSwapRateHelper}
+	 *       (3M / 6M) on both curves with an exogenous discount curve.</li>
+	 *   <li>Plain swaps on Euribor6M with the same exogenous discount curve.</li>
+	 * </ul>
+	 *
+	 * <p>Verifies that, after the coupled bootstrap converges, every input
+	 * instrument re-prices to its quoted level within {@code 1e-10} tolerance.
+	 * The required {@code LazyObject.updating_} re-entry guard is already in
+	 * place (see {@code LazyObject.update()}), so observer-cycle protection
+	 * during the inner LM evaluations is exercised end-to-end by this test.
+	 */
+	@Test
+	public void testMultiCurveTwoPiecewiseYieldCurves() {
+	    QL.info("Testing multicurve bootstrap with two piecewise yield curves...");
+
+	    final Date today = new Date(23, Month.October, 2025);
+	    new Settings().setEvaluationDate(today);
+
+	    final double accuracy = 1.0e-10;
+
+	    // Settlement: 2 business days after today, on Target
+	    final Calendar target = new Target();
+	    final Date settlement = target.advance(today, 2, TimeUnit.Days);
+
+	    final Handle< YieldTermStructure > discountCurve = new Handle< YieldTermStructure >(
+	            new FlatForward(settlement, 0.02, new Actual360()));
+
+	    final RelinkableHandle< YieldTermStructure > intcurve3m = new RelinkableHandle< YieldTermStructure >();
+	    final RelinkableHandle< YieldTermStructure > intcurve6m = new RelinkableHandle< YieldTermStructure >();
+
+	    final IborIndex euribor3m = new Euribor3M(intcurve3m);
+	    final IborIndex euribor6m = new Euribor6M(intcurve6m);
+
+	    final java.util.List< RateHelper > helpers3m = new java.util.ArrayList< RateHelper >();
+	    final java.util.List< RateHelper > helpers6m = new java.util.ArrayList< RateHelper >();
+
+	    final Handle< Quote > q = new Handle< Quote >(new SimpleQuote(0.03));
+	    final Handle< Quote > b = new Handle< Quote >(new SimpleQuote(0.0020));
+
+	    for ( int i = 1; i <= 9; ++i ) {
+	        helpers3m.add(new FraRateHelper(q, i, i + 3, euribor3m.fixingDays(), euribor3m.fixingCalendar(),
+	                euribor3m.businessDayConvention(), euribor3m.endOfMonth(), euribor3m.dayCounter()));
+	    }
+	    for ( int i = 2; i <= 10; ++i ) {
+	        helpers3m.add(new org.jquantlib.experimental.termstructures.IborIborBasisSwapRateHelper(
+	                b, new Period(i, TimeUnit.Years), euribor3m.fixingDays(), euribor3m.fixingCalendar(),
+	                euribor3m.businessDayConvention(), euribor3m.endOfMonth(),
+	                euribor3m, euribor6m, discountCurve, true));
+	    }
+
+	    for ( int i = 1; i <= 3; ++i ) {
+	        helpers6m.add(new org.jquantlib.experimental.termstructures.IborIborBasisSwapRateHelper(
+	                b, new Period(i * 6, TimeUnit.Months), euribor3m.fixingDays(), euribor3m.fixingCalendar(),
+	                euribor3m.businessDayConvention(), euribor3m.endOfMonth(),
+	                euribor3m, euribor6m, discountCurve, false));
+	    }
+	    for ( int i = 2; i <= 10; ++i ) {
+	        helpers6m.add(new SwapRateHelper(q, new Period(i, TimeUnit.Years),
+	                euribor6m.fixingCalendar(), Frequency.Annual, BusinessDayConvention.Following,
+	                new Thirty360(Thirty360.Convention.BondBasis), euribor6m,
+	                new Handle< Quote >(), new Period(0, TimeUnit.Days), discountCurve));
+	    }
+
+	    final GlobalBootstrap boot3m = new GlobalBootstrap(PiecewiseYieldCurve.class, accuracy);
+	    final PiecewiseYieldCurve ptr3m = new PiecewiseYieldCurve(
+	            Discount.class, LogLinear.class, GlobalBootstrap.class,
+	            today, helpers3m.toArray(new RateHelper[0]), new Actual360(),
+	            new Handle/*<Quote>*/[0], new Date[0], accuracy, new LogLinear(), boot3m);
+
+	    final GlobalBootstrap boot6m = new GlobalBootstrap(PiecewiseYieldCurve.class, accuracy);
+	    final PiecewiseYieldCurve ptr6m = new PiecewiseYieldCurve(
+	            Discount.class, LogLinear.class, GlobalBootstrap.class,
+	            today, helpers6m.toArray(new RateHelper[0]), new Actual360(),
+	            new Handle/*<Quote>*/[0], new Date[0], accuracy, new LogLinear(), boot6m);
+
+	    final MultiCurve multiCurve = new MultiCurve(accuracy);
+	    final Handle< YieldTermStructure > curve3m = multiCurve.addBootstrappedCurve(intcurve3m, ptr3m);
+	    final Handle< YieldTermStructure > curve6m = multiCurve.addBootstrappedCurve(intcurve6m, ptr6m);
+
+	    final double tolerance = 1.0e-10;
+
+	    // Check FRA quotes
+	    for ( int i = 1; i <= 9; ++i ) {
+	        final Date start = euribor3m.fixingCalendar().advance(
+	                euribor3m.fixingCalendar().advance(today, euribor3m.fixingDays(), TimeUnit.Days),
+	                i, TimeUnit.Months, euribor3m.businessDayConvention(), euribor3m.endOfMonth());
+	        final ForwardRateAgreement fra = new ForwardRateAgreement(
+	                euribor3m, start, Position.Long, q.currentLink().value(), 1.0, curve3m);
+	        final double err = Math.abs(fra.forwardRate().rate() - q.currentLink().value());
+	        if ( err > tolerance ) {
+	            throw new RuntimeException(String.format(
+	                    "FRA #%d: forwardRate=%.16e expected=%.16e err=%.2e tol=%.2e",
+	                    i, fra.forwardRate().rate(), q.currentLink().value(), err, tolerance));
+	        }
+	    }
+
+	    // Check 3M-side basis swaps (NPV ~ 0)
+	    for ( int i = 2; i <= 10; ++i ) {
+	        final Date start = euribor3m.fixingCalendar().advance(today, euribor3m.fixingDays(), TimeUnit.Days);
+	        final Date maturity = euribor3m.fixingCalendar().advance(start, new Period(i, TimeUnit.Years),
+	                euribor3m.businessDayConvention());
+	        final Schedule baseSched = new MakeSchedule()
+	                .from(start).to(maturity).withTenor(new Period(3, TimeUnit.Months))
+	                .withCalendar(euribor3m.fixingCalendar())
+	                .withConvention(euribor3m.businessDayConvention())
+	                .endOfMonth(euribor3m.endOfMonth()).forwards().schedule();
+	        final Schedule othSched = new MakeSchedule()
+	                .from(start).to(maturity).withTenor(new Period(6, TimeUnit.Months))
+	                .withCalendar(euribor6m.fixingCalendar())
+	                .withConvention(euribor6m.businessDayConvention())
+	                .endOfMonth(euribor6m.endOfMonth()).forwards().schedule();
+	        final org.jquantlib.cashflow.Leg baseLeg = new org.jquantlib.cashflow.IborLeg(baseSched, euribor3m)
+	                .withSpreads(b.currentLink().value()).withNotionals(1.0).Leg();
+	        final org.jquantlib.cashflow.Leg othLeg = new org.jquantlib.cashflow.IborLeg(othSched, euribor6m)
+	                .withNotionals(1.0).Leg();
+	        final org.jquantlib.instruments.Swap swap = new org.jquantlib.instruments.Swap(baseLeg, othLeg);
+	        swap.setPricingEngine(new DiscountingSwapEngine(discountCurve));
+	        if ( Math.abs(swap.NPV()) > tolerance ) {
+	            throw new RuntimeException(String.format("3M basis swap #%d NPV=%.2e > tol=%.2e",
+	                    i, swap.NPV(), tolerance));
+	        }
+	    }
+
+	    // Check 6M-side short basis swaps
+	    for ( int i = 1; i <= 3; ++i ) {
+	        final Date start = euribor3m.fixingCalendar().advance(today, euribor3m.fixingDays(), TimeUnit.Days);
+	        final Date maturity = euribor3m.fixingCalendar().advance(start, new Period(i * 6, TimeUnit.Months),
+	                euribor3m.businessDayConvention());
+	        final Schedule baseSched = new MakeSchedule()
+	                .from(start).to(maturity).withTenor(new Period(3, TimeUnit.Months))
+	                .withCalendar(euribor3m.fixingCalendar())
+	                .withConvention(euribor3m.businessDayConvention())
+	                .endOfMonth(euribor3m.endOfMonth()).forwards().schedule();
+	        final Schedule othSched = new MakeSchedule()
+	                .from(start).to(maturity).withTenor(new Period(6, TimeUnit.Months))
+	                .withCalendar(euribor6m.fixingCalendar())
+	                .withConvention(euribor6m.businessDayConvention())
+	                .endOfMonth(euribor6m.endOfMonth()).forwards().schedule();
+	        final org.jquantlib.cashflow.Leg baseLeg = new org.jquantlib.cashflow.IborLeg(baseSched, euribor3m)
+	                .withSpreads(b.currentLink().value()).withNotionals(1.0).Leg();
+	        final org.jquantlib.cashflow.Leg othLeg = new org.jquantlib.cashflow.IborLeg(othSched, euribor6m)
+	                .withNotionals(1.0).Leg();
+	        final org.jquantlib.instruments.Swap swap = new org.jquantlib.instruments.Swap(baseLeg, othLeg);
+	        swap.setPricingEngine(new DiscountingSwapEngine(discountCurve));
+	        if ( Math.abs(swap.NPV()) > tolerance ) {
+	            throw new RuntimeException(String.format("6M short basis swap #%d NPV=%.2e > tol=%.2e",
+	                    i, swap.NPV(), tolerance));
+	        }
+	    }
+
+	    // Check 6M vanilla swaps
+	    for ( int i = 2; i <= 10; ++i ) {
+	        final VanillaSwap swap = new MakeVanillaSwap(new Period(i, TimeUnit.Years), euribor6m, q.currentLink().value())
+	                .withSettlementDays(euribor6m.fixingDays())
+	                .withFixedLegDayCount(new Thirty360(Thirty360.Convention.BondBasis))
+	                .withFixedLegTenor(new Period(1, TimeUnit.Years))
+	                .withFixedLegConvention(BusinessDayConvention.Following)
+	                .withFixedLegTerminationDateConvention(BusinessDayConvention.Following)
+	                .value();
+	        swap.setPricingEngine(new DiscountingSwapEngine(discountCurve));
+	        if ( Math.abs(swap.NPV()) > tolerance ) {
+	            throw new RuntimeException(String.format("6M vanilla swap %dY NPV=%.2e > tol=%.2e",
+	                    i, swap.NPV(), tolerance));
+	        }
+	    }
+	}
+
+
     /**
      * Faithful port of {@code test-suite/piecewiseyieldcurve.cpp:2094}
      * {@code BOOST_AUTO_TEST_CASE(testSwapHelpersWithOnceFrequency)}. The test is
