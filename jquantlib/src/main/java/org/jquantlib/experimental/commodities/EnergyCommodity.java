@@ -125,15 +125,17 @@ public abstract class EnergyCommodity extends Commodity {
         final Currency baseCurrency = CommoditySettings.getInstance().currency();
         try {
             for ( final Map.Entry< String, Object > entry : secondaryCosts_.entrySet() ) {
-                final Object value = entry.getValue();
-                if ( value instanceof CommodityUnitCost ) {
-                    final double v = calculateUnitCost(commodityType, (CommodityUnitCost) value, evaluationDate)
-                            * totalQuantityValue;
-                    secondaryCostAmounts_.put(entry.getKey(), new Money(baseCurrency, v));
-                } else if (value instanceof Money amount) {
-                    final double fxFactor = calculateFxConversionFactor(amount.currency(), baseCurrency,
-                            evaluationDate);
-                    secondaryCostAmounts_.put(entry.getKey(), new Money(baseCurrency, amount.value() * fxFactor));
+                switch (entry.getValue()) {
+                    case final CommodityUnitCost cuc -> {
+                        final double v = calculateUnitCost(commodityType, cuc, evaluationDate) * totalQuantityValue;
+                        secondaryCostAmounts_.put(entry.getKey(), new Money(baseCurrency, v));
+                    }
+                    case final Money amount -> {
+                        final double fxFactor = calculateFxConversionFactor(amount.currency(), baseCurrency,
+                                evaluationDate);
+                        secondaryCostAmounts_.put(entry.getKey(), new Money(baseCurrency, amount.value() * fxFactor));
+                    }
+                    default -> { /* ignore unknown entry types */ }
                 }
             }
         } catch ( final RuntimeException e ) {

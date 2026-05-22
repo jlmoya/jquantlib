@@ -87,15 +87,15 @@ public abstract class OvernightIndexedCouponPricer extends FloatingRateCouponPri
     @Override
     public void initialize(final FloatingRateCoupon coupon) {
         // C++ initialize() unwraps a CappedFlooredOvernightIndexedCoupon to its underlying.
-        if ( coupon instanceof CappedFlooredOvernightIndexedCoupon ) {
-            final OvernightIndexedCoupon underlying = ((CappedFlooredOvernightIndexedCoupon) coupon).underlying();
-            QL.require(underlying != null,
-                    "OvernightIndexedCouponPricer: CappedFlooredOvernightIndexedCoupon underlying coupon not defined");
-            coupon_ = underlying;
-        } else if ( coupon instanceof OvernightIndexedCoupon ) {
-            coupon_ = (OvernightIndexedCoupon) coupon;
-        } else {
-            QL.require(false, "OvernightIndexedCouponPricer: unsupported coupon type");
+        switch (coupon) {
+            case final CappedFlooredOvernightIndexedCoupon cf -> {
+                final OvernightIndexedCoupon underlying = cf.underlying();
+                QL.require(underlying != null,
+                        "OvernightIndexedCouponPricer: CappedFlooredOvernightIndexedCoupon underlying coupon not defined");
+                coupon_ = underlying;
+            }
+            case final OvernightIndexedCoupon oc -> coupon_ = oc;
+            default -> QL.require(false, "OvernightIndexedCouponPricer: unsupported coupon type");
         }
     }
 

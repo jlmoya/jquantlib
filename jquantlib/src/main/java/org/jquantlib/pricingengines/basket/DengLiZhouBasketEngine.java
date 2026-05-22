@@ -279,15 +279,11 @@ public class DengLiZhouBasketEngine extends BasketOption.Engine {
 
         // Accept either AverageBasketPayoff or SpreadBasketPayoff. The latter
         // is mapped to an average payoff with weights {1, -1}.
-        final AverageBasketPayoff avgPayoff;
-        if ( arguments_.payoff instanceof AverageBasketPayoff ) {
-            avgPayoff = (AverageBasketPayoff) arguments_.payoff;
-        } else if ( arguments_.payoff instanceof SpreadBasketPayoff ) {
-            avgPayoff = new AverageBasketPayoff(((SpreadBasketPayoff) arguments_.payoff).basePayoff(),
-                    new double[] { 1.0, -1.0 });
-        } else {
-            avgPayoff = null;
-        }
+        final AverageBasketPayoff avgPayoff = switch (arguments_.payoff) {
+            case final AverageBasketPayoff p -> p;
+            case final SpreadBasketPayoff sp -> new AverageBasketPayoff(sp.basePayoff(), new double[] { 1.0, -1.0 });
+            default -> null;
+        };
         QL.require(avgPayoff != null, "average or spread basket payoff expected");
 
         final double[] weights = avgPayoff.weights();

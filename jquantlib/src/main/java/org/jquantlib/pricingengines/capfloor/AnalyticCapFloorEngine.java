@@ -81,22 +81,20 @@ public class AnalyticCapFloorEngine extends CapFloor.Engine {
     public void calculate() {
         QL.require(model_ != null, "null model");
 
-        final Date referenceDate;
-        final DayCounter dayCounter;
-        if ( model_ instanceof TermStructureConsistentModel ) {
-            final Handle< YieldTermStructure > ts = ((TermStructureConsistentModel) model_).termStructure();
-            referenceDate = ts.currentLink().referenceDate();
-            dayCounter = ts.currentLink().dayCounter();
-        } else if ( model_ instanceof org.jquantlib.model.TermStructureConsistentModel ) {
-            final Handle< YieldTermStructure > ts = ((org.jquantlib.model.TermStructureConsistentModel) model_).termStructure();
-            referenceDate = ts.currentLink().referenceDate();
-            dayCounter = ts.currentLink().dayCounter();
-        } else {
-            QL.require(termStructure_ != null && !termStructure_.empty(),
-                    "no term structure given to non-TS-consistent model");
-            referenceDate = termStructure_.currentLink().referenceDate();
-            dayCounter = termStructure_.currentLink().dayCounter();
-        }
+        // Select a YieldTermStructure handle based on the concrete model type. Pattern-matching
+        // switch (JEP 441) replaces the original instanceof-chain; the default arm falls back to
+        // the engine-level termStructure_ when the model does not expose one.
+        final Handle< YieldTermStructure > yts = switch (model_) {
+            case final TermStructureConsistentModel tscm -> tscm.termStructure();
+            case final org.jquantlib.model.TermStructureConsistentModel tscm -> tscm.termStructure();
+            default -> {
+                QL.require(termStructure_ != null && !termStructure_.empty(),
+                        "no term structure given to non-TS-consistent model");
+                yield termStructure_;
+            }
+        };
+        final Date referenceDate = yts.currentLink().referenceDate();
+        final DayCounter dayCounter = yts.currentLink().dayCounter();
 
         final CapFloor.ArgumentsImpl arguments = (CapFloor.ArgumentsImpl) arguments_;
         final CapFloor.ResultsImpl results = (CapFloor.ResultsImpl) results_;
