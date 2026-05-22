@@ -71,8 +71,7 @@ public class InterpolatedZeroInflationCurveTest {
         };
         final double[] rates = new double[]{ 0.025, 0.030, 0.032, 0.034, 0.036, 0.038 };
 
-        final InterpolatedZeroInflationCurve<Linear> curve =
-                new InterpolatedZeroInflationCurve<>(Linear.class,
+        final var curve = new InterpolatedZeroInflationCurve<Linear>(Linear.class,
                         refDate, dates, rates, freq, dc);
         curve.enableExtrapolation();
 

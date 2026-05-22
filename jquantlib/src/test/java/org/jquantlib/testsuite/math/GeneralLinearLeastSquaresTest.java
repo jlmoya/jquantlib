@@ -58,14 +58,14 @@ public class GeneralLinearLeastSquaresTest {
     }
 
     private static List<Ops.DoubleOp> linearBasis() {
-        final List<Ops.DoubleOp> b = new ArrayList<Ops.DoubleOp>();
+        final List<Ops.DoubleOp> b = new ArrayList<>();
         b.add(new Ops.DoubleOp() { @Override public double op(final double x) { return 1.0; } });
         b.add(new Ops.DoubleOp() { @Override public double op(final double x) { return x; } });
         return b;
     }
 
     private static List<Ops.DoubleOp> quadBasis() {
-        final List<Ops.DoubleOp> b = new ArrayList<Ops.DoubleOp>();
+        final List<Ops.DoubleOp> b = new ArrayList<>();
         b.add(new Ops.DoubleOp() { @Override public double op(final double x) { return 1.0; } });
         b.add(new Ops.DoubleOp() { @Override public double op(final double x) { return x; } });
         b.add(new Ops.DoubleOp() { @Override public double op(final double x) { return x * x; } });
@@ -129,7 +129,7 @@ public class GeneralLinearLeastSquaresTest {
 
 
     private static List<Ops.ObjectToDouble<Array>> linear2dBasis() {
-        final List<Ops.ObjectToDouble<Array>> v = new ArrayList<Ops.ObjectToDouble<Array>>();
+        final List<Ops.ObjectToDouble<Array>> v = new ArrayList<>();
         v.add(new Ops.ObjectToDouble<Array>() { @Override public double op(final Array a) { return 1.0; } });
         v.add(new Ops.ObjectToDouble<Array>() { @Override public double op(final Array a) { return a.get(0); } });
         v.add(new Ops.ObjectToDouble<Array>() { @Override public double op(final Array a) { return a.get(1); } });
@@ -137,7 +137,7 @@ public class GeneralLinearLeastSquaresTest {
     }
 
     private static List<Ops.ObjectToDouble<Array>> quadratic2dBasis() {
-        final List<Ops.ObjectToDouble<Array>> v = new ArrayList<Ops.ObjectToDouble<Array>>();
+        final List<Ops.ObjectToDouble<Array>> v = new ArrayList<>();
         v.add(new Ops.ObjectToDouble<Array>() { @Override public double op(final Array a) { return 1.0; } });
         v.add(new Ops.ObjectToDouble<Array>() { @Override public double op(final Array a) { return a.get(0); } });
         v.add(new Ops.ObjectToDouble<Array>() { @Override public double op(final Array a) { return a.get(1); } });

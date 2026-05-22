@@ -231,7 +231,7 @@ public class MultipleResetsSwapTest {
                 new Period(3, TimeUnit.Years)
         };
 
-        final List<RateHelper> helpers = new ArrayList<RateHelper>();
+        final List<RateHelper> helpers = new ArrayList<>();
         for (final Period tenor : tenors) {
             helpers.add(new MultipleResetsSwapRateHelper(
                     0, tenor,

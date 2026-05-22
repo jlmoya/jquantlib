@@ -382,7 +382,7 @@ public class AsianOptionsAdditionalTest {
             // expiryDate - (futureFixings-1)*7 (earliest). The engine sorts internally,
             // so traversal order is immaterial for pricing.
             final int futureFixings = (int) Math.floor(day / 7.0);
-            final List<Date> fixingDates = new ArrayList<Date>(futureFixings);
+            final List<Date> fixingDates = new ArrayList<>(futureFixings);
             final Date expiryDate = today.add(day);
             for (int j = 0; j < futureFixings; j++) {
                 fixingDates.add(null);
@@ -478,7 +478,7 @@ public class AsianOptionsAdditionalTest {
         for (final int day : days) {
 
             final int futureFixings = (int) Math.floor(day / 30.0);
-            final List<Date> fixingDates = new ArrayList<Date>(futureFixings);
+            final List<Date> fixingDates = new ArrayList<>(futureFixings);
             final Date expiryDate = today.add(day);
             for (int i = 0; i < futureFixings; i++) {
                 fixingDates.add(null);
@@ -562,7 +562,7 @@ public class AsianOptionsAdditionalTest {
         final Date exerciseDate = today.add(360);
         final Exercise exercise = new EuropeanExercise(exerciseDate);
 
-        final List<Date> fixingDates = new ArrayList<Date>(futureFixings);
+        final List<Date> fixingDates = new ArrayList<>(futureFixings);
         final int dt = (int) Math.round(360.0 / futureFixings);
         Date last = today.add(dt);
         fixingDates.add(last);
@@ -644,7 +644,7 @@ public class AsianOptionsAdditionalTest {
         final Date exerciseDate = today.add(360);
         final Exercise exercise = new EuropeanExercise(exerciseDate);
 
-        final java.util.List<Date> fixingDates = new ArrayList<Date>(futureFixings);
+        final java.util.List<Date> fixingDates = new ArrayList<>(futureFixings);
         final int dt = (int) Math.round(360.0 / futureFixings);
         Date last = today.add(dt);
         fixingDates.add(last);
@@ -731,7 +731,7 @@ public class AsianOptionsAdditionalTest {
         final int pastFixings = 0;
 
         final int futureFixings = (int) Math.floor(day / 7.0);
-        final java.util.List<Date> fixingDates = new ArrayList<Date>(futureFixings);
+        final java.util.List<Date> fixingDates = new ArrayList<>(futureFixings);
         final Date expiryDate = today.add(day);
         for (int j = 0; j < futureFixings; j++) {
             fixingDates.add(null);
@@ -832,7 +832,7 @@ public class AsianOptionsAdditionalTest {
                             .withControlVariate(true)
                             .value();
 
-            final java.util.List<Date> fixingList = new ArrayList<Date>(fixings);
+            final java.util.List<Date> fixingList = new ArrayList<>(fixings);
             for (final Date d : fixingDatesArr) {
                 fixingList.add(d);
             }
@@ -918,7 +918,7 @@ public class AsianOptionsAdditionalTest {
                         .withSamples(4095)
                         .value();
 
-        final java.util.List<Date> fixingList = new ArrayList<Date>(fixings);
+        final java.util.List<Date> fixingList = new ArrayList<>(fixings);
         for (final Date d : fixingDatesArr) {
             fixingList.add(d);
         }
@@ -1014,7 +1014,7 @@ public class AsianOptionsAdditionalTest {
                             .withSeed(3456789L)
                             .value();
 
-            final java.util.List<Date> fixingList = new ArrayList<Date>(fixings);
+            final java.util.List<Date> fixingList = new ArrayList<>(fixings);
             for (final Date d : fixingDatesArr) {
                 fixingList.add(d);
             }
@@ -1086,7 +1086,7 @@ public class AsianOptionsAdditionalTest {
         final int pastFixings = 0;
 
         // monthly fixings for 6 months
-        final List<Date> fixingDates = new ArrayList<Date>();
+        final List<Date> fixingDates = new ArrayList<>();
         for (int i = 0; i <= 6; i++) {
             fixingDates.add(today.add(new org.jquantlib.time.Period(i,
                     org.jquantlib.time.TimeUnit.Months)));
@@ -1168,7 +1168,7 @@ public class AsianOptionsAdditionalTest {
 
         // C++ option1: pastFixings=0, runningSum=0, future fixings = today + i*Months, i=0..12.
         // Note: C++ allows fixingDate == today (i=0), which is treated as a future fixing.
-        final List<Date> futureFixings1 = new ArrayList<Date>();
+        final List<Date> futureFixings1 = new ArrayList<>();
         for (int i = 0; i <= 12; i++) {
             futureFixings1.add(today.add(new org.jquantlib.time.Period(i,
                     org.jquantlib.time.TimeUnit.Months)));
@@ -1183,7 +1183,7 @@ public class AsianOptionsAdditionalTest {
         // traditional interface we pass only future dates.
         pastFixings = 2;
         runningSum = pastFixings * spotQ.value() * 0.8;
-        final List<Date> futureFixings2 = new ArrayList<Date>(futureFixings1);
+        final List<Date> futureFixings2 = new ArrayList<>(futureFixings1);
         final DiscreteAveragingAsianOption option2 = new DiscreteAveragingAsianOption(
                 AverageType.Arithmetic, runningSum, pastFixings, futureFixings2, payoff, exercise);
 
@@ -1297,7 +1297,7 @@ public class AsianOptionsAdditionalTest {
         final Date futureB = today.add(new org.jquantlib.time.Period(6,
                 org.jquantlib.time.TimeUnit.Weeks));
 
-        final List<Date> futureFixingDates = new ArrayList<Date>();
+        final List<Date> futureFixingDates = new ArrayList<>();
         futureFixingDates.add(futureA);
         futureFixingDates.add(futureB);
 
@@ -1468,7 +1468,7 @@ public class AsianOptionsAdditionalTest {
                     org.jquantlib.time.TimeUnit.Weeks));
             final Date startDate = exerciseDate.sub(new org.jquantlib.time.Period(1,
                     org.jquantlib.time.TimeUnit.Years));
-            final List<Date> fixingDates = new ArrayList<Date>(12);
+            final List<Date> fixingDates = new ArrayList<>(12);
             for (int i = 0; i < 12; i++) {
                 fixingDates.add(startDate.add(new org.jquantlib.time.Period(i,
                         org.jquantlib.time.TimeUnit.Months)));
@@ -1636,7 +1636,7 @@ public class AsianOptionsAdditionalTest {
 
             final PricingEngine engine = new TurnbullWakemanAsianEngine(stochProcess);
 
-            final List<Date> fixingList = new ArrayList<Date>(l.fixings);
+            final List<Date> fixingList = new ArrayList<>(l.fixings);
             for (final Date d : fixingDates) {
                 fixingList.add(d);
             }
@@ -1942,7 +1942,7 @@ public class AsianOptionsAdditionalTest {
         final Date maturity = today.add(new org.jquantlib.time.Period(
                 13, org.jquantlib.time.TimeUnit.Months));
 
-        final List<Date> fixingDates = new ArrayList<Date>();
+        final List<Date> fixingDates = new ArrayList<>();
         Date next = today.add(new org.jquantlib.time.Period(
                 1, org.jquantlib.time.TimeUnit.Months));
         final Date stopBefore = maturity.sub(new org.jquantlib.time.Period(
@@ -2042,7 +2042,7 @@ public class AsianOptionsAdditionalTest {
 
         // --- Case 1: futureFixings == 1 (today + 3 weeks; today fixing pushed to past) ---
         {
-            final List<Date> fixingDates = new ArrayList<Date>();
+            final List<Date> fixingDates = new ArrayList<>();
             fixingDates.add(today);
             fixingDates.add(today.add(new org.jquantlib.time.Period(
                     3, org.jquantlib.time.TimeUnit.Weeks)));
@@ -2084,7 +2084,7 @@ public class AsianOptionsAdditionalTest {
 
         // --- Case 2: only "today" in fixing dates (pushed to past, futureFixings=0) ---
         {
-            final List<Date> fixingDates = new ArrayList<Date>();
+            final List<Date> fixingDates = new ArrayList<>();
             fixingDates.add(today);
 
             final DiscreteAveragingAsianOption asianOption = new DiscreteAveragingAsianOption(
@@ -2109,7 +2109,7 @@ public class AsianOptionsAdditionalTest {
 
         // --- Case 3: empty fixing dates (pure intrinsic on past-only average) ---
         {
-            final List<Date> fixingDates = new ArrayList<Date>();
+            final List<Date> fixingDates = new ArrayList<>();
             final DiscreteAveragingAsianOption asianOption = new DiscreteAveragingAsianOption(
                     AverageType.Arithmetic, runningAccumulator, pastFixingsCount,
                     fixingDates, payoff, exercise);

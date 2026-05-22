@@ -79,7 +79,7 @@ public class GsrTest {
         new Settings().setEvaluationDate(EVAL_DATE);
         final Handle<YieldTermStructure> yts = new Handle<YieldTermStructure>(
                 new FlatForward(EVAL_DATE, 0.03, new Actual360()));
-        final List<Date> volStepDates = new ArrayList<Date>();
+        final List<Date> volStepDates = new ArrayList<>();
         volStepDates.add(EVAL_DATE.add(new Period(1, TimeUnit.Years)));
         volStepDates.add(EVAL_DATE.add(new Period(2, TimeUnit.Years)));
         final double[] vols = new double[]{0.01, 0.012, 0.015};
@@ -91,7 +91,7 @@ public class GsrTest {
         new Settings().setEvaluationDate(EVAL_DATE);
         final Handle<YieldTermStructure> yts = new Handle<YieldTermStructure>(
                 new FlatForward(EVAL_DATE, 0.03, new Actual360()));
-        final List<Date> volStepDates = new ArrayList<Date>();
+        final List<Date> volStepDates = new ArrayList<>();
         volStepDates.add(EVAL_DATE.add(new Period(1, TimeUnit.Years)));
         volStepDates.add(EVAL_DATE.add(new Period(2, TimeUnit.Years)));
         final double[] vols = new double[]{0.01, 0.012, 0.015};
@@ -104,7 +104,7 @@ public class GsrTest {
         new Settings().setEvaluationDate(EVAL_DATE);
         final Handle<YieldTermStructure> yts = new Handle<YieldTermStructure>(
                 new FlatForward(EVAL_DATE, 0.03, new Actual360()));
-        final List<Date> volStepDates = new ArrayList<Date>();
+        final List<Date> volStepDates = new ArrayList<>();
         volStepDates.add(EVAL_DATE.add(new Period(1, TimeUnit.Years)));
         volStepDates.add(EVAL_DATE.add(new Period(2, TimeUnit.Years)));
         final double[] vols = new double[]{0.01, 0.012, 0.015};
@@ -125,7 +125,7 @@ public class GsrTest {
         final Gsr gsrTset = buildT30Gsr();
         gsrTset.numeraireTime(45.0);
 
-        final List<String> failures = new ArrayList<String>();
+        final List<String> failures = new ArrayList<>();
 
         for (final String name : ref.caseNames()) {
             final ReferenceReader.Case c = ref.getCase(name);
@@ -246,11 +246,11 @@ public class GsrTest {
         final Handle<YieldTermStructure> yts0 = new Handle<YieldTermStructure>(
                 new FlatForward(0, new Target(), 0.00, new Actual365Fixed()));
 
-        final List<Date> stepDates0 = new ArrayList<Date>();
+        final List<Date> stepDates0 = new ArrayList<>();
         final double[] vols0 = { modelvol };
         final double[] reversions0 = { reversion };
 
-        final List<Date> stepDates1 = new ArrayList<Date>();
+        final List<Date> stepDates1 = new ArrayList<>();
         for (int i = 1; i < 60; ++i) {
             stepDates1.add(refDate.add(new Period(i * 6, TimeUnit.Months)));
         }
@@ -336,11 +336,11 @@ public class GsrTest {
         final double modelvol = 0.01;
         final double reversion = 0.01;
 
-        final List<Date> stepDates = new ArrayList<Date>();
+        final List<Date> stepDates = new ArrayList<>();
         final double[] vols = { modelvol };
         final double[] reversions = { reversion };
 
-        final List<Date> stepDates1 = new ArrayList<Date>();
+        final List<Date> stepDates1 = new ArrayList<>();
         for (int i = 1; i < 60; ++i) {
             stepDates1.add(refDate.add(new Period(i * 6, TimeUnit.Months)));
         }
@@ -505,7 +505,7 @@ public class GsrTest {
         final double modelvol = 0.01;
         final double reversion = 0.01;
 
-        final List<Date> stepDates = new ArrayList<Date>();
+        final List<Date> stepDates = new ArrayList<>();
         final double[] vols = { modelvol };
         final double[] reversions = { reversion };
 

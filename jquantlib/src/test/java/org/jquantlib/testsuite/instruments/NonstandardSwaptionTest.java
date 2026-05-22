@@ -83,7 +83,7 @@ public class NonstandardSwaptionTest {
         final Euribor3M idx = new Euribor3M(ts);
 
         final ReferenceReader reader = ReferenceReader.load("instruments/nonstandard_swaption");
-        final List<String> failures  = new ArrayList<String>();
+        final List<String> failures  = new ArrayList<>();
 
         // ── Case 1: receiver_physical_otc_1y5y ───────────────────────────────
         {

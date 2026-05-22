@@ -242,7 +242,7 @@ public class CapFlooredCouponTest {
         }
 
         private static List<Double> toList(final double v) {
-            return new ArrayList<Double>(Arrays.asList(Double.valueOf(v)));
+            return new ArrayList<>(Arrays.asList(Double.valueOf(v)));
         }
     }
 

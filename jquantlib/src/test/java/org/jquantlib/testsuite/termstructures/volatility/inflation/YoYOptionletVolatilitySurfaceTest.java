@@ -115,8 +115,7 @@ public class YoYOptionletVolatilitySurfaceTest {
         final double minStrike = -0.10;
         final double maxStrike = 0.50;
 
-        final InterpolatedYoYOptionletVolatilityCurve<Linear> curve =
-                new InterpolatedYoYOptionletVolatilityCurve<>(
+        final var curve = new InterpolatedYoYOptionletVolatilityCurve<Linear>(
                         Linear.class, settlementDays, cal, bdc, dc,
                         observationLag, freq, /*indexIsInterpolated*/ true,
                         dates, vols, minStrike, maxStrike);

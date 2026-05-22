@@ -163,7 +163,7 @@ public class CapFloorTest {
         CapFloor makeCapFloor(final CapFloor.Type type, final Leg leg,
                               final double strike, final double volatility,
                               final boolean isLogNormal) {
-            final List<Double> strikes = new ArrayList<Double>(
+            final List<Double> strikes = new ArrayList<>(
                     Arrays.asList(Double.valueOf(strike)));
             final CapFloor cf;
             switch (type) {
@@ -226,7 +226,7 @@ public class CapFloorTest {
                         // results map (C++ uses Instrument::result<T>; Java's
                         // CapFloor.result(key) accessor is deferred to a
                         // follow-up — see Phase 5e.5b-CFC-d-49 commit).
-                        final List<Double> strikeList = new ArrayList<Double>(
+                        final List<Double> strikeList = new ArrayList<>(
                                 Arrays.asList(Double.valueOf(strike)));
                         final CapFloor capFloor = new CapFloor(type, leg,
                                 strikeList, vars.termStructure, null);
@@ -358,9 +358,9 @@ public class CapFloorTest {
                                 CapFloor.Type.Floor, leg, floorRate, vol);
 
                         // Build Collar via the explicit cap+floor strikes ctor.
-                        final List<Double> capStrikes = new ArrayList<Double>(
+                        final List<Double> capStrikes = new ArrayList<>(
                                 Arrays.asList(Double.valueOf(capRate)));
-                        final List<Double> floorStrikes = new ArrayList<Double>(
+                        final List<Double> floorStrikes = new ArrayList<>(
                                 Arrays.asList(Double.valueOf(floorRate)));
                         final CapFloor collar = new CapFloor(
                                 CapFloor.Type.Collar, leg,
@@ -684,11 +684,11 @@ public class CapFloorTest {
             // ActualActual.ISDA for the structural tests, which would
             // otherwise yield a slightly different blackVariance(fixingDate)
             // and break the cached-value comparison.
-            final List<Double> capStrikes = new ArrayList<Double>(
+            final List<Double> capStrikes = new ArrayList<>(
                     Arrays.asList(Double.valueOf(0.07)));
             final CapFloor cap = new CapFloor(CapFloor.Type.Cap, leg,
                     capStrikes, vars.termStructure, null);
-            final List<Double> floorStrikes = new ArrayList<Double>(
+            final List<Double> floorStrikes = new ArrayList<>(
                     Arrays.asList(Double.valueOf(0.03)));
             final CapFloor floor = new CapFloor(CapFloor.Type.Floor, leg,
                     floorStrikes, vars.termStructure, null);

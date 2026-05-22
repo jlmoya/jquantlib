@@ -106,7 +106,7 @@ public class AnalyticCapFloorEngineTest {
         final double capStrike = in.getDouble("cap_strike");
         final CapFloor cap = new CapFloor(
                 CapFloor.Type.Cap, floatingLeg,
-                new ArrayList<Double>(Arrays.asList(Double.valueOf(capStrike))),
+                new ArrayList<>(Arrays.asList(Double.valueOf(capStrike))),
                 ts, null);
 
         final double hwA = in.getDouble("hw_a");

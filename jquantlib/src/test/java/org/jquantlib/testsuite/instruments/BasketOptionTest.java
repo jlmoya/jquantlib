@@ -679,7 +679,7 @@ public class BasketOptionTest {
                 new Handle<Quote>(spot3), new Handle<YieldTermStructure>(qTS),
                 new Handle<YieldTermStructure>(rTS), new Handle<BlackVolTermStructure>(volTS3));
 
-        final List<StochasticProcess1D> procs = new ArrayList<StochasticProcess1D>();
+        final List<StochasticProcess1D> procs = new ArrayList<>();
         procs.add(p1);
         procs.add(p2);
         procs.add(p3);
@@ -770,7 +770,7 @@ public class BasketOptionTest {
                 new Handle<YieldTermStructure>(rTS),
                 new Handle<BlackVolTermStructure>(volTS1));
 
-        final List<StochasticProcess1D> procs = new ArrayList<StochasticProcess1D>();
+        final List<StochasticProcess1D> procs = new ArrayList<>();
         procs.add(stochProcess1);
 
         final Matrix correlation = new Matrix(1, 1);
@@ -864,7 +864,7 @@ public class BasketOptionTest {
                 new Handle<YieldTermStructure>(rTS),
                 new Handle<BlackVolTermStructure>(volTS1));
 
-        final List<StochasticProcess1D> procs = new ArrayList<StochasticProcess1D>();
+        final List<StochasticProcess1D> procs = new ArrayList<>();
         procs.add(stochProcess1);
 
         final Matrix correlation = new Matrix(1, 1);
@@ -999,7 +999,7 @@ public class BasketOptionTest {
         final YieldTermStructure rTS = Utilities.flatRate(today, rQuote, dc);
 
         final List<GeneralizedBlackScholesProcess> processes =
-                new ArrayList<GeneralizedBlackScholesProcess>(4);
+                new ArrayList<>(4);
         // Strong references to keep observers from being GC'd.
         final SimpleQuote[] spots = new SimpleQuote[4];
         final SimpleQuote[] qQuotes = new SimpleQuote[4];
@@ -1084,7 +1084,7 @@ public class BasketOptionTest {
         final YieldTermStructure rTS = Utilities.flatRate(today, rQuote, dc);
 
         final List<GeneralizedBlackScholesProcess> processes =
-                new ArrayList<GeneralizedBlackScholesProcess>(4);
+                new ArrayList<>(4);
         // Strong references to keep observers from being GC'd.
         final SimpleQuote[] spots = new SimpleQuote[4];
         final SimpleQuote[] qQuotes = new SimpleQuote[4];
@@ -2246,7 +2246,7 @@ public class BasketOptionTest {
                     new Handle<YieldTermStructure>(rTS),
                     new Handle<BlackVolTermStructure>(volTS3));
 
-            final List<StochasticProcess1D> procs = new ArrayList<StochasticProcess1D>();
+            final List<StochasticProcess1D> procs = new ArrayList<>();
             procs.add(p1);
             procs.add(p2);
             procs.add(p3);
@@ -2729,10 +2729,10 @@ public class BasketOptionTest {
         final double relTol = 40.0;
 
         for (final BenchEngine engine : engines) {
-            final List<Double> diffs = new ArrayList<Double>();
+            final List<Double> diffs = new ArrayList<>();
 
             for (final Benchmark b : benchmarks) {
-                final List<Double> calculated = new ArrayList<Double>();
+                final List<Double> calculated = new ArrayList<>();
                 final int n = b.underlyings.length;
 
                 final SimpleQuote rQuote = new SimpleQuote(b.r);
@@ -2745,7 +2745,7 @@ public class BasketOptionTest {
                 final YieldTermStructure[] qTSs = new YieldTermStructure[n];
                 final BlackVolTermStructure[] volTSs = new BlackVolTermStructure[n];
                 final List<GeneralizedBlackScholesProcess> processes =
-                        new ArrayList<GeneralizedBlackScholesProcess>(n);
+                        new ArrayList<>(n);
                 for (int i = 0; i < n; ++i) {
                     spots[i] = new SimpleQuote(b.underlyings[i]);
                     qQuotes[i] = new SimpleQuote(b.q[i]);

@@ -118,7 +118,7 @@ public class ShortRateModelsTest {
 
         final PricingEngine engine = new JamshidianSwaptionEngine(model, termStructure);
 
-        final List<CalibrationHelper> swaptions = new ArrayList<CalibrationHelper>();
+        final List<CalibrationHelper> swaptions = new ArrayList<>();
         for (final CalibrationData d : CAL_DATA) {
             final Handle<Quote> vol = new Handle<Quote>(new SimpleQuote(d.volatility));
             final BlackCalibrationHelper helper = new SwaptionHelper(
@@ -185,7 +185,7 @@ public class ShortRateModelsTest {
 
         final PricingEngine engine = new JamshidianSwaptionEngine(model, termStructure);
 
-        final List<CalibrationHelper> swaptions = new ArrayList<CalibrationHelper>();
+        final List<CalibrationHelper> swaptions = new ArrayList<>();
         for (final CalibrationData d : CAL_DATA) {
             final Handle<Quote> vol = new Handle<Quote>(new SimpleQuote(d.volatility));
             final BlackCalibrationHelper helper = new SwaptionHelper(
@@ -251,7 +251,7 @@ public class ShortRateModelsTest {
 
         final PricingEngine engine = new JamshidianSwaptionEngine(model, termStructure);
 
-        final List<CalibrationHelper> swaptions = new ArrayList<CalibrationHelper>();
+        final List<CalibrationHelper> swaptions = new ArrayList<>();
         for (final CalibrationData d : CAL_DATA) {
             final Handle<Quote> vol = new Handle<Quote>(new SimpleQuote(d.volatility));
             final BlackCalibrationHelper helper = new SwaptionHelper(

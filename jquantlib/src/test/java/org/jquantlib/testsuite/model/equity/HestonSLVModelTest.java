@@ -244,7 +244,7 @@ public class HestonSLVModelTest {
             v[i] = rnd.stationary_invcdf(qMin + i * dq);
         }
 
-        final List<Fdm1dMesher> ms = new ArrayList<Fdm1dMesher>(1);
+        final List<Fdm1dMesher> ms = new ArrayList<>(1);
         ms.add(new Predefined1dMesher(v));
         return new FdmMesherComposite(ms);
     }
@@ -402,7 +402,7 @@ public class HestonSLVModelTest {
                 /*localVolProbEps*/ 1.0e-6,
                 /*maxIter*/ 10000);
 
-        final List<double[]> strikes = new ArrayList<double[]>(timeGrid.size() - 1);
+        final List<double[]> strikes = new ArrayList<>(timeGrid.size() - 1);
         for (int i = 1; i < timeGrid.size(); ++i) {
             final double t = timeGrid.at(i);
             final Fdm1dMesher fdm1dMesher = localVolRND.mesher(t);
@@ -595,7 +595,7 @@ public class HestonSLVModelTest {
         final double upperBound = theta + 6.0 * vol;
         final double lowerBound = Math.max(0.0002, theta - 6.0 * vol);
 
-        final List<Fdm1dMesher> ms = new ArrayList<Fdm1dMesher>(1);
+        final List<Fdm1dMesher> ms = new ArrayList<>(1);
         ms.add(new Uniform1dMesher(lowerBound, upperBound, xGrid));
         final FdmMesher mesher = new FdmMesherComposite(ms);
 
@@ -797,7 +797,7 @@ public class HestonSLVModelTest {
                 new SquareRootProcessRNDCalculator(v0, kappa, theta, sigma);
         final double vUpperBound = rnd.stationary_invcdf(0.9995);
         final double vLowerBound = rnd.stationary_invcdf(1e-5);
-        final List<CPointSpec> vCPoints = new ArrayList<CPointSpec>();
+        final List<CPointSpec> vCPoints = new ArrayList<>();
         vCPoints.add(new CPointSpec(vLowerBound, 0.0001, false));
         vCPoints.add(new CPointSpec(v0,          0.1,    true));
         final Fdm1dMesher varianceMesher =
@@ -810,7 +810,7 @@ public class HestonSLVModelTest {
         final Fdm1dMesher spotMesher = new Concentrating1dMesher(
                 sLowerBound, sUpperBound, xGrid, x0, 0.1, true);
 
-        final List<Fdm1dMesher> ms = new ArrayList<Fdm1dMesher>(2);
+        final List<Fdm1dMesher> ms = new ArrayList<>(2);
         ms.add(spotMesher);
         ms.add(varianceMesher);
         final FdmMesherComposite mesher = new FdmMesherComposite(ms);
@@ -950,7 +950,7 @@ public class HestonSLVModelTest {
         final double lowerBound = rnd.stationary_invcdf(0.01);
 
         final double beta = 10.0;
-        final List<CPointSpec> vCPoints = new ArrayList<CPointSpec>();
+        final List<CPointSpec> vCPoints = new ArrayList<>();
         vCPoints.add(new CPointSpec(lowerBound, beta,       true));
         vCPoints.add(new CPointSpec(v0,         beta / 100, true));
         vCPoints.add(new CPointSpec(upperBound, beta,       true));
@@ -960,7 +960,7 @@ public class HestonSLVModelTest {
         final Fdm1dMesher equityMesher = new Concentrating1dMesher(
                 Math.log(2.0), Math.log(600.0), xGrid, x0 + 0.005, 0.1, true);
 
-        final List<Fdm1dMesher> ms = new ArrayList<Fdm1dMesher>(2);
+        final List<Fdm1dMesher> ms = new ArrayList<>(2);
         ms.add(equityMesher);
         ms.add(varianceMesher);
         final FdmMesherComposite mesher = new FdmMesherComposite(ms);
@@ -1016,7 +1016,7 @@ public class HestonSLVModelTest {
         final Matrix m = createLocalVolMatrixFromProcess(
                 lvProcess, denseStrikes, smoothSurface.dates, times);
 
-        final List<Date> datesList = new ArrayList<Date>(smoothSurface.dates.length);
+        final List<Date> datesList = new ArrayList<>(smoothSurface.dates.length);
         for (final Date d : smoothSurface.dates) {
             datesList.add(d);
         }
@@ -1475,7 +1475,7 @@ public class HestonSLVModelTest {
             final double vMin = rnd.stationary_invcdf(eps);
             final double vMax = rnd.stationary_invcdf(1.0 - eps);
 
-            final List<Fdm1dMesher> ms1 = new ArrayList<Fdm1dMesher>(1);
+            final List<Fdm1dMesher> ms1 = new ArrayList<>(1);
             ms1.add(new Uniform1dMesher(vMin, vMax, vGrid));
             final FdmMesher mesher = new FdmMesherComposite(ms1);
 
@@ -1581,7 +1581,7 @@ public class HestonSLVModelTest {
             final double expected = 1.0 - eps - lowEps;
             final double vMax = rnd.stationary_invcdf(1.0 - eps);
 
-            final List<Fdm1dMesher> ms = new ArrayList<Fdm1dMesher>(1);
+            final List<Fdm1dMesher> ms = new ArrayList<>(1);
             ms.add(new Uniform1dMesher(Math.log(vMin), Math.log(vMax), vGrid));
             final FdmMesherComposite mesher = new FdmMesherComposite(ms);
 
@@ -1856,7 +1856,7 @@ public class HestonSLVModelTest {
                 /*timeStepsPerYear*/ 91,
                 /*nBins*/ xGrid,
                 /*calibrationPaths*/ nSim,
-                /*mandatoryDates*/ new ArrayList<Date>(),
+                /*mandatoryDates*/ new ArrayList<>(),
                 /*mixingFactor*/ 1.0).leverageFunction();
 
         // Reference: flat-vol BS prices (vol=0.3, same surface fed to
@@ -2526,7 +2526,7 @@ public class HestonSLVModelTest {
                                 Utilities.flatVol(todaysDate, implVol, dc))));
 
         // Weekly Fokker-Planck time grid up to maturity.
-        final List<Double> expiriesList = new ArrayList<Double>();
+        final List<Double> expiriesList = new ArrayList<>();
         final Period timeStepPeriod = new Period(1, TimeUnit.Weeks);
         Date expiryDate = todaysDate.add(timeStepPeriod);
         while (expiryDate.le(maturityDate)) {
@@ -2567,7 +2567,7 @@ public class HestonSLVModelTest {
                 /*timeStepsPerYear*/ 182,
                 /*nBins*/ xGrid,
                 /*calibrationPaths*/ nSim,
-                /*mandatoryDates*/ new ArrayList<Date>(),
+                /*mandatoryDates*/ new ArrayList<>(),
                 /*mixingFactor*/ 1.0).leverageFunction();
 
         // FD Heston SLV double-barrier engine: tGrid=51, xGrid=101, vGrid=31.

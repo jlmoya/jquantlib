@@ -46,12 +46,12 @@ public class BSMRNDCalculatorTest {
         final DayCounter dc   = new Actual365Fixed();
         final Date today      = new Date(15, Month.January, 2026);
 
-        final Handle<Quote> spot = new Handle<>(new SimpleQuote(100.0));
-        final Handle<YieldTermStructure> rTS = new Handle<>(
+        final var spot = new Handle<Quote>(new SimpleQuote(100.0));
+        final var rTS = new Handle<YieldTermStructure>(
                 new FlatForward(today, new Handle<Quote>(new SimpleQuote(0.05)), dc));
-        final Handle<YieldTermStructure> qTS = new Handle<>(
+        final var qTS = new Handle<YieldTermStructure>(
                 new FlatForward(today, new Handle<Quote>(new SimpleQuote(0.02)), dc));
-        final Handle<BlackVolTermStructure> volTS = new Handle<>(
+        final var volTS = new Handle<BlackVolTermStructure>(
                 new BlackConstantVol(today, new NullCalendar(),
                         new Handle<Quote>(new SimpleQuote(0.20)), dc));
 

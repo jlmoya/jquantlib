@@ -110,8 +110,8 @@ public class SwaptionVolatilityMatrixTest {
                 new ArrayList<List<Handle<? extends Quote>>>(3);
         for (int i = 0; i < 3; ++i) {
             final List<Handle<? extends Quote>> row =
-                    new ArrayList<Handle<? extends Quote>>(3);
-            final List<SimpleQuote> qrow = new ArrayList<SimpleQuote>(3);
+                    new ArrayList<>(3);
+            final List<SimpleQuote> qrow = new ArrayList<>(3);
             for (int j = 0; j < 3; ++j) {
                 final SimpleQuote q = new SimpleQuote(VOLS[i][j]);
                 row.add(new Handle<Quote>(q));
@@ -147,13 +147,13 @@ public class SwaptionVolatilityMatrixTest {
                 DC, false, VolatilityType.ShiftedLognormal, null));
 
         // (3) fixed refdate, handle vols
-        final List<List<SimpleQuote>> qs3 = new ArrayList<List<SimpleQuote>>();
+        final List<List<SimpleQuote>> qs3 = new ArrayList<>();
         assertCoherence(new SwaptionVolatilityMatrix(
                 REF_DATE, CAL, BDC, OPTION_TENORS, SWAP_TENORS,
                 volsHandles(qs3), DC, false, VolatilityType.ShiftedLognormal, null));
 
         // (4) floating refdate, handle vols
-        final List<List<SimpleQuote>> qs4 = new ArrayList<List<SimpleQuote>>();
+        final List<List<SimpleQuote>> qs4 = new ArrayList<>();
         assertCoherence(new SwaptionVolatilityMatrix(
                 CAL, BDC, OPTION_TENORS, SWAP_TENORS,
                 volsHandles(qs4), DC, false, VolatilityType.ShiftedLognormal, null));
@@ -224,7 +224,7 @@ public class SwaptionVolatilityMatrixTest {
     public void testSwaptionVolMatrixObservability() {
         // (a) fixed refdate, handle vols — change SimpleQuote underlying handle.
         {
-            final List<List<SimpleQuote>> quotes = new ArrayList<List<SimpleQuote>>();
+            final List<List<SimpleQuote>> quotes = new ArrayList<>();
             final SwaptionVolatilityMatrix vol = new SwaptionVolatilityMatrix(
                     REF_DATE, CAL, BDC, OPTION_TENORS, SWAP_TENORS,
                     volsHandles(quotes), DC, false,
@@ -251,7 +251,7 @@ public class SwaptionVolatilityMatrixTest {
 
         // (b) floating refdate, handle vols — same propagation contract.
         {
-            final List<List<SimpleQuote>> quotes = new ArrayList<List<SimpleQuote>>();
+            final List<List<SimpleQuote>> quotes = new ArrayList<>();
             final SwaptionVolatilityMatrix vol = new SwaptionVolatilityMatrix(
                     CAL, BDC, OPTION_TENORS, SWAP_TENORS,
                     volsHandles(quotes), DC, false,

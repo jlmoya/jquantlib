@@ -229,7 +229,7 @@ public class CPICapFloorTest {
             final List<ZeroCouponInflationSwapHelper> helpers = new ArrayList<>();
             for (final Datum d : zciisData) {
                 final Quote q = new SimpleQuote(d.rate / 100.0);
-                final Handle<Quote> qh = new Handle<>(q);
+                final var qh = new Handle<Quote>(q);
                 helpers.add(new ZeroCouponInflationSwapHelper(
                         qh, observationLag, d.date, calendar,
                         convention, dcZCIIS, ii, CPI.InterpolationType.AsIndex));
@@ -324,8 +324,7 @@ public class CPICapFloorTest {
         final CommonVars common = new CommonVars();
 
         final double nominal = 1.0;
-        final InterpolatedCPICapFloorTermPriceSurface<Bilinear> cpiSurf =
-                new InterpolatedCPICapFloorTermPriceSurface<>(
+        final var cpiSurf = new InterpolatedCPICapFloorTermPriceSurface<Bilinear>(
                         Bilinear.class,
                         nominal,
                         common.baseZeroRate,
@@ -442,8 +441,7 @@ public class CPICapFloorTest {
                 common.observationLag,
                 observationInterpolation);
 
-        final Handle<CPICapFloorTermPriceSurface> cpiCFsurfUKh =
-                new Handle<>(cpiCFpriceSurf);
+        final var cpiCFsurfUKh = new Handle<CPICapFloorTermPriceSurface>(cpiCFpriceSurf);
         final PricingEngine engine = new InterpolatingCPICapFloorEngine(cpiCFsurfUKh);
 
         aCap.setPricingEngine(engine);

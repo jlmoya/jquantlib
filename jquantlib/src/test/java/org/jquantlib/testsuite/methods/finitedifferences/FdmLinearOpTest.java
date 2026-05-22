@@ -61,7 +61,7 @@ public class FdmLinearOpTest {
     // -------------------------------------------------------------------------
     private static FdmMesherComposite uniformMesher(final int[] dim,
                                                     final double[][] boundaries) {
-        final List<Fdm1dMesher> ms = new ArrayList<Fdm1dMesher>(dim.length);
+        final List<Fdm1dMesher> ms = new ArrayList<>(dim.length);
         for (int d = 0; d < dim.length; ++d) {
             ms.add(new Uniform1dMesher(boundaries[d][0], boundaries[d][1], dim[d]));
         }
@@ -654,8 +654,8 @@ public class FdmLinearOpTest {
 
         // Reshape to (log-spot, variance) interpolation grid.
         // Collect tx (log-spot grid, dim 0, size 200) and ty (variance grid, dim 1, size 100).
-        final List<Double> tx = new ArrayList<Double>();
-        final List<Double> ty = new ArrayList<Double>();
+        final List<Double> tx = new ArrayList<>();
+        final List<Double> ty = new ArrayList<>();
         for (final FdmLinearOpIterator iter : mesher.layout()) {
             if (iter.coordinates()[1] == 0) {
                 tx.add(mesher.location(iter, 0));
@@ -790,8 +790,8 @@ public class FdmLinearOpTest {
             condition.applyTo(rhs, t - dt);
         }
 
-        final List<Double> tx = new ArrayList<Double>();
-        final List<Double> ty = new ArrayList<Double>();
+        final List<Double> tx = new ArrayList<>();
+        final List<Double> ty = new ArrayList<>();
         for (final FdmLinearOpIterator iter : mesher.layout()) {
             if (iter.coordinates()[1] == 0) {
                 tx.add(mesher.location(iter, 0));
@@ -912,13 +912,13 @@ public class FdmLinearOpTest {
 
         // Stopping times = (exerciseTimes ∪ dividendTimes), conditions
         // applied in order (expressCondition, dividendCondition).
-        final List<List<Double>> stoppingTimes = new ArrayList<List<Double>>();
-        final List<Double> exTimes = new ArrayList<Double>();
+        final List<List<Double>> stoppingTimes = new ArrayList<>();
+        final List<Double> exTimes = new ArrayList<>();
         for (final double t : exerciseTimes) {
             exTimes.add(t);
         }
         stoppingTimes.add(exTimes);
-        stoppingTimes.add(new ArrayList<Double>(dividendCondition.dividendTimes()));
+        stoppingTimes.add(new ArrayList<>(dividendCondition.dividendTimes()));
 
         final org.jquantlib.methods.finitedifferences.stepconditions.FdmStepConditionComposite.Conditions conditions =
                 new org.jquantlib.methods.finitedifferences.stepconditions.FdmStepConditionComposite.Conditions();
@@ -1130,7 +1130,7 @@ public class FdmLinearOpTest {
                 new org.jquantlib.methods.finitedifferences.utilities.FdmBoundaryConditionSet();
         final org.jquantlib.methods.finitedifferences.stepconditions.FdmStepConditionComposite emptyConditions =
                 new org.jquantlib.methods.finitedifferences.stepconditions.FdmStepConditionComposite(
-                        new ArrayList<List<Double>>(),
+                        new ArrayList<>(),
                         new org.jquantlib.methods.finitedifferences.stepconditions.FdmStepConditionComposite.Conditions());
 
         final int tGrid = 25;
@@ -1169,9 +1169,9 @@ public class FdmLinearOpTest {
         }
 
         // Collect per-axis coordinates (matches C++ tx/ty/tr loops).
-        final List<Double> tx = new ArrayList<Double>();
-        final List<Double> ty = new ArrayList<Double>();
-        final List<Double> tr = new ArrayList<Double>();
+        final List<Double> tx = new ArrayList<>();
+        final List<Double> ty = new ArrayList<>();
+        final List<Double> tr = new ArrayList<>();
         for (final FdmLinearOpIterator iter : mesher.layout()) {
             if (iter.coordinates()[1] == 0 && iter.coordinates()[2] == 0) {
                 tx.add(mesher.location(iter, 0));
@@ -1510,7 +1510,7 @@ public class FdmLinearOpTest {
         final MersenneTwisterUniformRng rng = new MersenneTwisterUniformRng(1234);
 
         final SparseMatrix expected = new SparseMatrix(rows, columns);
-        final List<SparseMatrix> v = new ArrayList<SparseMatrix>(nMatrices);
+        final List<SparseMatrix> v = new ArrayList<>(nMatrices);
         for (int i = 0; i < nMatrices; ++i) v.add(new SparseMatrix(rows, columns));
 
         for (final SparseMatrix m : v) {

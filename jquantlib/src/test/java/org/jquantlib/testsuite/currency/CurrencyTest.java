@@ -77,7 +77,7 @@ public class CurrencyTest {
         assertTrue(Currency.operatorEquals(chf, chf2));
         assertTrue(Currency.operatorNotEquals(chf, euro));
         
-        HashSet<Currency> testSet = new HashSet<Currency>();
+        var testSet = new HashSet<Currency>();
         testSet.add(chf);
         
         assertTrue(testSet.contains(chf));

@@ -287,7 +287,7 @@ public class CPISwapTest {
             final List<ZeroCouponInflationSwapHelper> helpers = new ArrayList<>();
             for (int i = 0; i < zciisDataLength; ++i) {
                 final Quote q = new SimpleQuote(zciisR.get(i) / 100.0);
-                final Handle<Quote> qh = new Handle<>(q);
+                final var qh = new Handle<Quote>(q);
                 helpers.add(new ZeroCouponInflationSwapHelper(
                         qh, observationLag, zciisD.get(i),
                         calendar, convention, dcZCIIS, ii,
@@ -414,8 +414,7 @@ public class CPISwapTest {
             3.72677 / 100.0,
             3.63082 / 100.0
         };
-        final InterpolatedZeroCurve<Linear> nomCurve =
-                new InterpolatedZeroCurve<>(Linear.class, nomD, nomR,
+        final var nomCurve = new InterpolatedZeroCurve<Linear>(Linear.class, nomD, nomR,
                         common.dcNominal);
         final Handle<YieldTermStructure> nominalTS =
                 new Handle<YieldTermStructure>(nomCurve);
@@ -740,8 +739,7 @@ public class CPISwapTest {
             3.72677 / 100.0,
             3.63082 / 100.0
         };
-        final InterpolatedZeroCurve<Linear> nomCurve =
-                new InterpolatedZeroCurve<>(Linear.class, nomD, nomR,
+        final var nomCurve = new InterpolatedZeroCurve<Linear>(Linear.class, nomD, nomR,
                         common.dcNominal);
         final Handle<YieldTermStructure> nominalTS =
                 new Handle<YieldTermStructure>(nomCurve);

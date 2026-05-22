@@ -83,7 +83,7 @@ public class AmericanMaxPathPricerTest {
 
     private static MultiPath makeMultiPath(final TimeGrid grid,
                                            final double[] s1, final double[] s2) {
-        final List<Path> components = new ArrayList<Path>(2);
+        final List<Path> components = new ArrayList<>(2);
         components.add(new Path(grid, s1));
         components.add(new Path(grid, s2));
         return new MultiPath(components);

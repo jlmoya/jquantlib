@@ -57,7 +57,7 @@ public class Gaussian1dVolTest {
         new Settings().setEvaluationDate(EVAL_DATE);
         final Handle<YieldTermStructure> yts = new Handle<YieldTermStructure>(
                 new FlatForward(EVAL_DATE, 0.03, new Actual360()));
-        final List<Date> volStepDates = new ArrayList<Date>();
+        final List<Date> volStepDates = new ArrayList<>();
         volStepDates.add(EVAL_DATE.add(new Period(1, TimeUnit.Years)));
         volStepDates.add(EVAL_DATE.add(new Period(2, TimeUnit.Years)));
         final double[] vols = new double[]{0.01, 0.012, 0.015};
@@ -72,7 +72,7 @@ public class Gaussian1dVolTest {
         final Gsr gsr = buildStandardGsr();
         final Handle<YieldTermStructure> yts = gsr.termStructure();
 
-        final List<String> failures = new ArrayList<String>();
+        final List<String> failures = new ArrayList<>();
         int skipped = 0;
 
         for (final String name : ref.caseNames()) {

@@ -58,8 +58,7 @@ public class InterpolatedCreditCurvesTest {
         };
         final double[] hr = { h, h, h, h };
 
-        final InterpolatedHazardRateCurve<BackwardFlat> curve =
-                new InterpolatedHazardRateCurve<>(BackwardFlat.class, dates, hr, DC);
+        final var curve = new InterpolatedHazardRateCurve<BackwardFlat>(BackwardFlat.class, dates, hr, DC);
 
         // node values
         for (int i = 0; i < dates.length; ++i) {
@@ -85,8 +84,7 @@ public class InterpolatedCreditCurvesTest {
         final Date[] dates = { REF, REF.add(360) };
         final double[] hr = { h, h };
 
-        final InterpolatedHazardRateCurve<BackwardFlat> curve =
-                new InterpolatedHazardRateCurve<>(BackwardFlat.class, dates, hr, DC);
+        final var curve = new InterpolatedHazardRateCurve<BackwardFlat>(BackwardFlat.class, dates, hr, DC);
         curve.enableExtrapolation();
 
         // Past last node, hazard rate is flat at h. So S(t) = exp(-h t).
@@ -100,8 +98,7 @@ public class InterpolatedCreditCurvesTest {
     public void interpolatedHazardRate_maxDateMatchesLastPillar() {
         final Date[] dates = { REF, REF.add(360), REF.add(720) };
         final double[] hr = { 0.01, 0.02, 0.03 };
-        final InterpolatedHazardRateCurve<BackwardFlat> curve =
-                new InterpolatedHazardRateCurve<>(BackwardFlat.class, dates, hr, DC);
+        final var curve = new InterpolatedHazardRateCurve<BackwardFlat>(BackwardFlat.class, dates, hr, DC);
 
         assertTrue("maxDate is last pillar",
                 curve.maxDate().eq(dates[dates.length - 1]));
@@ -119,8 +116,7 @@ public class InterpolatedCreditCurvesTest {
         // Strictly decreasing: S(0)=1, S(1y)=0.99, S(2y)=0.97, S(3y)=0.94.
         final double[] s = { 1.0, 0.99, 0.97, 0.94 };
 
-        final InterpolatedSurvivalProbabilityCurve<LogLinear> curve =
-                new InterpolatedSurvivalProbabilityCurve<>(LogLinear.class, dates, s, DC);
+        final var curve = new InterpolatedSurvivalProbabilityCurve<LogLinear>(LogLinear.class, dates, s, DC);
 
         // Node values via date accessor.
         for (int i = 0; i < dates.length; ++i) {
@@ -165,8 +161,7 @@ public class InterpolatedCreditCurvesTest {
         };
         final double[] p = { 0.01, 0.012, 0.014, 0.016 };
 
-        final InterpolatedDefaultDensityCurve<Linear> curve =
-                new InterpolatedDefaultDensityCurve<>(Linear.class, dates, p, DC);
+        final var curve = new InterpolatedDefaultDensityCurve<Linear>(Linear.class, dates, p, DC);
 
         for (int i = 0; i < dates.length; ++i) {
             assertEquals("p(node " + i + ")",
@@ -181,8 +176,7 @@ public class InterpolatedCreditCurvesTest {
         final Date[] dates = { REF, REF.add(360), REF.add(720) };
         final double[] p = { 0.01, 0.012, 0.014 };
 
-        final InterpolatedDefaultDensityCurve<Linear> curve =
-                new InterpolatedDefaultDensityCurve<>(Linear.class, dates, p, DC);
+        final var curve = new InterpolatedDefaultDensityCurve<Linear>(Linear.class, dates, p, DC);
 
         // S(t) = max(1 - integral, 0) — must be monotone non-increasing in t.
         double prev = curve.survivalProbability(0.0);

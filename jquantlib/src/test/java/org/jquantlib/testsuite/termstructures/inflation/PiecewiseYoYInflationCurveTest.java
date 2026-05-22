@@ -95,15 +95,14 @@ public class PiecewiseYoYInflationCurveTest {
 
         final List<YearOnYearInflationSwapHelper> helpers = new ArrayList<>();
         for (int i = 0; i < quoteRates.length; ++i) {
-            final Handle<Quote> qh = new Handle<>(new SimpleQuote(quoteRates[i]));
+            final var qh = new Handle<Quote>(new SimpleQuote(quoteRates[i]));
             final Date maturity = refDate.add(tenors[i]);
             helpers.add(new YearOnYearInflationSwapHelper(qh, swapObsLag, maturity,
                     cal, bdc, dc, yyIndex));
         }
 
         final double baseYoYRate = 0.025;
-        final PiecewiseYoYInflationCurve<Linear> curve =
-                new PiecewiseYoYInflationCurve<>(Linear.class, refDate, baseDate,
+        final var curve = new PiecewiseYoYInflationCurve<Linear>(Linear.class, refDate, baseDate,
                         baseYoYRate, freq, dc, helpers);
         curve.enableExtrapolation();
 

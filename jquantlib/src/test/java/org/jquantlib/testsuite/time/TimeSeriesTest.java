@@ -147,7 +147,7 @@ public class TimeSeriesTest {
         final Date d1 = new Date(25, Month.April, 2005);
         final UnitedStates calendar = new UnitedStates(UnitedStates.Market.NYSE);
 
-        final Map<Date, Integer> unordered = new HashMap<Date, Integer>();
+        final Map<Date, Integer> unordered = new HashMap<>();
         Date d = d0.clone();
         for (int i = 0; d.lt(d1); i++) {
             unordered.put(d.clone(), i);

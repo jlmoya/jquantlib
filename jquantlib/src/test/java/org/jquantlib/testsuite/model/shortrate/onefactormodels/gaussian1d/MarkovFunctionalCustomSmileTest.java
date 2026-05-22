@@ -132,7 +132,7 @@ public class MarkovFunctionalCustomSmileTest {
     public void customSmile_acceptsUserSuppliedSmileSection() {
         new Settings().setEvaluationDate(REFERENCE_DATE);
 
-        final List<String> failures = new ArrayList<String>();
+        final List<String> failures = new ArrayList<>();
 
         // ModelSettings (to be passed into MF constructor, which calls validate internally).
         final MarkovFunctional.ModelSettings settings = new MarkovFunctional.ModelSettings()
@@ -161,12 +161,12 @@ public class MarkovFunctionalCustomSmileTest {
         final SwapIndex swapIndexBase = new EurLiborSwapIsdaFixA(
                 new Period(1, TimeUnit.Years));
 
-        final List<Date> volStepDates = new ArrayList<Date>();
+        final List<Date> volStepDates = new ArrayList<>();
         final double[] vols = new double[]{0.01};
 
-        final List<Date> expiries = new ArrayList<Date>();
+        final List<Date> expiries = new ArrayList<>();
         expiries.add(REFERENCE_DATE.add(new Period(5, TimeUnit.Years)));
-        final List<Period> tenors = new ArrayList<Period>();
+        final List<Period> tenors = new ArrayList<>();
         tenors.add(new Period(10, TimeUnit.Years));
 
         MarkovFunctional mf = null;

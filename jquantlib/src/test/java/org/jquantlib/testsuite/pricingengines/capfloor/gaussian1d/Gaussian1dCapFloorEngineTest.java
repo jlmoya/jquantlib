@@ -84,7 +84,7 @@ public class Gaussian1dCapFloorEngineTest {
         // Schedule starts 3M after eval (mirrors probe — avoids past-fixing issues).
         final Date schedStart = cal.advance(EVAL, new Period(3, TimeUnit.Months));
 
-        final List<Date> volStepDates = new ArrayList<Date>();
+        final List<Date> volStepDates = new ArrayList<>();
         volStepDates.add(EVAL.add(new Period(1, TimeUnit.Years)));
         volStepDates.add(EVAL.add(new Period(2, TimeUnit.Years)));
         volStepDates.add(EVAL.add(new Period(5, TimeUnit.Years)));
@@ -95,7 +95,7 @@ public class Gaussian1dCapFloorEngineTest {
         final ReferenceReader reader = ReferenceReader.load(
                 "pricingengines/capfloor/gaussian1d_capfloor_engine");
 
-        final List<String> failures = new ArrayList<String>();
+        final List<String> failures = new ArrayList<>();
 
         for (final String name : reader.caseNames()) {
             final Case c = reader.getCase(name);
@@ -164,7 +164,7 @@ public class Gaussian1dCapFloorEngineTest {
                 .withPaymentAdjustment(BusinessDayConvention.ModifiedFollowing)
                 .Leg();
 
-        final List<Double> strikes = new ArrayList<Double>();
+        final List<Double> strikes = new ArrayList<>();
         strikes.add(strike);
 
         final CapFloor.Type cfType = "Cap".equals(typeStr)

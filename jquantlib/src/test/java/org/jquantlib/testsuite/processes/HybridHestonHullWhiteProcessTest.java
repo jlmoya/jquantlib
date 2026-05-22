@@ -1606,7 +1606,7 @@ public class HybridHestonHullWhiteProcessTest {
                 0.303219, 0.291534, 0.286187, 0.283073, 0.280239, 0.276414, 0.270926, 0.262173
         };
 
-        final List<CalibrationHelper> options = new ArrayList<CalibrationHelper>();
+        final List<CalibrationHelper> options = new ArrayList<>();
 
         for (int i = 0; i < maturities.length; ++i) {
             final Period maturity = new Period(

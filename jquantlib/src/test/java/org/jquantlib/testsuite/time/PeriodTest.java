@@ -97,7 +97,7 @@ public class PeriodTest {
 	        assertFalse(oneDay.equals(oneYear));
 	        assertEquals(oneDay, oneDayAgain);
 
-	        HashSet<Period> testSet = new HashSet<Period>();
+	        var testSet = new HashSet<Period>();
 	        testSet.add(oneDay);
 	        testSet.add(oneDayAgo);
 

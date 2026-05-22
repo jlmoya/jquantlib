@@ -56,12 +56,12 @@ public class AnalyticPDFHestonEngineTest {
 
         final DayCounter dc = new Actual365Fixed();
 
-        final Handle<YieldTermStructure> rTS = new Handle<>(
+        final var rTS = new Handle<YieldTermStructure>(
                 new FlatForward(settlement, new Handle<Quote>(new SimpleQuote(0.07)), dc));
-        final Handle<YieldTermStructure> qTS = new Handle<>(
+        final var qTS = new Handle<YieldTermStructure>(
                 new FlatForward(settlement, new Handle<Quote>(new SimpleQuote(0.185)), dc));
 
-        final Handle<Quote> spot = new Handle<>(new SimpleQuote(100.0));
+        final var spot = new Handle<Quote>(new SimpleQuote(100.0));
         final HestonProcess process = new HestonProcess(rTS, qTS, spot,
                 0.1, 4.0, 0.05, 1.0, -0.5);
         final HestonModel model = new HestonModel(process);

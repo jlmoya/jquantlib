@@ -133,12 +133,12 @@ public class MarkovFunctionalTest {
         final SwapIndex swapIndexBase = new EurLiborSwapIsdaFixA(
                 new Period(1, TimeUnit.Years));
 
-        final List<Date> volStepDates = new ArrayList<Date>();
+        final List<Date> volStepDates = new ArrayList<>();
         final double[] vols = new double[]{0.01};
 
-        final List<Date> expiries = new ArrayList<Date>();
+        final List<Date> expiries = new ArrayList<>();
         expiries.add(REFERENCE_DATE.add(new Period(5, TimeUnit.Years)));
-        final List<Period> tenors = new ArrayList<Period>();
+        final List<Period> tenors = new ArrayList<>();
         tenors.add(new Period(10, TimeUnit.Years));
 
         final MarkovFunctional.ModelSettings settings = new MarkovFunctional.ModelSettings()
@@ -172,10 +172,10 @@ public class MarkovFunctionalTest {
 
         final IborIndex iborIndex = new EURLibor6M();
 
-        final List<Date> volStepDates = new ArrayList<Date>();
+        final List<Date> volStepDates = new ArrayList<>();
         final double[] vols = new double[]{0.01};
 
-        final List<Date> expiries = new ArrayList<Date>();
+        final List<Date> expiries = new ArrayList<>();
         expiries.add(REFERENCE_DATE.add(new Period(2, TimeUnit.Years)));
 
         final MarkovFunctional.ModelSettings settings = new MarkovFunctional.ModelSettings()
@@ -201,7 +201,7 @@ public class MarkovFunctionalTest {
         final MarkovFunctional swMF = buildSwaptionMF();
         final MarkovFunctional cpMF = buildCapletMF();
 
-        final List<String> failures = new ArrayList<String>();
+        final List<String> failures = new ArrayList<>();
 
         for (final String name : ref.caseNames()) {
             final ReferenceReader.Case c = ref.getCase(name);
@@ -324,12 +324,12 @@ public class MarkovFunctionalTest {
         final SwapIndex swapIndexBase = new EurLiborSwapIsdaFixA(
                 new Period(1, TimeUnit.Years));
 
-        final List<Date> volStepDates = new ArrayList<Date>();
+        final List<Date> volStepDates = new ArrayList<>();
         final double[] vols = new double[]{0.01};
 
-        final List<Date> expiries = new ArrayList<Date>();
+        final List<Date> expiries = new ArrayList<>();
         expiries.add(REFERENCE_DATE.add(new Period(5, TimeUnit.Years)));
-        final List<Period> tenors = new ArrayList<Period>();
+        final List<Period> tenors = new ArrayList<>();
         tenors.add(new Period(10, TimeUnit.Years));
 
         // Use SABR_SMILE | SMILE_EXPONENTIAL_EXTRAPOLATION (natural C++ pairing).
@@ -781,7 +781,7 @@ public class MarkovFunctionalTest {
         final SwapIndex swapIndexBase = new EuriborSwapIsdaFixA(
                 new Period(1, TimeUnit.Years));
 
-        final List<Date> volStepDates = new ArrayList<Date>();
+        final List<Date> volStepDates = new ArrayList<>();
         final double[] vols = new double[]{1.0};
 
         final IborIndex iborIndex1 = new Euribor6M(md0Yts_);
@@ -812,8 +812,8 @@ public class MarkovFunctionalTest {
                         .receiveFixed(false)
                         .value();
 
-        final List<Exercise> europeanExercises = new ArrayList<Exercise>();
-        final List<Swaption> europeanSwaptions = new ArrayList<Swaption>();
+        final List<Exercise> europeanExercises = new ArrayList<>();
+        final List<Swaption> europeanSwaptions = new ArrayList<>();
         for (int i = 0; i < expiries.size(); i++) {
             europeanExercises.add(new EuropeanExercise(expiries.get(i)));
             final Swaption sw = new Swaption(underlyingCall, europeanExercises.get(i));
@@ -897,7 +897,7 @@ public class MarkovFunctionalTest {
                 new Period(1, TimeUnit.Years));
         final IborIndex iborIndex = new Euribor(new Period(6, TimeUnit.Months));
 
-        final List<Date> volStepDates = new ArrayList<Date>();
+        final List<Date> volStepDates = new ArrayList<>();
         final double[] vols = new double[]{1.0};
 
         // use a grid with fewer points for smile arbitrage
@@ -1060,7 +1060,7 @@ public class MarkovFunctionalTest {
         final SwapIndex swapIndexBase = new EuriborSwapIsdaFixA(
                 new Period(1, TimeUnit.Years));
 
-        final List<Date> volStepDates = new ArrayList<Date>();
+        final List<Date> volStepDates = new ArrayList<>();
         volStepDates.add(new Target().advance(referenceDate, new Period(1, TimeUnit.Years)));
         volStepDates.add(new Target().advance(referenceDate, new Period(2, TimeUnit.Years)));
         volStepDates.add(new Target().advance(referenceDate, new Period(3, TimeUnit.Years)));
@@ -1081,7 +1081,7 @@ public class MarkovFunctionalTest {
 
         final double[] calibrationHelperVols1 = new double[]{0.20, 0.20, 0.20, 0.20};
 
-        final List<CalibrationHelper> calibrationHelper1 = new ArrayList<CalibrationHelper>();
+        final List<CalibrationHelper> calibrationHelper1 = new ArrayList<>();
         calibrationHelper1.add(new SwaptionHelper(
                 new Period(1, TimeUnit.Years), new Period(4, TimeUnit.Years),
                 new Handle<Quote>(new SimpleQuote(calibrationHelperVols1[0])),
@@ -1190,7 +1190,7 @@ public class MarkovFunctionalTest {
                         new Period(4, TimeUnit.Years), new Period(1, TimeUnit.Years),
                         cube.atmStrike(new Period(4, TimeUnit.Years), new Period(1, TimeUnit.Years)))};
 
-        final List<CalibrationHelper> calibrationHelper2 = new ArrayList<CalibrationHelper>();
+        final List<CalibrationHelper> calibrationHelper2 = new ArrayList<>();
         calibrationHelper2.add(new SwaptionHelper(
                 new Period(1, TimeUnit.Years), new Period(4, TimeUnit.Years),
                 new Handle<Quote>(new SimpleQuote(calibrationHelperVols2[0])),
@@ -1283,7 +1283,7 @@ public class MarkovFunctionalTest {
         final SwapIndex swapIndexBase = new EuriborSwapIsdaFixA(
                 new Period(1, TimeUnit.Years));
 
-        final List<Date> volStepDates = new ArrayList<Date>();
+        final List<Date> volStepDates = new ArrayList<>();
         final double[] vols = new double[]{1.0};
         final double[] money = new double[]{
                 0.1, 0.25, 0.50, 0.75, 1.0, 1.25, 1.50, 2.0, 5.0};
@@ -1365,7 +1365,7 @@ public class MarkovFunctionalTest {
         final PricingEngine blackCapFloorEngine2 = new BlackCapFloorEngine(
                 flatYts_, flatOptionletVts_);
         final PricingEngine mfCapFloorEngine2 = new Gaussian1dCapFloorEngine(mf2, 64, 7.0);
-        final List<CapFloor> c2 = new ArrayList<CapFloor>();
+        final List<CapFloor> c2 = new ArrayList<>();
         final double[] strikesBasket2Flat = new double[]{
                 0.01, 0.02, 0.03, 0.04, 0.05, 0.07, 0.10};
         for (final double s : strikesBasket2Flat) {
@@ -1474,7 +1474,7 @@ public class MarkovFunctionalTest {
         // C++ excludes strike 0.10 because the caplet stripper fails for it.
         final double[] strikesBasket2Real = new double[]{
                 0.01, 0.02, 0.03, 0.04, 0.05, 0.06};
-        final List<CapFloor> c4 = new ArrayList<CapFloor>();
+        final List<CapFloor> c4 = new ArrayList<>();
         for (final double s : strikesBasket2Real) {
             c4.add(new MakeCapFloor(CapFloor.Type.Cap,
                     new Period(5, TimeUnit.Years), iborIndex4, s).value());
@@ -1511,7 +1511,7 @@ public class MarkovFunctionalTest {
     private static Handle<YieldTermStructure> md0Yts() {
         final IborIndex euribor6mEmpty = new Euribor6M();
 
-        final List<Handle<Quote>> q6m = new ArrayList<Handle<Quote>>();
+        final List<Handle<Quote>> q6m = new ArrayList<>();
 
         final double[] q6mh = new double[]{
                 0.0001,  0.0001,  0.0001,  0.0003,  0.00055, 0.0009,
@@ -1568,7 +1568,7 @@ public class MarkovFunctionalTest {
             q6m.add(new Handle<Quote>(new SimpleQuote(v)));
         }
 
-        final List<RateHelper> r6m = new ArrayList<RateHelper>();
+        final List<RateHelper> r6m = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             r6m.add(new DepositRateHelper(
                     q6m.get(i), q6mh1[i],
@@ -1611,7 +1611,7 @@ public class MarkovFunctionalTest {
      */
     @SuppressWarnings({"rawtypes", "unchecked"})
     private static Handle<SwaptionVolatilityStructure> md0SwaptionVts() {
-        final List<Period> optionTenors = new ArrayList<Period>();
+        final List<Period> optionTenors = new ArrayList<>();
         for (final Period p : new Period[]{
                 new Period(1, TimeUnit.Months),  new Period(2, TimeUnit.Months),
                 new Period(3, TimeUnit.Months),  new Period(6, TimeUnit.Months),
@@ -1626,7 +1626,7 @@ public class MarkovFunctionalTest {
             optionTenors.add(p);
         }
 
-        final List<Period> swapTenors = new ArrayList<Period>();
+        final List<Period> swapTenors = new ArrayList<>();
         for (final Period p : new Period[]{
                 new Period(1, TimeUnit.Years),  new Period(2, TimeUnit.Years),
                 new Period(3, TimeUnit.Years),  new Period(4, TimeUnit.Years),
@@ -1676,7 +1676,7 @@ public class MarkovFunctionalTest {
                 new ArrayList<List<Handle<? extends Quote>>>();
         for (int i = 0; i < 20; i++) {
             final List<Handle<? extends Quote>> row =
-                    new ArrayList<Handle<? extends Quote>>();
+                    new ArrayList<>();
             for (int j = 0; j < 14; j++) {
                 row.add(new Handle<Quote>(new SimpleQuote(qSwAtmh[i * 14 + j])));
             }
@@ -1690,21 +1690,21 @@ public class MarkovFunctionalTest {
         final Handle<SwaptionVolatilityStructure> swaptionVolAtm =
                 new Handle<SwaptionVolatilityStructure>(swaptionVolAtmRaw);
 
-        final List<Period> optionTenorsSmile = new ArrayList<Period>();
+        final List<Period> optionTenorsSmile = new ArrayList<>();
         for (final Period p : new Period[]{
                 new Period(3, TimeUnit.Months),  new Period(1, TimeUnit.Years),
                 new Period(5, TimeUnit.Years),   new Period(10, TimeUnit.Years),
                 new Period(20, TimeUnit.Years),  new Period(30, TimeUnit.Years)}) {
             optionTenorsSmile.add(p);
         }
-        final List<Period> swapTenorsSmile = new ArrayList<Period>();
+        final List<Period> swapTenorsSmile = new ArrayList<>();
         for (final Period p : new Period[]{
                 new Period(2, TimeUnit.Years),  new Period(5, TimeUnit.Years),
                 new Period(10, TimeUnit.Years), new Period(20, TimeUnit.Years),
                 new Period(30, TimeUnit.Years)}) {
             swapTenorsSmile.add(p);
         }
-        final List<Double> strikeSpreads = new ArrayList<Double>();
+        final List<Double> strikeSpreads = new ArrayList<>();
         for (final double d : new double[]{-0.02, -0.01, -0.0050, -0.0025, 0.0,
                 0.0025, 0.0050, 0.01, 0.02}) {
             strikeSpreads.add(d);
@@ -1753,7 +1753,7 @@ public class MarkovFunctionalTest {
 
         final List<List<Handle<Quote>>> qSwSmile = new ArrayList<List<Handle<Quote>>>();
         for (int i = 0; i < 30; i++) {
-            final List<Handle<Quote>> row = new ArrayList<Handle<Quote>>();
+            final List<Handle<Quote>> row = new ArrayList<>();
             for (int j = 0; j < 9; j++) {
                 row.add(new Handle<Quote>(new SimpleQuote(qSwSmileh[i * 9 + j])));
             }
@@ -1777,7 +1777,7 @@ public class MarkovFunctionalTest {
         final List<List<Handle<Quote>>> parameterGuess =
                 new ArrayList<List<Handle<Quote>>>();
         for (int i = 0; i < 30; i++) {
-            final List<Handle<Quote>> row = new ArrayList<Handle<Quote>>();
+            final List<Handle<Quote>> row = new ArrayList<>();
             for (int j = 0; j < 4; j++) {
                 row.add(new Handle<Quote>(new SimpleQuote(qSwSmileh1[i * 4 + j])));
             }
@@ -1815,7 +1815,7 @@ public class MarkovFunctionalTest {
      * Coterminal 10y basket: 9 yearly fixings 1y..9y from reference date.
      */
     private static List<Date> expiriesCalBasket3(final Date referenceDate) {
-        final List<Date> res = new ArrayList<Date>();
+        final List<Date> res = new ArrayList<>();
         for (int i = 1; i <= 9; i++) {
             res.add(new Target().advance(referenceDate, new Period(i, TimeUnit.Years)));
         }
@@ -1827,7 +1827,7 @@ public class MarkovFunctionalTest {
      * Decreasing tenors 9y..1y (coterminal with 10y).
      */
     private static List<Period> tenorsCalBasket3() {
-        final List<Period> res = new ArrayList<Period>();
+        final List<Period> res = new ArrayList<>();
         for (final int n : new int[]{9, 8, 7, 6, 5, 4, 3, 2, 1}) {
             res.add(new Period(n, TimeUnit.Years));
         }
@@ -1872,7 +1872,7 @@ public class MarkovFunctionalTest {
      * 5 yearly expiries 1y..5y from the reference date — CMS10y swaption basket.
      */
     private static List<Date> expiriesCalBasket1(final Date referenceDate) {
-        final List<Date> res = new ArrayList<Date>();
+        final List<Date> res = new ArrayList<>();
         final Target t = new Target();
         for (int i = 1; i <= 5; i++) {
             res.add(t.advance(referenceDate, new Period(i, TimeUnit.Years)));
@@ -1885,7 +1885,7 @@ public class MarkovFunctionalTest {
      * 5 × 10y constant tenors — CMS10y swaption basket.
      */
     private static List<Period> tenorsCalBasket1() {
-        final List<Period> res = new ArrayList<Period>();
+        final List<Period> res = new ArrayList<>();
         for (int i = 0; i < 5; i++) {
             res.add(new Period(10, TimeUnit.Years));
         }
@@ -1897,7 +1897,7 @@ public class MarkovFunctionalTest {
      * 10 semi-annual expiries 6m..60m from the reference date — 6m caplet basket.
      */
     private static List<Date> expiriesCalBasket2(final Date referenceDate) {
-        final List<Date> res = new ArrayList<Date>();
+        final List<Date> res = new ArrayList<>();
         final Target t = new Target();
         for (int n : new int[]{6, 12, 18, 24, 30, 36, 42, 48, 54, 60}) {
             res.add(t.advance(referenceDate, new Period(n, TimeUnit.Months)));
@@ -1919,7 +1919,7 @@ public class MarkovFunctionalTest {
         final int nOptTen = 16;
         final int nStrikes = 12;
 
-        final List<Period> optionTenors = new ArrayList<Period>();
+        final List<Period> optionTenors = new ArrayList<>();
         for (final Period p : new Period[]{
                 new Period(1, TimeUnit.Years),  new Period(18, TimeUnit.Months),
                 new Period(2, TimeUnit.Years),  new Period(3, TimeUnit.Years),

@@ -66,8 +66,7 @@ public class InterpolatedYoYInflationCurveTest {
         };
         final double[] rates = new double[]{ 0.025, 0.027, 0.029, 0.031, 0.034, 0.036 };
 
-        final InterpolatedYoYInflationCurve<Linear> curve =
-                new InterpolatedYoYInflationCurve<>(Linear.class,
+        final var curve = new InterpolatedYoYInflationCurve<Linear>(Linear.class,
                         refDate, dates, rates, freq, dc);
         curve.enableExtrapolation();
 

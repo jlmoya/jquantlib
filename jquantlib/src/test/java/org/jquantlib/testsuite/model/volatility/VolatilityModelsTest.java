@@ -159,7 +159,7 @@ public class VolatilityModelsTest {
         final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
                 new FlatForward(eval, 0.0,  dayCounter));
 
-        final List<String> failures = new ArrayList<String>();
+        final List<String> failures = new ArrayList<>();
         // Engine-inherent tier: see method Javadoc for justification.
         final double tolerance = 1.0e-3;
 

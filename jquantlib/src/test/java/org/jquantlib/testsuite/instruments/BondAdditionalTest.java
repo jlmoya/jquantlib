@@ -520,7 +520,7 @@ public class BondAdditionalTest {
                 DateGeneration.Rule.Backward, true);
 
         // Adjust 29-Feb -> 28-Feb (bond pays on 28-Feb regardless of leap-year).
-        final List<Date> dates = new ArrayList<Date>(schedule.size());
+        final List<Date> dates = new ArrayList<>(schedule.size());
         for (int i = 0; i < schedule.size(); ++i) {
             final Date d = schedule.date(i);
             if (d.month() == Month.February && d.dayOfMonth() == 29) {
@@ -775,7 +775,7 @@ public class BondAdditionalTest {
         new Settings().setEvaluationDate(today);
 
         // Mirrors C++ bonds.cpp:1687-1691 — irregular date vector.
-        final List<Date> dates = new ArrayList<Date>(4);
+        final List<Date> dates = new ArrayList<>(4);
         dates.add(new Date(1, Month.February, 2019));
         dates.add(new Date(7, Month.February, 2019));
         dates.add(new Date(1, Month.April, 2019));

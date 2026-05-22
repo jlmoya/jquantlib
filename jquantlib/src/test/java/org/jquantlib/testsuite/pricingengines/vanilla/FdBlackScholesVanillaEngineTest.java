@@ -175,15 +175,14 @@ public class FdBlackScholesVanillaEngineTest {
             final double q, final double vol,
             final DayCounter dc, final NullCalendar cal) {
 
-        final Handle<Quote> spotH = new Handle<>(new SimpleQuote(spot));
-        final Handle<YieldTermStructure> rTS = new Handle<>(
+        final var spotH = new Handle<Quote>(new SimpleQuote(spot));
+        final var rTS = new Handle<YieldTermStructure>(
                 new FlatForward(eval, new Handle<>(new SimpleQuote(r)), dc,
                         Compounding.Continuous, Frequency.Annual));
-        final Handle<YieldTermStructure> qTS = new Handle<>(
+        final var qTS = new Handle<YieldTermStructure>(
                 new FlatForward(eval, new Handle<>(new SimpleQuote(q)), dc,
                         Compounding.Continuous, Frequency.Annual));
-        final Handle<org.jquantlib.termstructures.BlackVolTermStructure> volTS =
-                new Handle<>(new BlackConstantVol(eval, cal, vol, dc));
+        final var volTS = new Handle<org.jquantlib.termstructures.BlackVolTermStructure>(new BlackConstantVol(eval, cal, vol, dc));
 
         return new GeneralizedBlackScholesProcess(spotH, qTS, rTS, volTS);
     }

@@ -122,7 +122,7 @@ public class SwaptionVolatilityMatrixTest {
         final BusinessDayConvention bdc = BusinessDayConvention.Following;
         final Date refDate = new Date(2, Month.January, 2020);
 
-        final List<Date> optionDates = new ArrayList<Date>();
+        final List<Date> optionDates = new ArrayList<>();
         optionDates.add(new Date(2, Month.January, 2021));
         optionDates.add(new Date(3, Month.January, 2022));
         optionDates.add(new Date(2, Month.January, 2025));

@@ -158,7 +158,7 @@ public class BasisSwapRateHelpersTest {
         seedTodayFixing(baseIndex, today, 0.01);
         seedTodayFixing(otherIndex, today, 0.01);
 
-        final List<RateHelper> helpers = new ArrayList<RateHelper>();
+        final List<RateHelper> helpers = new ArrayList<>();
         for (final BasisSwapQuote q : qs) {
             final Handle<Quote> h = new Handle<Quote>(new SimpleQuote(q.basis));
             helpers.add(new IborIborBasisSwapRateHelper(
@@ -272,7 +272,7 @@ public class BasisSwapRateHelpersTest {
         seedTodayFixing(baseIndex, today, 0.01);
         seedTodayFixing(otherIndex, today, 0.01);
 
-        final List<RateHelper> helpers = new ArrayList<RateHelper>();
+        final List<RateHelper> helpers = new ArrayList<>();
         for (final BasisSwapQuote q : qs) {
             final Handle<Quote> h = new Handle<Quote>(new SimpleQuote(q.basis));
             helpers.add(new OvernightIborBasisSwapRateHelper(

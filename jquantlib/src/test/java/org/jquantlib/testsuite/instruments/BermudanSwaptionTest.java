@@ -129,7 +129,7 @@ public class BermudanSwaptionTest {
 
     /** Extract accrual-start dates from a fixed leg (BermudanExercise feed). */
     private static Date[] exerciseDatesFromFixedLeg(final Leg fixedLeg) {
-        final List<Date> dates = new ArrayList<Date>();
+        final List<Date> dates = new ArrayList<>();
         for (final CashFlow cf : fixedLeg) {
             if (cf instanceof Coupon) {
                 dates.add(((Coupon) cf).accrualStartDate());

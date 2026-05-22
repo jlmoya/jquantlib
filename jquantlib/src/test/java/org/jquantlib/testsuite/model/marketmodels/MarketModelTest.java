@@ -156,7 +156,7 @@ public class MarketModelTest {
         final int N = MarketModelTestSetup.todaysForwards.length;
         final double[] forwardStrikes = new double[N];
         final Payoff[] optionletPayoffs = new Payoff[N];
-        final List<StrikedTypePayoff> displacedPayoffs = new ArrayList<StrikedTypePayoff>(N);
+        final List<StrikedTypePayoff> displacedPayoffs = new ArrayList<>(N);
         for (int i = 0; i < N; ++i) {
             forwardStrikes[i] = MarketModelTestSetup.todaysForwards[i] + 0.01;
             optionletPayoffs[i] = new PlainVanillaPayoff(Option.Type.Call, MarketModelTestSetup.todaysForwards[i]);
@@ -226,7 +226,7 @@ public class MarketModelTest {
         final int N = MarketModelTestSetup.todaysForwards.length;
         final double[] forwardStrikes = new double[N];
         final Payoff[] optionletPayoffs = new Payoff[N];
-        final List<PlainVanillaPayoff> displacedPayoffs = new ArrayList<PlainVanillaPayoff>(N);
+        final List<PlainVanillaPayoff> displacedPayoffs = new ArrayList<>(N);
         for (int i = 0; i < N; ++i) {
             forwardStrikes[i] = MarketModelTestSetup.todaysForwards[i] + 0.01;
             optionletPayoffs[i] = new PlainVanillaPayoff(Option.Type.Call, MarketModelTestSetup.todaysForwards[i]);
@@ -388,7 +388,7 @@ public class MarketModelTest {
     /** Per-sub-product expected-value bookkeeping (cpp:150). */
     private static final class SubProductExpectedValues {
         final String description;
-        final List<Double> values = new ArrayList<Double>();
+        final List<Double> values = new ArrayList<>();
         boolean testBias = false; // C++ struct default (cpp:154)
         double errorThreshold;
 
@@ -457,7 +457,7 @@ public class MarketModelTest {
             final List<SubProductExpectedValues> subProductExpectedValues) {
         final int n = MarketModelTestSetup.todaysForwards.length;
         final Payoff[] optionletPayoffs = new Payoff[n];
-        final List<StrikedTypePayoff> displacedPayoffs = new ArrayList<StrikedTypePayoff>(n);
+        final List<StrikedTypePayoff> displacedPayoffs = new ArrayList<>(n);
         for (int i = 0; i < n; ++i) {
             optionletPayoffs[i] = new PlainVanillaPayoff(Option.Type.Call, MarketModelTestSetup.todaysForwards[i]);
             displacedPayoffs.add(new PlainVanillaPayoff(Option.Type.Call,
@@ -627,7 +627,7 @@ public class MarketModelTest {
         MarketModelTestSetup.paths_ = 32767;
         MarketModelTestSetup.trainingPaths_ = 8191;
         final MultiProductComposite product = new MultiProductComposite();
-        final List<SubProductExpectedValues> subProductExpectedValues = new ArrayList<SubProductExpectedValues>();
+        final List<SubProductExpectedValues> subProductExpectedValues = new ArrayList<>();
         addForwards(product, subProductExpectedValues);
         addOptionLets(product, subProductExpectedValues);
         addCoinitialSwaps(product, subProductExpectedValues);
@@ -900,7 +900,7 @@ public class MarketModelTest {
                         evolver = MarketModelTestSetup.makeMarketModelEvolver(
                                 marketModel, numeraires, uFactory, evolvers[i]);
 
-                        final List<MarketModelEvolver> innerEvolvers = new ArrayList<MarketModelEvolver>();
+                        final List<MarketModelEvolver> innerEvolvers = new ArrayList<>();
                         final boolean[] isExerciseTime = Utilities.isInSubset(
                                 evolution.evolutionTimes(), naifStrategy.exerciseTimes());
                         for (int s = 0; s < isExerciseTime.length; ++s) {
@@ -1041,7 +1041,7 @@ public class MarketModelTest {
                     final int initialNumeraire = evolver.numeraires()[0];
                     final double initialNumeraireValue = MarketModelTestSetup.todaysDiscounts[initialNumeraire];
 
-                    final List<double[]> parameters = new ArrayList<double[]>();
+                    final List<double[]> parameters = new ArrayList<>();
                     GenericEarlyExercise.optimize(collectedData, parametricForm, parameters, ec, om);
                     // C++: firstPassValue * initialNumeraireValue  (only printed)
 
@@ -1068,7 +1068,7 @@ public class MarketModelTest {
                             SobolBrownianGenerator.Ordering.Diagonal, MarketModelTestSetup.seed_ + 142);
                     evolver = MarketModelTestSetup.makeMarketModelEvolver(
                             marketModel, numeraires, uFactory, evolvers[i]);
-                    final List<MarketModelEvolver> innerEvolvers = new ArrayList<MarketModelEvolver>();
+                    final List<MarketModelEvolver> innerEvolvers = new ArrayList<>();
                     final boolean[] isExerciseTime = Utilities.isInSubset(
                             evolution.evolutionTimes(), exerciseStrategy.exerciseTimes());
                     for (int s = 0; s < isExerciseTime.length; ++s) {
@@ -1180,7 +1180,7 @@ public class MarketModelTest {
                         }
                         final double[][] basisCoefficientsArr = new double[simulationData.length - 1][];
                         GenericLongstaffSchwartzRegression.evaluate(simulationData, basisCoefficientsArr);
-                        final List<double[]> basisCoefficients = new ArrayList<double[]>();
+                        final List<double[]> basisCoefficients = new ArrayList<>();
                         for (final double[] c : basisCoefficientsArr) {
                             basisCoefficients.add(c);
                         }
@@ -1212,7 +1212,7 @@ public class MarketModelTest {
                         evolver = MarketModelTestSetup.makeMarketModelEvolver(
                                 marketModel, numeraires, uFactory, evolvers[i]);
 
-                        final List<MarketModelEvolver> innerEvolvers = new ArrayList<MarketModelEvolver>();
+                        final List<MarketModelEvolver> innerEvolvers = new ArrayList<>();
                         final boolean[] isExerciseTime = Utilities.isInSubset(
                                 evolution.evolutionTimes(), exerciseStrategy.exerciseTimes());
                         for (int s = 0; s < isExerciseTime.length; ++s) {
@@ -1383,7 +1383,7 @@ public class MarketModelTest {
     @Test
     public void testPathwiseGreeks() {
         final int N = MarketModelTestSetup.todaysForwards.length;
-        final List<StrikedTypePayoff> displacedPayoffs = new ArrayList<StrikedTypePayoff>(N);
+        final List<StrikedTypePayoff> displacedPayoffs = new ArrayList<>(N);
         for (int i = 0; i < N; ++i) {
             displacedPayoffs.add(new PlainVanillaPayoff(Option.Type.Call,
                     MarketModelTestSetup.todaysForwards[i] + MarketModelTestSetup.displacement));
@@ -1554,7 +1554,7 @@ public class MarketModelTest {
 
         final int N = MarketModelTestSetup.todaysForwards.length;
         final Payoff[] payoffs = new Payoff[N];
-        final List<StrikedTypePayoff> displacedPayoffs = new ArrayList<StrikedTypePayoff>(N);
+        final List<StrikedTypePayoff> displacedPayoffs = new ArrayList<>(N);
         for (int i = 0; i < N; ++i) {
             payoffs[i] = new PlainVanillaPayoff(Option.Type.Call, MarketModelTestSetup.todaysForwards[i]);
             displacedPayoffs.add(new PlainVanillaPayoff(Option.Type.Call,
@@ -1616,7 +1616,7 @@ public class MarketModelTest {
                                 marketModel, startIndex, endIndex);
 
                 final List<org.jquantlib.math.matrixutilities.Matrix> pseudoRoots =
-                        new ArrayList<org.jquantlib.math.matrixutilities.Matrix>(marketModel.numberOfSteps());
+                        new ArrayList<>(marketModel.numberOfSteps());
                 for (int k = 0; k < marketModel.numberOfSteps(); ++k) {
                     pseudoRoots.add(new org.jquantlib.math.matrixutilities.Matrix(marketModel.pseudoRoot(k)));
                 }
@@ -1676,7 +1676,7 @@ public class MarketModelTest {
                                         marketModel, capStrikeOuter, startIndex, endIndex, initialNumeraireValueOuter);
 
                         final List<org.jquantlib.math.matrixutilities.Matrix> pseudoRoots =
-                                new ArrayList<org.jquantlib.math.matrixutilities.Matrix>(marketModel.numberOfSteps());
+                                new ArrayList<>(marketModel.numberOfSteps());
                         for (int k = 0; k < marketModel.numberOfSteps(); ++k) {
                             pseudoRoots.add(new org.jquantlib.math.matrixutilities.Matrix(marketModel.pseudoRoot(k)));
                         }
@@ -1773,7 +1773,7 @@ public class MarketModelTest {
                                         marketModel, capStrikeOuter, startIndex, endIndex, initialNumeraireValueOuter);
 
                         final List<org.jquantlib.math.matrixutilities.Matrix> pseudoRoots =
-                                new ArrayList<org.jquantlib.math.matrixutilities.Matrix>(marketModel.numberOfSteps());
+                                new ArrayList<>(marketModel.numberOfSteps());
                         for (int k = 0; k < marketModel.numberOfSteps(); ++k) {
                             pseudoRoots.add(new org.jquantlib.math.matrixutilities.Matrix(marketModel.pseudoRoot(k)));
                         }
@@ -1835,9 +1835,9 @@ public class MarketModelTest {
 
                 // Build pseudoBumps and pseudoBumpsDown (numberRates*factors entries each, one bump per element)
                 final List<org.jquantlib.math.matrixutilities.Matrix> pseudoBumps =
-                        new ArrayList<org.jquantlib.math.matrixutilities.Matrix>();
+                        new ArrayList<>();
                 final List<org.jquantlib.math.matrixutilities.Matrix> pseudoBumpsDown =
-                        new ArrayList<org.jquantlib.math.matrixutilities.Matrix>();
+                        new ArrayList<>();
                 for (int k = 0; k < evolution.numberOfRates(); ++k) {
                     for (int f = 0; f < factors; ++f) {
                         final org.jquantlib.math.matrixutilities.Matrix mUp =
@@ -1855,11 +1855,11 @@ public class MarketModelTest {
                 // C++ has a peculiar accumulation pattern using a single 'modelBump' matrix mutated in-place
                 // and pushed back per step×k×f×m.
                 final List<List<org.jquantlib.math.matrixutilities.Matrix>> vegaBumps =
-                        new ArrayList<List<org.jquantlib.math.matrixutilities.Matrix>>();
+                        new ArrayList<>();
                 final org.jquantlib.math.matrixutilities.Matrix modelBump =
                         new org.jquantlib.math.matrixutilities.Matrix(evolution.numberOfRates(), factors);
                 for (int l = 0; l < evolution.numberOfSteps(); ++l) {
-                    vegaBumps.add(new ArrayList<org.jquantlib.math.matrixutilities.Matrix>());
+                    vegaBumps.add(new ArrayList<>());
                     for (int k = 0; k < evolution.numberOfRates(); k += bumpIncrement) {
                         for (int f = 0; f < factorsToTest; ++f) {
                             for (int m = 0; m < evolution.numberOfSteps(); ++m) {
@@ -1879,13 +1879,13 @@ public class MarketModelTest {
                     final int[] numeraires = MarketModelTestSetup.makeMeasure(product, measure);
 
                     final List<org.jquantlib.model.marketmodels.pathwisegreeks.RatePseudoRootJacobian> testees =
-                            new ArrayList<org.jquantlib.model.marketmodels.pathwisegreeks.RatePseudoRootJacobian>();
+                            new ArrayList<>();
                     final List<org.jquantlib.model.marketmodels.pathwisegreeks.RatePseudoRootJacobianAllElements> testees2 =
-                            new ArrayList<org.jquantlib.model.marketmodels.pathwisegreeks.RatePseudoRootJacobianAllElements>();
+                            new ArrayList<>();
                     final List<org.jquantlib.model.marketmodels.pathwisegreeks.RatePseudoRootJacobianNumerical> testers =
-                            new ArrayList<org.jquantlib.model.marketmodels.pathwisegreeks.RatePseudoRootJacobianNumerical>();
+                            new ArrayList<>();
                     final List<org.jquantlib.model.marketmodels.pathwisegreeks.RatePseudoRootJacobianNumerical> testersDown =
-                            new ArrayList<org.jquantlib.model.marketmodels.pathwisegreeks.RatePseudoRootJacobianNumerical>();
+                            new ArrayList<>();
 
                     final MTBrownianGeneratorFactory generatorFactory =
                             new MTBrownianGeneratorFactory(MarketModelTestSetup.seed_);
@@ -1936,7 +1936,7 @@ public class MarketModelTest {
 
                     // globalB[j] = (numberRates × factors), one per step (== numberRates here)
                     final List<org.jquantlib.math.matrixutilities.Matrix> globalB =
-                            new ArrayList<org.jquantlib.math.matrixutilities.Matrix>();
+                            new ArrayList<>();
                     for (int i = 0; i < steps; ++i) {
                         globalB.add(new org.jquantlib.math.matrixutilities.Matrix(evolution.numberOfRates(), factors));
                     }
@@ -2206,7 +2206,7 @@ public class MarketModelTest {
                 // ===== Block 6: PathwiseVegasAccountingEngine vs PathwiseVegasOuterAccountingEngine for caps =====
                 {
                     final List<org.jquantlib.model.marketmodels.pathwisegreeks.VolatilityBumpInstrumentJacobian.Cap> caps =
-                            new ArrayList<org.jquantlib.model.marketmodels.pathwisegreeks.VolatilityBumpInstrumentJacobian.Cap>();
+                            new ArrayList<>();
                     final double capStrikeBlock6 = MarketModelTestSetup.todaysForwards[0];
                     for (int i = 0; i + 2 < numberRates; i += 3) {
                         caps.add(new org.jquantlib.model.marketmodels.pathwisegreeks.VolatilityBumpInstrumentJacobian.Cap(
@@ -2438,7 +2438,7 @@ public class MarketModelTest {
         final double d = 0.1710;
 
         final double[] rt = MarketModelTestSetup.rateTimes;
-        final List<Double> rtList = new ArrayList<Double>(rt.length);
+        final List<Double> rtList = new ArrayList<>(rt.length);
         for (final double x : rt) {
             rtList.add(x);
         }
@@ -2478,11 +2478,11 @@ public class MarketModelTest {
         final double[] bv = MarketModelTestSetup.blackVols;
 
         // C++: std::vector<Time>(rateTimes.begin(), rateTimes.end()-1)
-        final List<Double> tList = new ArrayList<Double>(rt.length - 1);
+        final List<Double> tList = new ArrayList<>(rt.length - 1);
         for (int i = 0; i < rt.length - 1; ++i) {
             tList.add(rt[i]);
         }
-        final List<Double> blackVolsList = new ArrayList<Double>(bv.length);
+        final List<Double> blackVolsList = new ArrayList<>(bv.length);
         for (final double x : bv) {
             blackVolsList.add(x);
         }

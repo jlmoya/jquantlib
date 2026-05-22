@@ -242,7 +242,7 @@ public class CPIBondTest {
             final List<ZeroCouponInflationSwapHelper> helpers = new ArrayList<>();
             for (int i = 0; i < zciisD.length; ++i) {
                 final Quote q = new SimpleQuote(zciisR[i] / 100.0);
-                final Handle<Quote> qh = new Handle<>(q);
+                final var qh = new Handle<Quote>(q);
                 helpers.add(new ZeroCouponInflationSwapHelper(
                         qh, observationLag, zciisD[i],
                         calendar, convention, dayCounter, ii,

@@ -351,14 +351,14 @@ public class ObservableTest {
             // the rest are released so the JVM is free to collect them.
             final List<UpdateCounter> retained =
                     java.util.Collections.synchronizedList(
-                            new ArrayList<UpdateCounter>());
+                            new ArrayList<>());
 
             final CyclicBarrier start = new CyclicBarrier(nThreads);
             final CountDownLatch done = new CountDownLatch(nThreads);
             final ExecutorService pool =
                     Executors.newFixedThreadPool(nThreads);
             final List<java.util.concurrent.Future<?>> futures =
-                    new ArrayList<java.util.concurrent.Future<?>>(nThreads);
+                    new ArrayList<>(nThreads);
 
             for (int t = 0; t < nThreads; t++) {
                 futures.add(pool.submit(new Runnable() {
@@ -467,12 +467,12 @@ public class ObservableTest {
             final Handle<Quote> qHandle = new Handle<Quote>(q);
 
             // strikes = {0.01, 0.02}
-            final List<Double> strikes = new ArrayList<Double>(2);
+            final List<Double> strikes = new ArrayList<>(2);
             strikes.add(0.01);
             strikes.add(0.02);
 
             // dates = {refDate + 90, refDate + 180}
-            final List<Date> dates = new ArrayList<Date>(2);
+            final List<Date> dates = new ArrayList<>(2);
             dates.add(refDate.add(90));
             dates.add(refDate.add(180));
 
@@ -481,7 +481,7 @@ public class ObservableTest {
                     new ArrayList<List<Handle<? extends Quote>>>(2);
             for (int i = 0; i < 2; ++i) {
                 final List<Handle<? extends Quote>> row =
-                        new ArrayList<Handle<? extends Quote>>(2);
+                        new ArrayList<>(2);
                 row.add(qHandle);
                 row.add(qHandle);
                 quotes.add(row);

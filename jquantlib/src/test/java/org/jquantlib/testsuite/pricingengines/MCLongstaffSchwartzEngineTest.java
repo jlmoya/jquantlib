@@ -224,7 +224,7 @@ public class MCLongstaffSchwartzEngineTest {
 
         final int numberAssets = 2;
         final Matrix corr = new Matrix(numberAssets, numberAssets);
-        final List<StochasticProcess1D> v = new ArrayList<StochasticProcess1D>(numberAssets);
+        final List<StochasticProcess1D> v = new ArrayList<>(numberAssets);
         for (int i = 0; i < numberAssets; ++i) {
             v.add(stochasticProcess);
             corr.set(i, i, 1.0);

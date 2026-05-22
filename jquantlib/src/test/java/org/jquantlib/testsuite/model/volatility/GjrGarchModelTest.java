@@ -205,7 +205,7 @@ public class GjrGarchModelTest {
         final double mcAbsFloor = 2.0 * 7.5e-2;
         final double mcRelFloor = 0.20;
 
-        final List<String> failures = new ArrayList<String>();
+        final List<String> failures = new ArrayList<>();
 
         for (int k = 0; k < 3; ++k) {
             final double lambda = Lambda[k];
@@ -395,7 +395,7 @@ public class GjrGarchModelTest {
         final PricingEngine engine = new AnalyticGJRGARCHEngine(model);
 
         // C++ loops s in [3,10) and m in [0,3) → 7 strikes x 3 maturities.
-        final List<CalibrationHelper> options = new ArrayList<CalibrationHelper>();
+        final List<CalibrationHelper> options = new ArrayList<>();
         for (int s = 3; s < 10; ++s) {
             for (int m = 0; m < 3; ++m) {
                 final Handle<Quote> vol = new Handle<Quote>(

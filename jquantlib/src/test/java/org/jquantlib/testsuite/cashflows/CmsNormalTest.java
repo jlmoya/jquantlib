@@ -168,8 +168,8 @@ public class CmsNormalTest {
 
             final Handle<Quote> zeroMeanRev = new Handle<Quote>(new SimpleQuote(0.0));
 
-            numericalPricers = new ArrayList<CmsCouponPricer>();
-            analyticPricers = new ArrayList<CmsCouponPricer>();
+            numericalPricers = new ArrayList<>();
+            analyticPricers = new ArrayList<>();
             for (int j = 0; j < yieldCurveModels.size(); ++j) {
                 numericalPricers.add(new NumericHaganPricer(atmVol, yieldCurveModels.get(j), zeroMeanRev));
                 analyticPricers.add(new AnalyticHaganPricer(atmVol, yieldCurveModels.get(j), zeroMeanRev));
@@ -259,7 +259,7 @@ public class CmsNormalTest {
 
             final List<List<Handle<Quote>>> volSpreads = new ArrayList<List<Handle<Quote>>>(nRows);
             for (int i = 0; i < nRows; ++i) {
-                final List<Handle<Quote>> row = new ArrayList<Handle<Quote>>(nCols);
+                final List<Handle<Quote>> row = new ArrayList<>(nCols);
                 for (int j = 0; j < nCols; ++j) {
                     row.add(new Handle<Quote>(new SimpleQuote(volSpreadsMatrix.get(i, j))));
                 }
@@ -302,7 +302,7 @@ public class CmsNormalTest {
             // nu=0.3, rho=0.5).
             final List<List<Handle<Quote>>> guess = new ArrayList<List<Handle<Quote>>>(nRows);
             for (int i = 0; i < nRows; ++i) {
-                final List<Handle<Quote>> row = new ArrayList<Handle<Quote>>(4);
+                final List<Handle<Quote>> row = new ArrayList<>(4);
                 row.add(new Handle<Quote>(new SimpleQuote(0.01)));
                 row.add(new Handle<Quote>(new SimpleQuote(0.0)));
                 row.add(new Handle<Quote>(new SimpleQuote(0.3)));

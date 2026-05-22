@@ -75,8 +75,7 @@ public class CPICouponTest {
         };
         final double[] nodeRates = new double[] { 0.025, 0.030, 0.032, 0.034, 0.036, 0.038 };
 
-        final InterpolatedZeroInflationCurve<Linear> zeroCurve =
-                new InterpolatedZeroInflationCurve<>(Linear.class,
+        final var zeroCurve = new InterpolatedZeroInflationCurve<Linear>(Linear.class,
                         refDate, nodeDates, nodeRates, freq, dc);
         zeroCurve.enableExtrapolation();
 

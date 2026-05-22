@@ -229,8 +229,8 @@ public class QuotesTest {
 		};
 
 		for (final ToDoubleFunction<double[]> func : funcs) {
-			final List<SimpleQuote> mes = new ArrayList<SimpleQuote>();
-			final List<Handle<? extends Quote>> handles = new ArrayList<Handle<? extends Quote>>();
+			final List<SimpleQuote> mes = new ArrayList<>();
+			final List<Handle<? extends Quote>> handles = new ArrayList<>();
 			for (int i = 0; i < 3; i++) {
 				mes.add(new SimpleQuote(i + 1));
 				handles.add(new Handle<SimpleQuote>(mes.get(mes.size() - 1)));

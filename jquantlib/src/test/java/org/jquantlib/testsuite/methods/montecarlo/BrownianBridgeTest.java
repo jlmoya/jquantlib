@@ -211,7 +211,7 @@ public class BrownianBridgeTest {
 
         final double[] timesArr = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8,
                                    0.9, 1.0, 2.0, 5.0, 7.0, 9.0, 10.0};
-        final List<Double> timesList = new ArrayList<Double>();
+        final List<Double> timesList = new ArrayList<>();
         for (final double t : timesArr) {
             timesList.add(Double.valueOf(t));
         }

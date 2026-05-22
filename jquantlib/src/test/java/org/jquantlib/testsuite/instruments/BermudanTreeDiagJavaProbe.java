@@ -97,7 +97,7 @@ public class BermudanTreeDiagJavaProbe {
                 fixSched, atm, fixDc, fltSched, idx, 0.0, idx.dayCounter());
         atmSwap.setPricingEngine(new DiscountingSwapEngine(ts));
 
-        final List<Date> exDates = new ArrayList<Date>();
+        final List<Date> exDates = new ArrayList<>();
         for (final CashFlow cf : atmSwap.fixedLeg()) {
             exDates.add(((Coupon) cf).accrualStartDate());
         }
@@ -105,7 +105,7 @@ public class BermudanTreeDiagJavaProbe {
         final HullWhite hw = new HullWhite(ts, 0.048696, 0.0058904);
 
         // Build Swaption args + manually replay engine path for n_ex=1.
-        final List<Date> sub1 = new ArrayList<Date>(exDates.subList(0, 1));
+        final List<Date> sub1 = new ArrayList<>(exDates.subList(0, 1));
         final org.jquantlib.instruments.Swaption.ArgumentsImpl args =
                 new org.jquantlib.instruments.Swaption.ArgumentsImpl();
         args.swap = atmSwap;
@@ -224,7 +224,7 @@ public class BermudanTreeDiagJavaProbe {
                 fixSched, atm, fixDc, fltSched, idx, 0.0, idx.dayCounter());
         atmSwap.setPricingEngine(new DiscountingSwapEngine(ts));
 
-        final List<Date> exDates = new ArrayList<Date>();
+        final List<Date> exDates = new ArrayList<>();
         for (final CashFlow cf : atmSwap.fixedLeg()) {
             exDates.add(((Coupon) cf).accrualStartDate());
         }
@@ -245,7 +245,7 @@ public class BermudanTreeDiagJavaProbe {
         };
 
         for (int n = 1; n <= exDates.size(); n++) {
-            final List<Date> subset = new ArrayList<Date>(exDates.subList(0, n));
+            final List<Date> subset = new ArrayList<>(exDates.subList(0, n));
             final Exercise berm = new BermudanExercise(subset.toArray(new Date[0]));
             final Swaption sBerm = new Swaption(atmSwap, berm);
             sBerm.setPricingEngine(treeEng);
@@ -256,7 +256,7 @@ public class BermudanTreeDiagJavaProbe {
 
         // n_ex=1 is European-equivalent — test all 3 engines
         {
-            final List<Date> sub1 = new ArrayList<Date>(exDates.subList(0, 1));
+            final List<Date> sub1 = new ArrayList<>(exDates.subList(0, 1));
             final Exercise euro = new EuropeanExercise(sub1.get(0));
             final Exercise berm = new BermudanExercise(sub1.toArray(new Date[0]));
 
@@ -282,7 +282,7 @@ public class BermudanTreeDiagJavaProbe {
 
         // Trace: initialize swaption at exTime, dump values
         {
-            final List<Date> sub1 = new ArrayList<Date>(exDates.subList(0, 1));
+            final List<Date> sub1 = new ArrayList<>(exDates.subList(0, 1));
             final org.jquantlib.instruments.Swaption.ArgumentsImpl args2 =
                     new org.jquantlib.instruments.Swaption.ArgumentsImpl();
             args2.swap = atmSwap;
@@ -332,7 +332,7 @@ public class BermudanTreeDiagJavaProbe {
         final org.jquantlib.instruments.Swaption.ArgumentsImpl args =
                 new org.jquantlib.instruments.Swaption.ArgumentsImpl();
         args.swap = atmSwap;
-        final List<Date> sub1 = new ArrayList<Date>(exDates.subList(0, 1));
+        final List<Date> sub1 = new ArrayList<>(exDates.subList(0, 1));
         args.exercise = new BermudanExercise(sub1.toArray(new Date[0]));
         args.settlementType = org.jquantlib.instruments.Settlement.Type.Physical;
         args.settlementMethod = org.jquantlib.instruments.Settlement.Method.PhysicalOTC;

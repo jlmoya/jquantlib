@@ -143,7 +143,7 @@ public class SofrFuturesTest {
         index.addFixing(new Date(24, Month.October, 2018), 0.0218);
         index.addFixing(new Date(25, Month.October, 2018), 0.0219);
 
-        final List<RateHelper> helpers = new ArrayList<RateHelper>();
+        final List<RateHelper> helpers = new ArrayList<>();
         for (final SofrQuotes q : sofrQuotes) {
             helpers.add(new SofrFutureRateHelper(q.price, q.month, q.year, q.freq));
         }
@@ -214,7 +214,7 @@ public class SofrFuturesTest {
         index.addFixing(new Date(26, Month.June, 2024), 0.02);
         index.addFixing(new Date(27, Month.June, 2024), 0.02);
 
-        final List<RateHelper> helpers = new ArrayList<RateHelper>();
+        final List<RateHelper> helpers = new ArrayList<>();
         for (final SofrQuotes q : sofrQuotes) {
             helpers.add(new SofrFutureRateHelper(q.price, q.month, q.year, q.freq));
         }

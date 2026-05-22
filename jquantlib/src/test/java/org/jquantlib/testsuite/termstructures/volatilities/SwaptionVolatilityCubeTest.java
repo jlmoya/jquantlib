@@ -134,7 +134,7 @@ public class SwaptionVolatilityCubeTest {
                 new ArrayList<List<Handle<? extends Quote>>>(ATM_OPTION_TENORS.size());
         for (int i = 0; i < ATM_OPTION_TENORS.size(); ++i) {
             final List<Handle<? extends Quote>> row =
-                    new ArrayList<Handle<? extends Quote>>(ATM_SWAP_TENORS.size());
+                    new ArrayList<>(ATM_SWAP_TENORS.size());
             for (int j = 0; j < ATM_SWAP_TENORS.size(); ++j) {
                 row.add(new Handle<Quote>(new SimpleQuote(ATM_VOLS[i][j])));
             }
@@ -148,7 +148,7 @@ public class SwaptionVolatilityCubeTest {
                 new ArrayList<List<Handle<Quote>>>(VOL_SPREADS.length);
         for (int i = 0; i < VOL_SPREADS.length; ++i) {
             final List<Handle<Quote>> row =
-                    new ArrayList<Handle<Quote>>(STRIKE_SPREADS.size());
+                    new ArrayList<>(STRIKE_SPREADS.size());
             for (int j = 0; j < STRIKE_SPREADS.size(); ++j) {
                 row.add(new Handle<Quote>(new SimpleQuote(VOL_SPREADS[i][j])));
             }
@@ -377,7 +377,7 @@ public class SwaptionVolatilityCubeTest {
         final int n = CUBE_OPTION_TENORS.size() * CUBE_SWAP_TENORS.size();
         final List<List<Handle<Quote>>> g = new ArrayList<List<Handle<Quote>>>(n);
         for (int i = 0; i < n; ++i) {
-            final List<Handle<Quote>> row = new ArrayList<Handle<Quote>>(4);
+            final List<Handle<Quote>> row = new ArrayList<>(4);
             row.add(new Handle<Quote>(new SimpleQuote(0.2)));
             row.add(new Handle<Quote>(new SimpleQuote(0.5)));
             row.add(new Handle<Quote>(new SimpleQuote(0.4)));
@@ -595,7 +595,7 @@ public class SwaptionVolatilityCubeTest {
         final int n = CUBE_OPTION_TENORS.size() * CUBE_SWAP_TENORS.size();
         final List<List<Handle<Quote>>> g = new ArrayList<List<Handle<Quote>>>(n);
         for (int i = 0; i < n; ++i) {
-            final List<Handle<Quote>> row = new ArrayList<Handle<Quote>>(5);
+            final List<Handle<Quote>> row = new ArrayList<>(5);
             row.add(new Handle<Quote>(new SimpleQuote(alpha)));
             row.add(new Handle<Quote>(new SimpleQuote(beta)));
             row.add(new Handle<Quote>(new SimpleQuote(nu)));
@@ -875,9 +875,9 @@ public class SwaptionVolatilityCubeTest {
         // Build a shifted-lognormal ATM matrix with a uniform 2% shift.
         final int nOpts = ATM_OPTION_TENORS.size();
         final int nSwps = ATM_SWAP_TENORS.size();
-        final List<List<Double>> shifts = new ArrayList<List<Double>>(nOpts);
+        final List<List<Double>> shifts = new ArrayList<>(nOpts);
         for (int i = 0; i < nOpts; ++i) {
-            final List<Double> row = new ArrayList<Double>(nSwps);
+            final List<Double> row = new ArrayList<>(nSwps);
             for (int j = 0; j < nSwps; ++j) {
                 row.add(0.02);
             }

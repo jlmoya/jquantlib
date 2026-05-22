@@ -54,7 +54,7 @@ public class Concentrating1dMesherTest {
     }
 
     private static List<CPointSpec> spec(final CPointSpec... s) {
-        return new ArrayList<CPointSpec>(Arrays.asList(s));
+        return new ArrayList<>(Arrays.asList(s));
     }
 
     private static void assertMonotoneAndSpacing(final Concentrating1dMesher m) {
@@ -154,7 +154,7 @@ public class Concentrating1dMesherTest {
     public void rejectsEmptyCPoints() {
         try {
             new Concentrating1dMesher(0.0, 1.0, 11,
-                    new ArrayList<CPointSpec>());
+                    new ArrayList<>());
             fail("expected IllegalArgumentException on empty cPoints");
         } catch (final IllegalArgumentException expected) {
             // expected

@@ -115,7 +115,7 @@ public class MCAmericanBasketEngineTest {
 
         final int numberAssets = 2;
         final Matrix corr = new Matrix(numberAssets, numberAssets);
-        final List<StochasticProcess1D> v = new ArrayList<StochasticProcess1D>(numberAssets);
+        final List<StochasticProcess1D> v = new ArrayList<>(numberAssets);
         for (int i = 0; i < numberAssets; ++i) {
             v.add(stochasticProcess);
             corr.set(i, i, 1.0);
@@ -195,7 +195,7 @@ public class MCAmericanBasketEngineTest {
         final Date maturity = today.add(1080);
         final Exercise exercise = new AmericanExercise(today, maturity);
 
-        final List<StochasticProcess1D> procs = new ArrayList<StochasticProcess1D>(3);
+        final List<StochasticProcess1D> procs = new ArrayList<>(3);
         for (int i = 0; i < 3; ++i) {
             procs.add(process);
         }
@@ -270,7 +270,7 @@ public class MCAmericanBasketEngineTest {
 
         final Matrix corr = new Matrix(2, 2);
         corr.set(0, 0, 1.0); corr.set(1, 1, 1.0);
-        final List<StochasticProcess1D> v = new ArrayList<StochasticProcess1D>();
+        final List<StochasticProcess1D> v = new ArrayList<>();
         v.add(process); v.add(process);
         final StochasticProcessArray procs = new StochasticProcessArray(v, corr);
 

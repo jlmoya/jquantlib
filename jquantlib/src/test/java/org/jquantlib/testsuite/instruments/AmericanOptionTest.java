@@ -542,9 +542,9 @@ public class AmericanOptionTest {
 
 
     private void testFdGreeks(final Class<? extends PricingEngine> klass) {
-        final Map<String, Double> calculated = new HashMap<String, Double>();
-        final Map<String, Double> expected = new HashMap<String, Double>();
-        final Map<String, Double> tolerance = new HashMap<String, Double>();
+        final Map<String, Double> calculated = new HashMap<>();
+        final Map<String, Double> expected = new HashMap<>();
+        final Map<String, Double> tolerance = new HashMap<>();
         tolerance.put("delta", 7.0e-4);
         tolerance.put("gamma", 2.0e-4);
         tolerance.put("theta", 1.0e-4);

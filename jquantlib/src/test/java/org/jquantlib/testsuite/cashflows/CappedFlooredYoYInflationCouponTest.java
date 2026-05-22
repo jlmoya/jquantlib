@@ -798,13 +798,13 @@ public class CappedFlooredYoYInflationCouponTest {
                         final Leg leg2 = vars.makeYoYCapFlooredLeg(whichPricer,
                                 from, legLength,
                                 constList(legLength, strike), // cap
-                                new ArrayList<Double>(),       // floor
+                                new ArrayList<>(),       // floor
                                 vol, 1.0, 0.0);
 
                         // Floored leg with this pricer's volatility surface.
                         final Leg leg3 = vars.makeYoYCapFlooredLeg(whichPricer,
                                 from, legLength,
-                                new ArrayList<Double>(),       // cap
+                                new ArrayList<>(),       // cap
                                 constList(legLength, strike), // floor
                                 vol, 1.0, 0.0);
 

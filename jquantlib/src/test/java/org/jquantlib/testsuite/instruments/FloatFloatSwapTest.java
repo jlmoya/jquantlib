@@ -86,7 +86,7 @@ public class FloatFloatSwapTest {
         final DiscountingSwapEngine dse = new DiscountingSwapEngine(ts);
 
         final ReferenceReader reader = ReferenceReader.load("instruments/floatfloat_swap");
-        final List<String> failures = new ArrayList<String>();
+        final List<String> failures = new ArrayList<>();
 
         // Spot start: 2 business days after eval (TARGET, ModifiedFollowing)
         final Date start = cal.advance(EVAL, new Period(2, TimeUnit.Days),

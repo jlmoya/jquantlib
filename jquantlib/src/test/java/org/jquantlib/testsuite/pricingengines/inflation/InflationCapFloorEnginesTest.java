@@ -88,11 +88,10 @@ public class InflationCapFloorEnginesTest {
                 new Date(13, Month.August, 2017)
         };
         final double[] nodeRates = {0.025, 0.027, 0.029, 0.031, 0.034, 0.036};
-        final InterpolatedYoYInflationCurve<Linear> yoyCurve =
-                new InterpolatedYoYInflationCurve<>(Linear.class, refDate,
+        final var yoyCurve = new InterpolatedYoYInflationCurve<Linear>(Linear.class, refDate,
                         nodeDates, nodeRates, freq, dc);
         yoyCurve.enableExtrapolation();
-        final Handle<YoYInflationTermStructure> ts = new Handle<>(yoyCurve);
+        final var ts = new Handle<YoYInflationTermStructure>(yoyCurve);
         final YYUKRPI yyIndex = new YYUKRPI(freq, false, false, ts);
 
         // Seed historic fixings
@@ -121,14 +120,14 @@ public class InflationCapFloorEnginesTest {
         // Nominal discount curve: 5% Continuous Actual365Fixed
         final FlatForward nominalCurve = new FlatForward(refDate, 0.05, dc,
                 Compounding.Continuous, Frequency.Annual);
-        final Handle<YieldTermStructure> nominalTS = new Handle<>(nominalCurve);
+        final var nominalTS = new Handle<YieldTermStructure>(nominalCurve);
 
         // Constant 20% vol surface — uses Track B's real ConstantYoYOptionletVolatility
         // (matches C++ probe setup with indexIsInterpolated=false).
         final YoYOptionletVolatilitySurface volSurface =
                 new ConstantYoYOptionletVolatility(0.20, 0, cal, bdc, dc,
                         observationLag, freq, /*indexIsInterpolated*/ false);
-        final Handle<YoYOptionletVolatilitySurface> volTS = new Handle<>(volSurface);
+        final var volTS = new Handle<YoYOptionletVolatilitySurface>(volSurface);
 
         // 5Y schedule
         final Date startDate = evalDate;

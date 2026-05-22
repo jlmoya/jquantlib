@@ -574,7 +574,7 @@ public class BatesModelTest {
         // integrands at these parameters.
         final PricingEngine batesEngine = new BatesEngine(batesModel, process, 128);
 
-        final List<CalibrationHelper> options = new ArrayList<CalibrationHelper>();
+        final List<CalibrationHelper> options = new ArrayList<>();
 
         for (int s = 0; s < 13; ++s) {
             for (int m = 0; m < 8; ++m) {
@@ -752,8 +752,8 @@ public class BatesModelTest {
         // setPricingEngine (declared on BlackCalibrationHelper, not on
         // the base CalibrationHelper interface), and a parallel
         // CalibrationHelper view for getCalibrationError().
-        final List<HestonModelHelper> helpers = new ArrayList<HestonModelHelper>();
-        final List<CalibrationHelper> options = new ArrayList<CalibrationHelper>();
+        final List<HestonModelHelper> helpers = new ArrayList<>();
+        final List<CalibrationHelper> options = new ArrayList<>();
         for (int s = 0; s < 13; ++s) {
             for (int m = 0; m < 8; ++m) {
                 final Handle<Quote> volQ = new Handle<Quote>(

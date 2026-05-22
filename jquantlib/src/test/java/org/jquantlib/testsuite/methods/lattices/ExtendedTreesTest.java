@@ -94,7 +94,7 @@ public class ExtendedTreesTest {
         final EngineType engine = EngineType.JR;
         /* @Size */final int steps = 251;
         /* @Size */final int samples = Constants.NULL_INTEGER;
-        final Map<String, /* @Real */Double> relativeTol = new HashMap<String, Double>();
+        final Map<String, /* @Real */Double> relativeTol = new HashMap<>();
         relativeTol.put("value", 0.002);
         relativeTol.put("delta", 1.0e-3);
         relativeTol.put("gamma", 1.0e-4);
@@ -110,7 +110,7 @@ public class ExtendedTreesTest {
         final EngineType engine = EngineType.CRR;
         /* @Size */final int steps = 501;
         /* @Size */final int samples = Constants.NULL_INTEGER;
-        final Map<String, /* @Real */Double> relativeTol = new HashMap<String, Double>();
+        final Map<String, /* @Real */Double> relativeTol = new HashMap<>();
         relativeTol.put("value", 0.02);
         relativeTol.put("delta", 1.0e-3);
         relativeTol.put("gamma", 1.0e-4);
@@ -126,7 +126,7 @@ public class ExtendedTreesTest {
         final EngineType engine = EngineType.EQP;
         /* @Size */final int steps = 501;
         /* @Size */final int samples = Constants.NULL_INTEGER;
-        final Map<String, /* @Real */Double> relativeTol = new HashMap<String, Double>();
+        final Map<String, /* @Real */Double> relativeTol = new HashMap<>();
         relativeTol.put("value", 0.02);
         relativeTol.put("delta", 1.0e-3);
         relativeTol.put("gamma", 1.0e-4);
@@ -142,7 +142,7 @@ public class ExtendedTreesTest {
         final EngineType engine = EngineType.TGEO;
         /* @Size */final int steps = 251;
         /* @Size */final int samples = Constants.NULL_INTEGER;
-        final Map<String, /* @Real */Double> relativeTol = new HashMap<String, Double>();
+        final Map<String, /* @Real */Double> relativeTol = new HashMap<>();
         relativeTol.put("value", 0.002);
         relativeTol.put("delta", 1.0e-3);
         relativeTol.put("gamma", 1.0e-4);
@@ -158,7 +158,7 @@ public class ExtendedTreesTest {
         final EngineType engine = EngineType.TIAN;
         /* @Size */final int steps = 251;
         /* @Size */final int samples = Constants.NULL_INTEGER;
-        final Map<String, /* @Real */Double> relativeTol = new HashMap<String, Double>();
+        final Map<String, /* @Real */Double> relativeTol = new HashMap<>();
         relativeTol.put("value", 0.002);
         relativeTol.put("delta", 1.0e-3);
         relativeTol.put("gamma", 1.0e-4);
@@ -174,7 +174,7 @@ public class ExtendedTreesTest {
         final EngineType engine = EngineType.LR;
         /* @Size */final int steps = 251;
         /* @Size */final int samples = Constants.NULL_INTEGER;
-        final Map<String, /* @Real */Double> relativeTol = new HashMap<String, Double>();
+        final Map<String, /* @Real */Double> relativeTol = new HashMap<>();
         relativeTol.put("value", 1.0e-6);
         relativeTol.put("delta", 1.0e-3);
         relativeTol.put("gamma", 1.0e-4);
@@ -190,7 +190,7 @@ public class ExtendedTreesTest {
         final EngineType engine = EngineType.JOSHI;
         /* @Size */final int steps = 251;
         /* @Size */final int samples = Constants.NULL_INTEGER;
-        final Map<String, /* @Real */Double> relativeTol = new HashMap<String, Double>();
+        final Map<String, /* @Real */Double> relativeTol = new HashMap<>();
         relativeTol.put("value", 1.0e-7);
         relativeTol.put("delta", 1.0e-3);
         relativeTol.put("gamma", 1.0e-4);
@@ -201,8 +201,8 @@ public class ExtendedTreesTest {
     private void testEngineConsistency(final EngineType engine, final/* @Size */int binomialSteps, final/* @Size */int samples,
             final Map<String, /* @Real */Double> tolerance) {
 
-        final Map<String, /* @Real */Double> calculated = new HashMap<String, Double>();
-        final Map<String, /* @Real */Double> expected = new HashMap<String, Double>();
+        final Map<String, /* @Real */Double> calculated = new HashMap<>();
+        final Map<String, /* @Real */Double> expected = new HashMap<>();
 
         // test options
         final Option.Type types[] = { Option.Type.Call, Option.Type.Put };

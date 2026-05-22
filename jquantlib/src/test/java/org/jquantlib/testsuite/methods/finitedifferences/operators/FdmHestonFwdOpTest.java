@@ -47,7 +47,7 @@ public class FdmHestonFwdOpTest {
 
     private static FdmMesher mesher2D(final double xMin, final double xMax, final int nx,
                                       final double vMin, final double vMax, final int nv) {
-        final List<Fdm1dMesher> ms = new ArrayList<Fdm1dMesher>(2);
+        final List<Fdm1dMesher> ms = new ArrayList<>(2);
         ms.add(new Uniform1dMesher(xMin, xMax, nx));
         ms.add(new Uniform1dMesher(vMin, vMax, nv));
         return new FdmMesherComposite(ms);

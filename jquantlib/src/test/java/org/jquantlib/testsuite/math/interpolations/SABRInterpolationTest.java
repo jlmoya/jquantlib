@@ -141,7 +141,7 @@ public class SABRInterpolationTest {
 
         final double calibrationTolerance = 5.0e-8;
         // initialize optimization methods
-        final List<OptimizationMethod> methods_ = new ArrayList<OptimizationMethod>();
+        final List<OptimizationMethod> methods_ = new ArrayList<>();
         methods_.add(new Simplex(0.01));
         methods_.add(new LevenbergMarquardt(1e-8, 1e-8, 1e-8));
         // Initialize end criteria

@@ -95,14 +95,13 @@ public class PiecewiseZeroInflationCurveTest {
 
         final List<ZeroCouponInflationSwapHelper> helpers = new ArrayList<>();
         for (int i = 0; i < quoteRates.length; ++i) {
-            final Handle<Quote> qh = new Handle<>(new SimpleQuote(quoteRates[i]));
+            final var qh = new Handle<Quote>(new SimpleQuote(quoteRates[i]));
             final Date maturity = refDate.add(tenors[i]);
             helpers.add(new ZeroCouponInflationSwapHelper(qh, swapObsLag, maturity,
                     cal, bdc, dc, ukRpi));
         }
 
-        final PiecewiseZeroInflationCurve<Linear> curve =
-                new PiecewiseZeroInflationCurve<>(Linear.class, refDate, baseDate,
+        final var curve = new PiecewiseZeroInflationCurve<Linear>(Linear.class, refDate, baseDate,
                         freq, dc, helpers);
         curve.enableExtrapolation();
 

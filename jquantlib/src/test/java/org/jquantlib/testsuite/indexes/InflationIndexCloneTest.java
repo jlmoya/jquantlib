@@ -76,8 +76,7 @@ public class InflationIndexCloneTest {
                 new Date(13, Month.August, 2010)
         };
         final double[] nodeRatesA = new double[] { 0.025, 0.030, 0.034 };
-        final InterpolatedZeroInflationCurve<Linear> curveA =
-                new InterpolatedZeroInflationCurve<>(Linear.class,
+        final var curveA = new InterpolatedZeroInflationCurve<Linear>(Linear.class,
                         refDate, nodeDatesA, nodeRatesA, freq, dc);
         curveA.enableExtrapolation();
 
@@ -89,8 +88,7 @@ public class InflationIndexCloneTest {
         // Curve B uses noticeably different rates so a forecasted fixing through
         // it must differ from one through curve A.
         final double[] nodeRatesB = new double[] { 0.060, 0.065, 0.070 };
-        final InterpolatedZeroInflationCurve<Linear> curveB =
-                new InterpolatedZeroInflationCurve<>(Linear.class,
+        final var curveB = new InterpolatedZeroInflationCurve<Linear>(Linear.class,
                         refDate, nodeDatesB, nodeRatesB, freq, dc);
         curveB.enableExtrapolation();
 

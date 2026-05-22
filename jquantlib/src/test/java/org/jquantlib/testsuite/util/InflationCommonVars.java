@@ -117,7 +117,7 @@ public final class InflationCommonVars {
             final List<Datum> data, final ZeroHelperFactory factory) {
         final List<ZeroCouponInflationSwapHelper> instruments = new ArrayList<>();
         for (final Datum d : data) {
-            final Handle<SimpleQuote> quote = new Handle<>(new SimpleQuote(d.rate / 100.0));
+            final var quote = new Handle<SimpleQuote>(new SimpleQuote(d.rate / 100.0));
             instruments.add(factory.make(quote, d.date));
         }
         return instruments;

@@ -115,13 +115,12 @@ public class GlobalBootstrapTest {
         // ----- Iterative bootstrap -----
         final List<ZeroCouponInflationSwapHelper> helpersIter = new ArrayList<>();
         for (int i = 0; i < quoteRates.length; ++i) {
-            final Handle<Quote> qh = new Handle<>(new SimpleQuote(quoteRates[i]));
+            final var qh = new Handle<Quote>(new SimpleQuote(quoteRates[i]));
             final Date maturity = refDate.add(tenors[i]);
             helpersIter.add(new ZeroCouponInflationSwapHelper(
                     qh, swapObsLag, maturity, cal, bdc, dc, ukRpi));
         }
-        final PiecewiseZeroInflationCurve<Linear> curveIter =
-                new PiecewiseZeroInflationCurve<>(Linear.class, refDate, baseDate,
+        final var curveIter = new PiecewiseZeroInflationCurve<Linear>(Linear.class, refDate, baseDate,
                         freq, dc, helpersIter);
         curveIter.enableExtrapolation();
         final double[] dataIter = curveIter.data();
@@ -129,13 +128,12 @@ public class GlobalBootstrapTest {
         // ----- GlobalBootstrap -----
         final List<ZeroCouponInflationSwapHelper> helpersGlobal = new ArrayList<>();
         for (int i = 0; i < quoteRates.length; ++i) {
-            final Handle<Quote> qh = new Handle<>(new SimpleQuote(quoteRates[i]));
+            final var qh = new Handle<Quote>(new SimpleQuote(quoteRates[i]));
             final Date maturity = refDate.add(tenors[i]);
             helpersGlobal.add(new ZeroCouponInflationSwapHelper(
                     qh, swapObsLag, maturity, cal, bdc, dc, ukRpi));
         }
-        final PiecewiseZeroInflationCurve<Linear> curveGlobal =
-                new PiecewiseZeroInflationCurve<>(Linear.class, refDate, baseDate,
+        final var curveGlobal = new PiecewiseZeroInflationCurve<Linear>(Linear.class, refDate, baseDate,
                         freq, dc, helpersGlobal, 1.0e-12, new GlobalBootstrap());
         curveGlobal.enableExtrapolation();
         final double[] dataGlobal = curveGlobal.data();
@@ -186,8 +184,7 @@ public class GlobalBootstrapTest {
                 new Handle<>(new SimpleQuote(0.029)), swapObsLag,
                 refDate.add(new Period(2, TimeUnit.Years)), cal, bdc, dc, ukRpi));
 
-        final PiecewiseZeroInflationCurve<Linear> curve =
-                new PiecewiseZeroInflationCurve<>(Linear.class, refDate, baseDate,
+        final var curve = new PiecewiseZeroInflationCurve<Linear>(Linear.class, refDate, baseDate,
                         freq, dc, helpers, 1.0e-12, new GlobalBootstrap());
         curve.enableExtrapolation();
 

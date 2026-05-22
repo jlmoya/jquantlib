@@ -458,7 +458,7 @@ public class DayCountersTest {
         assertTrue(business252Brazil.eq(business252Brazil1));
         assertFalse(business252Brazil.ne(business252Brazil1));
         
-        HashSet<DayCounter> testSet = new HashSet<DayCounter>();
+        var testSet = new HashSet<DayCounter>();
         testSet.add(thirty360);
         
         assertTrue(testSet.contains(thirty360));

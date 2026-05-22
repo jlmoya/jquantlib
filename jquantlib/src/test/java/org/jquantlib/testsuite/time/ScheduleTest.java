@@ -75,7 +75,7 @@ public class ScheduleTest {
                 calendar, modFollow, modFollow,
                 dateRule, false, null, null);
 
-        final List<Date> dates = new ArrayList<Date>();
+        final List<Date> dates = new ArrayList<>();
         dates.add(startDate);
         dates.add(calendar.advance(startDate, new Period(10, TimeUnit.Weeks),modFollow));
 
@@ -622,7 +622,7 @@ public class ScheduleTest {
         final Period p1Y = new Period(1, TimeUnit.Years);
         final Period p5Y = new Period(5, TimeUnit.Years);
         final Period p0M = new Period(0, TimeUnit.Months);
-        final List<CdsInput> inputs = new ArrayList<CdsInput>();
+        final List<CdsInput> inputs = new ArrayList<>();
         // 3M tenor block
         inputs.add(new CdsInput(new Date(19, Month.March, 2016), p3M, new Date(21, Month.December, 2015), new Date(20, Month.March, 2016)));
         inputs.add(new CdsInput(new Date(20, Month.March, 2016), p3M, new Date(21, Month.December, 2015), new Date(20, Month.September, 2016)));
@@ -708,7 +708,7 @@ public class ScheduleTest {
         final Period p1Y = new Period(1, TimeUnit.Years);
         final Period p5Y = new Period(5, TimeUnit.Years);
         final Period p0M = new Period(0, TimeUnit.Months);
-        final List<CdsInput> inputs = new ArrayList<CdsInput>();
+        final List<CdsInput> inputs = new ArrayList<>();
         // 3M
         inputs.add(new CdsInput(new Date(19, Month.March, 2016), p3M, new Date(21, Month.December, 2015), new Date(20, Month.June, 2016)));
         inputs.add(new CdsInput(new Date(20, Month.March, 2016), p3M, new Date(21, Month.December, 2015), new Date(20, Month.September, 2016)));
@@ -799,7 +799,7 @@ public class ScheduleTest {
         final Period p9M = new Period(9, TimeUnit.Months);
         final Period p1Y = new Period(1, TimeUnit.Years);
         final Period p5Y = new Period(5, TimeUnit.Years);
-        final List<CdsInput> inputs = new ArrayList<CdsInput>();
+        final List<CdsInput> inputs = new ArrayList<>();
         // 3M
         inputs.add(new CdsInput(new Date(19, Month.March, 2016), p3M, new Date(19, Month.March, 2016), new Date(20, Month.June, 2016)));
         inputs.add(new CdsInput(new Date(20, Month.March, 2016), p3M, new Date(20, Month.March, 2016), new Date(20, Month.September, 2016)));
@@ -880,7 +880,7 @@ public class ScheduleTest {
         Date tradeDate = new Date(18, Month.September, 2015);
         Date maturity = CreditDefaultSwap.cdsMaturity(tradeDate, tenor, rule);
         Schedule s = makeCdsSchedule(tradeDate, maturity, rule);
-        List<Date> expDates = new ArrayList<Date>(Arrays.asList(
+        List<Date> expDates = new ArrayList<>(Arrays.asList(
                 new Date(22, Month.June, 2015), new Date(21, Month.September, 2015),
                 new Date(21, Month.December, 2015), new Date(21, Month.March, 2016),
                 new Date(20, Month.June, 2016)));
@@ -912,7 +912,7 @@ public class ScheduleTest {
         tradeDate = new Date(20, Month.June, 2009);
         maturity = new Date(20, Month.December, 2009);
         s = makeCdsSchedule(tradeDate, maturity, rule);
-        expDates = new ArrayList<Date>(Arrays.asList(
+        expDates = new ArrayList<>(Arrays.asList(
                 new Date(20, Month.March, 2009), new Date(22, Month.June, 2009),
                 new Date(21, Month.September, 2009), new Date(20, Month.December, 2009)));
         checkDates(s, expDates);
@@ -941,7 +941,7 @@ public class ScheduleTest {
         Date tradeDate = new Date(18, Month.September, 2015);
         Date maturity = CreditDefaultSwap.cdsMaturity(tradeDate, tenor, rule);
         Schedule s = makeCdsSchedule(tradeDate, maturity, rule);
-        List<Date> expDates = new ArrayList<Date>(Arrays.asList(
+        List<Date> expDates = new ArrayList<>(Arrays.asList(
                 new Date(22, Month.June, 2015), new Date(21, Month.September, 2015),
                 new Date(21, Month.December, 2015), new Date(21, Month.March, 2016),
                 new Date(20, Month.June, 2016), new Date(20, Month.September, 2016)));
@@ -972,7 +972,7 @@ public class ScheduleTest {
         tradeDate = new Date(20, Month.June, 2009);
         maturity = new Date(20, Month.December, 2009);
         s = makeCdsSchedule(tradeDate, maturity, rule);
-        expDates = new ArrayList<Date>(Arrays.asList(
+        expDates = new ArrayList<>(Arrays.asList(
                 new Date(20, Month.March, 2009), new Date(22, Month.June, 2009),
                 new Date(21, Month.September, 2009), new Date(20, Month.December, 2009)));
         checkDates(s, expDates);
@@ -1001,7 +1001,7 @@ public class ScheduleTest {
         Date tradeDatePlusOne = new Date(18, Month.September, 2015);
         Date maturity = CreditDefaultSwap.cdsMaturity(tradeDatePlusOne, tenor, rule);
         Schedule s = makeCdsSchedule(tradeDatePlusOne, maturity, rule);
-        List<Date> expDates = new ArrayList<Date>(Arrays.asList(
+        List<Date> expDates = new ArrayList<>(Arrays.asList(
                 new Date(18, Month.September, 2015), new Date(21, Month.December, 2015),
                 new Date(21, Month.March, 2016), new Date(20, Month.June, 2016),
                 new Date(20, Month.September, 2016)));

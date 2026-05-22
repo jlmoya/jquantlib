@@ -73,7 +73,7 @@ public class LongstaffSchwartzPathPricerTest {
             return path.get(t);
         }
         @Override public List<? extends Ops.Op<Double, Double>> basisSystem() {
-            final List<Ops.Op<Double, Double>> b = new ArrayList<Ops.Op<Double, Double>>();
+            final List<Ops.Op<Double, Double>> b = new ArrayList<>();
             b.add(new Ops.Op<Double, Double>() { public Double op(final Double x) { return 1.0; } });
             b.add(new Ops.Op<Double, Double>() { public Double op(final Double x) { return x; } });
             b.add(new Ops.Op<Double, Double>() { public Double op(final Double x) { return x * x; } });
@@ -141,7 +141,7 @@ public class LongstaffSchwartzPathPricerTest {
             // ObjectToDouble<Array> is functionally identical to Op<Array, Double>;
             // adapt one to the other so the LSPP generic stays clean.
             final List<Ops.Op<Array, Double>> adapted =
-                    new ArrayList<Ops.Op<Array, Double>>(basis.size());
+                    new ArrayList<>(basis.size());
             for (final Ops.ObjectToDouble<Array> b : basis) {
                 adapted.add(new Ops.Op<Array, Double>() {
                     @Override public Double op(final Array a) { return b.op(a); }
@@ -178,7 +178,7 @@ public class LongstaffSchwartzPathPricerTest {
                 s1[t] = s1[t - 1] * (1.0 + 0.10 * (rand.nextDouble() - 0.5));
                 s2[t] = s2[t - 1] * (1.0 + 0.10 * (rand.nextDouble() - 0.5));
             }
-            final List<Path> components = new ArrayList<Path>(2);
+            final List<Path> components = new ArrayList<>(2);
             components.add(new Path(grid, s1));
             components.add(new Path(grid, s2));
             final MultiPath mp = new MultiPath(components);
@@ -190,7 +190,7 @@ public class LongstaffSchwartzPathPricerTest {
         p.calibrate();
 
         // Price an ITM 2-asset path: both assets terminal-ITM
-        final List<Path> itmComps = new ArrayList<Path>(2);
+        final List<Path> itmComps = new ArrayList<>(2);
         itmComps.add(new Path(grid, new double[] { 100, 102, 105, 108, 115 }));
         itmComps.add(new Path(grid, new double[] { 100, 101, 103, 106, 110 }));
         final MultiPath itm = new MultiPath(itmComps);

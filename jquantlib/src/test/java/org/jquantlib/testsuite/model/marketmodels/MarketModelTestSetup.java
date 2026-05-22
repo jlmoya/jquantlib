@@ -647,7 +647,7 @@ public final class MarketModelTestSetup {
     }
 
     private static List<Double> doubleArrayToList(final double[] arr) {
-        final List<Double> list = new ArrayList<Double>(arr.length);
+        final List<Double> list = new ArrayList<>(arr.length);
         for (final double x : arr) {
             list.add(x);
         }

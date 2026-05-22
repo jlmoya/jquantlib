@@ -263,7 +263,7 @@ public class PathGeneratorTest {
 
         // Black-Scholes
         {
-            final List<StochasticProcess1D> processes = new ArrayList<StochasticProcess1D>(3);
+            final List<StochasticProcess1D> processes = new ArrayList<>(3);
             processes.add(new BlackScholesMertonProcess(x0, q, r, sigma));
             processes.add(new BlackScholesMertonProcess(x0, q, r, sigma));
             processes.add(new BlackScholesMertonProcess(x0, q, r, sigma));
@@ -282,7 +282,7 @@ public class PathGeneratorTest {
 
         // geometric Brownian
         {
-            final List<StochasticProcess1D> processes = new ArrayList<StochasticProcess1D>(3);
+            final List<StochasticProcess1D> processes = new ArrayList<>(3);
             processes.add(new GeometricBrownianMotionProcess(100.0, 0.03, 0.20));
             processes.add(new GeometricBrownianMotionProcess(100.0, 0.03, 0.20));
             processes.add(new GeometricBrownianMotionProcess(100.0, 0.03, 0.20));
@@ -300,7 +300,7 @@ public class PathGeneratorTest {
 
         // Ornstein-Uhlenbeck
         {
-            final List<StochasticProcess1D> processes = new ArrayList<StochasticProcess1D>(3);
+            final List<StochasticProcess1D> processes = new ArrayList<>(3);
             processes.add(new OrnsteinUhlenbeckProcess(0.1, 0.20));
             processes.add(new OrnsteinUhlenbeckProcess(0.1, 0.20));
             processes.add(new OrnsteinUhlenbeckProcess(0.1, 0.20));
@@ -318,7 +318,7 @@ public class PathGeneratorTest {
 
         // square-root
         {
-            final List<StochasticProcess1D> processes = new ArrayList<StochasticProcess1D>(3);
+            final List<StochasticProcess1D> processes = new ArrayList<>(3);
             processes.add(new SquareRootProcess(0.1, 0.1, 0.20, 10.0));
             processes.add(new SquareRootProcess(0.1, 0.1, 0.20, 10.0));
             processes.add(new SquareRootProcess(0.1, 0.1, 0.20, 10.0));

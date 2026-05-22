@@ -349,7 +349,7 @@ public class DatesTest {
 
     @Test
     public void testLowerUpperBound() {
-        final List<Date> dates = new ArrayList<Date>();
+        final List<Date> dates = new ArrayList<>();
 
         dates.add(new Date(1,1,2009));
         dates.add(new Date(2,1,2009));
@@ -475,7 +475,7 @@ public class DatesTest {
         assertFalse(today.equals(tomorrow1));
         assertEquals(tomorrow1, tomorrow2);
 
-        HashSet<Date> testSet = new HashSet<Date>();
+        var testSet = new HashSet<Date>();
         testSet.add(today);
         testSet.add(tomorrow1);
 
@@ -523,7 +523,7 @@ public class DatesTest {
         }
 
         // Check Date can be used as HashSet key (C++ unordered_set equivalent).
-        final HashSet<Date> set = new HashSet<Date>();
+        final var set = new HashSet<Date>();
         set.add(startDate);
         if (!set.contains(startDate)) {
             fail("Expected to find date " + startDate + " in HashSet");

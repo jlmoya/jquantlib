@@ -61,16 +61,16 @@ public class OptimizerTest {
         System.out.println("Testing optimizers... ");
 
         // following block moved inside this method body
-        final List<CostFunction> costFunctions_ = new ArrayList<CostFunction>();
-        final List<Constraint> constraints_ = new ArrayList<Constraint>();
-        final List<Array> initialValues_ = new ArrayList<Array>();
-        final List<Integer> maxIterations_ = new ArrayList<Integer>();
-        final List<Integer> maxStationaryStateIterations_ = new ArrayList<Integer>();
-        final List<Double> rootEpsilons_ = new ArrayList<Double>();
-        final List<Double> functionEpsilons_ = new ArrayList<Double>();
-        final List<Double> gradientNormEpsilons_ = new ArrayList<Double>();
-        final List<EndCriteria> endCriterias_ = new ArrayList<EndCriteria>();
-        final List<List<OptimizationMethod>> optimizationMethods_ = new ArrayList<List<OptimizationMethod>>();
+        final List<CostFunction> costFunctions_ = new ArrayList<>();
+        final List<Constraint> constraints_ = new ArrayList<>();
+        final List<Array> initialValues_ = new ArrayList<>();
+        final List<Integer> maxIterations_ = new ArrayList<>();
+        final List<Integer> maxStationaryStateIterations_ = new ArrayList<>();
+        final List<Double> rootEpsilons_ = new ArrayList<>();
+        final List<Double> functionEpsilons_ = new ArrayList<>();
+        final List<Double> gradientNormEpsilons_ = new ArrayList<>();
+        final List<EndCriteria> endCriterias_ = new ArrayList<>();
+        final List<List<OptimizationMethod>> optimizationMethods_ = new ArrayList<>();
         final double [] xMinExpected = new double[1];
         final double [] yMinExpected = new double[1];
 
@@ -81,7 +81,7 @@ public class OptimizerTest {
         final double b = 1;
         final double c = 1;
 
-        final List<Double> coefficients = new ArrayList<Double>();
+        final List<Double> coefficients = new ArrayList<>();
         coefficients.add(c);
         coefficients.add(b);
         coefficients.add( a);
@@ -89,9 +89,9 @@ public class OptimizerTest {
         yMinExpected[0] = -(b*b-4.0*a*c)/(4.0*a);
 
 
-        //List<Array> yMinExpected_ = new ArrayList<Array>();
-        final List<Double> xMinExpected_ = new ArrayList<Double>();
-        final List<Double> yMinExpected_ = new ArrayList<Double>();
+        //List<Array> yMinExpected_ = new ArrayList<>();
+        final List<Double> xMinExpected_ = new ArrayList<>();
+        final List<Double> yMinExpected_ = new ArrayList<>();
         xMinExpected_.add(xMinExpected[xMinExpected.length-1]);
         yMinExpected_.add(xMinExpected[yMinExpected.length-1]);
         costFunctions_.add(new OneDimensionalPolynomDegreeN(coefficients));
@@ -164,7 +164,7 @@ public class OptimizerTest {
             final double levenbergMarquardtEpsfcn,
             final double levenbergMarquardtXtol,
             final double levenbergMarquardtGtol){
-        final List<OptimizationMethod> results = new ArrayList<OptimizationMethod>();
+        final List<OptimizationMethod> results = new ArrayList<>();
         for(int i=0; i<optimizationMethodTypes.length; ++i) {
             results.add(makeOptimizationMethod(optimizationMethodTypes[i],
                     simplexLambda,
@@ -241,7 +241,7 @@ public class OptimizerTest {
         @Override
         public Array values(final Array x) {
             // dummy nested optimization
-            final List<Double> coefficients = new ArrayList<Double>();
+            final List<Double> coefficients = new ArrayList<>();
             coefficients.add(1.0);
             coefficients.add(1.0);
             coefficients.add(1.0);

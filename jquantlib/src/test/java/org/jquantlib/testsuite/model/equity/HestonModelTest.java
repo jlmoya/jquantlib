@@ -282,7 +282,7 @@ public class HestonModelTest {
         final Handle<Quote> vol = new Handle<Quote>(new SimpleQuote(0.1));
         final double volatility = vol.currentLink().value();
 
-        final List<CalibrationHelper> options = new ArrayList<CalibrationHelper>();
+        final List<CalibrationHelper> options = new ArrayList<>();
         for (final Period maturity : optionMaturities) {
             for (double moneyness = -1.0; moneyness < 2.0; moneyness += 1.0) {
                 final Date refDate = riskFreeTS.currentLink().referenceDate();
@@ -436,7 +436,7 @@ public class HestonModelTest {
                 4500, 4600, 4800, 5000, 5200, 5400, 5600
         };
 
-        final List<CalibrationHelper> options = new ArrayList<CalibrationHelper>();
+        final List<CalibrationHelper> options = new ArrayList<>();
         for (int s = 0; s < 13; ++s) {
             for (int m = 0; m < 8; ++m) {
                 final Handle<Quote> volQ =
@@ -570,7 +570,7 @@ public class HestonModelTest {
                 4500, 4600, 4800, 5000, 5200, 5400, 5600
         };
 
-        final List<CalibrationHelper> options = new ArrayList<CalibrationHelper>();
+        final List<CalibrationHelper> options = new ArrayList<>();
         for (int s = 0; s < 13; ++s) {
             for (int m = 0; m < 8; ++m) {
                 final Handle<Quote> volQ =

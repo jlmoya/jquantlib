@@ -162,7 +162,7 @@ public class OptionletStripperTest {
 
     /** Mirrors C++ {@code CommonVars::setCapFloorTermVolSurface()} smile matrix. */
     private static CapFloorTermVolData makeCapFloorTermVolData() {
-        final List<Period> optionTenors = new ArrayList<Period>();
+        final List<Period> optionTenors = new ArrayList<>();
         optionTenors.add(new Period(1, TimeUnit.Years));
         optionTenors.add(new Period(18, TimeUnit.Months));
         optionTenors.add(new Period(2, TimeUnit.Years));
@@ -225,7 +225,7 @@ public class OptionletStripperTest {
     /** Mirrors C++ {@code CommonVars::setCapFloorTermVolCurve()} ATM vol curve. */
     private static CapFloorTermVolCurve makeCapFloorTermVolCurve(
             final Calendar calendar, final DayCounter dayCounter) {
-        final List<Period> optionTenors = new ArrayList<Period>();
+        final List<Period> optionTenors = new ArrayList<>();
         optionTenors.add(new Period(1, TimeUnit.Years));
         optionTenors.add(new Period(18, TimeUnit.Months));
         optionTenors.add(new Period(2, TimeUnit.Years));
@@ -250,7 +250,7 @@ public class OptionletStripperTest {
         };
 
         final List<Handle<? extends Quote>> atmHandles =
-                new ArrayList<Handle<? extends Quote>>(optionTenors.size());
+                new ArrayList<>(optionTenors.size());
         for (int i = 0; i < optionTenors.size(); ++i) {
             atmHandles.add(new Handle<Quote>(new SimpleQuote(atmTermV[i])));
         }
@@ -262,7 +262,7 @@ public class OptionletStripperTest {
      *  16 tenors x 13 strikes = 208 vol points (raw values are in % and
      *  divided by 100 to obtain unit vols, mirroring the C++ {@code termV /= 100;}). */
     private static CapFloorTermVolData makeRealCapFloorTermVolData() {
-        final List<Period> optionTenors = new ArrayList<Period>();
+        final List<Period> optionTenors = new ArrayList<>();
         optionTenors.add(new Period(1, TimeUnit.Years));
         optionTenors.add(new Period(18, TimeUnit.Months));
         optionTenors.add(new Period(2, TimeUnit.Years));
@@ -335,7 +335,7 @@ public class OptionletStripperTest {
                 new Handle<YieldTermStructure>(new FlatForward(0, calendar, flatFwdRate, dayCounter));
 
         final int nTenors = 10;
-        final List<Period> optionTenors = new ArrayList<Period>(nTenors);
+        final List<Period> optionTenors = new ArrayList<>(nTenors);
         for (int i = 0; i < nTenors; ++i) {
             optionTenors.add(new Period(i + 1, TimeUnit.Years));
         }
@@ -769,7 +769,7 @@ public class OptionletStripperTest {
                 new Handle<YieldTermStructure>(new FlatForward(0, calendar, flatFwdRate, dayCounter));
 
         final int nTenors = 10;
-        final List<Period> optionTenors = new ArrayList<Period>(nTenors);
+        final List<Period> optionTenors = new ArrayList<>(nTenors);
         for (int i = 0; i < nTenors; ++i) {
             optionTenors.add(new Period(i + 1, TimeUnit.Years));
         }
@@ -792,7 +792,7 @@ public class OptionletStripperTest {
 
         // Build the matching ATM curve (one tenor per row, same flat vol)
         final List<Handle<? extends Quote>> curveHandles =
-                new ArrayList<Handle<? extends Quote>>(nTenors);
+                new ArrayList<>(nTenors);
         for (int i = 0; i < nTenors; ++i) {
             curveHandles.add(new Handle<Quote>(new SimpleQuote(flatVol)));
         }
@@ -1072,7 +1072,7 @@ public class OptionletStripperTest {
 
         // setRealCapFloorVolSurface — 10x3 cap-vol surface for SOFR
         final double[] strikes1ON = new double[] { 0.03, 0.035, 0.04 };
-        final List<Period> expiries = new ArrayList<Period>();
+        final List<Period> expiries = new ArrayList<>();
         for (int i = 1; i <= 10; ++i) {
             expiries.add(new Period(i, TimeUnit.Years));
         }
@@ -1110,7 +1110,7 @@ public class OptionletStripperTest {
                .withPaymentLag(2);
 
         final double strikeRate = 0.04;
-        final List<Double> strikesList = new ArrayList<Double>();
+        final List<Double> strikesList = new ArrayList<>();
         strikesList.add(strikeRate);
 
         // C++: Cap cap(sofrLeg, strikes); Cap cap1(sofrLeg, strikes);

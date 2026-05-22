@@ -152,8 +152,8 @@ public class CmsTest {
 
             final Handle<Quote> zeroMeanRev = new Handle<Quote>(new SimpleQuote(0.0));
 
-            numericalPricers = new ArrayList<CmsCouponPricer>();
-            analyticPricers = new ArrayList<CmsCouponPricer>();
+            numericalPricers = new ArrayList<>();
+            analyticPricers = new ArrayList<>();
             for (int j = 0; j < yieldCurveModels.size(); ++j) {
                 if (j < yieldCurveModels.size() - 1) {
                     numericalPricers.add(new NumericHaganPricer(atmVol, yieldCurveModels.get(j), zeroMeanRev));

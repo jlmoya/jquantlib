@@ -363,7 +363,7 @@ public class MultipleResetsCouponsTest {
             @Override
             public void run() {
                 vars.createMultipleResetsLeg(start, end)
-                    .withNotionals(new ArrayList<Double>())
+                    .withNotionals(new ArrayList<>())
                     .Leg();
             }
         });
@@ -440,7 +440,7 @@ public class MultipleResetsCouponsTest {
     }
 
     private static List<Double> repeat(final int n, final double v) {
-        final List<Double> out = new ArrayList<Double>(n);
+        final List<Double> out = new ArrayList<>(n);
         for (int i = 0; i < n; i++) {
             out.add(v);
         }
@@ -448,7 +448,7 @@ public class MultipleResetsCouponsTest {
     }
 
     private static List<Integer> repeatInt(final int n, final int v) {
-        final List<Integer> out = new ArrayList<Integer>(n);
+        final List<Integer> out = new ArrayList<>(n);
         for (int i = 0; i < n; i++) {
             out.add(v);
         }

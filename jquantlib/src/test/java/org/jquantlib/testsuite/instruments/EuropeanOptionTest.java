@@ -719,7 +719,7 @@ public class EuropeanOptionTest {
     public void testGreeks() {
         QL.info("Testing analytic European option greeks...");
 
-        final Map<String,Double> tolerance = new HashMap<String, Double>();
+        final Map<String,Double> tolerance = new HashMap<>();
         tolerance.put("delta",  1.0e-5);
         tolerance.put("gamma",  1.0e-5);
         tolerance.put("theta",  1.0e-5);
@@ -727,8 +727,8 @@ public class EuropeanOptionTest {
         tolerance.put("divRho", 1.0e-5);
         tolerance.put("vega",   1.0e-5);
 
-        final Map<String,Double> expected = new HashMap<String, Double>();
-        final Map<String,Double> calculated = new HashMap<String, Double>();
+        final Map<String,Double> expected = new HashMap<>();
+        final Map<String,Double> calculated = new HashMap<>();
 
         final Option.Type types[] = { Option.Type.Call, Option.Type.Put };
         final double strikes[] = { 50.0, 99.5, 100.0, 100.5, 150.0 };
@@ -1071,8 +1071,8 @@ public class EuropeanOptionTest {
 
         // QL_TEST_START_TIMING
 
-        final Map<String, Double> calculated = new HashMap<String, Double>();
-        final Map<String, Double> expected = new HashMap<String, Double>();
+        final Map<String, Double> calculated = new HashMap<>();
+        final Map<String, Double> expected = new HashMap<>();
 
         // test options
         final Option.Type types[] = { Option.Type.Call, Option.Type.Put };
@@ -1164,7 +1164,7 @@ public class EuropeanOptionTest {
         final EngineType engine = EngineType.JR;
         final int timeSteps = 251;
         final int samples = 0;
-        final Map<String,Double> relativeTol = new HashMap<String, Double>(4);
+        final Map<String,Double> relativeTol = new HashMap<>(4);
         relativeTol.put("value", 0.002);
         relativeTol.put("delta", 1.0e-3);
         relativeTol.put("gamma", 1.0e-4);
@@ -1181,7 +1181,7 @@ public class EuropeanOptionTest {
         final EngineType engine = EngineType.CRR;
         final int timeSteps = 501;
         final int samples = 0;
-        final Map<String,Double> relativeTol = new HashMap<String, Double>(4);
+        final Map<String,Double> relativeTol = new HashMap<>(4);
         relativeTol.put("value", 0.002);
         relativeTol.put("delta", 1.0e-3);
         relativeTol.put("gamma", 1.0e-4);
@@ -1198,7 +1198,7 @@ public class EuropeanOptionTest {
         final EngineType engine = EngineType.EQP;
         final int timeSteps = 501;
         final int samples = 0;
-        final Map<String,Double> relativeTol = new HashMap<String, Double>(4);
+        final Map<String,Double> relativeTol = new HashMap<>(4);
         relativeTol.put("value", 0.02);
         relativeTol.put("delta", 1.0e-3);
         relativeTol.put("gamma", 1.0e-4);
@@ -1215,7 +1215,7 @@ public class EuropeanOptionTest {
         final EngineType engine = EngineType.TGEO;
         final int timeSteps = 251;
         final int samples = 0;
-        final Map<String,Double> relativeTol = new HashMap<String, Double>(4);
+        final Map<String,Double> relativeTol = new HashMap<>(4);
         relativeTol.put("value", 0.002);
         relativeTol.put("delta", 1.0e-3);
         relativeTol.put("gamma", 1.0e-4);
@@ -1232,7 +1232,7 @@ public class EuropeanOptionTest {
         final EngineType engine = EngineType.TIAN;
         final int timeSteps = 251;
         final int samples = 0;
-        final Map<String,Double> relativeTol = new HashMap<String, Double>(4);
+        final Map<String,Double> relativeTol = new HashMap<>(4);
         relativeTol.put("value", 0.002);
         relativeTol.put("delta", 1.0e-3);
         relativeTol.put("gamma", 1.0e-4);
@@ -1249,7 +1249,7 @@ public class EuropeanOptionTest {
         final EngineType engine = EngineType.LR;
         final int timeSteps = 251;
         final int samples = 0;
-        final Map<String,Double> relativeTol = new HashMap<String, Double>(4);
+        final Map<String,Double> relativeTol = new HashMap<>(4);
         relativeTol.put("value", 1.0e-6);
         relativeTol.put("delta", 1.0e-3);
         relativeTol.put("gamma", 1.0e-4);
@@ -1266,7 +1266,7 @@ public class EuropeanOptionTest {
         final EngineType engine = EngineType.JOSHI;
         final int timeSteps = 251;
         final int samples = 0;
-        final Map<String,Double> relativeTol = new HashMap<String, Double>(4);
+        final Map<String,Double> relativeTol = new HashMap<>(4);
         relativeTol.put("value", 1.0e-7);
         relativeTol.put("delta", 1.0e-3);
         relativeTol.put("gamma", 1.0e-4);
@@ -1283,7 +1283,7 @@ public class EuropeanOptionTest {
         final EngineType engine = EngineType.FiniteDifferences;
         final @NonNegative int timeSteps = 300;
         final @NonNegative int gridPoints = 300;
-        final Map<String,Double> relativeTol = new HashMap<String, Double>(4);
+        final Map<String,Double> relativeTol = new HashMap<>(4);
         relativeTol.put("value", 1.0e-4);
         relativeTol.put("delta", 1.0e-6);
         relativeTol.put("gamma", 1.0e-6);
@@ -1301,7 +1301,7 @@ public class EuropeanOptionTest {
         final EngineType engine = EngineType.Integral;
         final int timeSteps = 300;
         final int gridPoints = 300;
-        final Map<String,Double> relativeTol = new HashMap<String, Double>(1);
+        final Map<String,Double> relativeTol = new HashMap<>(1);
         relativeTol.put("value", 0.0001);
         testEngineConsistency(engine, timeSteps, gridPoints, relativeTol);
     }
@@ -1337,7 +1337,7 @@ public class EuropeanOptionTest {
         //      Size samples = 4095; // 2^12-1
         //      tol["value"] = 0.01;
         final int samples = 4095;
-        final Map< String, Double > relativeTol = new HashMap< String, Double >(1);
+        final Map< String, Double > relativeTol = new HashMap<>(1);
         relativeTol.put("value", 0.01);
         testEngineConsistencyMc(samples, /* lowDiscrepancy=*/ true, relativeTol);
     }
@@ -1360,7 +1360,7 @@ public class EuropeanOptionTest {
         QL.info("Testing FFT European engines against analytic results...");
         // C++: EngineType engine = FFT; Size steps = Null<Size>(); Size samples = Null<Size>();
         //      tol["value"] = 0.01;
-        final Map< String, Double > relativeTol = new HashMap< String, Double >(1);
+        final Map< String, Double > relativeTol = new HashMap<>(1);
         relativeTol.put("value", 0.01);
         testEngineConsistencyFFT(relativeTol);
     }
@@ -1498,9 +1498,9 @@ public class EuropeanOptionTest {
 
                     // Single mid-life dividend of 1.0 — mirrors C++
                     //   DividendVector({ today + length/2 }, { 1.0 })
-                    final List< Date > divDates = new ArrayList< Date >(1);
+                    final List< Date > divDates = new ArrayList<>(1);
                     divDates.add(today.add(length / 2));
-                    final List< Double > divs = new ArrayList< Double >(1);
+                    final List< Double > divs = new ArrayList<>(1);
                     divs.add(1.0);
 
                     final DividendVanillaOption option = new DividendVanillaOption(payoff, exercise, divDates, divs);
@@ -1593,7 +1593,7 @@ public class EuropeanOptionTest {
         // C++: EngineType engine = PseudoMonteCarlo; Size steps = Null<Size>();
         //      Size samples = 40000; tol["value"] = 0.01;
         final int samples = 40000;
-        final Map< String, Double > relativeTol = new HashMap< String, Double >(1);
+        final Map< String, Double > relativeTol = new HashMap<>(1);
         relativeTol.put("value", 0.01);
         testEngineConsistencyMc(samples, /* lowDiscrepancy=*/ false, relativeTol);
     }
@@ -2205,7 +2205,7 @@ public class EuropeanOptionTest {
 
                                     final VanillaOption option = new EuropeanOption(payoff, exercise);
                                     final FFTVanillaEngine fft = new FFTVanillaEngine(process);
-                                    final List< Instrument > batch = new ArrayList< Instrument >();
+                                    final List< Instrument > batch = new ArrayList<>();
                                     batch.add(option);
                                     fft.precalculate(batch);
                                     option.setPricingEngine(fft);

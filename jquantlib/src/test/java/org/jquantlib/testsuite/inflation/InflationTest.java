@@ -264,12 +264,12 @@ public class InflationTest {
         new Settings().setEvaluationDate(evaluationDate);
 
         // Seed UKRPI fixings 2005-01..2007-07 (31 data points, matching C++ fixData[31])
-        final RelinkableHandle<ZeroInflationTermStructure> hz = new RelinkableHandle<>();
+        final var hz = new RelinkableHandle<ZeroInflationTermStructure>();
         final UKRPI ii = new UKRPI(Frequency.Monthly, false, false, hz);
         InflationCommonVars.addCanonicalUkRpiFixings(ii, 31); // first 31 entries
 
         final YieldTermStructure nominalTS = InflationCommonVars.nominalTermStructure();
-        final Handle<YieldTermStructure> nominalHandle = new Handle<>(nominalTS);
+        final var nominalHandle = new Handle<YieldTermStructure>(nominalTS);
 
         // Build 14-pillar ZCIIS helpers
         final List<InflationCommonVars.Datum> zcData = InflationCommonVars.ukZcSwapData();
@@ -278,15 +278,14 @@ public class InflationTest {
 
         final List<ZeroCouponInflationSwapHelper> helpers = new ArrayList<>();
         for (final InflationCommonVars.Datum d : zcData) {
-            final Handle<Quote> quote = new Handle<>(new SimpleQuote(d.rate / 100.0));
+            final var quote = new Handle<Quote>(new SimpleQuote(d.rate / 100.0));
             helpers.add(new ZeroCouponInflationSwapHelper(quote, observationLag,
                     d.date, calendar, bdc, dc, ii, CPI.InterpolationType.AsIndex));
         }
 
         // Inspect first helper's fixing date after bootstrap triggers it.
         final Date baseDate = ii.lastFixingDate();
-        final PiecewiseZeroInflationCurve<Linear> pZITS =
-                new PiecewiseZeroInflationCurve<>(Linear.class, evaluationDate,
+        final var pZITS = new PiecewiseZeroInflationCurve<Linear>(Linear.class, evaluationDate,
                         baseDate, Frequency.Monthly, dc, helpers);
         hz.linkTo(pZITS);
 
@@ -407,8 +406,7 @@ public class InflationTest {
         }
 
         // Lazy curve — supplier evaluated at performCalculations time.
-        final PiecewiseZeroInflationCurve<Linear> curveLazy =
-                new PiecewiseZeroInflationCurve<>(Linear.class, evaluationDate,
+        final var curveLazy = new PiecewiseZeroInflationCurve<Linear>(Linear.class, evaluationDate,
                         () -> ii.lastFixingDate(), frequency, dc, helpers);
 
         // Now set quote values.
@@ -434,8 +432,7 @@ public class InflationTest {
         // Now create a non-lazy curve with the explicit baseDate, and
         // verify the two produce the same baseDate and node set.
         final Date explicitBaseDate = ii.lastFixingDate();
-        final PiecewiseZeroInflationCurve<Linear> curve =
-                new PiecewiseZeroInflationCurve<>(Linear.class, evaluationDate,
+        final var curve = new PiecewiseZeroInflationCurve<Linear>(Linear.class, evaluationDate,
                         explicitBaseDate, frequency, dc, helpers);
 
         // Trigger eager bootstrap on both curves.
@@ -488,13 +485,13 @@ public class InflationTest {
         new Settings().setEvaluationDate(evaluationDate);
 
         // Seed UKRPI fixings 2005-01..2007-07 (31 entries, matching C++).
-        final RelinkableHandle<ZeroInflationTermStructure> hz = new RelinkableHandle<>();
+        final var hz = new RelinkableHandle<ZeroInflationTermStructure>();
         final UKRPI ii = new UKRPI(Frequency.Monthly, false, false, hz);
         InflationCommonVars.addCanonicalUkRpiFixings(ii, 31);
 
         // Nominal term structure passed to the deprecated helper overload.
         final YieldTermStructure nominalTS = InflationCommonVars.nominalTermStructure();
-        final Handle<YieldTermStructure> nominalHandle = new Handle<>(nominalTS);
+        final var nominalHandle = new Handle<YieldTermStructure>(nominalTS);
 
         // Build 14-pillar ZCIIS helpers via the deprecated overload
         // (inflation.cpp:651-654).
@@ -504,7 +501,7 @@ public class InflationTest {
 
         final List<ZeroCouponInflationSwapHelper> helpers = new ArrayList<>();
         for (final InflationCommonVars.Datum d : zcData) {
-            final Handle<Quote> quote = new Handle<>(new SimpleQuote(d.rate / 100.0));
+            final var quote = new Handle<Quote>(new SimpleQuote(d.rate / 100.0));
             // Deprecated overload: (quote, lag, maturity, cal, bdc, dc, zii,
             //                       obsInterp, nominalTermStructure)
             helpers.add(new ZeroCouponInflationSwapHelper(quote, observationLag,
@@ -513,8 +510,7 @@ public class InflationTest {
         }
 
         final Date baseDate = ii.lastFixingDate();
-        final PiecewiseZeroInflationCurve<Linear> pZITS =
-                new PiecewiseZeroInflationCurve<>(Linear.class, evaluationDate,
+        final var pZITS = new PiecewiseZeroInflationCurve<Linear>(Linear.class, evaluationDate,
                         baseDate, Frequency.Monthly, dc, helpers);
         hz.linkTo(pZITS);
 
@@ -623,8 +619,7 @@ public class InflationTest {
         };
         final double[] rates = new double[] { 0.0293, 0.0293, 0.0295, 0.03, 0.03175 };
 
-        final InterpolatedZeroInflationCurve<Linear> curve =
-                new InterpolatedZeroInflationCurve<>(Linear.class,
+        final var curve = new InterpolatedZeroInflationCurve<Linear>(Linear.class,
                         evaluationDate, dates, rates, Frequency.Monthly,
                         new Thirty360(Thirty360.Convention.BondBasis));
 
@@ -746,8 +741,7 @@ public class InflationTest {
                 0.01, 0.01, 0.011, 0.012, 0.013, 0.015, 0.018, 0.02, 0.025, 0.03, 0.03
         };
 
-        final InterpolatedZeroInflationCurve<Linear> curve =
-                new InterpolatedZeroInflationCurve<>(Linear.class,
+        final var curve = new InterpolatedZeroInflationCurve<Linear>(Linear.class,
                         today, dates, rates, Frequency.Monthly,
                         new org.jquantlib.daycounters.Actual360());
 
@@ -1152,12 +1146,12 @@ public class InflationTest {
         final UKRPI rpi = new UKRPI(Frequency.Monthly, false, false);
         InflationCommonVars.addCanonicalUkRpiFixings(rpi, 31);
 
-        final RelinkableHandle<YoYInflationTermStructure> hy = new RelinkableHandle<>();
+        final var hy = new RelinkableHandle<YoYInflationTermStructure>();
         // ratio-style YoY index (non-interpolated ratio), bound to hy
         final YoYInflationIndex iir = new YoYInflationIndex(rpi, hy);
 
         final YieldTermStructure nominalTS = InflationCommonVars.nominalTermStructure();
-        final Handle<YieldTermStructure> nominalHandle = new Handle<>(nominalTS);
+        final var nominalHandle = new Handle<YieldTermStructure>(nominalTS);
 
         // 15-pillar YoY swap data
         final List<InflationCommonVars.Datum> yyData = InflationCommonVars.ukYoYSwapData();
@@ -1169,7 +1163,7 @@ public class InflationTest {
         // for YoY swaps unlike zero-coupon inflation swaps).
         final List<YearOnYearInflationSwapHelper> helpers = new ArrayList<>();
         for (final InflationCommonVars.Datum d : yyData) {
-            final Handle<Quote> quote = new Handle<>(new SimpleQuote(d.rate / 100.0));
+            final var quote = new Handle<Quote>(new SimpleQuote(d.rate / 100.0));
             helpers.add(new YearOnYearInflationSwapHelper(quote, observationLag,
                     d.date, calendar, bdc, dc, iir, CPI.InterpolationType.AsIndex,
                     nominalHandle));
@@ -1177,8 +1171,7 @@ public class InflationTest {
 
         final Date baseDate = rpi.lastFixingDate();
         final double baseYYRate = yyData.get(0).rate / 100.0;
-        final PiecewiseYoYInflationCurve<Linear> pYYTS =
-                new PiecewiseYoYInflationCurve<>(Linear.class, evaluationDate,
+        final var pYYTS = new PiecewiseYoYInflationCurve<Linear>(Linear.class, evaluationDate,
                         baseDate, baseYYRate, iir.frequency(), dc, helpers);
 
         // Force bootstrap by querying; then inspect first cashflow.
@@ -1455,12 +1448,11 @@ public class InflationTest {
         };
         final double[] rates = new double[] { 0.02, 0.02 };
 
-        final InterpolatedZeroInflationCurve<Linear> mockCurve =
-                new InterpolatedZeroInflationCurve<>(Linear.class,
+        final var mockCurve = new InterpolatedZeroInflationCurve<Linear>(Linear.class,
                         today, dates, rates, Frequency.Monthly,
                         new org.jquantlib.daycounters.Actual360());
 
-        final Handle<ZeroInflationTermStructure> ts = new Handle<>(mockCurve);
+        final var ts = new Handle<ZeroInflationTermStructure>(mockCurve);
         final UKRPI testIndex = new UKRPI(Frequency.Monthly, false, false, ts);
 
         testIndex.addFixing(new Date(1, Month.November, 2020), 293.5, true);
@@ -1796,8 +1788,7 @@ public class InflationTest {
         };
         final double[] rates = new double[] { 0.02, 0.02 };
 
-        final RelinkableHandle<ZeroInflationTermStructure> inflationHandle =
-                new RelinkableHandle<>();
+        final var inflationHandle = new RelinkableHandle<ZeroInflationTermStructure>();
         inflationHandle.linkTo(new InterpolatedZeroInflationCurve<>(Linear.class,
                 today, dates, rates, Frequency.Monthly,
                 new org.jquantlib.daycounters.Actual360()));
@@ -1855,7 +1846,7 @@ public class InflationTest {
         InflationCommonVars.addCanonicalUkRpiFixings(rpi, 31);
 
         final YieldTermStructure nominalTS = InflationCommonVars.nominalTermStructure();
-        final Handle<YieldTermStructure> nominalHandle = new Handle<>(nominalTS);
+        final var nominalHandle = new Handle<YieldTermStructure>(nominalTS);
 
         // --- Zero inflation curve ---
         final List<InflationCommonVars.Datum> zcData = InflationCommonVars.ukZcSwapData();
@@ -1864,14 +1855,13 @@ public class InflationTest {
 
         final List<ZeroCouponInflationSwapHelper> zHelpers = new ArrayList<>();
         for (final InflationCommonVars.Datum d : zcData) {
-            final Handle<Quote> quote = new Handle<>(new SimpleQuote(d.rate / 100.0));
+            final var quote = new Handle<Quote>(new SimpleQuote(d.rate / 100.0));
             zHelpers.add(new ZeroCouponInflationSwapHelper(quote, obsLagZero,
                     d.date, calendar, bdc, dc, rpi, CPI.InterpolationType.AsIndex));
         }
 
         final Date baseDate = rpi.lastFixingDate();
-        final PiecewiseZeroInflationCurve<Linear> pZITS =
-                new PiecewiseZeroInflationCurve<>(Linear.class, evaluationDate,
+        final var pZITS = new PiecewiseZeroInflationCurve<Linear>(Linear.class, evaluationDate,
                         baseDate, Frequency.Monthly, dc, zHelpers);
         pZITS.enableExtrapolation();
 
@@ -1891,14 +1881,13 @@ public class InflationTest {
 
         final List<YearOnYearInflationSwapHelper> yHelpers = new ArrayList<>();
         for (final InflationCommonVars.Datum d : yyData) {
-            final Handle<Quote> quote = new Handle<>(new SimpleQuote(d.rate / 100.0));
+            final var quote = new Handle<Quote>(new SimpleQuote(d.rate / 100.0));
             yHelpers.add(new YearOnYearInflationSwapHelper(quote, obsLagYoY,
                     d.date, calendar, bdc, dc, yoy, CPI.InterpolationType.AsIndex));
         }
 
         final double baseYYRate = yyData.get(0).rate / 100.0;
-        final PiecewiseYoYInflationCurve<Linear> pYYTS =
-                new PiecewiseYoYInflationCurve<>(Linear.class, evaluationDate,
+        final var pYYTS = new PiecewiseYoYInflationCurve<Linear>(Linear.class, evaluationDate,
                         baseDate, baseYYRate, yoy.frequency(), dc, yHelpers);
         pYYTS.enableExtrapolation();
 
@@ -1961,8 +1950,7 @@ public class InflationTest {
 
             new Settings().setEvaluationDate(evalDate);
 
-            final RelinkableHandle<ZeroInflationTermStructure> hz =
-                    new RelinkableHandle<>();
+            final var hz = new RelinkableHandle<ZeroInflationTermStructure>();
             final USCPI index = new USCPI(false, hz);
             for (int i = 0; i < fixDates.length; ++i) {
                 index.addFixing(fixDates[i], fixValues[i], true);
@@ -1981,8 +1969,7 @@ public class InflationTest {
             }
 
             try {
-                final PiecewiseZeroInflationCurve<Linear> curve =
-                        new PiecewiseZeroInflationCurve<>(Linear.class,
+                final var curve = new PiecewiseZeroInflationCurve<Linear>(Linear.class,
                                 evalDate, baseDate, Frequency.Monthly, dc, helpers);
                 hz.linkTo(curve);
                 curve.zeroRate(evalDate.add(new Period(1, TimeUnit.Years)));
@@ -2045,8 +2032,7 @@ public class InflationTest {
 
             new Settings().setEvaluationDate(evalDate);
 
-            final RelinkableHandle<ZeroInflationTermStructure> hz =
-                    new RelinkableHandle<>();
+            final var hz = new RelinkableHandle<ZeroInflationTermStructure>();
             final EUHICPXT index = new EUHICPXT(false, hz);
             for (int i = 0; i < fixDates.length; ++i) {
                 index.addFixing(fixDates[i], fixValues[i], true);
@@ -2066,8 +2052,7 @@ public class InflationTest {
 
             // IterativeBootstrap
             try {
-                final PiecewiseZeroInflationCurve<Linear> curve =
-                        new PiecewiseZeroInflationCurve<>(Linear.class,
+                final var curve = new PiecewiseZeroInflationCurve<Linear>(Linear.class,
                                 evalDate, baseDate, Frequency.Monthly, dc, helpers);
                 hz.linkTo(curve);
                 curve.zeroRate(evalDate.add(new Period(1, TimeUnit.Years)));
@@ -2079,8 +2064,7 @@ public class InflationTest {
 
             // GlobalBootstrap
             try {
-                final PiecewiseZeroInflationCurve<Linear> curve =
-                        new PiecewiseZeroInflationCurve<>(Linear.class,
+                final var curve = new PiecewiseZeroInflationCurve<Linear>(Linear.class,
                                 evalDate, baseDate, Frequency.Monthly, dc, helpers,
                                 1.0e-14, new GlobalBootstrap());
                 hz.linkTo(curve);
@@ -2143,8 +2127,7 @@ public class InflationTest {
 
             new Settings().setEvaluationDate(evalDate);
 
-            final RelinkableHandle<ZeroInflationTermStructure> hz =
-                    new RelinkableHandle<>();
+            final var hz = new RelinkableHandle<ZeroInflationTermStructure>();
             final UKRPI index = new UKRPI(Frequency.Monthly, false, false, hz);
             for (int i = 0; i < fixDates.length; ++i) {
                 index.addFixing(fixDates[i], fixValues[i], true);
@@ -2165,8 +2148,7 @@ public class InflationTest {
 
             // IterativeBootstrap
             try {
-                final PiecewiseZeroInflationCurve<Linear> curve =
-                        new PiecewiseZeroInflationCurve<>(Linear.class,
+                final var curve = new PiecewiseZeroInflationCurve<Linear>(Linear.class,
                                 evalDate, baseDate, Frequency.Monthly, dc, helpers);
                 hz.linkTo(curve);
                 curve.zeroRate(evalDate.add(new Period(1, TimeUnit.Years)));
@@ -2178,8 +2160,7 @@ public class InflationTest {
 
             // GlobalBootstrap
             try {
-                final PiecewiseZeroInflationCurve<Linear> curve =
-                        new PiecewiseZeroInflationCurve<>(Linear.class,
+                final var curve = new PiecewiseZeroInflationCurve<Linear>(Linear.class,
                                 evalDate, baseDate, Frequency.Monthly, dc, helpers,
                                 1.0e-14, new GlobalBootstrap());
                 hz.linkTo(curve);
@@ -2242,8 +2223,7 @@ public class InflationTest {
 
             new Settings().setEvaluationDate(evalDate);
 
-            final RelinkableHandle<ZeroInflationTermStructure> hz =
-                    new RelinkableHandle<>();
+            final var hz = new RelinkableHandle<ZeroInflationTermStructure>();
             final USCPI index = new USCPI(false, hz);
             for (int i = 0; i < fixDates.length; ++i) {
                 index.addFixing(fixDates[i], fixValues[i], true);
@@ -2262,8 +2242,7 @@ public class InflationTest {
             }
 
             try {
-                final PiecewiseZeroInflationCurve<Linear> curve =
-                        new PiecewiseZeroInflationCurve<>(Linear.class,
+                final var curve = new PiecewiseZeroInflationCurve<Linear>(Linear.class,
                                 evalDate, baseDate, Frequency.Monthly, dc, helpers,
                                 1.0e-14, new GlobalBootstrap());
                 hz.linkTo(curve);
@@ -2329,8 +2308,7 @@ public class InflationTest {
 
             new Settings().setEvaluationDate(evalDate);
 
-            final RelinkableHandle<ZeroInflationTermStructure> hz =
-                    new RelinkableHandle<>();
+            final var hz = new RelinkableHandle<ZeroInflationTermStructure>();
             final USCPI index = new USCPI(false, hz);
             for (int i = 0; i < fixDates.length; ++i) {
                 index.addFixing(fixDates[i], fixValues[i], true);
@@ -2350,8 +2328,7 @@ public class InflationTest {
             }
 
             try {
-                final PiecewiseZeroInflationCurve<Linear> curve =
-                        new PiecewiseZeroInflationCurve<>(Linear.class,
+                final var curve = new PiecewiseZeroInflationCurve<Linear>(Linear.class,
                                 evalDate, baseDate, Frequency.Monthly, dc, helpers);
                 hz.linkTo(curve);
                 curve.zeroRate(evalDate.add(new Period(1, TimeUnit.Years)));

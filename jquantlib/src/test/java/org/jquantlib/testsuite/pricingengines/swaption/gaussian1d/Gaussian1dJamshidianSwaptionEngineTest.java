@@ -77,7 +77,7 @@ public class Gaussian1dJamshidianSwaptionEngineTest {
 
     private static Gsr buildGsr(final Handle<YieldTermStructure> yts) {
         final Calendar cal = new Target();
-        final List<Date> volStepDates = new ArrayList<Date>();
+        final List<Date> volStepDates = new ArrayList<>();
         volStepDates.add(cal.advance(EVAL_DATE, new Period(2, TimeUnit.Years)));
         volStepDates.add(cal.advance(EVAL_DATE, new Period(5, TimeUnit.Years)));
         final double[] vols = new double[]{0.0070, 0.0080, 0.0085};

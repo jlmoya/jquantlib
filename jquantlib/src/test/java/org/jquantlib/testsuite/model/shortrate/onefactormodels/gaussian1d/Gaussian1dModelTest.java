@@ -52,7 +52,7 @@ public class Gaussian1dModelTest {
         new Settings().setEvaluationDate(EVAL_DATE);
         final Handle<YieldTermStructure> yts = new Handle<YieldTermStructure>(
                 new FlatForward(EVAL_DATE, 0.03, new Actual360()));
-        final List<Date> volStepDates = new ArrayList<Date>();
+        final List<Date> volStepDates = new ArrayList<>();
         volStepDates.add(EVAL_DATE.add(new Period(1, TimeUnit.Years)));
         volStepDates.add(EVAL_DATE.add(new Period(2, TimeUnit.Years)));
         final double[] vols = new double[]{0.01, 0.012, 0.015};
@@ -65,7 +65,7 @@ public class Gaussian1dModelTest {
                 "models/shortrate/onefactormodels/gaussian1d_model");
 
         final Gsr gsr = buildStandardGsr();
-        final List<String> failures = new ArrayList<String>();
+        final List<String> failures = new ArrayList<>();
         int srSkipped = 0;
 
         for (final String name : ref.caseNames()) {

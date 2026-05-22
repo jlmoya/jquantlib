@@ -84,7 +84,7 @@ public class NonstandardSwapTest {
         final DiscountingSwapEngine dse = new DiscountingSwapEngine(ts);
 
         final ReferenceReader reader = ReferenceReader.load("instruments/nonstandard_swap");
-        final List<String> failures = new ArrayList<String>();
+        final List<String> failures = new ArrayList<>();
 
         // ── Helper: spot start date ───────────────────────────────────────────
         // C++: cal.advance(EVAL, Period(2, Days))  with TARGET ModifiedFollowing

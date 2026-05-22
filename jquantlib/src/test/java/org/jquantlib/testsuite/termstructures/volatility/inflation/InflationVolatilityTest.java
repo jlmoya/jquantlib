@@ -217,8 +217,7 @@ public class InflationVolatilityTest {
             dEUR[i] = eval.add(new Period(ys, TimeUnit.Years))
                     .add(new Period(ds, TimeUnit.Days));
         }
-        final InterpolatedZeroCurve<Cubic> euriborTS =
-                new InterpolatedZeroCurve<>(Cubic.class, dEUR, ratesEUR, dc);
+        final var euriborTS = new InterpolatedZeroCurve<Cubic>(Cubic.class, dEUR, ratesEUR, dc);
         nominalEUR = new Handle<>(euriborTS);
 
         final Date[] dGBP = new Date[timesGBP.length];
@@ -228,8 +227,7 @@ public class InflationVolatilityTest {
             dGBP[i] = eval.add(new Period(ys, TimeUnit.Years))
                     .add(new Period(ds, TimeUnit.Days));
         }
-        final InterpolatedZeroCurve<Cubic> gbpLiborTS =
-                new InterpolatedZeroCurve<>(Cubic.class, dGBP, ratesGBP, dc);
+        final var gbpLiborTS = new InterpolatedZeroCurve<Cubic>(Cubic.class, dGBP, ratesGBP, dc);
         nominalGBP = new Handle<>(gbpLiborTS);
 
         // YoY EU rates curve (mirrors C++ yoyEUrates[] — 31 values from
@@ -272,8 +270,7 @@ public class InflationVolatilityTest {
         final double[] curveRates = new double[rList.size()];
         for (int i = 0; i < rList.size(); i++) curveRates[i] = rList.get(i);
 
-        final InterpolatedYoYInflationCurve<Linear> pYTSEU =
-                new InterpolatedYoYInflationCurve<>(Linear.class, eval,
+        final var pYTSEU = new InterpolatedYoYInflationCurve<Linear>(Linear.class, eval,
                         curveDates, curveRates, Frequency.Monthly,
                         new Actual365Fixed());
         // Re-create the EU index with the freshly built YoY curve so
@@ -442,14 +439,13 @@ public class InflationVolatilityTest {
         //   setCapletVolatility(Handle<YoYOptionletVolatilitySurface>)
         // exists ... we'll use it with the -Curve variant of the surface.
         // test UNIT DISPLACED pricer.
-        final Handle<YoYOptionletVolatilitySurface> hVS = new Handle<>();
+        final var hVS = new Handle<YoYOptionletVolatilitySurface>();
         final YoYInflationUnitDisplacedBlackCapFloorEngine yoyPricerUD =
                 new YoYInflationUnitDisplacedBlackCapFloorEngine(
                         yoyIndexEU, hVS, nominalEUR);
 
         // cap stripper
-        final InterpolatedYoYOptionletStripper<Linear> yoyOptionletStripper =
-                new InterpolatedYoYOptionletStripper<>(Linear.class);
+        final var yoyOptionletStripper = new InterpolatedYoYOptionletStripper<Linear>(Linear.class);
 
         // now set up all the variables for the stripping
         final int settlementDays = 0;

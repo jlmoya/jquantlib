@@ -274,8 +274,7 @@ public class InflationCapFloorTest {
             // Bootstrap a piecewise YoY curve (Linear interpolation).
             final Date baseDate = rpi.lastFixingDate();
             final double baseYYRate = yyData.get(0).rate / 100.0;
-            final PiecewiseYoYInflationCurve<Linear> pYYTS =
-                    new PiecewiseYoYInflationCurve<>(
+            final var pYYTS = new PiecewiseYoYInflationCurve<Linear>(
                             Linear.class, evaluationDate, baseDate, baseYYRate,
                             iirForHelpers.frequency(), dc, helpers);
             // Trigger eager bootstrap so that the curve's data values are
@@ -434,8 +433,7 @@ public class InflationCapFloorTest {
         final List<YearOnYearInflationSwapHelper> instruments = new ArrayList<>();
         for (final DatumYY datum : iiData) {
             final Date maturity = datum.date;
-            final Handle<org.jquantlib.quotes.Quote> quote =
-                    new Handle<>(new SimpleQuote(datum.rate / 100.0));
+            final var quote = new Handle<org.jquantlib.quotes.Quote>(new SimpleQuote(datum.rate / 100.0));
             instruments.add(new YearOnYearInflationSwapHelper(
                     quote, observationLag, maturity, calendar, bdc, dc, ii,
                     interpolation, discountCurve));
@@ -572,8 +570,7 @@ public class InflationCapFloorTest {
                                 /* spread on index */ 0.0,
                                 vars.dc, new UnitedKingdom());
 
-                        final Handle<YieldTermStructure> hTS =
-                                new Handle<>(vars.nominalTS.currentLink());
+                        final var hTS = new Handle<YieldTermStructure>(vars.nominalTS.currentLink());
                         final PricingEngine sppe = new DiscountingSwapEngine(hTS);
                         swap.setPricingEngine(sppe);
 

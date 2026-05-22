@@ -67,8 +67,7 @@ public class SeasonalityTest {
         };
         final double[] nodeRates = new double[] { 0.025, 0.030, 0.032, 0.034, 0.036, 0.038 };
 
-        final InterpolatedZeroInflationCurve<Linear> curveUnadjusted =
-                new InterpolatedZeroInflationCurve<>(Linear.class,
+        final var curveUnadjusted = new InterpolatedZeroInflationCurve<Linear>(Linear.class,
                         refDate, nodeDates, nodeRates, freq, dc);
         curveUnadjusted.enableExtrapolation();
 
@@ -88,14 +87,12 @@ public class SeasonalityTest {
                 new KerkhofSeasonality(seasonalityBaseDate, factors);
 
         // Adjusted-curve overlays (one per seasonality class).
-        final InterpolatedZeroInflationCurve<Linear> curveSeasM =
-                new InterpolatedZeroInflationCurve<>(Linear.class,
+        final var curveSeasM = new InterpolatedZeroInflationCurve<Linear>(Linear.class,
                         refDate, nodeDates, nodeRates, freq, dc);
         curveSeasM.enableExtrapolation();
         curveSeasM.setSeasonality(seasM);
 
-        final InterpolatedZeroInflationCurve<Linear> curveSeasK =
-                new InterpolatedZeroInflationCurve<>(Linear.class,
+        final var curveSeasK = new InterpolatedZeroInflationCurve<Linear>(Linear.class,
                         refDate, nodeDates, nodeRates, freq, dc);
         curveSeasK.enableExtrapolation();
         curveSeasK.setSeasonality(seasK);
@@ -106,13 +103,11 @@ public class SeasonalityTest {
         final double[] yoyNodeRates = new double[]{
                 0.025, 0.027, 0.029, 0.031, 0.034, 0.036
         };
-        final InterpolatedYoYInflationCurve<Linear> yoyCurveUnadjusted =
-                new InterpolatedYoYInflationCurve<>(Linear.class,
+        final var yoyCurveUnadjusted = new InterpolatedYoYInflationCurve<Linear>(Linear.class,
                         refDate, nodeDates, yoyNodeRates, freq, dc);
         yoyCurveUnadjusted.enableExtrapolation();
 
-        final InterpolatedYoYInflationCurve<Linear> yoyCurveSeasM =
-                new InterpolatedYoYInflationCurve<>(Linear.class,
+        final var yoyCurveSeasM = new InterpolatedYoYInflationCurve<Linear>(Linear.class,
                         refDate, nodeDates, yoyNodeRates, freq, dc);
         yoyCurveSeasM.enableExtrapolation();
         yoyCurveSeasM.setSeasonality(seasM);

@@ -373,7 +373,7 @@ public class LiborMarketModelTest {
         // Build the CapHelper + SwaptionHelper list. C++ uses
         // ImpliedVolError for both; mirror the loop structure verbatim.
         final List<CalibrationHelper> calibrationHelpers =
-                new ArrayList<CalibrationHelper>();
+                new ArrayList<>();
         int swapVolIndex = 0;
         for (int i = 2; i < size; ++i) {
             final Period maturity = new Period(i * index.tenor().length(),

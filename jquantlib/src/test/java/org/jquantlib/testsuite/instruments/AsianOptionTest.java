@@ -150,7 +150,7 @@ public class AsianOptionTest {
         QL.info("Df: " + rTS.discount(exerciseDate));
         QL.info("DivDf: " + qTS.discount(exerciseDate));
 
-        final List<Date> fixingDates = new ArrayList<Date>(futureFixings);
+        final List<Date> fixingDates = new ArrayList<>(futureFixings);
         final int dt = (int) (360.0 / (futureFixings) + 0.5);
         fixingDates.add(today.clone().addAssign(dt));
         for (int j = 1; j < futureFixings; j++) {
@@ -183,7 +183,7 @@ public class AsianOptionTest {
 
         QL.info("Testing discrete-averaging geometric Asian greeks...");
 
-        final Map<String, Double> tolerance = new HashMap<String, Double>();
+        final Map<String, Double> tolerance = new HashMap<>();
         tolerance.put("delta", 1.0e-5);
         tolerance.put("gamma", 1.0e-5);
         tolerance.put("theta", 1.0e-5);
@@ -229,7 +229,7 @@ public class AsianOptionTest {
                     final double runningAverage = 120;
                     final int pastFixings = 1;
 
-                    final List<Date> fixingDates = new ArrayList<Date>();
+                    final List<Date> fixingDates = new ArrayList<>();
 
                     final Date d = today.clone();
                     final Period THREEMONTH = new Period(3, TimeUnit.Months);
@@ -255,7 +255,7 @@ public class AsianOptionTest {
                                     vol.setValue(v);
 
                                     final double value = option.NPV();
-                                    final Map<String, Double> calculated = new HashMap<String, Double>();
+                                    final Map<String, Double> calculated = new HashMap<>();
                                     calculated.put("delta", option.delta());
                                     calculated.put("gamma", option.gamma());
                                     calculated.put("theta", option.theta());
@@ -263,7 +263,7 @@ public class AsianOptionTest {
                                     calculated.put("divRho", option.dividendRho());
                                     calculated.put("vega", option.vega());
 
-                                    final Map<String, Double> expected = new HashMap<String, Double>();
+                                    final Map<String, Double> expected = new HashMap<>();
                                     if (value > spot.value() * 1.0e-5) {
                                         // perturb spot and get delta and gamma
                                         final double du = u * 1.0e-4;
@@ -321,7 +321,7 @@ public class AsianOptionTest {
                                             final double error = Utilities.relativeError(expct, calcl, u);
                                             if (error > tol) {
                                                 reportFailure(greek.getKey(), AverageType.Geometric, runningAverage, pastFixings,
-                                                        new ArrayList<Date>(), payoff, maturity, u, q, r, today, v, expct, calcl,
+                                                        new ArrayList<>(), payoff, maturity, u, q, r, today, v, expct, calcl,
                                                         tol);
                                             }
                                         }
@@ -378,7 +378,7 @@ public class AsianOptionTest {
         /* @Real */double tolerance = 1.0e-4;
 
         if (Math.abs(calculated - expected) > tolerance) {
-            reportFailure("value", averageType, runningAccumulator, pastFixings, new ArrayList<Date>(), payoff, exercise, spot
+            reportFailure("value", averageType, runningAccumulator, pastFixings, new ArrayList<>(), payoff, exercise, spot
                     .value(), qRate.value(), rRate.value(), today, vol.value(), expected, calculated, tolerance);
 
         }
@@ -386,7 +386,7 @@ public class AsianOptionTest {
         runningAccumulator = 1.0;
         pastFixings = 0;
 
-        final List<Date> fixingDates = new ArrayList<Date>(91);
+        final List<Date> fixingDates = new ArrayList<>(91);
 
         for (/* @Size */int i = 0; i < 91; i++) {
             fixingDates.add(today.clone().addAssign(i));
@@ -410,7 +410,7 @@ public class AsianOptionTest {
     public void testAnalyticContinuousGeometricAveragePriceGreeks() {
         QL.info("Testing analytic continuous geometric average-price Asian greeks...");
 
-        final Map<String, /* @Real */Double> tolerance = new HashMap<String, Double>();
+        final Map<String, /* @Real */Double> tolerance = new HashMap<>();
         tolerance.put("delta", 1.0e-5);
         tolerance.put("gamma", 1.0e-5);
         tolerance.put("theta", 1.0e-5);
@@ -474,7 +474,7 @@ public class AsianOptionTest {
                                     vol.setValue(v);
 
                                     /* @Real */final double value = option.NPV();
-                                    final Map<String, Double> calculated = new HashMap<String, Double>();
+                                    final Map<String, Double> calculated = new HashMap<>();
                                     calculated.put("delta", option.delta());
                                     calculated.put("gamma", option.gamma());
                                     calculated.put("theta", option.theta());
@@ -482,7 +482,7 @@ public class AsianOptionTest {
                                     calculated.put("divRho", option.dividendRho());
                                     calculated.put("vega", option.vega());
 
-                                    final Map<String, Double> expected = new HashMap<String, Double>();
+                                    final Map<String, Double> expected = new HashMap<>();
                                     if (value > spot.value() * 1.0e-5) {
                                         // perturb spot and get delta and gamma
                                         /* @Real */final double du = u * 1.0e-4;
@@ -540,7 +540,7 @@ public class AsianOptionTest {
                                             /* @Real */final double error = Utilities.relativeError(expct, calcl, u);
                                             if (error > tol) {
                                                 reportFailure(greek.getKey(), AverageType.Geometric, runningAverage, pastFixings,
-                                                        new ArrayList<Date>(), payoff, maturity, u, q, r, today, v, expct, calcl,
+                                                        new ArrayList<>(), payoff, maturity, u, q, r, today, v, expct, calcl,
                                                         tol);
                                             }
                                         }

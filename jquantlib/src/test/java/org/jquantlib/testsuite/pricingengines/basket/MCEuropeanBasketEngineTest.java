@@ -104,7 +104,7 @@ public class MCEuropeanBasketEngineTest {
                 makeBsm(today, 100.0, 0.05, 0.02, 0.20, dc, cal);
 
         // single-asset "array" with 1x1 correlation = [[1]]
-        final List<StochasticProcess1D> processes = new ArrayList<StochasticProcess1D>();
+        final List<StochasticProcess1D> processes = new ArrayList<>();
         processes.add(process);
         final Matrix corr = new Matrix(new double[][] { { 1.0 } });
         final StochasticProcessArray array = new StochasticProcessArray(processes, corr);
@@ -146,7 +146,7 @@ public class MCEuropeanBasketEngineTest {
         final GeneralizedBlackScholesProcess p1 = makeBsm(today, 100.0, 0.05, 0.02, 0.20, dc, cal);
         final GeneralizedBlackScholesProcess p2 = makeBsm(today, 100.0, 0.05, 0.02, 0.20, dc, cal);
 
-        final List<StochasticProcess1D> processes = new ArrayList<StochasticProcess1D>();
+        final List<StochasticProcess1D> processes = new ArrayList<>();
         processes.add(p1);
         processes.add(p2);
         // identity correlation (independent assets)
@@ -190,7 +190,7 @@ public class MCEuropeanBasketEngineTest {
         final GeneralizedBlackScholesProcess p1 = makeBsm(today, 100.0, 0.05, 0.02, 0.20, dc, cal);
         final GeneralizedBlackScholesProcess p2 = makeBsm(today, 100.0, 0.05, 0.02, 0.20, dc, cal);
 
-        final List<StochasticProcess1D> processes = new ArrayList<StochasticProcess1D>();
+        final List<StochasticProcess1D> processes = new ArrayList<>();
         processes.add(p1);
         processes.add(p2);
         final double[][] data = new double[][] { { 1.0, 1.0 }, { 1.0, 1.0 } };

@@ -85,7 +85,7 @@ public class CliquetOptionTest {
 
         final PricingEngine engine = new AnalyticCliquetEngine(process);
 
-        final List<Date> reset = new ArrayList<Date>();
+        final List<Date> reset = new ArrayList<>();
         reset.add(today.add(90));
         final Date maturity = today.add(360);
 
@@ -185,7 +185,7 @@ public class CliquetOptionTest {
 
                         // Reset dates: every Period(frequencie) between today (exclusive)
                         // and maturity->lastDate() (exclusive)
-                        final List<Date> reset = new ArrayList<Date>();
+                        final List<Date> reset = new ArrayList<>();
                         final Period tenor = new Period(frequencie);
                         Date d = today.add(tenor);
                         while (d.lt(maturity.lastDate())) {
@@ -359,7 +359,7 @@ public class CliquetOptionTest {
                         final PercentageStrikePayoff payoff =
                                 new PercentageStrikePayoff(type, moneynes);
 
-                        final List<Date> reset = new ArrayList<Date>();
+                        final List<Date> reset = new ArrayList<>();
                         Date d = today.add(tenor);
                         while (d.lt(maturity.lastDate())) {
                             reset.add(d);

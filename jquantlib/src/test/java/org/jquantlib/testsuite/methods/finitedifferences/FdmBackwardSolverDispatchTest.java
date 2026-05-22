@@ -134,7 +134,7 @@ public class FdmBackwardSolverDispatchTest {
 
     private static FdmStepConditionComposite emptyCondition() {
         return new FdmStepConditionComposite(
-                new ArrayList<List<Double>>(),
+                new ArrayList<>(),
                 new FdmStepConditionComposite.Conditions());
     }
 

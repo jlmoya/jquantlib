@@ -125,8 +125,8 @@ public class DividendOptionTest {
                   final Date exDate = today.add(new Period(length, TimeUnit.Years));
                   final Exercise exercise = new EuropeanExercise(exDate);
 
-                  final List<Date> dividendDates = new ArrayList<Date>();
-                  final List</* @Real */ Double> dividends = new ArrayList<Double>();
+                  final List<Date> dividendDates = new ArrayList<>();
+                  final List</* @Real */ Double> dividends = new ArrayList<>();
                   for (final Date d = today.add(new Period(3, TimeUnit.Months));
                              d.lt(exercise.lastDate());
                              d.addAssign(new Period(6, TimeUnit.Months))) {
@@ -193,8 +193,8 @@ public class DividendOptionTest {
         final Date exDate = today.add(new Period(6, TimeUnit.Months));
         final Exercise exercise = new EuropeanExercise(exDate);
 
-        final List<Date> dividendDates = new ArrayList<Date>();
-        final List</* @Real */ Double> dividends = new ArrayList<Double>();
+        final List<Date> dividendDates = new ArrayList<>();
+        final List</* @Real */ Double> dividends = new ArrayList<>();
         dividendDates.add(today.add(new Period(2, TimeUnit.Months)));
         dividends.add(0.50);
         dividendDates.add(today.add(new Period(5, TimeUnit.Months)));
@@ -260,8 +260,8 @@ public class DividendOptionTest {
                   final Date exDate = today.add(new Period(length, TimeUnit.Months));
                   final Exercise exercise = new EuropeanExercise(exDate);
 
-                  final List<Date> dividendDates = new ArrayList<Date>();
-                  final List</* @Real */ Double> dividends = new ArrayList<Double>();
+                  final List<Date> dividendDates = new ArrayList<>();
+                  final List</* @Real */ Double> dividends = new ArrayList<>();
                   dividendDates.add(today);
                   dividends.add(dividendValue);
 
@@ -332,8 +332,8 @@ public class DividendOptionTest {
                   final Date exDate = today.add(new Period(length, TimeUnit.Years));
                   final Exercise exercise = new EuropeanExercise(exDate);
 
-                  final List<Date> dividendDates = new ArrayList<Date>();
-                  final List</* @Real */ Double> dividends = new ArrayList<Double>();
+                  final List<Date> dividendDates = new ArrayList<>();
+                  final List</* @Real */ Double> dividends = new ArrayList<>();
                   dividendDates.add(exercise.lastDate());
                   dividends.add(dividendValue);
 
@@ -376,9 +376,9 @@ public class DividendOptionTest {
 
         QL.info("Testing dividend European option greeks...");
 
-        final Map<String, /* @Real */ Double> calculated = new HashMap<String, Double>();
-        final Map<String, /* @Real */ Double> expected = new HashMap<String, Double>();
-        final Map<String, /* @Real */ Double> tolerance = new HashMap<String, Double>();
+        final Map<String, /* @Real */ Double> calculated = new HashMap<>();
+        final Map<String, /* @Real */ Double> expected = new HashMap<>();
+        final Map<String, /* @Real */ Double> tolerance = new HashMap<>();
         tolerance.put("delta", 1.0e-5);
         tolerance.put("gamma", 1.0e-5);
         tolerance.put("theta", 1.0e-5);
@@ -411,8 +411,8 @@ public class DividendOptionTest {
                   final Date exDate = today.add(new Period(length, TimeUnit.Years));
                   final Exercise exercise = new EuropeanExercise(exDate);
 
-                  final List<Date> dividendDates = new ArrayList<Date>();
-                  final List</* @Real */ Double> dividends = new ArrayList<Double>();
+                  final List<Date> dividendDates = new ArrayList<>();
+                  final List</* @Real */ Double> dividends = new ArrayList<>();
                   for (final Date d = today.add(new Period(3, TimeUnit.Months));
                              d.lt(exercise.lastDate());
                              d.addAssign(new Period(6, TimeUnit.Months))) {
@@ -537,8 +537,8 @@ public class DividendOptionTest {
                   final Date exDate = today.add(new Period(length, TimeUnit.Years));
                   final Exercise exercise = new EuropeanExercise(exDate);
 
-                  final List<Date> dividendDates = new ArrayList<Date>();
-                  final List</* @Real */ Double> dividends = new ArrayList<Double>();
+                  final List<Date> dividendDates = new ArrayList<>();
+                  final List</* @Real */ Double> dividends = new ArrayList<>();
                   for (final Date d = today.add(new Period(3, TimeUnit.Months));
                              d.lt(exercise.lastDate());
                              d.addAssign(new Period(6, TimeUnit.Months))) {
@@ -640,9 +640,9 @@ public class DividendOptionTest {
 
     private <T extends FDEngineAdapter> void testFdGreeks(final Class<T> engineClass, final Date today, final Exercise exercise) {
 
-        final Map<String, /* @Real */ Double> calculated = new HashMap<String, Double>();
-        final Map<String, /* @Real */ Double> expected = new HashMap<String, Double>();
-        final Map<String, /* @Real */ Double> tolerance = new HashMap<String, Double>();
+        final Map<String, /* @Real */ Double> calculated = new HashMap<>();
+        final Map<String, /* @Real */ Double> expected = new HashMap<>();
+        final Map<String, /* @Real */ Double> tolerance = new HashMap<>();
         tolerance.put("delta", 5.0e-3);
         tolerance.put("gamma", 7.0e-3);
         // tolerance.put("theta", 1.0e-2);
@@ -667,8 +667,8 @@ public class DividendOptionTest {
         for (final Type type : types)
             for (final double strike : strikes) {
 
-                final List<Date> dividendDates = new ArrayList<Date>();
-                final List</* @Real */ Double> dividends = new ArrayList<Double>();
+                final List<Date> dividendDates = new ArrayList<>();
+                final List</* @Real */ Double> dividends = new ArrayList<>();
                 for (final Date d = today.add(new Period(3, TimeUnit.Months));
                            d.lt(exercise.lastDate());
                            d.addAssign(new Period(6, TimeUnit.Months))) {
@@ -767,8 +767,8 @@ public class DividendOptionTest {
         final StrikedTypePayoff payoff = new PlainVanillaPayoff(Option.Type.Call, 55.0);
         final /* @Real */ double tolerance = 3.0e-3;
 
-        final List<Date> dividendDates = new ArrayList<Date>();
-        final List</* @Real */ Double> dividends = new ArrayList<Double>();
+        final List<Date> dividendDates = new ArrayList<>();
+        final List</* @Real */ Double> dividends = new ArrayList<>();
 
         final DividendVanillaOption option1 = new DividendVanillaOption(payoff, exercise, dividendDates, dividends);
         option1.setPricingEngine(engine);
@@ -913,9 +913,9 @@ public class DividendOptionTest {
         final StrikedTypePayoff payoff = new PlainVanillaPayoff(Option.Type.Call, 55.0);
 
         // today's dividend must be taken into account
-        final List< Date > dividendDates = new ArrayList< Date >();
+        final List< Date > dividendDates = new ArrayList<>();
         dividendDates.add(today);
-        final List< Double > dividendAmounts = new ArrayList< Double >();
+        final List< Double > dividendAmounts = new ArrayList<>();
         dividendAmounts.add(1.0);
 
         // Build the FD engine via the full constructor (no MakeFdBlackScholesVanillaEngine builder in Java).

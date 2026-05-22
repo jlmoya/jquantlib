@@ -80,7 +80,7 @@ public class FloatFloatSwaptionTest {
         final Euribor6M idx6m = new Euribor6M(ts);
 
         final ReferenceReader reader = ReferenceReader.load("instruments/floatfloat_swaption");
-        final List<String> failures  = new ArrayList<String>();
+        final List<String> failures  = new ArrayList<>();
 
         // ── Case 1: receiver_physical_otc_1y5y ───────────────────────────────
         {

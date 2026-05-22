@@ -36,7 +36,7 @@ public class FdmSquareRootFwdOpTest {
     private static final double TOL_REL = 1e-12;
 
     private static FdmMesher mesher(final double vMin, final double vMax, final int n) {
-        final List<Fdm1dMesher> ms = new ArrayList<Fdm1dMesher>(1);
+        final List<Fdm1dMesher> ms = new ArrayList<>(1);
         ms.add(new Uniform1dMesher(vMin, vMax, n));
         return new FdmMesherComposite(ms);
     }

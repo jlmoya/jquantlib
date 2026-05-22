@@ -92,7 +92,7 @@ public class Gaussian1dFloatFloatSwaptionEngineTest {
         final Euribor3M idx1 = new Euribor3M(ts);
         final Euribor6M idx2 = new Euribor6M(ts);
 
-        final List<Date> volStepDates = new ArrayList<Date>();
+        final List<Date> volStepDates = new ArrayList<>();
         volStepDates.add(EVAL.add(new Period(1, TimeUnit.Years)));
         volStepDates.add(EVAL.add(new Period(2, TimeUnit.Years)));
         volStepDates.add(EVAL.add(new Period(5, TimeUnit.Years)));
@@ -102,7 +102,7 @@ public class Gaussian1dFloatFloatSwaptionEngineTest {
         final ReferenceReader reader = ReferenceReader.load(
                 "pricingengines/swaption/gaussian1d_float_float_swaption_engine");
 
-        final List<String> failures = new ArrayList<String>();
+        final List<String> failures = new ArrayList<>();
 
         for (final String name : reader.caseNames()) {
             final Case c = reader.getCase(name);

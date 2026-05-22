@@ -48,7 +48,7 @@ public class AmericanBasketPathPricerTest {
 
     private static MultiPath makeMultiPath(final TimeGrid grid,
                                            final double[]... paths) {
-        final List<Path> components = new ArrayList<Path>(paths.length);
+        final List<Path> components = new ArrayList<>(paths.length);
         for (final double[] p : paths) {
             components.add(new Path(grid, p));
         }

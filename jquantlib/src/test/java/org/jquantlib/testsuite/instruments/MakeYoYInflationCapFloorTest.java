@@ -137,11 +137,10 @@ public class MakeYoYInflationCapFloorTest {
                 new Date(13, Month.August, 2017)
         };
         final double[] nodeRates = {0.025, 0.027, 0.029, 0.031, 0.034, 0.036};
-        final InterpolatedYoYInflationCurve<Linear> yoyCurve =
-                new InterpolatedYoYInflationCurve<>(Linear.class, refDate,
+        final var yoyCurve = new InterpolatedYoYInflationCurve<Linear>(Linear.class, refDate,
                         nodeDates, nodeRates, freq, dc);
         yoyCurve.enableExtrapolation();
-        final Handle<YoYInflationTermStructure> ts = new Handle<>(yoyCurve);
+        final var ts = new Handle<YoYInflationTermStructure>(yoyCurve);
         final YYUKRPI idx = new YYUKRPI(freq, false, false, ts);
 
         final Date[] fixDates = {

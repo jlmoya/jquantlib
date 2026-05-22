@@ -97,7 +97,7 @@ public class BasketGeneratingEngineTest {
 
         final Euribor3M idx = new Euribor3M(ts);
 
-        final List<Date> volStepDates = new ArrayList<Date>();
+        final List<Date> volStepDates = new ArrayList<>();
         volStepDates.add(EVAL.add(new Period(1, TimeUnit.Years)));
         volStepDates.add(EVAL.add(new Period(2, TimeUnit.Years)));
         volStepDates.add(EVAL.add(new Period(5, TimeUnit.Years)));
@@ -125,7 +125,7 @@ public class BasketGeneratingEngineTest {
         final ReferenceReader reader = ReferenceReader.load(
                 "pricingengines/swaption/basket_generating_engine");
 
-        final List<String> failures = new ArrayList<String>();
+        final List<String> failures = new ArrayList<>();
 
         for (final String name : reader.caseNames()) {
             final Case c = reader.getCase(name);
@@ -274,7 +274,7 @@ public class BasketGeneratingEngineTest {
         // Extract the first number after "berm_" or "euro_"
         // For "euro_1y_..." → start at year 1, for "euro_2y_..." → start at year 2.
         // For "berm_Xy_..." → years 1..X.
-        final List<Date> dates = new ArrayList<Date>();
+        final List<Date> dates = new ArrayList<>();
         if (specTag.startsWith("euro_")) {
             // "euro_<N>y_..." → single exercise at year N
             final int yearNum = parseLeadingInt(specTag.substring(5));

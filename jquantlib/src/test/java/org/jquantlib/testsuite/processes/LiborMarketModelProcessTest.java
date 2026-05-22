@@ -373,9 +373,9 @@ public class LiborMarketModelProcessTest {
         // bars (errorEstimate()) tight enough to match the C++ cached
         // expectations within their reported tolerance.
         final int nrTrails = 250000;
-        final List<GeneralStatistics> stat1 = new ArrayList<GeneralStatistics>(process1.size());
-        final List<GeneralStatistics> stat2 = new ArrayList<GeneralStatistics>(process2.size());
-        final List<GeneralStatistics> stat3 = new ArrayList<GeneralStatistics>(process2.size() - 1);
+        final List<GeneralStatistics> stat1 = new ArrayList<>(process1.size());
+        final List<GeneralStatistics> stat2 = new ArrayList<>(process2.size());
+        final List<GeneralStatistics> stat3 = new ArrayList<>(process2.size() - 1);
         for (int j = 0; j < process1.size(); ++j) {
             stat1.add(new GeneralStatistics());
         }

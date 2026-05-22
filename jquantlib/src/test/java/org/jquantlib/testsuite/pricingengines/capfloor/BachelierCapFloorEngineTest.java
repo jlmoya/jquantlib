@@ -97,7 +97,7 @@ public class BachelierCapFloorEngineTest {
         final double capStrike = in.getDouble("cap_strike");
         final CapFloor cap = new CapFloor(
                 CapFloor.Type.Cap, floatingLeg,
-                new ArrayList<Double>(Arrays.asList(Double.valueOf(capStrike))),
+                new ArrayList<>(Arrays.asList(Double.valueOf(capStrike))),
                 ts, null);
 
         final double normalVol = in.getDouble("normal_vol");

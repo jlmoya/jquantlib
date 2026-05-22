@@ -291,9 +291,9 @@ public class JumpDiffusionEngineTest {
     public void testGreeks() {
         QL.info("Testing jump-diffusion option greeks...");
 
-        final Map<String, Double> calculated = new HashMap<String, Double>();
-        final Map<String, Double> expected = new HashMap<String, Double>();
-        final Map<String, Double> tolerance = new HashMap<String, Double>();
+        final Map<String, Double> calculated = new HashMap<>();
+        final Map<String, Double> expected = new HashMap<>();
+        final Map<String, Double> tolerance = new HashMap<>();
         tolerance.put("delta", 1.0e-4);
         tolerance.put("gamma", 1.0e-4);
         tolerance.put("theta", 1.1e-4);

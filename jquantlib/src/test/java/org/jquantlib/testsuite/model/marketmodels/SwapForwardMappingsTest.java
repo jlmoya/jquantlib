@@ -227,7 +227,7 @@ public class SwapForwardMappingsTest {
         final double beta = 0.2;
         final int endIndex = N - 2; // = 15 for N=17
 
-        final List<Double> rateTimesList = new ArrayList<Double>(RATE_TIMES.length);
+        final List<Double> rateTimesList = new ArrayList<>(RATE_TIMES.length);
         for (double t : RATE_TIMES) rateTimesList.add(t);
 
         for (int startIndex = 1; startIndex + 2 < N; startIndex += 5) {
