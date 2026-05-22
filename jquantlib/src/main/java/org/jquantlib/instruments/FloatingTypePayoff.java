@@ -44,7 +44,7 @@ import org.jquantlib.util.Visitor;
  * <p>Port of QuantLib v1.42.1 {@code QuantLib::FloatingTypePayoff}
  * ({@code ql/instruments/payoffs.hpp}).
  */
-public class FloatingTypePayoff extends TypePayoff {
+public final class FloatingTypePayoff extends TypePayoff {
 
     public FloatingTypePayoff(final Option.Type type) {
         super(type);

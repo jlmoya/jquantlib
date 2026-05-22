@@ -44,7 +44,7 @@ import org.jquantlib.QL;
  *
  * @author Jose Moya
  */
-public class MaxBasketPayoff extends BasketPayoff {
+public final class MaxBasketPayoff extends BasketPayoff {
 
     public MaxBasketPayoff(final Payoff basePayoff) {
         super(basePayoff);

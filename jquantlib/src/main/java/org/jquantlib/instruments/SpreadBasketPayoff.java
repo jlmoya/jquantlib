@@ -45,7 +45,7 @@ import org.jquantlib.QL;
  *
  * @author Jose Moya
  */
-public class SpreadBasketPayoff extends BasketPayoff {
+public final class SpreadBasketPayoff extends BasketPayoff {
 
     public SpreadBasketPayoff(final Payoff basePayoff) {
         super(basePayoff);

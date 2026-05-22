@@ -41,7 +41,7 @@ import org.jquantlib.util.Visitor;
  *
  * @author Phase 5e.5b-CFC-d-170 port
  */
-public class VanillaForwardPayoff extends StrikedTypePayoff {
+public final class VanillaForwardPayoff extends StrikedTypePayoff {
 
     public VanillaForwardPayoff(final Option.Type type, final /*@Real*/ double strike) {
         super(type, strike);

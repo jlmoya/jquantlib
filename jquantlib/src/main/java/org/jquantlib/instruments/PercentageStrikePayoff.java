@@ -59,7 +59,7 @@ import org.jquantlib.util.Visitor;
  * Mirrors C++ QuantLib v1.42.1 {@code PercentageStrikePayoff} in
  * {@code ql/instruments/payoffs.{hpp,cpp}}.
  */
-public class PercentageStrikePayoff extends StrikedTypePayoff {
+public final class PercentageStrikePayoff extends StrikedTypePayoff {
 
     public PercentageStrikePayoff(final Option.Type type, final /*@Real*/ double moneyness) {
         super(type, moneyness);

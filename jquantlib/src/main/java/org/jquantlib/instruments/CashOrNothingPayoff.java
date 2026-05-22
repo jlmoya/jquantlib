@@ -57,7 +57,7 @@ import org.jquantlib.util.Visitor;
  * @author Richard Gomes
  * @see <a href="http://www.in-the-money.com/artandpap/Binary%20Options.doc">Binary Options</a>
  */
-public class CashOrNothingPayoff extends StrikedTypePayoff {
+public final class CashOrNothingPayoff extends StrikedTypePayoff {
 
     //
     // protected fields

@@ -45,7 +45,7 @@ import org.jquantlib.QL;
  *
  * @author Jose Moya
  */
-public class AverageBasketPayoff extends BasketPayoff {
+public final class AverageBasketPayoff extends BasketPayoff {
 
     private final double[] weights;
 

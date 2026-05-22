@@ -55,7 +55,7 @@ import org.jquantlib.util.Visitor;
  * @author Richard Gomes
  * @see <a href="http://www.in-the-money.com/artandpap/Binary%20Options.doc">Binary Options</a>
  */
-public class PlainVanillaPayoff extends StrikedTypePayoff {
+public final class PlainVanillaPayoff extends StrikedTypePayoff {
 
     //
     // public constructors

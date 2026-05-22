@@ -45,9 +45,15 @@ package org.jquantlib.instruments;
 /**
  * Intermediate class for typed payoffs (CALL/PUT) with a fixed strike price
  *
+ * <p>JDK 25 sealed (JEP 409): permits the six v1.42.1 strike-bearing payoffs — vanilla, the two
+ * binary (cash-or-nothing / asset-or-nothing) variants, gap, percentage-strike, and the forward
+ * intrinsic payoff.</p>
+ *
  * @author Richard Gomes
  */
-public abstract class StrikedTypePayoff extends TypePayoff {
+public abstract sealed class StrikedTypePayoff extends TypePayoff
+        permits PlainVanillaPayoff, CashOrNothingPayoff, AssetOrNothingPayoff,
+                GapPayoff, PercentageStrikePayoff, VanillaForwardPayoff {
 
     //
     // protected fields

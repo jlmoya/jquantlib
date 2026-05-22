@@ -48,9 +48,13 @@ package org.jquantlib.instruments;
  * <p>Ported from C++ QuantLib v1.42.1
  * {@code ql/instruments/basketoption.hpp::BasketPayoff}.</p>
  *
+ * <p>JDK 25 sealed (JEP 409): permits the four v1.42.1 basket combinators
+ * (min, max, average, spread). All sub-types live in this package.</p>
+ *
  * @author Jose Moya
  */
-public abstract class BasketPayoff extends Payoff {
+public abstract sealed class BasketPayoff extends Payoff
+        permits MinBasketPayoff, MaxBasketPayoff, AverageBasketPayoff, SpreadBasketPayoff {
 
     //
     // protected fields

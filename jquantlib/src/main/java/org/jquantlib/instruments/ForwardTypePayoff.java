@@ -46,7 +46,7 @@ import org.jquantlib.lang.exceptions.LibraryException;
  *
  * @author John Martin
  */
-public class ForwardTypePayoff extends Payoff {
+public final class ForwardTypePayoff extends Payoff {
 
     //
     // protected fields

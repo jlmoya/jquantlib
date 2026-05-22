@@ -51,7 +51,7 @@ import org.jquantlib.util.Visitor;
  *
  * @author Richard Gomes
  */
-public class NullPayoff extends Payoff {
+public final class NullPayoff extends Payoff {
 
     //
     // overrides Payoff

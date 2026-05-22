@@ -47,10 +47,14 @@ import org.jquantlib.instruments.Option.Type;
 /**
  * Intermediate class for typed payoffs (CALL/PUT)
  *
+ * <p>JDK 25 sealed (JEP 409): permits {@link FloatingTypePayoff} and {@link StrikedTypePayoff} — the
+ * two v1.42.1 sub-families of CALL/PUT-typed payoffs.</p>
+ *
  * @author Richard Gomes
  * @see Option.Type
  */
-public abstract class TypePayoff extends Payoff {
+public abstract sealed class TypePayoff extends Payoff
+        permits FloatingTypePayoff, StrikedTypePayoff {
 
     //
     // protected fields

@@ -44,7 +44,7 @@ import org.jquantlib.QL;
  *
  * @author Jose Moya
  */
-public class MinBasketPayoff extends BasketPayoff {
+public final class MinBasketPayoff extends BasketPayoff {
 
     public MinBasketPayoff(final Payoff basePayoff) {
         super(basePayoff);
