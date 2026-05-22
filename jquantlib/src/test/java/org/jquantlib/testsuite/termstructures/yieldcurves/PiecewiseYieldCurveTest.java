@@ -66,6 +66,7 @@ import org.jquantlib.quotes.SimpleQuote;
 import org.jquantlib.termstructures.Bootstrap;
 import org.jquantlib.termstructures.Compounding;
 import org.jquantlib.termstructures.IterativeBootstrap;
+import org.jquantlib.termstructures.LocalBootstrap;
 import org.jquantlib.termstructures.RateHelper;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.termstructures.yieldcurves.ZeroSpreadedTermStructure;
@@ -823,6 +824,36 @@ public class PiecewiseYieldCurveTest {
 	    testBMACurveConsistency(ForwardRate.class, ConvexMonotone.class, IterativeBootstrap.class, vars);
 	}
 
+	/**
+	 * Faithful port of C++ {@code test-suite/piecewiseyieldcurve.cpp:781}
+	 * {@code BOOST_AUTO_TEST_CASE(testLocalBootstrapConsistency)}.
+	 * <p>Phase 1.4 closure (D5-A-LB): unblocked once
+	 * {@link org.jquantlib.termstructures.LocalBootstrap} body was completed
+	 * and {@link ConvexMonotone#localInterpolate(org.jquantlib.math.matrixutilities.Array,
+	 * org.jquantlib.math.matrixutilities.Array, int,
+	 * org.jquantlib.math.interpolations.Interpolation, int)} was ported. Mirrors
+	 * the C++ helpers' tolerance contract (1.0e-6 for {@code testCurveConsistency}).
+	 * <p>The {@code testBMACurveConsistency} half follows the existing Phase 1.3
+	 * convention used by {@link #testConvexMonotoneForwardConsistency()} and the
+	 * other piecewise-curve tests: the 4-arg overload delegates to
+	 * {@link #testCurveConsistency} rather than to the real BMA path, because the
+	 * Java BMA pricing chain ({@link org.jquantlib.cashflow.AverageBMACoupon}
+	 * fixings) is not yet wired to honour the C++ default-fixing semantics. The
+	 * 6-arg variant that would invoke the full BMA pricer is a separate
+	 * dependency tracked in the BMA-pricing audit, not gated on
+	 * {@code LocalBootstrap}.
+	 */
+	@Test
+	public void testLocalBootstrapConsistency() {
+	    QL.info("Testing consistency of local-bootstrap algorithm...");
+
+	    final CommonVars vars = new CommonVars();
+
+	    testCurveConsistency(ForwardRate.class, ConvexMonotone.class, LocalBootstrap.class,
+	            vars, new ConvexMonotone(), 1.0e-6);
+	    testBMACurveConsistency(ForwardRate.class, ConvexMonotone.class, LocalBootstrap.class, vars);
+	}
+
 
 	@Test
 	public void testObservability() {
@@ -1290,16 +1321,15 @@ public class PiecewiseYieldCurveTest {
 	//   unblocked by un-commenting + re-annotating the placeholder body. See
 	//   @Test testConvexMonotoneForwardConsistency() above.
 	//
-	// testLocalBootstrapConsistency (cpp:781) — BLOCKED (Phase 1.3 partial — D5-A scope)
-	//   Requires (1) ConvexMonotone.localInterpolate() — Java factory has only the
-	//   single-pass interpolate() variant; the local variant in cpp uses
-	//   getExistingHelpers() to incrementally extend the interpolation as more
-	//   pillars come in (~45 LOC factory + integration with
-	//   ConvexMonotoneInterpolation constructor that takes preExistingHelpers).
-	//   And (2) completion of the body of LocalBootstrap.calculate() (the cpp
-	//   loop currently lives in a FIXME-fenced commented block in
-	//   org.jquantlib.termstructures.LocalBootstrap.calculate()). Effort: ~200 LOC
-	//   total (factory + bootstrap loop + tests). Deferred to Phase 1.4.
+	// testLocalBootstrapConsistency (cpp:781) — PORTED in Phase1.4-D5-A-LB.
+	//   Closed by porting (1) ConvexMonotone.localInterpolate() — exposes
+	//   getExistingHelpers() and reuses the preExistingHelpers ctor on
+	//   ConvexMonotoneInterpolation; and (2) the body of
+	//   org.jquantlib.termstructures.LocalBootstrap.calculate() — sliding-window
+	//   PenaltyFunction over Levenberg-Marquardt mirroring v1.42.1
+	//   ql/termstructures/localbootstrap.hpp:134-258. Tolerance contract per the
+	//   C++ original: 1e-6 for testCurveConsistency / 1e-7 for testBMACurveConsistency.
+	//   See @Test testLocalBootstrapConsistency() above.
 	//
 	// testDefaultInstantiation (cpp:1067) — PORTED in Phase1-closure-A7-B-562
 	//   See @Test testDefaultInstantiation() above. Required infra ports of
@@ -1557,14 +1587,9 @@ public class PiecewiseYieldCurveTest {
 	 * {@code BOOST_AUTO_TEST_CASE(testConstructionWithExplicitBootstrap)}.
 	 * <p>
 	 * Verifies that PiecewiseYieldCurve can be constructed with an explicit
-	 * {@link IterativeBootstrap} instance (versus the default-constructed one).
-	 * <p>
-	 * C++ tests both {@code IterativeBootstrap} and {@code LocalBootstrap+ConvexMonotone}
-	 * variants. Java omits the LocalBootstrap+ConvexMonotone half: ConvexMonotone
-	 * interpolator is not yet ported (see commented-out
-	 * {@code testConvexMonotoneForwardConsistency} above). The IterativeBootstrap
-	 * half tests the construction-with-explicit-bootstrap contract — that's the
-	 * primary purpose of the test.
+	 * {@link IterativeBootstrap} instance and with an explicit
+	 * {@link LocalBootstrap}+{@link ConvexMonotone} pair (Phase 1.4-D5-A-LB
+	 * unblocks the second half).
 	 */
 	@Test
 	public void testConstructionWithExplicitBootstrap() {
@@ -1574,12 +1599,22 @@ public class PiecewiseYieldCurveTest {
 
 	    // With an explicit IterativeBootstrap object (PiecewiseYieldCurve<ForwardRate,Linear,IterativeBootstrap>).
 	    final IterativeBootstrap bootstrap = new IterativeBootstrap(PiecewiseYieldCurve.class);
-	    final YieldTermStructure yts = new PiecewiseYieldCurve(
+	    YieldTermStructure yts = new PiecewiseYieldCurve(
 	            ForwardRate.class, Linear.class, IterativeBootstrap.class,
 	            vars.settlement, vars.instruments, new Actual360(),
 	            new Handle/*<Quote>*/[0], new Date[0], 1.0e-12, new Linear(), bootstrap);
 
 	    // BOOST_CHECK_NO_THROW(yts->discount(1.0, true))
+	    yts.discount(1.0, true);
+
+	    // With an explicit LocalBootstrap object (PiecewiseYieldCurve<ForwardRate,ConvexMonotone,LocalBootstrap>).
+	    // Phase 1.4-D5-A-LB: closes the LocalBootstrap+ConvexMonotone half of the C++ original.
+	    final LocalBootstrap localBootstrap = new LocalBootstrap(PiecewiseYieldCurve.class);
+	    yts = new PiecewiseYieldCurve(
+	            ForwardRate.class, ConvexMonotone.class, LocalBootstrap.class,
+	            vars.settlement, vars.instruments, new Actual360(),
+	            new Handle/*<Quote>*/[0], new Date[0], 1.0e-12, new ConvexMonotone(), localBootstrap);
+
 	    yts.discount(1.0, true);
 	}
 
