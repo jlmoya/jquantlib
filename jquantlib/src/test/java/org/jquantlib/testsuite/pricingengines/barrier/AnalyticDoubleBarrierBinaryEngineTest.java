@@ -61,36 +61,10 @@ public class AnalyticDoubleBarrierBinaryEngineTest {
         return (int) (t * 360 + 0.5);
     }
 
-    private static class Data {
-        final DoubleBarrierType barrierType;
-        final double barrierLo;
-        final double barrierHi;
-        final double cash;
-        final double s;
-        final double q;
-        final double r;
-        final double t;
-        final double v;
-        final double result;
-        final double tol;
-
-        Data(final DoubleBarrierType barrierType, final double barrierLo, final double barrierHi,
-             final double cash, final double s,
-             final double q, final double r, final double t, final double v,
-             final double result, final double tol) {
-            this.barrierType = barrierType;
-            this.barrierLo = barrierLo;
-            this.barrierHi = barrierHi;
-            this.cash = cash;
-            this.s = s;
-            this.q = q;
-            this.r = r;
-            this.t = t;
-            this.v = v;
-            this.result = result;
-            this.tol = tol;
-        }
-    }
+    private record Data(DoubleBarrierType barrierType, double barrierLo, double barrierHi,
+                        double cash, double s,
+                        double q, double r, double t, double v,
+                        double result, double tol) {}
 
     private static final Data[] HAUG_VALUES = new Data[] {
             // KnockOut from Haug p.181
@@ -160,20 +134,20 @@ public class AnalyticDoubleBarrierBinaryEngineTest {
         final BlackVolTermStructure volTS = Utilities.flatVol(today, vol, dc);
 
         for (final Data value : HAUG_VALUES) {
-            final StrikedTypePayoff payoff = new CashOrNothingPayoff(Option.Type.Call, 0, value.cash);
+            final StrikedTypePayoff payoff = new CashOrNothingPayoff(Option.Type.Call, 0, value.cash());
 
-            final Date exDate = today.add(timeToDays(value.t));
+            final Date exDate = today.add(timeToDays(value.t()));
             final Exercise exercise;
-            if (value.barrierType == DoubleBarrierType.KIKO || value.barrierType == DoubleBarrierType.KOKI) {
+            if (value.barrierType() == DoubleBarrierType.KIKO || value.barrierType() == DoubleBarrierType.KOKI) {
                 exercise = new AmericanExercise(today, exDate);
             } else {
                 exercise = new EuropeanExercise(exDate);
             }
 
-            spot.setValue(value.s);
-            qRate.setValue(value.q);
-            rRate.setValue(value.r);
-            vol.setValue(value.v);
+            spot.setValue(value.s());
+            qRate.setValue(value.q());
+            rRate.setValue(value.r());
+            vol.setValue(value.v());
 
             final BlackScholesMertonProcess process = new BlackScholesMertonProcess(
                     new Handle<Quote>(spot),
@@ -183,18 +157,18 @@ public class AnalyticDoubleBarrierBinaryEngineTest {
 
             final AnalyticDoubleBarrierBinaryEngine engine = new AnalyticDoubleBarrierBinaryEngine(process);
             final DoubleBarrierOption opt = new DoubleBarrierOption(
-                    value.barrierType, value.barrierLo, value.barrierHi, 0.0, payoff, exercise);
+                    value.barrierType(), value.barrierLo(), value.barrierHi(), 0.0, payoff, exercise);
             opt.setPricingEngine(engine);
 
             final double calculated = opt.NPV();
-            final double error = Math.abs(calculated - value.result);
+            final double error = Math.abs(calculated - value.result());
 
-            assertTrue("DoubleBarrierBinary " + value.barrierType
-                            + " bar=[" + value.barrierLo + "," + value.barrierHi + "]"
-                            + " S=" + value.s + " v=" + value.v
-                            + ": expected=" + value.result + " calculated=" + calculated
-                            + " error=" + error + " tol=" + value.tol,
-                    error <= value.tol);
+            assertTrue("DoubleBarrierBinary " + value.barrierType()
+                            + " bar=[" + value.barrierLo() + "," + value.barrierHi() + "]"
+                            + " S=" + value.s() + " v=" + value.v()
+                            + ": expected=" + value.result() + " calculated=" + calculated
+                            + " error=" + error + " tol=" + value.tol(),
+                    error <= value.tol());
         }
     }
 }

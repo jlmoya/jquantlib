@@ -61,38 +61,10 @@ public class AnalyticBinaryBarrierEngineTest {
         return (int) (t * 360 + 0.5);
     }
 
-    private static class BinaryOptionData {
-        final BarrierType barrierType;
-        final double barrier;
-        final double cash;
-        final Option.Type type;
-        final double strike;
-        final double s;
-        final double q;
-        final double r;
-        final double t;
-        final double v;
-        final double result;
-        final double tol;
-
-        BinaryOptionData(final BarrierType barrierType, final double barrier, final double cash,
-                         final Option.Type type, final double strike, final double s,
-                         final double q, final double r, final double t, final double v,
-                         final double result, final double tol) {
-            this.barrierType = barrierType;
-            this.barrier = barrier;
-            this.cash = cash;
-            this.type = type;
-            this.strike = strike;
-            this.s = s;
-            this.q = q;
-            this.r = r;
-            this.t = t;
-            this.v = v;
-            this.result = result;
-            this.tol = tol;
-        }
-    }
+    private record BinaryOptionData(BarrierType barrierType, double barrier, double cash,
+                                    Option.Type type, double strike, double s,
+                                    double q, double r, double t, double v,
+                                    double result, double tol) {}
 
     private static final BinaryOptionData[] CASH_VALUES = new BinaryOptionData[] {
             new BinaryOptionData(BarrierType.DownIn,  100.00, 15.00, Option.Type.Call, 102.00, 105.00, 0.00, 0.10, 0.5, 0.20,  4.9289, 1e-4),
@@ -159,16 +131,16 @@ public class AnalyticBinaryBarrierEngineTest {
 
         for (final BinaryOptionData value : values) {
             final StrikedTypePayoff payoff = cashOrNothing
-                    ? new CashOrNothingPayoff(value.type, value.strike, value.cash)
-                    : new AssetOrNothingPayoff(value.type, value.strike);
+                    ? new CashOrNothingPayoff(value.type(), value.strike(), value.cash())
+                    : new AssetOrNothingPayoff(value.type(), value.strike());
 
-            final Date exDate = today.add(timeToDays(value.t));
+            final Date exDate = today.add(timeToDays(value.t()));
             final Exercise amExercise = new AmericanExercise(today, exDate, true);
 
-            spot.setValue(value.s);
-            qRate.setValue(value.q);
-            rRate.setValue(value.r);
-            vol.setValue(value.v);
+            spot.setValue(value.s());
+            qRate.setValue(value.q());
+            rRate.setValue(value.r());
+            vol.setValue(value.v());
 
             final BlackScholesMertonProcess process = new BlackScholesMertonProcess(
                     new Handle<Quote>(spot),
@@ -177,18 +149,18 @@ public class AnalyticBinaryBarrierEngineTest {
                     new Handle<BlackVolTermStructure>(volTS));
             final AnalyticBinaryBarrierEngine engine = new AnalyticBinaryBarrierEngine(process);
 
-            final BarrierOption opt = new BarrierOption(value.barrierType, value.barrier, 0.0, payoff, amExercise);
+            final BarrierOption opt = new BarrierOption(value.barrierType(), value.barrier(), 0.0, payoff, amExercise);
             opt.setPricingEngine(engine);
 
             final double calculated = opt.NPV();
-            final double error = Math.abs(calculated - value.result);
+            final double error = Math.abs(calculated - value.result());
 
             assertTrue("BinaryBarrier " + (cashOrNothing ? "Cash" : "Asset") + " "
-                            + value.barrierType + " " + value.type
-                            + " S=" + value.s + " K=" + value.strike + " H=" + value.barrier
-                            + ": expected=" + value.result + " calculated=" + calculated
-                            + " error=" + error + " tol=" + value.tol,
-                    error <= value.tol);
+                            + value.barrierType() + " " + value.type()
+                            + " S=" + value.s() + " K=" + value.strike() + " H=" + value.barrier()
+                            + ": expected=" + value.result() + " calculated=" + calculated
+                            + " error=" + error + " tol=" + value.tol(),
+                    error <= value.tol());
         }
     }
 }

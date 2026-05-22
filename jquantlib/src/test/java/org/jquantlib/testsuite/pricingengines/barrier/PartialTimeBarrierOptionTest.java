@@ -57,19 +57,7 @@ public class PartialTimeBarrierOptionTest {
         QL.info("::::: " + this.getClass().getSimpleName() + " :::::");
     }
 
-    private static class TestCase {
-        final double underlying;
-        final double strike;
-        final int days;
-        final double result;
-
-        TestCase(final double underlying, final double strike, final int days, final double result) {
-            this.underlying = underlying;
-            this.strike = strike;
-            this.days = days;
-            this.result = result;
-        }
-    }
+    private record TestCase(double underlying, double strike, int days, double result) {}
 
     /** Reference values from C++ testAnalyticEngine (DownOut/EndB1, Call). */
     private static final TestCase[] CALL_VALUES = new TestCase[] {
@@ -169,20 +157,20 @@ public class PartialTimeBarrierOptionTest {
         final double tolerance = 1.0e-4;
 
         for (final TestCase tc : values) {
-            final Date coverEventDate = today.add(tc.days);
-            final PlainVanillaPayoff payoff = new PlainVanillaPayoff(optType, tc.strike);
+            final Date coverEventDate = today.add(tc.days());
+            final PlainVanillaPayoff payoff = new PlainVanillaPayoff(optType, tc.strike());
             final PartialTimeBarrierOption option = new PartialTimeBarrierOption(
                     barrierType, PartialBarrier.EndB1, barrier, rebate,
                     coverEventDate, payoff, exercise);
             option.setPricingEngine(engine);
 
-            spot.setValue(tc.underlying);
+            spot.setValue(tc.underlying());
             final double calculated = option.NPV();
-            final double error = Math.abs(calculated - tc.result);
+            final double error = Math.abs(calculated - tc.result());
 
             assertTrue("PartialTimeBarrier " + barrierType + " " + optType
-                            + " S=" + tc.underlying + " K=" + tc.strike + " days=" + tc.days
-                            + ": expected=" + tc.result + " calculated=" + calculated
+                            + " S=" + tc.underlying() + " K=" + tc.strike() + " days=" + tc.days()
+                            + ": expected=" + tc.result() + " calculated=" + calculated
                             + " error=" + error + " tol=" + tolerance,
                     error <= tolerance);
         }

@@ -58,37 +58,9 @@ public class AnalyticSoftBarrierEngineTest {
         return (int) (t * 360 + 0.5);
     }
 
-    private static class Data {
-        final BarrierType barrierType;
-        final Option.Type type;
-        final double s;
-        final double strike;
-        final double U;
-        final double L;
-        final double q;
-        final double r;
-        final double t;
-        final double v;
-        final double result;
-        final double tol;
-
-        Data(final BarrierType barrierType, final Option.Type type, final double s, final double strike,
-             final double U, final double L, final double q, final double r,
-             final double t, final double v, final double result, final double tol) {
-            this.barrierType = barrierType;
-            this.type = type;
-            this.s = s;
-            this.strike = strike;
-            this.U = U;
-            this.L = L;
-            this.q = q;
-            this.r = r;
-            this.t = t;
-            this.v = v;
-            this.result = result;
-            this.tol = tol;
-        }
-    }
+    private record Data(BarrierType barrierType, Option.Type type, double s, double strike,
+                        double U, double L, double q, double r,
+                        double t, double v, double result, double tol) {}
 
     /**
      * Subset of Haug values from C++ test suite. We exclude U=L cases (which fall back to
@@ -158,14 +130,14 @@ public class AnalyticSoftBarrierEngineTest {
         final BlackVolTermStructure volTS = Utilities.flatVol(today, vol, dc);
 
         for (final Data value : VALUES) {
-            spot.setValue(value.s);
-            qRate.setValue(value.q);
-            rRate.setValue(value.r);
-            vol.setValue(value.v);
+            spot.setValue(value.s());
+            qRate.setValue(value.q());
+            rRate.setValue(value.r());
+            vol.setValue(value.v());
 
-            final Date exDate = today.add(timeToDays(value.t));
+            final Date exDate = today.add(timeToDays(value.t()));
             final Exercise exercise = new EuropeanExercise(exDate);
-            final PlainVanillaPayoff payoff = new PlainVanillaPayoff(value.type, value.strike);
+            final PlainVanillaPayoff payoff = new PlainVanillaPayoff(value.type(), value.strike());
 
             final GeneralizedBlackScholesProcess process = new GeneralizedBlackScholesProcess(
                     new Handle<Quote>(spot),
@@ -174,18 +146,18 @@ public class AnalyticSoftBarrierEngineTest {
                     new Handle<BlackVolTermStructure>(volTS));
 
             final SoftBarrierOption option = new SoftBarrierOption(
-                    value.barrierType, value.L, value.U, payoff, exercise);
+                    value.barrierType(), value.L(), value.U(), payoff, exercise);
             option.setPricingEngine(new AnalyticSoftBarrierEngine(process));
 
             final double calculated = option.NPV();
-            final double error = Math.abs(calculated - value.result);
+            final double error = Math.abs(calculated - value.result());
 
-            assertTrue("SoftBarrier " + value.barrierType + " " + value.type
-                            + " S=" + value.s + " K=" + value.strike + " U=" + value.U + " L=" + value.L
-                            + " v=" + value.v + " T=" + value.t
-                            + ": expected=" + value.result + " calculated=" + calculated
-                            + " error=" + error + " tol=" + value.tol,
-                    error <= value.tol);
+            assertTrue("SoftBarrier " + value.barrierType() + " " + value.type()
+                            + " S=" + value.s() + " K=" + value.strike() + " U=" + value.U() + " L=" + value.L()
+                            + " v=" + value.v() + " T=" + value.t()
+                            + ": expected=" + value.result() + " calculated=" + calculated
+                            + " error=" + error + " tol=" + value.tol(),
+                    error <= value.tol());
         }
     }
 }
