@@ -125,8 +125,12 @@ import org.junit.Test;
  *      termination-date constructor.</li>
  *  <li>{@code testActual365_Canadian} — requires
  *      {@code Actual365Fixed::Canadian} enum branch (absent).</li>
- *  <li>{@code testIntraday} — guarded by C++ {@code QL_HIGH_RESOLUTION_DATE};
- *      Java has no high-resolution {@link org.jquantlib.time.Date}.</li>
+ *  <li>{@code testIntraday} — <b>ACTIVATED (Phase 1.3 D5-D-intraday)</b>:
+ *      ported to {@link #testIntraday()}; depends on the intraday-aware
+ *      Date constructor (CFC-d-304) plus the new sub-day TimeUnits, and
+ *      requires {@code Actual360} / {@code ActualActual.ISDA} to honour
+ *      {@code Date.fractionOfDay()} (now done — both mirror C++
+ *      {@code daysBetween} which adds the intraday term).</li>
  *  <li>{@code testAct366} / {@code testAct36525} — require
  *      {@code org.jquantlib.daycounters.Actual366} and
  *      {@code Actual36525} classes (absent).</li>
@@ -1484,6 +1488,56 @@ public class DayCountersTest {
                                 + " inv=" + inv + " expected=" + d2Plus);
                     }
                 }
+            }
+        }
+    }
+
+    /**
+     * Port of v1.42.1 test-suite/daycounters.cpp::testIntraday (lines 1094-1120).
+     *
+     * <p>Phase 1.3 D5-D-intraday: exercises that ActualActual(ISDA),
+     * Actual365Fixed, and Actual360 honour the intraday {@code fractionOfDay()}
+     * component of a Date. The C++ test expects the formula:
+     * <pre>
+     *   yf(d1, d2) = ((12*60+34)*60 + 17 + 0.231298)
+     *                * yf(d1, d1+1) / 86400
+     *                + yf(d1, d1+2)
+     * </pre>
+     * which equals {@code yf(d1, d1+2) + fractionOfDay(d2) * yf(d1, d1+1)}.
+     * Both d1+1 and d1+2 are pure day-only Dates, so {@code yf(d1, d1+1)/86400}
+     * is the per-second fraction; the test verifies that adding two days of
+     * day-resolution plus the intraday fraction reproduces yf(d1, d2).
+     */
+    @Test
+    public void testIntraday() {
+        QL.info("Testing intraday behavior of day counter...");
+
+        final Date d1 = new Date(12, Month.February, 2015);
+        final Date d2 = new Date(14, Month.February, 2015, 12, 34, 17, 1, 230298);
+
+        final double tol = 100.0 * 1e-16; // 100 * QL_EPSILON
+
+        final DayCounter[] dayCounters = {
+                new ActualActual(ActualActual.Convention.ISDA),
+                new Actual365Fixed(),
+                new Actual360()
+        };
+
+        for (final DayCounter dc : dayCounters) {
+            final double expected = ((12 * 60 + 34) * 60 + 17 + 0.231298)
+                                  * dc.yearFraction(d1, d1.add(new Period(1, TimeUnit.Days))) / 86400.0
+                                  + dc.yearFraction(d1, d1.add(new Period(2, TimeUnit.Days)));
+
+            final double calc = dc.yearFraction(d1, d2);
+            if (Math.abs(calc - expected) > tol) {
+                fail("can not reproduce result for day counter " + dc.name()
+                        + "  calculated=" + calc + "  expected=" + expected);
+            }
+
+            final double calcReverse = dc.yearFraction(d2, d1);
+            if (Math.abs(calcReverse + expected) > tol) {
+                fail("can not reproduce reverse result for day counter " + dc.name()
+                        + "  calculated=" + calcReverse + "  expected=" + (-expected));
             }
         }
     }

@@ -79,10 +79,17 @@ import org.junit.Test;
  *      ({@code "%Y-%m-%d"}, {@code "%m/%d/%Y"}, {@code "%d/%m/%Y"},
  *      {@code "%Y%m%d"}). A faithful port requires extending DateParser to
  *      support the C++ format syntax (production change beyond the cert).</li>
- *  <li>{@code intraday} — <b>BLOCKED</b>: guarded by C++
- *      {@code QL_HIGH_RESOLUTION_DATE}; Java {@link org.jquantlib.time.Date} is
- *      day-resolution only (no hours/minutes/seconds/milliseconds/microseconds
- *      accessors).</li>
+ *  <li>{@code intraday} — <b>ACTIVATED (Phase 1.3 D5-D-intraday)</b>:
+ *      ported to {@link #intraday()} after extending Java
+ *      {@link org.jquantlib.time.Date} with the intraday-aware
+ *      {@code (d,m,y,h,m,s,ms,us)} constructor (CFC-d-304), then adding
+ *      {@code Hours/Minutes/Seconds/Milliseconds/Microseconds} TimeUnits and
+ *      a sub-day {@code Date.advance} path with day rollover via
+ *      {@code timeOfDayNanos}. The test uses
+ *      {@link org.jquantlib.time.Date#equalsExact} for intraday-resolution
+ *      comparison (Java's default {@code equals} is deliberately day-only to
+ *      preserve {@code Calendar.holiday} lookup semantics — see Date class
+ *      javadoc).</li>
  *  <li>{@code ecbIsECBcode} / {@code ecbDates} / {@code ecbGetDateFromCode} /
  *      {@code ecbGetCodeFromDate} / {@code ecbNextCode} — <b>BLOCKED</b>: there
  *      is no {@code org.jquantlib.time.ECB} class. C++ {@code ql/time/ecb.hpp}
@@ -744,5 +751,82 @@ public class DatesTest {
         input = "20011002";
         d = DateParser.parseFormatted(input, "%Y%m%d");
         assertEquals(new Date(2, Month.October, 2001), d);
+    }
+
+    /**
+     * Port of v1.42.1 test-suite/dates.cpp::intraday (lines 432-503).
+     *
+     * <p>Phase 1.3 D5-D-intraday: this test was BLOCKED in R4 because Java
+     * Date was day-only. With the CFC-d-304 intraday constructor plus the
+     * new Hours/Minutes/Seconds/Milliseconds/Microseconds TimeUnits and a
+     * sub-day {@code Date.add(Period)} path with day rollover, the full
+     * C++ test is reproducible.
+     *
+     * <p>Note: assertions on the intraday-bearing dates use
+     * {@link Date#equalsExact} (not {@code equals}). Java's {@code equals}
+     * is day-only by design to preserve {@code Calendar.holiday} lookup;
+     * see Date class javadoc.
+     */
+    @Test
+    public void intraday() {
+        QL.info("Testing intraday information of dates...");
+
+        final Date d1 = new Date(12, Month.February, 2015, 10, 45, 12, 1234, 76253);
+        assertEquals(2015, d1.year());
+        assertEquals(Month.February, d1.month());
+        assertEquals(12, d1.dayOfMonth());
+        assertEquals(10, d1.hours());
+        assertEquals(45, d1.minutes());
+        assertEquals(13, d1.seconds()); // 12s + 1234ms = 13s + 234ms
+
+        // ticksPerSecond=1e9 (nanosecond resolution >= 1e6 path)
+        assertEquals((234000 + 76253) / 1000000.0, d1.fractionOfSecond(), 1.0e-12);
+        assertEquals(234 + 76, d1.milliseconds());
+        assertEquals(253, d1.microseconds());
+
+        // d2 input: 28 Feb 2015 50:165:476.001234253 → 2 March 2015 04:52:57.234253
+        // 50h = 2d 2h; 165min = 2h 45min; 476s = 7m 56s; 1234ms = 1s 234ms
+        // 02:00 + 02:45 + 07:56 ⇒ d+2d, 12:41:56 + 1.234253 ⇒ 12:41:57.234253? No:
+        // Boost time_duration normalizes: 50h becomes 2 days + 2h; 165min adds 2h 45m;
+        // total hours so far = 2+2 = 4; total minutes = 165+0 = 165 → 2h 45m, gives 6h 45m.
+        // 476 s = 7m 56s → 6h 45m + 7m 56s = 6h 52m 56s
+        // 1234ms = 1s 234ms → 6h 52m 57s.234253. Hmm — C++ expects 04:52:57.234253.
+        // The discrepancy is because boost's time_duration constructor takes
+        // (h,m,s,ticks), each can be > its modular bound and boost rolls each
+        // INDEPENDENTLY (50h directly carries to dt += days; 165 minutes adds
+        // 2h45m to time-of-day → 2h+45m time; 476s adds 7m56s → 52m56s; etc).
+        // Java mirrors via timeOfDayNanos summation with day-carry.
+        final Date d2 = new Date(28, Month.February, 2015, 50, 165, 476, 1234, 253);
+        assertEquals(2015, d2.year());
+        assertEquals(Month.March, d2.month());
+        assertEquals(2, d2.dayOfMonth());
+        assertEquals(4, d2.hours());
+        assertEquals(52, d2.minutes());
+        assertEquals(57, d2.seconds());
+        assertEquals(234, d2.milliseconds());
+        assertEquals(253, d2.microseconds());
+
+        // Period(n, sub-day-unit) advance with equalsExact (intraday-aware).
+        final Date d3 = new Date(10, Month.April, 2023, 11, 43, 13, 234, 253);
+
+        assertTrue("failed to add hours",
+                d3.add(new Period(23, TimeUnit.Hours))
+                  .equalsExact(new Date(11, Month.April, 2023, 10, 43, 13, 234, 253)));
+
+        assertTrue("failed to add minutes",
+                d3.add(new Period(2, TimeUnit.Minutes))
+                  .equalsExact(new Date(10, Month.April, 2023, 11, 45, 13, 234, 253)));
+
+        assertTrue("failed to add (negative) seconds",
+                d3.add(new Period(-2, TimeUnit.Seconds))
+                  .equalsExact(new Date(10, Month.April, 2023, 11, 43, 11, 234, 253)));
+
+        assertTrue("failed to add (negative) milliseconds",
+                d3.add(new Period(-20, TimeUnit.Milliseconds))
+                  .equalsExact(new Date(10, Month.April, 2023, 11, 43, 13, 214, 253)));
+
+        assertTrue("failed to add microseconds",
+                d3.add(new Period(20, TimeUnit.Microseconds))
+                  .equalsExact(new Date(10, Month.April, 2023, 11, 43, 13, 234, 273)));
     }
 }
