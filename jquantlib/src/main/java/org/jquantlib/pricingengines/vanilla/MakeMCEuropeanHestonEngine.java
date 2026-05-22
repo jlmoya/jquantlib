@@ -120,12 +120,12 @@ public class MakeMCEuropeanHestonEngine {
     public PricingEngine value() {
         QL.require(steps_ != McSimulation.NULL_SAMPLES || stepsPerYear_ != McSimulation.NULL_SAMPLES,
                 "no time steps provided");
-        if ( process_ instanceof HestonProcess ) {
-            return new MCEuropeanHestonEngine((HestonProcess) process_, steps_, stepsPerYear_, antithetic_, samples_,
+        if (process_ instanceof HestonProcess hp) {
+            return new MCEuropeanHestonEngine(hp, steps_, stepsPerYear_, antithetic_, samples_,
                     tolerance_, maxSamples_, seed_);
         }
-        if ( process_ instanceof HestonStochasticLocalVolProcess ) {
-            return new MCEuropeanHestonEngine((HestonStochasticLocalVolProcess) process_, steps_, stepsPerYear_,
+        if (process_ instanceof HestonStochasticLocalVolProcess hslvp) {
+            return new MCEuropeanHestonEngine(hslvp, steps_, stepsPerYear_,
                     antithetic_, samples_, tolerance_, maxSamples_, seed_);
         }
         throw new IllegalStateException("unsupported process type: " + process_.getClass().getName());

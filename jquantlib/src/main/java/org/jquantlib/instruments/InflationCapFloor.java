@@ -165,8 +165,8 @@ public class InflationCapFloor extends Instrument {
 
     public YoYInflationCoupon lastYoYInflationCoupon() {
         final CashFlow lastCF = yoyLeg_.get(yoyLeg_.size() - 1);
-        if ( lastCF instanceof YoYInflationCoupon ) {
-            return (YoYInflationCoupon) lastCF;
+        if (lastCF instanceof YoYInflationCoupon yic) {
+            return yic;
         }
         return null;
     }

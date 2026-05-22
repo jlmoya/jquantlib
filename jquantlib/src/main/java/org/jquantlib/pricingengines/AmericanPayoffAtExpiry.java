@@ -86,8 +86,8 @@ public class AmericanPayoffAtExpiry {
 
         this.mu = Math.log(dividendDiscount / discount) / variance - 0.5;
 
-        if ( strikedTypePayoff instanceof CashOrNothingPayoff ) {
-            this.K = ((CashOrNothingPayoff) strikedTypePayoff).getCashPayoff();
+        if (strikedTypePayoff instanceof CashOrNothingPayoff cnp) {
+            this.K = cnp.getCashPayoff();
         }
         if ( strikedTypePayoff instanceof AssetOrNothingPayoff ) {
             this.K = this.forward;

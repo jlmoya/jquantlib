@@ -166,11 +166,11 @@ public class MCEuropeanHestonEngine extends OneAssetOption.EngineImpl {
      * {@link StochasticProcess} forces an {@code instanceof} switch here.
      */
     protected Handle< YieldTermStructure > riskFreeRate() {
-        if ( process_ instanceof HestonProcess ) {
-            return ((HestonProcess) process_).riskFreeRate();
+        if (process_ instanceof HestonProcess hp) {
+            return hp.riskFreeRate();
         }
-        if ( process_ instanceof HestonStochasticLocalVolProcess ) {
-            return ((HestonStochasticLocalVolProcess) process_).riskFreeRate();
+        if (process_ instanceof HestonStochasticLocalVolProcess hslvp) {
+            return hslvp.riskFreeRate();
         }
         throw new IllegalStateException("unsupported process type: " + process_.getClass().getName());
     }

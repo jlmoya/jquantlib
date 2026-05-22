@@ -135,8 +135,8 @@ public class AnalyticBinaryBarrierEngine extends BarrierOption.EngineImpl {
         double mu = Math.log(dividendDiscount / discount) / variance - 0.5;
         double K = 0;
 
-        if ( payoff instanceof CashOrNothingPayoff ) {
-            K = ((CashOrNothingPayoff) payoff).getCashPayoff();
+        if (payoff instanceof CashOrNothingPayoff cnp) {
+            K = cnp.getCashPayoff();
         }
 
         if ( payoff instanceof AssetOrNothingPayoff ) {

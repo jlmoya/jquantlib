@@ -144,8 +144,8 @@ public class AmericanBasketPathPricer implements EarlyExercisePathPricer< MultiP
 
         // scaling — mirror C++ {@code if (strikePayoff != nullptr) scalingValue_ /= strikePayoff->strike();}
         final Payoff base = basketPayoff.basePayoff();
-        if ( base instanceof StrikedTypePayoff ) {
-            this.scalingValue_ /= ((StrikedTypePayoff) base).strike();
+        if (base instanceof StrikedTypePayoff stp) {
+            this.scalingValue_ /= stp.strike();
         }
 
         // last basis function = the (scaled-state) payoff itself.

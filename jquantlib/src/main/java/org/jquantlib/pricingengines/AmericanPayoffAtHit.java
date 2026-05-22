@@ -145,8 +145,8 @@ public class AmericanPayoffAtHit {
             X = JQuantMath.pow(strike / spot, muMinusLambda);
         }
 
-        if ( strikedTypePayoff instanceof CashOrNothingPayoff ) {
-            K = ((CashOrNothingPayoff) strikedTypePayoff).getCashPayoff();
+        if (strikedTypePayoff instanceof CashOrNothingPayoff cnp) {
+            K = cnp.getCashPayoff();
         }
 
         if (strikedTypePayoff instanceof AssetOrNothingPayoff aoo) {

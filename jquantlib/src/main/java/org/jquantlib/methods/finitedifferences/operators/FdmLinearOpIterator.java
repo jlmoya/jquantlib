@@ -105,10 +105,10 @@ public final class FdmLinearOpIterator {
         if ( other == this ) {
             return true;
         }
-        if ( !(other instanceof FdmLinearOpIterator) ) {
+        if (!(other instanceof FdmLinearOpIterator that)) {
             return false;
         }
-        return index == ((FdmLinearOpIterator) other).index;
+        return index == that.index;
     }
 
     @Override

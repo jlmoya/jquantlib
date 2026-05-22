@@ -220,9 +220,13 @@ public class FloatFloatSwaption extends Option {
     @Override
     protected void fetchResults(final PricingEngine.Results r) /* @ReadOnly */ {
         super.fetchResults(r);
-        if ( r instanceof Instrument.ResultsImpl ) {
+        if (r instanceof Instrument.ResultsImpl ri) {
             // copy by reference — engine.reset() will replace map next round
+<<<<<<< HEAD
             additionalResults_ = new HashMap<>(((Instrument.ResultsImpl) r).additionalResults());
+=======
+            additionalResults_ = new HashMap< String, Object >(ri.additionalResults());
+>>>>>>> 3996b722 (refactor(multi): pattern matching for instanceof — additional cleanup (jdk25-mod-w2))
         } else {
             additionalResults_ = new HashMap<>();
         }

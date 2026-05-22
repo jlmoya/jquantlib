@@ -462,19 +462,18 @@ public class ZabrSwaptionVolatilityCube extends SwaptionVolatilityCube {
 
     private double atmVolShift(final double optionTime, final double swapLen) {
         final SwaptionVolatilityStructure atm = atmVol_.currentLink();
-        if ( atm instanceof SwaptionVolatilityMatrix ) {
-            return ((SwaptionVolatilityMatrix) atm).shift(optionTime, swapLen, true);
+        if (atm instanceof SwaptionVolatilityMatrix svm) {
+            return svm.shift(optionTime, swapLen, true);
         }
         return atm.shift();
     }
 
     private void fillVolatilityCube() {
         final SwaptionVolatilityStructure atmRaw = atmVol_.currentLink();
-        if ( !(atmRaw instanceof SwaptionVolatilityDiscrete) ) {
+        if (!(atmRaw instanceof SwaptionVolatilityDiscrete atmDisc)) {
             volCubeAtmCalibrated_.updateInterpolators();
             return;
         }
-        final SwaptionVolatilityDiscrete atmDisc = (SwaptionVolatilityDiscrete) atmRaw;
 
         final double[] atmOptionTimes = mergeAndSort(atmDisc.optionTimes(), volCubeAtmCalibrated_.optionTimes());
         final double[] atmSwapLengths = mergeAndSort(atmDisc.swapLengths(), volCubeAtmCalibrated_.swapLengths());

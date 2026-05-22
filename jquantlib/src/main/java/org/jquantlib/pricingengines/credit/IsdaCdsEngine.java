@@ -192,16 +192,16 @@ public class IsdaCdsEngine extends CreditDefaultSwap.Engine {
      */
     @SuppressWarnings( "rawtypes" )
     private static List< Date > extractYieldDates(final YieldTermStructure ts) {
-        if ( ts instanceof InterpolatedDiscountCurve ) {
-            final Date[] arr = ((InterpolatedDiscountCurve) ts).dates();
+        if (ts instanceof InterpolatedDiscountCurve idc) {
+            final Date[] arr = idc.dates();
             return arr == null ? Collections.emptyList() : new ArrayList<>(java.util.Arrays.asList(arr));
         }
-        if ( ts instanceof InterpolatedForwardCurve ) {
-            final Date[] arr = ((InterpolatedForwardCurve) ts).dates();
+        if (ts instanceof InterpolatedForwardCurve ifc) {
+            final Date[] arr = ifc.dates();
             return arr == null ? Collections.emptyList() : new ArrayList<>(java.util.Arrays.asList(arr));
         }
-        if ( ts instanceof org.jquantlib.termstructures.yieldcurves.PiecewiseYieldCurve ) {
-            final Date[] arr = ((org.jquantlib.termstructures.yieldcurves.PiecewiseYieldCurve) ts).dates();
+        if (ts instanceof org.jquantlib.termstructures.yieldcurves.PiecewiseYieldCurve pyc) {
+            final Date[] arr = pyc.dates();
             return arr == null ? Collections.emptyList() : new ArrayList<>(java.util.Arrays.asList(arr));
         }
         if ( ts instanceof FlatForward ) {
@@ -219,16 +219,16 @@ public class IsdaCdsEngine extends CreditDefaultSwap.Engine {
      */
     @SuppressWarnings( "rawtypes" )
     private static List< Date > extractCreditDates(final DefaultProbabilityTermStructure ts) {
-        if ( ts instanceof InterpolatedSurvivalProbabilityCurve ) {
-            final Date[] arr = ((InterpolatedSurvivalProbabilityCurve) ts).dates();
+        if (ts instanceof InterpolatedSurvivalProbabilityCurve ispc) {
+            final Date[] arr = ispc.dates();
             return arr == null ? Collections.emptyList() : new ArrayList<>(java.util.Arrays.asList(arr));
         }
-        if ( ts instanceof InterpolatedHazardRateCurve ) {
-            final Date[] arr = ((InterpolatedHazardRateCurve) ts).dates();
+        if (ts instanceof InterpolatedHazardRateCurve ihrc) {
+            final Date[] arr = ihrc.dates();
             return arr == null ? Collections.emptyList() : new ArrayList<>(java.util.Arrays.asList(arr));
         }
-        if ( ts instanceof org.jquantlib.termstructures.credit.PiecewiseDefaultCurve ) {
-            final Date[] arr = ((org.jquantlib.termstructures.credit.PiecewiseDefaultCurve) ts).dates();
+        if (ts instanceof org.jquantlib.termstructures.credit.PiecewiseDefaultCurve pdc) {
+            final Date[] arr = pdc.dates();
             return arr == null ? Collections.emptyList() : new ArrayList<>(java.util.Arrays.asList(arr));
         }
         if ( ts instanceof FlatHazardRate ) {

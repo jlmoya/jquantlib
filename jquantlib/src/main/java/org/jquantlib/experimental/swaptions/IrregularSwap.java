@@ -171,12 +171,11 @@ public class IrregularSwap extends Swap {
     public void setupArguments(final PricingEngine.Arguments args) /* @ReadOnly */ {
         super.setupArguments(args);
 
-        if ( !(args instanceof IrregularSwap.ArgumentsImpl) ) {
+        if (!(args instanceof IrregularSwap.ArgumentsImpl arguments)) {
             // it might be a plain Swap engine — return silently (mirrors C++).
             return;
         }
 
-        final IrregularSwap.ArgumentsImpl arguments = (IrregularSwap.ArgumentsImpl) args;
         arguments.type = type_;
 
         final Leg fixedCoupons = fixedLeg();

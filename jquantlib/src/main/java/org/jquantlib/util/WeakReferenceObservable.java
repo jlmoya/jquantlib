@@ -112,8 +112,8 @@ public class WeakReferenceObservable extends DefaultObservable {
      */
     @Override
     protected Observer unwrap(final Observer observer) {
-        if ( observer instanceof WeakReferenceObserver ) {
-            return ((WeakReferenceObserver) observer).get();
+        if (observer instanceof WeakReferenceObserver wro) {
+            return wro.get();
         }
         return observer;
     }

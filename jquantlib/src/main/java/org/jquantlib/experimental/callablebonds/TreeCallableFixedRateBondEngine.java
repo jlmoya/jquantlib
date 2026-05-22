@@ -96,8 +96,8 @@ public class TreeCallableFixedRateBondEngine extends CallableBondEngineImpl {
         QL.require(model_ != null, "no model specified");
 
         final Handle< YieldTermStructure > discountCurve;
-        if ( model_ instanceof TermStructureConsistentModel ) {
-            discountCurve = ((TermStructureConsistentModel) model_).termStructure();
+        if (model_ instanceof TermStructureConsistentModel tscm) {
+            discountCurve = tscm.termStructure();
         } else {
             discountCurve = termStructure_;
         }

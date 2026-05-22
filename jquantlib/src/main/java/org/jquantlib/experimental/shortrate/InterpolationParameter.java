@@ -77,8 +77,8 @@ public class InterpolationParameter extends Parameter {
      * given {@code params().constIterator()} style backing.
      */
     public void reset(final Interpolation interp) {
-        if ( impl instanceof InterpolationImpl ) {
-            ((InterpolationImpl) impl).interpolator = interp;
+        if (impl instanceof InterpolationImpl ii) {
+            ii.interpolator = interp;
         }
     }
 

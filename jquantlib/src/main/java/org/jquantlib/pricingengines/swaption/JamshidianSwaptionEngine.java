@@ -225,8 +225,8 @@ public class JamshidianSwaptionEngine extends Swaption.EngineImpl {
      */
     private double discountBondOptionWithDelay(final Option.Type type, final double strike, final double maturity,
             final double bondStart, final double bondMaturity) {
-        if ( model_ instanceof HullWhite ) {
-            return ((HullWhite) model_).discountBondOption(type, strike, maturity, bondStart, bondMaturity);
+        if (model_ instanceof HullWhite hw) {
+            return hw.discountBondOption(type, strike, maturity, bondStart, bondMaturity);
         }
         // Fallback: 4-arg AffineModel contract (no start delay).
         return model_.discountBondOption(type, strike, maturity, bondMaturity);
