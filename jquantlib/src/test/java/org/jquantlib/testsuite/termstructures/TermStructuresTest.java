@@ -132,8 +132,8 @@ public class TermStructuresTest {
         final RateHelper[] instruments = new RateHelper[deposits + swaps];
         for (int i = 0; i < deposits; i++) {
             instruments[i] = new DepositRateHelper(
-                    depositData[i].rate / 100,
-                    new Period(depositData[i].n, depositData[i].units),
+                    depositData[i].rate() / 100,
+                    new Period(depositData[i].n(), depositData[i].units()),
                     this.settlementDays, this.calendar,
                     BusinessDayConvention.ModifiedFollowing, true,
                     new Actual360());
@@ -149,8 +149,8 @@ public class TermStructuresTest {
                 new Actual360());
         for (int i = 0; i < swaps; i++) {
             instruments[i + deposits] = new SwapRateHelper(
-                    swapData[i].rate / 100,
-                    new Period(swapData[i].n, swapData[i].units),
+                    swapData[i].rate() / 100,
+                    new Period(swapData[i].n(), swapData[i].units()),
                     this.calendar, Frequency.Annual,
                     BusinessDayConvention.Unadjusted,
                     new Thirty360(),
@@ -465,8 +465,8 @@ public class TermStructuresTest {
         final RateHelper[] helpers = new RateHelper[deposits.length];
         for (int i = 0; i < deposits.length; ++i) {
             helpers[i] = new DepositRateHelper(
-                    deposits[i].rate / 100.0,
-                    new Period(deposits[i].n, deposits[i].units),
+                    deposits[i].rate() / 100.0,
+                    new Period(deposits[i].n(), deposits[i].units()),
                     settle,
                     cal,
                     BusinessDayConvention.ModifiedFollowing,
@@ -873,16 +873,6 @@ public class TermStructuresTest {
     // private inner classes
     //
 
-    private static class Datum {
-        public int n;
-        public TimeUnit units;
-        public double rate;
-
-        public Datum(final int n, final TimeUnit units, final double rate) {
-            this.n = n;
-            this.units = units;
-            this.rate = rate;
-        }
-    }
+    private record Datum(int n, TimeUnit units, double rate) {}
 
 }

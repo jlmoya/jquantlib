@@ -235,44 +235,10 @@ public class PiecewiseYieldCurveTest {
     // private inner classes
     //
 	
-	private static class Datum {
-        public final int n;
-        public final TimeUnit units;
-        public final /*@Rate*/ double rate;
-        
-        public Datum(
-        		final int n,
-        		final TimeUnit units,
-        		final /*@Rate*/ double rate) {
-        	this.n = n;
-        	this.units = units;
-        	this.rate = rate;
-        }
-    }
+	private record Datum(int n, TimeUnit units, /*@Rate*/ double rate) {}
 
-	private static class BondDatum {
-    	public final int n;
-    	public final TimeUnit units;
-    	public final int length;
-    	public final Frequency frequency;
-    	public final /*@Rate*/ double coupon;
-    	public final /*@Real*/ double price;
-        
-        public BondDatum(
-        		final int n,
-        		final TimeUnit units,
-        		final int length,
-        		final Frequency frequency,
-        		final /*@Rate*/ double coupon,
-        		final /*@Real*/ double price) {
-        	this.n = n;
-        	this.units = units;
-        	this.length = length;
-        	this.frequency = frequency;
-        	this.coupon = coupon;
-        	this.price = price;
-        }
-    }
+	private record BondDatum(int n, TimeUnit units, int length, Frequency frequency,
+	                         /*@Rate*/ double coupon, /*@Real*/ double price) {}
 
 	private class CommonVars {
 		// global variables
@@ -348,23 +314,23 @@ public class PiecewiseYieldCurveTest {
             prices = new SimpleQuote[bonds];
             
             for (int i=0; i<deposits; i++) {
-                rates[i] = new SimpleQuote(depositData[i].rate/100);
+                rates[i] = new SimpleQuote(depositData[i].rate()/100);
             }
 
             for (int i=0; i<swaps; i++) {
-            	rates[i+deposits] = new SimpleQuote(swapData[i].rate/100);
+            	rates[i+deposits] = new SimpleQuote(swapData[i].rate()/100);
             }
             
             for (int i=0; i<fras; i++) {
-                fraRates[i] = new SimpleQuote(fraData[i].rate/100);
+                fraRates[i] = new SimpleQuote(fraData[i].rate()/100);
             }
             
             for (int i=0; i<bonds; i++) {
-                prices[i] = new SimpleQuote(bondData[i].price);
+                prices[i] = new SimpleQuote(bondData[i].price());
             }
             
             for (int i=0; i<bmas; i++) {
-                fractions[i] = new SimpleQuote(bmaData[i].rate/100);
+                fractions[i] = new SimpleQuote(bmaData[i].rate()/100);
             }
 
             // rate helpers
@@ -378,7 +344,7 @@ public class PiecewiseYieldCurveTest {
             for (int i=0; i<deposits; i++) {
                 final Handle<Quote> r = new Handle<Quote>(rates[i]);
                 instruments[i] = new
-                    DepositRateHelper(r, new Period(depositData[i].n,depositData[i].units),
+                    DepositRateHelper(r, new Period(depositData[i].n(),depositData[i].units()),
                                       euribor6m.fixingDays(), calendar,
                                       euribor6m.businessDayConvention(),
                                       euribor6m.endOfMonth(),
@@ -388,7 +354,7 @@ public class PiecewiseYieldCurveTest {
             for (int i=0; i<swaps; i++) {
                 final Handle<Quote> r = new Handle<Quote>(rates[i+deposits]);
                 instruments[i+deposits] = new
-                    SwapRateHelper(r, new Period(swapData[i].n, swapData[i].units),
+                    SwapRateHelper(r, new Period(swapData[i].n(), swapData[i].units()),
                                    calendar,
                                    fixedLegFrequency, fixedLegConvention,
                                    fixedLegDayCounter, euribor6m);
@@ -398,7 +364,7 @@ public class PiecewiseYieldCurveTest {
             for (int i=0; i<fras; i++) {
                 final Handle<Quote> r = new Handle<Quote>(fraRates[i]);
                 fraHelpers[i] = new
-                    FraRateHelper(r, fraData[i].n, fraData[i].n + 3,
+                    FraRateHelper(r, fraData[i].n(), fraData[i].n() + 3,
                                   euribor3m.fixingDays(),
                                   euribor3m.fixingCalendar(),
                                   euribor3m.businessDayConvention(),
@@ -408,14 +374,14 @@ public class PiecewiseYieldCurveTest {
 
             for (int i=0; i<bonds; i++) {
                 final Handle<Quote> p = new Handle<Quote>(prices[i]);
-                final Date maturity = calendar.advance(today, bondData[i].n, bondData[i].units);
-                final Date issue = calendar.advance(maturity, -bondData[i].length, TimeUnit.Years);
+                final Date maturity = calendar.advance(today, bondData[i].n(), bondData[i].units());
+                final Date issue = calendar.advance(maturity, -bondData[i].length(), TimeUnit.Years);
                 
                 /*@Rate*/ final double[] coupons = new double[1];
-                coupons[0] = bondData[i].coupon/100.0;
+                coupons[0] = bondData[i].coupon()/100.0;
 
                 schedules[i] = new Schedule(issue, maturity,
-                                        new Period(bondData[i].frequency),
+                                        new Period(bondData[i].frequency()),
                                         calendar,
                                         bondConvention, bondConvention,
                                         DateGeneration.Rule.Backward, false, new Date(), new Date());
@@ -475,14 +441,14 @@ public class PiecewiseYieldCurveTest {
 
         // check deposits
         for (int i=0; i<vars.deposits; i++) {
-            final Euribor index = new Euribor(new Period(depositData[i].n, depositData[i].units), curveHandle);
-            /*@Rate*/ final double expectedRate  = depositData[i].rate/100;
+            final Euribor index = new Euribor(new Period(depositData[i].n(), depositData[i].units()), curveHandle);
+            /*@Rate*/ final double expectedRate  = depositData[i].rate()/100;
             /*@Rate*/ final double estimatedRate = index.fixing(vars.today);
             if (Math.abs(expectedRate-estimatedRate) > tolerance) {
             	throw new RuntimeException(
 	                String.format("%d %s %s %s %f %s %f",
-	                    depositData[i].n,
-	                    depositData[i].units == TimeUnit.Weeks ? "week(s)" : "month(s)",
+	                    depositData[i].n(),
+	                    depositData[i].units() == TimeUnit.Weeks ? "week(s)" : "month(s)",
 	                    " deposit:",
 	                    "\n    estimated rate: ", estimatedRate,
 	                    "\n    expected rate:  ", expectedRate));
@@ -492,7 +458,7 @@ public class PiecewiseYieldCurveTest {
         // check swaps
         final IborIndex euribor6m = new Euribor6M(curveHandle);
         for (int i=0; i<vars.swaps; i++) {
-            final Period tenor = new Period(swapData[i].n, swapData[i].units);
+            final Period tenor = new Period(swapData[i].n(), swapData[i].units());
 
             final VanillaSwap swap = new MakeVanillaSwap(tenor, euribor6m, 0.0)
                 .withEffectiveDate(vars.settlement)
@@ -502,13 +468,13 @@ public class PiecewiseYieldCurveTest {
                 .withFixedLegTerminationDateConvention(vars.fixedLegConvention)
                 .value();
 
-            /*@Rate*/ final double expectedRate  = swapData[i].rate/100;
+            /*@Rate*/ final double expectedRate  = swapData[i].rate()/100;
             /*@Rate*/ final double estimatedRate = swap.fairRate();
             /*@Spread*/ final double error = Math.abs(expectedRate-estimatedRate);
             if (error > tolerance) {
             	throw new RuntimeException(
         			String.format("%d %s %s %f %s %f %s %f %s %f",
-	                    swapData[i].n, " year(s) swap:\n",
+	                    swapData[i].n(), " year(s) swap:\n",
 	                    "\n estimated rate: ", estimatedRate,
 	                    "\n expected rate:  ", expectedRate,
 	                    "\n error:          ", error,
@@ -529,10 +495,10 @@ public class PiecewiseYieldCurveTest {
         curveHandle.linkTo(vars.termStructure);
 
         for (int i=0; i<vars.bonds; i++) {
-            final Date maturity = vars.calendar.advance(vars.today, bondData[i].n, bondData[i].units);
-            final Date issue = vars.calendar.advance(maturity, -bondData[i].length, TimeUnit.Years);
+            final Date maturity = vars.calendar.advance(vars.today, bondData[i].n(), bondData[i].units());
+            final Date issue = vars.calendar.advance(maturity, -bondData[i].length(), TimeUnit.Years);
             /*@Rate*/ final double[] coupons = new double[1];
-            coupons[0] = bondData[i].coupon/100.0;
+            coupons[0] = bondData[i].coupon()/100.0;
 
             final FixedRateBond bond = new FixedRateBond(vars.bondSettlementDays, 100.0,
                                vars.schedules[i], coupons,
@@ -542,7 +508,7 @@ public class PiecewiseYieldCurveTest {
             final PricingEngine bondEngine = new DiscountingBondEngine(curveHandle);
             bond.setPricingEngine(bondEngine);
 
-            /*@Real*/ final double expectedPrice = bondData[i].price, estimatedPrice = bond.cleanPrice();
+            /*@Real*/ final double expectedPrice = bondData[i].price(), estimatedPrice = bond.cleanPrice();
             /*@Real*/ final double error = Math.abs(expectedPrice-estimatedPrice);
             if (error > tolerance) {
             	throw new RuntimeException(
@@ -568,8 +534,8 @@ public class PiecewiseYieldCurveTest {
         final IborIndex euribor3m = new Euribor3M(curveHandle);
         for (int i=0; i<vars.fras; i++) {
             final Date start = vars.calendar.advance(vars.settlement,
-		                                       fraData[i].n,
-		                                       fraData[i].units,
+		                                       fraData[i].n(),
+		                                       fraData[i].units(),
 		                                       euribor3m.businessDayConvention(),
 		                                       euribor3m.endOfMonth());
             final Date end = vars.calendar.advance(start, 3, TimeUnit.Months,
@@ -577,9 +543,9 @@ public class PiecewiseYieldCurveTest {
                                              euribor3m.endOfMonth());
 
             final ForwardRateAgreement fra = new ForwardRateAgreement(start, end, Position.Long,
-            													fraData[i].rate/100, 100.0,
+            													fraData[i].rate()/100, 100.0,
             													euribor3m, curveHandle);
-            /*@Rate*/ final double expectedRate  = fraData[i].rate/100;
+            /*@Rate*/ final double expectedRate  = fraData[i].rate()/100;
             /*@Rate*/ final double estimatedRate = fra.forwardRate().rate();
             if (Math.abs(expectedRate-estimatedRate) > tolerance) {
             	throw new RuntimeException(
@@ -638,7 +604,7 @@ public class PiecewiseYieldCurveTest {
         for (int i=0; i<vars.bmas; ++i) {
             final Handle<Quote> f = new Handle<Quote>(vars.fractions[i]);
             vars.bmaHelpers[i] = // boost::shared_ptr<RateHelper>(
-                      new BMASwapRateHelper(f, new Period(bmaData[i].n, bmaData[i].units),
+                      new BMASwapRateHelper(f, new Period(bmaData[i].n(), bmaData[i].units()),
                                             vars.settlementDays,
                                             vars.calendar,
                                             new Period(vars.bmaFrequency),
@@ -669,7 +635,7 @@ public class PiecewiseYieldCurveTest {
         final BMAIndex bma = new BMAIndex(curveHandle);
         final IborIndex libor3m = new USDLibor(new Period(3, TimeUnit.Months), riskFreeCurve);
         for (int i=0; i<vars.bmas; i++) {
-            final Period tenor = new Period(bmaData[i].n, bmaData[i].units);
+            final Period tenor = new Period(bmaData[i].n(), bmaData[i].units());
 
             final Schedule bmaSchedule = new MakeSchedule(vars.settlement,
                                                 	vars.settlement.add(tenor),
@@ -694,13 +660,13 @@ public class PiecewiseYieldCurveTest {
 				                       bmaSchedule, bma, vars.bmaDayCounter);
             swap.setPricingEngine(new DiscountingSwapEngine(libor3m.termStructure()));
 
-            /*@Real*/ final double expectedFraction = bmaData[i].rate/100;
+            /*@Real*/ final double expectedFraction = bmaData[i].rate()/100;
             /*@Real*/ final double estimatedFraction = swap.fairLiborFraction();
             /*@Real*/ final double error = Math.abs(expectedFraction-estimatedFraction);
             if (error > tolerance) {
             	throw new RuntimeException(
             			String.format("%d %s %s %f %s %f %s %f %s %f",
-                            bmaData[i].n, " year(s) BMA swap:\n",
+                            bmaData[i].n(), " year(s) BMA swap:\n",
                             "\n estimated libor fraction: ", estimatedFraction,
                             "\n expected libor fraction:  ", expectedFraction,
                             "\n error:          ", error,
@@ -919,7 +885,7 @@ public class PiecewiseYieldCurveTest {
 	    for (int i=0; i<vars.swaps; i++) {
 	        final Handle<Quote> r = new Handle<Quote>(vars.rates[i+vars.deposits]);
 	        swapHelpers[i] = new SwapRateHelper(
-	        		           r, new Period(swapData[i].n, swapData[i].units),
+	        		           r, new Period(swapData[i].n(), swapData[i].units()),
 	                           vars.calendar,
 	                           vars.fixedLegFrequency, vars.fixedLegConvention,
 	                           vars.fixedLegDayCounter, euribor6m);
@@ -935,7 +901,7 @@ public class PiecewiseYieldCurveTest {
 
 	    final IborIndex index = new Euribor6M(curveHandle);
 	    for (int i=0; i<vars.swaps; i++) {
-	        final Period tenor = new Period(swapData[i].n, swapData[i].units);
+	        final Period tenor = new Period(swapData[i].n(), swapData[i].units());
 
 	        final VanillaSwap swap = new MakeVanillaSwap(tenor, index, 0.0)
 	            .withEffectiveDate(vars.settlement)
@@ -945,14 +911,14 @@ public class PiecewiseYieldCurveTest {
 	            .withFixedLegTerminationDateConvention(vars.fixedLegConvention)
 	            		.value();
 
-	        /*@Rate*/ final double expectedRate  = swapData[i].rate/100;
+	        /*@Rate*/ final double expectedRate  = swapData[i].rate()/100;
 	        /*@Rate*/ final double estimatedRate = swap.fairRate();
 	        /*@Real*/ final double tolerance = 1.0e-9;
 	        if (Math.abs(expectedRate-estimatedRate) > tolerance) {
 	        	throw new RuntimeException(
 	        			String.format("%s %d %s %s %f %s %s %f",
 	        				"before LIBOR fixing:\n",
-	                        swapData[i].n, " year(s) swap:\n",
+	                        swapData[i].n(), " year(s) swap:\n",
 	                        "    estimated rate: ", estimatedRate, "\n",
 	                        "    expected rate:  ", expectedRate));
 	        }
@@ -968,7 +934,7 @@ public class PiecewiseYieldCurveTest {
 	        throw new RuntimeException("Observer was not notified of rate fixing");
 
 	    for (int i=0; i<vars.swaps; i++) {
-	        final Period tenor = new Period(swapData[i].n, swapData[i].units);
+	        final Period tenor = new Period(swapData[i].n(), swapData[i].units());
 
 	        final VanillaSwap swap = new MakeVanillaSwap(tenor, index, 0.0)
 	            .withEffectiveDate(vars.settlement)
@@ -978,14 +944,14 @@ public class PiecewiseYieldCurveTest {
 	            .withFixedLegTerminationDateConvention(vars.fixedLegConvention)
 	            		.value();
 
-	        /*@Rate*/ final double expectedRate  = swapData[i].rate/100;
+	        /*@Rate*/ final double expectedRate  = swapData[i].rate()/100;
 	        /*@Rate*/ final double estimatedRate = swap.fairRate();
 	        /*@Real*/ final double tolerance = 1.0e-9;
 	        if (Math.abs(expectedRate-estimatedRate) > tolerance) {
 	        	throw new RuntimeException(
 	        			String.format("%s %d %s %s %f %s %s %f",
 	                        "after LIBOR fixing:\n",
-	                        swapData[i].n, " year(s) swap:\n",
+	                        swapData[i].n(), " year(s) swap:\n",
 	                        "    estimated rate: ", estimatedRate, "\n",
 	                        "    expected rate:  ", expectedRate));
 	        }
@@ -1023,7 +989,7 @@ public class PiecewiseYieldCurveTest {
 	    // market elements
 	    vars.rates = new SimpleQuote[vars.swaps];
 	    for (int i=0; i<vars.swaps; i++) {
-	        vars.rates[i] = new SimpleQuote(swapData[i].rate/100);
+	        vars.rates[i] = new SimpleQuote(swapData[i].rate()/100);
 	    }
 
 	    // rate helpers
@@ -1033,7 +999,7 @@ public class PiecewiseYieldCurveTest {
 	    for (int i=0; i<vars.swaps; i++) {
 	        final Handle<Quote> r = new Handle<Quote>(vars.rates[i]);
 	        vars.instruments[i] = new SwapRateHelper(
-	        							r, new Period(swapData[i].n, swapData[i].units),
+	        							r, new Period(swapData[i].n(), swapData[i].units()),
 	        							vars.calendar,                         // TODO: code review on this line!!!!
 	        							vars.fixedLegFrequency, vars.fixedLegConvention,
 			                            vars.fixedLegDayCounter, index);
@@ -1053,7 +1019,7 @@ public class PiecewiseYieldCurveTest {
 	    // check swaps
 	    final IborIndex jpylibor6m = new JPYLibor(new Period(6, TimeUnit.Months), curveHandle);
 	    for (int i=0; i<vars.swaps; i++) {
-	        final Period tenor = new Period(swapData[i].n, swapData[i].units);
+	        final Period tenor = new Period(swapData[i].n(), swapData[i].units());
 
 	        final VanillaSwap swap = new MakeVanillaSwap(tenor, jpylibor6m, 0.0)
 	            .withEffectiveDate(vars.settlement)
@@ -1065,7 +1031,7 @@ public class PiecewiseYieldCurveTest {
 	            .withFloatingLegCalendar(vars.calendar)
 	            		.value();
 
-	        /*@Rate*/ final double expectedRate  = swapData[i].rate/100;
+	        /*@Rate*/ final double expectedRate  = swapData[i].rate()/100;
 	        /*@Rate*/ final double estimatedRate = swap.fairRate();
 	        /*@Spread*/ final double error = Math.abs(expectedRate-estimatedRate);
 	        /*@Real*/ final double tolerance = 1.0e-9;
@@ -1074,7 +1040,7 @@ public class PiecewiseYieldCurveTest {
 	        if (error > tolerance) {
 	        	throw new RuntimeException(
 	        			String.format("%d %s %s %f %s %f %s %f %s %f",
-	        				swapData[i].n, " year(s) swap:\n",
+	        				swapData[i].n(), " year(s) swap:\n",
 	                        "\n estimated rate: ", estimatedRate,
 	                        "\n expected rate:  ", expectedRate,
 	                        "\n error:          ", error,
@@ -1108,7 +1074,7 @@ public class PiecewiseYieldCurveTest {
 	    final RateHelper[] fraHelpers = new RateHelper[vars.fras];
 	    for (int i = 0; i < vars.fras; i++) {
 	        final Handle<Quote> r = new Handle<Quote>(vars.fraRates[i]);
-	        fraHelpers[i] = new FraRateHelper(r, fraData[i].n, fraData[i].n + 3,
+	        fraHelpers[i] = new FraRateHelper(r, fraData[i].n(), fraData[i].n() + 3,
 	                                          euribor3m.fixingDays(),
 	                                          euribor3m.fixingCalendar(),
 	                                          euribor3m.businessDayConvention(),
@@ -1126,19 +1092,19 @@ public class PiecewiseYieldCurveTest {
 
 	    for (int i = 0; i < vars.fras; i++) {
 	        final Date start = vars.calendar.advance(vars.settlement,
-	                                                  fraData[i].n,
-	                                                  fraData[i].units,
+	                                                  fraData[i].n(),
+	                                                  fraData[i].units(),
 	                                                  euribor3mCurved.businessDayConvention(),
 	                                                  euribor3mCurved.endOfMonth());
-	        if (fraData[i].units != TimeUnit.Months) {
+	        if (fraData[i].units() != TimeUnit.Months) {
 	            throw new RuntimeException("fraData units must be Months (mirrors C++ BOOST_REQUIRE)");
 	        }
-	        final Date end = vars.calendar.advance(vars.settlement, 3 + fraData[i].n, TimeUnit.Months,
+	        final Date end = vars.calendar.advance(vars.settlement, 3 + fraData[i].n(), TimeUnit.Months,
 	                                                euribor3mCurved.businessDayConvention(),
 	                                                euribor3mCurved.endOfMonth());
 	        final ForwardRateAgreement fra = new ForwardRateAgreement(euribor3mCurved, start, end, Position.Long,
-	                                                                  fraData[i].rate / 100, 100.0, curveHandle);
-	        final double expectedRate = fraData[i].rate / 100;
+	                                                                  fraData[i].rate() / 100, 100.0, curveHandle);
+	        final double expectedRate = fraData[i].rate() / 100;
 	        final double estimatedRate = fra.forwardRate().rate();
 	        final double tolerance = 1.0e-6; // matches v1.42.1 piecewiseyieldcurve.cpp:821 loose tolerance for at-par FRA
 	        if (Math.abs(expectedRate - estimatedRate) > tolerance) {
@@ -1654,8 +1620,8 @@ public class PiecewiseYieldCurveTest {
 	    final IborIndex euribor1m = new Euribor1M();
 	    final RateHelper[] helpers = new RateHelper[data.length];
 	    for (int i = 0; i < data.length; i++) {
-	        helpers[i] = new SwapRateHelper(data[i].rate / 100,
-	                                        new Period(data[i].n, data[i].units),
+	        helpers[i] = new SwapRateHelper(data[i].rate() / 100,
+	                                        new Period(data[i].n(), data[i].units()),
 	                                        new Target(), Frequency.Monthly,
 	                                        BusinessDayConvention.Unadjusted,
 	                                        new Thirty360(Thirty360.Convention.BondBasis), euribor1m);
@@ -1681,7 +1647,7 @@ public class PiecewiseYieldCurveTest {
 
 	    final IborIndex index = new Euribor1M(h);
 	    for (int i = 0; i < data.length; i++) {
-	        final Period tenor = new Period(data[i].n, data[i].units);
+	        final Period tenor = new Period(data[i].n(), data[i].units());
 
 	        final VanillaSwap swap = new MakeVanillaSwap(tenor, index, 0.0)
 	                .withFixedLegDayCount(new Thirty360(Thirty360.Convention.BondBasis))
@@ -1690,7 +1656,7 @@ public class PiecewiseYieldCurveTest {
 	                .value();
 	        swap.setPricingEngine(new DiscountingSwapEngine(h));
 
-	        final double expectedRate = data[i].rate / 100;
+	        final double expectedRate = data[i].rate() / 100;
 	        final double estimatedRate = swap.fairRate();
 	        final double error = Math.abs(expectedRate - estimatedRate);
 	        final double tolerance = 1.0e-9;
@@ -2104,7 +2070,7 @@ public class PiecewiseYieldCurveTest {
 	    final RateHelper[] helpers = new RateHelper[vars.deposits];
 	    for (int i = 0; i < vars.deposits; i++) {
 	        final Handle<Quote> r = new Handle<Quote>(vars.rates[i]);
-	        final IborIndex euribor = new Euribor(new Period(depositData[i].n, depositData[i].units),
+	        final IborIndex euribor = new Euribor(new Period(depositData[i].n(), depositData[i].units()),
 	                new Handle<YieldTermStructure>());
 	        helpers[i] = new DepositRateHelper(r, fixingDate, euribor);
 	    }
@@ -2117,14 +2083,14 @@ public class PiecewiseYieldCurveTest {
 
 	    final double tolerance = 1.0e-9;
 	    for (int i = 0; i < vars.deposits; i++) {
-	        final Euribor index = new Euribor(new Period(depositData[i].n, depositData[i].units), h);
-	        final double expectedRate = depositData[i].rate / 100;
+	        final Euribor index = new Euribor(new Period(depositData[i].n(), depositData[i].units()), h);
+	        final double expectedRate = depositData[i].rate() / 100;
 	        final double estimatedRate = index.fixing(vars.today);
 	        if (Math.abs(expectedRate - estimatedRate) > tolerance) {
 	            throw new RuntimeException(String.format(
 	                    "%d %s deposit (testDepositForDates): expected=%.10f estimated=%.10f",
-	                    depositData[i].n,
-	                    depositData[i].units == TimeUnit.Weeks ? "week(s)" : "month(s)",
+	                    depositData[i].n(),
+	                    depositData[i].units() == TimeUnit.Weeks ? "week(s)" : "month(s)",
 	                    expectedRate, estimatedRate));
 	        }
 	    }
@@ -2148,10 +2114,10 @@ public class PiecewiseYieldCurveTest {
 	    for (int i = 0; i < vars.fras; i++) {
 	        final Handle<Quote> r = new Handle<Quote>(vars.fraRates[i]);
 	        final Date startDate = vars.calendar.advance(vars.settlement,
-	                fraData[i].n, fraData[i].units,
+	                fraData[i].n(), fraData[i].units(),
 	                euribor6m.businessDayConvention(), euribor6m.endOfMonth());
 	        final Date endDate = vars.calendar.advance(vars.settlement,
-	                fraData[i].n + 3, fraData[i].units,
+	                fraData[i].n() + 3, fraData[i].units(),
 	                euribor6m.businessDayConvention(), euribor6m.endOfMonth());
 	        helpers[i] = new FraRateHelper(r, startDate, endDate, euribor6m,
 	                org.jquantlib.termstructures.Pillar.Choice.LastRelevantDate,
@@ -2174,21 +2140,21 @@ public class PiecewiseYieldCurveTest {
 	    // useIndexedCoupon_==false branch (forwardrateagreement.cpp:102-107 in v1.42.1).
 	    final double tolerance = 1.0e-9;
 	    for (int i = 0; i < vars.fras; i++) {
-	        if (fraData[i].units != TimeUnit.Months) {
+	        if (fraData[i].units() != TimeUnit.Months) {
 	            throw new RuntimeException(
 	                    "fraData units must be Months (mirrors C++ BOOST_REQUIRE in testFraForDates)");
 	        }
 	        final Date start = vars.calendar.advance(vars.settlement,
-	                fraData[i].n, fraData[i].units,
+	                fraData[i].n(), fraData[i].units(),
 	                euribor6mCurved.businessDayConvention(), euribor6mCurved.endOfMonth());
 	        final Date end = vars.calendar.advance(vars.settlement,
-	                fraData[i].n + 3, fraData[i].units,
+	                fraData[i].n() + 3, fraData[i].units(),
 	                euribor6mCurved.businessDayConvention(), euribor6mCurved.endOfMonth());
 	        final double dStart = curve.discount(start);
 	        final double dEnd = curve.discount(end);
 	        final double tau = euribor6mCurved.dayCounter().yearFraction(start, end);
 	        final double estimatedRate = (dStart / dEnd - 1.0) / tau;
-	        final double expectedRate = fraData[i].rate / 100;
+	        final double expectedRate = fraData[i].rate() / 100;
 	        if (Math.abs(expectedRate - estimatedRate) > tolerance) {
 	            throw new RuntimeException(String.format(
 	                    "#%d FRA (testFraForDates): expected=%.10f estimated=%.10f",
@@ -3000,8 +2966,8 @@ public class PiecewiseYieldCurveTest {
         final RateHelper[] helpers = new RateHelper[swapDataLocal.length];
         IborIndex euribor3m = new Euribor3M();
         for (int i = 0; i < swapDataLocal.length; i++) {
-            final Handle< Quote > r = new Handle< Quote >(new SimpleQuote(swapDataLocal[i].rate / 100.0));
-            helpers[i] = new SwapRateHelper(r, new Period(swapDataLocal[i].n, swapDataLocal[i].units),
+            final Handle< Quote > r = new Handle< Quote >(new SimpleQuote(swapDataLocal[i].rate() / 100.0));
+            helpers[i] = new SwapRateHelper(r, new Period(swapDataLocal[i].n(), swapDataLocal[i].units()),
                     vars.calendar, vars.fixedLegFrequency, vars.fixedLegConvention, vars.fixedLegDayCounter,
                     euribor3m);
         }
@@ -3017,7 +2983,7 @@ public class PiecewiseYieldCurveTest {
         final double tolerance = 1.0e-9;
         euribor3m = new Euribor3M(curveHandle);
         for (int i = 0; i < swapDataLocal.length; i++) {
-            final VanillaSwap swap = new MakeVanillaSwap(new Period(swapDataLocal[i].n, swapDataLocal[i].units),
+            final VanillaSwap swap = new MakeVanillaSwap(new Period(swapDataLocal[i].n(), swapDataLocal[i].units()),
                     euribor3m, 0.0)
                     .withEffectiveDate(vars.settlement)
                     .withFixedLegDayCount(vars.fixedLegDayCounter)
@@ -3025,13 +2991,13 @@ public class PiecewiseYieldCurveTest {
                     .withFixedLegConvention(vars.fixedLegConvention)
                     .withFixedLegTerminationDateConvention(vars.fixedLegConvention)
                     .value();
-            final double expectedRate = swapDataLocal[i].rate / 100.0;
+            final double expectedRate = swapDataLocal[i].rate() / 100.0;
             final double estimatedRate = swap.fairRate();
             final double error = Math.abs(expectedRate - estimatedRate);
             if (error > tolerance) {
                 throw new RuntimeException(String.format(
                         "%d year(s) swap: estimated=%.10f expected=%.10f error=%.2e tol=%.2e",
-                        swapDataLocal[i].n, estimatedRate, expectedRate, error, tolerance));
+                        swapDataLocal[i].n(), estimatedRate, expectedRate, error, tolerance));
             }
         }
 
