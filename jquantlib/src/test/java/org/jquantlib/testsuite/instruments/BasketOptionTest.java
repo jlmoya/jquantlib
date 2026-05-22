@@ -191,40 +191,11 @@ public class BasketOptionTest {
         throw new IllegalArgumentException("unknown basket type");
     }
 
-    private static class BasketOptionTwoData {
-        final BasketType basketType;
-        final Option.Type type;
-        final double strike;
-        final double s1, s2;
-        final double q1, q2;
-        final double r;
-        final double t;       // years
-        final double v1, v2;
-        final double rho;
-        final double result;
-        final double tol;
-
-        BasketOptionTwoData(final BasketType bt, final Option.Type type,
-                final double strike, final double s1, final double s2,
-                final double q1, final double q2, final double r, final double t,
-                final double v1, final double v2, final double rho,
-                final double result, final double tol) {
-            this.basketType = bt;
-            this.type = type;
-            this.strike = strike;
-            this.s1 = s1;
-            this.s2 = s2;
-            this.q1 = q1;
-            this.q2 = q2;
-            this.r = r;
-            this.t = t;
-            this.v1 = v1;
-            this.v2 = v2;
-            this.rho = rho;
-            this.result = result;
-            this.tol = tol;
-        }
-    }
+    private record BasketOptionTwoData(BasketType basketType, Option.Type type,
+                                       double strike, double s1, double s2,
+                                       double q1, double q2, double r, double t,
+                                       double v1, double v2, double rho,
+                                       double result, double tol) {}
 
     private static int timeToDays(final double t) {
         return (int) (t * 360 + 0.5);
@@ -346,51 +317,51 @@ public class BasketOptionTest {
         final BlackVolTermStructure volTS2 = Utilities.flatVol(today, vol2, dc);
 
         for (final BasketOptionTwoData v : values) {
-            final PlainVanillaPayoff payoff = new PlainVanillaPayoff(v.type, v.strike);
-            final Date exDate = today.add(timeToDays(v.t));
+            final PlainVanillaPayoff payoff = new PlainVanillaPayoff(v.type(), v.strike());
+            final Date exDate = today.add(timeToDays(v.t()));
             final Exercise exercise = new EuropeanExercise(exDate);
 
-            spot1.setValue(v.s1);
-            spot2.setValue(v.s2);
-            qRate1.setValue(v.q1);
-            qRate2.setValue(v.q2);
-            rRate.setValue(v.r);
-            vol1.setValue(v.v1);
-            vol2.setValue(v.v2);
+            spot1.setValue(v.s1());
+            spot2.setValue(v.s2());
+            qRate1.setValue(v.q1());
+            qRate2.setValue(v.q2());
+            rRate.setValue(v.r());
+            vol1.setValue(v.v1());
+            vol2.setValue(v.v2());
 
             final GeneralizedBlackScholesProcess p1 = makeProcess(spot1, qTS1, rTS, volTS1);
             final GeneralizedBlackScholesProcess p2 = makeProcess(spot2, qTS2, rTS, volTS2);
 
             final PricingEngine engine;
-            switch (v.basketType) {
+            switch (v.basketType()) {
                 case MaxBasket:
                 case MinBasket:
-                    engine = new StulzEngine(p1, p2, v.rho);
+                    engine = new StulzEngine(p1, p2, v.rho());
                     break;
                 case SpreadBasket:
-                    engine = new KirkEngine(p1, p2, v.rho);
+                    engine = new KirkEngine(p1, p2, v.rho());
                     break;
                 default:
                     throw new IllegalStateException("unknown basket type");
             }
 
             final BasketOption basketOption = new BasketOption(
-                    basketTypeToPayoff(v.basketType, payoff), exercise);
+                    basketTypeToPayoff(v.basketType(), payoff), exercise);
             basketOption.setPricingEngine(engine);
 
             final double calculated = basketOption.NPV();
-            final double error = Math.abs(calculated - v.result);
-            if (error > v.tol) {
-                fail("BasketOption " + v.basketType + " " + v.type + ":\n"
-                        + "  s1 = " + v.s1 + ", s2 = " + v.s2 + "\n"
-                        + "  q1 = " + v.q1 + ", q2 = " + v.q2 + "\n"
-                        + "  r = " + v.r + ", t = " + v.t + "\n"
-                        + "  v1 = " + v.v1 + ", v2 = " + v.v2 + "\n"
-                        + "  rho = " + v.rho + "\n"
-                        + "  expected = " + v.result + "\n"
+            final double error = Math.abs(calculated - v.result());
+            if (error > v.tol()) {
+                fail("BasketOption " + v.basketType() + " " + v.type() + ":\n"
+                        + "  s1 = " + v.s1() + ", s2 = " + v.s2() + "\n"
+                        + "  q1 = " + v.q1() + ", q2 = " + v.q2() + "\n"
+                        + "  r = " + v.r() + ", t = " + v.t() + "\n"
+                        + "  v1 = " + v.v1() + ", v2 = " + v.v2() + "\n"
+                        + "  rho = " + v.rho() + "\n"
+                        + "  expected = " + v.result() + "\n"
                         + "  calculated = " + calculated + "\n"
                         + "  error = " + error + "\n"
-                        + "  tolerance = " + v.tol);
+                        + "  tolerance = " + v.tol());
             }
         }
     }
@@ -500,66 +471,16 @@ public class BasketOptionTest {
     }
 
     /** Mirrors {@code C++ BasketOptionOneData} struct. */
-    private static class BasketOptionOneData {
-        final Option.Type type;
-        final double strike;
-        final double s;
-        final double q;
-        final double r;
-        final double t;
-        final double v;
-        final double result;
-        final double tol;
-
-        BasketOptionOneData(final Option.Type type, final double strike, final double s,
-                final double q, final double r, final double t, final double v,
-                final double result, final double tol) {
-            this.type = type;
-            this.strike = strike;
-            this.s = s;
-            this.q = q;
-            this.r = r;
-            this.t = t;
-            this.v = v;
-            this.result = result;
-            this.tol = tol;
-        }
-    }
+    private record BasketOptionOneData(Option.Type type, double strike, double s,
+                                       double q, double r, double t, double v,
+                                       double result, double tol) {}
 
     /** Mirrors {@code C++ BasketOptionThreeData} struct (subset used in testTavellaValues). */
-    private static class BasketOptionThreeData {
-        final BasketType basketType;
-        final Option.Type type;
-        final double strike;
-        final double s1, s2, s3;
-        final double r;
-        final double t;       // years
-        final double v1, v2, v3;
-        final double rho;
-        final double euroValue;
-        final double amValue;
-
-        BasketOptionThreeData(final BasketType bt, final Option.Type type,
-                final double strike, final double s1, final double s2, final double s3,
-                final double r, final double t,
-                final double v1, final double v2, final double v3,
-                final double rho, final double euroValue, final double amValue) {
-            this.basketType = bt;
-            this.type = type;
-            this.strike = strike;
-            this.s1 = s1;
-            this.s2 = s2;
-            this.s3 = s3;
-            this.r = r;
-            this.t = t;
-            this.v1 = v1;
-            this.v2 = v2;
-            this.v3 = v3;
-            this.rho = rho;
-            this.euroValue = euroValue;
-            this.amValue = amValue;
-        }
-    }
+    private record BasketOptionThreeData(BasketType basketType, Option.Type type,
+                                         double strike, double s1, double s2, double s3,
+                                         double r, double t,
+                                         double v1, double v2, double v3,
+                                         double rho, double euroValue, double amValue) {}
 
     /**
      * One-asset American put values used by {@code testOneDAmericanValues}
@@ -657,17 +578,17 @@ public class BasketOptionTest {
         final long seed = 0L;
 
         final BasketOptionThreeData v = values[0];
-        final PlainVanillaPayoff payoff = new PlainVanillaPayoff(v.type, v.strike);
+        final PlainVanillaPayoff payoff = new PlainVanillaPayoff(v.type(), v.strike());
 
-        final Date exDate = today.add(timeToDays(v.t));
+        final Date exDate = today.add(timeToDays(v.t()));
         final Exercise exercise = new AmericanExercise(today, exDate);
 
-        spot1.setValue(v.s1);
-        spot2.setValue(v.s2);
-        spot3.setValue(v.s3);
-        vol1.setValue(v.v1);
-        vol2.setValue(v.v2);
-        vol3.setValue(v.v3);
+        spot1.setValue(v.s1());
+        spot2.setValue(v.s2());
+        spot3.setValue(v.s3());
+        vol1.setValue(v.v1());
+        vol2.setValue(v.v2());
+        vol3.setValue(v.v3());
 
         final StochasticProcess1D p1 = new BlackScholesMertonProcess(
                 new Handle<Quote>(spot1), new Handle<YieldTermStructure>(qTS),
@@ -712,14 +633,14 @@ public class BasketOptionTest {
                 LsmBasisSystem.PolynomialType.Monomial);
 
         final BasketOption basketOption = new BasketOption(
-                basketTypeToPayoff(v.basketType, payoff), exercise);
+                basketTypeToPayoff(v.basketType(), payoff), exercise);
         basketOption.setPricingEngine(mcLSMCEngine);
 
         final double calculated = basketOption.NPV();
-        final double expected = v.amValue;
-        final double relError = relativeError(calculated, expected, v.s1);
+        final double expected = v.amValue();
+        final double relError = relativeError(calculated, expected, v.s1());
         if (relError > mcRelativeErrorTolerance) {
-            fail("MC LSMC Tavella value: " + v.basketType + " " + v.type + ":\n"
+            fail("MC LSMC Tavella value: " + v.basketType() + " " + v.type() + ":\n"
                     + "  expected   = " + expected + "\n"
                     + "  calculated = " + calculated + "\n"
                     + "  relError   = " + relError + "\n"
@@ -794,31 +715,31 @@ public class BasketOptionTest {
 
         for (int i = 0; i < ONE_D_VALUES.length; ++i) {
             final BasketOptionOneData v = ONE_D_VALUES[i];
-            final PlainVanillaPayoff payoff = new PlainVanillaPayoff(v.type, v.strike);
+            final PlainVanillaPayoff payoff = new PlainVanillaPayoff(v.type(), v.strike());
 
-            final Date exDate = today.add(timeToDays(v.t));
+            final Date exDate = today.add(timeToDays(v.t()));
             final Exercise exercise = new AmericanExercise(today, exDate);
 
-            spot1.setValue(v.s);
-            vol1.setValue(v.v);
-            rRate.setValue(v.r);
-            qRate.setValue(v.q);
+            spot1.setValue(v.s());
+            vol1.setValue(v.v());
+            rRate.setValue(v.r());
+            qRate.setValue(v.q());
 
             final BasketOption basketOption = new BasketOption(
                     basketTypeToPayoff(BasketType.MaxBasket, payoff), exercise);
             basketOption.setPricingEngine(mcLSMCEngine);
 
             final double calculated = basketOption.NPV();
-            final double expected = v.result;
-            final double relError = relativeError(calculated, expected, v.s);
+            final double expected = v.result();
+            final double relError = relativeError(calculated, expected, v.s());
 
-            if (relError > v.tol) {
-                fail("Row " + i + " (S=" + v.s + ", t=" + v.t + ", vol=" + v.v
-                        + ", r=" + v.r + "):\n"
+            if (relError > v.tol()) {
+                fail("Row " + i + " (S=" + v.s() + ", t=" + v.t() + ", vol=" + v.v()
+                        + ", r=" + v.r() + "):\n"
                         + "  expected   = " + expected + "\n"
                         + "  calculated = " + calculated + "\n"
                         + "  relError   = " + relError + "\n"
-                        + "  tol        = " + v.tol);
+                        + "  tol        = " + v.tol());
             }
         }
     }
@@ -887,31 +808,31 @@ public class BasketOptionTest {
                 LsmBasisSystem.PolynomialType.Monomial);
 
         for (final BasketOptionOneData value : values) {
-            final PlainVanillaPayoff payoff = new PlainVanillaPayoff(value.type, value.strike);
+            final PlainVanillaPayoff payoff = new PlainVanillaPayoff(value.type(), value.strike());
 
-            final Date exDate = today.add(timeToDays(value.t));
+            final Date exDate = today.add(timeToDays(value.t()));
             final Exercise exercise = new AmericanExercise(today, exDate);
 
-            spot1.setValue(value.s);
-            vol1.setValue(value.v);
-            rRate.setValue(value.r);
-            qRate.setValue(value.q);
+            spot1.setValue(value.s());
+            vol1.setValue(value.v());
+            rRate.setValue(value.r());
+            qRate.setValue(value.q());
 
             final BasketOption basketOption = new BasketOption(
                     basketTypeToPayoff(BasketType.MaxBasket, payoff), exercise);
             basketOption.setPricingEngine(mcLSMCEngine);
 
             final double calculated = basketOption.NPV();
-            final double expected = value.result;
-            final double relError = relativeError(calculated, expected, value.s);
+            final double expected = value.result();
+            final double relError = relativeError(calculated, expected, value.s());
 
             // Sanity: NPV strictly positive, no crash.
             assertTrue("NPV must be > 0 for ITM American put: " + calculated,
                     calculated > 0.0);
-            if (relError > value.tol) {
+            if (relError > value.tol()) {
                 fail("Odd-sample MC: expected " + expected
                         + ", got " + calculated
-                        + " (relError " + relError + " > tol " + value.tol + ")");
+                        + " (relError " + relError + " > tol " + value.tol() + ")");
             }
         }
     }
@@ -2218,20 +2139,20 @@ public class BasketOptionTest {
         final double mcRelativeErrorTolerance = 1.0e-2;
 
         for (final BasketOptionThreeData value : values) {
-            final PlainVanillaPayoff payoff = new PlainVanillaPayoff(value.type, value.strike);
+            final PlainVanillaPayoff payoff = new PlainVanillaPayoff(value.type(), value.strike());
 
             // C++: exDate = today + Integer(value.t) * 30 (months at 30 days each).
-            final Date exDate = today.add((int) (value.t * 30.0));
+            final Date exDate = today.add((int) (value.t() * 30.0));
             final Exercise exercise = new EuropeanExercise(exDate);
             final Exercise amExercise = new AmericanExercise(today, exDate);
 
-            spot1.setValue(value.s1);
-            spot2.setValue(value.s2);
-            spot3.setValue(value.s3);
-            rRate.setValue(value.r);
-            vol1.setValue(value.v1);
-            vol2.setValue(value.v2);
-            vol3.setValue(value.v3);
+            spot1.setValue(value.s1());
+            spot2.setValue(value.s2());
+            spot3.setValue(value.s3());
+            rRate.setValue(value.r());
+            vol1.setValue(value.v1());
+            vol2.setValue(value.v2());
+            vol3.setValue(value.v3());
 
             final StochasticProcess1D p1 = new BlackScholesMertonProcess(
                     new Handle<Quote>(spot1), new Handle<YieldTermStructure>(qTS),
@@ -2257,7 +2178,7 @@ public class BasketOptionTest {
             final Matrix correlation = new Matrix(3, 3);
             for (int i = 0; i < 3; ++i) {
                 for (int j = 0; j < 3; ++j) {
-                    correlation.set(i, j, (i == j) ? 1.0 : value.rho);
+                    correlation.set(i, j, (i == j) ? 1.0 : value.rho());
                 }
             }
 
@@ -2277,16 +2198,16 @@ public class BasketOptionTest {
                             /* seed */ euSeed);
 
             final BasketOption euroBasketOption = new BasketOption(
-                    basketTypeToPayoff(value.basketType, payoff), exercise);
+                    basketTypeToPayoff(value.basketType(), payoff), exercise);
             euroBasketOption.setPricingEngine(mcQuasiEngine);
 
             final double euroCalc = euroBasketOption.NPV();
-            final double euroExp = value.euroValue;
-            final double euroRelError = relativeError(euroCalc, euroExp, value.s1);
+            final double euroExp = value.euroValue();
+            final double euroRelError = relativeError(euroCalc, euroExp, value.s1());
             if (euroRelError > mcRelativeErrorTolerance) {
-                fail("MC Quasi value (PseudoRandom proxy): " + value.basketType + " "
-                        + value.type + " K=" + value.strike + " t=" + value.t
-                        + " rho=" + value.rho + ":\n"
+                fail("MC Quasi value (PseudoRandom proxy): " + value.basketType() + " "
+                        + value.type() + " K=" + value.strike() + " t=" + value.t()
+                        + " rho=" + value.rho() + ":\n"
                         + "  expected   = " + euroExp + "\n"
                         + "  calculated = " + euroCalc + "\n"
                         + "  relError   = " + euroRelError + "\n"
@@ -2309,16 +2230,16 @@ public class BasketOptionTest {
                     LsmBasisSystem.PolynomialType.Monomial);
 
             final BasketOption amBasketOption = new BasketOption(
-                    basketTypeToPayoff(value.basketType, payoff), amExercise);
+                    basketTypeToPayoff(value.basketType(), payoff), amExercise);
             amBasketOption.setPricingEngine(mcLSMCEngine);
 
             final double amCalc = amBasketOption.NPV();
-            final double amExp = value.amValue;
-            final double amRelError = relativeError(amCalc, amExp, value.s1);
+            final double amExp = value.amValue();
+            final double amRelError = relativeError(amCalc, amExp, value.s1());
             if (amRelError > mcAmericanRelativeErrorTolerance) {
-                fail("MC LSMC Value: " + value.basketType + " " + value.type
-                        + " K=" + value.strike + " t=" + value.t
-                        + " rho=" + value.rho + ":\n"
+                fail("MC LSMC Value: " + value.basketType() + " " + value.type()
+                        + " K=" + value.strike() + " t=" + value.t()
+                        + " rho=" + value.rho() + ":\n"
                         + "  expected   = " + amExp + "\n"
                         + "  calculated = " + amCalc + "\n"
                         + "  relError   = " + amRelError + "\n"

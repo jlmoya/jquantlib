@@ -190,15 +190,15 @@ public class BarrierOptionTest {
         final BlackVolTermStructure volTS = Utilities.flatVol(today, vol, dc);
 
         for (final NewBarrierOptionData value : values) {
-            final Date exDate = today.add( timeToDays(value.t) );
+            final Date exDate = today.add( timeToDays(value.t()) );
             final Exercise exercise = new EuropeanExercise(exDate);
 
-            spot.setValue(value.s);
-            qRate.setValue(value.q);
-            rRate.setValue(value.r);
-            vol.setValue(value.v);
+            spot.setValue(value.s());
+            qRate.setValue(value.q());
+            rRate.setValue(value.r());
+            vol.setValue(value.v());
 
-            final StrikedTypePayoff payoff = new PlainVanillaPayoff(value.type, value.strike);
+            final StrikedTypePayoff payoff = new PlainVanillaPayoff(value.type(), value.strike());
 
             final BlackScholesMertonProcess stochProcess = new BlackScholesMertonProcess(
                     new Handle<Quote>(spot),
@@ -207,17 +207,17 @@ public class BarrierOptionTest {
                     new Handle<BlackVolTermStructure>(volTS));
             final PricingEngine engine = new AnalyticBarrierEngine(stochProcess);
 
-            final BarrierOption barrierOption = new BarrierOption(value.barrierType, value.barrier, value.rebate, payoff, exercise);
+            final BarrierOption barrierOption = new BarrierOption(value.barrierType(), value.barrier(), value.rebate(), payoff, exercise);
             barrierOption.setPricingEngine(engine);
 
             final double calculated = barrierOption.NPV();
-            final double expected = value.result;
+            final double expected = value.result();
             final double error = Math.abs(calculated-expected);
-            if (error>value.tol) {
-                REPORT_FAILURE("value", value.barrierType, value.barrier,
-                        value.rebate, payoff, exercise, value.s,
-                        value.q, value.r, today, value.v,
-                        expected, calculated, error, value.tol);
+            if (error>value.tol()) {
+                REPORT_FAILURE("value", value.barrierType(), value.barrier(),
+                        value.rebate(), payoff, exercise, value.s(),
+                        value.q(), value.r(), today, value.v(),
+                        expected, calculated, error, value.tol());
             }
 
         }
@@ -267,8 +267,8 @@ public class BarrierOptionTest {
         final Exercise exercise = new EuropeanExercise(exDate);
 
         for (final BarrierOptionData value : values) {
-            volatility.setValue(value.volatility);
-            final StrikedTypePayoff callPayoff = new PlainVanillaPayoff(Option.Type.Call, value.strike);
+            volatility.setValue(value.volatility());
+            final StrikedTypePayoff callPayoff = new PlainVanillaPayoff(Option.Type.Call, value.strike());
 
             final BlackScholesMertonProcess stochProcess = new BlackScholesMertonProcess(
                     new Handle<Quote>(underlying),
@@ -278,17 +278,17 @@ public class BarrierOptionTest {
 
             final PricingEngine engine = new AnalyticBarrierEngine(stochProcess);
 
-            final BarrierOption barrierCallOption = new BarrierOption(value.barrierType, value.barrier, rebate, callPayoff, exercise);
+            final BarrierOption barrierCallOption = new BarrierOption(value.barrierType(), value.barrier(), rebate, callPayoff, exercise);
             barrierCallOption.setPricingEngine(engine);
 
             final double calculated = barrierCallOption.NPV();
-            final double expected = value.callValue;
+            final double expected = value.callValue();
             final double error = Math.abs(calculated - expected);
             final double maxErrorAllowed = 1.0e-3;
 
             if (error > maxErrorAllowed) {
-                REPORT_FAILURE("value", value.barrierType, value.barrier, rebate, callPayoff, exercise, underlyingPrice, q,
-                        r, today, value.volatility, expected, calculated, error, maxErrorAllowed);
+                REPORT_FAILURE("value", value.barrierType(), value.barrier(), rebate, callPayoff, exercise, underlyingPrice, q,
+                        r, today, value.volatility(), expected, calculated, error, maxErrorAllowed);
             }
         }
     }
@@ -330,8 +330,8 @@ public class BarrierOptionTest {
         final Exercise exercise = new EuropeanExercise(exDate);
 
         for (final BarrierOptionData value : values) {
-            volatility.setValue(value.volatility);
-            final StrikedTypePayoff callPayoff = new PlainVanillaPayoff(Option.Type.Call, value.strike);
+            volatility.setValue(value.volatility());
+            final StrikedTypePayoff callPayoff = new PlainVanillaPayoff(Option.Type.Call, value.strike());
 
             final BlackScholesMertonProcess stochProcess = new BlackScholesMertonProcess(
                     new Handle<Quote>(underlying),
@@ -341,17 +341,17 @@ public class BarrierOptionTest {
             final PricingEngine engine = new AnalyticBarrierEngine(stochProcess);
 
 
-            final BarrierOption barrierCallOption = new BarrierOption(value.barrierType, value.barrier, rebate, callPayoff, exercise);
+            final BarrierOption barrierCallOption = new BarrierOption(value.barrierType(), value.barrier(), rebate, callPayoff, exercise);
             barrierCallOption.setPricingEngine(engine);
 
             final double calculated = barrierCallOption.NPV();
-            final double expected = value.callValue;
+            final double expected = value.callValue();
             final double error = Math.abs(calculated - expected);
             final double maxErrorAllowed = 1.0e-3;
 
             if (error > maxErrorAllowed) {
-                REPORT_FAILURE("value", value.barrierType, value.barrier, rebate, callPayoff, exercise, underlyingPrice, q,
-                        r, today, value.volatility, expected, calculated, error, maxErrorAllowed);
+                REPORT_FAILURE("value", value.barrierType(), value.barrier(), rebate, callPayoff, exercise, underlyingPrice, q,
+                        r, today, value.volatility(), expected, calculated, error, maxErrorAllowed);
             }
         }
 
@@ -657,35 +657,35 @@ public class BarrierOptionTest {
         final SimpleQuote vol25Call = new SimpleQuote(0.0);
 
         for (final BarrierFxOptionData value : values) {
-            spot.setValue(value.s);
-            qRate.setValue(value.q);
-            rRate.setValue(value.r);
-            vol25Put.setValue(value.vol25Put);
-            volAtm.setValue(value.volAtm);
-            vol25Call.setValue(value.vol25Call);
+            spot.setValue(value.s());
+            qRate.setValue(value.q());
+            rRate.setValue(value.r());
+            vol25Put.setValue(value.vol25Put());
+            volAtm.setValue(value.volAtm());
+            vol25Call.setValue(value.vol25Call());
 
-            final StrikedTypePayoff payoff = new PlainVanillaPayoff(value.type, value.strike);
+            final StrikedTypePayoff payoff = new PlainVanillaPayoff(value.type(), value.strike());
 
-            final Date exDate = today.add(timeToDaysAct365(value.t));
+            final Date exDate = today.add(timeToDaysAct365(value.t()));
             final Exercise exercise = new EuropeanExercise(exDate);
 
             final Handle<DeltaVolQuote> volAtmQuote = new Handle<DeltaVolQuote>(
                     new DeltaVolQuote(new Handle<Quote>(volAtm),
-                            DeltaVolQuote.DeltaType.Fwd, value.t,
+                            DeltaVolQuote.DeltaType.Fwd, value.t(),
                             DeltaVolQuote.AtmType.AtmDeltaNeutral));
             final Handle<DeltaVolQuote> vol25PutQuote = new Handle<DeltaVolQuote>(
-                    new DeltaVolQuote(-0.25, new Handle<Quote>(vol25Put), value.t,
+                    new DeltaVolQuote(-0.25, new Handle<Quote>(vol25Put), value.t(),
                             DeltaVolQuote.DeltaType.Fwd));
             final Handle<DeltaVolQuote> vol25CallQuote = new Handle<DeltaVolQuote>(
-                    new DeltaVolQuote(0.25, new Handle<Quote>(vol25Call), value.t,
+                    new DeltaVolQuote(0.25, new Handle<Quote>(vol25Call), value.t(),
                             DeltaVolQuote.DeltaType.Fwd));
 
             final BarrierOption barrierOption = new BarrierOption(
-                    value.barrierType, value.barrier, value.rebate, payoff, exercise);
+                    value.barrierType(), value.barrier(), value.rebate(), payoff, exercise);
 
-            final double bsVanillaPrice = BlackFormula.blackFormula(value.type, value.strike,
-                    spot.value() * qTS.discount(value.t) / rTS.discount(value.t),
-                    value.v * Math.sqrt(value.t), rTS.discount(value.t));
+            final double bsVanillaPrice = BlackFormula.blackFormula(value.type(), value.strike(),
+                    spot.value() * qTS.discount(value.t()) / rTS.discount(value.t()),
+                    value.v() * Math.sqrt(value.t()), rTS.discount(value.t()));
 
             final PricingEngine vannaVolgaEngine = new VannaVolgaBarrierEngine(
                     volAtmQuote, vol25PutQuote, vol25CallQuote,
@@ -696,16 +696,16 @@ public class BarrierOptionTest {
             barrierOption.setPricingEngine(vannaVolgaEngine);
 
             final double calculated = barrierOption.NPV();
-            final double expected = value.result;
+            final double expected = value.result();
             final double error = Math.abs(calculated - expected);
             assertTrue(String.format(
                     "VannaVolga(simple) mismatch: barrierType=%s barrier=%.2f strike=%.5f s=%.5f type=%s "
                             + "t=%.2f vol25Put=%.5f volAtm=%.5f vol25Call=%.5f v=%.5f -> "
                             + "expected=%.6f calculated=%.6f error=%.4g (tol=%.4g)",
-                    value.barrierType, value.barrier, value.strike, value.s, value.type, value.t,
-                    value.vol25Put, value.volAtm, value.vol25Call, value.v,
-                    expected, calculated, error, value.tol),
-                    error <= value.tol);
+                    value.barrierType(), value.barrier(), value.strike(), value.s(), value.type(), value.t(),
+                    value.vol25Put(), value.volAtm(), value.vol25Call(), value.v(),
+                    expected, calculated, error, value.tol()),
+                    error <= value.tol());
         }
     }
 
@@ -743,118 +743,22 @@ public class BarrierOptionTest {
     }
 
 
-    private static class NewBarrierOptionData {
-
-        private final BarrierType barrierType;
-        private final double barrier;
-        private final double rebate;
-        private final Option.Type type;
-        private final double strike;
-        private final double s;        // spot
-        private final double q;        // dividend
-        private final double r;        // risk-free rate
-        private final double t;        // time to maturity
-        private final double v;  // volatility
-        private final double result;   // result
-        private final double tol;      // tolerance
-
-        public NewBarrierOptionData(
-                final BarrierType barrierType,
-                final double barrier,
-                final double rebate,
-                final Option.Type type,
-                final double strike,
-                final double s,        // spot
-                final double q,        // dividend
-                final double r,        // risk-free rate
-                final double t,        // time to maturity
-                final double v,  // volatility
-                final double result,   // result
-                final double tol      // tolerance
-        ) {
-            this.barrierType = barrierType;
-            this.barrier = barrier;
-            this.rebate = rebate;
-            this.type = type;
-            this.strike = strike;
-            this.s = s;
-            this.q = q;
-            this.r = r;
-            this.t = t;
-            this.v = v;
-            this.result = result;
-            this.tol = tol;
-        }
-    }
+    private record NewBarrierOptionData(BarrierType barrierType, double barrier, double rebate,
+                                        Option.Type type, double strike,
+                                        double s, double q, double r, double t,
+                                        double v, double result, double tol) {}
 
 
-    private static class BarrierOptionData {
-
-        private final BarrierType barrierType;
-        private final double volatility;
-        private final double strike;
-        private final double barrier;
-        private final double callValue;
-        private final double putValue;
-
-        public BarrierOptionData(
-                final BarrierType barrierType,
-                final double volatility,
-                final double strike,
-                final double barrier,
-                final double callValue,
-                final double putValue) {
-            this.barrierType = barrierType;
-            this.volatility = volatility;
-            this.strike = strike;
-            this.barrier = barrier;
-            this.callValue = callValue;
-            this.putValue = putValue;
-        }
-
-    }
+    private record BarrierOptionData(BarrierType barrierType, double volatility, double strike,
+                                     double barrier, double callValue, double putValue) {}
 
 
     /** Row of FX-option Vanna/Volga reference values from v1.42.1 test-suite/barrieroption.cpp:130-146. */
-    private static final class BarrierFxOptionData {
-        final BarrierType barrierType;
-        final double barrier;
-        final double rebate;
-        final Option.Type type;
-        final double strike;
-        final double s;          // spot
-        final double q;          // dividend
-        final double r;          // risk-free rate
-        final double t;          // time to maturity
-        final double vol25Put;   // 25 delta put vol
-        final double volAtm;     // atm vol
-        final double vol25Call;  // 25 delta call vol
-        final double v;          // volatility at strike
-        final double result;     // result
-        final double tol;        // tolerance
-
-        BarrierFxOptionData(final BarrierType barrierType, final double barrier, final double rebate,
-                            final Option.Type type, final double strike, final double s,
-                            final double q, final double r, final double t,
-                            final double vol25Put, final double volAtm, final double vol25Call,
-                            final double v, final double result, final double tol) {
-            this.barrierType = barrierType;
-            this.barrier = barrier;
-            this.rebate = rebate;
-            this.type = type;
-            this.strike = strike;
-            this.s = s;
-            this.q = q;
-            this.r = r;
-            this.t = t;
-            this.vol25Put = vol25Put;
-            this.volAtm = volAtm;
-            this.vol25Call = vol25Call;
-            this.v = v;
-            this.result = result;
-            this.tol = tol;
-        }
-    }
+    private record BarrierFxOptionData(BarrierType barrierType, double barrier, double rebate,
+                                       Option.Type type, double strike, double s,
+                                       double q, double r, double t,
+                                       double vol25Put, double volAtm, double vol25Call,
+                                       double v, double result, double tol) {}
 
     /**
      * Java port of v1.42.1 {@code test-suite/barrieroption.cpp:testLowVolatility} (line 1185).
