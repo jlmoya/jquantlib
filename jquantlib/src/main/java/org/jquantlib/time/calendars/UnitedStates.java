@@ -191,6 +191,35 @@ public class UnitedStates extends Calendar {
     }
 
     /**
+     * Veterans Day, with Saturday->Friday rollback (used by Settlement / GovBond).
+     * Mirrors C++ v1.42.1 unitedstates.cpp:68-77 {@code isVeteransDay}.
+     */
+    private static boolean isVeteransDay(final int d, final Month m, final int y, final Weekday w) {
+        if ( y <= 1970 || y >= 1978 ) {
+            // November 11th, adjusted (Sat->Fri, Sun->Mon)
+            return (d == 11 || (d == 12 && w == Weekday.Monday) || (d == 10 && w == Weekday.Friday))
+                    && m == Month.November;
+        } else {
+            // fourth Monday in October (1971-1977)
+            return (d >= 22 && d <= 28) && w == Weekday.Monday && m == Month.October;
+        }
+    }
+
+    /**
+     * Labor Day — first Monday in September. Mirrors C++ v1.42.1 unitedstates.cpp:57-60.
+     */
+    private static boolean isLaborDay(final int d, final Month m, final int y, final Weekday w) {
+        return d <= 7 && w == Weekday.Monday && m == Month.September;
+    }
+
+    /**
+     * Columbus Day — second Monday in October, since 1971. Mirrors C++ v1.42.1 unitedstates.cpp:62-66.
+     */
+    private static boolean isColumbusDay(final int d, final Month m, final int y, final Weekday w) {
+        return (d >= 8 && d <= 14) && w == Weekday.Monday && m == Month.October && y >= 1971;
+    }
+
+    /**
      * Juneteenth, declared 2021 and observed by exchanges from 2022 onward.
      *
      * @param moveToFriday when true (default), Saturday->Friday rollback is honored (matches C++ default param).
@@ -225,65 +254,44 @@ public class UnitedStates extends Calendar {
         @Override
         public boolean isBusinessDay(final Date date) {
             final Weekday w = date.weekday();
-            final int d = date.dayOfMonth(), dd = date.dayOfYear();
+            final int d = date.dayOfMonth();
             final Month m = date.month();
             final int y = date.year();
-            final int em = easterMonday(y);
-            //                // New Year's Day (possibly moved to Monday if on Sunday)
-            //                || ((d == 1 || (d == 2 && w == Weekday.Monday)) && m == Month.January)
-            //                // Martin Luther King's birthday (third Monday in JANUARY)
-            //                || ((d >= 15 && d <= 21) && w == Weekday.Monday && m == Month.January)
-            //                // Washington's birthday (third Monday in Month.FEBRUARY)
-            //                || ((d >= 15 && d <= 21) && w == Weekday.Monday && m == Month.February)
-            //                // Good Weekday.FRIDAY
-            //                || (dd == em-3)
-            //                // Memorial Day (last Monday in Month.MAY)
-            //                || (d >= 25 && w == Weekday.Monday && m == Month.May)
-            //                // Independence Day (Monday if Sunday or Weekday.FRIDAY if Saturday)
-            //                || ((d == 4 || (d == 5 && w == Weekday.Monday) ||
-            //                     (d == 3 && w == Weekday.Friday)) && m == Month.July)
-            //                // Labor Day (first Monday in Month.SEPTEMBER)
-            //                || (d <= 7 && w == Weekday.Monday && m == Month.September)
-            //                // Columbus Day (second Monday in October)
-            //                || ((d >= 8 && d <= 14) && w == Weekday.Monday && m == Month.October)
-            //                // Veteran's Day (Monday if Sunday or Weekday.FRIDAY if Saturday)
-            //                || ((d == 11 || (d == 12 && w == Weekday.Monday) ||
-            //                     (d == 10 && w == Weekday.Friday)) && m == Month.November)
-            //                // Thanksgiving Day (fourth Weekday.THURSDAY in Month.NOVEMBER)
-            //                || ((d >= 22 && d <= 28) && w == Weekday.Thursday && m == Month.November)
-            //                // Christmas (Monday if Sunday or Weekday.FRIDAY if Saturday)
-            //                || ((d == 25 || (d == 26 && w == Weekday.Monday) ||
-            //                     (d == 24 && w == Weekday.Friday)) && m == Month.December))
-            return !isWeekend(w)
+            // Mirrors C++ v1.42.1 ql/time/calendars/unitedstates.cpp:134-169
+            // UnitedStates::SettlementImpl::isBusinessDay. Bug-Fix Phase 1.3:
+            // previously diverged in MLK y>=1983 guard, Washington/Memorial
+            // /Veterans/Columbus pre-1971 forms, and was missing helper-based
+            // 1971-1977 Veterans-Day (fourth Monday in October) rule.
+            if ( isWeekend(w)
                     // New Year's Day (possibly moved to Monday if on Sunday)
-                    && ((d != 1 && (d != 2 || w != Weekday.Monday)) || m != Month.January)
+                    || ((d == 1 || (d == 2 && w == Weekday.Monday)) && m == Month.January)
                     // (or to Friday if on Saturday)
-                    && (d != 31 || w != Weekday.Friday || m != Month.December)
-                    // Martin Luther King's birthday (third Monday in January)
-                    && ((d < 15 || d > 21) || w != Weekday.Monday || m != Month.January)
-                    // Washington's birthday (third Monday in February)
-                    && ((d < 15 || d > 21) || w != Weekday.Monday || m != Month.February)
-                    // Memorial Day (last Monday in May)
-                    && (d < 25 || w != Weekday.Monday || m != Month.May)
-                    // Juneteenth (Monday if Sunday or Friday if Saturday) — observed
-                    // since 2022 by federal holiday and US settlement market. Mirrors
-                    // C++ unitedstates.cpp:151-152.
-                    && !isJuneteenth(d, m, y, w, true)
+                    || (d == 31 && w == Weekday.Friday && m == Month.December)
+                    // Martin Luther King's birthday (third Monday in January, since 1983)
+                    || ((d >= 15 && d <= 21) && w == Weekday.Monday && m == Month.January && y >= 1983)
+                    // Washington's birthday (third Monday in February since 1971; Feb 22 adjusted otherwise)
+                    || isWashingtonBirthday(d, m, y, w)
+                    // Memorial Day (last Monday in May since 1971; May 30 adjusted otherwise)
+                    || isMemorialDay(d, m, y, w)
+                    // Juneteenth (Monday if Sunday or Friday if Saturday) — observed since 2022
+                    || isJuneteenth(d, m, y, w, true)
                     // Independence Day (Monday if Sunday or Friday if Saturday)
-                    && ((d != 4 && (d != 5 || w != Weekday.Monday) && (d != 3 || w != Weekday.Friday))
-                    || m != Month.July)
+                    || ((d == 4 || (d == 5 && w == Weekday.Monday) || (d == 3 && w == Weekday.Friday))
+                        && m == Month.July)
                     // Labor Day (first Monday in September)
-                    && (d > 7 || w != Weekday.Monday || m != Month.September)
-                    // Columbus Day (second Monday in October)
-                    && ((d < 8 || d > 14) || w != Weekday.Monday || m != Month.October)
-                    // Veteran's Day (Monday if Sunday or Friday if Saturday)
-                    && ((d != 11 && (d != 12 || w != Weekday.Monday) && (d != 10 || w != Weekday.Friday))
-                    || m != Month.November)
+                    || isLaborDay(d, m, y, w)
+                    // Columbus Day (second Monday in October, since 1971)
+                    || isColumbusDay(d, m, y, w)
+                    // Veteran's Day (Nov 11 with Sat->Fri / Sun->Mon for y<=1970 or y>=1978; fourth Monday of October 1971-1977)
+                    || isVeteransDay(d, m, y, w)
                     // Thanksgiving Day (fourth Thursday in November)
-                    && ((d < 22 || d > 28) || w != Weekday.Thursday || m != Month.November)
+                    || ((d >= 22 && d <= 28) && w == Weekday.Thursday && m == Month.November)
                     // Christmas (Monday if Sunday or Friday if Saturday)
-                    && ((d != 25 && (d != 26 || w != Weekday.Monday) && (d != 24 || w != Weekday.Friday))
-                    || m != Month.December);
+                    || ((d == 25 || (d == 26 && w == Weekday.Monday) || (d == 24 && w == Weekday.Friday))
+                        && m == Month.December) ) {
+                return false;
+            }
+            return true;
         }
     }
 
