@@ -78,6 +78,25 @@ Doing (1) first unblocks future opportunistic modernization without paying its r
 
 ---
 
+## Pre-upgrade scan results (2026-05-21)
+
+Grep-based survey of JDK-friction patterns in `jquantlib/src/main/java/`:
+
+| Pattern | Count | Notes |
+|---|---|---|
+| `Thread.stop()` / `SecurityManager` / `Thread.suspend()` | 0 | Clean — no removed-API usage |
+| `import sun.*` (JDK internal) | 0 | Clean — no JDK-internal direct deps |
+| `setAccessible(true)` on `java.*` field | 2 (Settings.java, IborLeg.java) | Both reflect on `org.jquantlib.*` private fields (Date.timeOfDayNanos, Coupon.exCouponDate_) — same-module reflection, no `--add-opens` needed |
+| `void finalize()` override | 0 real (1 commented-out, 1 false-positive on `finalizeComposite()`) | Clean — `finalize` removed in JDK 18; no impact |
+| `.newInstance()` (deprecated since JDK 9) | ~12 files | Cosmetic deprecation warning. Migrate to `.getDeclaredConstructor().newInstance()` during sweep. Won't block compile. |
+
+**Conclusion:** the upgrade is low-risk. Main work items beyond pom bumps:
+- ~12 `.newInstance()` → `.getDeclaredConstructor().newInstance()` rewrites
+- slf4j 1.7 → 2.x API shift (mostly transparent; `Logger` interface stable)
+- junit 4.12 → 4.13.2 (very minor changes, mostly internal)
+
+---
+
 ## Risks + mitigations
 
 | Risk | Mitigation |
