@@ -54,7 +54,7 @@ import org.jquantlib.time.Date;
  * @author Richard Gomes
  */
 @QualityAssurance( quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Richard Gomes" } )
-public class EuropeanExercise extends Exercise {
+public final class EuropeanExercise extends Exercise {
 
     /**
      * Defines the exercise date for an European Option.

@@ -51,7 +51,8 @@ import org.jquantlib.lang.annotation.QualityAssurance.Version;
  * @author Richard Gomes
  */
 @QualityAssurance( quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Richard Gomes" } )
-public abstract class EarlyExercise extends Exercise {
+public abstract sealed class EarlyExercise extends Exercise
+        permits AmericanExercise, BermudanExercise {
 
     //
     // protected fields

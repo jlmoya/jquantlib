@@ -56,7 +56,7 @@ import org.jquantlib.time.Date;
  * @author Richard Gomes
  */
 @QualityAssurance( quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Richard Gomes" } )
-public class AmericanExercise extends EarlyExercise {
+public final class AmericanExercise extends EarlyExercise {
 
     /**
      * Constructs an AmericanExercise with two limiting dates define and a default payoff equals <code>false</code>,

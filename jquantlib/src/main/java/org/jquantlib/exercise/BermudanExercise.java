@@ -54,10 +54,14 @@ import java.util.List;
 /**
  * A Bermudan option can only be exercised at a set of fixed dates.
  *
+ * <p>JDK 25 sealed (JEP 409): {@code non-sealed} because subtype
+ * {@code org.jquantlib.instruments.SwingExercise} lives in a different package, and Java
+ * cross-package sealing requires a named module (this build is the unnamed module).</p>
+ *
  * @author Richard Gomes
  */
 @QualityAssurance( quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Richard Gomes" } )
-public class BermudanExercise extends EarlyExercise {
+public non-sealed class BermudanExercise extends EarlyExercise {
 
     /**
      * Constructs a BermudanExercise with a list of exercise dates and the default payoff
