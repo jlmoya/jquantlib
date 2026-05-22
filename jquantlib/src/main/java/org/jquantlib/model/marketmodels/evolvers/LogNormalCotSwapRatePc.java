@@ -134,10 +134,9 @@ public class LogNormalCotSwapRatePc extends MarketModelEvolver {
 
     @Override
     public void setInitialState(final CurveState cs) {
-        if ( !(cs instanceof CoterminalSwapCurveState) ) {
+        if (!(cs instanceof CoterminalSwapCurveState cotcs)) {
             throw new ClassCastException("expected CoterminalSwapCurveState");
         }
-        final CoterminalSwapCurveState cotcs = (CoterminalSwapCurveState) cs;
         setCoterminalSwapRates(cotcs.coterminalSwapRates());
     }
 

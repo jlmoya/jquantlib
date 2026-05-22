@@ -83,9 +83,9 @@ public class DateInterval {
     public boolean equals(final Object obj) {
         if ( this == obj )
             return true;
-        if ( !(obj instanceof DateInterval) )
+        if (!(obj instanceof DateInterval dateInterval))
             return false;
-        final DateInterval other = (DateInterval) obj;
+        final DateInterval other = dateInterval;
         return startDate_.equals(other.startDate_) && endDate_.equals(other.endDate_);
     }
 

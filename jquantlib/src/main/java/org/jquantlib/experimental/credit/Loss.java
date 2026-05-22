@@ -60,10 +60,9 @@ public final class Loss implements Comparable< Loss > {
         if ( this == o ) {
             return true;
         }
-        if ( !(o instanceof Loss) ) {
+        if (!(o instanceof Loss other)) {
             return false;
         }
-        final Loss other = (Loss) o;
         return Double.compare(this.time, other.time) == 0;
     }
 

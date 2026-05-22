@@ -271,8 +271,7 @@ public abstract class SwaptionVolatilityCube extends SwaptionVolatilityDiscrete 
      * Shift at the given (optionTime, swapLength); forwards to the ATM surface (C++ {@code shiftImpl}).
      */
     protected double shiftImpl(final double optionTime, final double swapLength) {
-        if ( atmVol_.currentLink() instanceof SwaptionVolatilityMatrix ) {
-            final SwaptionVolatilityMatrix m = (SwaptionVolatilityMatrix) atmVol_.currentLink();
+        if (atmVol_.currentLink() instanceof SwaptionVolatilityMatrix m) {
             return m.shift(optionTime, swapLength, true);
         }
         return atmVol_.currentLink().shift();

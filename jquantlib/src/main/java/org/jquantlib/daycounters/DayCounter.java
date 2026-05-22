@@ -183,7 +183,7 @@ public class DayCounter {
         if ( obj == null )
             return false;
 
-        return obj instanceof DayCounter && ((DayCounter) obj).fEquals(this);
+        return obj instanceof DayCounter dayCounter && dayCounter.fEquals(this);
 
     }
 

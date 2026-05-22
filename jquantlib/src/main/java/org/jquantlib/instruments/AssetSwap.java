@@ -219,8 +219,7 @@ public class AssetSwap extends Swap {
         // coupon, then add the accrued coupon. Mirrors C++ assetswap.cpp:114.
         if ( i < bondLeg.size() - 1 ) {
             final CashFlow skipped = bondLeg.get(i);
-            if ( skipped instanceof Coupon ) {
-                final Coupon c = (Coupon) skipped;
+            if (skipped instanceof Coupon c) {
                 final /*@Real*/ double accruedAmt = c.accruedAmount(dealMaturity);
                 final SimpleCashFlow accruedCoupon = new SimpleCashFlow(accruedAmt, finalDate);
                 leg0.add(accruedCoupon);
@@ -435,8 +434,7 @@ public class AssetSwap extends Swap {
             // The bondLeg may contain SimpleCashFlow (accrued / redemption)
             // entries — only FixedRateCoupons get fixedResetDates etc.
             final CashFlow cf = fixedCoupons.get(k);
-            if ( cf instanceof FixedRateCoupon ) {
-                final FixedRateCoupon coupon = (FixedRateCoupon) cf;
+            if (cf instanceof FixedRateCoupon coupon) {
                 a.fixedPayDates.set(k, coupon.date());
                 a.fixedResetDates.set(k, coupon.accrualStartDate());
                 a.fixedCoupons.set(k, coupon.amount());
@@ -457,8 +455,7 @@ public class AssetSwap extends Swap {
 
         for ( int k = 0; k < nFloat; ++k ) {
             final CashFlow cf = floatingCoupons.get(k);
-            if ( cf instanceof FloatingRateCoupon ) {
-                final FloatingRateCoupon coupon = (FloatingRateCoupon) cf;
+            if (cf instanceof FloatingRateCoupon coupon) {
                 a.floatingResetDates.set(k, coupon.accrualStartDate());
                 a.floatingPayDates.set(k, coupon.date());
                 a.floatingFixingDates.set(k, coupon.fixingDate());

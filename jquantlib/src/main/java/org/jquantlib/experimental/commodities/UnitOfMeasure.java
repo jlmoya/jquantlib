@@ -97,9 +97,9 @@ public class UnitOfMeasure {
     public boolean equals(final Object obj) {
         if ( this == obj )
             return true;
-        if ( !(obj instanceof UnitOfMeasure) )
+        if (!(obj instanceof UnitOfMeasure unitOfMeasure))
             return false;
-        final UnitOfMeasure other = (UnitOfMeasure) obj;
+        final UnitOfMeasure other = unitOfMeasure;
         if ( this.empty() || other.empty() )
             return this.empty() == other.empty();
         return this.code().equals(other.code());

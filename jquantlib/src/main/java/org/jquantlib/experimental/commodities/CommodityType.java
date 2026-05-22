@@ -88,9 +88,9 @@ public class CommodityType {
     public boolean equals(final Object obj) {
         if ( this == obj )
             return true;
-        if ( !(obj instanceof CommodityType) )
+        if (!(obj instanceof CommodityType commodityType))
             return false;
-        final CommodityType other = (CommodityType) obj;
+        final CommodityType other = commodityType;
         if ( this.empty() || other.empty() )
             return this.empty() == other.empty();
         return this.code().equals(other.code());

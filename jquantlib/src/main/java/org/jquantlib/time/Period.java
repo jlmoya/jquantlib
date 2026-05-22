@@ -639,7 +639,7 @@ public class Period implements Cloneable {
         if ( obj == null )
             return false;
 
-        return obj instanceof Period && ((Period) obj).fEquals(this);
+        return obj instanceof Period period && period.fEquals(this);
     }
 
     //

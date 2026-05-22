@@ -166,8 +166,7 @@ public abstract class CrossCurrencyBasisSwapRateHelperBase extends CrossCurrency
             if ( !cf.date().lt(refDt) ) {
                 final double df = disc.discount(cf.date());
                 npv += cf.amount() * df;
-                if ( cf instanceof org.jquantlib.cashflow.Coupon ) {
-                    final org.jquantlib.cashflow.Coupon c = (org.jquantlib.cashflow.Coupon) cf;
+                if (cf instanceof org.jquantlib.cashflow.Coupon c) {
                     bps += c.nominal() * c.accrualPeriod() * df;
                 }
             }

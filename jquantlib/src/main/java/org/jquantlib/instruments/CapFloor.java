@@ -269,8 +269,7 @@ public class CapFloor extends Instrument {
         // Defensive: some engines may store the per-optionlet vector as an
         // Array/Number[]; convert. (Current Black/Bachelier engines store
         // raw double[].)
-        if ( o instanceof org.jquantlib.math.matrixutilities.Array ) {
-            final org.jquantlib.math.matrixutilities.Array a = (org.jquantlib.math.matrixutilities.Array) o;
+        if (o instanceof org.jquantlib.math.matrixutilities.Array a) {
             final double[] dst = new double[a.size()];
             for ( int i = 0; i < dst.length; ++i ) {
                 dst[i] = a.get(i);

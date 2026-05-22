@@ -141,7 +141,7 @@ public class Currency implements Cloneable {
         if ( obj == null )
             return false;
 
-        return obj instanceof Currency && ((Currency) obj).fEquals(this);
+        return obj instanceof Currency currency && currency.fEquals(this);
 
     }
 

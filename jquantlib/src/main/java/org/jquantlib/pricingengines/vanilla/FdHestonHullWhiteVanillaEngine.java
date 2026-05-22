@@ -154,8 +154,7 @@ public class FdHestonHullWhiteVanillaEngine
 
         // 1. Cache lookup: short-circuit when the requesting option's
         // (exercise dates, option type, strike) was previously computed.
-        if ( args.payoff instanceof PlainVanillaPayoff ) {
-            final PlainVanillaPayoff p1 = (PlainVanillaPayoff) args.payoff;
+        if (args.payoff instanceof PlainVanillaPayoff p1) {
             for ( final CachedResult c : cachedResults ) {
                 final PlainVanillaPayoff p2 = (PlainVanillaPayoff) c.payoff;
                 if ( c.exercise.lastDate().equals(args.exercise.lastDate()) && p1.optionType() == p2.optionType()

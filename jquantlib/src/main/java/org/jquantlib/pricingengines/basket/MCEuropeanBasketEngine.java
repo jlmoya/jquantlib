@@ -171,10 +171,9 @@ public class MCEuropeanBasketEngine extends BasketOption.Engine {
         QL.require(payoff != null, "non-basket payoff given");
 
         final StochasticProcess1D first = processes_.process(0);
-        if ( !(first instanceof GeneralizedBlackScholesProcess) ) {
+        if (!(first instanceof GeneralizedBlackScholesProcess process)) {
             throw new RuntimeException("Black-Scholes process required");
         }
-        final GeneralizedBlackScholesProcess process = (GeneralizedBlackScholesProcess) first;
         final double discount = process.riskFreeRate().currentLink().discount(a.exercise.lastDate());
         return new EuropeanMultiPathPricer(payoff, discount);
     }

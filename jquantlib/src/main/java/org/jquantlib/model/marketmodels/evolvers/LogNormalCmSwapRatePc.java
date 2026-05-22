@@ -136,10 +136,9 @@ public class LogNormalCmSwapRatePc extends MarketModelEvolver {
 
     @Override
     public void setInitialState(final CurveState cs) {
-        if ( !(cs instanceof CMSwapCurveState) ) {
+        if (!(cs instanceof CMSwapCurveState cmcs)) {
             throw new ClassCastException("expected CMSwapCurveState");
         }
-        final CMSwapCurveState cmcs = (CMSwapCurveState) cs;
         setCMSwapRates(cmcs.cmSwapRates(spanningForwards_));
     }
 

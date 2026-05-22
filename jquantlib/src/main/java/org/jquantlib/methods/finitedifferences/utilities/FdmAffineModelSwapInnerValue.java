@@ -112,10 +112,9 @@ public class FdmAffineModelSwapInnerValue< M extends AffineModel > implements Fd
             final Leg leg = (j == 0) ? swap_.fixedLeg() : swap_.floatingLeg();
             double legNpv = 0.0;
             for ( final CashFlow cf : leg ) {
-                if ( !(cf instanceof Coupon) ) {
+                if (!(cf instanceof Coupon coupon)) {
                     continue;
                 }
-                final Coupon coupon = (Coupon) cf;
                 if ( coupon.accrualStartDate().ge(iterExerciseDate) ) {
                     final double payTime = dayCounter_.yearFraction(referenceDate_, cf.date());
                     final double df = model_.discountBond(exerciseTime, payTime, factors);

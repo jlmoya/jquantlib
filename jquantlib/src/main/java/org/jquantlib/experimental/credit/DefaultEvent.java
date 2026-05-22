@@ -173,10 +173,9 @@ public class DefaultEvent extends Event {
         if ( this == o ) {
             return true;
         }
-        if ( !(o instanceof DefaultEvent) ) {
+        if (!(o instanceof DefaultEvent rhs)) {
             return false;
         }
-        final DefaultEvent rhs = (DefaultEvent) o;
         return bondsCurrency.equals(rhs.bondsCurrency) && eventType.equals(rhs.eventType) && defaultDate.equals(
                 rhs.defaultDate) && bondsSeniority == rhs.bondsSeniority;
     }

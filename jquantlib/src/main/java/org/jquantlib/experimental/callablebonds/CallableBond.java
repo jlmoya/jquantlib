@@ -317,8 +317,7 @@ public class CallableBond extends Bond {
                     double callAccrued = 0.0;
                     for ( final CashFlow cf : cashflows_ ) {
                         if ( !cf.hasOccurred(callDate, false) ) {
-                            if ( cf instanceof Coupon ) {
-                                final Coupon coupon = (Coupon) cf;
+                            if (cf instanceof Coupon coupon) {
                                 double acc = coupon.accruedAmount(callDate);
                                 // Mirrors C++ callablebond.cpp:463-464 — when
                                 // the call date falls in the coupon's ex-coupon

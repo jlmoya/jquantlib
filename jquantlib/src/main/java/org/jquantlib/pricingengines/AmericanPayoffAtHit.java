@@ -149,8 +149,7 @@ public class AmericanPayoffAtHit {
             K = ((CashOrNothingPayoff) strikedTypePayoff).getCashPayoff();
         }
 
-        if ( strikedTypePayoff instanceof AssetOrNothingPayoff ) {
-            final AssetOrNothingPayoff aoo = (AssetOrNothingPayoff) strikedTypePayoff;
+        if (strikedTypePayoff instanceof AssetOrNothingPayoff aoo) {
             if ( inTheMoney ) {
                 K = spot;
             } else {

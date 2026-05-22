@@ -392,8 +392,7 @@ public abstract class BasketGeneratingEngine {
             // Fixed leg: subtract fixed cashflows
             final Leg fixed = swap.fixedLeg();
             for ( final CashFlow cf : fixed ) {
-                if ( cf instanceof FixedRateCoupon ) {
-                    final FixedRateCoupon c = (FixedRateCoupon) cf;
+                if (cf instanceof FixedRateCoupon c) {
                     swapNpvResult -= fixedRate * c.accrualPeriod() * nominal * mdl_.zerobond(c.date(), expiry_, y,
                             indexBase_.iborIndex().termStructure());
                 }
@@ -402,8 +401,7 @@ public abstract class BasketGeneratingEngine {
             // Floating leg: add floating cashflows
             final Leg flt = swap.floatingLeg();
             for ( final CashFlow cf : flt ) {
-                if ( cf instanceof IborCoupon ) {
-                    final IborCoupon c = (IborCoupon) cf;
+                if (cf instanceof IborCoupon c) {
                     final InterestRateIndex idx = c.index();
                     if ( !(idx instanceof IborIndex) )
                         continue; // safety guard

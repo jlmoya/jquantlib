@@ -97,10 +97,9 @@ public class DefaultProbKey {
         if ( this == o ) {
             return true;
         }
-        if ( !(o instanceof DefaultProbKey) ) {
+        if (!(o instanceof DefaultProbKey rhs)) {
             return false;
         }
-        final DefaultProbKey rhs = (DefaultProbKey) o;
         if ( this.seniorityField != rhs.seniorityField ) {
             return false;
         }

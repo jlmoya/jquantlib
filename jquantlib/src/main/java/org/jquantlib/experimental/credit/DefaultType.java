@@ -87,10 +87,9 @@ public class DefaultType {
         if ( this == o ) {
             return true;
         }
-        if ( !(o instanceof DefaultType) ) {
+        if (!(o instanceof DefaultType rhs)) {
             return false;
         }
-        final DefaultType rhs = (DefaultType) o;
         return defTypes == rhs.defTypes && restrType == rhs.restrType;
     }
 

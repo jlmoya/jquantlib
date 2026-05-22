@@ -79,9 +79,9 @@ public class PaymentTerm {
     public boolean equals(final Object obj) {
         if ( this == obj )
             return true;
-        if ( !(obj instanceof PaymentTerm) )
+        if (!(obj instanceof PaymentTerm paymentTerm))
             return false;
-        final PaymentTerm other = (PaymentTerm) obj;
+        final PaymentTerm other = paymentTerm;
         if ( this.empty() || other.empty() )
             return this.empty() == other.empty();
         return this.name().equals(other.name());

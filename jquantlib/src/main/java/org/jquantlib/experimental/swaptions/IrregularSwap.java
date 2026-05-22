@@ -228,8 +228,7 @@ public class IrregularSwap extends Swap {
     public void fetchResults(final PricingEngine.Results r) /* @ReadOnly */ {
         super.fetchResults(r);
 
-        if ( r instanceof IrregularSwap.ResultsImpl ) {
-            final IrregularSwap.ResultsImpl results = (IrregularSwap.ResultsImpl) r;
+        if (r instanceof IrregularSwap.ResultsImpl results) {
             fairRate_ = results.fairRate;
             fairSpread_ = results.fairSpread;
         } else {

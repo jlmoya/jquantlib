@@ -307,8 +307,7 @@ public class ZabrSwaptionVolatilityCube extends SwaptionVolatilityCube {
         }
         // Check shift: if any cell of the atm structure carries a non-zero shift,
         // we must throw (mirrors C++ close(shift, 0.0) check).
-        if ( atmVol_.currentLink() instanceof SwaptionVolatilityMatrix ) {
-            final SwaptionVolatilityMatrix m = (SwaptionVolatilityMatrix) atmVol_.currentLink();
+        if (atmVol_.currentLink() instanceof SwaptionVolatilityMatrix m) {
             for ( int j = 0; j < nOptionTenors_; ++j ) {
                 for ( int k = 0; k < nSwapTenors_; ++k ) {
                     final double s = m.shift(optionTimes_[j], swapLengths_[k], true);

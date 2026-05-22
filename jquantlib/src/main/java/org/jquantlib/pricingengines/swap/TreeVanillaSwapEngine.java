@@ -121,8 +121,7 @@ public class TreeVanillaSwapEngine extends Swap.EngineImpl {
 
         final Date referenceDate;
         final DayCounter dayCounter;
-        if ( model_ instanceof TermStructureConsistentModel ) {
-            final TermStructureConsistentModel tsm = (TermStructureConsistentModel) model_;
+        if (model_ instanceof TermStructureConsistentModel tsm) {
             referenceDate = tsm.termStructure().currentLink().referenceDate();
             dayCounter = tsm.termStructure().currentLink().dayCounter();
         } else {

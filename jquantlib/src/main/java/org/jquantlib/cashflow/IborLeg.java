@@ -346,10 +346,9 @@ public class IborLeg {
         }
         for ( int i = 0; i < cashflows.size(); ++i ) {
             final CashFlow cf = cashflows.get(i);
-            if ( !(cf instanceof Coupon) ) {
+            if (!(cf instanceof Coupon coupon)) {
                 continue;
             }
-            final Coupon coupon = (Coupon) cf;
             // Recompute the payment date the same way FloatingLeg does.
             // Schedule indices for coupon i correspond to schedule.date(i)
             // and schedule.date(i+1).
@@ -382,10 +381,9 @@ public class IborLeg {
         }
         for ( int i = 0; i < cashflows.size(); ++i ) {
             final CashFlow cf = cashflows.get(i);
-            if ( !(cf instanceof IborCoupon) ) {
+            if (!(cf instanceof IborCoupon original)) {
                 continue;
             }
-            final IborCoupon original = (IborCoupon) cf;
             final IborCoupon replacement = new FixingConventionIborCoupon(original, fixingConvention_);
             cashflows.set(i, replacement);
         }

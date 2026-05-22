@@ -195,11 +195,9 @@ public class MCAmericanBasketEngine extends BasketOption.Engine {
         // Mirrors C++ {@code dynamic_pointer_cast<GeneralizedBlackScholesProcess>}
         // on processArray->process(0).
         final StochasticProcess1D first = processes_.process(0);
-        if ( !(first instanceof GeneralizedBlackScholesProcess) ) {
+        if (!(first instanceof GeneralizedBlackScholesProcess process)) {
             throw new RuntimeException("generalized Black-Scholes process required");
         }
-        final GeneralizedBlackScholesProcess process = (GeneralizedBlackScholesProcess) first;
-
         final MultiAssetOption.ArgumentsImpl a = arguments_;
         final AmericanBasketPathPricer earlyPricer = new AmericanBasketPathPricer(processes_.size(), a.payoff,
                 polynomialOrder_, polynomialType_);

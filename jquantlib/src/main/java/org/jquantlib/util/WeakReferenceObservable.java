@@ -92,8 +92,7 @@ public class WeakReferenceObservable extends DefaultObservable {
      */
     public void compact() {
         for ( final Observer weakObserver : getObservers() ) {
-            if ( weakObserver instanceof WeakReferenceObserver ) {
-                final WeakReferenceObserver wro = (WeakReferenceObserver) weakObserver;
+            if (weakObserver instanceof WeakReferenceObserver wro) {
                 if ( wro.get() == null ) {
                     deleteWeakReference(wro);
                 }

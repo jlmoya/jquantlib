@@ -136,8 +136,7 @@ public class ChoiBasketEngine extends BasketOption.Engine {
         final AverageBasketPayoff avgPayoff;
         if ( arguments_.payoff instanceof AverageBasketPayoff ) {
             avgPayoff = (AverageBasketPayoff) arguments_.payoff;
-        } else if ( arguments_.payoff instanceof SpreadBasketPayoff ) {
-            final SpreadBasketPayoff sp = (SpreadBasketPayoff) arguments_.payoff;
+        } else if (arguments_.payoff instanceof SpreadBasketPayoff sp) {
             avgPayoff = new AverageBasketPayoff(sp.basePayoff(), new double[] { 1.0, -1.0 });
         } else {
             avgPayoff = null;

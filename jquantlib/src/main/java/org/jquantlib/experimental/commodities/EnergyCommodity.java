@@ -130,8 +130,7 @@ public abstract class EnergyCommodity extends Commodity {
                     final double v = calculateUnitCost(commodityType, (CommodityUnitCost) value, evaluationDate)
                             * totalQuantityValue;
                     secondaryCostAmounts_.put(entry.getKey(), new Money(baseCurrency, v));
-                } else if ( value instanceof Money ) {
-                    final Money amount = (Money) value;
+                } else if (value instanceof Money amount) {
                     final double fxFactor = calculateFxConversionFactor(amount.currency(), baseCurrency,
                             evaluationDate);
                     secondaryCostAmounts_.put(entry.getKey(), new Money(baseCurrency, amount.value() * fxFactor));

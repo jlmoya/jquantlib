@@ -562,8 +562,7 @@ public class FloatFloatSwap extends Swap {
 
         for ( int i = 0; i < n1; i++ ) {
             final CashFlow cf = leg1.get(i);
-            if ( cf instanceof FloatingRateCoupon ) {
-                final FloatingRateCoupon c = (FloatingRateCoupon) cf;
+            if (cf instanceof FloatingRateCoupon c) {
                 a.leg1AccrualTimes.set(i, c.accrualPeriod());
                 a.leg1PayDates.set(i, c.date());
                 a.leg1ResetDates.set(i, c.accrualStartDate());
@@ -575,8 +574,7 @@ public class FloatFloatSwap extends Swap {
                 } catch ( final Exception e ) {
                     a.leg1Coupons.set(i, NULL_REAL);
                 }
-                if ( cf instanceof CappedFlooredCoupon ) {
-                    final CappedFlooredCoupon cfc = (CappedFlooredCoupon) cf;
+                if (cf instanceof CappedFlooredCoupon cfc) {
                     a.leg1CappedRates.set(i, cfc.cap());
                     a.leg1FlooredRates.set(i, cfc.floor());
                 }
@@ -612,8 +610,7 @@ public class FloatFloatSwap extends Swap {
 
         for ( int i = 0; i < n2; i++ ) {
             final CashFlow cf = leg2.get(i);
-            if ( cf instanceof FloatingRateCoupon ) {
-                final FloatingRateCoupon c = (FloatingRateCoupon) cf;
+            if (cf instanceof FloatingRateCoupon c) {
                 a.leg2AccrualTimes.set(i, c.accrualPeriod());
                 a.leg2PayDates.set(i, c.date());
                 a.leg2ResetDates.set(i, c.accrualStartDate());
@@ -625,8 +622,7 @@ public class FloatFloatSwap extends Swap {
                 } catch ( final Exception e ) {
                     a.leg2Coupons.set(i, NULL_REAL);
                 }
-                if ( cf instanceof CappedFlooredCoupon ) {
-                    final CappedFlooredCoupon cfc = (CappedFlooredCoupon) cf;
+                if (cf instanceof CappedFlooredCoupon cfc) {
                     a.leg2CappedRates.set(i, cfc.cap());
                     a.leg2FlooredRates.set(i, cfc.floor());
                 }

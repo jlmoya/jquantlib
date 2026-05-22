@@ -123,11 +123,9 @@ public class AmericanBasketPathPricer implements EarlyExercisePathPricer< MultiP
                 || polynomialType == LsmBasisSystem.PolynomialType.Hyperbolic
                 || polynomialType == LsmBasisSystem.PolynomialType.Chebyshev2nd, "insufficient polynomial type");
 
-        if ( !(payoff instanceof BasketPayoff) ) {
+        if (!(payoff instanceof BasketPayoff basketPayoff)) {
             throw new RuntimeException("payoff not a basket payoff");
         }
-        final BasketPayoff basketPayoff = (BasketPayoff) payoff;
-
         this.assetNumber_ = assetNumber;
         this.payoff_ = payoff;
 

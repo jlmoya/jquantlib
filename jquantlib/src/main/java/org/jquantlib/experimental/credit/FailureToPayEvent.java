@@ -67,10 +67,9 @@ public class FailureToPayEvent extends DefaultEvent {
 
     @Override
     public boolean matchesEventType(final DefaultType contractEvType) {
-        if ( !(contractEvType instanceof FailureToPay) ) {
+        if (!(contractEvType instanceof FailureToPay eveType)) {
             return false;
         }
-        final FailureToPay eveType = (FailureToPay) contractEvType;
         if ( defaultedAmount < eveType.amountRequired() ) {
             return false;
         }

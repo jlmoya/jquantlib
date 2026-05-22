@@ -309,9 +309,9 @@ public class Quantity {
     public boolean equals(final Object obj) {
         if ( this == obj )
             return true;
-        if ( !(obj instanceof Quantity) )
+        if (!(obj instanceof Quantity quantity))
             return false;
-        return eq(this, (Quantity) obj);
+        return eq(this, quantity);
     }
 
     // ---- private helpers ----

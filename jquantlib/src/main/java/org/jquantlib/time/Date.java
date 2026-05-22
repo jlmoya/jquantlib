@@ -1132,7 +1132,7 @@ public class Date implements Observable, Comparable< Date >, Serializable, Clone
         if ( anObject == null )
             return false;
 
-        return anObject instanceof Date && ((Date) anObject).fEquals(this);
+        return anObject instanceof Date date && date.fEquals(this);
     }
 
     protected boolean fEquals(final Date other) {

@@ -324,10 +324,9 @@ public class FdG2SwaptionEngine extends Swaption.EngineImpl {
                 final Leg leg = (j == 0) ? swap_.fixedLeg() : swap_.floatingLeg();
                 double legNpv = 0.0;
                 for ( final CashFlow cf : leg ) {
-                    if ( !(cf instanceof Coupon) ) {
+                    if (!(cf instanceof Coupon coupon)) {
                         continue;
                     }
-                    final Coupon coupon = (Coupon) cf;
                     if ( coupon.accrualStartDate().ge(iterExerciseDate) ) {
                         legNpv += cf.amount() * disTs_.discount(cf.date());
                     }

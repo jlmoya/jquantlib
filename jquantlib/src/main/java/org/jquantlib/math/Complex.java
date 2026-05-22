@@ -184,9 +184,8 @@ public final class Complex {
 
     @Override
     public boolean equals(final Object o) {
-        if ( !(o instanceof Complex) )
+        if (!(o instanceof Complex c))
             return false;
-        final Complex c = (Complex) o;
         return Double.doubleToLongBits(re) == Double.doubleToLongBits(c.re)
                 && Double.doubleToLongBits(im) == Double.doubleToLongBits(c.im);
     }

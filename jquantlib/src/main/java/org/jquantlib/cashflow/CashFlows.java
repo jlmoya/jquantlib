@@ -548,8 +548,7 @@ public class CashFlows {
         final Date paymentDate = leg.get(idx).date();
         for ( int i = idx; i < leg.size() && leg.get(i).date().equals(paymentDate); ++i ) {
             final CashFlow cf = leg.get(i);
-            if ( cf instanceof Coupon ) {
-                final Coupon cp = (Coupon) cf;
+            if (cf instanceof Coupon cp) {
                 if ( settlementDate.le(cp.accrualStartDate()) || settlementDate.gt(cp.date()) ) {
                     return 0.0;
                 }
@@ -596,8 +595,7 @@ public class CashFlows {
         final Date paymentDate = leg.get(idx).date();
         for ( int i = idx; i < leg.size() && leg.get(i).date().equals(paymentDate); ++i ) {
             final CashFlow cf = leg.get(i);
-            if ( cf instanceof Coupon ) {
-                final Coupon cp = (Coupon) cf;
+            if (cf instanceof Coupon cp) {
                 if ( settlementDate.le(cp.accrualStartDate()) || settlementDate.gt(cp.date()) ) {
                     return 0L;
                 }
@@ -1266,8 +1264,7 @@ public class CashFlows {
         for ( int i = iteratorIndex; i < leg.size(); i++ ) {
             final CashFlow cf = iteratorLeg.get(i);
             if ( cf.date().eq(paymentDate) ) {
-                if ( cf instanceof Coupon ) {
-                    final Coupon cp = (Coupon) cf;
+                if (cf instanceof Coupon cp) {
                     if ( firstCouponFound ) {
                         QL.require(
                                 nominal == cp.nominal() && accrualPeriod == cp.accrualPeriod() && dc == cp.dayCounter(),

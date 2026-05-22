@@ -129,8 +129,7 @@ public class RiskyBondEngine extends Bond.EngineImpl {
                     settlementValue += weightedCouponAmount * discToD2;
                 }
 
-                if ( cf instanceof Coupon ) {
-                    final Coupon coupon = (Coupon) cf;
+                if (cf instanceof Coupon coupon) {
                     // C++: Date defaultDate = d1 + (d2 - d1) / 2.
                     final long span = d2.sub(d1);
                     final Date defaultDate = d1.add((int) (span / 2));

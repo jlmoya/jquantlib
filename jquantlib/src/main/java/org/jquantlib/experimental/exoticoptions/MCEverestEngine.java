@@ -108,10 +108,9 @@ public class MCEverestEngine extends EverestOption.EngineImpl {
     protected double endDiscount() {
         final EverestOption.ArgumentsImpl a = arguments_;
         final StochasticProcess1D first = processes_.process(0);
-        if ( !(first instanceof GeneralizedBlackScholesProcess) ) {
+        if (!(first instanceof GeneralizedBlackScholesProcess process)) {
             throw new RuntimeException("Black-Scholes process required");
         }
-        final GeneralizedBlackScholesProcess process = (GeneralizedBlackScholesProcess) first;
         return process.riskFreeRate().currentLink().discount(a.exercise.lastDate());
     }
 

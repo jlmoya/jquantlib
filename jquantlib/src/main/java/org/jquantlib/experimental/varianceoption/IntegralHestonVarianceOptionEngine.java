@@ -114,8 +114,7 @@ public class IntegralHestonVarianceOptionEngine extends VarianceOption.EngineImp
                 .rate();
 
         final Payoff payoff = arguments_.payoff;
-        if ( payoff instanceof PlainVanillaPayoff ) {
-            final PlainVanillaPayoff p = (PlainVanillaPayoff) payoff;
+        if (payoff instanceof PlainVanillaPayoff p) {
             if ( p.optionType() == Option.Type.Call ) {
                 results_.value = ivopOneDim(epsilon, chi, theta, v0, p.strike(), tau, r) * arguments_.notional;
                 return;

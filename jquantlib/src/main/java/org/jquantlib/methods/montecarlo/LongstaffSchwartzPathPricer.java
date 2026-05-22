@@ -297,13 +297,11 @@ public class LongstaffSchwartzPathPricer< PathType, StateType > extends PathPric
      */
     @SuppressWarnings( "unchecked" )
     protected PathType deepCopyPath(final PathType path) {
-        if ( path instanceof Path ) {
-            final Path src = (Path) path;
+        if (path instanceof Path src) {
             final double[] vals = src.values().clone();
             return (PathType) new Path(src.timeGrid(), vals);
         }
-        if ( path instanceof MultiPath ) {
-            final MultiPath src = (MultiPath) path;
+        if (path instanceof MultiPath src) {
             // Snapshot every component path's values.
             final int n = src.assetNumber();
             final List< Path > copies = new ArrayList<>(n);

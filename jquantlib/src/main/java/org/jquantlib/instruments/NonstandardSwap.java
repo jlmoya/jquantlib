@@ -379,8 +379,7 @@ public class NonstandardSwap extends Swap {
 
         for ( int i = 0; i < nFixed; i++ ) {
             final CashFlow cf = fixedCoupons.get(i);
-            if ( cf instanceof FixedRateCoupon ) {
-                final FixedRateCoupon coupon = (FixedRateCoupon) cf;
+            if (cf instanceof FixedRateCoupon coupon) {
                 arguments.fixedPayDates.set(i, coupon.date());
                 arguments.fixedResetDates.set(i, coupon.accrualStartDate());
                 arguments.fixedCoupons.set(i, coupon.amount());
@@ -417,8 +416,7 @@ public class NonstandardSwap extends Swap {
 
         for ( int i = 0; i < nFloat; i++ ) {
             final CashFlow cf = floatingCoupons.get(i);
-            if ( cf instanceof IborCoupon ) {
-                final IborCoupon coupon = (IborCoupon) cf;
+            if (cf instanceof IborCoupon coupon) {
                 arguments.floatingResetDates.set(i, coupon.accrualStartDate());
                 arguments.floatingPayDates.set(i, coupon.date());
                 arguments.floatingFixingDates.set(i, coupon.fixingDate());
