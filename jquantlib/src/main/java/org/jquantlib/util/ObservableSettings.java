@@ -71,7 +71,7 @@ public final class ObservableSettings {
      * {@link #unregisterDeferredObserver(Observer)} and the snapshot
      * block inside {@link #enableUpdates()}.
      */
-    private final Set< Observer > deferredObservers = new LinkedHashSet< Observer >();
+    private final Set< Observer > deferredObservers = new LinkedHashSet<>();
     private volatile boolean updatesEnabled = true;
     private volatile boolean updatesDeferred = false;
     private volatile boolean runningDeferredUpdates = false;

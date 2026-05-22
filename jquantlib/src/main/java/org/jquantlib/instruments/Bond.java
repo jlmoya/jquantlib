@@ -117,8 +117,8 @@ public class Bond extends Instrument {
         this.calendar_ = calendar;
         this.cashflows_ = coupons;
         this.issueDate_ = issueDate.clone();
-        this.notionals_ = new ArrayList< Double >();
-        this.notionalSchedule_ = new ArrayList< Date >();
+        this.notionals_ = new ArrayList<>();
+        this.notionalSchedule_ = new ArrayList<>();
         this.redemptions_ = new Leg();
 
         if ( !coupons.isEmpty() ) {
@@ -161,8 +161,8 @@ public class Bond extends Instrument {
         this.maturityDate_ = maturityDate.clone();
         this.issueDate_ = issueDate.clone();
 
-        this.notionalSchedule_ = new ArrayList< Date >();
-        this.notionals_ = new ArrayList< Double >();
+        this.notionalSchedule_ = new ArrayList<>();
+        this.notionals_ = new ArrayList<>();
         this.redemptions_ = new Leg();
 
         if ( !cashflows.isEmpty() ) {
@@ -809,13 +809,13 @@ public class Bond extends Instrument {
       @deprecated
      */
     protected void addRedemptionsToCashflows(final double redemption) {
-        final List< Double > redemptions = new ArrayList< Double >();
+        final List< Double > redemptions = new ArrayList<>();
         redemptions.add(redemption);
         addRedemptionsToCashflows(redemptions);
     }
 
     protected void addRedemptionsToCashflows(final double[] redemptionsArr) {
-        final List< Double > redemptions = new ArrayList< Double >();
+        final List< Double > redemptions = new ArrayList<>();
         for ( final double d : redemptionsArr )
             redemptions.add(new Double(d));
 
@@ -823,7 +823,7 @@ public class Bond extends Instrument {
     }
 
     protected void addRedemptionsToCashflows() {
-        addRedemptionsToCashflows(new ArrayList< Double >());
+        addRedemptionsToCashflows(new ArrayList<>());
     }
 
     protected void calculateNotionalsFromCashflows() {

@@ -77,7 +77,7 @@ public class DiscreteAveragingAsianOption extends OneAssetOption {
         this.averageType = averageType;
         this.runningAccumulator = runningAccumulator;
         this.pastFixings = pastFixings;
-        this.fixingDates = new ArrayList< Date >(fixingDates);
+        this.fixingDates = new ArrayList<>(fixingDates);
         Collections.sort(this.fixingDates);
     }
 
@@ -118,7 +118,7 @@ public class DiscreteAveragingAsianOption extends OneAssetOption {
             averageType = null;
             runningAccumulator = Constants.NULL_REAL; //FIXME is there central values?
             pastFixings = Constants.NULL_INTEGER; //FIXME is there central values?
-            fixingDates = new ArrayList< Date >();
+            fixingDates = new ArrayList<>();
         }
 
         //

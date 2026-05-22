@@ -191,13 +191,13 @@ public class ConvertibleBondOption extends OneAssetOption {
             redemption = Constants.NULL_REAL;
 
             dividends = new DividendSchedule();
-            dividendDates = new ArrayList< Date >();
-            callabilityDates = new ArrayList< Date >();
-            callabilityTypes = new ArrayList< Callability.Type >();
-            callabilityPrices = new ArrayList< Double >();
-            callabilityTriggers = new ArrayList< Double >();
-            couponDates = new ArrayList< Date >();
-            couponAmounts = new ArrayList< Double >();
+            dividendDates = new ArrayList<>();
+            callabilityDates = new ArrayList<>();
+            callabilityTypes = new ArrayList<>();
+            callabilityPrices = new ArrayList<>();
+            callabilityTriggers = new ArrayList<>();
+            couponDates = new ArrayList<>();
+            couponAmounts = new ArrayList<>();
         }
 
         @Override

@@ -300,9 +300,9 @@ public class VanillaSwap extends Swap {
             // new ArrayList<>(Collections.nCopies(size, null)) which yields
             // size() == n with null entries ready to be overwritten via .set().
             final int nFixed = fixedCoupons.size();
-            a.fixedResetDates = new ArrayList< Date >(Collections.nCopies(nFixed, null));
-            a.fixedPayDates = new ArrayList< Date >(Collections.nCopies(nFixed, null));
-            a.fixedCoupons = new ArrayList</*@Real*/ Double >(Collections.nCopies(nFixed, null));
+            a.fixedResetDates = new ArrayList<>(Collections.nCopies(nFixed, null));
+            a.fixedPayDates = new ArrayList<>(Collections.nCopies(nFixed, null));
+            a.fixedCoupons = new ArrayList<>(Collections.nCopies(nFixed, null));
 
             for ( int i = 0; i < nFixed; i++ ) {
                 final FixedRateCoupon coupon = (FixedRateCoupon) fixedCoupons.get(i);
@@ -314,13 +314,13 @@ public class VanillaSwap extends Swap {
             final Leg floatingCoupons = floatingLeg();
 
             final int nFloat = floatingCoupons.size();
-            a.floatingResetDates = new ArrayList< Date >(Collections.nCopies(nFloat, null));
-            a.floatingPayDates = new ArrayList< Date >(Collections.nCopies(nFloat, null));
-            a.floatingFixingDates = new ArrayList< Date >(Collections.nCopies(nFloat, null));
+            a.floatingResetDates = new ArrayList<>(Collections.nCopies(nFloat, null));
+            a.floatingPayDates = new ArrayList<>(Collections.nCopies(nFloat, null));
+            a.floatingFixingDates = new ArrayList<>(Collections.nCopies(nFloat, null));
 
-            a.floatingAccrualTimes = new ArrayList</*@Time*/ Double >(Collections.nCopies(nFloat, null));
-            a.floatingSpreads = new ArrayList</*@Spread*/ Double >(Collections.nCopies(nFloat, null));
-            a.floatingCoupons = new ArrayList</*@Real*/ Double >(Collections.nCopies(nFloat, null));
+            a.floatingAccrualTimes = new ArrayList<>(Collections.nCopies(nFloat, null));
+            a.floatingSpreads = new ArrayList<>(Collections.nCopies(nFloat, null));
+            a.floatingCoupons = new ArrayList<>(Collections.nCopies(nFloat, null));
             for ( int i = 0; i < nFloat; ++i ) {
                 final IborCoupon coupon = (IborCoupon) floatingCoupons.get(i);
 

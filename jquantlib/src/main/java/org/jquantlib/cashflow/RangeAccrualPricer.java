@@ -100,7 +100,7 @@ public abstract class RangeAccrualPricer extends FloatingRateCouponPricer {
         final List< Date > observationDates = coupon_.observationSchedule().dates();
         QL.require(observationDates.size() == observationsNo_ + 2, "incompatible size of initialValues vector");
 
-        initialValues_ = new ArrayList< Double >(observationDates.size());
+        initialValues_ = new ArrayList<>(observationDates.size());
         final Calendar calendar = index.fixingCalendar();
         for ( int i = 0; i < observationDates.size(); ++i ) {
             final Date fixingDate = calendar.advance(observationDates.get(i), -coupon_.fixingDays(), TimeUnit.Days);

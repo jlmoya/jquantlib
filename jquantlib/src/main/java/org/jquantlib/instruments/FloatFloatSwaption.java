@@ -99,7 +99,7 @@ public class FloatFloatSwaption extends Option {
      * {@link #fetchResults(PricingEngine.Results)} so callers can retrieve named extra results via
      * {@link #result(String)} (mirrors C++ {@code Instrument::result<T>(name)}).
      */
-    private Map< String, Object > additionalResults_ = new HashMap< String, Object >();
+    private Map< String, Object > additionalResults_ = new HashMap<>();
 
     // ── constructors ──────────────────────────────────────────────────────────
 
@@ -222,9 +222,9 @@ public class FloatFloatSwaption extends Option {
         super.fetchResults(r);
         if ( r instanceof Instrument.ResultsImpl ) {
             // copy by reference — engine.reset() will replace map next round
-            additionalResults_ = new HashMap< String, Object >(((Instrument.ResultsImpl) r).additionalResults());
+            additionalResults_ = new HashMap<>(((Instrument.ResultsImpl) r).additionalResults());
         } else {
-            additionalResults_ = new HashMap< String, Object >();
+            additionalResults_ = new HashMap<>();
         }
     }
 

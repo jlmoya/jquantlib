@@ -58,7 +58,7 @@ public class CompositeInstrument extends Instrument {
         }
     }
 
-    private final List<Component> components_ = new LinkedList<Component>();
+    private final List<Component> components_ = new LinkedList<>();
 
     /** Adds an instrument to the composite with the given multiplier. */
     public void add(final Instrument instrument, final double multiplier) {

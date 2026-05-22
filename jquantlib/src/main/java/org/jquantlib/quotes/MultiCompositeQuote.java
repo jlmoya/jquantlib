@@ -54,7 +54,7 @@ public class MultiCompositeQuote extends Quote implements Observer {
 
     public MultiCompositeQuote(final List<Handle<? extends Quote>> elements,
                                final ToDoubleFunction<double[]> f) {
-        this.elements_ = new ArrayList<Handle<? extends Quote>>(elements);
+        this.elements_ = new ArrayList<>(elements);
         this.f_ = f;
         for (final Handle<? extends Quote> elem : elements_) {
             elem.addObserver(this);

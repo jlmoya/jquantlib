@@ -337,14 +337,14 @@ public class InflationCapFloor extends Instrument {
     /** Concrete YoY inflation cap. */
     public static class Cap extends InflationCapFloor {
         public Cap(final Leg yoyLeg, final List< Double > exerciseRates) {
-            super(Type.Cap, yoyLeg, exerciseRates, new ArrayList< Double >());
+            super(Type.Cap, yoyLeg, exerciseRates, new ArrayList<>());
         }
     }
 
     /** Concrete YoY inflation floor. */
     public static class Floor extends InflationCapFloor {
         public Floor(final Leg yoyLeg, final List< Double > exerciseRates) {
-            super(Type.Floor, yoyLeg, new ArrayList< Double >(), exerciseRates);
+            super(Type.Floor, yoyLeg, new ArrayList<>(), exerciseRates);
         }
     }
 

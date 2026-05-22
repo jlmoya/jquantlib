@@ -225,7 +225,7 @@ public class Settings {
     private static class ThreadAttributes extends ThreadLocal< Map< String, Object > > {
         @Override
         public Map< String, Object > initialValue() {
-            final Map< String, Object > map = new TreeMap< String, Object >();
+            final Map< String, Object > map = new TreeMap<>();
             map.put(ENFORCES_TODAYS_HISTORIC_FIXINGS, false);
             map.put(NEGATIVE_RATES, false);
             map.put(EXTRA_SAFETY_CHECKS, true);

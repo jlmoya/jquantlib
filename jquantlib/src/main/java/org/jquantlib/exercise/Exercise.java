@@ -76,7 +76,7 @@ public abstract class Exercise {
      */
     protected Exercise(final Exercise.Type type) {
         this.type = type;
-        this.dates = new ArrayList< Date >(5); // some reasonable prime number
+        this.dates = new ArrayList<>(5); // some reasonable prime number
     }
 
     //

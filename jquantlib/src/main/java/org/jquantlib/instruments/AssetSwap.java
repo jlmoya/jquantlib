@@ -427,9 +427,9 @@ public class AssetSwap extends Swap {
 
         final Leg fixedCoupons = bondLeg();
         final int nFixed = fixedCoupons.size();
-        a.fixedResetDates = new ArrayList< Date >(Collections.nCopies(nFixed, null));
-        a.fixedPayDates = new ArrayList< Date >(Collections.nCopies(nFixed, null));
-        a.fixedCoupons = new ArrayList< Double >(Collections.nCopies(nFixed, null));
+        a.fixedResetDates = new ArrayList<>(Collections.nCopies(nFixed, null));
+        a.fixedPayDates = new ArrayList<>(Collections.nCopies(nFixed, null));
+        a.fixedCoupons = new ArrayList<>(Collections.nCopies(nFixed, null));
 
         for ( int k = 0; k < nFixed; ++k ) {
             // The bondLeg may contain SimpleCashFlow (accrued / redemption)
@@ -449,11 +449,11 @@ public class AssetSwap extends Swap {
 
         final Leg floatingCoupons = floatingLeg();
         final int nFloat = floatingCoupons.size();
-        a.floatingResetDates = new ArrayList< Date >(Collections.nCopies(nFloat, null));
-        a.floatingPayDates = new ArrayList< Date >(Collections.nCopies(nFloat, null));
-        a.floatingFixingDates = new ArrayList< Date >(Collections.nCopies(nFloat, null));
-        a.floatingAccrualTimes = new ArrayList< Double >(Collections.nCopies(nFloat, null));
-        a.floatingSpreads = new ArrayList< Double >(Collections.nCopies(nFloat, null));
+        a.floatingResetDates = new ArrayList<>(Collections.nCopies(nFloat, null));
+        a.floatingPayDates = new ArrayList<>(Collections.nCopies(nFloat, null));
+        a.floatingFixingDates = new ArrayList<>(Collections.nCopies(nFloat, null));
+        a.floatingAccrualTimes = new ArrayList<>(Collections.nCopies(nFloat, null));
+        a.floatingSpreads = new ArrayList<>(Collections.nCopies(nFloat, null));
 
         for ( int k = 0; k < nFloat; ++k ) {
             final CashFlow cf = floatingCoupons.get(k);

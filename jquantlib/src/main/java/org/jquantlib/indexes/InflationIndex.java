@@ -133,8 +133,8 @@ public abstract class InflationIndex extends Index implements Observer {
 
         int n = (int) (lim.second().inc().sub(lim.first()));
 
-        List< Date > dates = new ArrayList< Date >();
-        List< Double > rates = new ArrayList< Double >();
+        List< Date > dates = new ArrayList<>();
+        List< Double > rates = new ArrayList<>();
 
         for ( int i = 0; i < n; i++ ) {
             dates.add(i, lim.first().add(i));

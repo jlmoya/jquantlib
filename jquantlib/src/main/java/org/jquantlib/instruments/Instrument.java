@@ -256,7 +256,7 @@ public abstract class Instrument extends LazyObject {
         //
 
         //TODO: Code review
-        private final Map< String, Object > additionalResults = new HashMap< String, Object >();
+        private final Map< String, Object > additionalResults = new HashMap<>();
         /**
          * Represents the calculated value of an {@link Instrument}
          *

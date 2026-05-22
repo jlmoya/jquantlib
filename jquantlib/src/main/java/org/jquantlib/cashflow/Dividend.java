@@ -55,7 +55,7 @@ public abstract class Dividend extends CashFlow {
             final List< Double > dividends) {
         QL.require(dividendDates.size() == dividends.size(),
                 "size mismatch between dividend dates and amounts");  // TODO: message
-        final List< Dividend > items = new ArrayList< Dividend >(dividendDates.size());
+        final List< Dividend > items = new ArrayList<>(dividendDates.size());
         for ( int i = 0; i < dividendDates.size(); i++ ) {
             items.add(new FixedDividend(dividends.get(i), dividendDates.get(i)));
         }

@@ -36,20 +36,20 @@ public class OvernightLeg {
 
     private final Schedule schedule_;
     private final OvernightIndex overnightIndex_;
-    private List< Double > notionals_ = new ArrayList< Double >();
+    private List< Double > notionals_ = new ArrayList<>();
     private DayCounter paymentDayCounter_ = new DayCounter();
     private Calendar paymentCalendar_;
     private BusinessDayConvention paymentAdjustment_ = BusinessDayConvention.Following;
     private int paymentLag_ = 0;
-    private List< Double > gearings_ = new ArrayList< Double >();
-    private List< Double > spreads_ = new ArrayList< Double >();
+    private List< Double > gearings_ = new ArrayList<>();
+    private List< Double > spreads_ = new ArrayList<>();
     private boolean telescopicValueDates_ = false;
     private RateAveraging.Type averagingMethod_ = RateAveraging.Type.Compound;
     private int lookbackDays_ = Constants.NULL_NATURAL;
     private int lockoutDays_ = 0;
     private boolean applyObservationShift_ = false;
-    private List< Double > caps_ = new ArrayList< Double >();
-    private List< Double > floors_ = new ArrayList< Double >();
+    private List< Double > caps_ = new ArrayList<>();
+    private List< Double > floors_ = new ArrayList<>();
     private boolean nakedOption_ = false;
     private boolean dailyCapFloor_ = false;
     private OvernightIndexedCouponPricer couponPricer_ = null;
@@ -76,13 +76,13 @@ public class OvernightLeg {
     }
 
     public OvernightLeg withNotionals(final double notional) {
-        notionals_ = new ArrayList< Double >();
+        notionals_ = new ArrayList<>();
         notionals_.add(notional);
         return this;
     }
 
     public OvernightLeg withNotionals(final List< Double > notionals) {
-        notionals_ = new ArrayList< Double >(notionals);
+        notionals_ = new ArrayList<>(notionals);
         return this;
     }
 
@@ -107,24 +107,24 @@ public class OvernightLeg {
     }
 
     public OvernightLeg withGearings(final double gearing) {
-        gearings_ = new ArrayList< Double >();
+        gearings_ = new ArrayList<>();
         gearings_.add(gearing);
         return this;
     }
 
     public OvernightLeg withGearings(final List< Double > gearings) {
-        gearings_ = new ArrayList< Double >(gearings);
+        gearings_ = new ArrayList<>(gearings);
         return this;
     }
 
     public OvernightLeg withSpreads(final double spread) {
-        spreads_ = new ArrayList< Double >();
+        spreads_ = new ArrayList<>();
         spreads_.add(spread);
         return this;
     }
 
     public OvernightLeg withSpreads(final List< Double > spreads) {
-        spreads_ = new ArrayList< Double >(spreads);
+        spreads_ = new ArrayList<>(spreads);
         return this;
     }
 
@@ -154,24 +154,24 @@ public class OvernightLeg {
     }
 
     public OvernightLeg withCaps(final double cap) {
-        caps_ = new ArrayList< Double >();
+        caps_ = new ArrayList<>();
         caps_.add(cap);
         return this;
     }
 
     public OvernightLeg withCaps(final List< Double > caps) {
-        caps_ = new ArrayList< Double >(caps);
+        caps_ = new ArrayList<>(caps);
         return this;
     }
 
     public OvernightLeg withFloors(final double floor) {
-        floors_ = new ArrayList< Double >();
+        floors_ = new ArrayList<>();
         floors_.add(floor);
         return this;
     }
 
     public OvernightLeg withFloors(final List< Double > floors) {
-        floors_ = new ArrayList< Double >(floors);
+        floors_ = new ArrayList<>(floors);
         return this;
     }
 

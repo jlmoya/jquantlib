@@ -88,7 +88,7 @@ public class Swap extends Instrument {
 
     public Swap(final Leg firstLeg, final Leg secondLeg) {
 
-        this.legs = new ArrayList< Leg >();
+        this.legs = new ArrayList<>();
         this.payer = new double[2];
         this.legNPV = new double[2];
         this.legBPS = new double[2];
@@ -133,7 +133,7 @@ public class Swap extends Instrument {
     //
 
     protected Swap(final int legs) {
-        this.legs = new ArrayList< Leg >();
+        this.legs = new ArrayList<>();
         this.payer = new double[legs];
         this.legNPV = new double[legs];
         this.legBPS = new double[legs];

@@ -58,14 +58,14 @@ public class RangeAccrualLeg {
 
     private final Schedule schedule_;
     private final IborIndex index_;
-    private List< Double > notionals_ = new ArrayList< Double >();
+    private List< Double > notionals_ = new ArrayList<>();
     private DayCounter paymentDayCounter_;
     private BusinessDayConvention paymentAdjustment_ = BusinessDayConvention.Following;
-    private List< Integer > fixingDays_ = new ArrayList< Integer >();
-    private List< Double > gearings_ = new ArrayList< Double >();
-    private List< Double > spreads_ = new ArrayList< Double >();
-    private List< Double > lowerTriggers_ = new ArrayList< Double >();
-    private List< Double > upperTriggers_ = new ArrayList< Double >();
+    private List< Integer > fixingDays_ = new ArrayList<>();
+    private List< Double > gearings_ = new ArrayList<>();
+    private List< Double > spreads_ = new ArrayList<>();
+    private List< Double > lowerTriggers_ = new ArrayList<>();
+    private List< Double > upperTriggers_ = new ArrayList<>();
     private Period observationTenor_;
     private BusinessDayConvention observationConvention_ = BusinessDayConvention.ModifiedFollowing;
 
@@ -107,7 +107,7 @@ public class RangeAccrualLeg {
     }
 
     public RangeAccrualLeg withNotionals(final double notional) {
-        notionals_ = new ArrayList< Double >(List.of(notional));
+        notionals_ = new ArrayList<>(List.of(notional));
         return this;
     }
 
@@ -127,7 +127,7 @@ public class RangeAccrualLeg {
     }
 
     public RangeAccrualLeg withFixingDays(final int fixingDays) {
-        fixingDays_ = new ArrayList< Integer >(List.of(fixingDays));
+        fixingDays_ = new ArrayList<>(List.of(fixingDays));
         return this;
     }
 
@@ -137,7 +137,7 @@ public class RangeAccrualLeg {
     }
 
     public RangeAccrualLeg withGearings(final double gearing) {
-        gearings_ = new ArrayList< Double >(List.of(gearing));
+        gearings_ = new ArrayList<>(List.of(gearing));
         return this;
     }
 
@@ -147,7 +147,7 @@ public class RangeAccrualLeg {
     }
 
     public RangeAccrualLeg withSpreads(final double spread) {
-        spreads_ = new ArrayList< Double >(List.of(spread));
+        spreads_ = new ArrayList<>(List.of(spread));
         return this;
     }
 
@@ -157,7 +157,7 @@ public class RangeAccrualLeg {
     }
 
     public RangeAccrualLeg withLowerTriggers(final double trigger) {
-        lowerTriggers_ = new ArrayList< Double >(List.of(trigger));
+        lowerTriggers_ = new ArrayList<>(List.of(trigger));
         return this;
     }
 
@@ -167,7 +167,7 @@ public class RangeAccrualLeg {
     }
 
     public RangeAccrualLeg withUpperTriggers(final double trigger) {
-        upperTriggers_ = new ArrayList< Double >(List.of(trigger));
+        upperTriggers_ = new ArrayList<>(List.of(trigger));
         return this;
     }
 

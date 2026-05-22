@@ -50,6 +50,6 @@ public class DiscretizedDiscountBond extends DiscretizedAsset {
 
     @Override
     public List</*@Time*/ Double > mandatoryTimes() {
-        return new ArrayList</*@Time*/ Double >();
+        return new ArrayList<>();
     }
 }

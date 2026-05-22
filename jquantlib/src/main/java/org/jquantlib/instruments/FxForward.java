@@ -89,7 +89,7 @@ public class FxForward extends Instrument {
      * Cached snapshot of engine's additional-results map, copied during {@link #fetchResults(PricingEngine.Results)}.
      * Mirrors the C++ pattern where {@code Instrument::result<T>(name)} reads from {@code additionalResults}.
      */
-    private Map< String, Object > additionalResults_ = new HashMap< String, Object >();
+    private Map< String, Object > additionalResults_ = new HashMap<>();
 
     // ── constructors ────────────────────────────────────────────────────
 
@@ -269,7 +269,7 @@ public class FxForward extends Instrument {
         npvTargetCurrency_ = results.npvTargetCurrency;
 
         // Snapshot additional results so callers can read them later.
-        additionalResults_ = new HashMap< String, Object >(results.additionalResults());
+        additionalResults_ = new HashMap<>(results.additionalResults());
     }
 
     // ── additional results ──────────────────────────────────────────────

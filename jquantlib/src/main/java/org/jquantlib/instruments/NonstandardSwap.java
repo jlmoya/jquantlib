@@ -372,9 +372,9 @@ public class NonstandardSwap extends Swap {
         // ── Fixed leg ───────────────────────────────────────────────────────
         final Leg fixedCoupons = fixedLeg();
         final int nFixed = fixedCoupons.size();
-        arguments.fixedResetDates = new ArrayList< Date >(Collections.nCopies(nFixed, null));
-        arguments.fixedPayDates = new ArrayList< Date >(Collections.nCopies(nFixed, null));
-        arguments.fixedCoupons = new ArrayList< Double >(Collections.nCopies(nFixed, null));
+        arguments.fixedResetDates = new ArrayList<>(Collections.nCopies(nFixed, null));
+        arguments.fixedPayDates = new ArrayList<>(Collections.nCopies(nFixed, null));
+        arguments.fixedCoupons = new ArrayList<>(Collections.nCopies(nFixed, null));
         arguments.fixedIsRedemptionFlow = new boolean[nFixed];  // default false
 
         for ( int i = 0; i < nFixed; i++ ) {
@@ -406,13 +406,13 @@ public class NonstandardSwap extends Swap {
         // ── Floating leg ─────────────────────────────────────────────────────
         final Leg floatingCoupons = floatingLeg();
         final int nFloat = floatingCoupons.size();
-        arguments.floatingResetDates = new ArrayList< Date >(Collections.nCopies(nFloat, null));
-        arguments.floatingPayDates = new ArrayList< Date >(Collections.nCopies(nFloat, null));
-        arguments.floatingFixingDates = new ArrayList< Date >(Collections.nCopies(nFloat, null));
-        arguments.floatingAccrualTimes = new ArrayList< Double >(Collections.nCopies(nFloat, null));
-        arguments.floatingSpreads = new ArrayList< Double >(Collections.nCopies(nFloat, null));
-        arguments.floatingGearings = new ArrayList< Double >(Collections.nCopies(nFloat, null));
-        arguments.floatingCoupons = new ArrayList< Double >(Collections.nCopies(nFloat, null));
+        arguments.floatingResetDates = new ArrayList<>(Collections.nCopies(nFloat, null));
+        arguments.floatingPayDates = new ArrayList<>(Collections.nCopies(nFloat, null));
+        arguments.floatingFixingDates = new ArrayList<>(Collections.nCopies(nFloat, null));
+        arguments.floatingAccrualTimes = new ArrayList<>(Collections.nCopies(nFloat, null));
+        arguments.floatingSpreads = new ArrayList<>(Collections.nCopies(nFloat, null));
+        arguments.floatingGearings = new ArrayList<>(Collections.nCopies(nFloat, null));
+        arguments.floatingCoupons = new ArrayList<>(Collections.nCopies(nFloat, null));
         arguments.floatingIsRedemptionFlow = new boolean[nFloat];  // default false
 
         for ( int i = 0; i < nFloat; i++ ) {

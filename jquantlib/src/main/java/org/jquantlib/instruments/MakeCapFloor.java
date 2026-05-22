@@ -120,7 +120,7 @@ public class MakeCapFloor {
             leg = lastOnly(leg);
         }
 
-        final List< Double > strikeVector = new ArrayList< Double >(1);
+        final List< Double > strikeVector = new ArrayList<>(1);
         double s = strike_;
         if ( s == Constants.NULL_REAL ) {
             // temporary patch... should be fixed for every CapFloor::Engine

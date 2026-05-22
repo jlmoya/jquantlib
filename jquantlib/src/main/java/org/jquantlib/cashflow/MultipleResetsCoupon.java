@@ -119,11 +119,11 @@ public class MultipleResetsCoupon extends FloatingRateCoupon {
         // Java FloatingRateCoupon ctor does not yet carry — Phase 5d.5-MR).
         this.exCouponDate_ = (exCouponDate == null) ? new Date() : exCouponDate.clone();
         this.rateSpread_ = rateSpread;
-        this.valueDates_ = new ArrayList< Date >(resetSchedule.dates());
+        this.valueDates_ = new ArrayList<>(resetSchedule.dates());
 
         // fixing dates
         n_ = valueDates_.size() - 1;
-        fixingDates_ = new ArrayList< Date >(n_);
+        fixingDates_ = new ArrayList<>(n_);
         if ( this.fixingDays_ == 0 ) {
             for ( int i = 0; i < n_; i++ ) {
                 fixingDates_.add(valueDates_.get(i));
@@ -135,7 +135,7 @@ public class MultipleResetsCoupon extends FloatingRateCoupon {
         }
 
         // accrual times of sub-periods
-        dt_ = new ArrayList< Double >(n_);
+        dt_ = new ArrayList<>(n_);
         final DayCounter dc = index.dayCounter();
         for ( int i = 0; i < n_; i++ ) {
             dt_.add(dc.yearFraction(valueDates_.get(i), valueDates_.get(i + 1)));

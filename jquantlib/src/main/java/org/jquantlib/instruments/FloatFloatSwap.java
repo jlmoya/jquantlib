@@ -549,15 +549,15 @@ public class FloatFloatSwap extends Swap {
         // ── Leg 1 ──────────────────────────────────────────────────────────────
         final Leg leg1 = leg1();
         final int n1 = leg1.size();
-        a.leg1ResetDates = new ArrayList< Date >(Collections.nCopies(n1, null));
-        a.leg1PayDates = new ArrayList< Date >(Collections.nCopies(n1, null));
-        a.leg1FixingDates = new ArrayList< Date >(Collections.nCopies(n1, null));
-        a.leg1AccrualTimes = new ArrayList< Double >(Collections.nCopies(n1, 0.0));
-        a.leg1Spreads = new ArrayList< Double >(Collections.nCopies(n1, 0.0));
-        a.leg1Gearings = new ArrayList< Double >(Collections.nCopies(n1, 1.0));
-        a.leg1Coupons = new ArrayList< Double >(Collections.nCopies(n1, NULL_REAL));
-        a.leg1CappedRates = new ArrayList< Double >(Collections.nCopies(n1, NULL_REAL));
-        a.leg1FlooredRates = new ArrayList< Double >(Collections.nCopies(n1, NULL_REAL));
+        a.leg1ResetDates = new ArrayList<>(Collections.nCopies(n1, null));
+        a.leg1PayDates = new ArrayList<>(Collections.nCopies(n1, null));
+        a.leg1FixingDates = new ArrayList<>(Collections.nCopies(n1, null));
+        a.leg1AccrualTimes = new ArrayList<>(Collections.nCopies(n1, 0.0));
+        a.leg1Spreads = new ArrayList<>(Collections.nCopies(n1, 0.0));
+        a.leg1Gearings = new ArrayList<>(Collections.nCopies(n1, 1.0));
+        a.leg1Coupons = new ArrayList<>(Collections.nCopies(n1, NULL_REAL));
+        a.leg1CappedRates = new ArrayList<>(Collections.nCopies(n1, NULL_REAL));
+        a.leg1FlooredRates = new ArrayList<>(Collections.nCopies(n1, NULL_REAL));
         a.leg1IsRedemptionFlow = new boolean[n1];
 
         for ( int i = 0; i < n1; i++ ) {
@@ -599,15 +599,15 @@ public class FloatFloatSwap extends Swap {
         // ── Leg 2 ──────────────────────────────────────────────────────────────
         final Leg leg2 = leg2();
         final int n2 = leg2.size();
-        a.leg2ResetDates = new ArrayList< Date >(Collections.nCopies(n2, null));
-        a.leg2PayDates = new ArrayList< Date >(Collections.nCopies(n2, null));
-        a.leg2FixingDates = new ArrayList< Date >(Collections.nCopies(n2, null));
-        a.leg2AccrualTimes = new ArrayList< Double >(Collections.nCopies(n2, 0.0));
-        a.leg2Spreads = new ArrayList< Double >(Collections.nCopies(n2, 0.0));
-        a.leg2Gearings = new ArrayList< Double >(Collections.nCopies(n2, 1.0));
-        a.leg2Coupons = new ArrayList< Double >(Collections.nCopies(n2, NULL_REAL));
-        a.leg2CappedRates = new ArrayList< Double >(Collections.nCopies(n2, NULL_REAL));
-        a.leg2FlooredRates = new ArrayList< Double >(Collections.nCopies(n2, NULL_REAL));
+        a.leg2ResetDates = new ArrayList<>(Collections.nCopies(n2, null));
+        a.leg2PayDates = new ArrayList<>(Collections.nCopies(n2, null));
+        a.leg2FixingDates = new ArrayList<>(Collections.nCopies(n2, null));
+        a.leg2AccrualTimes = new ArrayList<>(Collections.nCopies(n2, 0.0));
+        a.leg2Spreads = new ArrayList<>(Collections.nCopies(n2, 0.0));
+        a.leg2Gearings = new ArrayList<>(Collections.nCopies(n2, 1.0));
+        a.leg2Coupons = new ArrayList<>(Collections.nCopies(n2, NULL_REAL));
+        a.leg2CappedRates = new ArrayList<>(Collections.nCopies(n2, NULL_REAL));
+        a.leg2FlooredRates = new ArrayList<>(Collections.nCopies(n2, NULL_REAL));
         a.leg2IsRedemptionFlow = new boolean[n2];
 
         for ( int i = 0; i < n2; i++ ) {

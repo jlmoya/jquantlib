@@ -177,7 +177,7 @@ public class OvernightIndexedSwap extends Swap {
                 .withCouponRates(fixedRate).withPaymentAdjustment(paymentAdjustment_).Leg();
 
         // Overnight leg
-        final List< Double > overnightNominalList = new ArrayList< Double >(overnightNominals_.length);
+        final List< Double > overnightNominalList = new ArrayList<>(overnightNominals_.length);
         for ( final double n : overnightNominals_ ) {
             overnightNominalList.add(n);
         }

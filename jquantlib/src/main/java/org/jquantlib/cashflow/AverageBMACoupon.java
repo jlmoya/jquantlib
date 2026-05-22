@@ -94,7 +94,7 @@ public class AverageBMACoupon extends FloatingRateCoupon {
     }
 
     public List< Double > indexFixings() {
-        List< Double > fixings = new ArrayList< Double >(fixingSchedule.size());
+        List< Double > fixings = new ArrayList<>(fixingSchedule.size());
         for ( int i = 0; i < fixingSchedule.size(); i++ ) {
             fixings.add(index_.fixing(fixingSchedule.date(i)));
         }

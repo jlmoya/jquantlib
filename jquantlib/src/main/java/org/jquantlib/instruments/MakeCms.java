@@ -227,7 +227,7 @@ public class MakeCms {
                 .withPaymentDayCounter(floatDayCount_).withPaymentAdjustment(floatConvention_)
                 .withFixingDays(iborIndex_.fixingDays()).withSpreads(usedSpread).Leg();
 
-        final List< Leg > legs = new ArrayList< Leg >(2);
+        final List< Leg > legs = new ArrayList<>(2);
         final boolean[] payer = new boolean[2];
         if ( payCms_ ) {
             legs.add(cmsLeg);

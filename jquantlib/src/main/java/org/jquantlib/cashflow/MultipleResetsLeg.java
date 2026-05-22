@@ -93,11 +93,11 @@ public class MultipleResetsLeg {
         this.paymentDayCounter_ = new DayCounter();
         this.paymentAdjustment_ = BusinessDayConvention.Following;
         this.paymentLag_ = 0;
-        this.notionals_ = new ArrayList< Double >();
-        this.fixingDays_ = new ArrayList< Integer >();
-        this.gearings_ = new ArrayList< Double >();
-        this.couponSpreads_ = new ArrayList< Double >();
-        this.rateSpreads_ = new ArrayList< Double >();
+        this.notionals_ = new ArrayList<>();
+        this.fixingDays_ = new ArrayList<>();
+        this.gearings_ = new ArrayList<>();
+        this.couponSpreads_ = new ArrayList<>();
+        this.rateSpreads_ = new ArrayList<>();
         this.averagingMethod_ = RateAveraging.Type.Compound;
         this.exCouponPeriod_ = new Period();
         this.exCouponCalendar_ = new NullCalendar();
@@ -133,13 +133,13 @@ public class MultipleResetsLeg {
     }
 
     public MultipleResetsLeg withNotionals(final double notional) {
-        this.notionals_ = new ArrayList< Double >();
+        this.notionals_ = new ArrayList<>();
         this.notionals_.add(notional);
         return this;
     }
 
     public MultipleResetsLeg withNotionals(final List< Double > notionals) {
-        this.notionals_ = new ArrayList< Double >(notionals);
+        this.notionals_ = new ArrayList<>(notionals);
         return this;
     }
 
@@ -164,46 +164,46 @@ public class MultipleResetsLeg {
     }
 
     public MultipleResetsLeg withFixingDays(final int fixingDays) {
-        this.fixingDays_ = new ArrayList< Integer >();
+        this.fixingDays_ = new ArrayList<>();
         this.fixingDays_.add(fixingDays);
         return this;
     }
 
     public MultipleResetsLeg withFixingDays(final List< Integer > fixingDays) {
-        this.fixingDays_ = new ArrayList< Integer >(fixingDays);
+        this.fixingDays_ = new ArrayList<>(fixingDays);
         return this;
     }
 
     public MultipleResetsLeg withGearings(final double gearing) {
-        this.gearings_ = new ArrayList< Double >();
+        this.gearings_ = new ArrayList<>();
         this.gearings_.add(gearing);
         return this;
     }
 
     public MultipleResetsLeg withGearings(final List< Double > gearings) {
-        this.gearings_ = new ArrayList< Double >(gearings);
+        this.gearings_ = new ArrayList<>(gearings);
         return this;
     }
 
     public MultipleResetsLeg withCouponSpreads(final double spread) {
-        this.couponSpreads_ = new ArrayList< Double >();
+        this.couponSpreads_ = new ArrayList<>();
         this.couponSpreads_.add(spread);
         return this;
     }
 
     public MultipleResetsLeg withCouponSpreads(final List< Double > spreads) {
-        this.couponSpreads_ = new ArrayList< Double >(spreads);
+        this.couponSpreads_ = new ArrayList<>(spreads);
         return this;
     }
 
     public MultipleResetsLeg withRateSpreads(final double spread) {
-        this.rateSpreads_ = new ArrayList< Double >();
+        this.rateSpreads_ = new ArrayList<>();
         this.rateSpreads_.add(spread);
         return this;
     }
 
     public MultipleResetsLeg withRateSpreads(final List< Double > spreads) {
-        this.rateSpreads_ = new ArrayList< Double >(spreads);
+        this.rateSpreads_ = new ArrayList<>(spreads);
         return this;
     }
 
@@ -251,7 +251,7 @@ public class MultipleResetsLeg {
             // Build sub-schedule by slicing the full reset schedule between
             // index i*resetsPerCoupon_ and (i+1)*resetsPerCoupon_ inclusive.
             // Equivalent to C++ schedule_.after(start).until(end).
-            final List< Date > subDates = new ArrayList< Date >(resetsPerCoupon_ + 1);
+            final List< Date > subDates = new ArrayList<>(resetsPerCoupon_ + 1);
             for ( int k = i * resetsPerCoupon_; k <= (i + 1) * resetsPerCoupon_; ++k ) {
                 subDates.add(schedule_.date(k));
             }

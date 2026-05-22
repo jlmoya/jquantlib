@@ -73,7 +73,7 @@ public abstract class MultipleResetsPricer extends FloatingRateCouponPricer {
 
         final List< Date > fixingDates = coupon_.fixingDates();
         final int n = fixingDates.size();
-        subPeriodFixings_ = new ArrayList< Double >(n);
+        subPeriodFixings_ = new ArrayList<>(n);
         for ( int i = 0; i < n; i++ ) {
             subPeriodFixings_.add(index.fixing(fixingDates.get(i)) + coupon_.rateSpread());
         }

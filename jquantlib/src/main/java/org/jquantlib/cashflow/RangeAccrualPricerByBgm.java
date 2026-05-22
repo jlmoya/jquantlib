@@ -92,7 +92,7 @@ public class RangeAccrualPricerByBgm extends RangeAccrualPricer {
      */
     protected List< Double > driftsOverPeriod(final double U, final double lambdaS, final double lambdaT,
             final double correlation) {
-        final List< Double > result = new ArrayList< Double >(2);
+        final List< Double > result = new ArrayList<>(2);
 
         final double p = (U - startTime_) / accrualFactor_;
         final double q = (endTime_ - U) / accrualFactor_;
@@ -116,7 +116,7 @@ public class RangeAccrualPricerByBgm extends RangeAccrualPricer {
      * {@code [lambdaBeforeFixing, lambdaAfterFixing]}.
      */
     protected List< Double > lambdasOverPeriod(final double U, final double lambdaS, final double lambdaT) {
-        final List< Double > result = new ArrayList< Double >(2);
+        final List< Double > result = new ArrayList<>(2);
 
         final double p = (U - startTime_) / accrualFactor_;
         final double q = (endTime_ - U) / accrualFactor_;

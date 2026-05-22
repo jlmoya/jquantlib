@@ -62,7 +62,7 @@ public class ExchangeRateManager {
     /** Singleton instance of the ExchangeRateManager. */
     private static volatile ExchangeRateManager instance = null;
     /** The HashMape containing all ExchangeRates. */
-    protected final HashMap< Object, List< Entry > > data_ = new HashMap< Object, List< Entry > >();
+    protected final HashMap< Object, List< Entry > > data_ = new HashMap<>();
 
     /**
      * Constructs a new ExchangeRateManager and initialises the most used rates. Note: private; should only be accessed
@@ -110,7 +110,7 @@ public class ExchangeRateManager {
         /* @Key */
         final int k = hash(rate.source(), rate.target());
         if ( data_.get(k) == null ) {
-            data_.put(k, new ArrayList< Entry >());
+            data_.put(k, new ArrayList<>());
         }
         data_.get(k).add(0, new Entry(rate, startDate, endDate));
     }

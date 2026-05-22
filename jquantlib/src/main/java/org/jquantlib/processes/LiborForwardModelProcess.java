@@ -89,11 +89,11 @@ public class LiborForwardModelProcess extends StochasticProcess {
         // The previous port used {@code new ArrayList<>(size_)} (capacity hint
         // only) and then {@code set(i, …)} on the empty list, which threw
         // {@code IndexOutOfBoundsException} on first iteration.
-        this.fixingDates_ = new ArrayList< Date >(size_);
-        this.fixingTimes_ = new ArrayList< Double >(size_);
-        this.accrualStartTimes_ = new ArrayList< Double >(size_);
-        this.accrualEndTimes_ = new ArrayList< Double >(size_);
-        this.accrualPeriod_ = new ArrayList< Double >(size_);
+        this.fixingDates_ = new ArrayList<>(size_);
+        this.fixingTimes_ = new ArrayList<>(size_);
+        this.accrualStartTimes_ = new ArrayList<>(size_);
+        this.accrualEndTimes_ = new ArrayList<>(size_);
+        this.accrualPeriod_ = new ArrayList<>(size_);
         for ( int i = 0; i < size_; ++i ) {
             fixingDates_.add(null);
             fixingTimes_.add(0.0);

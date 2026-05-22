@@ -63,7 +63,7 @@ public class CliquetOption extends OneAssetOption {
     public CliquetOption(final PercentageStrikePayoff payoff, final EuropeanExercise maturity,
             final List< Date > resetDates) {
         super(payoff, maturity);
-        this.resetDates = new ArrayList< Date >(resetDates);
+        this.resetDates = new ArrayList<>(resetDates);
     }
 
     @Override
@@ -71,7 +71,7 @@ public class CliquetOption extends OneAssetOption {
         super.setupArguments(args);
         QL.require(args instanceof CliquetOption.ArgumentsImpl, "wrong engine type");
         final CliquetOption.ArgumentsImpl moreArgs = (CliquetOption.ArgumentsImpl) args;
-        moreArgs.resetDates = new ArrayList< Date >(resetDates);
+        moreArgs.resetDates = new ArrayList<>(resetDates);
     }
 
     /**
@@ -96,7 +96,7 @@ public class CliquetOption extends OneAssetOption {
             this.localFloor = Constants.NULL_REAL;
             this.globalCap = Constants.NULL_REAL;
             this.globalFloor = Constants.NULL_REAL;
-            this.resetDates = new ArrayList< Date >();
+            this.resetDates = new ArrayList<>();
         }
 
         @Override

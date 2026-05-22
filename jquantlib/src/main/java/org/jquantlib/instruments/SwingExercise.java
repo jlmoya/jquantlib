@@ -97,7 +97,7 @@ public class SwingExercise extends BermudanExercise {
      * {@code createDateTimes} helper.
      */
     private static Date[] createDateTimesDates(final Date from, final Date to, final int stepSizeSecs) {
-        final List< Date > dates = new ArrayList< Date >();
+        final List< Date > dates = new ArrayList<>();
         Date iterDate = from;
         int iterStepSize = 0;
         while ( iterDate.le(to) ) {
@@ -116,7 +116,7 @@ public class SwingExercise extends BermudanExercise {
      * iteration sequence as {@link #createDateTimesDates(Date, Date, int)}.
      */
     private static int[] createDateTimesSeconds(final Date from, final Date to, final int stepSizeSecs) {
-        final List< Integer > secs = new ArrayList< Integer >();
+        final List< Integer > secs = new ArrayList<>();
         Date iterDate = from;
         int iterStepSize = 0;
         while ( iterDate.le(to) ) {

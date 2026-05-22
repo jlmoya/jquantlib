@@ -130,7 +130,7 @@ public class OvernightIndexedCoupon extends FloatingRateCoupon {
 
         final Schedule sch = new MakeSchedule(startDate, tmpEndDate, new Period(1, TimeUnit.Days),
                 overnightIndex.fixingCalendar(), overnightIndex.businessDayConvention()).backwards().schedule();
-        this.valueDates_ = new ArrayList< Date >(sch.dates());
+        this.valueDates_ = new ArrayList<>(sch.dates());
 
         // C++ overnightindexedcoupon.cpp:126-140 — if telescopic AND lockout
         // is set, ensure the lockout dates are covered in the back stub.
@@ -152,13 +152,13 @@ public class OvernightIndexedCoupon extends FloatingRateCoupon {
         QL.ensure(valueDates_.size() >= 2, "degenerate schedule");
         this.n_ = valueDates_.size() - 1;
 
-        this.interestDates_ = new ArrayList< Date >(valueDates_);
+        this.interestDates_ = new ArrayList<>(valueDates_);
 
         // Fixing dates: when fixingDays_ matches the index default and equals
         // zero, fixing date is the value date itself. Otherwise apply the
         // lookback shift (with optional observation-shift correction on
         // interest dates) — C++ overnightindexedcoupon.cpp:148-178.
-        this.fixingDates_ = new ArrayList< Date >(n_);
+        this.fixingDates_ = new ArrayList<>(n_);
         // Pre-fill so we can index-assign below.
         for ( int i = 0; i < n_; ++i ) {
             fixingDates_.add(null);
@@ -293,7 +293,7 @@ public class OvernightIndexedCoupon extends FloatingRateCoupon {
     }
 
     public List< Double > indexFixings() {
-        final List< Double > out = new ArrayList< Double >(n_);
+        final List< Double > out = new ArrayList<>(n_);
         for ( int i = 0; i < n_; ++i ) {
             out.add(index_.fixing(fixingDates_.get(i)));
         }

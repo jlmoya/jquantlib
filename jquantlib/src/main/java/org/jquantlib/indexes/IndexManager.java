@@ -42,8 +42,8 @@ public class IndexManager {
     //
 
     private IndexManager() {
-        data = new ConcurrentHashMap< String, TimeSeries< Double > >();
-        notifiers = new ConcurrentHashMap< String, Observable >();
+        data = new ConcurrentHashMap<>();
+        notifiers = new ConcurrentHashMap<>();
     }
 
     //

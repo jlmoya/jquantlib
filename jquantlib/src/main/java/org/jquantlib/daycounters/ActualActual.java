@@ -351,7 +351,7 @@ public class ActualActual extends DayCounter {
         private List<Date> getPeriodDatesIncludingQuasiPayments() {
             // C++: ql/time/daycounters/actualactual.cpp:49-101
             final Date issueDate = schedule.date(0);
-            final List<Date> newDates = new ArrayList<Date>(schedule.dates());
+            final List<Date> newDates = new ArrayList<>(schedule.dates());
 
             if (!schedule.hasIsRegular() || !schedule.isRegular(1)) {
                 final Date firstCoupon = schedule.date(1);

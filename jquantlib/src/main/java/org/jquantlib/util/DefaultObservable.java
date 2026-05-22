@@ -67,7 +67,7 @@ public class DefaultObservable implements Observable {
 
     public DefaultObservable(final Observable observable) {
         QL.require(observable != null, DefaultObservable.OBSERVABLE_IS_NULL);
-        this.observers = new CopyOnWriteArrayList< Observer >();
+        this.observers = new CopyOnWriteArrayList<>();
         this.observable = observable;
     }
 

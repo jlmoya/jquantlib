@@ -88,7 +88,7 @@ public class RangeAccrualFloatersCoupon extends FloatingRateCoupon {
         // Build observation dates: drop start and end. C++ uses Schedule::dates,
         // pop_back, erase(begin) — match that semantics exactly.
         final List< Date > rawDates = observationSchedule.dates();
-        this.observationDates_ = new ArrayList< Date >(rawDates.size());
+        this.observationDates_ = new ArrayList<>(rawDates.size());
         // Skip first (start) and last (end).
         for ( int i = 1; i < rawDates.size() - 1; ++i ) {
             observationDates_.add(rawDates.get(i));
@@ -101,7 +101,7 @@ public class RangeAccrualFloatersCoupon extends FloatingRateCoupon {
         this.startTime_ = dayCounter.yearFraction(referenceDate, startDate);
         this.endTime_ = dayCounter.yearFraction(referenceDate, endDate);
 
-        this.observationTimes_ = new ArrayList< Double >(observationsNo_);
+        this.observationTimes_ = new ArrayList<>(observationsNo_);
         for ( int i = 0; i < observationsNo_; ++i ) {
             observationTimes_.add(dayCounter.yearFraction(referenceDate, observationDates_.get(i)));
         }
