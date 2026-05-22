@@ -27,15 +27,33 @@ import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.DoubleBinaryOperator;
 import java.util.function.ToDoubleFunction;
 
 import org.jquantlib.QL;
+import org.jquantlib.Settings;
+import org.jquantlib.daycounters.ActualActual;
+import org.jquantlib.daycounters.DayCounter;
+import org.jquantlib.indexes.Euribor;
+import org.jquantlib.indexes.Index;
+import org.jquantlib.instruments.Option;
+import org.jquantlib.pricingengines.BlackFormula;
+import org.jquantlib.quotes.CompositeQuote;
+import org.jquantlib.quotes.ForwardValueQuote;
 import org.jquantlib.quotes.Handle;
+import org.jquantlib.quotes.ImpliedStdDevQuote;
 import org.jquantlib.quotes.MultiCompositeQuote;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.RelinkableHandle;
 import org.jquantlib.quotes.SimpleQuote;
+import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.termstructures.yieldcurves.FlatForward;
 import org.jquantlib.testsuite.util.Flag;
+import org.jquantlib.time.Calendar;
+import org.jquantlib.time.Date;
+import org.jquantlib.time.Period;
+import org.jquantlib.time.TimeUnit;
+import org.jquantlib.time.calendars.Target;
 import org.junit.Test;
 
 
@@ -44,19 +62,19 @@ import org.junit.Test;
  *
  * @author Richard Gomes
  *
- * <h2>Phase1-cert-D5-C-R4 + Phase1-closure-A1-553 audit (test-suite/quotes.cpp coverage)</h2>
+ * <h2>Phase1-cert-D5-C-R4 + Phase1-closure-A1-553 + Phase1.3-B audit (test-suite/quotes.cpp coverage)</h2>
  * <ul>
  *   <li>{@code testObservable}            — present below.</li>
  *   <li>{@code testObservableHandle}      — present below.</li>
  *   <li>{@code testDerived}               — commented out (DerivedQuote class
  *       exists but the test was never enabled by the original port).</li>
- *   <li>{@code testComposite}             — commented out (CompositeQuote
- *       not ported).</li>
- *   <li>{@code testMultiComposite}        — ADDED in Phase 1 closure A1 round
- *       (commit landing this comment); {@link org.jquantlib.quotes.MultiCompositeQuote}
- *       ported alongside.</li>
- *   <li>{@code testForwardValueQuoteAndImpliedStdevQuote} — commented
- *       out; ForwardValueQuote and ImpliedStdDevQuote not ported.</li>
+ *   <li>{@code testComposite}             — ADDED in Phase 1.3 closure (round B);
+ *       {@link org.jquantlib.quotes.CompositeQuote} (binary form) ported alongside.</li>
+ *   <li>{@code testMultiComposite}        — ADDED in Phase 1 closure A1 round;
+ *       {@link org.jquantlib.quotes.MultiCompositeQuote} ported alongside.</li>
+ *   <li>{@code testForwardValueQuoteAndImpliedStdevQuote} — ADDED in Phase 1.3
+ *       closure (round B); {@link org.jquantlib.quotes.ForwardValueQuote} and
+ *       {@link org.jquantlib.quotes.ImpliedStdDevQuote} ported alongside.</li>
  * </ul>
  */
 // TODO: code review :: please verify against QL/C++ code
@@ -135,29 +153,44 @@ public class QuotesTest {
 //	    }
 //	}
 
-//	@Test
-//	public void testComposite() {
-//
-//		QL.info("Testing composite quotes...");
-//
-//	    typedef Real (*binary_f)(Real,Real);
-//	    binary_f funcs[3] = { add, mul, sub };
-//
-//	    Quote me1 = new SimpleQuote(12.0);
-//	    Quote me2 = new SimpleQuote(13.0);
-//
-//	    Handle<Quote> h1 new Handle<Quote>(me1);
-//	    Handle<Quote> h2 new Handle<Quote>(me2);
-//
-//	    for (Integer i=0; i<3; i++) {
-//	        CompositeQuote<binary_f> composite(h1,h2,funcs[i]);
-//	        Real x = composite.value(),
-//	             y = funcs[i](me1->value(),me2->value());
-//	        if (Math.abs(x-y) > 1.0e-10)
-//	            fail("composite quote yields " << x << "\n"
-//	                       << "function result is " << y);
-//	    }
-//	}
+	/**
+	 * Faithful port of {@code test-suite/quotes.cpp BOOST_AUTO_TEST_CASE(testComposite)}
+	 * (v1.42.1). Verifies that {@link CompositeQuote} (binary form) applied to a pair of
+	 * handles with {@code add}, {@code mul}, and {@code sub} binary functors matches direct
+	 * computation across a sweep of underlying values.
+	 *
+	 * <p>Ported alongside {@link CompositeQuote} in Phase 1.3 closure (round B).
+	 */
+	@Test
+	public void testComposite() {
+
+		QL.info("Testing composite quotes...");
+
+		final DoubleBinaryOperator[] funcs = new DoubleBinaryOperator[] {
+				(a, b) -> a + b,
+				(a, b) -> a * b,
+				(a, b) -> a - b,
+		};
+		final double[] values = new double[] { 12.0, 23.0, 34.0 };
+
+		final SimpleQuote me1 = new SimpleQuote();
+		final SimpleQuote me2 = new SimpleQuote();
+		final Handle<Quote> h1 = new Handle<Quote>(me1);
+		final Handle<Quote> h2 = new Handle<Quote>(me2);
+
+		for (final DoubleBinaryOperator func : funcs) {
+			final CompositeQuote composite = new CompositeQuote(h1, h2, func);
+			for (final double value : values) {
+				me1.setValue(value);
+				me2.setValue(value + 1);
+				final double x = composite.value();
+				final double y = func.applyAsDouble(value, value + 1);
+				if (Math.abs(x - y) > 1.0e-10) {
+					fail("composite quote yields " + x + ", function result is " + y);
+				}
+			}
+		}
+	}
 
 	/**
 	 * Faithful port of {@code test-suite/quotes.cpp BOOST_AUTO_TEST_CASE(testMultiComposite)}
@@ -221,73 +254,94 @@ public class QuotesTest {
 		}
 	}
 
-//	@Test
-//	public void testForwardValueQuoteAndImpliedStdevQuote(){
-//
-//		QL.info("Testing forward-value and implied-stdev quotes...");
-//
-//	    double forwardRate = .05;
-//	    DayCounter dc = new ActualActual();
-//	    Calendar calendar = Target.getCalendar();
-//	    SimpleQuote forwardQuote = new SimpleQuote(forwardRate);
-//	    Quote forwardHandle = forwardQuote;
-//	    Date evaluationDate = Settings.getInstance().getEvaluationDate();
-//	    YieldTermStructure yc =new FlatForward(evaluationDate, forwardHandle, dc);
-//	    YieldTermStructure ycHandle = yc;
-//	    Period euriborTenor = new Period(1, TimeUnit.Years);
-//	    Index euribor = new Euribor(euriborTenor, ycHandle);
-//	    Date fixingDate = calendar.advance(evaluationDate, euriborTenor);
-//	    ForwardValueQuote forwardValueQuote = new ForwardValueQuote(euribor, fixingDate);
-//	    /*@Rate*/ double  forwardValue =  forwardValueQuote.getValue();
-//	    /*@Rate*/ double  expectedForwardValue = euribor.fixing(fixingDate, true);
-//	    // we test if the forward value given by the quote is consistent
-//	    // with the one directly given by the index
-//        fail("Forward Value Quote quote yields "
-//        		+ forwardValue + "\n  expected result is "
-//        		+ expectedForwardValue,
-//        			Math.abs(forwardValue-expectedForwardValue) <= 1.0e-15);
-//	    // then we test the observer/observable chain
-//	    Flag f;
-//	    f.registerWith(forwardValueQuote);
-//	    forwardQuote.setValue(0.04);
-//        fail("Observer was not notified of quote change", f.isUp());
-//
-//	    // and we re-test if the values are still matching
-//	    forwardValue =  forwardValueQuote.getValue();
-//	    expectedForwardValue = euribor.fixing(fixingDate, true);
-//        fail("Foward Value Quote quote yields "
-//        		+ forwardValue
-//        		+ "\n  expected result is "
-//        		+ expectedForwardValue,
-//        		Math.abs(forwardValue-expectedForwardValue) <= 1.0e-15);
-//	    // we test the ImpliedStdevQuote class
-//	    f.unregisterWith(forwardValueQuote);
-//	    f.lower();
-//	    double price = 0.02;
-//	    /*@Rate*/ double  strike = 0.04;
-//	    /*@Volatility*/ double guess = .15;
-//	    double accuracy = 1.0e-6;
-//	    Option.Type optionType = Option.Type.Call;
-//	    SimpleQuote priceQuote = new SimpleQuote(price);
-//	    Quote priceHandle = priceQuote;
-//	    ImpliedStdDevQuote impliedStdevQuote = new ImpliedStdDevQuote(optionType, forwardHandle, priceHandle, strike, guess, accuracy));
-//	    /*@StdDev*/ double impliedStdev = impliedStdevQuote.getValue();
-//	    /*@StdDev*/ double expectedImpliedStdev = blackFormulaImpliedStdDev(optionType, strike, forwardQuote.getValue(), price, 1.0, guess, 1.0e-6);
-//        fail("impliedStdevQuote yields "
-//        		+ impliedStdev
-//        		+ "\n  expected result is "
-//        		+ expectedImpliedStdev,
-//        		Math.abs(impliedStdev-expectedImpliedStdev) <= 1.0e-15);
-//	    // then we test the observer/observable chain
-//	    Quote quote = impliedStdevQuote;
-//	    quote.addObserver(f);
-//	    forwardQuote.setValue(0.05);
-//	    fail("Observer was not notified of quote change", f.isUp());
-//	    quote.getValue();
-//	    f.lower();
-//	    priceQuote.setValue(0.11);
-//      fail("Observer was not notified of quote change", f.isUp());
-//	}
+	/**
+	 * Faithful port of {@code test-suite/quotes.cpp BOOST_AUTO_TEST_CASE(testForwardValueQuoteAndImpliedStdevQuote)}
+	 * (v1.42.1). Exercises {@link ForwardValueQuote} and {@link ImpliedStdDevQuote}:
+	 * <ul>
+	 *   <li>Forward-value quote agrees with {@code Euribor.fixing()} on a flat-forward curve.</li>
+	 *   <li>Observer chain fires when the underlying forward-rate quote moves.</li>
+	 *   <li>Implied-stdev quote matches {@link BlackFormula#blackFormulaImpliedStdDev}.</li>
+	 *   <li>Observer chain fires for both forward and price quote moves.</li>
+	 * </ul>
+	 *
+	 * <p>Ported alongside {@link ForwardValueQuote} and {@link ImpliedStdDevQuote} in Phase 1.3 closure (round B).
+	 */
+	@Test
+	public void testForwardValueQuoteAndImpliedStdevQuote() {
+
+		QL.info("Testing forward-value and implied-standard-deviation quotes...");
+
+		final double forwardRate = 0.05;
+		final DayCounter dc = new ActualActual(ActualActual.Convention.ISDA);
+		final Calendar calendar = new Target();
+		final SimpleQuote forwardQuote = new SimpleQuote(forwardRate);
+		final Handle<Quote> forwardHandle = new Handle<Quote>(forwardQuote);
+		final Date evaluationDate = new Settings().evaluationDate();
+		final YieldTermStructure yc = new FlatForward(evaluationDate, forwardHandle, dc);
+		final Handle<YieldTermStructure> ycHandle = new Handle<YieldTermStructure>(yc);
+		final Period euriborTenor = new Period(1, TimeUnit.Years);
+		final Index euribor = new Euribor(euriborTenor, ycHandle);
+		final Date fixingDate = calendar.advance(evaluationDate, euriborTenor);
+		final ForwardValueQuote forwardValueQuote = new ForwardValueQuote(euribor, fixingDate);
+		double forwardValue = forwardValueQuote.value();
+		double expectedForwardValue = euribor.fixing(fixingDate, true);
+		// the forward value given by the quote is consistent with the
+		// one directly given by the index
+		if (Math.abs(forwardValue - expectedForwardValue) > 1.0e-15) {
+			fail("Foward Value Quote quote yields " + forwardValue
+					+ "\nexpected result is " + expectedForwardValue);
+		}
+
+		// then we test the observer/observable chain
+		final Flag f = new Flag();
+		forwardValueQuote.addObserver(f);
+		forwardQuote.setValue(0.04);
+		if (!f.isUp()) {
+			fail("Observer was not notified of quote change");
+		}
+
+		// and we retest if the values are still matching
+		forwardValue = forwardValueQuote.value();
+		expectedForwardValue = euribor.fixing(fixingDate, true);
+		if (Math.abs(forwardValue - expectedForwardValue) > 1.0e-15) {
+			fail("Foward Value Quote quote yields " + forwardValue
+					+ "\nexpected result is " + expectedForwardValue);
+		}
+
+		// we test the ImpliedStdevQuote class
+		forwardValueQuote.deleteObserver(f);
+		f.lower();
+		final double price = 0.02;
+		final double strike = 0.04;
+		final double guess = 0.15;
+		final double accuracy = 1.0e-6;
+		final Option.Type optionType = Option.Type.Call;
+		final SimpleQuote priceQuote = new SimpleQuote(price);
+		final Handle<Quote> priceHandle = new Handle<Quote>(priceQuote);
+		final ImpliedStdDevQuote impliedStdevQuote = new ImpliedStdDevQuote(
+				optionType, forwardHandle, priceHandle, strike, guess, accuracy);
+		final double impliedStdev = impliedStdevQuote.value();
+		final double expectedImpliedStdev = BlackFormula.blackFormulaImpliedStdDev(
+				optionType, strike, forwardQuote.value(), price, 1.0, guess, 1.0e-6, 0.0);
+		if (Math.abs(impliedStdev - expectedImpliedStdev) > 1.0e-15) {
+			fail("\nimpliedStdevQuote yields :" + impliedStdev
+					+ "\nexpected result is       :" + expectedImpliedStdev);
+		}
+
+		// then we test the observer/observable chain
+		impliedStdevQuote.addObserver(f);
+		forwardQuote.setValue(0.05);
+		if (!f.isUp()) {
+			fail("Observer was not notified of quote change");
+		}
+		impliedStdevQuote.value();
+		f.lower();
+		impliedStdevQuote.value();
+		priceQuote.setValue(0.11);
+		if (!f.isUp()) {
+			fail("Observer was not notified of quote change");
+		}
+	}
 
 
 }
