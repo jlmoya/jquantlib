@@ -92,6 +92,12 @@ public class PiecewiseYieldCurve< T extends Traits, I extends Interpolator, B ex
     private final Class< I > classI;
     private final Class< B > classB;
     private final Traits.Curve baseCurve;
+    /**
+     * For spread-curve traits ({@link SpreadBootstrapTraits}) this is the handle of the underlying base yield curve
+     * carried through to {@link InterpolatedSpreadDiscountCurve}. {@code null} for ordinary traits
+     * (Discount / ZeroYield / ForwardRate / SimpleZeroYield).
+     */
+    private final Handle< YieldTermStructure > spreadBaseCurve;
 
     private final RateHelper[] instruments;
     private final Handle< Quote >[] jumps;
@@ -178,7 +184,8 @@ public class PiecewiseYieldCurve< T extends Traits, I extends Interpolator, B ex
         //TODO; validate types of interpolator and bootstrap
 
         // instantiate base class and call super constructor
-        this.baseCurve = constructBaseClass(classT, classI, referenceDate, dayCounter, this.interpolator);
+        this.spreadBaseCurve = null;
+        this.baseCurve = constructBaseClass(classT, classI, null, referenceDate, dayCounter, this.interpolator);
         this.instruments = instruments; // TODO: clone() ?
 
         this.jumps = jumps == null ? new Handle /*<Quote>*/ [0] : jumps;
@@ -191,6 +198,53 @@ public class PiecewiseYieldCurve< T extends Traits, I extends Interpolator, B ex
         for ( final Handle< Quote > jump : jumps ) {
             jump.addObserver(this);
         }
+        bootstrap.setup(this);
+    }
+
+    // ************************************************************
+    // * Case 3 : initBySpreadBaseCurve — spread curves on top of *
+    // *           a base YieldTermStructure (SpreadBootstrapTraits)*
+    // ************************************************************
+
+    public PiecewiseYieldCurve(final Class< T > classT, final Class< I > classI, final Class< B > classB,
+            //--
+            final Handle< YieldTermStructure > spreadBaseCurve, final RateHelper[] instruments,
+            //----
+            final Interpolator interpolator) {
+        this(classT, classI, classB, spreadBaseCurve, instruments, 1.0e-12, interpolator,
+                new IterativeBootstrap< PiecewiseYieldCurve< T, I, B > >(PiecewiseYieldCurve.class));
+    }
+
+    public PiecewiseYieldCurve(final Class< T > classT, final Class< I > classI, final Class< B > classB,
+            //--
+            final Handle< YieldTermStructure > spreadBaseCurve, final RateHelper[] instruments,
+            //----
+            final /*@Real*/ double accuracy, final Interpolator interpolator, final Bootstrap bootstrap) {
+
+        QL.require(classT != null, "Generic type for Traits is null");
+        QL.require(classI != null, "Generic type for Interpolation is null");
+        QL.require(classB != null, "Generic type for Bootstrap is null");
+        QL.require(spreadBaseCurve != null, "base curve handle must not be null");
+        this.classT = classT;
+        this.classI = classI;
+        this.classB = classB;
+
+        this.interpolator = interpolator == null ? constructInterpolator(classI) : interpolator;
+        this.bootstrap = bootstrap == null ? constructBootstrap(classB) : bootstrap;
+
+        // Build the (spread) base curve using the supplied baseCurve handle. The day counter and reference
+        // date are sourced from the base curve at query time (see InterpolatedSpreadDiscountCurve).
+        this.spreadBaseCurve = spreadBaseCurve;
+        this.baseCurve = constructBaseClass(classT, classI, spreadBaseCurve, null, null, this.interpolator);
+        this.instruments = instruments;
+
+        this.jumps = new Handle/*<Quote>*/[0];
+        this.jumpDates = new Date[0];
+        this.accuracy = Double.isNaN(accuracy) ? 1.0e-12 : accuracy;
+        this.traits = constructTraits(classT);
+
+        this.jumpTimes = new double[0];
+        setJumps();
         bootstrap.setup(this);
     }
 
@@ -272,6 +326,7 @@ public class PiecewiseYieldCurve< T extends Traits, I extends Interpolator, B ex
         //TODO; validate types of interpolator and bootstrap
 
         // instantiate base class and call super constructor
+        this.spreadBaseCurve = null;
         this.baseCurve = constructBaseClass(classT, classI, settlementDays, calendar, dayCounter, this.interpolator);
         this.instruments = instruments;
 
@@ -289,8 +344,12 @@ public class PiecewiseYieldCurve< T extends Traits, I extends Interpolator, B ex
     }
 
     static private Traits.Curve constructBaseClass(final Class< ? > classT, final Class< ? > classI,
+            final Handle< YieldTermStructure > spreadBaseCurve,
             final Date referenceDate, final DayCounter dayCounter, final Interpolator interpolator) {
-        if ( classT == Discount.class )
+        if ( classT == SpreadBootstrapTraits.class ) {
+            QL.require(spreadBaseCurve != null, "SpreadBootstrapTraits requires a base-curve handle");
+            return new InterpolatedSpreadDiscountCurve(classI, spreadBaseCurve, interpolator);
+        } else if ( classT == Discount.class )
             return new InterpolatedDiscountCurve(classI, referenceDate, dayCounter, interpolator);
         else if ( classT == ForwardRate.class )
             return new InterpolatedForwardCurve(classI, referenceDate, dayCounter, interpolator);
@@ -299,7 +358,8 @@ public class PiecewiseYieldCurve< T extends Traits, I extends Interpolator, B ex
         else if ( classT == SimpleZeroYield.class )
             return new InterpolatedSimpleZeroCurve(classI, referenceDate, dayCounter, interpolator);
         else
-            throw new LibraryException("only Discount, ForwardRate, ZeroYield and SimpleZeroYield are supported");
+            throw new LibraryException(
+                    "only Discount, ForwardRate, ZeroYield, SimpleZeroYield and SpreadBootstrapTraits are supported");
     }
 
     static private Traits.Curve constructBaseClass(final Class< ? > classT, final Class< ? > classI,
@@ -313,8 +373,12 @@ public class PiecewiseYieldCurve< T extends Traits, I extends Interpolator, B ex
             return new InterpolatedZeroCurve(classI, settlementDays, calendar, dayCounter, interpolator);
         else if ( classT == SimpleZeroYield.class )
             return new InterpolatedSimpleZeroCurve(classI, settlementDays, calendar, dayCounter, interpolator);
+        else if ( classT == SpreadBootstrapTraits.class )
+            throw new LibraryException(
+                    "SpreadBootstrapTraits cannot be constructed with settlementDays — use the Handle<YieldTermStructure> base-curve constructor");
         else
-            throw new LibraryException("only Discount, ForwardRate, ZeroYield and SimpleZeroYield are supported");
+            throw new LibraryException(
+                    "only Discount, ForwardRate, ZeroYield, SimpleZeroYield and SpreadBootstrapTraits are supported");
     }
 
     static private Traits constructTraits(final Class< ? > classT) {
@@ -352,6 +416,27 @@ public class PiecewiseYieldCurve< T extends Traits, I extends Interpolator, B ex
         }
 
         throw new LibraryException("not a Bootstrap"); // TODO: message
+    }
+
+    //
+    // protected accessors (subclass-only)
+    //
+
+    /**
+     * Expose the underlying {@link Traits.Curve} so {@link PiecewiseSpreadYieldCurve} can downcast to
+     * {@link InterpolatedSpreadDiscountCurve} and retrieve its {@code baseCurve()} handle. This mirrors the C++
+     * dispatch where {@code PiecewiseSpreadYieldCurve} inherits the inner base-curve API.
+     */
+    protected Traits.Curve baseTraitsCurve() {
+        return baseCurve;
+    }
+
+    /**
+     * Returns the spread base-curve handle iff this curve was constructed with {@link SpreadBootstrapTraits},
+     * otherwise {@code null}. Useful for {@link MultiCurve} wiring.
+     */
+    public Handle< YieldTermStructure > spreadBaseCurve() {
+        return spreadBaseCurve;
     }
 
     //
