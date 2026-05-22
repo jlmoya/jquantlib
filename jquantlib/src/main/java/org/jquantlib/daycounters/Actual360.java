@@ -103,7 +103,15 @@ public class Actual360 extends DayCounter {
         @Override
         public /*@Time*/ double yearFraction(final Date dateStart, final Date dateEnd, final Date refPeriodStart,
                 final Date refPeriodEnd) /* @ReadOnly */ {
-            return /*@Time*/ dayCount(dateStart, dateEnd) / 360.0;
+            // Phase 1.3 D5-D-intraday: mirror C++
+            // ql/time/daycounters/actual360.hpp:55-58:
+            //   return (daysBetween(d1, d2) + (includeLastDay?1:0)) / 360.0;
+            // where daysBetween is (d2-d1) + d2.fractionOfDay() - d1.fractionOfDay().
+            // For day-only Dates the fractional terms are 0 and the result is
+            // identical to the prior integer-only branch.
+            final long days = dayCount(dateStart, dateEnd);
+            final double fractional = dateEnd.fractionOfDay() - dateStart.fractionOfDay();
+            return ((double) days + fractional) / 360.0;
         }
 
     }

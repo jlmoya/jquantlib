@@ -213,7 +213,7 @@ public class ActualActual extends DayCounter {
         @Override
         public double yearFraction(final Date dateStart, final Date dateEnd, final Date refPeriodStart,
                 final Date refPeriodEnd) /* @ReadOnly */ {
-            if ( dateStart.equals(dateEnd) )
+            if ( dateStart.equals(dateEnd) && dateStart.timeOfDayNanos() == dateEnd.timeOfDayNanos() )
                 return 0.0;
             if ( dateStart.gt(dateEnd) )
                 return -yearFraction(dateEnd, dateStart, new Date(), new Date());
@@ -223,12 +223,18 @@ public class ActualActual extends DayCounter {
             final double dib1 = Date.isLeap(dateStart.year()) ? 366.0 : 365.0;
             final double dib2 = Date.isLeap(dateEnd.year()) ? 366.0 : 365.0;
 
+            // Phase 1.3 D5-D-intraday: mirror C++
+            // ql/time/daycounters/actualactual.cpp:283-301 ISDA_Impl which
+            // computes via daysBetween(d1, Jan1+1y1)/dib1 +
+            // daysBetween(Jan1+y2, d2)/dib2. daysBetween includes the
+            // intraday fractionOfDay() term; we keep the dayOfYear backbone
+            // and add the intraday correction explicitly.
             double sum = y2 - y1 - 1;
 
             // Days from start to starting of following year
-            sum += (dib1 - dateStart.dayOfYear() + 1) / dib1;
+            sum += (dib1 - dateStart.dayOfYear() + 1 - dateStart.fractionOfDay()) / dib1;
             // Days from beginning of year to the endDate
-            sum += (dateEnd.dayOfYear() - 1) / dib2;
+            sum += (dateEnd.dayOfYear() - 1 + dateEnd.fractionOfDay()) / dib2;
             return sum;
         }
 
