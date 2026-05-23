@@ -47,7 +47,7 @@ import java.util.List;
  *
  * @author Phase 5e.5b-CFC-d-164 port
  */
-public class SwingExercise extends BermudanExercise {
+public final class SwingExercise extends BermudanExercise {
 
     private static final int SEC_PER_DAY = 24 * 3600;
 

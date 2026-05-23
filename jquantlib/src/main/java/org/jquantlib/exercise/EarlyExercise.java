@@ -46,7 +46,12 @@ import org.jquantlib.lang.annotation.QualityAssurance.Quality;
 import org.jquantlib.lang.annotation.QualityAssurance.Version;
 
 /**
- * Early exercise base class
+ * Early exercise base class.
+ *
+ * <p>JDK 25 sealed (JEP 409): direct subtypes are {@link AmericanExercise}
+ * (final) and {@link BermudanExercise} (non-sealed, because
+ * {@code SwingExercise} lives in a different package and the unnamed-module
+ * constraint forbids cross-package permits).
  *
  * @author Richard Gomes
  */
