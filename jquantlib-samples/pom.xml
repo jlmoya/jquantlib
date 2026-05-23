@@ -7,7 +7,7 @@
         <groupId>org.jquantlib</groupId>
         <artifactId>jquantlib-parent</artifactId>
         <version>1.0.0</version>
-        <relativePath>../jquantlib-parent</relativePath>
+        <relativePath>..</relativePath>
     </parent>
     
     <artifactId>jquantlib-samples</artifactId>

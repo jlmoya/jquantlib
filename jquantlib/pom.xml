@@ -7,7 +7,7 @@
         <groupId>org.jquantlib</groupId>
         <artifactId>jquantlib-parent</artifactId>
         <version>1.0.0</version>
-        <relativePath>../jquantlib-parent</relativePath>
+        <relativePath>..</relativePath>
     </parent>
 
 	<artifactId>jquantlib</artifactId>
@@ -28,7 +28,7 @@
 		<dependency>
 			<groupId>org.json</groupId>
 			<artifactId>json</artifactId>
-			<version>20231013</version>
+			<version>20260522</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
@@ -64,7 +64,7 @@
                 </executions>
                 <configuration>
                     <serverId>nexus-releases</serverId>
-                    <nexusUrl>http://localhost:7910/repository/maven-releases/</nexusUrl>
+                    <nexusUrl>${nexus.base.url}/maven-releases/</nexusUrl>
                     <skipStaging>true</skipStaging>
                 </configuration>
             </plugin>

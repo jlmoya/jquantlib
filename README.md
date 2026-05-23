@@ -175,7 +175,6 @@ jquantlib/                              ← this repo root
 ├── jquantlib-helpers/                  ← helper classes
 ├── jquantlib-contrib/                  ← third-party contributions
 ├── jquantlib-samples/                  ← sample applications
-├── jquantlib-parent/                   ← parent POM
 │
 ├── migration-harness/                  ← C++ ground-truth scaffolding
 │   ├── cpp/
@@ -221,7 +220,6 @@ bash migration-harness/generate-references.sh
 ### Run a sample
 
 ```bash
-cd jquantlib-parent
 mvn clean verify install
 # Sample apps live under jquantlib-samples/
 ```
@@ -253,7 +251,7 @@ mvn clean verify install
 
 | Module | Role |
 |--------|------|
-| `jquantlib-parent` | Parent POM for unified build |
+| `jquantlib-parent` | Root parent POM + aggregator (lives at the repo root) |
 | `jquantlib` | Main module — actively being ported (mirrors QuantLib/C++) |
 | `jquantlib-helpers` | Helper classes |
 | `jquantlib-contrib` | Third-party contributions |
