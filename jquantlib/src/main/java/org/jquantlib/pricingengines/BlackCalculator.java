@@ -545,7 +545,6 @@ public class BlackCalculator {
 
     private static class Calculator implements PolymorphicVisitor {
 
-        // TODO: refactor messages?
         private static final String INVALID_OPTION_TYPE = "invalid option type";
         private static final String INVALID_PAYOFF_TYPE = "invalid payoff type";
 

@@ -156,7 +156,6 @@ import java.util.Set;
  * @note This class is not thread-safe
  */
 @QualityAssurance( quality = Quality.Q1_TRANSLATION, version = Version.V097, reviewers = { "Richard Gomes" } )
-// TODO: better documentation
 public class Matrix extends Cells< Address.MatrixAddress > implements Cloneable {
 
     //
@@ -929,7 +928,6 @@ public class Matrix extends Cells< Address.MatrixAddress > implements Cloneable 
     }
 
     //
-    // TODO: better comments
     //
 
     public Matrix fill(final double scalar) {
@@ -1034,18 +1032,15 @@ public class Matrix extends Cells< Address.MatrixAddress > implements Cloneable 
     //
 
     @Override
-    // TODO: implement equals() with a near-linear approach
     // 1. the chain of Addresses must be equal
     // 2. the base and last memory addresses must be equal in all Addresses
     // *** THIS IDEA NEEDS VALIDATION ***
     public boolean equals(final Object obj) {
-        // TODO Auto-generated method stub
         return super.equals(obj);
     }
 
     @Override
     public int hashCode() {
-        // TODO Auto-generated method stub
         return super.hashCode();
     }
 

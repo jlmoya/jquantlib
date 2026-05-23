@@ -996,7 +996,6 @@ public class SobolRsg implements UniformRandomSequenceGenerator {
         //					pw.print("" + (k + 1) + "\t" + degree[k] + "\t" + ppmt[k] + "\t");
         //
         //					for (int j=0; j<10; j++) {
-        //						//  TODO: do as this:
         //						// outStream << io::power_of_two(
         //						//   directionIntegers_[k][j]) << "\t";
         //						pw.print(directionIntegers_[k][j] + "\t");
