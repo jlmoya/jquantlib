@@ -268,11 +268,6 @@ abstract public class AbstractYieldTermStructure extends AbstractTermStructure i
         return forwardRate(d1, d2, resultDayCounter, comp, Frequency.Annual);
     }
 
-    // FIXME: code review: is this method needed ???
-    //  protected InterestRate forwardRate(final Date d, final Period p, final DayCounter resultDayCounter, Compounding comp) {
-    //      return getForwardRate(d, p, resultDayCounter, comp);
-    //  }
-
     /* (non-Javadoc)
      * @see org.jquantlib.termstructures.IYieldTermStructure#forwardRate(org.jquantlib.util.Date, org.jquantlib.util.Date, org.jquantlib.daycounters.DayCounter, org.jquantlib.termstructures.Compounding, org.jquantlib.time.Frequency)
      */

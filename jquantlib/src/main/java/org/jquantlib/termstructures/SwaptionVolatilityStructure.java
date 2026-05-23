@@ -46,7 +46,6 @@ public abstract class SwaptionVolatilityStructure extends AbstractTermStructure 
         return blackVariance(optionTime, swapLength, strike, false);
     }
 
-    //FIXME:.....
     // overloaded (at least) in SwaptionVolCube2
     /*
      * public SmileSection smileSection( Date optionDate, Period swapTenor) {

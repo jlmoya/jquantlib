@@ -72,12 +72,9 @@ public interface PiecewiseCurve< I extends Interpolator > extends YieldTermStruc
 
     void setInterpolation(final Interpolation interpolation);
 
-    //FIXME:: remove these methods. SEE: http://bugs.jquantlib.org/view.php?id=464
-    // Ideally, we should employ Array<T> which could mimick closer std::vector (which is a dynamic array).
-    // Doing so, we would not be obliged to overwrite an existing
-    // data structure, but we could simply rezise it and add more data.
-    // Then these 3 methods below could be removed.
-    // The same issue happens in Traits.Curve
+    // setDates / setTimes / setData are part of the bootstrap-curve
+    // contract and are called by IterativeBootstrap on each guess.
+    // The same shape is mirrored in Traits.Curve.
     void setDates(final Date[] dates);
 
     void setTimes(/*@Time*/ double[] times);

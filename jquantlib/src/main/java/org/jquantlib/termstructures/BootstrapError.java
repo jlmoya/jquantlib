@@ -28,7 +28,6 @@ import org.jquantlib.math.Ops;
 import org.jquantlib.termstructures.yieldcurves.PiecewiseCurve;
 import org.jquantlib.termstructures.yieldcurves.Traits;
 
-// FIXME: http://bugs.jquantlib.org/view.php?id=463
 public class BootstrapError< T extends Traits > implements Ops.DoubleOp {
 
     private final PiecewiseCurve curve;
@@ -78,7 +77,6 @@ public class BootstrapError< T extends Traits > implements Ops.DoubleOp {
 
     @Override
     public double op(final double guess) {
-        //FIXME: find a way to solve this! :: ifndef DOXYGEN
         traits.updateGuess(curve.data(), guess, segment);
         curve.interpolation().update();
         return helper.quoteError();

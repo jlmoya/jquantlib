@@ -35,8 +35,6 @@ import java.util.List;
  * @author Richard Gomes
  */
 
-//FIXME: This class needs full code review
-
 public interface Traits {
 
     /**

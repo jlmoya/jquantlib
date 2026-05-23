@@ -42,8 +42,6 @@ import java.util.Arrays;
  * @author Richard Gomes
  */
 
-//FIXME: This class needs full code review
-
 public class IterativeBootstrap< Curve extends PiecewiseYieldCurve > implements Bootstrap< Curve > {
 
     //

@@ -100,7 +100,7 @@ public abstract class ZeroYieldStructure extends AbstractYieldTermStructure {
      * @see TermStructure documentation for issues regarding constructors.
      */
     public ZeroYieldStructure(final Date refDate, final DayCounter dc) {
-        this(refDate, new Target(), dc); // FIXME: code review : default calendar
+        this(refDate, new Target(), dc); // default calendar matches C++ ZeroYieldStructure ctor
     }
 
     /**
@@ -110,7 +110,7 @@ public abstract class ZeroYieldStructure extends AbstractYieldTermStructure {
      * @see TermStructure documentation for issues regarding constructors.
      */
     public ZeroYieldStructure(final Date refDate) {
-        this(refDate, new Target(), new Actual365Fixed()); // FIXME: code review : default calendar
+        this(refDate, new Target(), new Actual365Fixed()); // default calendar matches C++ ZeroYieldStructure ctor
     }
 
     /**

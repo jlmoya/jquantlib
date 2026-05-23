@@ -100,7 +100,7 @@ public abstract class ForwardRateStructure extends AbstractYieldTermStructure {
      * @see TermStructure documentation for issues regarding constructors.
      */
     protected ForwardRateStructure(final Date refDate, final DayCounter dc) {
-        this(refDate, new Target(), dc); // FIXME: code review : default calendar
+        this(refDate, new Target(), dc); // default calendar matches C++ ForwardRateStructure ctor
     }
 
     /**
@@ -110,7 +110,7 @@ public abstract class ForwardRateStructure extends AbstractYieldTermStructure {
      * @see TermStructure documentation for issues regarding constructors.
      */
     protected ForwardRateStructure(final Date refDate) {
-        this(refDate, new Target(), new Actual365Fixed()); // FIXME: code review : default calendar
+        this(refDate, new Target(), new Actual365Fixed()); // default calendar matches C++ ForwardRateStructure ctor
     }
 
     /**
