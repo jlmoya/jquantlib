@@ -22,4 +22,18 @@
         <module>jquantlib-parent</module>
     </modules>
 
+    <build>
+        <plugins>
+            <!-- This aggregator has no artifact to publish; skip deploy for the
+                 root POM specifically. The 5 sub-modules still inherit the
+                 distributionManagement from jquantlib-parent and deploy normally. -->
+            <plugin>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
 </project>
