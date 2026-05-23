@@ -49,11 +49,9 @@ import org.junit.Test;
  *       paymentDate, floating leg has 1 MultipleResetsCoupon at paymentDate.</li>
  * </ul>
  *
- * <p>Phase 5d.5-ZCS+FB. The skeleton {@code ZeroCouponSwapTest} (Phase 5d)
- * remains @Ignore'd in its current location and would be un-ignored by a
- * follow-up sub-task once the full {@code testInstrumentValuation} /
- * {@code testFairFixedPayment} cross-validation references are produced
- * (carry-forward to Phase 5d.5-ZCS+FBb).
+ * <p>Phase 5d.5-ZCS+FB. The full {@code ZeroCouponSwapTest} (in the same
+ * package) was un-Ignore'd in a later phase and runs alongside this
+ * structural smoke test.
  */
 public class ZeroCouponSwapBasicTest {
 

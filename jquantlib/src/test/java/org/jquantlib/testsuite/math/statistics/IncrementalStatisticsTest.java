@@ -67,7 +67,7 @@ import org.junit.Test;
  *   downsideDeviation =  7.1264841364431061e+02
  * </pre>
  *
- * <h2>Why this test stays @Ignore'd -- production bug in numerical-stability path</h2>
+ * <h2>Status (Phase3-truly-done-E refresh)</h2>
  *
  * <p>Block 2 of the C++ test ({@code mu=1e8, sigma=0.1}) is specifically the
  * scenario where the pre-QL-1.7 naive variance formula
@@ -76,20 +76,12 @@ import org.junit.Test;
  * this by replacing the naive accumulator with boost::accumulators (Welford
  * online algorithm).
  *
- * <p>The Java {@link IncrementalStatistics} <em>still uses the pre-1.7
- * naive accumulator</em>: it tracks {@code sum_, quadraticSum_, cubicSum_,
- * fourthPowerSum_} as raw running sums and subtracts powers of the mean in
- * {@link IncrementalStatistics#variance()}. Running the block-2 fixture
- * through the Java implementation triggers a {@code negative variance}
- * assertion ({@code IncrementalStatistics.java:135}), reproducing exactly
- * the C++ pre-1.7 failure mode.
- *
- * <p>Fixing this requires porting boost::accumulators-style online (Welford /
- * Chan-Golub-Levesque) moment recurrences into Java's
- * {@link IncrementalStatistics}, which is a production-side change. Per
- * Phase 5e.5b-CFC-d-220 scope (test-side only), the test stays {@code @Ignore}'d
- * with this refined reason; a follow-up production WI is required to
- * un-ignore it.
+ * <p>The Java {@link IncrementalStatistics} now also uses the weighted
+ * Welford / Chan-Golub-Levesque / P&eacute;bay online moment recurrences
+ * (porting landed under Phase 5e.5b-CFC-d-223), so the block-2 numerical-
+ * stability assertion {@code variance &asymp; 1e-2} reproduces to within the
+ * {@code 1e-5} test tolerance. The test is active (no {@code @Ignore})
+ * and passes under the standard test-suite profile.
  */
 public class IncrementalStatisticsTest {
 
