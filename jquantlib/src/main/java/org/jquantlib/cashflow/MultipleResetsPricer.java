@@ -79,28 +79,48 @@ public abstract class MultipleResetsPricer extends FloatingRateCouponPricer {
         }
     }
 
+    // ── swapletPrice / cap / floor not provided by base ──────────────────────
+    //
+    // MultipleResetsPricer is the abstract base for the two concrete sub-period
+    // pricers (AveragingMultipleResetsPricer and CompoundingMultipleResetsPricer).
+    // It exposes the per-sub-period rate aggregation via swapletRate() in its
+    // subclasses, but does not value the coupon discounted price nor any
+    // embedded cap / floor optionality at this aggregation level.
+    //
+    // Mirrors C++ v1.42.1 ql/cashflows/multipleresetscoupon.cpp:102-120
+    // (QL_FAIL("MultipleResetsPricer::swapletPrice not implemented") etc.).
+    //
+    // Cap/floor pricing for an aggregate sub-period rate is a non-trivial
+    // basket option problem; QuantLib leaves it unimplemented and users must
+    // supply a dedicated pricer to handle capped/floored multiple-reset coupons.
+
     @Override
     public double swapletPrice() {
-        throw new LibraryException("MultipleResetsPricer::swapletPrice not implemented");
+        throw new LibraryException("MultipleResetsPricer::swapletPrice not implemented "
+                + "(no discount applied at this aggregation level; see C++ multipleresetscoupon.cpp:102)");
     }
 
     @Override
     public double capletPrice(final double effectiveCap) {
-        throw new LibraryException("MultipleResetsPricer::capletPrice not implemented");
+        throw new LibraryException("MultipleResetsPricer::capletPrice not implemented "
+                + "(cap/floor on the aggregated sub-period rate is a basket option; supply a dedicated pricer)");
     }
 
     @Override
     public double capletRate(final double effectiveCap) {
-        throw new LibraryException("MultipleResetsPricer::capletRate not implemented");
+        throw new LibraryException("MultipleResetsPricer::capletRate not implemented "
+                + "(cap/floor on the aggregated sub-period rate is a basket option; supply a dedicated pricer)");
     }
 
     @Override
     public double floorletPrice(final double effectiveFloor) {
-        throw new LibraryException("MultipleResetsPricer::floorletPrice not implemented");
+        throw new LibraryException("MultipleResetsPricer::floorletPrice not implemented "
+                + "(cap/floor on the aggregated sub-period rate is a basket option; supply a dedicated pricer)");
     }
 
     @Override
     public double floorletRate(final double effectiveFloor) {
-        throw new LibraryException("MultipleResetsPricer::floorletRate not implemented");
+        throw new LibraryException("MultipleResetsPricer::floorletRate not implemented "
+                + "(cap/floor on the aggregated sub-period rate is a basket option; supply a dedicated pricer)");
     }
 }

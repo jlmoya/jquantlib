@@ -113,30 +113,17 @@ public abstract class OvernightIndexedCouponPricer extends FloatingRateCouponPri
         return floorletRate(effectiveFloor);
     }
 
-    @Override
-    public double swapletPrice() {
-        throw new UnsupportedOperationException("swapletPrice not implemented");
-    }
-
-    @Override
-    public double capletPrice(double effectiveCap) {
-        throw new UnsupportedOperationException("capletPrice not implemented");
-    }
-
-    @Override
-    public double capletRate(double effectiveCap) {
-        throw new UnsupportedOperationException("capletRate not implemented");
-    }
-
-    @Override
-    public double floorletPrice(double effectiveFloor) {
-        throw new UnsupportedOperationException("floorletPrice not implemented");
-    }
-
-    @Override
-    public double floorletRate(double effectiveFloor) {
-        throw new UnsupportedOperationException("floorletRate not implemented");
-    }
+    // Base class does NOT provide swapletPrice / capletPrice / capletRate /
+    // floorletPrice / floorletRate. These remain abstract from
+    // FloatingRateCouponPricer; each derived pricer decides whether they apply.
+    // Mirrors C++ v1.42.1 overnightindexedcouponpricer.hpp where the base
+    // OvernightIndexedCouponPricer leaves them pure-virtual and only the
+    // CompoundingOvernightIndexedCouponPricer / ArithmeticAveragedOvernightIndexedCouponPricer
+    // subclasses install the QL_FAIL "not available" stubs (overnightindexedcouponpricer.hpp:113-117, 155-159).
+    //
+    // The Black* / Capped-Floored Black* subclasses provide actual Black-formula
+    // implementations of capletRate / floorletRate (see BlackOvernightIndexedCouponPricer
+    // and CappedFlooredBlackOvernightIndexedCouponPricer).
 
     /**
      * Helper: determine number of fixings used up to {@code date}.

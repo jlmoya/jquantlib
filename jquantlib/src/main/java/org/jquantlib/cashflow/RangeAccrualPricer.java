@@ -113,23 +113,41 @@ public abstract class RangeAccrualPricer extends FloatingRateCouponPricer {
         return swapletPrice() / (accrualFactor_ * discount_);
     }
 
+    // ── Cap/floor pricing intentionally not provided ─────────────────────────
+    //
+    // RangeAccrualPricer values a range-accrual coupon — the embedded
+    // optionality is the digital-range structure (count of fixings in
+    // [lowerTrigger, upperTrigger]), not a per-fixing cap or floor on the
+    // index. Capping or flooring the realized accrual rate has no standard
+    // market interpretation: the accrual rate is already a function of the
+    // discrete digital prices, so applying a further caplet/floorlet would
+    // require an off-model basket pricing approach that QuantLib does not
+    // provide at this layer.
+    //
+    // Mirrors C++ v1.42.1 ql/cashflows/rangeaccrual.cpp:154-168
+    // (QL_FAIL("RangeAccrualPricer::capletPrice not implemented") etc.).
+
     @Override
     public double capletPrice(final double effectiveCap) {
-        throw new LibraryException("RangeAccrualPricer::capletPrice not implemented");
+        throw new LibraryException("RangeAccrualPricer::capletPrice not implemented "
+                + "(range-accrual coupons price the digital range, not a per-fixing cap)");
     }
 
     @Override
     public double capletRate(final double effectiveCap) {
-        throw new LibraryException("RangeAccrualPricer::capletRate not implemented");
+        throw new LibraryException("RangeAccrualPricer::capletRate not implemented "
+                + "(range-accrual coupons price the digital range, not a per-fixing cap)");
     }
 
     @Override
     public double floorletPrice(final double effectiveFloor) {
-        throw new LibraryException("RangeAccrualPricer::floorletPrice not implemented");
+        throw new LibraryException("RangeAccrualPricer::floorletPrice not implemented "
+                + "(range-accrual coupons price the digital range, not a per-fixing floor)");
     }
 
     @Override
     public double floorletRate(final double effectiveFloor) {
-        throw new LibraryException("RangeAccrualPricer::floorletRate not implemented");
+        throw new LibraryException("RangeAccrualPricer::floorletRate not implemented "
+                + "(range-accrual coupons price the digital range, not a per-fixing floor)");
     }
 }

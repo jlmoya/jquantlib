@@ -20,6 +20,7 @@ package org.jquantlib.cashflow;
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.indexes.OvernightIndex;
+import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.math.Constants;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.termstructures.YieldTermStructure;
@@ -164,5 +165,63 @@ public class ArithmeticAveragedOvernightIndexedCouponPricer extends OvernightInd
                         coupon_.referencePeriodStart(), coupon_.referencePeriodEnd());
         final double rate = accumulatedRate / accruedPeriod;
         return coupon_.gearing() * rate + coupon_.spread();
+    }
+
+    // ── Cap/floor pricing intentionally not provided ─────────────────────────
+    //
+    // ArithmeticAveragedOvernightIndexedCouponPricer is an aggregate-rate pricer
+    // (arithmetic average of overnight fixings). It does not value the embedded
+    // optionality of a per-fixing cap or floor.  To price a capped/floored
+    // averaged overnight coupon, use the dedicated Black pricer
+    // {@link BlackAveragingOvernightIndexedCouponPricer}.
+    //
+    // Mirrors C++ v1.42.1 ql/cashflows/overnightindexedcouponpricer.hpp:155-159
+    // (QL_FAIL("swapletPrice not available") etc.).
+
+    @Override
+    public double swapletPrice() {
+        throw new LibraryException(
+                "ArithmeticAveragedOvernightIndexedCouponPricer: swapletPrice not available "
+                        + "(aggregate-rate pricer; use BlackAveragingOvernightIndexedCouponPricer for cap/floor pricing)");
+    }
+
+    @Override
+    public double capletPrice(final double effectiveCap) {
+        throw new LibraryException(
+                "ArithmeticAveragedOvernightIndexedCouponPricer: capletPrice not available "
+                        + "(aggregate-rate pricer; use BlackAveragingOvernightIndexedCouponPricer for cap pricing)");
+    }
+
+    @Override
+    public double capletRate(final double effectiveCap) {
+        throw new LibraryException(
+                "ArithmeticAveragedOvernightIndexedCouponPricer: capletRate not available "
+                        + "(aggregate-rate pricer; use BlackAveragingOvernightIndexedCouponPricer for cap pricing)");
+    }
+
+    @Override
+    public double floorletPrice(final double effectiveFloor) {
+        throw new LibraryException(
+                "ArithmeticAveragedOvernightIndexedCouponPricer: floorletPrice not available "
+                        + "(aggregate-rate pricer; use BlackAveragingOvernightIndexedCouponPricer for floor pricing)");
+    }
+
+    @Override
+    public double floorletRate(final double effectiveFloor) {
+        throw new LibraryException(
+                "ArithmeticAveragedOvernightIndexedCouponPricer: floorletRate not available "
+                        + "(aggregate-rate pricer; use BlackAveragingOvernightIndexedCouponPricer for floor pricing)");
+    }
+
+    @Override
+    public double capletRate(final double effectiveCap, final boolean dailyCapFloor) {
+        throw new LibraryException(
+                "ArithmeticAveragedOvernightIndexedCouponPricer.capletRate(Rate, bool) not implemented");
+    }
+
+    @Override
+    public double floorletRate(final double effectiveFloor, final boolean dailyCapFloor) {
+        throw new LibraryException(
+                "ArithmeticAveragedOvernightIndexedCouponPricer.floorletRate(Rate, bool) not implemented");
     }
 }
