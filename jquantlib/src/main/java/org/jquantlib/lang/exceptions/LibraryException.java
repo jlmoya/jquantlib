@@ -38,13 +38,24 @@ POSSIBILITY OF SUCH DAMAGE.
 
 package org.jquantlib.lang.exceptions;
 
-import org.jquantlib.QL;
-
 import java.io.PrintStream;
 import java.io.PrintWriter;
 
 /**
- * A specialized RuntimeException used internally by JQuantLib
+ * A specialized RuntimeException used internally by JQuantLib.
+ *
+ * <p>Historical note: the original ctors called {@code QL.error(this)} which
+ * unconditionally printed every constructed instance + full stack trace to
+ * stderr — even instances that were immediately caught for control flow
+ * (e.g. {@code LfmCovarianceProxy.integratedCovariance} fast-path/slow-path
+ * fallback, where the C++ idiom is to try a closed-form path that may
+ * {@code QL_FAIL} and fall through to numerical integration). The result was
+ * test consoles flooded with ERROR + stack traces for benign control flow.
+ * Per CLAUDE.md ground-truth principle the C++ {@code QL_FAIL} just throws
+ * — it does not log. The {@code QL.error(this)} side-effect was a Java-only
+ * deviation from C++ semantics. Removed 2026-05-23 to match C++ behavior
+ * and clean up test output; uncaught exceptions surface normally via JUnit's
+ * default reporting.
  *
  * @author Richard Gomes
  */
@@ -55,7 +66,6 @@ public class LibraryException extends RuntimeException {
      */
     public LibraryException() {
         super("LibraryException created");
-        QL.error(this);
     }
 
     /**
@@ -65,7 +75,6 @@ public class LibraryException extends RuntimeException {
      */
     public LibraryException(final String message) {
         super(message);
-        QL.error(this);
     }
 
     /**
@@ -76,7 +85,6 @@ public class LibraryException extends RuntimeException {
      */
     public LibraryException(final String message, final Throwable cause) {
         super(message, cause);
-        QL.error(this);
     }
 
     /**
@@ -87,7 +95,6 @@ public class LibraryException extends RuntimeException {
      */
     public LibraryException(final Throwable cause) {
         super(cause);
-        QL.error(this);
     }
 
     @Override
