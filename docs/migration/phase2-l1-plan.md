@@ -1,4 +1,19 @@
-# Phase 2 forward closure — L1 (math/utilities/time/patterns) plan
+# Phase 2 forward closure — L1 roadmap
+
+> **For agentic workers:** This is the L1 cluster ROADMAP. Each cluster
+> (L1-A, L1-B, etc.) gets its own bite-sized implementation plan file
+> (`phase2-l1-<X>-<topic>-plan.md`) with TDD-structured tasks. Use
+> superpowers:subagent-driven-development to execute each cluster plan.
+
+**Goal:** Port the 132 genuinely-missing math/utilities/time/patterns
+classes from C++ v1.42.1 to Java, on the JDK 25 LTS + W1-W4 modernized base.
+
+**Architecture:** 5 thematic clusters (L1-A through L1-E), each dispatched
+to a worktree-isolated implementer subagent with spec + code-quality
+review gates per cluster before FF-merge to main.
+
+**Tech Stack:** JDK 25, Maven (surefire 3.5.2, junit 4.13.2, slf4j 2.0.16),
+git worktrees, C++ source pinned at v1.42.1 (commit 099987f0).
 
 **Date:** 2026-05-22
 **Predecessor:** `jquantlib-jdk25-modernized-w1-w4` @ `683bf14e`
