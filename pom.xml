@@ -22,18 +22,20 @@
         <module>jquantlib-parent</module>
     </modules>
 
-    <build>
-        <plugins>
-            <!-- This aggregator has no artifact to publish; skip deploy for the
-                 root POM specifically. The 5 sub-modules still inherit the
-                 distributionManagement from jquantlib-parent and deploy normally. -->
-            <plugin>
-                <artifactId>maven-deploy-plugin</artifactId>
-                <configuration>
-                    <skip>true</skip>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+    <!-- Mirror the distributionManagement declared in jquantlib-parent so
+         `mvn deploy` from the repo root has a deploy target for the
+         aggregator POM itself (Maven can't inherit it: jquantlib-parent is
+         a module of this aggregator, which would be a parent-of-own-child
+         cycle). Keep the two URLs in sync if either is changed. -->
+    <distributionManagement>
+        <repository>
+            <id>nexus-releases</id>
+            <url>http://localhost:7910/repository/maven-releases/</url>
+        </repository>
+        <snapshotRepository>
+            <id>nexus-snapshots</id>
+            <url>http://localhost:7910/repository/maven-snapshots/</url>
+        </snapshotRepository>
+    </distributionManagement>
 
 </project>
