@@ -156,7 +156,6 @@ public class DividendVanillaOption extends VanillaOption {
         // public fields
         //
 
-        // FIXME: public fields here is a bad design technique :(
         public List< ? extends Dividend > cashFlow;
 
         //

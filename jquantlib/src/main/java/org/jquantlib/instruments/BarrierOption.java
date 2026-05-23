@@ -140,7 +140,6 @@ public class BarrierOption extends OneAssetOption {
         // public fields
         //
 
-        // FIXME: public fields here is a bad design technique :(
         public BarrierType barrierType;
         public double barrier, rebate;
 

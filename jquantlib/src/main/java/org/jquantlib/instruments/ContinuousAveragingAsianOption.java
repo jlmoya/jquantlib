@@ -109,7 +109,6 @@ public class ContinuousAveragingAsianOption extends OneAssetOption {
         // public fields
         //
 
-        // FIXME: public fields here is a bad design technique :(
         public AverageType averageType;
         public Date startDate;
 

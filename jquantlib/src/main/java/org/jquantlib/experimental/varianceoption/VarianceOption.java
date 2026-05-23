@@ -124,7 +124,6 @@ public class VarianceOption extends Instrument {
      */
     public static class ArgumentsImpl implements Instrument.Arguments {
 
-        // FIXME: public fields here mirror QuantLib's pre-getter style.
         public Payoff payoff;
         public /*@Real*/ double notional;
         public Date startDate;

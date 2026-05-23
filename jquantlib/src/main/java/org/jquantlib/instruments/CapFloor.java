@@ -202,7 +202,8 @@ public class CapFloor extends Instrument {
     public boolean isExpired() {
         Date lastPaymentDate = Date.minDate();
         for ( int i = 0; i < floatingLeg_.size(); i++ ) {
-            //FIXME: kind of ugly... intention: get the last date of all dates in the floatingdate c++ max syntax.
+            // Track the latest date across all floating-leg cashflows
+            // (equivalent to std::max_element over their dates).
             lastPaymentDate = lastPaymentDate.le(floatingLeg_.get(i).date())
                     ? floatingLeg_.get(i).date()
                     : lastPaymentDate;

@@ -116,8 +116,8 @@ public class DiscreteAveragingAsianOption extends OneAssetOption {
 
         public ArgumentsImpl() {
             averageType = null;
-            runningAccumulator = Constants.NULL_REAL; //FIXME is there central values?
-            pastFixings = Constants.NULL_INTEGER; //FIXME is there central values?
+            runningAccumulator = Constants.NULL_REAL;
+            pastFixings = Constants.NULL_INTEGER;
             fixingDates = new ArrayList<>();
         }
 

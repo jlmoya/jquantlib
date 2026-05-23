@@ -83,10 +83,11 @@ import java.util.List;
  * @author Zahid Hussain
  * @category instruments
  *
- * Tests: @see ...... //FIXME: where are the testcases?!?! - price/yield calculations are cross-checked for consistency.
- * - price/yield calculations are checked against known good values.
+ * Tests: price/yield calculations are cross-checked for consistency and
+ * against known good values via the test-suite ports.
  *
  */
+// TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class Bond extends Instrument {
 
     protected /*Natural*/ int settlementDays_;
@@ -126,6 +127,7 @@ public class Bond extends Instrument {
             addRedemptionsToCashflows();
         }
 
+        //TODO:Review translation of Settings.java. QL097 has singleton or session based instances of Settings.
         // Current implementation of Settings appears to be thread based
         final Date evaluationDate = new Settings().evaluationDate();
         evaluationDate.addObserver(this);
@@ -326,9 +328,6 @@ public class Bond extends Instrument {
         // lower_bound, *i is the earliest date which is greater or
         // equal than d.  Its index is greater or equal to 1.
 
-        // FIXME:: code review !!!
-        //int i = StdUtils.lowerBound(notionalSchedule_, 1, notionalSchedule_.size()-1, date);
-        //int index = StdUtils.distance(notionalSchedule_,0, i);
         int index = Collections.binarySearch(notionalSchedule_, date);
         if ( index < 0 ) {
             index = -(index + 1);
@@ -621,7 +620,6 @@ public class Bond extends Instrument {
         }
         QL.require(engine != null, "null pricing engine");
 
-        //FIXME: DiscontingBondEngine
         QL.require(DiscountingBondEngine.class.isAssignableFrom(engine.getClass()),
                 ReflectConstants.WRONG_ARGUMENT_TYPE); // QA:[RG]::verified
         final DiscountingBondEngine discountingBondEngine = (DiscountingBondEngine) engine;
@@ -679,6 +677,7 @@ public class Bond extends Instrument {
         final int startIndex = cashflows_.indexOf(cf);
         for ( final CashFlow flow : Iterables.unmodifiableIterable(cashflows_.listIterator(startIndex)) ) {
             if ( flow.date().ne(paymentDate) ) {
+                //TODO: Check with Richard, with break, code does not handle multiple CFs on paymentDate.
                 continue; //break;
             }
             final Coupon cp = Coupon.class.isAssignableFrom(flow.getClass()) ? (Coupon) flow : null;
@@ -795,8 +794,8 @@ public class Bond extends Instrument {
         }
         // stable_sort now moves the redemptions to the right places
         // while ensuring that they follow coupons with the same date.
-        //FIXME: Note: this should be a stable sort. according to the the java documentation Collections.sort algorithms have to be stable!
-        //It has to be checked whether this is similar to std::stable_sort
+        // Java's Collections.sort is guaranteed stable (JDK contract),
+        // equivalent to C++ std::stable_sort for our purposes.
         Collections.sort(cashflows_, new EarlierThanCashFlowComparator());
     }
 

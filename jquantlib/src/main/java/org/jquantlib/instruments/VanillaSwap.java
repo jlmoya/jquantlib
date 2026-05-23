@@ -94,7 +94,6 @@ public class VanillaSwap extends Swap {
                 BusinessDayConvention.Following);
     }
 
-    //FIXME: remove parameter "fixingDays"
     public VanillaSwap(final Type type, final /*@Real*/ double nominal, final Schedule fixedSchedule,
             final /*@Rate*/ double fixedRate, final DayCounter fixedDayCount, final Schedule floatSchedule,
             final IborIndex iborIndex, final /*@Spread*/ double spread, final DayCounter floatingDayCount,
@@ -111,22 +110,13 @@ public class VanillaSwap extends Swap {
         this.spread = spread;
         this.floatingDayCount = floatingDayCount;
         this.paymentConvention = paymentConvention;
-        //FIXME this.fixingDays = fixingDays;
 
         final Leg fixedLeg = new FixedRateLeg(fixedSchedule, fixedDayCount).withNotionals(nominal)
                 .withCouponRates(fixedRate).withPaymentAdjustment(paymentConvention).Leg();
 
-        // JM where are gearings set they cannot be null for the floating leg.
         final Leg floatingLeg = new IborLeg(floatingSchedule, iborIndex).withNotionals(nominal)
                 .withPaymentDayCounter(floatingDayCount).withPaymentAdjustment(paymentConvention)
-
-                //FIXME:: .withFixingDays (fixingDays) // FIXME: slight deviation from quantlib, need to expose fixing days up the stack
-
                 .withSpreads(spread)
-
-                // FIXME: JM quantlib does not assign this, it is currently required for construction
-                // .withGearings(1.0)
-
                 .Leg();
 
         for ( final CashFlow item : floatingLeg ) {
