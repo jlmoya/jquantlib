@@ -150,7 +150,7 @@ import org.junit.Test;
  * {@link #testBadPreviousCurve} (gated), {@link #testConstructionWithExplicitBootstrap}.
  * BLOCKED tests are documented at the bottom of the class.
  */
-@SuppressWarnings("unchecked")
+@SuppressWarnings({"unchecked", "deprecation"})
 public class PiecewiseYieldCurveTest {
 
     /**
