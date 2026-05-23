@@ -62,15 +62,15 @@ public class BlackIborCouponPricer extends IborCouponPricer {
     /** Mirrors C++ {@code discount_}; {@link Constants#NULL_REAL} when no curve. */
     protected double discount_ = Constants.NULL_REAL;
     // Cached on each initialize().
-    private IborCoupon coupon_;
-    private double gearing_;
-    private double spread_;
-    private double accrualPeriod_;
-    private Date fixingDate_;
-    private Date fixingValueDate_;
-    private Date fixingMaturityDate_;
-    private double spanningTimeIndexMaturity_;
-    private IborIndex iborIndex_;
+    protected IborCoupon coupon_;
+    protected double gearing_;
+    protected double spread_;
+    protected double accrualPeriod_;
+    protected Date fixingDate_;
+    protected Date fixingValueDate_;
+    protected Date fixingMaturityDate_;
+    protected double spanningTimeIndexMaturity_;
+    protected IborIndex iborIndex_;
     /** Default: empty caplet vol, Black76, correlation = 1.0. */
     public BlackIborCouponPricer() {
         this(new Handle< OptionletVolatilityStructure >(), TimingAdjustment.Black76,
