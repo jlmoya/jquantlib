@@ -68,7 +68,6 @@ public class InterpolatedZeroCurve< I extends Interpolator > extends ZeroYieldSt
     //
     // private fields
     //
-    // TODO: all fields should be protected?  See: QL/C++
 
     private final Class< I > classI;
     private final Interpolator interpolator;
@@ -111,8 +110,8 @@ public class InterpolatedZeroCurve< I extends Interpolator > extends ZeroYieldSt
         // (Phase 2x A.1) — zero rates are arbitrary doubles per C++ v1.42.1
         // (ql/termstructures/yield/zerocurve.hpp).
 
-        this.dates = dates; // TODO: clone() ?
-        this.data = yields; // TODO: clone() ?
+        this.dates = dates;
+        this.data = yields;
         this.times = new double[dates.length];
         times[0] = 0.0;
 
@@ -238,17 +237,17 @@ public class InterpolatedZeroCurve< I extends Interpolator > extends ZeroYieldSt
 
     @Override
     public void setDates(final Date[] dates) {
-        this.dates = dates; // TODO: clone() ?
+        this.dates = dates;
     }
 
     @Override
     public void setTimes(final double[] times) {
-        this.times = times; // TODO: clone() ?
+        this.times = times;
     }
 
     @Override
     public void setData(final double[] data) {
-        this.data = data; // TODO: clone() ?
+        this.data = data;
     }
 
     @Override

@@ -58,7 +58,6 @@ public class SingleVariate< T, RNG extends RandomNumberGenerator, IC extends Inv
     //public PathPricer<Path> path_pricer_type;
     //public InverseCumulativeRsg<T, RNG, IC> rsg_type;
 
-    //TODO: code review
     //public PathGenerator<T> path_generator_type;
 
     //  public class PathGenerator<Double, Sample<Double> RNG extends RandomNumberGenerator<Path>, GSG extends RandomSequenceGenerator<Path, RNG>> { // should be GaussianSequenceGenerator ?

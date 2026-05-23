@@ -51,7 +51,6 @@ import org.jquantlib.math.matrixutilities.Matrix;
  * @author Richard Gomes
  * @see BicubicSplineInterpolation
  */
-// TODO: rename to Bicubic
 public class BicubicSpline implements Interpolation2D.Interpolator2D {
 
     public Interpolation2D interpolate(final Array vx, final Array vy, final Matrix mz) /* @ReadOnly */ {

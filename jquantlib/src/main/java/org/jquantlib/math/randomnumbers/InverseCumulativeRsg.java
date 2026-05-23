@@ -53,7 +53,6 @@ import org.jquantlib.methods.montecarlo.Sample;
  * @author Richard Gomes
  */
 
-//TODO: why USG and not RSG? What's the difference between URSG and RSG??
 public class InverseCumulativeRsg< USG extends UniformRandomSequenceGenerator, IC extends InverseCumulative >
         implements UniformRandomSequenceGenerator, RandomSequenceGeneratorIntf {
 

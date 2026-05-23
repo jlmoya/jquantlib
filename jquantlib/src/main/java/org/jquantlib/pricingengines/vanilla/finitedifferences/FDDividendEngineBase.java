@@ -61,7 +61,6 @@ import java.util.List;
  * @todo The dividend class really needs to be made more sophisticated to distinguish between fixed dividends and
  * fractional dividends
  */
-//TODO: The dividend class really needs to be made more sophisticated to distinguish between fixed dividends and fractional dividends
 public abstract class FDDividendEngineBase extends FDMultiPeriodEngine {
 
     //

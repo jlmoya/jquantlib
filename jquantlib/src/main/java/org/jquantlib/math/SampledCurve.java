@@ -73,7 +73,6 @@ public class SampledCurve implements Cloneable {
     }
 
     public SampledCurve(final Array grid) {
-        // TODO: code review :: use of clone()
         this.grid = grid;
         this.values = new Array(this.grid.size());
     }
@@ -84,7 +83,6 @@ public class SampledCurve implements Cloneable {
      * @param that
      */
     public SampledCurve(final SampledCurve that) {
-        // TODO: code review :: use of clone()
         this.grid = that.grid.clone();
         this.values = that.values.clone();
     }
@@ -133,12 +131,10 @@ public class SampledCurve implements Cloneable {
     }
 
     public void setGrid(final Array g) {
-        // TODO: RICHARD:: code review :: use of clone()
         this.grid = g;
     }
 
     public void setValues(final Array array) {
-        // TODO: RICHARD:: code review :: use of clone()
         this.values = array;
     }
 

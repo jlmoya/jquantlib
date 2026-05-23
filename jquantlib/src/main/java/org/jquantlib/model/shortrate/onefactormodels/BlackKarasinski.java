@@ -48,12 +48,10 @@ import org.jquantlib.time.TimeGrid;
  * @author Praneet Tiwari
  * @category shortrate
  */
-// TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class BlackKarasinski extends OneFactorModel implements TermStructureConsistentModel {
     // need permanent solution for this one
 
     private static final String no_defined_process_for_bk = "no defined process for Black-Karasinski";
-    //TODO:renaming....
     private final TermStructureConsistentModelClass termstructureConsistentModel;
 
     public BlackKarasinski(final Handle< YieldTermStructure > termStructure) {

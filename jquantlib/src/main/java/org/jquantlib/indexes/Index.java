@@ -40,7 +40,6 @@ import java.util.List;
  *
  * @author Srinivas Hasti
  */
-//TODO: Code review and comments
 public abstract class Index implements Observable {
 
     //

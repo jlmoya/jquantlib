@@ -57,7 +57,7 @@ public class FDBermudanEngine extends OneAssetOption.EngineImpl {
     //
 
     private final FDMultiPeriodEngine fdVanillaEngine;
-    private double extraTermInBermuda; // TODO: code review
+    private double extraTermInBermuda;
 
     //
     // public constructors
@@ -84,12 +84,10 @@ public class FDBermudanEngine extends OneAssetOption.EngineImpl {
     // private methods
     //
 
-    // TODO: verify how this method is called
     private void initializeStepCondition() {
         fdVanillaEngine.stepCondition = new NullCondition< Array >();
     }
 
-    // TODO: verify how this method is called
     private void executeIntermediateStep(final int step) {
         final int size = fdVanillaEngine.intrinsicValues.size();
         for ( int j = 0; j < size; j++ ) {

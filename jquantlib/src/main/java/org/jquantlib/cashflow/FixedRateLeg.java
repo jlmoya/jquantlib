@@ -6,7 +6,6 @@ import org.jquantlib.termstructures.Compounding;
 import org.jquantlib.termstructures.InterestRate;
 import org.jquantlib.time.*;
 
-// TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class FixedRateLeg extends Leg {
 
     private final Schedule schedule_;
@@ -51,7 +50,7 @@ public class FixedRateLeg extends Leg {
     }
 
     public FixedRateLeg withNotionals(final double[]/*List<Double>*/ notionals) {
-        this.notionals_ = notionals; // TODO: clone() ?
+        this.notionals_ = notionals;
         return this;
     }
 
@@ -77,7 +76,7 @@ public class FixedRateLeg extends Leg {
     }
 
     public FixedRateLeg withCouponRates(final InterestRate[] couponRates) {
-        couponRates_ = couponRates; // TODO: clone() ?
+        couponRates_ = couponRates;
         return this;
     }
 

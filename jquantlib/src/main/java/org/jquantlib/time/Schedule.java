@@ -84,7 +84,7 @@ public class Schedule {
 
     public Schedule(final List< Date > dates, final Calendar calendar, final BusinessDayConvention convention) {
         this.dates_ = dates;
-        this.isRegular_ = new ArrayList<>(); // TODO: use a data structure backed by primitive types instead
+        this.isRegular_ = new ArrayList<>();
 
         this.calendar_ = calendar;
         this.convention_ = convention;
@@ -152,8 +152,8 @@ public class Schedule {
             final BusinessDayConvention convention, final BusinessDayConvention terminationDateConvention,
             final DateGeneration.Rule rule, final boolean endOfMonth, final Date firstDate, final Date nextToLastDate) {
 
-        this.dates_ = new ArrayList<>(); // TODO: use a data structure backed by primitive types instead
-        this.isRegular_ = new ArrayList<>(); // TODO: use a data structure backed by primitive types instead
+        this.dates_ = new ArrayList<>();
+        this.isRegular_ = new ArrayList<>();
 
         this.fullInterface_ = true;
         this.tenor_ = tenor;
@@ -805,7 +805,6 @@ public class Schedule {
         throw new UnsupportedOperationException("Schedule.end: use dates().iterator() instead");
     }
 
-    //TODO :: operator Schedule() const;
 
     public int lowerBound() /* @ReadOnly */ {
         return lowerBound(new Date());

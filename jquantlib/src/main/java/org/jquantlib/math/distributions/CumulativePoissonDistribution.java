@@ -40,8 +40,6 @@ import java.awt.print.Book;
  * @see Wikipedia: <a href="http://en.wikipedia.org/wiki/Poisson_distribution">Poisson Distribution</a>
  * @see Book : <i>"Numerical Recipes in C", 2nd edition, Teukolsky, Vetterling, Flannery, chapter 6.</i>
  */
-//TODO Test the correctness of the returned value against known good results.
-//TODO CumulativePoissonDistribution: Write a test case.
 public class CumulativePoissonDistribution implements Ops.IntToDouble {
 
     //

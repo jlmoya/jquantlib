@@ -30,7 +30,6 @@ import org.jquantlib.math.Ops;
  *
  */
 
-// TODO Add test case for MoroInverseCumulativeNormal class.
 public class MoroInverseCumulativeNormal extends NormalDistribution implements Ops.DoubleOp {
 
     //

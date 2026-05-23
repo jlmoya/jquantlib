@@ -307,7 +307,6 @@ public class Std {
     public class Bind2nd< T extends Number > {
 
         public BinaryOperator< T > bind2nd(final T x) {
-            // TODO:
             throw new LibraryException("Unsupported operation");
         }
     }

@@ -30,7 +30,6 @@ public class DiscountingBondEngine extends Bond.EngineImpl {
 
     @Override
     public void calculate() /* @ReadOnly */ {
-        //TODO: study performance .vs. defensive programming
         // QL.require(Bond.Arguments.class.isAssignableFrom(arguments.getClass()), ReflectConstants.WRONG_ARGUMENT_TYPE); // QA:[RG]::verified
         // QL.require(Bond.Results.class.isAssignableFrom(results.getClass()), ReflectConstants.WRONG_ARGUMENT_TYPE); // QA:[RG]::verified
 

@@ -28,7 +28,6 @@ import org.jquantlib.math.Ops;
 /**
  * @author <Richard Gomes>
  */
-// TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class TabulatedGaussLegendre {
 
     // Abscissas and Weights from Abramowitz and Stegun

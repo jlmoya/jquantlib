@@ -52,7 +52,6 @@ import org.jquantlib.util.Pair;
  * @author Tim Blackler
  *
  */
-// TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class YoYInflationIndex extends InflationIndex {
 
     private final Handle< YoYInflationTermStructure > yoyInflation;

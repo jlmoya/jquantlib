@@ -46,7 +46,6 @@ import org.jquantlib.util.Visitor;
  *
  * @author John Nichol
  */
-// TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class SimpleCashFlow extends CashFlow {
 
     //

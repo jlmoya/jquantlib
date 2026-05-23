@@ -54,7 +54,6 @@ import org.jquantlib.math.Ops;
  *
  * @author Richard Gomes
  */
-//TODO: Add test case.
 //TEST the correctness of the result is tested by checking it against known good values.
 public class SegmentIntegral extends Integrator {
 

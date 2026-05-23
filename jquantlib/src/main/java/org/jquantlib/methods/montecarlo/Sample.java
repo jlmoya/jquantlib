@@ -30,8 +30,6 @@ package org.jquantlib.methods.montecarlo;
  * @author Richard Gomes
  */
 
-//TODO: Add JavaDocs
-//TODO: Code review
 
 // Sample<Double>
 // Sample<Array>

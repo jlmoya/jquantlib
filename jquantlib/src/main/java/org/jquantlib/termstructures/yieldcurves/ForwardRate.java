@@ -58,7 +58,6 @@ public class ForwardRate implements Traits {
     static private final double averageRate = .05;
     static private final double maxRate = 1.0;
 
-    //TODO: think how constructor must look like
     public ForwardRate() {
     }
 

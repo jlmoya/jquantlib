@@ -67,7 +67,6 @@ import java.util.List;
  * fair-spread calculation. This might not be what you want.
  * @category instruments
  */
-// TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class VanillaSwap extends Swap {
 
     static final /*@Spread*/ double basisPoint = 1.0e-4;
@@ -442,7 +441,6 @@ public class VanillaSwap extends Swap {
      *
      * @author Richard Gomes
      */
-    // TODO: code review :: object model needs to be validated and eventually refactored
     public class ArgumentsImpl extends Swap.ArgumentsImpl implements VanillaSwap.Arguments {
 
         public Type type;
@@ -486,7 +484,6 @@ public class VanillaSwap extends Swap {
      *
      * @author Richard Gomes
      */
-    // TODO: code review :: object model needs to be validated and eventually refactored
     public class ResultsImpl extends Swap.ResultsImpl implements VanillaSwap.Results {
 
         public /*@Rate*/ double fairRate;

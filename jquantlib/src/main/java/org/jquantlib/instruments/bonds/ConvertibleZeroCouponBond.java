@@ -40,7 +40,6 @@ import org.jquantlib.time.Schedule;
  * @author Daniel Kong
  * @author Zahid Hussain
  */
-//TODO: Work in progress
 public class ConvertibleZeroCouponBond extends ConvertibleBond {
 
     public ConvertibleZeroCouponBond(final Exercise exercise, final double conversionRatio,

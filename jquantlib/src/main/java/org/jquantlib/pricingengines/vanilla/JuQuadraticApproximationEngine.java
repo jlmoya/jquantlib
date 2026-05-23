@@ -62,7 +62,6 @@ import org.jquantlib.processes.GeneralizedBlackScholesProcess;
  */
 public class JuQuadraticApproximationEngine extends VanillaOption.EngineImpl {
 
-    // TODO: refactor messages
     private static final String NOT_AN_AMERICAN_OPTION = "not an American Option";
     private static final String NON_AMERICAN_EXERCISE_GIVEN = "non-American exercise given";
     private static final String PAYOFF_AT_EXPIRY_NOT_HANDLED = "payoff at expiry not handled";
@@ -170,7 +169,6 @@ public class JuQuadraticApproximationEngine extends VanillaOption.EngineImpl {
                 throw new LibraryException(UNKNOWN_OPTION_TYPE); // QA:[RG]::verified
             }
 
-            // TODO: study how zero interest rate could be handled
             QL.ensure(h != 0.0, DIVIDING_BY_ZERO_INTEREST_RATE); // QA:[RG]::verified
 
             final double /* @Real */temp_root = Math.sqrt((beta - 1) * (beta - 1) + (4 * alpha) / h);

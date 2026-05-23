@@ -28,7 +28,6 @@ import org.jquantlib.math.matrixutilities.Array;
  * @author Srinivas Hasti
  *
  */
-// TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class TransformedGrid {
 
     protected Array grid;
@@ -38,7 +37,6 @@ public class TransformedGrid {
     protected Array dx;
 
     public TransformedGrid(final Array grid) {
-        // TODO: code review :: use of clone()
         this.grid = grid;
         this.transformedGrid = grid.clone();
         this.dxm = new Array(grid.size());
@@ -52,7 +50,6 @@ public class TransformedGrid {
     }
 
     public TransformedGrid(final Array grid, final Ops.DoubleOp f) {
-        // TODO: code review :: use of clone()
         this.grid = grid;
         this.transformedGrid = grid.clone().transform(f);
         this.dxm = new Array(grid.size());

@@ -69,7 +69,6 @@ public class InterpolatedForwardCurve< I extends Interpolator > extends ForwardR
     //
     // private fields
     //
-    // TODO: all fields should be protected?  See: QL/C++
 
     private final Class< I > classI;
     private final Interpolator interpolator;
@@ -120,8 +119,8 @@ public class InterpolatedForwardCurve< I extends Interpolator > extends ForwardR
         QL.require(forwards.length != 0, "forwards cannot be empty");
         QL.require(dates.length == forwards.length, "Dates must be the same size as forwards");
 
-        this.dates = dates; // TODO: clone() ?
-        this.data = forwards; // TODO: clone() ?
+        this.dates = dates;
+        this.data = forwards;
         this.times = new double[dates.length];
         times[0] = 0.0;
 
@@ -250,17 +249,17 @@ public class InterpolatedForwardCurve< I extends Interpolator > extends ForwardR
 
     @Override
     public void setDates(final Date[] dates) {
-        this.dates = dates; // TODO: clone() ?
+        this.dates = dates;
     }
 
     @Override
     public void setTimes(final double[] times) {
-        this.times = times; // TODO: clone() ?
+        this.times = times;
     }
 
     @Override
     public void setData(final double[] data) {
-        this.data = data; // TODO: clone() ?
+        this.data = data;
     }
 
     @Override

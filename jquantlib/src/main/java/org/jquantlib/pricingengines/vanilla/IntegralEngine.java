@@ -55,7 +55,6 @@ import org.jquantlib.processes.GeneralizedBlackScholesProcess;
  */
 public class IntegralEngine extends OneAssetOption.EngineImpl {
 
-    // TODO: refactor messages
     private static final String NOT_AN_AMERICAN_OPTION = "not an American Option";
     private static final String NON_STRIKED_PAYOFF_GIVEN = "non-striked payoff given";
     private static final String BLACK_SCHOLES_PROCESS_REQUIRED = "Black-Scholes process required";
@@ -83,7 +82,6 @@ public class IntegralEngine extends OneAssetOption.EngineImpl {
     // implements PricingEngine
     //
 
-    // TODO: define tolerance for calculate()
     @Override
     public void calculate() {
         QL.require(a.exercise.type() == Exercise.Type.European, NOT_AN_AMERICAN_OPTION);

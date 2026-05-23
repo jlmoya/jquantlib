@@ -39,7 +39,6 @@ import org.jquantlib.time.Schedule;
  * @warning Most methods inherited from Bond (such as yield or the yield-based dirtyPrice and cleanPrice) refer to the
  * underlying plain-vanilla bond and do not take convertibility and callability into account.
  */
-//TODO: Work in progress
 public class ConvertibleFixedCouponBond extends ConvertibleBond {
 
     public ConvertibleFixedCouponBond(final Exercise exercise, final double conversionRatio,

@@ -57,7 +57,6 @@ import org.jquantlib.util.Visitor;
  * gamma, gamma forward, rho, dividend rho, vega, and strike sensitivity.
  */
 // FIXME When the variance is null, division by zero occur during calculations
-// TODO: write test cases, including a situation when variance is zero
 public class BlackCalculator {
 
     //
@@ -547,7 +546,6 @@ public class BlackCalculator {
 
     private static class Calculator implements PolymorphicVisitor {
 
-        // TODO: refactor messages?
         private static final String INVALID_OPTION_TYPE = "invalid option type";
         private static final String INVALID_PAYOFF_TYPE = "invalid payoff type";
 

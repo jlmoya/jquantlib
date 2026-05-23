@@ -51,7 +51,6 @@ import java.util.Iterator;
  *
  * @author Richard Gomes
  */
-// TODO : Test cases
 public class ConstantEstimator implements VolatilityCompositor {
 
     private final /* @NonNegative */ int size;

@@ -39,7 +39,6 @@ import org.jquantlib.math.Ops;
  * @author Richard Gomes
  *
  */
-// TODO: review comments and formulas
 public class CumulativeBinomialDistribution implements Ops.IntToDouble {
 
     private static final String INVALID_PROBABILITY = "probability must be 0.0 <= p <= 1.0";

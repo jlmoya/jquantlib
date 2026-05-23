@@ -27,7 +27,6 @@ import org.jquantlib.QL;
 /**
  * @author <Richard Gomes>
  */
-// TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 //FIXME: refactor package "solvers1d"
 abstract public class AbstractSolver1D< F extends Ops.DoubleOp > {
 
@@ -163,7 +162,6 @@ abstract public class AbstractSolver1D< F extends Ops.DoubleOp > {
      * @return a zero of a function
      */
     public double solve(final F f, double accuracy, final double guess, final double xMin, final double xMax) {
-        // TODO: Design by Contract? http://bugs.jquantlib.org/view.php?id=291
         QL.require(accuracy > 0.0, "accuracy must be positive");
         QL.require(xMin < xMax, "invalid range: xMin >= xMax");
         QL.require(!lowerBoundEnforced || xMin >= lowerBound, "xMin < enforced low bound");

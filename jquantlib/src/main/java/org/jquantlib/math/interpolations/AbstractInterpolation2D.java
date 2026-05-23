@@ -194,9 +194,9 @@ public class AbstractInterpolation2D implements Interpolation2D {
         }
 
         protected Impl(final Array vx, final Array vy, final Matrix mz) {
-            this.vx = vx; // TODO: clone?
-            this.vy = vy; // TODO: clone?
-            this.mz = mz; // TODO: clone?
+            this.vx = vx;
+            this.vy = vy;
+            this.mz = mz;
 
             QL.require(vx.size() >= 2 && vy.size() >= 2, "not enough points to interpolate");
             // Validate vx and vy independently — using a single combined loop

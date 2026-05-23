@@ -70,7 +70,6 @@ import java.util.List;
  */
 public class AnalyticDiscreteGeometricAveragePriceAsianEngine extends DiscreteAveragingAsianOption.EngineImpl {
 
-    // TODO: refactor messages
     private static final String NOT_AN_EUROPEAN_OPTION = "not an European Option";
     private static final String NON_STRIKED_PAYOFF_GIVEN = "non-striked payoff given";
     private static final String BLACK_SCHOLES_PROCESS_REQUIRED = "Black-Scholes process required";
@@ -133,7 +132,6 @@ public class AnalyticDiscreteGeometricAveragePriceAsianEngine extends DiscreteAv
         final DayCounter divdc = process.dividendYield().currentLink().dayCounter();
         final DayCounter voldc = process.blackVolatility().currentLink().dayCounter();
 
-        // TODO: consider double[] instead
         final List< Double > fixingTimes = new ArrayList<>();
         /*@Size*/
         int i;

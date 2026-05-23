@@ -44,8 +44,6 @@ import org.jquantlib.math.matrixutilities.Array;
 /**
  * @author Dominik Holenstein
  */
-// TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
-// TODO: remove statics
 public final class Grid {
 
     private Grid() {

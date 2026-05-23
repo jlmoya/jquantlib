@@ -48,7 +48,6 @@ import org.jquantlib.quotes.SimpleQuote;
  * Implementation of the Heston Model, see http://en.wikipedia.org/wiki/Heston_model
  */
 
-// TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class HestonModel extends CalibratedModel {
 
     /** Calibration target — needed by SLV calibrators (Phase 5h.5-SLV-b). */

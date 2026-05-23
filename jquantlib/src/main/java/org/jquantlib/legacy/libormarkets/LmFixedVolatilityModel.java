@@ -34,7 +34,6 @@ public class LmFixedVolatilityModel extends LmVolatilityModel {
     public LmFixedVolatilityModel(final Array volatilities, final Array startTimes) {
         super(startTimes.size(), 0);
 
-        // TODO: code review :: use of clone()
         this.volatilities_ = volatilities;
         this.startTimes_ = startTimes;
 

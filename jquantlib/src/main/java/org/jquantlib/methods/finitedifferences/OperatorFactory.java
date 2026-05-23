@@ -37,7 +37,6 @@ public class OperatorFactory {
         else
             return new BSMOperator(grid, process, residualTime);
     }
-    //TODO: finish; This is not required for Mar 1st release.
     /*
      * public static TridiagonalOperator getOperator( const
      * boost::shared_ptr<OneFactorModel::ShortRateDynamics> &process, const

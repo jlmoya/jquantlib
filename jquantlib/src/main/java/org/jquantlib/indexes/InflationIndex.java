@@ -42,7 +42,6 @@ import java.util.List;
  * @author Tim Blackler
  *
  */
-// TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public abstract class InflationIndex extends Index implements Observer {
 
     protected String familyName;

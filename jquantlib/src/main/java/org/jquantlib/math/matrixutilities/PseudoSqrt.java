@@ -338,7 +338,6 @@ public class PseudoSqrt {
             variance.set(i, Math.sqrt(targetMatrix.get(i,i)));
         }
         if (lowerDiagonal) {
-            //TODO: write test case for matrix operations
             Matrix approxMatrix = new Matrix(result.operatorMultiply(result, result.transpose(result)));
             result = new CholeskyDecomposition().CholeskyDecomposition(approxMatrix, true);
             for (i=0; i<size; i++) {

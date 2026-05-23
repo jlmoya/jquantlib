@@ -12,7 +12,6 @@ import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.time.Date;
 import org.jquantlib.util.Observer;
 
-// TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class DiscountingSwapEngine extends Swap.EngineImpl implements /* Swap.Engine, */ Observer {
 
     private final Handle< YieldTermStructure > discountCurve;

@@ -184,7 +184,6 @@ public abstract class AbstractTermStructure implements TermStructure {
      *
      * @see TermStructure documentation for more details about constructors.
      */
-    //TODO : What's the calendar in this case?
     public AbstractTermStructure(final DayCounter dc) {
         QL.require(dc != null, "day counter must be informed");
         this.calendar = null;

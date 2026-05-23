@@ -181,12 +181,11 @@ public class PiecewiseYieldCurve< T extends Traits, I extends Interpolator, B ex
         this.interpolator = interpolator == null ? constructInterpolator(classI) : interpolator;
         this.bootstrap = bootstrap == null ? constructBootstrap(classB) : bootstrap;
 
-        //TODO; validate types of interpolator and bootstrap
 
         // instantiate base class and call super constructor
         this.spreadBaseCurve = null;
         this.baseCurve = constructBaseClass(classT, classI, null, referenceDate, dayCounter, this.interpolator);
-        this.instruments = instruments; // TODO: clone() ?
+        this.instruments = instruments;
 
         this.jumps = jumps == null ? new Handle /*<Quote>*/ [0] : jumps;
         this.jumpDates = jumpDates == null ? new Date[0] : jumpDates;
@@ -323,7 +322,6 @@ public class PiecewiseYieldCurve< T extends Traits, I extends Interpolator, B ex
         this.interpolator = interpolator == null ? constructInterpolator(classI) : interpolator;
         this.bootstrap = bootstrap == null ? constructBootstrap(classB) : bootstrap;
 
-        //TODO; validate types of interpolator and bootstrap
 
         // instantiate base class and call super constructor
         this.spreadBaseCurve = null;

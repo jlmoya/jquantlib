@@ -389,7 +389,6 @@ public class ExchangeRateManager {
         }
         // @Override
         // public boolean op(double a) {
-        // // TODO Auto-generated method stub
         // return false;
         // }
 

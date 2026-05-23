@@ -84,7 +84,6 @@ import org.jquantlib.time.Date;
  */
 public class JumpDiffusionEngine extends VanillaOption.EngineImpl {
 
-    // TODO: refactor messages
     private static final double DEFAULT_RELATIVE_ACCURACY = 1e-4;
     private static final int DEFAULT_MAX_ITERATIONS = 100;
 

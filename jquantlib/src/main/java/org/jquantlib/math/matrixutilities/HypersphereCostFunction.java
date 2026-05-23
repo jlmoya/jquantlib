@@ -24,7 +24,6 @@ package org.jquantlib.math.matrixutilities;
 
 import org.jquantlib.math.optimization.CostFunction;
 
-//TODO: license, class comments
 class HypersphereCostFunction extends CostFunction {
 
     private final int size_;

@@ -37,7 +37,6 @@ import org.jquantlib.time.Frequency;
  *
  * @author Richard Gomes
  */
-// TODO: Converted rates are checked against known good results
 public class InterestRate {
 
     //

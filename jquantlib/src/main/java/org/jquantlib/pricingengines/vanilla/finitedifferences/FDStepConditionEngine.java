@@ -96,7 +96,6 @@ public abstract class FDStepConditionEngine extends FDVanillaEngine {
         final StandardSystemFiniteDifferenceModel model = new StandardSystemFiniteDifferenceModel(operatorSet, bcSet);
         arraySet = model.rollback(arraySet, getResidualTime(), 0.0, timeSteps, conditionSet);
 
-        //TODO: code review: Verify use clone()
         prices.setValues(arraySet.get(0).clone());
         controlPrices.setValues(arraySet.get(1).clone());
 

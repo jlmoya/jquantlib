@@ -19,7 +19,6 @@
  JQuantLib is based on QuantLib. http://quantlib.org/
  When applicable, the original copyright notice follows this notice.
  */
-// TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 package org.jquantlib.methods.lattices;
 
 /**
@@ -62,7 +61,6 @@ public abstract class Tree {
             this.value = i;
         }
 
-        // TODO: possibly remove this method? (Could ordinal() be used?)
         public int getValue() {
             return value;
         }

@@ -48,7 +48,6 @@ import org.jquantlib.math.matrixutilities.Array;
 import java.util.ArrayList;
 import java.util.List;
 
-//TODO: code review
 // This is a re-implementation of Simplex, from the original C++ source.
 // Currently, the junit test for the SABR implementation fails, *unless* Simplex.java is
 // replaced with this alternative implementation Simplex2.java, in which case it passes

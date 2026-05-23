@@ -37,7 +37,6 @@ import org.jquantlib.util.Visitor;
  * @author Ueli Hofstetter
  * @author Daniel Kong
  */
-// TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public abstract class Coupon extends CashFlow {
 
     //

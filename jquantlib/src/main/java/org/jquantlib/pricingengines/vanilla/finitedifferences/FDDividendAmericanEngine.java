@@ -59,15 +59,13 @@ import java.util.List;
 
 
 /*
-this:: typedef FDEngineAdapter<FDAmericanCondition<FDDividendEngine>, DividendVanillaOption::engine> FDDividendAmericanEngine;
-
-TODO:: typedef FDEngineAdapter<FDAmericanCondition<FDDividendEngineMerton73>, DividendVanillaOption::engine> FDDividendAmericanEngineMerton73;
-
-TODO:: typedef FDEngineAdapter<FDAmericanCondition<FDDividendEngineShiftScale>, DividendVanillaOption::engine> FDDividendAmericanEngineShiftScale;
-
-*/
-
-//typedef FDEngineAdapter<FDAmericanCondition<FDDividendEngine>, DividendVanillaOption::engine> FDDividendAmericanEngine;
+ * C++ v1.42.1 declares three typedef aliases:
+ *   typedef FDEngineAdapter<FDAmericanCondition<FDDividendEngine>, DividendVanillaOption::engine> FDDividendAmericanEngine;
+ *   typedef FDEngineAdapter<FDAmericanCondition<FDDividendEngineMerton73>, DividendVanillaOption::engine> FDDividendAmericanEngineMerton73;
+ *   typedef FDEngineAdapter<FDAmericanCondition<FDDividendEngineShiftScale>, DividendVanillaOption::engine> FDDividendAmericanEngineShiftScale;
+ * Java port currently materialises only the first; the Merton73 and ShiftScale
+ * variants remain unported.
+ */
 public class FDDividendAmericanEngine
         extends FDEngineAdapter< FDAmericanCondition< FDDividendEngine >, DividendVanillaOption.Engine >
         implements DividendVanillaOption.Engine {

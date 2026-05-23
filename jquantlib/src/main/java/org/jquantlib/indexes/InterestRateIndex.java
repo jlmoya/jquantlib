@@ -41,7 +41,6 @@ import org.jquantlib.util.Observer;
  * @author Zahid Hussain
  *
  */
-// TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public abstract class InterestRateIndex extends Index implements Observer {
 
     protected String familyName;

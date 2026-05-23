@@ -71,7 +71,6 @@ public class InterpolatedDiscountCurve< I extends Interpolator > extends Abstrac
     //
     // private fields
     //
-    // TODO: all fields should be protected?  See: QL/C++
 
     private final Class< I > classI;
     private final Interpolator interpolator;
@@ -110,8 +109,8 @@ public class InterpolatedDiscountCurve< I extends Interpolator > extends Abstrac
         QL.require(dates.length == discounts.length, "Dates must be the same size as Discounts");
         QL.require(discounts[0] == 1.0, "Initial discount factor must be 1.0");
 
-        this.dates = dates; // TODO: clone() ?
-        this.data = discounts; // TODO: clone() ?
+        this.dates = dates;
+        this.data = discounts;
         this.times = new double[dates.length];
         times[0] = 0.0;
 
@@ -243,17 +242,17 @@ public class InterpolatedDiscountCurve< I extends Interpolator > extends Abstrac
 
     @Override
     public void setDates(final Date[] dates) {
-        this.dates = dates; // TODO: clone() ?
+        this.dates = dates;
     }
 
     @Override
     public void setTimes(final double[] times) {
-        this.times = times; // TODO: clone() ?
+        this.times = times;
     }
 
     @Override
     public void setData(final double[] data) {
-        this.data = data; // TODO: clone() ?
+        this.data = data;
     }
 
     @Override

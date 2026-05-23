@@ -29,7 +29,6 @@ import java.util.Vector;
  * @author Srinivas Hasti
  *
  */
-// TODO: Code review
 //Using Type token to dynamically create instance of MixedScheme requires
 //a extension class, so making this class abstract to force a type hierarchy
 

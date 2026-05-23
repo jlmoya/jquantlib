@@ -35,7 +35,6 @@ import org.jquantlib.processes.StochasticProcess1D;
  * @author Tim Swetonic
  * @category lattices
  */
-// TODO: http://bugs.jquantlib.org/view.php?id=394
 public abstract class BinomialTree extends Tree {
 
     public static final Branches branches = Branches.BINOMIAL;

@@ -87,7 +87,6 @@ public class FDDividendEngineMerton73 extends FDDividendEngineBase {
     }
 
     @Override
-    // TODO:  Make this work for both fixed and scaled dividends
     protected void executeIntermediateStep(final int step) /* @ReadOnly */ {
         final double scaleFactor = getDiscountedDividend(step) / center + 1.0;
         sMin *= scaleFactor;

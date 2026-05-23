@@ -65,7 +65,6 @@ import org.jquantlib.math.solvers1D.NewtonSafe;
  * @author Richard Gomes
  * @author Srinivas Hasti
  */
-// TODO: adjust formulas (LaTeX)
 public class BlackFormula {
 
     /** {@code phi(0) = 1/sqrt(2*pi)}; standard normal pdf at zero. */
@@ -129,7 +128,6 @@ public class BlackFormula {
         @Real
         final double d2 = d1 - stddev;
 
-        // TODO: code review
         final CumulativeNormalDistribution phi = new CumulativeNormalDistribution();
         @Real
         final double result =
@@ -269,7 +267,6 @@ public class BlackFormula {
     public static /*@Real*/ double blackFormulaImpliedStdDevApproximation(final PlainVanillaPayoff payoff,
             @Real final double strike, @Real final double forward, @Real final double blackPrice) {
 
-        // TODO : complete
         return blackFormulaImpliedStdDevApproximation(payoff, strike, forward, blackPrice, 1.0, 0.0);
     }
 
@@ -284,7 +281,6 @@ public class BlackFormula {
             @Real final double strike, @Real final double forward, @Real final double blackPrice,
             @DiscountFactor final double discount) {
 
-        // TODO : complete
         return blackFormulaImpliedStdDevApproximation(payoff, strike, forward, blackPrice, discount, 0.0);
     }
 
@@ -360,31 +356,7 @@ public class BlackFormula {
             @Real double forward, @Real final double blackPrice, @DiscountFactor final double discount,
             @Real double guess, @Real final double accuracy, @Real final double displacement) {
 
-        //---
-        // TODO: This block of code was removed because there's no option to pass maxIterations in the original C++ code
-        //---
-        //		return blackFormulaImpliedStdDev(optionType, strike, forward, blackPrice, discount, guess, accuracy, displacement, 1);
-        //	}
-        //
-        //	/**
-        //	 * Black 1976 implied standard deviation, i.e.
-        //	 * volatility*sqrt(timeToMaturity)
-        //	 */
-        //	// TODO: Move the code
-        //	public static /*@Real*/ double blackFormulaImpliedStdDev(
-        //			final Option.Type optionType,
-        //			@Real double strike,
-        //			@Real double forward,
-        //			@Real final double blackPrice,
-        //			@DiscountFactor final doublediscount,
-        //			@Real double guess,
-        //			@Real final double accuracy,
-        //			@Real final double displacement,
-        //			final int maxIterations) {
-        //---
-        //TODO: The original C++ code does not have this line and calls to solver.setMaxIterations(100)
         final int maxIterations = 100;
-        //---
 
         // strike may be negative when displacement > 0; the shifted strike must be non-negative.
         // Mirrors C++ QuantLib v1.42.1 blackFormulaImpliedStdDev check (Phase 2o A.2).
@@ -411,7 +383,7 @@ public class BlackFormula {
 
         if ( stddev >= 0.0 )
             return stddev;
-        throw new ArithmeticException("a negative value was calculated"); // TODO: add more logging
+        throw new ArithmeticException("a negative value was calculated");
     }
 
     /**
@@ -609,7 +581,6 @@ public class BlackFormula {
         final double d1 = Math.log((forward + displacement) / (strike + displacement)) / stddev + 0.5 * stddev;
         final double d2 = d1 - stddev;
 
-        // TODO: code review
         final CumulativeNormalDistribution phi = new CumulativeNormalDistribution();
         return phi.op(optionType.toInteger() * d2);
     }
@@ -748,7 +719,6 @@ public class BlackFormula {
         strike = strike + displacement;
         final double d1 = Math.log(forward / strike) / stddev + .5 * stddev;
 
-        // TODO: code review
         final CumulativeNormalDistribution cdf = new CumulativeNormalDistribution();
         return discount * forward * cdf.derivative(d1);
     }
@@ -1262,7 +1232,6 @@ public class BlackFormula {
             this.undiscountedBlackPrice_ = (undiscountedBlackPrice);
             signedMoneyness_ = optionType.toInteger() * Math.log((forward + displacement) / (strike + displacement));
 
-            // TODO: code review
             this.N_ = new CumulativeNormalDistribution();
         }
 

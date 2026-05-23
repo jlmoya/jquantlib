@@ -29,7 +29,6 @@ import org.jquantlib.math.matrixutilities.Matrix;
  * @author Srinivas Hasti
  *
  */
-// TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public abstract class TreeLattice2D< T extends TrinomialTree > extends TreeLattice {
     private final Matrix m;
     private final double rho;

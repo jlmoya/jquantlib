@@ -94,7 +94,6 @@ public class TwoAssetBarrierOption extends MultiAssetOption {
      */
     public static class ArgumentsImpl extends MultiAssetOption.ArgumentsImpl implements MultiAssetOption.Arguments {
 
-        // TODO: refactor messages
         private static final String UNKNOWN_TYPE = "unknown type";
 
         public BarrierType barrierType;

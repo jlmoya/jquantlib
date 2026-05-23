@@ -34,7 +34,6 @@ import org.jquantlib.math.Constants;
  * @author Richard Gomes
  * @category processes
  */
-// TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class OrnsteinUhlenbeckProcess extends StochasticProcess1D {
 
     static private final String NEGATIVE_SPEED_GIVEN = "negative speed given";

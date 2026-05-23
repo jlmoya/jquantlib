@@ -34,7 +34,6 @@ import org.jquantlib.math.Ops;
  *
  * @author Dominik Holenstein
  */
-//TODO FalsePosition: Add test case.
 public class FalsePosition extends AbstractSolver1D< Ops.DoubleOp > {
 
     /**

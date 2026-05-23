@@ -144,7 +144,6 @@ public interface Address {
          */
         FORTRAN,
 
-        //TODO: to be implemented
         //        /**
         //         * Tells if rows and columns must be transposed.
         //         * <p>

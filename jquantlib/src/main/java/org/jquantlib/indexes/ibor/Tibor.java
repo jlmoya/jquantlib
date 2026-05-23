@@ -52,7 +52,6 @@ import org.jquantlib.time.calendars.Japan;
  * Tokyo Interbank Offered Rate This is the rate fixed in Tokio by JBA. Use JPYLibor if you're interested in the London
  * fixing by BBA.
  *
- * TODO check settlement days and end-of-month adjustment.
  */
 public class Tibor extends IborIndex {
 

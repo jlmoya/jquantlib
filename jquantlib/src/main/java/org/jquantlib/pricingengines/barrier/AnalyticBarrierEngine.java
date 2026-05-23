@@ -65,7 +65,6 @@ import org.jquantlib.time.Frequency;
 @SuppressWarnings( "PMD.TooManyMethods" )
 public class AnalyticBarrierEngine extends BarrierOption.EngineImpl {
 
-    // TODO: refactor messages
     private static final String BS_PROCESS_REQUIRED = "Black-Scholes process required";
     private static final String NON_PLAIN_PAYOFF_GIVEN = "non-plain payoff given";
     private static final String STRIKE_MUST_BE_POSITIVE = "strike must be positive";
@@ -245,7 +244,6 @@ public class AnalyticBarrierEngine extends BarrierOption.EngineImpl {
         return (1 + mu()) * stdDeviation();
     }
 
-    //TODO: consider change method name to lowercase
     @SuppressWarnings( "PMD.MethodNamingConventions" )
     private double A(final double phi) {
         final double x1 = Math.log(underlying() / strike()) / stdDeviation() + muSigma();
@@ -254,7 +252,6 @@ public class AnalyticBarrierEngine extends BarrierOption.EngineImpl {
         return phi * (underlying() * dividendDiscount() * N1 - strike() * riskFreeDiscount() * N2);
     }
 
-    //TODO: consider change method name to lowercase
     @SuppressWarnings( "PMD.MethodNamingConventions" )
     private double B(final double phi) {
         final double x2 = Math.log(underlying() / barrier()) / stdDeviation() + muSigma();
@@ -263,7 +260,6 @@ public class AnalyticBarrierEngine extends BarrierOption.EngineImpl {
         return phi * (underlying() * dividendDiscount() * N1 - strike() * riskFreeDiscount() * N2);
     }
 
-    //TODO: consider change method name to lowercase
     @SuppressWarnings( "PMD.MethodNamingConventions" )
     private double C(final double eta, final double phi) {
         final double HS = barrier() / underlying();
@@ -278,7 +274,6 @@ public class AnalyticBarrierEngine extends BarrierOption.EngineImpl {
                 - strike() * riskFreeDiscount() * ((N2 == 0.0) ? 0.0 : powHS0 * N2));
     }
 
-    //TODO: consider change method name to lowercase
     @SuppressWarnings( "PMD.MethodNamingConventions" )
     private double D(final double eta, final double phi) {
         final double HS = barrier() / underlying();
@@ -292,7 +287,6 @@ public class AnalyticBarrierEngine extends BarrierOption.EngineImpl {
                 - strike() * riskFreeDiscount() * ((N2 == 0.0) ? 0.0 : powHS0 * N2));
     }
 
-    //TODO: consider change method name to lowercase
     @SuppressWarnings( "PMD.MethodNamingConventions" )
     private double E(final double eta) {
         if ( rebate() > 0 ) {
@@ -308,7 +302,6 @@ public class AnalyticBarrierEngine extends BarrierOption.EngineImpl {
         }
     }
 
-    //TODO: consider change method name to lowercase
     @SuppressWarnings( "PMD.MethodNamingConventions" )
     private double F(final double eta) {
         if ( rebate() > 0 ) {

@@ -81,7 +81,7 @@ public interface Traits {
 
     int maxIterations() /* @ReadOnly */;
 
-    interface Curve extends YieldTermStructure /* TODO: public boost::noncopyable*/ {
+    interface Curve extends YieldTermStructure {
 
         @Override
         Date maxDate() /* @ReadOnly */;

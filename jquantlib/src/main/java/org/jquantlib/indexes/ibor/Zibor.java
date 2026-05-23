@@ -52,7 +52,6 @@ import org.jquantlib.time.calendars.Switzerland;
  * Zurich Interbank Offered Rate. This is the rate fixed in Zurich by BBA. Use CHFLibor if you're interested in the
  * London fixing by BBA.
  *
- * TODO check settlement days, end-of-month adjustment, and day-count convention.
  *
  */
 public class Zibor extends IborIndex {

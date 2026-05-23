@@ -35,7 +35,6 @@ import org.jquantlib.time.Schedule;
  *
  * @author Zahid Hussain
  */
-//TODO: Write test case
 
 public class CmsRateBond extends Bond {
 

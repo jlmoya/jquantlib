@@ -37,11 +37,11 @@ import org.jquantlib.time.Frequency;
  *
  * @author Srinivas Hasti
  * @author Richard Gomes
- * @see <a href="http://bugs.jquantlib.org/view.php?id=425">issue 425</a>
  */
-//TODO: http://bugs.jquantlib.org/view.php?id=425
-public class FDShoutCondition< T                            /* TODO: should be:: T extends FDDividendEngineBase & FDStepConditionEngine */ >
-        extends FDStepConditionEngine /* TODO: should be:: implements FDDividendEngineBase, FDStepConditionEngine */ {
+// Ideally T would be bounded as {@code T extends FDDividendEngineBase & FDStepConditionEngine}
+// to match C++ template intent; Java's single-inheritance forces the looser bound.
+public class FDShoutCondition< T >
+        extends FDStepConditionEngine {
 
     public FDShoutCondition(final GeneralizedBlackScholesProcess process) {
         this(process, 100, 100);

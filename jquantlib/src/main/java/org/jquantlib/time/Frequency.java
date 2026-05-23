@@ -49,7 +49,6 @@ import org.jquantlib.lang.exceptions.LibraryException;
  *
  * @author Richard Gomes
  */
-// TODO: document methods
 public enum Frequency {
     /** null frequency */ NoFrequency(-1),
     /** only once */ Once(0),

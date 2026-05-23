@@ -53,9 +53,6 @@ import org.jquantlib.time.calendars.Target;
  *
  * @author Richard Gomes
  */
-// TODO: add derived class ParSwapTermStructure similar to ZeroYieldTermStructure, DiscountStructure, ForwardRateStructure
-// TODO: observability against evaluation date changes is checked.
-// FIXME:: code review on return types of getSomethingRate(...)
 abstract public class AbstractYieldTermStructure extends AbstractTermStructure implements YieldTermStructure {
 
     //

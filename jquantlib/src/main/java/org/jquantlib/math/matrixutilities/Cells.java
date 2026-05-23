@@ -213,7 +213,6 @@ public abstract class Cells< T extends Address > implements Cloneable {
         }
     }
 
-    //TODO: implement hashCode and equals
     //
     //        @Override
     //        public int hashCode() {

@@ -39,7 +39,6 @@ import java.util.ArrayList;
  *
  * In ohter words once a prime has been calculated, you can just skip over that multiple too.
  *
- * //  TODO fill in a latex algo for later. {@latex$ Prime_{next}}
  *
  * @author Q.Boiler  email is at Yahoo
  */
@@ -66,7 +65,6 @@ public class PrimeNumbers {
         return primeNumbers.get(absoluteIndex);
     }
 
-    // TODO, this was a copy from QuantLib.
     // Not really sure if nextPrimeNumber() should
     // both return a long and mutate the primeNumbers collection.
     public long nextPrimeNumber() {

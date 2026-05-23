@@ -74,7 +74,6 @@ import org.jquantlib.math.integrals.TabulatedGaussLegendre;
  *
  * @author Richard Gomes
  */
-//TODO: code review :: seems like we should extend or implement something ?
 public class BivariateNormalDistribution implements Ops.BinaryDoubleOp {
 
     //

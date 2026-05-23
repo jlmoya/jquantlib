@@ -34,7 +34,6 @@ import org.jquantlib.math.Ops;
  * @author Dominik Holenstein
  */
 // TEST the correctness of the returned value is tested by checking it against known good results.
-// TODO PoissonDistribution: check logMu_ -> is never used
 public class PoissonDistribution implements Ops.IntToDouble {
 
     //

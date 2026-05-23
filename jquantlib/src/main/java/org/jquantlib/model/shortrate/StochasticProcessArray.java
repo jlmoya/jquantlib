@@ -38,7 +38,6 @@ import java.util.List;
  *
  * @author Praneet Tiwari
  */
-// TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class StochasticProcessArray extends StochasticProcess {
 
     private static final String no_process_given = "no process given";

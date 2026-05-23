@@ -80,10 +80,9 @@ import static org.jquantlib.time.Weekday.Tuesday;
  * <li>Boxing Day, DECEMBER 26th (possibly moved to Monday or Tuesday)</li>
  * </ul>
  *
- * @author Srinivas Hasti TODO add LIFFE
+ * @author Srinivas Hasti
  * @author Zahid Hussain
  * @category calendars
- * @TODO add LIFFE
  * @test the correctness of the returned results is tested against a list of known holidays.
  */
 

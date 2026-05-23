@@ -29,7 +29,6 @@ import java.util.ArrayList;
 /**
  * @author Ueli Hofstetter
  */
-// TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class Leg extends ArrayList< CashFlow > implements Cloneable {
 
     //

@@ -61,7 +61,6 @@ import org.jquantlib.time.Schedule;
  * @author Tim Blackler
  * @category instruments
  */
-// TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class BMASwap extends Swap {
 
     static final /*@Spread*/ double basisPoint = 1.0e-4;

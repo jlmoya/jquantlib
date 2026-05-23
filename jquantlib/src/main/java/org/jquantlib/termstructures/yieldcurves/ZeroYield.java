@@ -58,7 +58,6 @@ public class ZeroYield implements Traits {
     private static final double avgRate = .05;
     private static final double maxRate = 1.0;
 
-    //TODO: think how constructor must look like
     public ZeroYield() {
     }
 

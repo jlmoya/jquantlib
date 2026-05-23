@@ -89,7 +89,6 @@ public class RendistatoBasket implements Observer, Observable {
             // add check for prices ??
         }
 
-        // TODO: filter out expired bonds, zero outstanding bond, etc.
         this.btps_ = new ArrayList<>(btps);
         this.outstandings_ = new ArrayList<>(outstandings);
         this.quotes_ = new ArrayList<>(cleanPriceQuotes);

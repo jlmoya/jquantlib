@@ -254,7 +254,6 @@ public class BrownianBridge {
      * Brownian-bridge constructor
      */
     //
-    //TODO: Improve this method.
     // This method in particular presents a very weak interface which is
     // potentially risky for critical systems due to the possibility of failure.
     // The point is that we have possibilities of NullPointerException and

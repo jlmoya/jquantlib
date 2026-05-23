@@ -824,7 +824,6 @@ public class SobolRsg implements UniformRandomSequenceGenerator {
             for ( int k = 1; k < maxTabulated; k++ ) {
                 for ( int l = 1; l <= degree[k]; l++ ) {
                     // FIXME: Translate these two lines
-                    // TODO: Code Review is this correct.
                     directionIntegers[k][l - 1] = 1L;
                     directionIntegers[k][l - 1] <<= (BITS - l);
                 }
@@ -999,7 +998,6 @@ public class SobolRsg implements UniformRandomSequenceGenerator {
         //					pw.print("" + (k + 1) + "\t" + degree[k] + "\t" + ppmt[k] + "\t");
         //
         //					for (int j=0; j<10; j++) {
-        //						//  TODO: do as this:
         //						// outStream << io::power_of_two(
         //						//   directionIntegers_[k][j]) << "\t";
         //						pw.print(directionIntegers_[k][j] + "\t");

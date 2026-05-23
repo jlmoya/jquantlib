@@ -16,7 +16,6 @@ import org.jquantlib.time.Period;
  *
  * @author Richard Gomes
  */
-// TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class SwapIndex extends InterestRateIndex {
 
     //

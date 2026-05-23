@@ -55,7 +55,6 @@ import java.lang.reflect.Constructor;
  * @author Zahid HussainS
  * @category hybridengines
  */
-//TODO: work in progress
 // Temp hack to pass class of T
 
 public class BinomialConvertibleEngine< T extends BinomialTree > extends ConvertibleBondOption.EngineImpl {

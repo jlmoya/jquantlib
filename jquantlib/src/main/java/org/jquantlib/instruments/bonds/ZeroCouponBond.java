@@ -52,7 +52,6 @@ import org.jquantlib.time.Date;
  *
  *
  */
-// TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class ZeroCouponBond extends Bond {
 
     public ZeroCouponBond(final /* @Natural */ int settlementDays, final Calendar calendar, final double faceAmount,

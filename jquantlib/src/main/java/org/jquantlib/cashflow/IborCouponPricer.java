@@ -25,7 +25,6 @@ package org.jquantlib.cashflow;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.termstructures.volatilities.optionlet.OptionletVolatilityStructure;
 
-// TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public abstract class IborCouponPricer extends FloatingRateCouponPricer {
 
     public static final String no_adequate_capletVol_given = "no adequate capletVol given";

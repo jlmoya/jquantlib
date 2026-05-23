@@ -50,7 +50,6 @@ import org.jquantlib.util.Pair;
  * @author Tim Blackler
  *
  */
-// TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class ZeroInflationIndex extends InflationIndex {
 
     private final Handle< ZeroInflationTermStructure > zeroInflation;

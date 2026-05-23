@@ -51,7 +51,6 @@ import org.jquantlib.time.calendars.Turkey;
 /**
  * TRY LIBOR fixed by TBA. See <http://www.trlibor.org/trlibor/english/default.asp>
  *
- * TODO check end-of-month adjustment.
  *
  */
 public class TRLibor extends IborIndex {

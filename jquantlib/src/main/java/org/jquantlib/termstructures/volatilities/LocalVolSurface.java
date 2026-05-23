@@ -60,7 +60,6 @@ import org.jquantlib.util.Visitor;
  * @author Richard Gomes
  * @see <a href="http://www.math.nyu.edu/fellows_fin_math/gatheral/Lecture1_Fall02.pdf">This article</a>
  */
-// TODO: this class is untested, probably unreliable.
 public class LocalVolSurface extends LocalVolTermStructure {
 
     private final Handle< BlackVolTermStructure > blackTS_;

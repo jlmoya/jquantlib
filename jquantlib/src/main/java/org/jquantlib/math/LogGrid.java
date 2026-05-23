@@ -28,7 +28,6 @@ import org.jquantlib.math.matrixutilities.Array;
 /**
  * @author Srinivas Hasti
  */
-// TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class LogGrid extends TransformedGrid {
 
     public LogGrid(Array grid) {

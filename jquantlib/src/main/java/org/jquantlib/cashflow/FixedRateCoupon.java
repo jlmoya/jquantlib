@@ -35,7 +35,6 @@ import org.jquantlib.util.Visitor;
  * @author Zahid Hussain
  *
  */
-// TODO: code review :: Please review this class! :S
 public class FixedRateCoupon extends Coupon {
 
     private final InterestRate rate;

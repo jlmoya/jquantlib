@@ -73,10 +73,8 @@ import org.jquantlib.time.Date;
  * @author <Richard Gomes>
  * @see PricingEngine
  */
-//TODO: write more test cases
 public class AnalyticEuropeanEngine extends OneAssetOption.EngineImpl {
 
-    // TODO: refactor messages
     private static final String NOT_AN_EUROPEAN_OPTION = "not an European Option";
     private static final String NON_STRIKED_PAYOFF_GIVEN = "non-striked payoff given";
     private static final String BLACK_SCHOLES_PROCESS_REQUIRED = "Black-Scholes process required";

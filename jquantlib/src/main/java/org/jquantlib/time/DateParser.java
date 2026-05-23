@@ -32,7 +32,6 @@ import org.jquantlib.QL;
  * @Changes: Sep 2009: Used correct method to parse date and format strings in parse method.
  *
  */
-// TODO: OSGi :: remove statics
 public class DateParser {
 
     /**

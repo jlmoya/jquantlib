@@ -27,7 +27,6 @@ public interface Ops {
     interface DoubleOp {
 
         double op(double x);
-        //TODO: boolean isFailed() // TODO is error handling needed?
     }
 
     /**
@@ -39,7 +38,6 @@ public interface Ops {
      */
     interface BinaryDoubleOp {
         double op(double x, double y);
-        //FIXME: boolean isFailed() TODO error handling
     }
 
     /**
@@ -49,10 +47,8 @@ public interface Ops {
      * @see <a
      * href="http://gee.cs.oswego.edu/dl/jsr166/dist/extra166ydocs/extra166y/Ops.IntToDouble.html">IntToDouble</a>
      */
-    //TODO : consider http://gee.cs.oswego.edu/dl/jsr166/dist/extra166ydocs/extra166y/Ops.BinaryDoubleOp.html
     interface IntToDouble {
         double op(int x);
-        //FIXME: boolean isFailed() // TODO is error handling needed?
     }
 
     /**

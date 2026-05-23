@@ -37,7 +37,6 @@ import java.util.ArrayList;
  *
  * @author Praneet Tiwari
  */
-// TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public abstract class TwoFactorModel extends ShortRateModel {
 
     public TwoFactorModel(final int /* @Size */nParams) {

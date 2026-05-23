@@ -31,8 +31,6 @@ import org.jquantlib.processes.GeneralizedBlackScholesProcess;
  * @author Srinivas Hasti
  * @category vanillaengines
  */
-//TODO: class comments
-//TODO: work in progress
 public class FDEuropeanEngine extends OneAssetOption.EngineImpl {
 
     //

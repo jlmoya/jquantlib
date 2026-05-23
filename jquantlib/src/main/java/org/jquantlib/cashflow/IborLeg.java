@@ -100,11 +100,10 @@ public class IborLeg {
         // requires a non-null DayCounter instance, not Java's default null.
         paymentDayCounter_ = new DayCounter();
 
-        // TODO : review initialization
-        // these are vectors in quantlib, therfor they must be initalized to default
-        // values or nullable. since we have decided to write the code without null checks
-        // all over the place we are going to initialze them for now to be consistent with
-        // quantlib behavoir
+        // these are vectors in quantlib, therefore they must be initialized to default
+        // values or nullable. Since we have decided to write the code without null checks
+        // all over the place we initialize them for now to be consistent with
+        // quantlib behavior.
         fixingDays_ = new Array(0);
         gearings_ = new Array(0);
         spreads_ = new Array(0);

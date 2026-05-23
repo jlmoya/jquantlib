@@ -79,7 +79,6 @@ public interface PricingEngine extends Observable {
 
     void calculate() /* @ReadOnly */;
 
-    //TODO: for the time being.
     // This method must be removed from there and declared on extended interfaces when necessary /////
     void update();
 

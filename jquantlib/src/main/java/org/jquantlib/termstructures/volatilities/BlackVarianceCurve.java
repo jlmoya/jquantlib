@@ -63,7 +63,6 @@ import org.jquantlib.util.Visitor;
  *
  * @author Richard Gomes
  */
-// TODO check time extrapolation
 public class BlackVarianceCurve extends BlackVarianceTermStructure {
 
     //
@@ -164,14 +163,16 @@ public class BlackVarianceCurve extends BlackVarianceTermStructure {
     }
 
     @Override
-    // TODO :: compare against C++ sources
     protected final /*@Variance*/ double blackVarianceImpl(final /*@Time*/ double t, final /*@Real*/ double maturity) {
         if ( t <= times.last() ) {
             return varianceCurve.op(t);
         } else {
-            // extrapolate with flat vol
+            // extrapolate with flat vol (linear-in-time variance scaling).
+            // C++ v1.42.1 delegates to BlackVolTimeExtrapolation::extrapolatedVariance
+            // which supports multiple extrapolation strategies; Java retains the
+            // original linear extrapolation. Tracked as a future align task.
             /*@Time*/
-            final double lastTime = times.last();  // TODO: probably an error here
+            final double lastTime = times.last();
             return varianceCurve.op(lastTime) * t / lastTime;
         }
     }

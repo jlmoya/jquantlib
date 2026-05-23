@@ -103,7 +103,6 @@ public class ContinuousAveragingAsianOption extends OneAssetOption {
     public static class ArgumentsImpl extends OneAssetOption.ArgumentsImpl
             implements ContinuousAveragingAsianOption.Arguments {
 
-        // TODO: refactor messages
         private static final String UNSPECIFIED_AVERAGE_TYPE = "unspecified average type";
 
         //

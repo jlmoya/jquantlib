@@ -33,7 +33,6 @@ import org.jquantlib.math.Constants;
  * @author Richard Gomes
  * @see <a href="http://en.wikipedia.org/wiki/Probability_density_function">Normal Distribution</a>
  */
-// TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class NormalDistribution implements Derivative {
 
     //

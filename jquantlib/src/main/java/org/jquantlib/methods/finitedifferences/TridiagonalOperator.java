@@ -28,8 +28,6 @@ import org.jquantlib.math.matrixutilities.Array;
  * @author Srinivas Hasti
  * @author Tim Swetonic
  */
-//TODO: code review :: license, class comments, comments for access modifiers, put "final" everywhere
-//TODO: code review:: This class should be parametrized
 public class TridiagonalOperator implements Operator {
 
     protected TimeSetter timeSetter;
@@ -414,7 +412,6 @@ public class TridiagonalOperator implements Operator {
         return result;
     }
 
-    //TODO : code review against QuantLib/C++
     /*public Operator assign(Operator d) {
 		swap(d);
 		return this;
@@ -424,7 +421,6 @@ public class TridiagonalOperator implements Operator {
     // public static inner interfaces
     //
 
-    // TODO: code review: consider refactor inner interface TimeSetter
     public interface TimeSetter {
         void setTime(double t, TridiagonalOperator l);
     }

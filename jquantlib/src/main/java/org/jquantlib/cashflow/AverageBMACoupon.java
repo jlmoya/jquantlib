@@ -63,7 +63,6 @@ import java.util.List;
  * @author Tim Blackler
  *
  */
-// TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class AverageBMACoupon extends FloatingRateCoupon {
 
     private final static int bmaCutoffDays = 0;

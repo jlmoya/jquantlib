@@ -50,14 +50,13 @@ import org.jquantlib.processes.GeneralizedBlackScholesProcess;
  */
 
 /*
-    this:: typedef FDEngineAdapter<FDDividendEngine, DividendVanillaOption::engine> FDDividendEuropeanEngine;
-
-    TODO:: typedef FDEngineAdapter<FDDividendEngineMerton73, DividendVanillaOption::engine> FDDividendEuropeanEngineMerton73;
-
-    TODO:: typedef FDEngineAdapter<FDDividendEngineShiftScale, DividendVanillaOption::engine> FDDividendEuropeanEngineShiftScale;
-*/
-
-//typedef FDEngineAdapter<FDDividendEngine, DividendVanillaOption::engine> FDDividendEuropeanEngine;
+ * C++ v1.42.1 declares three typedef aliases:
+ *   typedef FDEngineAdapter<FDDividendEngine, DividendVanillaOption::engine> FDDividendEuropeanEngine;
+ *   typedef FDEngineAdapter<FDDividendEngineMerton73, DividendVanillaOption::engine> FDDividendEuropeanEngineMerton73;
+ *   typedef FDEngineAdapter<FDDividendEngineShiftScale, DividendVanillaOption::engine> FDDividendEuropeanEngineShiftScale;
+ * Java port currently materialises only the first; the Merton73 and ShiftScale
+ * variants remain unported.
+ */
 public class FDDividendEuropeanEngine extends FDEngineAdapter< FDDividendEngine, DividendVanillaOption.Engine >
         implements DividendVanillaOption.Engine {
 

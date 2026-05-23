@@ -52,7 +52,6 @@ import org.jquantlib.Settings;
  * @author Srinivas Hasti
  * @see <a href="http://en.wikipedia.org/wiki/International_Monetary_Market">International Monetary Market</a>
  */
-//TODO: Improve comments
 public class IMM {
 
     /**

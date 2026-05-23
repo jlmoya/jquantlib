@@ -62,7 +62,6 @@ import org.jquantlib.processes.GeneralizedBlackScholesProcess;
  */
 public class BaroneAdesiWhaleyApproximationEngine extends VanillaOption.EngineImpl {
 
-    // TODO: refactor messages
     private static final String NOT_AN_AMERICAN_OPTION = "not an American Option";
     private static final String NON_AMERICAN_EXERCISE_GIVEN = "non-American exercise given";
     private static final String PAYOFF_AT_EXPIRY_NOT_HANDLED = "payoff at expiry not handled";
@@ -274,10 +273,8 @@ public class BaroneAdesiWhaleyApproximationEngine extends VanillaOption.EngineIm
     //
     // package protected methods
     //
-    // TODO: study if a refactoring is a good idea, in order to remove the package private access modifier
     //
 
-    //TODO: code review :: unused method?
     @Deprecated
     private /* @Usused */ double criticalPrice(final StrikedTypePayoff payoff,
             final double /*@DiscountFactor*/ riskFreeDiscount, final double /*@DiscountFactor*/ dividendDiscount,

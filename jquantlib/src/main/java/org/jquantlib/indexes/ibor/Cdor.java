@@ -52,7 +52,6 @@ import org.jquantlib.time.calendars.Canada;
  * Canadian Dollar Offered Rate fixed by IDA See <http://www.bba.org.uk/bba/jsp/polopoly.jsp?d=225&a=1414>. This is the
  * rate fixed in Canada by IDA. Use CADLibor if you're interested in the London fixing by BBA.
  *
- * TODO check settlement days, end-of-month adjustment, and day-count convention.
  */
 public class Cdor extends IborIndex {
 

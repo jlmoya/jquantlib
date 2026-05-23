@@ -134,7 +134,6 @@ public class BarrierOption extends OneAssetOption {
      */
     static public class ArgumentsImpl extends OneAssetOption.ArgumentsImpl implements BarrierOption.Arguments {
 
-        // TODO: refactor messages
         private static final String UNKNOWN_TYPE = "unknown type";
 
         //

@@ -1006,7 +1006,6 @@ public class Array extends Cells< Address.ArrayAddress > implements Cloneable, I
         return this.addr.isFortran() ? new Array(this.rows, this.cols, this.$, this.addr.toJava()) : this;
     }
 
-    //TODO: better comments
     //
     // methods moved from Cells
     //

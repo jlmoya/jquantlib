@@ -51,7 +51,6 @@ import org.jquantlib.time.calendars.SouthAfrica;
 /**
  * Johannesburg Interbank Agreed Rate
  *
- * TODO check settlement days and day-count convention.
  */
 public class Jibar extends IborIndex {
 

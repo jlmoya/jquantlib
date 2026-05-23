@@ -87,7 +87,6 @@ import java.util.List;
  * - price/yield calculations are checked against known good values.
  *
  */
-// TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class Bond extends Instrument {
 
     protected /*Natural*/ int settlementDays_;
@@ -127,7 +126,6 @@ public class Bond extends Instrument {
             addRedemptionsToCashflows();
         }
 
-        //TODO:Review translation of Settings.java. QL097 has singleton or session based instances of Settings.
         // Current implementation of Settings appears to be thread based
         final Date evaluationDate = new Settings().evaluationDate();
         evaluationDate.addObserver(this);
@@ -331,7 +329,6 @@ public class Bond extends Instrument {
         // FIXME:: code review !!!
         //int i = StdUtils.lowerBound(notionalSchedule_, 1, notionalSchedule_.size()-1, date);
         //int index = StdUtils.distance(notionalSchedule_,0, i);
-        //TODO: get reviewed by Richard
         int index = Collections.binarySearch(notionalSchedule_, date);
         if ( index < 0 ) {
             index = -(index + 1);
@@ -682,7 +679,6 @@ public class Bond extends Instrument {
         final int startIndex = cashflows_.indexOf(cf);
         for ( final CashFlow flow : Iterables.unmodifiableIterable(cashflows_.listIterator(startIndex)) ) {
             if ( flow.date().ne(paymentDate) ) {
-                //TODO: Check with Richard, with break, code does not handle multiple CFs on paymentDate.
                 continue; //break;
             }
             final Coupon cp = Coupon.class.isAssignableFrom(flow.getClass()) ? (Coupon) flow : null;

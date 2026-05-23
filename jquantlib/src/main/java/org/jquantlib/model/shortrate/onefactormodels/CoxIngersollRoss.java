@@ -48,7 +48,6 @@ import org.jquantlib.time.TimeGrid;
  * @bug this class was not tested enough to guarantee its functionality.
  * @category shortrate
  */
-// TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class CoxIngersollRoss extends OneFactorAffineModel {
     // private double /*@Real*/ y0_, theta_, k_, sigma_;
     // check this value, arbitrary for now

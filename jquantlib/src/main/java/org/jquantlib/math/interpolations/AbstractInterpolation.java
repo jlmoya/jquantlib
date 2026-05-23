@@ -202,8 +202,8 @@ public abstract class AbstractInterpolation implements Interpolation {
          * {@code 1} to permit single-point interpolation.
          */
         protected Impl(final Array vx, final Array vy, final int requiredPoints) {
-            this.vx = vx; // TODO: clone?
-            this.vy = vy; // TODO: clone?
+            this.vx = vx;
+            this.vy = vy;
 
             QL.require(vx.size() >= requiredPoints, "not enough points to interpolate");
             QL.require(extraSafetyChecks(), "unsorted values on array X");

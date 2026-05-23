@@ -41,7 +41,6 @@ import static org.jquantlib.pricingengines.BlackFormula.blackFormula;
  * @author Praneet Tiwari
  * @category shortrate
  */
-// TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class Vasicek extends OneFactorAffineModel {
 
     //

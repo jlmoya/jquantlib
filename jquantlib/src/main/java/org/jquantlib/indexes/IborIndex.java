@@ -57,7 +57,6 @@ import org.jquantlib.time.Period;
  * @author Srinivas Hasti
  * @author Zahid Hussain
  */
-// TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class IborIndex extends InterestRateIndex {
 
     private final BusinessDayConvention convention;

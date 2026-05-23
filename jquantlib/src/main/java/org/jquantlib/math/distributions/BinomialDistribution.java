@@ -61,8 +61,8 @@ public class BinomialDistribution implements Ops.IntToDouble {
     // private fields
     //
 
-    private double logP; //TODO: code review
-    private double logOneMinusP; //TODO: code review
+    private double logP;
+    private double logOneMinusP;
 
     /**
      * Constructor of the Binomial Distribution taking two arguments for initialization.
@@ -70,7 +70,6 @@ public class BinomialDistribution implements Ops.IntToDouble {
      * @param p Probability of success of each trial
      * @param n Sequence of independent yes/no experiments
      */
-    //TODO: code review
     public BinomialDistribution(final double p, final int n) {
         QL.require(p >= 0 && p <= 1.0, INVALID_PROBABILITY); // QA:[RG]::verified
         this.nExp = n;

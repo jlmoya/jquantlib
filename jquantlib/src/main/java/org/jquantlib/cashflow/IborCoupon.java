@@ -57,7 +57,6 @@ import org.jquantlib.util.Visitor;
  * @author Zahid Hussain
  *
  */
-// TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class IborCoupon extends FloatingRateCoupon {
 
     private final static String NULL_TERM_STRUCTURE = "null term structure set to par coupon";

@@ -56,7 +56,6 @@ import org.jquantlib.util.Visitor;
  *
  * @author Richard Gomes
  */
-// TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public abstract class LocalVolTermStructure extends VolatilityTermStructure implements PolymorphicVisitable {
 
     //

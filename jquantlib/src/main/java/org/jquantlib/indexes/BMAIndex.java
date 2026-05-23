@@ -58,7 +58,6 @@ import org.jquantlib.time.calendars.UnitedStates;
  *
  * @author Tim Blackler
  */
-// TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class BMAIndex extends InterestRateIndex {
 
     private final Handle< YieldTermStructure > termStructure;

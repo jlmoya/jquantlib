@@ -52,7 +52,6 @@ import org.jquantlib.math.matrixutilities.Matrix;
  * @author Richard Gomes
  * @see Bicubic
  */
-// TODO: rename to BicubicSpline
 public class BicubicSplineInterpolation extends AbstractInterpolation2D {
 
     //

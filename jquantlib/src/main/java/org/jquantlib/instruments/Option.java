@@ -222,7 +222,6 @@ public abstract class Option extends Instrument {
 
             /*@Real*/
             final double u = p.stateVariable().currentLink().value();
-            //TODO update zeroRate so that we do not need to set frequency and extrapolate
             /*@Rate*/
             final double r = p.riskFreeRate().currentLink()
                     .zeroRate(0.0, Compounding.Continuous, Frequency.Annual, false).rate();

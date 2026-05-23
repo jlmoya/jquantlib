@@ -72,7 +72,6 @@ public class AverageBMALeg {
         this.index = index;
         this.paymentAdjustment = BusinessDayConvention.Following;
 
-        // TODO : review initialization
         // these are vectors in quantlib, therfor they must be initalized to default
         // values or nullable. since we have decided to write the code without null checks
         // all over the place we are going to initialze them for now to be consistent with

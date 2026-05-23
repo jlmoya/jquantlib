@@ -76,7 +76,6 @@ import org.jquantlib.util.Visitor;
  * @author Ueli Hofstetter
  * @author John Martin
  */
-// TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class CappedFlooredCoupon extends FloatingRateCoupon {
 
     protected FloatingRateCoupon underlying_;

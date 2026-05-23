@@ -31,7 +31,6 @@ import org.jquantlib.termstructures.SwaptionVolatilityStructure;
  *
  * @author Ueli Hofstetter
  */
-// TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public abstract class CmsCouponPricer extends FloatingRateCouponPricer {
 
     private static final String no_adequate_swaptionVol_given = "no adequate swaptionVol given";
@@ -62,7 +61,6 @@ public abstract class CmsCouponPricer extends FloatingRateCouponPricer {
     //
 
     @Override
-    //TODO: code review
     public void update() {
         notifyObservers();
     }

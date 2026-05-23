@@ -1160,7 +1160,6 @@ public class Date implements Observable, Comparable< Date >, Serializable, Clone
      * @note Does not trigger notifications
      * @see
      */
-    //TODO: consider @PackagePrivate
     protected final long todaysSerialNumber() {
         final java.util.Calendar cal = java.util.Calendar.getInstance();
         final int d = cal.get(java.util.Calendar.DAY_OF_MONTH);
@@ -1176,7 +1175,6 @@ public class Date implements Observable, Comparable< Date >, Serializable, Clone
      * @note Does not trigger notifications
      * @see inner class DateProxy in {@link Settings}
      */
-    //TODO: consider @PackagePrivate
     protected final Date assign(final long serialNumber) {
         this.serialNumber = serialNumber;
         return this;

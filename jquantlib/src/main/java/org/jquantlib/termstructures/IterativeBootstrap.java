@@ -167,7 +167,7 @@ public class IterativeBootstrap< Curve extends PiecewiseYieldCurve > implements 
 
         for ( int iteration = 0; ; ++iteration ) {
             // only read safe to use as a reference
-            final double[] previousData = data.clone(); // TODO: verify if clone() is needed
+            final double[] previousData = data.clone();
             // restart from the previous interpolation
             if ( validCurve ) {
                 ts.setInterpolation(interpolator.interpolate(new Array(times), new Array(data)));

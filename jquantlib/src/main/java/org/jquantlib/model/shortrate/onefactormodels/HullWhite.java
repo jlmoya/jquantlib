@@ -56,7 +56,6 @@ import static org.jquantlib.pricingengines.BlackFormula.blackFormula;
  * @note When the term structure is relinked, the r0 parameter of the underlying Vasicek model is not updated.
  * @category shortrate
  */
-// TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class HullWhite extends Vasicek implements TermStructureConsistentModel {
 
     private final TermStructureConsistentModelClass termStructureConsistentModelClass;

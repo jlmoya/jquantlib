@@ -139,7 +139,7 @@ public abstract class OneFactorModel extends ShortRateModel {
      * {@code Lattice} returned from {@link #tree(TimeGrid)} and invoke {@link #setSpread} for OAS pricing. Mirrors C++
      * v1.42.1 onefactormodel.hpp line 75 where the class is declared {@code public} on {@code OneFactorModel}.
      */
-    public class ShortRateTree extends TreeLattice1D { //TODO: <OneFactorModel.ShortRateTree> {
+    public class ShortRateTree extends TreeLattice1D {
 
         //
         // private fields

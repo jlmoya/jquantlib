@@ -57,8 +57,6 @@ import org.jquantlib.time.Frequency;
 /**
  * @author <Richard Gomes>
  */
-//TODO class comments
-//TODO add reference to original paper, clewlow strickland
 public class AnalyticContinuousGeometricAveragePriceAsianEngine extends ContinuousAveragingAsianOption.EngineImpl {
 
     //

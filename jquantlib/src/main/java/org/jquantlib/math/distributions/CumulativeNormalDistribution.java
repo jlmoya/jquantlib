@@ -80,7 +80,7 @@ public class CumulativeNormalDistribution extends NormalDistribution implements 
         // QL.require(!(z >= average && 2.0*average-z > average) , "not a real number");
         z = (z - average) / sigma;
         double result = 0.5 * (1.0 + errorFunction.op(z * Constants.M_SQRT_2));
-        if ( result <= 1e-8 ) { //TODO: investigate the threshold level
+        if ( result <= 1e-8 ) {
             // See:Asymptotic expansion for very negative z following (26.2.12) on page 408 in M. Abramowitz and A. Stegun,
             // Pocketbook of Mathematical Functions, ISBN 3-87144818-4.
             // See also: Jaeckels book "Monte Carlo Methods in Finance", ISBN-13: 978-0471497417

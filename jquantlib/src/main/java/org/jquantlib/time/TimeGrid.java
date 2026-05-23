@@ -36,7 +36,6 @@ import java.util.List;
  *
  * @author Dominik Holenstein
  */
-// TODO: Taken over from QuantLib: What was the rationale for limiting the grid to positive times?
 // Investigate and see whether we can use it for negative ones as well.
 public class TimeGrid {
 
@@ -292,7 +291,6 @@ public class TimeGrid {
      *
      * @note This constructor is not available yet - fix adjacent_difference before using
      */
-    //TODO: needs code review
     //    template <class Iterator>
     //    TimeGrid(Iterator begin, Iterator end, Size steps)
     //    : mandatoryTimes_(begin, end) {
@@ -400,7 +398,6 @@ public class TimeGrid {
     }
 
     public final Array mandatoryTimes() /*@Readonly*/ {
-        // TODO: code review :: use of clone()
         return mandatoryTimes.clone();
     }
 
