@@ -92,7 +92,21 @@ public class SabrSwaptionVolatilityCube extends SwaptionVolatilityCube {
 
     private static final double DEFAULT_TOL = 100.0e-4;
     private static final double DEFAULT_TOL_VEGA = 15.0e-4;
-    private static final int N_PARAMS = 4;
+    protected static final int N_PARAMS = 4;
+
+    /**
+     * Calibration result for a single (option, swap) cell. Returned by
+     * {@link #calibrateCell(Array, Array, double, double, double[], double)} so subclasses can plug in different smile
+     * models (e.g. NoArbSABR) without re-implementing the full cube machinery.
+     *
+     * <p>{@code endCriteriaOrdinal} is the {@link EndCriteria.Type#ordinal()} of the optimizer's stopping reason; the
+     * cube stores this in the parameters cube and the swaption-cube infrastructure consults it via
+     * {@code calculate()} → end-criteria checks.
+     */
+    public record SmileCalibrationResult(double alpha, double beta, double nu, double rho, double rmsError,
+            double maxError, int endCriteriaOrdinal) {
+        // record stored as a tuple of (params + diagnostics); no extra methods needed.
+    }
 
     //
     // configuration / inputs
@@ -370,7 +384,80 @@ public class SabrSwaptionVolatilityCube extends SwaptionVolatilityCube {
         final double[] sabrParams = new double[N_PARAMS];
         System.arraycopy(all, 0, sabrParams, 0, N_PARAMS);
         final double shift = shiftImpl(optionTime, swapLength);
+        return buildSmileSection(optionTime, forward, sabrParams, shift);
+    }
+
+    /**
+     * Hook for subclasses to plug in a different smile model.
+     *
+     * <p>Default implementation calibrates a 4-parameter {@link SABRInterpolation} ({@code SwaptionVolCubeSabrModel}).
+     * Subclasses such as {@code NoArbSabrSwaptionVolatilityCube} override this to fit a different interpolator (e.g.
+     * {@code NoArbSabrInterpolation}).
+     *
+     * @param strikes  strikes for this (option, swap) cell
+     * @param vols     market vols at {@code strikes}
+     * @param t        option time
+     * @param forward  at-the-money forward
+     * @param guess    initial parameter guess (length {@link #N_PARAMS})
+     * @param shift    shifted-lognormal shift (only meaningful for ShiftedLognormal volatilityType)
+     * @return calibration result + diagnostics
+     */
+    protected SmileCalibrationResult calibrateCell(final Array strikes, final Array vols, final double t,
+            final double forward, final double[] guess, final double shift) {
+        final SABRInterpolation sabr = new SABRInterpolation(strikes, vols, t, forward, guess[0], guess[1], guess[2],
+                guess[3], isParameterFixed_[0], isParameterFixed_[1], isParameterFixed_[2], isParameterFixed_[3],
+                vegaWeightedSmileFit_, endCriteria_, optMethod_, errorAccept_, useMaxError_, maxGuesses_, shift,
+                volatilityType_);
+        sabr.update();
+        return new SmileCalibrationResult(sabr.alpha(), sabr.beta(), sabr.nu(), sabr.rho(), sabr.rmsError(),
+                sabr.maxError(), sabr.endCriteria().ordinal());
+    }
+
+    /**
+     * Hook for subclasses to construct a smile section from calibrated parameters.
+     *
+     * <p>Default implementation returns a {@link SabrSmileSection}; subclasses such as
+     * {@code NoArbSabrSwaptionVolatilityCube} return a {@code NoArbSabrSmileSection}.
+     */
+    protected SmileSection buildSmileSection(final double optionTime, final double forward, final double[] sabrParams,
+            final double shift) {
         return new SabrSmileSection(optionTime, forward, sabrParams, shift, volatilityType_);
+    }
+
+    /** Accessor for the volatility type the cube is calibrated against. */
+    @Override
+    public VolatilityType volatilityType() {
+        return volatilityType_;
+    }
+
+    /** Accessor for the per-parameter "fixed" flag array (subclass calibration). */
+    protected boolean[] isParameterFixed() {
+        return isParameterFixed_;
+    }
+
+    /** Accessor for the optimizer end-criteria (subclass calibration). */
+    protected EndCriteria endCriteria() {
+        return endCriteria_;
+    }
+
+    /** Accessor for the optimizer method (subclass calibration). */
+    protected OptimizationMethod optMethod() {
+        return optMethod_;
+    }
+
+    /** Accessor for the error-accept threshold (subclass calibration). */
+    protected double errorAccept() {
+        return errorAccept_;
+    }
+
+    /** Accessor for the useMaxError flag (subclass calibration). */
+    protected boolean useMaxError() {
+        return useMaxError_;
+    }
+
+    /** Accessor for the maxGuesses cap (subclass calibration). */
+    protected int maxGuesses() {
+        return maxGuesses_;
     }
 
     //
@@ -421,29 +508,23 @@ public class SabrSwaptionVolatilityCube extends SwaptionVolatilityCube {
                     yArr.set(z, volsList.get(z));
                 }
 
-                final SABRInterpolation sabr = new SABRInterpolation(xArr, yArr, optionTimes[j], atmForward, guess[0],
-                        guess[1], guess[2], guess[3], isParameterFixed_[0], isParameterFixed_[1], isParameterFixed_[2],
-                        isParameterFixed_[3], vegaWeightedSmileFit_, endCriteria_, optMethod_, errorAccept_,
-                        useMaxError_, maxGuesses_, shiftTmp, volatilityType_);
-                sabr.update();
+                final SmileCalibrationResult r = calibrateCell(xArr, yArr, optionTimes[j], atmForward, guess, shiftTmp);
 
-                final double rmsError = sabr.rmsError();
-                final double maxError = sabr.maxError();
-                alphas.set(j, k, sabr.alpha());
-                betas.set(j, k, sabr.beta());
-                nus.set(j, k, sabr.nu());
-                rhos.set(j, k, sabr.rho());
+                alphas.set(j, k, r.alpha());
+                betas.set(j, k, r.beta());
+                nus.set(j, k, r.nu());
+                rhos.set(j, k, r.rho());
                 forwards.set(j, k, atmForward);
-                errors.set(j, k, rmsError);
-                maxErrors.set(j, k, maxError);
-                endCriteriaM.set(j, k, sabr.endCriteria().ordinal());
+                errors.set(j, k, r.rmsError());
+                maxErrors.set(j, k, r.maxError());
+                endCriteriaM.set(j, k, r.endCriteriaOrdinal());
 
-                QL.require(sabr.endCriteria() != EndCriteria.Type.MaxIterations,
+                QL.require(r.endCriteriaOrdinal() != EndCriteria.Type.MaxIterations.ordinal(),
                         "global swaptions calibration failed: MaxIterations reached" + " for option=" + optionDates.get(
-                                j) + " swap=" + swapTenorsLocal.get(k) + " alpha=" + sabr.alpha() + " beta="
-                                + sabr.beta() + " nu=" + sabr.nu() + " rho=" + sabr.rho() + " rms=" + rmsError);
+                                j) + " swap=" + swapTenorsLocal.get(k) + " alpha=" + r.alpha() + " beta=" + r.beta()
+                                + " nu=" + r.nu() + " rho=" + r.rho() + " rms=" + r.rmsError());
 
-                final double effErr = useMaxError_ ? maxError : rmsError;
+                final double effErr = useMaxError_ ? r.maxError() : r.rmsError();
                 QL.require(effErr < maxErrorTolerance_,
                         "global swaptions calibration failed: tolerance " + maxErrorTolerance_ + " exceeded by "
                                 + effErr + " at option=" + optionDates.get(j) + " swap=" + swapTenorsLocal.get(k));
