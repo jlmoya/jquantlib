@@ -262,6 +262,18 @@ public class Europe {
     }
 
     /**
+     * Russian ruble. The ISO three-letter code is RUB; the numeric code is 643. It is divided in 100 kopeyki.
+     *
+     * @category currencies
+     */
+    public static class RUBCurrency extends Currency {
+        public RUBCurrency() {
+            Data rubData = new Data("Russian ruble", "RUB", 643, "", "", 100, new Rounding(), "%1$.2f %3%");
+            data = rubData;
+        }
+    }
+
+    /**
      * Swedish krona The ISO three-letter code is SEK; the numeric code is 752. It is divided in 100 �re.
      *
      * @category currencies
