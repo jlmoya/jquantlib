@@ -178,7 +178,15 @@ public class FdmHestonOp implements FdmLinearOpComposite {
 
     @Override
     public Matrix toMatrix() {
-        throw new UnsupportedOperationException("FdmHestonOp.toMatrix() not implemented; use toMatrixDecomp()");
+        // Mirrors C++ v1.42.1 FdmLinearOpComposite::toMatrix default:
+        //   std::accumulate(dcmp.begin()+1, dcmp.end(), SparseMatrix(dcmp.front()))
+        // Sum of the per-direction matrices returned by toMatrixDecomp().
+        final List< Matrix > dcmp = toMatrixDecomp();
+        final Matrix acc = new Matrix(dcmp.get(0));
+        for ( int i = 1; i < dcmp.size(); ++i ) {
+            acc.addAssign(dcmp.get(i));
+        }
+        return acc;
     }
 
     @Override
