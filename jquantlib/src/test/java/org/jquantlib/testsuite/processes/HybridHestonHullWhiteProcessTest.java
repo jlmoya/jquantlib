@@ -70,7 +70,6 @@ import org.jquantlib.time.TimeGrid;
 import org.jquantlib.time.TimeUnit;
 import org.jquantlib.time.calendars.NullCalendar;
 import org.jquantlib.time.calendars.Target;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**

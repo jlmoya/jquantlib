@@ -103,7 +103,6 @@ import org.jquantlib.time.Date;
 import org.jquantlib.time.Month;
 import org.jquantlib.time.Period;
 import org.jquantlib.time.TimeUnit;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class AmericanOptionTest {

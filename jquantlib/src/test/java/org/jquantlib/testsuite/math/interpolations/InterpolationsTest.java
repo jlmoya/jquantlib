@@ -59,7 +59,6 @@ import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.matrixutilities.Matrix;
 import org.jquantlib.math.randomnumbers.HaltonRsg;
 import org.jquantlib.termstructures.volatilities.Sabr;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**

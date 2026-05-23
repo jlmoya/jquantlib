@@ -38,7 +38,6 @@ import org.jquantlib.math.randomnumbers.SeedGenerator;
 import org.jquantlib.math.randomnumbers.SobolRsg;
 import org.jquantlib.math.statistics.DiscrepancyStatistics;
 import org.jquantlib.math.statistics.SequenceStatistics;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**

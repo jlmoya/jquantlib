@@ -46,7 +46,6 @@ import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.termstructures.volatilities.BlackVarianceCurve;
 import org.jquantlib.testsuite.util.Utilities;
 import org.jquantlib.time.Date;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**

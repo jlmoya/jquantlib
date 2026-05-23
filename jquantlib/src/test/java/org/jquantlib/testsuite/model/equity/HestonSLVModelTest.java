@@ -98,7 +98,6 @@ import org.jquantlib.time.Period;
 import org.jquantlib.time.TimeGrid;
 import org.jquantlib.time.TimeUnit;
 import org.junit.Assume;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**

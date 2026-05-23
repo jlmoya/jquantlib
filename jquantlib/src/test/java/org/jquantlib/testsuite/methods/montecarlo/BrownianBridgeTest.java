@@ -55,7 +55,6 @@ import org.jquantlib.time.TimeGrid;
 import org.jquantlib.time.calendars.NullCalendar;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**

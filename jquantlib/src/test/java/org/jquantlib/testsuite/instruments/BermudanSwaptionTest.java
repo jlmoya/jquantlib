@@ -54,7 +54,6 @@ import org.jquantlib.time.Schedule;
 import org.jquantlib.time.TimeUnit;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**

@@ -75,7 +75,6 @@ import org.jquantlib.time.calendars.Target;
 import org.jquantlib.time.calendars.UnitedKingdom;
 import org.jquantlib.time.calendars.UnitedStates;
 import org.jquantlib.util.Pair;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;

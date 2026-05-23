@@ -66,7 +66,6 @@ import org.jquantlib.time.Schedule;
 import org.jquantlib.time.TimeUnit;
 import org.jquantlib.time.calendars.Target;
 import org.jquantlib.time.calendars.UnitedStates;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**

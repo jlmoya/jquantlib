@@ -50,7 +50,6 @@ import org.jquantlib.time.Period;
 import org.jquantlib.time.Schedule;
 import org.jquantlib.time.TimeUnit;
 import org.jquantlib.time.calendars.Target;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -249,8 +248,4 @@ public class RangeAccrualTest {
             }
         }
     }
-
-    /** Reference of {@link Ignore} retained for IDE imports if future re-skip needed. */
-    @SuppressWarnings("unused")
-    private static final Class<?> IGNORE_REF = Ignore.class;
 }

@@ -24,7 +24,6 @@ import org.jquantlib.testsuite.util.ReferenceReader;
 import org.jquantlib.testsuite.util.ReferenceReader.Case;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertTrue;

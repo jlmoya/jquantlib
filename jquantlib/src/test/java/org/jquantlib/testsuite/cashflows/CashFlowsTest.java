@@ -49,7 +49,6 @@ import org.jquantlib.time.calendars.NullCalendar;
 import org.jquantlib.time.calendars.Target;
 import org.jquantlib.time.calendars.UnitedStates;
 import org.junit.Assume;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**

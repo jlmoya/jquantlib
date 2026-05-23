@@ -34,7 +34,6 @@ import org.jquantlib.currencies.Europe.CHFCurrency;
 import org.jquantlib.currencies.Europe.EURCurrency;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.math.Rounding;
-import org.junit.Ignore;
 import org.junit.Test;
 
 //FIXME: http://bugs.jquantlib.org/view.php?id=474

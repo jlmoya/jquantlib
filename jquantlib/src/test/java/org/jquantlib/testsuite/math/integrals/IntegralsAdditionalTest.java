@@ -45,7 +45,6 @@ import org.jquantlib.math.integrals.SegmentIntegral;
 import org.jquantlib.math.integrals.TrapezoidIntegral;
 import org.jquantlib.math.integrals.TwoDimensionalIntegral;
 import org.jquantlib.math.matrixutilities.Array;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**

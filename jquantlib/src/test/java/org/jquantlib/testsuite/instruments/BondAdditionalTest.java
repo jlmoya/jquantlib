@@ -48,7 +48,6 @@ import org.jquantlib.time.calendars.Australia;
 import org.jquantlib.time.calendars.NullCalendar;
 import org.jquantlib.time.calendars.UnitedKingdom;
 import org.jquantlib.time.calendars.UnitedStates;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
