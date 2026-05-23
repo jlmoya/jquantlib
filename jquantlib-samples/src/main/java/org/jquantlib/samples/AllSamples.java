@@ -4,6 +4,7 @@ import java.util.Arrays;
 
 import org.jquantlib.lang.iterators.Iterables;
 
+@SuppressWarnings("deprecation")
 public class AllSamples {
 
     static public void main(final String args[]) {

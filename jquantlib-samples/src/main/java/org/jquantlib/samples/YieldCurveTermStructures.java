@@ -33,6 +33,7 @@ import org.jquantlib.time.calendars.UnitedStates.Market;
  * @author Apratim Rajendra
  *
  */
+@SuppressWarnings("unchecked")
 public class YieldCurveTermStructures implements Runnable {
 
     public static void main(final String[] args) {

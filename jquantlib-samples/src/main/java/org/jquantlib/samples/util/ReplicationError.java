@@ -51,6 +51,7 @@ import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.calendars.Target;
 
+@SuppressWarnings("unchecked")
 public class ReplicationError {
 
     private final /* @Time */Number maturity_;
