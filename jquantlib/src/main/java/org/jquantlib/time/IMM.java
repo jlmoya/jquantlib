@@ -144,7 +144,6 @@ public class IMM {
      * @param refDate
      * @return
      */
-    // FIXME: this method is potentially harmful in heavily multi-threaded environments
     public static Date date(final String immCode, final Date refDate) {
         QL.require(isIMMcode(immCode, false), "not a valid IMM code");
 
@@ -343,7 +342,6 @@ public class IMM {
      * @param date
      * @return
      */
-    // FIXME: this method is potentially harmful in heavily multi-threaded environments
     public static String code(final Date date) {
         QL.require(isIMMdate(date, false), "not an IMM date");
 

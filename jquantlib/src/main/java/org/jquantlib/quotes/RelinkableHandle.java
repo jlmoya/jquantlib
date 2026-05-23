@@ -50,7 +50,6 @@ import org.jquantlib.util.Observable;
  *
  * @author Richard Gomes
  */
-//FIXME:
 public class RelinkableHandle< T extends Observable > extends Handle< T > {
 
     public RelinkableHandle() {

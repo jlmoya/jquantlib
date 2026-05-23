@@ -822,7 +822,6 @@ public class Schedule {
      *
      * @see http://www.sgi.com/tech/stl/lower_bound.html
      */
-    // FIXME: http://bugs.jquantlib.org/view.php?id=67
     private Iterator< Date > std_lower_bound(final Date date) {
 
         final List< Date > ldates = new ArrayList<>();

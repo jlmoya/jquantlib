@@ -73,14 +73,11 @@ public class ExchangeRateManager {
         addKnownRates();
     }
 
-    // FIXME: check whether this should be derived from some kind of (generic function)
-
     /**
      * Returns a singleton of the ExchangeRateManager.
      *
      * @return The ExchangeRateManager shared by everything loaded with this classloader.
      */
-    //FIXME: remove singleton pattern
     public static ExchangeRateManager getInstance() {
         if ( instance == null ) {
             synchronized ( ExchangeRateManager.class ) {

@@ -28,10 +28,8 @@ import org.jquantlib.math.Closeness;
 /**
  * Cash amount in a given currency.
  */
-//FIXME: http://bugs.jquantlib.org/view.php?id=474
 public class Money implements Cloneable {
 
-    //FIXME: These static methods must be "moved" to class Settings
     public static ConversionType conversionType;
     public static Currency baseCurrency;
 
@@ -85,7 +83,7 @@ public class Money implements Cloneable {
         return new Money(currency_.rounding().operator(value_), currency_);
     }
 
-    // +() //FIXME: this looks like a mistake in c++
+    // +()
     public Money positiveValue() {
         return new Money(currency_, value_);
     }
@@ -160,7 +158,6 @@ public class Money implements Cloneable {
         return money.lessEquals(this);
     }
 
-    // FIXME: suspicious....
     public Money operatorMultiply(/* Decimal */final double value, final Currency c) {
         return new Money(value, c);
     }
@@ -168,7 +165,6 @@ public class Money implements Cloneable {
     public void convertTo(final Currency target) {
         if ( currency().ne(target) ) {
             final ExchangeRate rate = ExchangeRateManager.getInstance().lookup(currency(), target);
-            // FIXME ... evt. Money should be modified in ExchangeRate directly
             final Money money = rate.exchange(this).rounded();
             this.currency_ = money.currency_;
             this.value_ = money.value_;

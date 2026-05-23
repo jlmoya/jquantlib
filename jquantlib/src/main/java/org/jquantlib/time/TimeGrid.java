@@ -69,7 +69,7 @@ public class TimeGrid {
         // We seem to assume that the grid begins at 0.
         // Let's enforce the assumption for the time being
         // (even though I'm not sure that I agree.)
-        QL.require(end > 0.0, "negative times not allowed"); // QA:[RG]::verified // FIXME: message
+        QL.require(end > 0.0, "negative times not allowed"); // QA:[RG]::verified
 
         /*@Time*/
         final double dt = end / steps;

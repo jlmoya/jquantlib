@@ -512,7 +512,6 @@ public class Date implements Observable, Comparable< Date >, Serializable, Clone
         final int m = month;
         final int y = year;
         final int dow = dayOfWeek.value();
-        // FIXME: code review
         final int first = new Date(1, m, y).weekday().value();
         final int skip = nth - (dow >= first ? 1 : 0);
         return new Date(1 + dow - first + skip * 7, m, y);

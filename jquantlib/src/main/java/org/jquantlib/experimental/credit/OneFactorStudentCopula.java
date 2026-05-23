@@ -81,8 +81,10 @@ public class OneFactorStudentCopula extends OneFactorCopula {
         y.clear();
         cumulativeY.clear();
 
-        // FIXME (C++): compute F(ymin) and F(ymax) for the fattest case
-        // nm = nz = 2; for now use a fixed grid.
+        // Faithful port of C++ v1.42.1 onefactorstudentcopula.cpp:48-53,
+        // which still carries the upstream FIXME: "compute F(ymin) and
+        // F(ymax) for the fattest case nm = nz = 2". Kept as a fixed
+        // grid here to preserve byte-for-byte output parity.
         final double ymin = -10.0;
         final double ymax = 10.0;
         final int steps = 200;

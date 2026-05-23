@@ -46,8 +46,6 @@ import org.jquantlib.math.optimization.NoConstraint;
  *
  * @author Praneet Tiwari
  */
-//FIXME: refactor
-
 public class NullParameter extends Parameter {
 
     public NullParameter() {

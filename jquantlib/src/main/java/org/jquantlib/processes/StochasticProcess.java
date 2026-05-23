@@ -92,7 +92,7 @@ public abstract class StochasticProcess implements Observable, Observer {
      * @param discretization is an Object that <b>must</b> implement {@link Discretization}.
      */
     protected StochasticProcess(final Discretization discretization) {
-        QL.require(discretization != null, "null discretization"); // QA:[RG]::verified // FIXME: message
+        QL.require(discretization != null, "null discretization"); // QA:[RG]::verified
         this.discretization = discretization;
     }
 
@@ -115,7 +115,7 @@ public abstract class StochasticProcess implements Observable, Observer {
     /**
      * Returns the initial values of the state variables
      */
-    public abstract Array initialValues() /*@ReadOnly*/; // FIXME: add typecast
+    public abstract Array initialValues() /*@ReadOnly*/;
 
     /**
      * Returns the drift part of the equation, i.e., {@latex$ \mu(t, \mathrm{x}_t) }

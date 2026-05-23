@@ -50,7 +50,6 @@ import org.jquantlib.math.Ops;
  * @author Richard Gomes
  * @category mcarlo
  */
-//FIXME: study how to solve warning on usage of type Double
 public abstract class PathPricer< PathType > implements Ops.Op< PathType, Double > {
 
     public PathPricer() {

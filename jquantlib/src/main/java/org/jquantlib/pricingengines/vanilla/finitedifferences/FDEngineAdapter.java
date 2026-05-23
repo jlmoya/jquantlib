@@ -53,7 +53,6 @@ import java.util.List;
  * @author Richard Gomes
  * @category vanillaengines
  */
-//FIXME: http://bugs.jquantlib.org/view.php?id=405
 public abstract class FDEngineAdapter< Base extends FDVanillaEngine, Engine extends OneAssetOption.Engine >
         implements OneAssetOption.Engine {
 

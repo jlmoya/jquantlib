@@ -97,7 +97,6 @@ public class Parameter {
         return constraint.test(params);
     }
 
-    // FIXME: evaluate the possibility to rename to Ops.Ops#op
     public double get(final /* @Time */ double t) /* @ReadOnly */ {
         return impl.value(params, t);
     }

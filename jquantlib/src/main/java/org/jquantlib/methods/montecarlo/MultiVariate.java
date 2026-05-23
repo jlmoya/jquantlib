@@ -48,8 +48,6 @@ public class MultiVariate< RNG extends RandomNumberGenerator > implements Variat
     public MultiVariate() {
     }
 
-    // FIXME: decide how to implement
-
 }
 
 /// /! default Monte Carlo traits for multi-variate models

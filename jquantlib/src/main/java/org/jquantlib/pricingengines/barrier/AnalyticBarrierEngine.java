@@ -77,7 +77,6 @@ public class AnalyticBarrierEngine extends BarrierOption.EngineImpl {
     private final CumulativeNormalDistribution f;
 
     // these fields are initialised every time calculate() is called
-    // FIXME: code review
     private transient final GeneralizedBlackScholesProcess process;
     final private BarrierOption.ArgumentsImpl a;
 

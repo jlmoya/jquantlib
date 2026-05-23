@@ -116,15 +116,6 @@ public class CappedFlooredCoupon extends FloatingRateCoupon {
             }
         }
 
-        // FIXME :: this comment does not belong to C++ code :: evaluate and eventually remove
-        //
-        // note subtle difference, caps become floors and floors become caps
-        // if gearing is < 0.
-        // It maybe WRONG to do this, note how we access the floor() and cap()
-        // functions defined below. if we swap the caps and floors at construction, for
-        // a negative gearing, we will undo this change when we access the negative
-        // gearing again through the floor and cap functions.
-
         else {
             if ( capPresent ) {
                 floor_ = cap;

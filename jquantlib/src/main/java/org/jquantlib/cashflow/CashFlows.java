@@ -1392,10 +1392,9 @@ public class CashFlows {
         @Override
         public < CashFlow > Visitor< CashFlow > visitor(final Class< ? extends CashFlow > klass) {
 
-            //FIXME
-            // Coupon is a CashFlow, therefore any Coupon types will never get to the CashFlowVisitor.
-            // This may be fine for now, but could become problematic if other types are introduced.
-
+            // Coupon is a CashFlow, therefore any Coupon types will never
+            // reach the CashFlowVisitor branch — they always match the
+            // Coupon branch first.
             if ( Coupon.class.isAssignableFrom(klass) )
                 return (Visitor< CashFlow >) new CouponVisitor();
             if ( org.jquantlib.cashflow.CashFlow.class.isAssignableFrom(klass) )

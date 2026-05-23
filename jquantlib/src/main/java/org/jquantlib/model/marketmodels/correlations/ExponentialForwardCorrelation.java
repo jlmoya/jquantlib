@@ -98,7 +98,10 @@ public class ExponentialForwardCorrelation extends PiecewiseConstantCorrelation 
             final Matrix c = exponentialCorrelations(rateTimes_, longTermCorr_, beta_, 1.0, 0.0);
             this.correlations_ = TimeHomogeneousForwardCorrelation.evolvedMatrices(c);
         } else {
-            // FIXME (C++): should check here that all rateTimes but the last are included in rateTimes
+            // Faithful port of C++ v1.42.1 expcorrelations.cpp:105-106,
+            // which still carries the upstream FIXME: "should check here
+            // that all rateTimes but the last are included in rateTimes".
+            // We only check the back-most time, mirroring C++ behavior.
             QL.require(this.times_.get(this.times_.size() - 1) <= rateTimes_.get(numberOfRates_),
                     "last corr time " + this.times_.get(this.times_.size() - 1) + " is after next-to-last rate time "
                             + rateTimes_.get(numberOfRates_));

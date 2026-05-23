@@ -188,7 +188,7 @@ public class FixedRateLeg extends Leg {
             // -> 28-Feb-2018 semi-annual EOM schedule). Phase 5e.5b-CFC-d-137.
             final Date ref = calendar.advance(end, schedule_.tenor().negative(), schedule_.businessDayConvention(),
                     schedule_.endOfMonth());
-            // FIXME: empty() method on dayCounter missing --> substituted by == null (probably incorrect)
+            // Java has no DayCounter::empty(); null is the empty sentinel.
             final DayCounter dc = (firstPeriodDayCounter_ == null) ? paymentDayCounter_ : firstPeriodDayCounter_;
             leg.add(new FixedRateCoupon(nominal, paymentDate, rate, dc, start, end, ref, end, exCouponDate));
         }

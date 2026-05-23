@@ -134,10 +134,6 @@ public class BinomialVanillaEngine< T extends Tree > extends VanillaOption.Engin
 
     @Override
     public void calculate() /*@ReadOnly*/ {
-        //FIXME: code review: what about BermudanExercise?
-        //QL.require(a.exercise.type() == Exercise.Type.European || a.exercise.type() == Exercise.Type.American,
-        //           "neither European nor American option");
-
         final DayCounter rfdc = process.riskFreeRate().currentLink().dayCounter();
         final DayCounter divdc = process.dividendYield().currentLink().dayCounter();
         final DayCounter voldc = process.blackVolatility().currentLink().dayCounter();
