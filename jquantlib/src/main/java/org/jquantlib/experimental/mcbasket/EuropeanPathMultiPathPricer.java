@@ -25,34 +25,36 @@
 
 package org.jquantlib.experimental.mcbasket;
 
+import org.jquantlib.QL;
 import org.jquantlib.math.matrixutilities.Array;
+import org.jquantlib.math.matrixutilities.Matrix;
+import org.jquantlib.methods.montecarlo.MultiPath;
 import org.jquantlib.methods.montecarlo.PathPricer;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.termstructures.YieldTermStructure;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 /**
  * European-style path pricer for multi-asset baskets.
  *
- * <p>Phase 4i scaffold port of C++ QuantLib v1.42.1
+ * <p>Phase 4i port of C++ QuantLib v1.42.1
  * {@code ql/experimental/mcbasket/mcpathbasketengine.{hpp,cpp}}:: {@code EuropeanPathMultiPathPricer}. Pinned commit
  * {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
  *
  * <p>Computes {@code DotProduct(payments, discounts)} for the path,
  * ignoring early exercise.
  *
- * <h3>Phase 4i carry-forward (Phase 4i.5)</h3>
+ * <h3>Phase 4i.5 implementation (P3-B)</h3>
  *
- * <p>Like {@link LongstaffSchwartzMultiPathPricer}, this is a partial port:
- * the {@link #op(Object)} body needs the still-missing {@code MultiPath} type. The class is fully wired so that, once
- * {@code MultiPath} lands in {@code org.jquantlib.methods.montecarlo}, the body can be filled by mirroring lines 36-65
- * of the referenced C++ source (build a path matrix, call
- * {@link PathPayoff#value(org.jquantlib.math.matrixutilities.Matrix, java.util.List, Array, Array, java.util.List)},
- * then dot-product with the discounts).
+ * <p>{@link #op(MultiPath)} now mirrors C++
+ * {@code EuropeanPathMultiPathPricer::operator()} lines 33-65 of
+ * {@code mcpathbasketengine.cpp}: build the (numAssets, numTimes) path matrix from the {@link MultiPath}, call
+ * {@link PathPayoff#value(Matrix, List, Array, Array, List)}, then dot-product the values with {@code discounts_}.
  */
-public class EuropeanPathMultiPathPricer extends PathPricer< Object > {
+public class EuropeanPathMultiPathPricer extends PathPricer< MultiPath > {
 
     private final PathPayoff payoff_;
     private final int[] timePositions_;
@@ -68,11 +70,37 @@ public class EuropeanPathMultiPathPricer extends PathPricer< Object > {
     }
 
     @Override
-    public Double op(final Object multiPath) {
-        // TODO Phase 4i.5: build the (numAssets, numTimes) path matrix from
-        //                  the MultiPath, call payoff_.value(...), then
-        //                  return DotProduct(values, discounts_).
-        throw new UnsupportedOperationException("EuropeanPathMultiPathPricer.op pending Phase 4i.5 (MultiPath)");
+    public Double op(final MultiPath multiPath) {
+        final int n = multiPath.pathSize();
+        QL.require(n > 0, "the path cannot be empty");
+
+        final int numberOfAssets = multiPath.assetNumber();
+        QL.require(numberOfAssets > 0, "there must be some paths");
+
+        final int numberOfTimes = timePositions_.length;
+
+        // Mirrors C++ Matrix path(numberOfAssets, numberOfTimes, Null<Real>())
+        // — sentinel-initialised; cells are immediately overwritten below.
+        final Matrix path = new Matrix(numberOfAssets, numberOfTimes);
+
+        for ( int i = 0; i < numberOfTimes; i++ ) {
+            final int pos = timePositions_[i];
+            for ( int j = 0; j < numberOfAssets; j++ ) {
+                path.set(j, i, multiPath.get(j).get(pos));
+            }
+        }
+
+        final Array values = new Array(numberOfTimes, 0.0, 0.0);
+
+        // C++ passes default-constructed Array exercises and empty std::vector<Array> states;
+        // PathPayoff::value treats them as "ignored" outputs.
+        final Array exercises = new Array(0);
+        final List< Array > states = new ArrayList<>();
+
+        payoff_.value(path, forwardTermStructures_, values, exercises, states);
+
+        // in this engine we ignore early exercise
+        return values.dotProduct(discounts_);
     }
 
     public PathPayoff payoff() {

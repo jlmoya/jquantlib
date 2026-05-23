@@ -27,20 +27,42 @@ package org.jquantlib.experimental.mcbasket;
 
 import org.jquantlib.QL;
 import org.jquantlib.math.Constants;
+import org.jquantlib.math.distributions.InverseCumulativeNormal;
+import org.jquantlib.math.matrixutilities.Array;
+import org.jquantlib.math.randomnumbers.InverseCumulativeRsg;
+import org.jquantlib.math.randomnumbers.MersenneTwisterUniformRng;
+import org.jquantlib.math.randomnumbers.RandomSequenceGenerator;
+import org.jquantlib.methods.montecarlo.MonteCarloModel;
+import org.jquantlib.methods.montecarlo.MultiPath;
+import org.jquantlib.methods.montecarlo.MultiPathGenerator;
+import org.jquantlib.methods.montecarlo.PathPricer;
 import org.jquantlib.model.shortrate.StochasticProcessArray;
+import org.jquantlib.pricingengines.McSimulation;
+import org.jquantlib.processes.GeneralizedBlackScholesProcess;
+import org.jquantlib.processes.StochasticProcess1D;
+import org.jquantlib.quotes.Handle;
+import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.termstructures.yieldcurves.ImpliedTermStructure;
+import org.jquantlib.time.Date;
+import org.jquantlib.time.TimeGrid;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Monte Carlo engine for path-dependent basket options.
  *
- * <p>Phase 4i scaffold port of C++ QuantLib v1.42.1
+ * <p>Java port of C++ QuantLib v1.42.1
  * {@code ql/experimental/mcbasket/mcpathbasketengine.{hpp,cpp}}:: {@code MCPathBasketEngine}. Pinned commit
  * {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
  *
  * <p>The C++ engine is templated on
  * {@code <RNG = PseudoRandom, S = Statistics>} and inherits from {@code McSimulation<MultiVariate,RNG,S>}. The Java
- * port stores all the named-parameter knobs but defers the actual MC loop to Phase 4i.5, because it depends on
- * {@code McSimulation<MultiVariate, ...>}, {@code MultiPathGenerator}, and {@code MultiPath} which are not yet
- * available in the Java codebase.
+ * port collapses the {@code RNG} template parameter (specialised to {@code PseudoRandom} —
+ * MersenneTwister + InverseCumulativeNormal) and embeds an {@link McSimulation McSimulation&lt;MultiPath&gt;}
+ * delegate via composition, mirroring the precedent set by
+ * {@link org.jquantlib.experimental.exoticoptions.MCHimalayaEngine} and
+ * {@link org.jquantlib.pricingengines.basket.MCAmericanBasketEngine}.
  */
 public class MCPathBasketEngine extends PathMultiAssetOption.EngineImpl {
 
@@ -54,6 +76,9 @@ public class MCPathBasketEngine extends PathMultiAssetOption.EngineImpl {
     protected final boolean antitheticVariate_;
     protected final boolean controlVariate_;
     protected final long seed_;
+
+    /** Lazily-built delegate that owns the {@link MonteCarloModel}. */
+    protected McSimulation< MultiPath > simulation_;
 
     public MCPathBasketEngine(final StochasticProcessArray process, final int timeSteps, final int timeStepsPerYear,
             final boolean brownianBridge, final boolean antitheticVariate, final boolean controlVariate,
@@ -85,14 +110,107 @@ public class MCPathBasketEngine extends PathMultiAssetOption.EngineImpl {
         }
     }
 
+    //
+    // McSimulation-shaped helpers
+    //
+
+    /** Mirrors C++ {@code TimeGrid timeGrid()} lines 161-175 of {@code mcpathbasketengine.hpp}. */
+    protected TimeGrid timeGrid() {
+        final List< Date > fixings = arguments_.fixingDates;
+        final int numberOfFixings = fixings.size();
+        final List< Double > fixingTimes = new ArrayList<>(numberOfFixings);
+        for ( int i = 0; i < numberOfFixings; i++ ) {
+            fixingTimes.add(process_.time(fixings.get(i)));
+        }
+        final int numberOfTimeSteps = (timeSteps_ != Constants.NULL_INTEGER)
+                ? timeSteps_
+                : (int) (timeStepsPerYear_ * fixingTimes.get(fixingTimes.size() - 1));
+        return new TimeGrid(fixingTimes, numberOfTimeSteps);
+    }
+
+    /** Build a Gaussian-driven {@link MultiPathGenerator} for the underlying processes. */
+    protected MonteCarloModel.PathGeneratorAdapter< MultiPath > pathGenerator() {
+        final PathPayoff payoff = arguments_.payoff;
+        QL.require(payoff != null, "non-basket payoff given");
+
+        final int numAssets = process_.size();
+        final TimeGrid grid = timeGrid();
+        final int dimensions = numAssets * (grid.size() - 1);
+        final RandomSequenceGenerator< MersenneTwisterUniformRng > uniformRsg =
+                new RandomSequenceGenerator< MersenneTwisterUniformRng >(MersenneTwisterUniformRng.class, dimensions,
+                        seed_);
+        final InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal > gsg =
+                new InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal >(
+                        uniformRsg, new InverseCumulativeNormal());
+        final MultiPathGenerator< InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal > > gen =
+                new MultiPathGenerator< InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal > >(
+                        process_, grid, gsg, brownianBridge_);
+        return new MonteCarloModel.MultiPathGeneratorAdapterImpl(gen);
+    }
+
+    /** Mirrors C++ {@code pathPricer()} lines 177-218 of {@code mcpathbasketengine.hpp}. */
+    protected PathPricer< MultiPath > pathPricer() {
+        final PathPayoff payoff = arguments_.payoff;
+        QL.require(payoff != null, "non-basket payoff given");
+
+        final StochasticProcess1D first = process_.process(0);
+        if (!(first instanceof GeneralizedBlackScholesProcess process)) {
+            throw new RuntimeException("Black-Scholes process required");
+        }
+
+        final TimeGrid theTimeGrid = timeGrid();
+        final Array times = theTimeGrid.mandatoryTimes();
+        final int numberOfTimes = times.size();
+        final List< Date > fixings = arguments_.fixingDates;
+        QL.require(fixings.size() == numberOfTimes, "Invalid dates/times");
+
+        final int[] timePositions = new int[numberOfTimes];
+        final double[] discountFactorsArr = new double[numberOfTimes];
+        final List< Handle< YieldTermStructure > > forwardTermStructures = new ArrayList<>(numberOfTimes);
+
+        final Handle< YieldTermStructure > riskFreeRate = process.riskFreeRate();
+        for ( int i = 0; i < numberOfTimes; i++ ) {
+            final double t = times.get(i);
+            timePositions[i] = theTimeGrid.index(t);
+            discountFactorsArr[i] = riskFreeRate.currentLink().discount(t);
+            forwardTermStructures.add(new Handle< YieldTermStructure >(
+                    new ImpliedTermStructure< YieldTermStructure >(riskFreeRate, fixings.get(i))));
+        }
+        final Array discountFactors = new Array(discountFactorsArr);
+        return new EuropeanPathMultiPathPricer(payoff, timePositions, forwardTermStructures, discountFactors);
+    }
+
+    //
+    // PricingEngine
+    //
+
     @Override
     public void calculate() /* @ReadOnly */ {
-        // TODO Phase 4i.5: invoke McSimulation<MultiVariate>.calculate() on a
-        //                  path generator built from process_. The Java
-        //                  codebase does not yet ship a multivariate
-        //                  McSimulation; mirror lines 62-70 of
-        //                  mcpathbasketengine.hpp once it does.
-        throw new UnsupportedOperationException("MCPathBasketEngine.calculate pending Phase 4i.5 "
-                + "(McSimulation<MultiVariate>, MultiPathGenerator, MultiPath)");
+        // Mirrors C++ {@code calculate()} lines 62-70 of mcpathbasketengine.hpp:
+        //   McSimulation<MultiVariate,RNG,S>::calculate(requiredTolerance_,
+        //                                               requiredSamples_,
+        //                                               maxSamples_);
+        //   results_.value = mcModel_->sampleAccumulator().mean();
+        //   if constexpr (RNG::allowsErrorEstimate)
+        //       results_.errorEstimate = mcModel_->sampleAccumulator().errorEstimate();
+        this.simulation_ = new McSimulation< MultiPath >(antitheticVariate_, controlVariate_) {
+            @Override
+            protected PathPricer< MultiPath > pathPricer() {
+                return MCPathBasketEngine.this.pathPricer();
+            }
+
+            @Override
+            protected MonteCarloModel.PathGeneratorAdapter< MultiPath > pathGenerator() {
+                return MCPathBasketEngine.this.pathGenerator();
+            }
+
+            @Override
+            protected TimeGrid timeGrid() {
+                return MCPathBasketEngine.this.timeGrid();
+            }
+        };
+        this.simulation_.calculate(requiredTolerance_, requiredSamples_, maxSamples_);
+        results_.value = this.simulation_.sampleAccumulator().mean();
+        results_.errorEstimate = this.simulation_.errorEstimate();
     }
 }

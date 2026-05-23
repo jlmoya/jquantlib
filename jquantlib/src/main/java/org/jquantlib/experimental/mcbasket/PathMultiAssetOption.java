@@ -131,7 +131,7 @@ public abstract class PathMultiAssetOption extends Instrument {
     }
 
     public abstract static class EngineImpl
-            extends GenericEngine< PathMultiAssetOption.Arguments, PathMultiAssetOption.Results > {
+            extends GenericEngine< PathMultiAssetOption.ArgumentsImpl, PathMultiAssetOption.ResultsImpl > {
 
         protected EngineImpl() {
             super(new PathMultiAssetOption.ArgumentsImpl(), new PathMultiAssetOption.ResultsImpl());

@@ -25,24 +25,34 @@
 
 package org.jquantlib.experimental.mcbasket;
 
+import org.jquantlib.QL;
+import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.model.shortrate.StochasticProcessArray;
+import org.jquantlib.processes.GeneralizedBlackScholesProcess;
+import org.jquantlib.processes.StochasticProcess1D;
+import org.jquantlib.quotes.Handle;
+import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.termstructures.yieldcurves.ImpliedTermStructure;
+import org.jquantlib.time.Date;
+import org.jquantlib.time.TimeGrid;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Least-square Monte Carlo engine for American-style multi-asset path options.
  *
- * <p>Phase 4i scaffold port of C++ QuantLib v1.42.1
+ * <p>Java port of C++ QuantLib v1.42.1
  * {@code ql/experimental/mcbasket/mcamericanpathengine.hpp}. Pinned commit
  * {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
  *
  * <p>Per the C++ docstring: "This method is intrinsically weak for
  * out-of-the-money options."
  *
- * <h3>Phase 4i carry-forward (Phase 4i.5)</h3>
- *
  * <p>The constructor wires up all named parameters and the
  * {@link #lsmPathPricer()} factory builds a {@link LongstaffSchwartzMultiPathPricer} with the canonical
  * {@code (polynomialOrder = 2, polynomialType = Monomial)} defaults. The full {@link #calculate()} dispatch is
- * inherited (and currently stubbed) from {@link MCLongstaffSchwartzPathEngine}.
+ * inherited from {@link MCLongstaffSchwartzPathEngine}.
  */
 public class MCAmericanPathEngine extends MCLongstaffSchwartzPathEngine {
 
@@ -59,17 +69,41 @@ public class MCAmericanPathEngine extends MCLongstaffSchwartzPathEngine {
 
     @Override
     protected LongstaffSchwartzMultiPathPricer lsmPathPricer() {
-        // TODO Phase 4i.5: build the LongstaffSchwartzMultiPathPricer using
-        //                  - timeGrid() (depends on McSimulation<MultiVariate>),
-        //                  - the GeneralizedBlackScholesProcess underlying
-        //                    process(0) of processArray_,
-        //                  - the discount factors and ImpliedTermStructure
-        //                    handles per fixing date,
-        //                  - polynomialOrder = 2,
-        //                  - PolynomialType.Monomial.
-        // See mcamericanpathengine.hpp lines 114-161.
-        throw new UnsupportedOperationException("MCAmericanPathEngine.lsmPathPricer pending Phase 4i.5 "
-                + "(timeGrid, ImpliedTermStructure handles per fixing date)");
+        // Mirrors C++ {@code MCAmericanPathEngine<RNG>::lsmPathPricer()} lines 114-161 of
+        // {@code mcamericanpathengine.hpp}.
+        QL.require(processArray_ != null && processArray_.size() > 0, "Stochastic process array required");
+
+        final StochasticProcess1D first = processArray_.process(0);
+        if (!(first instanceof GeneralizedBlackScholesProcess process)) {
+            throw new RuntimeException("generalized Black-Scholes process required");
+        }
+
+        final TimeGrid theTimeGrid = this.timeGrid();
+        final Array times = theTimeGrid.mandatoryTimes();
+        final int numberOfTimes = times.size();
+        final List< Date > fixings = arguments_.fixingDates;
+        QL.require(fixings.size() == numberOfTimes, "Invalid dates/times");
+
+        final int[] timePositions = new int[numberOfTimes];
+        final double[] discountFactorsArr = new double[numberOfTimes];
+        final List< Handle< YieldTermStructure > > forwardTermStructures = new ArrayList<>(numberOfTimes);
+
+        final Handle< YieldTermStructure > riskFreeRate = process.riskFreeRate();
+        for ( int i = 0; i < numberOfTimes; i++ ) {
+            final double t = times.get(i);
+            timePositions[i] = theTimeGrid.index(t);
+            discountFactorsArr[i] = riskFreeRate.currentLink().discount(t);
+            forwardTermStructures.add(new Handle< YieldTermStructure >(
+                    new ImpliedTermStructure< YieldTermStructure >(riskFreeRate, fixings.get(i))));
+        }
+        final Array discountFactors = new Array(discountFactorsArr);
+
+        final int polynomialOrder = 2;
+        final LongstaffSchwartzMultiPathPricer.PolynomialType polynomialType =
+                LongstaffSchwartzMultiPathPricer.PolynomialType.Monomial;
+
+        return new LongstaffSchwartzMultiPathPricer(arguments_.payoff, timePositions, forwardTermStructures,
+                discountFactors, polynomialOrder, polynomialType);
     }
 
     public StochasticProcessArray processArray() {

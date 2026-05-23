@@ -27,25 +27,39 @@ package org.jquantlib.experimental.mcbasket;
 
 import org.jquantlib.QL;
 import org.jquantlib.math.Constants;
+import org.jquantlib.math.distributions.InverseCumulativeNormal;
+import org.jquantlib.math.randomnumbers.InverseCumulativeRsg;
+import org.jquantlib.math.randomnumbers.MersenneTwisterUniformRng;
+import org.jquantlib.math.randomnumbers.RandomSequenceGenerator;
+import org.jquantlib.math.statistics.Statistics;
+import org.jquantlib.methods.montecarlo.MonteCarloModel;
+import org.jquantlib.methods.montecarlo.MultiPath;
+import org.jquantlib.methods.montecarlo.MultiPathGenerator;
+import org.jquantlib.methods.montecarlo.PathPricer;
+import org.jquantlib.pricingengines.McSimulation;
 import org.jquantlib.processes.StochasticProcess;
+import org.jquantlib.time.Date;
+import org.jquantlib.time.TimeGrid;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Longstaff-Schwartz Monte Carlo engine base for early-exercise basket options.
  *
- * <p>Phase 4i scaffold port of C++ QuantLib v1.42.1
+ * <p>Java port of C++ QuantLib v1.42.1
  * {@code ql/experimental/mcbasket/mclongstaffschwartzpathengine.hpp}. Pinned commit
  * {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
  *
  * <p>The C++ class is templated on
  * {@code <GenericEngine, MC, RNG, S = Statistics>} and inherits from {@code McSimulation<MC,RNG,S>}. The Java port
- * collapses the {@code MC} template parameter (only {@code MultiVariate} is used in v1.42.1) and keeps the engine
- * concrete on {@link PathMultiAssetOption.EngineImpl}.
+ * collapses the {@code MC} template parameter (only {@code MultiVariate} is used in v1.42.1), specialises {@code RNG}
+ * to {@code PseudoRandom} (Mersenne-Twister + InverseCumulativeNormal), and embeds an
+ * {@link McSimulation McSimulation&lt;MultiPath&gt;} delegate via composition (mirroring the pattern set by
+ * {@link org.jquantlib.pricingengines.basket.MCAmericanBasketEngine}).
  *
- * <h3>Phase 4i carry-forward (Phase 4i.5)</h3>
- *
- * <p>Subclasses must implement {@link #lsmPathPricer()}; the {@link #calculate()}
- * loop is a stub awaiting the multivariate {@code McSimulation}, {@code MultiPathGenerator}, and
- * {@code MonteCarloModel<MultiVariate>} dependencies.
+ * <p>Subclasses supply {@link #lsmPathPricer()} which is invoked during the
+ * calibration phase; {@link #calculate()} then runs the standard pricing MC loop after the pricer has been calibrated.
  */
 public abstract class MCLongstaffSchwartzPathEngine extends PathMultiAssetOption.EngineImpl {
 
@@ -64,6 +78,7 @@ public abstract class MCLongstaffSchwartzPathEngine extends PathMultiAssetOption
     protected final int nCalibrationSamples_;
 
     protected LongstaffSchwartzMultiPathPricer pathPricer_;
+    protected McSimulation< MultiPath > simulation_;
 
     protected MCLongstaffSchwartzPathEngine(final StochasticProcess process, final int timeSteps,
             final int timeStepsPerYear, final boolean brownianBridge, final boolean antitheticVariate,
@@ -101,21 +116,81 @@ public abstract class MCLongstaffSchwartzPathEngine extends PathMultiAssetOption
      */
     protected abstract LongstaffSchwartzMultiPathPricer lsmPathPricer();
 
+    //
+    // McSimulation-shaped helpers
+    //
+
+    /** Mirrors C++ {@code TimeGrid timeGrid()} lines 159-173 of {@code mclongstaffschwartzpathengine.hpp}. */
+    protected TimeGrid timeGrid() {
+        final List< Date > fixings = arguments_.fixingDates;
+        final int numberOfFixings = fixings.size();
+        final List< Double > fixingTimes = new ArrayList<>(numberOfFixings);
+        for ( int i = 0; i < numberOfFixings; i++ ) {
+            fixingTimes.add(process_.time(fixings.get(i)));
+        }
+        final int numberOfTimeSteps = (timeSteps_ != Constants.NULL_INTEGER)
+                ? timeSteps_
+                : (int) (timeStepsPerYear_ * fixingTimes.get(fixingTimes.size() - 1));
+        return new TimeGrid(fixingTimes, numberOfTimeSteps);
+    }
+
+    /** Build a Gaussian-driven {@link MultiPathGenerator}; mirrors C++ {@code pathGenerator()} lines 175-190. */
+    protected MonteCarloModel.PathGeneratorAdapter< MultiPath > pathGenerator() {
+        final int dimensions = process_.factors();
+        final TimeGrid grid = timeGrid();
+        final RandomSequenceGenerator< MersenneTwisterUniformRng > uniformRsg =
+                new RandomSequenceGenerator< MersenneTwisterUniformRng >(MersenneTwisterUniformRng.class,
+                        dimensions * (grid.size() - 1), seed_);
+        final InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal > gsg =
+                new InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal >(
+                        uniformRsg, new InverseCumulativeNormal());
+        final MultiPathGenerator< InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal > > gen =
+                new MultiPathGenerator< InverseCumulativeRsg< RandomSequenceGenerator< MersenneTwisterUniformRng >, InverseCumulativeNormal > >(
+                        process_, grid, gsg, brownianBridge_);
+        return new MonteCarloModel.MultiPathGeneratorAdapterImpl(gen);
+    }
+
+    //
+    // PricingEngine
+    //
+
+    /**
+     * Mirrors C++ {@code MCLongstaffSchwartzPathEngine::calculate()} lines 132-154 of
+     * {@code mclongstaffschwartzpathengine.hpp}: build the pricer in calibration mode, drive it through one MC pass,
+     * call {@link LongstaffSchwartzMultiPathPricer#calibrate()}, then run the standard pricing MC and write the mean
+     * / error to results.
+     */
     @Override
     public void calculate() /* @ReadOnly */ {
-        // TODO Phase 4i.5: replicate the C++ two-phase calibration/pricing
-        //                  loop once the multivariate Monte-Carlo
-        //                  infrastructure is available. Roughly:
-        //
-        //   pathPricer_ = lsmPathPricer();
-        //   model = MonteCarloModel<MC,RNG,S>(pathGenerator, pathPricer_, ...);
-        //   model.addSamples(nCalibrationSamples_);
-        //   pathPricer_.calibrate();
-        //   McSimulation::calculate(requiredTolerance_, requiredSamples_, maxSamples_);
-        //   results_.value = model.sampleAccumulator().mean();
-        //
-        // See mclongstaffschwartzpathengine.hpp lines 132-154.
-        throw new UnsupportedOperationException("MCLongstaffSchwartzPathEngine.calculate pending Phase 4i.5 "
-                + "(McSimulation<MultiVariate>, MonteCarloModel<MultiVariate>, " + "MultiPathGenerator)");
+        // 1) Calibration phase: build a pricer in calibration mode and drive
+        //    it with nCalibrationSamples samples.
+        this.pathPricer_ = lsmPathPricer();
+        final MonteCarloModel< MultiPath > mcModelCalibration = new MonteCarloModel< MultiPath >(pathGenerator(),
+                this.pathPricer_, new Statistics(), antitheticVariate_);
+        mcModelCalibration.addSamples(nCalibrationSamples_);
+        this.pathPricer_.calibrate();
+
+        // 2) Pricing phase: standard McSimulation drives the now-calibrated
+        //    pricer to produce mean + error.
+        final LongstaffSchwartzMultiPathPricer pricer = this.pathPricer_;
+        this.simulation_ = new McSimulation< MultiPath >(antitheticVariate_, controlVariate_) {
+            @Override
+            protected PathPricer< MultiPath > pathPricer() {
+                return pricer;
+            }
+
+            @Override
+            protected MonteCarloModel.PathGeneratorAdapter< MultiPath > pathGenerator() {
+                return MCLongstaffSchwartzPathEngine.this.pathGenerator();
+            }
+
+            @Override
+            protected TimeGrid timeGrid() {
+                return MCLongstaffSchwartzPathEngine.this.timeGrid();
+            }
+        };
+        this.simulation_.calculate(requiredTolerance_, requiredSamples_, maxSamples_);
+        results_.value = this.simulation_.sampleAccumulator().mean();
+        results_.errorEstimate = this.simulation_.errorEstimate();
     }
 }
