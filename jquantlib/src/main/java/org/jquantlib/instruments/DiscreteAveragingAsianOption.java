@@ -128,20 +128,20 @@ public class DiscreteAveragingAsianOption extends OneAssetOption {
         @Override
         public void validate() /*@ReadOnly*/ {
             super.validate();
-            QL.require(averageType != null, "unspecified average type"); // TODO: message
-            QL.require(pastFixings != Constants.NULL_INTEGER, "null past-fixing number"); // TODO: message
-            QL.require(!Double.isNaN(runningAccumulator), "null running product"); // TODO: message
+            QL.require(averageType != null, "unspecified average type");
+            QL.require(pastFixings != Constants.NULL_INTEGER, "null past-fixing number");
+            QL.require(!Double.isNaN(runningAccumulator), "null running product");
 
             switch ( averageType ) {
             case Arithmetic:
                 QL.require(runningAccumulator >= 0.0,
-                        "non negative running sum required: not allowed"); // TODO: message
+                        "non negative running sum required: not allowed");
                 break;
             case Geometric:
-                QL.require(runningAccumulator > 0.0, "positive running product required: not allowed"); // TODO: message
+                QL.require(runningAccumulator > 0.0, "positive running product required: not allowed");
                 break;
             default:
-                throw new LibraryException("invalid average type"); // TODO: message
+                throw new LibraryException("invalid average type");
             }
         }
 

@@ -101,7 +101,7 @@ public class BinomialVanillaEngine< T extends Tree > extends VanillaOption.Engin
     public BinomialVanillaEngine(final Class< ? extends Tree > classT, final GeneralizedBlackScholesProcess process,
             final int timeSteps) {
         this.classT = classT;
-        QL.require(timeSteps > 0, "timeSteps must be positive"); // TODO: message
+        QL.require(timeSteps > 0, "timeSteps must be positive");
         this.timeSteps_ = timeSteps;
         this.a = (VanillaOption.ArgumentsImpl) arguments_;
         this.r = (VanillaOption.ResultsImpl) results_;
@@ -136,7 +136,7 @@ public class BinomialVanillaEngine< T extends Tree > extends VanillaOption.Engin
     public void calculate() /*@ReadOnly*/ {
         //FIXME: code review: what about BermudanExercise?
         //QL.require(a.exercise.type() == Exercise.Type.European || a.exercise.type() == Exercise.Type.American,
-        //           "neither European nor American option"); // TODO: message
+        //           "neither European nor American option");
 
         final DayCounter rfdc = process.riskFreeRate().currentLink().dayCounter();
         final DayCounter divdc = process.dividendYield().currentLink().dayCounter();
@@ -144,7 +144,7 @@ public class BinomialVanillaEngine< T extends Tree > extends VanillaOption.Engin
         final Calendar volcal = process.blackVolatility().currentLink().calendar();
 
         final double s0 = process.stateVariable().currentLink().value();
-        QL.require(s0 > 0.0, "negative or null underlying given"); // TODO: message
+        QL.require(s0 > 0.0, "negative or null underlying given");
         final double v = process.blackVolatility().currentLink().blackVol(a.exercise.lastDate(), s0);
         final Date maturityDate = a.exercise.lastDate();
 
@@ -162,7 +162,7 @@ public class BinomialVanillaEngine< T extends Tree > extends VanillaOption.Engin
         final Handle< BlackVolTermStructure > flatVol = new Handle< BlackVolTermStructure >(
                 new BlackConstantVol(referenceDate, volcal, v, voldc));
         final PlainVanillaPayoff payoff = (PlainVanillaPayoff) a.payoff;
-        QL.require(payoff != null, "non-plain payoff given"); // TODO: message
+        QL.require(payoff != null, "non-plain payoff given");
 
         final double maturity = rfdc.yearFraction(referenceDate, maturityDate);
 
@@ -181,14 +181,14 @@ public class BinomialVanillaEngine< T extends Tree > extends VanillaOption.Engin
         // Rollback to third-last step, and get underlying price (s2) & option values (p2) at this point
         option.rollback(grid.at(2));
         final Array va2 = option.values();
-        QL.require(va2.size() == 3, "expect 3 nodes in grid at second step"); // TODO: message
+        QL.require(va2.size() == 3, "expect 3 nodes in grid at second step");
         final double p2h = va2.get(2); // high-price
         final double s2 = lattice.underlying(2, 2); // high price
 
         // Rollback to second-last step, and get option value (p1) at this point
         option.rollback(grid.at(1));
         final Array va = option.values();
-        QL.require(va.size() == 2, "expect 2 nodes in grid at first step"); // TODO: message
+        QL.require(va.size() == 2, "expect 2 nodes in grid at first step");
         final double p1 = va.get(1);
 
         // Finally, rollback to t=0

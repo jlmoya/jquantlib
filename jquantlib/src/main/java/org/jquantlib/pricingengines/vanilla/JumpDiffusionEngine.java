@@ -233,7 +233,7 @@ public class JumpDiffusionEngine extends VanillaOption.EngineImpl {
             lastContribution *= weight;
         }
 
-        QL.ensure(i < maxIterations, "accuracy not reached"); // TODO: message
+        QL.ensure(i < maxIterations, "accuracy not reached");
     }
 
 }

@@ -101,7 +101,7 @@ public abstract class FDStepConditionEngine extends FDVanillaEngine {
         controlPrices.setValues(arraySet.get(1).clone());
 
         final StrikedTypePayoff striked_payoff = (StrikedTypePayoff) (payoff);
-        QL.require(striked_payoff != null, "non-striked payoff given"); // TODO: message
+        QL.require(striked_payoff != null, "non-striked payoff given");
 
         final double variance = process.blackVolatility().currentLink()
                 .blackVariance(exerciseDate, striked_payoff.strike());

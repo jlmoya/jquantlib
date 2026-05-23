@@ -47,7 +47,7 @@ public abstract class Integrator {
     //
 
     public Integrator(final double absoluteAccuracy, final int maxEvaluations) {
-        QL.require(absoluteAccuracy > Constants.QL_EPSILON, "required tolerance must be > epsilon"); // TODO: message
+        QL.require(absoluteAccuracy > Constants.QL_EPSILON, "required tolerance must be > epsilon");
 
         this.absoluteAccuracy = absoluteAccuracy;
         this.maxEvaluations = maxEvaluations;

@@ -94,7 +94,7 @@ public non-sealed class BermudanExercise extends EarlyExercise {
      */
     public BermudanExercise(final Date[] dates, final boolean payoffAtExpiry) {
         super(Exercise.Type.Bermudan, payoffAtExpiry);
-        QL.require(dates != null && dates.length > 0, "empty exercise dates");  // TODO: message
+        QL.require(dates != null && dates.length > 0, "empty exercise dates");
         if ( dates.length == 1 ) {
             super.type = Exercise.Type.European;
             super.payoffAtExpiry = false;

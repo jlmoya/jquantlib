@@ -124,9 +124,9 @@ public class DividendVanillaOption extends VanillaOption {
             engine = new FDDividendAmericanEngine(newProcess);
             break;
         case Bermudan:
-            throw new LibraryException("engine not available for Bermudan option with dividends"); // TODO: message
+            throw new LibraryException("engine not available for Bermudan option with dividends");
         default:
-            throw new LibraryException("unknown exercise type"); // // TODO: message
+            throw new LibraryException("unknown exercise type"); //
         }
 
         return ImpliedVolatilityHelper.calculate(this, engine, volQuote, targetValue, accuracy, maxEvaluations, minVol,
@@ -169,7 +169,7 @@ public class DividendVanillaOption extends VanillaOption {
             final Date exerciseDate = exercise.lastDate();
             for ( int i = 0; i < cashFlow.size(); i++ ) {
                 final Date d = cashFlow.get(i).date();
-                QL.require(d.le(exerciseDate), "dividend date later than the exercise date"); // TODO: message
+                QL.require(d.le(exerciseDate), "dividend date later than the exercise date");
             }
         }
     }

@@ -218,7 +218,7 @@ public class LocalVolSurface extends LocalVolTermStructure {
             final double den = den1 + den2 + den3;
             final double result = dwdt / den;
             QL.ensure(result >= 0.0,
-                    "negative local vol^2 at strike); the black vol surface is not smooth enough"); // TODO: message
+                    "negative local vol^2 at strike); the black vol surface is not smooth enough");
             return Math.sqrt(result);
 
             // commented out at original source QuantLib

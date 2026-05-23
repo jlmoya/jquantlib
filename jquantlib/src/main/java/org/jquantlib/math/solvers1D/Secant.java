@@ -72,6 +72,6 @@ public class Secant extends AbstractSolver1D< Ops.DoubleOp > {
             if ( Math.abs(dx) < xAccuracy || froot == 0.0 )
                 return root;
         }
-        throw new ArithmeticException("maximum number of function evaluations exceeded"); // TODO: message
+        throw new ArithmeticException("maximum number of function evaluations exceeded");
     }
 }

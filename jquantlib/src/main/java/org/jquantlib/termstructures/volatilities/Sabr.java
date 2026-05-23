@@ -206,10 +206,10 @@ public class Sabr {
      */
     public void validateSabrParameters(final double alpha, final double beta, final double nu, final double rho) {
         //FIXME don't spent time constructing string until the error is real...
-        QL.require(alpha > 0.0, "alpha must be positive"); // TODO: message
-        QL.require(beta >= 0.0 && beta <= 1.0, "beta must be in (0.0, 1.0)"); // TODO: message
-        QL.require(nu >= 0.0, "nu must be non negative"); // TODO: message
-        QL.require(rho * rho < 1.0, "rho square must be less than one"); // TODO: message
+        QL.require(alpha > 0.0, "alpha must be positive");
+        QL.require(beta >= 0.0 && beta <= 1.0, "beta must be in (0.0, 1.0)");
+        QL.require(nu >= 0.0, "nu must be non negative");
+        QL.require(rho * rho < 1.0, "rho square must be less than one");
     }
 
     /**

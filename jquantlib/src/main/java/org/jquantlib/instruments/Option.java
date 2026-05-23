@@ -181,8 +181,8 @@ public abstract class Option extends Instrument {
 
         @Override
         public void validate() /*@ReadOnly*/ {
-            QL.require(payoff != null, "No payoff given"); // TODO: message
-            QL.require(exercise != null, "No exercise given"); // TODO: message
+            QL.require(payoff != null, "No payoff given");
+            QL.require(exercise != null, "No exercise given");
         }
 
     }

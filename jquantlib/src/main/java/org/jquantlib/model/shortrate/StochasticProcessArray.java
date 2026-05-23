@@ -49,9 +49,9 @@ public class StochasticProcessArray extends StochasticProcess {
 
     public StochasticProcessArray(final List< StochasticProcess1D > processes, final Matrix correlation) {
 
-        QL.require(!processes.isEmpty(), no_process_given); // TODO: message
+        QL.require(!processes.isEmpty(), no_process_given);
         QL.require(correlation.rows() == processes.size(),
-                mismatch_processnumber_sizecorrelationmatrix); // TODO: message
+                mismatch_processnumber_sizecorrelationmatrix);
 
         this.processes_ = processes;
         this.sqrtCorrelation_ = PseudoSqrt.pseudoSqrt(correlation, SalvagingAlgorithm.Spectral);

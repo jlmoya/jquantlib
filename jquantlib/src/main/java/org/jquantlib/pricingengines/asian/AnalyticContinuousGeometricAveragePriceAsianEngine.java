@@ -90,11 +90,11 @@ public class AnalyticContinuousGeometricAveragePriceAsianEngine extends Continuo
 
     @Override
     public void calculate() /*@ReadOnly*/ {
-        QL.require(a.averageType == AverageType.Geometric, "not a geometric average option"); // TODO: message
-        QL.require(a.exercise.type() == Exercise.Type.European, "not an European Option"); // TODO: message
+        QL.require(a.averageType == AverageType.Geometric, "not a geometric average option");
+        QL.require(a.exercise.type() == Exercise.Type.European, "not an European Option");
         final Date exercise = a.exercise.lastDate();
 
-        QL.require(a.payoff instanceof PlainVanillaPayoff, "non-plain payoff given"); // TODO: message
+        QL.require(a.payoff instanceof PlainVanillaPayoff, "non-plain payoff given");
         final PlainVanillaPayoff payoff = (PlainVanillaPayoff) arguments_.payoff;
 
         /*@Volatility*/
@@ -120,7 +120,7 @@ public class AnalyticContinuousGeometricAveragePriceAsianEngine extends Continuo
         final double dividendDiscount = Math.exp(-dividendYield * t_q);
         /*@Real*/
         final double spot = process.stateVariable().currentLink().value();
-        QL.require(spot > 0.0, "negative or null underlying given"); // TODO: message
+        QL.require(spot > 0.0, "negative or null underlying given");
         /*@Real*/
         final double forward = spot * dividendDiscount / riskFreeDiscount;
 

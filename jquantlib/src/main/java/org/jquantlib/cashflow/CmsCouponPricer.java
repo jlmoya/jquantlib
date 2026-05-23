@@ -55,7 +55,7 @@ public abstract class CmsCouponPricer extends FloatingRateCouponPricer {
 
         this.swaptionVol_ = swaptionVol;
         QL.require(swaptionVol_ != null && swaptionVol_.currentLink() != null,
-                no_adequate_swaptionVol_given); // TODO: message
+                no_adequate_swaptionVol_given);
 
         this.swaptionVol_.addObserver(this);
         //registerWith(swaptionVol_);

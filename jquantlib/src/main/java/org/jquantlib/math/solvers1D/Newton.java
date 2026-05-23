@@ -67,6 +67,6 @@ public class Newton extends AbstractSolver1D< Derivative > {
             dfroot = f.derivative(root);
             evaluationNumber++;
         }
-        throw new ArithmeticException("maximum number of function evaluations exceeded"); // TODO: message
+        throw new ArithmeticException("maximum number of function evaluations exceeded");
     }
 }

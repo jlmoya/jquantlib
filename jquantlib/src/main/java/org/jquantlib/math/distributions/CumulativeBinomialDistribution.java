@@ -69,7 +69,7 @@ public class CumulativeBinomialDistribution implements Ops.IntToDouble {
      * @param n is the total number of trials
      */
     public CumulativeBinomialDistribution(final double p, final int n) {
-        QL.require(p >= 0.0 && p <= 1.0, INVALID_PROBABILITY); // TODO: message
+        QL.require(p >= 0.0 && p <= 1.0, INVALID_PROBABILITY);
         this.n = n; // total number of trials
         this.p = p; // probability of success on a single trial
     }

@@ -96,6 +96,6 @@ public class NewtonSafe extends AbstractSolver1D< Derivative > {
             else
                 xh = root;
         }
-        throw new ArithmeticException("maximum number of function evaluations exceeded"); // TODO: message
+        throw new ArithmeticException("maximum number of function evaluations exceeded");
     }
 }

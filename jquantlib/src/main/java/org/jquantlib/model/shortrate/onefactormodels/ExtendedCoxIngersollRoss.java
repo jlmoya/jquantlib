@@ -85,7 +85,7 @@ public class ExtendedCoxIngersollRoss extends CoxIngersollRoss {
 
     @Override
     public double discountBondOption(final Option.Type type, final double strike, final double t, final double s) {
-        QL.require(strike > 0.0, STRIKE_MUST_BE_POSITIVE); // TODO: message
+        QL.require(strike > 0.0, STRIKE_MUST_BE_POSITIVE);
         final double discountT = termstructureConsistentModel.termStructure().currentLink().discount(t);
         final double discountS = termstructureConsistentModel.termStructure().currentLink().discount(s);
         if ( t < Constants.QL_EPSILON )

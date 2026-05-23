@@ -735,14 +735,14 @@ public class SobolRsg implements UniformRandomSequenceGenerator {
     }
 
     public SobolRsg(final int dimensionality, final long seed, final DirectionIntegers direction) {
-        QL.require(dimensionality > 0, "dimensionality must be greater than 0"); // TODO: message
+        QL.require(dimensionality > 0, "dimensionality must be greater than 0");
 
         // In QuantLib/C++ PrimitivePolinomials is initialized in a template given its maximum dimensionality
         // defined via macros. In Java we allocate at runtime.
         final PrimitivePolynomials pp = new PrimitivePolynomials();
 
         QL.require(dimensionality <= pp.getPpmtMaxDim(),
-                "dimensionality exceeds available primitive polynomials module two"); // TODO: message
+                "dimensionality exceeds available primitive polynomials module two");
 
         this.dimensionality = dimensionality;
         this.sequenceCounter = 0;
@@ -1102,7 +1102,7 @@ public class SobolRsg implements UniformRandomSequenceGenerator {
         sequenceCounter++;
         // did we overflow?
         if ( sequenceCounter == 0 ) {
-            throw new ArithmeticException("period exceeded"); // TODO: message
+            throw new ArithmeticException("period exceeded");
         }
 
         // Instead of using the counter n as new unique generating integer

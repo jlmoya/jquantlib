@@ -91,7 +91,7 @@ public class Thirty360 extends DayCounter {
             super.impl = new Impl_NASD();
             break;
         default:
-            throw new LibraryException("unknown 30/360 convention"); // TODO: message
+            throw new LibraryException("unknown 30/360 convention");
         }
     }
 

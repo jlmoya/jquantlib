@@ -72,7 +72,7 @@ public abstract class LfmCovarianceParameterization {
         // {@code QL_REQUIRE(x.empty(), ...)} — the previous Java port had the
         // predicate inverted, which made the only test path
         // (testLambdaBootstrapping) impossible to call.
-        QL.require(x.empty(), "can not handle given x here"); // TODO: message
+        QL.require(x.empty(), "can not handle given x here");
 
         final Matrix tmp = new Matrix(size_, size_);
         for ( int i = 0; i < size_; ++i ) {

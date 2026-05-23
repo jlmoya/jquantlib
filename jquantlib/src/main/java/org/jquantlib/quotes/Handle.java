@@ -75,7 +75,7 @@ public class Handle< T extends Observable > implements Observable {
     //
     /// //////////////////////////////////////////////////////////////////////////////////////////////
 
-    static private final String EMPTY_HANDLE = "empty Handle cannot be dereferenced"; // TODO: message
+    static private final String EMPTY_HANDLE = "empty Handle cannot be dereferenced";
 
     //
     // final private fields

@@ -131,9 +131,9 @@ public class AnalyticEuropeanEngine extends OneAssetOption.EngineImpl {
 
     @Override
     public void calculate() /* @ReadOnly */ {
-        QL.require(a.exercise.type() == Exercise.Type.European, NOT_AN_EUROPEAN_OPTION); // TODO: message
+        QL.require(a.exercise.type() == Exercise.Type.European, NOT_AN_EUROPEAN_OPTION);
         final StrikedTypePayoff payoff = (StrikedTypePayoff) a.payoff;
-        QL.require(payoff != null, NON_STRIKED_PAYOFF_GIVEN); // TODO: message
+        QL.require(payoff != null, NON_STRIKED_PAYOFF_GIVEN);
 
         // Mirror C++ v1.42.1 analyticeuropeanengine.cpp:42 — if no discount
         // curve was supplied, default to the process risk-free curve;
@@ -156,7 +156,7 @@ public class AnalyticEuropeanEngine extends OneAssetOption.EngineImpl {
                 a.exercise.lastDate());
         /* @Real */
         final double spot = process.stateVariable().currentLink().value();
-        QL.require(spot > 0.0, "negative or null underlying given"); // TODO: message
+        QL.require(spot > 0.0, "negative or null underlying given");
         /* @Real */
         final double forwardPrice = spot * dividendDiscount / riskFreeDiscountForFwdEstimation;
         final BlackCalculator black = new BlackCalculator(payoff, forwardPrice, Math.sqrt(variance), df);

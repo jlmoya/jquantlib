@@ -142,8 +142,8 @@ public class FixedRateLeg extends Leg {
     }
 
     public Leg Leg() {
-        QL.require(couponRates_ != null && couponRates_.length > 0, "coupon rates not specified"); // TODO: message
-        QL.require(notionals_ != null && notionals_.length > 0, "nominals not specified"); // TODO: message
+        QL.require(couponRates_ != null && couponRates_.length > 0, "coupon rates not specified");
+        QL.require(notionals_ != null && notionals_.length > 0, "nominals not specified");
 
         final Leg leg = new Leg();
 
@@ -173,7 +173,7 @@ public class FixedRateLeg extends Leg {
                 schedule_.hasTenor() && schedule_.hasIsRegular() && !schedule_.isRegular(1);
         if ( !firstStubIsShortOrLong ) {
             QL.require(firstPeriodDayCounter_ == null || !firstPeriodDayCounter_.equals(paymentDayCounter_),
-                    "regular first coupon does not allow a first-period day count"); // TODO: message
+                    "regular first coupon does not allow a first-period day count");
             leg.add(new FixedRateCoupon(nominal, paymentDate, rate, paymentDayCounter_, start, end, start, end,
                     exCouponDate));
         } else {

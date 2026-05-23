@@ -40,7 +40,7 @@ public class DiscountingBondEngine extends Bond.EngineImpl {
         final Leg cashflows = a.cashflows;
         final Date settlementDate = a.settlementDate;
         final Date valuationDate = discountCurve.currentLink().referenceDate();
-        QL.require(!discountCurve.empty(), "no discounting term structure set"); //// TODO: message
+        QL.require(!discountCurve.empty(), "no discounting term structure set"); //
 
         r.value = CashFlows.getInstance().npv(cashflows, discountCurve, valuationDate, valuationDate);
         r.settlementValue = CashFlows.getInstance().npv(cashflows, discountCurve, settlementDate, settlementDate);

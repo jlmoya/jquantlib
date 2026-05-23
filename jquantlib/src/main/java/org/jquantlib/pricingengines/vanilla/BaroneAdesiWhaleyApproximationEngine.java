@@ -207,7 +207,7 @@ public class BaroneAdesiWhaleyApproximationEngine extends VanillaOption.EngineIm
         final double /*@DiscountFactor*/ riskFreeDiscount = process.riskFreeRate().currentLink()
                 .discount(ex.lastDate());
         final double /*@Real*/ spot = process.stateVariable().currentLink().value();
-        QL.require(spot > 0.0, "negative or null underlying given"); // TODO: message
+        QL.require(spot > 0.0, "negative or null underlying given");
         final double /*@Real*/ forwardPrice = spot * dividendDiscount / riskFreeDiscount;
         final BlackCalculator black = new BlackCalculator(payoff, forwardPrice, Math.sqrt(variance), riskFreeDiscount);
 

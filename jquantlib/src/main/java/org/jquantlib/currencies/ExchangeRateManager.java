@@ -321,7 +321,7 @@ public class ExchangeRateManager {
         }
 
         // if the loop completed, we have no way to return the requested rate.
-        throw new LibraryException("no conversion available"); // TODO: message
+        throw new LibraryException("no conversion available");
     }
 
     /**

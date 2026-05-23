@@ -72,7 +72,7 @@ public class RandomSequenceGenerator< RNG extends RandomNumberGenerator >
     public RandomSequenceGenerator(final Class< ? extends RandomNumberGenerator > classRNG,
             final /*@NonNegative*/ int dimensionality, final RNG rng) {
 
-        QL.require(dimensionality >= 1, "dimensionality must be greater than 0"); // TODO: message
+        QL.require(dimensionality >= 1, "dimensionality must be greater than 0");
         this.classRNG = classRNG;
         this.dimension = dimensionality;
         this.rng = rng;

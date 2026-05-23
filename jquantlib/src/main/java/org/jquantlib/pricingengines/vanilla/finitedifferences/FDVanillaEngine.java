@@ -98,7 +98,7 @@ public class FDVanillaEngine {
     }
 
     protected void setGridLimits(/* Real */final double center, /* Time */final double t) {
-        QL.require(center > 0.0, "negative or null underlying given"); // TODO: message
+        QL.require(center > 0.0, "negative or null underlying given");
         this.center = center;
         /* Size */
         final int newGridPoints = safeGridPoints(gridPoints, t);

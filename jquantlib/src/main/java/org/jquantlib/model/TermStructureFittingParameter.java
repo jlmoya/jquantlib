@@ -96,7 +96,7 @@ public class TermStructureFittingParameter extends Parameter {
         @Override
         public double value(final Array ref, /* @Time */ final double t) /* @ReadOnly */ {
             final int index = times.indexOf(t);
-            QL.require(index > -1, "fitting parameter not set!"); // TODO: message
+            QL.require(index > -1, "fitting parameter not set!");
             return values.get(index);
         }
 

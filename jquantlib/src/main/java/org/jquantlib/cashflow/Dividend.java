@@ -59,7 +59,7 @@ public abstract sealed class Dividend extends CashFlow
     public static List< ? extends Dividend > DividendVector(final List< Date > dividendDates,
             final List< Double > dividends) {
         QL.require(dividendDates.size() == dividends.size(),
-                "size mismatch between dividend dates and amounts");  // TODO: message
+                "size mismatch between dividend dates and amounts");
         final List< Dividend > items = new ArrayList<>(dividendDates.size());
         for ( int i = 0; i < dividendDates.size(); i++ ) {
             items.add(new FixedDividend(dividends.get(i), dividendDates.get(i)));

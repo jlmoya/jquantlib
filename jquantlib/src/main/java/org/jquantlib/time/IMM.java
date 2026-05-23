@@ -147,7 +147,7 @@ public class IMM {
      */
     // FIXME: this method is potentially harmful in heavily multi-threaded environments
     public static Date date(final String immCode, final Date refDate) {
-        QL.require(isIMMcode(immCode, false), "not a valid IMM code"); // TODO: message
+        QL.require(isIMMcode(immCode, false), "not a valid IMM code");
 
         Date referenceDate;
         if ( refDate.isNull() ) {
@@ -346,14 +346,14 @@ public class IMM {
      */
     // FIXME: this method is potentially harmful in heavily multi-threaded environments
     public static String code(final Date date) {
-        QL.require(isIMMdate(date, false), "not an IMM date"); // TODO: message
+        QL.require(isIMMdate(date, false), "not an IMM date");
 
         final int y = date.year() % 10;
         final char code = date.month().getImmChar();
 
         final String imm = String.valueOf(code) + y;
 
-        QL.ensure(isIMMcode(imm, false), "the result is an invalid IMM code"); // TODO: message
+        QL.ensure(isIMMcode(imm, false), "the result is an invalid IMM code");
         return imm;
     }
 

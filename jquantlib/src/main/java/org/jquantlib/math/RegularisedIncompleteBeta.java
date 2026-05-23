@@ -97,7 +97,7 @@ public class RegularisedIncompleteBeta {
                 return result;
         }
 
-        throw new ArithmeticException("a or b too big, or maxIteration too small in betacf"); // TODO: message
+        throw new ArithmeticException("a or b too big, or maxIteration too small in betacf");
 
     }
 
@@ -115,8 +115,8 @@ public class RegularisedIncompleteBeta {
 
         checkMaxIterations(maxIterations_);
 
-        QL.require(a > 0.0, "a must be greater than zero"); // TODO: message
-        QL.require(b > 0.0, "b must be greater than zero"); // TODO: message
+        QL.require(a > 0.0, "a must be greater than zero");
+        QL.require(b > 0.0, "b must be greater than zero");
 
         if ( x == 0.0 )
             return 0.0;
@@ -124,7 +124,7 @@ public class RegularisedIncompleteBeta {
         if ( x == 1.0 )
             return 1.0;
 
-        QL.require(x > 0.0 && x < 1.0, "x must be in [0,1]"); // TODO: message
+        QL.require(x > 0.0 && x < 1.0, "x must be in [0,1]");
 
         final double result = Math.exp(
                 _gammaFunction.logValue(a + b) - _gammaFunction.logValue(a) - _gammaFunction.logValue(b) + a * Math.log(
@@ -143,7 +143,7 @@ public class RegularisedIncompleteBeta {
      * @throws IllegalArgumentException if <code>maxIterations<1</code>
      */
     private void checkMaxIterations(final int maxIterations) {
-        QL.require(maxIterations > 0, "Expected maxIterations must be greater 0"); // TODO: message
+        QL.require(maxIterations > 0, "Expected maxIterations must be greater 0");
     }
 
 }

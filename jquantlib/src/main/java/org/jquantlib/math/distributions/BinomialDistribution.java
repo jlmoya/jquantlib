@@ -97,7 +97,7 @@ public class BinomialDistribution implements Ops.IntToDouble {
      */
     static public /*@Real*/ double PeizerPrattMethod2Inversion(final double z, final long n) {
 
-        QL.require(n % 2 == 1, "n must be an odd number"); // TODO: message
+        QL.require(n % 2 == 1, "n must be an odd number");
 
         /*@Real*/
         double result = (z / (n + 1.0 / 3.0 + 0.1 / (n + 1.0)));
@@ -141,9 +141,9 @@ public class BinomialDistribution implements Ops.IntToDouble {
      * @return Natural logarithm of the binomial coefficient
      */
     private double binomialCoefficientLn(final int n, final int k) {
-        QL.require(n >= 0, "n < 0 not allowed"); // TODO: message
-        QL.require(k >= 0, "k < 0 not allowed"); // TODO: message
-        QL.require(n >= k, "n < k not allowed"); // TODO: message
+        QL.require(n >= 0, "n < 0 not allowed");
+        QL.require(k >= 0, "k < 0 not allowed");
+        QL.require(n >= k, "n < k not allowed");
         return factorial.ln(n) - factorial.ln(k) - factorial.ln(n - k);
     }
 

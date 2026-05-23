@@ -117,7 +117,7 @@ public abstract class Constraint {
         int icount = 0;
         while ( !valid ) {
             if ( icount > 200 ) {
-                throw new LibraryException("can't update parameter vector"); // TODO: message
+                throw new LibraryException("can't update parameter vector");
             }
             diff *= 0.5;
             icount++;

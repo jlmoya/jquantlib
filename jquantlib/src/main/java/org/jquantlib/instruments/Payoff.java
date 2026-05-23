@@ -97,7 +97,7 @@ public abstract class Payoff implements PolymorphicVisitable {
         if ( v != null ) {
             v.visit(this);
         } else {
-            throw new LibraryException("null payoff visitor"); // TODO: message
+            throw new LibraryException("null payoff visitor");
         }
     }
 

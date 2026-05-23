@@ -138,7 +138,7 @@ public class CappedFlooredCoupon extends FloatingRateCoupon {
         }
 
         if ( isCapped_ && isFloored_ ) {
-            QL.require(cap >= floor, "cap level less than floor level"); // TODO: message
+            QL.require(cap >= floor, "cap level less than floor level");
         }
 
         this.underlying_.addObserver(this);

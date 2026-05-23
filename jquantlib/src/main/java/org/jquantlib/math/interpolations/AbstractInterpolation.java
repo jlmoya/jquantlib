@@ -205,8 +205,8 @@ public abstract class AbstractInterpolation implements Interpolation {
             this.vx = vx; // TODO: clone?
             this.vy = vy; // TODO: clone?
 
-            QL.require(vx.size() >= requiredPoints, "not enough points to interpolate"); // TODO: message
-            QL.require(extraSafetyChecks(), "unsorted values on array X");   // TODO: message
+            QL.require(vx.size() >= requiredPoints, "not enough points to interpolate");
+            QL.require(extraSafetyChecks(), "unsorted values on array X");
         }
 
         //
@@ -222,7 +222,7 @@ public abstract class AbstractInterpolation implements Interpolation {
         }
 
         public final boolean isInRange(final double x) {
-            QL.require(extraSafetyChecks(), "unsorted values on array X"); // TODO: message
+            QL.require(extraSafetyChecks(), "unsorted values on array X");
             final double x1 = xMin(), x2 = xMax();
             return (x >= x1 && x <= x2) || isClose(x, x1) || isClose(x, x2);
         }
@@ -266,7 +266,7 @@ public abstract class AbstractInterpolation implements Interpolation {
         //
 
         protected int locate(final double x) /* @ReadOnly */ {
-            QL.require(extraSafetyChecks(), "unsorted values on array X"); // TODO: message
+            QL.require(extraSafetyChecks(), "unsorted values on array X");
             if ( x < vx.first() )
                 return 0;
             else if ( x > vx.last() )
@@ -308,7 +308,7 @@ public abstract class AbstractInterpolation implements Interpolation {
         @Override
         public void update() {
             for ( int i = 0; i < logY_.size(); i++ ) {
-                QL.require(vy.get(i) > 0.0, "invalid value"); // TODO: message
+                QL.require(vy.get(i) > 0.0, "invalid value");
                 logY_.set(i, Math.log(vy.get(i)));
             }
             interpolation_.update();

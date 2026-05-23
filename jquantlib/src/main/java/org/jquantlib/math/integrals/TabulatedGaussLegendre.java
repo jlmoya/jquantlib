@@ -142,7 +142,7 @@ public class TabulatedGaussLegendre {
             n_ = n20;
             break;
         default:
-            throw new LibraryException("order not supported"); // TODO: message
+            throw new LibraryException("order not supported");
         }
     }
 

@@ -192,13 +192,13 @@ public class VanillaSwap extends Swap {
 
     public /*@Rate*/ double fairRate() /* @ReadOnly */ {
         calculate();
-        QL.require(!Double.isNaN(fairRate), "result not available"); // TODO: message
+        QL.require(!Double.isNaN(fairRate), "result not available");
         return fairRate;
     }
 
     public /*@Spread*/ double fairSpread() /* @ReadOnly */ {
         calculate();
-        QL.require(!Double.isNaN(fairSpread), "result not available"); // TODO: message
+        QL.require(!Double.isNaN(fairSpread), "result not available");
         return fairSpread;
     }
 
@@ -240,7 +240,7 @@ public class VanillaSwap extends Swap {
 
     public /*@Real*/ double fixedLegBPS() /* @ReadOnly */ {
         calculate();
-        QL.require(!Double.isNaN(legBPS[0]), "result not available"); // TODO: message
+        QL.require(!Double.isNaN(legBPS[0]), "result not available");
         return legBPS[0];
     }
 
@@ -252,13 +252,13 @@ public class VanillaSwap extends Swap {
 
     public /*@Real*/ double fixedLegNPV() /* @ReadOnly */ {
         calculate();
-        QL.require(!Double.isNaN(legNPV[0]), "result not available"); // TODO: message
+        QL.require(!Double.isNaN(legNPV[0]), "result not available");
         return legNPV[0];
     }
 
     public /*@Real*/ double floatingLegNPV() /* @ReadOnly */ {
         calculate();
-        QL.require(!Double.isNaN(legNPV[1]), "result not available"); // TODO: message
+        QL.require(!Double.isNaN(legNPV[1]), "result not available");
         return legNPV[1];
     }
 
@@ -414,7 +414,7 @@ public class VanillaSwap extends Swap {
             case 1:
                 return Type.Payer;
             default:
-                throw new LibraryException("value must be one of -1, 1"); // TODO: message
+                throw new LibraryException("value must be one of -1, 1");
             }
         }
 
@@ -462,7 +462,7 @@ public class VanillaSwap extends Swap {
         @Override
         public void validate() /* @ReadOnly */ {
             super.validate();
-            QL.require(!Double.isNaN(nominal), "nominal null or not set"); // TODO: message
+            QL.require(!Double.isNaN(nominal), "nominal null or not set");
             QL.require(fixedResetDates.size() == fixedPayDates.size(),
                     "number of fixed start dates different from number of fixed payment dates");
             QL.require(fixedPayDates.size() == fixedCoupons.size(),

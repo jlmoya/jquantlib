@@ -116,9 +116,9 @@ public class InterpolatedForwardCurve< I extends Interpolator > extends ForwardR
         //      fraction, not coincide).
         // See ConvertibleBondAdditionalTest class javadoc for the original
         // bug-report breadcrumb.
-        QL.require(dates.length != 0, "Dates cannot be empty"); // TODO: message
-        QL.require(forwards.length != 0, "forwards cannot be empty"); // TODO: message
-        QL.require(dates.length == forwards.length, "Dates must be the same size as forwards"); // TODO: message
+        QL.require(dates.length != 0, "Dates cannot be empty");
+        QL.require(forwards.length != 0, "forwards cannot be empty");
+        QL.require(dates.length == forwards.length, "Dates must be the same size as forwards");
 
         this.dates = dates; // TODO: clone() ?
         this.data = forwards; // TODO: clone() ?
@@ -126,10 +126,10 @@ public class InterpolatedForwardCurve< I extends Interpolator > extends ForwardR
         times[0] = 0.0;
 
         for ( int i = 1; i < dates.length; ++i ) {
-            QL.require(dates[i].gt(dates[i - 1]), "Dates must be in ascending order"); // TODO: message
+            QL.require(dates[i].gt(dates[i - 1]), "Dates must be in ascending order");
             times[i] = dc.yearFraction(dates[0], dates[i]);
             QL.require(!Closeness.isClose(times[i], times[i - 1]),
-                    "two dates correspond to the same time under this curve's day count convention"); // TODO: message
+                    "two dates correspond to the same time under this curve's day count convention");
         }
 
         this.interpolator = interpolator == null ? constructInterpolator(classI) : interpolator;
@@ -188,14 +188,14 @@ public class InterpolatedForwardCurve< I extends Interpolator > extends ForwardR
 
     static private Interpolator constructInterpolator(final Class< ? > klass) {
         if ( klass == null )
-            throw new LibraryException("null interpolator"); // TODO: message
+            throw new LibraryException("null interpolator");
         if ( !Interpolator.class.isAssignableFrom(klass) )
             throw new LibraryException(ReflectConstants.WRONG_ARGUMENT_TYPE);
 
         try {
             return (Interpolator) klass.newInstance();
         } catch ( final Exception e ) {
-            throw new LibraryException("cannot create Interpolator", e); // TODO: message
+            throw new LibraryException("cannot create Interpolator", e);
         }
     }
 

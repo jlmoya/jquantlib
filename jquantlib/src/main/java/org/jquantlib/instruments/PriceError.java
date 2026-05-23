@@ -59,7 +59,7 @@ public class PriceError implements DoubleOp {
         this.vol = vol;
         this.targetValue = targetValue;
         this.results = (Instrument.ResultsImpl) engine.getResults();
-        QL.require(results != null, "pricing engine does not supply needed results"); // TODO: message
+        QL.require(results != null, "pricing engine does not supply needed results");
     }
 
     //

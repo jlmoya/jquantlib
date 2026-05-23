@@ -317,7 +317,7 @@ public class MakeVanillaSwap {
 
         if ( Double.isNaN(fixedRate) ) {
             QL.require(!iborIndex.termStructure().empty(),
-                    "no forecasting term structure set to " + iborIndex.name()); // TODO: message
+                    "no forecasting term structure set to " + iborIndex.name());
 
             final VanillaSwap temp = new VanillaSwap(type, nominal, fixedSchedule, 0.0, usedFixedDayCount,
                     floatSchedule, iborIndex, floatSpread, floatDayCount, usedPaymentConv);

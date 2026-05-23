@@ -74,9 +74,9 @@ public class PseudoSqrt {
 
         QL.require(matrix.rows == matrix.columns(), Cells.MATRIX_MUST_BE_SQUARE); // QA:[RG]::verified
         QL.require(checkSymmetry(matrix), Cells.MATRIX_MUST_BE_SYMMETRIC); // QA:[RG]::verified
-        QL.require(componentRetainedPercentage > 0.0, "no eigenvalues retained"); // TODO: message
-        QL.require(componentRetainedPercentage <= 1.0, "percentage to be retained > 100%"); // TODO: message
-        QL.require(maxRank >= 1, "max rank required < 1"); // TODO: message
+        QL.require(componentRetainedPercentage > 0.0, "no eigenvalues retained");
+        QL.require(componentRetainedPercentage <= 1.0, "percentage to be retained > 100%");
+        QL.require(maxRank >= 1, "max rank required < 1");
 
         final int size = matrix.rows;
 
@@ -105,7 +105,7 @@ public class PseudoSqrt {
             eigenValues = jd.eigenvalues();
             break;
         default:
-            throw new LibraryException("unknown or invalid salvaging algorithm"); // TODO: message
+            throw new LibraryException("unknown or invalid salvaging algorithm");
         }
 
         // factor reduction
@@ -627,7 +627,7 @@ public class PseudoSqrt {
             break;
         }
         default:
-            throw new LibraryException(unknown_salvaging_algorithm); // TODO: message
+            throw new LibraryException(unknown_salvaging_algorithm);
         }
         return result;
     }

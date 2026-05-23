@@ -386,11 +386,11 @@ public class PiecewiseYieldCurve< T extends Traits, I extends Interpolator, B ex
             try {
                 return (Traits) classT.newInstance();
             } catch ( final Exception e ) {
-                throw new LibraryException("could not instantiate Traits", e); // TODO: message
+                throw new LibraryException("could not instantiate Traits", e);
             }
         }
 
-        throw new LibraryException("not a Traits"); // TODO: message
+        throw new LibraryException("not a Traits");
     }
 
     static private Interpolator constructInterpolator(final Class< ? > classI) {
@@ -398,11 +398,11 @@ public class PiecewiseYieldCurve< T extends Traits, I extends Interpolator, B ex
             try {
                 return (Interpolator) classI.newInstance();
             } catch ( final Exception e ) {
-                throw new LibraryException("could not instantiate Interpolator", e); // TODO: message
+                throw new LibraryException("could not instantiate Interpolator", e);
             }
         }
 
-        throw new LibraryException("not an Interpolator"); // TODO: message
+        throw new LibraryException("not an Interpolator");
     }
 
     static private Bootstrap constructBootstrap(final Class< ? > classB) {
@@ -411,11 +411,11 @@ public class PiecewiseYieldCurve< T extends Traits, I extends Interpolator, B ex
                 final Constructor< Bootstrap > c = (Constructor< Bootstrap >) classB.getConstructor(Class.class);
                 return c.newInstance(PiecewiseCurve.class);
             } catch ( final Exception e ) {
-                throw new LibraryException("could not instantiate Bootstrap", e); // TODO: message
+                throw new LibraryException("could not instantiate Bootstrap", e);
             }
         }
 
-        throw new LibraryException("not a Bootstrap"); // TODO: message
+        throw new LibraryException("not a Bootstrap");
     }
 
     //

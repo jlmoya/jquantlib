@@ -198,17 +198,17 @@ public class AbstractInterpolation2D implements Interpolation2D {
             this.vy = vy; // TODO: clone?
             this.mz = mz; // TODO: clone?
 
-            QL.require(vx.size() >= 2 && vy.size() >= 2, "not enough points to interpolate"); // TODO: message
+            QL.require(vx.size() >= 2 && vy.size() >= 2, "not enough points to interpolate");
             // Validate vx and vy independently — using a single combined loop
             // bounded by vx.size()-1 is wrong when vx and vy have different
             // sizes (e.g., FdSabrVanillaEngine uses a 400-point f-mesh and a
             // 50-point x-mesh). Port mirrors C++ which validates x and y
             // arrays separately.
             for ( int i = 0; i < vx.size() - 1; i++ ) {
-                QL.require(vx.get(i) <= vx.get(i + 1), "unsorted values on array X"); // TODO: message
+                QL.require(vx.get(i) <= vx.get(i + 1), "unsorted values on array X");
             }
             for ( int i = 0; i < vy.size() - 1; i++ ) {
-                QL.require(vy.get(i) <= vy.get(i + 1), "unsorted values on array Y"); // TODO: message
+                QL.require(vy.get(i) <= vy.get(i + 1), "unsorted values on array Y");
             }
         }
 
@@ -238,13 +238,13 @@ public class AbstractInterpolation2D implements Interpolation2D {
         }
 
         public boolean isInRange(final double x, final double y) /*@ReadOnly*/ {
-            QL.require(extraSafetyChecksX(), "unsorted values on array X"); // TODO: message
+            QL.require(extraSafetyChecksX(), "unsorted values on array X");
             final double x1 = xMin(), x2 = xMax();
             final boolean xIsInrange = (x >= x1 && x <= x2) || isClose(x, x1) || isClose(x, x2);
             if ( !xIsInrange )
                 return false;
 
-            QL.require(extraSafetyChecksY(), "unsorted values on array Y"); // TODO: message
+            QL.require(extraSafetyChecksY(), "unsorted values on array Y");
             final double y1 = yMin(), y2 = yMax();
             return (y >= y1 && y <= y2) || isClose(y, y1) || isClose(y, y2);
         }
@@ -262,7 +262,7 @@ public class AbstractInterpolation2D implements Interpolation2D {
         //
 
         protected int locateX(final double x) /* @ReadOnly */ {
-            QL.require(extraSafetyChecksX(), "unsorted values on array X"); // TODO: message
+            QL.require(extraSafetyChecksX(), "unsorted values on array X");
             // Mirror C++ v1.42.1 ql/math/interpolations/interpolation2d.hpp:
             //   else if (x > *(xEnd_-1))
             //       return xEnd_-xBegin_-2;
@@ -282,7 +282,7 @@ public class AbstractInterpolation2D implements Interpolation2D {
         }
 
         protected int locateY(final double y) /* @ReadOnly */ {
-            QL.require(extraSafetyChecksY(), "unsorted values on array Y"); // TODO: message
+            QL.require(extraSafetyChecksY(), "unsorted values on array Y");
             if ( y <= vy.first() )
                 return 0;
             else if ( y >= vy.last() )

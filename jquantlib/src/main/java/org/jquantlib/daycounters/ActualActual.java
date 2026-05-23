@@ -93,7 +93,7 @@ public class ActualActual extends DayCounter {
             super.impl = new ImplAFB();
             break;
         default:
-            throw new LibraryException("unknown act/act convention"); // TODO: message
+            throw new LibraryException("unknown act/act convention");
         }
     }
 
@@ -130,7 +130,7 @@ public class ActualActual extends DayCounter {
             Date refPeriodEnd = (!d4.isNull() ? d4 : d2);
 
             QL.ensure(refPeriodEnd.gt(refPeriodStart) && refPeriodEnd.gt(d1),
-                    "invalid reference period");  // TODO: message
+                    "invalid reference period");
 
             // estimate roughly the length in months of a period
             int months = (int) (0.5 + 12 * (refPeriodEnd.sub(refPeriodStart)) / 365.0);
@@ -175,7 +175,7 @@ public class ActualActual extends DayCounter {
 
                 // here refPeriodEnd is the last notional payment date
                 // d1 < refPeriodEnd < d2 AND refPeriodStart < refPeriodEnd
-                QL.require(refPeriodStart.le(d1), "invalid dates"); // TODO: message
+                QL.require(refPeriodStart.le(d1), "invalid dates");
 
                 // now it is: refPeriodStart <= d1 < refPeriodEnd < d2
 

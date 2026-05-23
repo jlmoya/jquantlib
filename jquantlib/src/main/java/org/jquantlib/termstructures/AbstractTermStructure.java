@@ -186,7 +186,7 @@ public abstract class AbstractTermStructure implements TermStructure {
      */
     //TODO : What's the calendar in this case?
     public AbstractTermStructure(final DayCounter dc) {
-        QL.require(dc != null, "day counter must be informed"); // TODO: message
+        QL.require(dc != null, "day counter must be informed");
         this.calendar = null;
         this.settlementDays = 0;
         this.dayCounter = dc;
@@ -222,9 +222,9 @@ public abstract class AbstractTermStructure implements TermStructure {
      * @see TermStructure documentation for more details about constructors.
      */
     public AbstractTermStructure(final Date referenceDate, final Calendar calendar, final DayCounter dc) {
-        QL.require(referenceDate != null, "reference date must be informed"); // TODO: message
-        QL.require(calendar != null, "calendar must be informed"); // TODO: message
-        QL.require(dc != null, "day counter must be informed"); // TODO: message
+        QL.require(referenceDate != null, "reference date must be informed");
+        QL.require(calendar != null, "calendar must be informed");
+        QL.require(dc != null, "day counter must be informed");
 
         this.settlementDays = 0;
         this.calendar = calendar;
@@ -290,17 +290,17 @@ public abstract class AbstractTermStructure implements TermStructure {
      * This method performs date-range check
      */
     protected void checkRange(final Date d, final boolean extrapolate) /* @ReadOnly */ {
-        QL.require(d.ge(referenceDate()), "date before reference date"); // TODO: message
-        QL.require(extrapolate || allowsExtrapolation() || d.le(maxDate()), "date is past max curve"); // TODO: message
+        QL.require(d.ge(referenceDate()), "date before reference date");
+        QL.require(extrapolate || allowsExtrapolation() || d.le(maxDate()), "date is past max curve");
     }
 
     /**
      * This method performs date-range check
      */
     protected void checkRange(/*@Time*/ final double t, final boolean extrapolate) /* @ReadOnly */ {
-        QL.require(t >= 0.0, "negative time given"); // TODO: message
+        QL.require(t >= 0.0, "negative time given");
         QL.require(extrapolate || allowsExtrapolation() || t <= maxTime() || Closeness.isCloseEnough(t, maxTime()),
-                "time is past max curve"); // TODO: message
+                "time is past max curve");
     }
 
     /* (non-Javadoc)
@@ -308,7 +308,7 @@ public abstract class AbstractTermStructure implements TermStructure {
      */
     @Override
     public Calendar calendar() /* @ReadOnly */ {
-        QL.require(this.calendar != null, THIS_METHOD_MUST_BE_OVERRIDDEN); // TODO: message
+        QL.require(this.calendar != null, THIS_METHOD_MUST_BE_OVERRIDDEN);
         return calendar;
     }
 
@@ -332,7 +332,7 @@ public abstract class AbstractTermStructure implements TermStructure {
      */
     @Override
     public DayCounter dayCounter() /* @ReadOnly */ {
-        QL.require(this.dayCounter != null, THIS_METHOD_MUST_BE_OVERRIDDEN); // TODO: message
+        QL.require(this.dayCounter != null, THIS_METHOD_MUST_BE_OVERRIDDEN);
         return dayCounter;
     }
 

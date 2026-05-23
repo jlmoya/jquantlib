@@ -96,7 +96,7 @@ public class Beta {
                 return result;
 
         }
-        throw new ArithmeticException("a or b too big, or maxIteration too small in betacf"); // TODO: message
+        throw new ArithmeticException("a or b too big, or maxIteration too small in betacf");
     }
 
     public static double incompleteBetaFunction(final double a, final double b, final double x, final double accuracy,
@@ -104,8 +104,8 @@ public class Beta {
 
         final GammaFunction gf = new GammaFunction();
 
-        QL.require(a > 0.0, "a must be greater than zero"); // TODO: message
-        QL.require(b > 0.0, "b must be greater than zero"); // TODO: message
+        QL.require(a > 0.0, "a must be greater than zero");
+        QL.require(b > 0.0, "b must be greater than zero");
 
         if ( x == 0.0 )
             return 0.0;

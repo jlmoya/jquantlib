@@ -164,7 +164,7 @@ public abstract class BootstrapHelper< TS extends TermStructure >
         if ( v != null ) {
             v.visit(this);
         } else {
-            throw new LibraryException("not a bootstrap helper visitor");//TODO: message
+            throw new LibraryException("not a bootstrap helper visitor");
         }
     }
 

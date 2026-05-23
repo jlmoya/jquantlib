@@ -109,11 +109,11 @@ public class BlackFormula {
         // strike may be negative when displacement > 0; the shifted strike must be non-negative.
         // Forward may be negative when displacement > |forward|; the shifted forward must be positive.
         // Mirrors C++ QuantLib v1.42.1 blackFormula::checkParameters which checks after shifting.
-        QL.require(displacement >= 0.0, "displacement must be non-negative"); // TODO: message
-        QL.require(strike + displacement >= 0.0, "strike+displacement must be non-negative"); // TODO: message
-        QL.require(forward + displacement > 0.0, "forward+displacement must be positive"); // TODO: message
-        QL.require(stddev >= 0.0, "stddev must be non-negative"); // TODO: message
-        QL.require(discount > 0.0, "discount must be positive"); // TODO: message
+        QL.require(displacement >= 0.0, "displacement must be non-negative");
+        QL.require(strike + displacement >= 0.0, "strike+displacement must be non-negative");
+        QL.require(forward + displacement > 0.0, "forward+displacement must be positive");
+        QL.require(stddev >= 0.0, "stddev must be non-negative");
+        QL.require(discount > 0.0, "discount must be positive");
 
         // Note: zero-stdDev intrinsic uses unshifted (forward - strike) per C++ blackFormula:75
         if ( stddev == 0.0 )
@@ -138,7 +138,7 @@ public class BlackFormula {
 
         if ( result >= 0.0 )
             return result;
-        throw new ArithmeticException("a negative value was calculated"); // TODO: message
+        throw new ArithmeticException("a negative value was calculated");
     }
 
     /**
@@ -223,11 +223,11 @@ public class BlackFormula {
 
         // strike may be negative when displacement > 0; the shifted strike must be non-negative.
         // Mirrors C++ QuantLib v1.42.1 blackFormulaImpliedStdDevApproximation check (Phase 2o A.2).
-        QL.require(strike + displacement >= 0.0, "strike+displacement must be non-negative"); // TODO: message
-        QL.require(forward > 0.0, "forward must be positive"); // TODO: message
-        QL.require(displacement >= 0.0, "displacement must be non-negative"); // TODO: message
-        QL.require(blackPrice >= 0.0, "blackPrice must be non-negative"); // TODO: message
-        QL.require(discount > 0.0, "discount must be positive"); // TODO: message
+        QL.require(strike + displacement >= 0.0, "strike+displacement must be non-negative");
+        QL.require(forward > 0.0, "forward must be positive");
+        QL.require(displacement >= 0.0, "displacement must be non-negative");
+        QL.require(blackPrice >= 0.0, "blackPrice must be non-negative");
+        QL.require(discount > 0.0, "discount must be positive");
 
         double stddev;
         forward = forward + displacement;
@@ -256,7 +256,7 @@ public class BlackFormula {
 
         if ( stddev >= 0.0 )
             return stddev;
-        throw new ArithmeticException("a negative value was calculated"); // TODO: message
+        throw new ArithmeticException("a negative value was calculated");
     }
 
     /**
@@ -388,11 +388,11 @@ public class BlackFormula {
 
         // strike may be negative when displacement > 0; the shifted strike must be non-negative.
         // Mirrors C++ QuantLib v1.42.1 blackFormulaImpliedStdDev check (Phase 2o A.2).
-        QL.require(strike + displacement >= 0.0, "strike+displacement must be non-negative"); // TODO: message
-        QL.require(forward > 0.0, "forward must be positive"); // TODO: message
-        QL.require(displacement >= 0.0, "displacement must be non-negative"); // TODO: message
-        QL.require(blackPrice >= 0.0, "blackPrice must be non-negative"); // TODO: message
-        QL.require(discount > 0.0, "discount must be positive"); // TODO: message
+        QL.require(strike + displacement >= 0.0, "strike+displacement must be non-negative");
+        QL.require(forward > 0.0, "forward must be positive");
+        QL.require(displacement >= 0.0, "displacement must be non-negative");
+        QL.require(blackPrice >= 0.0, "blackPrice must be non-negative");
+        QL.require(discount > 0.0, "discount must be positive");
 
         strike = strike + displacement;
         forward = forward + displacement;
@@ -738,11 +738,11 @@ public class BlackFormula {
 
         // strike may be negative when displacement > 0; the shifted strike must be non-negative.
         // Mirrors C++ QuantLib v1.42.1 blackFormulaStdDevDerivative check (Phase 2o A.2).
-        QL.require(strike + displacement >= 0.0, "strike+displacement must be non-negative"); // TODO: message
-        QL.require(forward > 0.0, "forward must be positive"); // TODO: message
-        QL.require(stddev >= 0.0, "blackPrice must be non-negative"); // TODO: message
-        QL.require(discount > 0.0, "discount must be positive"); // TODO: message
-        QL.require(displacement >= 0.0, "displacement must be non-negative"); // TODO: message
+        QL.require(strike + displacement >= 0.0, "strike+displacement must be non-negative");
+        QL.require(forward > 0.0, "forward must be positive");
+        QL.require(stddev >= 0.0, "blackPrice must be non-negative");
+        QL.require(discount > 0.0, "discount must be positive");
+        QL.require(displacement >= 0.0, "displacement must be non-negative");
 
         forward = forward + displacement;
         strike = strike + displacement;
@@ -1251,10 +1251,10 @@ public class BlackFormula {
         public BlackImpliedStdDevHelper(final Option.Type optionType, final double strike, final double forward,
                 final double undiscountedBlackPrice, final double displacement) {
 
-            QL.require(strike >= 0.0, "strike must be non-negative"); // TODO: message
-            QL.require(forward > 0.0, "forward must be positive"); // TODO: message
-            QL.require(displacement >= 0.0, "displacement must be non-negative"); // TODO: message
-            QL.require(undiscountedBlackPrice >= 0.0, "undiscounted Black price must be non-negative"); // TODO: message
+            QL.require(strike >= 0.0, "strike must be non-negative");
+            QL.require(forward > 0.0, "forward must be positive");
+            QL.require(displacement >= 0.0, "displacement must be non-negative");
+            QL.require(undiscountedBlackPrice >= 0.0, "undiscounted Black price must be non-negative");
 
             this.halfOptionType_ = (0.5 * optionType.toInteger());
             this.signedStrike_ = (optionType.toInteger() * (strike + displacement));
@@ -1267,7 +1267,7 @@ public class BlackFormula {
         }
 
         public double op(@NonNegative final double stddev) {
-            QL.require(stddev >= 0.0, "stddev must be non-negative"); // TODO: message
+            QL.require(stddev >= 0.0, "stddev must be non-negative");
             if ( stddev == 0.0 )
                 return Math.max(signedForward_ - signedStrike_, 0.0d) - undiscountedBlackPrice_;
 
@@ -1281,7 +1281,7 @@ public class BlackFormula {
         }
 
         public double derivative(@NonNegative final double stddev) {
-            QL.require(stddev >= 0.0, "stddev must be non-negative"); // TODO: message
+            QL.require(stddev >= 0.0, "stddev must be non-negative");
 
             final double signedD1 = signedMoneyness_ / stddev + halfOptionType_ * stddev;
             return signedForward_ * N_.derivative(signedD1);

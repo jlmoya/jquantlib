@@ -127,11 +127,11 @@ public class HullWhite extends Vasicek implements TermStructureConsistentModel {
     public static /* @Rate */ double convexityBias(final double futurePrice, final /* @Time */ double t,
             final /* @Time */ double T, final double sigma, final double a) {
 
-        QL.require(futurePrice >= 0.0, "negative futures price not allowed"); // TODO: message
-        QL.require(t >= 0.0, "negative t not allowed"); // TODO: message
-        QL.require(T >= t, "T must not be less than t"); // TODO: message
-        QL.require(sigma >= 0.0, "negative sigma not allowed"); // TODO: message
-        QL.require(a >= 0.0, "negative a not allowed"); // TODO: message
+        QL.require(futurePrice >= 0.0, "negative futures price not allowed");
+        QL.require(t >= 0.0, "negative t not allowed");
+        QL.require(T >= t, "T must not be less than t");
+        QL.require(sigma >= 0.0, "negative sigma not allowed");
+        QL.require(a >= 0.0, "negative a not allowed");
 
         // temp(x) = (1 - exp(-a*x)) / a, with a small-a Taylor fallback to x.
         // Aligned to v1.42.1 hullwhite.cpp convexityBias.

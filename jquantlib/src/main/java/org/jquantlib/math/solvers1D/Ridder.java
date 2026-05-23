@@ -91,12 +91,12 @@ public class Ridder extends AbstractSolver1D< Ops.DoubleOp > {
                 xMin = root;
                 fxMin = froot;
             } else
-                throw new LibraryException("internal error"); // TODO: message
+                throw new LibraryException("internal error");
 
             if ( Math.abs(xMax - xMin) <= xAccuracy_ )
                 return root;
         }
-        throw new ArithmeticException("maximum number of function evaluations exceeded"); // TODO: message
+        throw new ArithmeticException("maximum number of function evaluations exceeded");
     }
 
     private double sign(final double a, final double b) {

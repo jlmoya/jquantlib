@@ -59,7 +59,7 @@ public class BootstrapError< T extends Traits > implements Ops.DoubleOp {
 
     static private Traits constructTraits(final Class< ? > klass) {
         if ( klass == null ) {
-            throw new LibraryException("null Traits"); // TODO: message
+            throw new LibraryException("null Traits");
         }
         if ( klass != Traits.class ) {
             throw new LibraryException(ReflectConstants.WRONG_ARGUMENT_TYPE);
@@ -68,7 +68,7 @@ public class BootstrapError< T extends Traits > implements Ops.DoubleOp {
         try {
             return (Traits) klass.newInstance();
         } catch ( final Exception e ) {
-            throw new LibraryException("cannot create Traits", e); // TODO: message
+            throw new LibraryException("cannot create Traits", e);
         }
     }
 

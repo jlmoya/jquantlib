@@ -167,16 +167,16 @@ public class Schedule {
         this.finalIsRegular_ = true;
 
         // sanity checks
-        QL.require(effectiveDate != null && !effectiveDate.isNull(), "null effective date"); // TODO: message
-        QL.require(terminationDate != null && !terminationDate.isNull(), "null termination date"); // TODO: message
+        QL.require(effectiveDate != null && !effectiveDate.isNull(), "null effective date");
+        QL.require(terminationDate != null && !terminationDate.isNull(), "null termination date");
         QL.require(effectiveDate.lt(terminationDate),
                 "effective date (" + effectiveDate + ") later than or equal to termination date (" + terminationDate
-                        + ")"); // TODO: message
+                        + ")");
 
         if ( tenor.length() == 0 ) {
             rule_ = DateGeneration.Rule.Zero;
         } else {
-            QL.require(tenor.length() > 0, "non positive tenor (" + tenor + ") not allowed"); // TODO: message
+            QL.require(tenor.length() > 0, "non positive tenor (" + tenor + ") not allowed");
         }
 
         if ( firstDate != null && !firstDate.isNull() ) {
@@ -188,11 +188,11 @@ public class Schedule {
                 // Required by testFirstDateOnMaturity.
                 QL.require(firstDate.gt(effectiveDate) && firstDate.le(terminationDate),
                         "first date (" + firstDate + ") out of effective-termination date range (" + effectiveDate
-                                + ", " + terminationDate + "]"); // TODO: message
+                                + ", " + terminationDate + "]");
                 break;
             case ThirdWednesday:
                 QL.require(IMM.isIMMdate(firstDate, false),
-                        "first date (" + firstDate + ") is not an IMM date"); // TODO: message
+                        "first date (" + firstDate + ") is not an IMM date");
                 break;
             case Zero:
             case Twentieth:
@@ -201,10 +201,10 @@ public class Schedule {
             case CDS:
             case CDS2015:
                 String errMsg = "first date incompatible with " + rule_ + " date generation rule";
-                throw new LibraryException(errMsg); // TODO: message
+                throw new LibraryException(errMsg);
             default:
                 errMsg = "unknown Rule (" + rule_ + ")";
-                throw new LibraryException(errMsg); // TODO: message
+                throw new LibraryException(errMsg);
             }
         }
         if ( nextToLastDate != null && !nextToLastDate.isNull() ) {
@@ -216,11 +216,11 @@ public class Schedule {
                 // Required by testNextToLastDateOnStart.
                 QL.require(nextToLastDate.ge(effectiveDate) && nextToLastDate.lt(terminationDate),
                         "next to last date (" + nextToLastDate + ") out of [effective (" + effectiveDate
-                                + "), termination (" + terminationDate + ")) date range"); // TODO: message
+                                + "), termination (" + terminationDate + ")) date range");
                 break;
             case ThirdWednesday:
                 QL.require(IMM.isIMMdate(nextToLastDate, false),
-                        "first date (" + firstDate + ") is not an IMM date"); // TODO: message
+                        "first date (" + firstDate + ") is not an IMM date");
             case Zero:
             case Twentieth:
             case TwentiethIMM:
@@ -228,10 +228,10 @@ public class Schedule {
             case CDS:
             case CDS2015:
                 String errMsg = "next to last date incompatible with " + rule_ + " date generation rule";
-                throw new LibraryException(errMsg); // TODO: message
+                throw new LibraryException(errMsg);
             default:
                 errMsg = "unknown Rule (" + rule_ + ")";
-                throw new LibraryException(errMsg); // TODO: message
+                throw new LibraryException(errMsg);
             }
         }
 
@@ -322,7 +322,7 @@ public class Schedule {
         case CDS:
         case CDS2015:
             QL.require(!endOfMonth,
-                    "endOfMonth convention incompatible with " + rule_ + " date generation rule"); // TODO: message
+                    "endOfMonth convention incompatible with " + rule_ + " date generation rule");
             // fall through
         case Forward:
 
@@ -427,7 +427,7 @@ public class Schedule {
 
         default:
             final String errMsg = "unknown Rule (" + rule_ + ")";
-            throw new LibraryException(errMsg); // TODO: message
+            throw new LibraryException(errMsg);
         }
 
         // adjustments
@@ -696,7 +696,7 @@ public class Schedule {
     public boolean isRegular(final int i) /* @ReadOnly */ {
         QL.require(hasIsRegular(), "full interface (isRegular) not available"); // mirrors C++ schedule.cpp
         QL.require(i <= isRegular_.size() && i > 0,
-                "index (" + i + ") must be in [1, " + isRegular_.size() + "]"); // TODO: message
+                "index (" + i + ") must be in [1, " + isRegular_.size() + "]");
         return isRegular_.get(i - 1);
     }
 
@@ -770,19 +770,19 @@ public class Schedule {
     }
 
     public BusinessDayConvention terminationDateBusinessDayConvention() /* @ReadOnly */ {
-        QL.require(fullInterface_, "full interface not available"); // TODO: message
+        QL.require(fullInterface_, "full interface not available");
         return terminationDateConvention_;
     }
 
     // Iterators
 
     public DateGeneration.Rule rule() /* @ReadOnly */ {
-        QL.require(fullInterface_, "full interface not available"); // TODO: message
+        QL.require(fullInterface_, "full interface not available");
         return rule_;
     }
 
     public boolean endOfMonth() /* @ReadOnly */ {
-        QL.require(fullInterface_, "full interface not available"); // TODO: message
+        QL.require(fullInterface_, "full interface not available");
         return endOfMonth_;
     }
 

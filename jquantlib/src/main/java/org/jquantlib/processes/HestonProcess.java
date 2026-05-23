@@ -371,7 +371,7 @@ public class HestonProcess extends StochasticProcess {
             break;
         }
         default:
-            throw new LibraryException("unknown discretization schema"); // TODO: message
+            throw new LibraryException("unknown discretization schema");
         }
 
         return new Array(retVal);

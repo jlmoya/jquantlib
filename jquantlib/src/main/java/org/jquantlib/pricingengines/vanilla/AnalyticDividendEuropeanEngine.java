@@ -89,10 +89,10 @@ public class AnalyticDividendEuropeanEngine extends DividendVanillaOption.Engine
     @Override
     public void calculate() /* @ReadOnly */ {
 
-        QL.require(a.exercise.type() == Exercise.Type.European, "not an European option"); // TODO: message
+        QL.require(a.exercise.type() == Exercise.Type.European, "not an European option");
 
         final StrikedTypePayoff payoff = (StrikedTypePayoff) a.payoff;
-        QL.require(payoff != null, "non-striked payoff given"); // TODO: message
+        QL.require(payoff != null, "non-striked payoff given");
 
         final Date settlementDate = process.riskFreeRate().currentLink().referenceDate();
         double riskless = 0.0;
@@ -108,7 +108,7 @@ public class AnalyticDividendEuropeanEngine extends DividendVanillaOption.Engine
         }
 
         final double spot = process.stateVariable().currentLink().value() - riskless;
-        QL.require(spot > 0.0, "negative or null underlying after subtracting dividends"); // TODO: message
+        QL.require(spot > 0.0, "negative or null underlying after subtracting dividends");
 
         final /*@DiscountFactor*/ double dividendDiscount = process.dividendYield().currentLink()
                 .discount(a.exercise.lastDate());

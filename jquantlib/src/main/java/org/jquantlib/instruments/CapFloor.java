@@ -110,7 +110,7 @@ public class CapFloor extends Instrument {
         }
 
         if ( type_ == Type.Cap || type_ == Type.Collar ) {
-            QL.require(capRates_.size() > 0, "no cap rates given"); // TODO: message
+            QL.require(capRates_.size() > 0, "no cap rates given");
             // capRates_.reserve(floatingLeg_.size());
             while ( capRates_.size() < floatingLeg_.size() ) {
                 // this looks kind of suspicious...
@@ -119,7 +119,7 @@ public class CapFloor extends Instrument {
         }
 
         if ( type_ == Type.Floor || type_ == Type.Collar ) {
-            QL.require(floorRates_.size() > 0, "no floor rates given"); // TODO: message
+            QL.require(floorRates_.size() > 0, "no floor rates given");
             // floorRates_.reserve(floatingLeg_.size());
             while ( floorRates_.size() < floatingLeg_.size() ) {
                 floorRates_.add(floorRates_.get(floorRates_.size() - 1));
@@ -151,7 +151,7 @@ public class CapFloor extends Instrument {
             setPricingEngine(engine);
         }
 
-        QL.require(strikes.size() > 0, "no strikes given"); // TODO: message
+        QL.require(strikes.size() > 0, "no strikes given");
         if ( type_ == Type.Cap ) {
             capRates_ = strikes;
             //capRates_.reserve(floatingLeg_.size());
@@ -165,7 +165,7 @@ public class CapFloor extends Instrument {
                 floorRates_.add(floorRates_.get(floorRates_.size() - 1));
             }
         } else
-            throw new LibraryException("only Cap/Floor types allowed in this constructor"); // TODO: message
+            throw new LibraryException("only Cap/Floor types allowed in this constructor");
 
         final Date evaluationDate = new Settings().evaluationDate();
         for ( final CashFlow cashFlow : floatingLeg_ ) {

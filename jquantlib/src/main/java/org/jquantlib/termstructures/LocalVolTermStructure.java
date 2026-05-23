@@ -216,7 +216,7 @@ public abstract class LocalVolTermStructure extends VolatilityTermStructure impl
         /*@Real*/
         final double maxStrike = maxStrike();
         QL.require(extrapolate || allowsExtrapolation() || (strike >= minStrike && strike <= maxStrike),
-                "strike is outside curve domain"); // TODO: message
+                "strike is outside curve domain");
     }
 
     //
@@ -229,7 +229,7 @@ public abstract class LocalVolTermStructure extends VolatilityTermStructure impl
         if ( v != null ) {
             v.visit(this);
         } else {
-            throw new LibraryException("not a local-volatility term structure visitor"); // TODO: message
+            throw new LibraryException("not a local-volatility term structure visitor");
         }
     }
 

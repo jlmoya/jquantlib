@@ -110,7 +110,7 @@ public class Rounding {
             }
             break;
         default:
-            throw new LibraryException("unknown rounding method"); // TODO: message
+            throw new LibraryException("unknown rounding method");
         }
         return (neg) ? -(lvalue / mult) : lvalue / mult;
     }

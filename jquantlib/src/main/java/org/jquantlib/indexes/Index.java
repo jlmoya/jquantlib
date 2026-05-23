@@ -134,8 +134,8 @@ public abstract class Index implements Observable {
         // v1.42.1 (ql/indexes/indexmanager.hpp:104).
         IndexManager.getInstance().notifier(tag).notifyObservers();
 
-        QL.ensure(noInvalidFixing, "at least one invalid fixing provided");  // TODO: message
-        QL.ensure(noDuplicatedFixing, "at least one duplicated fixing provided");  // TODO: message
+        QL.ensure(noInvalidFixing, "at least one invalid fixing provided");
+        QL.ensure(noDuplicatedFixing, "at least one duplicated fixing provided");
     }
 
     /**
@@ -181,8 +181,8 @@ public abstract class Index implements Observable {
         // Phase 5c align: see addFixing(date, value, forceOverwrite).
         IndexManager.getInstance().notifier(tag).notifyObservers();
 
-        QL.ensure(noInvalidFixing, "at least one invalid fixing provided");  // TODO: message
-        QL.ensure(noDuplicatedFixing, "at least one duplicated fixing provided");  // TODO: message
+        QL.ensure(noInvalidFixing, "at least one invalid fixing provided");
+        QL.ensure(noDuplicatedFixing, "at least one duplicated fixing provided");
     }
 
     /**

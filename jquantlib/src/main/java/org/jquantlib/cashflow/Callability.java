@@ -86,7 +86,7 @@ public class Callability extends Event {
         }
 
         public double amount() {
-            QL.require(!Double.isNaN(amount), "no amount given"); // TODO: message
+            QL.require(!Double.isNaN(amount), "no amount given");
             return amount;
         }
 

@@ -84,7 +84,7 @@ public abstract class CalibratedModel implements Observer, Observable {
             final EndCriteria endCriteria, final Constraint additionalConstraint, final double[] weights) {
 
         QL.require(weights == null || weights.length == instruments.size(),
-                "mismatch between number of instruments and weights"); // TODO: message
+                "mismatch between number of instruments and weights");
 
         Constraint c;
         if ( additionalConstraint.empty() ) {
@@ -144,7 +144,7 @@ public abstract class CalibratedModel implements Observer, Observable {
         }
 
         QL.require(weights == null || weights.length == instruments.size(),
-                "mismatch between number of instruments and weights"); // TODO: message
+                "mismatch between number of instruments and weights");
 
         final double[] w = new double[instruments.size()];
         if ( weights == null ) {
@@ -155,7 +155,7 @@ public abstract class CalibratedModel implements Observer, Observable {
 
         final Array prms = params();
         QL.require(fixParameters == null || fixParameters.length == 0 || fixParameters.length == prms.size(),
-                "mismatch between number of parameters and fixed-parameter specs"); // TODO: message
+                "mismatch between number of parameters and fixed-parameter specs");
 
         final boolean[] mask;
         if ( fixParameters == null || fixParameters.length == 0 ) {
@@ -242,7 +242,7 @@ public abstract class CalibratedModel implements Observer, Observable {
             pos += to.length;
         }
 
-        QL.require(pos == params.size(), "parameter array too big"); // TODO: message
+        QL.require(pos == params.size(), "parameter array too big");
         update();
     }
 

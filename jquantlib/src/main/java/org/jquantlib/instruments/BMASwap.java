@@ -196,7 +196,7 @@ public class BMASwap extends Swap {
             case 1:
                 return Type.Payer;
             default:
-                throw new LibraryException("value must be one of -1, 1"); // TODO: message
+                throw new LibraryException("value must be one of -1, 1");
             }
         }
 

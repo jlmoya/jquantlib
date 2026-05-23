@@ -84,7 +84,7 @@ public enum Weekday {
         case 7:
             return Weekday.Saturday;
         default:
-            throw new LibraryException("value must be [1,7]"); // TODO: message
+            throw new LibraryException("value must be [1,7]");
         }
     }
 
@@ -121,7 +121,7 @@ public enum Weekday {
         case 7:
             return "Saturday";
         }
-        throw new LibraryException("value must be [1,7]"); // TODO: message
+        throw new LibraryException("value must be [1,7]");
     }
 
     /**

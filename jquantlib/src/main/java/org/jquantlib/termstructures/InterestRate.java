@@ -104,7 +104,7 @@ public class InterestRate {
         if ( this.compound == Compounding.Compounded || this.compound == Compounding.SimpleThenCompounded ) {
             freqMakesSense = true;
             QL.require(freq != Frequency.Once && freq != Frequency.NoFrequency,
-                    "frequency not allowed for this interest rate"); // TODO: message
+                    "frequency not allowed for this interest rate");
             this.freq = freq.toInteger();
         }
     }
@@ -125,7 +125,7 @@ public class InterestRate {
         /* @Time */
         final double t = time;
         final double f = freq.toInteger();
-        QL.require(c > 0.0, "positive compound factor required"); // TODO: message
+        QL.require(c > 0.0, "positive compound factor required");
 
         // Mirror C++ v1.42.1 ql/interestrate.cpp::InterestRate::impliedRate:
         // when the compound factor is exactly 1.0 the implied rate is 0
@@ -136,7 +136,7 @@ public class InterestRate {
             QL.require(t >= 0.0, "non negative time required");
             return new InterestRate(0.0, resultDC, comp, freq);
         }
-        QL.require(t > 0.0, "positive time required"); // TODO: message
+        QL.require(t > 0.0, "positive time required");
 
         /* @Rate */
         double rate;
@@ -163,7 +163,7 @@ public class InterestRate {
             }
             break;
         default:
-            throw new LibraryException("unknown compounding convention"); // TODO: message
+            throw new LibraryException("unknown compounding convention");
         }
         return new InterestRate(rate, resultDC, comp, freq);
     }
@@ -186,7 +186,7 @@ public class InterestRate {
      */
     static public InterestRate impliedRate(final/* @CompoundFactor */double compound, final Date d1, final Date d2,
             final DayCounter resultDC, final Compounding comp, final Frequency freq) {
-        QL.require(d1.le(d2), "d1 later than or equal to d2"); // TODO: message
+        QL.require(d1.le(d2), "d1 later than or equal to d2");
         /* @Time */
         final double t = resultDC.yearFraction(d1, d2);
         return impliedRate(compound, t, resultDC, comp, freq);
@@ -200,8 +200,8 @@ public class InterestRate {
     public final/* @CompoundFactor */double compoundFactor(final/* @Time */double time) {
         /* @Time */
         final double t = time;
-        QL.require(t >= 0.0, "negative time not allowed"); // TODO: message
-        QL.require(!Double.isNaN(rate), "null interest rate"); // TODO: message
+        QL.require(t >= 0.0, "negative time not allowed");
+        QL.require(!Double.isNaN(rate), "null interest rate");
 
         // if (rate<0.0) throw new IllegalArgumentException("null interest rate");
 
@@ -226,7 +226,7 @@ public class InterestRate {
                 return JQuantMath.pow((1 + r / freq), (freq * t));
             }
         } else {
-            throw new LibraryException("unknown compounding convention"); // TODO: message
+            throw new LibraryException("unknown compounding convention");
         }
     }
 
@@ -337,7 +337,7 @@ public class InterestRate {
      */
     public final InterestRate equivalentRate(final Date d1, final Date d2, final DayCounter resultDC,
             final Compounding comp, final Frequency freq) {
-        QL.require(d1.lt(d2), "d1 later than or equal to d2"); // TODO: message
+        QL.require(d1.lt(d2), "d1 later than or equal to d2");
         /* @Time */
         final double t1 = this.dc.yearFraction(d1, d2);
         /* @Time */
@@ -370,7 +370,7 @@ public class InterestRate {
                 sb.append("simple compounding up to " + (12 / freq) + " months, then " + freq + " compounding");
             }
         } else {
-            throw new LibraryException("unknown compounding convention"); // TODO: message
+            throw new LibraryException("unknown compounding convention");
         }
         return sb.toString();
     }

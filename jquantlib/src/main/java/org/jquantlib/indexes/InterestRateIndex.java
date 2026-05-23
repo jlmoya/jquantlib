@@ -189,7 +189,7 @@ public abstract class InterestRateIndex extends Index implements Observer {
     }
 
     public Date valueDate(final Date fixingDate) {
-        QL.require(isValidFixingDate(fixingDate), "Fixing date is not valid"); // TODO: message
+        QL.require(isValidFixingDate(fixingDate), "Fixing date is not valid");
         return fixingCalendar().advance(fixingDate, fixingDays, TimeUnit.Days);
     }
 

@@ -316,7 +316,7 @@ abstract public class AbstractYieldTermStructure extends AbstractTermStructure i
             final double compound = discount1 / discount2;
             return InterestRate.impliedRate(compound, d1, d2, dayCounter, comp, freq);
         } else
-            throw new LibraryException("d1 later than d2"); // TODO: message
+            throw new LibraryException("d1 later than d2");
     }
 
     /* (non-Javadoc)
@@ -455,7 +455,7 @@ abstract public class AbstractYieldTermStructure extends AbstractTermStructure i
     @Override
     public /*@Rate*/ double parRate(final /*@Time*/ double[] times, final Frequency frequency,
             final boolean extrapolate) {
-        QL.require(times.length >= 2, "at least two times are required"); // TODO: message
+        QL.require(times.length >= 2, "at least two times are required");
         /*@Time*/
         final double last = times[times.length - 1];
         checkRange(last, extrapolate);

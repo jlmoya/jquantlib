@@ -256,7 +256,7 @@ public abstract class BlackVolTermStructure extends VolatilityTermStructure impl
      */
     public final /*@Volatility*/ double blackForwardVol(final Date date1, final Date date2,
             final /*@Real*/ double strike, final boolean extrapolate) {
-        QL.require(date1.le(date2), "date1 later than date2"); // TODO: message
+        QL.require(date1.le(date2), "date1 later than date2");
         /*@Time*/
         final double time1 = timeFromReference(date1);
         /*@Time*/
@@ -279,7 +279,7 @@ public abstract class BlackVolTermStructure extends VolatilityTermStructure impl
         final double t1 = time1;
         /*@Time*/
         final double t2 = time2;
-        QL.require(t1 <= t2, "t1 later than t2"); // TODO: message
+        QL.require(t1 <= t2, "t1 later than t2");
         checkRange(time2, extrapolate);
         checkStrike(strike, extrapolate);
         if ( t1 == t2 ) {
@@ -295,7 +295,7 @@ public abstract class BlackVolTermStructure extends VolatilityTermStructure impl
                 final double var1 = blackVarianceImpl(t1 - epsilon, strike);
                 /*@Variance*/
                 final double var2 = blackVarianceImpl(t1 + epsilon, strike);
-                QL.require(var2 >= var1, "variances must be non-decreasing"); // TODO: message
+                QL.require(var2 >= var1, "variances must be non-decreasing");
                 return Math.sqrt((var2 - var1) / (2 * epsilon));
             }
         } else {
@@ -303,7 +303,7 @@ public abstract class BlackVolTermStructure extends VolatilityTermStructure impl
             final double var1 = blackVarianceImpl(time1, strike);
             /*@Variance*/
             final double var2 = blackVarianceImpl(time2, strike);
-            QL.require(var2 >= var1, "variances must be non-decreasing"); // TODO: message
+            QL.require(var2 >= var1, "variances must be non-decreasing");
             return Math.sqrt((var2 - var1) / (t2 - t1));
         }
     }
@@ -319,7 +319,7 @@ public abstract class BlackVolTermStructure extends VolatilityTermStructure impl
      */
     public final /*@Variance*/ double blackForwardVariance(final Date date1, final Date date2,
             final /*@Real*/ double strike, final boolean extrapolate) {
-        QL.require(date1.le(date2), "date1 later than date2"); // TODO: message
+        QL.require(date1.le(date2), "date1 later than date2");
         /*@Time*/
         final double time1 = timeFromReference(date1);
         /*@Time*/
@@ -342,14 +342,14 @@ public abstract class BlackVolTermStructure extends VolatilityTermStructure impl
         final double t1 = time1;
         /*@Time*/
         final double t2 = time2;
-        QL.require(t1 <= t2, "t1 later than t2"); // TODO: message
+        QL.require(t1 <= t2, "t1 later than t2");
         checkRange(time2, extrapolate);
         checkStrike(strike, extrapolate);
         /*@Variance*/
         final double v1 = blackVarianceImpl(time1, strike);
         /*@Variance*/
         final double v2 = blackVarianceImpl(time2, strike);
-        QL.require(v2 >= v1, "variances must be non-decreasing"); // TODO: message
+        QL.require(v2 >= v1, "variances must be non-decreasing");
         return v2 - v1;
     }
 
@@ -363,7 +363,7 @@ public abstract class BlackVolTermStructure extends VolatilityTermStructure impl
         if ( v != null ) {
             v.visit(this);
         } else {
-            throw new LibraryException("not a Black-volatility term structure visitor"); // TODO: message
+            throw new LibraryException("not a Black-volatility term structure visitor");
         }
     }
 

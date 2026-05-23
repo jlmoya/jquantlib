@@ -69,7 +69,7 @@ public class IterativeBootstrap< Curve extends PiecewiseYieldCurve > implements 
     public IterativeBootstrap(final Class< ? > typeCurve) {
 
         if ( typeCurve == null ) {
-            throw new LibraryException("null PiecewiseCurve"); // TODO: message
+            throw new LibraryException("null PiecewiseCurve");
         }
         if ( !PiecewiseCurve.class.isAssignableFrom(typeCurve) ) {
             throw new LibraryException(ReflectConstants.WRONG_ARGUMENT_TYPE);

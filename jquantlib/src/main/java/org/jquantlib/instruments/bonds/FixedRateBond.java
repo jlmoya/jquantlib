@@ -203,7 +203,7 @@ public class FixedRateBond extends Bond {
         case TwentiethIMM:
             throw new LibraryException(reportFalseDateGenerationRule(stubDate, rule));
         default:
-            throw new LibraryException("unknown DateGeneration.Rule"); // TODO: message
+            throw new LibraryException("unknown DateGeneration.Rule");
         }
 
         final Schedule schedule = new Schedule(startDate, maturityDate_, tenor, calendar_, accrualConvention,

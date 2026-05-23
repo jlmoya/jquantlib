@@ -109,7 +109,7 @@ public class TrapezoidIntegral< T extends TrapezoidIntegral.IntegrationPolicy > 
             I = newI;
             i++;
         } while ( i < super.maxEvaluations() );
-        throw new ArithmeticException("max number of iterations reached"); // TODO: message
+        throw new ArithmeticException("max number of iterations reached");
     }
 
     //

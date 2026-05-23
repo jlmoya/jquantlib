@@ -134,7 +134,7 @@ public class Brent extends AbstractSolver1D< Ops.DoubleOp > {
             froot = f.op(root);
             evaluationNumber++;
         }
-        throw new ArithmeticException("maximum number of function evaluations exceeded"); // TODO: message
+        throw new ArithmeticException("maximum number of function evaluations exceeded");
     }
 
     private double sign(final double a, final double b) {

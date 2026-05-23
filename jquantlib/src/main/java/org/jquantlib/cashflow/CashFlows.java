@@ -1268,7 +1268,7 @@ public class CashFlows {
                     if ( firstCouponFound ) {
                         QL.require(
                                 nominal == cp.nominal() && accrualPeriod == cp.accrualPeriod() && dc == cp.dayCounter(),
-                                "cannot aggregate two different coupons");  // TODO: message
+                                "cannot aggregate two different coupons");
                     } else {
                         firstCouponFound = true;
                         nominal = cp.nominal();
@@ -1279,7 +1279,7 @@ public class CashFlows {
                 }
             }
         }
-        QL.ensure((firstCouponFound), "next cashflow (" + paymentDate + ") is not a coupon"); // TODO: message
+        QL.ensure((firstCouponFound), "next cashflow (" + paymentDate + ") is not a coupon");
         return result;
     }
 

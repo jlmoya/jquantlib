@@ -108,7 +108,7 @@ public class ExchangeRate {
             result.target_ = r2.source_;
             result.rate_ = r1.rate_ / r2.rate_;
         } else {
-            throw new LibraryException("exchange rates not chainable"); // TODO: message
+            throw new LibraryException("exchange rates not chainable");
         }
         return result;
     }
@@ -144,7 +144,7 @@ public class ExchangeRate {
             } else if ( amount.currency().eq(target_) ) {
                 return new Money(amount.value() / rate_, source_);
             } else {
-                throw new LibraryException("exchange rate not applicable"); // TODO: message
+                throw new LibraryException("exchange rate not applicable");
             }
         case Derived:
             // C++ uses operator== on Currency (name-based equality). Java
@@ -157,10 +157,10 @@ public class ExchangeRate {
                     .eq(rateChain_.second().target()) ) {
                 return rateChain_.first().exchange(rateChain_.second().exchange(amount));
             } else {
-                throw new LibraryException("exchange rate not applicable"); // TODO: message
+                throw new LibraryException("exchange rate not applicable");
             }
         default:
-            throw new LibraryException("unknown exchange-rate type"); // TODO: message
+            throw new LibraryException("unknown exchange-rate type");
         }
     }
 

@@ -63,7 +63,7 @@ public final class EuropeanExercise extends Exercise {
      */
     public EuropeanExercise(final Date date) {
         super(Exercise.Type.European);
-        QL.require(date != null, "empty exercise date");  // TODO: message
+        QL.require(date != null, "empty exercise date");
         super.dates.add(date.clone());
     }
 

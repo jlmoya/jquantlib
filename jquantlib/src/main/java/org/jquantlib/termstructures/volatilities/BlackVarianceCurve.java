@@ -93,11 +93,11 @@ public class BlackVarianceCurve extends BlackVarianceTermStructure {
         super(referenceDate);
 
         QL.require(dates.length == blackVolCurve.length,
-                "mismatch between date vector and black vol vector"); // TODO: message
+                "mismatch between date vector and black vol vector");
         // cannot have dates[0]==referenceDate, since the
         // value of the volatility at dates[0] would be lost
         // (variance at referenceDate must be zero)
-        QL.require(dates[0].gt(referenceDate), "cannot have dates[0] <= referenceDate"); // TODO: message
+        QL.require(dates[0].gt(referenceDate), "cannot have dates[0] <= referenceDate");
 
         this.dayCounter = dayCounter;
         this.dates = dates.clone();
@@ -109,11 +109,11 @@ public class BlackVarianceCurve extends BlackVarianceTermStructure {
         times.set(0, 0.0);
         for ( int j = 1; j <= blackVolCurve.length; j++ ) {
             times.set(j, timeFromReference(this.dates[j - 1]));
-            QL.require(times.get(j) > times.get(j - 1), "times must be sorted unique"); // TODO: message
+            QL.require(times.get(j) > times.get(j - 1), "times must be sorted unique");
             final double value = times.get(j) * blackVolCurve[j - 1] * blackVolCurve[j - 1];
             variances.set(j, value);
             QL.require(variances.get(j) >= variances.get(j - 1) || !forceMonotoneVariance,
-                    "variance must be non-decreasing"); // TODO: message
+                    "variance must be non-decreasing");
         }
 
         // default: linear interpolation

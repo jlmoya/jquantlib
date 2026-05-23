@@ -71,7 +71,7 @@ public final class ForwardTypePayoff extends Payoff {
      */
     public ForwardTypePayoff(final Position positionType, final/* @Price */double strike) {
         super();
-        QL.require(strike >= 0.0, "negative strike given"); // TODO: message
+        QL.require(strike >= 0.0, "negative strike given");
         this.strike = strike;
         this.type = positionType;
     }

@@ -94,7 +94,7 @@ public class BMAIndex extends InterestRateIndex {
 
     @Override
     protected double forecastFixing(final Date fixingDate) {
-        QL.require(!termStructure.empty(), "no forecasting term structure set to " + name());  // TODO: message
+        QL.require(!termStructure.empty(), "no forecasting term structure set to " + name());
         final Date start = fixingCalendar().advance(fixingDate, 1, TimeUnit.Days);
         final Date end = maturityDate(start);
         return termStructure.currentLink().forwardRate(start, end, dayCounter, Compounding.Simple).rate();

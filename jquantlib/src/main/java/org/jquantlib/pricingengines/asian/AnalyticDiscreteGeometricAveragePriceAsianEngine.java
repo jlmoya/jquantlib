@@ -104,9 +104,9 @@ public class AnalyticDiscreteGeometricAveragePriceAsianEngine extends DiscreteAv
 
     @Override
     public void calculate() /*@ReadOnly*/ {
-        QL.require(a.exercise.type() == Exercise.Type.European, NOT_AN_EUROPEAN_OPTION); // TODO: message
+        QL.require(a.exercise.type() == Exercise.Type.European, NOT_AN_EUROPEAN_OPTION);
         final StrikedTypePayoff payoff = (StrikedTypePayoff) a.payoff;
-        QL.require(a.payoff instanceof StrikedTypePayoff, NON_STRIKED_PAYOFF_GIVEN); // TODO: message
+        QL.require(a.payoff instanceof StrikedTypePayoff, NON_STRIKED_PAYOFF_GIVEN);
 
         /*
          * This engine cannot really check for the averageType==Geometric

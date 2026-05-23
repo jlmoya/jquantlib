@@ -48,7 +48,7 @@ public class Euribor365 extends IborIndex {
         super("Euribor365", tenor, 2, // settlement days
                 new EURCurrency(), new Target(), euriborConvention(tenor), euriborEOM(tenor), new Actual365Fixed(), h);
         QL.require(this.tenor().units() != TimeUnit.Days,
-                "for daily tenors dedicated DailyTenor constructor must be used"); // TODO: message
+                "for daily tenors dedicated DailyTenor constructor must be used");
     }
 
 }

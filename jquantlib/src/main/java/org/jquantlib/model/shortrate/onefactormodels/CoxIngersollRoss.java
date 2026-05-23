@@ -120,7 +120,7 @@ public class CoxIngersollRoss extends OneFactorAffineModel {
     @Override
     public double /* @Real */discountBondOption(final Option.Type type, final double /* @Real */strike,
             final double /* @Time */t, final double /* @Time */s) {
-        QL.require(strike > 0.0, strike_must_be_positive); // TODO: message
+        QL.require(strike > 0.0, strike_must_be_positive);
         final double /* @DiscountFactor */discountT = discountBond(0.0, t, x0());
         final double /* @DiscountFactor */discountS = discountBond(0.0, s, x0());
 

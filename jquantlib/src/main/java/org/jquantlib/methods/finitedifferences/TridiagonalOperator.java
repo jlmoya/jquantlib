@@ -47,7 +47,7 @@ public class TridiagonalOperator implements Operator {
             this.diagonal = new Array(0);
             this.upperDiagonal = new Array(0);
         } else
-            throw new IllegalStateException("Invalid size for Tridiagonal Operator"); // TODO: message
+            throw new IllegalStateException("Invalid size for Tridiagonal Operator");
 
     }
 

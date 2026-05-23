@@ -187,7 +187,7 @@ public class BlackCalculator {
             beta = 1.0 - cum_d2;// N(-d2)
             dBeta_dD2 = -n_d2;// -n( d2)
         } else
-            throw new LibraryException("invalid option type"); // TODO: message
+            throw new LibraryException("invalid option type");
 
         // now dispatch on type.
 

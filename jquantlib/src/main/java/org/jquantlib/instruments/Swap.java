@@ -149,9 +149,9 @@ public class Swap extends Instrument {
      * Returns the BPS of leg {@code j}. Mirrors C++ v1.42.1 ql/instruments/swap.hpp Swap::legBPS(Size j) const.
      */
     public /*@Real*/ double legBPS(final int j) /* @ReadOnly */ {
-        QL.require(j < legs.size(), "leg index out of range"); // TODO: message
+        QL.require(j < legs.size(), "leg index out of range");
         calculate();
-        QL.require(!Double.isNaN(legBPS[j]), "result not available"); // TODO: message
+        QL.require(!Double.isNaN(legBPS[j]), "result not available");
         return legBPS[j];
     }
 
@@ -159,9 +159,9 @@ public class Swap extends Instrument {
      * Returns the NPV of leg {@code j}. Mirrors C++ v1.42.1 ql/instruments/swap.hpp Swap::legNPV(Size j) const.
      */
     public /*@Real*/ double legNPV(final int j) /* @ReadOnly */ {
-        QL.require(j < legs.size(), "leg index out of range"); // TODO: message
+        QL.require(j < legs.size(), "leg index out of range");
         calculate();
-        QL.require(!Double.isNaN(legNPV[j]), "result not available"); // TODO: message
+        QL.require(!Double.isNaN(legNPV[j]), "result not available");
         return legNPV[j];
     }
 
@@ -192,7 +192,7 @@ public class Swap extends Instrument {
     }
 
     public Date startDate() /* @ReadOnly */ {
-        QL.require(legs.size() > 0, "no legs given"); // TODO: message
+        QL.require(legs.size() > 0, "no legs given");
         Date d = CashFlows.getInstance().startDate(this.legs.get(0));
         for ( int j = 1; j < this.legs.size(); j++ ) {
             d = Date.min(d, CashFlows.getInstance().startDate(this.legs.get(j)));
@@ -201,7 +201,7 @@ public class Swap extends Instrument {
     }
 
     public Date maturityDate() /* @ReadOnly */ {
-        QL.require(legs.size() > 0, "no legs given"); // TODO: message
+        QL.require(legs.size() > 0, "no legs given");
         Date d = CashFlows.getInstance().maturityDate(this.legs.get(0));
         for ( int j = 1; j < this.legs.size(); j++ ) {
             d = Date.max(d, CashFlows.getInstance().maturityDate(this.legs.get(j)));
@@ -261,14 +261,14 @@ public class Swap extends Instrument {
 
         final Swap.ResultsImpl r = (Swap.ResultsImpl) results;
         if ( r.legNPV.length > 0 ) {
-            QL.require(r.legNPV.length == legNPV.length, "wrong number of leg NPV returned"); // TODO: message
+            QL.require(r.legNPV.length == legNPV.length, "wrong number of leg NPV returned");
             legNPV = r.legNPV;
         } else {
             Arrays.fill(legNPV, Constants.NULL_REAL);
         }
 
         if ( r.legBPS.length > 0 ) {
-            QL.require(r.legBPS.length == legBPS.length, "wrong number of leg BPS returned"); // TODO: message
+            QL.require(r.legBPS.length == legBPS.length, "wrong number of leg BPS returned");
             legBPS = r.legBPS;
         } else {
             Arrays.fill(legBPS, Constants.NULL_REAL);
@@ -323,7 +323,7 @@ public class Swap extends Instrument {
 
         @Override
         public void validate() /* @ReadOnly */ {
-            QL.require(legs.size() == payer.length, "number of legs and multipliers differ"); // TODO: message
+            QL.require(legs.size() == payer.length, "number of legs and multipliers differ");
         }
     }
 

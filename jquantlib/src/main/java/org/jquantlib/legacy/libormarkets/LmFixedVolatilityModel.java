@@ -38,9 +38,9 @@ public class LmFixedVolatilityModel extends LmVolatilityModel {
         this.volatilities_ = volatilities;
         this.startTimes_ = startTimes;
 
-        QL.require(startTimes_.size() > 1, "too few dates"); // TODO: message
+        QL.require(startTimes_.size() > 1, "too few dates");
         QL.require(volatilities_.size() == startTimes_.size(),
-                "volatility array and fixing time array have to have the same size"); // TODO: message
+                "volatility array and fixing time array have to have the same size");
 
         for ( int i = 1; i < startTimes_.size(); i++ )
             if ( startTimes_.get(i) <= startTimes_.get(i - 1) )

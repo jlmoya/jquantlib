@@ -86,7 +86,7 @@ public abstract class CapVolatilityStructure extends AbstractTermStructure {
     private void checkRange(final double t, final double k, final boolean extrapolate) {
         super.checkRange(t, extrapolate);
         QL.require(extrapolate || allowsExtrapolation() || (k >= minStrike() && k <= maxStrike()),
-                "strike is outside curve domain"); // TODO: message
+                "strike is outside curve domain");
     }
 
 }

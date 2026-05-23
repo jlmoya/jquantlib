@@ -192,7 +192,7 @@ public class Money implements Cloneable {
     //    ==    equals     Money   Money   boolean
 
     public void convertToBase() {
-        QL.require((!baseCurrency.empty()), "no base currency set");  // TODO: message
+        QL.require((!baseCurrency.empty()), "no base currency set");
         convertTo(baseCurrency);
     }
 
@@ -217,7 +217,7 @@ public class Money implements Cloneable {
             // recursive invocation
             this.addAssign(tmp);
         } else
-            throw new LibraryException("currency mismatch and no conversion specified"); // TODO: message
+            throw new LibraryException("currency mismatch and no conversion specified");
         return this;
     }
 
@@ -241,7 +241,7 @@ public class Money implements Cloneable {
             tmp.convertTo(currency_);
             this.subAssign(tmp);
         } else
-            throw new LibraryException("currency mismatch and no conversion specified"); // TODO: message
+            throw new LibraryException("currency mismatch and no conversion specified");
         return this;
     }
 
@@ -273,7 +273,7 @@ public class Money implements Cloneable {
             tmp.convertTo(this.currency());
             return this.div(tmp);
         } else
-            throw new LibraryException("currency mismatch and no conversion specified"); // TODO: message
+            throw new LibraryException("currency mismatch and no conversion specified");
     }
 
     /**
@@ -297,7 +297,7 @@ public class Money implements Cloneable {
             tmp.convertTo(this.currency());
             return this.equals(tmp);
         } else
-            throw new LibraryException("currency mismatch and no conversion specified"); // TODO: message
+            throw new LibraryException("currency mismatch and no conversion specified");
     }
 
     public boolean less(final Money money) {
@@ -317,7 +317,7 @@ public class Money implements Cloneable {
             tmp.convertTo(currency());
             return this.less(tmp);
         } else
-            throw new LibraryException("currency mismatch and no conversion specified"); // TODO: message
+            throw new LibraryException("currency mismatch and no conversion specified");
     }
 
     public boolean lessEquals(final Money money) {
@@ -336,7 +336,7 @@ public class Money implements Cloneable {
             tmp.convertTo(this.currency());
             return this.lessEquals(tmp);
         } else
-            throw new LibraryException("currency mismatch and no conversion specified"); // TODO: message
+            throw new LibraryException("currency mismatch and no conversion specified");
     }
 
     public boolean close(final Money money, /* Size */final int n) {
@@ -353,7 +353,7 @@ public class Money implements Cloneable {
             tmp.convertTo(this.currency());
             return this.close(tmp, n);
         } else
-            throw new LibraryException("currency mismatch and no conversion specified"); // TODO: message
+            throw new LibraryException("currency mismatch and no conversion specified");
     }
 
     public boolean close_enough(final Money money, /* Size */final int n) {
@@ -371,7 +371,7 @@ public class Money implements Cloneable {
             tmp.convertTo(currency());
             return this.close_enough(tmp, n);
         } else
-            throw new LibraryException("currency mismatch and no conversion specified"); // TODO: message
+            throw new LibraryException("currency mismatch and no conversion specified");
     }
 
     //

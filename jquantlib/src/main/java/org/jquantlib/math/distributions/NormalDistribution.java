@@ -77,7 +77,7 @@ public class NormalDistribution implements Derivative {
      * @param sigma
      */
     public NormalDistribution(final double average, final double sigma) {
-        QL.require(sigma > 0.0, "sigma must be greater than 0.0"); // TODO: message
+        QL.require(sigma > 0.0, "sigma must be greater than 0.0");
 
         this.average = average;
         this.sigma = sigma;

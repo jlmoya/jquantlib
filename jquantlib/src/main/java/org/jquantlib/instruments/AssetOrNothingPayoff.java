@@ -99,7 +99,7 @@ public final class AssetOrNothingPayoff extends StrikedTypePayoff {
         else if ( type == Option.Type.Put )
             return (strike - price > 0.0) ? price : 0.0;
         else
-            throw new LibraryException("unknown/illegal option type"); // TODO: message
+            throw new LibraryException("unknown/illegal option type");
     }
 
     //

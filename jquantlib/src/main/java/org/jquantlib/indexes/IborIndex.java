@@ -97,7 +97,7 @@ public class IborIndex extends InterestRateIndex {
         case Years:
             return BusinessDayConvention.ModifiedFollowing;
         default:
-            throw new LibraryException("invalid time units"); // TODO: message
+            throw new LibraryException("invalid time units");
         }
     }
 
@@ -117,7 +117,7 @@ public class IborIndex extends InterestRateIndex {
         case Years:
             return BusinessDayConvention.ModifiedFollowing;
         default:
-            throw new LibraryException("invalid time units"); // TODO: message
+            throw new LibraryException("invalid time units");
         }
     }
 
@@ -133,7 +133,7 @@ public class IborIndex extends InterestRateIndex {
         case Years:
             return true;
         default:
-            throw new LibraryException("invalid time units");  // TODO: message
+            throw new LibraryException("invalid time units");
         }
     }
 
@@ -149,7 +149,7 @@ public class IborIndex extends InterestRateIndex {
         case Years:
             return true;
         default:
-            throw new LibraryException("invalid time units");  // TODO: message
+            throw new LibraryException("invalid time units");
         }
     }
 
@@ -162,7 +162,7 @@ public class IborIndex extends InterestRateIndex {
         case Years:
             return BusinessDayConvention.ModifiedFollowing;
         default:
-            throw new LibraryException("invalid time units"); // TODO: message
+            throw new LibraryException("invalid time units");
         }
     }
 
@@ -175,7 +175,7 @@ public class IborIndex extends InterestRateIndex {
         case Years:
             return true;
         default:
-            throw new LibraryException("invalid time units"); // TODO: message
+            throw new LibraryException("invalid time units");
         }
     }
 
@@ -203,7 +203,7 @@ public class IborIndex extends InterestRateIndex {
 
     @Override
     protected double forecastFixing(final Date fixingDate) {
-        QL.require(!termStructure.empty(), "no forecasting term structure set to " + name());  // TODO: message
+        QL.require(!termStructure.empty(), "no forecasting term structure set to " + name());
         final Date fixingValueDate = valueDate(fixingDate);
         final Date endValueDate = maturityDate(fixingValueDate);
         final double fixingDiscount = termStructure.currentLink().discount(fixingValueDate);

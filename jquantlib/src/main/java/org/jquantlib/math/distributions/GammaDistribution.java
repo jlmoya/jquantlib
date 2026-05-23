@@ -63,7 +63,7 @@ public class GammaDistribution implements Ops.DoubleOp {
      * @throws ArithmeticException if <code>a_</code> is smaller than 0.00
      */
     public GammaDistribution(final double a) {
-        QL.require(a >= 0.0, "invalid parameter for gamma distribution"); // TODO: message
+        QL.require(a >= 0.0, "invalid parameter for gamma distribution");
         this.a = a;
     }
 
@@ -126,7 +126,7 @@ public class GammaDistribution implements Ops.DoubleOp {
             }
         }
 
-        throw new ArithmeticException(ACCURACY_NOT_REACHED); // TODO: message
+        throw new ArithmeticException(ACCURACY_NOT_REACHED);
     }
 
 }

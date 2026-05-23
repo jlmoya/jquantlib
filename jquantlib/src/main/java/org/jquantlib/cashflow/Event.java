@@ -178,7 +178,7 @@ public abstract class Event implements Observable, PolymorphicVisitable {
         if ( v != null ) {
             v.visit(this);
         } else {
-            throw new LibraryException("null event visitor"); // TODO: message
+            throw new LibraryException("null event visitor");
         }
     }
 

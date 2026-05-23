@@ -97,7 +97,7 @@ public class SimpleQuote extends Quote {
 
     @Override
     public final double value() /* @ReadOnly */ {
-        QL.require(isValid(), "invalid simple quote: no value available"); // TODO: message
+        QL.require(isValid(), "invalid simple quote: no value available");
         return value;
     }
 
