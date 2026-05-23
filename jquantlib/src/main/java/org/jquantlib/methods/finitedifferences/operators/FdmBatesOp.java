@@ -193,7 +193,26 @@ public class FdmBatesOp implements FdmLinearOpComposite {
 
     @Override
     public Matrix toMatrix() {
-        throw new UnsupportedOperationException("FdmBatesOp.toMatrix() not implemented; use toMatrixDecomp()");
+        // DESIGN-INTENT (matches C++ v1.42.1):
+        // The Bates operator's jump-integro term is a dense integral
+        // operator (Gauss-Hermite quadrature over a Gaussian jump kernel)
+        // with no sparse-matrix representation. Consequently neither
+        // C++ FdmBatesOp::toMatrixDecomp() nor toMatrix() can materialize
+        // the operator: C++ throws QL_FAIL("not implemented") in
+        // toMatrixDecomp() and the inherited
+        // FdmLinearOpComposite::toMatrix() (which calls toMatrixDecomp())
+        // propagates the same failure.
+        // Java preserves this behavior: callers that need a matrix view
+        // must materialize integro(.) separately as a dense N x N operator
+        // by repeatedly applying it to unit vectors. There is no
+        // toMatrixDecomp() short-circuit because the jump term mixes the
+        // log-spot direction across all variance rows.
+        throw new UnsupportedOperationException(
+                "FdmBatesOp.toMatrix(): not implemented (design-intent, "
+                        + "matches C++ v1.42.1). The Gauss-Hermite jump-"
+                        + "integro term has no sparse-matrix form; use "
+                        + "apply(.) directly or materialize via unit-vector "
+                        + "probes.");
     }
 
     //
@@ -202,6 +221,9 @@ public class FdmBatesOp implements FdmLinearOpComposite {
 
     @Override
     public List< Matrix > toMatrixDecomp() {
+        // DESIGN-INTENT (matches C++ v1.42.1 FdmBatesOp::toMatrixDecomp,
+        // which is QL_FAIL("not implemented")). See toMatrix() for the
+        // rationale: the jump-integro term has no sparse decomposition.
         throw new UnsupportedOperationException("not implemented");
     }
 
