@@ -194,8 +194,6 @@ public class LUDecomposition {
      *
      * @return piv
      */
-    //FIXME: code review
-    //FIXME: should return ArrayInt (array of integers) instead
     public int[] getPivot() {
         final int[] p = new int[m];
         System.arraycopy(piv, 0, p, 0, m);

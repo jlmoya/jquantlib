@@ -176,9 +176,10 @@ public abstract class Cells< T extends Address > implements Cloneable {
         return cols;
     }
 
+    /** Alias for {@link #columns()}; widely used in the codebase. */
     public final int cols() {
         return cols;
-    } // FIXME: remove this
+    }
 
     public final int size() {
         return size;

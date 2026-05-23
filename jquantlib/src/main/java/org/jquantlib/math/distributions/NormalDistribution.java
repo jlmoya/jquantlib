@@ -39,8 +39,8 @@ public class NormalDistribution implements Derivative {
     // protected fields
     //
 
-    private final double normalizationFactor; // FIXME: code review
-    private final double denominator; // FIXME: code review
+    private final double normalizationFactor;
+    private final double denominator;
 
     //
     // private fields

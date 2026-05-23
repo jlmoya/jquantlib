@@ -61,11 +61,9 @@ public class SteepestDescent extends LineSearchBasedMethod {
                 throw new ArithmeticException("line search failed");
             // End
             end = endCriteria.get(iterationNumber, stationaryStateIterationNumber_,
-                    true, //FIXME: it should be in the problem
+                    true,
                     P.functionValue(), Math.sqrt(P.gradientNormValue()), lineSearch_.lastFunctionValue(),
                     Math.sqrt(lineSearch_.lastGradientNorm2()), ecType
-                    //FIXME: it's never been used! ???
-                    // , normdiff
             );
 
             // Updates

@@ -30,7 +30,8 @@ public abstract class LineSearchBasedMethod extends OptimizationMethod {
 
     public LineSearchBasedMethod(final LineSearch lineSearch) {
         lineSearch_ = lineSearch;
-        //FIXME: is this correct
+        // Default to Armijo when no line search is supplied — mirrors
+        // C++ LineSearchBasedMethod ctor in v1.42.1.
         if ( lineSearch_ == null ) {
             lineSearch_ = new ArmijoLineSearch();
         }

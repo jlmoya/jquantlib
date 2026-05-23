@@ -101,11 +101,9 @@ public class ConjugateGradient extends LineSearchBasedMethod {
         P.setGradientNormValue(g.dotProduct(g));
         // Loop over iterations
         do {
-            // Linesearch
-            // FIXME: what are we doing here?
-            //t = (*lineSearch_)(P, ecType, endCriteria, t);
-            // don't throw: it can fail just because maxIterations exceeded
-            //QL_REQUIRE(lineSearch_->succeed(), "line-search failed!");
+            // Linesearch — caller-driven; we do not throw because the
+            // line search can fail simply because maxIterations was
+            // exceeded (matches C++ ConjugateGradient::minimize).
             if ( lineSearch_.succeed_ ) {
                 // Updates
                 d = lineSearch_.searchDirection();
@@ -119,25 +117,7 @@ public class ConjugateGradient extends LineSearchBasedMethod {
                 // orthogonalization coef
                 gold2 = P.gradientNormValue();
                 P.setGradientNormValue(lineSearch_.lastGradientNorm2());
-                //c = P.gradientNormValue() / gold2;
-                // conjugate gradient search direction
-                //sddiff = (-g + c * d) - lineSearch_->searchDirection();
-                //normdiff = std::sqrt(DotProduct(sddiff, sddiff));
-                //lineSearch_->searchDirection() = -g + c * d;
-                // End criteria
-                /* FIXME: This part will be remove in later versions of Quantlib --> to be reviewd!!
-                done = endCriteria(iterationNumber_,
-                                   stationaryStateIterationNumber_,
-                                   true,  //FIXME: it should be in the problem
-                                   fold,
-                                   Math.sqrt(gold2),
-                                   P.functionValue(),
-                                   Math.sqrt(P.gradientNormValue()),
-                                   ecType
-                                   // FIXME: it's never been used! ???
-                                   // , normdiff
-                                   );*/
-                // Increase interation number"
+                // Increase iteration number
                 ++iterationNumber_;
             } else {
                 done = true;

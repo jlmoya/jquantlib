@@ -33,7 +33,6 @@ import org.jquantlib.lang.annotation.NonNegative;
  *
  * @author Richard Gomes
  */
-//FIXME: code review
 final public class Closeness {
 
     //

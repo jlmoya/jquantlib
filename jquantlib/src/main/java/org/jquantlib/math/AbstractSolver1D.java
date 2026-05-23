@@ -27,7 +27,6 @@ import org.jquantlib.QL;
 /**
  * @author <Richard Gomes>
  */
-//FIXME: refactor package "solvers1d"
 abstract public class AbstractSolver1D< F extends Ops.DoubleOp > {
 
     //
@@ -114,7 +113,7 @@ abstract public class AbstractSolver1D< F extends Ops.DoubleOp > {
 
         evaluationNumber = 2;
         while ( evaluationNumber <= maxEvaluations ) {
-            if ( fxMin * fxMax <= 0.0 ) {//FIXME avoid product to check signs
+            if ( fxMin * fxMax <= 0.0 ) {
                 if ( fxMin == 0.0 )
                     return xMin;
                 if ( fxMax == 0.0 )
@@ -141,7 +140,6 @@ abstract public class AbstractSolver1D< F extends Ops.DoubleOp > {
             evaluationNumber++;
         }
 
-        //FIXME is it so exceptional, should we return s success/fail flag?
         throw new ArithmeticException("unable to bracket root after function evaluation");
     }
 
@@ -162,6 +160,7 @@ abstract public class AbstractSolver1D< F extends Ops.DoubleOp > {
      * @return a zero of a function
      */
     public double solve(final F f, double accuracy, final double guess, final double xMin, final double xMax) {
+        // TODO: Design by Contract? http://bugs.jquantlib.org/view.php?id=291
         QL.require(accuracy > 0.0, "accuracy must be positive");
         QL.require(xMin < xMax, "invalid range: xMin >= xMax");
         QL.require(!lowerBoundEnforced || xMin >= lowerBound, "xMin < enforced low bound");

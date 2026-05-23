@@ -58,7 +58,6 @@ import org.jquantlib.lang.exceptions.LibraryException;
  * @note This class is adapted from JAMA
  * @see <a href="http://math.nist.gov/javanumerics/jama/">JAMA</a>
  */
-// FIXME: http://bugs.jquantlib.org/view.php?id=340
 @QualityAssurance( quality = Quality.Q1_TRANSLATION, version = Version.OTHER, reviewers = { "Richard Gomes" } )
 public class CholeskyDecomposition {
 

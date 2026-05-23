@@ -248,7 +248,5 @@ public class Simplex extends OptimizationMethod {
                 return EndCriteria.Type.StationaryFunctionValue;
             }
         } while ( true );
-        //FIXME: code review
-        //-- throw new LibraryException("optimization failed: unexpected behaviour");
     }
 }

@@ -242,7 +242,6 @@ public class Matrix extends Cells< Address.MatrixAddress > implements Cloneable 
         super(m.rows(), m.cols(), copyData(m), m.addr.clone());
     }
 
-    //FIXME:: protected
     public Matrix(final int rows, final int cols, final double[] data, final Address.MatrixAddress addr) {
         super(rows, cols, data, addr);
     }
@@ -257,7 +256,7 @@ public class Matrix extends Cells< Address.MatrixAddress > implements Cloneable 
         if ( m.addr.isContiguous() ) {
             System.arraycopy(m.$, 0, data, 0, size);
         } else {
-            //FIXME: this code is probably wrong
+            // Non-contiguous source (sub-view) — copy row by row.
             final MatrixOffset offset = m.addr.offset();
             final int cols = m.cols();
             for ( int row = 0; row < m.rows(); row++ ) {

@@ -60,7 +60,6 @@ public class ArmijoLineSearch extends LineSearch {
         final Constraint constraint = P.constraint();
         succeed_ = true;
         boolean maxIter = false;
-        //FIXME: check this initialization
         double qtold = t_ini;
         double t = t_ini;
         int loopNumber = 0;
