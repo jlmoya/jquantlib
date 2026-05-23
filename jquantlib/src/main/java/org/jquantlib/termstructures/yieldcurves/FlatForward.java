@@ -201,10 +201,8 @@ public class FlatForward extends AbstractYieldTermStructure {
      * @see Observer#update(Observable, Object)
      */
     @Override
-    //XXX::OBS public void update(final Observable o, final Object arg) {
     public void update() {
         updateRate();
-        //XX::OBS super.update(o, arg);
         super.update();
     }
 

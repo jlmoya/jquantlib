@@ -95,7 +95,6 @@ public class SampledCurve implements Cloneable {
 
     @Override
     public SampledCurve clone() {
-        //XXX final SampledCurve result = new SampledCurve(this);
         try {
             return (SampledCurve) super.clone();
         } catch ( final CloneNotSupportedException e ) {

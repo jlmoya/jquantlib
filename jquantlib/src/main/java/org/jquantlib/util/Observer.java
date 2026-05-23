@@ -44,7 +44,6 @@ public interface Observer {
      * @param o
      * @param arg
      */
-    //XXX::OBS public void update(Observable o, Object arg);
     void update();
 
     /**

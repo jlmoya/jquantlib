@@ -74,8 +74,6 @@ public class BlackKarasinski extends OneFactorModel implements TermStructureCons
         // seems like we should have this.termStructure
 
         termStructure.addObserver(this);
-        //XXX:registerWith
-        //registerWith(termStructure);
     }
 
     // Internal Parameter accessors (Phase 2b WI-3 indirection — replaces

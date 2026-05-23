@@ -112,9 +112,7 @@ public abstract class GenericEngine< A extends Instrument.Arguments, R extends I
     //
 
     @Override
-    //XXX::OBS public void update(final Observable o, final Object arg) {
     public void update() {
-        //XXX:OBS update();
         notifyObservers();
     }
 

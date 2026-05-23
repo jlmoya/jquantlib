@@ -129,11 +129,9 @@ public class WeakReferenceObservable extends DefaultObservable {
         }
 
         @Override
-        //XXX::OBS public void update(final Observable o, final Object arg) {
         public void update() {
             final Observer referent = get();
             if ( referent != null )
-                //XXX::OBS referent.update(o, arg);
                 referent.update();
             else
                 deleteWeakReference(this);

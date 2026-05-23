@@ -122,10 +122,6 @@ public class FDDividendAmericanEngine
         super.impl.reset();
     }
 
-    //    @Override
-    //XXX::OBS    public void update(final Observable o, final Object arg) {
-    //        super.impl.update(o, arg);
-    //    }
     @Override
     public void update() {
         super.impl.update();

@@ -137,7 +137,6 @@ public abstract class Instrument extends LazyObject {
         this.engine = engine;
         if ( this.engine != null )
             this.engine.addObserver(this);
-        //XXX:OBS update(this, null);
         update();
     }
 

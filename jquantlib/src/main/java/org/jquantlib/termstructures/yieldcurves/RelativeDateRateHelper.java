@@ -53,19 +53,6 @@ public abstract class RelativeDateRateHelper extends RateHelper {
      */
     protected boolean updateDates = true;
 
-    //    //
-    //    // protected constructors
-    //    //
-    //
-    //    protected RelativeDateRateHelper() {
-    //        super();
-    //
-    //        this.evaluationDate = new Settings().evaluationDate();
-    //        this.evaluationDate.addObserver(this);
-    //        // XXX:registerWith
-    //        //registerWith(this.evaluationDate);
-    //    }
-
     //
     // public constructors
     //
@@ -106,15 +93,6 @@ public abstract class RelativeDateRateHelper extends RateHelper {
         this.evaluationDate = live.clone();
     }
 
-    //XXX
-    //    public RelativeDateRateHelper(final Handle<Quote> quote, final T termStructure, final Date earliestDate, final Date latestDate) {
-    //        super(quote, termStructure, earliestDate, latestDate);
-    //        this.evaluationDate = new Settings().evaluationDate();
-    //        this.evaluationDate.addObserver(this);
-    //        // XXX:registerWith
-    //        //registerWith(this.evaluationDate);
-    //    }
-
     //
     // protected abstract methods
     //
@@ -126,7 +104,6 @@ public abstract class RelativeDateRateHelper extends RateHelper {
     //
 
     @Override
-    //XXX::OBS public void update(final Observable o, final Object arg) {
     public void update() {
         // Mirrors C++ v1.42.1 RelativeDateRateHelper::update() (ratehelpers.cpp).
         // When updateDates_ is false (date-based ctors), absolute caller-supplied

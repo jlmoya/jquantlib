@@ -35,8 +35,6 @@ public abstract class IborCouponPricer extends FloatingRateCouponPricer {
     public IborCouponPricer(final Handle< OptionletVolatilityStructure > capletVol) {
         this.capletVol_ = capletVol;
         this.capletVol_.addObserver(this);
-        //XXX:registerWith
-        //registerWith(this.capletVol_);
     }
 
     public Handle< OptionletVolatilityStructure > capletVolatility() {

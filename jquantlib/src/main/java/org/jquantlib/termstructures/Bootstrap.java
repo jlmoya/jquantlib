@@ -29,10 +29,4 @@ public interface Bootstrap< Curve extends PiecewiseYieldCurve > {
     void calculate();
 
     void setup(Curve curve);
-    //XXX
-    //    public void setup(
-    //            final YieldTermStructure termStructure,
-    //            final Bootstrapable bootstrapable,
-    //            final RateHelper[] instruments,
-    //            final BootstrapTraits traits);
 }

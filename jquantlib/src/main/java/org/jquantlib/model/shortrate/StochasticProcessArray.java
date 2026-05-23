@@ -57,8 +57,6 @@ public class StochasticProcessArray extends StochasticProcess {
         this.sqrtCorrelation_ = PseudoSqrt.pseudoSqrt(correlation, SalvagingAlgorithm.Spectral);
         for ( int i = 0; i < processes_.size(); i++ ) {
             processes_.get(i).addObserver(this);
-            //XXX:registerWith
-            //registerWith(processes_.get(i));
         }
     }
 

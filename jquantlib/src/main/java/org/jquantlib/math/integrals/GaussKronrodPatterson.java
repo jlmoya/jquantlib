@@ -49,7 +49,6 @@ import org.jquantlib.math.transcendental.JQuantMath;
  * @deprecated
  */
 @Deprecated
-//XXX: remove this class
 public class GaussKronrodPatterson extends Integrator {
 
     //

@@ -69,11 +69,6 @@ public interface Interpolation2D extends Extrapolator, Ops.BinaryDoubleOp {
 
     double yMax() /*@ReadOnly*/;
 
-    //XXX
-    //  public Array xValues() /*@ReadOnly*/;
-    //  public Array yValues() /*@ReadOnly*/;
-    //  public Matrix zData() /*@ReadOnly*/;
-
     int locateX(double x) /*@ReadOnly*/;
 
     int locateY(double y) /*@ReadOnly*/;

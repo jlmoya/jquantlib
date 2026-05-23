@@ -142,7 +142,7 @@ public abstract class StochasticProcess implements Observable, Observer {
      * overridden in derived classes which want to hard-code a particular discretization.
      */
     public Matrix stdDeviation(final /*@Time*/ double t0, final Array x0, final /*@Time*/ double dt) /*@ReadOnly*/ {
-        return discretization.diffusionDiscretization(this, t0, x0, dt); // XXX
+        return discretization.diffusionDiscretization(this, t0, x0, dt);
     }
 
     /**
@@ -151,7 +151,7 @@ public abstract class StochasticProcess implements Observable, Observer {
      * derived classes which want to hard-code a particular discretization.
      */
     public Matrix covariance(final /*@Time*/ double t0, final Array x0, final /*@Time*/ double dt) /*@ReadOnly*/ {
-        return discretization.covarianceDiscretization(this, t0, x0, dt); // XXX
+        return discretization.covarianceDiscretization(this, t0, x0, dt);
     }
 
     /**
@@ -178,17 +178,6 @@ public abstract class StochasticProcess implements Observable, Observer {
     // implements Observer
     //
 
-    //XXX:registerWith
-    //    @Override
-    //    public void registerWith(final Observable o) {
-    //        o.addObserver(this);
-    //    }
-    //
-    //    @Override
-    //    public void unregisterWith(final Observable o) {
-    //        o.deleteObserver(this);
-    //    }
-
     /**
      * Returns the time value corresponding to the given date in the reference system of the stochastic process.
      *
@@ -204,7 +193,6 @@ public abstract class StochasticProcess implements Observable, Observer {
     //
 
     @Override
-    //XXX::OBS public void update(final Observable o, final Object arg) {
     public void update() {
         notifyObservers();
     }

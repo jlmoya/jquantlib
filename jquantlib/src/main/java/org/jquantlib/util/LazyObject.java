@@ -210,17 +210,6 @@ public abstract class LazyObject implements Observer, Observable {
     // implements Observer
     //
 
-    // XXX:registerWith
-    //    @Override
-    //    public void registerWith(final Observable o) {
-    //        o.addObserver(this);
-    //    }
-    //
-    //    @Override
-    //    public void unregisterWith(final Observable o) {
-    //        o.deleteObserver(this);
-    //    }
-
     /**
      * This method performs all needed calculations by calling the <i><b>performCalculations</b></i> method.
      * <p>
@@ -260,7 +249,6 @@ public abstract class LazyObject implements Observer, Observable {
     //
 
     @Override
-    //XXX::OBS public void update(final Observable o, final Object arg) {
     public void update() {
         // Mirrors C++ LazyObject::update() (ql/patterns/lazyobject.hpp).
         // Guard against recursive re-entry (observer cycles created during
@@ -285,7 +273,6 @@ public abstract class LazyObject implements Observer, Observable {
                 failed = false;
                 // observers don't expect notifications from frozen objects
                 if ( !frozen )
-                    //XXX::OBS notifyObservers(arg);
                     notifyObservers();
             } else {
                 calculated = false;

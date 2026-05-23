@@ -109,10 +109,6 @@ public abstract class Forward extends Instrument {
         this.payoff = (ForwardTypePayoff) payoff;
         this.valueDate = valueDate;
 
-        //XXX
-        //registerWith(Settings::instance().evaluationDate());
-        //registerWith(discountCurve_);
-
         new Settings().evaluationDate().addObserver(this);
         discountCurve.addObserver(this);
     }

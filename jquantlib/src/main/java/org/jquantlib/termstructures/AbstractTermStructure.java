@@ -378,17 +378,6 @@ public abstract class AbstractTermStructure implements TermStructure {
     // implements Observer
     //
 
-    //XXX:registerWith
-    //    @Override
-    //    public void registerWith(final Observable o) {
-    //        o.addObserver(this);
-    //    }
-    //
-    //    @Override
-    //    public void unregisterWith(final Observable o) {
-    //        o.deleteObserver(this);
-    //    }
-
     @Override
     public void enableExtrapolation() {
         delegatedExtrapolator.enableExtrapolation();
@@ -399,7 +388,6 @@ public abstract class AbstractTermStructure implements TermStructure {
     //
 
     @Override
-    //XXX::OBS public void update(final Observable o, final Object arg) {
     public void update() {
         // Re-entrancy guard — mirrors C++ LazyObject::update() updating_ flag.
         // Breaks circular observer chains created during inflation bootstrap:

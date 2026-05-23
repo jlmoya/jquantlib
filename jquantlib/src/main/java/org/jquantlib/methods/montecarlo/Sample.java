@@ -46,14 +46,18 @@ public final class Sample< T > {
 
     /**
      * This field represents the value held by this Sample.
+     *
+     * <p>Public read access via the getter; package-private write access exposed to friend
+     * classes (Java analogue of C++ {@code friend} on {@code ql/methods/montecarlo/sample.hpp}).
      */
-    //XXX This field has public read access via getter but can be written by friend classes (same package)
     private T value;
 
     /**
      * This field represents the weight held by this Sample.
+     *
+     * <p>Public read access via the getter; package-private write access exposed to friend
+     * classes (Java analogue of C++ {@code friend} on {@code ql/methods/montecarlo/sample.hpp}).
      */
-    //XXX This field has public read access via getter but can be written by friend classes (same package)
     private double weight;
 
     //

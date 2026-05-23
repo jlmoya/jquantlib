@@ -252,10 +252,8 @@ public class GeneralizedBlackScholesProcess extends StochasticProcess1D {
     //
 
     @Override
-    //XXX::OBS public final void update(final Observable o, final Object arg) {
     public final void update() {
         updated = false;
-        //XXX::OBS super.update(o, arg);
         super.update();
     }
 

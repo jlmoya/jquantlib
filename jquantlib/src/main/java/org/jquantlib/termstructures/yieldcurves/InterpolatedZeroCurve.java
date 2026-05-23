@@ -187,11 +187,6 @@ public class InterpolatedZeroCurve< I extends Interpolator > extends ZeroYieldSt
         }
     }
 
-    //XXX :: this method is defined in QuantLib/C++ but it is never called
-    //	public double[] zeroRates() {
-    //        return data();
-    //	}
-
     //
     // implements Traits.Curve
     //

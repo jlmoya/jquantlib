@@ -188,43 +188,36 @@ public class Handle< T extends Observable > implements Observable {
 
     @Override
     public final void addObserver(final Observer observer) {
-        //XXX QL.require(observable!=null, EMPTY_HANDLE);
         link.addObserver(observer);
     }
 
     @Override
     public final int countObservers() {
-        //XXX QL.require(observable!=null, EMPTY_HANDLE);
         return link.countObservers();
     }
 
     @Override
     public final void deleteObserver(final Observer observer) {
-        //XXX QL.require(observable!=null, EMPTY_HANDLE);
         link.deleteObserver(observer);
     }
 
     @Override
     public final void notifyObservers() {
-        //XXX QL.require(observable!=null, EMPTY_HANDLE);
         link.notifyObservers();
     }
 
     @Override
     public final void notifyObservers(final Object arg) {
-        //XXX QL.require(observable!=null, EMPTY_HANDLE);
         link.notifyObservers(arg);
     }
 
     @Override
     public final void deleteObservers() {
-        //XXX QL.require(observable!=null, EMPTY_HANDLE);
         link.deleteObservers();
     }
 
     @Override
     public final List< Observer > getObservers() {
-        //XXX QL.require(observable!=null, EMPTY_HANDLE);
         return link.getObservers();
     }
 

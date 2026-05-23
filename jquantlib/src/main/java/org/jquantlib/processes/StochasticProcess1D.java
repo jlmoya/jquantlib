@@ -103,7 +103,7 @@ public abstract class StochasticProcess1D extends StochasticProcess {
      */
     public /*@Expectation*/ double expectation(final /*@Time*/ double t0, final /*@Real*/ double x0,
             final /*@Time*/ double dt) {
-        return apply(x0, discretization1D.driftDiscretization(this, t0, x0, dt)); // XXX
+        return apply(x0, discretization1D.driftDiscretization(this, t0, x0, dt));
     }
 
     /**
@@ -112,7 +112,7 @@ public abstract class StochasticProcess1D extends StochasticProcess {
      * classes which want to hard-code a particular discretization.
      */
     public /*@StdDev*/ double stdDeviation(final /*@Time*/ double t0, final double x0, final /*@Time*/ double dt) {
-        return discretization1D.diffusionDiscretization(this, t0, x0, dt); // XXX
+        return discretization1D.diffusionDiscretization(this, t0, x0, dt);
     }
 
     /**
@@ -121,7 +121,7 @@ public abstract class StochasticProcess1D extends StochasticProcess {
      * want to hard-code a particular discretization.
      */
     public /*@Variance*/ double variance(final /*@Time*/ double t0, final double x0, final /*@Time*/ double dt) {
-        return discretization1D.varianceDiscretization(this, t0, x0, dt); // XXX
+        return discretization1D.varianceDiscretization(this, t0, x0, dt);
     }
 
     /**
@@ -221,13 +221,13 @@ public abstract class StochasticProcess1D extends StochasticProcess {
          * Returns the drift part of the equation, i.e. {@latex$ \mu(t, x_t) }
          */
         /* @Drift */double driftDiscretization(final StochasticProcess1D sp, final/* @Time */double t0,
-                final/* @Real */double x0, final/* @Time */double dt); // XXX
+                final/* @Real */double x0, final/* @Time */double dt);
 
         /**
          * Returns the diffusion part of the equation, i.e. {@latex$ \sigma(t, x_t) }
          */
         /* @Diffusion */double diffusionDiscretization(final StochasticProcess1D sp, final/* @Time */double t0,
-                final/* @Real */double x0, final/* @Time */double dt); // XXX
+                final/* @Real */double x0, final/* @Time */double dt);
 
         /**
          * Returns the variance {@latex$ V(x_ { t_0 + \ Delta t } | x_ { t_0 } = x_0) } of the process after a time interval
@@ -235,7 +235,7 @@ public abstract class StochasticProcess1D extends StochasticProcess {
          * which want to hard-code a particular discretization.
          */
         /* @Variance */double varianceDiscretization(final StochasticProcess1D sp, final/* @Time */double t0,
-                final/* @Real */double x0, final/* @Time */double dt); // XXX
+                final/* @Real */double x0, final/* @Time */double dt);
 
     }
 

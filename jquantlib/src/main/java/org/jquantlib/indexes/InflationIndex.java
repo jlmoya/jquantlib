@@ -145,9 +145,7 @@ public abstract class InflationIndex extends Index implements Observer {
     }
 
     @Override
-    //XXX::OBS public void update(final Observable o, final Object arg) {
     public void update() {
-        //XXX::OBS notifyObservers(arg);
         notifyObservers();
     }
 

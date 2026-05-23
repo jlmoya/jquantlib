@@ -65,7 +65,6 @@ public abstract class OneFactorModel extends ShortRateModel {
     @Override
     public Lattice tree(final TimeGrid grid) /* @ReadOnly */ {
         final TrinomialTree trinomial = new TrinomialTree(dynamics().process(), grid);
-        //XXX return boost::shared_ptr<Lattice>( new ShortRateTree(trinomial, dynamics(), grid) );
         return new ShortRateTree(trinomial, dynamics(), grid);
     }
 

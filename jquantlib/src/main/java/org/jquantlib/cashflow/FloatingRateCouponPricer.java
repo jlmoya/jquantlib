@@ -51,17 +51,6 @@ public abstract class FloatingRateCouponPricer implements Observer, Observable {
     // implements Observer
     //
 
-    //XXX:registerWith
-    //    @Override
-    //    public void registerWith(final Observable o) {
-    //        o.addObserver(this);
-    //    }
-    //
-    //    @Override
-    //    public void unregisterWith(final Observable o) {
-    //        o.deleteObserver(this);
-    //    }
-
     @Override
     public void update() {
         notifyObservers();

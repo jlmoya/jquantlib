@@ -142,8 +142,6 @@ public class CappedFlooredCoupon extends FloatingRateCoupon {
         }
 
         this.underlying_.addObserver(this);
-        //XXX:registerWith
-        // registerWith(underlying);
     }
 
     @Override

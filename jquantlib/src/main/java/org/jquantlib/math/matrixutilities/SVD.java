@@ -500,10 +500,6 @@ public class SVD {
         // Populate S matrix
 
         for ( int i = 0; i < n; i++ ) {
-            // XXX: not needed
-            // for (int j = 0; j < n; j++) {
-            // S.data[S.addr.op(i,j)] = 0.0;
-            // }
             S.$[S.addr.op(i, i)] = s.$[s.addr.op(i)];
         }
     }

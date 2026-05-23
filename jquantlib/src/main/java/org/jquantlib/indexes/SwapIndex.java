@@ -43,8 +43,6 @@ public class SwapIndex extends InterestRateIndex {
         this.fixedLegConvention = fixedLegConvention;
 
         this.iborIndex.addObserver(this);
-        //XXX:registerWith
-        //registerWith(this.iborIndex);
     }
 
     //

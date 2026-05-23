@@ -174,7 +174,6 @@ public class DefaultObservable implements Observable {
      * @param arg
      */
     protected void wrappedNotify(final Observer observer, final Observable observable, final Object arg) {
-        //XXX::OBS observer.update(observable, arg);
         observer.update();
     }
 

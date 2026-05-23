@@ -789,18 +789,6 @@ public class Matrix extends Cells< Address.MatrixAddress > implements Cloneable 
         return (new LUDecomposition(this)).solve(new Identity(rows()));
     }
 
-    //XXX
-    //    /**
-    //     * Solve A*X = B
-    //     *
-    //     * @param m right hand side
-    //     * @return solution if A is square, least squares solution otherwise
-    //     */
-    //    public Matrix solve (final Matrix m) {
-    //       return (rows() == cols()
-    //               ? (new LUDecomposition(this)).solve(m)
-    //                       : (new QRDecomposition(this, true)).solve(m));
-    //    }
 
     //
     //  Range
@@ -1035,7 +1023,6 @@ public class Matrix extends Cells< Address.MatrixAddress > implements Cloneable 
      */
     @Override
     public Matrix clone() {
-        //XXX return new Matrix(this);
         final Matrix clone = (Matrix) super.clone();
         clone.$ = copyData(this);
         clone.addr = new DirectMatrixAddress(clone.$, 0, this.rows, null, 0, this.cols, this.flags(), true, this.rows,
@@ -1084,29 +1071,6 @@ public class Matrix extends Cells< Address.MatrixAddress > implements Cloneable 
     public int offset() {
         return addr.isFortran() ? 1 : 0;
     }
-
-    //XXX
-    //  //
-    //  // static methods
-    //  //
-    //
-    //    /**
-    //     * sqrt(a^2 + b^2) without under/overflow.
-    //     */
-    //    //TODO: verify if it can be replaced by Math.hypot
-    //    public static double hypot(final double a, final double b) {
-    //        double r;
-    //        if (Math.abs(a) > Math.abs(b)) {
-    //            r = b / a;
-    //            r = Math.abs(a) * Math.sqrt(1 + r * r); Math.h
-    //        } else if (b != 0) {
-    //            r = a / b;
-    //            r = Math.abs(b) * Math.sqrt(1 + r * r);
-    //        } else {
-    //            r = 0.0;
-    //        }
-    //        return r;
-    //    }
 
     //
     // private inner classes

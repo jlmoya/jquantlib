@@ -250,12 +250,6 @@ public abstract class CalibratedModel implements Observer, Observable {
     // implements Observer
     //
 
-    //    @Override
-    //XXX::OBS    public void update(final Observable o, final Object arg) {
-    //        generateArguments();
-    //        notifyObservers();
-    //    }
-
     protected void generateArguments() {
         // nothing
     }

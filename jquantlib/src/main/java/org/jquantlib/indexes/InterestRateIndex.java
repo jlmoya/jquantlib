@@ -197,21 +197,8 @@ public abstract class InterestRateIndex extends Index implements Observer {
     // implements Observer
     //
 
-    //XXX:registerWith
-    //    @Override
-    //    public void registerWith(final Observable o) {
-    //        o.addObserver(this);
-    //    }
-    //
-    //    @Override
-    //    public void unregisterWith(final Observable o) {
-    //        o.deleteObserver(this);
-    //    }
-
     @Override
-    //XXX::OBS public void update(final Observable o, final Object arg) {
     public void update() {
-        //XXX::OBS notifyObservers(arg);
         notifyObservers();
     }
 

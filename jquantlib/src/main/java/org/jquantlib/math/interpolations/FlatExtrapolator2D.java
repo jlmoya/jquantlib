@@ -46,15 +46,6 @@ public class FlatExtrapolator2D extends AbstractInterpolation2D {
             calculate();
         }
 
-        //XXX
-        //        //
-        //        // public methods
-        //        //
-        //
-        //        public void update() {
-        //            decoratedInterp_.update();
-        //        }
-
         //
         // overrides AbstractInterpolation2D.Impl
         //

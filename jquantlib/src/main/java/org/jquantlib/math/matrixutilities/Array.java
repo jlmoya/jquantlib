@@ -243,7 +243,6 @@ public class Array extends Cells< Address.ArrayAddress > implements Cloneable, I
 
     @Override
     public Array clone() {
-        //XXX return new Array(this, this.flags());
         final Array clone = (Array) super.clone();
         clone.$ = new double[this.size()];
         clone.addr = new DirectArrayRowAddress(clone.$, 0, null, 0, this.size(), this.flags(), true, 1, this.size());

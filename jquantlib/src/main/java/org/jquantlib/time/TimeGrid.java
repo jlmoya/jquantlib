@@ -52,9 +52,9 @@ public class TimeGrid {
     //
 
     public TimeGrid() {
-        this.times = null; //XXX  new Array();
-        this.dt = null; //XXX: new Array();
-        this.mandatoryTimes = null; //XXX: new Array();
+        this.times = null;
+        this.dt = null;
+        this.mandatoryTimes = null;
     }
 
     /**
@@ -147,7 +147,6 @@ public class TimeGrid {
     public TimeGrid(@Time @NonNegative final Array mandatoryTimes) {
         QL.require(mandatoryTimes.size() > 0, "empty time sequence");
 
-        //XXX this.mandatoryTimes = mandatoryTimes.clone();
         this.mandatoryTimes = mandatoryTimes;
         this.mandatoryTimes.sort();
 

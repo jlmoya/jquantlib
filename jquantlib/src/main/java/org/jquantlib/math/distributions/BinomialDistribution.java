@@ -154,7 +154,6 @@ public class BinomialDistribution implements Ops.IntToDouble {
      * @param k Number of successful trials
      * @return Math.floor(0.5 + Math.exp(binomialCoefficientLn(n, k)))
      */
-    //XXX
     private double binomialCoefficient(final int n, final int k) {
         return Math.floor(0.5 + Math.exp(binomialCoefficientLn(n, k)));
     }

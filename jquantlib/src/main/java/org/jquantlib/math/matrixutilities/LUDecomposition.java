@@ -166,9 +166,6 @@ public class LUDecomposition {
                     L.$[L.addr.op(i, j)] = LU.$[LU.addr.op(i, j)];
                 } else if ( i == j ) {
                     L.$[L.addr.op(i, j)] = 1.0;
-                    //XXX - not needed
-                    //                } else {
-                    //                    L.data[L.addr.op(i, j)] = 0.0;
                 }
             }
         }
@@ -186,9 +183,6 @@ public class LUDecomposition {
             for ( int j = 0; j < n; j++ ) {
                 if ( i <= j ) {
                     U.$[U.addr.op(i, j)] = LU.$[LU.addr.op(i, j)];
-                    //XXX - not needed
-                    //                } else {
-                    //                    U.data[U.addr.op(i, j)] = 0.0;
                 }
             }
         }
@@ -207,20 +201,6 @@ public class LUDecomposition {
         System.arraycopy(piv, 0, p, 0, m);
         return p;
     }
-
-    //XXX
-    //    /**
-    //     * Return pivot permutation vector as a one-dimensional double array
-    //     *
-    //     * @return (double) piv
-    //     */
-    //    public double[] getDoublePivot() {
-    //        final double[] vals = new double[m];
-    //        for (int i = 0; i < m; i++) {
-    //            vals[i] = piv[i];
-    //        }
-    //        return vals;
-    //    }
 
     /**
      * Determinant
