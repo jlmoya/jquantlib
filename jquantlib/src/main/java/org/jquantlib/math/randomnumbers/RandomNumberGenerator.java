@@ -47,5 +47,4 @@ public interface RandomNumberGenerator {
      */
     /*@UnsignedInt*/ long nextInt32() /*@ReadOnly*/;
 
-    // FIXME: code review:: public boolean allowErrorEstimate(); // FIXME: should declare this method???
 }

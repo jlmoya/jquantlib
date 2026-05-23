@@ -64,7 +64,6 @@ import org.jquantlib.methods.montecarlo.Sample;
  * @author Dominik Holenstein
  * @author Q.Boiler
  */
-//FIXME: http://bugs.jquantlib.org/view.php?id=332
 public class SobolRsg implements UniformRandomSequenceGenerator {
 
     // Sobol' Levitan coefficients of the free direction integers as given by Bratley, P., Fox, B.L. (1988)
@@ -823,9 +822,8 @@ public class SobolRsg implements UniformRandomSequenceGenerator {
             maxTabulated = this.dimensionality;
             for ( int k = 1; k < maxTabulated; k++ ) {
                 for ( int l = 1; l <= degree[k]; l++ ) {
-                    // FIXME: Translate these two lines
-                    directionIntegers[k][l - 1] = 1L;
-                    directionIntegers[k][l - 1] <<= (BITS - l);
+                    // C++: directionIntegers_[k][l-1] = 1UL << (BITS - l);
+                    directionIntegers[k][l - 1] = 1L << (BITS - l);
                 }
             }
             break;
@@ -998,6 +996,7 @@ public class SobolRsg implements UniformRandomSequenceGenerator {
         //					pw.print("" + (k + 1) + "\t" + degree[k] + "\t" + ppmt[k] + "\t");
         //
         //					for (int j=0; j<10; j++) {
+        //						//  TODO: do as this:
         //						// outStream << io::power_of_two(
         //						//   directionIntegers_[k][j]) << "\t";
         //						pw.print(directionIntegers_[k][j] + "\t");

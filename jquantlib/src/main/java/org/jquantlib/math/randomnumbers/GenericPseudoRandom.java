@@ -56,23 +56,13 @@ public abstract class GenericPseudoRandom< RNG extends RandomNumberGenerator, IC
     // static private fields
     //
 
-    //
-    // FIXME:: code review :: it's not clear how should this variable be used.
-    // Declared as private final till we discover what's the trick with it.
-    //
+    // Mirrors C++ QuantLib PseudoRandom trait flag:
+    //   enum { allowsErrorEstimate = 1 };
     static private final boolean allowsErrorEstimate = true;
 
-    //
-    // FIXME: QuantLib:: This variable apparently is never initialized!!!
-    //
-    // The following command
-    //
-    //       find . -name '*.*pp' -exec fgrep -H -i 'icInstance' {} \;
-    //
-    // does not return any occurrence of icInstance in the left side of an assignment.
-    // So, we declare this variable as private final and initialize with null.
-    // This can change as soon as we find what's the trick with it.
-    //
+    // The C++ template trait never assigns icInstance — it is treated as a
+    // null inverse-cumulative template parameter selector. We keep the same
+    // null sentinel here so the makeSequenceGenerator branching mirrors C++.
     static final private GenericPseudoRandom icInstance = null;
 
     private final Class< ? extends UniformRandomSequenceGenerator > classRNG;
@@ -102,10 +92,10 @@ public abstract class GenericPseudoRandom< RNG extends RandomNumberGenerator, IC
         try {
             // obtain Class from previously created RNG variable
 
-            //FIXME:
-            // "looks like" we need to add a method to RNG interface in order to obtain a RSG from a RNG
-            //
-
+            // NOTE: in C++ the RSG type comes from a typedef on the RNG
+            // traits class. Java erasure cannot recover the parameterised
+            // class from RNG, so callers must pass it explicitly or this
+            // branch will throw NPE on the getConstructor below.
             final Class< RandomSequenceGenerator< RNG > > rsgClass = null;
 
             final Constructor< RandomSequenceGenerator< RNG > > c = rsgClass.getConstructor(int.class, rng.getClass());

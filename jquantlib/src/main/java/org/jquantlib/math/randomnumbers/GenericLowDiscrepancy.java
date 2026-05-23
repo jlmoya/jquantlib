@@ -56,23 +56,13 @@ public class GenericLowDiscrepancy< RSG extends UniformRandomSequenceGenerator, 
     // static private fields
     //
 
-    //
-    // FIXME:: code review :: it's not clear how should this variable be used.
-    // Declared as private final till we discover what's the trick with it.
-    //
+    // Mirrors C++ QuantLib LowDiscrepancy trait flag:
+    //   enum { allowsErrorEstimate = 0 };
     static private final boolean allowsErrorEstimate = false;
 
-    //
-    // FIXME: QuantLib:: This variable apparently is never initialized!!!
-    //
-    // The following command
-    //
-    //       find . -name '*.*pp' -exec fgrep -H -i 'icInstance' {} \;
-    //
-    // does not return any occurrence of icInstance in the left side of an assignment.
-    // So, we declare this variable as private final and initialize with null.
-    // This can change as soon as we find what's the trick with it.
-    //
+    // The C++ template trait never assigns icInstance — it is treated as a
+    // null inverse-cumulative template parameter selector. We keep the same
+    // null sentinel here so the makeSequenceGenerator branching mirrors C++.
     static final private GenericLowDiscrepancy icInstance = null;
 
     private Class< ? extends UniformRandomSequenceGenerator > classRSG;

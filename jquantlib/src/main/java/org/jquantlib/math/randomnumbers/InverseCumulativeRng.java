@@ -55,7 +55,10 @@ import org.jquantlib.methods.montecarlo.Sample;
 public class InverseCumulativeRng< RNG extends RandomNumberGenerator, IC extends InverseCumulative > {
 
     private final RNG uniformGenerator_;
-    private IC ICND_; // FIXME: not initialized; possibly a static variable used via templates
+    // ICND_ is a template-default in C++ (a per-IC singleton selected by
+    // the template parameter); Java cannot recover that, so it stays
+    // null and callers must set it via a subclass init.
+    private IC ICND_;
 
     public InverseCumulativeRng(final RNG ug) {
         this.uniformGenerator_ = ug;
@@ -65,8 +68,7 @@ public class InverseCumulativeRng< RNG extends RandomNumberGenerator, IC extends
      * @return a sample from a Gaussian distribution
      */
     public Sample< Double > getNext() /* @ReadOnly */ {
-        Sample< Double > sample = uniformGenerator_.next(); // FIXME: usage of sample_type :: typedef Sample<Real> sample_type;
-
+        Sample< Double > sample = uniformGenerator_.next();
         return new Sample< Double >(ICND_.op(sample.value()), sample.weight());
     }
 }

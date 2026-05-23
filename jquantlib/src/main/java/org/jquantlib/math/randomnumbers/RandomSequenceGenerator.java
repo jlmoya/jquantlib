@@ -50,7 +50,6 @@ import org.jquantlib.methods.montecarlo.Sample;
  * @author Richard Gomes
  * @note Do not use with low-discrepancy sequence generator.
  */
-// FIXME: code review :: possibly rename this class ???
 public class RandomSequenceGenerator< RNG extends RandomNumberGenerator >
         implements UniformRandomSequenceGenerator, RandomSequenceGeneratorIntf {
 

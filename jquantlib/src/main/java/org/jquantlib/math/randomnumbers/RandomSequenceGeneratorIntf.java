@@ -29,9 +29,6 @@ import org.jquantlib.methods.montecarlo.Sample;
  * @author Richard Gomes
  */
 @Deprecated
-// FIXME: code review :: possibly rename this interface ???
-// FIXME:: Should this interface be kept or deleted ???
-// This code is a work in progress and needs code review. [Richard Gomes]
 public interface RandomSequenceGeneratorIntf {
 
     Sample< double[] > nextSequence() /*@ReadOnly*/;
