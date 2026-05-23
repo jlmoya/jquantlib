@@ -112,6 +112,14 @@ public class Vasicek extends OneFactorAffineModel {
         return sigmaParam().get(0.0);
     }
 
+    /**
+     * Initial short rate. Mirrors C++ v1.42.1 vasicek.hpp:58 {@code Real r0() const { return r0_; }}.
+     * Added Phase 2 L3-D for {@link org.jquantlib.pricingengines.vanilla.AnalyticBlackVasicekEngine}.
+     */
+    public /* @Rate */ double r0() /* @ReadOnly */ {
+        return r0_;
+    }
+
     //
     // implements AffineModel
     //
