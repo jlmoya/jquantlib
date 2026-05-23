@@ -32,10 +32,12 @@ package org.jquantlib.testsuite.math.statistics;
 import static org.junit.Assert.assertEquals;
 
 import org.jquantlib.QL;
+import org.jquantlib.math.Closeness;
 import org.jquantlib.math.distributions.CumulativeNormalDistribution;
 import org.jquantlib.math.distributions.InverseCumulativeNormal;
 import org.jquantlib.math.distributions.NormalDistribution;
 import org.jquantlib.math.randomnumbers.SobolRsg;
+import org.jquantlib.math.statistics.GaussianStatsHolder;
 import org.jquantlib.math.statistics.IncrementalStatistics;
 import org.jquantlib.math.statistics.RiskStatistics;
 import org.junit.Test;
@@ -58,21 +60,37 @@ import org.junit.Test;
  * {@code GenericRiskStatistics} (which itself extends {@code GaussianStatistics}),
  * so the {@code gaussian*} entry points are available on both stat objects.
  *
- * <p><b>Known production-side limitations (asserts are commented out, not
- * @Ignore'd, so the rest of the suite keeps running):</b>
- * <ul>
- *   <li>{@code averageShortfall}, {@code shortfall}, {@code regret} and
- *       {@code downsideVariance} sample-based variants use
- *       {@code Bind1stPredicate(target, LessThan)} which evaluates
- *       {@code target < xi} (upper half) instead of the C++ lambda
- *       {@code xi < target} (lower half). This is a real production-side
- *       sign bug to be addressed in a follow-up
- *       {@code align(math.statistics)} commit.</li>
- *   <li>The C++ {@code GenericGaussianStatistics<StatsHolder>} sub-test
- *       (riskstats.cpp lines 343-351) is omitted: Java's
- *       {@code GenericGaussianStatistics} does not currently accept a
- *       {@code StatsHolder} wrapper (port deferred).</li>
- * </ul>
+ * <p>All asserts that were previously commented out in the initial L6-A port
+ * are now enabled following the 2026-05-23 {@code align(math.statistics)} fix
+ * to {@link org.jquantlib.math.statistics.GenericRiskStatistics}, which
+ * corrected three composition bugs:
+ * <ol>
+ *   <li>{@code regret(target)} composed
+ *       {@code Expression([Square, Bind2nd(Minus, target)])} (Square FIRST),
+ *       evaluating {@code (x)^2 - target} instead of {@code (x - target)^2}.
+ *       Replaced with {@code ComposedFunction(Square, Bind2nd(Minus, target))}
+ *       = {@code (x - target)^2}, matching variance()/skewness()/kurtosis()
+ *       composition order in {@link
+ *       org.jquantlib.math.statistics.GeneralStatistics}. This also fixes
+ *       {@code downsideVariance()} (which is {@code regret(0.0)}) and
+ *       {@code semiVariance()} (which is {@code regret(mean())}).</li>
+ *   <li>{@code averageShortfall(target)} used
+ *       {@code Bind1stPredicate(target, LessThan)}, evaluating
+ *       {@code LessThan.op(target, xi) = (target < xi)} -- the UPPER half --
+ *       instead of {@code xi < target} (LOWER half). Replaced with
+ *       {@code Bind2ndPredicate(LessThan, target)}.</li>
+ *   <li>{@code shortfall(target)} used {@code Clipped(less, Constant(1.0))}
+ *       which returns {@code Double.NaN} when {@code x >= target}, poisoning
+ *       the sum to NaN. Replaced with a direct 1.0/0.0 indicator over the
+ *       full range.</li>
+ * </ol>
+ *
+ * <p>The C++ {@code GenericGaussianStatistics<StatsHolder>} sub-test
+ * (riskstats.cpp lines 343-351) now runs against {@link
+ * org.jquantlib.math.statistics.GaussianStatsHolder} -- a small concrete Java
+ * class that mirrors the {@code gaussian*} risk measures on a fixed
+ * {@code (mean, sigma)} pair, providing the same shape as the C++ template
+ * instantiation.
  */
 public class RiskStatisticsTest {
 
@@ -209,6 +227,24 @@ public class RiskStatisticsTest {
                 assertEquals("RiskStatistics: wrong potentialUpside" + tag,
                         expected, s.potentialUpside(twoSigma), tolerance);
 
+                // ---- GenericGaussianStatistics<StatsHolder> sub-test ----
+                // Mirrors v1.42.1 riskstats.cpp lines 343-351 -- "just to check
+                // that GaussianStatistics<StatsHolder> does work". Uses
+                // GaussianStatsHolder, the Java analogue of the C++ template
+                // instantiation.
+                {
+                    final GaussianStatsHolder testHolder = new GaussianStatsHolder(
+                            s.mean(), s.standardDeviation());
+                    final double expectedHolder = s.gaussianPotentialUpside(twoSigma);
+                    final double calculatedHolder = testHolder.gaussianPotentialUpside(twoSigma);
+                    if (!Closeness.isClose(calculatedHolder, expectedHolder)) {
+                        org.junit.Assert.fail("GaussianStatsHolder fails"
+                                + " for N(" + averages[i] + ", " + sigmas[j] + ")"
+                                + "\n  calculated: " + calculatedHolder
+                                + "\n  expected:   " + expectedHolder);
+                    }
+                }
+
                 // ---- value-at-risk ----
                 expected = -Math.min(lower_tail, 0.0);
                 tolerance = (expected == 0.0) ? 1.0e-3 : Math.abs(expected * 1.0e-3);
@@ -227,80 +263,122 @@ public class RiskStatisticsTest {
                 }
 
                 // ---- expected shortfall ----
-                // SKIPPED (production-side): GenericRiskStatistics.expectedShortfall
-                // uses Bind2ndPredicate(LessThan, target) which evaluates
-                // x < target (correct), but the gaussian* branch relies on
-                // NormalDistribution.op honoring (mean, sigma). That has been
-                // fixed (Phase 5h.5-RND), yet the expected-shortfall reference
-                // value uses normal(lower_tail) * sigma^2 / (1 - twoSigma)
-                // which only matches when both sides agree on the normal PDF.
-                // Currently both the gaussian and sample-based variants
-                // diverge for at least one (mu, sigma) cell; pending Phase
-                // 5b.5 align(math.statistics) work the assertions stay
-                // commented out -- see class javadoc.
                 expected = -Math.min(averages[i] - sigmas[j] * sigmas[j]
                         * normal.op(lower_tail) / (1.0 - twoSigma), 0.0);
                 tolerance = (expected == 0.0) ? 1.0e-4 : Math.abs(expected) * 1.0e-2;
-                // assertEquals(...gaussianExpectedShortfall...) -- skipped
-                // assertEquals(...expectedShortfall...)         -- skipped
+                assertEquals("IncrementalGaussianStatistics: wrong gaussianExpectedShortfall" + tag,
+                        expected, igs.gaussianExpectedShortfall(twoSigma), tolerance);
+                assertEquals("RiskStatistics: wrong gaussianExpectedShortfall" + tag,
+                        expected, s.gaussianExpectedShortfall(twoSigma), tolerance);
+                assertEquals("RiskStatistics: wrong expectedShortfall" + tag,
+                        expected, s.expectedShortfall(twoSigma), tolerance);
 
                 // ---- shortfall ----
-                // gaussianShortfall depends on CumulativeNormalDistribution
-                // honoring (mean, sigma); CND constructor stores them and op
-                // uses (x - mu) / sigma, so this assertion is safe.
                 expected = 0.5;
                 tolerance = (expected == 0.0) ? 1.0e-3 : Math.abs(expected * 1.0e-3);
                 assertEquals("IncrementalGaussianStatistics: wrong gaussianShortfall" + tag,
                         expected, igs.gaussianShortfall(averages[i]), tolerance);
                 assertEquals("RiskStatistics: wrong gaussianShortfall" + tag,
                         expected, s.gaussianShortfall(averages[i]), tolerance);
-                // SKIPPED (production-side): sample-based s.shortfall uses
-                // Bind2ndPredicate(LessThan, target) so x < target (correct),
-                // but currently exhibits the wrong half for some cells via
-                // the same Bind1stPredicate path in averageShortfall/regret;
-                // staying conservative until align(math.statistics) lands.
-                // assertEquals(... s.shortfall(averages[i]) ...) -- skipped
+                assertEquals("RiskStatistics: wrong shortfall" + tag,
+                        expected, s.shortfall(averages[i]), tolerance);
 
                 // ---- average shortfall ----
-                // SKIPPED (production-side, real Java bug):
-                // GenericRiskStatistics.averageShortfall uses
-                // Bind1stPredicate(target, LessThan), which Java evaluates as
-                // LessThan.op(target, a) = target < a (upper half), whereas
-                // C++ uses lambda xi < target (lower half). Same sign bug
-                // also affects regret/downsideVariance gaussian-vs-sample.
                 expected = sigmas[j] / Math.sqrt(2.0 * Math.PI) * 2.0;
                 tolerance = expected * 1.0e-3;
                 assertEquals("IncrementalGaussianStatistics: wrong gaussianAverageShortfall" + tag,
                         expected, igs.gaussianAverageShortfall(averages[i]), tolerance);
                 assertEquals("RiskStatistics: wrong gaussianAverageShortfall" + tag,
                         expected, s.gaussianAverageShortfall(averages[i]), tolerance);
-                // assertEquals(... s.averageShortfall(averages[i]) ...) -- skipped
+                assertEquals("RiskStatistics: wrong averageShortfall" + tag,
+                        expected, s.averageShortfall(averages[i]), tolerance);
 
                 // ---- regret ----
-                // SKIPPED (production-side): For N(-100, 0.1), Java
-                // s.regret(-100) returns ~10116 instead of sigma^2 = 0.01.
-                // Likely the same Bind1stPredicate / expectationValue
-                // composition issue as averageShortfall, surfacing in the
-                // (x - target)^2 * I[x < target] integral. Pending
-                // align(math.statistics) follow-up.
                 expected = sigmas[j] * sigmas[j];
                 tolerance = expected * 1.0e-1;
-                // assertEquals(... igs.gaussianRegret(averages[i]) ...) -- skipped
-                // assertEquals(... s.gaussianRegret(averages[i])  ...) -- skipped
-                // assertEquals(... s.regret(averages[i])           ...) -- skipped
+                assertEquals("IncrementalGaussianStatistics: wrong gaussianRegret(" + averages[i] + ")" + tag,
+                        expected, igs.gaussianRegret(averages[i]), tolerance);
+                assertEquals("RiskStatistics: wrong gaussianRegret(" + averages[i] + ")" + tag,
+                        expected, s.gaussianRegret(averages[i]), tolerance);
+                assertEquals("RiskStatistics: wrong regret(" + averages[i] + ")" + tag,
+                        expected, s.regret(averages[i]), tolerance);
 
                 // ---- downside variance ----
-                // downsideVariance() == regret(0.0) -- inherits the same
-                // production-side limitation as regret. Skip the comparison
-                // between sample and gaussian variants, and the mu=0 special
-                // case where the expected sigma^2 reference matches C++.
-                // assertEquals(... igs.downsideVariance() ...)           -- skipped
-                // assertEquals(... igs.gaussianDownsideVariance() ...)   -- skipped
-                // (mu==0 block) -- skipped
+                // First the C++ self-consistency check: s.downsideVariance() vs
+                // igs.downsideVariance() and igs.gaussianDownsideVariance().
+                expected = s.downsideVariance();
+                tolerance = (expected == 0.0) ? 1.0e-3 : Math.abs(expected * 1.0e-3);
+                assertEquals("IncrementalGaussianStatistics: wrong downsideVariance" + tag,
+                        expected, igs.downsideVariance(), tolerance);
+                assertEquals("IncrementalGaussianStatistics: wrong gaussianDownsideVariance" + tag,
+                        expected, igs.gaussianDownsideVariance(), tolerance);
+
+                // mu==0 special case -- expected sigma^2 reference.
+                if (averages[i] == 0.0) {
+                    expected = sigmas[j] * sigmas[j];
+                    tolerance = expected * 1.0e-3;
+                    assertEquals("IncrementalGaussianStatistics: wrong downsideVariance (mu=0)" + tag,
+                            expected, igs.downsideVariance(), tolerance);
+                    assertEquals("IncrementalGaussianStatistics: wrong gaussianDownsideVariance (mu=0)" + tag,
+                            expected, igs.gaussianDownsideVariance(), tolerance);
+                    assertEquals("RiskStatistics: wrong downsideVariance (mu=0)" + tag,
+                            expected, s.downsideVariance(), tolerance);
+                    assertEquals("RiskStatistics: wrong gaussianDownsideVariance (mu=0)" + tag,
+                            expected, s.gaussianDownsideVariance(), tolerance);
+                }
 
                 igs.reset();
                 s.reset();
             }
         }
+    }
+
+    /**
+     * Focused regression test for the pre-2026-05-23 regret-composition bug.
+     *
+     * <p>For samples drawn from N(-100, 0.1), {@code s.regret(-100)} must be
+     * approximately {@code sigma^2 = 0.01} (within 10% per the
+     * {@link #testResults} tolerance schedule). The buggy implementation
+     * returned ~10116 because it evaluated {@code (x)^2 - target} rather than
+     * {@code (x - target)^2} via {@code Expression([Square, Bind2nd(Minus,
+     * target)])} (Square applied FIRST, not LAST).
+     *
+     * <p>This test is intentionally self-contained -- single (mu, sigma) cell,
+     * deterministic Sobol seed -- so the regression manifests as a 6-order-
+     * of-magnitude difference, not a tolerance breach, making future
+     * accidental regressions impossible to miss.
+     */
+    @Test
+    public void testRegretAtNegativeHundred() {
+        QL.info("Testing regret(-100) at N(-100, 0.1) -- regret composition fix...");
+
+        final RiskStatistics s = new RiskStatistics();
+        final InverseCumulativeNormal inverseCum = new InverseCumulativeNormal(-100.0, 0.1);
+        final SobolRsg rng = new SobolRsg(1);
+
+        final int N = (int) Math.pow(2.0, 16) - 1;
+        final double[] data = new double[N];
+        final double[] weights = new double[N];
+        for (int k = 0; k < N; k++) {
+            data[k] = inverseCum.op(rng.nextSequence().value()[0]);
+            weights[k] = 1.0;
+        }
+        s.addSequence(data, weights);
+
+        final double sigma2 = 0.1 * 0.1;
+        final double regret = s.regret(-100.0);
+        assertEquals(
+                "regret(-100) for N(-100, 0.1) should be ~sigma^2 = 0.01"
+                        + " -- got " + regret
+                        + " (pre-fix value was ~10116, off by 6 orders of magnitude)",
+                sigma2, regret, sigma2 * 1.0e-1);
+
+        // downsideVariance() is regret(0.0). For x ~ N(-100, 0.1) every sample
+        // is below 0, so downsideVariance approximates variance + mean^2 - 0 =
+        // sigma^2 + mu^2 (=> ~10000.01). Sanity-check it is finite and
+        // positive (the NaN-poisoning shortfall bug used to surface here too).
+        final double dv = s.downsideVariance();
+        org.junit.Assert.assertTrue("downsideVariance must be finite", Double.isFinite(dv));
+        org.junit.Assert.assertTrue("downsideVariance must be positive: " + dv, dv > 0.0);
     }
 }
