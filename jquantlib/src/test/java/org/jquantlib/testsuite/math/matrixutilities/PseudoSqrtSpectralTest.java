@@ -159,4 +159,25 @@ public class PseudoSqrtSpectralTest {
             }
         }
     }
+
+    /**
+     * Phase 3-D: confirm the Hypersphere/LowerDiagonal salvaging
+     * algorithms now throw a descriptive deferred-port message rather
+     * than the previous bare {@code throw new UnsupportedOperationException("work in progress")}.
+     */
+    @Test
+    public void testHypersphereDeferredPortMessage() {
+        final Matrix corr = himalayaCorrelation();
+        try {
+            PseudoSqrt.pseudoSqrt(corr, SalvagingAlgorithm.Hypersphere);
+            throw new AssertionError("expected UOE for Hypersphere deferred port");
+        } catch (final UnsupportedOperationException e) {
+            // Message must point to the alternative algorithms.
+            if (e.getMessage() == null
+                    || !e.getMessage().contains("Higham")
+                    || !e.getMessage().contains("Principal")) {
+                throw new AssertionError("UOE message must guide to Higham/Principal: " + e.getMessage());
+            }
+        }
+    }
 }

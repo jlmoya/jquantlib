@@ -44,6 +44,10 @@ package org.jquantlib.math.matrixutilities;
 import org.jquantlib.QL;
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.math.Closeness;
+import org.jquantlib.math.optimization.ConjugateGradient;
+import org.jquantlib.math.optimization.EndCriteria;
+import org.jquantlib.math.optimization.NoConstraint;
+import org.jquantlib.math.optimization.Problem;
 
 /**
  * @author Ueli Hofstetter
@@ -159,6 +163,166 @@ public class PseudoSqrt {
                 }
             }
         }
+    }
+
+    /**
+     * Optimisation step for the {@code Hypersphere} and {@code LowerDiagonal}
+     * salvaging algorithms. Faithful port of C++
+     * {@code QuantLib::detail::hypersphereOptimize}
+     * (pseudosqrt.cpp:141-263) — parameterises the pseudo-root via spherical
+     * angles {@code theta_i}, minimises the Frobenius residual with
+     * {@link ConjugateGradient}, then reconstructs the matrix from the
+     * optimal angles.
+     *
+     * @param targetMatrix the symmetric matrix whose pseudo-root is sought
+     * @param currentRoot  an initial pseudo-root (typically derived from the
+     *                     spectral salvaging step)
+     * @param lowerDiagonal {@code true} for the lower-diagonal flavour
+     *                                  ({@code n*(n-1)/2} angles);
+     *                                  {@code false} for the full hypersphere
+     *                                  ({@code n*(n-1)} angles)
+     * @return the optimised pseudo-root
+     */
+    static Matrix hypersphereOptimize(final Matrix targetMatrix, final Matrix currentRoot, final boolean lowerDiagonal) {
+        final int size = targetMatrix.rows;
+        Matrix result = currentRoot.clone();
+        final Array variance = new Array(size);
+        for ( int i = 0; i < size; i++ ) {
+            variance.set(i, Math.sqrt(targetMatrix.get(i, i)));
+        }
+        if ( lowerDiagonal ) {
+            // C++ pseudosqrt.cpp:150-157: replace result with the Cholesky
+            // factor of (result * result^T), scaled by the row-diagonal.
+            final Matrix approxMatrix = result.mul(result.transpose());
+            result = CholeskyDecomposition.CholeskyDecomposition(approxMatrix, true);
+            for ( int i = 0; i < size; i++ ) {
+                final double rowScale = Math.sqrt(approxMatrix.get(i, i));
+                for ( int j = 0; j < size; j++ ) {
+                    result.set(i, j, result.get(i, j) / rowScale);
+                }
+            }
+        } else {
+            // C++ pseudosqrt.cpp:158-164: divide each row by the
+            // square-root-of-variance.
+            for ( int i = 0; i < size; i++ ) {
+                for ( int j = 0; j < size; j++ ) {
+                    result.set(i, j, result.get(i, j) / variance.get(i));
+                }
+            }
+        }
+
+        final ConjugateGradient optimize = new ConjugateGradient();
+        final EndCriteria endCriteria = new EndCriteria(100, 10, 1e-8, 1e-8, 1e-8);
+        final HypersphereCostFunction costFunction = new HypersphereCostFunction(targetMatrix, variance, lowerDiagonal);
+        final NoConstraint constraint = new NoConstraint();
+
+        // hypersphere vector optimization
+        final double eps = 1e-16;
+
+        if ( lowerDiagonal ) {
+            // C++ pseudosqrt.cpp:174-217 — n*(n-1)/2 angles
+            final Array theta = new Array(size * (size - 1) / 2);
+            for ( int i = 1; i < size; i++ ) {
+                for ( int j = 0; j < i; j++ ) {
+                    final int idx = i * (i - 1) / 2 + j;
+                    double v = result.get(i, j);
+                    v = clampToOpenUnit(v, eps);
+                    for ( int k = 0; k < j; k++ ) {
+                        v /= Math.sin(theta.get(i * (i - 1) / 2 + k));
+                        v = clampToOpenUnit(v, eps);
+                    }
+                    double ang = Math.acos(v);
+                    if ( j == i - 1 && result.get(i, i) < 0.0 ) {
+                        ang = -ang;
+                    }
+                    theta.set(idx, ang);
+                }
+            }
+            final Problem p = new Problem(costFunction, constraint, theta);
+            optimize.minimize(p, endCriteria);
+            final Array optTheta = p.currentValue();
+
+            // Reconstruct result from optimised angles (C++ pseudosqrt.cpp:201-217).
+            for ( int i = 0; i < size; i++ ) {
+                for ( int k = 0; k < size; k++ ) {
+                    result.set(i, k, 1.0);
+                }
+            }
+            for ( int i = 0; i < size; i++ ) {
+                for ( int k = 0; k < size; k++ ) {
+                    if ( k > i ) {
+                        result.set(i, k, 0.0);
+                    } else {
+                        double prod = 1.0;
+                        for ( int j = 0; j <= k; j++ ) {
+                            if ( j == k && k != i ) {
+                                prod *= Math.cos(optTheta.get(i * (i - 1) / 2 + j));
+                            } else if ( j != i ) {
+                                prod *= Math.sin(optTheta.get(i * (i - 1) / 2 + j));
+                            }
+                        }
+                        result.set(i, k, prod);
+                    }
+                }
+            }
+        } else {
+            // C++ pseudosqrt.cpp:218-256 — n*(n-1) angles
+            final Array theta = new Array(size * (size - 1));
+            for ( int i = 0; i < size; i++ ) {
+                for ( int j = 0; j < size - 1; j++ ) {
+                    final int idx = j * size + i;
+                    double v = result.get(i, j);
+                    v = clampToOpenUnit(v, eps);
+                    for ( int k = 0; k < j; k++ ) {
+                        v /= Math.sin(theta.get(k * size + i));
+                        v = clampToOpenUnit(v, eps);
+                    }
+                    double ang = Math.acos(v);
+                    if ( j == size - 2 && result.get(i, j + 1) < 0.0 ) {
+                        ang = -ang;
+                    }
+                    theta.set(idx, ang);
+                }
+            }
+            final Problem p = new Problem(costFunction, constraint, theta);
+            optimize.minimize(p, endCriteria);
+            final Array optTheta = p.currentValue();
+
+            // Reconstruct result from optimised angles (C++ pseudosqrt.cpp:245-255).
+            for ( int i = 0; i < size; i++ ) {
+                for ( int k = 0; k < size; k++ ) {
+                    result.set(i, k, 1.0);
+                }
+            }
+            for ( int i = 0; i < size; i++ ) {
+                for ( int k = 0; k < size; k++ ) {
+                    double prod = 1.0;
+                    for ( int j = 0; j <= k; j++ ) {
+                        if ( j == k && k != size - 1 ) {
+                            prod *= Math.cos(optTheta.get(j * size + i));
+                        } else if ( j != size - 1 ) {
+                            prod *= Math.sin(optTheta.get(j * size + i));
+                        }
+                    }
+                    result.set(i, k, prod);
+                }
+            }
+        }
+
+        // C++ pseudosqrt.cpp:258-262 — re-scale rows by sqrt(variance).
+        for ( int i = 0; i < size; i++ ) {
+            for ( int j = 0; j < size; j++ ) {
+                result.set(i, j, result.get(i, j) * variance.get(i));
+            }
+        }
+        return result;
+    }
+
+    /** Clamp v to (-1 + eps, 1 - eps) to keep acos / sin safe. */
+    private static double clampToOpenUnit(final double v, final double eps) {
+        if ( v > 1.0 - eps ) return 1.0 - eps;
+        if ( v < -1.0 + eps ) return -1.0 + eps;
+        return v;
     }
 
     /*
@@ -390,7 +554,7 @@ public class PseudoSqrt {
         final Matrix diagonal = new Matrix(size, size);
 
         // salvaging algorithm
-        final Matrix result;
+        Matrix result;
         boolean negative;
         switch ( sa ) {
         case None:
@@ -412,41 +576,23 @@ public class PseudoSqrt {
             normalizePseudoRoot(matrix, result);
             break;
         case Hypersphere:
-            // negative eigenvalues set to zero
-            negative = false;
-            for ( int i = 0; i < size; ++i ) {
-                diagonal.set(i, i, Math.sqrt(Math.max(jd.eigenvalues().get(i), 0.0)));
-                if ( jd.eigenvalues().get(i) < 0.0 ) {
-                    negative = true;
-                }
-            }
-            if ( true )
-                throw new UnsupportedOperationException("work in progress");
-            //result = jd.eigenvectors() * diagonal;
-            normalizePseudoRoot(matrix, result);
-
-            if ( negative )
-                throw new UnsupportedOperationException("work in progress");
-            //result = hypersphereOptimize(matrix, result, false);
-            break;
         case LowerDiagonal:
-            // negative eigenvalues set to zero
-            negative = false;
-            for ( int i = 0; i < size; ++i ) {
-                diagonal.set(i, i, Math.sqrt(Math.max(jd.eigenvalues().get(i), 0.0)));
-                if ( jd.eigenvalues().get(i) < 0.0 ) {
-                    negative = true;
-                }
-            }
-            if ( true )
-                throw new UnsupportedOperationException("work in progress");
-            //result = jd.eigenvectors() * diagonal;
-            normalizePseudoRoot(matrix, result);
-
-            if ( negative )
-                throw new UnsupportedOperationException("work in progress");
-            //result = hypersphereOptimize(matrix, result, true);
-            break;
+            // Phase 3-D: full salvaging path requires hypersphereOptimize
+            // (C++ pseudosqrt.cpp:141-263) which combines a custom
+            // spherical-angle parameterisation with ConjugateGradient.
+            // The straightforward Java port is included below as
+            // hypersphereOptimize(), but on this JVM it does not
+            // converge reliably for ill-conditioned matrices — the
+            // ConjugateGradient line-search exhausts iterations and
+            // hangs the test JVM. Deferred until a hardened optimiser
+            // (or a Brent-backed line-search wrapper) is available.
+            // See Higham/Principal salvaging algorithms below as
+            // production-ready alternatives.
+            throw new UnsupportedOperationException(
+                    "PseudoSqrt.SalvagingAlgorithm." + sa + " not yet supported: "
+                            + "hypersphereOptimize port does not converge reliably on the current "
+                            + "Java ConjugateGradient implementation. Use Higham or Principal instead "
+                            + "(Phase3-D deferred; tracking under follow-up).");
         case Higham: {
             // Phase 5e.5b-CFC-d-52 port of C++ pseudosqrt.cpp:415-420.
             final int maxIterations = 40;
