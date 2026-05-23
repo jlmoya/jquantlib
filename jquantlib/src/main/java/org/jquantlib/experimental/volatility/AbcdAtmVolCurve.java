@@ -33,6 +33,7 @@ import org.jquantlib.Settings;
 import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.math.interpolations.AbcdInterpolation;
+import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.optimization.EndCriteria;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
@@ -168,8 +169,14 @@ public class AbcdAtmVolCurve extends BlackAtmVolCurve {
     }
 
     private void interpolate() {
-        this.interpolation_ = new AbcdInterpolation(actualOptionTimes_, actualVols_, -0.06, 0.17, 0.54, 0.17, false,
-                false, false, false, false, null, null);
+        this.interpolation_ = new AbcdInterpolation(toArray(actualOptionTimes_), toArray(actualVols_),
+                -0.06, 0.17, 0.54, 0.17, false, false, false, false, false, null, null);
+    }
+
+    private static Array toArray(final List<Double> list) {
+        final double[] a = new double[list.size()];
+        for (int i = 0; i < a.length; i++) a[i] = list.get(i);
+        return new Array(a);
     }
 
     private void initializeOptionDatesAndTimes() {
@@ -209,8 +216,8 @@ public class AbcdAtmVolCurve extends BlackAtmVolCurve {
                 actualVols_.add(vols_.get(i));
             }
         }
-        interpolation_ = new AbcdInterpolation(actualOptionTimes_, actualVols_, -0.06, 0.17, 0.54, 0.17, false, false,
-                false, false, false, null, null);
+        interpolation_ = new AbcdInterpolation(toArray(actualOptionTimes_), toArray(actualVols_),
+                -0.06, 0.17, 0.54, 0.17, false, false, false, false, false, null, null);
         dirty_ = false;
     }
 
@@ -283,7 +290,8 @@ public class AbcdAtmVolCurve extends BlackAtmVolCurve {
     }
 
     public double k(final double t) {
-        return interpolation_.k(t, actualOptionTimes_);
+        final Array times = toArray(actualOptionTimes_);
+        return interpolation_.k(t, times, times);
     }
 
     public double a() {
