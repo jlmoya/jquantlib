@@ -1164,9 +1164,10 @@ public class Matrix extends Cells< Address.MatrixAddress > implements Cloneable 
             super(row, chain, col0, col1, data, rows, cols);
         }
 
+        /** Read-only view: writes are rejected to preserve C++ {@code const} contract. */
         @Override
         public void set(final int pos, final double value) {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("ConstRangeRow: read-only view does not permit mutation");
         }
     }
 
@@ -1177,9 +1178,10 @@ public class Matrix extends Cells< Address.MatrixAddress > implements Cloneable 
             super(row0, row1, chain, col, data, rows, cols);
         }
 
+        /** Read-only view: writes are rejected to preserve C++ {@code const} contract. */
         @Override
         public void set(final int pos, final double value) {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("ConstRangeCol: read-only view does not permit mutation");
         }
     }
 
@@ -1205,9 +1207,10 @@ public class Matrix extends Cells< Address.MatrixAddress > implements Cloneable 
             super(ridx, chain, cidx, data, rows, cols);
         }
 
+        /** Read-only view: writes are rejected to preserve C++ {@code const} contract. */
         @Override
         public void set(final int row, final int col, final double value) {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("ConstRangeMatrix: read-only view does not permit mutation");
         }
 
     }

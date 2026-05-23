@@ -25,7 +25,6 @@ package org.jquantlib.time;
 import org.jquantlib.QL;
 import org.jquantlib.lang.annotation.NonNegative;
 import org.jquantlib.lang.annotation.Time;
-import org.jquantlib.lang.iterators.Iterables;
 import org.jquantlib.math.Closeness;
 import org.jquantlib.math.matrixutilities.Array;
 
@@ -137,15 +136,16 @@ public class TimeGrid {
     /**
      * Time grid with mandatory time points.
      * <p>
-     * Mandatory points are guaranteed to belong to the grid. No additional points are added.
+     * Mandatory points are guaranteed to belong to the grid. No additional points are added beyond an implicit
+     * zero anchor if the smallest mandatory time is strictly positive.
+     * <p>
+     * Port of C++ v1.42.1 {@code TimeGrid(Iterator begin, Iterator end)} (timegrid.hpp template ctor).
      *
-     * @param list
-     * @note This constructor is not available yet
+     * @param mandatoryTimes input mandatory time points; will be sorted and de-duplicated in-place
+     * @throws IllegalArgumentException if {@code mandatoryTimes} is empty or contains a negative value
      */
     public TimeGrid(@Time @NonNegative final Array mandatoryTimes) {
-
-        if ( System.getProperty("EXPERIMENTAL") == null )
-            throw new UnsupportedOperationException("This constructor is not available yet");
+        QL.require(mandatoryTimes.size() > 0, "empty time sequence");
 
         //XXX this.mandatoryTimes = mandatoryTimes.clone();
         this.mandatoryTimes = mandatoryTimes;
@@ -156,8 +156,10 @@ public class TimeGrid {
         // We seem to assume that the grid begins at 0.
         // Let's enforce the assumption for the time being
         // (even though I'm not sure that I agree.)
-        QL.require(mandatoryTimes.first() < 0.0, "negative times not allowed"); // TODO: message
+        QL.require(this.mandatoryTimes.first() >= 0.0, "negative times not allowed");
 
+        // Phase 3-D align: C++ uses std::unique with close_enough comparator
+        // (timegrid.hpp:64-66) — collapse adjacent close-enough mandatories.
         final List< Double > unique = new ArrayList<>();
         double prev = this.mandatoryTimes.get(0);
         unique.add(prev);
@@ -169,13 +171,28 @@ public class TimeGrid {
             prev = curr;
         }
 
-        this.times = new Array(unique.size());
-        int i = 0;
-        for ( final double d : Iterables.unmodifiableIterable(unique.iterator()) ) {
-            this.times.set(i, d);
-            i++;
+        // Phase 3-D align: C++ pushes a leading 0.0 if the smallest mandatory
+        // time is strictly positive (timegrid.hpp:68-69). Without this the
+        // grid would not start at zero, violating the documented invariant.
+        final List< Double > timesList = new ArrayList<>(unique.size() + 1);
+        if ( unique.get(0) > 0.0 ) {
+            timesList.add(0.0);
         }
-        this.dt = this.times.adjacentDifference();
+        timesList.addAll(unique);
+
+        this.times = new Array(timesList.size());
+        for ( int i = 0; i < timesList.size(); i++ ) {
+            this.times.set(i, timesList.get(i));
+        }
+
+        if ( this.times.size() > 1 ) {
+            this.dt = new Array(this.times.size() - 1);
+            for ( int i = 0; i < this.dt.size(); i++ ) {
+                this.dt.set(i, this.times.get(i + 1) - this.times.get(i));
+            }
+        } else {
+            this.dt = new Array(0);
+        }
     }
 
     /**

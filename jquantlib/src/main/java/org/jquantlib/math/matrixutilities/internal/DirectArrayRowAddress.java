@@ -136,14 +136,16 @@ public class DirectArrayRowAddress extends DirectAddress implements Address.Arra
         // implements ListIterator
         //
 
+        /** Fixed-size row view: structural mutation is not permitted (ListIterator contract). */
         @Override
         public void add(final Double e) {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("DirectArrayRowAddress: cannot add to a fixed-size row view");
         }
 
+        /** Fixed-size row view: structural mutation is not permitted (ListIterator contract). */
         @Override
         public void remove() {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("DirectArrayRowAddress: cannot remove from a fixed-size row view");
         }
 
         @Override

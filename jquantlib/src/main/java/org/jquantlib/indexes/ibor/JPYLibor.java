@@ -42,9 +42,7 @@ package org.jquantlib.indexes.ibor;
 import org.jquantlib.currencies.Asia.JPYCurrency;
 import org.jquantlib.daycounters.Actual360;
 import org.jquantlib.quotes.Handle;
-import org.jquantlib.termstructures.AbstractYieldTermStructure;
 import org.jquantlib.termstructures.YieldTermStructure;
-import org.jquantlib.time.Date;
 import org.jquantlib.time.Period;
 import org.jquantlib.time.calendars.Japan;
 
@@ -59,17 +57,7 @@ import org.jquantlib.time.calendars.Japan;
 public class JPYLibor extends Libor {
 
     public JPYLibor(final Period tenor) {
-        this(tenor, new Handle< YieldTermStructure >(new AbstractYieldTermStructure() {
-            @Override
-            protected double discountImpl(final double t) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public Date maxDate() {
-                throw new UnsupportedOperationException();
-            }
-        }));
+        this(tenor, new Handle< YieldTermStructure >());
     }
 
     public JPYLibor(final Period tenor, final Handle< YieldTermStructure > h) {

@@ -130,12 +130,23 @@ public class Handle< T extends Observable > implements Observable {
     // public methods
     //
 
+    /**
+     * Re-links this handle to a new observable.
+     * <p>
+     * Mirrors C++ {@code Handle::linkTo} which is <em>only</em> defined on
+     * {@code RelinkableHandle<T>} (handle.hpp:127). A plain {@code Handle<T>}
+     * is bound at construction and cannot be re-linked; calling this method
+     * on the base class is therefore a programmer error.
+     *
+     * @throws UnsupportedOperationException always — use {@link RelinkableHandle} instead
+     */
     public void linkTo(final T observable) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("Handle.linkTo: plain Handle is non-relinkable; use RelinkableHandle");
     }
 
+    /** See {@link #linkTo(Observable)} — same rationale. */
     public void linkTo(final T observable, final boolean registerAsObserver) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("Handle.linkTo: plain Handle is non-relinkable; use RelinkableHandle");
     }
 
     //

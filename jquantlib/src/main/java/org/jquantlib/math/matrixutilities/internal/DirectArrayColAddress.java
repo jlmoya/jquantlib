@@ -139,14 +139,16 @@ public class DirectArrayColAddress extends DirectAddress implements Address.Arra
         // implements ListIterator
         //
 
+        /** Fixed-size column view: structural mutation is not permitted (ListIterator contract). */
         @Override
         public void add(final Double e) {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("DirectArrayColAddress: cannot add to a fixed-size column view");
         }
 
+        /** Fixed-size column view: structural mutation is not permitted (ListIterator contract). */
         @Override
         public void remove() {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("DirectArrayColAddress: cannot remove from a fixed-size column view");
         }
 
         @Override

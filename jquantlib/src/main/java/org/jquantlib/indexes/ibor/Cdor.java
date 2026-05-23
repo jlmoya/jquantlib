@@ -43,10 +43,8 @@ import org.jquantlib.currencies.America.CADCurrency;
 import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.indexes.IborIndex;
 import org.jquantlib.quotes.Handle;
-import org.jquantlib.termstructures.AbstractYieldTermStructure;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.time.BusinessDayConvention;
-import org.jquantlib.time.Date;
 import org.jquantlib.time.Period;
 import org.jquantlib.time.calendars.Canada;
 
@@ -59,17 +57,7 @@ import org.jquantlib.time.calendars.Canada;
 public class Cdor extends IborIndex {
 
     public Cdor(final Period tenor) {
-        this(tenor, new Handle< YieldTermStructure >(new AbstractYieldTermStructure() {
-            @Override
-            protected double discountImpl(final double t) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public Date maxDate() {
-                throw new UnsupportedOperationException();
-            }
-        }));
+        this(tenor, new Handle< YieldTermStructure >());
     }
 
     public Cdor(final Period tenor, final Handle< YieldTermStructure > h) {

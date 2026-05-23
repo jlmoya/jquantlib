@@ -42,9 +42,7 @@ package org.jquantlib.indexes.ibor;
 import org.jquantlib.currencies.Asia.JPYCurrency;
 import org.jquantlib.daycounters.Actual360;
 import org.jquantlib.quotes.Handle;
-import org.jquantlib.termstructures.AbstractYieldTermStructure;
 import org.jquantlib.termstructures.YieldTermStructure;
-import org.jquantlib.time.Date;
 import org.jquantlib.time.calendars.Japan;
 
 /**
@@ -58,17 +56,7 @@ import org.jquantlib.time.calendars.Japan;
 public class DailyTenorJPYLibor extends DailyTenorLibor {
 
     public DailyTenorJPYLibor(final int settlementDays) {
-        this(settlementDays, new Handle< YieldTermStructure >(new AbstractYieldTermStructure() {
-            @Override
-            protected double discountImpl(final double t) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public Date maxDate() {
-                throw new UnsupportedOperationException();
-            }
-        }));
+        this(settlementDays, new Handle< YieldTermStructure >());
     }
 
     public DailyTenorJPYLibor(final int settlementDays, final Handle< YieldTermStructure > h) {

@@ -319,9 +319,16 @@ public abstract class AbstractInterpolation implements Interpolation {
             return Math.exp(interpolation_.op(x, true));
         }
 
+        /**
+         * Faithful port of C++ {@code LogInterpolation::primitive}
+         * (loginterpolation.hpp:384-385) which is
+         * {@code QL_FAIL("LogInterpolation primitive not implemented")}.
+         * The exp-of-linear primitive has no closed form and is not used
+         * by any QuantLib pricing path.
+         */
         @Override
         public double primitive(final double x) /* @ReadOnly */ {
-            throw new UnsupportedOperationException("LogInterpolation primitive not implemented"); // TODO: message
+            throw new UnsupportedOperationException("LogInterpolation primitive not implemented");
         }
 
         @Override

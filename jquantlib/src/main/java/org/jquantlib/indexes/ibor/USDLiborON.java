@@ -40,9 +40,7 @@
 package org.jquantlib.indexes.ibor;
 
 import org.jquantlib.quotes.Handle;
-import org.jquantlib.termstructures.AbstractYieldTermStructure;
 import org.jquantlib.termstructures.YieldTermStructure;
-import org.jquantlib.time.Date;
 
 /**
  * base class for all BBA LIBOR indexes but the EUR, O/N, and S/N ones
@@ -55,17 +53,7 @@ import org.jquantlib.time.Date;
 public class USDLiborON extends DailyTenorUSDLibor {
 
     public USDLiborON() {
-        this(new Handle< YieldTermStructure >(new AbstractYieldTermStructure() {
-            @Override
-            protected double discountImpl(final double t) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public Date maxDate() {
-                throw new UnsupportedOperationException();
-            }
-        }));
+        this(new Handle< YieldTermStructure >());
     }
 
     public USDLiborON(final Handle< YieldTermStructure > h) {

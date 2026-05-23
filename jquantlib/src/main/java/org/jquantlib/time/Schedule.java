@@ -786,16 +786,23 @@ public class Schedule {
         return endOfMonth_;
     }
 
+    /**
+     * @deprecated C++ iterator-pair API; use {@link #dates()} and standard
+     *             {@link java.util.List} iteration instead. Throws
+     *             unconditionally because the C++ begin()/end() return
+     *             {@code const_iterator}s into the internal vector — Java
+     *             has no analogous concept and no caller exists. Retained
+     *             only for signature/audit parity.
+     */
     @Deprecated
-    //FIXME: this method will probably disappear as begin() and end() does not make sense withou pointers
     public Iterator< Date > begin() /* @ReadOnly */ {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("Schedule.begin: use dates().iterator() instead");
     }
 
+    /** See {@link #begin()} — same rationale. */
     @Deprecated
-    //FIXME: this method will probably disappear as begin() and end() does not make sense withou pointers
     public Iterator< Date > end() /* @ReadOnly */ {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("Schedule.end: use dates().iterator() instead");
     }
 
     //TODO :: operator Schedule() const;

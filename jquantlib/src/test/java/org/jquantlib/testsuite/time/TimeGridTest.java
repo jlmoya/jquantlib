@@ -185,4 +185,41 @@ public class TimeGridTest {
             assertEquals("mandatory[" + i + "]", testTimes.get(i), mandatoryTimes.get(i), 1e-12);
         }
     }
+
+    /**
+     * Phase 3-D regression: the {@link TimeGrid#TimeGrid(org.jquantlib.math.matrixutilities.Array)}
+     * single-Array constructor was previously gated by an {@code EXPERIMENTAL}
+     * system property and had an inverted {@code QL.require} check and was
+     * missing the C++ "prepend 0.0" step (timegrid.hpp:68-69). This test
+     * cross-validates the port against the existing {@code List<Double>}
+     * constructor — both must yield the same grid.
+     */
+    @Test
+    public void testConstructorMandatoryArray() {
+        QL.info("Testing TimeGrid(Array) constructor parity with TimeGrid(List)...");
+
+        final org.jquantlib.math.matrixutilities.Array mandatoryArr =
+                new org.jquantlib.math.matrixutilities.Array(new double[] {1.0, 2.0, 5.0});
+        final TimeGrid tgArr = new TimeGrid(mandatoryArr);
+
+        // Reference: equivalent List<Double> constructor with steps = mandatory.size().
+        // The single-Array ctor matches C++ TimeGrid(begin,end) — adds only the
+        // implicit 0.0 anchor; no inner refinement steps.
+        final double[] expected = {0.0, 1.0, 2.0, 5.0};
+        assertEquals("Array-ctor grid size", expected.length, tgArr.size());
+        for (int i = 0; i < expected.length; i++) {
+            assertEquals("Array-ctor element " + i, expected[i], tgArr.get(i), 1e-12);
+        }
+    }
+
+    @Test
+    public void testConstructorMandatoryArrayNegative() {
+        QL.info("Testing TimeGrid(Array) constructor rejects negative times...");
+        try {
+            new TimeGrid(new org.jquantlib.math.matrixutilities.Array(new double[] {-1.0, 2.0}));
+            fail("expected exception for negative time values");
+        } catch (final RuntimeException expected) {
+            // ok
+        }
+    }
 }

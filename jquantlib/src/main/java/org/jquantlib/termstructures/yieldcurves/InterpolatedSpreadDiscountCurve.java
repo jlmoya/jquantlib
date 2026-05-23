@@ -249,14 +249,29 @@ public class InterpolatedSpreadDiscountCurve< I extends Interpolator > extends A
         return discountImpl(t);
     }
 
+    /**
+     * Trait-interface accessor. Spread discount curves do not expose the
+     * instantaneous forward as a primitive — use the parent's
+     * {@code forwardRate(...)} family which derives it numerically from
+     * {@link #discount(double)}.
+     */
     @Override
     public double forward(final double t) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(
+                "InterpolatedSpreadDiscountCurve.forward(t): not a primitive of a discount curve — "
+                        + "use forwardRate(d1,d2,...) on the parent YieldTermStructure");
     }
 
+    /**
+     * Trait-interface accessor. Spread discount curves do not expose the
+     * zero yield as a primitive — use the parent's {@code zeroRate(...)}
+     * family which derives it from {@link #discount(double)}.
+     */
     @Override
     public double zeroYield(final double t) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(
+                "InterpolatedSpreadDiscountCurve.zeroYield(t): not a primitive of a discount curve — "
+                        + "use zeroRate(d,...) on the parent YieldTermStructure");
     }
 
     //

@@ -170,8 +170,17 @@ public class FDVanillaEngine {
                 : minGridPoints);
     }
 
+    /**
+     * Engine-specific calculate hook. Mirrors C++
+     * {@code FDVanillaEngine::calculate(Results*)} which is abstract; Java
+     * makes the class concrete only for instantiation convenience and
+     * delegates the actual scheme to subclasses (e.g.
+     * {@code FDEuropeanEngine}, {@code FDAmericanEngine}). Subclasses
+     * <em>must</em> override.
+     */
     protected void calculate(final Results r) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(
+                "FDVanillaEngine.calculate(Results): subclass must override this hook");
     }
 
 }

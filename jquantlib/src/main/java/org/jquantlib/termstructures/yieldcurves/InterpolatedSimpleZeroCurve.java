@@ -237,9 +237,16 @@ public class InterpolatedSimpleZeroCurve< I extends Interpolator > extends Abstr
         return discountImpl(t);
     }
 
+    /**
+     * Trait-interface accessor. Zero-rate curves do not expose the
+     * instantaneous forward as a primitive — use the parent's
+     * {@code forwardRate(...)} family instead.
+     */
     @Override
     public double forward(final double t) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(
+                "InterpolatedSimpleZeroCurve.forward(t): not a primitive of a zero curve — "
+                        + "use forwardRate(d1,d2,...) on the parent YieldTermStructure");
     }
 
     @Override

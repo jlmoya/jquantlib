@@ -43,10 +43,8 @@ import org.jquantlib.currencies.Europe.TRYCurrency;
 import org.jquantlib.daycounters.Actual360;
 import org.jquantlib.indexes.IborIndex;
 import org.jquantlib.quotes.Handle;
-import org.jquantlib.termstructures.AbstractYieldTermStructure;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.time.BusinessDayConvention;
-import org.jquantlib.time.Date;
 import org.jquantlib.time.Period;
 import org.jquantlib.time.calendars.Turkey;
 
@@ -59,17 +57,7 @@ import org.jquantlib.time.calendars.Turkey;
 public class TRLibor extends IborIndex {
 
     public TRLibor(final Period tenor) {
-        this(tenor, new Handle< YieldTermStructure >(new AbstractYieldTermStructure() {
-            @Override
-            protected double discountImpl(final double t) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public Date maxDate() {
-                throw new UnsupportedOperationException();
-            }
-        }));
+        this(tenor, new Handle< YieldTermStructure >());
     }
 
     public TRLibor(final Period tenor, final Handle< YieldTermStructure > h) {

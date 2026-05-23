@@ -92,10 +92,21 @@ public class InverseCumulativeRsg< USG extends UniformRandomSequenceGenerator, I
         return this.dimension;
     }
 
+    /**
+     * Returns raw 32-bit integer samples from the underlying uniform generator.
+     * <p>
+     * C++ {@code InverseCumulativeRsg} only exposes the
+     * inverse-cumulative-mapped {@code Real} sequence — it does not declare
+     * an {@code Int32Sequence} accessor. The Java
+     * {@link org.jquantlib.math.randomnumbers.RandomSequenceGeneratorIntf}
+     * interface unifies both shapes, so this no-op shape is unreachable on
+     * an inverse-cumulative wrapper.
+     */
     @Override
-    //FIXME: original QuantLib does not declare this method.
     public long[] nextInt32Sequence() /* @ReadOnly */ {
-        throw new UnsupportedOperationException(); //TODO: message
+        throw new UnsupportedOperationException(
+                "InverseCumulativeRsg: int32 sequence is not defined on the inverse-cumulative wrapper "
+                        + "(C++ exposes only the Real sequence); call nextSequence() instead");
     }
 
     /**

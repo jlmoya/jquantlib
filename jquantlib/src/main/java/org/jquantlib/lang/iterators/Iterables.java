@@ -140,8 +140,9 @@ public class Iterables {
                     return en.nextElement();
                 }
 
+                /** Unmodifiable wrapper — remove() is unsupported per JDK convention. */
                 public void remove() {
-                    throw new UnsupportedOperationException();
+                    throw new UnsupportedOperationException("unmodifiable iterator: remove() not supported");
                 }
             };
         }
@@ -166,8 +167,9 @@ public class Iterables {
                     return it.next();
                 }
 
+                /** Unmodifiable wrapper — remove() is unsupported per JDK convention. */
                 public void remove() {
-                    throw new UnsupportedOperationException();
+                    throw new UnsupportedOperationException("unmodifiable iterator: remove() not supported");
                 }
             };
         }
