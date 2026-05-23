@@ -105,10 +105,13 @@ public abstract class Gaussian1dModel extends LazyObject implements TermStructur
     /**
      * Cache of underlying swaps generated from {@link SwapIndex} templates.
      * <p>
-     * In C++ the cache is keyed on (index name, fixing serial, tenor units, tenor length). We use a String key with the
-     * same components.
+     * Keyed by a {@link CachedSwapKey} record whose equality compares the SwapIndex by
+     * {@link SwapIndex#name()} (so two template instances with the same conventions cache-hit)
+     * and whose hash is computed by {@link CachedSwapKeyHasher}. This mirrors the C++
+     * {@code unordered_map<CachedSwapKey, ext::shared_ptr<VanillaSwap>, CachedSwapKeyHasher>}
+     * exactly.
      */
-    private final Map< String, VanillaSwap > swapCache_ = new HashMap<>();
+    private final Map< CachedSwapKey, VanillaSwap > swapCache_ = new HashMap<>();
     /** State process — protected so subclasses can install their own. */
     protected StochasticProcess1D stateProcess_;
     /** Cached evaluation date (refreshed in performCalculations). */
@@ -641,8 +644,7 @@ public abstract class Gaussian1dModel extends LazyObject implements TermStructur
      * arbitrary tenors will need {@code SwapIndex.clone(Period)} added in a follow-up (A15).
      */
     protected VanillaSwap underlyingSwap(final SwapIndex index, final Date expiry, final Period tenor) {
-        final String key =
-                index.name() + "|" + expiry.serialNumber() + "|" + tenor.units().ordinal() + "|" + tenor.length();
+        final CachedSwapKey key = new CachedSwapKey(index, expiry, tenor);
         VanillaSwap cached = swapCache_.get(key);
         if ( cached == null ) {
             // SwapIndex.clone(Period) landed in Phase 2j.5 Track C.3 alignment.
