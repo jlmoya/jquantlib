@@ -34,39 +34,113 @@ import org.jquantlib.termstructures.BlackVolTermStructure;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.testsuite.util.Utilities;
 import org.jquantlib.time.Date;
+import org.jquantlib.time.Month;
 import org.junit.Test;
 
 /**
- * Smoke + cross-validation test for {@link FdBlackScholesAsianEngine} (Phase 2 L3-D port).
+ * Cross-validation tests for {@link FdBlackScholesAsianEngine}.
  *
- * <p>Engine port covers the SKELETON replacement and the prerequisite
- * {@link org.jquantlib.methods.finitedifferences.stepconditions.FdmArithmeticAverageCondition}.
+ * <p>Engine and prerequisite step condition
+ * ({@link org.jquantlib.methods.finitedifferences.stepconditions.FdmArithmeticAverageCondition})
+ * were ported in SKIP-E1 (commit 205f8b4b). This file (SKIP-E1-FOLLOWUP)
+ * adds the strict numerical cross-validation against the published Levy 1997
+ * reference values that was deferred when SKIP-E1 landed.
  *
- * <p><strong>Single-fixing test:</strong> when there is exactly one fixing
- * date (at maturity), an arithmetic-average Asian option degenerates to a
- * vanilla European option on the spot at maturity. The FdEngine value must
- * agree with the Black-Scholes analytic value within the FDM discretization
+ * <h2>Levy 1997 cross-validation</h2>
+ *
+ * <p>{@link #testCases4LevyReferenceValues} mirrors the first 5 entries of
+ * the C++ {@code testMCDiscreteArithmeticAveragePrice} cases4 dataset
+ * (test-suite/asianoptions.cpp, "Asian Option", Levy 1997 in "Exotic
+ * Options: The State of the Art", ed. Clewlow / Strickland). Java FdEngine
+ * agrees with the published Levy values within the same {@code 2.0e-2}
+ * tolerance the C++ test enforces — see the SKIP-E1-FOLLOWUP completion
+ * note for the per-case diffs (all roughly 0.003, well within tolerance).
+ *
+ * <h2>Single-fixing degeneracy</h2>
+ *
+ * <p>{@link #testSingleFixingMatchesVanillaPut}: with exactly one fixing
+ * date at maturity, an arithmetic-average Asian option degenerates to a
+ * vanilla European on the spot at maturity. The FdEngine value must agree
+ * with the Black-Scholes analytic value within the FDM discretization
  * tolerance.
  *
- * <p><strong>Smoke test:</strong> exercises the multi-fixing code path (the
- * UnsupportedOperationException placeholder is no longer reached) and
- * verifies the produced NPV is finite, non-negative, and bounded above by
- * the corresponding vanilla European put — a structural sanity check that
- * holds for any arithmetic-Asian option (averaging reduces volatility, so
- * average-price options price at or below vanilla).
+ * <h2>Multi-fixing smoke test</h2>
  *
- * <p>A full numerical cross-validation against the published Levy 1997
- * reference values (see C++ {@code test-suite/asianoptions.cpp} cases4) is
- * planned in a follow-up — the current Java FdEngine returns roughly half
- * the C++ FdEngine NPV in multi-fixing scenarios. The structural pieces are
- * all in place; the discrepancy is most likely either a sign / weight in
- * {@link org.jquantlib.methods.finitedifferences.stepconditions.FdmArithmeticAverageCondition#applyTo}
- * or a 2-D solver direction-mismatch. Tracking under SKIP-E1-FOLLOWUP.
+ * <p>{@link #testMultiFixingEngineRunsAndProducesFiniteResult}: structural
+ * sanity check that all multi-fixing scenarios produce finite, non-negative
+ * NPVs bounded above by the corresponding vanilla put (averaging reduces
+ * variance ⇒ Asian put ≤ vanilla put).
  */
 public class FdBlackScholesAsianEngineTest {
 
     /** Tolerance for the single-fixing-vs-vanilla degeneracy. */
     private static final double FD_VS_ANALYTIC_TOL = 0.10;
+
+    /**
+     * Tolerance for cases4 Levy 1997 reference cross-validation. Mirrors
+     * the {@code 2.0e-2} tolerance the C++ test
+     * {@code testMCDiscreteArithmeticAveragePrice} enforces for the same
+     * FdEngine + dataset.
+     */
+    private static final double LEVY_REF_TOL = 2.0e-2;
+
+    /**
+     * Cross-validation against Levy 1997 reference values for the discrete
+     * arithmetic-average Asian put — first 5 cases4 entries from
+     * C++ test-suite/asianoptions.cpp. Same evaluation date (2015-09-16),
+     * same parameters, same engine grid (tGrid=xGrid=aGrid=100). Same
+     * tolerance the C++ test enforces.
+     */
+    @Test
+    public void testCases4LevyReferenceValues() {
+        // Mirror the C++ global fixture evaluation date.
+        final Date today = new Date(16, Month.September, 2015);
+        new Settings().setEvaluationDate(today);
+        final DayCounter dc = new Actual360();
+
+        // cases4 fields: type, underlying, strike, dividendYield, riskFreeRate,
+        // first, length, fixings, vol, controlVariate, result
+        // Common params for first 5 entries: spot=90, K=87, q=0.06, r=0.025,
+        // first=0, length=11/12, vol=0.13
+        final SimpleQuote spot = new SimpleQuote(90.0);
+        final YieldTermStructure qTS = Utilities.flatRate(today, 0.06, dc);
+        final YieldTermStructure rTS = Utilities.flatRate(today, 0.025, dc);
+        final BlackVolTermStructure volTS = Utilities.flatVol(today, 0.13, dc);
+
+        final BlackScholesMertonProcess process = new BlackScholesMertonProcess(
+                new Handle<Quote>(spot),
+                new Handle<YieldTermStructure>(qTS),
+                new Handle<YieldTermStructure>(rTS),
+                new Handle<BlackVolTermStructure>(volTS));
+
+        final StrikedTypePayoff payoff = new PlainVanillaPayoff(Option.Type.Put, 87.0);
+
+        // First 5 cases4 entries — all fixings < 100 (FdEngine exercised in C++).
+        final int[] fixingsArr = { 2, 4, 8, 12, 26 };
+        final double[] expectedNpv = {
+                1.3942835683, 1.5852442983, 1.66970673, 1.6980019214, 1.7255070456
+        };
+
+        for (int idx = 0; idx < fixingsArr.length; idx++) {
+            final int fixings = fixingsArr[idx];
+            final double expected = expectedNpv[idx];
+
+            final List<Date> fixingDates = buildFixingDates(today, 0.0, 11.0 / 12.0, fixings);
+            final Exercise exercise = new EuropeanExercise(fixingDates.get(fixings - 1));
+
+            final DiscreteAveragingAsianOption option = new DiscreteAveragingAsianOption(
+                    AverageType.Arithmetic, 0.0, 0, fixingDates, payoff, exercise);
+            // Same grid as C++ test (line 768 of asianoptions.cpp).
+            option.setPricingEngine(new FdBlackScholesAsianEngine(process, 100, 100, 100));
+            final double calculated = option.NPV();
+
+            assertEquals(
+                    String.format(
+                            "Levy 1997 cases4 fixings=%d: expected=%.10f calculated=%.10f diff=%.6e tol=%.6e",
+                            fixings, expected, calculated, Math.abs(calculated - expected), LEVY_REF_TOL),
+                    expected, calculated, LEVY_REF_TOL);
+        }
+    }
 
     /**
      * Single-fixing-at-maturity arithmetic Asian degenerates to a vanilla
@@ -78,8 +152,8 @@ public class FdBlackScholesAsianEngineTest {
         final Date today = new Settings().evaluationDate();
         final DayCounter dc = new Actual360();
         final SimpleQuote spot = new SimpleQuote(90.0);
-        final YieldTermStructure qTS = Utilities.flatRate(today, 0.025, dc);
-        final YieldTermStructure rTS = Utilities.flatRate(today, 0.06, dc);
+        final YieldTermStructure qTS = Utilities.flatRate(today, 0.06, dc);
+        final YieldTermStructure rTS = Utilities.flatRate(today, 0.025, dc);
         final BlackVolTermStructure volTS = Utilities.flatVol(today, 0.13, dc);
 
         final BlackScholesMertonProcess process = new BlackScholesMertonProcess(
@@ -113,20 +187,17 @@ public class FdBlackScholesAsianEngineTest {
     }
 
     /**
-     * Smoke test: confirms the SKELETON UnsupportedOperationException no longer
-     * fires, the multi-fixing arithmetic-average step condition runs end to
-     * end, and the produced NPV is finite and non-negative.
-     *
-     * <p>Strict numerical agreement with the published Levy 1997 references
-     * is deferred (see class JavaDoc).
+     * Structural sanity check: exercises the multi-fixing code path and
+     * verifies the produced NPV is finite, non-negative, and bounded above
+     * by the corresponding vanilla European put.
      */
     @Test
     public void testMultiFixingEngineRunsAndProducesFiniteResult() {
         final Date today = new Settings().evaluationDate();
         final DayCounter dc = new Actual360();
         final SimpleQuote spot = new SimpleQuote(90.0);
-        final YieldTermStructure qTS = Utilities.flatRate(today, 0.025, dc);
-        final YieldTermStructure rTS = Utilities.flatRate(today, 0.06, dc);
+        final YieldTermStructure qTS = Utilities.flatRate(today, 0.06, dc);
+        final YieldTermStructure rTS = Utilities.flatRate(today, 0.025, dc);
         final BlackVolTermStructure volTS = Utilities.flatVol(today, 0.13, dc);
 
         final BlackScholesMertonProcess process = new BlackScholesMertonProcess(
