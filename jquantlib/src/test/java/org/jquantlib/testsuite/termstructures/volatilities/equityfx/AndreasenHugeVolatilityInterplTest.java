@@ -1020,20 +1020,22 @@ public class AndreasenHugeVolatilityInterplTest {
      * grid with a constant 0.18 vol; calibrator must regress to a flat
      * surface (max-error and avg-error both 1e-10 in vol units).
      *
-     * <p><strong>@Ignore — A3 finding (Phase1-closure-A4-A-549-rest):</strong>
-     * Java {@link AndreasenHugeVolatilityInterpl} converges to per-option
-     * calibration error 2.34e-9 in vol units, vs the C++ test's expected
-     * threshold of 1e-10 (line 1011). The calibrator is structurally correct
-     * (it recovers the flat 0.18 vol to ~9 decimals) but the iterative
-     * LevenbergMarquardt + tridiagonal-solve loop does not tighten as far as
-     * the C++ reference's MINPACK/Boost LM path. Filed as A3-rest finding:
-     * the convergence delta is symptomatic of accumulated FP drift across the
-     * 5000-grid TridiagonalOperator solves (Java's vec math is element-wise,
-     * vs C++'s Boost <tt>uBLAS</tt> contiguous-array kernels). Loosening the
-     * spec to 1e-8 would mask the gap; left @Ignore'd with this audit trail.
+     * <p><strong>@Ignore — A3 finding (Phase1-closure-A4-A-549-rest, refined
+     * by Phase3-truly-done-E):</strong> Java
+     * {@link AndreasenHugeVolatilityInterpl} converges to per-option
+     * calibration error that varies ~2e-9 to ~3e-8 in vol units depending on
+     * iteration ordering, vs the C++ test's spec threshold of 1e-10 (line
+     * 1011). The calibrator is structurally correct (recovers the flat 0.18
+     * vol to ~8-9 decimals); the residual delta is non-deterministic FP drift
+     * across the 5000-grid TridiagonalOperator solves (Java element-wise math
+     * vs C++ Boost {@code uBLAS} contiguous-array kernels). Loosening past
+     * the 1e-8 loose tier would mask the gap; the test stays {@code @Ignore}'d
+     * with this audit trail until a production-side calibrator refinement
+     * (TridiagonalOperator vectorization or LM tolerance retune) lands.
      */
-    @Ignore("A3: Java AH calibrator per-option residual ~2e-9 vol vs spec maxError 1e-10 "
-            + "(see JavaDoc above; Phase1-closure-A4-A-549-rest finding)")
+    @Ignore("A3: Java AH calibrator per-option residual ~2e-9..3e-8 vol vs spec maxError 1e-10 "
+            + "(see JavaDoc above; non-deterministic FP drift across 5000-grid "
+            + "TridiagonalOperator solves; Phase1-closure-A4-A-549-rest finding)")
     @Test
     public void testFlatVolCalibration() {
         Assume.assumeTrue(
