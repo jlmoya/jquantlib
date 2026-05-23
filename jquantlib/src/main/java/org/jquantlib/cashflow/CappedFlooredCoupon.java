@@ -208,12 +208,17 @@ public class CappedFlooredCoupon extends FloatingRateCoupon {
         return Constants.NULL_REAL;
     }
 
-    private /*@Rate*/ double effectiveCap() /* @ReadOnly */ {
+    public /*@Rate*/ double effectiveCap() /* @ReadOnly */ {
         return (cap_ - spread()) / gearing();
     }
 
-    private /*@Rate*/ double effectiveFloor() /* @ReadOnly */ {
+    public /*@Rate*/ double effectiveFloor() /* @ReadOnly */ {
         return (floor_ - spread()) / gearing();
+    }
+
+    /** Returns the wrapped {@link FloatingRateCoupon} underlying this capped/floored coupon. */
+    public FloatingRateCoupon underlying() {
+        return underlying_;
     }
 
     //
