@@ -45,11 +45,12 @@ import org.jquantlib.lang.annotation.QualityAssurance;
 import org.jquantlib.lang.annotation.QualityAssurance.Quality;
 import org.jquantlib.lang.annotation.QualityAssurance.Version;
 import org.jquantlib.math.Ops;
-import org.jquantlib.math.functions.*;
+import org.jquantlib.math.functions.Bind2ndPredicate;
+import org.jquantlib.math.functions.ComposedFunction;
+import org.jquantlib.math.functions.Identity;
+import org.jquantlib.math.functions.LessThanPredicate;
+import org.jquantlib.math.functions.TruePredicate;
 import org.jquantlib.util.Pair;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * empirical-distribution risk measures
@@ -117,11 +118,22 @@ public class GenericRiskStatistics extends GaussianStatistics {
      */
     public /*@Real*/ double regret(final /*@Real*/ double target) /*@ReadOnly*/ {
         // average over the range below the target
-
-        final List< Ops.DoubleOp > functions = new ArrayList<>();
-        functions.add(new Square());
-        functions.add(new Bind2nd(new Minus(), target));
-        final Expression comp = new Expression(functions);
+        //
+        // C++ (riskstatistics.hpp v1.42.1):
+        //   expectationValue([=](Real xi){ Real d = xi - target; return d*d; },
+        //                    [=](Real xi){ return xi < target; });
+        //
+        // History: pre-2026-05-23 this used Expression([Square, Bind2nd(Minus, target)])
+        // which iterates left-to-right -> Square applied FIRST, then subtract target
+        // -> evaluated (x^2 - target) instead of (x - target)^2. For N(-100, 0.1)
+        // with target=-100 that yielded regret ~ 10116 vs expected sigma^2 = 0.01.
+        // Switched to ComposedFunction(Square, Bind2nd(Minus, target)) = Square(x - target),
+        // matching variance()/skewness()/kurtosis() composition order in
+        // GeneralStatistics. See test
+        // testsuite.math.statistics.RiskStatisticsTest::testRegretAtNegativeHundred.
+        final Ops.DoubleOp comp = new ComposedFunction(
+                new org.jquantlib.math.functions.Square(),
+                new org.jquantlib.math.functions.Bind2nd(new org.jquantlib.math.functions.Minus(), target));
         final Ops.DoublePredicate less = new Bind2ndPredicate(new LessThanPredicate(), target);
 
         final Pair< Double, Integer > result = expectationValue(comp, less);
@@ -187,17 +199,34 @@ public class GenericRiskStatistics extends GaussianStatistics {
     public /*@Real*/ double shortfall(final /*@Real*/ double target) /*@ReadOnly*/ {
         QL.ensure(samples() != 0, EMPTY_SAMPLE_SET);
 
-        final Ops.DoublePredicate less = new Bind2ndPredicate(new LessThanPredicate(), target);
-        return expectationValue(new Clipped(less, new Constant(1.0)), new TruePredicate()).first();
+        // C++ (riskstatistics.hpp v1.42.1):
+        //   expectationValue([=](Real x){ return x < target ? 1.0 : 0.0; }).first
+        //
+        // History: pre-2026-05-23 this used Clipped(less, Constant(1.0)) which
+        // returns Double.NaN when x >= target, poisoning the running sum to NaN
+        // for the whole result. Replaced with a direct 1.0/0.0 indicator over
+        // every sample (TruePredicate range), matching the C++ lambda.
+        final Ops.DoubleOp indicator = x -> x < target ? 1.0 : 0.0;
+        return expectationValue(indicator, new TruePredicate()).first();
     }
 
     /**
      * averaged shortfallness, defined as {@latex[ \mathrm{E}\left[ t-x \;|\; x<t \right] }
      */
     public /*@Real*/ double averageShortfall(final /*@Real*/ double target) /*@ReadOnly*/ {
-
-        final Ops.DoubleOp minus = new Bind1st(target, new Minus());
-        final Ops.DoublePredicate less = new Bind1stPredicate(target, new LessThanPredicate());
+        // C++ (riskstatistics.hpp v1.42.1):
+        //   expectationValue([=](Real xi){ return target - xi; },
+        //                    [=](Real xi){ return xi < target; });
+        //
+        // History: pre-2026-05-23 the predicate was Bind1stPredicate(target, LessThan)
+        // which evaluates LessThan.op(target, xi) = (target < xi) -- the UPPER
+        // half -- whereas C++ filters the LOWER half (xi < target). Switched to
+        // Bind2ndPredicate(LessThan, target) = (xi < target), matching C++.
+        // The shortfall-amount op (target - xi) was already correct via
+        // Bind1st(target, Minus) = Minus.op(target, xi) = target - xi.
+        final Ops.DoubleOp minus = new org.jquantlib.math.functions.Bind1st(
+                target, new org.jquantlib.math.functions.Minus());
+        final Ops.DoublePredicate less = new Bind2ndPredicate(new LessThanPredicate(), target);
         final Pair< Double, Integer > result = expectationValue(minus, less);
 
         final double x = result.first();
