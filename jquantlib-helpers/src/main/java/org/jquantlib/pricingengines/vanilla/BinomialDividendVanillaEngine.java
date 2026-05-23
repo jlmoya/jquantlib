@@ -68,6 +68,7 @@ import org.jquantlib.time.TimeGrid;
  * @author Srinivas Hasti
  * @author Richard Gomes
  */
+@SuppressWarnings("unchecked")
 public abstract class BinomialDividendVanillaEngine<T extends Tree> extends DividendVanillaOption.EngineImpl {
 
    //

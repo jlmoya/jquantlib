@@ -55,6 +55,7 @@ import org.jquantlib.time.calendars.UnitedStates;
  * @author Zahid Hussain
  *
  */
+@SuppressWarnings("unchecked")
 public class Bonds { //implements Runnable {
 
     public static void main(final String[] args) {
