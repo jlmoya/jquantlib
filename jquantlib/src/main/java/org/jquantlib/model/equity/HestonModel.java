@@ -115,24 +115,31 @@ public class HestonModel extends CalibratedModel {
     }
 
     //
-    // private inner classes
+    // public nested classes
     //
 
-    private class VolatilityConstraint extends Constraint {
+    /**
+     * Feller-condition constraint for Heston-model calibration: requires {@code sigma >= 0} and
+     * {@code sigma * sigma < 2 * kappa * theta}.
+     *
+     * <p>Mirrors C++ v1.42.1 {@code HestonModel::FellerConstraint} (nested class declared in
+     * {@code ql/models/equity/hestonmodel.hpp}).
+     */
+    public static class FellerConstraint extends Constraint {
 
-        public VolatilityConstraint() {
-            if ( true ) {
-                throw new UnsupportedOperationException("Work in progress. Todo: check class hierarchy");
+        public FellerConstraint() {
+            super.impl = new Impl();
+        }
+
+        private class Impl extends Constraint.Impl {
+
+            @Override
+            public boolean test(final Array params) {
+                final double theta = params.get(0);
+                final double kappa = params.get(1);
+                final double sigma = params.get(2);
+                return (sigma >= 0.0 && sigma * sigma < 2.0 * kappa * theta);
             }
         }
-
-        @Override
-        public boolean test(final Array p) {
-            final double theta = p.get(0);
-            final double kappa = p.get(1);
-            final double sigma = p.get(2);
-            return (sigma >= 0.0 && sigma * sigma < 2.0 * kappa * theta);
-        }
-
     }
 }
