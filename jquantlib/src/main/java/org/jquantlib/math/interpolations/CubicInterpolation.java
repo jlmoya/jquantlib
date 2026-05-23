@@ -389,7 +389,37 @@ public class CubicInterpolation extends AbstractInterpolation {
                                         - 3]);
                         break;
                     case Akima:
-                        throw new LibraryException("Akima not implemented yet");
+                        // Akima approximation (local, non-monotone, non-linear).
+                        // Mirrors C++ CubicInterpolation::Akima case
+                        // (cubicinterpolation.hpp lines 605-622, v1.42.1).
+                        tmp[0] = (Math.abs(S[1] - S[0]) * 2 * S[0] * S[1]
+                                + Math.abs(2 * S[0] * S[1] - 4 * S[0] * S[0] * S[1]) * S[0])
+                                / (Math.abs(S[1] - S[0]) + Math.abs(2 * S[0] * S[1] - 4 * S[0] * S[0] * S[1]));
+                        tmp[1] = (Math.abs(S[2] - S[1]) * S[0] + Math.abs(S[0] - 2 * S[0] * S[1]) * S[1])
+                                / (Math.abs(S[2] - S[1]) + Math.abs(S[0] - 2 * S[0] * S[1]));
+                        for ( int i = 2; i < n - 2; ++i ) {
+                            if ( (S[i - 2] == S[i - 1]) && (S[i] != S[i + 1]) ) {
+                                tmp[i] = S[i - 1];
+                            } else if ( (S[i - 2] != S[i - 1]) && (S[i] == S[i + 1]) ) {
+                                tmp[i] = S[i];
+                            } else if ( S[i] == S[i - 1] ) {
+                                tmp[i] = S[i];
+                            } else if ( (S[i - 2] == S[i - 1]) && (S[i - 1] != S[i]) && (S[i] == S[i + 1]) ) {
+                                tmp[i] = (S[i - 1] + S[i]) / 2.0;
+                            } else {
+                                tmp[i] = (Math.abs(S[i + 1] - S[i]) * S[i - 1]
+                                        + Math.abs(S[i - 1] - S[i - 2]) * S[i])
+                                        / (Math.abs(S[i + 1] - S[i]) + Math.abs(S[i - 1] - S[i - 2]));
+                            }
+                        }
+                        tmp[n - 2] = (Math.abs(2 * S[n - 2] * S[n - 3] - S[n - 2]) * S[n - 3]
+                                + Math.abs(S[n - 3] - S[n - 4]) * S[n - 2])
+                                / (Math.abs(2 * S[n - 2] * S[n - 3] - S[n - 2]) + Math.abs(S[n - 3] - S[n - 4]));
+                        tmp[n - 1] = (Math.abs(4 * S[n - 2] * S[n - 2] * S[n - 3] - 2 * S[n - 2] * S[n - 3]) * S[n - 2]
+                                + Math.abs(S[n - 2] - S[n - 3]) * 2 * S[n - 2] * S[n - 3])
+                                / (Math.abs(4 * S[n - 2] * S[n - 2] * S[n - 3] - 2 * S[n - 2] * S[n - 3])
+                                        + Math.abs(S[n - 2] - S[n - 3]));
+                        break;
                     case Kruger:
                         // intermediate points
                         for ( int i = 1; i < n - 1; ++i ) {
