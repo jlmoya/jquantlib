@@ -53,7 +53,8 @@ package org.jquantlib.instruments;
  */
 public abstract sealed class StrikedTypePayoff extends TypePayoff
         permits PlainVanillaPayoff, CashOrNothingPayoff, AssetOrNothingPayoff,
-                GapPayoff, PercentageStrikePayoff, VanillaForwardPayoff {
+                GapPayoff, PercentageStrikePayoff, VanillaForwardPayoff,
+                SuperFundPayoff, SuperSharePayoff {
 
     //
     // protected fields
