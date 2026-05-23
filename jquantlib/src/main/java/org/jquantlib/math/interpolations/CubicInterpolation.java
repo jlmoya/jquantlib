@@ -46,6 +46,7 @@ import org.jquantlib.math.Closeness;
 import org.jquantlib.math.Constants;
 import org.jquantlib.math.interpolations.factories.Cubic;
 import org.jquantlib.math.matrixutilities.Array;
+import org.jquantlib.math.matrixutilities.Matrix;
 import org.jquantlib.methods.finitedifferences.TridiagonalOperator;
 
 import java.util.Arrays;
@@ -136,6 +137,20 @@ public class CubicInterpolation extends AbstractInterpolation {
         Spline,
 
         /**
+         * Overshooting minimization 1st derivative spline (non-local, global).
+         * <p>
+         * Mirrors C++ {@code CubicInterpolation::SplineOM1} in {@code cubicinterpolation.hpp} (v1.42.1, line 119).
+         */
+        SplineOM1,
+
+        /**
+         * Overshooting minimization 2nd derivative spline (non-local, global).
+         * <p>
+         * Mirrors C++ {@code CubicInterpolation::SplineOM2} in {@code cubicinterpolation.hpp} (v1.42.1, line 122).
+         */
+        SplineOM2,
+
+        /**
          * Fourth-order approximation (local, non-monotone, linear)
          */
         FourthOrder,
@@ -163,7 +178,14 @@ public class CubicInterpolation extends AbstractInterpolation {
         /**
          * Kruger approximation (local, monotone, non-linear)
          */
-        Kruger
+        Kruger,
+
+        /**
+         * Weighted harmonic mean approximation (local, monotonic, non-linear).
+         * <p>
+         * Mirrors C++ {@code CubicInterpolation::Harmonic} in {@code cubicinterpolation.hpp} (v1.42.1, line 140).
+         */
+        Harmonic
     }
 
     public enum BoundaryCondition {
@@ -341,6 +363,101 @@ public class CubicInterpolation extends AbstractInterpolation {
 
                 // solve the system
                 tmp = L.solveFor(tmp);
+            } else if ( da == CubicInterpolation.DerivativeApprox.SplineOM1 ) {
+                // Overshooting Minimization (1st derivative variant).
+                // Mirrors C++ CubicInterpolation::SplineOM1 case
+                // (cubicinterpolation.hpp lines 482-525, v1.42.1).
+                final Matrix T = new Matrix(n - 2, n);
+                for ( int i = 0; i < n - 2; ++i ) {
+                    T.set(i, i, dx[i] / 6.0);
+                    T.set(i, i + 1, (dx[i + 1] + dx[i]) / 3.0);
+                    T.set(i, i + 2, dx[i + 1] / 6.0);
+                }
+                final Matrix Smat = new Matrix(n - 2, n);
+                for ( int i = 0; i < n - 2; ++i ) {
+                    Smat.set(i, i, 1.0 / dx[i]);
+                    Smat.set(i, i + 1, -(1.0 / dx[i + 1] + 1.0 / dx[i]));
+                    Smat.set(i, i + 2, 1.0 / dx[i + 1]);
+                }
+                final Matrix Up = new Matrix(n, 2);
+                Up.set(0, 0, 1.0);
+                Up.set(n - 1, 1, 1.0);
+                final Matrix Us = new Matrix(n, n - 2);
+                for ( int i = 0; i < n - 2; ++i ) {
+                    Us.set(i + 1, i, 1.0);
+                }
+                final Matrix Z = Us.mul(T.mul(Us).inverse());
+                final Matrix I = new Matrix(n, n);
+                for ( int i = 0; i < n; ++i ) {
+                    I.set(i, i, 1.0);
+                }
+                final Matrix V = I.sub(Z.mul(T)).mul(Up);
+                final Matrix W = Z.mul(Smat);
+                final Matrix Q = new Matrix(n, n);
+                Q.set(0, 0, 1.0 / (n - 1) * dx[0] * dx[0] * dx[0]);
+                Q.set(0, 1, 7.0 / 8.0 * 1.0 / (n - 1) * dx[0] * dx[0] * dx[0]);
+                for ( int i = 1; i < n - 1; ++i ) {
+                    Q.set(i, i - 1, 7.0 / 8.0 * 1.0 / (n - 1) * dx[i - 1] * dx[i - 1] * dx[i - 1]);
+                    Q.set(i, i,
+                            1.0 / (n - 1) * dx[i] * dx[i] * dx[i] + 1.0 / (n - 1) * dx[i - 1] * dx[i - 1] * dx[i - 1]);
+                    Q.set(i, i + 1, 7.0 / 8.0 * 1.0 / (n - 1) * dx[i] * dx[i] * dx[i]);
+                }
+                Q.set(n - 1, n - 2, 7.0 / 8.0 * 1.0 / (n - 1) * dx[n - 2] * dx[n - 2] * dx[n - 2]);
+                Q.set(n - 1, n - 1, 1.0 / (n - 1) * dx[n - 2] * dx[n - 2] * dx[n - 2]);
+                final Matrix J = I.sub(V.mul(V.transpose().mul(Q).mul(V).inverse()).mul(V.transpose()).mul(Q)).mul(W);
+                final Array Y = new Array(vy_);
+                final Array D = J.mul(Y);
+                for ( int i = 0; i < n - 1; ++i ) {
+                    tmp[i] = (vy_[i + 1] - vy_[i]) / dx[i] - (2.0 * D.get(i) + D.get(i + 1)) * dx[i] / 6.0;
+                }
+                tmp[n - 1] = tmp[n - 2] + D.get(n - 2) * dx[n - 2] + (D.get(n - 1) - D.get(n - 2)) * dx[n - 2] / 2.0;
+            } else if ( da == CubicInterpolation.DerivativeApprox.SplineOM2 ) {
+                // Overshooting Minimization (2nd derivative variant).
+                // Mirrors C++ CubicInterpolation::SplineOM2 case
+                // (cubicinterpolation.hpp lines 526-568, v1.42.1).
+                final Matrix T = new Matrix(n - 2, n);
+                for ( int i = 0; i < n - 2; ++i ) {
+                    T.set(i, i, dx[i] / 6.0);
+                    T.set(i, i + 1, (dx[i] + dx[i + 1]) / 3.0);
+                    T.set(i, i + 2, dx[i + 1] / 6.0);
+                }
+                final Matrix Smat = new Matrix(n - 2, n);
+                for ( int i = 0; i < n - 2; ++i ) {
+                    Smat.set(i, i, 1.0 / dx[i]);
+                    Smat.set(i, i + 1, -(1.0 / dx[i + 1] + 1.0 / dx[i]));
+                    Smat.set(i, i + 2, 1.0 / dx[i + 1]);
+                }
+                final Matrix Up = new Matrix(n, 2);
+                Up.set(0, 0, 1.0);
+                Up.set(n - 1, 1, 1.0);
+                final Matrix Us = new Matrix(n, n - 2);
+                for ( int i = 0; i < n - 2; ++i ) {
+                    Us.set(i + 1, i, 1.0);
+                }
+                final Matrix Z = Us.mul(T.mul(Us).inverse());
+                final Matrix I = new Matrix(n, n);
+                for ( int i = 0; i < n; ++i ) {
+                    I.set(i, i, 1.0);
+                }
+                final Matrix V = I.sub(Z.mul(T)).mul(Up);
+                final Matrix W = Z.mul(Smat);
+                final Matrix Q = new Matrix(n, n);
+                Q.set(0, 0, 1.0 / (n - 1) * dx[0]);
+                Q.set(0, 1, 1.0 / 2.0 * 1.0 / (n - 1) * dx[0]);
+                for ( int i = 1; i < n - 1; ++i ) {
+                    Q.set(i, i - 1, 1.0 / 2.0 * 1.0 / (n - 1) * dx[i - 1]);
+                    Q.set(i, i, 1.0 / (n - 1) * dx[i] + 1.0 / (n - 1) * dx[i - 1]);
+                    Q.set(i, i + 1, 1.0 / 2.0 * 1.0 / (n - 1) * dx[i]);
+                }
+                Q.set(n - 1, n - 2, 1.0 / 2.0 * 1.0 / (n - 1) * dx[n - 2]);
+                Q.set(n - 1, n - 1, 1.0 / (n - 1) * dx[n - 2]);
+                final Matrix J = I.sub(V.mul(V.transpose().mul(Q).mul(V).inverse()).mul(V.transpose()).mul(Q)).mul(W);
+                final Array Y = new Array(vy_);
+                final Array D = J.mul(Y);
+                for ( int i = 0; i < n - 1; ++i ) {
+                    tmp[i] = (vy_[i + 1] - vy_[i]) / dx[i] - (2.0 * D.get(i) + D.get(i + 1)) * dx[i] / 6.0;
+                }
+                tmp[n - 1] = tmp[n - 2] + D.get(n - 2) * dx[n - 2] + (D.get(n - 1) - D.get(n - 2)) * dx[n - 2] / 2.0;
             } else { // local schemes
                 if ( n == 2 ) {
                     tmp[0] = tmp[1] = S[0];
@@ -432,6 +549,44 @@ public class CubicInterpolation extends AbstractInterpolation {
                         // end points
                         tmp[0] = (3.0 * S[0] - tmp[1]) / 2.0;
                         tmp[n - 1] = (3.0 * S[n - 2] - tmp[n - 2]) / 2.0;
+                        break;
+                    case Harmonic:
+                        // Weighted harmonic mean approximation (local, monotonic, non-linear).
+                        // Mirrors C++ CubicInterpolation::Harmonic case
+                        // (cubicinterpolation.hpp lines 639-672, v1.42.1).
+                        // intermediate points
+                        for ( int i = 1; i < n - 1; ++i ) {
+                            final double w1 = 2.0 * dx[i] + dx[i - 1];
+                            final double w2 = dx[i] + 2.0 * dx[i - 1];
+                            if ( S[i - 1] * S[i] <= 0.0 ) {
+                                // slope changes sign at point
+                                tmp[i] = 0.0;
+                            } else {
+                                // weighted harmonic mean of S[i] and S[i-1] if they
+                                // have the same sign; otherwise 0
+                                tmp[i] = (w1 + w2) / (w1 / S[i - 1] + w2 / S[i]);
+                            }
+                        }
+                        // end point [0]
+                        tmp[0] = ((2.0 * dx[0] + dx[1]) * S[0] - dx[0] * S[1]) / (dx[1] + dx[0]);
+                        if ( tmp[0] * S[0] < 0.0 ) {
+                            tmp[0] = 0.0;
+                        } else if ( S[0] * S[1] < 0.0 ) {
+                            if ( Math.abs(tmp[0]) > Math.abs(3.0 * S[0]) ) {
+                                tmp[0] = 3.0 * S[0];
+                            }
+                        }
+                        // end point [n-1]
+                        tmp[n - 1] =
+                                ((2.0 * dx[n - 2] + dx[n - 3]) * S[n - 2] - dx[n - 2] * S[n - 3]) / (dx[n - 3] + dx[n
+                                        - 2]);
+                        if ( tmp[n - 1] * S[n - 2] < 0.0 ) {
+                            tmp[n - 1] = 0.0;
+                        } else if ( S[n - 2] * S[n - 3] < 0.0 ) {
+                            if ( Math.abs(tmp[n - 1]) > Math.abs(3.0 * S[n - 2]) ) {
+                                tmp[n - 1] = 3.0 * S[n - 2];
+                            }
+                        }
                         break;
                     default:
                         throw new LibraryException("unknown scheme");
