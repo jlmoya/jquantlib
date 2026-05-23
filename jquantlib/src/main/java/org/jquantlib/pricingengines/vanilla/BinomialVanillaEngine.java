@@ -75,6 +75,7 @@ import java.lang.reflect.Constructor;
  * partial derivatives.
  */
 //ZH: remove abstract
+@SuppressWarnings("unchecked")
 public class BinomialVanillaEngine< T extends Tree > extends VanillaOption.EngineImpl {
 
     //

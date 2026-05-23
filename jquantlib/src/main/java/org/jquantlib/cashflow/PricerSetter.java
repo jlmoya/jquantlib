@@ -16,6 +16,8 @@ import java.util.List;
  * @author Richard Gomes
  */
 @QualityAssurance( quality = Quality.Q0_UNFINISHED, version = Version.V097, reviewers = "Richard Gomes" )
+@SuppressWarnings("unchecked") // PolymorphicVisitor dispatch uses raw Visitor<?> -> Visitor<X> casts;
+                                // the Class<X> klass arg is the runtime witness ensuring type safety.
 public class PricerSetter implements PolymorphicVisitor {
 
     private static final String INCOMPATIBLE_PRICER = "incompatible pricer";

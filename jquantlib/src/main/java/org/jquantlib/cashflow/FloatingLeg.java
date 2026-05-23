@@ -63,6 +63,9 @@ import org.jquantlib.time.*;
  * @author Zahid Hussain
  * @author Richard Gomes
  */
+@SuppressWarnings("unchecked") // generic-type casts at lines 179, 205: getConstructor(...).newInstance(...)
+                                // returns Object after erasure; the typeFRC/typeCFC Class refs are caller-supplied
+                                // and verified at the call site against the type-parameter contract.
 public class FloatingLeg< InterestRateIndexType extends InterestRateIndex, FloatingCouponType extends FloatingRateCoupon, CappedFlooredCouponType >
         extends Leg {
     //Make compiler happy

@@ -50,6 +50,7 @@ import java.lang.reflect.Constructor;
  * @param <IC>   represents the InverseCumulative
  * @author Richard Gomes
  */
+@SuppressWarnings("unchecked")
 public class GenericLowDiscrepancy< RSG extends UniformRandomSequenceGenerator, IC extends InverseCumulative > {
 
     //

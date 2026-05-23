@@ -72,6 +72,7 @@ import org.junit.Test;
  * <p>Source: {@code test-suite/libormarketmodelprocess.cpp} v1.42.1 @
  * {@code 099987f0ca}.
  */
+@SuppressWarnings("deprecation")
 public class LiborMarketModelProcessTest {
 
     private static final int LEN = 10;

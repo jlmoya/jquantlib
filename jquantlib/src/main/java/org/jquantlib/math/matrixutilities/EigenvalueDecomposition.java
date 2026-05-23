@@ -42,6 +42,7 @@ import org.jquantlib.lang.annotation.QualityAssurance.Version;
  * @see <a href="http://math.nist.gov/javanumerics/jama/">JAMA</a>
  */
 @QualityAssurance( quality = Quality.Q1_TRANSLATION, version = Version.OTHER, reviewers = { "Richard Gomes" } )
+@SuppressWarnings("deprecation")
 public class EigenvalueDecomposition {
 
     //

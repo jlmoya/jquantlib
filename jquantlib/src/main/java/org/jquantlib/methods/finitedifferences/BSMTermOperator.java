@@ -26,6 +26,7 @@ import org.jquantlib.processes.GeneralizedBlackScholesProcess;
  * @author Srinivas Hasti
  *
  */
+@SuppressWarnings("unchecked")
 public class BSMTermOperator extends PdeOperator< PdeBSM > {
 
     public BSMTermOperator(final Array grid, final GeneralizedBlackScholesProcess process, final double residualTime) {

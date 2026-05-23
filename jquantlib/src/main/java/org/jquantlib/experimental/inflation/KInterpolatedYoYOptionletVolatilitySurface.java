@@ -59,6 +59,7 @@ import java.util.List;
  * @param <I> Interpolator type (e.g. {@code Linear})
  * @author JQuantLib migration team (Phase 2s Track B)
  */
+@SuppressWarnings("deprecation")
 public class KInterpolatedYoYOptionletVolatilitySurface< I extends Interpolator >
         extends YoYOptionletVolatilitySurface {
 

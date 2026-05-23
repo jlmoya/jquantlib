@@ -45,6 +45,7 @@ import org.junit.Test;
  * {@code midEquivalent} / {@code midSafe} free functions
  * (now backed by {@link Prices}).
  */
+@SuppressWarnings("unchecked") // exercises generic-Prices construction with raw type-parameter casts
 public class PricesTest {
 
     public PricesTest() {

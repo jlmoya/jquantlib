@@ -25,6 +25,7 @@ package org.jquantlib.methods.finitedifferences;
  * @author Srinivas Hasti
  *
  */
+@SuppressWarnings("unchecked")
 public class DZero extends TridiagonalOperator {
 
     public DZero(int gridPoints, /* Real */double h) {

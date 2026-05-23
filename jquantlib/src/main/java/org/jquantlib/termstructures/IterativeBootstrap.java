@@ -42,6 +42,7 @@ import java.util.Arrays;
  * @author Richard Gomes
  */
 
+@SuppressWarnings("unchecked")
 public class IterativeBootstrap< Curve extends PiecewiseYieldCurve > implements Bootstrap< Curve > {
 
     //

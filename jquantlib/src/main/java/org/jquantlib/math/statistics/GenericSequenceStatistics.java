@@ -57,6 +57,7 @@ import org.jquantlib.math.matrixutilities.Matrix;
  * @author Richard Gomes
  */
 @QualityAssurance( quality = Quality.Q4_UNIT, reviewers = { "Richard Gomes" }, version = Version.V097 )
+@SuppressWarnings("deprecation")
 public class GenericSequenceStatistics {
 
     private static final String UNSUFFICIENT_SAMPLE_WEIGHT = "sampleWeight=0, unsufficient";

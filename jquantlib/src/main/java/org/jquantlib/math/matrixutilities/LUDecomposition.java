@@ -43,6 +43,7 @@ import org.jquantlib.lang.exceptions.LibraryException;
  * @see <a href="http://math.nist.gov/javanumerics/jama/">JAMA</a>
  */
 @QualityAssurance( quality = Quality.Q1_TRANSLATION, version = Version.OTHER, reviewers = { "Richard Gomes" } )
+@SuppressWarnings("deprecation") // legitimate internal user of Cells.$ raw backing storage
 public class LUDecomposition {
 
     private final static String MATRIX_IS_SINGULAR = "Matrix is singular";

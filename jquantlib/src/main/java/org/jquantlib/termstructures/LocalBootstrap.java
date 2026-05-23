@@ -61,6 +61,7 @@ import org.jquantlib.time.Date;
  * <p>Particularly suited to the convex-monotone spline method (Hagan-West),
  * for which a global iterative solve produces non-local risk profiles.
  */
+@SuppressWarnings("unchecked")
 public class LocalBootstrap< Curve extends PiecewiseYieldCurve > implements Bootstrap< Curve > {
 
     //

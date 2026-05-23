@@ -70,6 +70,7 @@ import java.util.List;
  *
  * @param <I> interpolator type (e.g. BackwardFlat, Linear, LogLinear).
  */
+@SuppressWarnings("deprecation")
 public class PiecewiseDefaultCurve< I extends Interpolator > extends DefaultProbabilityTermStructure {
 
     private final Flavor flavor;

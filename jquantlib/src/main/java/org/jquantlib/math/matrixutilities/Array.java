@@ -61,6 +61,8 @@ import java.util.Set;
  * @author Richard Gomes
  */
 @QualityAssurance( quality = Quality.Q2_RESEMBLANCE, version = Version.V097, reviewers = { "Richard Gomes" } )
+@SuppressWarnings("deprecation") // Array is the legitimate internal user of Cells.$ raw backing storage;
+                                  // the @Deprecated marker on Cells.$ exists to discourage EXTERNAL access.
 public class Array extends Cells< Address.ArrayAddress > implements Cloneable, Iterable< Double >, Algebra< Array > {
 
     //

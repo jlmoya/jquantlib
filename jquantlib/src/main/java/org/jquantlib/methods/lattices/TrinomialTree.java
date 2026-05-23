@@ -56,6 +56,7 @@ import java.util.Vector;
  * @warning The diffusion term of the SDE must be independent of the underlying process.
  * @category lattices
  */
+@SuppressWarnings("deprecation")
 public class TrinomialTree extends Tree {
 
     public static final Branches branches = Branches.TRINOMIAL;

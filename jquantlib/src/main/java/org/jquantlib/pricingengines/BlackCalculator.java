@@ -56,6 +56,7 @@ import org.jquantlib.util.Visitor;
  * @note <b>BUG:</b> When the variance is null, division by zero occur during the calculation of delta, delta forward,
  * gamma, gamma forward, rho, dividend rho, vega, and strike sensitivity.
  */
+@SuppressWarnings("unchecked")
 public class BlackCalculator {
 
     //

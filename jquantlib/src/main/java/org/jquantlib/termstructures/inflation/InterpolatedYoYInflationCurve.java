@@ -69,6 +69,7 @@ import java.util.List;
  * @see PiecewiseYoYInflationCurve
  * @see YearOnYearInflationSwapHelper
  */
+@SuppressWarnings("deprecation")
 public class InterpolatedYoYInflationCurve< I extends Interpolator > extends YoYInflationTermStructure {
 
     //

@@ -25,6 +25,7 @@ package org.jquantlib.methods.finitedifferences;
  * @author Srinivas Hasti
  *
  */
+@SuppressWarnings("unchecked")
 public class DPlus extends TridiagonalOperator {
 
     public DPlus(int gridPoints, /* Real */double h) {

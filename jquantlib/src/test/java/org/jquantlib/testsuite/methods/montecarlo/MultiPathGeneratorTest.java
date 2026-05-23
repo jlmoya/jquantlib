@@ -61,6 +61,7 @@ import org.junit.Test;
  * machinery without forcing a multi-asset process port that belongs to a
  * later phase.
  */
+@SuppressWarnings("deprecation")
 public class MultiPathGeneratorTest {
 
     public MultiPathGeneratorTest() {

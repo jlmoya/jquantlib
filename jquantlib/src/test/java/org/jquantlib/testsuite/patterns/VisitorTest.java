@@ -34,6 +34,7 @@ import org.junit.Test;
  *
  * @author Richard Gomes
  */
+@SuppressWarnings("unchecked")
 public class VisitorTest {
 
 	public VisitorTest() {

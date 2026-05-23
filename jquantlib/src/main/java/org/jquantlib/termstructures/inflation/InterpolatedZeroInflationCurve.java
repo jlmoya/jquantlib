@@ -77,6 +77,7 @@ import java.util.List;
  * @see PiecewiseZeroInflationCurve
  * @see InflationTraits
  */
+@SuppressWarnings("deprecation")
 public class InterpolatedZeroInflationCurve< I extends Interpolator > extends ZeroInflationTermStructure {
 
     //

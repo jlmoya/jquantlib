@@ -47,6 +47,7 @@ import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.transcendental.JQuantMath;
 
 @QualityAssurance( quality = Quality.Q4_UNIT, reviewers = { "Richard Gomes" }, version = Version.V097 )
+@SuppressWarnings("deprecation")
 public class DiscrepancyStatistics extends SequenceStatistics {
 
     private static final String DIMENSION_NOT_ALLOWED = "dimension==1 not allowed";

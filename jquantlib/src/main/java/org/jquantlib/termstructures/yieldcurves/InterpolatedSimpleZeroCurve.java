@@ -57,6 +57,7 @@ import org.jquantlib.util.Pair;
  * @param <I> Interpolator
  * @see SimpleZeroYield
  */
+@SuppressWarnings("deprecation")
 public class InterpolatedSimpleZeroCurve< I extends Interpolator > extends AbstractYieldTermStructure
         implements Traits.Curve {
 

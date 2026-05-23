@@ -48,6 +48,7 @@ package org.jquantlib.methods.finitedifferences;
  * @author Srinivas Hasti
  * @category findiff
  */
+@SuppressWarnings("unchecked")
 public class DMinus extends TridiagonalOperator {
 
     public DMinus(final int gridPoints, /* Real */final double h) {

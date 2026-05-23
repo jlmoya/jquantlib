@@ -63,6 +63,7 @@ import java.util.List;
  * @author Richard Gomes
  * @category yieldtermstructures
  */
+@SuppressWarnings("deprecation") // legitimate internal user of deprecated InterpolatedCurve API
 public class InterpolatedZeroCurve< I extends Interpolator > extends ZeroYieldStructure implements Traits.Curve {
 
     //

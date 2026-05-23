@@ -78,6 +78,7 @@ import org.junit.Test;
  * </ul>
  */
 // TODO: code review :: please verify against QL/C++ code
+@SuppressWarnings("unchecked")
 public class QuotesTest {
 
 	public QuotesTest() {

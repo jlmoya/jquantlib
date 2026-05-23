@@ -28,6 +28,7 @@ import org.jquantlib.math.Ops;
 import org.jquantlib.termstructures.yieldcurves.PiecewiseCurve;
 import org.jquantlib.termstructures.yieldcurves.Traits;
 
+@SuppressWarnings("deprecation")
 public class BootstrapError< T extends Traits > implements Ops.DoubleOp {
 
     private final PiecewiseCurve curve;

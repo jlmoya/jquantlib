@@ -42,6 +42,7 @@ import java.util.List;
  * @author Ueli Hofstetter
  */
 @QualityAssurance( quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = "Richard Gomes" )
+@SuppressWarnings("deprecation")
 public abstract class CalibratedModel implements Observer, Observable {
 
     private static final String parameter_array_to_small = "parameter array to small";

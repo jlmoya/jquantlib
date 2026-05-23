@@ -53,6 +53,7 @@ import java.util.List;
  * @author Richard Gomes
  * @category vanillaengines
  */
+@SuppressWarnings("unchecked")
 public abstract class FDEngineAdapter< Base extends FDVanillaEngine, Engine extends OneAssetOption.Engine >
         implements OneAssetOption.Engine {
 

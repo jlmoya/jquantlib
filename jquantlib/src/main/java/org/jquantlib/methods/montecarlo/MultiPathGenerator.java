@@ -48,6 +48,7 @@ import org.jquantlib.time.TimeGrid;
  *
  * @author JQuantLib
  */
+@SuppressWarnings("deprecation")
 public class MultiPathGenerator< GSG extends RandomSequenceGeneratorIntf > {
 
     private final boolean brownianBridge_;

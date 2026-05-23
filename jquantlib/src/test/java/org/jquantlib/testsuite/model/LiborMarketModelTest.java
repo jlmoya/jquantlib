@@ -117,6 +117,7 @@ import org.junit.Test;
  * <p>Source: {@code test-suite/libormarketmodel.cpp} v1.42.1 @
  * {@code 099987f0ca}.
  */
+@SuppressWarnings("deprecation")
 public class LiborMarketModelTest {
 
     /** Mirror of C++ free function {@code makeIndex(dates, rates)}

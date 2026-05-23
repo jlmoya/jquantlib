@@ -87,6 +87,7 @@ import java.util.List;
  * against known good values via the test-suite ports.
  *
  */
+@SuppressWarnings("deprecation")
 public class Bond extends Instrument {
 
     protected /*Natural*/ int settlementDays_;

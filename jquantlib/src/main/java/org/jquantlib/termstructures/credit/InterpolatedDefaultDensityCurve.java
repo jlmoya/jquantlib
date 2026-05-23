@@ -56,6 +56,7 @@ import java.util.List;
  *
  * @param <I> interpolator type.
  */
+@SuppressWarnings("deprecation")
 public class InterpolatedDefaultDensityCurve< I extends Interpolator > extends DefaultDensityStructure {
 
     private final Class< I > classI;

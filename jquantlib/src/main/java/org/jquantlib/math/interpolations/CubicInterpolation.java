@@ -84,6 +84,7 @@ import java.util.Arrays;
  * Lagrange).
  * @test to be adapted from old ones.
  */
+@SuppressWarnings("deprecation")
 public class CubicInterpolation extends AbstractInterpolation {
 
     //

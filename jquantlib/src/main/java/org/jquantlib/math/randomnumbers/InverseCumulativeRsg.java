@@ -53,6 +53,7 @@ import org.jquantlib.methods.montecarlo.Sample;
  * @author Richard Gomes
  */
 
+@SuppressWarnings("deprecation")
 public class InverseCumulativeRsg< USG extends UniformRandomSequenceGenerator, IC extends InverseCumulative >
         implements UniformRandomSequenceGenerator, RandomSequenceGeneratorIntf {
 

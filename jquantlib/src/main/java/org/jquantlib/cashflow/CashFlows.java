@@ -1390,6 +1390,9 @@ public class CashFlows {
         //
 
         @Override
+        @SuppressWarnings("unchecked") // raw cast to the method-level CashFlow type-param;
+                                        // the runtime isAssignableFrom guards verify type
+                                        // compatibility at the call site.
         public < CashFlow > Visitor< CashFlow > visitor(final Class< ? extends CashFlow > klass) {
 
             // Coupon is a CashFlow, therefore any Coupon types will never

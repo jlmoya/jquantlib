@@ -71,6 +71,7 @@ import org.junit.Test;
  * yet ported, so we cross-validate the {@code PathGenerator} contract
  * via a hand-rolled {@link DeterministicGsg} sequence here.
  */
+@SuppressWarnings("deprecation")
 public class PathGeneratorAdditionalTest {
 
     public PathGeneratorAdditionalTest() {

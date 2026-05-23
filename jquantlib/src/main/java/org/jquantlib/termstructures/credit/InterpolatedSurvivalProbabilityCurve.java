@@ -54,6 +54,7 @@ import java.util.List;
  *
  * @param <I> interpolator type.
  */
+@SuppressWarnings("deprecation")
 public class InterpolatedSurvivalProbabilityCurve< I extends Interpolator > extends SurvivalProbabilityStructure {
 
     private final Class< I > classI;

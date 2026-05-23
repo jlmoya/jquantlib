@@ -30,6 +30,7 @@ import java.util.*;
  * @author Srinivas Hasti
  *
  */
+@SuppressWarnings("unchecked")
 public class FiniteDifferenceModel< S extends Operator, T extends MixedScheme< S > > {
 
     private final T evolver;

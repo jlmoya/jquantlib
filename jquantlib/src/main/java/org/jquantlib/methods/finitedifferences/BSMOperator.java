@@ -31,6 +31,7 @@ import org.jquantlib.processes.GeneralizedBlackScholesProcess;
  * @author Srinivas Hasti
  *
  */
+@SuppressWarnings("unchecked")
 public class BSMOperator extends TridiagonalOperator {
 
     public BSMOperator(final int size, final double dx, final double r, final double q, final double sigma) {

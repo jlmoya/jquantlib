@@ -69,6 +69,7 @@ import java.util.Arrays;
  * @see <a href="http://www1.fpl.fs.fed.us/optimization.html">MINPACK/J</a>
  * @see <a href="http://www.netlib.org/minpack">MINPACK</a>
  */
+@SuppressWarnings({"unchecked", "deprecation"}) // unchecked: raw matrix arithmetic; deprecation: legitimate Cells.$ access
 public class QRDecomposition {
 
     private final int m;

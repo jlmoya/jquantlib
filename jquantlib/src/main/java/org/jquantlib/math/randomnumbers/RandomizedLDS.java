@@ -49,6 +49,7 @@ import java.util.function.Supplier;
  * <p>Static factories are provided for the two combinations exercised by
  * the QuantLib test-suite: {@link #ofSobol(int, long, long)} and {@link #ofLattice(int, double[], int, long)}.
  */
+@SuppressWarnings("deprecation")
 public class RandomizedLDS {
 
     private final Supplier< Lds > factory_;

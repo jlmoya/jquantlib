@@ -28,6 +28,7 @@ import org.jquantlib.math.matrixutilities.Array;
  * @author Srinivas Hasti
  * @author Tim Swetonic
  */
+@SuppressWarnings("unchecked")
 public class TridiagonalOperator implements Operator {
 
     protected TimeSetter timeSetter;

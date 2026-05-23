@@ -48,6 +48,7 @@ import org.jquantlib.processes.GeneralizedBlackScholesProcess;
  * @param <T>
  * @author Srinivas Hasti
  */
+@SuppressWarnings("unchecked")
 public abstract class PdeOperator< T extends PdeSecondOrderParabolic > extends TridiagonalOperator {
 
     private final Class< ? extends PdeSecondOrderParabolic > classT;

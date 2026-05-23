@@ -59,6 +59,7 @@ import org.jquantlib.lang.exceptions.LibraryException;
  * @see <a href="http://math.nist.gov/javanumerics/jama/">JAMA</a>
  */
 @QualityAssurance( quality = Quality.Q1_TRANSLATION, version = Version.OTHER, reviewers = { "Richard Gomes" } )
+@SuppressWarnings("deprecation")
 public class CholeskyDecomposition {
 
     private final static String MATRIX_IS_NOT_SIMMETRIC_POSITIVE = "Matrix is not symmetric positive definite.";

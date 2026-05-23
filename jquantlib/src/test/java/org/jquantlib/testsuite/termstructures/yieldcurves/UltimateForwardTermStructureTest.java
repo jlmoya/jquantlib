@@ -53,6 +53,7 @@ import org.junit.Test;
  * <p>Source: {@code test-suite/ultimateforwardtermstructure.cpp} v1.42.1
  * @ {@code 099987f0ca}.
  */
+@SuppressWarnings("unchecked")
 public class UltimateForwardTermStructureTest {
 
     //

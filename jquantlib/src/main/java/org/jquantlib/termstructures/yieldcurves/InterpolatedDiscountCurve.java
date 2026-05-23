@@ -65,6 +65,7 @@ import java.util.List;
  * @author Richard Gomes
  * @category yieldtermstructures
  */
+@SuppressWarnings("deprecation")
 public class InterpolatedDiscountCurve< I extends Interpolator > extends AbstractYieldTermStructure
         implements Traits.Curve {
 

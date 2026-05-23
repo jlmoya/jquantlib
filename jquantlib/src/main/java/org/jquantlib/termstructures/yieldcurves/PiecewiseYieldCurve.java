@@ -67,6 +67,7 @@ import java.util.List;
  * @note The bootstrapping algorithm will raise an exception if any two instruments have the same maturity date.
  * @category yieldtermstructures
  */
+@SuppressWarnings({"unchecked","deprecation"})
 public class PiecewiseYieldCurve< T extends Traits, I extends Interpolator, B extends Bootstrap > extends LazyObject
         implements PiecewiseCurve< I >, MultiCurveBootstrapProvider {
 

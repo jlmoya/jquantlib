@@ -48,6 +48,7 @@ import org.jquantlib.processes.GeneralizedBlackScholesProcess;
  * @param <T>
  * @author Srinivas Hasti
  */
+@SuppressWarnings("unchecked")
 public class PdeConstantCoeff< T extends Pde > extends PdeSecondOrderParabolic {
     /* Real*/private final double diffusion;
     /* Real*/private final double drift;

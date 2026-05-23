@@ -58,6 +58,7 @@ import org.jquantlib.lang.annotation.QualityAssurance.Version;
  * @see "Matrix computation," second edition, by Golub and Van Loan, The Johns Hopkins University Press
  */
 @QualityAssurance( quality = Quality.Q0_UNFINISHED, version = Version.V097, reviewers = { "Richard Gomes" } )
+@SuppressWarnings("deprecation")
 public class SymmetricSchurDecomposition {
 
     private static final double epsPrec = 1e-15;

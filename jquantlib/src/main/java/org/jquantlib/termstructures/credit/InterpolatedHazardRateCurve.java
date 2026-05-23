@@ -62,6 +62,7 @@ import java.util.List;
  *
  * @param <I> interpolator type (e.g. {@link org.jquantlib.math.interpolations.factories.BackwardFlat}).
  */
+@SuppressWarnings("deprecation")
 public class InterpolatedHazardRateCurve< I extends Interpolator > extends HazardRateStructure {
 
     //

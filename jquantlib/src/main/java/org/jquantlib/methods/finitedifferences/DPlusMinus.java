@@ -34,6 +34,7 @@ package org.jquantlib.methods.finitedifferences;
  *
  * \test the correctness of the returned values is tested by checking them against numerical calculations.
  */
+@SuppressWarnings("unchecked")
 public class DPlusMinus extends TridiagonalOperator {
 
     public DPlusMinus(int gridPoints, /*Real*/double h) {

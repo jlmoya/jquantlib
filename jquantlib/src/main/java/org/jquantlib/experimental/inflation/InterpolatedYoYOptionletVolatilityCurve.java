@@ -60,6 +60,7 @@ import java.util.List;
  *
  * @param <I> Interpolator type (e.g. {@link Linear}).
  */
+@SuppressWarnings("deprecation")
 public class InterpolatedYoYOptionletVolatilityCurve< I extends Interpolator > extends YoYOptionletVolatilitySurface {
 
     //

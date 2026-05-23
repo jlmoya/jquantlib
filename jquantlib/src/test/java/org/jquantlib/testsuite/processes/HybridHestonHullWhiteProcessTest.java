@@ -142,6 +142,7 @@ import org.junit.Test;
  * <p>Source: {@code test-suite/hybridhestonhullwhiteprocess.cpp} v1.42.1
  * @ {@code 099987f0ca}.
  */
+@SuppressWarnings("unchecked")
 public class HybridHestonHullWhiteProcessTest {
 
     // The Phase 5h.5 carry-forward REASON ("requires HybridHestonHullWhiteProcess

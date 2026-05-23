@@ -45,6 +45,7 @@ import org.junit.Test;
  *
  * @author Richard Gomes
  */
+@SuppressWarnings("deprecation") // tests the deprecated Cells.$ direct-access API
 public class ArrayTest {
 
     private final Set<Address.Flags> jFlags;

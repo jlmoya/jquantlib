@@ -41,6 +41,7 @@ import org.junit.Test;
  * @author Dominik Holenstein
  * @author Richard Gomes
  */
+@SuppressWarnings("deprecation")
 public class GaussKonrodPattersonIntegratorTest {
 
 	public GaussKonrodPattersonIntegratorTest() {

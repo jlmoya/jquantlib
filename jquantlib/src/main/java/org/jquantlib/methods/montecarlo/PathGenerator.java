@@ -60,6 +60,7 @@ import org.jquantlib.time.TimeGrid;
  *
  * @author JQuantLib
  */
+@SuppressWarnings("deprecation")
 public class PathGenerator</*<RNG extends RandomNumberGenerator,*/ GSG extends RandomSequenceGeneratorIntf > {
 
     //

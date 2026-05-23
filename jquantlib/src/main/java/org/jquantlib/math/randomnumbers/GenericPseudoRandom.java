@@ -50,6 +50,7 @@ import java.lang.reflect.Constructor;
  * @param <IC>  represents the InverseCumulative
  * @author Richard Gomes
  */
+@SuppressWarnings("unchecked")
 public abstract class GenericPseudoRandom< RNG extends RandomNumberGenerator, IC extends InverseCumulative > {
 
     //

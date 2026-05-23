@@ -58,6 +58,10 @@ import java.lang.reflect.Field;
  * @author Ueli Hofstetter
  * @author John Martin
  */
+@SuppressWarnings({"rawtypes", "unchecked"}) // intentional raw-FloatingLeg instantiation at line 283:
+                                              // reflective ctor takes 3 Class<?> tokens for IRT/FRC/CFC types;
+                                              // parameterising would require parallel type-token chains
+                                              // with no added safety (reflection erases anyway).
 public class IborLeg {
 
     private final Schedule schedule_;

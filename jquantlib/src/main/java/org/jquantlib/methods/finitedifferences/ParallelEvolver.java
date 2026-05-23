@@ -32,6 +32,7 @@ import java.util.Vector;
 //Using Type token to dynamically create instance of MixedScheme requires
 //a extension class, so making this class abstract to force a type hierarchy
 
+@SuppressWarnings("unchecked")
 public abstract class ParallelEvolver< S extends Operator, T extends MixedScheme< S > > {
 
     private final List< T > evolvers;

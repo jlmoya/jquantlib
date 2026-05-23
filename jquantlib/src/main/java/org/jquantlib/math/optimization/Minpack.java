@@ -101,6 +101,7 @@ import org.jquantlib.math.matrixutilities.internal.Address;
  *
  * @author Richard Gomes
  */
+@SuppressWarnings("deprecation")
 public class Minpack {
 
     /** Resolution of floating-point arithmetic (machine epsilon-like). */

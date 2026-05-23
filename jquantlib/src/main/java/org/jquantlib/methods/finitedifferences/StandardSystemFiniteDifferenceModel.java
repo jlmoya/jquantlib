@@ -28,6 +28,7 @@ import java.util.*;
  *
  */
 // Code Review; Is this the best way ? Code duplication of FiniteDifferenceModel
+@SuppressWarnings("unchecked")
 public class StandardSystemFiniteDifferenceModel {
 
     private final ParallelEvolver< TridiagonalOperator, CrankNicolson< TridiagonalOperator > > evolver;

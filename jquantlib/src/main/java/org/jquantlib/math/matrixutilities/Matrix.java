@@ -156,6 +156,8 @@ import java.util.Set;
  * @note This class is not thread-safe
  */
 @QualityAssurance( quality = Quality.Q1_TRANSLATION, version = Version.V097, reviewers = { "Richard Gomes" } )
+@SuppressWarnings("deprecation") // Matrix is a legitimate internal user of Cells.$ raw backing storage;
+                                  // the @Deprecated marker on Cells.$ exists to discourage EXTERNAL access.
 public class Matrix extends Cells< Address.MatrixAddress > implements Cloneable {
 
     //

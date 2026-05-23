@@ -64,6 +64,7 @@ import java.util.List;
  * @category yieldtermstructures
  */
 
+@SuppressWarnings("deprecation")
 public class InterpolatedForwardCurve< I extends Interpolator > extends ForwardRateStructure implements Traits.Curve {
 
     //

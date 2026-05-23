@@ -59,6 +59,7 @@ import java.util.List;
  *
  * @param <I> interpolator type (e.g. {@code BackwardFlat}, {@code Linear}).
  */
+@SuppressWarnings("deprecation")
 public class InterpolatedAffineHazardRateCurve< I extends Interpolator > extends OneFactorAffineSurvivalStructure {
 
     private final Class< I > classI;
