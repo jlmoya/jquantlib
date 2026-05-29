@@ -52,14 +52,16 @@ import java.util.List;
 /**
  * Abstract base class for exercise dates
  *
- * <p>JDK 25 sealed hierarchy (JEP 409): permits the three QuantLib v1.42.1 exercise styles
- * — {@link EuropeanExercise} and {@link EarlyExercise} (the abstract parent for American/Bermudan/Swing).</p>
+ * <p>JDK 25 sealed hierarchy (JEP 409): permits the QuantLib v1.42.1 exercise styles
+ * — {@link EuropeanExercise} and {@link EarlyExercise} (the abstract parent for American/Bermudan/Swing),
+ * plus {@link RebatedExercise} which (per C++ v1.42.1 {@code ql/rebatedexercise.hpp}) derives
+ * directly from {@code Exercise}.</p>
  *
  * @author Richard Gomes
  */
 @QualityAssurance( quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Richard Gomes" } )
 public abstract sealed class Exercise
-        permits EuropeanExercise, EarlyExercise {
+        permits EuropeanExercise, EarlyExercise, RebatedExercise {
 
     //
     // protected fields
