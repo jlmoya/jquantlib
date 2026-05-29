@@ -117,10 +117,6 @@ processes,G2ForwardProcess,UNFLAGGED
 processes,G2Process,UNFLAGGED
 processes,GarmanKohlagenProcess,UNFLAGGED
 processes,JointStochasticProcess,UNFLAGGED
-quotes,DerivedQuote,UNFLAGGED
-quotes,EurodollarFuturesImpliedStdDevQuote,UNFLAGGED
-quotes,ForwardSwapQuote,UNFLAGGED
-quotes,LastFixingQuote,UNFLAGGED
 termstructures,CPIVolatilitySurface,UNFLAGGED
 termstructures,CmsMarket,UNFLAGGED
 termstructures,CmsMarketCalibration,UNFLAGGED

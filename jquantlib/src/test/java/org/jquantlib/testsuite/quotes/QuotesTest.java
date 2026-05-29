@@ -133,26 +133,45 @@ public class QuotesTest {
 	}
 
 
-//	@Test
-//	public void testDerived() {
-//
-//		QL.info("Testing derived quotes...");
-//
-//	    typedef Real (*unary_f)(Real);
-//	    unary_f funcs[3] = { add10, mul10, sub10 };
-//
-//	    Quote me = new SimpleQuote(17.0);
-//	    Handle<Quote> h = new Handle<Quote>(me);
-//
-//	    for (Integer i=0; i<3; i++) {
-//	        DerivedQuote<unary_f> derived(h,funcs[i]);
-//	        Real x = derived.value(),
-//	             y = funcs[i](me->value());
-//	        if (Math.abs(x-y) > 1.0e-10)
-//	            fail("derived quote yields " << x << "\n"
-//	                       << "function result is " << y);
-//	    }
-//	}
+	/**
+	 * Faithful port of {@code test-suite/quotes.cpp BOOST_AUTO_TEST_CASE(testDerived)}
+	 * (v1.42.1). Verifies that {@link DerivedQuote} applied to a {@link SimpleQuote}
+	 * handle with the {@code add10}, {@code mul10}, and {@code sub10} unary functors
+	 * matches direct computation across a sweep of underlying values.
+	 *
+	 * <p>Ported alongside {@link DerivedQuote} (gap-quotes closure). The C++ test uses
+	 * function pointers {@code Real(*)(Real)}; the Java analogue is
+	 * {@link java.util.function.DoubleUnaryOperator}.
+	 */
+	@Test
+	public void testDerived() {
+
+		QL.info("Testing derived quotes...");
+
+		final java.util.function.DoubleUnaryOperator[] funcs =
+				new java.util.function.DoubleUnaryOperator[] {
+						x -> x + 10.0,
+						x -> x * 10.0,
+						x -> x - 10.0,
+				};
+		final double[] values = new double[] { 12.0, 23.0, 34.0 };
+
+		final SimpleQuote me = new SimpleQuote();
+		final Handle<Quote> h = new Handle<Quote>(me);
+
+		for (final java.util.function.DoubleUnaryOperator func : funcs) {
+			final org.jquantlib.quotes.DerivedQuote derived =
+					new org.jquantlib.quotes.DerivedQuote(h, func);
+			for (final double value : values) {
+				me.setValue(value);
+				final double x = derived.value();
+				final double y = func.applyAsDouble(value);
+				if (Math.abs(x - y) > 1.0e-10) {
+					fail("derived quote yields " + x + ", function result is " + y);
+				}
+			}
+		}
+	}
 
 	/**
 	 * Faithful port of {@code test-suite/quotes.cpp BOOST_AUTO_TEST_CASE(testComposite)}

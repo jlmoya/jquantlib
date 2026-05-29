@@ -1,0 +1,95 @@
+{
+  "cases": [
+    {
+      "expected": 0.27105341031749214,
+      "inputs": {
+        "accuracy": 1e-08,
+        "callPrice": 0.3,
+        "forward": 95.0,
+        "guess": 0.15,
+        "putPrice": 0.55,
+        "side": "call_price_used_Put",
+        "strike": 95.5
+      },
+      "name": "eurodollar_call_side"
+    },
+    {
+      "expected": 0.2587721064112298,
+      "inputs": {
+        "accuracy": 1e-08,
+        "callPrice": 0.45,
+        "forward": 95.0,
+        "guess": 0.15,
+        "putPrice": 0.2,
+        "side": "put_price_used_Call",
+        "strike": 94.0
+      },
+      "name": "eurodollar_put_side"
+    },
+    {
+      "expected": {
+        "fixingDate": 44727,
+        "startDate": 44729,
+        "value": 0.030901680090972147,
+        "valueDate": 43999
+      },
+      "inputs": {
+        "evalDate": "2020-06-15",
+        "flatRate": 0.03,
+        "fwdStart": "2Y",
+        "spread": null,
+        "swapTenor": "5Y"
+      },
+      "name": "forward_swap_no_spread"
+    },
+    {
+      "expected": {
+        "fixingDate": 44727,
+        "startDate": 44729,
+        "value": 0.03192391815737675,
+        "valueDate": 43999
+      },
+      "inputs": {
+        "evalDate": "2020-06-15",
+        "flatRate": 0.03,
+        "fwdStart": "2Y",
+        "spread": 0.001,
+        "swapTenor": "5Y"
+      },
+      "name": "forward_swap_spread_10bp"
+    },
+    {
+      "expected": {
+        "isValid": true,
+        "referenceDate": 43903,
+        "value": 0.017
+      },
+      "inputs": {
+        "evalDate": "2020-03-20",
+        "index": "Euribor6M",
+        "lastFixing": "2020-03-13",
+        "lastValue": 0.017
+      },
+      "name": "last_fixing_eval_after_last"
+    },
+    {
+      "expected": {
+        "isValid": true,
+        "referenceDate": 43874,
+        "value": 0.016
+      },
+      "inputs": {
+        "evalDate": "2020-02-13",
+        "index": "Euribor6M",
+        "lastFixing": "2020-03-13",
+        "valueAtEval": 0.016
+      },
+      "name": "last_fixing_eval_between"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-29T16:36:09Z",
+  "generated_by": "quotes_missing_probe",
+  "test_group": "quotes/quotes_missing"
+}
