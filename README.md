@@ -1,9 +1,10 @@
 # JQuantLib
 
-> A 100%-Java port of [QuantLib](https://www.quantlib.org/) — the de-facto open-source library for quantitative finance — being systematically rebuilt from C++ v1.42.1 with bit-exact precision guarantees.
+> A pure-Java port of [QuantLib](https://www.quantlib.org/) — the de-facto open-source library for quantitative finance — being systematically rebuilt from C++ v1.42.1 with tier-stratified, cross-validated precision (EXACT / TIGHT / LOOSE) against the pinned C++ source.
 
-[![Tag](https://img.shields.io/badge/tag-jquantlib--final-brightgreen)](#migration-status)
-[![Tests](https://img.shields.io/badge/tests-3610%20%2F%200%20fail-success)](#migration-status)
+[![Tag](https://img.shields.io/badge/tag-cpp--surface--functional--coverage-brightgreen)](#migration-status)
+[![Tests](https://img.shields.io/badge/tests-3678%20%2F%200%20fail-success)](#migration-status)
+[![C%2B%2B%20surface](https://img.shields.io/badge/C%2B%2B%20v1.42.1%20surface-100%25%20accounted-success)](#migration-status)
 [![Warnings](https://img.shields.io/badge/warnings-0-success)](#migration-status)
 [![JDK](https://img.shields.io/badge/JDK-25%20LTS-orange)](#migration-status)
 [![Scanner](https://img.shields.io/badge/scanner_WIP-0-success)](#migration-status)
@@ -31,6 +32,8 @@ This is not a maintenance branch. It is a **systematic, full-fidelity port** wit
 | **Direct-to-main** | Solo single-owner repo; no PR overhead. Each phase ends with a signed git tag (`jquantlib-phase<N>-complete`) and a completion document under `docs/migration/`. |
 
 ## Migration status
+
+**2026-05-29 — Full C++ v1.42.1 `ql/` surface functional coverage.** All 2024 C++ classes are accounted for via the reproducible audit `migration-harness/check_coverage.py`: **1933 ported & C++-cross-validated, 91 allowlisted with a written rationale (case-rename / inner-class / C++-template-idiom / traits-folded / commented-out-upstream), 0 unflagged.** Full suite green (676 test classes / 3678 tests). Generic numerics are kept native **by evidence** — the C++ cross-validation pins internal algorithmic state (MINPACK `fjac`/`fvec`, exact Sobol, bit-exact transcendentals), so a different-algorithm library fails our existing tests; even the Levenberg–Marquardt lineage-match (Hipparchus) fails substitution. Nothing was re-baselined away from C++. This is *functional* coverage, not a 1:1-class claim. Detail: [`docs/migration/full-cpp-surface-completion.md`](docs/migration/full-cpp-surface-completion.md).
 
 | Phase | Tag | What landed | Tests | Date |
 |-------|-----|-------------|-------|------|
