@@ -1,0 +1,90 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "accrualPeriod": 1.0138888888888888,
+        "amount": 68093.17035607719,
+        "callOptionRate": 0.016591634610463313,
+        "putOptionRate": 0.0,
+        "rate": 0.0671603872005145,
+        "underlyingRate": 0.05056875259005118
+      },
+      "inputs": {
+        "capletVol": 0.15,
+        "cashRate": 0.04,
+        "flatForward": 0.05,
+        "gap": 0.0001,
+        "index": "Euribor6M",
+        "replication": "Central",
+        "strike": 0.05
+      },
+      "name": "ibor_cash_call_long"
+    },
+    {
+      "expected": {
+        "amount": 79334.68883862246,
+        "callOptionRate": 0.0,
+        "putOptionRate": 0.027679159689138103,
+        "rate": 0.07824791227918929,
+        "underlyingRate": 0.05056875259005118
+      },
+      "inputs": {
+        "putStrike": 0.06
+      },
+      "name": "ibor_asset_put_long"
+    },
+    {
+      "expected": {
+        "amount": 60120.018939384725,
+        "callOptionRate": 0.016591634610463313,
+        "putOptionRate": 0.007863930164409005,
+        "rate": 0.05929645703610549,
+        "underlyingRate": 0.05056875259005118
+      },
+      "inputs": {
+        "callStrike": 0.05,
+        "cashRate": 0.04,
+        "putStrike": 0.03
+      },
+      "name": "ibor_cash_collar"
+    },
+    {
+      "expected": {
+        "accrualPeriod": 1.0166666666666666,
+        "amount": 253.19515399781824,
+        "callOptionRate": 0.003826727375458999,
+        "putOptionRate": 0.0,
+        "rate": 0.02490444137683458,
+        "underlyingRate": 0.02107771400137558
+      },
+      "inputs": {
+        "cashRate": 0.02,
+        "flatForward": 0.02,
+        "gap": 0.0001,
+        "index": "EuriborSwapIsdaFixA10Y",
+        "reversion": 0.01,
+        "strike": 0.03,
+        "swaptionVol": 0.2
+      },
+      "name": "cms_cash_call_long"
+    },
+    {
+      "expected": {
+        "amount": 395.391075821739,
+        "callOptionRate": 0.0,
+        "putOptionRate": 0.01781321148928727,
+        "rate": 0.03889092549066285,
+        "underlyingRate": 0.02107771400137558
+      },
+      "inputs": {
+        "putStrike": 0.05
+      },
+      "name": "cms_asset_put_long"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-29T16:43:56Z",
+  "generated_by": "digital_coupons_probe",
+  "test_group": "cashflows/digital_coupons"
+}

@@ -93,13 +93,6 @@ utilities,Clone,allowlisted
 utilities,Null,allowlisted
 utilities,Tracing,allowlisted
 (root),RebatedExercise,UNFLAGGED
-cashflows,AmortizingPayment,UNFLAGGED
-cashflows,DigitalCmsCoupon,UNFLAGGED
-cashflows,DigitalCmsLeg,UNFLAGGED
-cashflows,DigitalIborCoupon,UNFLAGGED
-cashflows,DigitalIborLeg,UNFLAGGED
-cashflows,Redemption,UNFLAGGED
-cashflows,TimeBasket,UNFLAGGED
 experimental,AdaptiveInertia,UNFLAGGED
 experimental,BaseCorrelationLossModel,UNFLAGGED
 experimental,CDO,UNFLAGGED
