@@ -273,4 +273,184 @@ public class Asia {
         }
     }
 
+    /**
+     * Indonesian Rupiah
+     * <p>
+     * The ISO three-letter code is IDR; the numeric code is 360. It is divided in 100 sen.
+     *
+     * @category currencies
+     */
+    public static class IDRCurrency extends Currency {
+        public IDRCurrency() {
+            // C++ asia.cpp:62
+            Data idrData = new Data("Indonesian Rupiah", "IDR", 360, "Rp", "", 100, new Rounding(), "%3% %1$.2f");
+            data = idrData;
+        }
+    }
+
+    /**
+     * Kazakstani Tenge
+     * <p>
+     * The ISO three-letter code is KZT; the numeric code is 398. It is divided in 100 tijin.
+     *
+     * @category currencies
+     */
+    public static class KZTCurrency extends Currency {
+        public KZTCurrency() {
+            // C++ asia.cpp:134 (name "Kazakstanti Tenge" mirrors the C++ literal exactly)
+            Data kztData = new Data("Kazakstanti Tenge", "KZT", 398, "Kzt", "", 100, new Rounding(), "%3% %1$.2f");
+            data = kztData;
+        }
+    }
+
+    /**
+     * Malaysian Ringgit
+     * <p>
+     * The ISO three-letter code is MYR; the numeric code is 458. It is divided in 100 sen.
+     *
+     * @category currencies
+     */
+    public static class MYRCurrency extends Currency {
+        public MYRCurrency() {
+            // C++ asia.cpp:143
+            Data myrData = new Data("Malaysian Ringgit", "MYR", 458, "RM", "", 100, new Rounding(), "%3% %1$.2f");
+            data = myrData;
+        }
+    }
+
+    /**
+     * Vietnamese Dong
+     * <p>
+     * The ISO three-letter code is VND; the numeric code is 704. It was divided in 100 xu.
+     *
+     * @category currencies
+     */
+    public static class VNDCurrency extends Currency {
+        public VNDCurrency() {
+            // C++ asia.cpp:206
+            Data vndData = new Data("Vietnamese Dong", "VND", 704, "", "", 100, new Rounding(), "%3% %1$.2f");
+            data = vndData;
+        }
+    }
+
+    /**
+     * Qatari riyal
+     * <p>
+     * The ISO three-letter code is QAR; the numeric code is 634. It is divided in 100 dirhams.
+     *
+     * @category currencies
+     */
+    public static class QARCurrency extends Currency {
+        public QARCurrency() {
+            // C++ asia.cpp:212
+            Data qarData = new Data("Qatari riyal", "QAR", 634, "QAR", "", 100, new Rounding(), "%3% %1$.2f");
+            data = qarData;
+        }
+    }
+
+    /**
+     * Bahraini dinar
+     * <p>
+     * The ISO three-letter code is BHD; the numeric code is 48. It is divided in 1000 fils.
+     *
+     * @category currencies
+     */
+    public static class BHDCurrency extends Currency {
+        public BHDCurrency() {
+            // C++ asia.cpp:218
+            Data bhdData = new Data("Bahraini dinar", "BHD", 48, "BHD", "", 1000, new Rounding(), "%3% %1$.2f");
+            data = bhdData;
+        }
+    }
+
+    /**
+     * Omani rial
+     * <p>
+     * The ISO three-letter code is OMR; the numeric code is 512. It is divided in 1000 baisa.
+     *
+     * @category currencies
+     */
+    public static class OMRCurrency extends Currency {
+        public OMRCurrency() {
+            // C++ asia.cpp:224
+            Data omrData = new Data("Omani rial", "OMR", 512, "OMR", "", 1000, new Rounding(), "%3% %1$.2f");
+            data = omrData;
+        }
+    }
+
+    /**
+     * Jordanian dinar
+     * <p>
+     * The ISO three-letter code is JOD; the numeric code is 400. It is divided in 1000 fils.
+     *
+     * @category currencies
+     */
+    public static class JODCurrency extends Currency {
+        public JODCurrency() {
+            // C++ asia.cpp:230
+            Data jodData = new Data("Jordanian dinar", "JOD", 400, "JOD", "", 1000, new Rounding(), "%3% %1$.2f");
+            data = jodData;
+        }
+    }
+
+    /**
+     * United Arab Emirates dirham
+     * <p>
+     * The ISO three-letter code is AED; the numeric code is 784. It is divided in 100 fils.
+     *
+     * @category currencies
+     */
+    public static class AEDCurrency extends Currency {
+        public AEDCurrency() {
+            // C++ asia.cpp:236
+            Data aedData = new Data("United Arab Emirates dirham", "AED", 784, "AED", "", 100, new Rounding(), "%3% %1$.2f");
+            data = aedData;
+        }
+    }
+
+    /**
+     * Philippine peso
+     * <p>
+     * The ISO three-letter code is PHP; the numeric code is 608. It is divided in 100 centavos.
+     *
+     * @category currencies
+     */
+    public static class PHPCurrency extends Currency {
+        public PHPCurrency() {
+            // C++ asia.cpp:242
+            Data phpData = new Data("Philippine peso", "PHP", 608, "PHP", "", 100, new Rounding(), "%3% %1$.2f");
+            data = phpData;
+        }
+    }
+
+    /**
+     * Chinese yuan (Hong Kong)
+     * <p>
+     * The ISO three-letter code is CNH; the numeric code is 156. It is divided in 100 fen.
+     *
+     * @category currencies
+     */
+    public static class CNHCurrency extends Currency {
+        public CNHCurrency() {
+            // C++ asia.cpp:248
+            Data cnhData = new Data("Chinese yuan (Hong Kong)", "CNH", 156, "CNH", "", 100, new Rounding(), "%3% %1$.2f");
+            data = cnhData;
+        }
+    }
+
+    /**
+     * Sri Lankan rupee
+     * <p>
+     * The ISO three-letter code is LKR; the numeric code is 144. It is divided in 100 cents.
+     *
+     * @category currencies
+     */
+    public static class LKRCurrency extends Currency {
+        public LKRCurrency() {
+            // C++ asia.cpp:254
+            Data lkrData = new Data("Sri Lankan rupee", "LKR", 144, "LKR", "", 100, new Rounding(), "%3% %1$.2f");
+            data = lkrData;
+        }
+    }
+
 }

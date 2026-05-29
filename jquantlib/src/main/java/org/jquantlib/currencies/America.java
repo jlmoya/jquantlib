@@ -215,4 +215,64 @@ public class America {
         }
     }
 
+    /**
+     * Mexican Unidad de Inversion
+     * <p>
+     * The ISO three-letter code is MXV; the numeric code is 979. A unit of account used in Mexico.
+     *
+     * @category currencies
+     */
+    public static class MXVCurrency extends Currency {
+        public MXVCurrency() {
+            // C++ america.cpp:142
+            Data mxvData = new Data("Mexican Unidad de Inversion", "MXV", 979, "MXV", "", 1, new Rounding(), "%3% %1$.2f");
+            data = mxvData;
+        }
+    }
+
+    /**
+     * Unidad de Valor Real (UVR) (funds code)
+     * <p>
+     * The ISO three-letter code is COU; the numeric code is 970. A unit of account used in Colombia.
+     *
+     * @category currencies
+     */
+    public static class COUCurrency extends Currency {
+        public COUCurrency() {
+            // C++ america.cpp:148
+            Data couData = new Data("Unidad de Valor Real (UVR) (funds code)", "COU", 970, "COU", "", 100, new Rounding(), "%3% %1$.2f");
+            data = couData;
+        }
+    }
+
+    /**
+     * Unidad de Fomento (funds code)
+     * <p>
+     * The ISO three-letter code is CLF; the numeric code is 990. A unit of account used in Chile.
+     *
+     * @category currencies
+     */
+    public static class CLFCurrency extends Currency {
+        public CLFCurrency() {
+            // C++ america.cpp:154
+            Data clfData = new Data("Unidad de Fomento (funds code)", "CLF", 990, "CLF", "", 1, new Rounding(), "%3% %1$.2f");
+            data = clfData;
+        }
+    }
+
+    /**
+     * Uruguayan peso
+     * <p>
+     * The ISO three-letter code is UYU; the numeric code is 858. It is divided in 100 cent&eacute;simos.
+     *
+     * @category currencies
+     */
+    public static class UYUCurrency extends Currency {
+        public UYUCurrency() {
+            // C++ america.cpp:160
+            Data uyuData = new Data("Uruguayan peso", "UYU", 858, "UYU", "", 1, new Rounding(), "%3% %1$.2f");
+            data = uyuData;
+        }
+    }
+
 }

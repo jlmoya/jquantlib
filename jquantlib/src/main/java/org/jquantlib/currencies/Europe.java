@@ -514,4 +514,79 @@ public class Europe {
         }
     }
 
+    /**
+     * Ukrainian hryvnia
+     * <p>
+     * The ISO three-letter code is UAH; the numeric code is 980. It is divided in 100 kopiykas.
+     *
+     * @category currencies
+     */
+    public static class UAHCurrency extends Currency {
+        public UAHCurrency() {
+            // C++ europe.cpp:362
+            Data uahData = new Data("Ukrainian hryvnia", "UAH", 980, "hrn", "", 100, new Rounding(), "%3% %1$.2f");
+            data = uahData;
+        }
+    }
+
+    /**
+     * Serbian dinar
+     * <p>
+     * The ISO three-letter code is RSD; the numeric code is 941. It is divided in 100 para.
+     *
+     * @category currencies
+     */
+    public static class RSDCurrency extends Currency {
+        public RSDCurrency() {
+            // C++ europe.cpp:368
+            Data rsdData = new Data("Serbian dinar", "RSD", 941, "RSD", "", 100, new Rounding(), "%3% %1$.2f");
+            data = rsdData;
+        }
+    }
+
+    /**
+     * Croatian kuna
+     * <p>
+     * The ISO three-letter code is HRK; the numeric code is 191. It is divided in 100 lipa.
+     *
+     * @category currencies
+     */
+    public static class HRKCurrency extends Currency {
+        public HRKCurrency() {
+            // C++ europe.cpp:374
+            Data hrkData = new Data("Croatian kuna", "HRK", 191, "HRK", "", 100, new Rounding(), "%3% %1$.2f");
+            data = hrkData;
+        }
+    }
+
+    /**
+     * Bulgarian lev
+     * <p>
+     * The ISO three-letter code is BGN; the numeric code is 975. It is divided in 100 stotinki.
+     *
+     * @category currencies
+     */
+    public static class BGNCurrency extends Currency {
+        public BGNCurrency() {
+            // C++ europe.cpp:380
+            Data bgnData = new Data("Bulgarian lev", "BGN", 975, "BGN", "", 100, new Rounding(), "%3% %1$.2f");
+            data = bgnData;
+        }
+    }
+
+    /**
+     * Georgian lari
+     * <p>
+     * The ISO three-letter code is GEL; the numeric code is 981. It is divided in 100 tetri.
+     *
+     * @category currencies
+     */
+    public static class GELCurrency extends Currency {
+        public GELCurrency() {
+            // C++ europe.cpp:386
+            Data gelData = new Data("Georgian lari", "GEL", 981, "GEL", "", 100, new Rounding(), "%3% %1$.2f");
+            data = gelData;
+        }
+    }
+
 }
