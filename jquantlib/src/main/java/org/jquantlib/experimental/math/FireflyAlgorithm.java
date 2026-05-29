@@ -391,9 +391,10 @@ public class FireflyAlgorithm extends OptimizationMethod {
 
     /** Gaussian random walk: each component drawn from a centred Gaussian. */
     public static class GaussianWalk extends RandomWalk {
-        private final double sigma_;
-        private final java.util.Random rng_;
-        private final double delta_;
+        protected final double sigma_;
+        protected final java.util.Random rng_;
+        /** Step multiplier; mutable so {@link DecreasingGaussianWalk} can decay it per iteration (C++ delta_). */
+        protected double delta_;
 
         public GaussianWalk(final double sigma, final double delta, final long seed) {
             this.sigma_ = sigma;
@@ -428,6 +429,48 @@ public class FireflyAlgorithm extends OptimizationMethod {
                 final double sign = (rng_.nextDouble() < 0.5) ? -1.0 : 1.0;
                 xRW.set(j, delta_ * sign * lfd_.draw(u));
             }
+        }
+    }
+
+    /**
+     * Decreasing Gaussian random walk: like {@link GaussianWalk}, but the step multiplier {@code delta} is
+     * squared (i.e. shrinks, since {@code delta < 1}) every time all fireflies have been processed in an
+     * iteration.
+     *
+     * <p>C++ fireflyalgorithm.hpp:255.
+     */
+    public static class DecreasingGaussianWalk extends GaussianWalk {
+        private final double delta0_;
+        private int iteration_;
+
+        public DecreasingGaussianWalk(final double sigma, final double delta, final long seed) {
+            super(sigma, delta, seed);
+            this.delta0_ = delta;
+        }
+
+        @Override
+        protected void walkImpl(final Array xRW) {
+            // C++ fireflyalgorithm.hpp:263-272
+            iteration_++;
+            if ( iteration_ > Mfa_ ) {
+                // Every time all the fireflies have been processed, multiply delta by itself
+                iteration_ = 0;
+                delta_ *= delta_;
+            }
+            super.walkImpl(xRW);
+        }
+
+        @Override
+        protected void init(final FireflyAlgorithm fa) {
+            // C++ fireflyalgorithm.hpp:273-277
+            super.init(fa);
+            iteration_ = 0;
+            delta_ = delta0_;
+        }
+
+        /** Exposes the current step multiplier for cross-validation. */
+        public double currentDelta() {
+            return delta_;
         }
     }
 

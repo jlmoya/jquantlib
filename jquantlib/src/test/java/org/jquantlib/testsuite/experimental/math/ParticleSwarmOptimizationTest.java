@@ -88,6 +88,55 @@ public class ParticleSwarmOptimizationTest {
         assertEquals("x[1]", 0.0, problem.currentValue().get(1), 0.5);
     }
 
+    /** End-to-end smoke tests that each newly-ported Inertia/Topology variant drives PSO to a low value. */
+    private void runVariant(final ParticleSwarmOptimization.Topology topology,
+            final ParticleSwarmOptimization.Inertia inertia, final int M) {
+        final Sphere cost = new Sphere(0.0);
+        final BoundaryConstraint constraint = new BoundaryConstraint(-5.0, 5.0);
+        final Array initial = new Array(2);
+        initial.set(0, 3.0);
+        initial.set(1, -2.0);
+        final Problem problem = new Problem(cost, constraint, initial);
+        final EndCriteria endCriteria = new EndCriteria(300, 100, 1.0e-8, 1.0e-8, 1.0e-8);
+        final ParticleSwarmOptimization pso = new ParticleSwarmOptimization(
+                M, topology, inertia, 2.05, 2.05, 12345L,
+                new double[] { -5.0, -5.0 }, new double[] { 5.0, 5.0 });
+        final EndCriteria.Type ec = pso.minimize(problem, endCriteria);
+        assertNotNull(ec);
+        assertTrue("function value " + problem.functionValue(), problem.functionValue() < 1.0);
+    }
+
+    @Test
+    public void testSimpleRandomInertiaRuns() {
+        runVariant(new ParticleSwarmOptimization.GlobalTopology(),
+                new ParticleSwarmOptimization.SimpleRandomInertia(0.5, 9L), 30);
+    }
+
+    @Test
+    public void testAdaptiveInertiaRuns() {
+        runVariant(new ParticleSwarmOptimization.GlobalTopology(),
+                new ParticleSwarmOptimization.AdaptiveInertia(0.1, 2.0, 5, 2), 30);
+    }
+
+    @Test
+    public void testLevyFlightInertiaRuns() {
+        runVariant(new ParticleSwarmOptimization.GlobalTopology(),
+                new ParticleSwarmOptimization.LevyFlightInertia(1.5, 5, 13L), 30);
+    }
+
+    @Test
+    public void testKNeighborsTopologyRuns() {
+        runVariant(new ParticleSwarmOptimization.KNeighbors(2),
+                new ParticleSwarmOptimization.TrivialInertia(), 30);
+    }
+
+    @Test
+    public void testClubsTopologyRuns() {
+        // defaultClubs=3, totalClubs=6 exercises the RNG club-assignment + leave/join paths.
+        runVariant(new ParticleSwarmOptimization.ClubsTopology(3, 6, 5, 1, 20, 17L),
+                new ParticleSwarmOptimization.TrivialInertia(), 30);
+    }
+
     @Test
     public void testDecreasingInertiaConfiguration() {
         // Smoke test that DecreasingInertia integrates with PSO.

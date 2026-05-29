@@ -71,6 +71,30 @@ public class FireflyAlgorithmTest {
     }
 
     @Test
+    public void testFireflyDecreasingGaussianWalkRuns() {
+        // End-to-end smoke test of the newly-ported DecreasingGaussianWalk.
+        final Sphere cost = new Sphere();
+        final BoundaryConstraint constraint = new BoundaryConstraint(-5.0, 5.0);
+        final Array initial = new Array(2);
+        initial.set(0, 1.0);
+        initial.set(1, 1.0);
+        final Problem problem = new Problem(cost, constraint, initial);
+        final EndCriteria endCriteria = new EndCriteria(150, 50, 1.0e-8, 1.0e-8, 1.0e-8);
+
+        final FireflyAlgorithm.ExponentialIntensity intensity =
+                new FireflyAlgorithm.ExponentialIntensity(1.0, 0.1, 0.1);
+        final FireflyAlgorithm.DecreasingGaussianWalk walk =
+                new FireflyAlgorithm.DecreasingGaussianWalk(0.5, 0.9, 3L);
+        final FireflyAlgorithm fa = new FireflyAlgorithm(
+                30, intensity, walk, 10, 1.0, 0.5, 7L,
+                new double[] { -5.0, -5.0 }, new double[] { 5.0, 5.0 });
+
+        final EndCriteria.Type ec = fa.minimize(problem, endCriteria);
+        assertNotNull(ec);
+        assertTrue("function value " + problem.functionValue(), problem.functionValue() < 5.0);
+    }
+
+    @Test
     public void testFireflyDifferentialEvolutionOnly() {
         // Mfa = 0 -> pure differential evolution
         final Sphere cost = new Sphere();
