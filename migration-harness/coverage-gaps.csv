@@ -75,7 +75,6 @@ patterns,Proxy,allowlisted
 patterns,Singleton,allowlisted
 patterns,UpdateChecker,allowlisted
 pricingengines,MCEuropeanGJRGARCHEngine,allowlisted
-processes,CachingKey,allowlisted
 processes,GJRGARCHProcess,allowlisted
 processes,HestonSLVProcess,allowlisted
 termstructures,InterpolatedCurve,allowlisted
@@ -110,13 +109,6 @@ methods,FdmHestonLocalVolatilityVarianceMesher,UNFLAGGED
 methods,FdmIndicesOnBoundary,UNFLAGGED
 methods,TRBDF2,UNFLAGGED
 methods,UniformGridMesher,UNFLAGGED
-processes,BlackProcess,UNFLAGGED
-processes,BlackScholesProcess,UNFLAGGED
-processes,EndEulerDiscretization,UNFLAGGED
-processes,G2ForwardProcess,UNFLAGGED
-processes,G2Process,UNFLAGGED
-processes,GarmanKohlagenProcess,UNFLAGGED
-processes,JointStochasticProcess,UNFLAGGED
 termstructures,CPIVolatilitySurface,UNFLAGGED
 termstructures,CmsMarket,UNFLAGGED
 termstructures,CmsMarketCalibration,UNFLAGGED
