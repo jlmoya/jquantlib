@@ -88,7 +88,6 @@ ALLOWLIST = {
     # --- inner-of: Java realizes it as an inner class/enum/factory/Arguments/Results ---
     "IntegrationFactory": "inner-of -> experimental.credit.LatentModel (static createLMIntegration)",
     "VectorIntegrator": "inner-of -> math.integrals.GaussianQuadMultidimIntegrator (inlined helper)",
-    "CachingKey": "inner-of -> processes.JointStochasticProcess (ported with it)",
     "Function": "inner-of -> cashflow.NumericHaganPricer (private functor)",
     "PriceHelper": "inner-of -> cashflow.LinearTsrPricer (private functor)",
     "VegaRatioHelper": "inner-of -> cashflow.LinearTsrPricer (private functor)",
@@ -137,7 +136,6 @@ ALLOWLIST = {
     "SwaptionVolCubeNoArbSabrModel": "cpp-idiom -> template tag folded into NoArbSabrSwaptionVolatilityCube",
     "VannaVolga": "cpp-idiom -> interpolation traits-factory tag (VannaVolgaInterpolation ported)",
     "LinearFlat": "cpp-idiom -> interpolation traits-factory tag folded into GeneralizedHullWhite",
-    "Root": "cpp-idiom -> solver functor realized as a Java lambda in RandomDefaultLM",
     "PrivateObserver": "cpp-idiom -> SabrSwaptionVolatilityCube rebuilds guard in performCalculations()",
     "XabrSwaptionVolatilityCube": "cpp-idiom CRTP base -> concrete Sabr/Zabr/NoArbSabr SwaptionVolatilityCube",
 
