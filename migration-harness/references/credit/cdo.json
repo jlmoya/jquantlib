@@ -1,0 +1,674 @@
+{
+  "cases": [
+    {
+      "expected": 2.1236279281969743,
+      "inputs": {
+        "asof": 38960,
+        "attachment": 0.0,
+        "correlation": 0.1,
+        "detachment": 0.03,
+        "integrationStepYears": 1.0,
+        "lambda": 0.01,
+        "nBuckets": 100.0,
+        "poolSize": 10.0,
+        "premium": 0.02,
+        "protectionSeller": true,
+        "rate": 0.05,
+        "recovery": 0.4,
+        "upfront": 0.0
+      },
+      "name": "equity_0_3_corr10_premiumValue"
+    },
+    {
+      "expected": -9.610886285755733,
+      "inputs": {
+        "asof": 38960,
+        "attachment": 0.0,
+        "correlation": 0.1,
+        "detachment": 0.03,
+        "integrationStepYears": 1.0,
+        "lambda": 0.01,
+        "nBuckets": 100.0,
+        "poolSize": 10.0,
+        "premium": 0.02,
+        "protectionSeller": true,
+        "rate": 0.05,
+        "recovery": 0.4,
+        "upfront": 0.0
+      },
+      "name": "equity_0_3_corr10_protectionValue"
+    },
+    {
+      "expected": 0.09051384339172515,
+      "inputs": {
+        "asof": 38960,
+        "attachment": 0.0,
+        "correlation": 0.1,
+        "detachment": 0.03,
+        "integrationStepYears": 1.0,
+        "lambda": 0.01,
+        "nBuckets": 100.0,
+        "poolSize": 10.0,
+        "premium": 0.02,
+        "protectionSeller": true,
+        "rate": 0.05,
+        "recovery": 0.4,
+        "upfront": 0.0
+      },
+      "name": "equity_0_3_corr10_fairPremium"
+    },
+    {
+      "expected": -7.487258357558758,
+      "inputs": {
+        "asof": 38960,
+        "attachment": 0.0,
+        "correlation": 0.1,
+        "detachment": 0.03,
+        "integrationStepYears": 1.0,
+        "lambda": 0.01,
+        "nBuckets": 100.0,
+        "poolSize": 10.0,
+        "premium": 0.02,
+        "protectionSeller": true,
+        "rate": 0.05,
+        "recovery": 0.4,
+        "upfront": 0.0
+      },
+      "name": "equity_0_3_corr10_NPV"
+    },
+    {
+      "expected": 0.0,
+      "inputs": {
+        "asof": 38960,
+        "attachment": 0.0,
+        "correlation": 0.1,
+        "detachment": 0.03,
+        "integrationStepYears": 1.0,
+        "lambda": 0.01,
+        "nBuckets": 100.0,
+        "poolSize": 10.0,
+        "premium": 0.02,
+        "protectionSeller": true,
+        "rate": 0.05,
+        "recovery": 0.4,
+        "upfront": 0.0
+      },
+      "name": "equity_0_3_corr10_error"
+    },
+    {
+      "expected": 1000.0,
+      "inputs": {
+        "asof": 38960,
+        "attachment": 0.0,
+        "correlation": 0.1,
+        "detachment": 0.03,
+        "integrationStepYears": 1.0,
+        "lambda": 0.01,
+        "nBuckets": 100.0,
+        "poolSize": 10.0,
+        "premium": 0.02,
+        "protectionSeller": true,
+        "rate": 0.05,
+        "recovery": 0.4,
+        "upfront": 0.0
+      },
+      "name": "equity_0_3_corr10_nominal"
+    },
+    {
+      "expected": 600.0,
+      "inputs": {
+        "asof": 38960,
+        "attachment": 0.0,
+        "correlation": 0.1,
+        "detachment": 0.03,
+        "integrationStepYears": 1.0,
+        "lambda": 0.01,
+        "nBuckets": 100.0,
+        "poolSize": 10.0,
+        "premium": 0.02,
+        "protectionSeller": true,
+        "rate": 0.05,
+        "recovery": 0.4,
+        "upfront": 0.0
+      },
+      "name": "equity_0_3_corr10_lgd"
+    },
+    {
+      "expected": 2.2055464163152756,
+      "inputs": {
+        "asof": 38960,
+        "attachment": 0.0,
+        "correlation": 0.3,
+        "detachment": 0.03,
+        "integrationStepYears": 1.0,
+        "lambda": 0.01,
+        "nBuckets": 100.0,
+        "poolSize": 10.0,
+        "premium": 0.02,
+        "protectionSeller": true,
+        "rate": 0.05,
+        "recovery": 0.4,
+        "upfront": 0.0
+      },
+      "name": "equity_0_3_corr30_premiumValue"
+    },
+    {
+      "expected": -8.013140000887278,
+      "inputs": {
+        "asof": 38960,
+        "attachment": 0.0,
+        "correlation": 0.3,
+        "detachment": 0.03,
+        "integrationStepYears": 1.0,
+        "lambda": 0.01,
+        "nBuckets": 100.0,
+        "poolSize": 10.0,
+        "premium": 0.02,
+        "protectionSeller": true,
+        "rate": 0.05,
+        "recovery": 0.4,
+        "upfront": 0.0
+      },
+      "name": "equity_0_3_corr30_protectionValue"
+    },
+    {
+      "expected": 0.07266353536349086,
+      "inputs": {
+        "asof": 38960,
+        "attachment": 0.0,
+        "correlation": 0.3,
+        "detachment": 0.03,
+        "integrationStepYears": 1.0,
+        "lambda": 0.01,
+        "nBuckets": 100.0,
+        "poolSize": 10.0,
+        "premium": 0.02,
+        "protectionSeller": true,
+        "rate": 0.05,
+        "recovery": 0.4,
+        "upfront": 0.0
+      },
+      "name": "equity_0_3_corr30_fairPremium"
+    },
+    {
+      "expected": -5.807593584572002,
+      "inputs": {
+        "asof": 38960,
+        "attachment": 0.0,
+        "correlation": 0.3,
+        "detachment": 0.03,
+        "integrationStepYears": 1.0,
+        "lambda": 0.01,
+        "nBuckets": 100.0,
+        "poolSize": 10.0,
+        "premium": 0.02,
+        "protectionSeller": true,
+        "rate": 0.05,
+        "recovery": 0.4,
+        "upfront": 0.0
+      },
+      "name": "equity_0_3_corr30_NPV"
+    },
+    {
+      "expected": 0.0,
+      "inputs": {
+        "asof": 38960,
+        "attachment": 0.0,
+        "correlation": 0.3,
+        "detachment": 0.03,
+        "integrationStepYears": 1.0,
+        "lambda": 0.01,
+        "nBuckets": 100.0,
+        "poolSize": 10.0,
+        "premium": 0.02,
+        "protectionSeller": true,
+        "rate": 0.05,
+        "recovery": 0.4,
+        "upfront": 0.0
+      },
+      "name": "equity_0_3_corr30_error"
+    },
+    {
+      "expected": 1000.0,
+      "inputs": {
+        "asof": 38960,
+        "attachment": 0.0,
+        "correlation": 0.3,
+        "detachment": 0.03,
+        "integrationStepYears": 1.0,
+        "lambda": 0.01,
+        "nBuckets": 100.0,
+        "poolSize": 10.0,
+        "premium": 0.02,
+        "protectionSeller": true,
+        "rate": 0.05,
+        "recovery": 0.4,
+        "upfront": 0.0
+      },
+      "name": "equity_0_3_corr30_nominal"
+    },
+    {
+      "expected": 1200.0,
+      "inputs": {
+        "asof": 38960,
+        "attachment": 0.0,
+        "correlation": 0.3,
+        "detachment": 0.03,
+        "integrationStepYears": 1.0,
+        "lambda": 0.01,
+        "nBuckets": 100.0,
+        "poolSize": 10.0,
+        "premium": 0.02,
+        "protectionSeller": true,
+        "rate": 0.05,
+        "recovery": 0.4,
+        "upfront": 0.0
+      },
+      "name": "equity_0_3_corr30_lgd"
+    },
+    {
+      "expected": 2.216629564135955,
+      "inputs": {
+        "asof": 38960,
+        "attachment": 0.03,
+        "correlation": 0.3,
+        "detachment": 0.06,
+        "integrationStepYears": 1.0,
+        "lambda": 0.01,
+        "nBuckets": 100.0,
+        "poolSize": 10.0,
+        "premium": 0.02,
+        "protectionSeller": true,
+        "rate": 0.05,
+        "recovery": 0.4,
+        "upfront": 0.0
+      },
+      "name": "mezz_3_6_corr30_premiumValue"
+    },
+    {
+      "expected": -8.053407036067618,
+      "inputs": {
+        "asof": 38960,
+        "attachment": 0.03,
+        "correlation": 0.3,
+        "detachment": 0.06,
+        "integrationStepYears": 1.0,
+        "lambda": 0.01,
+        "nBuckets": 100.0,
+        "poolSize": 10.0,
+        "premium": 0.02,
+        "protectionSeller": true,
+        "rate": 0.05,
+        "recovery": 0.4,
+        "upfront": 0.0
+      },
+      "name": "mezz_3_6_corr30_protectionValue"
+    },
+    {
+      "expected": 0.07266353536349089,
+      "inputs": {
+        "asof": 38960,
+        "attachment": 0.03,
+        "correlation": 0.3,
+        "detachment": 0.06,
+        "integrationStepYears": 1.0,
+        "lambda": 0.01,
+        "nBuckets": 100.0,
+        "poolSize": 10.0,
+        "premium": 0.02,
+        "protectionSeller": true,
+        "rate": 0.05,
+        "recovery": 0.4,
+        "upfront": 0.0
+      },
+      "name": "mezz_3_6_corr30_fairPremium"
+    },
+    {
+      "expected": -5.836777471931663,
+      "inputs": {
+        "asof": 38960,
+        "attachment": 0.03,
+        "correlation": 0.3,
+        "detachment": 0.06,
+        "integrationStepYears": 1.0,
+        "lambda": 0.01,
+        "nBuckets": 100.0,
+        "poolSize": 10.0,
+        "premium": 0.02,
+        "protectionSeller": true,
+        "rate": 0.05,
+        "recovery": 0.4,
+        "upfront": 0.0
+      },
+      "name": "mezz_3_6_corr30_NPV"
+    },
+    {
+      "expected": 0.0,
+      "inputs": {
+        "asof": 38960,
+        "attachment": 0.03,
+        "correlation": 0.3,
+        "detachment": 0.06,
+        "integrationStepYears": 1.0,
+        "lambda": 0.01,
+        "nBuckets": 100.0,
+        "poolSize": 10.0,
+        "premium": 0.02,
+        "protectionSeller": true,
+        "rate": 0.05,
+        "recovery": 0.4,
+        "upfront": 0.0
+      },
+      "name": "mezz_3_6_corr30_error"
+    },
+    {
+      "expected": 1000.0,
+      "inputs": {
+        "asof": 38960,
+        "attachment": 0.03,
+        "correlation": 0.3,
+        "detachment": 0.06,
+        "integrationStepYears": 1.0,
+        "lambda": 0.01,
+        "nBuckets": 100.0,
+        "poolSize": 10.0,
+        "premium": 0.02,
+        "protectionSeller": true,
+        "rate": 0.05,
+        "recovery": 0.4,
+        "upfront": 0.0
+      },
+      "name": "mezz_3_6_corr30_nominal"
+    },
+    {
+      "expected": 1800.0,
+      "inputs": {
+        "asof": 38960,
+        "attachment": 0.03,
+        "correlation": 0.3,
+        "detachment": 0.06,
+        "integrationStepYears": 1.0,
+        "lambda": 0.01,
+        "nBuckets": 100.0,
+        "poolSize": 10.0,
+        "premium": 0.02,
+        "protectionSeller": true,
+        "rate": 0.05,
+        "recovery": 0.4,
+        "upfront": 0.0
+      },
+      "name": "mezz_3_6_corr30_lgd"
+    },
+    {
+      "expected": 79.86061042367581,
+      "inputs": {
+        "asof": 38960,
+        "attachment": 0.1,
+        "correlation": 0.3,
+        "detachment": 1.0,
+        "integrationStepYears": 1.0,
+        "lambda": 0.01,
+        "nBuckets": 100.0,
+        "poolSize": 10.0,
+        "premium": 0.02,
+        "protectionSeller": true,
+        "rate": 0.05,
+        "recovery": 0.4,
+        "upfront": 0.0
+      },
+      "name": "senior_10_100_corr30_premiumValue"
+    },
+    {
+      "expected": -6.217759508866718,
+      "inputs": {
+        "asof": 38960,
+        "attachment": 0.1,
+        "correlation": 0.3,
+        "detachment": 1.0,
+        "integrationStepYears": 1.0,
+        "lambda": 0.01,
+        "nBuckets": 100.0,
+        "poolSize": 10.0,
+        "premium": 0.02,
+        "protectionSeller": true,
+        "rate": 0.05,
+        "recovery": 0.4,
+        "upfront": 0.0
+      },
+      "name": "senior_10_100_corr30_protectionValue"
+    },
+    {
+      "expected": 0.0015571530134518919,
+      "inputs": {
+        "asof": 38960,
+        "attachment": 0.1,
+        "correlation": 0.3,
+        "detachment": 1.0,
+        "integrationStepYears": 1.0,
+        "lambda": 0.01,
+        "nBuckets": 100.0,
+        "poolSize": 10.0,
+        "premium": 0.02,
+        "protectionSeller": true,
+        "rate": 0.05,
+        "recovery": 0.4,
+        "upfront": 0.0
+      },
+      "name": "senior_10_100_corr30_fairPremium"
+    },
+    {
+      "expected": 73.64285091480909,
+      "inputs": {
+        "asof": 38960,
+        "attachment": 0.1,
+        "correlation": 0.3,
+        "detachment": 1.0,
+        "integrationStepYears": 1.0,
+        "lambda": 0.01,
+        "nBuckets": 100.0,
+        "poolSize": 10.0,
+        "premium": 0.02,
+        "protectionSeller": true,
+        "rate": 0.05,
+        "recovery": 0.4,
+        "upfront": 0.0
+      },
+      "name": "senior_10_100_corr30_NPV"
+    },
+    {
+      "expected": 0.0,
+      "inputs": {
+        "asof": 38960,
+        "attachment": 0.1,
+        "correlation": 0.3,
+        "detachment": 1.0,
+        "integrationStepYears": 1.0,
+        "lambda": 0.01,
+        "nBuckets": 100.0,
+        "poolSize": 10.0,
+        "premium": 0.02,
+        "protectionSeller": true,
+        "rate": 0.05,
+        "recovery": 0.4,
+        "upfront": 0.0
+      },
+      "name": "senior_10_100_corr30_error"
+    },
+    {
+      "expected": 1000.0,
+      "inputs": {
+        "asof": 38960,
+        "attachment": 0.1,
+        "correlation": 0.3,
+        "detachment": 1.0,
+        "integrationStepYears": 1.0,
+        "lambda": 0.01,
+        "nBuckets": 100.0,
+        "poolSize": 10.0,
+        "premium": 0.02,
+        "protectionSeller": true,
+        "rate": 0.05,
+        "recovery": 0.4,
+        "upfront": 0.0
+      },
+      "name": "senior_10_100_corr30_nominal"
+    },
+    {
+      "expected": 2400.0,
+      "inputs": {
+        "asof": 38960,
+        "attachment": 0.1,
+        "correlation": 0.3,
+        "detachment": 1.0,
+        "integrationStepYears": 1.0,
+        "lambda": 0.01,
+        "nBuckets": 100.0,
+        "poolSize": 10.0,
+        "premium": 0.02,
+        "protectionSeller": true,
+        "rate": 0.05,
+        "recovery": 0.4,
+        "upfront": 0.0
+      },
+      "name": "senior_10_100_corr30_lgd"
+    },
+    {
+      "expected": -2.2055464163152756,
+      "inputs": {
+        "asof": 38960,
+        "attachment": 0.0,
+        "correlation": 0.3,
+        "detachment": 0.03,
+        "integrationStepYears": 1.0,
+        "lambda": 0.01,
+        "nBuckets": 100.0,
+        "poolSize": 10.0,
+        "premium": 0.02,
+        "protectionSeller": false,
+        "rate": 0.05,
+        "recovery": 0.4,
+        "upfront": 0.0
+      },
+      "name": "equity_0_3_corr30_buyer_premiumValue"
+    },
+    {
+      "expected": 8.013140000887278,
+      "inputs": {
+        "asof": 38960,
+        "attachment": 0.0,
+        "correlation": 0.3,
+        "detachment": 0.03,
+        "integrationStepYears": 1.0,
+        "lambda": 0.01,
+        "nBuckets": 100.0,
+        "poolSize": 10.0,
+        "premium": 0.02,
+        "protectionSeller": false,
+        "rate": 0.05,
+        "recovery": 0.4,
+        "upfront": 0.0
+      },
+      "name": "equity_0_3_corr30_buyer_protectionValue"
+    },
+    {
+      "expected": 0.07266353536349086,
+      "inputs": {
+        "asof": 38960,
+        "attachment": 0.0,
+        "correlation": 0.3,
+        "detachment": 0.03,
+        "integrationStepYears": 1.0,
+        "lambda": 0.01,
+        "nBuckets": 100.0,
+        "poolSize": 10.0,
+        "premium": 0.02,
+        "protectionSeller": false,
+        "rate": 0.05,
+        "recovery": 0.4,
+        "upfront": 0.0
+      },
+      "name": "equity_0_3_corr30_buyer_fairPremium"
+    },
+    {
+      "expected": 5.807593584572002,
+      "inputs": {
+        "asof": 38960,
+        "attachment": 0.0,
+        "correlation": 0.3,
+        "detachment": 0.03,
+        "integrationStepYears": 1.0,
+        "lambda": 0.01,
+        "nBuckets": 100.0,
+        "poolSize": 10.0,
+        "premium": 0.02,
+        "protectionSeller": false,
+        "rate": 0.05,
+        "recovery": 0.4,
+        "upfront": 0.0
+      },
+      "name": "equity_0_3_corr30_buyer_NPV"
+    },
+    {
+      "expected": 0.0,
+      "inputs": {
+        "asof": 38960,
+        "attachment": 0.0,
+        "correlation": 0.3,
+        "detachment": 0.03,
+        "integrationStepYears": 1.0,
+        "lambda": 0.01,
+        "nBuckets": 100.0,
+        "poolSize": 10.0,
+        "premium": 0.02,
+        "protectionSeller": false,
+        "rate": 0.05,
+        "recovery": 0.4,
+        "upfront": 0.0
+      },
+      "name": "equity_0_3_corr30_buyer_error"
+    },
+    {
+      "expected": 1000.0,
+      "inputs": {
+        "asof": 38960,
+        "attachment": 0.0,
+        "correlation": 0.3,
+        "detachment": 0.03,
+        "integrationStepYears": 1.0,
+        "lambda": 0.01,
+        "nBuckets": 100.0,
+        "poolSize": 10.0,
+        "premium": 0.02,
+        "protectionSeller": false,
+        "rate": 0.05,
+        "recovery": 0.4,
+        "upfront": 0.0
+      },
+      "name": "equity_0_3_corr30_buyer_nominal"
+    },
+    {
+      "expected": 3000.0,
+      "inputs": {
+        "asof": 38960,
+        "attachment": 0.0,
+        "correlation": 0.3,
+        "detachment": 0.03,
+        "integrationStepYears": 1.0,
+        "lambda": 0.01,
+        "nBuckets": 100.0,
+        "poolSize": 10.0,
+        "premium": 0.02,
+        "protectionSeller": false,
+        "rate": 0.05,
+        "recovery": 0.4,
+        "upfront": 0.0
+      },
+      "name": "equity_0_3_corr30_buyer_lgd"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-29T17:36:48Z",
+  "generated_by": "cdo_probe.cpp",
+  "test_group": "credit/cdo"
+}

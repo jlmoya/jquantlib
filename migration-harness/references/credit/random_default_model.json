@@ -1,0 +1,122 @@
+{
+  "cases": [
+    {
+      "expected": 0.5,
+      "inputs": {
+        "M": 0.0,
+        "Z": 0.0,
+        "correlation": 0.3,
+        "y": 0.0
+      },
+      "name": "condprob_corr30_m0_z0"
+    },
+    {
+      "expected": 0.5514764765377099,
+      "inputs": {
+        "M": 1.0,
+        "Z": -0.5,
+        "correlation": 0.3,
+        "y": 0.1293925442381283
+      },
+      "name": "condprob_corr30_mp1_zm05"
+    },
+    {
+      "expected": 0.8028197427047963,
+      "inputs": {
+        "M": -1.5,
+        "Z": 2.0,
+        "correlation": 0.3,
+        "y": 0.851736216810402
+      },
+      "name": "condprob_corr30_mm15_zp2"
+    },
+    {
+      "expected": 0.736455371567231,
+      "inputs": {
+        "M": 0.5,
+        "Z": 0.5,
+        "correlation": 0.1,
+        "y": 0.6324555320336759
+      },
+      "name": "condprob_corr10_mp05_zp05"
+    },
+    {
+      "expected": 0.01694742676234462,
+      "inputs": {
+        "M": -2.0,
+        "Z": -1.0,
+        "correlation": 0.5,
+        "y": -2.121320343559643
+      },
+      "name": "condprob_corr50_mm2_zm1"
+    },
+    {
+      "expected": 0.10005003335834942,
+      "inputs": {
+        "accuracy": 1e-08,
+        "asof": 38960,
+        "lambda": 0.01,
+        "p": 0.001,
+        "tmax": 5.0
+      },
+      "name": "invtime_p_001"
+    },
+    {
+      "expected": 0.5012541823542772,
+      "inputs": {
+        "accuracy": 1e-08,
+        "asof": 38960,
+        "lambda": 0.01,
+        "p": 0.005,
+        "tmax": 5.0
+      },
+      "name": "invtime_p_005"
+    },
+    {
+      "expected": 1.0050335853502106,
+      "inputs": {
+        "accuracy": 1e-08,
+        "asof": 38960,
+        "lambda": 0.01,
+        "p": 0.01,
+        "tmax": 5.0
+      },
+      "name": "invtime_p_01"
+    },
+    {
+      "expected": 2.0202707316836035,
+      "inputs": {
+        "accuracy": 1e-08,
+        "asof": 38960,
+        "lambda": 0.01,
+        "p": 0.02,
+        "tmax": 5.0
+      },
+      "name": "invtime_p_02"
+    },
+    {
+      "expected": 3.0459207484708504,
+      "inputs": {
+        "accuracy": 1e-08,
+        "asof": 38960,
+        "lambda": 0.01,
+        "p": 0.03,
+        "tmax": 5.0
+      },
+      "name": "invtime_p_03"
+    },
+    {
+      "expected": 0.048770575499285984,
+      "inputs": {
+        "lambda": 0.01,
+        "tmax": 5.0
+      },
+      "name": "defprob_at_tmax"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-29T17:36:49Z",
+  "generated_by": "random_default_model_probe.cpp",
+  "test_group": "credit/random_default_model"
+}

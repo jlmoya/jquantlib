@@ -1,0 +1,342 @@
+{
+  "cases": [
+    {
+      "expected": 11.07010861932081,
+      "inputs": {
+        "asof": 40344,
+        "attach": 0.0,
+        "correlsRowMajor": [
+          0.2,
+          0.22,
+          0.25,
+          0.27,
+          0.35,
+          0.37,
+          0.4,
+          0.42,
+          0.55,
+          0.57,
+          0.6,
+          0.63
+        ],
+        "detach": 0.03,
+        "lambda": 0.01,
+        "losses": [
+          0.03,
+          0.1,
+          0.2
+        ],
+        "poolSize": 20.0,
+        "recovery": 0.4,
+        "tenors_months": [
+          12,
+          36,
+          60,
+          84
+        ]
+      },
+      "name": "equity_0_3_etl_1y"
+    },
+    {
+      "expected": 26.180767854792144,
+      "inputs": {
+        "asof": 40344,
+        "attach": 0.0,
+        "correlsRowMajor": [
+          0.2,
+          0.22,
+          0.25,
+          0.27,
+          0.35,
+          0.37,
+          0.4,
+          0.42,
+          0.55,
+          0.57,
+          0.6,
+          0.63
+        ],
+        "detach": 0.03,
+        "lambda": 0.01,
+        "losses": [
+          0.03,
+          0.1,
+          0.2
+        ],
+        "poolSize": 20.0,
+        "recovery": 0.4,
+        "tenors_months": [
+          12,
+          36,
+          60,
+          84
+        ]
+      },
+      "name": "equity_0_3_etl_3y"
+    },
+    {
+      "expected": 34.454055128319034,
+      "inputs": {
+        "asof": 40344,
+        "attach": 0.0,
+        "correlsRowMajor": [
+          0.2,
+          0.22,
+          0.25,
+          0.27,
+          0.35,
+          0.37,
+          0.4,
+          0.42,
+          0.55,
+          0.57,
+          0.6,
+          0.63
+        ],
+        "detach": 0.03,
+        "lambda": 0.01,
+        "losses": [
+          0.03,
+          0.1,
+          0.2
+        ],
+        "poolSize": 20.0,
+        "recovery": 0.4,
+        "tenors_months": [
+          12,
+          36,
+          60,
+          84
+        ]
+      },
+      "name": "equity_0_3_etl_5y"
+    },
+    {
+      "expected": 0.5080707686985875,
+      "inputs": {
+        "asof": 40344,
+        "attach": 0.03,
+        "correlsRowMajor": [
+          0.2,
+          0.22,
+          0.25,
+          0.27,
+          0.35,
+          0.37,
+          0.4,
+          0.42,
+          0.55,
+          0.57,
+          0.6,
+          0.63
+        ],
+        "detach": 0.1,
+        "lambda": 0.01,
+        "losses": [
+          0.03,
+          0.1,
+          0.2
+        ],
+        "poolSize": 20.0,
+        "recovery": 0.4,
+        "tenors_months": [
+          12,
+          36,
+          60,
+          84
+        ]
+      },
+      "name": "mezz_3_10_etl_1y"
+    },
+    {
+      "expected": 5.654103729131876,
+      "inputs": {
+        "asof": 40344,
+        "attach": 0.03,
+        "correlsRowMajor": [
+          0.2,
+          0.22,
+          0.25,
+          0.27,
+          0.35,
+          0.37,
+          0.4,
+          0.42,
+          0.55,
+          0.57,
+          0.6,
+          0.63
+        ],
+        "detach": 0.1,
+        "lambda": 0.01,
+        "losses": [
+          0.03,
+          0.1,
+          0.2
+        ],
+        "poolSize": 20.0,
+        "recovery": 0.4,
+        "tenors_months": [
+          12,
+          36,
+          60,
+          84
+        ]
+      },
+      "name": "mezz_3_10_etl_3y"
+    },
+    {
+      "expected": 13.6332984024937,
+      "inputs": {
+        "asof": 40344,
+        "attach": 0.03,
+        "correlsRowMajor": [
+          0.2,
+          0.22,
+          0.25,
+          0.27,
+          0.35,
+          0.37,
+          0.4,
+          0.42,
+          0.55,
+          0.57,
+          0.6,
+          0.63
+        ],
+        "detach": 0.1,
+        "lambda": 0.01,
+        "losses": [
+          0.03,
+          0.1,
+          0.2
+        ],
+        "poolSize": 20.0,
+        "recovery": 0.4,
+        "tenors_months": [
+          12,
+          36,
+          60,
+          84
+        ]
+      },
+      "name": "mezz_3_10_etl_5y"
+    },
+    {
+      "expected": -0.09225905659240752,
+      "inputs": {
+        "asof": 40344,
+        "attach": 0.1,
+        "correlsRowMajor": [
+          0.2,
+          0.22,
+          0.25,
+          0.27,
+          0.35,
+          0.37,
+          0.4,
+          0.42,
+          0.55,
+          0.57,
+          0.6,
+          0.63
+        ],
+        "detach": 0.2,
+        "lambda": 0.01,
+        "losses": [
+          0.03,
+          0.1,
+          0.2
+        ],
+        "poolSize": 20.0,
+        "recovery": 0.4,
+        "tenors_months": [
+          12,
+          36,
+          60,
+          84
+        ]
+      },
+      "name": "senior_10_20_etl_1y"
+    },
+    {
+      "expected": 0.49310040950005174,
+      "inputs": {
+        "asof": 40344,
+        "attach": 0.1,
+        "correlsRowMajor": [
+          0.2,
+          0.22,
+          0.25,
+          0.27,
+          0.35,
+          0.37,
+          0.4,
+          0.42,
+          0.55,
+          0.57,
+          0.6,
+          0.63
+        ],
+        "detach": 0.2,
+        "lambda": 0.01,
+        "losses": [
+          0.03,
+          0.1,
+          0.2
+        ],
+        "poolSize": 20.0,
+        "recovery": 0.4,
+        "tenors_months": [
+          12,
+          36,
+          60,
+          84
+        ]
+      },
+      "name": "senior_10_20_etl_3y"
+    },
+    {
+      "expected": 2.3734736875264844,
+      "inputs": {
+        "asof": 40344,
+        "attach": 0.1,
+        "correlsRowMajor": [
+          0.2,
+          0.22,
+          0.25,
+          0.27,
+          0.35,
+          0.37,
+          0.4,
+          0.42,
+          0.55,
+          0.57,
+          0.6,
+          0.63
+        ],
+        "detach": 0.2,
+        "lambda": 0.01,
+        "losses": [
+          0.03,
+          0.1,
+          0.2
+        ],
+        "poolSize": 20.0,
+        "recovery": 0.4,
+        "tenors_months": [
+          12,
+          36,
+          60,
+          84
+        ]
+      },
+      "name": "senior_10_20_etl_5y"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-29T17:36:48Z",
+  "generated_by": "base_correlation_loss_model_probe.cpp",
+  "test_group": "credit/base_correlation_loss_model"
+}
