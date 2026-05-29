@@ -1,0 +1,895 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "value": 109574
+      },
+      "inputs": {
+        "v": 0.18
+      },
+      "name": "cf_maxDate_serial"
+    },
+    {
+      "expected": {
+        "value": -1.7976931348623157e+308
+      },
+      "inputs": {
+        "v": 0.18
+      },
+      "name": "cf_minStrike"
+    },
+    {
+      "expected": {
+        "value": 1.7976931348623157e+308
+      },
+      "inputs": {
+        "v": 0.18
+      },
+      "name": "cf_maxStrike"
+    },
+    {
+      "expected": {
+        "value": 0.18
+      },
+      "inputs": {
+        "strike": 0.01,
+        "t": 0.5
+      },
+      "name": "cf_vol_0"
+    },
+    {
+      "expected": {
+        "value": 0.18
+      },
+      "inputs": {
+        "strike": 0.03,
+        "t": 0.5
+      },
+      "name": "cf_vol_1"
+    },
+    {
+      "expected": {
+        "value": 0.18
+      },
+      "inputs": {
+        "strike": 0.05,
+        "t": 0.5
+      },
+      "name": "cf_vol_2"
+    },
+    {
+      "expected": {
+        "value": 0.18
+      },
+      "inputs": {
+        "strike": 0.01,
+        "t": 1.0
+      },
+      "name": "cf_vol_3"
+    },
+    {
+      "expected": {
+        "value": 0.18
+      },
+      "inputs": {
+        "strike": 0.03,
+        "t": 1.0
+      },
+      "name": "cf_vol_4"
+    },
+    {
+      "expected": {
+        "value": 0.18
+      },
+      "inputs": {
+        "strike": 0.05,
+        "t": 1.0
+      },
+      "name": "cf_vol_5"
+    },
+    {
+      "expected": {
+        "value": 0.18
+      },
+      "inputs": {
+        "strike": 0.01,
+        "t": 2.5
+      },
+      "name": "cf_vol_6"
+    },
+    {
+      "expected": {
+        "value": 0.18
+      },
+      "inputs": {
+        "strike": 0.03,
+        "t": 2.5
+      },
+      "name": "cf_vol_7"
+    },
+    {
+      "expected": {
+        "value": 0.18
+      },
+      "inputs": {
+        "strike": 0.05,
+        "t": 2.5
+      },
+      "name": "cf_vol_8"
+    },
+    {
+      "expected": {
+        "value": 0.18
+      },
+      "inputs": {
+        "strike": 0.01,
+        "t": 5.0
+      },
+      "name": "cf_vol_9"
+    },
+    {
+      "expected": {
+        "value": 0.18
+      },
+      "inputs": {
+        "strike": 0.03,
+        "t": 5.0
+      },
+      "name": "cf_vol_10"
+    },
+    {
+      "expected": {
+        "value": 0.18
+      },
+      "inputs": {
+        "strike": 0.05,
+        "t": 5.0
+      },
+      "name": "cf_vol_11"
+    },
+    {
+      "expected": {
+        "value": 0.18
+      },
+      "inputs": {
+        "strike": 0.01,
+        "t": 10.0
+      },
+      "name": "cf_vol_12"
+    },
+    {
+      "expected": {
+        "value": 0.18
+      },
+      "inputs": {
+        "strike": 0.03,
+        "t": 10.0
+      },
+      "name": "cf_vol_13"
+    },
+    {
+      "expected": {
+        "value": 0.18
+      },
+      "inputs": {
+        "strike": 0.05,
+        "t": 10.0
+      },
+      "name": "cf_vol_14"
+    },
+    {
+      "expected": {
+        "value": 109574
+      },
+      "inputs": {
+        "v": 0.045
+      },
+      "name": "cpi_maxDate_serial"
+    },
+    {
+      "expected": {
+        "value": -1.7976931348623157e+308
+      },
+      "inputs": {
+        "v": 0.045
+      },
+      "name": "cpi_minStrike"
+    },
+    {
+      "expected": {
+        "value": 1.7976931348623157e+308
+      },
+      "inputs": {
+        "v": 0.045
+      },
+      "name": "cpi_maxStrike"
+    },
+    {
+      "expected": {
+        "value": 43739
+      },
+      "inputs": {
+        "v": 0.045
+      },
+      "name": "cpi_baseDate_serial"
+    },
+    {
+      "expected": {
+        "value": 0.045
+      },
+      "inputs": {
+        "strike": 0.02,
+        "t": 0.25
+      },
+      "name": "cpi_vol_time_0"
+    },
+    {
+      "expected": {
+        "value": 0.045
+      },
+      "inputs": {
+        "strike": 0.02,
+        "t": 1.0
+      },
+      "name": "cpi_vol_time_1"
+    },
+    {
+      "expected": {
+        "value": 0.045
+      },
+      "inputs": {
+        "strike": 0.02,
+        "t": 3.0
+      },
+      "name": "cpi_vol_time_2"
+    },
+    {
+      "expected": {
+        "value": 0.045
+      },
+      "inputs": {
+        "maturity_serial": 44198,
+        "strike": 0.02
+      },
+      "name": "cpi_vol_date_0"
+    },
+    {
+      "expected": {
+        "value": 0.0020305479452054796
+      },
+      "inputs": {
+        "maturity_serial": 44198,
+        "strike": 0.02
+      },
+      "name": "cpi_totVar_date_0"
+    },
+    {
+      "expected": {
+        "value": 1.0027397260273974
+      },
+      "inputs": {
+        "maturity_serial": 44198,
+        "strike": 0.02
+      },
+      "name": "cpi_timeFromBase_0"
+    },
+    {
+      "expected": {
+        "value": 0.045
+      },
+      "inputs": {
+        "maturity_serial": 44563,
+        "strike": 0.02
+      },
+      "name": "cpi_vol_date_1"
+    },
+    {
+      "expected": {
+        "value": 0.0040555479452054795
+      },
+      "inputs": {
+        "maturity_serial": 44563,
+        "strike": 0.02
+      },
+      "name": "cpi_totVar_date_1"
+    },
+    {
+      "expected": {
+        "value": 2.0027397260273974
+      },
+      "inputs": {
+        "maturity_serial": 44563,
+        "strike": 0.02
+      },
+      "name": "cpi_timeFromBase_1"
+    },
+    {
+      "expected": {
+        "value": 0.045
+      },
+      "inputs": {
+        "maturity_serial": 45659,
+        "strike": 0.02
+      },
+      "name": "cpi_vol_date_2"
+    },
+    {
+      "expected": {
+        "value": 0.010136095890410958
+      },
+      "inputs": {
+        "maturity_serial": 45659,
+        "strike": 0.02
+      },
+      "name": "cpi_totVar_date_2"
+    },
+    {
+      "expected": {
+        "value": 5.005479452054795
+      },
+      "inputs": {
+        "maturity_serial": 45659,
+        "strike": 0.02
+      },
+      "name": "cpi_timeFromBase_2"
+    },
+    {
+      "expected": {
+        "value": 80.0
+      },
+      "inputs": null,
+      "name": "grid_default_minStrike"
+    },
+    {
+      "expected": {
+        "value": 120.0
+      },
+      "inputs": null,
+      "name": "grid_default_maxStrike"
+    },
+    {
+      "expected": {
+        "value": 3.0027397260273974
+      },
+      "inputs": null,
+      "name": "grid_default_maxTime"
+    },
+    {
+      "expected": {
+        "value": 44928
+      },
+      "inputs": null,
+      "name": "grid_default_maxDate_serial"
+    },
+    {
+      "expected": {
+        "value": 1.0
+      },
+      "inputs": {
+        "strike": 85.0,
+        "t": 0.5
+      },
+      "name": "grid_default_lv_0"
+    },
+    {
+      "expected": {
+        "value": 1.0
+      },
+      "inputs": {
+        "strike": 100.0,
+        "t": 0.5
+      },
+      "name": "grid_default_lv_1"
+    },
+    {
+      "expected": {
+        "value": 1.0
+      },
+      "inputs": {
+        "strike": 115.0,
+        "t": 0.5
+      },
+      "name": "grid_default_lv_2"
+    },
+    {
+      "expected": {
+        "value": 1.0
+      },
+      "inputs": {
+        "strike": 85.0,
+        "t": 1.0
+      },
+      "name": "grid_default_lv_3"
+    },
+    {
+      "expected": {
+        "value": 1.0
+      },
+      "inputs": {
+        "strike": 100.0,
+        "t": 1.0
+      },
+      "name": "grid_default_lv_4"
+    },
+    {
+      "expected": {
+        "value": 1.0
+      },
+      "inputs": {
+        "strike": 115.0,
+        "t": 1.0
+      },
+      "name": "grid_default_lv_5"
+    },
+    {
+      "expected": {
+        "value": 1.0
+      },
+      "inputs": {
+        "strike": 85.0,
+        "t": 1.5
+      },
+      "name": "grid_default_lv_6"
+    },
+    {
+      "expected": {
+        "value": 1.0
+      },
+      "inputs": {
+        "strike": 100.0,
+        "t": 1.5
+      },
+      "name": "grid_default_lv_7"
+    },
+    {
+      "expected": {
+        "value": 1.0
+      },
+      "inputs": {
+        "strike": 115.0,
+        "t": 1.5
+      },
+      "name": "grid_default_lv_8"
+    },
+    {
+      "expected": {
+        "value": 1.0
+      },
+      "inputs": {
+        "strike": 85.0,
+        "t": 2.0
+      },
+      "name": "grid_default_lv_9"
+    },
+    {
+      "expected": {
+        "value": 1.0
+      },
+      "inputs": {
+        "strike": 100.0,
+        "t": 2.0
+      },
+      "name": "grid_default_lv_10"
+    },
+    {
+      "expected": {
+        "value": 1.0
+      },
+      "inputs": {
+        "strike": 115.0,
+        "t": 2.0
+      },
+      "name": "grid_default_lv_11"
+    },
+    {
+      "expected": {
+        "value": 1.0
+      },
+      "inputs": {
+        "strike": 85.0,
+        "t": 2.5
+      },
+      "name": "grid_default_lv_12"
+    },
+    {
+      "expected": {
+        "value": 1.0
+      },
+      "inputs": {
+        "strike": 100.0,
+        "t": 2.5
+      },
+      "name": "grid_default_lv_13"
+    },
+    {
+      "expected": {
+        "value": 1.0
+      },
+      "inputs": {
+        "strike": 115.0,
+        "t": 2.5
+      },
+      "name": "grid_default_lv_14"
+    },
+    {
+      "expected": {
+        "value": 0.2
+      },
+      "inputs": {
+        "strike": 80.0,
+        "t": 1.0027397260273974
+      },
+      "name": "grid_set_node_0"
+    },
+    {
+      "expected": {
+        "value": 0.22
+      },
+      "inputs": {
+        "strike": 100.0,
+        "t": 1.0027397260273974
+      },
+      "name": "grid_set_node_1"
+    },
+    {
+      "expected": {
+        "value": 0.24000000000000002
+      },
+      "inputs": {
+        "strike": 120.0,
+        "t": 1.0027397260273974
+      },
+      "name": "grid_set_node_2"
+    },
+    {
+      "expected": {
+        "value": 0.195
+      },
+      "inputs": {
+        "strike": 80.0,
+        "t": 2.0027397260273974
+      },
+      "name": "grid_set_node_3"
+    },
+    {
+      "expected": {
+        "value": 0.215
+      },
+      "inputs": {
+        "strike": 100.0,
+        "t": 2.0027397260273974
+      },
+      "name": "grid_set_node_4"
+    },
+    {
+      "expected": {
+        "value": 0.23500000000000001
+      },
+      "inputs": {
+        "strike": 120.0,
+        "t": 2.0027397260273974
+      },
+      "name": "grid_set_node_5"
+    },
+    {
+      "expected": {
+        "value": 0.19
+      },
+      "inputs": {
+        "strike": 80.0,
+        "t": 3.0027397260273974
+      },
+      "name": "grid_set_node_6"
+    },
+    {
+      "expected": {
+        "value": 0.21
+      },
+      "inputs": {
+        "strike": 100.0,
+        "t": 3.0027397260273974
+      },
+      "name": "grid_set_node_7"
+    },
+    {
+      "expected": {
+        "value": 0.23
+      },
+      "inputs": {
+        "strike": 120.0,
+        "t": 3.0027397260273974
+      },
+      "name": "grid_set_node_8"
+    },
+    {
+      "expected": {
+        "value": 0.20500000000000002
+      },
+      "inputs": {
+        "strike": 85.0,
+        "t": 0.5
+      },
+      "name": "grid_set_interior_0"
+    },
+    {
+      "expected": {
+        "value": 0.225
+      },
+      "inputs": {
+        "strike": 105.0,
+        "t": 0.5
+      },
+      "name": "grid_set_interior_1"
+    },
+    {
+      "expected": {
+        "value": 0.202513698630137
+      },
+      "inputs": {
+        "strike": 85.0,
+        "t": 1.5
+      },
+      "name": "grid_set_interior_2"
+    },
+    {
+      "expected": {
+        "value": 0.22251369863013698
+      },
+      "inputs": {
+        "strike": 105.0,
+        "t": 1.5
+      },
+      "name": "grid_set_interior_3"
+    },
+    {
+      "expected": {
+        "value": 0.19751369863013699
+      },
+      "inputs": {
+        "strike": 85.0,
+        "t": 2.5
+      },
+      "name": "grid_set_interior_4"
+    },
+    {
+      "expected": {
+        "value": 0.21751369863013698
+      },
+      "inputs": {
+        "strike": 105.0,
+        "t": 2.5
+      },
+      "name": "grid_set_interior_5"
+    },
+    {
+      "expected": {
+        "value": 0.00012340980408667956
+      },
+      "inputs": {
+        "y": -3.0
+      },
+      "name": "betaTransformDirect_0"
+    },
+    {
+      "expected": {
+        "value": 0.36787944117144233
+      },
+      "inputs": {
+        "y": -1.0
+      },
+      "name": "betaTransformDirect_1"
+    },
+    {
+      "expected": {
+        "value": 0.7788007830714049
+      },
+      "inputs": {
+        "y": -0.5
+      },
+      "name": "betaTransformDirect_2"
+    },
+    {
+      "expected": {
+        "value": 0.999999
+      },
+      "inputs": {
+        "y": 0.0
+      },
+      "name": "betaTransformDirect_3"
+    },
+    {
+      "expected": {
+        "value": 0.7788007830714049
+      },
+      "inputs": {
+        "y": 0.5
+      },
+      "name": "betaTransformDirect_4"
+    },
+    {
+      "expected": {
+        "value": 0.36787944117144233
+      },
+      "inputs": {
+        "y": 1.0
+      },
+      "name": "betaTransformDirect_5"
+    },
+    {
+      "expected": {
+        "value": 0.01831563888873418
+      },
+      "inputs": {
+        "y": 2.0
+      },
+      "name": "betaTransformDirect_6"
+    },
+    {
+      "expected": {
+        "value": 0.00012340980408667956
+      },
+      "inputs": {
+        "y": 3.0
+      },
+      "name": "betaTransformDirect_7"
+    },
+    {
+      "expected": {
+        "value": 1e-06
+      },
+      "inputs": {
+        "y": 15.0
+      },
+      "name": "betaTransformDirect_8"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "y": 0.0
+      },
+      "name": "reversionTransformDirect_0"
+    },
+    {
+      "expected": {
+        "value": 0.1
+      },
+      "inputs": {
+        "y": 0.01
+      },
+      "name": "reversionTransformDirect_1"
+    },
+    {
+      "expected": {
+        "value": 0.5
+      },
+      "inputs": {
+        "y": 0.25
+      },
+      "name": "reversionTransformDirect_2"
+    },
+    {
+      "expected": {
+        "value": 1.0
+      },
+      "inputs": {
+        "y": 1.0
+      },
+      "name": "reversionTransformDirect_3"
+    },
+    {
+      "expected": {
+        "value": 2.0
+      },
+      "inputs": {
+        "y": 4.0
+      },
+      "name": "reversionTransformDirect_4"
+    },
+    {
+      "expected": {
+        "value": 3.0
+      },
+      "inputs": {
+        "y": 9.0
+      },
+      "name": "reversionTransformDirect_5"
+    },
+    {
+      "expected": {
+        "value": 1.5174271293851462
+      },
+      "inputs": {
+        "beta": 0.1
+      },
+      "name": "betaTransformInverse_0"
+    },
+    {
+      "expected": {
+        "value": 1.0972569454443823
+      },
+      "inputs": {
+        "beta": 0.3
+      },
+      "name": "betaTransformInverse_1"
+    },
+    {
+      "expected": {
+        "value": 0.8325546111576977
+      },
+      "inputs": {
+        "beta": 0.5
+      },
+      "name": "betaTransformInverse_2"
+    },
+    {
+      "expected": {
+        "value": 0.5972226920828884
+      },
+      "inputs": {
+        "beta": 0.7
+      },
+      "name": "betaTransformInverse_3"
+    },
+    {
+      "expected": {
+        "value": 0.3245928459745012
+      },
+      "inputs": {
+        "beta": 0.9
+      },
+      "name": "betaTransformInverse_4"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "reversion": 0.0
+      },
+      "name": "reversionTransformInverse_0"
+    },
+    {
+      "expected": {
+        "value": 0.0001
+      },
+      "inputs": {
+        "reversion": 0.01
+      },
+      "name": "reversionTransformInverse_1"
+    },
+    {
+      "expected": {
+        "value": 0.0025000000000000005
+      },
+      "inputs": {
+        "reversion": 0.05
+      },
+      "name": "reversionTransformInverse_2"
+    },
+    {
+      "expected": {
+        "value": 0.25
+      },
+      "inputs": {
+        "reversion": 0.5
+      },
+      "name": "reversionTransformInverse_3"
+    },
+    {
+      "expected": {
+        "value": 4.0
+      },
+      "inputs": {
+        "reversion": 2.0
+      },
+      "name": "reversionTransformInverse_4"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-29T18:59:22Z",
+  "generated_by": "gap_vol_surfaces_probe",
+  "test_group": "termstructures/gap_vol_surfaces"
+}

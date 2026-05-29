@@ -552,6 +552,171 @@ public class SabrSwaptionVolatilityCube extends SwaptionVolatilityCube {
         return atm.shift();
     }
 
+    //
+    // Recalibration API (used by CmsMarketCalibration). Faithful port of C++ v1.42.1
+    // XabrSwaptionVolatilityCube<Model>::recalibration / updateAfterRecalibration /
+    // sabrCalibrationSection (ql/termstructures/volatility/swaption/sabrswaptionvolatilitycube.hpp).
+    //
+
+    /**
+     * Recalibrate the {@code swapTenor} column imposing a single {@code beta} across all option tenors. Mirrors C++
+     * {@code recalibration(Real beta, const Period& swapTenor)}.
+     */
+    public void recalibration(final double beta, final Period swapTenor) {
+        final double[] betaVector = new double[nOptionTenors_];
+        Arrays.fill(betaVector, beta);
+        recalibration(betaVector, swapTenor);
+    }
+
+    /**
+     * Recalibrate the {@code swapTenor} column imposing a per-option-tenor {@code beta} vector. Mirrors C++
+     * {@code recalibration(const std::vector<Real>& beta, const Period& swapTenor)}.
+     */
+    public void recalibration(final double[] beta, final Period swapTenor) {
+        QL.require(beta.length == nOptionTenors_,
+                "beta size (" + beta.length + ") must be equal to number of option tenors (" + nOptionTenors_ + ")");
+
+        final List< Period > swapTenorsLocal = marketVolCube_.swapTenors();
+        int k = swapTenorsLocal.indexOf(swapTenor);
+        QL.require(k >= 0, "swap tenor (" + swapTenor + ") not found");
+
+        for ( int i = 0; i < nOptionTenors_; ++i ) {
+            parametersGuess_.setElement(1, i, k, beta[i]);
+        }
+
+        parametersGuess_.updateInterpolators();
+        sabrCalibrationSection(marketVolCube_, sparseParameters_, swapTenor);
+
+        volCubeAtmCalibrated_ = new Cube(marketVolCube_);
+        if ( isAtmCalibrated_ ) {
+            fillVolatilityCube();
+            sabrCalibrationSection(volCubeAtmCalibrated_, denseParameters_, swapTenor);
+        }
+        notifyObservers();
+    }
+
+    /**
+     * Recalibrate the {@code swapTenor} column imposing a {@code beta} term structure sampled at {@code swapLengths},
+     * linearly interpolated (flat-extrapolated) onto the cube option times. Mirrors C++
+     * {@code recalibration(const std::vector<Period>& swapLengths, const std::vector<Real>& beta, const Period&)}.
+     */
+    public void recalibration(final List< Period > swapLengths, final double[] beta, final Period swapTenor) {
+        QL.require(beta.length == swapLengths.size(),
+                "beta size (" + beta.length + ") must be equal to number of swap lengths (" + swapLengths.size() + ")");
+
+        final double[] betaTimes = new double[beta.length];
+        for ( int i = 0; i < beta.length; ++i ) {
+            betaTimes[i] = timeFromReference(optionDateFromTenor(swapLengths.get(i)));
+        }
+
+        final Array betaTimesArr = new Array(betaTimes.length);
+        final Array betaArr = new Array(beta.length);
+        for ( int i = 0; i < beta.length; ++i ) {
+            betaTimesArr.set(i, betaTimes[i]);
+            betaArr.set(i, beta[i]);
+        }
+        final org.jquantlib.math.interpolations.LinearInterpolation betaInterpolation =
+                new org.jquantlib.math.interpolations.LinearInterpolation(betaTimesArr, betaArr);
+        betaInterpolation.update();
+
+        final double[] cubeOptionTimes = optionTimes();
+        final double[] cubeBeta = new double[cubeOptionTimes.length];
+        for ( int i = 0; i < cubeOptionTimes.length; ++i ) {
+            double t = cubeOptionTimes[i];
+            // flat extrapolation ensures admissible values
+            if ( t < betaTimes[0] ) {
+                t = betaTimes[0];
+            }
+            if ( t > betaTimes[betaTimes.length - 1] ) {
+                t = betaTimes[betaTimes.length - 1];
+            }
+            cubeBeta[i] = betaInterpolation.op(t);
+        }
+        recalibration(cubeBeta, swapTenor);
+    }
+
+    /**
+     * Re-establish the dense cube after one or more {@link #recalibration} calls. Mirrors C++
+     * {@code updateAfterRecalibration()}.
+     */
+    public void updateAfterRecalibration() {
+        volCubeAtmCalibrated_ = new Cube(marketVolCube_);
+        if ( isAtmCalibrated_ ) {
+            fillVolatilityCube();
+            denseParameters_ = sabrCalibration(volCubeAtmCalibrated_);
+            denseParameters_.updateInterpolators();
+        }
+        notifyObservers();
+    }
+
+    /**
+     * Re-fit the SABR smiles for a single {@code swapTenor} column of {@code marketVolCube}, writing the calibrated
+     * parameters into {@code parametersCube}. Faithful port of C++ {@code sabrCalibrationSection}.
+     */
+    private void sabrCalibrationSection(final Cube marketVolCube, final Cube parametersCube, final Period swapTenor) {
+        final double[] optionTimes = marketVolCube.optionTimes();
+        final double[] swapLengths = marketVolCube.swapLengths();
+        final List< Date > optionDates = marketVolCube.optionDates();
+        final List< Period > swapTenorsLocal = marketVolCube.swapTenors();
+
+        final int k = swapTenorsLocal.indexOf(swapTenor);
+        QL.require(k >= 0, "swap tenor not found");
+
+        final Matrix[] tmpMarketVolCube = marketVolCube.points();
+
+        for ( int j = 0; j < optionTimes.length; ++j ) {
+            final double atmForward = atmStrike(optionDates.get(j), swapTenorsLocal.get(k));
+            final double shiftTmp = atmVolShift(optionTimes[j], swapLengths[k]);
+
+            final List< Double > strikesList = new ArrayList<>(nStrikes_);
+            final List< Double > volsList = new ArrayList<>(nStrikes_);
+            for ( int i = 0; i < nStrikes_; ++i ) {
+                final double strike = atmForward + strikeSpreads_.get(i);
+                if ( strike + shiftTmp >= cutoffStrike_ ) {
+                    strikesList.add(strike);
+                    volsList.add(tmpMarketVolCube[i].get(j, k));
+                }
+            }
+
+            final double[] guess = parametersGuess_.value(optionTimes[j], swapLengths[k]);
+
+            final Array xArr = new Array(strikesList.size());
+            final Array yArr = new Array(volsList.size());
+            for ( int z = 0; z < strikesList.size(); ++z ) {
+                xArr.set(z, strikesList.get(z));
+                yArr.set(z, volsList.get(z));
+            }
+
+            final SmileCalibrationResult r = calibrateCell(xArr, yArr, optionTimes[j], atmForward, guess, shiftTmp);
+
+            QL.require(r.endCriteriaOrdinal() != EndCriteria.Type.MaxIterations.ordinal(),
+                    "section calibration failed: option tenor " + optionDates.get(j) + ", swap tenor "
+                            + swapTenorsLocal.get(k) + ": max iteration reached, alpha " + r.alpha() + ", beta "
+                            + r.beta() + ", nu " + r.nu() + ", rho " + r.rho() + ", max error " + r.maxError()
+                            + ", error " + r.rmsError());
+
+            final double effErr = useMaxError_ ? r.maxError() : r.rmsError();
+            QL.require(effErr < maxErrorTolerance_,
+                    "section calibration failed: option tenor " + optionDates.get(j) + ", swap tenor "
+                            + swapTenorsLocal.get(k) + (useMaxError_ ? ": max error " : ": error ") + effErr
+                            + ", alpha " + r.alpha() + ", beta " + r.beta() + ", nu " + r.nu() + ", rho " + r.rho());
+
+            final double[] calibrationResult = new double[N_PARAMS + 4];
+            calibrationResult[0] = r.alpha();
+            calibrationResult[1] = r.beta();
+            calibrationResult[2] = r.nu();
+            calibrationResult[3] = r.rho();
+            calibrationResult[N_PARAMS] = atmForward;
+            calibrationResult[N_PARAMS + 1] = r.rmsError();
+            calibrationResult[N_PARAMS + 2] = r.maxError();
+            calibrationResult[N_PARAMS + 3] = r.endCriteriaOrdinal();
+
+            parametersCube.setPoint(optionDates.get(j), swapTenorsLocal.get(k), optionTimes[j], swapLengths[k],
+                    calibrationResult);
+            parametersCube.updateInterpolators();
+        }
+    }
+
     private void fillVolatilityCube() {
         final SwaptionVolatilityStructure atmRaw = atmVol_.currentLink();
         if ( !(atmRaw instanceof SwaptionVolatilityDiscrete) ) {
