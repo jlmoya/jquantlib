@@ -1,0 +1,245 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "indices": [
+          0,
+          4,
+          8
+        ]
+      },
+      "inputs": {
+        "dim": [
+          4,
+          3
+        ],
+        "direction": 0,
+        "side": "Lower"
+      },
+      "name": "indices_dir0_lower"
+    },
+    {
+      "expected": {
+        "indices": [
+          3,
+          7,
+          11
+        ]
+      },
+      "inputs": {
+        "dim": [
+          4,
+          3
+        ],
+        "direction": 0,
+        "side": "Upper"
+      },
+      "name": "indices_dir0_upper"
+    },
+    {
+      "expected": {
+        "indices": [
+          0,
+          1,
+          2,
+          3
+        ]
+      },
+      "inputs": {
+        "dim": [
+          4,
+          3
+        ],
+        "direction": 1,
+        "side": "Lower"
+      },
+      "name": "indices_dir1_lower"
+    },
+    {
+      "expected": {
+        "indices": [
+          8,
+          9,
+          10,
+          11
+        ]
+      },
+      "inputs": {
+        "dim": [
+          4,
+          3
+        ],
+        "direction": 1,
+        "side": "Upper"
+      },
+      "name": "indices_dir1_upper"
+    },
+    {
+      "expected": {
+        "cellLoc0": [
+          0.0,
+          1.0,
+          2.0,
+          3.0,
+          0.0,
+          1.0,
+          2.0,
+          3.0,
+          0.0,
+          1.0,
+          2.0,
+          3.0
+        ],
+        "cellLoc1": [
+          10.0,
+          10.0,
+          10.0,
+          10.0,
+          11.0,
+          11.0,
+          11.0,
+          11.0,
+          12.0,
+          12.0,
+          12.0,
+          12.0
+        ],
+        "dx0": 1.0,
+        "dx1": 1.0,
+        "locations0": [
+          0.0,
+          1.0,
+          2.0,
+          3.0,
+          0.0,
+          1.0,
+          2.0,
+          3.0,
+          0.0,
+          1.0,
+          2.0,
+          3.0
+        ],
+        "locations1": [
+          10.0,
+          10.0,
+          10.0,
+          10.0,
+          11.0,
+          11.0,
+          11.0,
+          11.0,
+          12.0,
+          12.0,
+          12.0,
+          12.0
+        ]
+      },
+      "inputs": {
+        "bounds0": [
+          0.0,
+          3.0
+        ],
+        "bounds1": [
+          10.0,
+          12.0
+        ],
+        "dim": [
+          4,
+          3
+        ]
+      },
+      "name": "uniform_grid_4x3"
+    },
+    {
+      "expected": {
+        "afterApplying_ramp_i": [
+          0.0,
+          1.0,
+          2.0,
+          99.0,
+          4.0,
+          5.0,
+          6.0,
+          99.0,
+          8.0,
+          9.0,
+          10.0,
+          99.0
+        ],
+        "afterSolving_ramp_10i": [
+          0.0,
+          10.0,
+          20.0,
+          99.0,
+          40.0,
+          50.0,
+          60.0,
+          99.0,
+          80.0,
+          90.0,
+          100.0,
+          99.0
+        ]
+      },
+      "inputs": {
+        "dim": [
+          4,
+          3
+        ],
+        "direction": 0,
+        "side": "Upper",
+        "value": 99.0
+      },
+      "name": "dirichlet_dir0_upper_v99"
+    },
+    {
+      "expected": {
+        "afterApplying_ramp_i": [
+          -5.0,
+          -5.0,
+          -5.0,
+          -5.0,
+          4.0,
+          5.0,
+          6.0,
+          7.0,
+          8.0,
+          9.0,
+          10.0,
+          11.0
+        ],
+        "scalar_applyAfterApplying": [
+          -5.0,
+          2.0,
+          3.0
+        ]
+      },
+      "inputs": {
+        "dim": [
+          4,
+          3
+        ],
+        "direction": 1,
+        "scalar_value": [
+          1.0,
+          2.0,
+          3.0
+        ],
+        "scalar_x": [
+          9.0,
+          10.0,
+          11.0
+        ],
+        "side": "Lower",
+        "value": -5.0
+      },
+      "name": "dirichlet_dir1_lower_vneg5"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-29T19:34:14Z",
+  "generated_by": "fdm_gap_boundary_probe",
+  "test_group": "methods/finitedifferences/utilities/fdm_gap_boundary"
+}

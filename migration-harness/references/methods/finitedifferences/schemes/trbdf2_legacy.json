@@ -1,0 +1,61 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "stepped": [
+          1.0000000630794323,
+          1.9999965925580236,
+          3.0001745104520006,
+          3.9918348090528424,
+          5.315820171447349
+        ]
+      },
+      "inputs": {
+        "alpha": 0.5857864376269049,
+        "c": 0.5,
+        "dt": 0.1,
+        "initial": [
+          1.0,
+          2.0,
+          3.0,
+          4.0,
+          5.0
+        ],
+        "n": 5,
+        "t": 1.0
+      },
+      "name": "single_step_n5_c0.5_dt0.1"
+    },
+    {
+      "expected": {
+        "stepped": [
+          1.000006519851528,
+          1.999814680896709,
+          3.0044515775080525,
+          3.9164231847847497,
+          6.054508729142002
+        ]
+      },
+      "inputs": {
+        "c": 0.5,
+        "dt": 0.1,
+        "initial": [
+          1.0,
+          2.0,
+          3.0,
+          4.0,
+          5.0
+        ],
+        "n": 5,
+        "steps": 3,
+        "t0": 1.0
+      },
+      "name": "three_steps_n5_c0.5_dt0.1"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-29T19:34:23Z",
+  "generated_by": "trbdf2_legacy_probe",
+  "test_group": "methods/finitedifferences/schemes/trbdf2_legacy"
+}
