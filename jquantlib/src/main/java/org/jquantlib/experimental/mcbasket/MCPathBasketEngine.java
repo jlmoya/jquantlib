@@ -111,6 +111,51 @@ public class MCPathBasketEngine extends PathMultiAssetOption.EngineImpl {
     }
 
     //
+    // read-only accessors for the configured Monte-Carlo parameters
+    // (used by builder cross-validation; no behavioural effect)
+    //
+
+    public StochasticProcessArray processArray() {
+        return process_;
+    }
+
+    public int timeSteps() {
+        return timeSteps_;
+    }
+
+    public int timeStepsPerYear() {
+        return timeStepsPerYear_;
+    }
+
+    public boolean brownianBridge() {
+        return brownianBridge_;
+    }
+
+    public boolean antitheticVariate() {
+        return antitheticVariate_;
+    }
+
+    public boolean controlVariate() {
+        return controlVariate_;
+    }
+
+    public int requiredSamples() {
+        return requiredSamples_;
+    }
+
+    public double requiredTolerance() {
+        return requiredTolerance_;
+    }
+
+    public int maxSamples() {
+        return maxSamples_;
+    }
+
+    public long seed() {
+        return seed_;
+    }
+
+    //
     // McSimulation-shaped helpers
     //
 
