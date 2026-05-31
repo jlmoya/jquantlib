@@ -1,0 +1,362 @@
+diff --git a/jquantlib/src/main/java/org/jquantlib/cashflow/CashFlows.java b/jquantlib/src/main/java/org/jquantlib/cashflow/CashFlows.java
+index f30bb6ae..9d94965f 100755
+--- a/jquantlib/src/main/java/org/jquantlib/cashflow/CashFlows.java
++++ b/jquantlib/src/main/java/org/jquantlib/cashflow/CashFlows.java
+@@ -37,6 +37,8 @@ import org.jquantlib.termstructures.YieldTermStructure;
+ import org.jquantlib.termstructures.yieldcurves.FlatForward;
+ import org.jquantlib.time.Date;
+ import org.jquantlib.time.Frequency;
++import org.jquantlib.time.Period;
++import org.jquantlib.time.TimeUnit;
+ import org.jquantlib.util.PolymorphicVisitor;
+ import org.jquantlib.util.Visitor;
+ 
+@@ -289,6 +291,314 @@ public class CashFlows {
+         return totalNPV / discountCurve.discount(npvDate);
+     }
+ 
++    //
++    // C++-style stepwise NPV / duration / convexity overloads.
++    //
++    // Faithful Java port of the private helpers in C++
++    // {@code ql/cashflows/cashflows.cpp:567-707} (getStepwiseDiscountTime,
++    // npv(InterestRate), modifiedDuration, simpleDuration, macaulayDuration,
++    // convexity). The existing (legacy) {@link #npv(Leg, InterestRate, Date)}
++    // / {@link #duration(Leg, InterestRate, Duration, Date)} /
++    // {@link #convexity(Leg, InterestRate, Date)} variants use the additive
++    // {@code yearFraction(settlement, paymentDate)} formulation, which
++    // diverges from the C++ stepwise accumulation for non-additive day
++    // counters such as {@link org.jquantlib.daycounters.Thirty360} (USA
++    // convention) when settlement falls on the 31st of a month
++    // (test-suite/bonds.cpp::testThirty360BondWithSettlementOn31st).
++    //
++    // The legacy methods are retained intact for backwards compatibility:
++    // other callers (HaganIrregularSwaptionEngine, BlackCallableFixedRate
++    // BondEngine, CapFloor strike helpers) depend on the additive form.
++    //
++
++    /**
++     * Stepwise time-to-discount for one cashflow. Mirrors C++
++     * {@code getStepwiseDiscountTime} (cashflows.cpp:568-600). For a
++     * {@link Coupon} we accumulate using the coupon's reference period;
++     * for any other cashflow, fall back to {@code dc.yearFraction(lastDate,
++     * cashFlowDate)}.
++     */
++    private static double stepwiseDiscountTime(final CashFlow cashFlow,
++                                               final DayCounter dc,
++                                               final Date npvDate,
++                                               final Date lastDate) {
++        final Date cashFlowDate = cashFlow.date();
++        Date refStartDate;
++        Date refEndDate;
++        final Coupon coupon = (cashFlow instanceof Coupon) ? (Coupon) cashFlow : null;
++        if (coupon != null) {
++            refStartDate = coupon.referencePeriodStart();
++            refEndDate = coupon.referencePeriodEnd();
++        } else {
++            if (lastDate.equals(npvDate)) {
++                // No previous coupon date — fake a year before.
++                refStartDate = cashFlowDate.sub(new Period(1, TimeUnit.Years));
++            } else {
++                refStartDate = lastDate;
++            }
++            refEndDate = cashFlowDate;
++        }
++
++        if (coupon != null && !lastDate.equals(coupon.accrualStartDate())) {
++            final double couponPeriod = dc.yearFraction(coupon.accrualStartDate(),
++                    cashFlowDate, refStartDate, refEndDate);
++            final double accruedPeriod = dc.yearFraction(coupon.accrualStartDate(),
++                    lastDate, refStartDate, refEndDate);
++            return couponPeriod - accruedPeriod;
++        }
++        return dc.yearFraction(lastDate, cashFlowDate, refStartDate, refEndDate);
++    }
++
++    /**
++     * Stepwise IRR-discounted NPV. Mirrors C++ {@code CashFlows::npv(leg,
++     * InterestRate, includeSettlementDateFlows, settlementDate, npvDate)}
++     * (cashflows.cpp:811-853): walk the leg in order, accumulating the
++     * stepwise time {@code t += getStepwiseDiscountTime(...)} between
++     * consecutive cashflows and discount each amount by
++     * {@code y.discountFactor(t)}.
++     *
++     * @param leg the cash-flow leg
++     * @param y the constant-yield interest rate
++     * @param includeSettlementDateFlows whether a flow on the settlement
++     *        date is still pending (true) or already paid (false)
++     * @param settlementDate the settlement date; if null, the evaluation
++     *        date is used
++     * @param npvDate the date the NPV is discounted to; if null, defaults
++     *        to {@code settlementDate}
++     */
++    public static double npv(final Leg leg,
++                             final InterestRate y,
++                             final boolean includeSettlementDateFlows,
++                             Date settlementDate,
++                             Date npvDate) {
++        if (leg.isEmpty()) {
++            return 0.0;
++        }
++        if (settlementDate == null || settlementDate.isNull()) {
++            settlementDate = new Settings().evaluationDate();
++        }
++        if (npvDate == null || npvDate.isNull()) {
++            npvDate = settlementDate;
++        }
++
++        double npv = 0.0;
++        double discount = 1.0;
++        Date lastDate = npvDate;
++        final DayCounter dc = y.dayCounter();
++        for (int i = 0; i < leg.size(); ++i) {
++            final CashFlow cf = leg.get(i);
++            if (cf.hasOccurred(settlementDate, includeSettlementDateFlows)) {
++                continue;
++            }
++            // tradingExCoupon not modelled in the JQuant Bond instance —
++            // QuantLib defaults the field to zero ex-dividend days, so the
++            // path is equivalent to "always include" here.
++            final double amount = cf.amount();
++            final double b = y.discountFactor(stepwiseDiscountTime(cf, dc, npvDate, lastDate));
++            discount *= b;
++            lastDate = cf.date();
++            npv += amount * discount;
++        }
++        return npv;
++    }
++
++    /**
++     * Stepwise modified duration. Mirrors C++ private helper
++     * {@code modifiedDuration} (cashflows.cpp:642-707).
++     */
++    private static double modifiedDurationStepwise(final Leg leg,
++                                                   final InterestRate y,
++                                                   final boolean includeSettlementDateFlows,
++                                                   Date settlementDate,
++                                                   Date npvDate) {
++        if (leg.isEmpty()) {
++            return 0.0;
++        }
++        if (settlementDate == null || settlementDate.isNull()) {
++            settlementDate = new Settings().evaluationDate();
++        }
++        if (npvDate == null || npvDate.isNull()) {
++            npvDate = settlementDate;
++        }
++        double P = 0.0;
++        double t = 0.0;
++        double dPdy = 0.0;
++        final double r = y.rate();
++        final int N = y.frequency().toInteger();
++        Date lastDate = npvDate;
++        final DayCounter dc = y.dayCounter();
++        for (int i = 0; i < leg.size(); ++i) {
++            final CashFlow cf = leg.get(i);
++            if (cf.hasOccurred(settlementDate, includeSettlementDateFlows)) {
++                continue;
++            }
++            final double c = cf.amount();
++            t += stepwiseDiscountTime(cf, dc, npvDate, lastDate);
++            final double B = y.discountFactor(t);
++            P += c * B;
++            switch (y.compounding()) {
++              case Simple:
++                dPdy -= c * B * B * t;
++                break;
++              case Compounded:
++                dPdy -= c * t * B / (1.0 + r / N);
++                break;
++              case Continuous:
++                dPdy -= c * B * t;
++                break;
++              case SimpleThenCompounded:
++                if (t <= 1.0 / N) {
++                    dPdy -= c * B * B * t;
++                } else {
++                    dPdy -= c * t * B / (1.0 + r / N);
++                }
++                break;
++              default:
++                throw new IllegalArgumentException("unknown compounding ("
++                        + y.compounding() + ")");
++            }
++            lastDate = cf.date();
++        }
++        if (P == 0.0) {
++            return 0.0;
++        }
++        return -dPdy / P;
++    }
++
++    /**
++     * Stepwise simple duration. Mirrors C++ private helper
++     * {@code simpleDuration} (cashflows.cpp:620-640).
++     */
++    private static double simpleDurationStepwise(final Leg leg,
++                                                 final InterestRate y,
++                                                 final boolean includeSettlementDateFlows,
++                                                 Date settlementDate,
++                                                 Date npvDate) {
++        if (leg.isEmpty()) {
++            return 0.0;
++        }
++        if (settlementDate == null || settlementDate.isNull()) {
++            settlementDate = new Settings().evaluationDate();
++        }
++        if (npvDate == null || npvDate.isNull()) {
++            npvDate = settlementDate;
++        }
++        double P = 0.0;
++        double dPdy = 0.0;
++        double t = 0.0;
++        Date lastDate = npvDate;
++        final DayCounter dc = y.dayCounter();
++        for (int i = 0; i < leg.size(); ++i) {
++            final CashFlow cf = leg.get(i);
++            if (cf.hasOccurred(settlementDate, includeSettlementDateFlows)) {
++                continue;
++            }
++            final double c = cf.amount();
++            t += stepwiseDiscountTime(cf, dc, npvDate, lastDate);
++            final double B = y.discountFactor(t);
++            P += c * B;
++            dPdy += t * c * B;
++            lastDate = cf.date();
++        }
++        if (P == 0.0) {
++            return 0.0;
++        }
++        return dPdy / P;
++    }
++
++    /**
++     * Stepwise duration dispatcher. Mirrors C++
++     * {@code CashFlows::duration(leg, InterestRate, Duration,
++     * includeSettlementDateFlows, settlementDate, npvDate)}
++     * (cashflows.cpp:924-955).
++     */
++    public static double duration(final Leg leg,
++                                  final InterestRate y,
++                                  final Duration type,
++                                  final boolean includeSettlementDateFlows,
++                                  final Date settlementDate,
++                                  final Date npvDate) {
++        switch (type) {
++          case Simple:
++            return simpleDurationStepwise(leg, y, includeSettlementDateFlows, settlementDate, npvDate);
++          case Modified:
++            return modifiedDurationStepwise(leg, y, includeSettlementDateFlows, settlementDate, npvDate);
++          case Macaulay: {
++            QL.require(y.compounding() == Compounding.Compounded,
++                    "compounded rate required");
++            final double mod = modifiedDurationStepwise(leg, y, includeSettlementDateFlows,
++                    settlementDate, npvDate);
++            return (1.0 + y.rate() / y.frequency().toInteger()) * mod;
++          }
++          default:
++            throw new IllegalArgumentException("unknown duration type");
++        }
++    }
++
++    /**
++     * Stepwise convexity. Mirrors C++ {@code CashFlows::convexity(leg,
++     * InterestRate, includeSettlementDateFlows, settlementDate, npvDate)}
++     * (cashflows.cpp:957-1041).
++     */
++    public static double convexity(final Leg leg,
++                                   final InterestRate y,
++                                   final boolean includeSettlementDateFlows,
++                                   Date settlementDate,
++                                   Date npvDate) {
++        if (leg.isEmpty()) {
++            return 0.0;
++        }
++        if (settlementDate == null || settlementDate.isNull()) {
++            settlementDate = new Settings().evaluationDate();
++        }
++        if (npvDate == null || npvDate.isNull()) {
++            npvDate = settlementDate;
++        }
++        final DayCounter dc = y.dayCounter();
++        double P = 0.0;
++        double t = 0.0;
++        double d2Pdy2 = 0.0;
++        final double r = y.rate();
++        final int N = y.frequency().toInteger();
++        Date lastDate = npvDate;
++        for (int i = 0; i < leg.size(); ++i) {
++            final CashFlow cf = leg.get(i);
++            if (cf.hasOccurred(settlementDate, includeSettlementDateFlows)) {
++                continue;
++            }
++            final double c = cf.amount();
++            t += stepwiseDiscountTime(cf, dc, npvDate, lastDate);
++            final double B = y.discountFactor(t);
++            P += c * B;
++            switch (y.compounding()) {
++              case Simple:
++                d2Pdy2 += c * 2.0 * B * B * B * t * t;
++                break;
++              case Compounded:
++                d2Pdy2 += c * B * t * (N * t + 1) / (N * (1 + r / N) * (1 + r / N));
++                break;
++              case Continuous:
++                d2Pdy2 += c * B * t * t;
++                break;
++              case SimpleThenCompounded:
++                if (t <= 1.0 / N) {
++                    d2Pdy2 += c * 2.0 * B * B * B * t * t;
++                } else {
++                    d2Pdy2 += c * B * t * (N * t + 1) / (N * (1 + r / N) * (1 + r / N));
++                }
++                break;
++              default:
++                throw new IllegalArgumentException("unknown compounding ("
++                        + y.compounding() + ")");
++            }
++            lastDate = cf.date();
++        }
++        if (P == 0.0) {
++            return 0.0;
++        }
++        return d2Pdy2 / P;
++    }
++
+     /**
+      * Iterator-style "next cash flow" helper used by {@link
+      * #accruedAmount(Leg, boolean, Date)}; returns the index of the first
+diff --git a/jquantlib/src/main/java/org/jquantlib/pricingengines/bond/BondFunctions.java b/jquantlib/src/main/java/org/jquantlib/pricingengines/bond/BondFunctions.java
+index 2fc3e285..4c580f97 100644
+--- a/jquantlib/src/main/java/org/jquantlib/pricingengines/bond/BondFunctions.java
++++ b/jquantlib/src/main/java/org/jquantlib/pricingengines/bond/BondFunctions.java
+@@ -26,11 +26,8 @@
+ package org.jquantlib.pricingengines.bond;
+ 
+ import org.jquantlib.QL;
+-import org.jquantlib.Settings;
+-import org.jquantlib.cashflow.CashFlow;
+ import org.jquantlib.cashflow.CashFlows;
+ import org.jquantlib.cashflow.CashFlows.Duration;
+-import org.jquantlib.cashflow.Coupon;
+ import org.jquantlib.cashflow.Leg;
+ import org.jquantlib.daycounters.DayCounter;
+ import org.jquantlib.instruments.Bond;
+@@ -42,8 +39,6 @@ import org.jquantlib.termstructures.InterestRate;
+ import org.jquantlib.termstructures.YieldTermStructure;
+ import org.jquantlib.time.Date;
+ import org.jquantlib.time.Frequency;
+-import org.jquantlib.time.Period;
+-import org.jquantlib.time.TimeUnit;
+ 
+ /**
+  * Bond adapters of {@link CashFlows} functions. Faithful Java port of
+@@ -335,7 +330,7 @@ public final class BondFunctions {
+         // accumulates yearFractions from settlement directly, which differs
+         // from the C++ stepwise accumulation for non-additive day counters
+         // such as Thirty/360 USA.
+-        return npvStepwise(bond.cashflows(), yield, false, settlement, settlement)
++        return CashFlows.npv(bond.cashflows(), yield, false, settlement, settlement)
+                 * 100.0 / bond.notional(settlement);
+     }
+ 

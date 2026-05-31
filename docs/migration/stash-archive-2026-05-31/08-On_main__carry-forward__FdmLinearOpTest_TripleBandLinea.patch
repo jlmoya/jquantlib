@@ -1,0 +1,420 @@
+diff --git a/jquantlib/src/main/java/org/jquantlib/methods/finitedifferences/operators/TripleBandLinearOp.java b/jquantlib/src/main/java/org/jquantlib/methods/finitedifferences/operators/TripleBandLinearOp.java
+index 6cc55c44..99bdca9f 100644
+--- a/jquantlib/src/main/java/org/jquantlib/methods/finitedifferences/operators/TripleBandLinearOp.java
++++ b/jquantlib/src/main/java/org/jquantlib/methods/finitedifferences/operators/TripleBandLinearOp.java
+@@ -25,6 +25,7 @@ package org.jquantlib.methods.finitedifferences.operators;
+ import org.jquantlib.QL;
+ import org.jquantlib.math.matrixutilities.Array;
+ import org.jquantlib.math.matrixutilities.Matrix;
++import org.jquantlib.math.matrixutilities.SparseMatrix;
+ import org.jquantlib.methods.finitedifferences.meshers.FdmMesher;
+ 
+ /**
+@@ -246,6 +247,30 @@ public class TripleBandLinearOp implements FdmLinearOp {
+         return ret;
+     }
+ 
++    /**
++     * Native sparse view of the triple-band operator: at most 3 entries per
++     * row ({@code i0[i]}, {@code i}, {@code i2[i]}). Overrides
++     * {@link FdmLinearOp#toSparseMatrix()} so callers do not materialize a
++     * dense {@code n*n} matrix first — important for large 3-D layouts
++     * (e.g. 50x25x31 = 38750 rows ⇒ dense ~1.5e9 cells / ~12 GB).
++     *
++     * <p>Boundary nodes can have {@code i0[i] == i} or {@code i2[i] == i};
++     * we accumulate via {@link SparseMatrix#addAt} so that the three writes
++     * collapse onto the same column when needed (matches the
++     * {@link #toMatrix()} += semantics verbatim).
++     */
++    @Override
++    public SparseMatrix toSparseMatrix() {
++        final int n = mesher.layout().size();
++        final SparseMatrix out = new SparseMatrix(n, n);
++        for (int i = 0; i < n; ++i) {
++            out.addAt(i, i0[i], lower[i]);
++            out.addAt(i, i,     diag[i]);
++            out.addAt(i, i2[i], upper[i]);
++        }
++        return out;
++    }
++
+     /**
+      * Solve the splitting system {@code (a * this + b * I) x = r} with the
+      * Thomas algorithm walked in transposed (reverse-index) order.
+diff --git a/jquantlib/src/test/java/org/jquantlib/testsuite/methods/finitedifferences/FdmLinearOpTest.java b/jquantlib/src/test/java/org/jquantlib/testsuite/methods/finitedifferences/FdmLinearOpTest.java
+index dcc07542..7e080a01 100644
+--- a/jquantlib/src/test/java/org/jquantlib/testsuite/methods/finitedifferences/FdmLinearOpTest.java
++++ b/jquantlib/src/test/java/org/jquantlib/testsuite/methods/finitedifferences/FdmLinearOpTest.java
+@@ -443,20 +443,12 @@ public class FdmLinearOpTest {
+      * NumericalDifferentiation.weights() for both interior nodes (3-point
+      * stencils) and boundary nodes (2-point stencils).
+      *
+-     * <p>Body-fill is complete and matches the C++ logic verbatim, but the test
+-     * is {@code @Ignore}d because the JQuantLib {@code TripleBandLinearOp.toMatrix()}
+-     * (and the default {@code toSparseMatrix()} path) always materializes a
+-     * dense matrix on the full layout. With the C++ test grid (50 x 25 x 31 =
+-     * 38750 nodes) that is ~1.5e9 entries (~12 GB) — Java OOMs immediately.
+-     * <p>Future work: override {@code TripleBandLinearOp.toSparseMatrix()} with
+-     * a CSR construction that only writes the three bands (analogous to the
+-     * existing {@link org.jquantlib.methods.finitedifferences.operators.NthOrderDerivativeOp}
+-     * override). Once that's in place, un-ignore this test.
++     * <p>Phase 5e.5b-CFC-d-157: un-ignored. Added a native
++     * {@code TripleBandLinearOp.toSparseMatrix()} override that writes only
++     * the three bands (~3 * size entries) directly into CSR storage, instead
++     * of going through the default {@code toMatrix()} dense path. The 50x25x31
++     * test grid now fits in &lt;100 MB instead of ~12 GB.
+      */
+-    @Ignore("Phase Body-Fill-2: body-filled but TripleBandLinearOp.toMatrix() / "
+-            + "toSparseMatrix() materializes the full layout (~1.5e9 cells) and "
+-            + "OOMs the JVM. Needs a TripleBandLinearOp.toSparseMatrix() override "
+-            + "that writes only the 3 bands. Body retained for re-enable.")
+     @Test
+     public void testDerivativeWeightsOnNonUniformGrids() {
+         final org.jquantlib.methods.finitedifferences.meshers.Concentrating1dMesher mesherX
+@@ -847,7 +839,11 @@ public class FdmLinearOpTest {
+      * / {@code meanVarianceGammaAt} — none of which are yet ported.
+      * Body-fill deferred until these production classes land.
+      */
+-    @Ignore("PARTIAL: requires FdmHestonExpressCondition + ExpressPayoff + FdmHestonSolver.meanVariance{Delta,Gamma}At — not yet ported")
++    @Ignore("Phase 5e.5b-CFC-d-157: requires (1) FdmHestonExpressCondition "
++            + "(production class — knock-out step condition), (2) FdmDividendHandler "
++            + "step condition, (3) ExpressPayoff (test-local C++ helper class), and "
++            + "(4) FdmHestonSolver.{valueAt,meanVarianceDeltaAt,meanVarianceGammaAt} "
++            + "API — none ported. Substantial body-fill (~150 LOC + 4 production classes).")
+     @Test
+     public void testFdmHestonExpress() {
+         fail("not implemented");
+@@ -1197,15 +1193,133 @@ public class FdmLinearOpTest {
+         return a;
+     }
+ 
+-    /** {@code testCrankNicolsonWithDamping} — requires
+-     * {@code FdmBlackScholesOp} step-condition wired into a Crank-Nicolson
+-     * scheme.  FdmBlackScholesOp exists; defer to Phase 5j.5 to wire the
+-     * full pricing path.
++    /** {@code testCrankNicolsonWithDamping} — Java port of v1.42.1
++     * {@code test-suite/fdmlinearop.cpp::testCrankNicolsonWithDamping}.
++     *
++     * <p>Phase 5e.5b-CFC-d-157: body-filled. Prices a European
++     * cash-or-nothing put (digital, strike=100, cash=10, maturity=0.75y,
++     * vol=35%, r=q=6%) two ways:
++     * <ul>
++     *   <li><strong>Analytic reference:</strong> {@link org.jquantlib.pricingengines.AnalyticEuropeanEngine}
++     *       on a {@link org.jquantlib.processes.BlackScholesMertonProcess}
++     *       — produces the closed-form Black-Scholes price + gamma.</li>
++     *   <li><strong>FD path:</strong> 1D log-space mesher with
++     *       {@link org.jquantlib.methods.finitedifferences.meshers.FdmBlackScholesMesher},
++     *       {@link org.jquantlib.methods.finitedifferences.operators.FdmBlackScholesOp},
++     *       and a {@link org.jquantlib.methods.finitedifferences.solvers.FdmBackwardSolver}
++     *       run with 25 Douglas (theta=0.5) steps prefixed by 3 implicit-Euler
++     *       damping steps to absorb the digital's discontinuous payoff. Spot value
++     *       and gamma are interpolated via {@link org.jquantlib.math.interpolations.MonotonicNaturalCubicInterpolation}
++     *       (gamma = (spline.secondDerivative - spline.derivative) / S^2 to convert
++     *       from log-space).</li>
++     * </ul>
++     *
++     * <p>Tolerance: relative {@code 2e-3} (C++ verbatim) on both PV and gamma.
+      */
+-    @Ignore("Phase 5j.5 — requires full FdmBlackScholesOp pricing wiring")
+     @Test
+     public void testCrankNicolsonWithDamping() {
+-        fail("not implemented");
++        final org.jquantlib.daycounters.DayCounter dc =
++                new org.jquantlib.daycounters.Actual360();
++        final org.jquantlib.time.Date today = org.jquantlib.time.Date.todaysDate();
++        new org.jquantlib.Settings().setEvaluationDate(today);
++
++        final org.jquantlib.quotes.SimpleQuote spot =
++                new org.jquantlib.quotes.SimpleQuote(100.0);
++        final org.jquantlib.quotes.Handle<org.jquantlib.termstructures.YieldTermStructure> qTS =
++                new org.jquantlib.quotes.Handle<org.jquantlib.termstructures.YieldTermStructure>(
++                        org.jquantlib.testsuite.util.Utilities.flatRate(today, 0.06, dc));
++        final org.jquantlib.quotes.Handle<org.jquantlib.termstructures.YieldTermStructure> rTS =
++                new org.jquantlib.quotes.Handle<org.jquantlib.termstructures.YieldTermStructure>(
++                        org.jquantlib.testsuite.util.Utilities.flatRate(today, 0.06, dc));
++        final org.jquantlib.quotes.Handle<org.jquantlib.termstructures.BlackVolTermStructure> volTS =
++                new org.jquantlib.quotes.Handle<org.jquantlib.termstructures.BlackVolTermStructure>(
++                        org.jquantlib.testsuite.util.Utilities.flatVol(today, 0.35, dc));
++
++        final org.jquantlib.instruments.StrikedTypePayoff payoff =
++                new org.jquantlib.instruments.CashOrNothingPayoff(
++                        org.jquantlib.instruments.Option.Type.Put, 100.0, 10.0);
++
++        final double maturity = 0.75;
++        final org.jquantlib.time.Date exDate = today.add((int) Math.round(maturity * 360.0));
++        final org.jquantlib.exercise.Exercise exercise =
++                new org.jquantlib.exercise.EuropeanExercise(exDate);
++
++        final org.jquantlib.processes.BlackScholesMertonProcess process =
++                new org.jquantlib.processes.BlackScholesMertonProcess(
++                        new org.jquantlib.quotes.Handle<org.jquantlib.quotes.Quote>(spot),
++                        qTS, rTS, volTS);
++
++        final org.jquantlib.pricingengines.PricingEngine engine =
++                new org.jquantlib.pricingengines.AnalyticEuropeanEngine(process);
++
++        final org.jquantlib.instruments.VanillaOption opt =
++                new org.jquantlib.instruments.VanillaOption(payoff, exercise);
++        opt.setPricingEngine(engine);
++
++        final double expectedPV    = opt.NPV();
++        final double expectedGamma = opt.gamma();
++
++        // FD pricing using implicit-Euler damping + Douglas.
++        final int csSteps = 25;
++        final int dampingSteps = 3;
++        final int xGrid = 400;
++        final int[] dim = { xGrid };
++
++        final FdmLinearOpLayout layout = new FdmLinearOpLayout(dim);
++        final Fdm1dMesher equityMesher =
++                new org.jquantlib.methods.finitedifferences.meshers.FdmBlackScholesMesher(
++                        dim[0], process, maturity, payoff.strike(),
++                        Double.NaN, Double.NaN, 0.0001, 1.5,
++                        payoff.strike(), 0.01,
++                        new org.jquantlib.instruments.DividendSchedule(), 0.0);
++
++        final FdmMesher mesher = new FdmMesherComposite(equityMesher);
++
++        final org.jquantlib.methods.finitedifferences.operators.FdmBlackScholesOp map =
++                new org.jquantlib.methods.finitedifferences.operators.FdmBlackScholesOp(
++                        mesher, process, payoff.strike(), 0);
++
++        final org.jquantlib.methods.finitedifferences.utilities.FdmInnerValueCalculator calculator =
++                new org.jquantlib.methods.finitedifferences.utilities.FdmLogInnerValue(
++                        payoff, mesher, 0);
++
++        final Array rhs = new Array(layout.size());
++        final Array x   = new Array(layout.size());
++        for (final FdmLinearOpIterator iter : layout) {
++            rhs.set(iter.index(), calculator.avgInnerValue(iter, maturity));
++            x.set(iter.index(), mesher.location(iter, 0));
++        }
++
++        final org.jquantlib.methods.finitedifferences.solvers.FdmBackwardSolver solver =
++                new org.jquantlib.methods.finitedifferences.solvers.FdmBackwardSolver(
++                        map,
++                        new org.jquantlib.methods.finitedifferences.utilities.FdmBoundaryConditionSet(),
++                        null,
++                        org.jquantlib.methods.finitedifferences.schemes.FdmSchemeDesc.Douglas());
++        solver.rollback(rhs, maturity, 0.0, csSteps, dampingSteps);
++
++        final org.jquantlib.math.interpolations.MonotonicNaturalCubicInterpolation spline =
++                new org.jquantlib.math.interpolations.MonotonicNaturalCubicInterpolation(x, rhs);
++
++        final double s = spot.value();
++        final double logS = Math.log(s);
++        final double calculatedPV    = spline.op(logS);
++        final double calculatedGamma = (spline.secondDerivative(logS)
++                                        - spline.derivative(logS)) / (s * s);
++
++        final double relTol = 2.0e-3;
++        if (Math.abs(calculatedPV - expectedPV) > relTol * expectedPV) {
++            fail("Error calculating the PV of the digital option"
++                    + "\n rel. tolerance:  " + relTol
++                    + "\n expected:        " + expectedPV
++                    + "\n calculated:      " + calculatedPV);
++        }
++        if (Math.abs(calculatedGamma - expectedGamma) > relTol * expectedGamma) {
++            fail("Error calculating the Gamma of the digital option"
++                    + "\n rel. tolerance:  " + relTol
++                    + "\n expected:        " + expectedGamma
++                    + "\n calculated:      " + calculatedGamma);
++        }
+     }
+ 
+     /** Sparse matrix tests — Phase 5b.5 ports SparseMatrix (CSR form,
+@@ -1333,21 +1447,184 @@ public class FdmLinearOpTest {
+         }
+     }
+ 
+-    /** {@code testHighInterestRateBlackScholesMesher} /
+-     * {@code testLowVolatilityHighDiscreteDividendBlackScholesMesher} —
+-     * exercise {@code FdmBlackScholesMesher} corner cases for high r and
+-     * dividend handling.  Java {@code FdmBlackScholesMesher} exists but the
+-     * dividend-aware constructor path is not yet exercised.  Defer.
++    /** {@code testHighInterestRateBlackScholesMesher} — Java port of
++     * v1.42.1 {@code test-suite/fdmlinearop.cpp::testHighInterestRateBlackScholesMesher}.
++     *
++     * <p>Phase 5e.5b-CFC-d-157: body-filled. Validates the
++     * {@link org.jquantlib.methods.finitedifferences.meshers.FdmBlackScholesMesher}
++     * boundary computation in a high-r (21%) scenario where the forward
++     * drift dominates volatility: the upper bound is determined by
++     * {@code S / discountR * discountQ * exp(z * sigma * sqrt(T))} rather
++     * than by the spot * {@code exp(z * sigma * sqrt(T))}.
++     *
++     * <p>Tolerance: relative {@code 1e-7} (C++ verbatim).
+      */
+-    @Ignore("Phase 5j.5 — FdmBlackScholesMesher dividend-aware constructor edge cases")
+     @Test
+     public void testHighInterestRateBlackScholesMesher() {
+-        fail("not implemented");
++        final org.jquantlib.daycounters.DayCounter dc =
++                new org.jquantlib.daycounters.Actual365Fixed();
++        final org.jquantlib.time.Date today = new org.jquantlib.time.Date(
++                11, org.jquantlib.time.Month.February, 2018);
++        new org.jquantlib.Settings().setEvaluationDate(today);
++
++        final double spot = 100.0;
++        final double r = 0.21;
++        final double q = 0.02;
++        final double v = 0.25;
++
++        final org.jquantlib.processes.GeneralizedBlackScholesProcess process =
++                new org.jquantlib.processes.GeneralizedBlackScholesProcess(
++                        new org.jquantlib.quotes.Handle<org.jquantlib.quotes.Quote>(
++                                new org.jquantlib.quotes.SimpleQuote(spot)),
++                        new org.jquantlib.quotes.Handle<org.jquantlib.termstructures.YieldTermStructure>(
++                                org.jquantlib.testsuite.util.Utilities.flatRate(today, q, dc)),
++                        new org.jquantlib.quotes.Handle<org.jquantlib.termstructures.YieldTermStructure>(
++                                org.jquantlib.testsuite.util.Utilities.flatRate(today, r, dc)),
++                        new org.jquantlib.quotes.Handle<org.jquantlib.termstructures.BlackVolTermStructure>(
++                                org.jquantlib.testsuite.util.Utilities.flatVol(today, v, dc)));
++
++        final int size = 10;
++        final double maturity = 2.0;
++        final double strike = 100.0;
++        final double eps = 0.05;
++        final double normInvEps = 1.64485363;
++        final double scaleFactor = 2.5;
++
++        final org.jquantlib.methods.finitedifferences.meshers.FdmBlackScholesMesher mesher =
++                new org.jquantlib.methods.finitedifferences.meshers.FdmBlackScholesMesher(
++                        size, process, maturity, strike,
++                        Double.NaN, Double.NaN, eps, scaleFactor,
++                        Double.NaN, Double.NaN,
++                        new org.jquantlib.instruments.DividendSchedule(), 0.0);
++
++        final double[] loc = mesher.locations();
++        final double calculatedMin = Math.exp(loc[0]);
++        final double calculatedMax = Math.exp(loc[loc.length - 1]);
++
++        final double minimum = spot
++                * Math.exp(-normInvEps * scaleFactor * v * Math.sqrt(maturity));
++        final double maximum = spot
++                / process.riskFreeRate().currentLink().discount(maturity)
++                * process.dividendYield().currentLink().discount(maturity)
++                * Math.exp(normInvEps * scaleFactor * v * Math.sqrt(maturity));
++
++        final double relTol = 1.0e-7;
++        final double maxDiff = Math.abs(calculatedMax - maximum);
++        if (maxDiff > relTol * maximum) {
++            fail("Upper bound for Black-Scholes mesher failed:"
++                    + "\n    calculated: " + calculatedMax
++                    + "\n    expected:   " + maximum
++                    + "\n    difference: " + maxDiff
++                    + "\n    tolerance:  " + (relTol * maximum));
++        }
++
++        final double minDiff = Math.abs(calculatedMin - minimum);
++        if (minDiff > relTol * minimum) {
++            fail("Lower bound for Black-Scholes mesher failed:"
++                    + "\n    calculated: " + calculatedMin
++                    + "\n    expected:   " + minimum
++                    + "\n    difference: " + minDiff
++                    + "\n    tolerance:  " + (relTol * minimum));
++        }
+     }
+ 
+-    @Ignore("Phase 5j.5 — FdmBlackScholesMesher dividend-aware constructor edge cases")
++    /** {@code testLowVolatilityHighDiscreteDividendBlackScholesMesher} —
++     * Java port of v1.42.1
++     * {@code test-suite/fdmlinearop.cpp::testLowVolatilityHighDiscreteDividendBlackScholesMesher}.
++     *
++     * <p>Phase 5e.5b-CFC-d-157: body-filled. Exercises the dividend-aware
++     * forward-propagation path of
++     * {@link org.jquantlib.methods.finitedifferences.meshers.FdmBlackScholesMesher}
++     * at zero vol with two discrete cash dividends (10 then 5). The grid
++     * boundaries collapse onto the forward path because {@code sigmaSqrtT == 0}.
++     *
++     * <p>Tolerance: relative {@code 1e5 * QL_EPSILON} (C++ verbatim).
++     */
+     @Test
+     public void testLowVolatilityHighDiscreteDividendBlackScholesMesher() {
+-        fail("not implemented");
++        final org.jquantlib.daycounters.DayCounter dc =
++                new org.jquantlib.daycounters.Actual365Fixed();
++        final org.jquantlib.time.Date today = new org.jquantlib.time.Date(
++                28, org.jquantlib.time.Month.January, 2018);
++        new org.jquantlib.Settings().setEvaluationDate(today);
++
++        final org.jquantlib.quotes.Handle<org.jquantlib.quotes.Quote> spot =
++                new org.jquantlib.quotes.Handle<org.jquantlib.quotes.Quote>(
++                        new org.jquantlib.quotes.SimpleQuote(100.0));
++        final org.jquantlib.quotes.Handle<org.jquantlib.termstructures.YieldTermStructure> qTS =
++                new org.jquantlib.quotes.Handle<org.jquantlib.termstructures.YieldTermStructure>(
++                        org.jquantlib.testsuite.util.Utilities.flatRate(today, 0.07, dc));
++        final org.jquantlib.quotes.Handle<org.jquantlib.termstructures.YieldTermStructure> rTS =
++                new org.jquantlib.quotes.Handle<org.jquantlib.termstructures.YieldTermStructure>(
++                        org.jquantlib.testsuite.util.Utilities.flatRate(today, 0.16, dc));
++        final org.jquantlib.quotes.Handle<org.jquantlib.termstructures.BlackVolTermStructure> volTS =
++                new org.jquantlib.quotes.Handle<org.jquantlib.termstructures.BlackVolTermStructure>(
++                        org.jquantlib.testsuite.util.Utilities.flatVol(today, 0.0, dc));
++
++        final org.jquantlib.processes.GeneralizedBlackScholesProcess process =
++                new org.jquantlib.processes.GeneralizedBlackScholesProcess(
++                        spot, qTS, rTS, volTS);
++
++        final org.jquantlib.time.Date firstDivDate =
++                today.add(new org.jquantlib.time.Period(7, org.jquantlib.time.TimeUnit.Months));
++        final double firstDivAmount = 10.0;
++        final org.jquantlib.time.Date secondDivDate =
++                today.add(new org.jquantlib.time.Period(11, org.jquantlib.time.TimeUnit.Months));
++        final double secondDivAmount = 5.0;
++
++        final org.jquantlib.instruments.DividendSchedule divSchedule =
++                new org.jquantlib.instruments.DividendSchedule();
++        divSchedule.add(new org.jquantlib.cashflow.FixedDividend(firstDivAmount, firstDivDate));
++        divSchedule.add(new org.jquantlib.cashflow.FixedDividend(secondDivAmount, secondDivDate));
++
++        final int size = 5;
++        final double maturity = 1.0;
++        final double strike = 100.0;
++        final double eps = 0.0001;
++        final double scaleFactor = 1.5;
++
++        final org.jquantlib.methods.finitedifferences.meshers.FdmBlackScholesMesher mesher =
++                new org.jquantlib.methods.finitedifferences.meshers.FdmBlackScholesMesher(
++                        size, process, maturity, strike,
++                        Double.NaN, Double.NaN, eps, scaleFactor,
++                        Double.NaN, Double.NaN,
++                        divSchedule, 0.0);
++
++        final double maximum = spot.currentLink().value()
++                * qTS.currentLink().discount(firstDivDate)
++                / rTS.currentLink().discount(firstDivDate);
++
++        final double minimum = (1.0 - firstDivAmount
++                / (spot.currentLink().value()
++                   * qTS.currentLink().discount(firstDivDate)
++                   / rTS.currentLink().discount(firstDivDate)))
++                * spot.currentLink().value()
++                * qTS.currentLink().discount(secondDivDate)
++                / rTS.currentLink().discount(secondDivDate)
++                - secondDivAmount;
++
++        final java.util.List<Double> loc = mesher.locations();
++        final double calculatedMax = Math.exp(loc.get(loc.size() - 1));
++        final double calculatedMin = Math.exp(loc.get(0));
++
++        final double relTol = 1.0e5 * org.jquantlib.math.Constants.QL_EPSILON;
++
++        final double maxDiff = Math.abs(calculatedMax - maximum);
++        if (maxDiff > relTol * maximum) {
++            fail("Upper bound for Black-Scholes mesher failed:"
++                    + "\n    calculated: " + calculatedMax
++                    + "\n    expected:   " + maximum
++                    + "\n    difference: " + maxDiff
++                    + "\n    tolerance:  " + (relTol * maximum));
++        }
++
++        final double minDiff = Math.abs(calculatedMin - minimum);
++        if (minDiff > relTol * minimum) {
++            fail("Lower bound for Black-Scholes mesher failed:"
++                    + "\n    calculated: " + calculatedMin
++                    + "\n    expected:   " + minimum
++                    + "\n    difference: " + minDiff
++                    + "\n    tolerance:  " + (relTol * minimum));
++        }
+     }
+ }

@@ -1,0 +1,257 @@
+diff --git a/jquantlib/src/main/java/org/jquantlib/math/matrixutilities/QRDecomposition.java b/jquantlib/src/main/java/org/jquantlib/math/matrixutilities/QRDecomposition.java
+index 9d309c83..3d33f468 100755
+--- a/jquantlib/src/main/java/org/jquantlib/math/matrixutilities/QRDecomposition.java
++++ b/jquantlib/src/main/java/org/jquantlib/math/matrixutilities/QRDecomposition.java
+@@ -202,26 +202,150 @@ public class QRDecomposition {
+             final Array b,
+             final boolean pivot,
+             final Array d) {
++        return qrSolve(A, b, pivot, d);
++    }
+ 
+-        QL.require(b.size() == m, "dimensions of A and b don't match");
+-        QL.require(d != null && !d.empty() && d.size() == n, "dimensions of A and d don't match");
+ 
+-        final Matrix aT = A.transpose();
+-        final Matrix rT = R.transpose();
++    //
++    // public static factories (Phase 5e.5b-CFC-d-52)
++    //
+ 
+-        final Array sdiag = new Array(n);
++    /**
++     * Free-function port of QuantLib v1.42.1 {@code qrSolve} from
++     * {@code ql/math/matrixutilities/qrdecomposition.cpp:125-159}.
++     *
++     * <p>Solves {@code A*x = b} (least-squares when overdetermined,
++     * minimum-norm via QR when underdetermined) using a Householder QR
++     * factorisation with optional column pivoting. Supports Levenberg-
++     * Marquardt-style diagonal damping via {@code d} (pass empty or
++     * {@code null} for no damping).
++     *
++     * @param A     m-by-n matrix
++     * @param b     right-hand side (length m)
++     * @param pivot whether to use column pivoting
++     * @param d     diagonal damping vector (length n) or empty for none
++     * @return least-squares solution x (length n)
++     */
++    public static Array qrSolve(final Matrix A, final Array b,
++                                final boolean pivot, final Array d) {
++        final int m = A.rows();
++        final int n = A.cols();
++        QL.require(b.size() == m, "dimensions of A and b don't match");
++        QL.require(d == null || d.empty() || d.size() == n,
++                "dimensions of A and d don't match");
++
++        // qrDecomposition: produce Q (m x n) and R (n x n) + pivot vector.
++        final Matrix mT = A.clone().toJava().transpose();
++        final int[] lipvt = new int[n];
++        final Array rdiag = new Array(n);
+         final Array wa = new Array(n);
+ 
+-        final Array ld = new Array(n);
+-        if (d!=null && !d.empty()) {
+-            ld.fill(d);
++        Minpack.qrfac(m, n, mT, pivot, lipvt, rdiag, rdiag, wa);
++
++        // build R
++        final double[][] rArr = new double[n][n];
++        for (int i = 0; i < n; i++) {
++            rArr[i][i] = rdiag.get(i);
++            if (i < m) {
++                for (int k = i + 1; k < n; k++) {
++                    rArr[i][k] = mT.get(k, i);
++                }
++            }
++        }
++
++        // build Q (mirror C++ qrdecomposition.cpp:62-110)
++        final double[][] qArr = new double[m][n];
++        if (m > n) {
++            // m > n branch
++            final int u = Math.min(n, m);
++            for (int i = 0; i < u; ++i) {
++                qArr[i][i] = 1.0;
++            }
++            final double[] v = new double[m];
++            for (int i = u - 1; i >= 0; --i) {
++                if (Math.abs(mT.get(i, i)) > org.jquantlib.math.Constants.QL_EPSILON) {
++                    final double tau = 1.0 / mT.get(i, i);
++                    for (int k = 0; k < i; ++k) v[k] = 0.0;
++                    for (int k = i; k < m; ++k) v[k] = mT.get(i, k);
++
++                    final double[] w = new double[n];
++                    for (int l = 0; l < n; ++l) {
++                        double s = 0.0;
++                        for (int k = i; k < m; ++k) {
++                            s += v[k] * qArr[k][l];
++                        }
++                        w[l] = s;
++                    }
++                    for (int k = i; k < m; ++k) {
++                        final double a = tau * v[k];
++                        for (int l = 0; l < n; ++l) {
++                            qArr[k][l] -= a * w[l];
++                        }
++                    }
++                }
++            }
++        } else {
++            // m <= n branch
++            final double[] w = new double[m];
++            for (int k = 0; k < m; ++k) {
++                for (int i = 0; i < m; ++i) w[i] = 0.0;
++                w[k] = 1.0;
++                for (int j = 0; j < Math.min(n, m); ++j) {
++                    final double t3 = mT.get(j, j);
++                    if (t3 != 0.0) {
++                        double t = 0.0;
++                        for (int i = j; i < m; ++i) {
++                            t += mT.get(j, i) * w[i];
++                        }
++                        t /= t3;
++                        for (int i = j; i < m; ++i) {
++                            w[i] -= mT.get(j, i) * t;
++                        }
++                    }
++                    qArr[k][j] = w[j];
++                }
++            }
++        }
++
++        final Matrix Q = new Matrix(qArr);
++        final Matrix R = new Matrix(rArr);
++
++        // ipvt
++        final int[] ipvt = new int[n];
++        if (pivot) {
++            System.arraycopy(lipvt, 0, ipvt, 0, n);
++        } else {
++            for (int i = 0; i < n; ++i) ipvt[i] = i;
+         }
+-        final Array x = new Array(n);
++
++        // qrSolve: rT = transpose(R); qtb = Q^T * b; call qrsolv.
++        final Matrix rT = R.transpose();
++        final double[] sdiag = new double[n];
++        final double[] waArr = new double[n];
++        final double[] ld = new double[n];
++        if (d != null && !d.empty()) {
++            for (int i = 0; i < n; ++i) ld[i] = d.get(i);
++        }
++        // qtb = Q^T * b
+         final Array qtb = Q.transpose().mul(b);
++        final double[] qtbArr = new double[n];
++        for (int i = 0; i < n; ++i) qtbArr[i] = qtb.get(i);
++
++        final double[] xArr = new double[n];
++
++        // Minpack.qrsolv expects R stored column-major in `r`. rT.transpose()
++        // gives R back, but we need a contiguous double[] in column-major
++        // form. Build it directly from rArr (which is row-major Java).
++        final double[] rFlat = new double[n * n];
++        for (int col = 0; col < n; ++col) {
++            for (int row = 0; row < n; ++row) {
++                rFlat[row + n * col] = rT.get(row, col);
++            }
++        }
++
++        Minpack.qrsolv(n, rFlat, n, ipvt, ld, qtbArr, xArr, sdiag, waArr);
+ 
+-        throw new UnsupportedOperationException();
+-        //TODO:: Minpack.qrsolv(n, rT, n, ipvt, ld, qtb, x, sdiag, wa);
+-        //TODO:: return x;
++        return new Array(xArr);
+     }
+ 
+ 
+diff --git a/jquantlib/src/main/java/org/jquantlib/pricingengines/BlackFormula.java b/jquantlib/src/main/java/org/jquantlib/pricingengines/BlackFormula.java
+index 68d32a9a..3027bea3 100755
+--- a/jquantlib/src/main/java/org/jquantlib/pricingengines/BlackFormula.java
++++ b/jquantlib/src/main/java/org/jquantlib/pricingengines/BlackFormula.java
+@@ -753,6 +753,85 @@ public class BlackFormula {
+         return blackFormulaCashItmProbability(payoff.optionType(), strike, forward, stddev, displacement);
+     }
+ 
++    // ---
++    // ---
++    // ---
++
++    /**
++     * Black 1976 probability of being in the money (in the asset martingale
++     * measure), i.e. N(d1). This is the analytic forward delta for a
++     * cash-or-nothing / asset-or-nothing payoff under the displaced-diffusion
++     * model.
++     *
++     * <p>Mirrors C++ v1.42.1 {@code blackFormulaAssetItmProbability}
++     * (ql/pricingengines/blackformula.cpp:593-613).
++     *
++     * @note Instead of volatility it uses standard deviation, i.e.
++     *       volatility*sqrt(timeToMaturity)
++     */
++    public static /*@Real*/ double blackFormulaAssetItmProbability(
++            final Option.Type optionType,
++            @Real final double strike,
++            @Real final double forward,
++            @StdDev final double stddev) {
++
++        return blackFormulaAssetItmProbability(optionType, strike, forward, stddev, 0.0);
++    }
++
++    /**
++     * Black 1976 probability of being in the money (in the asset martingale
++     * measure), i.e. N(d1), with displacement.
++     *
++     * <p>Mirrors C++ v1.42.1 {@code blackFormulaAssetItmProbability}
++     * (ql/pricingengines/blackformula.cpp:593-613).
++     */
++    public static /*@Real*/ double blackFormulaAssetItmProbability(
++            final Option.Type optionType,
++            @Real final double strike,
++            @Real final double forward,
++            @StdDev final double stddev,
++            @Real final double displacement) {
++
++        // C++ calls checkParameters(strike, forward, displacement) here;
++        // mirror the documented invariants (forward and strike+displacement
++        // must be non-negative) inline.
++        QL.require(strike + displacement >= 0.0,
++                "strike + displacement must be non-negative");
++        QL.require(forward + displacement > 0.0,
++                "forward + displacement must be positive");
++        QL.require(stddev >= 0.0, "stddev must be non-negative");
++
++        final int sign = optionType.toInteger();
++
++        if (stddev == 0.0) {
++            return (forward * sign < strike * sign) ? 1.0 : 0.0;
++        }
++
++        final double fShifted = forward + displacement;
++        final double kShifted = strike + displacement;
++        if (kShifted == 0.0) {
++            return (optionType == Option.Type.Call) ? 1.0 : 0.0;
++        }
++        final double d1 = Math.log(fShifted / kShifted) / stddev + 0.5 * stddev;
++        final CumulativeNormalDistribution phi = new CumulativeNormalDistribution();
++        return phi.op(sign * d1);
++    }
++
++    /**
++     * Black 1976 N(d1) for a PlainVanillaPayoff (asset martingale measure),
++     * with displacement. Mirrors C++ v1.42.1
++     * {@code blackFormulaAssetItmProbability(PlainVanillaPayoff,...)}.
++     */
++    public static /*@Real*/ double blackFormulaAssetItmProbability(
++            final PlainVanillaPayoff payoff,
++            @Real final double forward,
++            @StdDev final double stddev,
++            @Real final double displacement) {
++
++        return blackFormulaAssetItmProbability(payoff.optionType(),
++                payoff.strike(), forward, stddev, displacement);
++    }
++
+ 
+     // ---
+     // ---

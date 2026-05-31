@@ -1,0 +1,894 @@
+diff --git a/jquantlib/src/main/java/org/jquantlib/math/Autocovariance.java b/jquantlib/src/main/java/org/jquantlib/math/Autocovariance.java
+new file mode 100644
+index 00000000..554b2795
+--- /dev/null
++++ b/jquantlib/src/main/java/org/jquantlib/math/Autocovariance.java
+@@ -0,0 +1,193 @@
++/*
++ Copyright (C) 2026 JQuantLib migration contributors.
++
++ This source code is release under the BSD License.
++
++ This file is part of JQuantLib, a free-software/open-source library
++ for financial quantitative analysts and developers - http://jquantlib.org/
++
++ JQuantLib is free software: you can redistribute it and/or modify it
++ under the terms of the JQuantLib license.  You should have received a
++ copy of the license along with this program; if not, please email
++ <jquant-devel@lists.sourceforge.net>. The license is also available online at
++ <http://www.jquantlib.org/index.php/LICENSE.TXT>.
++
++ This program is distributed in the hope that it will be useful, but WITHOUT
++ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
++ FOR A PARTICULAR PURPOSE.  See the license for more details.
++
++ JQuantLib is based on QuantLib. http://quantlib.org/
++ When applicable, the original copyright notice follows this notice.
++ */
++
++/*
++ Copyright (C) 2010 Liquidnet Holdings, Inc.
++*/
++package org.jquantlib.math;
++
++import org.jquantlib.QL;
++
++/**
++ * Autocovariance, autocorrelation, and convolution utilities.
++ * <p>
++ * Java port of QuantLib v1.42.1 {@code ql/math/autocovariance.hpp}.
++ * <p>
++ * The C++ original computes these statistics via the FFT (using the
++ * Wiener-Khinchin theorem: autocorrelation is the inverse FFT of the
++ * power-spectrum, i.e. the magnitude-squared FFT of the signal).
++ * Because JQuantLib has no {@code FastFourierTransform} class, this Java
++ * port computes the convolutions directly. The numerical results are
++ * mathematically identical (both compute the cross-correlation sums
++ * x[0]*x[n] + x[1]*x[n+1] + ...); only the per-call complexity differs
++ * (direct: {@code O(N * (maxLag+1))} vs FFT: {@code O(N log N)}).
++ *
++ * @author Phase 5e.5b-CFC-d-77 carry-forward
++ */
++public final class Autocovariance {
++
++    private Autocovariance() {
++        // utility class
++    }
++
++    /**
++     * Convolutions of the input sequence.
++     * <p>
++     * Returns a length-{@code maxLag+1} array where
++     * {@code conv[n] = sum_{i=0}^{N-1-n} x[i] * x[i+n]} for
++     * {@code n = 0, 1, ..., maxLag}.
++     *
++     * @param x       input sequence
++     * @param maxLag  largest lag (must be {@code < x.length})
++     * @return        convolutions of {@code x} for lags 0..maxLag
++     */
++    public static double[] convolutions(final double[] x, final int maxLag) {
++        final int nData = x.length;
++        QL.require(maxLag < nData, "maxLag must be less than data size");
++        final double[] out = new double[maxLag + 1];
++        for (int n = 0; n <= maxLag; ++n) {
++            double s = 0.0;
++            for (int i = 0; i + n < nData; ++i) {
++                s += x[i] * x[i + n];
++            }
++            out[n] = s;
++        }
++        return out;
++    }
++
++    /**
++     * Unbiased auto-covariances of a centered (zero-mean) sequence.
++     * <p>
++     * Returns a length-{@code maxLag+1} array where the {@code n}-th entry
++     * equals {@code convolutions[n] / (nData - n)}.
++     *
++     * @param x       input sequence (assumed already centered)
++     * @param maxLag  largest lag (must be {@code < x.length})
++     * @return        unbiased auto-covariances of {@code x} for lags 0..maxLag
++     */
++    public static double[] autocovariances(final double[] x, final int maxLag) {
++        final int nData = x.length;
++        QL.require(maxLag < nData,
++                "number of covariances must be less than data size");
++        final double[] conv = convolutions(x, maxLag);
++        final double[] out = new double[maxLag + 1];
++        for (int n = 0; n <= maxLag; ++n) {
++            out[n] = conv[n] / (nData - n);
++        }
++        return out;
++    }
++
++    /**
++     * Unbiased auto-covariances of a non-centered sequence.
++     * <p>
++     * Removes the mean from the input data, then computes the unbiased
++     * auto-covariances of the centered sequence. The mean is returned via the
++     * length-one {@code meanOut} array (index 0). If {@code reuse} is true,
++     * the centered sequence is written back into the input array
++     * ({@code x[i] -= mean}); otherwise {@code x} is left untouched.
++     *
++     * @param x        input sequence (modified in place if {@code reuse})
++     * @param maxLag   largest lag
++     * @param reuse    whether to overwrite {@code x} with the centered values
++     * @param meanOut  length-one array to receive the sample mean
++     * @return         unbiased auto-covariances for lags 0..maxLag
++     */
++    public static double[] autocovariances(final double[] x, final int maxLag,
++                                           final boolean reuse, final double[] meanOut) {
++        final double[] centered = reuse ? x : new double[x.length];
++        final double mean = removeMean(x, centered);
++        meanOut[0] = mean;
++        return autocovariances(centered, maxLag);
++    }
++
++    /**
++     * Unbiased auto-correlations of a centered (zero-mean) sequence.
++     * <p>
++     * The first element of the output is the unbiased sample variance,
++     * {@code conv[0] / (nData - 1)}. Subsequent elements are
++     * {@code conv[n] / (variance * (nData - n))} for {@code n = 1..maxLag},
++     * where {@code variance = conv[0] / nData}. This matches the C++
++     * convention exactly.
++     *
++     * @param x       input sequence (assumed already centered)
++     * @param maxLag  largest lag
++     * @return        unbiased auto-correlations (with variance at index 0)
++     */
++    public static double[] autocorrelations(final double[] x, final int maxLag) {
++        final int nData = x.length;
++        QL.require(maxLag < nData,
++                "number of correlations must be less than data size");
++        final double[] conv = convolutions(x, maxLag);
++        final double[] out = new double[maxLag + 1];
++        // C++:
++        //   Real variance = ft[0].real() * w1 / w2;   // w1 = 1/ftSize, w2 = nData
++        //                                              // ft[0].real() * w1 == conv[0]
++        //   *out++ = variance * w2 / (w2-1.0);        // unbiased sample variance
++        //   w2 -= 1.0;
++        //   for (k = 1..maxLag, w2 -= 1.0)
++        //     *out++ = ft[k].real() * w1 / (variance * w2);
++        // Note: after the first emission, w2 is decremented from nData to nData-1,
++        // so for k=1 the divisor uses w2 = nData-1 (i.e. nData - k).
++        final double variance = conv[0] / nData;
++        out[0] = variance * nData / (nData - 1.0);
++        for (int n = 1; n <= maxLag; ++n) {
++            out[n] = conv[n] / (variance * (nData - n));
++        }
++        return out;
++    }
++
++    /**
++     * Unbiased auto-correlations of a non-centered sequence.
++     * <p>
++     * Removes the mean from the input data, then computes the unbiased
++     * auto-correlations of the centered sequence. See
++     * {@link #autocovariances(double[], int, boolean, double[])} for the
++     * meaning of {@code reuse} and {@code meanOut}.
++     */
++    public static double[] autocorrelations(final double[] x, final int maxLag,
++                                            final boolean reuse, final double[] meanOut) {
++        final double[] centered = reuse ? x : new double[x.length];
++        final double mean = removeMean(x, centered);
++        meanOut[0] = mean;
++        return autocorrelations(centered, maxLag);
++    }
++
++    /**
++     * Calculates and subtracts the mean from the input data into {@code out}.
++     * Returns the mean.
++     * <p>
++     * Matches the C++ {@code detail::remove_mean} running-average formula
++     * so as to preserve any rounding differences vs. the naive
++     * {@code sum / n} approach.
++     */
++    private static double removeMean(final double[] x, final double[] out) {
++        double mean = 0.0;
++        int n = 1;
++        for (int i = 0; i < x.length; ++i, ++n) {
++            mean = (mean * (n - 1) + x[i]) / n;
++        }
++        for (int i = 0; i < x.length; ++i) {
++            out[i] = x[i] - mean;
++        }
++        return mean;
++    }
++}
+diff --git a/jquantlib/src/main/java/org/jquantlib/math/matrixutilities/Expm.java b/jquantlib/src/main/java/org/jquantlib/math/matrixutilities/Expm.java
+new file mode 100644
+index 00000000..822b6437
+--- /dev/null
++++ b/jquantlib/src/main/java/org/jquantlib/math/matrixutilities/Expm.java
+@@ -0,0 +1,118 @@
++/*
++ Copyright (C) 2026 JQuantLib migration contributors.
++
++ This source code is release under the BSD License.
++
++ This file is part of JQuantLib, a free-software/open-source library
++ for financial quantitative analysts and developers - http://jquantlib.org/
++
++ JQuantLib is free software: you can redistribute it and/or modify it
++ under the terms of the JQuantLib license.  You should have received a
++ copy of the license along with this program; if not, please email
++ <jquant-devel@lists.sourceforge.net>. The license is also available online at
++ <http://www.jquantlib.org/index.php/LICENSE.TXT>.
++
++ This program is distributed in the hope that it will be useful, but WITHOUT
++ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
++ FOR A PARTICULAR PURPOSE.  See the license for more details.
++
++ JQuantLib is based on QuantLib. http://quantlib.org/
++ When applicable, the original copyright notice follows this notice.
++ */
++
++/*
++ Copyright (C) 2013 Klaus Spanderen
++*/
++package org.jquantlib.math.matrixutilities;
++
++import org.jquantlib.QL;
++import org.jquantlib.math.Constants;
++import org.jquantlib.math.ode.AdaptiveRungeKutta;
++
++/**
++ * Matrix exponential exp(t*M) based on the ordinary-differential-equation method.
++ * <p>
++ * Java port of QuantLib v1.42.1 {@code ql/math/matrixutilities/expm.{hpp,cpp}}
++ * (Klaus Spanderen, 2013).
++ * <p>
++ * The implementation mirrors the C++ algorithm exactly: for each unit basis
++ * vector {@code e_i}, the ODE {@code y' = M y} is integrated from {@code 0}
++ * to {@code t} using {@link AdaptiveRungeKutta}, and the resulting vector
++ * becomes column {@code i} of the output matrix {@code exp(t*M)}.
++ * <p>
++ * References:
++ * <ul>
++ *   <li>C. Moler, C. Van Loan, 1978,
++ *       <i>Nineteen Dubious Ways to Compute the Exponential of a Matrix</i>.</li>
++ * </ul>
++ *
++ * @author Phase 5e.5b-CFC-d-77 carry-forward
++ */
++public final class Expm {
++
++    private Expm() {
++        // utility class
++    }
++
++    /**
++     * Returns the matrix exponential exp(M) with default t=1.0 and tol=QL_EPSILON.
++     */
++    public static Matrix expm(final Matrix m) {
++        return expm(m, 1.0, Constants.QL_EPSILON);
++    }
++
++    /**
++     * Returns the matrix exponential exp(t*M) with default tol=QL_EPSILON.
++     */
++    public static Matrix expm(final Matrix m, final double t) {
++        return expm(m, t, Constants.QL_EPSILON);
++    }
++
++    /**
++     * Returns the matrix exponential exp(t*M).
++     *
++     * @param m    square matrix
++     * @param t    scalar multiplier
++     * @param tol  RK tolerance (relative)
++     * @return     exp(t*M)
++     */
++    public static Matrix expm(final Matrix m, final double t, final double tol) {
++        final int n = m.rows();
++        QL.require(n == m.columns(), "Expm expects a square matrix");
++
++        // C++ AdaptiveRungeKutta<>(eps=tol, h1=1.0e-4, hmin=0.0).
++        // Mirror the exact C++ defaults so reproducibility matches bit-for-bit.
++        final AdaptiveRungeKutta rk = new AdaptiveRungeKutta(tol, 1.0e-4, 0.0);
++
++        // MatrixVectorProductFct: y' = M * y
++        final double[][] mData = new double[n][n];
++        for (int i = 0; i < n; ++i) {
++            for (int j = 0; j < n; ++j) {
++                mData[i][j] = m.get(i, j);
++            }
++        }
++        final AdaptiveRungeKutta.OdeFct odeFct = (time, y) -> {
++            final double[] result = new double[n];
++            for (int i = 0; i < n; ++i) {
++                double s = 0.0;
++                final double[] row = mData[i];
++                for (int j = 0; j < n; ++j) {
++                    s += row[j] * y[j];
++                }
++                result[i] = s;
++            }
++            return result;
++        };
++
++        final Matrix result = new Matrix(n, n);
++        for (int i = 0; i < n; ++i) {
++            final double[] x0 = new double[n];
++            x0[i] = 1.0;
++            final double[] r = rk.solve(odeFct, x0, 0.0, t);
++            for (int j = 0; j < n; ++j) {
++                result.set(j, i, r[j]);
++            }
++        }
++        return result;
++    }
++}
+diff --git a/jquantlib/src/main/java/org/jquantlib/math/randomnumbers/RanluxUniformRng.java b/jquantlib/src/main/java/org/jquantlib/math/randomnumbers/RanluxUniformRng.java
+new file mode 100644
+index 00000000..56613d32
+--- /dev/null
++++ b/jquantlib/src/main/java/org/jquantlib/math/randomnumbers/RanluxUniformRng.java
+@@ -0,0 +1,226 @@
++/*
++ Copyright (C) 2026 JQuantLib migration contributors.
++
++ This source code is release under the BSD License.
++
++ This file is part of JQuantLib, a free-software/open-source library
++ for financial quantitative analysts and developers - http://jquantlib.org/
++
++ JQuantLib is free software: you can redistribute it and/or modify it
++ under the terms of the JQuantLib license.  You should have received a
++ copy of the license along with this program; if not, please email
++ <jquant-devel@lists.sourceforge.net>. The license is also available online at
++ <http://www.jquantlib.org/index.php/LICENSE.TXT>.
++
++ This program is distributed in the hope that it will be useful, but WITHOUT
++ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
++ FOR A PARTICULAR PURPOSE.  See the license for more details.
++
++ JQuantLib is based on QuantLib. http://quantlib.org/
++ When applicable, the original copyright notice follows this notice.
++ */
++
++/*
++ Copyright (C) 2009 Klaus Spanderen
++*/
++package org.jquantlib.math.randomnumbers;
++
++import org.jquantlib.methods.montecarlo.Sample;
++
++/**
++ * Luescher's "luxury" uniform random number generator.
++ * <p>
++ * Java port of QuantLib v1.42.1
++ * {@code ql/math/randomnumbers/ranluxuniformrng.hpp} (Klaus Spanderen, 2009).
++ * <p>
++ * The C++ implementation is a thin wrapper around
++ * {@code std::discard_block_engine<std::subtract_with_carry_engine<uint_fast64_t,48,10,24>, P, R>}.
++ * This Java port faithfully reproduces both STL engines bit-for-bit so that
++ * the C++ reference sequence is matched exactly.
++ * <p>
++ * Two static factory methods produce the standard luxury levels:
++ * <ul>
++ *   <li>{@link #ranlux3(long)} — block size {@code P=223}, used count {@code R=24};</li>
++ *   <li>{@link #ranlux4(long)} — block size {@code P=389}, used count {@code R=24}
++ *       (highest possible luxury).</li>
++ * </ul>
++ * <p>
++ * References:
++ * <ul>
++ *   <li>M. Luescher, <i>A portable high-quality random number generator for
++ *       lattice field theory simulations</i>, Comp. Phys. Comm. 79 (1994) 100.</li>
++ *   <li>ISO/IEC 14882 (C++17), §29.6.4.4 (subtract_with_carry_engine) and
++ *       §29.6.4.5 (discard_block_engine).</li>
++ * </ul>
++ *
++ * @author Phase 5e.5b-CFC-d-77 carry-forward
++ */
++public final class RanluxUniformRng implements RandomNumberGenerator {
++
++    /** C++ default Ranlux seed (per ranluxuniformrng.hpp constructor signature). */
++    public static final long DEFAULT_SEED = 19780503L;
++
++    /** Word size w = 48 bits → modulus m = 2^48. */
++    private static final long M48 = 1L << 48;
++    /** Lower-48-bit mask. */
++    private static final long MASK48 = M48 - 1L;
++
++    /** Short lag s = 10. */
++    private static final int S = 10;
++    /** Long lag r = 24. */
++    private static final int R = 24;
++
++    /** discard_block_engine "block size" P. */
++    private final int p;
++    /** discard_block_engine "used count" R (per-block). */
++    private final int rUsed;
++
++    /** subtract_with_carry_engine state X[0..R-1] (each X[i] in [0, 2^48)). */
++    private final long[] state = new long[R];
++    /** subtract_with_carry_engine carry bit (0 or 1). */
++    private long carry;
++    /** Cyclic index into {@link #state}, in [0, R). */
++    private int index;
++
++    /** discard_block_engine usage count within current block. */
++    private int blockUsed;
++
++    /**
++     * Construct a Ranlux RNG with the given block size, used count, and seed.
++     */
++    private RanluxUniformRng(final int p, final int rUsed, final long seed) {
++        this.p = p;
++        this.rUsed = rUsed;
++        this.blockUsed = 0;
++        seedSubtractWithCarry(seed);
++    }
++
++    /** Ranlux3: P=223, R=24 (good correlation properties). */
++    public static RanluxUniformRng ranlux3(final long seed) {
++        return new RanluxUniformRng(223, 24, seed);
++    }
++
++    /** Ranlux4: P=389, R=24 (highest luxury). */
++    public static RanluxUniformRng ranlux4(final long seed) {
++        return new RanluxUniformRng(389, 24, seed);
++    }
++
++    /** Ranlux3 with default seed 19780503 (matches C++). */
++    public static RanluxUniformRng ranlux3() {
++        return ranlux3(DEFAULT_SEED);
++    }
++
++    /** Ranlux4 with default seed 19780503 (matches C++). */
++    public static RanluxUniformRng ranlux4() {
++        return ranlux4(DEFAULT_SEED);
++    }
++
++    /**
++     * Per C++ standard (§29.6.4.4): when seeded with value {@code s},
++     * the engine uses a {@code linear_congruential_engine<uint_least32_t,
++     * 40014u, 0u, 2147483563u>} (a.k.a. {@code minstd_rand0}-style but with
++     * the IBM-multiplier 40014 mod 2147483563) seeded with
++     * {@code s == 0 ? 19780503u : s mod 2147483563u}. It then generates
++     * R*n outputs (n = ceil(w/32) = 2 for w=48); each X[i] is built from
++     * two consecutive z values as {@code z0 + z1 * 2^32}, masked to 48 bits.
++     * The carry is 1 iff X[R-1] == 0, else 0.
++     */
++    private void seedSubtractWithCarry(final long seed) {
++        final long lcgM = 2147483563L; // modulus
++        final long lcgA = 40014L;      // multiplier
++        // LCG seed: s != 0 ? s (mod M) : 19780503.
++        long lcgState = seed;
++        if (lcgState == 0L) {
++            lcgState = 19780503L;
++        }
++        lcgState %= lcgM;
++        if (lcgState == 0L) {
++            lcgState = 19780503L;
++        }
++
++        for (int i = 0; i < R; ++i) {
++            // n = ceil(48 / 32) = 2 LCG draws per state word.
++            lcgState = (lcgA * lcgState) % lcgM;
++            final long z0 = lcgState;
++            lcgState = (lcgA * lcgState) % lcgM;
++            final long z1 = lcgState;
++            // X[i] = (z0 + z1 * 2^32) mod 2^48
++            // (z1 << 32) may carry into bits ≥ 48; mask to keep only the low 48.
++            final long combined = (z0 + (z1 << 32)) & MASK48;
++            state[i] = combined;
++        }
++        carry = (state[R - 1] == 0L) ? 1L : 0L;
++        // Per the standard, index is set so the *next* engine call writes X[0]
++        // (i.e. the engine is positioned at i = R-1; the next operator()
++        // advances to i = 0). We model this by having index point to the slot
++        // we are about to *generate* next: after seeding we want the next
++        // generated value to land at index 0.
++        index = 0;
++    }
++
++    /**
++     * Advance the subtract-with-carry recurrence one step and return the
++     * newly generated {@code X[i]} (in {@code [0, 2^48)}).
++     * <p>
++     * Recurrence: {@code Y = X[(i-S+R) mod R] - X[(i-R+R) mod R] - carry},
++     * which simplifies (the X[(i-R) mod R] term is just X[i] itself prior
++     * to update) to {@code Y = X[(i+R-S) mod R] - X[i] - carry}; if
++     * {@code Y >= 0} then {@code X[i] = Y, carry = 0}, else
++     * {@code X[i] = Y + 2^48, carry = 1}.
++     */
++    private long nextSubtractWithCarry() {
++        final int i = index;
++        final int iS = (i + R - S) % R; // (i - S) mod R
++        long y = state[iS] - state[i] - carry;
++        if (y < 0L) {
++            y += M48;
++            carry = 1L;
++        } else {
++            carry = 0L;
++        }
++        state[i] = y;
++        index = (i + 1) % R;
++        return y;
++    }
++
++    /**
++     * discard_block_engine: returns base.next() but discards (P-R) of every
++     * P outputs after returning the first R.
++     */
++    private long nextDiscardBlock() {
++        // If we have already used all R "kept" outputs in the current block,
++        // discard the remaining (P-R) and start a new block.
++        if (blockUsed >= rUsed) {
++            for (int k = rUsed; k < p; ++k) {
++                nextSubtractWithCarry();
++            }
++            blockUsed = 0;
++        }
++        final long value = nextSubtractWithCarry();
++        ++blockUsed;
++        return value;
++    }
++
++    /**
++     * Returns the next uniform sample in {@code (0, 1)}.
++     * <p>
++     * Mirrors C++ {@code next()}: {@code ranlux_() * (1.0 / 2^48)}, weight 1.0.
++     */
++    @Override
++    public Sample<Double> next() {
++        final long x = nextDiscardBlock();
++        // C++: nx = 1.0 / (uint_fast64_t(1) << 48)
++        final double v = x * (1.0 / (double) M48);
++        return new Sample<Double>(v, 1.0);
++    }
++
++    /**
++     * Not part of the C++ Ranlux API; provided to satisfy the JQuantLib
++     * {@link RandomNumberGenerator} interface. Returns the low 32 bits of
++     * the next 48-bit raw word.
++     */
++    @Override
++    public long nextInt32() {
++        return nextDiscardBlock() & 0xFFFFFFFFL;
++    }
++}
+diff --git a/jquantlib/src/test/java/org/jquantlib/testsuite/math/AutocovariancesTest.java b/jquantlib/src/test/java/org/jquantlib/testsuite/math/AutocovariancesTest.java
+index 1e820206..c51639b6 100644
+--- a/jquantlib/src/test/java/org/jquantlib/testsuite/math/AutocovariancesTest.java
++++ b/jquantlib/src/test/java/org/jquantlib/testsuite/math/AutocovariancesTest.java
+@@ -22,17 +22,17 @@
+ 
+ package org.jquantlib.testsuite.math;
+ 
++import static org.junit.Assert.fail;
++
+ import org.jquantlib.QL;
+-import org.junit.Ignore;
++import org.jquantlib.math.Autocovariance;
+ import org.junit.Test;
+ 
+ /**
+  * Java port of QuantLib v1.42.1 test-suite/autocovariances.cpp (Phase 5a).
+  *
+- * <p>3 BOOST_AUTO_TEST_CASE methods. JQuantLib has no
+- * {@code QuantLib::convolutions / autocovariances / autocorrelations}
+- * (C++ {@code ql/math/autocovariance.hpp}). All three cases are
+- * Phase 5a.5 carry-forwards.
++ * <p>3 BOOST_AUTO_TEST_CASE methods. Bodies filled in
++ * Phase 5e.5b-CFC-d-77 once {@link Autocovariance} was ported.
+  */
+ public class AutocovariancesTest {
+ 
+@@ -40,19 +40,91 @@ public class AutocovariancesTest {
+         QL.info("::::: " + this.getClass().getSimpleName() + " :::::");
+     }
+ 
+-    @Ignore("Phase 5a.5 carry-forward — JQuantLib has no convolutions() helper "
+-            + "(C++ ql/math/autocovariance.hpp). Port the autocovariance utilities then enable.")
+     @Test
+     public void testConvolutions() {
++        QL.info("Testing convolutions...");
++
++        // Array x(10, 1, 1) constructs {1,2,3,4,5,6,7,8,9,10}
++        final double[] x = arithmeticSeq(10, 1.0, 1.0);
++        final double[] conv = Autocovariance.convolutions(x, 5);
++        final double[] expected = { 385, 330, 276, 224, 175, 130 };
++        if (dotProductDiff(conv, expected) > 1.0e-6) {
++            fail("Convolution: \n"
++                    + "    calculated:   " + java.util.Arrays.toString(conv) + "\n"
++                    + "    expected:     " + java.util.Arrays.toString(expected));
++        }
+     }
+ 
+-    @Ignore("Phase 5a.5 carry-forward — JQuantLib has no autocovariances() helper.")
+     @Test
+     public void testAutoCovariances() {
++        QL.info("Testing auto-covariances...");
++
++        final double[] x = arithmeticSeq(10, 1.0, 1.0);
++        final double[] meanOut = new double[1];
++        final double[] acovf = Autocovariance.autocovariances(x, 5, false, meanOut);
++        final double[] expected = { 8.25, 6.416667, 4.25, 1.75, -1.08333, -4.25 };
++
++        if (Math.abs(meanOut[0] - 5.5) > 1.0e-6) {
++            fail("Mean: \n"
++                    + "    calculated:   " + meanOut[0] + "\n"
++                    + "    expected:     " + 5.5);
++        }
++        if (dotProductDiff(acovf, expected) > 1.0e-6) {
++            fail("Autocovariances: \n"
++                    + "    calculated:   " + java.util.Arrays.toString(acovf) + "\n"
++                    + "    expected:     " + java.util.Arrays.toString(expected));
++        }
+     }
+ 
+-    @Ignore("Phase 5a.5 carry-forward — JQuantLib has no autocorrelations() helper.")
+     @Test
+     public void testAutoCorrelations() {
++        QL.info("Testing auto-correlations...");
++
++        final double[] x = arithmeticSeq(10, 1.0, 1.0);
++        final double[] meanOut = new double[1];
++        final double[] acorf = Autocovariance.autocorrelations(x, 5, true, meanOut);
++        final double[] expected = {
++                9.166667, 0.77777778, 0.51515152,
++                0.21212121, -0.13131313, -0.51515152
++        };
++
++        if (Math.abs(meanOut[0] - 5.5) > 1.0e-6) {
++            fail("Mean: \n"
++                    + "    calculated:   " + meanOut[0] + "\n"
++                    + "    expected:     " + 5.5);
++        }
++        if (dotProductDiff(acorf, expected) > 1.0e-6) {
++            fail("Autocovariances: \n"
++                    + "    calculated:   " + java.util.Arrays.toString(acorf) + "\n"
++                    + "    expected:     " + java.util.Arrays.toString(expected));
++        }
++
++        // Verify reuse=true wrote the centered data back into x.
++        // Array(10, -4.5, 1) constructs {-4.5, -3.5, -2.5, ..., 4.5}.
++        final double[] centered = arithmeticSeq(10, -4.5, 1.0);
++        if (dotProductDiff(x, centered) > 1.0e-6) {
++            fail("Centering: \n"
++                    + "    calculated:   " + java.util.Arrays.toString(x) + "\n"
++                    + "    expected:     " + java.util.Arrays.toString(centered));
++        }
++    }
++
++    /** Mirrors C++ {@code Array(n, first, step)} = {first, first+step, ..., first+(n-1)*step}. */
++    private static double[] arithmeticSeq(final int n, final double first, final double step) {
++        final double[] a = new double[n];
++        for (int i = 0; i < n; ++i) {
++            a[i] = first + i * step;
++        }
++        return a;
++    }
++
++    /** Returns {@code (a - b) . (a - b)}. */
++    private static double dotProductDiff(final double[] a, final double[] b) {
++        double s = 0.0;
++        for (int i = 0; i < a.length; ++i) {
++            final double d = a[i] - b[i];
++            s += d * d;
++        }
++        return s;
+     }
+ }
+diff --git a/jquantlib/src/test/java/org/jquantlib/testsuite/math/OdeTest.java b/jquantlib/src/test/java/org/jquantlib/testsuite/math/OdeTest.java
+index e85028f0..5731023b 100644
+--- a/jquantlib/src/test/java/org/jquantlib/testsuite/math/OdeTest.java
++++ b/jquantlib/src/test/java/org/jquantlib/testsuite/math/OdeTest.java
+@@ -25,6 +25,8 @@ package org.jquantlib.testsuite.math;
+ import static org.junit.Assert.fail;
+ 
+ import org.jquantlib.QL;
++import org.jquantlib.math.matrixutilities.Expm;
++import org.jquantlib.math.matrixutilities.Matrix;
+ import org.jquantlib.math.ode.AdaptiveRungeKutta;
+ import org.junit.Ignore;
+ import org.junit.Test;
+@@ -35,8 +37,9 @@ import org.junit.Test;
+  * <p>3 BOOST_AUTO_TEST_CASE methods. {@link AdaptiveRungeKutta} in Java
+  * supports only the {@code double[]}/Real-vector overload (ode #3 in C++).
+  * The 1D real (#1), complex 1D (#2), and complex vector (#4) overloads are
+- * Phase 5a.5 carry-forwards. {@code testMatrixExponential} requires
+- * {@code QuantLib::Expm} which is not yet ported to Java.
++ * Phase 5a.5 carry-forwards. {@code testMatrixExponential} and
++ * {@code testMatrixExponentialOfZero} were un-ignored in
++ * Phase 5e.5b-CFC-d-77 once {@link Expm} was ported.
+  */
+ public class OdeTest {
+ 
+@@ -76,14 +79,107 @@ public class OdeTest {
+     public void testAdaptiveRungeKutta1dAndComplex() {
+     }
+ 
+-    @Ignore("Phase 5a.5 carry-forward — JQuantLib has no Expm matrix-exponential class "
+-            + "(C++ ql/math/matrixutilities/expm.hpp). Port then enable.")
++    /**
++     * Mirrors the C++ {@code testMatrixExponential} from
++     * {@code test-suite/ode.cpp}. Verifies {@link Expm#expm(Matrix, double, double)}
++     * against the closed-form solution
++     * <pre>
++     * exp(t * M) for M = [[ 5, -6, -6],
++     *                    [-1,  4,  2],
++     *                    [ 3, -6, -4]]
++     * </pre>
++     * across a logarithmically-spaced range of t in (0.01, 10.24). Reference
++     * values come from
++     * http://www.millersville.edu/~bikenaga/linear-algebra/matrix-exponential/matrix-exponential.html
++     * Also verifies that {@code Expm(-M, -t) == Expm(M, t)}.
++     */
+     @Test
+     public void testMatrixExponential() {
++        QL.info("Testing matrix exponential based on ode...");
++
++        final Matrix m = new Matrix(3, 3);
++        m.set(0, 0,  5); m.set(0, 1, -6); m.set(0, 2, -6);
++        m.set(1, 0, -1); m.set(1, 1,  4); m.set(1, 2,  2);
++        m.set(2, 0,  3); m.set(2, 1, -6); m.set(2, 2, -4);
++
++        final double tol = 1e-12;
++
++        for (double t = 0.01; t < 11; t += t) {
++            final Matrix calculated = Expm.expm(m, t, tol);
++
++            final Matrix expected = new Matrix(3, 3);
++            final double et  = Math.exp(t);
++            final double e2t = Math.exp(2 * t);
++            expected.set(0, 0, -3 * et + 4 * e2t);
++            expected.set(0, 1,  6 * et - 6 * e2t);
++            expected.set(0, 2,  6 * et - 6 * e2t);
++            expected.set(1, 0,       et -     e2t);
++            expected.set(1, 1, -2 * et + 3 * e2t);
++            expected.set(1, 2, -2 * et + 2 * e2t);
++            expected.set(2, 0, -3 * et + 3 * e2t);
++            expected.set(2, 1,  6 * et - 6 * e2t);
++            expected.set(2, 2,  6 * et - 5 * e2t);
++
++            double relDiffNorm = relFrobeniusDiffNorm(calculated, expected);
++            if (Math.abs(relDiffNorm) > 100 * tol) {
++                fail("Failed to reproduce expected matrix exponential."
++                        + "\n rel. difference norm: " + relDiffNorm
++                        + "\n tolerance           : " + (100 * tol));
++            }
++
++            final Matrix negativeTime = Expm.expm(m.mul(-1.0), -t, tol);
++            relDiffNorm = relFrobeniusDiffNorm(negativeTime, expected);
++            if (Math.abs(relDiffNorm) > 100 * tol) {
++                fail("Failed to reproduce expected matrix exponential."
++                        + "\n rel. difference norm: " + relDiffNorm
++                        + "\n tolerance           : " + (100 * tol));
++            }
++        }
+     }
+ 
+-    @Ignore("Phase 5a.5 carry-forward — depends on Expm port (see testMatrixExponential).")
++    /**
++     * Mirrors the C++ {@code testMatrixExponentialOfZero}: exp(0) should be I.
++     */
+     @Test
+     public void testMatrixExponentialOfZero() {
++        QL.info("Testing matrix exponential of a zero matrix based on ode...");
++
++        final Matrix m = new Matrix(3, 3);
++        // Matrix constructor zero-initializes.
++
++        final double tol = 100 * Math.ulp(1.0);
++        final double t = 1.0;
++        final Matrix calculated = Expm.expm(m, t);
++
++        for (int i = 0; i < calculated.rows(); ++i) {
++            for (int j = 0; j < calculated.columns(); ++j) {
++                final double kroneckerDelta = (i == j) ? 1.0 : 0.0;
++                if (Math.abs(calculated.get(i, j) - kroneckerDelta) > tol) {
++                    fail("Failed to reproduce expected matrix exponential."
++                            + "\n tolerance           : " + tol);
++                }
++            }
++        }
++    }
++
++    /**
++     * Computes {@code ||A - B||_F / ||B||_F} using the QuantLib definition
++     * {@code ||X||_F = sqrt(sum of diag(X * X^T))}.
++     */
++    private static double relFrobeniusDiffNorm(final Matrix a, final Matrix b) {
++        final Matrix diff = a.sub(b);
++        return frobeniusNorm(diff) / frobeniusNorm(b);
++    }
++
++    private static double frobeniusNorm(final Matrix m) {
++        // ||M||_F^2 = sum_{i,j} M[i,j]^2 = sum_i (M * M^T)[i][i] = sum_i sum_j M[i][j]^2
++        double sumSq = 0.0;
++        for (int i = 0; i < m.rows(); ++i) {
++            for (int j = 0; j < m.columns(); ++j) {
++                final double v = m.get(i, j);
++                sumSq += v * v;
++            }
++        }
++        return Math.sqrt(sumSq);
+     }
+ }
+diff --git a/jquantlib/src/test/java/org/jquantlib/testsuite/math/randomnumbers/RngTraitsTest.java b/jquantlib/src/test/java/org/jquantlib/testsuite/math/randomnumbers/RngTraitsTest.java
+index 6856d86c..df13fee5 100644
+--- a/jquantlib/src/test/java/org/jquantlib/testsuite/math/randomnumbers/RngTraitsTest.java
++++ b/jquantlib/src/test/java/org/jquantlib/testsuite/math/randomnumbers/RngTraitsTest.java
+@@ -29,6 +29,7 @@ import org.jquantlib.math.distributions.InverseCumulativeNormal;
+ import org.jquantlib.math.randomnumbers.InverseCumulativeRsg;
+ import org.jquantlib.math.randomnumbers.MersenneTwisterUniformRng;
+ import org.jquantlib.math.randomnumbers.RandomSequenceGenerator;
++import org.jquantlib.math.randomnumbers.RanluxUniformRng;
+ import org.junit.Ignore;
+ import org.junit.Test;
+ 
+@@ -37,8 +38,8 @@ import org.junit.Test;
+  *
+  * <p>4 BOOST_AUTO_TEST_CASE methods. {@code testGaussian} is portable;
+  * {@code testDefaultPoisson} / {@code testCustomPoisson} require
+- * {@code PoissonPseudoRandom} (not in JQuantLib); {@code testRanLux}
+- * requires Ranlux3/4 RNG (not in JQuantLib).
++ * {@code PoissonPseudoRandom} (not in JQuantLib); {@code testRanLux} was
++ * un-ignored in Phase 5e.5b-CFC-d-77 once {@link RanluxUniformRng} was ported.
+  */
+ public class RngTraitsTest {
+ 
+@@ -87,9 +88,54 @@ public class RngTraitsTest {
+     public void testCustomPoisson() {
+     }
+ 
+-    @Ignore("Phase 5a.5 carry-forward — JQuantLib has no Ranlux3/4 RNG (C++ "
+-            + "ql/math/randomnumbers/ranluxuniformrng.hpp). Port then enable.")
++    /**
++     * Mirrors the C++ {@code testRanLux}: after 10010 discarded samples,
++     * the next 10 outputs of Ranlux3 (seed=2938723) and Ranlux4 (seed=4390109)
++     * must match the reference C++ values bit-for-bit (close_enough check).
++     */
+     @Test
+     public void testRanLux() {
++        QL.info("Testing known RanLux sequence...");
++
++        final RanluxUniformRng ranlux3 = RanluxUniformRng.ranlux3(2938723L);
++        final RanluxUniformRng ranlux4 = RanluxUniformRng.ranlux4(4390109L);
++
++        final double[] ranlux3Expected = {
++                0.307448851544538826, 0.666313657894363587, 0.698528013702823358,
++                0.0217381272445322793, 0.862964516238161394, 0.909193419106014034,
++                0.674484308686746914, 0.849607570377191479, 0.054626078713596371,
++                0.416474163715683687
++        };
++
++        final double[] ranlux4Expected = {
++                0.222209169374078641, 0.420181950405986271, 0.0302156663005135329,
++                0.0836259809475237148, 0.480549766594993599, 0.723472021829124401,
++                0.905819507194266293, 0.54072519936540786, 0.445908421479817463,
++                0.651084788437518824
++        };
++
++        for (int i = 0; i < 10010; ++i) {
++            ranlux3.next();
++            ranlux4.next();
++        }
++
++        // C++ close_enough uses 42 * ulp(max(|a|,|b|)) by default. With
++        // |a|, |b| < 1, that is ~42 * 2.22e-16 ≈ 9.3e-15.
++        final double tol = 1.0e-14;
++
++        for (int i = 0; i < 10; ++i) {
++            final double v3 = ranlux3.next().value();
++            if (Math.abs(v3 - ranlux3Expected[i]) > tol) {
++                fail("failed to reproduce ranlux3 numbers... idx=" + i
++                        + " expected=" + ranlux3Expected[i]
++                        + " actual=" + v3);
++            }
++            final double v4 = ranlux4.next().value();
++            if (Math.abs(v4 - ranlux4Expected[i]) > tol) {
++                fail("failed to reproduce ranlux4 numbers... idx=" + i
++                        + " expected=" + ranlux4Expected[i]
++                        + " actual=" + v4);
++            }
++        }
+     }
+ }

@@ -1,0 +1,1139 @@
+diff --git a/jquantlib/src/main/java/org/jquantlib/math/GaussianKernel.java b/jquantlib/src/main/java/org/jquantlib/math/GaussianKernel.java
+new file mode 100644
+index 00000000..271f3f4a
+--- /dev/null
++++ b/jquantlib/src/main/java/org/jquantlib/math/GaussianKernel.java
+@@ -0,0 +1,87 @@
++/*
++ Copyright (C) 2009 Dimitri Reiswich
++ Copyright (C) 2026 JQuantLib migration contributors.
++
++ This source code is release under the BSD License.
++
++ This file is part of JQuantLib, a free-software/open-source library
++ for financial quantitative analysts and developers - http://jquantlib.org/
++
++ JQuantLib is free software: you can redistribute it and/or modify it
++ under the terms of the JQuantLib license.  You should have received a
++ copy of the license along with this program; if not, please email
++ <jquant-devel@lists.sourceforge.net>. The license is also available online at
++ <http://www.jquantlib.org/index.php/LICENSE.TXT>.
++
++ This program is distributed in the hope that it will be useful, but WITHOUT
++ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
++ FOR A PARTICULAR PURPOSE.  See the license for more details.
++
++ JQuantLib is based on QuantLib. http://quantlib.org/
++ When applicable, the original copyright notice follows this notice.
++ */
++
++package org.jquantlib.math;
++
++import org.jquantlib.math.distributions.CumulativeNormalDistribution;
++import org.jquantlib.math.distributions.NormalDistribution;
++
++/**
++ * Gaussian kernel function.
++ *
++ * <p>Java port of QuantLib v1.42.1 {@code ql/math/kernelfunctions.hpp}
++ * (class {@code GaussianKernel}).
++ *
++ * <p>The Gaussian kernel evaluates to
++ * <pre>
++ *   K(x) = sqrt(2*pi) * pdf(x; mean, sigma)
++ * </pre>
++ * where {@code pdf} is the normal probability density function with the
++ * given mean and standard deviation. The {@code sqrt(2*pi)} factor cancels
++ * the {@code 1/(sigma*sqrt(2*pi))} normalisation in the pdf so that
++ * {@code K(mean) = 1/sigma} — matching the C++ behaviour exactly.
++ *
++ * @author Phase 5e.5b-CFC-d-59 port
++ */
++public class GaussianKernel implements KernelFunction {
++
++    private final NormalDistribution nd_;
++    private final CumulativeNormalDistribution cnd_;
++    private final double normFact_;
++
++    /**
++     * Construct a Gaussian kernel with the given mean and standard
++     * deviation.
++     *
++     * @param average mean of the normal distribution
++     * @param sigma   standard deviation (must be &gt; 0)
++     */
++    public GaussianKernel(final double average, final double sigma) {
++        this.nd_  = new NormalDistribution(average, sigma);
++        this.cnd_ = new CumulativeNormalDistribution(average, sigma);
++        // normFact_ = sqrt(2) * sqrt(pi) = sqrt(2*pi)
++        this.normFact_ = Constants.M_SQRT2 * Constants.M_SQRTPI;
++    }
++
++    /**
++     * Evaluate the kernel at point {@code x}.
++     */
++    @Override
++    public double op(final double x) {
++        return nd_.op(x) * normFact_;
++    }
++
++    /**
++     * First derivative of the kernel at point {@code x}.
++     */
++    public double derivative(final double x) {
++        return nd_.derivative(x) * normFact_;
++    }
++
++    /**
++     * Primitive (antiderivative) of the kernel at point {@code x}.
++     */
++    public double primitive(final double x) {
++        return cnd_.op(x) * normFact_;
++    }
++}
+diff --git a/jquantlib/src/main/java/org/jquantlib/math/KernelFunction.java b/jquantlib/src/main/java/org/jquantlib/math/KernelFunction.java
+new file mode 100644
+index 00000000..a1f5f32e
+--- /dev/null
++++ b/jquantlib/src/main/java/org/jquantlib/math/KernelFunction.java
+@@ -0,0 +1,48 @@
++/*
++ Copyright (C) 2009 Dimitri Reiswich
++ Copyright (C) 2026 JQuantLib migration contributors.
++
++ This source code is release under the BSD License.
++
++ This file is part of JQuantLib, a free-software/open-source library
++ for financial quantitative analysts and developers - http://jquantlib.org/
++
++ JQuantLib is free software: you can redistribute it and/or modify it
++ under the terms of the JQuantLib license.  You should have received a
++ copy of the license along with this program; if not, please email
++ <jquant-devel@lists.sourceforge.net>. The license is also available online at
++ <http://www.jquantlib.org/index.php/LICENSE.TXT>.
++
++ This program is distributed in the hope that it will be useful, but WITHOUT
++ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
++ FOR A PARTICULAR PURPOSE.  See the license for more details.
++
++ JQuantLib is based on QuantLib. http://quantlib.org/
++ When applicable, the original copyright notice follows this notice.
++ */
++
++package org.jquantlib.math;
++
++/**
++ * Kernel function in the statistical sense: a non-negative, real-valued
++ * function which integrates to one and is symmetric.
++ *
++ * <p>Java port of QuantLib v1.42.1 {@code ql/math/kernelfunctions.hpp}
++ * (class {@code KernelFunction}).
++ *
++ * <p>This is a functional interface so a Java lambda can be used wherever
++ * the C++ code accepts a free function such as {@code epanechnikovKernel}.
++ *
++ * @author Phase 5e.5b-CFC-d-59 port
++ */
++@FunctionalInterface
++public interface KernelFunction {
++
++    /**
++     * Evaluate the kernel at point {@code x}.
++     *
++     * @param x the input value
++     * @return the kernel weight K(x)
++     */
++    double op(double x);
++}
+diff --git a/jquantlib/src/main/java/org/jquantlib/math/matrixutilities/PseudoSqrt.java b/jquantlib/src/main/java/org/jquantlib/math/matrixutilities/PseudoSqrt.java
+index 5fde5685..b2ec7ca6 100755
+--- a/jquantlib/src/main/java/org/jquantlib/math/matrixutilities/PseudoSqrt.java
++++ b/jquantlib/src/main/java/org/jquantlib/math/matrixutilities/PseudoSqrt.java
+@@ -445,7 +445,10 @@ public class PseudoSqrt {
+                 throw new IllegalArgumentException( "negative eigenvalue(s) ("
+                         + /*std::scientific*/ + jd.eigenvalues().get(size-1)
+                         + ")");
+-            result = matrix.cholesky().L();
++            // Phase 5e.5b-CFC-d-52 align: C++ pseudosqrt.cpp:375 uses the
++            // free function CholeskyDecomposition(matrix, true) so we get
++            // the lower-triangular factor even for semidefinite input.
++            result = CholeskyDecomposition.CholeskyDecomposition(matrix, true);
+             break;
+         case Spectral:
+             // negative eigenvalues set to zero
+diff --git a/jquantlib/src/test/java/org/jquantlib/testsuite/instruments/CapFloorTest.java b/jquantlib/src/test/java/org/jquantlib/testsuite/instruments/CapFloorTest.java
+index 33282c45..c0ccc3fb 100644
+--- a/jquantlib/src/test/java/org/jquantlib/testsuite/instruments/CapFloorTest.java
++++ b/jquantlib/src/test/java/org/jquantlib/testsuite/instruments/CapFloorTest.java
+@@ -394,10 +394,95 @@ public class CapFloorTest {
+         }
+     }
+ 
+-    @Ignore("Phase 5e.5 WI-5e.5-CF-1: MakeCapFloor now ported (commit c1e9cb84); "
+-            + "needs implied-volatility solver wiring on CapFloor.")
+     @Test
+     public void testImpliedVolatility() {
++        QL.info("Testing implied term volatility for cap and floor...");
++
++        final CommonVars vars = new CommonVars();
++
++        final int maxEvaluations = 100;
++        final double tolerance = 1.0e-8;
++
++        final CapFloor.Type[] types = { CapFloor.Type.Cap, CapFloor.Type.Floor };
++        final double[] strikes = { 0.02, 0.03, 0.04 };
++        final int[] lengths = { 1, 5, 10 };
++
++        // test data
++        final double[] rRates = { 0.02, 0.03, 0.04, 0.05, 0.06, 0.07 };
++        final double[] vols = { 0.01, 0.05, 0.10, 0.20, 0.30, 0.70, 0.90 };
++
++        // See testStrikeDependency for the reference-date shift rationale.
++        final Date startDate = vars.termStructure.currentLink()
++                .referenceDate().add(new Period(vars.frequency));
++
++        for (final int length : lengths) {
++            final Leg leg = vars.makeLeg(startDate, length);
++
++            for (final CapFloor.Type type : types) {
++                for (final double strike : strikes) {
++
++                    final CapFloor capfloor = vars.makeCapFloor(type, leg, strike, 0.0);
++
++                    for (final double r : rRates) {
++                        for (final double v : vols) {
++
++                            vars.termStructure.linkTo(Utilities.flatRate(
++                                    vars.settlement, r, new Actual360()));
++                            capfloor.setPricingEngine(vars.makeEngine(v));
++
++                            final double value = capfloor.NPV();
++                            double implVol = 0.0;
++                            boolean failedToBracket = false;
++                            try {
++                                implVol = capfloor.impliedVolatility(value,
++                                        vars.termStructure,
++                                        0.10,
++                                        tolerance,
++                                        maxEvaluations,
++                                        10.0e-7, 4.0,
++                                        org.jquantlib.model.VolatilityType.ShiftedLognormal,
++                                        0.0);
++                            } catch (final RuntimeException e) {
++                                // couldn't bracket?
++                                capfloor.setPricingEngine(vars.makeEngine(0.0));
++                                final double value2 = capfloor.NPV();
++                                if (Math.abs(value - value2) < tolerance) {
++                                    // ok, just skip:
++                                    failedToBracket = true;
++                                } else {
++                                    // otherwise, report error
++                                    fail("implied vol failure: " + type
++                                            + "\n  strike:     " + strike
++                                            + "\n  risk-free:  " + r
++                                            + "\n  length:     " + length + "Y"
++                                            + "\n  volatility: " + v
++                                            + "\n  price:      " + value + "\n"
++                                            + e.getMessage());
++                                }
++                            }
++                            if (failedToBracket) {
++                                continue;
++                            }
++                            if (Math.abs(implVol - v) > tolerance) {
++                                // the difference might not matter
++                                capfloor.setPricingEngine(vars.makeEngine(implVol));
++                                final double value2 = capfloor.NPV();
++                                if (Math.abs(value - value2) > tolerance) {
++                                    fail("implied vol failure: " + type
++                                            + "\n  strike:        " + strike
++                                            + "\n  risk-free:     " + r
++                                            + "\n  length:        " + length + "Y"
++                                            + "\n  volatility:    " + v
++                                            + "\n  price:         " + value
++                                            + "\n  implied vol:   " + implVol
++                                            + "\n  implied price: " + value2);
++                                }
++                            }
++                        }
++                    }
++                }
++            }
++        }
+     }
+ 
+     @Ignore("Phase 5e.5 WI-5e.5-CF-1: MakeCapFloor now ported (commit c1e9cb84); "
+diff --git a/jquantlib/src/test/java/org/jquantlib/testsuite/instruments/ForwardOptionTest.java b/jquantlib/src/test/java/org/jquantlib/testsuite/instruments/ForwardOptionTest.java
+index a1fde20a..1f536310 100644
+--- a/jquantlib/src/test/java/org/jquantlib/testsuite/instruments/ForwardOptionTest.java
++++ b/jquantlib/src/test/java/org/jquantlib/testsuite/instruments/ForwardOptionTest.java
+@@ -19,8 +19,12 @@ import org.jquantlib.instruments.ForwardVanillaOption;
+ import org.jquantlib.instruments.Option;
+ import org.jquantlib.instruments.PlainVanillaPayoff;
+ import org.jquantlib.instruments.StrikedTypePayoff;
++import org.jquantlib.instruments.VanillaOption;
++import org.jquantlib.methods.lattices.CoxRossRubinstein;
+ import org.jquantlib.pricingengines.forward.ForwardPerformanceVanillaEngine;
+ import org.jquantlib.pricingengines.forward.ForwardVanillaEngine;
++import org.jquantlib.pricingengines.vanilla.BinomialVanillaEngine;
++import org.jquantlib.processes.BlackScholesMertonProcess;
+ import org.jquantlib.processes.GeneralizedBlackScholesProcess;
+ import org.jquantlib.quotes.Handle;
+ import org.jquantlib.quotes.Quote;
+diff --git a/migration-harness/cpp/probes/experimental/callablebonds_probe.cpp b/migration-harness/cpp/probes/experimental/callablebonds_probe.cpp
+new file mode 100644
+index 00000000..a6617078
+--- /dev/null
++++ b/migration-harness/cpp/probes/experimental/callablebonds_probe.cpp
+@@ -0,0 +1,610 @@
++// migration-harness/cpp/probes/experimental/callablebonds_probe.cpp
++// Reference values for QuantLib v1.42.1 CallableBondTests
++// (test-suite/callablebonds.cpp). Phase 5e.5b-CFC-d-61.
++//
++// Probes:
++//  * testInterplay  — case 1/2/3/4 expected analytic value (discount-factor
++//                     formula) + tree-engine NPV.
++//  * testConsistency — plain / callable / puttable clean prices.
++//  * testObservability — NPV before / after curve-quote bump (proves change).
++//  * testDegenerate — plain ZeroCouponBond / FixedRateBond clean prices and
++//                     their callable counterparts (no callability and
++//                     out-of-the-money callability cases).
++//  * testCached     — 3 stored callable / puttable / mixed prices.
++//  * testBlackEngine — cached price 74.54521578.
++//  * testBlackEngineDeepInTheMoney — analytic expected + tree-computed price.
++//  * testImpliedVol — dirty/clean target-price implied vols (round trip).
++//  * testCallableFixedRateBondWithArbitrarySchedule — clean-price smoke value.
++//  * testSnappingExerciseDate2ClosestCouponDate — NPV of fixed vs callable
++//    at the sweep call dates (i ∈ [-10..10] business-day-filtered).
++//
++// All cases run under the SAME evaluationDate / fixture conventions as the
++// matching C++ test so the Java port can pin them directly.
++
++#include <cstdio>
++#include <ql/version.hpp>
++#include "../common.hpp"
++
++#include <ql/experimental/callablebonds/callablebond.hpp>
++#include <ql/experimental/callablebonds/treecallablebondengine.hpp>
++#include <ql/experimental/callablebonds/blackcallablebondengine.hpp>
++#include <ql/instruments/bonds/zerocouponbond.hpp>
++#include <ql/instruments/bonds/fixedratebond.hpp>
++#include <ql/pricingengines/bond/discountingbondengine.hpp>
++#include <ql/time/daycounters/thirty360.hpp>
++#include <ql/time/daycounters/actual365fixed.hpp>
++#include <ql/time/calendars/target.hpp>
++#include <ql/time/calendars/unitedstates.hpp>
++#include <ql/time/schedule.hpp>
++#include <ql/termstructures/yield/flatforward.hpp>
++#include <ql/models/shortrate/onefactormodels/hullwhite.hpp>
++#include <ql/quotes/simplequote.hpp>
++#include <ql/shared_ptr.hpp>
++
++using namespace jqml_harness;
++using namespace QuantLib;
++
++namespace {
++
++struct Globals {
++    Date today, settlement;
++    Calendar calendar;
++    DayCounter dayCounter;
++    BusinessDayConvention rollingConvention;
++
++    RelinkableHandle<YieldTermStructure> termStructure;
++    RelinkableHandle<ShortRateModel> model;
++
++    Date issueDate() const { return calendar.adjust(today - 100*Days); }
++    Date maturityDate() const { return calendar.advance(issueDate(), 10, Years); }
++
++    std::vector<Date> evenYears() const {
++        std::vector<Date> dates;
++        for (Size i = 2; i < 10; i += 2)
++            dates.push_back(calendar.advance(issueDate(), i, Years));
++        return dates;
++    }
++    std::vector<Date> oddYears() const {
++        std::vector<Date> dates;
++        for (Size i = 1; i < 10; i += 2)
++            dates.push_back(calendar.advance(issueDate(), i, Years));
++        return dates;
++    }
++
++    template <class R>
++    ext::shared_ptr<YieldTermStructure> makeFlatCurve(const R& r) const {
++        return ext::shared_ptr<YieldTermStructure>(
++                new FlatForward(settlement, r, dayCounter));
++    }
++
++    Globals(Date pinned_today) {
++        calendar = TARGET();
++        dayCounter = Actual365Fixed();
++        rollingConvention = ModifiedFollowing;
++        today = pinned_today;
++        Settings::instance().evaluationDate() = today;
++        settlement = calendar.advance(today, 2, Days);
++    }
++};
++
++} // namespace
++
++int main() {
++    ReferenceWriter out("experimental/callablebonds",
++                        QL_VERSION,
++                        "callablebonds_probe");
++
++    // --- testInterplay (today pinned to 3-June-2004 for repeatability) ---
++    {
++        Globals vars(Date(3, June, 2004));
++        vars.termStructure.linkTo(vars.makeFlatCurve(0.03));
++        vars.model.linkTo(ext::make_shared<HullWhite>(vars.termStructure));
++        Size timeSteps = 240;
++        auto engine = ext::make_shared<TreeCallableZeroCouponBondEngine>(
++                *(vars.model), timeSteps, vars.termStructure);
++
++        // Case 1
++        CallabilitySchedule cb1;
++        cb1.push_back(ext::make_shared<Callability>(
++            Bond::Price(100.0, Bond::Price::Clean), Callability::Call,
++            vars.calendar.advance(vars.issueDate(), 4, Years)));
++        cb1.push_back(ext::make_shared<Callability>(
++            Bond::Price(1000.0, Bond::Price::Clean), Callability::Put,
++            vars.calendar.advance(vars.issueDate(), 6, Years)));
++        CallableZeroCouponBond bond1(3, 100.0, vars.calendar, vars.maturityDate(),
++                                     Thirty360(Thirty360::BondBasis),
++                                     vars.rollingConvention, 100.0,
++                                     vars.issueDate(), cb1);
++        bond1.setPricingEngine(engine);
++        Real expected1 = cb1[0]->price().amount()
++            * vars.termStructure->discount(cb1[0]->date())
++            / vars.termStructure->discount(bond1.settlementDate());
++        Real npv1 = bond1.settlementValue();
++
++        // Case 2 (add a later callability — should not change result)
++        CallabilitySchedule cb2 = cb1;
++        cb2.push_back(ext::make_shared<Callability>(
++            Bond::Price(100.0, Bond::Price::Clean), Callability::Call,
++            vars.calendar.advance(vars.issueDate(), 8, Years)));
++        CallableZeroCouponBond bond2(3, 100.0, vars.calendar, vars.maturityDate(),
++                                     Thirty360(Thirty360::BondBasis),
++                                     vars.rollingConvention, 100.0,
++                                     vars.issueDate(), cb2);
++        bond2.setPricingEngine(engine);
++        Real npv2 = bond2.settlementValue();
++
++        // Case 3 (put then call)
++        CallabilitySchedule cb3;
++        cb3.push_back(ext::make_shared<Callability>(
++            Bond::Price(100.0, Bond::Price::Clean), Callability::Put,
++            vars.calendar.advance(vars.issueDate(), 4, Years)));
++        cb3.push_back(ext::make_shared<Callability>(
++            Bond::Price(10.0, Bond::Price::Clean), Callability::Call,
++            vars.calendar.advance(vars.issueDate(), 6, Years)));
++        CallableZeroCouponBond bond3(3, 100.0, vars.calendar, vars.maturityDate(),
++                                     Thirty360(Thirty360::BondBasis),
++                                     vars.rollingConvention, 100.0,
++                                     vars.issueDate(), cb3);
++        bond3.setPricingEngine(engine);
++        Real expected3 = cb3[0]->price().amount()
++            * vars.termStructure->discount(cb3[0]->date())
++            / vars.termStructure->discount(bond3.settlementDate());
++        Real npv3 = bond3.settlementValue();
++
++        // Case 4 (add a later put — should not change)
++        CallabilitySchedule cb4 = cb3;
++        cb4.push_back(ext::make_shared<Callability>(
++            Bond::Price(100.0, Bond::Price::Clean), Callability::Put,
++            vars.calendar.advance(vars.issueDate(), 8, Years)));
++        CallableZeroCouponBond bond4(3, 100.0, vars.calendar, vars.maturityDate(),
++                                     Thirty360(Thirty360::BondBasis),
++                                     vars.rollingConvention, 100.0,
++                                     vars.issueDate(), cb4);
++        bond4.setPricingEngine(engine);
++        Real npv4 = bond4.settlementValue();
++
++        json inp{
++            {"today_serial", vars.today.serialNumber()},
++            {"flatRate", 0.03},
++            {"timeSteps", 240}
++        };
++        json exp{
++            {"case1_expected_settlement", expected1},
++            {"case1_npv_settlement", npv1},
++            {"case2_npv_settlement", npv2},
++            {"case3_expected_settlement", expected3},
++            {"case3_npv_settlement", npv3},
++            {"case4_npv_settlement", npv4}
++        };
++        out.addCase("testInterplay", inp, exp);
++    }
++
++    // --- testConsistency ---
++    {
++        Globals vars(Date(3, June, 2004));
++        vars.termStructure.linkTo(vars.makeFlatCurve(0.032));
++        vars.model.linkTo(ext::make_shared<HullWhite>(vars.termStructure));
++
++        Schedule schedule = MakeSchedule()
++            .from(vars.issueDate()).to(vars.maturityDate())
++            .withCalendar(vars.calendar).withFrequency(Semiannual)
++            .withConvention(vars.rollingConvention)
++            .withRule(DateGeneration::Backward);
++
++        std::vector<Rate> coupons(1, 0.05);
++        FixedRateBond plain(3, 100.0, schedule, coupons,
++                            Thirty360(Thirty360::BondBasis));
++        plain.setPricingEngine(
++            ext::make_shared<DiscountingBondEngine>(vars.termStructure));
++
++        CallabilitySchedule cbs, pbs;
++        for (auto& d : vars.evenYears())
++            cbs.push_back(ext::make_shared<Callability>(
++                Bond::Price(110.0, Bond::Price::Clean), Callability::Call, d));
++        for (auto& d : vars.oddYears())
++            pbs.push_back(ext::make_shared<Callability>(
++                Bond::Price(90.0, Bond::Price::Clean), Callability::Put, d));
++
++        Size timeSteps = 240;
++        auto engine = ext::make_shared<TreeCallableFixedRateBondEngine>(
++                *(vars.model), timeSteps, vars.termStructure);
++
++        CallableFixedRateBond callable(3, 100.0, schedule, coupons,
++                                       Thirty360(Thirty360::BondBasis),
++                                       vars.rollingConvention, 100.0,
++                                       vars.issueDate(), cbs);
++        callable.setPricingEngine(engine);
++
++        CallableFixedRateBond puttable(3, 100.0, schedule, coupons,
++                                       Thirty360(Thirty360::BondBasis),
++                                       vars.rollingConvention, 100.0,
++                                       vars.issueDate(), pbs);
++        puttable.setPricingEngine(engine);
++
++        json inp{
++            {"today_serial", vars.today.serialNumber()},
++            {"flatRate", 0.032},
++            {"timeSteps", 240}
++        };
++        json exp{
++            {"plain_cleanPrice", plain.cleanPrice()},
++            {"callable_cleanPrice", callable.cleanPrice()},
++            {"puttable_cleanPrice", puttable.cleanPrice()}
++        };
++        out.addCase("testConsistency", inp, exp);
++    }
++
++    // --- testObservability ---
++    {
++        Globals vars(Date(3, June, 2004));
++        auto observable = ext::make_shared<SimpleQuote>(0.03);
++        Handle<Quote> h(observable);
++        vars.termStructure.linkTo(vars.makeFlatCurve(h));
++        vars.model.linkTo(ext::make_shared<HullWhite>(vars.termStructure));
++
++        Schedule schedule = MakeSchedule()
++            .from(vars.issueDate()).to(vars.maturityDate())
++            .withCalendar(vars.calendar).withFrequency(Semiannual)
++            .withConvention(vars.rollingConvention)
++            .withRule(DateGeneration::Backward);
++
++        CallabilitySchedule cbs;
++        for (auto& d : vars.evenYears())
++            cbs.push_back(ext::make_shared<Callability>(
++                Bond::Price(110.0, Bond::Price::Clean), Callability::Call, d));
++        for (auto& d : vars.oddYears())
++            cbs.push_back(ext::make_shared<Callability>(
++                Bond::Price(90.0, Bond::Price::Clean), Callability::Put, d));
++
++        CallableZeroCouponBond bond(3, 100.0, vars.calendar, vars.maturityDate(),
++                                    Thirty360(Thirty360::BondBasis),
++                                    vars.rollingConvention, 100.0,
++                                    vars.issueDate(), cbs);
++        Size timeSteps = 240;
++        bond.setPricingEngine(
++            ext::make_shared<TreeCallableFixedRateBondEngine>(
++                *(vars.model), timeSteps, vars.termStructure));
++        Real npv_at_3pct = bond.NPV();
++        observable->setValue(0.04);
++        Real npv_at_4pct = bond.NPV();
++
++        json inp{{"today_serial", vars.today.serialNumber()}, {"timeSteps", 240}};
++        json exp{
++            {"npv_at_0.03", npv_at_3pct},
++            {"npv_at_0.04", npv_at_4pct}
++        };
++        out.addCase("testObservability", inp, exp);
++    }
++
++    // --- testDegenerate ---
++    {
++        Globals vars(Date(3, June, 2004));
++        vars.termStructure.linkTo(vars.makeFlatCurve(0.034));
++        vars.model.linkTo(ext::make_shared<HullWhite>(vars.termStructure));
++
++        Schedule schedule = MakeSchedule()
++            .from(vars.issueDate()).to(vars.maturityDate())
++            .withCalendar(vars.calendar).withFrequency(Semiannual)
++            .withConvention(vars.rollingConvention)
++            .withRule(DateGeneration::Backward);
++        std::vector<Rate> coupons(1, 0.05);
++
++        ZeroCouponBond zcb(3, vars.calendar, 100.0, vars.maturityDate(),
++                           vars.rollingConvention);
++        FixedRateBond frb(3, 100.0, schedule, coupons,
++                          Thirty360(Thirty360::BondBasis));
++        auto disc = ext::make_shared<DiscountingBondEngine>(vars.termStructure);
++        zcb.setPricingEngine(disc);
++        frb.setPricingEngine(disc);
++
++        Size timeSteps = 240;
++        auto tree = ext::make_shared<TreeCallableFixedRateBondEngine>(
++                *(vars.model), timeSteps, vars.termStructure);
++
++        // empty callability
++        CallabilitySchedule empty;
++        CallableZeroCouponBond czb_empty(3, 100.0, vars.calendar, vars.maturityDate(),
++                                         Thirty360(Thirty360::BondBasis),
++                                         vars.rollingConvention, 100.0,
++                                         vars.issueDate(), empty);
++        CallableFixedRateBond cfb_empty(3, 100.0, schedule, coupons,
++                                        Thirty360(Thirty360::BondBasis),
++                                        vars.rollingConvention, 100.0,
++                                        vars.issueDate(), empty);
++        czb_empty.setPricingEngine(tree);
++        cfb_empty.setPricingEngine(tree);
++
++        // out-of-the-money
++        CallabilitySchedule oom;
++        for (auto& d : vars.evenYears())
++            oom.push_back(ext::make_shared<Callability>(
++                Bond::Price(10000.0, Bond::Price::Clean), Callability::Call, d));
++        for (auto& d : vars.oddYears())
++            oom.push_back(ext::make_shared<Callability>(
++                Bond::Price(0.0, Bond::Price::Clean), Callability::Put, d));
++
++        CallableZeroCouponBond czb_oom(3, 100.0, vars.calendar, vars.maturityDate(),
++                                       Thirty360(Thirty360::BondBasis),
++                                       vars.rollingConvention, 100.0,
++                                       vars.issueDate(), oom);
++        CallableFixedRateBond cfb_oom(3, 100.0, schedule, coupons,
++                                      Thirty360(Thirty360::BondBasis),
++                                      vars.rollingConvention, 100.0,
++                                      vars.issueDate(), oom);
++        czb_oom.setPricingEngine(tree);
++        cfb_oom.setPricingEngine(tree);
++
++        json inp{{"today_serial", vars.today.serialNumber()}, {"timeSteps", 240}};
++        json exp{
++            {"zero_cleanPrice", zcb.cleanPrice()},
++            {"fixed_cleanPrice", frb.cleanPrice()},
++            {"czb_empty_cleanPrice", czb_empty.cleanPrice()},
++            {"cfb_empty_cleanPrice", cfb_empty.cleanPrice()},
++            {"czb_oom_cleanPrice", czb_oom.cleanPrice()},
++            {"cfb_oom_cleanPrice", cfb_oom.cleanPrice()}
++        };
++        out.addCase("testDegenerate", inp, exp);
++    }
++
++    // --- testCached ---
++    {
++        Globals vars(Date(3, June, 2004));
++        vars.termStructure.linkTo(vars.makeFlatCurve(0.032));
++        vars.model.linkTo(ext::make_shared<HullWhite>(vars.termStructure));
++
++        Schedule schedule = MakeSchedule()
++            .from(vars.issueDate()).to(vars.maturityDate())
++            .withCalendar(vars.calendar).withFrequency(Semiannual)
++            .withConvention(vars.rollingConvention)
++            .withRule(DateGeneration::Backward);
++
++        std::vector<Rate> coupons(1, 0.05);
++        CallabilitySchedule cbs, pbs, all;
++        for (auto& d : vars.evenYears()) {
++            auto e = ext::make_shared<Callability>(
++                Bond::Price(110.0, Bond::Price::Clean), Callability::Call, d);
++            cbs.push_back(e); all.push_back(e);
++        }
++        for (auto& d : vars.oddYears()) {
++            auto e = ext::make_shared<Callability>(
++                Bond::Price(100.0, Bond::Price::Clean), Callability::Put, d);
++            pbs.push_back(e); all.push_back(e);
++        }
++
++        Size timeSteps = 240;
++        auto engine = ext::make_shared<TreeCallableFixedRateBondEngine>(
++                *(vars.model), timeSteps, vars.termStructure);
++
++        CallableFixedRateBond b1(3, 10000.0, schedule, coupons,
++                                 Thirty360(Thirty360::BondBasis),
++                                 vars.rollingConvention, 100.0,
++                                 vars.issueDate(), cbs);
++        CallableFixedRateBond b2(3, 10000.0, schedule, coupons,
++                                 Thirty360(Thirty360::BondBasis),
++                                 vars.rollingConvention, 100.0,
++                                 vars.issueDate(), pbs);
++        CallableFixedRateBond b3(3, 10000.0, schedule, coupons,
++                                 Thirty360(Thirty360::BondBasis),
++                                 vars.rollingConvention, 100.0,
++                                 vars.issueDate(), all);
++        b1.setPricingEngine(engine);
++        b2.setPricingEngine(engine);
++        b3.setPricingEngine(engine);
++
++        json inp{{"today_serial", vars.today.serialNumber()},
++                 {"flatRate", 0.032}, {"timeSteps", 240}};
++        json exp{
++            {"callable_cleanPrice", b1.cleanPrice()},
++            {"puttable_cleanPrice", b2.cleanPrice()},
++            {"mixed_cleanPrice", b3.cleanPrice()}
++        };
++        out.addCase("testCached", inp, exp);
++    }
++
++    // --- testBlackEngine ---
++    {
++        Globals vars(Date(20, September, 2022));
++        vars.termStructure.linkTo(vars.makeFlatCurve(0.03));
++        CallabilitySchedule cbs;
++        cbs.push_back(ext::make_shared<Callability>(
++            Bond::Price(100.0, Bond::Price::Clean), Callability::Call,
++            vars.calendar.advance(vars.issueDate(), 4, Years)));
++        CallableZeroCouponBond bond(3, 10000.0, vars.calendar, vars.maturityDate(),
++                                    Thirty360(Thirty360::BondBasis),
++                                    vars.rollingConvention, 100.0,
++                                    vars.issueDate(), cbs);
++        bond.setPricingEngine(ext::make_shared<BlackCallableZeroCouponBondEngine>(
++            Handle<Quote>(ext::make_shared<SimpleQuote>(0.3)), vars.termStructure));
++        json inp{{"today_serial", vars.today.serialNumber()},
++                 {"flatRate", 0.03}, {"vol", 0.3}};
++        json exp{{"cleanPrice", bond.cleanPrice()}};
++        out.addCase("testBlackEngine", inp, exp);
++    }
++
++    // --- testImpliedVol ---
++    {
++        Globals vars(Date(3, June, 2004));
++        vars.termStructure.linkTo(vars.makeFlatCurve(0.03));
++
++        Schedule schedule = MakeSchedule()
++            .from(vars.issueDate()).to(vars.maturityDate())
++            .withCalendar(vars.calendar).withFrequency(Semiannual)
++            .withConvention(vars.rollingConvention)
++            .withRule(DateGeneration::Backward);
++        std::vector<Rate> coupons = { 0.01 };
++
++        CallabilitySchedule cbs;
++        cbs.push_back(ext::make_shared<Callability>(
++            Bond::Price(100.0, Bond::Price::Clean), Callability::Call,
++            schedule.at(8)));
++
++        CallableFixedRateBond bond(3, 10000.0, schedule, coupons,
++                                   Thirty360(Thirty360::BondBasis),
++                                   vars.rollingConvention, 100.0,
++                                   vars.issueDate(), cbs);
++
++        auto targetPriceDirty = Bond::Price(78.50, Bond::Price::Dirty);
++        Real volDirty = bond.impliedVolatility(targetPriceDirty,
++                            vars.termStructure, 1e-8, 200, 1e-4, 1.0);
++        bond.setPricingEngine(ext::make_shared<BlackCallableFixedRateBondEngine>(
++            Handle<Quote>(ext::make_shared<SimpleQuote>(volDirty)),
++            vars.termStructure));
++        Real dirtyAfter = bond.dirtyPrice();
++
++        auto targetPriceClean = Bond::Price(78.50, Bond::Price::Clean);
++        Real volClean = bond.impliedVolatility(targetPriceClean,
++                            vars.termStructure, 1e-8, 200, 1e-4, 1.0);
++        bond.setPricingEngine(ext::make_shared<BlackCallableFixedRateBondEngine>(
++            Handle<Quote>(ext::make_shared<SimpleQuote>(volClean)),
++            vars.termStructure));
++        Real cleanAfter = bond.cleanPrice();
++
++        json inp{{"today_serial", vars.today.serialNumber()},
++                 {"flatRate", 0.03}, {"targetPrice", 78.50}};
++        json exp{
++            {"vol_for_dirty_target", volDirty},
++            {"dirty_after", dirtyAfter},
++            {"vol_for_clean_target", volClean},
++            {"clean_after", cleanAfter}
++        };
++        out.addCase("testImpliedVol", inp, exp);
++    }
++
++    // --- testBlackEngineDeepInTheMoney ---
++    {
++        Globals vars(Date(20, September, 2022));
++        vars.termStructure.linkTo(vars.makeFlatCurve(0.05));
++
++        Schedule schedule = MakeSchedule()
++            .from(vars.issueDate()).to(vars.maturityDate())
++            .withCalendar(vars.calendar).withFrequency(Semiannual)
++            .withConvention(vars.rollingConvention)
++            .withRule(DateGeneration::Backward);
++        std::vector<Rate> coupons = { 0.0 };
++
++        Date callDate = schedule.at(6);
++        CallabilitySchedule cbs;
++        cbs.push_back(ext::make_shared<Callability>(
++            Bond::Price(50.0, Bond::Price::Clean), Callability::Call, callDate));
++        CallableFixedRateBond bond(3, 10000.0, schedule, coupons,
++                                   Thirty360(Thirty360::BondBasis),
++                                   vars.rollingConvention, 100.0,
++                                   vars.issueDate(), cbs);
++        Volatility vol = 1e-10;
++        bond.setPricingEngine(ext::make_shared<BlackCallableFixedRateBondEngine>(
++            Handle<Quote>(ext::make_shared<SimpleQuote>(vol)), vars.termStructure));
++        Real expected = 50.0 * vars.termStructure->discount(callDate)
++                              / vars.termStructure->discount(bond.settlementDate());
++        Real calculated = bond.cleanPrice();
++        json inp{{"today_serial", vars.today.serialNumber()},
++                 {"flatRate", 0.05}, {"vol", vol}, {"strike", 50.0}};
++        json exp{
++            {"expected", expected},
++            {"calculated_cleanPrice", calculated},
++            {"settlement_serial", bond.settlementDate().serialNumber()},
++            {"callDate_serial", callDate.serialNumber()}
++        };
++        out.addCase("testBlackEngineDeepInTheMoney", inp, exp);
++    }
++
++    // --- testCallableFixedRateBondWithArbitrarySchedule ---
++    {
++        Globals vars(Date(10, January, 2020));
++        vars.termStructure.linkTo(vars.makeFlatCurve(0.03));
++        vars.model.linkTo(ext::make_shared<HullWhite>(vars.termStructure));
++
++        Size timeSteps = 240;
++        auto engine = ext::make_shared<TreeCallableFixedRateBondEngine>(
++            *(vars.model), timeSteps, vars.termStructure);
++
++        std::vector<Date> dates(4);
++        dates[0] = Date(20, February, 2020);
++        dates[1] = Date(15, August, 2020);
++        dates[2] = Date(25, September, 2021);
++        dates[3] = Date(27, January, 2022);
++        Schedule schedule(dates, vars.calendar, Unadjusted);
++
++        CallabilitySchedule cbs;
++        cbs.push_back(ext::make_shared<Callability>(
++            Bond::Price(100.0, Bond::Price::Clean), Callability::Call, dates[2]));
++        std::vector<Rate> coupons(1, 0.06);
++
++        CallableFixedRateBond bond(2, 100.0, schedule, coupons, vars.dayCounter,
++                                   vars.rollingConvention, 100.0,
++                                   vars.issueDate(), cbs);
++        bond.setPricingEngine(engine);
++        Real cp = bond.cleanPrice();
++        json inp{{"today_serial", vars.today.serialNumber()}, {"timeSteps", 240}};
++        json exp{{"cleanPrice", cp}};
++        out.addCase("testCallableFixedRateBondWithArbitrarySchedule", inp, exp);
++    }
++
++    // --- testSnappingExerciseDate2ClosestCouponDate (no OAS, just NPV) ---
++    {
++        Date today(18, May, 2021);
++        Settings::instance().evaluationDate() = today;
++        UnitedStates calendar(UnitedStates::FederalReserve);
++        DayCounter dc = Thirty360(Thirty360::USA);
++        Frequency frequency = Semiannual;
++        Handle<YieldTermStructure> termStructure(
++            ext::make_shared<FlatForward>(today, 0.02, Actual365Fixed()));
++
++        Date initialCallDate(14, February, 2022);
++        json npv_pairs = json::array();
++        for (int i = -10; i < 11; i++) {
++            Date callDate = initialCallDate + i * Days;
++            if (!calendar.isBusinessDay(callDate)) continue;
++
++            Natural settlementDays = 2;
++            Date settlementDate(20, May, 2021);
++            Real coupon = 0.05;
++            Real faceAmount = 100.0;
++            Real redemption = faceAmount;
++            Date maturityDate(14, February, 2026);
++            Date issueDate = settlementDate - 2 * 366 * Days;
++            Schedule schedule = MakeSchedule()
++                .from(issueDate).to(maturityDate).withFrequency(frequency)
++                .withCalendar(calendar).withConvention(Unadjusted)
++                .withTerminationDateConvention(Unadjusted)
++                .backwards().endOfMonth(false);
++            std::vector<Rate> coupons(schedule.size() - 1, coupon);
++
++            CallabilitySchedule cbs;
++            cbs.push_back(ext::make_shared<Callability>(
++                Bond::Price(faceAmount, Bond::Price::Clean),
++                Callability::Type::Call, callDate));
++
++            auto callableBond = ext::make_shared<CallableFixedRateBond>(
++                settlementDays, faceAmount, schedule, coupons, dc,
++                BusinessDayConvention::Following, redemption, issueDate, cbs);
++            auto model = ext::make_shared<HullWhite>(termStructure, 1e-12, 0.003);
++            auto treeEngine = ext::make_shared<TreeCallableFixedRateBondEngine>(model, 40);
++            callableBond->setPricingEngine(treeEngine);
++
++            auto frbSchedule = schedule.until(callDate);
++            std::vector<Rate> frbCoupons(schedule.size() - 1, coupon);
++            auto fixedBond = ext::make_shared<FixedRateBond>(
++                settlementDays, faceAmount, frbSchedule, frbCoupons, dc,
++                BusinessDayConvention::Following, redemption, issueDate);
++            fixedBond->setPricingEngine(
++                ext::make_shared<DiscountingBondEngine>(termStructure));
++
++            Real npvCallable = callableBond->NPV();
++            Real npvFixed = fixedBond->NPV();
++            npv_pairs.push_back({
++                {"i", i},
++                {"callDate_serial", callDate.serialNumber()},
++                {"npv_callable", npvCallable},
++                {"npv_fixed", npvFixed},
++                {"diff", std::fabs(npvCallable - npvFixed)}
++            });
++        }
++        json inp{{"today_serial", today.serialNumber()}};
++        json exp{{"npv_pairs", npv_pairs}};
++        out.addCase("testSnappingExerciseDate2ClosestCouponDate", inp, exp);
++    }
++
++    out.write();
++    std::printf("callablebonds_probe: wrote references/experimental/callablebonds.json\n");
++    return 0;
++}
+diff --git a/migration-harness/references/experimental/callablebonds.json b/migration-harness/references/experimental/callablebonds.json
+new file mode 100644
+index 00000000..e4955fcd
+--- /dev/null
++++ b/migration-harness/references/experimental/callablebonds.json
+@@ -0,0 +1,235 @@
++{
++  "cases": [
++    {
++      "expected": {
++        "case1_expected_settlement": 89.44607586609752,
++        "case1_npv_settlement": 89.44607586609757,
++        "case2_npv_settlement": 89.44607586609757,
++        "case3_expected_settlement": 89.44607586609752,
++        "case3_npv_settlement": 89.44607586609757,
++        "case4_npv_settlement": 89.44607586609757
++      },
++      "inputs": {
++        "flatRate": 0.03,
++        "timeSteps": 240,
++        "today_serial": 38141
++      },
++      "name": "testInterplay"
++    },
++    {
++      "expected": {
++        "callable_cleanPrice": 110.6083494609341,
++        "plain_cleanPrice": 114.65941220897514,
++        "puttable_cleanPrice": 114.66271340118868
++      },
++      "inputs": {
++        "flatRate": 0.032,
++        "timeSteps": 240,
++        "today_serial": 38141
++      },
++      "name": "testConsistency"
++    },
++    {
++      "expected": {
++        "npv_at_0.03": 88.08608544071241,
++        "npv_at_0.04": 87.45263926380356
++      },
++      "inputs": {
++        "timeSteps": 240,
++        "today_serial": 38141
++      },
++      "name": "testObservability"
++    },
++    {
++      "expected": {
++        "cfb_empty_cleanPrice": 112.84875947714448,
++        "cfb_oom_cleanPrice": 112.84875947714448,
++        "czb_empty_cleanPrice": 71.85653457511174,
++        "czb_oom_cleanPrice": 71.85653457511174,
++        "fixed_cleanPrice": 112.84875947714458,
++        "zero_cleanPrice": 71.85653457511171
++      },
++      "inputs": {
++        "timeSteps": 240,
++        "today_serial": 38141
++      },
++      "name": "testDegenerate"
++    },
++    {
++      "expected": {
++        "callable_cleanPrice": 110.60834946093415,
++        "mixed_cleanPrice": 110.97398403063768,
++        "puttable_cleanPrice": 115.1658492587932
++      },
++      "inputs": {
++        "flatRate": 0.032,
++        "timeSteps": 240,
++        "today_serial": 38141
++      },
++      "name": "testCached"
++    },
++    {
++      "expected": {
++        "cleanPrice": 74.54494134581076
++      },
++      "inputs": {
++        "flatRate": 0.03,
++        "today_serial": 44824,
++        "vol": 0.3
++      },
++      "name": "testBlackEngine"
++    },
++    {
++      "expected": {
++        "clean_after": 78.50000000001654,
++        "dirty_after": 78.50000000000618,
++        "vol_for_clean_target": 0.7648653269451157,
++        "vol_for_dirty_target": 0.7934012085473411
++      },
++      "inputs": {
++        "flatRate": 0.03,
++        "targetPrice": 78.5,
++        "today_serial": 38141
++      },
++      "name": "testImpliedVol"
++    },
++    {
++      "expected": {
++        "calculated_cleanPrice": 44.70971553808225,
++        "callDate_serial": 45642,
++        "expected": 44.7181370467534,
++        "settlement_serial": 44827
++      },
++      "inputs": {
++        "flatRate": 0.05,
++        "strike": 50.0,
++        "today_serial": 44824,
++        "vol": 1e-10
++      },
++      "name": "testBlackEngineDeepInTheMoney"
++    },
++    {
++      "expected": {
++        "cleanPrice": 104.23185995529222
++      },
++      "inputs": {
++        "timeSteps": 240,
++        "today_serial": 43840
++      },
++      "name": "testCallableFixedRateBondWithArbitrarySchedule"
++    },
++    {
++      "expected": {
++        "npv_pairs": [
++          {
++            "callDate_serial": 44596,
++            "diff": 2.842170943040401e-14,
++            "i": -10,
++            "npv_callable": 103.38979774384106,
++            "npv_fixed": 103.38979774384109
++          },
++          {
++            "callDate_serial": 44599,
++            "diff": 2.842170943040401e-14,
++            "i": -7,
++            "npv_callable": 103.41427847639096,
++            "npv_fixed": 103.41427847639099
++          },
++          {
++            "callDate_serial": 44600,
++            "diff": 1.4210854715202004e-14,
++            "i": -6,
++            "npv_callable": 103.42243632622709,
++            "npv_fixed": 103.4224363262271
++          },
++          {
++            "callDate_serial": 44601,
++            "diff": 2.842170943040401e-14,
++            "i": -5,
++            "npv_callable": 103.43059297906738,
++            "npv_fixed": 103.43059297906741
++          },
++          {
++            "callDate_serial": 44602,
++            "diff": 4.263256414560601e-14,
++            "i": -4,
++            "npv_callable": 103.43874843501857,
++            "npv_fixed": 103.43874843501861
++          },
++          {
++            "callDate_serial": 44603,
++            "diff": 0.0,
++            "i": -3,
++            "npv_callable": 103.44690269418739,
++            "npv_fixed": 103.44690269418739
++          },
++          {
++            "callDate_serial": 44606,
++            "diff": 1.4210854715202004e-14,
++            "i": 0,
++            "npv_callable": 103.47135829206577,
++            "npv_fixed": 103.47135829206576
++          },
++          {
++            "callDate_serial": 44607,
++            "diff": 1.4210854715202004e-14,
++            "i": 1,
++            "npv_callable": 103.47964272125569,
++            "npv_fixed": 103.4796427212557
++          },
++          {
++            "callDate_serial": 44608,
++            "diff": 1.4210854715202004e-14,
++            "i": 2,
++            "npv_callable": 103.48792594680182,
++            "npv_fixed": 103.48792594680184
++          },
++          {
++            "callDate_serial": 44609,
++            "diff": 2.842170943040401e-14,
++            "i": 3,
++            "npv_callable": 103.49620796881113,
++            "npv_fixed": 103.49620796881116
++          },
++          {
++            "callDate_serial": 44610,
++            "diff": 2.842170943040401e-14,
++            "i": 4,
++            "npv_callable": 103.50448878739067,
++            "npv_fixed": 103.5044887873907
++          },
++          {
++            "callDate_serial": 44614,
++            "diff": 2.842170943040401e-14,
++            "i": 8,
++            "npv_callable": 103.5376000295512,
++            "npv_fixed": 103.53760002955123
++          },
++          {
++            "callDate_serial": 44615,
++            "diff": 1.4210854715202004e-14,
++            "i": 9,
++            "npv_callable": 103.5458748325869,
++            "npv_fixed": 103.54587483258692
++          },
++          {
++            "callDate_serial": 44616,
++            "diff": 4.263256414560601e-14,
++            "i": 10,
++            "npv_callable": 103.55414843283478,
++            "npv_fixed": 103.55414843283482
++          }
++        ]
++      },
++      "inputs": {
++        "today_serial": 44334
++      },
++      "name": "testSnappingExerciseDate2ClosestCouponDate"
++    }
++  ],
++  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
++  "cpp_version": "1.42.1",
++  "generated_at": "2026-05-16T23:43:42Z",
++  "generated_by": "callablebonds_probe",
++  "test_group": "experimental/callablebonds"
++}

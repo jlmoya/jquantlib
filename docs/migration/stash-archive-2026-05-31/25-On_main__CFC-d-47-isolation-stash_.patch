@@ -1,0 +1,2569 @@
+diff --git a/jquantlib/src/main/java/org/jquantlib/pricingengines/BlackFormula.java b/jquantlib/src/main/java/org/jquantlib/pricingengines/BlackFormula.java
+index 68d32a9a..3027bea3 100755
+--- a/jquantlib/src/main/java/org/jquantlib/pricingengines/BlackFormula.java
++++ b/jquantlib/src/main/java/org/jquantlib/pricingengines/BlackFormula.java
+@@ -753,6 +753,85 @@ public class BlackFormula {
+         return blackFormulaCashItmProbability(payoff.optionType(), strike, forward, stddev, displacement);
+     }
+ 
++    // ---
++    // ---
++    // ---
++
++    /**
++     * Black 1976 probability of being in the money (in the asset martingale
++     * measure), i.e. N(d1). This is the analytic forward delta for a
++     * cash-or-nothing / asset-or-nothing payoff under the displaced-diffusion
++     * model.
++     *
++     * <p>Mirrors C++ v1.42.1 {@code blackFormulaAssetItmProbability}
++     * (ql/pricingengines/blackformula.cpp:593-613).
++     *
++     * @note Instead of volatility it uses standard deviation, i.e.
++     *       volatility*sqrt(timeToMaturity)
++     */
++    public static /*@Real*/ double blackFormulaAssetItmProbability(
++            final Option.Type optionType,
++            @Real final double strike,
++            @Real final double forward,
++            @StdDev final double stddev) {
++
++        return blackFormulaAssetItmProbability(optionType, strike, forward, stddev, 0.0);
++    }
++
++    /**
++     * Black 1976 probability of being in the money (in the asset martingale
++     * measure), i.e. N(d1), with displacement.
++     *
++     * <p>Mirrors C++ v1.42.1 {@code blackFormulaAssetItmProbability}
++     * (ql/pricingengines/blackformula.cpp:593-613).
++     */
++    public static /*@Real*/ double blackFormulaAssetItmProbability(
++            final Option.Type optionType,
++            @Real final double strike,
++            @Real final double forward,
++            @StdDev final double stddev,
++            @Real final double displacement) {
++
++        // C++ calls checkParameters(strike, forward, displacement) here;
++        // mirror the documented invariants (forward and strike+displacement
++        // must be non-negative) inline.
++        QL.require(strike + displacement >= 0.0,
++                "strike + displacement must be non-negative");
++        QL.require(forward + displacement > 0.0,
++                "forward + displacement must be positive");
++        QL.require(stddev >= 0.0, "stddev must be non-negative");
++
++        final int sign = optionType.toInteger();
++
++        if (stddev == 0.0) {
++            return (forward * sign < strike * sign) ? 1.0 : 0.0;
++        }
++
++        final double fShifted = forward + displacement;
++        final double kShifted = strike + displacement;
++        if (kShifted == 0.0) {
++            return (optionType == Option.Type.Call) ? 1.0 : 0.0;
++        }
++        final double d1 = Math.log(fShifted / kShifted) / stddev + 0.5 * stddev;
++        final CumulativeNormalDistribution phi = new CumulativeNormalDistribution();
++        return phi.op(sign * d1);
++    }
++
++    /**
++     * Black 1976 N(d1) for a PlainVanillaPayoff (asset martingale measure),
++     * with displacement. Mirrors C++ v1.42.1
++     * {@code blackFormulaAssetItmProbability(PlainVanillaPayoff,...)}.
++     */
++    public static /*@Real*/ double blackFormulaAssetItmProbability(
++            final PlainVanillaPayoff payoff,
++            @Real final double forward,
++            @StdDev final double stddev,
++            @Real final double displacement) {
++
++        return blackFormulaAssetItmProbability(payoff.optionType(),
++                payoff.strike(), forward, stddev, displacement);
++    }
++
+ 
+     // ---
+     // ---
+diff --git a/jquantlib/src/main/java/org/jquantlib/termstructures/yieldcurves/InterpolatedPiecewiseZeroSpreadedTermStructure.java b/jquantlib/src/main/java/org/jquantlib/termstructures/yieldcurves/InterpolatedPiecewiseZeroSpreadedTermStructure.java
+new file mode 100644
+index 00000000..b71cb7f8
+--- /dev/null
++++ b/jquantlib/src/main/java/org/jquantlib/termstructures/yieldcurves/InterpolatedPiecewiseZeroSpreadedTermStructure.java
+@@ -0,0 +1,241 @@
++/*
++ Copyright (C) 2026 JQuantLib migration contributors.
++
++ This source code is release under the BSD License.
++
++ This file is part of JQuantLib, a free-software/open-source library
++ for financial quantitative analysts and developers - http://jquantlib.org/
++
++ JQuantLib is free software: you can redistribute it and/or modify it
++ under the terms of the JQuantLib license.  You should have received a
++ copy of the license along with this program; if not, please email
++ <jquant-devel@lists.sourceforge.net>. The license is also available online at
++ <http://www.jquantlib.org/index.php/LICENSE.TXT>.
++
++ This program is distributed in the hope that it will be useful, but WITHOUT
++ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
++ FOR A PARTICULAR PURPOSE.  See the license for more details.
++
++ JQuantLib is based on QuantLib. http://quantlib.org/
++ When applicable, the original copyright notice follows this notice.
++ */
++
++/*
++ Copyright (C) 2006 Roland Lichters
++ Copyright (C) 2006, 2008, 2014 StatPro Italia srl
++ Copyright (C) 2010 Robert Philipp
++
++ This file is part of QuantLib, a free-software/open-source library
++ for financial quantitative analysts and developers - http://quantlib.org/
++
++ QuantLib is free software: you can redistribute it and/or modify it
++ under the terms of the QuantLib license.  You should have received a
++ copy of the license along with this program; if not, please email
++ <quantlib-dev@lists.sf.net>. The license is also available online at
++ <https://www.quantlib.org/license.shtml>.
++*/
++
++package org.jquantlib.termstructures.yieldcurves;
++
++import org.jquantlib.QL;
++import org.jquantlib.daycounters.DayCounter;
++import org.jquantlib.math.interpolations.Interpolation;
++import org.jquantlib.math.interpolations.Interpolation.Interpolator;
++import org.jquantlib.math.matrixutilities.Array;
++import org.jquantlib.quotes.Handle;
++import org.jquantlib.quotes.Quote;
++import org.jquantlib.termstructures.Compounding;
++import org.jquantlib.termstructures.InterestRate;
++import org.jquantlib.termstructures.YieldTermStructure;
++import org.jquantlib.time.Calendar;
++import org.jquantlib.time.Date;
++import org.jquantlib.time.Frequency;
++
++/**
++ * Yield curve with an added vector of spreads on the zero-yield rate,
++ * interpolated across pillar dates.
++ * <p>
++ * Java port of QuantLib v1.42.1
++ * {@code ql/termstructures/yield/piecewisezerospreadedtermstructure.hpp}.
++ * <p>
++ * The zero-yield spread at any given date is interpolated between the
++ * input data via the supplied {@link Interpolator} factory. Behaviour
++ * outside the pillar range is flat (left-most or right-most spread).
++ * <p>
++ * This term structure remains linked to the original structure — any
++ * change in the latter will be reflected here as well via the observer
++ * pattern (also any change in any of the spread quote handles).
++ *
++ * @see ZeroSpreadedTermStructure single-spread cousin
++ *
++ * @author JQuantLib migration contributors (Phase 5e.5b-CFC-d-55)
++ */
++public class InterpolatedPiecewiseZeroSpreadedTermStructure extends ZeroYieldStructure {
++
++    //
++    // private final fields
++    //
++
++    private final Handle<YieldTermStructure> originalCurve;
++    private final Handle<Quote>[] spreads;
++    private final Date[] dates;
++    private final double[] times;
++    private final double[] spreadValues;
++    private final Compounding comp;
++    private final Frequency freq;
++    private final Interpolator factory;
++
++
++    //
++    // private fields (refreshed on update())
++    //
++
++    private Interpolation interpolator;
++
++
++    //
++    // public constructors
++    //
++
++    /**
++     * Full constructor mirroring C++ v1.42.1 (with compounding, frequency and
++     * interpolator-factory parameters).
++     */
++    @SuppressWarnings("unchecked")
++    public InterpolatedPiecewiseZeroSpreadedTermStructure(
++            final Handle<YieldTermStructure> h,
++            final Handle<Quote>[] spreads,
++            final Date[] dates,
++            final Compounding comp,
++            final Frequency freq,
++            final Interpolator factory) {
++        super();
++        QL.require(spreads != null && spreads.length > 0, "no spreads given");
++        QL.require(spreads.length == dates.length,
++                "spread and date vector have different sizes");
++        QL.require(factory != null, "null interpolation factory");
++
++        this.originalCurve = h;
++        this.spreads = (Handle<Quote>[]) new Handle<?>[spreads.length];
++        System.arraycopy(spreads, 0, this.spreads, 0, spreads.length);
++        this.dates = new Date[dates.length];
++        System.arraycopy(dates, 0, this.dates, 0, dates.length);
++        this.times = new double[dates.length];
++        this.spreadValues = new double[dates.length];
++        this.comp = comp;
++        this.freq = freq;
++        this.factory = factory;
++
++        this.originalCurve.addObserver(this);
++        for (int i = 0; i < this.spreads.length; ++i) {
++            this.spreads[i].addObserver(this);
++        }
++        if (!this.originalCurve.empty()) {
++            updateInterpolation();
++        }
++    }
++
++    /**
++     * Convenience constructor mirroring C++ defaults
++     * ({@code Compounding.Continuous}, {@code Frequency.NoFrequency},
++     * default-constructed interpolator factory).
++     */
++    public InterpolatedPiecewiseZeroSpreadedTermStructure(
++            final Handle<YieldTermStructure> h,
++            final Handle<Quote>[] spreads,
++            final Date[] dates,
++            final Interpolator factory) {
++        this(h, spreads, dates, Compounding.Continuous, Frequency.NoFrequency, factory);
++    }
++
++
++    //
++    // overrides ZeroYieldStructure / AbstractYieldTermStructure
++    //
++
++    @Override
++    public DayCounter dayCounter() {
++        return originalCurve.currentLink().dayCounter();
++    }
++
++    @Override
++    public Calendar calendar() {
++        return originalCurve.currentLink().calendar();
++    }
++
++    @Override
++    public int settlementDays() {
++        return originalCurve.currentLink().settlementDays();
++    }
++
++    @Override
++    public Date referenceDate() {
++        return originalCurve.currentLink().referenceDate();
++    }
++
++    @Override
++    public Date maxDate() {
++        final Date original = originalCurve.currentLink().maxDate();
++        final Date last = dates[dates.length - 1];
++        return original.le(last) ? original : last;
++    }
++
++    @Override
++    protected double zeroYieldImpl(final double t) {
++        final double spread = calcSpread(t);
++        final InterestRate zeroRate = originalCurve.currentLink()
++                .zeroRate(t, comp, freq, true);
++        final InterestRate spreadedRate = new InterestRate(
++                zeroRate.rate() + spread,
++                zeroRate.dayCounter(),
++                zeroRate.compounding(),
++                zeroRate.frequency());
++        return spreadedRate.equivalentRate(t, Compounding.Continuous, Frequency.NoFrequency)
++                .rate();
++    }
++
++
++    //
++    // overrides AbstractTermStructure (observer)
++    //
++
++    @Override
++    public void update() {
++        if (!originalCurve.empty()) {
++            updateInterpolation();
++            // Mirror C++: ZeroYieldStructure::update() — Java's
++            // ZeroYieldStructure has no override, so we forward to the
++            // AbstractTermStructure base behaviour via super.update().
++            super.update();
++        } else {
++            // Original curve not yet linked: skip referenceDate() lookup
++            // (which would NPE) and just notify observers via the base
++            // AbstractTermStructure.update().
++            super.update();
++        }
++    }
++
++
++    //
++    // private helpers
++    //
++
++    private double calcSpread(final double t) {
++        if (t <= times[0]) {
++            return spreads[0].currentLink().value();
++        } else if (t >= times[times.length - 1]) {
++            return spreads[spreads.length - 1].currentLink().value();
++        } else {
++            return interpolator.op(t, true);
++        }
++    }
++
++    private void updateInterpolation() {
++        for (int i = 0; i < dates.length; ++i) {
++            times[i] = timeFromReference(dates[i]);
++            spreadValues[i] = spreads[i].currentLink().value();
++        }
++        interpolator = factory.interpolate(new Array(times), new Array(spreadValues));
++        interpolator.update();
++    }
++}
+diff --git a/jquantlib/src/test/java/org/jquantlib/testsuite/cashflows/CashFlowsTest.java b/jquantlib/src/test/java/org/jquantlib/testsuite/cashflows/CashFlowsTest.java
+index 7550c8e2..d009f802 100644
+--- a/jquantlib/src/test/java/org/jquantlib/testsuite/cashflows/CashFlowsTest.java
++++ b/jquantlib/src/test/java/org/jquantlib/testsuite/cashflows/CashFlowsTest.java
+@@ -7,19 +7,40 @@
+ package org.jquantlib.testsuite.cashflows;
+ 
+ import static org.junit.Assert.assertEquals;
++import static org.junit.Assert.assertNotNull;
++import static org.junit.Assert.assertTrue;
+ import static org.junit.Assert.fail;
+ 
+ import org.jquantlib.Settings;
++import org.jquantlib.cashflow.BlackIborCouponPricer;
+ import org.jquantlib.cashflow.CashFlow;
+ import org.jquantlib.cashflow.CashFlows;
++import org.jquantlib.cashflow.FloatingRateCoupon;
++import org.jquantlib.cashflow.IborCoupon;
++import org.jquantlib.cashflow.IborLeg;
+ import org.jquantlib.cashflow.Leg;
+ import org.jquantlib.cashflow.SimpleCashFlow;
+ import org.jquantlib.daycounters.Actual365Fixed;
+ import org.jquantlib.daycounters.DayCounter;
++import org.jquantlib.indexes.IborIndex;
++import org.jquantlib.indexes.ibor.USDLibor;
++import org.jquantlib.math.Constants;
++import org.jquantlib.quotes.Handle;
+ import org.jquantlib.termstructures.Compounding;
++import org.jquantlib.termstructures.YieldTermStructure;
++import org.jquantlib.termstructures.volatilities.optionlet.ConstantOptionletVolatility;
++import org.jquantlib.termstructures.volatilities.optionlet.OptionletVolatilityStructure;
+ import org.jquantlib.termstructures.yieldcurves.FlatForward;
++import org.jquantlib.time.BusinessDayConvention;
++import org.jquantlib.time.Calendar;
+ import org.jquantlib.time.Date;
+ import org.jquantlib.time.Frequency;
++import org.jquantlib.time.MakeSchedule;
++import org.jquantlib.time.Month;
++import org.jquantlib.time.Period;
++import org.jquantlib.time.Schedule;
++import org.jquantlib.time.TimeUnit;
++import org.jquantlib.time.calendars.Target;
+ import org.junit.Ignore;
+ import org.junit.Test;
+ 
+@@ -41,48 +62,79 @@ import org.junit.Test;
+  * the C++-aligned {@code CashFlow.hasOccurred(Date, Boolean)} override
+  * (cashflow.cpp v1.42.1 lines 27-49).
+  *
+- * <p>Remaining Phase 5d.5 cases:
++ * <p><strong>Phase 5e.5b-CFC-d-45</strong> body-fills three additional
++ * cases against the existing Java production code:
+  * <ul>
+- *   <li>{@code testAccessViolation}, {@code testDefaultSettlementDate},
+- *       {@code testNullFixingDays}, {@code testExCouponDates},
+- *       {@code testIrregularFirstCouponReferenceDatesAtEndOfMonth},
+- *       {@code testIrregularFirstCouponReferenceDatesAtEndOfCalendarMonth},
+- *       {@code testIrregularLastCouponReferenceDatesAtEndOfMonth},
+- *       {@code testPartialScheduleLegConstruction},
+- *       {@code testFixedIborCouponWithoutForecastCurve},
+- *       {@code testIborCouponKnowsWhenitHasFixed}.
++ *   <li>{@code testAccessViolation} — Black ibor-coupon pricer must not
++ *       crash on a non-IborCoupon FloatingRateCoupon (a normal exception
++ *       is acceptable).
++ *   <li>{@code testNullFixingDays} — IborLeg accepts
++ *       {@code Null<Natural>()} ({@link Constants#NULL_NATURAL}) as the
++ *       fixing-days sentinel, gated by
++ *       {@code IborCoupon.Settings.usingAtParCoupons()}.
++ *   <li>{@code testFixedIborCouponWithoutForecastCurve} — a past
++ *       IborCoupon resolves the fixing from history without touching
++ *       the forecast curve.
+  * </ul>
+  *
+- * <p>Specific gaps that block immediate body-fill:
++ * <p>Cases still {@code @Ignore}'d for specific Java-side production
++ * gaps (see per-test REASON_* strings):
+  * <ul>
+- *   <li>{@code testNullFixingDays} requires the
+- *       {@code IborCoupon::Settings::usingAtParCoupons()} precondition
+- *       (Java has the accessor — Phase 2x — but the precondition guard
+- *       on this case wasn't ported);
+- *   <li>{@code testIrregular*ReferenceDatesAt*} expectations come from
+- *       the C++ schedule generation rules; reference values must be
+- *       captured via probe before body-fill;
+- *   <li>{@code testIborCouponKnowsWhenitHasFixed} regression depends on
+- *       fixing-history population helpers that are partially ported.
++ *   <li>{@code testDefaultSettlementDate} — requires
++ *       {@code CashFlows.accruedPeriod}/{@code accruedDays} statics.
++ *   <li>{@code testExCouponDates} — requires
++ *       {@code Coupon.exCouponDate()} accessor.
++ *   <li>{@code testIrregularFirstCouponReferenceDatesAtEndOfMonth},
++ *       {@code testIrregularLastCouponReferenceDatesAtEndOfMonth} —
++ *       Java Schedule generator does not snap irregular reference
++ *       period boundaries to end-of-month under
++ *       {@code DateGeneration.Backward + endOfMonth=true}; observed
++ *       Aug 28 vs expected Aug 31.
++ *   <li>{@code testIrregularFirstCouponReferenceDatesAtEndOfCalendarMonth}
++ *       — requires MakeSchedule fluent setters not yet ported
++ *       (withCalendar, withTenor, withTerminationDateConvention).
++ *   <li>{@code testPartialScheduleLegConstruction} — requires the
++ *       metadata-preserving Schedule(dates, ..., isRegular) ctor.
++ *   <li>{@code testIborCouponKnowsWhenitHasFixed} — requires
++ *       {@code IborCoupon.hasFixed()} and
++ *       {@code Settings.enforcesTodaysHistoricFixings()}.
+  * </ul>
+  *
+  * <p>Source: {@code test-suite/cashflows.cpp} v1.42.1 @ {@code 099987f0ca}.
+  */
+ public class CashFlowsTest {
+ 
+-    private static final String REASON =
+-            "Phase 5d.5 — requires reference-value probes for CashFlows facade "
+-          + "behaviour (settlement / ex-coupon / irregular-reference-date logic); "
+-          + "Java production code is in place but probes not yet authored";
+-
+-    private static final String REASON_NULL_FIXING =
+-            "Phase 5d.5 — requires precondition-guarded usingAtParCoupons() "
+-          + "test variant; Java has the accessor (Phase 2x) but the precondition "
+-          + "wrapper / parametric flag is not wired into the JUnit case yet";
++    private static final String REASON_ACCRUED =
++            "Phase 5d.5 — requires CashFlows.accruedPeriod / accruedDays "
++          + "static facades (Java currently ships only accruedAmount).";
++
++    private static final String REASON_EX_COUPON =
++            "Phase 5d.5 — requires Coupon.exCouponDate() accessor "
++          + "(Leg builders record ex-coupon period but do not thread "
++          + "exCouponDate through to the Coupon ctor).";
++
++    private static final String REASON_IRREGULAR_EOM =
++            "Phase 5d.5 — Java Schedule generator does not snap irregular "
++          + "reference-period boundaries to end-of-month under "
++          + "DateGeneration.Backward + endOfMonth=true (observed Aug 28 "
++          + "vs expected Aug 31). Needs Schedule generator fix in "
++          + "production.";
++
++    private static final String REASON_IRREGULAR_EOC =
++            "Phase 5d.5 — requires MakeSchedule.withCalendar/withTenor/"
++          + "withTerminationDateConvention fluent setters and "
++          + "ActualActual::ISMA reference-period semantics not yet at "
++          + "C++ parity.";
++
++    private static final String REASON_PARTIAL_SCHED =
++            "Phase 5d.5 — requires Schedule(dates, calendar, convention, "
++          + "terminationConvention, tenor, rule, endOfMonth, isRegular) "
++          + "metadata-preserving ctor (Java only has the date-vector and "
++          + "full ctor variants).";
+ 
+     private static final String REASON_FIXING =
+-            "Phase 5d.5 — requires fixing-history harness to validate the "
+-          + "IborCoupon-knows-when-it-has-fixed regression";
++            "Phase 5d.5 — requires IborCoupon.hasFixed() accessor and "
++          + "Settings.enforcesTodaysHistoricFixings() flag (neither ported).";
+ 
+     /**
+      * Mirrors C++ {@code CashFlowTests::testSettings} (test-suite/cashflows.cpp
+@@ -240,14 +292,200 @@ public class CashFlowsTest {
+                 expected, npv, 1e-6);
+     }
+ 
+-    @Ignore(REASON) @Test public void testAccessViolation() { fail("not implemented"); }
+-    @Ignore(REASON) @Test public void testDefaultSettlementDate() { fail("not implemented"); }
+-    @Ignore(REASON_NULL_FIXING) @Test public void testNullFixingDays() { fail("not implemented"); }
+-    @Ignore(REASON) @Test public void testExCouponDates() { fail("not implemented"); }
+-    @Ignore(REASON) @Test public void testIrregularFirstCouponReferenceDatesAtEndOfMonth() { fail("not implemented"); }
+-    @Ignore(REASON) @Test public void testIrregularFirstCouponReferenceDatesAtEndOfCalendarMonth() { fail("not implemented"); }
+-    @Ignore(REASON) @Test public void testIrregularLastCouponReferenceDatesAtEndOfMonth() { fail("not implemented"); }
+-    @Ignore(REASON) @Test public void testPartialScheduleLegConstruction() { fail("not implemented"); }
+-    @Ignore(REASON) @Test public void testFixedIborCouponWithoutForecastCurve() { fail("not implemented"); }
+-    @Ignore(REASON_FIXING) @Test public void testIborCouponKnowsWhenitHasFixed() { fail("not implemented"); }
++    /**
++     * Mirrors C++ {@code CashFlowTests::testAccessViolation}
++     * (test-suite/cashflows.cpp v1.42.1 lines 181-222).
++     *
++     * <p>Reproduces the version-1.0 dynamic_cast access violation in
++     * the Black ibor-coupon pricer: a {@link FloatingRateCoupon} (not
++     * an {@link IborCoupon}) is wrapped with a
++     * {@link BlackIborCouponPricer}, and the test only requires that
++     * {@code amount()} does NOT crash — throwing a normal exception is
++     * acceptable.
++     */
++    @Test
++    public void testAccessViolation() {
++        final Settings settings = new Settings();
++        final Date savedEval = settings.evaluationDate();
++        try {
++            final Date todaysDate = new Date(7, Month.April, 2010);
++            final Date settlementDate = new Date(9, Month.April, 2010);
++            settings.setEvaluationDate(todaysDate);
++            final Calendar calendar = new Target();
++
++            final Handle<YieldTermStructure> rhTermStructure =
++                    new Handle<YieldTermStructure>(
++                            new FlatForward(settlementDate, 0.04875825,
++                                    new Actual365Fixed()));
++
++            final double volatility = 0.10;
++            final Handle<OptionletVolatilityStructure> vol =
++                    new Handle<OptionletVolatilityStructure>(
++                            new ConstantOptionletVolatility(
++                                    2,
++                                    calendar,
++                                    BusinessDayConvention.ModifiedFollowing,
++                                    volatility,
++                                    new Actual365Fixed()));
++
++            final IborIndex index3m =
++                    new USDLibor(new Period(3, TimeUnit.Months), rhTermStructure);
++
++            final Date payDate = new Date(20, Month.December, 2013);
++            final Date startDate = new Date(20, Month.September, 2013);
++            final Date endDate = new Date(20, Month.December, 2013);
++            final double spread = 0.0115;
++            final BlackIborCouponPricer pricer = new BlackIborCouponPricer(vol);
++            // Mirrors C++ ctor:
++            //   FloatingRateCoupon(payDate,100, startDate, endDate, 2,
++            //                      index3m, 1.0 , spread / 100)
++            // Java ctor demands explicit refPeriodStart/refPeriodEnd,
++            // dayCounter and isInArrears — fill with C++ defaults
++            // (Date(), DayCounter(), false).
++            final FloatingRateCoupon coupon = new FloatingRateCoupon(
++                    payDate, 100.0, startDate, endDate, 2,
++                    index3m, 1.0, spread / 100.0,
++                    new Date(), new Date(),
++                    new DayCounter(), false);
++            coupon.setPricer(pricer);
++
++            try {
++                // this caused an access violation in version 1.0
++                coupon.amount();
++            } catch (final RuntimeException expected) {
++                // ok; proper exception thrown
++            }
++        } finally {
++            settings.setEvaluationDate(savedEval);
++        }
++    }
++
++    @Ignore(REASON_ACCRUED)
++    @Test public void testDefaultSettlementDate() { fail("not implemented"); }
++
++    /**
++     * Mirrors C++ {@code CashFlowTests::testNullFixingDays}
++     * (test-suite/cashflows.cpp v1.42.1 lines 254-271).
++     *
++     * <p>The C++ test is gated by
++     * {@code *precondition(usingAtParCoupons())}; Java mirrors that
++     * with a runtime guard that skips the body (via {@code Assume})
++     * when the per-process IborCoupon Settings flag is in the
++     * {@code createIndexedCoupons()} mode.
++     *
++     * <p>The check verifies that constructing an {@link IborLeg} with
++     * {@link Constants#NULL_NATURAL} as the fixing-days override does
++     * NOT throw — without proper null-handling the downstream
++     * FloatingRateCoupon ctor would propagate the sentinel into
++     * computations and blow up.
++     */
++    @Test
++    public void testNullFixingDays() {
++        // Java mirror of C++ *precondition(usingAtParCoupons()) — skip
++        // when the per-process flag is set to indexed coupons.
++        org.junit.Assume.assumeTrue(
++                IborCoupon.Settings.getInstance().usingAtParCoupons());
++
++        final Settings settings = new Settings();
++        final Date today = settings.evaluationDate();
++        final Schedule schedule = new MakeSchedule(
++                today.sub(new Period(2, TimeUnit.Months)),
++                today.add(new Period(4, TimeUnit.Months)),
++                new Period(Frequency.Semiannual),
++                new Target(),
++                BusinessDayConvention.Following)
++                .backwards()
++                .schedule();
++
++        final IborIndex index = new USDLibor(new Period(6, TimeUnit.Months));
++        final Leg leg = new IborLeg(schedule, index)
++                .withNotionals(100.0)
++                // this can happen with default values, and caused an
++                // exception when the null was not managed properly
++                .withFixingDays(Constants.NULL_NATURAL)
++                .Leg();
++        assertNotNull("leg construction yielded null", leg);
++        assertTrue("leg construction yielded empty leg", !leg.isEmpty());
++    }
++
++    @Ignore(REASON_EX_COUPON)
++    @Test public void testExCouponDates() { fail("not implemented"); }
++
++    @Ignore(REASON_IRREGULAR_EOM)
++    @Test public void testIrregularFirstCouponReferenceDatesAtEndOfMonth() { fail("not implemented"); }
++
++    @Ignore(REASON_IRREGULAR_EOC)
++    @Test public void testIrregularFirstCouponReferenceDatesAtEndOfCalendarMonth() { fail("not implemented"); }
++
++    @Ignore(REASON_IRREGULAR_EOM)
++    @Test public void testIrregularLastCouponReferenceDatesAtEndOfMonth() { fail("not implemented"); }
++
++    @Ignore(REASON_PARTIAL_SCHED)
++    @Test public void testPartialScheduleLegConstruction() { fail("not implemented"); }
++
++    /**
++     * Mirrors C++ {@code CashFlowTests::testFixedIborCouponWithoutForecastCurve}
++     * (test-suite/cashflows.cpp v1.42.1 lines 536-564).
++     *
++     * <p>A past {@link IborCoupon} (fixing-date &lt; today, no forecast
++     * curve attached to the index) must resolve the rate via the
++     * fixing history; the amount must equal
++     * {@code pastFixing * nominal * accrualPeriod}.
++     */
++    @Test
++    public void testFixedIborCouponWithoutForecastCurve() {
++        final Settings settings = new Settings();
++        final Date savedEval = settings.evaluationDate();
++        // Use a fixed evaluation date so the fixing-history lookup is
++        // deterministic across CI runs.
++        try {
++            final Date today = new Date(7, Month.April, 2010);
++            settings.setEvaluationDate(today);
++
++            final IborIndex index = new USDLibor(new Period(6, TimeUnit.Months));
++            final Calendar calendar = index.fixingCalendar();
++
++            final Date fixingDate = calendar.advance(today,
++                    new Period(-2, TimeUnit.Months),
++                    BusinessDayConvention.Following);
++            final double pastFixing = 0.01;
++            try {
++                index.addFixing(fixingDate, pastFixing);
++
++                final Date startDate = index.valueDate(fixingDate);
++                // Mirrors C++ line 549: index->maturityDate(fixingDate).
++                // Java's maturityDate(valueDate) on USDLibor calls
++                // jointCalendar.advance(valueDate, tenor, ...) — but C++
++                // and Java both pass the *fixing* date here (typo on
++                // C++ side made canonical by v1.42.1's behavior).
++                final Date endDate = index.maturityDate(startDate);
++
++                final IborCoupon coupon = new IborCoupon(
++                        endDate, 100.0, startDate, endDate,
++                        index.fixingDays(), index);
++                coupon.setPricer(new BlackIborCouponPricer());
++
++                // Main check: amount() does NOT throw.
++                final double amount = coupon.amount();
++
++                // Consistency check.
++                final double expected =
++                        pastFixing * coupon.nominal() * coupon.accrualPeriod();
++                assertEquals("amount mismatch", expected, amount, 1.0e-8);
++            } finally {
++                // Best-effort cleanup; the global IndexManager state
++                // would otherwise leak between tests.
++                try {
++                    index.clearFixings();
++                } catch (final Throwable ignored) {
++                    // some indexes / managers may not expose clear; ignore.
++                }
++            }
++        } finally {
++            settings.setEvaluationDate(savedEval);
++        }
++    }
++
++    @Ignore(REASON_FIXING)
++    @Test public void testIborCouponKnowsWhenitHasFixed() { fail("not implemented"); }
+ }
+diff --git a/jquantlib/src/test/java/org/jquantlib/testsuite/cashflows/DigitalCouponTest.java b/jquantlib/src/test/java/org/jquantlib/testsuite/cashflows/DigitalCouponTest.java
+index 0299e6fd..29d9cee2 100644
+--- a/jquantlib/src/test/java/org/jquantlib/testsuite/cashflows/DigitalCouponTest.java
++++ b/jquantlib/src/test/java/org/jquantlib/testsuite/cashflows/DigitalCouponTest.java
+@@ -34,11 +34,27 @@ import org.jquantlib.cashflow.IborCoupon;
+ import org.jquantlib.cashflow.Replication;
+ import org.jquantlib.daycounters.Actual360;
+ import org.jquantlib.daycounters.Actual365Fixed;
++import org.jquantlib.exercise.EuropeanExercise;
++import org.jquantlib.exercise.Exercise;
+ import org.jquantlib.indexes.Euribor6M;
+ import org.jquantlib.indexes.IborIndex;
++import org.jquantlib.instruments.AssetOrNothingPayoff;
++import org.jquantlib.instruments.CashOrNothingPayoff;
++import org.jquantlib.instruments.Option;
+ import org.jquantlib.instruments.Position;
++import org.jquantlib.instruments.StrikedTypePayoff;
++import org.jquantlib.instruments.VanillaOption;
+ import org.jquantlib.math.Constants;
++import org.jquantlib.math.distributions.CumulativeNormalDistribution;
++import org.jquantlib.pricingengines.AnalyticEuropeanEngine;
++import org.jquantlib.pricingengines.BlackFormula;
++import org.jquantlib.pricingengines.PricingEngine;
++import org.jquantlib.processes.BlackScholesMertonProcess;
++import org.jquantlib.quotes.Handle;
++import org.jquantlib.quotes.Quote;
+ import org.jquantlib.quotes.RelinkableHandle;
++import org.jquantlib.quotes.SimpleQuote;
++import org.jquantlib.termstructures.BlackVolTermStructure;
+ import org.jquantlib.termstructures.YieldTermStructure;
+ import org.jquantlib.termstructures.volatilities.optionlet.ConstantOptionletVolatility;
+ import org.jquantlib.termstructures.volatilities.optionlet.OptionletVolatilityStructure;
+@@ -48,7 +64,6 @@ import org.jquantlib.time.Calendar;
+ import org.jquantlib.time.Date;
+ import org.jquantlib.time.Period;
+ import org.jquantlib.time.TimeUnit;
+-import org.junit.Ignore;
+ import org.junit.Test;
+ 
+ /**
+@@ -62,25 +77,25 @@ import org.junit.Test;
+  *
+  * <h3>Phase 5e.5b-CFC-d-25 (2026-05-16)</h3>
+  *
+- * <p>Two structural-identity tests are body-filled and un-ignored:
+- * <ul>
+- *   <li>{@code testCallPutParity} — verifies that for each (vol, strike,
+- *       k) triple, {@code price(longCallDigital) - price(shortPutDigital)}
+- *       equals {@code nominal * accrual * discount * cashRate} (cash) and
+- *       {@code nominal * accrual * discount * forward} (asset). Pure
+- *       parity identity, no probe-generated reference values needed.</li>
+- *   <li>{@code testReplicationType} — verifies the monotone ordering
+- *       Sub &le; Central &le; Super across replication strategies. Pure
+- *       inequality, no probe-generated reference values needed.</li>
+- * </ul>
++ * <p>Two structural-identity tests were body-filled:
++ * {@code testCallPutParity} and {@code testReplicationType}.
+  *
+- * <p>Remaining 6 tests stay deferred: they cross-check
+- * {@link DigitalCoupon} prices against Cox-Rubinstein N(d1)/N(d2)
+- * closed-form formulas via {@code CumulativeNormalDistribution}, the
+- * Black {@code AssetOrNothing}/{@code CashOrNothing} payoffs through
+- * {@code AnalyticEuropeanEngine}, and {@code BlackScholesMertonProcess}.
+- * That path requires verifying the Java analytic-european digital engines
+- * are wired in the same way as v1.42.1.
++ * <h3>Phase 5e.5b-CFC-d-60 (2026-05-16)</h3>
++ *
++ * <p>The remaining 6 tests are body-filled using the already-ported
++ * {@link AnalyticEuropeanEngine} (which delegates to
++ * {@code BlackCalculator}, which handles
++ * {@link AssetOrNothingPayoff}/{@link CashOrNothingPayoff} payoffs natively)
++ * and {@link BlackFormula#blackFormulaCashItmProbability}. The deep ITM/OTM
++ * cases are pure deterministic checks against {@code underlying.price()} and
++ * 0; the standard {@code testAssetOrNothing}/{@code testCashOrNothing} cases
++ * cross-validate against Cox-Rubinstein {@code N(d1)}/{@code N(d2)}
++ * closed-form formulas and the {@code AnalyticEuropeanEngine}-backed Vanilla
++ * Option NPV with {@link AssetOrNothingPayoff}/{@link CashOrNothingPayoff}.
++ *
++ * <p>Mirror of {@code test-suite/digitalcoupon.cpp} BOOST_AUTO_TEST_CASE
++ * bodies; same tolerances (1e-4 optionTolerance, 1e-10 blackTolerance, ...)
++ * as v1.42.1.
+  */
+ public class DigitalCouponTest {
+ 
+@@ -97,6 +112,8 @@ public class DigitalCouponTest {
+         final IborIndex index;
+         final int fixingDays;
+         final RelinkableHandle<YieldTermStructure> termStructure;
++        final double optionTolerance;
++        final double blackTolerance;
+ 
+         CommonVars() {
+             this.fixingDays = 2;
+@@ -109,37 +126,830 @@ public class DigitalCouponTest {
+             this.settlement = calendar.advance(today, fixingDays, TimeUnit.Days);
+             termStructure.linkTo(Utilities.flatRate(settlement, 0.05,
+                     new Actual365Fixed()));
++            this.optionTolerance = 1.0e-04;
++            this.blackTolerance = 1.0e-10;
+         }
+     }
+ 
+-    @Ignore("Phase 5e.5 WI-5e.5-DC-1: deferred — needs analytic-european digital engine cross-validation.")
+     @Test
+     public void testAssetOrNothing() {
++        QL.info("Testing European asset-or-nothing digital coupon...");
++
++        /*  Call Payoff = (aL+b)Heaviside(aL+b-X) =  a Max[L-X'] + (b+aX')Heaviside(L-X')
++            Value Call = aF N(d1') + bN(d2')
++            Put Payoff =  (aL+b)Heaviside(X-aL-b) = -a Max[X-L'] + (b+aX')Heaviside(X'-L)
++            Value Put = aF N(-d1') + bN(-d2')
++            where:
++            d1' = ln(F/X')/stdDev + 0.5*stdDev;
++        */
++
++        final CommonVars vars = new CommonVars();
++
++        final double[] vols = { 0.05, 0.15, 0.30 };
++        final double[] strikes = { 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07 };
++        final double[] gearings = { 1.0, 2.8 };
++        final double[] spreads = { 0.0, 0.005 };
++
++        final double gap = 1.0e-7; /* low, in order to compare digital option value
++                                      with black formula result */
++        final DigitalReplication replication =
++                new DigitalReplication(Replication.Type.Central, gap);
++
++        for (final double capletVol : vols) {
++            final RelinkableHandle<OptionletVolatilityStructure> vol =
++                    new RelinkableHandle<OptionletVolatilityStructure>();
++            vol.linkTo(new ConstantOptionletVolatility(vars.today,
++                    vars.calendar, BusinessDayConvention.Following,
++                    capletVol, new Actual360()));
++            for (final double strike : strikes) {
++                for (int k = 9; k < 10; k++) {
++                    final Date startDate = vars.calendar.advance(vars.settlement,
++                            new Period(k + 1, TimeUnit.Years));
++                    final Date endDate = vars.calendar.advance(vars.settlement,
++                            new Period(k + 2, TimeUnit.Years));
++                    final double nullstrike = Constants.NULL_REAL;
++                    final Date paymentDate = endDate;
++                    for (int h = 0; h < gearings.length; h++) {
++                        final double gearing = gearings[h];
++                        final double spread = spreads[h];
++
++                        final FloatingRateCoupon underlying = new IborCoupon(
++                                paymentDate, vars.nominal,
++                                startDate, endDate,
++                                vars.fixingDays, vars.index,
++                                gearing, spread);
++                        // Floating Rate Coupon - Call Digital option
++                        final DigitalCoupon digitalCappedCoupon = new DigitalCoupon(
++                                underlying,
++                                strike, Position.Short, false, nullstrike,
++                                nullstrike, Position.Short, false, nullstrike,
++                                replication, false);
++                        final BlackIborCouponPricer pricer =
++                                new BlackIborCouponPricer(vol);
++                        digitalCappedCoupon.setPricer(pricer);
++
++                        // Check digital option price vs N(d1) price
++                        final double accrualPeriod = underlying.accrualPeriod();
++                        final double discount = vars.termStructure.currentLink()
++                                .discount(endDate);
++                        final Date exerciseDate = underlying.fixingDate();
++                        final double forward = underlying.rate();
++                        final double effFwd = (forward - spread) / gearing;
++                        final double effStrike = (strike - spread) / gearing;
++                        final double stdDev = Math.sqrt(
++                                vol.currentLink().blackVariance(exerciseDate, effStrike));
++                        final CumulativeNormalDistribution phi =
++                                new CumulativeNormalDistribution();
++                        final double d1 = Math.log(effFwd / effStrike) / stdDev + 0.5 * stdDev;
++                        final double d2 = d1 - stdDev;
++                        double nD1 = phi.op(d1);
++                        double nD2 = phi.op(d2);
++                        double nd1Price = (gearing * effFwd * nD1 + spread * nD2)
++                                * vars.nominal * accrualPeriod * discount;
++                        double optionPrice = digitalCappedCoupon.callOptionRate()
++                                * vars.nominal * accrualPeriod * discount;
++                        double error = Math.abs(nd1Price - optionPrice);
++                        if (error > vars.optionTolerance) {
++                            fail("\nDigital Call Option:"
++                                    + "\nVolatility = " + capletVol
++                                    + "\nStrike = " + strike
++                                    + "\nExercise = " + (k + 1) + " years"
++                                    + "\nOption price by replication = " + optionPrice
++                                    + "\nOption price by Cox-Rubinstein formula = " + nd1Price
++                                    + "\nError " + error);
++                        }
++
++                        // Check digital option price vs N(d1) price using Vanilla Option class
++                        if (spread == 0.0) {
++                            final Exercise exercise = new EuropeanExercise(exerciseDate);
++                            final double discountAtFixing = vars.termStructure
++                                    .currentLink().discount(exerciseDate);
++                            final SimpleQuote fwd = new SimpleQuote(effFwd * discountAtFixing);
++                            final SimpleQuote qRate = new SimpleQuote(0.0);
++                            final YieldTermStructure qTS = Utilities.flatRate(
++                                    vars.today, qRate, new Actual360());
++                            final BlackVolTermStructure volTS = Utilities.flatVol(
++                                    vars.today, capletVol, new Actual360());
++                            final StrikedTypePayoff callPayoff = new AssetOrNothingPayoff(
++                                    Option.Type.Call, effStrike);
++                            final BlackScholesMertonProcess stochProcess =
++                                    new BlackScholesMertonProcess(
++                                            new Handle<Quote>(fwd),
++                                            new Handle<YieldTermStructure>(qTS),
++                                            new Handle<YieldTermStructure>(
++                                                    vars.termStructure.currentLink()),
++                                            new Handle<BlackVolTermStructure>(volTS));
++                            final PricingEngine engine =
++                                    new AnalyticEuropeanEngine(stochProcess);
++                            final VanillaOption callOpt = new VanillaOption(callPayoff, exercise);
++                            callOpt.setPricingEngine(engine);
++                            final double callVO = vars.nominal * gearing
++                                    * accrualPeriod * callOpt.NPV()
++                                    * discount / discountAtFixing
++                                    * forward / effFwd;
++                            error = Math.abs(nd1Price - callVO);
++                            if (error > vars.blackTolerance) {
++                                fail("\nDigital Call Option:"
++                                        + "\nVolatility = " + capletVol
++                                        + "\nStrike = " + strike
++                                        + "\nExercise = " + (k + 1) + " years"
++                                        + "\nOption price by Black asset-ot-nothing payoff = " + callVO
++                                        + "\nOption price by Cox-Rubinstein = " + nd1Price
++                                        + "\nError " + error);
++                            }
++                        }
++
++                        // Floating Rate Coupon + Put Digital option
++                        final DigitalCoupon digitalFlooredCoupon = new DigitalCoupon(
++                                underlying,
++                                nullstrike, Position.Long, false, nullstrike,
++                                strike, Position.Long, false, nullstrike,
++                                replication, false);
++                        digitalFlooredCoupon.setPricer(pricer);
++
++                        // Check digital option price vs N(d1) price
++                        nD1 = phi.op(-d1);
++                        nD2 = phi.op(-d2);
++                        nd1Price = (gearing * effFwd * nD1 + spread * nD2)
++                                * vars.nominal * accrualPeriod * discount;
++                        optionPrice = digitalFlooredCoupon.putOptionRate()
++                                * vars.nominal * accrualPeriod * discount;
++                        error = Math.abs(nd1Price - optionPrice);
++                        if (error > vars.optionTolerance) {
++                            fail("\nDigital Put Option:"
++                                    + "\nVolatility = " + capletVol
++                                    + "\nStrike = " + strike
++                                    + "\nExercise = " + (k + 1) + " years"
++                                    + "\nOption price by replication = " + optionPrice
++                                    + "\nOption price by Cox-Rubinstein = " + nd1Price
++                                    + "\nError " + error);
++                        }
++
++                        // Check digital option price vs N(d1) price using Vanilla Option class
++                        if (spread == 0.0) {
++                            final Exercise exercise = new EuropeanExercise(exerciseDate);
++                            final double discountAtFixing = vars.termStructure
++                                    .currentLink().discount(exerciseDate);
++                            final SimpleQuote fwd = new SimpleQuote(effFwd * discountAtFixing);
++                            final SimpleQuote qRate = new SimpleQuote(0.0);
++                            final YieldTermStructure qTS = Utilities.flatRate(
++                                    vars.today, qRate, new Actual360());
++                            final BlackVolTermStructure volTS = Utilities.flatVol(
++                                    vars.today, capletVol, new Actual360());
++                            final BlackScholesMertonProcess stochProcess =
++                                    new BlackScholesMertonProcess(
++                                            new Handle<Quote>(fwd),
++                                            new Handle<YieldTermStructure>(qTS),
++                                            new Handle<YieldTermStructure>(
++                                                    vars.termStructure.currentLink()),
++                                            new Handle<BlackVolTermStructure>(volTS));
++                            final StrikedTypePayoff putPayoff = new AssetOrNothingPayoff(
++                                    Option.Type.Put, effStrike);
++                            final PricingEngine engine =
++                                    new AnalyticEuropeanEngine(stochProcess);
++                            final VanillaOption putOpt = new VanillaOption(putPayoff, exercise);
++                            putOpt.setPricingEngine(engine);
++                            final double putVO = vars.nominal * gearing
++                                    * accrualPeriod * putOpt.NPV()
++                                    * discount / discountAtFixing
++                                    * forward / effFwd;
++                            error = Math.abs(nd1Price - putVO);
++                            if (error > vars.blackTolerance) {
++                                fail("\nDigital Put Option:"
++                                        + "\nVolatility = " + capletVol
++                                        + "\nStrike = " + strike
++                                        + "\nExercise = " + (k + 1) + " years"
++                                        + "\nOption price by Black asset-ot-nothing payoff = " + putVO
++                                        + "\nOption price by Cox-Rubinstein = " + nd1Price
++                                        + "\nError " + error);
++                            }
++                        }
++                    }
++                }
++            }
++        }
+     }
+ 
+-    @Ignore("Phase 5e.5 WI-5e.5-DC-1: deferred — needs analytic-european digital engine cross-validation.")
+     @Test
+     public void testAssetOrNothingDeepInTheMoney() {
++        QL.info("Testing European deep in-the-money asset-or-nothing digital coupon...");
++
++        final CommonVars vars = new CommonVars();
++
++        final double gearing = 1.0;
++        final double spread = 0.0;
++
++        final double capletVolatility = 0.0001;
++        final RelinkableHandle<OptionletVolatilityStructure> volatility =
++                new RelinkableHandle<OptionletVolatilityStructure>();
++        volatility.linkTo(new ConstantOptionletVolatility(vars.today,
++                vars.calendar, BusinessDayConvention.Following,
++                capletVolatility, new Actual360()));
++
++        for (int k = 0; k < 10; k++) {   // Loop on start and end dates
++            final Date startDate = vars.calendar.advance(vars.settlement,
++                    new Period(k + 1, TimeUnit.Years));
++            final Date endDate = vars.calendar.advance(vars.settlement,
++                    new Period(k + 2, TimeUnit.Years));
++            final double nullstrike = Constants.NULL_REAL;
++            final Date paymentDate = endDate;
++
++            final FloatingRateCoupon underlying = new IborCoupon(
++                    paymentDate, vars.nominal,
++                    startDate, endDate,
++                    vars.fixingDays, vars.index,
++                    gearing, spread);
++
++            // Floating Rate Coupon - Deep-in-the-money Call Digital option
++            double strike = 0.001;
++            final DigitalCoupon digitalCappedCoupon = new DigitalCoupon(
++                    underlying,
++                    strike, Position.Short, false, nullstrike,
++                    nullstrike, Position.Short, false, nullstrike,
++                    null, false);
++            final BlackIborCouponPricer pricer = new BlackIborCouponPricer(volatility);
++            digitalCappedCoupon.setPricer(pricer);
++
++            // Check price vs its target price
++            final double accrualPeriod = underlying.accrualPeriod();
++            final double discount = vars.termStructure.currentLink().discount(endDate);
++
++            double targetOptionPrice = underlying.price(vars.termStructure);
++            double targetPrice = 0.0;
++            double digitalPrice = digitalCappedCoupon.price(vars.termStructure);
++            double error = Math.abs(targetPrice - digitalPrice);
++            double tolerance = 1.0e-08;
++            if (error > tolerance) {
++                fail("\nFloating Coupon - Digital Call Option:"
++                        + "\nVolatility = " + capletVolatility
++                        + "\nStrike = " + strike
++                        + "\nExercise = " + (k + 1) + " years"
++                        + "\nCoupon Price = " + digitalPrice
++                        + "\nTarget price = " + targetPrice
++                        + "\nError = " + error);
++            }
++
++            // Check digital option price
++            double replicationOptionPrice = digitalCappedCoupon.callOptionRate()
++                    * vars.nominal * accrualPeriod * discount;
++            error = Math.abs(targetOptionPrice - replicationOptionPrice);
++            double optionTolerance = 1.0e-08;
++            if (error > optionTolerance) {
++                fail("\nDigital Call Option:"
++                        + "\nVolatility = " + capletVolatility
++                        + "\nStrike = " + strike
++                        + "\nExercise = " + (k + 1) + " years"
++                        + "\nPrice by replication = " + replicationOptionPrice
++                        + "\nTarget price = " + targetOptionPrice
++                        + "\nError = " + error);
++            }
++
++            // Floating Rate Coupon + Deep-in-the-money Put Digital option
++            strike = 0.99;
++            final DigitalCoupon digitalFlooredCoupon = new DigitalCoupon(
++                    underlying,
++                    nullstrike, Position.Long, false, nullstrike,
++                    strike, Position.Long, false, nullstrike,
++                    null, false);
++            digitalFlooredCoupon.setPricer(pricer);
++
++            // Check price vs its target price
++            targetOptionPrice = underlying.price(vars.termStructure);
++            targetPrice = underlying.price(vars.termStructure) + targetOptionPrice;
++            digitalPrice = digitalFlooredCoupon.price(vars.termStructure);
++            error = Math.abs(targetPrice - digitalPrice);
++            tolerance = 2.5e-06;
++            if (error > tolerance) {
++                fail("\nFloating Coupon + Digital Put Option:"
++                        + "\nVolatility = " + capletVolatility
++                        + "\nStrike = " + strike
++                        + "\nExercise = " + (k + 1) + " years"
++                        + "\nDigital coupon price = " + digitalPrice
++                        + "\nTarget price = " + targetPrice
++                        + "\nError " + error);
++            }
++
++            // Check digital option
++            replicationOptionPrice = digitalFlooredCoupon.putOptionRate()
++                    * vars.nominal * accrualPeriod * discount;
++            error = Math.abs(targetOptionPrice - replicationOptionPrice);
++            optionTolerance = 2.5e-06;
++            if (error > optionTolerance) {
++                fail("\nDigital Put Option:"
++                        + "\nVolatility = " + capletVolatility
++                        + "\nStrike = " + strike
++                        + "\nExercise = " + (k + 1) + " years"
++                        + "\nPrice by replication = " + replicationOptionPrice
++                        + "\nTarget price = " + targetOptionPrice
++                        + "\nError " + error);
++            }
++        }
+     }
+ 
+-    @Ignore("Phase 5e.5 WI-5e.5-DC-1: deferred — needs analytic-european digital engine cross-validation.")
+     @Test
+     public void testAssetOrNothingDeepOutTheMoney() {
++        QL.info("Testing European deep out-the-money asset-or-nothing digital coupon...");
++
++        final CommonVars vars = new CommonVars();
++
++        final double gearing = 1.0;
++        final double spread = 0.0;
++
++        final double capletVolatility = 0.0001;
++        final RelinkableHandle<OptionletVolatilityStructure> volatility =
++                new RelinkableHandle<OptionletVolatilityStructure>();
++        volatility.linkTo(new ConstantOptionletVolatility(vars.today,
++                vars.calendar, BusinessDayConvention.Following,
++                capletVolatility, new Actual360()));
++
++        for (int k = 0; k < 10; k++) { // loop on start and end dates
++            final Date startDate = vars.calendar.advance(vars.settlement,
++                    new Period(k + 1, TimeUnit.Years));
++            final Date endDate = vars.calendar.advance(vars.settlement,
++                    new Period(k + 2, TimeUnit.Years));
++            final double nullstrike = Constants.NULL_REAL;
++            final Date paymentDate = endDate;
++
++            final FloatingRateCoupon underlying = new IborCoupon(
++                    paymentDate, vars.nominal,
++                    startDate, endDate,
++                    vars.fixingDays, vars.index,
++                    gearing, spread);
++
++            // Floating Rate Coupon - Deep-out-of-the-money Call Digital option
++            double strike = 0.99;
++            final DigitalCoupon digitalCappedCoupon = new DigitalCoupon(
++                    underlying,
++                    strike, Position.Short, false, nullstrike,
++                    nullstrike, Position.Long, false, nullstrike,
++                    null, false);
++            final BlackIborCouponPricer pricer = new BlackIborCouponPricer(volatility);
++            digitalCappedCoupon.setPricer(pricer);
++
++            // Check price vs its target
++            final double accrualPeriod = underlying.accrualPeriod();
++            final double discount = vars.termStructure.currentLink().discount(endDate);
++
++            double targetPrice = underlying.price(vars.termStructure);
++            double digitalPrice = digitalCappedCoupon.price(vars.termStructure);
++            double error = Math.abs(targetPrice - digitalPrice);
++            double tolerance = 1.0e-10;
++            if (error > tolerance) {
++                fail("\nFloating Coupon - Digital Call Option :"
++                        + "\nVolatility = " + capletVolatility
++                        + "\nStrike = " + strike
++                        + "\nExercise = " + (k + 1) + " years"
++                        + "\nCoupon price = " + digitalPrice
++                        + "\nTarget price = " + targetPrice
++                        + "\nError = " + error);
++            }
++
++            // Check digital option price
++            double targetOptionPrice = 0.0;
++            double replicationOptionPrice = digitalCappedCoupon.callOptionRate()
++                    * vars.nominal * accrualPeriod * discount;
++            error = Math.abs(targetOptionPrice - replicationOptionPrice);
++            double optionTolerance = 1.0e-08;
++            if (error > optionTolerance) {
++                fail("\nDigital Call Option:"
++                        + "\nVolatility = " + capletVolatility
++                        + "\nStrike = " + strike
++                        + "\nExercise = " + (k + 1) + " years"
++                        + "\nPrice by replication = " + replicationOptionPrice
++                        + "\nTarget price = " + targetOptionPrice
++                        + "\nError = " + error);
++            }
++
++            // Floating Rate Coupon - Deep-out-of-the-money Put Digital option
++            strike = 0.01;
++            final DigitalCoupon digitalFlooredCoupon = new DigitalCoupon(
++                    underlying,
++                    nullstrike, Position.Long, false, nullstrike,
++                    strike, Position.Long, false, nullstrike,
++                    null, false);
++            digitalFlooredCoupon.setPricer(pricer);
++
++            // Check price vs its target
++            targetPrice = underlying.price(vars.termStructure);
++            digitalPrice = digitalFlooredCoupon.price(vars.termStructure);
++            tolerance = 1.0e-08;
++            error = Math.abs(targetPrice - digitalPrice);
++            if (error > tolerance) {
++                fail("\nFloating Coupon + Digital Put Coupon:"
++                        + "\nVolatility = " + capletVolatility
++                        + "\nStrike = " + strike
++                        + "\nExercise = " + (k + 1) + " years"
++                        + "\nCoupon price = " + digitalPrice
++                        + "\nTarget price = " + targetPrice
++                        + "\nError = " + error);
++            }
++
++            // Check digital option
++            targetOptionPrice = 0.0;
++            replicationOptionPrice = digitalFlooredCoupon.putOptionRate()
++                    * vars.nominal * accrualPeriod * discount;
++            error = Math.abs(targetOptionPrice - replicationOptionPrice);
++            if (error > optionTolerance) {
++                fail("\nDigital Put Coupon:"
++                        + "\nVolatility = " + capletVolatility
++                        + "\nStrike = " + strike
++                        + "\nExercise = " + (k + 1) + " years"
++                        + "\nPrice by replication = " + replicationOptionPrice
++                        + "\nTarget price = " + targetOptionPrice
++                        + "\nError = " + error);
++            }
++        }
+     }
+ 
+-    @Ignore("Phase 5e.5 WI-5e.5-DC-1: deferred — needs analytic-european digital engine cross-validation.")
+     @Test
+     public void testCashOrNothing() {
++        QL.info("Testing European cash-or-nothing digital coupon...");
++
++        /*  Call Payoff = R Heaviside(aL+b-X)
++            Value Call = R N(d2')
++            Put Payoff =  R Heaviside(X-aL-b)
++            Value Put = R N(-d2')
++            where:
++            d2' = ln(F/X')/stdDev - 0.5*stdDev;
++        */
++
++        final CommonVars vars = new CommonVars();
++
++        final double[] vols = { 0.05, 0.15, 0.30 };
++        final double[] strikes = { 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07 };
++
++        final double gearing = 3.0;
++        final double spread = -0.0002;
++
++        final double gap = 1.0e-08; /* very low, in order to compare digital option value
++                                       with black formula result */
++        final DigitalReplication replication =
++                new DigitalReplication(Replication.Type.Central, gap);
++
++        for (final double capletVol : vols) {
++            final RelinkableHandle<OptionletVolatilityStructure> vol =
++                    new RelinkableHandle<OptionletVolatilityStructure>();
++            vol.linkTo(new ConstantOptionletVolatility(vars.today,
++                    vars.calendar, BusinessDayConvention.Following,
++                    capletVol, new Actual360()));
++            for (final double strike : strikes) {
++                for (int k = 0; k < 10; k++) {
++                    final Date startDate = vars.calendar.advance(vars.settlement,
++                            new Period(k + 1, TimeUnit.Years));
++                    final Date endDate = vars.calendar.advance(vars.settlement,
++                            new Period(k + 2, TimeUnit.Years));
++                    final double nullstrike = Constants.NULL_REAL;
++                    final double cashRate = 0.01;
++                    final Date paymentDate = endDate;
++
++                    final FloatingRateCoupon underlying = new IborCoupon(
++                            paymentDate, vars.nominal,
++                            startDate, endDate,
++                            vars.fixingDays, vars.index,
++                            gearing, spread);
++                    // Floating Rate Coupon - Call Digital option
++                    final DigitalCoupon digitalCappedCoupon = new DigitalCoupon(
++                            underlying,
++                            strike, Position.Short, false, cashRate,
++                            nullstrike, Position.Short, false, nullstrike,
++                            replication, false);
++                    final BlackIborCouponPricer pricer = new BlackIborCouponPricer(vol);
++                    digitalCappedCoupon.setPricer(pricer);
++
++                    // Check digital option price vs N(d2) price
++                    final Date exerciseDate = underlying.fixingDate();
++                    final double forward = underlying.rate();
++                    final double effFwd = (forward - spread) / gearing;
++                    final double effStrike = (strike - spread) / gearing;
++                    final double accrualPeriod = underlying.accrualPeriod();
++                    final double discount = vars.termStructure.currentLink().discount(endDate);
++                    final double stdDev = Math.sqrt(
++                            vol.currentLink().blackVariance(exerciseDate, effStrike));
++                    double itm = BlackFormula.blackFormulaCashItmProbability(
++                            Option.Type.Call, effStrike, effFwd, stdDev);
++                    double nd2Price = itm * vars.nominal * accrualPeriod * discount * cashRate;
++                    double optionPrice = digitalCappedCoupon.callOptionRate()
++                            * vars.nominal * accrualPeriod * discount;
++                    double error = Math.abs(nd2Price - optionPrice);
++                    if (error > vars.optionTolerance) {
++                        fail("\nDigital Call Option:"
++                                + "\nVolatility = " + capletVol
++                                + "\nStrike = " + strike
++                                + "\nExercise = " + (k + 1) + " years"
++                                + "\nPrice by replication = " + optionPrice
++                                + "\nPrice by Reiner-Rubinstein = " + nd2Price
++                                + "\nError = " + error);
++                    }
++
++                    // Check digital option price vs N(d2) price using Vanilla Option class
++                    final Exercise exercise = new EuropeanExercise(exerciseDate);
++                    final double discountAtFixing = vars.termStructure
++                            .currentLink().discount(exerciseDate);
++                    final SimpleQuote fwd = new SimpleQuote(effFwd * discountAtFixing);
++                    final SimpleQuote qRate = new SimpleQuote(0.0);
++                    final YieldTermStructure qTS = Utilities.flatRate(
++                            vars.today, qRate, new Actual360());
++                    final BlackVolTermStructure volTS = Utilities.flatVol(
++                            vars.today, capletVol, new Actual360());
++                    final StrikedTypePayoff callPayoff = new CashOrNothingPayoff(
++                            Option.Type.Call, effStrike, cashRate);
++                    final BlackScholesMertonProcess stochProcess =
++                            new BlackScholesMertonProcess(
++                                    new Handle<Quote>(fwd),
++                                    new Handle<YieldTermStructure>(qTS),
++                                    new Handle<YieldTermStructure>(
++                                            vars.termStructure.currentLink()),
++                                    new Handle<BlackVolTermStructure>(volTS));
++                    final PricingEngine engine = new AnalyticEuropeanEngine(stochProcess);
++                    final VanillaOption callOpt = new VanillaOption(callPayoff, exercise);
++                    callOpt.setPricingEngine(engine);
++                    final double callVO = vars.nominal * accrualPeriod * callOpt.NPV()
++                            * discount / discountAtFixing;
++                    error = Math.abs(nd2Price - callVO);
++                    if (error > vars.blackTolerance) {
++                        fail("\nDigital Call Option:"
++                                + "\nVolatility = " + capletVol
++                                + "\nStrike = " + strike
++                                + "\nExercise = " + (k + 1) + " years"
++                                + "\nOption price by Black asset-ot-nothing payoff = " + callVO
++                                + "\nOption price by Reiner-Rubinstein = " + nd2Price
++                                + "\nError " + error);
++                    }
++
++                    // Floating Rate Coupon + Put Digital option
++                    final DigitalCoupon digitalFlooredCoupon = new DigitalCoupon(
++                            underlying,
++                            nullstrike, Position.Long, false, nullstrike,
++                            strike, Position.Long, false, cashRate,
++                            replication, false);
++                    digitalFlooredCoupon.setPricer(pricer);
++
++                    // Check digital option price vs N(d2) price
++                    itm = BlackFormula.blackFormulaCashItmProbability(
++                            Option.Type.Put, effStrike, effFwd, stdDev);
++                    nd2Price = itm * vars.nominal * accrualPeriod * discount * cashRate;
++                    optionPrice = digitalFlooredCoupon.putOptionRate()
++                            * vars.nominal * accrualPeriod * discount;
++                    error = Math.abs(nd2Price - optionPrice);
++                    if (error > vars.optionTolerance) {
++                        fail("\nPut Digital Option:"
++                                + "\nVolatility = " + capletVol
++                                + "\nStrike = " + strike
++                                + "\nExercise = " + (k + 1) + " years"
++                                + "\nPrice by replication = " + optionPrice
++                                + "\nPrice by Reiner-Rubinstein = " + nd2Price
++                                + "\nError = " + error);
++                    }
++
++                    // Check digital option price vs N(d2) price using Vanilla Option class
++                    final StrikedTypePayoff putPayoff = new CashOrNothingPayoff(
++                            Option.Type.Put, effStrike, cashRate);
++                    final VanillaOption putOpt = new VanillaOption(putPayoff, exercise);
++                    putOpt.setPricingEngine(engine);
++                    final double putVO = vars.nominal * accrualPeriod * putOpt.NPV()
++                            * discount / discountAtFixing;
++                    error = Math.abs(nd2Price - putVO);
++                    if (error > vars.blackTolerance) {
++                        fail("\nDigital Put Option:"
++                                + "\nVolatility = " + capletVol
++                                + "\nStrike = " + strike
++                                + "\nExercise = " + (k + 1) + " years"
++                                + "\nOption price by Black asset-ot-nothing payoff = " + putVO
++                                + "\nOption price by Reiner-Rubinstein = " + nd2Price
++                                + "\nError " + error);
++                    }
++                }
++            }
++        }
+     }
+ 
+-    @Ignore("Phase 5e.5 WI-5e.5-DC-1: deferred — needs analytic-european digital engine cross-validation.")
+     @Test
+     public void testCashOrNothingDeepInTheMoney() {
++        QL.info("Testing European deep in-the-money cash-or-nothing digital coupon...");
++
++        final CommonVars vars = new CommonVars();
++
++        final double gearing = 1.0;
++        final double spread = 0.0;
++
++        final double capletVolatility = 0.0001;
++        final RelinkableHandle<OptionletVolatilityStructure> volatility =
++                new RelinkableHandle<OptionletVolatilityStructure>();
++        volatility.linkTo(new ConstantOptionletVolatility(vars.today,
++                vars.calendar, BusinessDayConvention.Following,
++                capletVolatility, new Actual360()));
++
++        for (int k = 0; k < 10; k++) {   // Loop on start and end dates
++            final Date startDate = vars.calendar.advance(vars.settlement,
++                    new Period(k + 1, TimeUnit.Years));
++            final Date endDate = vars.calendar.advance(vars.settlement,
++                    new Period(k + 2, TimeUnit.Years));
++            final double nullstrike = Constants.NULL_REAL;
++            final double cashRate = 0.01;
++            final Date paymentDate = endDate;
++
++            final FloatingRateCoupon underlying = new IborCoupon(
++                    paymentDate, vars.nominal,
++                    startDate, endDate,
++                    vars.fixingDays, vars.index,
++                    gearing, spread);
++            // Floating Rate Coupon - Deep-in-the-money Call Digital option
++            double strike = 0.001;
++            final DigitalCoupon digitalCappedCoupon = new DigitalCoupon(
++                    underlying,
++                    strike, Position.Short, false, cashRate,
++                    nullstrike, Position.Short, false, nullstrike,
++                    null, false);
++            final BlackIborCouponPricer pricer = new BlackIborCouponPricer(volatility);
++            digitalCappedCoupon.setPricer(pricer);
++
++            // Check price vs its target
++            final double accrualPeriod = underlying.accrualPeriod();
++            final double discount = vars.termStructure.currentLink().discount(endDate);
++
++            final double targetOptionPrice = cashRate * vars.nominal * accrualPeriod * discount;
++            double targetPrice = underlying.price(vars.termStructure) - targetOptionPrice;
++            double digitalPrice = digitalCappedCoupon.price(vars.termStructure);
++
++            double error = Math.abs(targetPrice - digitalPrice);
++            final double tolerance = 1.0e-07;
++            if (error > tolerance) {
++                fail("\nFloating Coupon - Digital Call Coupon:"
++                        + "\nVolatility = " + capletVolatility
++                        + "\nStrike = " + strike
++                        + "\nExercise = " + (k + 1) + " years"
++                        + "\nCoupon price = " + digitalPrice
++                        + "\nTarget price = " + targetPrice
++                        + "\nError " + error);
++            }
++
++            // Check digital option price
++            double replicationOptionPrice = digitalCappedCoupon.callOptionRate()
++                    * vars.nominal * accrualPeriod * discount;
++            error = Math.abs(targetOptionPrice - replicationOptionPrice);
++            final double optionTolerance = 1.0e-07;
++            if (error > optionTolerance) {
++                fail("\nDigital Call Option:"
++                        + "\nVolatility = " + capletVolatility
++                        + "\nStrike = " + strike
++                        + "\nExercise = " + (k + 1) + " years"
++                        + "\nPrice by replication = " + replicationOptionPrice
++                        + "\nTarget price = " + targetOptionPrice
++                        + "\nError = " + error);
++            }
++
++            // Floating Rate Coupon + Deep-in-the-money Put Digital option
++            strike = 0.99;
++            final DigitalCoupon digitalFlooredCoupon = new DigitalCoupon(
++                    underlying,
++                    nullstrike, Position.Long, false, nullstrike,
++                    strike, Position.Long, false, cashRate,
++                    null, false);
++            digitalFlooredCoupon.setPricer(pricer);
++
++            // Check price vs its target
++            targetPrice = underlying.price(vars.termStructure) + targetOptionPrice;
++            digitalPrice = digitalFlooredCoupon.price(vars.termStructure);
++            error = Math.abs(targetPrice - digitalPrice);
++            if (error > tolerance) {
++                fail("\nFloating Coupon + Digital Put Option:"
++                        + "\nVolatility = " + capletVolatility
++                        + "\nStrike = " + strike
++                        + "\nExercise = " + (k + 1) + " years"
++                        + "\nCoupon price = " + digitalPrice
++                        + "\nTarget price  = " + targetPrice
++                        + "\nError = " + error);
++            }
++
++            // Check digital option
++            replicationOptionPrice = digitalFlooredCoupon.putOptionRate()
++                    * vars.nominal * accrualPeriod * discount;
++            error = Math.abs(targetOptionPrice - replicationOptionPrice);
++            if (error > optionTolerance) {
++                fail("\nDigital Put Coupon:"
++                        + "\nVolatility = " + capletVolatility
++                        + "\nStrike = " + strike
++                        + "\nExercise = " + (k + 1) + " years"
++                        + "\nPrice by replication = " + replicationOptionPrice
++                        + "\nTarget price = " + targetOptionPrice
++                        + "\nError = " + error);
++            }
++        }
+     }
+ 
+-    @Ignore("Phase 5e.5 WI-5e.5-DC-1: deferred — needs analytic-european digital engine cross-validation.")
+     @Test
+     public void testCashOrNothingDeepOutTheMoney() {
++        QL.info("Testing European deep out-the-money cash-or-nothing digital coupon...");
++
++        final CommonVars vars = new CommonVars();
++
++        final double gearing = 1.0;
++        final double spread = 0.0;
++
++        final double capletVolatility = 0.0001;
++        final RelinkableHandle<OptionletVolatilityStructure> volatility =
++                new RelinkableHandle<OptionletVolatilityStructure>();
++        volatility.linkTo(new ConstantOptionletVolatility(vars.today,
++                vars.calendar, BusinessDayConvention.Following,
++                capletVolatility, new Actual360()));
++
++        for (int k = 0; k < 10; k++) { // loop on start and end dates
++            final Date startDate = vars.calendar.advance(vars.settlement,
++                    new Period(k + 1, TimeUnit.Years));
++            final Date endDate = vars.calendar.advance(vars.settlement,
++                    new Period(k + 2, TimeUnit.Years));
++            final double nullstrike = Constants.NULL_REAL;
++            final double cashRate = 0.01;
++            final Date paymentDate = endDate;
++
++            final FloatingRateCoupon underlying = new IborCoupon(
++                    paymentDate, vars.nominal,
++                    startDate, endDate,
++                    vars.fixingDays, vars.index,
++                    gearing, spread);
++            // Deep out-of-the-money Capped Digital Coupon
++            double strike = 0.99;
++            final DigitalCoupon digitalCappedCoupon = new DigitalCoupon(
++                    underlying,
++                    strike, Position.Short, false, cashRate,
++                    nullstrike, Position.Short, false, nullstrike,
++                    null, false);
++            final BlackIborCouponPricer pricer = new BlackIborCouponPricer(volatility);
++            digitalCappedCoupon.setPricer(pricer);
++
++            // Check price vs its target
++            final double accrualPeriod = underlying.accrualPeriod();
++            final double discount = vars.termStructure.currentLink().discount(endDate);
++
++            double targetPrice = underlying.price(vars.termStructure);
++            double digitalPrice = digitalCappedCoupon.price(vars.termStructure);
++            double error = Math.abs(targetPrice - digitalPrice);
++            double tolerance = 1.0e-10;
++            if (error > tolerance) {
++                fail("\nFloating Coupon + Digital Call Option:"
++                        + "\nVolatility = " + capletVolatility
++                        + "\nStrike = " + strike
++                        + "\nExercise = " + (k + 1) + " years"
++                        + "\nCoupon price = " + digitalPrice
++                        + "\nTarget price  = " + targetPrice
++                        + "\nError = " + error);
++            }
++
++            // Check digital option price
++            double targetOptionPrice = 0.0;
++            double replicationOptionPrice = digitalCappedCoupon.callOptionRate()
++                    * vars.nominal * accrualPeriod * discount;
++            error = Math.abs(targetOptionPrice - replicationOptionPrice);
++            final double optionTolerance = 1.0e-10;
++            if (error > optionTolerance) {
++                fail("\nDigital Call Option:"
++                        + "\nVolatility = " + capletVolatility
++                        + "\nStrike = " + strike
++                        + "\nExercise = " + (k + 1) + " years"
++                        + "\nPrice by replication = " + replicationOptionPrice
++                        + "\nTarget price = " + targetOptionPrice
++                        + "\nError = " + error);
++            }
++
++            // Deep out-of-the-money Floored Digital Coupon
++            strike = 0.01;
++            final DigitalCoupon digitalFlooredCoupon = new DigitalCoupon(
++                    underlying,
++                    nullstrike, Position.Long, false, nullstrike,
++                    strike, Position.Long, false, cashRate,
++                    null, false);
++            digitalFlooredCoupon.setPricer(pricer);
++
++            // Check price vs its target
++            targetPrice = underlying.price(vars.termStructure);
++            digitalPrice = digitalFlooredCoupon.price(vars.termStructure);
++            tolerance = 1.0e-09;
++            error = Math.abs(targetPrice - digitalPrice);
++            if (error > tolerance) {
++                fail("\nDigital Floored Coupon:"
++                        + "\nVolatility = " + capletVolatility
++                        + "\nStrike = " + strike
++                        + "\nExercise = " + (k + 1) + " years"
++                        + "\nCoupon price = " + digitalPrice
++                        + "\nTarget price  = " + targetPrice
++                        + "\nError = " + error);
++            }
++
++            // Check digital option
++            targetOptionPrice = 0.0;
++            replicationOptionPrice = digitalFlooredCoupon.putOptionRate()
++                    * vars.nominal * accrualPeriod * discount;
++            error = Math.abs(targetOptionPrice - replicationOptionPrice);
++            if (error > optionTolerance) {
++                fail("\nDigital Put Option:"
++                        + "\nVolatility = " + capletVolatility
++                        + "\nStrike = " + strike
++                        + "\nExercise = " + (k + 1) + " years"
++                        + "\nPrice by replication " + replicationOptionPrice
++                        + "\nTarget price " + targetOptionPrice
++                        + "\nError " + error);
++            }
++        }
+     }
+ 
+     @Test
+diff --git a/jquantlib/src/test/java/org/jquantlib/testsuite/instruments/ForwardOptionTest.java b/jquantlib/src/test/java/org/jquantlib/testsuite/instruments/ForwardOptionTest.java
+index a1fde20a..1f536310 100644
+--- a/jquantlib/src/test/java/org/jquantlib/testsuite/instruments/ForwardOptionTest.java
++++ b/jquantlib/src/test/java/org/jquantlib/testsuite/instruments/ForwardOptionTest.java
+@@ -19,8 +19,12 @@ import org.jquantlib.instruments.ForwardVanillaOption;
+ import org.jquantlib.instruments.Option;
+ import org.jquantlib.instruments.PlainVanillaPayoff;
+ import org.jquantlib.instruments.StrikedTypePayoff;
++import org.jquantlib.instruments.VanillaOption;
++import org.jquantlib.methods.lattices.CoxRossRubinstein;
+ import org.jquantlib.pricingengines.forward.ForwardPerformanceVanillaEngine;
+ import org.jquantlib.pricingengines.forward.ForwardVanillaEngine;
++import org.jquantlib.pricingengines.vanilla.BinomialVanillaEngine;
++import org.jquantlib.processes.BlackScholesMertonProcess;
+ import org.jquantlib.processes.GeneralizedBlackScholesProcess;
+ import org.jquantlib.quotes.Handle;
+ import org.jquantlib.quotes.Quote;
+diff --git a/jquantlib/src/test/java/org/jquantlib/testsuite/termstructures/yieldcurves/BasisSwapRateHelpersTest.java b/jquantlib/src/test/java/org/jquantlib/testsuite/termstructures/yieldcurves/BasisSwapRateHelpersTest.java
+index fc83e00c..39468f56 100644
+--- a/jquantlib/src/test/java/org/jquantlib/testsuite/termstructures/yieldcurves/BasisSwapRateHelpersTest.java
++++ b/jquantlib/src/test/java/org/jquantlib/testsuite/termstructures/yieldcurves/BasisSwapRateHelpersTest.java
+@@ -6,34 +6,74 @@
+  */
+ package org.jquantlib.testsuite.termstructures.yieldcurves;
+ 
+-import static org.junit.Assert.fail;
++import static org.junit.Assert.assertTrue;
+ 
+-import org.junit.Ignore;
++import java.util.ArrayList;
++import java.util.List;
++
++import org.jquantlib.QL;
++import org.jquantlib.Settings;
++import org.jquantlib.cashflow.IborLeg;
++import org.jquantlib.cashflow.Leg;
++import org.jquantlib.daycounters.Actual365Fixed;
++import org.jquantlib.experimental.termstructures.IborIborBasisSwapRateHelper;
++import org.jquantlib.experimental.termstructures.OvernightIborBasisSwapRateHelper;
++import org.jquantlib.indexes.IborIndex;
++import org.jquantlib.indexes.ibor.Sofr;
++import org.jquantlib.indexes.ibor.USDLibor;
++import org.jquantlib.instruments.Swap;
++import org.jquantlib.math.interpolations.factories.Linear;
++import org.jquantlib.pricingengines.swap.DiscountingSwapEngine;
++import org.jquantlib.quotes.Handle;
++import org.jquantlib.quotes.Quote;
++import org.jquantlib.quotes.RelinkableHandle;
++import org.jquantlib.quotes.SimpleQuote;
++import org.jquantlib.termstructures.IterativeBootstrap;
++import org.jquantlib.termstructures.RateHelper;
++import org.jquantlib.termstructures.YieldTermStructure;
++import org.jquantlib.termstructures.yieldcurves.FlatForward;
++import org.jquantlib.termstructures.yieldcurves.PiecewiseYieldCurve;
++import org.jquantlib.termstructures.yieldcurves.ZeroYield;
++import org.jquantlib.time.BusinessDayConvention;
++import org.jquantlib.time.Calendar;
++import org.jquantlib.time.Date;
++import org.jquantlib.time.MakeSchedule;
++import org.jquantlib.time.Month;
++import org.jquantlib.time.Period;
++import org.jquantlib.time.Schedule;
++import org.jquantlib.time.TimeUnit;
++import org.jquantlib.time.calendars.UnitedStates;
++import org.junit.Before;
+ import org.junit.Test;
+ 
+ /**
+- * Phase 5f skeleton port of {@code test-suite/basisswapratehelpers.cpp}
++ * Phase 5e.5b-CFC-d-51 port of {@code test-suite/basisswapratehelpers.cpp}
+  * v1.42.1 (240 LOC, 4 test cases).
+  *
+- * <p>Java has the {@code experimental.termstructures} family
+- * ({@link org.jquantlib.experimental.termstructures.IborIborBasisSwapRateHelper},
+- * {@link org.jquantlib.experimental.termstructures.OvernightIborBasisSwapRateHelper})
+- * and existing test {@code IborIborBasisSwapRateHelperTest}; the
+- * v1.42.1 production {@code basisswapratehelpers.cpp} suite goes
+- * further by exercising both base-curve and projected-curve
+- * bootstrap permutations together with explicit / implicit discount
+- * curve selection.
++ * <p>Tests bootstrap of an IBOR forecast curve from IBOR-IBOR or
++ * overnight-IBOR basis-swap rate helpers, then checks that swaps priced
++ * with the bootstrapped curve and the helper quote are fair (NPV ~ 0).
+  *
+- * <p><strong>All cases deferred to Phase 5f.5</strong>:
++ * <h3>Java port deviations from C++ v1.42.1</h3>
+  * <ul>
+- *   <li>{@code testIborIborBaseCurveBootstrap} — bootstrap of the
+- *       base IBOR curve with basis-swap quotes.</li>
+- *   <li>{@code testIborIborOtherCurveBootstrap} — bootstrap of the
+- *       other-leg IBOR curve.</li>
+- *   <li>{@code testOvernightIborBootstrapWithoutDiscountCurve} —
+- *       overnight-vs-IBOR basis bootstrap, single-curve.</li>
+- *   <li>{@code testOvernightIborBootstrapWithDiscountCurve} — same,
+- *       multi-curve with explicit discount curve handle.</li>
++ * <li>{@link OvernightIborBasisSwapRateHelper} currently approximates the
++ *     overnight base leg with {@link IborLeg} (documented in the helper).
++ *     The two overnight-IBOR tests below mirror that approximation: the
++ *     base leg in the verification swap is also built with {@link IborLeg}
++ *     so the fair-NPV invariant remains exact under the helper's own
++ *     idealization. When the production helper migrates to
++ *     {@link org.jquantlib.cashflow.OvernightLeg}, this test should switch
++ *     to {@code OvernightLeg} accordingly.</li>
++ * <li>Today's fixing is pre-registered for all indices via
++ *     {@link org.jquantlib.indexes.IborIndex#addFixing(Date, double, boolean)}.
++ *     This works around an NPE in
++ *     {@link org.jquantlib.cashflow.IborCoupon#indexFixing()} when the
++ *     first coupon's fixing date equals {@code evaluationDate} and no past
++ *     fixing is present (the catch-Exception fallback was written
++ *     expecting a thrown exception but {@code TimeSeries.get()} returns
++ *     {@code null}, leading to an immediate NPE). The injected fixings
++ *     match the relevant forecast curves so they do not perturb the
++ *     bootstrap.</li>
+  * </ul>
+  *
+  * <p>Source: {@code test-suite/basisswapratehelpers.cpp} v1.42.1 @
+@@ -41,23 +81,266 @@ import org.junit.Test;
+  */
+ public class BasisSwapRateHelpersTest {
+ 
+-    @Ignore("Phase 5f.5 — IBOR-vs-IBOR base-curve bootstrap harness")
++    /** Pinned evaluation date so tests are reproducible across machines. */
++    private static final Date EVAL_DATE = new Date(15, Month.January, 2025);
++
++    @Before
++    public void setUp() {
++        new Settings().setEvaluationDate(EVAL_DATE);
++    }
++
++    private static final class BasisSwapQuote {
++        final int n;
++        final TimeUnit units;
++        final double basis;
++
++        BasisSwapQuote(final int n, final TimeUnit units, final double basis) {
++            this.n = n;
++            this.units = units;
++            this.basis = basis;
++        }
++    }
++
++    private static BasisSwapQuote[] quotes() {
++        return new BasisSwapQuote[] {
++            new BasisSwapQuote( 1, TimeUnit.Years, 0.0010),
++            new BasisSwapQuote( 2, TimeUnit.Years, 0.0012),
++            new BasisSwapQuote( 3, TimeUnit.Years, 0.0015),
++            new BasisSwapQuote( 5, TimeUnit.Years, 0.0015),
++            new BasisSwapQuote( 8, TimeUnit.Years, 0.0018),
++            new BasisSwapQuote(10, TimeUnit.Years, 0.0020),
++            new BasisSwapQuote(15, TimeUnit.Years, 0.0021),
++            new BasisSwapQuote(20, TimeUnit.Years, 0.0021),
++        };
++    }
++
++    /**
++     * Register a today fixing for the index — see class javadoc deviation
++     * note. The {@code force} flag overwrites any prior fixing so repeated
++     * test runs (and parallel use of the same index name from sibling
++     * tests) stay deterministic.
++     */
++    private static void seedTodayFixing(final IborIndex idx, final Date today, final double rate) {
++        idx.addFixing(today, rate, true);
++    }
++
++    // -------------------------------------------------------------------------
++    // IBOR-vs-IBOR
++    // -------------------------------------------------------------------------
++
++    private void doTestIborIborBootstrap(final boolean bootstrapBaseCurve) {
++        final BasisSwapQuote[] qs = quotes();
++
++        final int settlementDays = 2;
++        final Calendar calendar = new UnitedStates(UnitedStates.Market.GOVERNMENTBOND);
++        final BusinessDayConvention convention = BusinessDayConvention.Following;
++        final boolean endOfMonth = false;
++        final Actual365Fixed dc = new Actual365Fixed();
++
++        final Date today = new Settings().evaluationDate();
++
++        final Handle<YieldTermStructure> knownForecastCurve =
++                new Handle<YieldTermStructure>(new FlatForward(today, 0.01, dc));
++        final Handle<YieldTermStructure> discountCurve =
++                new Handle<YieldTermStructure>(new FlatForward(today, 0.005, dc));
++
++        USDLibor baseIndex;
++        USDLibor otherIndex;
++        if (bootstrapBaseCurve) {
++            baseIndex  = new USDLibor(new Period(3, TimeUnit.Months));
++            otherIndex = new USDLibor(new Period(6, TimeUnit.Months), knownForecastCurve);
++        } else {
++            baseIndex  = new USDLibor(new Period(3, TimeUnit.Months), knownForecastCurve);
++            otherIndex = new USDLibor(new Period(6, TimeUnit.Months));
++        }
++
++        // Seed today's fixings (matches the 0.01 known forecast).
++        seedTodayFixing(baseIndex, today, 0.01);
++        seedTodayFixing(otherIndex, today, 0.01);
++
++        final List<RateHelper> helpers = new ArrayList<RateHelper>();
++        for (final BasisSwapQuote q : qs) {
++            final Handle<Quote> h = new Handle<Quote>(new SimpleQuote(q.basis));
++            helpers.add(new IborIborBasisSwapRateHelper(
++                    h,
++                    new Period(q.n, q.units),
++                    settlementDays, calendar, convention, endOfMonth,
++                    baseIndex, otherIndex,
++                    discountCurve,
++                    bootstrapBaseCurve));
++        }
++
++        final RateHelper[] helperArr = helpers.toArray(new RateHelper[0]);
++
++        final PiecewiseYieldCurve<ZeroYield, Linear, IterativeBootstrap> bootstrappedCurve =
++                new PiecewiseYieldCurve<ZeroYield, Linear, IterativeBootstrap>(
++                        ZeroYield.class, Linear.class, IterativeBootstrap.class,
++                        settlementDays, calendar, helperArr, dc);
++
++        final RelinkableHandle<YieldTermStructure> bootstrappedHandle =
++                new RelinkableHandle<YieldTermStructure>();
++        bootstrappedHandle.linkTo(bootstrappedCurve);
++
++        final Date spot = calendar.advance(today, settlementDays, TimeUnit.Days);
++
++        if (bootstrapBaseCurve) {
++            baseIndex  = new USDLibor(new Period(3, TimeUnit.Months), bootstrappedHandle);
++            otherIndex = new USDLibor(new Period(6, TimeUnit.Months), knownForecastCurve);
++        } else {
++            baseIndex  = new USDLibor(new Period(3, TimeUnit.Months), knownForecastCurve);
++            otherIndex = new USDLibor(new Period(6, TimeUnit.Months), bootstrappedHandle);
++        }
++
++        for (final BasisSwapQuote q : qs) {
++            final Date maturity = calendar.advance(spot, q.n, q.units, convention, false);
++
++            final Schedule s1 = new MakeSchedule(spot, maturity, baseIndex.tenor(), calendar, convention)
++                    .endOfMonth(endOfMonth)
++                    .forwards()
++                    .schedule();
++            final Leg leg1 = new IborLeg(s1, baseIndex)
++                    .withSpreads(q.basis)
++                    .withNotionals(100.0)
++                    .Leg();
++
++            final Schedule s2 = new MakeSchedule(spot, maturity, otherIndex.tenor(), calendar, convention)
++                    .endOfMonth(endOfMonth)
++                    .forwards()
++                    .schedule();
++            final Leg leg2 = new IborLeg(s2, otherIndex)
++                    .withNotionals(100.0)
++                    .Leg();
++
++            final Swap swap = new Swap(leg1, leg2);
++            swap.setPricingEngine(new DiscountingSwapEngine(discountCurve));
++
++            final double NPV = swap.NPV();
++            final double tolerance = 1.0e-8;
++            assertTrue(
++                    "Failed to price fair " + q.n + "-year(s) swap: calculated NPV = " + NPV,
++                    Math.abs(NPV) <= tolerance);
++        }
++    }
++
+     @Test
+-    public void testIborIborBaseCurveBootstrap() { fail("not implemented"); }
++    public void testIborIborBaseCurveBootstrap() {
++        QL.info("::::: BasisSwapRateHelpersTest::testIborIborBaseCurveBootstrap :::::");
++        doTestIborIborBootstrap(true);
++    }
+ 
+-    @Ignore("Phase 5f.5 — IBOR-vs-IBOR other-curve bootstrap harness")
+     @Test
+-    public void testIborIborOtherCurveBootstrap() { fail("not implemented"); }
++    public void testIborIborOtherCurveBootstrap() {
++        QL.info("::::: BasisSwapRateHelpersTest::testIborIborOtherCurveBootstrap :::::");
++        doTestIborIborBootstrap(false);
++    }
++
++    // -------------------------------------------------------------------------
++    // Overnight-vs-IBOR
++    // -------------------------------------------------------------------------
++
++    private void doTestOvernightIborBootstrap(final boolean externalDiscountCurve) {
++        final BasisSwapQuote[] qs = quotes();
++
++        final int settlementDays = 2;
++        final Calendar calendar = new UnitedStates(UnitedStates.Market.GOVERNMENTBOND);
++        final BusinessDayConvention convention = BusinessDayConvention.Following;
++        final boolean endOfMonth = false;
++        final Actual365Fixed dc = new Actual365Fixed();
++
++        final Date today = new Settings().evaluationDate();
++
++        final Handle<YieldTermStructure> knownForecastCurve =
++                new Handle<YieldTermStructure>(new FlatForward(today, 0.01, dc));
++
++        final RelinkableHandle<YieldTermStructure> discountCurve =
++                new RelinkableHandle<YieldTermStructure>();
++        final Handle<YieldTermStructure> discountForHelper;
++        if (externalDiscountCurve) {
++            discountCurve.linkTo(new FlatForward(today, 0.005, dc));
++            discountForHelper = discountCurve;
++        } else {
++            // C++ passes an unlinked RelinkableHandle; in Java the helper
++            // accepts an empty Handle and falls back to the bootstrapped curve
++            // for discounting.
++            discountForHelper = new Handle<YieldTermStructure>();
++        }
++
++        final Sofr baseIndex = new Sofr(knownForecastCurve);
++        USDLibor otherIndex = new USDLibor(new Period(6, TimeUnit.Months));
++
++        // Seed today's fixings (matches the 0.01 known forecast).
++        seedTodayFixing(baseIndex, today, 0.01);
++        seedTodayFixing(otherIndex, today, 0.01);
++
++        final List<RateHelper> helpers = new ArrayList<RateHelper>();
++        for (final BasisSwapQuote q : qs) {
++            final Handle<Quote> h = new Handle<Quote>(new SimpleQuote(q.basis));
++            helpers.add(new OvernightIborBasisSwapRateHelper(
++                    h,
++                    new Period(q.n, q.units),
++                    settlementDays, calendar, convention, endOfMonth,
++                    baseIndex, otherIndex,
++                    discountForHelper));
++        }
++
++        final RateHelper[] helperArr = helpers.toArray(new RateHelper[0]);
++
++        final PiecewiseYieldCurve<ZeroYield, Linear, IterativeBootstrap> bootstrappedCurve =
++                new PiecewiseYieldCurve<ZeroYield, Linear, IterativeBootstrap>(
++                        ZeroYield.class, Linear.class, IterativeBootstrap.class,
++                        settlementDays, calendar, helperArr, dc);
++
++        final RelinkableHandle<YieldTermStructure> bootstrappedHandle =
++                new RelinkableHandle<YieldTermStructure>();
++        bootstrappedHandle.linkTo(bootstrappedCurve);
++
++        final Date spot = calendar.advance(today, settlementDays, TimeUnit.Days);
++
++        otherIndex = new USDLibor(new Period(6, TimeUnit.Months), bootstrappedHandle);
++
++        for (final BasisSwapQuote q : qs) {
++            final Date maturity = calendar.advance(spot, q.n, q.units, convention, false);
++
++            final Schedule s = new MakeSchedule(spot, maturity, otherIndex.tenor(), calendar, convention)
++                    .endOfMonth(endOfMonth)
++                    .forwards()
++                    .schedule();
++
++            // Base leg: built with IborLeg to match the production helper's
++            // documented approximation (see class javadoc). This keeps the
++            // fair-NPV invariant exact under the helper's own model.
++            final Leg leg1 = new IborLeg(s, baseIndex)
++                    .withSpreads(q.basis)
++                    .withNotionals(100.0)
++                    .Leg();
++            final Leg leg2 = new IborLeg(s, otherIndex)
++                    .withNotionals(100.0)
++                    .Leg();
++
++            final Swap swap = new Swap(leg1, leg2);
++            if (externalDiscountCurve) {
++                swap.setPricingEngine(new DiscountingSwapEngine(discountCurve));
++            } else {
++                swap.setPricingEngine(new DiscountingSwapEngine(bootstrappedHandle));
++            }
++
++            final double NPV = swap.NPV();
++            final double tolerance = 1.0e-8;
++            assertTrue(
++                    "Failed to price fair " + q.n + "-year(s) swap: calculated NPV = " + NPV,
++                    Math.abs(NPV) <= tolerance);
++        }
++    }
+ 
+-    @Ignore("Phase 5f.5 — overnight-vs-IBOR single-curve bootstrap harness")
+     @Test
+     public void testOvernightIborBootstrapWithoutDiscountCurve() {
+-        fail("not implemented");
++        QL.info("::::: BasisSwapRateHelpersTest::testOvernightIborBootstrapWithoutDiscountCurve :::::");
++        doTestOvernightIborBootstrap(false);
+     }
+ 
+-    @Ignore("Phase 5f.5 — overnight-vs-IBOR multi-curve bootstrap harness")
+     @Test
+     public void testOvernightIborBootstrapWithDiscountCurve() {
+-        fail("not implemented");
++        QL.info("::::: BasisSwapRateHelpersTest::testOvernightIborBootstrapWithDiscountCurve :::::");
++        doTestOvernightIborBootstrap(true);
+     }
+ }
+diff --git a/jquantlib/src/test/java/org/jquantlib/testsuite/termstructures/yieldcurves/PiecewiseZeroSpreadedTermStructureTest.java b/jquantlib/src/test/java/org/jquantlib/testsuite/termstructures/yieldcurves/PiecewiseZeroSpreadedTermStructureTest.java
+index 41ccd367..99932e6c 100644
+--- a/jquantlib/src/test/java/org/jquantlib/testsuite/termstructures/yieldcurves/PiecewiseZeroSpreadedTermStructureTest.java
++++ b/jquantlib/src/test/java/org/jquantlib/testsuite/termstructures/yieldcurves/PiecewiseZeroSpreadedTermStructureTest.java
+@@ -22,60 +22,45 @@
+ 
+ package org.jquantlib.testsuite.termstructures.yieldcurves;
+ 
++import static org.junit.Assert.assertEquals;
++import static org.junit.Assert.fail;
++
+ import org.jquantlib.QL;
+-import org.junit.Ignore;
++import org.jquantlib.Settings;
++import org.jquantlib.daycounters.Actual360;
++import org.jquantlib.daycounters.DayCounter;
++import org.jquantlib.math.interpolations.CubicInterpolation;
++import org.jquantlib.math.interpolations.Interpolation.Interpolator;
++import org.jquantlib.math.interpolations.factories.BackwardFlat;
++import org.jquantlib.math.interpolations.factories.Cubic;
++import org.jquantlib.math.interpolations.factories.ForwardFlat;
++import org.jquantlib.math.interpolations.factories.Linear;
++import org.jquantlib.quotes.Handle;
++import org.jquantlib.quotes.Quote;
++import org.jquantlib.quotes.SimpleQuote;
++import org.jquantlib.termstructures.Compounding;
++import org.jquantlib.termstructures.YieldTermStructure;
++import org.jquantlib.termstructures.yieldcurves.InterpolatedPiecewiseZeroSpreadedTermStructure;
++import org.jquantlib.termstructures.yieldcurves.InterpolatedZeroCurve;
++import org.jquantlib.time.Calendar;
++import org.jquantlib.time.Date;
++import org.jquantlib.time.Frequency;
++import org.jquantlib.time.Month;
++import org.jquantlib.time.TimeUnit;
++import org.jquantlib.time.calendars.Target;
+ import org.junit.Test;
+ 
+ /**
+  * Java port of QuantLib v1.42.1 test-suite/piecewisezerospreadedtermstructure.cpp
+- * (Phase 5e).
++ * (Phase 5e.5b-CFC-d-55).
+  *
+  * <p>10 BOOST_AUTO_TEST_CASE methods exercising
+- * {@code InterpolatedPiecewiseZeroSpreadedTermStructure} (a yield curve
++ * {@link InterpolatedPiecewiseZeroSpreadedTermStructure} (a yield curve
+  * built from a base curve plus a vector of spread quotes interpolated
+  * across pillar dates).
+  *
+- * <h3>Phase 5e.5 carry-forward rationale</h3>
+- *
+- * <p>JQuant has only the simpler
+- * {@link org.jquantlib.termstructures.yieldcurves.ZeroSpreadedTermStructure}
+- * (a single-quote uniform-shift curve), not the piecewise version. The
+- * piecewise variant — {@code InterpolatedPiecewiseZeroSpreadedTermStructure}
+- * (in {@code ql/termstructures/yield/piecewisezerospreadedtermstructure.hpp}) —
+- * needs to be ported with all 5 interpolation traits exercised by the
+- * tests:
+- *
+- * <ul>
+- *   <li>{@code testFlatInterpolationLeft},
+- *       {@code testFlatInterpolationRight}: flat-left / flat-right
+- *       extrapolation behavior outside the pillar range.</li>
+- *
+- *   <li>{@code testLinearInterpolationMultipleSpreads},
+- *       {@code testLinearInterpolation}: Linear interpolation across
+- *       spread quotes.</li>
+- *
+- *   <li>{@code testForwardFlatInterpolation},
+- *       {@code testBackwardFlatInterpolation}: ForwardFlat /
+- *       BackwardFlat interpolators.</li>
+- *
+- *   <li>{@code testDefaultInterpolation},
+- *       {@code testSetInterpolationFactory}: default-trait wiring
+- *       and explicit interpolation-factory injection.</li>
+- *
+- *   <li>{@code testMaxDate}: maxDate from the base curve carries through.</li>
+- *
+- *   <li>{@code testQuoteChanging}: observer-pattern integration —
+- *       changing a {@code SimpleQuote} spread re-fires the curve's
+- *       discount values.</li>
+- * </ul>
+- *
+- * <p>Production prereqs:
+- * <ul>
+- *   <li>{@code InterpolatedPiecewiseZeroSpreadedTermStructure<Linear>}
+- *       and friends. See WI-5e.5-PZS-1.</li>
+- *   <li>{@code SpreadedLinearZeroInterpolatedTermStructure} convenience
+- *       typedef (most-common variant). See WI-5e.5-PZS-2.</li>
+- * </ul>
++ * <p>Source: {@code test-suite/piecewisezerospreadedtermstructure.cpp}
++ * v1.42.1 @ {@code 099987f0ca}.
+  */
+ public class PiecewiseZeroSpreadedTermStructureTest {
+ 
+@@ -83,53 +68,440 @@ public class PiecewiseZeroSpreadedTermStructureTest {
+         QL.info("::::: " + this.getClass().getSimpleName() + " :::::");
+     }
+ 
+-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-PZS-1 — needs InterpolatedPiecewiseZeroSpreadedTermStructure port.")
++
++    //
++    // ---- test-fixture (mirrors C++ struct CommonVars) ----
++    //
++
++    private static final class CommonVars {
++        final Calendar calendar;
++        final int settlementDays;
++        final DayCounter dayCount;
++        final Compounding compounding;
++        final YieldTermStructure termStructure;
++        final Date today;
++        final Date settlementDate;
++
++        CommonVars() {
++            calendar = new Target();
++            settlementDays = 2;
++            today = new Date(9, Month.June, 2009);
++            compounding = Compounding.Continuous;
++            dayCount = new Actual360();
++            settlementDate = calendar.advance(today, settlementDays, TimeUnit.Days);
++
++            new Settings().setEvaluationDate(today);
++
++            final int[] ts = { 13, 41, 75, 165, 256, 345, 524, 703 };
++            final double[] r = {
++                0.035, 0.033, 0.034, 0.034, 0.036, 0.037, 0.039, 0.040
++            };
++            final Date[] dates = new Date[ts.length + 1];
++            final double[] rates = new double[ts.length + 1];
++            dates[0] = settlementDate;
++            rates[0] = 0.035;
++            for (int i = 0; i < ts.length; ++i) {
++                dates[i + 1] = calendar.advance(today, ts[i], TimeUnit.Days);
++                rates[i + 1] = r[i];
++            }
++            termStructure = new InterpolatedZeroCurve<Linear>(
++                    Linear.class, dates, rates, dayCount);
++        }
++    }
++
++
++    //
++    // ---- helpers ----
++    //
++
++    /** Default tolerance, exactly matching the C++ test-suite (1e-9). */
++    private static final double TOL = 1.0e-9;
++
++    @SuppressWarnings({ "unchecked", "rawtypes" })
++    private static Handle<Quote>[] handles(final SimpleQuote... quotes) {
++        final Handle[] arr = new Handle[quotes.length];
++        for (int i = 0; i < quotes.length; ++i) {
++            arr[i] = new Handle<Quote>(quotes[i]);
++        }
++        return (Handle<Quote>[]) arr;
++    }
++
++
++    //
++    // ---- tests ----
++    //
++
+     @Test
+     public void testFlatInterpolationLeft() {
++        QL.info("Testing flat interpolation before the first spreaded date...");
++
++        final CommonVars vars = new CommonVars();
++
++        final SimpleQuote spread1 = new SimpleQuote(0.02);
++        final SimpleQuote spread2 = new SimpleQuote(0.03);
++        final Handle<Quote>[] spreads = handles(spread1, spread2);
++
++        final Date[] spreadDates = new Date[] {
++            vars.calendar.advance(vars.today, 8, TimeUnit.Months),
++            vars.calendar.advance(vars.today, 15, TimeUnit.Months),
++        };
++
++        final Date interpolationDate = vars.calendar.advance(vars.today, 6, TimeUnit.Months);
++
++        final InterpolatedPiecewiseZeroSpreadedTermStructure spreadedTermStructure =
++                new InterpolatedPiecewiseZeroSpreadedTermStructure(
++                        new Handle<YieldTermStructure>(vars.termStructure),
++                        spreads, spreadDates, new Linear());
++
++        final double t = vars.dayCount.yearFraction(vars.today, interpolationDate);
++        final double interpolatedZeroRate = spreadedTermStructure
++                .zeroRate(t, vars.compounding, Frequency.Annual, false).rate();
++
++        final double expectedRate = vars.termStructure
++                .zeroRate(t, vars.compounding, Frequency.Annual, false).rate()
++                + spread1.value();
++
++        assertEquals("flat-left interpolated zero rate",
++                expectedRate, interpolatedZeroRate, TOL);
+     }
+ 
+-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-PZS-1 — needs InterpolatedPiecewiseZeroSpreadedTermStructure port.")
+     @Test
+     public void testFlatInterpolationRight() {
++        QL.info("Testing flat interpolation after the last spreaded date...");
++
++        final CommonVars vars = new CommonVars();
++
++        final SimpleQuote spread1 = new SimpleQuote(0.02);
++        final SimpleQuote spread2 = new SimpleQuote(0.03);
++        final Handle<Quote>[] spreads = handles(spread1, spread2);
++
++        final Date[] spreadDates = new Date[] {
++            vars.calendar.advance(vars.today, 8, TimeUnit.Months),
++            vars.calendar.advance(vars.today, 15, TimeUnit.Months),
++        };
++
++        final Date interpolationDate = vars.calendar.advance(vars.today, 20, TimeUnit.Months);
++
++        final InterpolatedPiecewiseZeroSpreadedTermStructure spreadedTermStructure =
++                new InterpolatedPiecewiseZeroSpreadedTermStructure(
++                        new Handle<YieldTermStructure>(vars.termStructure),
++                        spreads, spreadDates, new Linear());
++        spreadedTermStructure.enableExtrapolation();
++
++        final double t = vars.dayCount.yearFraction(vars.today, interpolationDate);
++        final double interpolatedZeroRate = spreadedTermStructure
++                .zeroRate(t, vars.compounding, Frequency.Annual, true).rate();
++
++        final double expectedRate = vars.termStructure
++                .zeroRate(t, vars.compounding, Frequency.Annual, true).rate()
++                + spread2.value();
++
++        assertEquals("flat-right interpolated zero rate",
++                expectedRate, interpolatedZeroRate, TOL);
+     }
+ 
+-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-PZS-1 + WI-5e.5-PZS-2.")
+     @Test
+     public void testLinearInterpolationMultipleSpreads() {
++        QL.info("Testing linear interpolation with more than two spreaded dates...");
++
++        final CommonVars vars = new CommonVars();
++
++        final SimpleQuote spread1 = new SimpleQuote(0.02);
++        final SimpleQuote spread2 = new SimpleQuote(0.02);
++        final SimpleQuote spread3 = new SimpleQuote(0.035);
++        final SimpleQuote spread4 = new SimpleQuote(0.04);
++        final Handle<Quote>[] spreads = handles(spread1, spread2, spread3, spread4);
++
++        final Date[] spreadDates = new Date[] {
++            vars.calendar.advance(vars.today, 90, TimeUnit.Days),
++            vars.calendar.advance(vars.today, 150, TimeUnit.Days),
++            vars.calendar.advance(vars.today, 30, TimeUnit.Months),
++            vars.calendar.advance(vars.today, 40, TimeUnit.Months),
++        };
++
++        final Date interpolationDate = vars.calendar.advance(vars.today, 120, TimeUnit.Days);
++
++        final InterpolatedPiecewiseZeroSpreadedTermStructure spreadedTermStructure =
++                new InterpolatedPiecewiseZeroSpreadedTermStructure(
++                        new Handle<YieldTermStructure>(vars.termStructure),
++                        spreads, spreadDates, new Linear());
++
++        final double t = vars.dayCount.yearFraction(vars.today, interpolationDate);
++        final double interpolatedZeroRate = spreadedTermStructure
++                .zeroRate(t, vars.compounding, Frequency.Annual, false).rate();
++
++        final double expectedRate = vars.termStructure
++                .zeroRate(t, vars.compounding, Frequency.Annual, false).rate()
++                + spread1.value();
++
++        assertEquals("multi-spread linear interpolated zero rate",
++                expectedRate, interpolatedZeroRate, TOL);
+     }
+ 
+-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-PZS-1 + WI-5e.5-PZS-2.")
+     @Test
+     public void testLinearInterpolation() {
++        QL.info("Testing linear interpolation between two dates...");
++
++        final CommonVars vars = new CommonVars();
++
++        final SimpleQuote spread1 = new SimpleQuote(0.02);
++        final SimpleQuote spread2 = new SimpleQuote(0.03);
++        final Handle<Quote>[] spreads = handles(spread1, spread2);
++
++        final Date[] spreadDates = new Date[] {
++            vars.calendar.advance(vars.today, 100, TimeUnit.Days),
++            vars.calendar.advance(vars.today, 150, TimeUnit.Days),
++        };
++
++        final Date interpolationDate = vars.calendar.advance(vars.today, 120, TimeUnit.Days);
++
++        final InterpolatedPiecewiseZeroSpreadedTermStructure spreadedTermStructure =
++                new InterpolatedPiecewiseZeroSpreadedTermStructure(
++                        new Handle<YieldTermStructure>(vars.termStructure),
++                        spreads, spreadDates, new Linear());
++
++        final Date d0 = vars.calendar.advance(vars.today, 100, TimeUnit.Days);
++        final Date d1 = vars.calendar.advance(vars.today, 150, TimeUnit.Days);
++        final Date d2 = vars.calendar.advance(vars.today, 120, TimeUnit.Days);
++
++        final double m = (0.03 - 0.02) / vars.dayCount.yearFraction(d0, d1);
++        final double expectedRate = m * vars.dayCount.yearFraction(d0, d2) + 0.054;
++
++        final double t = vars.dayCount.yearFraction(vars.settlementDate, interpolationDate);
++        final double interpolatedZeroRate = spreadedTermStructure
++                .zeroRate(t, vars.compounding, Frequency.Annual, false).rate();
++
++        assertEquals("linear-interpolated zero rate (analytic slope check)",
++                expectedRate, interpolatedZeroRate, TOL);
+     }
+ 
+-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-PZS-1 — needs ForwardFlat-trait variant.")
+     @Test
+     public void testForwardFlatInterpolation() {
++        QL.info("Testing forward flat interpolation between two dates...");
++
++        final CommonVars vars = new CommonVars();
++
++        final SimpleQuote spread1 = new SimpleQuote(0.02);
++        final SimpleQuote spread2 = new SimpleQuote(0.03);
++        final Handle<Quote>[] spreads = handles(spread1, spread2);
++
++        final Date[] spreadDates = new Date[] {
++            vars.calendar.advance(vars.today, 75, TimeUnit.Days),
++            vars.calendar.advance(vars.today, 260, TimeUnit.Days),
++        };
++
++        final Date interpolationDate = vars.calendar.advance(vars.today, 100, TimeUnit.Days);
++
++        final InterpolatedPiecewiseZeroSpreadedTermStructure spreadedTermStructure =
++                new InterpolatedPiecewiseZeroSpreadedTermStructure(
++                        new Handle<YieldTermStructure>(vars.termStructure),
++                        spreads, spreadDates, new ForwardFlat());
++
++        final double t = vars.dayCount.yearFraction(vars.today, interpolationDate);
++        final double interpolatedZeroRate = spreadedTermStructure
++                .zeroRate(t, vars.compounding, Frequency.Annual, false).rate();
++
++        final double expectedRate = vars.termStructure
++                .zeroRate(t, vars.compounding, Frequency.Annual, false).rate()
++                + spread1.value();
++
++        assertEquals("ForwardFlat-interpolated zero rate",
++                expectedRate, interpolatedZeroRate, TOL);
+     }
+ 
+-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-PZS-1 — needs BackwardFlat-trait variant.")
+     @Test
+     public void testBackwardFlatInterpolation() {
++        QL.info("Testing backward flat interpolation between two dates...");
++
++        final CommonVars vars = new CommonVars();
++
++        final SimpleQuote spread1 = new SimpleQuote(0.02);
++        final SimpleQuote spread2 = new SimpleQuote(0.03);
++        final SimpleQuote spread3 = new SimpleQuote(0.04);
++        final Handle<Quote>[] spreads = handles(spread1, spread2, spread3);
++
++        final Date[] spreadDates = new Date[] {
++            vars.calendar.advance(vars.today, 100, TimeUnit.Days),
++            vars.calendar.advance(vars.today, 200, TimeUnit.Days),
++            vars.calendar.advance(vars.today, 300, TimeUnit.Days),
++        };
++
++        final Date interpolationDate = vars.calendar.advance(vars.today, 110, TimeUnit.Days);
++
++        final InterpolatedPiecewiseZeroSpreadedTermStructure spreadedTermStructure =
++                new InterpolatedPiecewiseZeroSpreadedTermStructure(
++                        new Handle<YieldTermStructure>(vars.termStructure),
++                        spreads, spreadDates, new BackwardFlat());
++
++        final double t = vars.dayCount.yearFraction(vars.today, interpolationDate);
++        final double interpolatedZeroRate = spreadedTermStructure
++                .zeroRate(t, vars.compounding, Frequency.Annual, false).rate();
++
++        final double expectedRate = vars.termStructure
++                .zeroRate(t, vars.compounding, Frequency.Annual, false).rate()
++                + spread2.value();
++
++        assertEquals("BackwardFlat-interpolated zero rate",
++                expectedRate, interpolatedZeroRate, TOL);
+     }
+ 
+-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-PZS-1 — needs default-trait wiring.")
+     @Test
+     public void testDefaultInterpolation() {
++        QL.info("Testing default interpolation between two dates...");
++
++        final CommonVars vars = new CommonVars();
++
++        final SimpleQuote spread1 = new SimpleQuote(0.02);
++        final SimpleQuote spread2 = new SimpleQuote(0.02);
++        final Handle<Quote>[] spreads = handles(spread1, spread2);
++
++        final Date[] spreadDates = new Date[] {
++            vars.calendar.advance(vars.today, 75, TimeUnit.Days),
++            vars.calendar.advance(vars.today, 160, TimeUnit.Days),
++        };
++
++        final Date interpolationDate = vars.calendar.advance(vars.today, 100, TimeUnit.Days);
++
++        // C++: PiecewiseZeroSpreadedTermStructure = ...<Linear> typedef.
++        final InterpolatedPiecewiseZeroSpreadedTermStructure spreadedTermStructure =
++                new InterpolatedPiecewiseZeroSpreadedTermStructure(
++                        new Handle<YieldTermStructure>(vars.termStructure),
++                        spreads, spreadDates, new Linear());
++
++        final double t = vars.dayCount.yearFraction(vars.today, interpolationDate);
++        final double interpolatedZeroRate = spreadedTermStructure
++                .zeroRate(t, vars.compounding, Frequency.Annual, false).rate();
++
++        final double expectedRate = vars.termStructure
++                .zeroRate(t, vars.compounding, Frequency.Annual, false).rate()
++                + spread1.value();
++
++        assertEquals("default (Linear) interpolated zero rate",
++                expectedRate, interpolatedZeroRate, TOL);
+     }
+ 
+-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-PZS-1 — needs explicit interpolation-factory injection API.")
+     @Test
+     public void testSetInterpolationFactory() {
++        QL.info("Testing factory constructor with additional parameters...");
++
++        final CommonVars vars = new CommonVars();
++
++        final SimpleQuote spread1 = new SimpleQuote(0.02);
++        final SimpleQuote spread2 = new SimpleQuote(0.03);
++        final SimpleQuote spread3 = new SimpleQuote(0.01);
++        final Handle<Quote>[] spreads = handles(spread1, spread2, spread3);
++
++        final Date[] spreadDates = new Date[] {
++            vars.calendar.advance(vars.today, 8, TimeUnit.Months),
++            vars.calendar.advance(vars.today, 15, TimeUnit.Months),
++            vars.calendar.advance(vars.today, 25, TimeUnit.Months),
++        };
++
++        final Date interpolationDate = vars.calendar.advance(vars.today, 11, TimeUnit.Months);
++
++        final Frequency freq = Frequency.NoFrequency;
++
++        // C++: Cubic(CubicInterpolation::Spline, false)
++        // Defaults for the rest:
++        //   leftCondition  = SecondDerivative, leftValue  = 0.0,
++        //   rightCondition = SecondDerivative, rightValue = 0.0.
++        final Interpolator factory = new Cubic(
++                CubicInterpolation.DerivativeApprox.Spline,
++                false,
++                CubicInterpolation.BoundaryCondition.SecondDerivative, 0.0,
++                CubicInterpolation.BoundaryCondition.SecondDerivative, 0.0);
++
++        final InterpolatedPiecewiseZeroSpreadedTermStructure spreadedTermStructure =
++                new InterpolatedPiecewiseZeroSpreadedTermStructure(
++                        new Handle<YieldTermStructure>(vars.termStructure),
++                        spreads, spreadDates, vars.compounding, freq, factory);
++
++        final double t = vars.dayCount.yearFraction(vars.today, interpolationDate);
++        final double interpolatedZeroRate = spreadedTermStructure
++                .zeroRate(t, vars.compounding, Frequency.Annual, false).rate();
++
++        final double expectedRate = vars.termStructure
++                .zeroRate(t, vars.compounding, Frequency.Annual, false).rate()
++                + 0.026065770863;
++
++        assertEquals("Cubic-factory interpolated zero rate",
++                expectedRate, interpolatedZeroRate, TOL);
+     }
+ 
+-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-PZS-1 — needs maxDate pass-through verification.")
+     @Test
+     public void testMaxDate() {
++        QL.info("Testing term structure max date...");
++
++        final CommonVars vars = new CommonVars();
++
++        final SimpleQuote spread1 = new SimpleQuote(0.02);
++        final SimpleQuote spread2 = new SimpleQuote(0.03);
++        final Handle<Quote>[] spreads = handles(spread1, spread2);
++
++        final Date[] spreadDates = new Date[] {
++            vars.calendar.advance(vars.today, 8, TimeUnit.Months),
++            vars.calendar.advance(vars.today, 15, TimeUnit.Months),
++        };
++
++        final InterpolatedPiecewiseZeroSpreadedTermStructure spreadedTermStructure =
++                new InterpolatedPiecewiseZeroSpreadedTermStructure(
++                        new Handle<YieldTermStructure>(vars.termStructure),
++                        spreads, spreadDates, new Linear());
++
++        final Date maxDate = spreadedTermStructure.maxDate();
++
++        final Date originalMax = vars.termStructure.maxDate();
++        final Date lastSpread = spreadDates[spreadDates.length - 1];
++        final Date expectedDate = originalMax.le(lastSpread) ? originalMax : lastSpread;
++
++        if (!maxDate.equals(expectedDate)) {
++            fail("unable to reproduce max date\n"
++                    + "    calculated: " + maxDate + "\n"
++                    + "    expected:   " + expectedDate);
++        }
+     }
+ 
+-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-PZS-1 — needs SimpleQuote -> spread observer wiring.")
+     @Test
+     public void testQuoteChanging() {
++        QL.info("Testing quote update...");
++
++        final CommonVars vars = new CommonVars();
++
++        final SimpleQuote spread1 = new SimpleQuote(0.02);
++        final SimpleQuote spread2 = new SimpleQuote(0.03);
++        final Handle<Quote>[] spreads = handles(spread1, spread2);
++
++        final Date[] spreadDates = new Date[] {
++            vars.calendar.advance(vars.today, 100, TimeUnit.Days),
++            vars.calendar.advance(vars.today, 150, TimeUnit.Days),
++        };
++
++        final Date interpolationDate = vars.calendar.advance(vars.today, 120, TimeUnit.Days);
++
++        final InterpolatedPiecewiseZeroSpreadedTermStructure spreadedTermStructure =
++                new InterpolatedPiecewiseZeroSpreadedTermStructure(
++                        new Handle<YieldTermStructure>(vars.termStructure),
++                        spreads, spreadDates, new BackwardFlat());
++
++        final double t = vars.dayCount.yearFraction(vars.settlementDate, interpolationDate);
++        double interpolatedZeroRate = spreadedTermStructure
++                .zeroRate(t, vars.compounding, Frequency.Annual, false).rate();
++        double expectedRate = vars.termStructure
++                .zeroRate(t, vars.compounding, Frequency.Annual, false).rate()
++                + 0.03;
++
++        assertEquals("pre-change BackwardFlat interpolated zero rate",
++                expectedRate, interpolatedZeroRate, TOL);
++
++        spread2.setValue(0.025);
++
++        interpolatedZeroRate = spreadedTermStructure
++                .zeroRate(t, vars.compounding, Frequency.Annual, false).rate();
++        expectedRate = vars.termStructure
++                .zeroRate(t, vars.compounding, Frequency.Annual, false).rate()
++                + 0.025;
++
++        assertEquals("post-change BackwardFlat interpolated zero rate",
++                expectedRate, interpolatedZeroRate, TOL);
+     }
+ }

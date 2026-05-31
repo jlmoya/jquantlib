@@ -1,0 +1,752 @@
+diff --git a/jquantlib/src/main/java/org/jquantlib/math/matrixutilities/SymmetricSchurDecomposition.java b/jquantlib/src/main/java/org/jquantlib/math/matrixutilities/SymmetricSchurDecomposition.java
+index b98bbb9a..8901d224 100755
+--- a/jquantlib/src/main/java/org/jquantlib/math/matrixutilities/SymmetricSchurDecomposition.java
++++ b/jquantlib/src/main/java/org/jquantlib/math/matrixutilities/SymmetricSchurDecomposition.java
+@@ -1,204 +1,274 @@
+-/*
+- Copyright (C) 2009 Richard Gomes
+-
+- This file is part of JQuantLib, a free-software/open-source library
+- for financial quantitative analysts and developers - http://jquantlib.org/
+-
+- JQuantLib is free software: you can redistribute it and/or modify it
+- under the terms of the QuantLib license.  You should have received a
+- copy of the license along with this program; if not, please email
+- <jquant-devel@lists.sourceforge.net>. The license is also available online at
+- <http://www.jquantlib.org/index.php/LICENSE.TXT>.
+-
+- This program is distributed in the hope that it will be useful, but WITHOUT
+- ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+- FOR A PARTICULAR PURPOSE.  See the license for more details.
+-
+- JQuantLib is based on QuantLib. http://quantlib.org/
+- When applicable, the original copyright notice follows this notice.
+- */
+-
+-/*
+- Copyright (C) 2000, 2001, 2002, 2003 RiskMap srl
+- Copyright (C) 2003, 2004, 2005, 2006 StatPro Italia srl
+- Copyright (C) 2004 Ferdinando Ametrano
+-
+- This file is part of QuantLib, a free-software/open-source library
+- for financial quantitative analysts and developers - http://quantlib.org/
+-
+- QuantLib is free software: you can redistribute it and/or modify it
+- under the terms of the QuantLib license.  You should have received a
+- copy of the license along with this program; if not, please email
+- <quantlib-dev@lists.sf.net>. The license is also available online at
+- <http://quantlib.org/license.shtml>.
+-
+- This program is distributed in the hope that it will be useful, but WITHOUT
+- ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+- FOR A PARTICULAR PURPOSE.  See the license for more details.
+- */
+-package org.jquantlib.math.matrixutilities;
+-
+-import org.jquantlib.QL;
+-import org.jquantlib.lang.annotation.QualityAssurance;
+-import org.jquantlib.lang.annotation.QualityAssurance.Quality;
+-import org.jquantlib.lang.annotation.QualityAssurance.Version;
+-
+-/**
+- * Symmetric threshold Jacobi algorithm
+- * <p>
+- * Given a real symmetric matrix S, the Schur decomposition finds the eigenvalues and eigenvectors of S. If D is the diagonal matrix
+- * formed by the eigenvalues and U the unitarian matrix of the eigenvectors we can write the Schur decomposition as {@latex[ S = U
+- * \cdot D \cdot U^T } where {@latex$ \cdot } is the standard matrix product and {@latex$ ^T } is the transpose operator.
+- * <p>
+- * This class implements the Schur decomposition using the symmetric threshold Jacobi algorithm. For details on the different Jacobi
+- * transfomations.
+- *
+- * @see "Matrix computation," second edition, by Golub and Van Loan, The Johns Hopkins University Press
+- *
+- * @author Richard Gomes
+- */
+-@QualityAssurance(quality = Quality.Q0_UNFINISHED, version = Version.V097, reviewers = { "Richard Gomes" })
+-public class SymmetricSchurDecomposition {
+-
+-    private static final double epsPrec = 1e-15;
+-    private static final int maxIterations = 100;
+-
+-    private final int size;
+-    private final Matrix A;
+-    private final Array diag;
+-
+-
+-    public SymmetricSchurDecomposition(final Matrix m) {
+-        QL.require(m.rows() == m.cols(), Matrix.MATRIX_MUST_BE_SQUARE); // QA:[RG]::verified
+-
+-        this.size = m.rows();
+-        this.A = new Matrix(m.rows(), m.cols(), m.flags());
+-        this.diag = new Array(size, m.flags());
+-
+-        final double tmpDiag[] = new double[size];
+-        final double tmpSum[] = new double[size];
+-
+-        final Matrix s = m.clone();
+-        final int offset = s.offset();
+-
+-        for (int q = offset; q < size+offset; q++) {
+-            diag.$[diag.addr.op(q)] = s.$[s.addr.op(q, q)];
+-            A.$[A.addr.op(q, q)] = 1.0;
+-        }
+-        for (int j = 0; j < size; j++) {
+-            tmpDiag[j] = diag.$[diag.addr.op(j+offset)];
+-        }
+-
+-        boolean keeplooping = true;
+-        int ite = 1;
+-        double threshold;
+-        do {
+-            // main loop
+-            double sum = 0;
+-            for (int a = offset; a < size - 1 + offset; a++) {
+-                for (int b = a + 1; b < size + offset; b++) {
+-                    sum += Math.abs(s.$[s.addr.op(a, b)]);
+-                }
+-            }
+-
+-            if (sum == 0) {
+-                keeplooping = false;
+-            } else {
+-                /*
+-                 * To speed up computation a threshold is introduced to make sure it is worthy to perform the Jacobi rotation
+-                 */
+-                if (ite < 5) {
+-                    threshold = 0.2 * sum / (size * size);
+-                } else {
+-                    threshold = 0.0;
+-                }
+-
+-                int j, k, l;
+-                for (j = offset; j < size - 1 + offset; j++) {
+-                    for (k = j + 1; k < size + offset; k++) {
+-                        double sine, rho, cosin, heig, tang, beta;
+-                        final double smll = Math.abs(s.$[s.addr.op(j, k)]);
+-                        if (ite > 5 && smll < epsPrec * Math.abs(diag.$[diag.addr.op(j)])
+-                                && smll < epsPrec * Math.abs(diag.$[diag.addr.op(k)])) {
+-                            s.$[s.addr.op(j, k)] = 0;
+-                        } else if (Math.abs(s.$[s.addr.op(j, k)]) > threshold) {
+-                            heig = diag.$[diag.addr.op(k)] - diag.$[diag.addr.op(j)];
+-                            if (smll < epsPrec * Math.abs(heig)) {
+-                                tang = s.$[s.addr.op(j, k)] / heig;
+-                            } else {
+-                                beta = 0.5 * heig / s.$[s.addr.op(j, k)];
+-                                tang = 1.0 / (Math.abs(beta) + Math.sqrt(1 + beta * beta));
+-                                if (beta < 0) {
+-                                    tang = -tang;
+-                                }
+-                            }
+-                            cosin = 1 / Math.sqrt(1 + tang * tang);
+-                            sine = tang * cosin;
+-                            rho = sine / (1 + cosin);
+-                            heig = tang * s.$[s.addr.op(j, k)];
+-                            tmpSum[j-offset] -= heig;
+-                            tmpSum[k-offset] += heig;
+-                            diag.$[diag.addr.op(j)] -= heig;
+-                            diag.$[diag.addr.op(k)] += heig;
+-                            s.$[s.addr.op(j, k)] = 0.0;
+-                            for (l = offset; l + 1 <= j; l++) {
+-                                jacobiRotate(s, rho, sine, l, j, l, k);
+-                            }
+-                            for (l = j + 1; l <= k - 1; l++) {
+-                                jacobiRotate(s, rho, sine, j, l, l, k);
+-                            }
+-                            for (l = k + 1; l < size + offset; l++) {
+-                                jacobiRotate(s, rho, sine, j, l, k, l);
+-                            }
+-                            for (l = offset; l < size + offset; l++) {
+-                                jacobiRotate(A, rho, sine, l, j, l, k);
+-                            }
+-                        }
+-                    }
+-                }
+-                for (k = 0; k < size; k++) {
+-                    tmpDiag[k] += tmpSum[k];
+-                    diag.$[diag.addr.op(k+offset)] = tmpDiag[k];
+-                    tmpSum[k] = 0.0;
+-                }
+-            }
+-        } while (++ite <= maxIterations && keeplooping);
+-
+-        QL.ensure(ite <= maxIterations, "Too many iterations reached");
+-    }
+-
+-    //
+-    // public methods
+-    //
+-
+-    public Matrix eigenvectors() {
+-        return A.clone();
+-    }
+-
+-    public Array eigenvalues() {
+-        return diag.clone();
+-    }
+-
+-    //
+-    // private methods
+-    //
+-
+-    /**
+-     * This routines implements the Jacobi, a.k.a. Givens, rotation
+-     */
+-    private void jacobiRotate(
+-            final Matrix m,
+-            final double rot,
+-            final double dil,
+-            final int j1,
+-            final int k1,
+-            final int j2,
+-            final int k2) /* @ReadOnly */{
+-        double x1, x2;
+-        x1 = m.$[m.addr.op(j1, k1)];
+-        x2 = m.$[m.addr.op(j2, k2)];
+-        m.$[m.addr.op(j1, k1)] = x1 - dil * (x2 + x1 * rot);
+-        m.$[m.addr.op(j2, k2)] = x2 + dil * (x1 - x2 * rot);
+-    }
+-
+-}
++/*
++ Copyright (C) 2009 Richard Gomes
++
++ This file is part of JQuantLib, a free-software/open-source library
++ for financial quantitative analysts and developers - http://jquantlib.org/
++
++ JQuantLib is free software: you can redistribute it and/or modify it
++ under the terms of the QuantLib license.  You should have received a
++ copy of the license along with this program; if not, please email
++ <jquant-devel@lists.sourceforge.net>. The license is also available online at
++ <http://www.jquantlib.org/index.php/LICENSE.TXT>.
++
++ This program is distributed in the hope that it will be useful, but WITHOUT
++ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
++ FOR A PARTICULAR PURPOSE.  See the license for more details.
++
++ JQuantLib is based on QuantLib. http://quantlib.org/
++ When applicable, the original copyright notice follows this notice.
++ */
++
++/*
++ Copyright (C) 2000, 2001, 2002, 2003 RiskMap srl
++ Copyright (C) 2003, 2004, 2005, 2006 StatPro Italia srl
++ Copyright (C) 2004 Ferdinando Ametrano
++
++ This file is part of QuantLib, a free-software/open-source library
++ for financial quantitative analysts and developers - http://quantlib.org/
++
++ QuantLib is free software: you can redistribute it and/or modify it
++ under the terms of the QuantLib license.  You should have received a
++ copy of the license along with this program; if not, please email
++ <quantlib-dev@lists.sf.net>. The license is also available online at
++ <http://quantlib.org/license.shtml>.
++
++ This program is distributed in the hope that it will be useful, but WITHOUT
++ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
++ FOR A PARTICULAR PURPOSE.  See the license for more details.
++ */
++package org.jquantlib.math.matrixutilities;
++
++import org.jquantlib.QL;
++import org.jquantlib.lang.annotation.QualityAssurance;
++import org.jquantlib.lang.annotation.QualityAssurance.Quality;
++import org.jquantlib.lang.annotation.QualityAssurance.Version;
++
++/**
++ * Symmetric threshold Jacobi algorithm
++ * <p>
++ * Given a real symmetric matrix S, the Schur decomposition finds the eigenvalues and eigenvectors of S. If D is the diagonal matrix
++ * formed by the eigenvalues and U the unitarian matrix of the eigenvectors we can write the Schur decomposition as {@latex[ S = U
++ * \cdot D \cdot U^T } where {@latex$ \cdot } is the standard matrix product and {@latex$ ^T } is the transpose operator.
++ * <p>
++ * This class implements the Schur decomposition using the symmetric threshold Jacobi algorithm. For details on the different Jacobi
++ * transfomations.
++ *
++ * @see "Matrix computation," second edition, by Golub and Van Loan, The Johns Hopkins University Press
++ *
++ * @author Richard Gomes
++ */
++@QualityAssurance(quality = Quality.Q0_UNFINISHED, version = Version.V097, reviewers = { "Richard Gomes" })
++public class SymmetricSchurDecomposition {
++
++    private static final double epsPrec = 1e-15;
++    private static final int maxIterations = 100;
++
++    private final int size;
++    private final Matrix A;
++    private final Array diag;
++
++
++    public SymmetricSchurDecomposition(final Matrix m) {
++        QL.require(m.rows() == m.cols(), Matrix.MATRIX_MUST_BE_SQUARE); // QA:[RG]::verified
++
++        this.size = m.rows();
++        this.A = new Matrix(m.rows(), m.cols(), m.flags());
++        this.diag = new Array(size, m.flags());
++
++        final double tmpDiag[] = new double[size];
++        final double tmpSum[] = new double[size];
++
++        final Matrix s = m.clone();
++        final int offset = s.offset();
++
++        for (int q = offset; q < size+offset; q++) {
++            diag.$[diag.addr.op(q)] = s.$[s.addr.op(q, q)];
++            A.$[A.addr.op(q, q)] = 1.0;
++        }
++        for (int j = 0; j < size; j++) {
++            tmpDiag[j] = diag.$[diag.addr.op(j+offset)];
++        }
++
++        boolean keeplooping = true;
++        int ite = 1;
++        double threshold;
++        do {
++            // main loop
++            double sum = 0;
++            for (int a = offset; a < size - 1 + offset; a++) {
++                for (int b = a + 1; b < size + offset; b++) {
++                    sum += Math.abs(s.$[s.addr.op(a, b)]);
++                }
++            }
++
++            if (sum == 0) {
++                keeplooping = false;
++            } else {
++                /*
++                 * To speed up computation a threshold is introduced to make sure it is worthy to perform the Jacobi rotation
++                 */
++                if (ite < 5) {
++                    threshold = 0.2 * sum / (size * size);
++                } else {
++                    threshold = 0.0;
++                }
++
++                int j, k, l;
++                for (j = offset; j < size - 1 + offset; j++) {
++                    for (k = j + 1; k < size + offset; k++) {
++                        double sine, rho, cosin, heig, tang, beta;
++                        final double smll = Math.abs(s.$[s.addr.op(j, k)]);
++                        if (ite > 5 && smll < epsPrec * Math.abs(diag.$[diag.addr.op(j)])
++                                && smll < epsPrec * Math.abs(diag.$[diag.addr.op(k)])) {
++                            s.$[s.addr.op(j, k)] = 0;
++                        } else if (Math.abs(s.$[s.addr.op(j, k)]) > threshold) {
++                            heig = diag.$[diag.addr.op(k)] - diag.$[diag.addr.op(j)];
++                            if (smll < epsPrec * Math.abs(heig)) {
++                                tang = s.$[s.addr.op(j, k)] / heig;
++                            } else {
++                                beta = 0.5 * heig / s.$[s.addr.op(j, k)];
++                                tang = 1.0 / (Math.abs(beta) + Math.sqrt(1 + beta * beta));
++                                if (beta < 0) {
++                                    tang = -tang;
++                                }
++                            }
++                            cosin = 1 / Math.sqrt(1 + tang * tang);
++                            sine = tang * cosin;
++                            rho = sine / (1 + cosin);
++                            heig = tang * s.$[s.addr.op(j, k)];
++                            tmpSum[j-offset] -= heig;
++                            tmpSum[k-offset] += heig;
++                            diag.$[diag.addr.op(j)] -= heig;
++                            diag.$[diag.addr.op(k)] += heig;
++                            s.$[s.addr.op(j, k)] = 0.0;
++                            for (l = offset; l + 1 <= j; l++) {
++                                jacobiRotate(s, rho, sine, l, j, l, k);
++                            }
++                            for (l = j + 1; l <= k - 1; l++) {
++                                jacobiRotate(s, rho, sine, j, l, l, k);
++                            }
++                            for (l = k + 1; l < size + offset; l++) {
++                                jacobiRotate(s, rho, sine, j, l, k, l);
++                            }
++                            for (l = offset; l < size + offset; l++) {
++                                jacobiRotate(A, rho, sine, l, j, l, k);
++                            }
++                        }
++                    }
++                }
++                for (k = 0; k < size; k++) {
++                    tmpDiag[k] += tmpSum[k];
++                    diag.$[diag.addr.op(k+offset)] = tmpDiag[k];
++                    tmpSum[k] = 0.0;
++                }
++            }
++        } while (++ite <= maxIterations && keeplooping);
++
++        QL.ensure(ite <= maxIterations, "Too many iterations reached");
++
++        // Phase 5e.5b-CFC-d-27 align: C++ symmetricschurdecomposition.cpp:115-138
++        // performs an (eigenvalue, eigenvector) sort in descending eigenvalue order,
++        // then normalizes each eigenvector's sign so the first row entry is non-negative.
++        // Without this step, Java's PseudoSqrt(Spectral) returns columns in a different
++        // order/sign than C++ pseudoSqrt(corr, SalvagingAlgorithm::Spectral), which
++        // decorrelates the dz mapping in MultiPathGenerator and breaks the
++        // Himalaya/Everest/Pagoda cached MC tests (and any other test that compares
++        // against C++ reference values produced from PseudoSqrt(Spectral)).
++        //
++        // Reference: migration-harness/cpp/probes/math/matrixutilities/pseudosqrt_spectral_probe.cpp
++        // + migration-harness/references/math/matrixutilities/pseudosqrt_spectral.json
++        sortAndSignNormalize();
++    }
++
++    //
++    // public methods
++    //
++
++    public Matrix eigenvectors() {
++        return A.clone();
++    }
++
++    public Array eigenvalues() {
++        return diag.clone();
++    }
++
++    //
++    // private methods
++    //
++
++    /**
++     * This routines implements the Jacobi, a.k.a. Givens, rotation
++     */
++    private void jacobiRotate(
++            final Matrix m,
++            final double rot,
++            final double dil,
++            final int j1,
++            final int k1,
++            final int j2,
++            final int k2) /* @ReadOnly */{
++        double x1, x2;
++        x1 = m.$[m.addr.op(j1, k1)];
++        x2 = m.$[m.addr.op(j2, k2)];
++        m.$[m.addr.op(j1, k1)] = x1 - dil * (x2 + x1 * rot);
++        m.$[m.addr.op(j2, k2)] = x2 + dil * (x1 - x2 * rot);
++    }
++
++    /**
++     * Sort (eigenvalues, eigenvectors) so eigenvalues are in descending order,
++     * then sign-normalize each eigenvector so its first row entry is non-negative.
++     * Mirrors C++ {@code symmetricschurdecomposition.cpp:115-138}.
++     *
++     * <p>Also rounds any eigenvalue whose magnitude relative to the largest
++     * eigenvalue is below 1e-16 down to zero, matching the C++ round-off guard.
++     */
++    private void sortAndSignNormalize() {
++        // Offset-aware indexing: Array/Matrix coordinates are 1-based for fortran flags,
++        // 0-based otherwise. Use the same offset as the rest of this class.
++        final int aOffset = diag.begin();   // 0 or 1
++        final int mOffset = A.offset();     // 0 or 1
++
++        // Snapshot current (eigenvalue, eigenvector-column) pairs in plain 0-based arrays.
++        final double[] values = new double[size];
++        final double[][] vectors = new double[size][size]; // vectors[col][row]
++        for (int col = 0; col < size; ++col) {
++            values[col] = diag.get(col + aOffset);
++            for (int row = 0; row < size; ++row) {
++                vectors[col][row] = A.get(row + mOffset, col + mOffset);
++            }
++        }
++
++        // Index-based sort, descending by eigenvalue. std::sort with std::greater<>
++        // on std::pair compares the .first first; ties are broken by the vectors'
++        // lexicographic order — practically not observed for non-degenerate inputs.
++        final Integer[] idx = new Integer[size];
++        for (int i = 0; i < size; ++i) idx[i] = i;
++        java.util.Arrays.sort(idx, (a, b) -> {
++            final int c = Double.compare(values[b], values[a]); // descending
++            if (c != 0) return c;
++            // Lexicographic tie-break on the eigenvector entries, matching
++            // std::pair<Real, std::vector<Real>> with std::greater<>.
++            for (int r = 0; r < size; ++r) {
++                final int cc = Double.compare(vectors[b][r], vectors[a][r]);
++                if (cc != 0) return cc;
++            }
++            return 0;
++        });
++
++        final double maxEv = values[idx[0]];
++        for (int col = 0; col < size; ++col) {
++            final int src = idx[col];
++            // Round-off guard: zero out eigenvalues whose magnitude relative to
++            // the largest is below machine precision (matches C++ 1e-16 threshold).
++            final double ev = values[src];
++            final double newEv = (maxEv != 0.0 && Math.abs(ev / maxEv) < 1e-16) ? 0.0 : ev;
++            diag.set(col + aOffset, newEv);
++
++            final double sign = (vectors[src][0] < 0.0) ? -1.0 : 1.0;
++            for (int row = 0; row < size; ++row) {
++                A.set(row + mOffset, col + mOffset, sign * vectors[src][row]);
++            }
++        }
++    }
++
++}
+diff --git a/jquantlib/src/test/java/org/jquantlib/testsuite/cashflows/RangeAccrualTest.java b/jquantlib/src/test/java/org/jquantlib/testsuite/cashflows/RangeAccrualTest.java
+index c1e81078..b8f1f6cc 100644
+--- a/jquantlib/src/test/java/org/jquantlib/testsuite/cashflows/RangeAccrualTest.java
++++ b/jquantlib/src/test/java/org/jquantlib/testsuite/cashflows/RangeAccrualTest.java
+@@ -22,46 +22,52 @@
+ 
+ package org.jquantlib.testsuite.cashflows;
+ 
++import static org.junit.Assert.assertEquals;
++import static org.junit.Assert.fail;
++
+ import org.jquantlib.QL;
+-import org.junit.Ignore;
++import org.jquantlib.Settings;
++import org.jquantlib.cashflow.RangeAccrualFloatersCoupon;
++import org.jquantlib.cashflow.RangeAccrualPricer;
++import org.jquantlib.cashflow.RangeAccrualPricerByBgm;
++import org.jquantlib.daycounters.Actual365Fixed;
++import org.jquantlib.daycounters.DayCounter;
++import org.jquantlib.indexes.Euribor6M;
++import org.jquantlib.indexes.IborIndex;
++import org.jquantlib.quotes.Handle;
++import org.jquantlib.termstructures.Compounding;
++import org.jquantlib.termstructures.YieldTermStructure;
++import org.jquantlib.termstructures.volatilities.FlatSmileSection;
++import org.jquantlib.termstructures.volatilities.SmileSection;
++import org.jquantlib.termstructures.yieldcurves.FlatForward;
++import org.jquantlib.time.BusinessDayConvention;
++import org.jquantlib.time.Calendar;
++import org.jquantlib.time.Date;
++import org.jquantlib.time.DateGeneration;
++import org.jquantlib.time.Frequency;
++import org.jquantlib.time.Month;
++import org.jquantlib.time.Period;
++import org.jquantlib.time.Schedule;
++import org.jquantlib.time.calendars.Target;
+ import org.junit.Test;
+ 
+ /**
+- * Java port of QuantLib v1.42.1 test-suite/rangeaccrual.cpp (Phase 5e).
++ * Java port of QuantLib v1.42.1 test-suite/rangeaccrual.cpp (Phase 5e.5b-CFC-d-28).
+  *
+  * <p>3 BOOST_AUTO_TEST_CASE methods exercising
+  * {@code RangeAccrualFloatersCoupon} pricing through the
+  * {@code RangeAccrualPricerByBgm} (Brace-Gatarek-Musiela) pricer.
+  *
+- * <h3>Phase 5e.5 carry-forward rationale</h3>
+- *
+- * <p>JQuant has no production code for range-accrual coupons. Both the
+- * coupon class and the BGM pricer need to be ported:
+- *
+- * <ul>
+- *   <li>{@code RangeAccrualFloatersCoupon} (in
+- *       {@code ql/cashflows/rangeaccrual.hpp}) — coupon class that
+- *       integrates an ibor leg's payoff over a strike range. See
+- *       WI-5e.5-RA-1.</li>
+- *
+- *   <li>{@code RangeAccrualPricerByBgm} — Brace-Gatarek-Musiela
+- *       BGM-style pricer that computes the range-accrual integral via
+- *       analytical formulas with smile-adjusted volatilities. Depends on
+- *       {@code SmileSection} (Phase 2j) and the
+- *       {@code IborCouponPricer} hierarchy. See WI-5e.5-RA-2.</li>
+- *
+- *   <li>{@code RangeAccrualLeg} fluent leg builder. See WI-5e.5-RA-3.</li>
+- *
+- *   <li>{@code testInfiniteRange}: as the strike range expands to
+- *       (-inf, +inf) the range-accrual coupon should converge to the
+- *       plain ibor coupon. Requires WI-5e.5-RA-1 + WI-5e.5-RA-2 +
+- *       BlackIborCouponPricer for the reference value.</li>
+- *
+- *   <li>{@code testPriceMonotonicityWithRespectToLowerStrike} /
+- *       {@code testPriceMonotonicityWithRespectToUpperStrike}: monotonic
+- *       behavior of the range-accrual price as one of the strike bounds
+- *       sweeps. Requires the same three prereqs.</li>
+- * </ul>
++ * <p>Body-fill rationale: production code
++ * ({@link RangeAccrualFloatersCoupon} + {@link RangeAccrualPricerByBgm}
++ * + RangeAccrualLeg) landed in commit efa0330a. C++ test setup uses a
++ * hard-coded zero curve (46 dates) and InterpolatedSmileSection with
++ * ~1000 stdDev points; we substitute a flat-forward curve and a single
++ * FlatSmileSection. The three invariants under test (rate convergence
++ * on infinite range, monotonicity in lower strike, monotonicity in upper
++ * strike) are properties of the BGM pricer and hold regardless of
++ * yield-curve / smile-section shape, matching C++
++ * {@code rangeaccrual.cpp:584-744}.
+  */
+ public class RangeAccrualTest {
+ 
+@@ -69,18 +75,177 @@ public class RangeAccrualTest {
+         QL.info("::::: " + this.getClass().getSimpleName() + " :::::");
+     }
+ 
+-    @Ignore("Phase 5e.5 WI-5e.5-RA-1/2/3: RangeAccrualFloatersCoupon + RangeAccrualPricerByBgm + RangeAccrualLeg now ported (commit efa0330a); empty test body — needs full port from C++ rangeaccrual.cpp::testInfiniteRange.")
++    /** Common-vars fixture mirroring C++ CommonVars (rangeaccrual.cpp:47-578). */
++    private static final class Vars {
++        final Calendar calendar = new Target();
++        final DayCounter dayCounter = new Actual365Fixed();
++        final Date today = new Date(6, Month.March, 2007);
++        final Handle<YieldTermStructure> termStructure;
++        final IborIndex iborIndex;
++        final Date startDate = new Date(6, Month.March, 2017);
++        final Date endDate = new Date(6, Month.September, 2017);
++        final Date paymentDate = endDate;
++        final int fixingDays = 2;
++        final DayCounter rangeCouponDayCount;
++        final Schedule observationSchedule;
++        final double flatVol = 0.1;
++        final double infiniteLowerStrike = 1.0e-9;
++        final double infiniteUpperStrike = 1.0;
++        final double gearing = 1.0;
++        final double spread = 0.0;
++        final double correlation = 1.0;
++        final SmileSection smileOnExpiry;
++        final SmileSection smileOnPayment;
++        final boolean[] byCallSpread = new boolean[]{true, false};
++        // C++ rangeaccrual.cpp:575 — rateTolerance = 2.0e-8.
++        final double rateTolerance = 2.0e-8;
++
++        Vars() {
++            new Settings().setEvaluationDate(today);
++            // Flat-forward 3% — simpler than C++ ZeroCurve(46 dates).
++            // Invariants under test are curve-shape-independent.
++            termStructure = new Handle<YieldTermStructure>(
++                new FlatForward(today, 0.03, dayCounter,
++                                Compounding.Continuous, Frequency.Annual));
++            iborIndex = new Euribor6M(termStructure);
++            rangeCouponDayCount = iborIndex.dayCounter();
++
++            // Observation schedule — daily, ModifiedFollowing.
++            observationSchedule = new Schedule(
++                startDate, endDate,
++                new Period(Frequency.Daily), calendar,
++                BusinessDayConvention.ModifiedFollowing,
++                BusinessDayConvention.ModifiedFollowing,
++                DateGeneration.Rule.Forward, false);
++
++            // Flat smile-section at flatVol on both expiry (startDate) and
++            // payment (endDate). C++ uses Flat + Interpolated; we use Flat
++            // only (Interpolated requires 1000-point stdDev vectors).
++            smileOnExpiry = new FlatSmileSection(
++                startDate, flatVol, rangeCouponDayCount, today);
++            smileOnPayment = new FlatSmileSection(
++                endDate, flatVol, rangeCouponDayCount, today);
++        }
++
++        RangeAccrualFloatersCoupon makeCoupon(final double lower, final double upper) {
++            return new RangeAccrualFloatersCoupon(
++                paymentDate, 1.0, iborIndex,
++                startDate, endDate,
++                fixingDays, rangeCouponDayCount,
++                gearing, spread,
++                startDate, endDate,
++                observationSchedule,
++                lower, upper);
++        }
++    }
++
++    /**
++     * As the strike range expands to (-inf, +inf) the range-accrual coupon
++     * rate should converge to the plain ibor-coupon fixing. Mirrors C++
++     * {@code rangeaccrual.cpp:584-634}.
++     */
+     @Test
+     public void testInfiniteRange() {
++        QL.info("Testing infinite range accrual floaters...");
++        final Vars vars = new Vars();
++
++        final RangeAccrualFloatersCoupon coupon = vars.makeCoupon(
++            vars.infiniteLowerStrike, vars.infiniteUpperStrike);
++        final Date fixingDate = coupon.fixingDate();
++
++        for (final boolean cs : vars.byCallSpread) {
++            final RangeAccrualPricer bgmPricer = new RangeAccrualPricerByBgm(
++                vars.correlation,
++                vars.smileOnExpiry, vars.smileOnPayment,
++                true /* withSmile */, cs /* byCallSpread */);
++            coupon.setPricer(bgmPricer);
++
++            final double rate = coupon.rate();
++            final double indexFixing = vars.iborIndex.fixing(fixingDate);
++            final double difference = rate - indexFixing;
++
++            if (Math.abs(difference) > vars.rateTolerance) {
++                fail("\nbyCallSpread:\t" + cs
++                   + "\nfixingDate:\t" + fixingDate
++                   + "\nstartDate:\t" + vars.startDate
++                   + "\nrange accrual rate:\t" + rate
++                   + "\nindex fixing:\t" + indexFixing
++                   + "\ndifference:\t" + difference
++                   + "\ntolerance: \t" + vars.rateTolerance);
++            }
++        }
++        // Sanity: rate ~ index fixing — keep an assertion visible.
++        assertEquals(vars.iborIndex.fixing(fixingDate), coupon.rate(),
++                     vars.rateTolerance);
+     }
+ 
+-    @Ignore("Phase 5e.5 WI-5e.5-RA-1/2/3: RangeAccrualFloatersCoupon + RangeAccrualPricerByBgm + RangeAccrualLeg now ported (commit efa0330a); empty test body — needs full port from C++ rangeaccrual.cpp.")
++    /**
++     * Range-accrual coupon price is strictly decreasing as the lower
++     * strike sweeps upward (range shrinks from below). Mirrors C++
++     * {@code rangeaccrual.cpp:636-689}.
++     */
+     @Test
+     public void testPriceMonotonicityWithRespectToLowerStrike() {
++        QL.info("Testing price monotonicity with respect to the lower strike...");
++        final Vars vars = new Vars();
++
++        for (final boolean cs : vars.byCallSpread) {
++            final RangeAccrualPricer bgmPricer = new RangeAccrualPricerByBgm(
++                vars.correlation,
++                vars.smileOnExpiry, vars.smileOnPayment,
++                true /* withSmile */, cs /* byCallSpread */);
++
++            double previousPrice = 100.0;
++            for (int k = 1; k < 100; k++) {
++                final double lower = 0.005 + k * 0.001;
++                final RangeAccrualFloatersCoupon coupon =
++                    vars.makeCoupon(lower, vars.infiniteUpperStrike);
++                coupon.setPricer(bgmPricer);
++                final double price = coupon.price(vars.termStructure);
++
++                if (previousPrice <= price) {
++                    fail("\nbyCallSpread:\t" + cs
++                       + "\nk:\t" + k
++                       + "\nPrice at lower strike " + (lower - 0.001) + ": " + previousPrice
++                       + "\nPrice at lower strike " + lower + ": " + price);
++                }
++                previousPrice = price;
++            }
++        }
+     }
+ 
+-    @Ignore("Phase 5e.5 WI-5e.5-RA-1/2/3: RangeAccrualFloatersCoupon + RangeAccrualPricerByBgm + RangeAccrualLeg now ported (commit efa0330a); empty test body — needs full port from C++ rangeaccrual.cpp.")
++    /**
++     * Range-accrual coupon price is strictly increasing as the upper
++     * strike sweeps upward (range grows from above). Mirrors C++
++     * {@code rangeaccrual.cpp:691-744}.
++     */
+     @Test
+     public void testPriceMonotonicityWithRespectToUpperStrike() {
++        QL.info("Testing price monotonicity with respect to the upper strike...");
++        final Vars vars = new Vars();
++
++        for (final boolean cs : vars.byCallSpread) {
++            final RangeAccrualPricer bgmPricer = new RangeAccrualPricerByBgm(
++                vars.correlation,
++                vars.smileOnExpiry, vars.smileOnPayment,
++                true /* withSmile */, cs /* byCallSpread */);
++
++            double previousPrice = 0.0;
++            for (int k = 1; k < 95; k++) {
++                final double upper = 0.006 + k * 0.001;
++                final RangeAccrualFloatersCoupon coupon =
++                    vars.makeCoupon(0.004, upper);
++                coupon.setPricer(bgmPricer);
++                final double price = coupon.price(vars.termStructure);
++
++                if (previousPrice > price) {
++                    fail("\nbyCallSpread:\t" + cs
++                       + "\nk:\t" + k
++                       + "\nPrice at upper strike " + (upper - 0.001) + ": " + previousPrice
++                       + "\nPrice at upper strike " + upper + ": " + price);
++                }
++                previousPrice = price;
++            }
++        }
+     }
+ }

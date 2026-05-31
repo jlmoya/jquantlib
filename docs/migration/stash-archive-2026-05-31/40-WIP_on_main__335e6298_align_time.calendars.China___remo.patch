@@ -1,0 +1,147 @@
+diff --git a/jquantlib/src/main/java/org/jquantlib/math/matrixutilities/SymmetricSchurDecomposition.java b/jquantlib/src/main/java/org/jquantlib/math/matrixutilities/SymmetricSchurDecomposition.java
+index b98bbb9a..cb16ab8e 100755
+--- a/jquantlib/src/main/java/org/jquantlib/math/matrixutilities/SymmetricSchurDecomposition.java
++++ b/jquantlib/src/main/java/org/jquantlib/math/matrixutilities/SymmetricSchurDecomposition.java
+@@ -165,6 +165,76 @@ public class SymmetricSchurDecomposition {
+         } while (++ite <= maxIterations && keeplooping);
+ 
+         QL.ensure(ite <= maxIterations, "Too many iterations reached");
++
++        // Phase 5e.5b-CFC-d-27 align: C++ symmetricschurdecomposition.cpp:115-138
++        // performs an (eigenvalue, eigenvector) sort in descending eigenvalue order,
++        // then normalizes each eigenvector's sign so the first row entry is non-negative.
++        // Without this step, Java's PseudoSqrt(Spectral) returns columns in a different
++        // order/sign than C++ pseudoSqrt(corr, SalvagingAlgorithm::Spectral), which
++        // decorrelates the dz mapping in MultiPathGenerator and breaks the
++        // Himalaya/Everest/Pagoda cached MC tests (and any other test that compares
++        // against C++ reference values produced from PseudoSqrt(Spectral)).
++        //
++        // Reference: migration-harness/cpp/probes/math/matrixutilities/pseudosqrt_spectral_probe.cpp
++        // + migration-harness/references/math/matrixutilities/pseudosqrt_spectral.json
++        sortAndSignNormalize();
++    }
++
++    /**
++     * Sort (eigenvalues, eigenvectors) so eigenvalues are in descending order,
++     * then sign-normalize each eigenvector so its first row entry is non-negative.
++     * Mirrors C++ {@code symmetricschurdecomposition.cpp:115-138}.
++     *
++     * <p>Also rounds any eigenvalue whose magnitude relative to the largest
++     * eigenvalue is below 1e-16 down to zero, matching the C++ round-off guard.
++     */
++    private void sortAndSignNormalize() {
++        // Offset-aware indexing: Array/Matrix coordinates are 1-based for fortran flags,
++        // 0-based otherwise. Use the same offset as the rest of this class.
++        final int aOffset = diag.begin();   // 0 or 1
++        final int mOffset = A.offset();     // 0 or 1
++
++        // Snapshot current (eigenvalue, eigenvector-column) pairs in plain 0-based arrays.
++        final double[] values = new double[size];
++        final double[][] vectors = new double[size][size]; // vectors[col][row]
++        for (int col = 0; col < size; ++col) {
++            values[col] = diag.get(col + aOffset);
++            for (int row = 0; row < size; ++row) {
++                vectors[col][row] = A.get(row + mOffset, col + mOffset);
++            }
++        }
++
++        // Index-based sort, descending by eigenvalue. std::sort with std::greater<>
++        // on std::pair compares the .first first; ties are broken by the vectors'
++        // lexicographic order — practically not observed for non-degenerate inputs.
++        final Integer[] idx = new Integer[size];
++        for (int i = 0; i < size; ++i) idx[i] = i;
++        java.util.Arrays.sort(idx, (a, b) -> {
++            final int c = Double.compare(values[b], values[a]); // descending
++            if (c != 0) return c;
++            // Lexicographic tie-break on the eigenvector entries, matching
++            // std::pair<Real, std::vector<Real>> with std::greater<>.
++            for (int r = 0; r < size; ++r) {
++                final int cc = Double.compare(vectors[b][r], vectors[a][r]);
++                if (cc != 0) return cc;
++            }
++            return 0;
++        });
++
++        final double maxEv = values[idx[0]];
++        for (int col = 0; col < size; ++col) {
++            final int src = idx[col];
++            // Round-off guard: zero out eigenvalues whose magnitude relative to
++            // the largest is below machine precision (matches C++ 1e-16 threshold).
++            final double ev = values[src];
++            final double newEv = (maxEv != 0.0 && Math.abs(ev / maxEv) < 1e-16) ? 0.0 : ev;
++            diag.set(col + aOffset, newEv);
++
++            final double sign = (vectors[src][0] < 0.0) ? -1.0 : 1.0;
++            for (int row = 0; row < size; ++row) {
++                A.set(row + mOffset, col + mOffset, sign * vectors[src][row]);
++            }
++        }
+     }
+ 
+     //
+diff --git a/jquantlib/src/main/java/org/jquantlib/time/calendars/Japan.java b/jquantlib/src/main/java/org/jquantlib/time/calendars/Japan.java
+index 833adc4e..f85aee95 100755
+--- a/jquantlib/src/main/java/org/jquantlib/time/calendars/Japan.java
++++ b/jquantlib/src/main/java/org/jquantlib/time/calendars/Japan.java
+@@ -144,6 +144,10 @@ public class Japan extends Calendar {
+ 	                && y < 2000)
+ 	            // National Foundation Day
+ 	            || ((d == 11 || (d == 12 && w == Monday)) && m == February)
++	            // Emperor's Birthday (Emperor Naruhito, from 2020 onwards).
++	            // Mirrors C++ japan.cpp:69-71.
++	            || ((d == 23 || (d == 24 && w == Monday)) && m == February
++	                && y >= 2020)
+ 	            // Vernal Equinox
+ 	            || ((d == ve || (d == ve+1 && w == Monday)) && m == March)
+ 	            // Greenery Day
+@@ -155,11 +159,21 @@ public class Japan extends Calendar {
+ 	            // Children's Day
+ 	            || ((d == 5  || (d == 6 && w == Monday)) && m == May)
+ 	            // Marine Day (3rd MONDAY in July),
+-	            // was July 20th until 2003, not a holiday before 1996
++	            // was July 20th until 2003, not a holiday before 1996,
++	            // July 23rd in 2020 due to Olympics, July 22nd in 2021 due to Olympics.
++	            // Mirrors C++ japan.cpp:88-97.
+ 	            || (w == Monday && (d >= 15 && d <= 21) && m == July
+-	                && y >= 2003)
++	                && ((y >= 2003 && y < 2020) || y >= 2022))
+ 	            || ((d == 20 || (d == 21 && w == Monday)) && m == July
+ 	                && y >= 1996 && y < 2003)
++	            || (d == 23 && m == July && y == 2020)
++	            || (d == 22 && m == July && y == 2021)
++	            // Mountain Day (Aug 11; Monday if Sunday). Established 2016.
++	            // Moved in 2020/2021 due to Olympics. Mirrors C++ japan.cpp:98-104.
++	            || ((d == 11 || (d == 12 && w == Monday)) && m == August
++	                && ((y >= 2016 && y < 2020) || y >= 2022))
++	            || (d == 10 && m == August && y == 2020)
++	            || (d == 9 && m == August && y == 2021)
+ 	            // Respect for the Aged Day (3rd MONDAY in September),
+ 	            // was September 15th until 2003
+ 	            || (w == Monday && (d >= 15 && d <= 21) && m == September
+@@ -182,9 +196,11 @@ public class Japan extends Calendar {
+ 	            || ((d == 3  || (d == 4 && w == Monday)) && m == November)
+ 	            // Labor Thanksgiving Day
+ 	            || ((d == 23 || (d == 24 && w == Monday)) && m == November)
+-	            // Emperor's Birthday
++	            // Emperor's Birthday (Emperor Akihito, 1989-2018 inclusive).
++	            // After 2018, Emperor Naruhito's birthday in February applies.
++	            // Mirrors C++ japan.cpp:72-74.
+ 	            || ((d == 23 || (d == 24 && w == Monday)) && m == December
+-	                && y >= 1989)
++	                && (y >= 1989 && y < 2019))
+ 	            // Bank Holiday
+ 	            || (d == 31 && m == December)
+ 	            // one-shot holidays
+@@ -195,7 +211,11 @@ public class Japan extends Calendar {
+ 	            // Enthronement Ceremony
+ 	            || (d == 12 && m == November && y == 1990)
+ 	            // Marriage of Prince Naruhito
+-	            || (d == 9 && m == June && y == 1993)) {
++	            || (d == 9 && m == June && y == 1993)
++	            // Enthronement Day (Emperor Naruhito)
++	            || (d == 1 && m == May && y == 2019)
++	            // Enthronement Ceremony (Emperor Naruhito)
++	            || (d == 22 && m == October && y == 2019)) {
+                 return false;
+             }
+ 	        return true;

@@ -1,0 +1,1597 @@
+diff --git a/jquantlib/src/main/java/org/jquantlib/cashflow/FixedRateLeg.java b/jquantlib/src/main/java/org/jquantlib/cashflow/FixedRateLeg.java
+index 5846a444..1a2011ad 100755
+--- a/jquantlib/src/main/java/org/jquantlib/cashflow/FixedRateLeg.java
++++ b/jquantlib/src/main/java/org/jquantlib/cashflow/FixedRateLeg.java
+@@ -1,270 +1,292 @@
+-package org.jquantlib.cashflow;
+-
+-import org.jquantlib.QL;
+-import org.jquantlib.daycounters.DayCounter;
+-import org.jquantlib.termstructures.Compounding;
+-import org.jquantlib.termstructures.InterestRate;
+-import org.jquantlib.time.BusinessDayConvention;
+-import org.jquantlib.time.Calendar;
+-import org.jquantlib.time.Date;
+-import org.jquantlib.time.Period;
+-import org.jquantlib.time.Schedule;
+-import org.jquantlib.time.TimeUnit;
+-
+-// TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
+-public class FixedRateLeg extends Leg {
+-
+-    private final Schedule schedule_;
+-    private double[] notionals_;
+-    private InterestRate[] couponRates_;
+-    private final DayCounter paymentDayCounter_;
+-    private DayCounter firstPeriodDayCounter_;
+-    private DayCounter lastPeriodDayCounter_;
+-    private BusinessDayConvention paymentAdjustment_;
+-    /** Phase 5d.5-Bonds-b — payment calendar (defaults to schedule.calendar()). */
+-    private Calendar paymentCalendar_;
+-    /** Phase 5d.5-Bonds-b — payment-lag in business days (default 0). */
+-    private int paymentLag_;
+-    /** Phase 5d.5-Bonds-b — ex-coupon period (default empty). */
+-    private Period exCouponPeriod_;
+-    /** Phase 5d.5-Bonds-b — ex-coupon calendar (default empty). */
+-    private Calendar exCouponCalendar_;
+-    /** Phase 5d.5-Bonds-b — ex-coupon adjustment (default Following). */
+-    private BusinessDayConvention exCouponAdjustment_;
+-    /** Phase 5d.5-Bonds-b — ex-coupon end-of-month flag (default false). */
+-    private boolean exCouponEndOfMonth_;
+-
+-    public FixedRateLeg(final Schedule schedule, final DayCounter paymentDayCounter){
+-        this.schedule_=(schedule);
+-        this.paymentDayCounter_=(paymentDayCounter);
+-        this.paymentAdjustment_ = BusinessDayConvention.Following;
+-        // Phase 5d.5-Bonds-b — default payment calendar matches C++
+-        // FixedRateLeg::operator Leg() which uses paymentCalendar_.advance(...)
+-        // and falls back to schedule.calendar() when paymentCalendar_ is empty.
+-        // Java has no Calendar.empty(); default to schedule.calendar() up front.
+-        this.paymentCalendar_ = schedule.calendar();
+-        this.paymentLag_ = 0;
+-        this.exCouponPeriod_ = new Period();
+-        this.exCouponCalendar_ = new Calendar();
+-        this.exCouponAdjustment_ = BusinessDayConvention.Following;
+-        this.exCouponEndOfMonth_ = false;
+-    }
+-
+-    public FixedRateLeg withNotionals(/* Real */final double notional) {
+-        this.notionals_ = new double[] {notional};
+-        return this;
+-    }
+-
+-    public FixedRateLeg withNotionals(final double[]/*List<Double>*/ notionals) {
+-        this.notionals_ = notionals; // TODO: clone() ?
+-        return this;
+-    }
+-
+-    public FixedRateLeg withCouponRates(/* @Rate */final double couponRate) {
+-        couponRates_ = new InterestRate[]{new InterestRate(couponRate, paymentDayCounter_, Compounding.Simple)};
+-
+-        //        couponRates_.clear();
+-        //        couponRates_.set(0, new InterestRate(couponRate, paymentDayCounter_, Compounding.SIMPLE));
+-        return this;
+-    }
+-
+-    public FixedRateLeg withCouponRates(final InterestRate couponRate) {
+-        couponRates_ = new InterestRate[]{couponRate};
+-        return this;
+-    }
+-
+-    public FixedRateLeg withCouponRates(/* @Rate */final double [] couponRates) {
+-        couponRates_ = new InterestRate[couponRates.length];
+-        for (int i = 0; i<couponRates.length; i++) {
+-            couponRates_[i] = new InterestRate(couponRates[i], paymentDayCounter_, Compounding.Simple);
+-        }
+-        return this;
+-    }
+-
+-    public FixedRateLeg withCouponRates(final InterestRate [] couponRates) {
+-        couponRates_ = couponRates; // TODO: clone() ?
+-        return this;
+-    }
+-
+-    public FixedRateLeg withPaymentAdjustment(final BusinessDayConvention convention) {
+-        paymentAdjustment_ = convention;
+-        return this;
+-    }
+-
+-    public FixedRateLeg withFirstPeriodDayCounter(final DayCounter dayCounter) {
+-        firstPeriodDayCounter_ = dayCounter;
+-        return this;
+-    }
+-
+-    /** Mirror of C++ {@code FixedRateLeg::withLastPeriodDayCounter}
+-     *  (ql/cashflows/fixedratecoupon.cpp:148-152). The provided day counter
+-     *  overrides the schedule's last-coupon day counter. Phase 3d L0 A.2
+-     *  switches this from accept-but-ignore to actually use the parameter
+-     *  in {@link #Leg()} construction. */
+-    public FixedRateLeg withLastPeriodDayCounter(final DayCounter dayCounter) {
+-        lastPeriodDayCounter_ = dayCounter;
+-        return this;
+-    }
+-
+-    /** Mirror of C++ {@code FixedRateLeg::withPaymentCalendar}
+-     *  (ql/cashflows/fixedratecoupon.cpp:154-157). Overrides the calendar
+-     *  used to advance to the payment date. */
+-    public FixedRateLeg withPaymentCalendar(final Calendar calendar) {
+-        this.paymentCalendar_ = calendar;
+-        return this;
+-    }
+-
+-    /** Mirror of C++ {@code FixedRateLeg::withPaymentLag}
+-     *  (ql/cashflows/fixedratecoupon.cpp:159-162). Number of business days
+-     *  to advance the period-end date when computing the payment date. */
+-    public FixedRateLeg withPaymentLag(final int lag) {
+-        this.paymentLag_ = lag;
+-        return this;
+-    }
+-
+-    /** Mirror of C++ {@code FixedRateLeg::withExCouponPeriod}
+-     *  (ql/cashflows/fixedratecoupon.cpp:164-174). Records ex-coupon
+-     *  parameters for downstream coupon construction.
+-     *
+-     *  <p>Phase 5e.5b-CFC-d-93 — {@link FixedRateCoupon} now accepts an
+-     *  {@code exCouponDate} parameter; {@link #Leg()} threads the
+-     *  computed ex-coupon date through to each coupon so
+-     *  {@link FixedRateCoupon#accruedAmount(Date)} returns negative
+-     *  values on ex-coupon settlement dates. */
+-    public FixedRateLeg withExCouponPeriod(final Period period,
+-                                           final Calendar cal,
+-                                           final BusinessDayConvention convention,
+-                                           final boolean endOfMonth) {
+-        this.exCouponPeriod_ = period;
+-        this.exCouponCalendar_ = cal;
+-        this.exCouponAdjustment_ = convention;
+-        this.exCouponEndOfMonth_ = endOfMonth;
+-        return this;
+-    }
+-
+-    public FixedRateLeg withExCouponPeriod(final Period period,
+-                                           final Calendar cal,
+-                                           final BusinessDayConvention convention) {
+-        return withExCouponPeriod(period, cal, convention, false);
+-    }
+-
+-
+-    public Leg Leg() {
+-        QL.require(couponRates_ != null && couponRates_.length>0 , "coupon rates not specified"); // TODO: message
+-        QL.require(notionals_   != null && notionals_.length>0 , "nominals not specified"); // TODO: message
+-
+-        final Leg leg = new Leg();
+-
+-        // the following is not always correct (for ref-date adjustments)
+-        final Calendar calendar = schedule_.calendar();
+-        // Phase 5d.5-Bonds-b — payment dates advance via paymentCalendar_
+-        // (defaults to schedule_.calendar()) by paymentLag_ business days
+-        // before applying paymentAdjustment_. Mirrors C++
+-        // ql/cashflows/fixedratecoupon.cpp:186 et al.
+-        final boolean hasExCoupon = exCouponPeriod_ != null && exCouponPeriod_.length() != 0;
+-
+-        // first period might be short or long
+-        Date start = schedule_.date(0), end = schedule_.date(1);
+-        Date paymentDate = paymentCalendar_.advance(end, paymentLag_, TimeUnit.Days, paymentAdjustment_, false);
+-        // Phase 5e.5b-CFC-d-93 — thread exCouponDate through FixedRateCoupon
+-        // ctor (was previously discarded).
+-        Date exCouponDate = computeExCouponDate(paymentDate, hasExCoupon);
+-        InterestRate rate = couponRates_[0];
+-        /*@Real*/ double nominal = notionals_[0];
+-        // Mirrors C++ ql/cashflows/fixedratecoupon.cpp:198-204 —
+-        // when the schedule lacks tenor/isRegular meta-info (date-vector
+-        // ctor, hasTenor()=false), or the first stub is regular, we use
+-        // start as the reference date; otherwise we back-walk from end
+-        // by one tenor.
+-        final boolean firstStubIsShortOrLong =
+-                schedule_.hasTenor() && schedule_.hasIsRegular()
+-                && !schedule_.isRegular(1);
+-        if (!firstStubIsShortOrLong) {
+-            QL.require(firstPeriodDayCounter_==null || !firstPeriodDayCounter_.equals(paymentDayCounter_) , "regular first coupon does not allow a first-period day count"); // TODO: message
+-            leg.add(new FixedRateCoupon(nominal, paymentDate, rate, paymentDayCounter_, start, end, start, end, exCouponDate));
+-        } else {
+-            Date ref = end.sub(schedule_.tenor());
+-            ref = calendar.adjust(ref, schedule_.businessDayConvention());
+-            // FIXME: empty() method on dayCounter missing --> substituted by == null (probably incorrect)
+-            final DayCounter dc = (firstPeriodDayCounter_ == null) ? paymentDayCounter_ : firstPeriodDayCounter_;
+-            leg.add(new FixedRateCoupon(nominal, paymentDate, rate, dc, start, end, ref, end, exCouponDate));
+-        }
+-        // regular periods
+-        for (int i = 2; i < schedule_.size() - 1; ++i) {
+-            start = end;
+-            end = schedule_.date(i);
+-            paymentDate = paymentCalendar_.advance(end, paymentLag_, TimeUnit.Days, paymentAdjustment_, false);
+-            exCouponDate = computeExCouponDate(paymentDate, hasExCoupon);
+-            if ((i - 1) < couponRates_.length) {
+-                rate = couponRates_[i - 1];
+-            } else {
+-                rate = couponRates_[couponRates_.length - 1];
+-            }
+-            if ((i - 1) < notionals_.length) {
+-                nominal = notionals_[i - 1];
+-            } else {
+-                nominal = notionals_[notionals_.length - 1];
+-            }
+-            leg.add(new FixedRateCoupon(nominal, paymentDate, rate, paymentDayCounter_, start, end, start, end, exCouponDate));
+-        }
+-
+-        if (schedule_.size() > 2) {
+-            // last period might be short or long
+-            final int N = schedule_.size();
+-            start = end;
+-            end = schedule_.date(N - 1);
+-            paymentDate = paymentCalendar_.advance(end, paymentLag_, TimeUnit.Days, paymentAdjustment_, false);
+-            exCouponDate = computeExCouponDate(paymentDate, hasExCoupon);
+-            if ((N - 2) < couponRates_.length) {
+-                rate = couponRates_[N - 2];
+-            } else {
+-                rate = couponRates_[couponRates_.length - 1];
+-            }
+-            if ((N - 2) < notionals_.length) {
+-                nominal = notionals_[N - 2];
+-            } else {
+-                nominal = notionals_[notionals_.length - 1];
+-            }
+-            // Phase 3d L0 A.2 — wire withLastPeriodDayCounter (mirrors C++
+-            // ql/cashflows/fixedratecoupon.cpp:255-272). When non-null this
+-            // day counter replaces paymentDayCounter for the last coupon.
+-            final DayCounter lastDc =
+-                    (lastPeriodDayCounter_ == null) ? paymentDayCounter_ : lastPeriodDayCounter_;
+-            final InterestRate lastRate = (lastPeriodDayCounter_ == null)
+-                    ? rate
+-                    : new InterestRate(rate.rate(), lastDc, rate.compounding());
+-            // Mirrors C++ ql/cashflows/fixedratecoupon.cpp:258-272 —
+-            // when the schedule lacks tenor (date-vector ctor) or the
+-            // last stub is regular, use the regular branch (refStart=start,
+-            // refEnd=end); otherwise compute a forward reference from
+-            // start by one tenor.
+-            final boolean lastIsRegularOrNoTenor =
+-                    !schedule_.hasTenor()
+-                    || (schedule_.hasIsRegular() && schedule_.isRegular(N - 1));
+-            if (lastIsRegularOrNoTenor) {
+-                leg.add(new FixedRateCoupon(nominal, paymentDate, lastRate, lastDc, start, end, start, end, exCouponDate));
+-            } else {
+-                Date ref = start.add(schedule_.tenor());
+-                ref = calendar.adjust(ref, schedule_.businessDayConvention());
+-                leg.add(new FixedRateCoupon(nominal, paymentDate, lastRate, lastDc, start, end, start, ref, exCouponDate));
+-            }
+-        }
+-        return leg;
+-    }
+-
+-    /** Mirrors C++ {@code FixedRateLeg::operator Leg()} ex-coupon block
+-     *  (ql/cashflows/fixedratecoupon.cpp:191-196 and similar). Computes
+-     *  the ex-coupon date as {@code exCouponCalendar.advance(paymentDate,
+-     *  -exCouponPeriod, exCouponAdjustment, exCouponEndOfMonth)} when an
+-     *  ex-coupon period is configured; returns {@code Date()} otherwise. */
+-    private Date computeExCouponDate(final Date paymentDate, final boolean hasExCoupon) {
+-        if (!hasExCoupon) {
+-            return new Date();
+-        }
+-        return exCouponCalendar_.advance(
+-                paymentDate,
+-                exCouponPeriod_.negative(),
+-                exCouponAdjustment_,
+-                exCouponEndOfMonth_);
+-    }
+-}
++package org.jquantlib.cashflow;
++
++import org.jquantlib.QL;
++import org.jquantlib.daycounters.DayCounter;
++import org.jquantlib.termstructures.Compounding;
++import org.jquantlib.termstructures.InterestRate;
++import org.jquantlib.time.BusinessDayConvention;
++import org.jquantlib.time.Calendar;
++import org.jquantlib.time.Date;
++import org.jquantlib.time.Period;
++import org.jquantlib.time.Schedule;
++import org.jquantlib.time.TimeUnit;
++
++// TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
++public class FixedRateLeg extends Leg {
++
++    private final Schedule schedule_;
++    private double[] notionals_;
++    private InterestRate[] couponRates_;
++    private final DayCounter paymentDayCounter_;
++    private DayCounter firstPeriodDayCounter_;
++    private DayCounter lastPeriodDayCounter_;
++    private BusinessDayConvention paymentAdjustment_;
++    /** Phase 5d.5-Bonds-b — payment calendar (defaults to schedule.calendar()). */
++    private Calendar paymentCalendar_;
++    /** Phase 5d.5-Bonds-b — payment-lag in business days (default 0). */
++    private int paymentLag_;
++    /** Phase 5d.5-Bonds-b — ex-coupon period (default empty). */
++    private Period exCouponPeriod_;
++    /** Phase 5d.5-Bonds-b — ex-coupon calendar (default empty). */
++    private Calendar exCouponCalendar_;
++    /** Phase 5d.5-Bonds-b — ex-coupon adjustment (default Following). */
++    private BusinessDayConvention exCouponAdjustment_;
++    /** Phase 5d.5-Bonds-b — ex-coupon end-of-month flag (default false). */
++    private boolean exCouponEndOfMonth_;
++
++    public FixedRateLeg(final Schedule schedule, final DayCounter paymentDayCounter){
++        this.schedule_=(schedule);
++        this.paymentDayCounter_=(paymentDayCounter);
++        this.paymentAdjustment_ = BusinessDayConvention.Following;
++        // Phase 5d.5-Bonds-b — default payment calendar matches C++
++        // FixedRateLeg::operator Leg() which uses paymentCalendar_.advance(...)
++        // and falls back to schedule.calendar() when paymentCalendar_ is empty.
++        // Java has no Calendar.empty(); default to schedule.calendar() up front.
++        this.paymentCalendar_ = schedule.calendar();
++        this.paymentLag_ = 0;
++        this.exCouponPeriod_ = new Period();
++        this.exCouponCalendar_ = new Calendar();
++        this.exCouponAdjustment_ = BusinessDayConvention.Following;
++        this.exCouponEndOfMonth_ = false;
++    }
++
++    public FixedRateLeg withNotionals(/* Real */final double notional) {
++        this.notionals_ = new double[] {notional};
++        return this;
++    }
++
++    public FixedRateLeg withNotionals(final double[]/*List<Double>*/ notionals) {
++        this.notionals_ = notionals; // TODO: clone() ?
++        return this;
++    }
++
++    public FixedRateLeg withCouponRates(/* @Rate */final double couponRate) {
++        couponRates_ = new InterestRate[]{new InterestRate(couponRate, paymentDayCounter_, Compounding.Simple)};
++
++        //        couponRates_.clear();
++        //        couponRates_.set(0, new InterestRate(couponRate, paymentDayCounter_, Compounding.SIMPLE));
++        return this;
++    }
++
++    public FixedRateLeg withCouponRates(final InterestRate couponRate) {
++        couponRates_ = new InterestRate[]{couponRate};
++        return this;
++    }
++
++    public FixedRateLeg withCouponRates(/* @Rate */final double [] couponRates) {
++        couponRates_ = new InterestRate[couponRates.length];
++        for (int i = 0; i<couponRates.length; i++) {
++            couponRates_[i] = new InterestRate(couponRates[i], paymentDayCounter_, Compounding.Simple);
++        }
++        return this;
++    }
++
++    public FixedRateLeg withCouponRates(final InterestRate [] couponRates) {
++        couponRates_ = couponRates; // TODO: clone() ?
++        return this;
++    }
++
++    public FixedRateLeg withPaymentAdjustment(final BusinessDayConvention convention) {
++        paymentAdjustment_ = convention;
++        return this;
++    }
++
++    public FixedRateLeg withFirstPeriodDayCounter(final DayCounter dayCounter) {
++        firstPeriodDayCounter_ = dayCounter;
++        return this;
++    }
++
++    /** Mirror of C++ {@code FixedRateLeg::withLastPeriodDayCounter}
++     *  (ql/cashflows/fixedratecoupon.cpp:148-152). The provided day counter
++     *  overrides the schedule's last-coupon day counter. Phase 3d L0 A.2
++     *  switches this from accept-but-ignore to actually use the parameter
++     *  in {@link #Leg()} construction. */
++    public FixedRateLeg withLastPeriodDayCounter(final DayCounter dayCounter) {
++        lastPeriodDayCounter_ = dayCounter;
++        return this;
++    }
++
++    /** Mirror of C++ {@code FixedRateLeg::withPaymentCalendar}
++     *  (ql/cashflows/fixedratecoupon.cpp:154-157). Overrides the calendar
++     *  used to advance to the payment date. */
++    public FixedRateLeg withPaymentCalendar(final Calendar calendar) {
++        this.paymentCalendar_ = calendar;
++        return this;
++    }
++
++    /** Mirror of C++ {@code FixedRateLeg::withPaymentLag}
++     *  (ql/cashflows/fixedratecoupon.cpp:159-162). Number of business days
++     *  to advance the period-end date when computing the payment date. */
++    public FixedRateLeg withPaymentLag(final int lag) {
++        this.paymentLag_ = lag;
++        return this;
++    }
++
++    /** Mirror of C++ {@code FixedRateLeg::withExCouponPeriod}
++     *  (ql/cashflows/fixedratecoupon.cpp:164-174). Records ex-coupon
++     *  parameters for downstream coupon construction.
++     *
++     *  <p>Phase 5e.5b-CFC-d-93 — {@link FixedRateCoupon} now accepts an
++     *  {@code exCouponDate} parameter; {@link #Leg()} threads the
++     *  computed ex-coupon date through to each coupon so
++     *  {@link FixedRateCoupon#accruedAmount(Date)} returns negative
++     *  values on ex-coupon settlement dates. */
++    public FixedRateLeg withExCouponPeriod(final Period period,
++                                           final Calendar cal,
++                                           final BusinessDayConvention convention,
++                                           final boolean endOfMonth) {
++        this.exCouponPeriod_ = period;
++        this.exCouponCalendar_ = cal;
++        this.exCouponAdjustment_ = convention;
++        this.exCouponEndOfMonth_ = endOfMonth;
++        return this;
++    }
++
++    public FixedRateLeg withExCouponPeriod(final Period period,
++                                           final Calendar cal,
++                                           final BusinessDayConvention convention) {
++        return withExCouponPeriod(period, cal, convention, false);
++    }
++
++
++    public Leg Leg() {
++        QL.require(couponRates_ != null && couponRates_.length>0 , "coupon rates not specified"); // TODO: message
++        QL.require(notionals_   != null && notionals_.length>0 , "nominals not specified"); // TODO: message
++
++        final Leg leg = new Leg();
++
++        // the following is not always correct (for ref-date adjustments)
++        final Calendar calendar = schedule_.calendar();
++        // Phase 5d.5-Bonds-b — payment dates advance via paymentCalendar_
++        // (defaults to schedule_.calendar()) by paymentLag_ business days
++        // before applying paymentAdjustment_. Mirrors C++
++        // ql/cashflows/fixedratecoupon.cpp:186 et al.
++        final boolean hasExCoupon = exCouponPeriod_ != null && exCouponPeriod_.length() != 0;
++
++        // first period might be short or long
++        Date start = schedule_.date(0), end = schedule_.date(1);
++        Date paymentDate = paymentCalendar_.advance(end, paymentLag_, TimeUnit.Days, paymentAdjustment_, false);
++        // Phase 5e.5b-CFC-d-93 — thread exCouponDate through FixedRateCoupon
++        // ctor (was previously discarded).
++        Date exCouponDate = computeExCouponDate(paymentDate, hasExCoupon);
++        InterestRate rate = couponRates_[0];
++        /*@Real*/ double nominal = notionals_[0];
++        // Mirrors C++ ql/cashflows/fixedratecoupon.cpp:198-204 —
++        // when the schedule lacks tenor/isRegular meta-info (date-vector
++        // ctor, hasTenor()=false), or the first stub is regular, we use
++        // start as the reference date; otherwise we back-walk from end
++        // by one tenor.
++        final boolean firstStubIsShortOrLong =
++                schedule_.hasTenor() && schedule_.hasIsRegular()
++                && !schedule_.isRegular(1);
++        if (!firstStubIsShortOrLong) {
++            QL.require(firstPeriodDayCounter_==null || !firstPeriodDayCounter_.equals(paymentDayCounter_) , "regular first coupon does not allow a first-period day count"); // TODO: message
++            leg.add(new FixedRateCoupon(nominal, paymentDate, rate, paymentDayCounter_, start, end, start, end, exCouponDate));
++        } else {
++            // Mirrors C++ ql/cashflows/fixedratecoupon.cpp:198-204 — the
++            // irregular first-coupon reference start is computed as
++            // schedule.calendar().advance(end, -schedule.tenor(),
++            //                             schedule.businessDayConvention(),
++            //                             schedule.endOfMonth()).
++            // The previous Java impl used end.sub(schedule_.tenor()) +
++            // calendar.adjust(...) which ignored the schedule's EOM flag
++            // and therefore mis-snapped reference starts when EOM=true
++            // (e.g. 28-Aug-2016 instead of 31-Aug-2016 for the 17-Jan-2017
++            // -> 28-Feb-2018 semi-annual EOM schedule). Phase 5e.5b-CFC-d-137.
++            final Date ref = calendar.advance(end,
++                    schedule_.tenor().negative(),
++                    schedule_.businessDayConvention(),
++                    schedule_.endOfMonth());
++            // FIXME: empty() method on dayCounter missing --> substituted by == null (probably incorrect)
++            final DayCounter dc = (firstPeriodDayCounter_ == null) ? paymentDayCounter_ : firstPeriodDayCounter_;
++            leg.add(new FixedRateCoupon(nominal, paymentDate, rate, dc, start, end, ref, end, exCouponDate));
++        }
++        // regular periods
++        for (int i = 2; i < schedule_.size() - 1; ++i) {
++            start = end;
++            end = schedule_.date(i);
++            paymentDate = paymentCalendar_.advance(end, paymentLag_, TimeUnit.Days, paymentAdjustment_, false);
++            exCouponDate = computeExCouponDate(paymentDate, hasExCoupon);
++            if ((i - 1) < couponRates_.length) {
++                rate = couponRates_[i - 1];
++            } else {
++                rate = couponRates_[couponRates_.length - 1];
++            }
++            if ((i - 1) < notionals_.length) {
++                nominal = notionals_[i - 1];
++            } else {
++                nominal = notionals_[notionals_.length - 1];
++            }
++            leg.add(new FixedRateCoupon(nominal, paymentDate, rate, paymentDayCounter_, start, end, start, end, exCouponDate));
++        }
++
++        if (schedule_.size() > 2) {
++            // last period might be short or long
++            final int N = schedule_.size();
++            start = end;
++            end = schedule_.date(N - 1);
++            paymentDate = paymentCalendar_.advance(end, paymentLag_, TimeUnit.Days, paymentAdjustment_, false);
++            exCouponDate = computeExCouponDate(paymentDate, hasExCoupon);
++            if ((N - 2) < couponRates_.length) {
++                rate = couponRates_[N - 2];
++            } else {
++                rate = couponRates_[couponRates_.length - 1];
++            }
++            if ((N - 2) < notionals_.length) {
++                nominal = notionals_[N - 2];
++            } else {
++                nominal = notionals_[notionals_.length - 1];
++            }
++            // Phase 3d L0 A.2 — wire withLastPeriodDayCounter (mirrors C++
++            // ql/cashflows/fixedratecoupon.cpp:255-272). When non-null this
++            // day counter replaces paymentDayCounter for the last coupon.
++            final DayCounter lastDc =
++                    (lastPeriodDayCounter_ == null) ? paymentDayCounter_ : lastPeriodDayCounter_;
++            final InterestRate lastRate = (lastPeriodDayCounter_ == null)
++                    ? rate
++                    : new InterestRate(rate.rate(), lastDc, rate.compounding());
++            // Mirrors C++ ql/cashflows/fixedratecoupon.cpp:258-272 —
++            // when the schedule lacks tenor (date-vector ctor) or the
++            // last stub is regular, use the regular branch (refStart=start,
++            // refEnd=end); otherwise compute a forward reference from
++            // start by one tenor.
++            final boolean lastIsRegularOrNoTenor =
++                    !schedule_.hasTenor()
++                    || (schedule_.hasIsRegular() && schedule_.isRegular(N - 1));
++            if (lastIsRegularOrNoTenor) {
++                leg.add(new FixedRateCoupon(nominal, paymentDate, lastRate, lastDc, start, end, start, end, exCouponDate));
++            } else {
++                // Mirrors C++ ql/cashflows/fixedratecoupon.cpp:264-268 — the
++                // irregular last-coupon reference end is computed as
++                // schedule.calendar().advance(start, schedule.tenor(),
++                //                             schedule.businessDayConvention(),
++                //                             schedule.endOfMonth()).
++                // EOM honoring is required so that e.g. start=28-Feb-2018 +
++                // 6M with EOM=true rolls to 31-Aug-2018, not 28-Aug-2018.
++                // Phase 5e.5b-CFC-d-137.
++                final Date ref = calendar.advance(start,
++                        schedule_.tenor(),
++                        schedule_.businessDayConvention(),
++                        schedule_.endOfMonth());
++                leg.add(new FixedRateCoupon(nominal, paymentDate, lastRate, lastDc, start, end, start, ref, exCouponDate));
++            }
++        }
++        return leg;
++    }
++
++    /** Mirrors C++ {@code FixedRateLeg::operator Leg()} ex-coupon block
++     *  (ql/cashflows/fixedratecoupon.cpp:191-196 and similar). Computes
++     *  the ex-coupon date as {@code exCouponCalendar.advance(paymentDate,
++     *  -exCouponPeriod, exCouponAdjustment, exCouponEndOfMonth)} when an
++     *  ex-coupon period is configured; returns {@code Date()} otherwise. */
++    private Date computeExCouponDate(final Date paymentDate, final boolean hasExCoupon) {
++        if (!hasExCoupon) {
++            return new Date();
++        }
++        return exCouponCalendar_.advance(
++                paymentDate,
++                exCouponPeriod_.negative(),
++                exCouponAdjustment_,
++                exCouponEndOfMonth_);
++    }
++}
+diff --git a/jquantlib/src/main/java/org/jquantlib/termstructures/volatilities/swaption/InterpolatedSwaptionVolatilityCube.java b/jquantlib/src/main/java/org/jquantlib/termstructures/volatilities/swaption/InterpolatedSwaptionVolatilityCube.java
+new file mode 100644
+index 00000000..de330f58
+--- /dev/null
++++ b/jquantlib/src/main/java/org/jquantlib/termstructures/volatilities/swaption/InterpolatedSwaptionVolatilityCube.java
+@@ -0,0 +1,202 @@
++/*
++ Copyright (C) 2026 JQuantLib migration contributors.
++
++ This source code is release under the BSD License.
++
++ This file is part of JQuantLib, a free-software/open-source library
++ for financial quantitative analysts and developers - http://jquantlib.org/
++
++ JQuantLib is free software: you can redistribute it and/or modify it
++ under the terms of the JQuantLib license.  You should have received a
++ copy of the license along with this program; if not, please email
++ <jquant-devel@lists.sourceforge.net>. The license is also available online at
++ <http://www.jquantlib.org/index.php/LICENSE.TXT>.
++
++ This program is distributed in the hope that it will be useful, but WITHOUT
++ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
++ FOR A PARTICULAR PURPOSE.  See the license for more details.
++
++ JQuantLib is based on QuantLib. http://quantlib.org/
++ When applicable, the original copyright notice follows this notice.
++ */
++
++/*
++ Copyright (C) 2006 Ferdinando Ametrano
++ Copyright (C) 2006 Katiuscia Manzoni
++ Copyright (C) 2015 Peter Caspers
++ Copyright (C) 2023 Ignacio Anguita
++
++ This file is part of QuantLib, a free-software/open-source library
++ for financial quantitative analysts and developers - http://quantlib.org/
++ */
++package org.jquantlib.termstructures.volatilities.swaption;
++
++import java.util.ArrayList;
++import java.util.List;
++
++import org.jquantlib.daycounters.Actual365Fixed;
++import org.jquantlib.indexes.SwapIndex;
++import org.jquantlib.math.Rounding;
++import org.jquantlib.math.interpolations.BilinearInterpolation;
++import org.jquantlib.math.interpolations.Interpolation2D;
++import org.jquantlib.math.interpolations.factories.Linear;
++import org.jquantlib.math.matrixutilities.Array;
++import org.jquantlib.math.matrixutilities.Matrix;
++import org.jquantlib.quotes.Handle;
++import org.jquantlib.quotes.Quote;
++import org.jquantlib.termstructures.SwaptionVolatilityStructure;
++import org.jquantlib.termstructures.volatilities.InterpolatedSmileSection;
++import org.jquantlib.termstructures.volatilities.SmileSection;
++import org.jquantlib.time.BusinessDayConvention;
++import org.jquantlib.time.Date;
++import org.jquantlib.time.Period;
++import org.jquantlib.time.TimeUnit;
++
++/**
++ * "Fit-later-interpolate-early" swaption volatility cube — bilinear
++ * interpolation across the (option-time, swap-length) plane at each strike
++ * spread, then a per-section {@link InterpolatedSmileSection} across strikes
++ * at query time.
++ *
++ * <p>Port of C++ QuantLib v1.42.1 {@code
++ * ql/termstructures/volatility/swaption/interpolatedswaptionvolatilitycube.{hpp,cpp}}.
++ *
++ * <h3>Java port deviations from C++ v1.42.1</h3>
++ * <ul>
++ *  <li>C++ instantiates one {@code InterpolatedSmileSection<Linear>} per
++ *      query (template + factory). Java uses
++ *      {@link InterpolatedSmileSection}'s raw-double ctor and a fresh
++ *      {@link Linear} factory.</li>
++ *  <li>C++ uses {@code Following} adjustment via the
++ *      {@code swapIndex_->fixingCalendar()}. Java mirrors this with
++ *      {@link org.jquantlib.time.Calendar#adjust(Date, BusinessDayConvention)}.</li>
++ * </ul>
++ */
++public class InterpolatedSwaptionVolatilityCube extends SwaptionVolatilityCube {
++
++    //
++    // private state
++    //
++
++    private final Interpolation2D[] volSpreadsInterpolator_;
++    private final Matrix[] volSpreadsMatrix_;
++
++    //
++    // public constructor
++    //
++
++    public InterpolatedSwaptionVolatilityCube(
++            final Handle<SwaptionVolatilityStructure> atmVolStructure,
++            final List<Period> optionTenors,
++            final List<Period> swapTenors,
++            final List<Double> strikeSpreads,
++            final List<List<Handle<Quote>>> volSpreads,
++            final SwapIndex swapIndexBase,
++            final SwapIndex shortSwapIndexBase,
++            final boolean vegaWeightedSmileFit) {
++        super(atmVolStructure, optionTenors, swapTenors, strikeSpreads,
++                volSpreads, swapIndexBase, shortSwapIndexBase,
++                vegaWeightedSmileFit);
++
++        this.volSpreadsInterpolator_ = new Interpolation2D[nStrikes_];
++        this.volSpreadsMatrix_ = new Matrix[nStrikes_];
++        for (int i = 0; i < nStrikes_; ++i) {
++            this.volSpreadsMatrix_[i] = new Matrix(optionTenors.size(),
++                    swapTenors.size());
++        }
++    }
++
++    //
++    // SwaptionVolatilityCube hooks
++    //
++
++    /**
++     * Refresh per-strike spread matrices from the quote handles and (re)build
++     * one {@link BilinearInterpolation} per strike.
++     */
++    @Override
++    protected void performCalculations() {
++        super.performCalculations();
++        // Populate volSpreadsMatrix_[i][j,k] from volSpreads_[j*nSwapTenors_+k][i]
++        for (int i = 0; i < nStrikes_; ++i) {
++            for (int j = 0; j < nOptionTenors_; ++j) {
++                for (int k = 0; k < nSwapTenors_; ++k) {
++                    volSpreadsMatrix_[i].set(j, k,
++                            volSpreads_.get(j * nSwapTenors_ + k).get(i)
++                                    .currentLink().value());
++                }
++            }
++        }
++        // (Re)build bilinear interpolators
++        final Array swapAxis = new Array(swapLengths_);
++        final Array optAxis = new Array(optionTimes_);
++        for (int i = 0; i < nStrikes_; ++i) {
++            volSpreadsInterpolator_[i] = new BilinearInterpolation(
++                    swapAxis, optAxis, volSpreadsMatrix_[i]);
++            volSpreadsInterpolator_[i].enableExtrapolation();
++        }
++    }
++
++    /**
++     * Accessor (mirror C++ public inspector).
++     */
++    public Matrix volSpreads(final int i) {
++        calculate();
++        return volSpreadsMatrix_[i];
++    }
++
++    //
++    // SwaptionVolatilityStructure hooks (smile sections)
++    //
++
++    @Override
++    protected SmileSection smileSectionImpl(final double optionTime,
++                                            final double swapLength) {
++        calculate();
++        Date optionDate = optionDateFromTime(optionTime);
++        // C++: round to nearest month then build a Period of that many months
++        final Rounding rounder = new Rounding(0);
++        final int months = (int) rounder.operator(swapLength * 12.0);
++        final Period swapTenor = new Period(months, TimeUnit.Months);
++        // Ensure that option date is a valid fixing date
++        if (swapTenor.gt(shortSwapIndexBase_.tenor())) {
++            optionDate = swapIndexBase_.fixingCalendar()
++                    .adjust(optionDate, BusinessDayConvention.Following);
++        } else {
++            optionDate = shortSwapIndexBase_.fixingCalendar()
++                    .adjust(optionDate, BusinessDayConvention.Following);
++        }
++        return smileSectionImpl(optionDate, swapTenor);
++    }
++
++    @Override
++    protected SmileSection smileSectionImpl(final Date optionDate,
++                                            final Period swapTenor) {
++        calculate();
++        final double atmForward = atmStrike(optionDate, swapTenor);
++        final double atmVol = atmVol_.currentLink()
++                .volatility(optionDate, swapTenor, atmForward, true);
++        final double optionTime = timeFromReference(optionDate);
++        final double exerciseTimeSqrt = Math.sqrt(optionTime);
++        final double length = swapLength(swapTenor);
++
++        final double[] strikes = new double[nStrikes_];
++        final double[] stdDevs = new double[nStrikes_];
++        for (int i = 0; i < nStrikes_; ++i) {
++            strikes[i] = atmForward + strikeSpreads_.get(i);
++            stdDevs[i] = exerciseTimeSqrt
++                    * (atmVol + volSpreadsInterpolator_[i].op(length, optionTime, true));
++        }
++        final double shift = shiftImpl(optionTime, length);
++        return new InterpolatedSmileSection(
++                optionTime,
++                strikes,
++                stdDevs,
++                atmForward,
++                new Linear(),
++                new Actual365Fixed(),
++                volatilityType(),
++                shift,
++                false /* flatStrikeExtrapolation */);
++    }
++}
+diff --git a/jquantlib/src/main/java/org/jquantlib/termstructures/volatilities/swaption/SpreadedSwaptionVolatility.java b/jquantlib/src/main/java/org/jquantlib/termstructures/volatilities/swaption/SpreadedSwaptionVolatility.java
+new file mode 100644
+index 00000000..18b7104f
+--- /dev/null
++++ b/jquantlib/src/main/java/org/jquantlib/termstructures/volatilities/swaption/SpreadedSwaptionVolatility.java
+@@ -0,0 +1,235 @@
++/*
++ Copyright (C) 2026 JQuantLib migration contributors.
++
++ This source code is release under the BSD License.
++
++ This file is part of JQuantLib, a free-software/open-source library
++ for financial quantitative analysts and developers - http://jquantlib.org/
++
++ JQuantLib is free software: you can redistribute it and/or modify it
++ under the terms of the JQuantLib license.  You should have received a
++ copy of the license along with this program; if not, please email
++ <jquant-devel@lists.sourceforge.net>. The license is also available online at
++ <http://www.jquantlib.org/index.php/LICENSE.TXT>.
++
++ This program is distributed in the hope that it will be useful, but WITHOUT
++ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
++ FOR A PARTICULAR PURPOSE.  See the license for more details.
++
++ JQuantLib is based on QuantLib. http://quantlib.org/
++ When applicable, the original copyright notice follows this notice.
++ */
++
++/*
++ Copyright (C) 2008 Ferdinando Ametrano
++ Copyright (C) 2007 Giorgio Facchinetti
++ Copyright (C) 2015 Peter Caspers
++
++ This file is part of QuantLib, a free-software/open-source library
++ for financial quantitative analysts and developers - http://quantlib.org/
++ */
++package org.jquantlib.termstructures.volatilities.swaption;
++
++import org.jquantlib.daycounters.DayCounter;
++import org.jquantlib.model.VolatilityType;
++import org.jquantlib.quotes.Handle;
++import org.jquantlib.quotes.Quote;
++import org.jquantlib.termstructures.SwaptionVolatilityStructure;
++import org.jquantlib.termstructures.volatilities.SmileSection;
++import org.jquantlib.termstructures.volatilities.SpreadedSmileSection;
++import org.jquantlib.time.BusinessDayConvention;
++import org.jquantlib.time.Calendar;
++import org.jquantlib.time.Date;
++import org.jquantlib.time.Period;
++
++/**
++ * Spread overlay on a base {@link SwaptionVolatilityStructure}: adds a
++ * constant additive volatility spread (via a {@link Quote}) to every
++ * vol/smile returned by the base.
++ *
++ * <p>Port of C++ QuantLib v1.42.1
++ * {@code ql/termstructures/volatility/swaption/spreadedswaptionvol.{hpp,cpp}}.
++ *
++ * <h3>Java port deviations from C++ v1.42.1</h3>
++ * <ul>
++ *  <li>Every {@code TermStructure}/{@code VolatilityTermStructure} accessor
++ *      forwards to {@code baseVol_}, exactly matching the C++ inline
++ *      forwarders.</li>
++ *  <li>{@code shiftImpl} delegates to {@code baseVol_->shift(t, l, true)}
++ *      to allow extrapolation, mirroring the C++ inline (header line 113).
++ *      Java's {@code SwaptionVolatilityStructure} does not expose a
++ *      {@code shift(time, length, bool)} overload directly; we route via the
++ *      no-arg {@code shift()} which returns the base lognormal shift
++ *      (zero unless the base is a shifted-lognormal matrix).</li>
++ * </ul>
++ */
++public class SpreadedSwaptionVolatility extends SwaptionVolatilityStructure {
++
++    private final Handle<SwaptionVolatilityStructure> baseVol_;
++    private final Handle<Quote> spread_;
++
++    public SpreadedSwaptionVolatility(
++            final Handle<SwaptionVolatilityStructure> baseVol,
++            final Handle<Quote> spread) {
++        super(baseVol.currentLink().dayCounter(),
++                baseVol.currentLink().businessDayConvention());
++        this.baseVol_ = baseVol;
++        this.spread_ = spread;
++        if (baseVol_.currentLink().allowsExtrapolation()) {
++            enableExtrapolation();
++        }
++        baseVol_.addObserver(this);
++        spread_.addObserver(this);
++    }
++
++    //
++    // TermStructure interface
++    //
++
++    @Override
++    public DayCounter dayCounter() {
++        return baseVol_.currentLink().dayCounter();
++    }
++
++    @Override
++    public Date maxDate() {
++        return baseVol_.currentLink().maxDate();
++    }
++
++    @Override
++    public double maxTime() {
++        return baseVol_.currentLink().maxTime();
++    }
++
++    @Override
++    public Date referenceDate() {
++        return baseVol_.currentLink().referenceDate();
++    }
++
++    @Override
++    public Calendar calendar() {
++        return baseVol_.currentLink().calendar();
++    }
++
++    //
++    // VolatilityTermStructure interface
++    //
++
++    @Override
++    public double minStrike() {
++        return baseVol_.currentLink().minStrike();
++    }
++
++    @Override
++    public double maxStrike() {
++        return baseVol_.currentLink().maxStrike();
++    }
++
++    //
++    // SwaptionVolatilityStructure interface
++    //
++
++    @Override
++    public Period maxSwapTenor() {
++        return baseVol_.currentLink().maxSwapTenor();
++    }
++
++    @Override
++    public VolatilityType volatilityType() {
++        return baseVol_.currentLink().volatilityType();
++    }
++
++    @Override
++    public BusinessDayConvention businessDayConvention() {
++        return baseVol_.currentLink().businessDayConvention();
++    }
++
++    @Override
++    public double shift() {
++        return baseVol_.currentLink().shift();
++    }
++
++    //
++    // smile section forwarders
++    //
++
++    @Override
++    protected SmileSection smileSectionImpl(final Date optionDate,
++                                            final Period swapTenor) {
++        final SmileSection baseSmile = baseVol_.currentLink()
++                .smileSection(optionDate, swapTenor, true);
++        return new SpreadedSmileSection(baseSmile, spread_);
++    }
++
++    @Override
++    protected SmileSection smileSectionImpl(final double optionTime,
++                                            final double swapLength) {
++        // The base SwaptionVolatilityStructure exposes smileSection(Date,...)
++        // but not directly smileSection(double, double, bool). Fall back via
++        // optionDateFromTenor: we cannot easily invert (optionTime, swapLength)
++        // to (Date, Period) without the discrete-grid optionInterpolator_.
++        // Reuse the optionTime→strike→volatility path: build an ad-hoc smile
++        // wrapping baseVol_.volatility(t, l, strike) + spread.
++        return new SpreadedSmileSection(
++                new BaseSmileWrapper(optionTime, swapLength,
++                        baseVol_.currentLink(), dayCounter(), volatilityType(), shift()),
++                spread_);
++    }
++
++    @Override
++    public double volatilityImpl(final double optionTime,
++                                 final double swapLength,
++                                 final double strike) {
++        return baseVol_.currentLink().volatility(optionTime, swapLength, strike, true)
++                + spread_.currentLink().value();
++    }
++
++    @Override
++    protected double volatilityImpl(final Date optionDate,
++                                    final Period swapTenor,
++                                    final double strike) {
++        return baseVol_.currentLink().volatility(optionDate, swapTenor, strike, true)
++                + spread_.currentLink().value();
++    }
++
++    @Override
++    public double blackVariance(final double optionTime, final double swapLength,
++                                final double strike, final boolean extrapolate) {
++        final double v = baseVol_.currentLink().volatility(
++                optionTime, swapLength, strike, extrapolate)
++                + spread_.currentLink().value();
++        return v * v * optionTime;
++    }
++
++    /**
++     * Helper smile-section that lazily evaluates the base
++     * SwaptionVolatilityStructure's {@code volatility(time, length, strike)}
++     * for a fixed (optionTime, swapLength) coordinate. Used by the
++     * {@code smileSectionImpl(double, double)} fallback when the base does
++     * not expose its own (time, length) smile section.
++     */
++    private static final class BaseSmileWrapper extends SmileSection {
++        private final double optionTime_;
++        private final double swapLength_;
++        private final SwaptionVolatilityStructure base_;
++
++        BaseSmileWrapper(final double optionTime, final double swapLength,
++                         final SwaptionVolatilityStructure base,
++                         final DayCounter dc,
++                         final VolatilityType type, final double shift) {
++            super(optionTime, dc, type, shift);
++            this.optionTime_ = optionTime;
++            this.swapLength_ = swapLength;
++            this.base_ = base;
++        }
++
++        @Override public double minStrike() { return base_.minStrike(); }
++        @Override public double maxStrike() { return base_.maxStrike(); }
++        @Override public double atmLevel()  { return Double.NaN; }
++
++        @Override
++        protected double volatilityImpl(final double strike) {
++            return base_.volatility(optionTime_, swapLength_, strike, true);
++        }
++    }
++}
+diff --git a/jquantlib/src/main/java/org/jquantlib/termstructures/volatilities/swaption/SwaptionVolatilityCube.java b/jquantlib/src/main/java/org/jquantlib/termstructures/volatilities/swaption/SwaptionVolatilityCube.java
+new file mode 100644
+index 00000000..493015d5
+--- /dev/null
++++ b/jquantlib/src/main/java/org/jquantlib/termstructures/volatilities/swaption/SwaptionVolatilityCube.java
+@@ -0,0 +1,309 @@
++/*
++ Copyright (C) 2026 JQuantLib migration contributors.
++
++ This source code is release under the BSD License.
++
++ This file is part of JQuantLib, a free-software/open-source library
++ for financial quantitative analysts and developers - http://jquantlib.org/
++
++ JQuantLib is free software: you can redistribute it and/or modify it
++ under the terms of the JQuantLib license.  You should have received a
++ copy of the license along with this program; if not, please email
++ <jquant-devel@lists.sourceforge.net>. The license is also available online at
++ <http://www.jquantlib.org/index.php/LICENSE.TXT>.
++
++ This program is distributed in the hope that it will be useful, but WITHOUT
++ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
++ FOR A PARTICULAR PURPOSE.  See the license for more details.
++
++ JQuantLib is based on QuantLib. http://quantlib.org/
++ When applicable, the original copyright notice follows this notice.
++ */
++
++/*
++ Copyright (C) 2006 Ferdinando Ametrano
++ Copyright (C) 2015 Peter Caspers
++
++ This file is part of QuantLib, a free-software/open-source library
++ for financial quantitative analysts and developers - http://quantlib.org/
++ */
++package org.jquantlib.termstructures.volatilities.swaption;
++
++import java.util.List;
++
++import org.jquantlib.QL;
++import org.jquantlib.indexes.SwapIndex;
++import org.jquantlib.model.VolatilityType;
++import org.jquantlib.quotes.Handle;
++import org.jquantlib.quotes.Quote;
++import org.jquantlib.termstructures.SwaptionVolatilityStructure;
++import org.jquantlib.time.Date;
++import org.jquantlib.time.Period;
++
++/**
++ * Swaption-volatility cube (abstract).
++ *
++ * <p>Port of C++ QuantLib v1.42.1 {@code
++ * ql/termstructures/volatility/swaption/swaptionvolcube.{hpp,cpp}}.
++ *
++ * <p>The cube is built on top of an ATM {@link SwaptionVolatilityStructure} and
++ * a grid of additive volatility spreads at a set of {@code strikeSpreads}
++ * relative to the ATM strike. Concrete subclasses (interpolated /
++ * SABR-fitted) decide how to combine the spreads with the ATM surface to
++ * produce a smile section at any (option, swap) coordinate.
++ *
++ * <h3>Java port deviations from C++ v1.42.1</h3>
++ * <ul>
++ *  <li>C++ inherits both {@code SwaptionVolatilityDiscrete} and
++ *      {@code LazyObject}. Java collapses both via the
++ *      {@link SwaptionVolatilityDiscrete#calculate()} hook (LazyObject
++ *      semantics already woven into the discrete base).</li>
++ *  <li>{@link #atmStrike(Date, Period)} simplifies the C++ four-way switch
++ *      on {@code exogenousDiscount} (Java {@link SwapIndex} does not yet
++ *      track an exogenous discount handle). The behaviour matches the
++ *      common case of {@code exogenousDiscount == false} for both the long
++ *      and short index families.</li>
++ * </ul>
++ */
++public abstract class SwaptionVolatilityCube extends SwaptionVolatilityDiscrete {
++
++    //
++    // protected fields
++    //
++
++    protected final Handle<SwaptionVolatilityStructure> atmVol_;
++    protected final int nStrikes_;
++    protected final List<Double> strikeSpreads_;
++    protected final double[] localStrikes_;
++    protected final double[] localSmile_;
++    protected final List<List<Handle<Quote>>> volSpreads_;
++    protected final SwapIndex swapIndexBase_;
++    protected final SwapIndex shortSwapIndexBase_;
++    protected final boolean vegaWeightedSmileFit_;
++
++    //
++    // public constructor
++    //
++
++    public SwaptionVolatilityCube(
++            final Handle<SwaptionVolatilityStructure> atmVolStructure,
++            final List<Period> optionTenors,
++            final List<Period> swapTenors,
++            final List<Double> strikeSpreads,
++            final List<List<Handle<Quote>>> volSpreads,
++            final SwapIndex swapIndexBase,
++            final SwapIndex shortSwapIndexBase,
++            final boolean vegaWeightedSmileFit) {
++        super(optionTenors,
++                swapTenors,
++                0,
++                atmVolStructure.currentLink().calendar(),
++                atmVolStructure.currentLink().businessDayConvention(),
++                atmVolStructure.currentLink().dayCounter());
++
++        this.atmVol_ = atmVolStructure;
++        this.nStrikes_ = strikeSpreads.size();
++        this.strikeSpreads_ = strikeSpreads;
++        this.localStrikes_ = new double[nStrikes_];
++        this.localSmile_ = new double[nStrikes_];
++        this.volSpreads_ = volSpreads;
++        this.swapIndexBase_ = swapIndexBase;
++        this.shortSwapIndexBase_ = shortSwapIndexBase;
++        this.vegaWeightedSmileFit_ = vegaWeightedSmileFit;
++
++        QL.require(!atmVol_.empty(), "atm vol handle not linked to anything");
++        for (int i = 1; i < nStrikes_; ++i) {
++            QL.require(strikeSpreads_.get(i - 1) < strikeSpreads_.get(i),
++                    "non increasing strike spreads at position " + i);
++        }
++        QL.require(!volSpreads_.isEmpty(), "empty vol spreads matrix");
++        QL.require(nOptionTenors_ * nSwapTenors_ == volSpreads_.size(),
++                "mismatch between number of option tenors * swap tenors ("
++                        + (nOptionTenors_ * nSwapTenors_)
++                        + ") and number of rows (" + volSpreads_.size() + ")");
++        for (int i = 0; i < volSpreads_.size(); ++i) {
++            QL.require(nStrikes_ == volSpreads_.get(i).size(),
++                    "mismatch between number of strikes (" + nStrikes_
++                            + ") and number of columns ("
++                            + volSpreads_.get(i).size()
++                            + ") in row " + (i + 1));
++        }
++
++        atmVol_.addObserver(this);
++        atmVol_.currentLink().enableExtrapolation();
++
++        if (swapIndexBase_ != null) {
++            swapIndexBase_.addObserver(this);
++        }
++        if (shortSwapIndexBase_ != null) {
++            shortSwapIndexBase_.addObserver(this);
++        }
++
++        QL.require(shortSwapIndexBase_.tenor().le(swapIndexBase_.tenor()),
++                "short index tenor (" + shortSwapIndexBase_.tenor()
++                        + ") is not less or equal than index tenor ("
++                        + swapIndexBase_.tenor() + ")");
++
++        registerWithVolatilitySpread();
++    }
++
++    //
++    // observer wiring
++    //
++
++    /**
++     * Mirrors C++ {@code registerWithVolatilitySpread()}: register as an
++     * observer of every Quote in the spreads grid.
++     */
++    protected final void registerWithVolatilitySpread() {
++        for (int i = 0; i < nStrikes_; i++) {
++            for (int j = 0; j < nOptionTenors_; j++) {
++                for (int k = 0; k < nSwapTenors_; k++) {
++                    final Handle<Quote> q = volSpreads_.get(j * nSwapTenors_ + k).get(i);
++                    if (q != null) {
++                        q.addObserver(this);
++                    }
++                }
++            }
++        }
++    }
++
++    //
++    // TermStructure interface — forward to ATM surface
++    //
++
++    @Override
++    public org.jquantlib.daycounters.DayCounter dayCounter() {
++        return atmVol_.currentLink().dayCounter();
++    }
++
++    @Override
++    public Date maxDate() {
++        return atmVol_.currentLink().maxDate();
++    }
++
++    @Override
++    public double maxTime() {
++        return atmVol_.currentLink().maxTime();
++    }
++
++    @Override
++    public Date referenceDate() {
++        return atmVol_.currentLink().referenceDate();
++    }
++
++    @Override
++    public org.jquantlib.time.Calendar calendar() {
++        return atmVol_.currentLink().calendar();
++    }
++
++    //
++    // VolatilityTermStructure interface
++    //
++
++    @Override
++    public double minStrike() {
++        return -org.jquantlib.math.Constants.QL_MAX_REAL;
++    }
++
++    @Override
++    public double maxStrike() {
++        return org.jquantlib.math.Constants.QL_MAX_REAL;
++    }
++
++    @Override
++    public Period maxSwapTenor() {
++        return atmVol_.currentLink().maxSwapTenor();
++    }
++
++    //
++    // Other inspectors
++    //
++
++    /**
++     * Returns the ATM strike for a given option date and swap tenor.
++     * Mirrors C++ {@code SwaptionVolatilityCube::atmStrike(Date, Period)}.
++     */
++    public double atmStrike(final Date optionD, final Period swapTenor) {
++        final SwapIndex indexToUse =
++                swapTenor.gt(shortSwapIndexBase_.tenor())
++                        ? swapIndexBase_
++                        : shortSwapIndexBase_;
++        return indexToUse.clone(swapTenor).fixing(optionD);
++    }
++
++    /**
++     * Returns the ATM strike for a given option tenor and swap tenor.
++     */
++    public double atmStrike(final Period optionTenor, final Period swapTenor) {
++        final Date optionDate = optionDateFromTenor(optionTenor);
++        return atmStrike(optionDate, swapTenor);
++    }
++
++    public Handle<SwaptionVolatilityStructure> atmVol() { return atmVol_; }
++
++    public List<Double> strikeSpreads() { return strikeSpreads_; }
++
++    public List<List<Handle<Quote>>> volSpreads() { return volSpreads_; }
++
++    public SwapIndex swapIndexBase() { return swapIndexBase_; }
++
++    public SwapIndex shortSwapIndexBase() { return shortSwapIndexBase_; }
++
++    public boolean vegaWeightedSmileFit() { return vegaWeightedSmileFit_; }
++
++    @Override
++    public VolatilityType volatilityType() {
++        return atmVol_.currentLink().volatilityType();
++    }
++
++    /**
++     * Minimum number of strikes the spreads grid must carry (defaults to 2;
++     * SABR-style derived classes may override).
++     */
++    protected int requiredNumberOfStrikes() {
++        return 2;
++    }
++
++    //
++    // SwaptionVolatilityStructure required overrides
++    //
++
++    @Override
++    public double volatilityImpl(final double optionTime,
++                                 final double swapLength,
++                                 final double strike) {
++        return smileSectionImpl(optionTime, swapLength).volatility(strike);
++    }
++
++    @Override
++    protected double volatilityImpl(final Date optionDate,
++                                    final Period swapTenor,
++                                    final double strike) {
++        return smileSectionImpl(optionDate, swapTenor).volatility(strike);
++    }
++
++    /**
++     * Shift at the given (optionTime, swapLength); forwards to the ATM
++     * surface (C++ {@code shiftImpl}).
++     */
++    protected double shiftImpl(final double optionTime, final double swapLength) {
++        if (atmVol_.currentLink() instanceof SwaptionVolatilityMatrix) {
++            final SwaptionVolatilityMatrix m = (SwaptionVolatilityMatrix) atmVol_.currentLink();
++            return m.shift(optionTime, swapLength, true);
++        }
++        return atmVol_.currentLink().shift();
++    }
++
++    //
++    // LazyObject hook
++    //
++
++    @Override
++    protected void performCalculations() {
++        QL.require(nStrikes_ >= requiredNumberOfStrikes(),
++                "too few strikes (" + nStrikes_
++                        + ") — required are at least " + requiredNumberOfStrikes());
++        super.performCalculations();
++    }
++}
+diff --git a/jquantlib/src/test/java/org/jquantlib/testsuite/cashflows/CashFlowsTest.java b/jquantlib/src/test/java/org/jquantlib/testsuite/cashflows/CashFlowsTest.java
+index 30dc1cd7..ce26c5e3 100644
+--- a/jquantlib/src/test/java/org/jquantlib/testsuite/cashflows/CashFlowsTest.java
++++ b/jquantlib/src/test/java/org/jquantlib/testsuite/cashflows/CashFlowsTest.java
+@@ -534,62 +534,133 @@ public class CashFlowsTest {
+         }
+     }
+ 
+-    @Ignore("Phase 5d.5 — Schedule(...,endOfMonth=true) generator currently snaps "
+-            + "irregular first-coupon reference start to schedule's first regular date "
+-            + "rather than to the prior end-of-month per C++ Schedule::nextTwentieth/EOM "
+-            + "logic. Reference value (31-Aug-2016 for the 17-Jan-2017 -> 28-Feb-2018 "
+-            + "semi-annual schedule) must come from a probe against C++ v1.42.1 once "
+-            + "the Schedule generator is aligned.")
+-    @Test public void testIrregularFirstCouponReferenceDatesAtEndOfMonth() { fail("not implemented"); }
+-
+-    @Ignore("Phase 5e.5b-CFC-d-97 — MakeSchedule fluent setters "
+-            + "(.withCalendar / .withTenor / .from / .to / .withConvention / "
+-            + ".withTerminationDateConvention / .withFirstDate / .withNextToLastDate) "
+-            + "are now ported and the test compiles cleanly against the C++ "
+-            + "fluent shape (see commented body below). Remaining blocker is "
+-            + "the Java Schedule generator: for the 30-Sep-2017 → 30-Sep-2022 "
+-            + "semi-annual schedule with endOfMonth=true + Unadjusted + "
+-            + "firstDate=31-Mar-2018, the first regular reference start currently "
+-            + "snaps to 29-Sep-2017 instead of 30-Sep-2017. Fix requires changes "
+-            + "to time.Schedule (out of scope for this commit — Schedule is owned "
+-            + "by a parallel-running agent).")
+-    @Test public void testIrregularFirstCouponReferenceDatesAtEndOfCalendarMonth() { fail("not implemented"); }
+-    /*
+-     * Ready-to-uncomment body once Schedule generator is aligned:
++    /**
++     * Mirror of C++ {@code CashFlowTests::testIrregularFirstCouponReferenceDatesAtEndOfMonth}
++     * (test-suite/cashflows.cpp v1.42.1 lines 356-376). Verifies that the
++     * irregular first coupon of a semi-annual EOM schedule (17-Jan-2017 ->
++     * 28-Feb-2018) carries a reference period start of 31-Aug-2016 — i.e.
++     * the prior end-of-month obtained by walking back one tenor from the
++     * first regular date (28-Feb-2017) using
++     * {@code Calendar.advance(end, -tenor, BDC, endOfMonth=true)}.
++     *
++     * <p>Phase 5e.5b-CFC-d-137 — un-ignored after fixing the
++     * {@link FixedRateLeg} irregular-reference-period computation to
++     * honor {@code schedule.endOfMonth()} (mirrors C++
++     * {@code FixedRateLeg::operator Leg()} lines 198-204).
++     */
++    @Test
++    public void testIrregularFirstCouponReferenceDatesAtEndOfMonth() {
++        final Schedule schedule = new MakeSchedule()
++                .from(new Date(17, Month.January, 2017))
++                .to(new Date(28, Month.February, 2018))
++                .withFrequency(Frequency.Semiannual)
++                .withConvention(BusinessDayConvention.Unadjusted)
++                .endOfMonth()
++                .backwards()
++                .schedule();
++
++        final Leg leg = new FixedRateLeg(schedule, new Actual360())
++                .withNotionals(100.0)
++                .withCouponRates(0.01)
++                .Leg();
++
++        final Coupon firstCoupon = (Coupon) leg.get(0);
++        final Date expected = new Date(31, Month.August, 2016);
++        if (!firstCoupon.referencePeriodStart().equals(expected)) {
++            fail("Expected reference start date at end of month, got "
++                    + firstCoupon.referencePeriodStart());
++        }
++    }
++
++    /**
++     * Mirror of C++ {@code CashFlowTests::testIrregularFirstCouponReferenceDatesAtEndOfCalendarMonth}
++     * (test-suite/cashflows.cpp v1.42.1 lines 378-403). Verifies that for a
++     * 30-Sep-2017 -> 30-Sep-2022 semi-annual EOM schedule with explicit
++     * firstDate=31-Mar-2018 and nextToLastDate=31-Mar-2022, the irregular
++     * first coupon's reference period start lands on the effective date
++     * (30-Sep-2017) and the first cashflow amount is 0.9375 (notional 100,
++     * coupon 1.875%, ActualActual ISMA).
+      *
+-     *   final Schedule schedule = new MakeSchedule()
+-     *           .withCalendar(new UnitedStates(UnitedStates.Market.GOVERNMENTBOND))
+-     *           .from(new Date(30, Month.September, 2017))
+-     *           .to(new Date(30, Month.September, 2022))
+-     *           .withTenor(new Period(6, TimeUnit.Months))
+-     *           .withConvention(BusinessDayConvention.Unadjusted)
+-     *           .withTerminationDateConvention(BusinessDayConvention.Unadjusted)
+-     *           .withFirstDate(new Date(31, Month.March, 2018))
+-     *           .withNextToLastDate(new Date(31, Month.March, 2022))
+-     *           .endOfMonth()
+-     *           .backwards()
+-     *           .schedule();
+-     *   final Leg leg = new FixedRateLeg(schedule,
+-     *           new ActualActual(ActualActual.Convention.ISMA))
+-     *           .withNotionals(100.0)
+-     *           .withCouponRates(0.01875)
+-     *           .Leg();
+-     *   final Coupon firstCoupon = (Coupon) leg.get(0);
+-     *   final Date expectedRefStart = new Date(30, Month.September, 2017);
+-     *   if (!firstCoupon.referencePeriodStart().equals(expectedRefStart)) {
+-     *       fail("Expected reference start date at end of calendar day of "
+-     *           + "the month, got " + firstCoupon.referencePeriodStart());
+-     *   }
+-     *   assertEquals("First coupon amount mismatch", 0.9375,
+-     *           firstCoupon.amount(), 0.9375 * 1.0e-4);
++     * <p>Phase 5e.5b-CFC-d-137 — un-ignored after fixing both the Schedule
++     * generator (removing the in-branch {@code convention=Preceding}
++     * mutation that mis-snapped EOM-flagged schedule dates) and the
++     * {@link FixedRateLeg} irregular-reference-period computation (now
++     * honoring {@code schedule.endOfMonth()}).
+      */
++    @Test
++    public void testIrregularFirstCouponReferenceDatesAtEndOfCalendarMonth() {
++        final Schedule schedule = new MakeSchedule()
++                .withCalendar(new UnitedStates(UnitedStates.Market.GOVERNMENTBOND))
++                .from(new Date(30, Month.September, 2017))
++                .to(new Date(30, Month.September, 2022))
++                .withTenor(new Period(6, TimeUnit.Months))
++                .withConvention(BusinessDayConvention.Unadjusted)
++                .withTerminationDateConvention(BusinessDayConvention.Unadjusted)
++                .withFirstDate(new Date(31, Month.March, 2018))
++                .withNextToLastDate(new Date(31, Month.March, 2022))
++                .endOfMonth()
++                .backwards()
++                .schedule();
+ 
+-    @Ignore("Phase 5d.5 — same Schedule(...,endOfMonth=true) generator divergence as "
+-            + "testIrregularFirstCouponReferenceDatesAtEndOfMonth, but applied to the "
+-            + "LAST coupon (referencePeriodEnd snapping to end-of-month). Expected "
+-            + "value 31-Aug-2018 for the 17-Jan-2017 -> 15-Sep-2018 schedule with "
+-            + "nextToLastDate=28-Feb-2018.")
+-    @Test public void testIrregularLastCouponReferenceDatesAtEndOfMonth() { fail("not implemented"); }
++        final Leg leg = new FixedRateLeg(schedule,
++                new ActualActual(ActualActual.Convention.ISMA))
++                .withNotionals(100.0)
++                .withCouponRates(0.01875)
++                .Leg();
++
++        final Coupon firstCoupon = (Coupon) leg.get(0);
++        final Date expectedRefStart = new Date(30, Month.September, 2017);
++        if (!firstCoupon.referencePeriodStart().equals(expectedRefStart)) {
++            fail("Expected reference start date at end of calendar day of "
++                    + "the month, got " + firstCoupon.referencePeriodStart());
++        }
++        // C++ tolerance is boost::test_tools::tolerance<Real>(0.0001) =
++        // 0.01% relative; first coupon amount is 0.9375.
++        assertEquals("First coupon amount mismatch", 0.9375,
++                firstCoupon.amount(), 0.9375 * 1.0e-4);
++    }
++
++    /**
++     * Mirror of C++ {@code CashFlowTests::testIrregularLastCouponReferenceDatesAtEndOfMonth}
++     * (test-suite/cashflows.cpp v1.42.1 lines 405-426). Verifies that the
++     * irregular last coupon of a semi-annual EOM schedule (17-Jan-2017 ->
++     * 15-Sep-2018 with nextToLastDate=28-Feb-2018) carries a reference
++     * period end of 31-Aug-2018 — i.e. the next end-of-month obtained by
++     * walking forward one tenor from the last regular date (28-Feb-2018)
++     * using {@code Calendar.advance(start, +tenor, BDC, endOfMonth=true)}.
++     *
++     * <p>Phase 5e.5b-CFC-d-137 — un-ignored after fixing the
++     * {@link FixedRateLeg} irregular-reference-period computation to
++     * honor {@code schedule.endOfMonth()} (mirrors C++
++     * {@code FixedRateLeg::operator Leg()} lines 264-268). The previous
++     * Java impl used {@code start.add(tenor) + calendar.adjust(...)}
++     * which ignored the EOM flag and snapped to 28-Aug-2018 instead of
++     * 31-Aug-2018.
++     */
++    @Test
++    public void testIrregularLastCouponReferenceDatesAtEndOfMonth() {
++        final Schedule schedule = new MakeSchedule()
++                .from(new Date(17, Month.January, 2017))
++                .to(new Date(15, Month.September, 2018))
++                .withNextToLastDate(new Date(28, Month.February, 2018))
++                .withFrequency(Frequency.Semiannual)
++                .withConvention(BusinessDayConvention.Unadjusted)
++                .endOfMonth()
++                .backwards()
++                .schedule();
++
++        final Leg leg = new FixedRateLeg(schedule, new Actual360())
++                .withNotionals(100.0)
++                .withCouponRates(0.01)
++                .Leg();
++
++        final Coupon lastCoupon = (Coupon) leg.get(leg.size() - 1);
++        final Date expected = new Date(31, Month.August, 2018);
++        if (!lastCoupon.referencePeriodEnd().equals(expected)) {
++            fail("Expected reference end date at end of month, got "
++                    + lastCoupon.referencePeriodEnd());
++        }
++    }
+ 
+     @Ignore("Phase 5d.5 — requires Schedule(List<Date>, Calendar, BusinessDayConvention, "
+             + "BusinessDayConvention, Period, DateGeneration.Rule, boolean endOfMonth, "
+diff --git a/migration-harness/cpp/probes/heston-engines/exp_fit_heston_probe.cpp b/migration-harness/cpp/probes/heston-engines/exp_fit_heston_probe.cpp
+new file mode 100644
+index 00000000..fc574762
+--- /dev/null
++++ b/migration-harness/cpp/probes/heston-engines/exp_fit_heston_probe.cpp
+@@ -0,0 +1,69 @@
++// Quick standalone probe to compute ExponentialFittingHestonEngine value
++// at sigma=1e-5 for the testSmallSigmaExpansion4ExpFitting case.
++
++#include <ql/exercise.hpp>
++#include <ql/instruments/vanillaoption.hpp>
++#include <ql/instruments/payoffs.hpp>
++#include <ql/models/equity/hestonmodel.hpp>
++#include <ql/pricingengines/vanilla/exponentialfittinghestonengine.hpp>
++#include <ql/pricingengines/blackformula.hpp>
++#include <ql/processes/hestonprocess.hpp>
++#include <ql/quotes/simplequote.hpp>
++#include <ql/settings.hpp>
++#include <ql/termstructures/yield/flatforward.hpp>
++#include <ql/time/daycounters/actual365fixed.hpp>
++#include <ql/time/calendar.hpp>
++#include <ql/time/calendars/nullcalendar.hpp>
++
++#include <cstdio>
++#include <iomanip>
++#include <iostream>
++
++int main() {
++    using namespace QuantLib;
++
++    const Date todaysDate(13, March, 2020);
++    Settings::instance().evaluationDate() = todaysDate;
++
++    const DayCounter dc = Actual365Fixed();
++    const Handle<YieldTermStructure> rTS(
++        ext::make_shared<FlatForward>(todaysDate, 0.05, dc));
++    const Handle<YieldTermStructure> qTS(
++        ext::make_shared<FlatForward>(todaysDate, 0.075, dc));
++    const Handle<Quote> spot(ext::make_shared<SimpleQuote>(100.0));
++
++    const Date maturityDate(14, March, 2021);
++    const Time maturity = dc.yearFraction(todaysDate, maturityDate);
++    const Real fwd =
++        spot->value()*qTS->discount(maturity)/rTS->discount(maturity);
++
++    const Real v0 = 0.04;
++    const Real rho = -0.5;
++    const Real kappa = 4.0;
++    const Real theta = 0.04;
++
++    const Real moneyness = 0.1;
++    const Real strike = std::exp(-moneyness*std::sqrt(theta*maturity))*fwd;
++
++    const Real expected = blackFormula(
++        Option::Call, strike, fwd,
++        std::sqrt(v0*maturity), rTS->discount(maturity));
++
++    VanillaOption option(
++        ext::make_shared<PlainVanillaPayoff>(Option::Call, strike),
++        ext::make_shared<EuropeanExercise>(maturityDate));
++
++    std::cout << std::setprecision(17);
++    std::cout << "fwd=" << fwd << "  strike=" << strike << "  expected=" << expected << "\n";
++    for (Real sigma : {1e-4, 1e-5, 1e-6, 1e-7, 1e-8}) {
++        option.setPricingEngine(
++            ext::make_shared<ExponentialFittingHestonEngine>(
++                ext::make_shared<HestonModel>(
++                    ext::make_shared<HestonProcess>(
++                        rTS, qTS, spot, v0, kappa, theta, sigma, rho))));
++        const Real calc = option.NPV();
++        std::cout << "sigma=" << sigma
++                  << "  calc=" << calc
++                  << "  diff=" << (calc-expected) << "\n";
++    }
++}

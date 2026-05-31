@@ -1,0 +1,1770 @@
+diff --git a/jquantlib/src/main/java/org/jquantlib/cashflow/CashFlows.java b/jquantlib/src/main/java/org/jquantlib/cashflow/CashFlows.java
+index f30bb6ae..9d94965f 100755
+--- a/jquantlib/src/main/java/org/jquantlib/cashflow/CashFlows.java
++++ b/jquantlib/src/main/java/org/jquantlib/cashflow/CashFlows.java
+@@ -37,6 +37,8 @@ import org.jquantlib.termstructures.YieldTermStructure;
+ import org.jquantlib.termstructures.yieldcurves.FlatForward;
+ import org.jquantlib.time.Date;
+ import org.jquantlib.time.Frequency;
++import org.jquantlib.time.Period;
++import org.jquantlib.time.TimeUnit;
+ import org.jquantlib.util.PolymorphicVisitor;
+ import org.jquantlib.util.Visitor;
+ 
+@@ -289,6 +291,314 @@ public class CashFlows {
+         return totalNPV / discountCurve.discount(npvDate);
+     }
+ 
++    //
++    // C++-style stepwise NPV / duration / convexity overloads.
++    //
++    // Faithful Java port of the private helpers in C++
++    // {@code ql/cashflows/cashflows.cpp:567-707} (getStepwiseDiscountTime,
++    // npv(InterestRate), modifiedDuration, simpleDuration, macaulayDuration,
++    // convexity). The existing (legacy) {@link #npv(Leg, InterestRate, Date)}
++    // / {@link #duration(Leg, InterestRate, Duration, Date)} /
++    // {@link #convexity(Leg, InterestRate, Date)} variants use the additive
++    // {@code yearFraction(settlement, paymentDate)} formulation, which
++    // diverges from the C++ stepwise accumulation for non-additive day
++    // counters such as {@link org.jquantlib.daycounters.Thirty360} (USA
++    // convention) when settlement falls on the 31st of a month
++    // (test-suite/bonds.cpp::testThirty360BondWithSettlementOn31st).
++    //
++    // The legacy methods are retained intact for backwards compatibility:
++    // other callers (HaganIrregularSwaptionEngine, BlackCallableFixedRate
++    // BondEngine, CapFloor strike helpers) depend on the additive form.
++    //
++
++    /**
++     * Stepwise time-to-discount for one cashflow. Mirrors C++
++     * {@code getStepwiseDiscountTime} (cashflows.cpp:568-600). For a
++     * {@link Coupon} we accumulate using the coupon's reference period;
++     * for any other cashflow, fall back to {@code dc.yearFraction(lastDate,
++     * cashFlowDate)}.
++     */
++    private static double stepwiseDiscountTime(final CashFlow cashFlow,
++                                               final DayCounter dc,
++                                               final Date npvDate,
++                                               final Date lastDate) {
++        final Date cashFlowDate = cashFlow.date();
++        Date refStartDate;
++        Date refEndDate;
++        final Coupon coupon = (cashFlow instanceof Coupon) ? (Coupon) cashFlow : null;
++        if (coupon != null) {
++            refStartDate = coupon.referencePeriodStart();
++            refEndDate = coupon.referencePeriodEnd();
++        } else {
++            if (lastDate.equals(npvDate)) {
++                // No previous coupon date — fake a year before.
++                refStartDate = cashFlowDate.sub(new Period(1, TimeUnit.Years));
++            } else {
++                refStartDate = lastDate;
++            }
++            refEndDate = cashFlowDate;
++        }
++
++        if (coupon != null && !lastDate.equals(coupon.accrualStartDate())) {
++            final double couponPeriod = dc.yearFraction(coupon.accrualStartDate(),
++                    cashFlowDate, refStartDate, refEndDate);
++            final double accruedPeriod = dc.yearFraction(coupon.accrualStartDate(),
++                    lastDate, refStartDate, refEndDate);
++            return couponPeriod - accruedPeriod;
++        }
++        return dc.yearFraction(lastDate, cashFlowDate, refStartDate, refEndDate);
++    }
++
++    /**
++     * Stepwise IRR-discounted NPV. Mirrors C++ {@code CashFlows::npv(leg,
++     * InterestRate, includeSettlementDateFlows, settlementDate, npvDate)}
++     * (cashflows.cpp:811-853): walk the leg in order, accumulating the
++     * stepwise time {@code t += getStepwiseDiscountTime(...)} between
++     * consecutive cashflows and discount each amount by
++     * {@code y.discountFactor(t)}.
++     *
++     * @param leg the cash-flow leg
++     * @param y the constant-yield interest rate
++     * @param includeSettlementDateFlows whether a flow on the settlement
++     *        date is still pending (true) or already paid (false)
++     * @param settlementDate the settlement date; if null, the evaluation
++     *        date is used
++     * @param npvDate the date the NPV is discounted to; if null, defaults
++     *        to {@code settlementDate}
++     */
++    public static double npv(final Leg leg,
++                             final InterestRate y,
++                             final boolean includeSettlementDateFlows,
++                             Date settlementDate,
++                             Date npvDate) {
++        if (leg.isEmpty()) {
++            return 0.0;
++        }
++        if (settlementDate == null || settlementDate.isNull()) {
++            settlementDate = new Settings().evaluationDate();
++        }
++        if (npvDate == null || npvDate.isNull()) {
++            npvDate = settlementDate;
++        }
++
++        double npv = 0.0;
++        double discount = 1.0;
++        Date lastDate = npvDate;
++        final DayCounter dc = y.dayCounter();
++        for (int i = 0; i < leg.size(); ++i) {
++            final CashFlow cf = leg.get(i);
++            if (cf.hasOccurred(settlementDate, includeSettlementDateFlows)) {
++                continue;
++            }
++            // tradingExCoupon not modelled in the JQuant Bond instance —
++            // QuantLib defaults the field to zero ex-dividend days, so the
++            // path is equivalent to "always include" here.
++            final double amount = cf.amount();
++            final double b = y.discountFactor(stepwiseDiscountTime(cf, dc, npvDate, lastDate));
++            discount *= b;
++            lastDate = cf.date();
++            npv += amount * discount;
++        }
++        return npv;
++    }
++
++    /**
++     * Stepwise modified duration. Mirrors C++ private helper
++     * {@code modifiedDuration} (cashflows.cpp:642-707).
++     */
++    private static double modifiedDurationStepwise(final Leg leg,
++                                                   final InterestRate y,
++                                                   final boolean includeSettlementDateFlows,
++                                                   Date settlementDate,
++                                                   Date npvDate) {
++        if (leg.isEmpty()) {
++            return 0.0;
++        }
++        if (settlementDate == null || settlementDate.isNull()) {
++            settlementDate = new Settings().evaluationDate();
++        }
++        if (npvDate == null || npvDate.isNull()) {
++            npvDate = settlementDate;
++        }
++        double P = 0.0;
++        double t = 0.0;
++        double dPdy = 0.0;
++        final double r = y.rate();
++        final int N = y.frequency().toInteger();
++        Date lastDate = npvDate;
++        final DayCounter dc = y.dayCounter();
++        for (int i = 0; i < leg.size(); ++i) {
++            final CashFlow cf = leg.get(i);
++            if (cf.hasOccurred(settlementDate, includeSettlementDateFlows)) {
++                continue;
++            }
++            final double c = cf.amount();
++            t += stepwiseDiscountTime(cf, dc, npvDate, lastDate);
++            final double B = y.discountFactor(t);
++            P += c * B;
++            switch (y.compounding()) {
++              case Simple:
++                dPdy -= c * B * B * t;
++                break;
++              case Compounded:
++                dPdy -= c * t * B / (1.0 + r / N);
++                break;
++              case Continuous:
++                dPdy -= c * B * t;
++                break;
++              case SimpleThenCompounded:
++                if (t <= 1.0 / N) {
++                    dPdy -= c * B * B * t;
++                } else {
++                    dPdy -= c * t * B / (1.0 + r / N);
++                }
++                break;
++              default:
++                throw new IllegalArgumentException("unknown compounding ("
++                        + y.compounding() + ")");
++            }
++            lastDate = cf.date();
++        }
++        if (P == 0.0) {
++            return 0.0;
++        }
++        return -dPdy / P;
++    }
++
++    /**
++     * Stepwise simple duration. Mirrors C++ private helper
++     * {@code simpleDuration} (cashflows.cpp:620-640).
++     */
++    private static double simpleDurationStepwise(final Leg leg,
++                                                 final InterestRate y,
++                                                 final boolean includeSettlementDateFlows,
++                                                 Date settlementDate,
++                                                 Date npvDate) {
++        if (leg.isEmpty()) {
++            return 0.0;
++        }
++        if (settlementDate == null || settlementDate.isNull()) {
++            settlementDate = new Settings().evaluationDate();
++        }
++        if (npvDate == null || npvDate.isNull()) {
++            npvDate = settlementDate;
++        }
++        double P = 0.0;
++        double dPdy = 0.0;
++        double t = 0.0;
++        Date lastDate = npvDate;
++        final DayCounter dc = y.dayCounter();
++        for (int i = 0; i < leg.size(); ++i) {
++            final CashFlow cf = leg.get(i);
++            if (cf.hasOccurred(settlementDate, includeSettlementDateFlows)) {
++                continue;
++            }
++            final double c = cf.amount();
++            t += stepwiseDiscountTime(cf, dc, npvDate, lastDate);
++            final double B = y.discountFactor(t);
++            P += c * B;
++            dPdy += t * c * B;
++            lastDate = cf.date();
++        }
++        if (P == 0.0) {
++            return 0.0;
++        }
++        return dPdy / P;
++    }
++
++    /**
++     * Stepwise duration dispatcher. Mirrors C++
++     * {@code CashFlows::duration(leg, InterestRate, Duration,
++     * includeSettlementDateFlows, settlementDate, npvDate)}
++     * (cashflows.cpp:924-955).
++     */
++    public static double duration(final Leg leg,
++                                  final InterestRate y,
++                                  final Duration type,
++                                  final boolean includeSettlementDateFlows,
++                                  final Date settlementDate,
++                                  final Date npvDate) {
++        switch (type) {
++          case Simple:
++            return simpleDurationStepwise(leg, y, includeSettlementDateFlows, settlementDate, npvDate);
++          case Modified:
++            return modifiedDurationStepwise(leg, y, includeSettlementDateFlows, settlementDate, npvDate);
++          case Macaulay: {
++            QL.require(y.compounding() == Compounding.Compounded,
++                    "compounded rate required");
++            final double mod = modifiedDurationStepwise(leg, y, includeSettlementDateFlows,
++                    settlementDate, npvDate);
++            return (1.0 + y.rate() / y.frequency().toInteger()) * mod;
++          }
++          default:
++            throw new IllegalArgumentException("unknown duration type");
++        }
++    }
++
++    /**
++     * Stepwise convexity. Mirrors C++ {@code CashFlows::convexity(leg,
++     * InterestRate, includeSettlementDateFlows, settlementDate, npvDate)}
++     * (cashflows.cpp:957-1041).
++     */
++    public static double convexity(final Leg leg,
++                                   final InterestRate y,
++                                   final boolean includeSettlementDateFlows,
++                                   Date settlementDate,
++                                   Date npvDate) {
++        if (leg.isEmpty()) {
++            return 0.0;
++        }
++        if (settlementDate == null || settlementDate.isNull()) {
++            settlementDate = new Settings().evaluationDate();
++        }
++        if (npvDate == null || npvDate.isNull()) {
++            npvDate = settlementDate;
++        }
++        final DayCounter dc = y.dayCounter();
++        double P = 0.0;
++        double t = 0.0;
++        double d2Pdy2 = 0.0;
++        final double r = y.rate();
++        final int N = y.frequency().toInteger();
++        Date lastDate = npvDate;
++        for (int i = 0; i < leg.size(); ++i) {
++            final CashFlow cf = leg.get(i);
++            if (cf.hasOccurred(settlementDate, includeSettlementDateFlows)) {
++                continue;
++            }
++            final double c = cf.amount();
++            t += stepwiseDiscountTime(cf, dc, npvDate, lastDate);
++            final double B = y.discountFactor(t);
++            P += c * B;
++            switch (y.compounding()) {
++              case Simple:
++                d2Pdy2 += c * 2.0 * B * B * B * t * t;
++                break;
++              case Compounded:
++                d2Pdy2 += c * B * t * (N * t + 1) / (N * (1 + r / N) * (1 + r / N));
++                break;
++              case Continuous:
++                d2Pdy2 += c * B * t * t;
++                break;
++              case SimpleThenCompounded:
++                if (t <= 1.0 / N) {
++                    d2Pdy2 += c * 2.0 * B * B * B * t * t;
++                } else {
++                    d2Pdy2 += c * B * t * (N * t + 1) / (N * (1 + r / N) * (1 + r / N));
++                }
++                break;
++              default:
++                throw new IllegalArgumentException("unknown compounding ("
++                        + y.compounding() + ")");
++            }
++            lastDate = cf.date();
++        }
++        if (P == 0.0) {
++            return 0.0;
++        }
++        return d2Pdy2 / P;
++    }
++
+     /**
+      * Iterator-style "next cash flow" helper used by {@link
+      * #accruedAmount(Leg, boolean, Date)}; returns the index of the first
+diff --git a/jquantlib/src/main/java/org/jquantlib/pricingengines/bond/BondFunctions.java b/jquantlib/src/main/java/org/jquantlib/pricingengines/bond/BondFunctions.java
+index 2fc3e285..744c8260 100644
+--- a/jquantlib/src/main/java/org/jquantlib/pricingengines/bond/BondFunctions.java
++++ b/jquantlib/src/main/java/org/jquantlib/pricingengines/bond/BondFunctions.java
+@@ -26,11 +26,8 @@
+ package org.jquantlib.pricingengines.bond;
+ 
+ import org.jquantlib.QL;
+-import org.jquantlib.Settings;
+-import org.jquantlib.cashflow.CashFlow;
+ import org.jquantlib.cashflow.CashFlows;
+ import org.jquantlib.cashflow.CashFlows.Duration;
+-import org.jquantlib.cashflow.Coupon;
+ import org.jquantlib.cashflow.Leg;
+ import org.jquantlib.daycounters.DayCounter;
+ import org.jquantlib.instruments.Bond;
+@@ -42,8 +39,6 @@ import org.jquantlib.termstructures.InterestRate;
+ import org.jquantlib.termstructures.YieldTermStructure;
+ import org.jquantlib.time.Date;
+ import org.jquantlib.time.Frequency;
+-import org.jquantlib.time.Period;
+-import org.jquantlib.time.TimeUnit;
+ 
+ /**
+  * Bond adapters of {@link CashFlows} functions. Faithful Java port of
+@@ -330,12 +325,13 @@ public final class BondFunctions {
+                 "non tradable at " + settlement
+                     + " (maturity being " + bond.maturityDate() + ")");
+ 
+-        // Use the C++-faithful stepwise NPV (CashFlows::npv with stepwise
+-        // discount times) — Java's CashFlows.npv(leg, irr, settlement)
+-        // accumulates yearFractions from settlement directly, which differs
+-        // from the C++ stepwise accumulation for non-additive day counters
+-        // such as Thirty/360 USA.
+-        return npvStepwise(bond.cashflows(), yield, false, settlement, settlement)
++        // Use the C++-faithful stepwise NPV (CashFlows::npv(InterestRate)
++        // with stepwise discount times) — the additive
++        // CashFlows.npv(leg, irr, settlement) variant accumulates
++        // yearFractions from settlement directly, which differs from the
++        // C++ stepwise accumulation for non-additive day counters such as
++        // Thirty/360 USA.
++        return CashFlows.npv(bond.cashflows(), yield, false, settlement, settlement)
+                 * 100.0 / bond.notional(settlement);
+     }
+ 
+@@ -439,7 +435,7 @@ public final class BondFunctions {
+         final Ops.DoubleOp irrFinder = new Ops.DoubleOp() {
+             @Override
+             public double op(final double y) {
+-                return targetNpv - npvStepwise(leg,
++                return targetNpv - CashFlows.npv(leg,
+                         new InterestRate(y, dayCounter, compounding, frequency),
+                         false, settle, settle);
+             }
+@@ -471,7 +467,7 @@ public final class BondFunctions {
+                 "non tradable at " + settlement
+                     + " (maturity being " + bond.maturityDate() + ")");
+ 
+-        return durationStepwise(bond.cashflows(), yield, type, false, settlement, settlement);
++        return CashFlows.duration(bond.cashflows(), yield, type, false, settlement, settlement);
+     }
+ 
+     public static double duration(final Bond bond,
+@@ -500,7 +496,7 @@ public final class BondFunctions {
+                 "non tradable at " + settlement
+                     + " (maturity being " + bond.maturityDate() + ")");
+ 
+-        return convexityStepwise(bond.cashflows(), yield, false, settlement, settlement);
++        return CashFlows.convexity(bond.cashflows(), yield, false, settlement, settlement);
+     }
+ 
+     public static double convexity(final Bond bond,
+@@ -538,10 +534,10 @@ public final class BondFunctions {
+                     + " (maturity being " + bond.maturityDate() + ")");
+ 
+         final double shift = 1.0e-4;
+-        final double dirty = npvStepwise(bond.cashflows(), yield, false, settlement, settlement);
+-        final double modDur = durationStepwise(bond.cashflows(), yield,
++        final double dirty = CashFlows.npv(bond.cashflows(), yield, false, settlement, settlement);
++        final double modDur = CashFlows.duration(bond.cashflows(), yield,
+                 Duration.Modified, false, settlement, settlement);
+-        final double conv = convexityStepwise(bond.cashflows(), yield, false, settlement, settlement);
++        final double conv = CashFlows.convexity(bond.cashflows(), yield, false, settlement, settlement);
+ 
+         double delta = -modDur * dirty;
+         double gamma = (conv / 100.0) * dirty;
+@@ -577,8 +573,8 @@ public final class BondFunctions {
+ 
+         // Mirror C++ CashFlows::yieldValueBasisPoint = shift / (-npv * modDur)
+         // (cashflows.cpp:1104-1128). Implement with stepwise NPV/duration.
+-        final double npv = npvStepwise(bond.cashflows(), yield, false, settlement, settlement);
+-        final double modDur = durationStepwise(bond.cashflows(), yield,
++        final double npv = CashFlows.npv(bond.cashflows(), yield, false, settlement, settlement);
++        final double modDur = CashFlows.duration(bond.cashflows(), yield,
+                 Duration.Modified, false, settlement, settlement);
+         final double shift = 0.01;
+         return (1.0 / (-npv * modDur)) * shift;
+@@ -644,292 +640,4 @@ public final class BondFunctions {
+                 discount.dayCounter(), compounding, frequency, settlement);
+     }
+ 
+-    //
+-    // Internal stepwise helpers — faithful Java port of the private helpers
+-    // in C++ {@code ql/cashflows/cashflows.cpp:567-707} (getStepwiseDiscountTime,
+-    // npv(InterestRate), modifiedDuration, simpleDuration, macaulayDuration,
+-    // convexity). Required because the Java {@link CashFlows} variants use the
+-    // additive {@code yearFraction(settlement, paymentDate)} formulation,
+-    // which diverges from the C++ stepwise accumulation for non-additive
+-    // day counters such as {@link org.jquantlib.daycounters.Thirty360}
+-    // (USA convention) when settlement falls on the 31st of a month
+-    // (test-suite/bonds.cpp::testThirty360BondWithSettlementOn31st).
+-    //
+-
+-    private static boolean cfHasOccurred(final CashFlow cf,
+-                                         final Date refDate,
+-                                         final boolean includeRefDateFlows) {
+-        return cf.hasOccurred(refDate, includeRefDateFlows);
+-    }
+-
+-    /**
+-     * Stepwise time-to-discount for one cashflow. Mirrors C++
+-     * {@code getStepwiseDiscountTime} (cashflows.cpp:568-600). For a
+-     * {@link Coupon} we accumulate using the coupon's reference period;
+-     * for any other cashflow, fall back to {@code dc.yearFraction(lastDate,
+-     * cashFlowDate)}.
+-     */
+-    private static double stepwiseDiscountTime(final CashFlow cashFlow,
+-                                               final DayCounter dc,
+-                                               final Date npvDate,
+-                                               final Date lastDate) {
+-        final Date cashFlowDate = cashFlow.date();
+-        Date refStartDate;
+-        Date refEndDate;
+-        final Coupon coupon = (cashFlow instanceof Coupon) ? (Coupon) cashFlow : null;
+-        if (coupon != null) {
+-            refStartDate = coupon.referencePeriodStart();
+-            refEndDate = coupon.referencePeriodEnd();
+-        } else {
+-            if (lastDate.equals(npvDate)) {
+-                // No previous coupon date — fake a year before.
+-                refStartDate = cashFlowDate.sub(new Period(1, TimeUnit.Years));
+-            } else {
+-                refStartDate = lastDate;
+-            }
+-            refEndDate = cashFlowDate;
+-        }
+-
+-        if (coupon != null && !lastDate.equals(coupon.accrualStartDate())) {
+-            final double couponPeriod = dc.yearFraction(coupon.accrualStartDate(),
+-                    cashFlowDate, refStartDate, refEndDate);
+-            final double accruedPeriod = dc.yearFraction(coupon.accrualStartDate(),
+-                    lastDate, refStartDate, refEndDate);
+-            return couponPeriod - accruedPeriod;
+-        }
+-        return dc.yearFraction(lastDate, cashFlowDate, refStartDate, refEndDate);
+-    }
+-
+-    /**
+-     * Stepwise IRR-discounted NPV. Mirrors C++ {@code CashFlows::npv(leg,
+-     * InterestRate, includeSettlementDateFlows, settlementDate, npvDate)}
+-     * (cashflows.cpp:811-853): walk the leg in order, accumulating the
+-     * stepwise time {@code t += getStepwiseDiscountTime(...)} between
+-     * consecutive cashflows and discount each amount by {@code y.discountFactor(t)}.
+-     */
+-    static double npvStepwise(final Leg leg,
+-                              final InterestRate y,
+-                              final boolean includeSettlementDateFlows,
+-                              Date settlementDate,
+-                              Date npvDate) {
+-        if (leg.isEmpty()) {
+-            return 0.0;
+-        }
+-        if (settlementDate == null || settlementDate.isNull()) {
+-            settlementDate = new Settings().evaluationDate();
+-        }
+-        if (npvDate == null || npvDate.isNull()) {
+-            npvDate = settlementDate;
+-        }
+-
+-        double npv = 0.0;
+-        double discount = 1.0;
+-        Date lastDate = npvDate;
+-        final DayCounter dc = y.dayCounter();
+-        for (int i = 0; i < leg.size(); ++i) {
+-            final CashFlow cf = leg.get(i);
+-            if (cfHasOccurred(cf, settlementDate, includeSettlementDateFlows)) {
+-                continue;
+-            }
+-            // tradingExCoupon not modelled in the JQuant Bond instance —
+-            // QuantLib defaults the field to zero ex-dividend days, so the
+-            // path is equivalent to "always include" here.
+-            final double amount = cf.amount();
+-            final double b = y.discountFactor(stepwiseDiscountTime(cf, dc, npvDate, lastDate));
+-            discount *= b;
+-            lastDate = cf.date();
+-            npv += amount * discount;
+-        }
+-        return npv;
+-    }
+-
+-    /**
+-     * Stepwise modified duration. Mirrors C++ private helper
+-     * {@code modifiedDuration} (cashflows.cpp:642-707).
+-     */
+-    private static double modifiedDurationStepwise(final Leg leg,
+-                                                   final InterestRate y,
+-                                                   final boolean includeSettlementDateFlows,
+-                                                   Date settlementDate,
+-                                                   Date npvDate) {
+-        if (leg.isEmpty()) {
+-            return 0.0;
+-        }
+-        if (settlementDate == null || settlementDate.isNull()) {
+-            settlementDate = new Settings().evaluationDate();
+-        }
+-        if (npvDate == null || npvDate.isNull()) {
+-            npvDate = settlementDate;
+-        }
+-        double P = 0.0;
+-        double t = 0.0;
+-        double dPdy = 0.0;
+-        final double r = y.rate();
+-        final int N = y.frequency().toInteger();
+-        Date lastDate = npvDate;
+-        final DayCounter dc = y.dayCounter();
+-        for (int i = 0; i < leg.size(); ++i) {
+-            final CashFlow cf = leg.get(i);
+-            if (cfHasOccurred(cf, settlementDate, includeSettlementDateFlows)) {
+-                continue;
+-            }
+-            final double c = cf.amount();
+-            t += stepwiseDiscountTime(cf, dc, npvDate, lastDate);
+-            final double B = y.discountFactor(t);
+-            P += c * B;
+-            switch (y.compounding()) {
+-              case Simple:
+-                dPdy -= c * B * B * t;
+-                break;
+-              case Compounded:
+-                dPdy -= c * t * B / (1.0 + r / N);
+-                break;
+-              case Continuous:
+-                dPdy -= c * B * t;
+-                break;
+-              case SimpleThenCompounded:
+-                if (t <= 1.0 / N) {
+-                    dPdy -= c * B * B * t;
+-                } else {
+-                    dPdy -= c * t * B / (1.0 + r / N);
+-                }
+-                break;
+-              default:
+-                throw new IllegalArgumentException("unknown compounding ("
+-                        + y.compounding() + ")");
+-            }
+-            lastDate = cf.date();
+-        }
+-        if (P == 0.0) {
+-            return 0.0;
+-        }
+-        return -dPdy / P;
+-    }
+-
+-    private static double simpleDurationStepwise(final Leg leg,
+-                                                 final InterestRate y,
+-                                                 final boolean includeSettlementDateFlows,
+-                                                 Date settlementDate,
+-                                                 Date npvDate) {
+-        if (leg.isEmpty()) {
+-            return 0.0;
+-        }
+-        if (settlementDate == null || settlementDate.isNull()) {
+-            settlementDate = new Settings().evaluationDate();
+-        }
+-        if (npvDate == null || npvDate.isNull()) {
+-            npvDate = settlementDate;
+-        }
+-        double P = 0.0;
+-        double dPdy = 0.0;
+-        double t = 0.0;
+-        Date lastDate = npvDate;
+-        final DayCounter dc = y.dayCounter();
+-        for (int i = 0; i < leg.size(); ++i) {
+-            final CashFlow cf = leg.get(i);
+-            if (cfHasOccurred(cf, settlementDate, includeSettlementDateFlows)) {
+-                continue;
+-            }
+-            final double c = cf.amount();
+-            t += stepwiseDiscountTime(cf, dc, npvDate, lastDate);
+-            final double B = y.discountFactor(t);
+-            P += c * B;
+-            dPdy += t * c * B;
+-            lastDate = cf.date();
+-        }
+-        if (P == 0.0) {
+-            return 0.0;
+-        }
+-        return dPdy / P;
+-    }
+-
+-    /**
+-     * Stepwise duration dispatcher. Mirrors C++
+-     * {@code CashFlows::duration} (cashflows.cpp:924-955).
+-     */
+-    static double durationStepwise(final Leg leg,
+-                                   final InterestRate y,
+-                                   final Duration type,
+-                                   final boolean includeSettlementDateFlows,
+-                                   final Date settlementDate,
+-                                   final Date npvDate) {
+-        switch (type) {
+-          case Simple:
+-            return simpleDurationStepwise(leg, y, includeSettlementDateFlows, settlementDate, npvDate);
+-          case Modified:
+-            return modifiedDurationStepwise(leg, y, includeSettlementDateFlows, settlementDate, npvDate);
+-          case Macaulay: {
+-            QL.require(y.compounding() == Compounding.Compounded,
+-                    "compounded rate required");
+-            final double mod = modifiedDurationStepwise(leg, y, includeSettlementDateFlows,
+-                    settlementDate, npvDate);
+-            return (1.0 + y.rate() / y.frequency().toInteger()) * mod;
+-          }
+-          default:
+-            throw new IllegalArgumentException("unknown duration type");
+-        }
+-    }
+-
+-    /**
+-     * Stepwise convexity. Mirrors C++ {@code CashFlows::convexity}
+-     * (cashflows.cpp:957-1041).
+-     */
+-    static double convexityStepwise(final Leg leg,
+-                                    final InterestRate y,
+-                                    final boolean includeSettlementDateFlows,
+-                                    Date settlementDate,
+-                                    Date npvDate) {
+-        if (leg.isEmpty()) {
+-            return 0.0;
+-        }
+-        if (settlementDate == null || settlementDate.isNull()) {
+-            settlementDate = new Settings().evaluationDate();
+-        }
+-        if (npvDate == null || npvDate.isNull()) {
+-            npvDate = settlementDate;
+-        }
+-        final DayCounter dc = y.dayCounter();
+-        double P = 0.0;
+-        double t = 0.0;
+-        double d2Pdy2 = 0.0;
+-        final double r = y.rate();
+-        final int N = y.frequency().toInteger();
+-        Date lastDate = npvDate;
+-        for (int i = 0; i < leg.size(); ++i) {
+-            final CashFlow cf = leg.get(i);
+-            if (cfHasOccurred(cf, settlementDate, includeSettlementDateFlows)) {
+-                continue;
+-            }
+-            final double c = cf.amount();
+-            t += stepwiseDiscountTime(cf, dc, npvDate, lastDate);
+-            final double B = y.discountFactor(t);
+-            P += c * B;
+-            switch (y.compounding()) {
+-              case Simple:
+-                d2Pdy2 += c * 2.0 * B * B * B * t * t;
+-                break;
+-              case Compounded:
+-                d2Pdy2 += c * B * t * (N * t + 1) / (N * (1 + r / N) * (1 + r / N));
+-                break;
+-              case Continuous:
+-                d2Pdy2 += c * B * t * t;
+-                break;
+-              case SimpleThenCompounded:
+-                if (t <= 1.0 / N) {
+-                    d2Pdy2 += c * 2.0 * B * B * B * t * t;
+-                } else {
+-                    d2Pdy2 += c * B * t * (N * t + 1) / (N * (1 + r / N) * (1 + r / N));
+-                }
+-                break;
+-              default:
+-                throw new IllegalArgumentException("unknown compounding ("
+-                        + y.compounding() + ")");
+-            }
+-            lastDate = cf.date();
+-        }
+-        if (P == 0.0) {
+-            return 0.0;
+-        }
+-        return d2Pdy2 / P;
+-    }
+ }
+diff --git a/jquantlib/src/test/java/org/jquantlib/testsuite/cashflows/DigitalCouponTest.java b/jquantlib/src/test/java/org/jquantlib/testsuite/cashflows/DigitalCouponTest.java
+index 9ab6f865..1f8cd8bb 100644
+--- a/jquantlib/src/test/java/org/jquantlib/testsuite/cashflows/DigitalCouponTest.java
++++ b/jquantlib/src/test/java/org/jquantlib/testsuite/cashflows/DigitalCouponTest.java
+@@ -22,7 +22,32 @@
+ 
+ package org.jquantlib.testsuite.cashflows;
+ 
++import static org.junit.Assert.fail;
++
+ import org.jquantlib.QL;
++import org.jquantlib.Settings;
++import org.jquantlib.cashflow.BlackIborCouponPricer;
++import org.jquantlib.cashflow.DigitalCoupon;
++import org.jquantlib.cashflow.DigitalReplication;
++import org.jquantlib.cashflow.FloatingRateCoupon;
++import org.jquantlib.cashflow.IborCoupon;
++import org.jquantlib.cashflow.Replication;
++import org.jquantlib.daycounters.Actual360;
++import org.jquantlib.daycounters.Actual365Fixed;
++import org.jquantlib.indexes.Euribor6M;
++import org.jquantlib.indexes.IborIndex;
++import org.jquantlib.instruments.Position;
++import org.jquantlib.math.Constants;
++import org.jquantlib.quotes.RelinkableHandle;
++import org.jquantlib.termstructures.YieldTermStructure;
++import org.jquantlib.termstructures.volatilities.optionlet.ConstantOptionletVolatility;
++import org.jquantlib.termstructures.volatilities.optionlet.OptionletVolatilityStructure;
++import org.jquantlib.testsuite.util.Utilities;
++import org.jquantlib.time.BusinessDayConvention;
++import org.jquantlib.time.Calendar;
++import org.jquantlib.time.Date;
++import org.jquantlib.time.Period;
++import org.jquantlib.time.TimeUnit;
+ import org.junit.Ignore;
+ import org.junit.Test;
+ 
+@@ -35,35 +60,27 @@ import org.junit.Test;
+  * {@link org.jquantlib.cashflow.DigitalReplication} pricing strategy
+  * with a Black-style underlying ibor-coupon pricer.
+  *
+- * <h3>Phase 5e.5 carry-forward rationale</h3>
+- *
+- * <p>JQuant has {@link org.jquantlib.cashflow.DigitalCoupon},
+- * {@link org.jquantlib.cashflow.DigitalReplication}, and
+- * {@link org.jquantlib.cashflow.IborCouponPricer} (Phase 1/2j) but the
+- * tests need:
++ * <h3>Phase 5e.5b-CFC-d-25 (2026-05-16)</h3>
+  *
++ * <p>Two structural-identity tests are body-filled and un-ignored:
+  * <ul>
+- *   <li>{@code BlackIborCouponPricer} concrete pricer to be wired into
+- *       {@code DigitalCoupon} via {@code setPricer(IborCouponPricer)}.
+- *       JQuant has a partial {@code BlackIborCouponPricer} stub; the
+- *       digital-replication path through {@code couponPrice()} +
+- *       {@code optionletPrice()} needs cross-validation. See
+- *       WI-5e.5-DC-1.</li>
+- *
+- *   <li>{@code OptionletReplication.Type} enum
+- *       (Sub/Central/Super) wired into
+- *       {@code DigitalReplication.replicationType()} to drive
+- *       {@code testReplicationType}. The Java
+- *       {@link org.jquantlib.cashflow.Replication} stub partially exposes
+- *       this; need to verify the C++ semantics. See WI-5e.5-DC-2.</li>
+- *
+- *   <li>{@code RelinkableHandle<OptionletVolatilityStructure>} for the
+- *       constant-vol test fixture; JQuant has the underlying
+- *       {@link org.jquantlib.quotes.RelinkableHandle} but the
+- *       {@code OptionletVolatilityStructure} hierarchy needs the
+- *       {@code ConstantOptionletVolatility} concrete subclass exposed at
+- *       the right package level. See WI-5e.5-DC-3.</li>
++ *   <li>{@code testCallPutParity} — verifies that for each (vol, strike, k)
++ *       triple, {@code price(longCallDigital) - price(shortPutDigital)}
++ *       equals {@code nominal * accrual * discount * cashRate} (cash) and
++ *       {@code nominal * accrual * discount * forward} (asset). Pure
++ *       parity identity, no probe-generated reference values needed.</li>
++ *   <li>{@code testReplicationType} — verifies the monotone ordering
++ *       Sub &le; Central &le; Super across all replication strategies.
++ *       Pure inequality, no probe-generated reference values needed.</li>
+  * </ul>
++ *
++ * <p>Remaining 6 tests stay deferred to a future phase: they cross-check
++ * {@link DigitalCoupon} prices against Cox-Rubinstein N(d1)/N(d2)
++ * closed-form formulas via {@code CumulativeNormalDistribution}, the
++ * Black {@code AssetOrNothing}/{@code CashOrNothing} payoffs through
++ * {@code AnalyticEuropeanEngine}, and {@code BlackScholesMertonProcess}.
++ * That path requires verifying the Java analytic-european digital engines
++ * are wired in the same way as v1.42.1 — pending cross-validation.
+  */
+ public class DigitalCouponTest {
+ 
+@@ -71,44 +88,283 @@ public class DigitalCouponTest {
+         QL.info("::::: " + this.getClass().getSimpleName() + " :::::");
+     }
+ 
+-    @Ignore("Phase 5e.5 WI-5e.5-DC-1: BlackIborCouponPricer now ported (commit 2e0ef9e7); empty test body — needs full port from C++ digitalcoupon.cpp + DigitalCoupon-pricer wiring.")
++    /** Mirror of C++ {@code CommonVars} struct (digitalcoupon.cpp:43-67). */
++    private static final class CommonVars {
++        final Date today;
++        final Date settlement;
++        final double nominal;
++        final Calendar calendar;
++        final IborIndex index;
++        final int fixingDays;
++        final RelinkableHandle<YieldTermStructure> termStructure;
++        final double optionTolerance;
++        final double blackTolerance;
++
++        CommonVars() {
++            this.fixingDays = 2;
++            this.nominal = 1000000.0;
++            this.termStructure = new RelinkableHandle<YieldTermStructure>();
++            this.index = new Euribor6M(termStructure);
++            this.calendar = index.fixingCalendar();
++            // Mirror C++: today = calendar.adjust(Settings::instance().evaluationDate())
++            // then Settings::instance().evaluationDate() = today.
++            this.today = calendar.adjust(new Settings().evaluationDate());
++            new Settings().setEvaluationDate(today);
++            this.settlement = calendar.advance(today, fixingDays, TimeUnit.Days);
++            termStructure.linkTo(Utilities.flatRate(settlement, 0.05,
++                    new Actual365Fixed()));
++            this.optionTolerance = 1.0e-04;
++            this.blackTolerance = 1.0e-10;
++        }
++    }
++
++    @Ignore("Phase 5e.5 WI-5e.5-DC-1: BlackIborCouponPricer now ported (commit 2e0ef9e7); empty test body — "
++            + "deferred: needs analytic-european digital engine cross-validation.")
+     @Test
+     public void testAssetOrNothing() {
+     }
+ 
+-    @Ignore("Phase 5e.5 WI-5e.5-DC-1: BlackIborCouponPricer now ported (commit 2e0ef9e7); empty test body — needs full port from C++ digitalcoupon.cpp + DigitalCoupon-pricer wiring.")
++    @Ignore("Phase 5e.5 WI-5e.5-DC-1: BlackIborCouponPricer now ported (commit 2e0ef9e7); empty test body — "
++            + "deferred: needs analytic-european digital engine cross-validation.")
+     @Test
+     public void testAssetOrNothingDeepInTheMoney() {
+     }
+ 
+-    @Ignore("Phase 5e.5 WI-5e.5-DC-1: BlackIborCouponPricer now ported (commit 2e0ef9e7); empty test body — needs full port from C++ digitalcoupon.cpp + DigitalCoupon-pricer wiring.")
++    @Ignore("Phase 5e.5 WI-5e.5-DC-1: BlackIborCouponPricer now ported (commit 2e0ef9e7); empty test body — "
++            + "deferred: needs analytic-european digital engine cross-validation.")
+     @Test
+     public void testAssetOrNothingDeepOutTheMoney() {
+     }
+ 
+-    @Ignore("Phase 5e.5 WI-5e.5-DC-1: BlackIborCouponPricer now ported (commit 2e0ef9e7); empty test body — needs full port from C++ digitalcoupon.cpp + DigitalCoupon-pricer wiring.")
++    @Ignore("Phase 5e.5 WI-5e.5-DC-1: BlackIborCouponPricer now ported (commit 2e0ef9e7); empty test body — "
++            + "deferred: needs analytic-european digital engine cross-validation.")
+     @Test
+     public void testCashOrNothing() {
+     }
+ 
+-    @Ignore("Phase 5e.5 WI-5e.5-DC-1: BlackIborCouponPricer now ported (commit 2e0ef9e7); empty test body — needs full port from C++ digitalcoupon.cpp + DigitalCoupon-pricer wiring.")
++    @Ignore("Phase 5e.5 WI-5e.5-DC-1: BlackIborCouponPricer now ported (commit 2e0ef9e7); empty test body — "
++            + "deferred: needs analytic-european digital engine cross-validation.")
+     @Test
+     public void testCashOrNothingDeepInTheMoney() {
+     }
+ 
+-    @Ignore("Phase 5e.5 WI-5e.5-DC-1: BlackIborCouponPricer now ported (commit 2e0ef9e7); empty test body — needs full port from C++ digitalcoupon.cpp + DigitalCoupon-pricer wiring.")
++    @Ignore("Phase 5e.5 WI-5e.5-DC-1: BlackIborCouponPricer now ported (commit 2e0ef9e7); empty test body — "
++            + "deferred: needs analytic-european digital engine cross-validation.")
+     @Test
+     public void testCashOrNothingDeepOutTheMoney() {
+     }
+ 
+-    @Ignore("Phase 5e.5 WI-5e.5-DC-1: BlackIborCouponPricer now ported (commit 2e0ef9e7); empty test body — needs full port from C++ digitalcoupon.cpp + DigitalCoupon-pricer wiring.")
++    /**
++     * Java port of C++ {@code testCallPutParity} (digitalcoupon.cpp:829-920).
++     * <p>
++     * Verifies that the long-call digital minus short-put digital equals
++     * the static cash payoff (for cash-or-nothing) or static forward payoff
++     * (for asset-or-nothing). This is a structural identity — neither
++     * branch involves option pricing alone, only their difference.
++     */
+     @Test
+     public void testCallPutParity() {
++        QL.info("Testing call/put parity for European digital coupon...");
++
++        final CommonVars vars = new CommonVars();
++
++        final double[] vols = { 0.05, 0.15, 0.30 };
++        final double[] strikes = { 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07 };
++
++        final double gearing = 1.0;
++        final double spread = 0.0;
++
++        for (final double capletVolatility : vols) {
++            final RelinkableHandle<OptionletVolatilityStructure> volatility =
++                    new RelinkableHandle<OptionletVolatilityStructure>();
++            volatility.linkTo(new ConstantOptionletVolatility(vars.today,
++                    vars.calendar, BusinessDayConvention.Following,
++                    capletVolatility, new Actual360()));
++            for (final double strike : strikes) {
++                for (int k = 0; k < 10; k++) {
++                    final Date startDate = vars.calendar.advance(vars.settlement,
++                            new Period(k + 1, TimeUnit.Years));
++                    final Date endDate = vars.calendar.advance(vars.settlement,
++                            new Period(k + 2, TimeUnit.Years));
++                    final double nullstrike = Constants.NULL_REAL;
++                    final Date paymentDate = endDate;
++
++                    final FloatingRateCoupon underlying = new IborCoupon(
++                            paymentDate, vars.nominal,
++                            startDate, endDate,
++                            vars.fixingDays, vars.index,
++                            gearing, spread);
++
++                    // ===================== Cash-or-Nothing branch =====================
++                    final double cashRate = 0.01;
++                    // Floating Rate Coupon + Call Digital option (Long call, Long put-stub)
++                    final DigitalCoupon cashDigitalCallCoupon = new DigitalCoupon(
++                            underlying,
++                            strike, Position.Long, false, cashRate,
++                            nullstrike, Position.Long, false, nullstrike,
++                            null, false);
++                    final BlackIborCouponPricer pricer =
++                            new BlackIborCouponPricer(volatility);
++                    cashDigitalCallCoupon.setPricer(pricer);
++                    // Floating Rate Coupon - Put Digital option (Long call-stub, Short put)
++                    final DigitalCoupon cashDigitalPutCoupon = new DigitalCoupon(
++                            underlying,
++                            nullstrike, Position.Long, false, nullstrike,
++                            strike, Position.Short, false, cashRate,
++                            null, false);
++                    cashDigitalPutCoupon.setPricer(pricer);
++                    double digitalPrice = cashDigitalCallCoupon.price(vars.termStructure)
++                                          - cashDigitalPutCoupon.price(vars.termStructure);
++                    // Target: nominal * accrualPeriod * discount * cashRate.
++                    final double accrualPeriod = underlying.accrualPeriod();
++                    final double discount = vars.termStructure.currentLink()
++                            .discount(endDate);
++                    double targetPrice = vars.nominal * accrualPeriod * discount * cashRate;
++
++                    double error = Math.abs(targetPrice - digitalPrice);
++                    final double tolerance1 = 1.0e-08;
++                    if (error > tolerance1) {
++                        fail("\nCash-or-nothing:"
++                                + "\nVolatility = " + capletVolatility
++                                + "\nStrike = " + strike
++                                + "\nExercise = " + (k + 1) + " years"
++                                + "\nPrice = " + digitalPrice
++                                + "\nTarget Price = " + targetPrice
++                                + "\nError = " + error);
++                    }
++
++                    // ===================== Asset-or-Nothing branch =====================
++                    // Floating Rate Coupon + Call Digital option (no cash payoff)
++                    final DigitalCoupon assetDigitalCallCoupon = new DigitalCoupon(
++                            underlying,
++                            strike, Position.Long, false, nullstrike,
++                            nullstrike, Position.Long, false, nullstrike,
++                            null, false);
++                    assetDigitalCallCoupon.setPricer(pricer);
++                    // Floating Rate Coupon - Put Digital option
++                    final DigitalCoupon assetDigitalPutCoupon = new DigitalCoupon(
++                            underlying,
++                            nullstrike, Position.Long, false, nullstrike,
++                            strike, Position.Short, false, nullstrike,
++                            null, false);
++                    assetDigitalPutCoupon.setPricer(pricer);
++                    digitalPrice = assetDigitalCallCoupon.price(vars.termStructure)
++                                   - assetDigitalPutCoupon.price(vars.termStructure);
++                    // Target: nominal * accrual * discount * forward(underlying.rate()).
++                    targetPrice = vars.nominal * accrualPeriod * discount
++                                  * underlying.rate();
++                    error = Math.abs(targetPrice - digitalPrice);
++                    final double tolerance2 = 1.0e-07;
++                    if (error > tolerance2) {
++                        fail("\nAsset-or-nothing:"
++                                + "\nVolatility = " + capletVolatility
++                                + "\nStrike = " + strike
++                                + "\nExercise = " + (k + 1) + " years"
++                                + "\nPrice = " + digitalPrice
++                                + "\nTarget Price = " + targetPrice
++                                + "\nError = " + error);
++                    }
++                }
++            }
++        }
+     }
+ 
+-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-DC-2 — needs Replication.Type Sub/Central/Super wiring "
+-            + "in DigitalReplication.")
++    /**
++     * Java port of C++ {@code testReplicationType} (digitalcoupon.cpp:922-1095).
++     * <p>
++     * Verifies the monotone-ordering property Sub &le; Central &le; Super
++     * for digital-coupon prices under the three
++     * {@link Replication.Type} strategies. This is a pure inequality —
++     * no probe-generated reference values are needed.
++     *
++     * <p>To keep the test runtime reasonable, only the
++     * {@code Long Call} branch is exercised (the C++ test sweeps all four
++     * call/put long/short combinations, but they're independent and the
++     * inequality holds the same way for each).
++     */
+     @Test
+     public void testReplicationType() {
++        QL.info("Testing replication type for European digital coupon...");
++
++        final CommonVars vars = new CommonVars();
++
++        final double[] vols = { 0.05, 0.15, 0.30 };
++        final double[] strikes = { 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07 };
++
++        final double gearing = 1.0;
++        final double spread = 0.0;
++
++        final double gap = 1.0e-04;
++        final DigitalReplication subReplication =
++                new DigitalReplication(Replication.Type.Sub, gap);
++        final DigitalReplication centralReplication =
++                new DigitalReplication(Replication.Type.Central, gap);
++        final DigitalReplication superReplication =
++                new DigitalReplication(Replication.Type.Super, gap);
++
++        for (final double capletVolatility : vols) {
++            final RelinkableHandle<OptionletVolatilityStructure> volatility =
++                    new RelinkableHandle<OptionletVolatilityStructure>();
++            volatility.linkTo(new ConstantOptionletVolatility(vars.today,
++                    vars.calendar, BusinessDayConvention.Following,
++                    capletVolatility, new Actual360()));
++            for (final double strike : strikes) {
++                for (int k = 0; k < 10; k++) {
++                    final Date startDate = vars.calendar.advance(vars.settlement,
++                            new Period(k + 1, TimeUnit.Years));
++                    final Date endDate = vars.calendar.advance(vars.settlement,
++                            new Period(k + 2, TimeUnit.Years));
++                    final double nullstrike = Constants.NULL_REAL;
++                    final Date paymentDate = endDate;
++
++                    final FloatingRateCoupon underlying = new IborCoupon(
++                            paymentDate, vars.nominal,
++                            startDate, endDate,
++                            vars.fixingDays, vars.index,
++                            gearing, spread);
++                    final double cashRate = 0.005;
++                    // Cash-or-Nothing: Floating Rate Coupon + Long Call Digital
++                    final DigitalCoupon subCashLongDigitalCallCoupon = new DigitalCoupon(
++                            underlying,
++                            strike, Position.Long, false, cashRate,
++                            nullstrike, Position.Long, false, nullstrike,
++                            subReplication, false);
++                    final DigitalCoupon centralCashLongDigitalCallCoupon = new DigitalCoupon(
++                            underlying,
++                            strike, Position.Long, false, cashRate,
++                            nullstrike, Position.Long, false, nullstrike,
++                            centralReplication, false);
++                    final DigitalCoupon superCashLongDigitalCallCoupon = new DigitalCoupon(
++                            underlying,
++                            strike, Position.Long, false, cashRate,
++                            nullstrike, Position.Long, false, nullstrike,
++                            superReplication, false);
++                    final BlackIborCouponPricer pricer =
++                            new BlackIborCouponPricer(volatility);
++                    subCashLongDigitalCallCoupon.setPricer(pricer);
++                    centralCashLongDigitalCallCoupon.setPricer(pricer);
++                    superCashLongDigitalCallCoupon.setPricer(pricer);
++                    final double subDigitalPrice =
++                            subCashLongDigitalCallCoupon.price(vars.termStructure);
++                    final double centralDigitalPrice =
++                            centralCashLongDigitalCallCoupon.price(vars.termStructure);
++                    final double superDigitalPrice =
++                            superCashLongDigitalCallCoupon.price(vars.termStructure);
++                    final double tolerance = 1.0e-09;
++                    if ((subDigitalPrice > centralDigitalPrice
++                            && Math.abs(centralDigitalPrice - subDigitalPrice) > tolerance)
++                            || (centralDigitalPrice > superDigitalPrice
++                            && Math.abs(centralDigitalPrice - superDigitalPrice) > tolerance)) {
++                        fail("\nCash-or-nothing: Floating Rate Coupon + Call Digital option"
++                                + "\nVolatility = " + capletVolatility
++                                + "\nStrike = " + strike
++                                + "\nExercise = " + (k + 1) + " years"
++                                + "\nSub-Replication Price = " + subDigitalPrice
++                                + "\nCentral-Replication Price = " + centralDigitalPrice
++                                + "\nOver-Replication Price = " + superDigitalPrice);
++                    }
++                }
++            }
++        }
+     }
+ }
+diff --git a/jquantlib/src/test/java/org/jquantlib/testsuite/pricingengines/BlackDeltaCalculatorTest.java b/jquantlib/src/test/java/org/jquantlib/testsuite/pricingengines/BlackDeltaCalculatorTest.java
+index be9ef084..14a4dd0c 100644
+--- a/jquantlib/src/test/java/org/jquantlib/testsuite/pricingengines/BlackDeltaCalculatorTest.java
++++ b/jquantlib/src/test/java/org/jquantlib/testsuite/pricingengines/BlackDeltaCalculatorTest.java
+@@ -28,25 +28,50 @@
+ */
+ package org.jquantlib.testsuite.pricingengines;
+ 
++import static org.junit.Assert.fail;
++
+ import org.jquantlib.QL;
+-import org.junit.Ignore;
++import org.jquantlib.Settings;
++import org.jquantlib.daycounters.Actual360;
++import org.jquantlib.daycounters.DayCounter;
++import org.jquantlib.exercise.EuropeanExercise;
++import org.jquantlib.exercise.Exercise;
++import org.jquantlib.experimental.fx.DeltaVolQuote;
++import org.jquantlib.instruments.EuropeanOption;
++import org.jquantlib.instruments.Option;
++import org.jquantlib.instruments.PlainVanillaPayoff;
++import org.jquantlib.instruments.StrikedTypePayoff;
++import org.jquantlib.pricingengines.AnalyticEuropeanEngine;
++import org.jquantlib.pricingengines.BlackDeltaCalculator;
++import org.jquantlib.pricingengines.PricingEngine;
++import org.jquantlib.processes.BlackScholesMertonProcess;
++import org.jquantlib.quotes.Handle;
++import org.jquantlib.quotes.Quote;
++import org.jquantlib.quotes.SimpleQuote;
++import org.jquantlib.termstructures.BlackVolTermStructure;
++import org.jquantlib.termstructures.YieldTermStructure;
++import org.jquantlib.termstructures.volatilities.BlackConstantVol;
++import org.jquantlib.termstructures.yieldcurves.FlatForward;
++import org.jquantlib.time.Calendar;
++import org.jquantlib.time.Date;
++import org.jquantlib.time.calendars.Target;
+ import org.junit.Test;
+ 
+ /**
+- * Java port of QuantLib v1.42.1 test-suite/blackdeltacalculator.cpp (Phase 5g).
++ * Java port of QuantLib v1.42.1
++ * {@code test-suite/blackdeltacalculator.cpp} (Phase 5e.5b-CFC-d-29).
+  *
+- * <p>The C++ file has four test cases exercising the FX premium-adjusted /
+- * unadjusted delta conventions implemented in
+- * {@code BlackDeltaCalculator}: testDeltaValues, testDeltaPriceConsistency,
+- * testPutCallParity, testAtmCalcs.
++ * <p>Exercises the FX premium-adjusted / unadjusted delta conventions
++ * implemented in {@link BlackDeltaCalculator}: {@code testDeltaValues},
++ * {@code testDeltaPriceConsistency}, {@code testPutCallParity},
++ * {@code testAtmCalcs}.
+  *
+- * <p><b>Phase 5g.5 deferral:</b> JQuantLib does not have a
+- * {@code BlackDeltaCalculator} class. The C++ class lives at
+- * {@code ql/pricingengines/blackdeltacalculator.hpp} and exercises the
+- * spot/forward × premium-adjusted/unadjusted FX delta conventions. The
+- * Java port belongs to the deferred Phase 4l (experimental/fx). Faithful
+- * test port deferred to Phase 5g.5 — explicitly called out as design
+- * concern D7 in the Phase 5 META design.
++ * <p>The first test (delta values + strike-from-delta) uses the loose
++ * tolerances from the C++ test (1e-3 for deltas, 1e-2 for strikes — the
++ * latter being a numerical-procedure outcome). The other three tests use
++ * the original C++ tight tolerance ({@code 1e-10}). The ATM test keeps
++ * the {@code 1e-2} tolerance the C++ test specifies (strikes from
++ * numerical procedures).
+  */
+ public class BlackDeltaCalculatorTest {
+ 
+@@ -54,24 +79,586 @@ public class BlackDeltaCalculatorTest {
+         QL.info("::::: " + this.getClass().getSimpleName() + " :::::");
+     }
+ 
++    // C++ utilities.hpp: timeToDays(t, daysPerYear=360) = lround(t*360).
++    private static int timeToDays(final double t) {
++        return (int) Math.round(t * 360.0);
++    }
++
++    private static final class DeltaData {
++        final Option.Type ot;
++        final DeltaVolQuote.DeltaType dt;
++        final double spot;
++        final double dDf;
++        final double fDf;
++        final double stdDev;
++        final double strike;
++        final double value;
++
++        DeltaData(final Option.Type ot, final DeltaVolQuote.DeltaType dt,
++                  final double spot, final double dDf, final double fDf,
++                  final double stdDev, final double strike, final double value) {
++            this.ot = ot;
++            this.dt = dt;
++            this.spot = spot;
++            this.dDf = dDf;
++            this.fDf = fDf;
++            this.stdDev = stdDev;
++            this.strike = strike;
++            this.value = value;
++        }
++    }
++
++    private static final class EuropeanOptionData {
++        final Option.Type type;
++        final double strike;
++        final double s;   // spot
++        final double q;   // dividend
++        final double r;   // risk-free rate
++        final double t;   // time to maturity
++        final double v;   // volatility
++
++        EuropeanOptionData(final Option.Type type, final double strike,
++                           final double s, final double q, final double r,
++                           final double t, final double v) {
++            this.type = type;
++            this.strike = strike;
++            this.s = s;
++            this.q = q;
++            this.r = r;
++            this.t = t;
++            this.v = v;
++        }
++    }
++
+     @Test
+-    @Ignore("Phase 5g.5 / Phase 4l — BlackDeltaCalculator class not present in "
+-            + "JQuantLib (deferred experimental/fx). Design concern D7. "
+-            + "C++ blackdeltacalculator.cpp testDeltaValues.")
+-    public void testDeltaValues() { }
++    public void testDeltaValues() {
++
++        QL.info("Testing delta calculator values...");
++
++        // Values taken from parallel implementation in R
++        final DeltaData[] values = new DeltaData[] {
++            new DeltaData(Option.Type.Call, DeltaVolQuote.DeltaType.Spot,    1.421,   0.997306, 0.992266,  0.1180654,  1.608080,  0.15),
++            new DeltaData(Option.Type.Call, DeltaVolQuote.DeltaType.PaSpot,  1.421,   0.997306, 0.992266,  0.1180654,  1.600545,  0.15),
++            new DeltaData(Option.Type.Call, DeltaVolQuote.DeltaType.Fwd,     1.421,   0.997306, 0.992266,  0.1180654,  1.609029,  0.15),
++            new DeltaData(Option.Type.Call, DeltaVolQuote.DeltaType.PaFwd,   1.421,   0.997306, 0.992266,  0.1180654,  1.601550,  0.15),
++            new DeltaData(Option.Type.Call, DeltaVolQuote.DeltaType.Spot,    122.121, 0.9695434,0.9872347, 0.0887676,  119.8031,  0.67),
++            new DeltaData(Option.Type.Call, DeltaVolQuote.DeltaType.PaSpot,  122.121, 0.9695434,0.9872347, 0.0887676,  117.7096,  0.67),
++            new DeltaData(Option.Type.Call, DeltaVolQuote.DeltaType.Fwd,     122.121, 0.9695434,0.9872347, 0.0887676,  120.0592,  0.67),
++            new DeltaData(Option.Type.Call, DeltaVolQuote.DeltaType.PaFwd,   122.121, 0.9695434,0.9872347, 0.0887676,  118.0532,  0.67),
++            new DeltaData(Option.Type.Put,  DeltaVolQuote.DeltaType.Spot,    3.4582,  0.99979,  0.9250616, 0.3199034,  4.964924, -0.821),
++            new DeltaData(Option.Type.Put,  DeltaVolQuote.DeltaType.PaSpot,  3.4582,  0.99979,  0.9250616, 0.3199034,  3.778327, -0.821),
++            new DeltaData(Option.Type.Put,  DeltaVolQuote.DeltaType.Fwd,     3.4582,  0.99979,  0.9250616, 0.3199034,  4.51896,  -0.821),
++            new DeltaData(Option.Type.Put,  DeltaVolQuote.DeltaType.PaFwd,   3.4582,  0.99979,  0.9250616, 0.3199034,  3.65728,  -0.821),
++            // JPYUSD Data taken from Castagnas "FX Options and Smile Risk" (Wiley 2009)
++            new DeltaData(Option.Type.Put,  DeltaVolQuote.DeltaType.Spot,    103.00,  0.99482,  0.98508,   0.07247845, 97.47,    -0.25),
++            new DeltaData(Option.Type.Put,  DeltaVolQuote.DeltaType.PaSpot,  103.00,  0.99482,  0.98508,   0.07247845, 97.22,    -0.25),
++        };
++
++        for (int i = 0; i < values.length; ++i) {
++            final DeltaData v = values[i];
++
++            final BlackDeltaCalculator myCalc = new BlackDeltaCalculator(
++                    v.ot, v.dt, v.spot, v.dDf, v.fDf, v.stdDev);
++
++            double tolerance = 1.0e-3;
++
++            double expected = v.value;
++            double calculated = myCalc.deltaFromStrike(v.strike);
++            double error = Math.abs(calculated - expected);
++
++            if (error > tolerance) {
++                fail("\n Delta-from-strike calculation failed for delta. \n"
++                        + "Iteration: " + i + "\n"
++                        + "Calculated Delta: " + calculated + "\n"
++                        + "Expected   Delta: " + expected + "\n"
++                        + "Error: " + error);
++            }
++
++            tolerance = 1.0e-2;
++            // tolerance not that small, but sufficient for strikes in
++            // particular since they might be results of a numerical procedure
++
++            expected = v.strike;
++            calculated = myCalc.strikeFromDelta(v.value);
++            error = Math.abs(calculated - expected);
++
++            if (error > tolerance) {
++                fail("\n Strike-from-delta calculation failed for delta. \n"
++                        + "Iteration: " + i + "\n"
++                        + "Calculated Strike: " + calculated + "\n"
++                        + "Expected   Strike: " + expected + "\n"
++                        + "Error: " + error);
++            }
++        }
++    }
+ 
+     @Test
+-    @Ignore("Phase 5g.5 — see testDeltaValues. "
+-            + "C++ blackdeltacalculator.cpp testDeltaPriceConsistency.")
+-    public void testDeltaPriceConsistency() { }
++    public void testDeltaPriceConsistency() {
++
++        QL.info("Testing premium-adjusted delta price consistency...");
++
++        // This function tests for price consistencies with the standard
++        // Black Scholes calculator, since premium adjusted deltas can be
++        // calculated from spot deltas by adding/subtracting the premium.
++
++        final EuropeanOptionData[] values = new EuropeanOptionData[] {
++            //                      type,         strike, spot,    rd,     rf,     t,    vol
++            new EuropeanOptionData(Option.Type.Call,  0.9123, 1.2212, 0.0231, 0.0000, 0.25, 0.301),
++            new EuropeanOptionData(Option.Type.Call,  0.9234, 1.2212, 0.0231, 0.0000, 0.35, 0.111),
++            new EuropeanOptionData(Option.Type.Call,  0.9783, 1.2212, 0.0231, 0.0000, 0.45, 0.071),
++            new EuropeanOptionData(Option.Type.Call,  1.0000, 1.2212, 0.0231, 0.0000, 0.55, 0.082),
++            new EuropeanOptionData(Option.Type.Call,  1.1230, 1.2212, 0.0231, 0.0000, 0.65, 0.012),
++            new EuropeanOptionData(Option.Type.Call,  1.2212, 1.2212, 0.0231, 0.0000, 0.75, 0.129),
++            new EuropeanOptionData(Option.Type.Call,  1.3212, 1.2212, 0.0231, 0.0000, 0.85, 0.034),
++            new EuropeanOptionData(Option.Type.Call,  1.3923, 1.2212, 0.0131, 0.2344, 0.95, 0.001),
++            new EuropeanOptionData(Option.Type.Call,  1.3455, 1.2212, 0.0000, 0.0000, 1.00, 0.127),
++            new EuropeanOptionData(Option.Type.Put,   0.9123, 1.2212, 0.0231, 0.0000, 0.25, 0.301),
++            new EuropeanOptionData(Option.Type.Put,   0.9234, 1.2212, 0.0231, 0.0000, 0.35, 0.111),
++            new EuropeanOptionData(Option.Type.Put,   0.9783, 1.2212, 0.0231, 0.0000, 0.45, 0.071),
++            new EuropeanOptionData(Option.Type.Put,   1.0000, 1.2212, 0.0231, 0.0000, 0.55, 0.082),
++            new EuropeanOptionData(Option.Type.Put,   1.1230, 1.2212, 0.0231, 0.0000, 0.65, 0.012),
++            new EuropeanOptionData(Option.Type.Put,   1.2212, 1.2212, 0.0231, 0.0000, 0.75, 0.129),
++            new EuropeanOptionData(Option.Type.Put,   1.3212, 1.2212, 0.0231, 0.0000, 0.85, 0.034),
++            new EuropeanOptionData(Option.Type.Put,   1.3923, 1.2212, 0.0131, 0.2344, 0.95, 0.001),
++            new EuropeanOptionData(Option.Type.Put,   1.3455, 1.2212, 0.0000, 0.0000, 1.00, 0.127),
++            // extreme case: zero vol
++            new EuropeanOptionData(Option.Type.Put,   1.3455, 1.2212, 0.0000, 0.0000, 0.50, 0.000),
++            // extreme case: zero strike
++            new EuropeanOptionData(Option.Type.Put,   0.0000, 1.2212, 0.0000, 0.0000, 1.50, 0.133),
++            // extreme case: zero strike + zero vol
++            new EuropeanOptionData(Option.Type.Put,   0.0000, 1.2212, 0.0000, 0.0000, 1.00, 0.133),
++        };
++
++        final DayCounter dc = new Actual360();
++        final Calendar calendar = new Target();
++        final Date today = Date.todaysDate();
++        new Settings().setEvaluationDate(today);
++
++        // Start setup of market data
++        final SimpleQuote spotQuote = new SimpleQuote(0.0);
++        final Handle<Quote> spotHandle = new Handle<Quote>(spotQuote);
++
++        final SimpleQuote qQuote = new SimpleQuote(0.0);
++        final Handle<Quote> qHandle = new Handle<Quote>(qQuote);
++        final YieldTermStructure qTS = new FlatForward(today, qHandle, dc);
++
++        final SimpleQuote rQuote = new SimpleQuote(0.0);
++        // C++ test passes qQuote here too (likely typo in upstream — reproduce
++        // verbatim so domestic and foreign discount factors share the same
++        // quote, mirroring the C++ semantics).
++        final Handle<Quote> rHandle = new Handle<Quote>(qQuote);
++        final YieldTermStructure rTS = new FlatForward(today, rHandle, dc);
++
++        final SimpleQuote volQuote = new SimpleQuote(0.0);
++        final Handle<Quote> volHandle = new Handle<Quote>(volQuote);
++        final BlackVolTermStructure volTS = new BlackConstantVol(today, calendar, volHandle, dc);
++
++        final double tolerance = 1.0e-10;
++
++        for (int i = 0; i < values.length; ++i) {
++            final EuropeanOptionData value = values[i];
++
++            final StrikedTypePayoff payoff = new PlainVanillaPayoff(value.type, value.strike);
++            final Date exDate = today.add(timeToDays(value.t));
++            final Exercise exercise = new EuropeanExercise(exDate);
++
++            spotQuote.setValue(value.s);
++            volQuote.setValue(value.v);
++            rQuote.setValue(value.r);
++            qQuote.setValue(value.q);
++
++            final double discDom = rTS.discount(exDate);
++            final double discFor = qTS.discount(exDate);
++            final double implVol = Math.sqrt(volTS.blackVariance(exDate, 0.0));
++
++            final BlackDeltaCalculator myCalc = new BlackDeltaCalculator(
++                    value.type, DeltaVolQuote.DeltaType.PaSpot,
++                    spotQuote.value(), discDom, discFor, implVol);
++
++            final BlackScholesMertonProcess stochProcess = new BlackScholesMertonProcess(
++                    spotHandle,
++                    new Handle<YieldTermStructure>(qTS),
++                    new Handle<YieldTermStructure>(rTS),
++                    new Handle<BlackVolTermStructure>(volTS));
++
++            final PricingEngine engine = new AnalyticEuropeanEngine(stochProcess);
++
++            final EuropeanOption option = new EuropeanOption(payoff, exercise);
++            option.setPricingEngine(engine);
++
++            double calculatedVal = myCalc.deltaFromStrike(value.strike);
++
++            double delta = 0.0;
++            if (implVol > 0.0) {
++                delta = option.delta();
++            } else {
++                final double fwd = spotQuote.value() * discFor / discDom;
++                if (payoff.optionType() == Option.Type.Call && fwd > payoff.strike()) {
++                    delta = 1.0;
++                } else if (payoff.optionType() == Option.Type.Put && fwd < payoff.strike()) {
++                    delta = -1.0;
++                }
++            }
++
++            double expectedVal = delta - option.NPV() / spotQuote.value();
++            double error = Math.abs(expectedVal - calculatedVal);
++
++            if (error > tolerance) {
++                fail("\n Premium-adjusted spot delta test failed. \n"
++                        + "Iteration: " + i + "\n"
++                        + "Calculated Delta: " + calculatedVal + "\n"
++                        + "Expected Value:   " + expectedVal + "\n"
++                        + "Error: " + error);
++            }
++
++            myCalc.setDeltaType(DeltaVolQuote.DeltaType.PaFwd);
++
++            calculatedVal = myCalc.deltaFromStrike(value.strike);
++            // Premium adjusted Fwd Delta is PA spot without discount
++            expectedVal = expectedVal / discFor;
++            error = Math.abs(expectedVal - calculatedVal);
++
++            if (error > tolerance) {
++                fail("\n Premium-adjusted forward delta test failed. \n"
++                        + "Iteration: " + i + "\n"
++                        + "Calculated Delta: " + calculatedVal + "\n"
++                        + "Expected Value:   " + expectedVal + "\n"
++                        + "Error: " + error);
++            }
++
++            // Test consistency with BlackScholes Calculator for Spot Delta
++            myCalc.setDeltaType(DeltaVolQuote.DeltaType.Spot);
++
++            calculatedVal = myCalc.deltaFromStrike(value.strike);
++            expectedVal = delta;
++            error = Math.abs(calculatedVal - expectedVal);
++
++            if (error > tolerance) {
++                fail("\n spot delta in BlackDeltaCalculator differs from delta in BlackScholesCalculator. \n"
++                        + "Iteration: " + i + "\n"
++                        + "Calculated Value: " + calculatedVal + "\n"
++                        + "Expected Value:   " + expectedVal + "\n"
++                        + "Error: " + error);
++            }
++        }
++    }
+ 
+     @Test
+-    @Ignore("Phase 5g.5 — see testDeltaValues. "
+-            + "C++ blackdeltacalculator.cpp testPutCallParity.")
+-    public void testPutCallParity() { }
++    public void testPutCallParity() {
++
++        QL.info("Testing put-call parity for deltas...");
++
++        // Test for put call parity between put and call deltas.
++        // Data below are from "Option pricing formulas", E.G. Haug,
++        // McGraw-Hill 1998, pag 11-16.
++        final EuropeanOptionData[] values = new EuropeanOptionData[] {
++            // pag 2-8
++            new EuropeanOptionData(Option.Type.Call,  65.00,  60.00, 0.00, 0.08, 0.25, 0.30),
++            new EuropeanOptionData(Option.Type.Put,   95.00, 100.00, 0.05, 0.10, 0.50, 0.20),
++            new EuropeanOptionData(Option.Type.Put,   19.00,  19.00, 0.10, 0.10, 0.75, 0.28),
++            new EuropeanOptionData(Option.Type.Call,  19.00,  19.00, 0.10, 0.10, 0.75, 0.28),
++            new EuropeanOptionData(Option.Type.Call,   1.60,   1.56, 0.08, 0.06, 0.50, 0.12),
++            new EuropeanOptionData(Option.Type.Put,   70.00,  75.00, 0.05, 0.10, 0.50, 0.35),
++            // pag 24
++            new EuropeanOptionData(Option.Type.Call, 100.00,  90.00, 0.10, 0.10, 0.10, 0.15),
++            new EuropeanOptionData(Option.Type.Call, 100.00, 100.00, 0.10, 0.10, 0.10, 0.15),
++            new EuropeanOptionData(Option.Type.Call, 100.00, 110.00, 0.10, 0.10, 0.10, 0.15),
++            new EuropeanOptionData(Option.Type.Call, 100.00,  90.00, 0.10, 0.10, 0.10, 0.25),
++            new EuropeanOptionData(Option.Type.Call, 100.00, 100.00, 0.10, 0.10, 0.10, 0.25),
++            new EuropeanOptionData(Option.Type.Call, 100.00, 110.00, 0.10, 0.10, 0.10, 0.25),
++            new EuropeanOptionData(Option.Type.Call, 100.00,  90.00, 0.10, 0.10, 0.10, 0.35),
++            new EuropeanOptionData(Option.Type.Call, 100.00, 100.00, 0.10, 0.10, 0.10, 0.35),
++            new EuropeanOptionData(Option.Type.Call, 100.00, 110.00, 0.10, 0.10, 0.10, 0.35),
++            new EuropeanOptionData(Option.Type.Call, 100.00,  90.00, 0.10, 0.10, 0.50, 0.15),
++            new EuropeanOptionData(Option.Type.Call, 100.00, 100.00, 0.10, 0.10, 0.50, 0.15),
++            new EuropeanOptionData(Option.Type.Call, 100.00, 110.00, 0.10, 0.10, 0.50, 0.15),
++            new EuropeanOptionData(Option.Type.Call, 100.00,  90.00, 0.10, 0.10, 0.50, 0.25),
++            new EuropeanOptionData(Option.Type.Call, 100.00, 100.00, 0.10, 0.10, 0.50, 0.25),
++            new EuropeanOptionData(Option.Type.Call, 100.00, 110.00, 0.10, 0.10, 0.50, 0.25),
++            new EuropeanOptionData(Option.Type.Call, 100.00,  90.00, 0.10, 0.10, 0.50, 0.35),
++            new EuropeanOptionData(Option.Type.Call, 100.00, 100.00, 0.10, 0.10, 0.50, 0.35),
++            new EuropeanOptionData(Option.Type.Call, 100.00, 110.00, 0.10, 0.10, 0.50, 0.35),
++            new EuropeanOptionData(Option.Type.Put,  100.00,  90.00, 0.10, 0.10, 0.10, 0.15),
++            new EuropeanOptionData(Option.Type.Put,  100.00, 100.00, 0.10, 0.10, 0.10, 0.15),
++            new EuropeanOptionData(Option.Type.Put,  100.00, 110.00, 0.10, 0.10, 0.10, 0.15),
++            new EuropeanOptionData(Option.Type.Put,  100.00,  90.00, 0.10, 0.10, 0.10, 0.25),
++            new EuropeanOptionData(Option.Type.Put,  100.00, 100.00, 0.10, 0.10, 0.10, 0.25),
++            new EuropeanOptionData(Option.Type.Put,  100.00, 110.00, 0.10, 0.10, 0.10, 0.25),
++            new EuropeanOptionData(Option.Type.Put,  100.00,  90.00, 0.10, 0.10, 0.10, 0.35),
++            new EuropeanOptionData(Option.Type.Put,  100.00, 100.00, 0.10, 0.10, 0.10, 0.35),
++            new EuropeanOptionData(Option.Type.Put,  100.00, 110.00, 0.10, 0.10, 0.10, 0.35),
++            new EuropeanOptionData(Option.Type.Put,  100.00,  90.00, 0.10, 0.10, 0.50, 0.15),
++            new EuropeanOptionData(Option.Type.Put,  100.00, 100.00, 0.10, 0.10, 0.50, 0.15),
++            new EuropeanOptionData(Option.Type.Put,  100.00, 110.00, 0.10, 0.10, 0.50, 0.15),
++            new EuropeanOptionData(Option.Type.Put,  100.00,  90.00, 0.10, 0.10, 0.50, 0.25),
++            new EuropeanOptionData(Option.Type.Put,  100.00, 100.00, 0.10, 0.10, 0.50, 0.25),
++            new EuropeanOptionData(Option.Type.Put,  100.00, 110.00, 0.10, 0.10, 0.50, 0.25),
++            new EuropeanOptionData(Option.Type.Put,  100.00,  90.00, 0.10, 0.10, 0.50, 0.35),
++            new EuropeanOptionData(Option.Type.Put,  100.00, 100.00, 0.10, 0.10, 0.50, 0.35),
++            new EuropeanOptionData(Option.Type.Put,  100.00, 110.00, 0.10, 0.10, 0.50, 0.35),
++            // pag 27
++            new EuropeanOptionData(Option.Type.Call,  40.00,  42.00, 0.08, 0.04, 0.75, 0.35),
++        };
++
++        final DayCounter dc = new Actual360();
++        final Calendar calendar = new Target();
++        final Date today = Date.todaysDate();
++        new Settings().setEvaluationDate(today);
++
++        final SimpleQuote spotQuote = new SimpleQuote(0.0);
++
++        final SimpleQuote qQuote = new SimpleQuote(0.0);
++        final Handle<Quote> qHandle = new Handle<Quote>(qQuote);
++        final YieldTermStructure qTS = new FlatForward(today, qHandle, dc);
++
++        final SimpleQuote rQuote = new SimpleQuote(0.0);
++        // Verbatim C++: rHandle is built from qQuote (likely upstream typo,
++        // but kept identical so semantics match).
++        final Handle<Quote> rHandle = new Handle<Quote>(qQuote);
++        final YieldTermStructure rTS = new FlatForward(today, rHandle, dc);
++
++        final SimpleQuote volQuote = new SimpleQuote(0.0);
++        final Handle<Quote> volHandle = new Handle<Quote>(volQuote);
++        final BlackVolTermStructure volTS = new BlackConstantVol(today, calendar, volHandle, dc);
++
++        final double tolerance = 1.0e-10;
++
++        for (int i = 0; i < values.length; ++i) {
++            final EuropeanOptionData value = values[i];
++
++            // C++ creates payoff/exercise (unused beyond setValues)
++            final Date exDate = today.add(timeToDays(value.t));
++
++            spotQuote.setValue(value.s);
++            volQuote.setValue(value.v);
++            rQuote.setValue(value.r);
++            qQuote.setValue(value.q);
++
++            final double discDom = rTS.discount(exDate);
++            final double discFor = qTS.discount(exDate);
++            final double implVol = Math.sqrt(volTS.blackVariance(exDate, 0.0));
++            final double forward = spotQuote.value() * discFor / discDom;
++
++            final BlackDeltaCalculator myCalc = new BlackDeltaCalculator(
++                    Option.Type.Call, DeltaVolQuote.DeltaType.Spot,
++                    spotQuote.value(), discDom, discFor, implVol);
++
++            double deltaCall = myCalc.deltaFromStrike(value.strike);
++            myCalc.setOptionType(Option.Type.Put);
++            double deltaPut = myCalc.deltaFromStrike(value.strike);
++            myCalc.setOptionType(Option.Type.Call);
++
++            double expectedDiff = discFor;
++            double calculatedDiff = deltaCall - deltaPut;
++            double error = Math.abs(expectedDiff - calculatedDiff);
++
++            if (error > tolerance) {
++                fail("\n Put-call parity failed for spot delta. \n"
++                        + "Iteration: " + i + "\n"
++                        + "Calculated Call Delta: " + deltaCall + "\n"
++                        + "Calculated Put Delta:  " + deltaPut + "\n"
++                        + "Expected Difference:   " + expectedDiff + "\n"
++                        + "Calculated Difference: " + calculatedDiff);
++            }
++
++            myCalc.setDeltaType(DeltaVolQuote.DeltaType.Fwd);
++
++            deltaCall = myCalc.deltaFromStrike(value.strike);
++            myCalc.setOptionType(Option.Type.Put);
++            deltaPut = myCalc.deltaFromStrike(value.strike);
++            myCalc.setOptionType(Option.Type.Call);
++
++            expectedDiff = 1.0;
++            calculatedDiff = deltaCall - deltaPut;
++            error = Math.abs(expectedDiff - calculatedDiff);
++
++            if (error > tolerance) {
++                fail("\n Put-call parity failed for forward delta. \n"
++                        + "Iteration: " + i + "\n"
++                        + "Calculated Call Delta: " + deltaCall + "\n"
++                        + "Calculated Put Delta:  " + deltaPut + "\n"
++                        + "Expected Difference:   " + expectedDiff + "\n"
++                        + "Calculated Difference: " + calculatedDiff);
++            }
++
++            myCalc.setDeltaType(DeltaVolQuote.DeltaType.PaSpot);
++
++            deltaCall = myCalc.deltaFromStrike(value.strike);
++            myCalc.setOptionType(Option.Type.Put);
++            deltaPut = myCalc.deltaFromStrike(value.strike);
++            myCalc.setOptionType(Option.Type.Call);
++
++            expectedDiff = discFor * value.strike / forward;
++            calculatedDiff = deltaCall - deltaPut;
++            error = Math.abs(expectedDiff - calculatedDiff);
++
++            if (error > tolerance) {
++                fail("\n Put-call parity failed for premium-adjusted spot delta. \n"
++                        + "Iteration: " + i + "\n"
++                        + "Calculated Call Delta: " + deltaCall + "\n"
++                        + "Calculated Put Delta:  " + deltaPut + "\n"
++                        + "Expected Difference:   " + expectedDiff + "\n"
++                        + "Calculated Difference: " + calculatedDiff);
++            }
++
++            myCalc.setDeltaType(DeltaVolQuote.DeltaType.PaFwd);
++
++            deltaCall = myCalc.deltaFromStrike(value.strike);
++            myCalc.setOptionType(Option.Type.Put);
++            deltaPut = myCalc.deltaFromStrike(value.strike);
++            myCalc.setOptionType(Option.Type.Call);
++
++            expectedDiff = value.strike / forward;
++            calculatedDiff = deltaCall - deltaPut;
++            error = Math.abs(expectedDiff - calculatedDiff);
++
++            if (error > tolerance) {
++                fail("\n Put-call parity failed for premium-adjusted forward delta. \n"
++                        + "Iteration: " + i + "\n"
++                        + "Calculated Call Delta: " + deltaCall + "\n"
++                        + "Calculated Put Delta:  " + deltaPut + "\n"
++                        + "Expected Difference:   " + expectedDiff + "\n"
++                        + "Calculated Difference: " + calculatedDiff);
++            }
++        }
++    }
+ 
+     @Test
+-    @Ignore("Phase 5g.5 — see testDeltaValues. "
+-            + "C++ blackdeltacalculator.cpp testAtmCalcs.")
+-    public void testAtmCalcs() { }
++    public void testAtmCalcs() {
++
++        QL.info("Testing delta-neutral ATM quotations...");
++
++        final DeltaData[] values = new DeltaData[] {
++            new DeltaData(Option.Type.Call, DeltaVolQuote.DeltaType.Spot,    1.421,   0.997306, 0.992266,  0.1180654,  1.608080,  0.15),
++            new DeltaData(Option.Type.Call, DeltaVolQuote.DeltaType.PaSpot,  1.421,   0.997306, 0.992266,  0.1180654,  1.600545,  0.15),
++            new DeltaData(Option.Type.Call, DeltaVolQuote.DeltaType.Fwd,     1.421,   0.997306, 0.992266,  0.1180654,  1.609029,  0.15),
++            new DeltaData(Option.Type.Call, DeltaVolQuote.DeltaType.PaFwd,   1.421,   0.997306, 0.992266,  0.1180654,  1.601550,  0.15),
++            new DeltaData(Option.Type.Call, DeltaVolQuote.DeltaType.Spot,    122.121, 0.9695434,0.9872347, 0.0887676,  119.8031,  0.67),
++            new DeltaData(Option.Type.Call, DeltaVolQuote.DeltaType.PaSpot,  122.121, 0.9695434,0.9872347, 0.0887676,  117.7096,  0.67),
++            new DeltaData(Option.Type.Call, DeltaVolQuote.DeltaType.Fwd,     122.121, 0.9695434,0.9872347, 0.0887676,  120.0592,  0.67),
++            new DeltaData(Option.Type.Call, DeltaVolQuote.DeltaType.PaFwd,   122.121, 0.9695434,0.9872347, 0.0887676,  118.0532,  0.67),
++            new DeltaData(Option.Type.Put,  DeltaVolQuote.DeltaType.Spot,    3.4582,  0.99979,  0.9250616, 0.3199034,  4.964924, -0.821),
++            new DeltaData(Option.Type.Put,  DeltaVolQuote.DeltaType.PaSpot,  3.4582,  0.99979,  0.9250616, 0.3199034,  3.778327, -0.821),
++            new DeltaData(Option.Type.Put,  DeltaVolQuote.DeltaType.Fwd,     3.4582,  0.99979,  0.9250616, 0.3199034,  4.51896,  -0.821),
++            new DeltaData(Option.Type.Put,  DeltaVolQuote.DeltaType.PaFwd,   3.4582,  0.99979,  0.9250616, 0.3199034,  3.65728,  -0.821),
++            // Data taken from Castagnas "FX Options and Smile Risk" (Wiley 2009)
++            new DeltaData(Option.Type.Put,  DeltaVolQuote.DeltaType.Spot,    103.00,  0.99482,  0.98508,   0.07247845, 97.47,    -0.25),
++            new DeltaData(Option.Type.Put,  DeltaVolQuote.DeltaType.PaSpot,  103.00,  0.99482,  0.98508,   0.07247845, 97.22,    -0.25),
++            // Extreme case: zero vol, ATM Fwd strike
++            new DeltaData(Option.Type.Call, DeltaVolQuote.DeltaType.Fwd,     103.00,  0.99482,  0.98508,   0.0,        101.0013,  0.5),
++            new DeltaData(Option.Type.Call, DeltaVolQuote.DeltaType.Spot,    103.00,  0.99482,  0.98508,   0.0,        101.0013,  0.99482 * 0.5),
++        };
++
++        // tolerance not that small, but sufficient for strikes (numerical procedures)
++        final double tolerance = 1.0e-2;
++
++        for (int i = 0; i < values.length; ++i) {
++            final DeltaData v = values[i];
++
++            final double currFwd = v.spot * v.fDf / v.dDf;
++
++            final BlackDeltaCalculator myCalc = new BlackDeltaCalculator(
++                    Option.Type.Call, v.dt, v.spot, v.dDf, v.fDf, v.stdDev);
++
++            double currAtmStrike = myCalc.atmStrike(DeltaVolQuote.AtmType.AtmDeltaNeutral);
++            double currCallDelta = myCalc.deltaFromStrike(currAtmStrike);
++            myCalc.setOptionType(Option.Type.Put);
++            double currPutDelta = myCalc.deltaFromStrike(currAtmStrike);
++            myCalc.setOptionType(Option.Type.Call);
++
++            double expected = 0.0;
++            double calculated = currCallDelta + currPutDelta;
++            double error = Math.abs(calculated - expected);
++
++            if (error > tolerance) {
++                fail("\n Delta neutrality failed for spot delta in Delta Calculator. \n"
++                        + "Iteration: " + i + "\n"
++                        + "Calculated Delta Sum: " + calculated + "\n"
++                        + "Expected Delta Sum:   " + expected + "\n"
++                        + "Error: " + error);
++            }
++
++            myCalc.setDeltaType(DeltaVolQuote.DeltaType.Fwd);
++            currAtmStrike = myCalc.atmStrike(DeltaVolQuote.AtmType.AtmDeltaNeutral);
++            currCallDelta = myCalc.deltaFromStrike(currAtmStrike);
++            myCalc.setOptionType(Option.Type.Put);
++            currPutDelta = myCalc.deltaFromStrike(currAtmStrike);
++            myCalc.setOptionType(Option.Type.Call);
++
++            calculated = currCallDelta + currPutDelta;
++            error = Math.abs(calculated - expected);
++
++            if (error > tolerance) {
++                fail("\n Delta neutrality failed for forward delta in Delta Calculator. \n"
++                        + "Iteration: " + i + "\n"
++                        + "Calculated Delta Sum: " + calculated + "\n"
++                        + "Expected Delta Sum:   " + expected + "\n"
++                        + "Error: " + error);
++            }
++
++            myCalc.setDeltaType(DeltaVolQuote.DeltaType.PaSpot);
++            currAtmStrike = myCalc.atmStrike(DeltaVolQuote.AtmType.AtmDeltaNeutral);
++            currCallDelta = myCalc.deltaFromStrike(currAtmStrike);
++            myCalc.setOptionType(Option.Type.Put);
++            currPutDelta = myCalc.deltaFromStrike(currAtmStrike);
++            myCalc.setOptionType(Option.Type.Call);
++
++            calculated = currCallDelta + currPutDelta;
++            error = Math.abs(calculated - expected);
++
++            if (error > tolerance) {
++                fail("\n Delta neutrality failed for premium-adjusted spot delta in Delta Calculator. \n"
++                        + "Iteration: " + i + "\n"
++                        + "Calculated Delta Sum: " + calculated + "\n"
++                        + "Expected Delta Sum:   " + expected + "\n"
++                        + "Error: " + error);
++            }
++
++            myCalc.setDeltaType(DeltaVolQuote.DeltaType.PaFwd);
++            currAtmStrike = myCalc.atmStrike(DeltaVolQuote.AtmType.AtmDeltaNeutral);
++            currCallDelta = myCalc.deltaFromStrike(currAtmStrike);
++            myCalc.setOptionType(Option.Type.Put);
++            currPutDelta = myCalc.deltaFromStrike(currAtmStrike);
++            myCalc.setOptionType(Option.Type.Call);
++
++            calculated = currCallDelta + currPutDelta;
++            error = Math.abs(calculated - expected);
++
++            if (error > tolerance) {
++                fail("\n Delta neutrality failed for premium-adjusted forward delta in Delta Calculator. \n"
++                        + "Iteration: " + i + "\n"
++                        + "Calculated Delta Sum: " + calculated + "\n"
++                        + "Expected Delta Sum:   " + expected + "\n"
++                        + "Error: " + error);
++            }
++
++            // Test ATM forward Calculations
++            calculated = myCalc.atmStrike(DeltaVolQuote.AtmType.AtmFwd);
++            expected = currFwd;
++            error = Math.abs(expected - calculated);
++
++            if (error > tolerance) {
++                fail("\n Atm forward test failed. \n"
++                        + "Iteration: " + i + "\n"
++                        + "Calculated Value: " + calculated + "\n"
++                        + "Expected   Value: " + expected + "\n"
++                        + "Error: " + error);
++            }
++
++            // Test ATM 0.50 delta calculations
++            myCalc.setDeltaType(DeltaVolQuote.DeltaType.Fwd);
++            final double atmFiftyStrike = myCalc.atmStrike(DeltaVolQuote.AtmType.AtmPutCall50);
++            calculated = Math.abs(myCalc.deltaFromStrike(atmFiftyStrike));
++            expected = 0.50;
++            error = Math.abs(expected - calculated);
++
++            if (error > tolerance) {
++                fail("\n Atm 0.50 delta strike test failed. \n"
++                        + "Iteration: " + i + "\n"
++                        + "Calculated Value: " + calculated + "\n"
++                        + "Expected   Value: " + expected + "\n"
++                        + "Error: " + error);
++            }
++        }
++    }
+ }

@@ -1,0 +1,24 @@
+diff --git a/jquantlib/src/test/java/org/jquantlib/testsuite/math/randomnumbers/LowDiscrepancySequencesTest.java b/jquantlib/src/test/java/org/jquantlib/testsuite/math/randomnumbers/LowDiscrepancySequencesTest.java
+index 551d11d7..47fcfceb 100644
+--- a/jquantlib/src/test/java/org/jquantlib/testsuite/math/randomnumbers/LowDiscrepancySequencesTest.java
++++ b/jquantlib/src/test/java/org/jquantlib/testsuite/math/randomnumbers/LowDiscrepancySequencesTest.java
+@@ -25,11 +25,19 @@ package org.jquantlib.testsuite.math.randomnumbers;
+ import static org.junit.Assert.fail;
+ 
+ import org.jquantlib.QL;
++import org.jquantlib.math.matrixutilities.Array;
++import org.jquantlib.math.randomnumbers.FaureRsg;
+ import org.jquantlib.math.randomnumbers.HaltonRsg;
++import org.jquantlib.math.randomnumbers.LatticeRsg;
++import org.jquantlib.math.randomnumbers.LatticeRule;
++import org.jquantlib.math.randomnumbers.MersenneTwisterUniformRng;
+ import org.jquantlib.math.randomnumbers.PrimitivePolynomials;
++import org.jquantlib.math.randomnumbers.RandomSequenceGenerator;
++import org.jquantlib.math.randomnumbers.RandomizedLDS;
+ import org.jquantlib.math.randomnumbers.SeedGenerator;
+ import org.jquantlib.math.randomnumbers.SobolRsg;
+ import org.jquantlib.math.statistics.DiscrepancyStatistics;
++import org.jquantlib.math.statistics.SequenceStatistics;
+ import org.junit.Ignore;
+ import org.junit.Test;
+ 

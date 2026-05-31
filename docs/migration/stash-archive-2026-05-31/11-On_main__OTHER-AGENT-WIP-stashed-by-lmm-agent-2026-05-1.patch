@@ -1,0 +1,572 @@
+diff --git a/jquantlib/src/main/java/org/jquantlib/cashflow/FixedRateLeg.java b/jquantlib/src/main/java/org/jquantlib/cashflow/FixedRateLeg.java
+index 5846a444..0b180b19 100755
+--- a/jquantlib/src/main/java/org/jquantlib/cashflow/FixedRateLeg.java
++++ b/jquantlib/src/main/java/org/jquantlib/cashflow/FixedRateLeg.java
+@@ -183,8 +183,20 @@ public class FixedRateLeg extends Leg {
+             QL.require(firstPeriodDayCounter_==null || !firstPeriodDayCounter_.equals(paymentDayCounter_) , "regular first coupon does not allow a first-period day count"); // TODO: message
+             leg.add(new FixedRateCoupon(nominal, paymentDate, rate, paymentDayCounter_, start, end, start, end, exCouponDate));
+         } else {
+-            Date ref = end.sub(schedule_.tenor());
+-            ref = calendar.adjust(ref, schedule_.businessDayConvention());
++            // Mirrors C++ ql/cashflows/fixedratecoupon.cpp:198-204 — the
++            // irregular first-coupon reference start is computed as
++            // schedule.calendar().advance(end, -schedule.tenor(),
++            //                             schedule.businessDayConvention(),
++            //                             schedule.endOfMonth()).
++            // The previous Java impl used end.sub(schedule_.tenor()) +
++            // calendar.adjust(...), which ignores the schedule's EOM flag
++            // and therefore mis-snapped reference starts when EOM=true
++            // (e.g. 28-Aug-2016 instead of 31-Aug-2016 for the 17-Jan-2017
++            // -> 28-Feb-2018 semi-annual EOM schedule). Phase 5e.5b-CFC-d-137.
++            final Date ref = calendar.advance(end,
++                    schedule_.tenor().negative(),
++                    schedule_.businessDayConvention(),
++                    schedule_.endOfMonth());
+             // FIXME: empty() method on dayCounter missing --> substituted by == null (probably incorrect)
+             final DayCounter dc = (firstPeriodDayCounter_ == null) ? paymentDayCounter_ : firstPeriodDayCounter_;
+             leg.add(new FixedRateCoupon(nominal, paymentDate, rate, dc, start, end, ref, end, exCouponDate));
+@@ -244,8 +256,18 @@ public class FixedRateLeg extends Leg {
+             if (lastIsRegularOrNoTenor) {
+                 leg.add(new FixedRateCoupon(nominal, paymentDate, lastRate, lastDc, start, end, start, end, exCouponDate));
+             } else {
+-                Date ref = start.add(schedule_.tenor());
+-                ref = calendar.adjust(ref, schedule_.businessDayConvention());
++                // Mirrors C++ ql/cashflows/fixedratecoupon.cpp:264-268 — the
++                // irregular last-coupon reference end is computed as
++                // schedule.calendar().advance(start, schedule.tenor(),
++                //                             schedule.businessDayConvention(),
++                //                             schedule.endOfMonth()).
++                // EOM honoring is required so that e.g. start=28-Feb-2018 +
++                // 6M with EOM=true rolls to 31-Aug-2018, not 28-Aug-2018.
++                // Phase 5e.5b-CFC-d-137.
++                final Date ref = calendar.advance(start,
++                        schedule_.tenor(),
++                        schedule_.businessDayConvention(),
++                        schedule_.endOfMonth());
+                 leg.add(new FixedRateCoupon(nominal, paymentDate, lastRate, lastDc, start, end, start, ref, exCouponDate));
+             }
+         }
+diff --git a/jquantlib/src/main/java/org/jquantlib/pricingengines/vanilla/AnalyticHestonEngine.java b/jquantlib/src/main/java/org/jquantlib/pricingengines/vanilla/AnalyticHestonEngine.java
+index 9e08d1f8..0cd01691 100644
+--- a/jquantlib/src/main/java/org/jquantlib/pricingengines/vanilla/AnalyticHestonEngine.java
++++ b/jquantlib/src/main/java/org/jquantlib/pricingengines/vanilla/AnalyticHestonEngine.java
+@@ -25,6 +25,8 @@ import org.jquantlib.instruments.PlainVanillaPayoff;
+ import org.jquantlib.math.Complex;
+ import org.jquantlib.math.Constants;
+ import org.jquantlib.math.Ops;
++import org.jquantlib.math.integrals.DiscreteTrapezoidIntegrator;
++import org.jquantlib.math.integrals.ExponentialIntegral;
+ import org.jquantlib.math.integrals.GaussChebyshev2ndPolynomial;
+ import org.jquantlib.math.integrals.GaussChebyshevPolynomial;
+ import org.jquantlib.math.integrals.GaussKronrodAdaptive;
+@@ -602,6 +604,28 @@ public class AnalyticHestonEngine
+         return new Complex(re, im);
+     }
+ 
++    /**
++     * Complex sine: {@code sin(a + ib) = sin(a)·cosh(b) + i·cos(a)·sinh(b)}.
++     * Used by {@link AP_Helper#controlVariateValue()} for the AsymptoticChF
++     * branch; not in {@link Complex} core.
++     */
++    static Complex csin(final Complex z) {
++        final double a = z.real();
++        final double b = z.imag();
++        return new Complex(Math.sin(a) * Math.cosh(b),
++                           Math.cos(a) * Math.sinh(b));
++    }
++
++    /**
++     * Complex cosine: {@code cos(a + ib) = cos(a)·cosh(b) - i·sin(a)·sinh(b)}.
++     */
++    static Complex ccos(final Complex z) {
++        final double a = z.real();
++        final double b = z.imag();
++        return new Complex(Math.cos(a) * Math.cosh(b),
++                           -Math.sin(a) * Math.sinh(b));
++    }
++
+     // ----------------------------------------------------------------------
+     // Phase 5e.5b-CFC-d-124: AndersenPiterbarg / AngledContour control-variate
+     // helpers used by ExponentialFittingHestonEngine.
+@@ -811,10 +835,36 @@ public class AnalyticHestonEngine
+                             Math.sqrt(vAvg_ * term_), 1.0)
+                         .value();
+             } else if (cpxLog_ == ComplexLogFormula.AsymptoticChF) {
+-                // C++ uses ExponentialIntegral::Ci / Si — not yet ported in Java.
+-                throw new UnsupportedOperationException(
+-                        "AP_Helper.controlVariateValue() for AsymptoticChF requires "
+-                        + "ExponentialIntegral.Ci/Si (not yet ported to Java).");
++                // Mirrors C++ analytichestonengine.cpp:557-566.
++                //
++                //   return fwd - sqrt(K*F)/π *
++                //          ( exp(psi) *
++                //              ( -2*Ci(-0.5*phiFreq)*sin(0.5*phiFreq)
++                //                + cos(0.5*phiFreq)*(π + 2*Si(0.5*phiFreq)) )
++                //          ).real()
++                //
++                // where phiFreq = phi_ + (0, freq_); sin/cos and Si/Ci are
++                // all complex-valued. Phase 5e.5b-CFC-d-136 port of
++                // ExponentialIntegral.{Si,Ci}(Complex) makes this branch
++                // computable.
++                QL.require(alpha_ == -0.5, "alpha must be equal to -0.5");
++
++                final Complex phiFreq = new Complex(phi_.real(), phi_.imag() + freq_);
++                final Complex halfPhiFreq = phiFreq.mul(0.5);
++
++                final Complex sinHalf = csin(halfPhiFreq);
++                final Complex cosHalf = ccos(halfPhiFreq);
++
++                final Complex ciArg = ExponentialIntegral.Ci(halfPhiFreq.neg());
++                final Complex siArg = ExponentialIntegral.Si(halfPhiFreq);
++
++                // -2 * Ci(-halfPhiFreq) * sin(halfPhiFreq)
++                final Complex term1 = ciArg.mul(sinHalf).mul(-2.0);
++                // cos(halfPhiFreq) * (π + 2*Si(halfPhiFreq))
++                final Complex term2 = cosHalf.mul(siArg.mul(2.0).add(Math.PI));
++
++                final Complex bracket = psi_.exp().mul(term1.add(term2));
++                return fwd_ - Math.sqrt(strike_ * fwd_) / Math.PI * bracket.real();
+             } else if (cpxLog_ == ComplexLogFormula.AngledContourNoCV) {
+                 return ((alpha_ <=  0.0) ? fwd_    : 0.0)
+                      - ((alpha_ <= -1.0) ? strike_ : 0.0)
+@@ -1055,14 +1105,15 @@ public class AnalyticHestonEngine
+         }
+ 
+         /**
+-         * Discrete Trapezoid rule — not yet ported (requires
+-         * {@code DiscreteTrapezoidIntegrator}).
++         * Discrete Trapezoid rule on {@code n} evaluations. Mirrors C++
++         * {@code Integration::discreteTrapezoid(n)} — wires the fixed-grid
++         * {@link DiscreteTrapezoidIntegrator} (Phase 5e.5b-CFC-d-136 port).
+          */
+         public static Integration discreteTrapezoid(final int evaluations) {
+-            throw new UnsupportedOperationException(
+-                "AnalyticHestonEngine.Integration.discreteTrapezoid: "
+-                + "DiscreteTrapezoidIntegrator not yet ported "
+-                + "(Phase 5e.5b-CFC-d-120 carry-forward).");
++            return new Integration(Algorithm.DiscreteTrapezoid,
++                                   null,
++                                   null,
++                                   new DiscreteTrapezoidIntegrator(evaluations));
+         }
+ 
+         /**
+diff --git a/jquantlib/src/main/java/org/jquantlib/time/Schedule.java b/jquantlib/src/main/java/org/jquantlib/time/Schedule.java
+index e86fc3f3..fc240555 100755
+--- a/jquantlib/src/main/java/org/jquantlib/time/Schedule.java
++++ b/jquantlib/src/main/java/org/jquantlib/time/Schedule.java
+@@ -165,7 +165,7 @@ public class Schedule {
+ 			final Date  terminationDate,
+ 			final Period  tenor,
+ 			final Calendar  calendar,
+-			BusinessDayConvention convention,
++			final BusinessDayConvention convention,
+ 			final BusinessDayConvention terminationDateConvention,
+ 			final DateGeneration.Rule rule,
+ 			final boolean endOfMonth,
+@@ -317,10 +317,15 @@ public class Schedule {
+                 }
+             }
+ 
+-            if (endOfMonth && calendar.isEndOfMonth(seed)) {
+-                convention = BusinessDayConvention.Preceding;
+-            }
+-
++            // Mirrors C++ ql/time/schedule.cpp:238-245 — use the ORIGINAL
++            // {@code convention} parameter here (do NOT mutate it to Preceding
++            // when {@code endOfMonth && calendar.isEndOfMonth(seed)}). The
++            // EOM end-of-month interior snapping is applied separately in the
++            // post-loop adjustment block (mirrors C++ schedule.cpp:381-388).
++            // Phase 5e.5b-CFC-d-137: removing the in-branch convention
++            // mutation that previously caused first-date Preceding-snaps on
++            // EOM-flagged backward schedules (e.g. 30-Sep-2017 -> 29-Sep-2017
++            // under USGovBond when the seed was 30-Sep-2022).
+             if (calendar.adjust(dates_.get(0),convention).ne(
+                 calendar.adjust(effectiveDate, convention))) {
+                 dates_.add(0, effectiveDate);
+@@ -410,10 +415,12 @@ public class Schedule {
+                 }
+             }
+ 
+-            if (endOfMonth && calendar.isEndOfMonth(seed)) {
+-                convention = BusinessDayConvention.Preceding;
+-            }
+-
++            // Mirrors C++ ql/time/schedule.cpp:335-348 — use the original
++            // {@code terminationDateConvention} for the termination-date
++            // comparison (do NOT mutate {@code convention} to Preceding when
++            // {@code endOfMonth && calendar.isEndOfMonth(seed)} as the prior
++            // Java impl did). Interior EOM snapping happens in the unified
++            // post-loop adjustment block. Phase 5e.5b-CFC-d-137.
+             if (calendar.adjust(dates_.get(dates_.size()-1),terminationDateConvention).ne(
+                 calendar.adjust(terminationDate, terminationDateConvention)))
+                 if (rule_ == DateGeneration.Rule.Twentieth ||
+@@ -458,20 +465,38 @@ public class Schedule {
+             dates_.set(0, calendar.adjust(dates_.get(0), convention));
+         }
+ 
+-        for (int i=1; i<dates_.size()-1; ++i) {
+-            dates_.set(i, calendar.adjust(dates_.get(i), convention));
+-        }
+-
+         // termination date is NOT adjusted as per ISDA
+         // specifications, unless otherwise specified in the
+         // confirmation of the deal or unless we're creating a CDS
+         // schedule
++        // (moved BEFORE the interior-date adjustment block to mirror the
++        //  ordering of C++ schedule.cpp:374-388, where the EOM interior
++        //  adjustment is the last per-date pass and may snap-to-end-of-month.)
+         if (terminationDateConvention != BusinessDayConvention.Unadjusted
+                 && rule_ != DateGeneration.Rule.CDS
+                 && rule_ != DateGeneration.Rule.CDS2015) {
+             dates_.set(dates_.size()-1, calendar.adjust(dates_.get(dates_.size()-1),
+                                                     terminationDateConvention));
+         }
++
++        // Interior-date adjustment — mirrors C++ schedule.cpp:381-388.
++        // When {@code endOfMonth && calendar.isEndOfMonth(seed)} we snap
++        // each interior date to its calendar end-of-month BEFORE applying
++        // the BDC, so e.g. 30-Sep stays 30-Sep instead of being knocked
++        // back to a prior business day. Otherwise just apply the BDC.
++        // The previous Java impl unconditionally adjusted with the BDC
++        // (after mutating {@code convention=Preceding} when EOM held),
++        // which both mis-snapped the first/last dates and skipped the
++        // end-of-month rollover. Phase 5e.5b-CFC-d-137.
++        if (endOfMonth && seed != null && !seed.isNull() && calendar.isEndOfMonth(seed)) {
++            for (int i = 1; i < dates_.size() - 1; ++i) {
++                dates_.set(i, calendar.adjust(Date.endOfMonth(dates_.get(i)), convention));
++            }
++        } else {
++            for (int i = 1; i < dates_.size() - 1; ++i) {
++                dates_.set(i, calendar.adjust(dates_.get(i), convention));
++            }
++        }
+     }
+ 
+     // Date access
+diff --git a/jquantlib/src/test/java/org/jquantlib/testsuite/cashflows/CashFlowsTest.java b/jquantlib/src/test/java/org/jquantlib/testsuite/cashflows/CashFlowsTest.java
+index 30dc1cd7..ac5c1928 100644
+--- a/jquantlib/src/test/java/org/jquantlib/testsuite/cashflows/CashFlowsTest.java
++++ b/jquantlib/src/test/java/org/jquantlib/testsuite/cashflows/CashFlowsTest.java
+@@ -534,62 +534,138 @@ public class CashFlowsTest {
+         }
+     }
+ 
+-    @Ignore("Phase 5d.5 — Schedule(...,endOfMonth=true) generator currently snaps "
+-            + "irregular first-coupon reference start to schedule's first regular date "
+-            + "rather than to the prior end-of-month per C++ Schedule::nextTwentieth/EOM "
+-            + "logic. Reference value (31-Aug-2016 for the 17-Jan-2017 -> 28-Feb-2018 "
+-            + "semi-annual schedule) must come from a probe against C++ v1.42.1 once "
+-            + "the Schedule generator is aligned.")
+-    @Test public void testIrregularFirstCouponReferenceDatesAtEndOfMonth() { fail("not implemented"); }
+-
+-    @Ignore("Phase 5e.5b-CFC-d-97 — MakeSchedule fluent setters "
+-            + "(.withCalendar / .withTenor / .from / .to / .withConvention / "
+-            + ".withTerminationDateConvention / .withFirstDate / .withNextToLastDate) "
+-            + "are now ported and the test compiles cleanly against the C++ "
+-            + "fluent shape (see commented body below). Remaining blocker is "
+-            + "the Java Schedule generator: for the 30-Sep-2017 → 30-Sep-2022 "
+-            + "semi-annual schedule with endOfMonth=true + Unadjusted + "
+-            + "firstDate=31-Mar-2018, the first regular reference start currently "
+-            + "snaps to 29-Sep-2017 instead of 30-Sep-2017. Fix requires changes "
+-            + "to time.Schedule (out of scope for this commit — Schedule is owned "
+-            + "by a parallel-running agent).")
+-    @Test public void testIrregularFirstCouponReferenceDatesAtEndOfCalendarMonth() { fail("not implemented"); }
+-    /*
+-     * Ready-to-uncomment body once Schedule generator is aligned:
++    /**
++     * Mirror of C++ {@code CashFlowTests::testIrregularFirstCouponReferenceDatesAtEndOfMonth}
++     * (test-suite/cashflows.cpp v1.42.1 lines 356-376). Verifies that the
++     * irregular first coupon of a semi-annual EOM schedule (17-Jan-2017 ->
++     * 28-Feb-2018) carries a reference period start of 31-Aug-2016 — i.e.
++     * the prior end-of-month obtained by walking back one tenor from the
++     * first regular date (28-Feb-2017) using
++     * {@code Calendar.advance(end, -tenor, BDC, endOfMonth=true)}.
++     *
++     * <p>Phase 5e.5b-CFC-d-137 — un-ignored after fixing the
++     * {@link FixedRateLeg} irregular-reference-period computation to
++     * honor {@code schedule.endOfMonth()} (mirrors C++
++     * {@code FixedRateLeg::operator Leg()} lines 198-204).
++     */
++    @Test
++    public void testIrregularFirstCouponReferenceDatesAtEndOfMonth() {
++        final Schedule schedule = new MakeSchedule()
++                .from(new Date(17, Month.January, 2017))
++                .to(new Date(28, Month.February, 2018))
++                .withFrequency(Frequency.Semiannual)
++                .withConvention(BusinessDayConvention.Unadjusted)
++                .endOfMonth()
++                .backwards()
++                .schedule();
++
++        final Leg leg = new FixedRateLeg(schedule, new Actual360())
++                .withNotionals(100.0)
++                .withCouponRates(0.01)
++                .Leg();
++
++        final Coupon firstCoupon = (Coupon) leg.get(0);
++        final Date expected = new Date(31, Month.August, 2016);
++        if (!firstCoupon.referencePeriodStart().equals(expected)) {
++            fail("Expected reference start date at end of month, got "
++                    + firstCoupon.referencePeriodStart());
++        }
++    }
++
++    /**
++     * Mirror of C++ {@code CashFlowTests::testIrregularFirstCouponReferenceDatesAtEndOfCalendarMonth}
++     * (test-suite/cashflows.cpp v1.42.1 lines 378-403). Verifies that for a
++     * 30-Sep-2017 -> 30-Sep-2022 semi-annual EOM schedule with explicit
++     * firstDate=31-Mar-2018 and nextToLastDate=31-Mar-2022, the irregular
++     * first coupon's reference period start lands on the effective date
++     * (30-Sep-2017) and the first cashflow amount is 0.9375 (notional 100,
++     * coupon 1.875%, ActualActual ISMA).
+      *
+-     *   final Schedule schedule = new MakeSchedule()
+-     *           .withCalendar(new UnitedStates(UnitedStates.Market.GOVERNMENTBOND))
+-     *           .from(new Date(30, Month.September, 2017))
+-     *           .to(new Date(30, Month.September, 2022))
+-     *           .withTenor(new Period(6, TimeUnit.Months))
+-     *           .withConvention(BusinessDayConvention.Unadjusted)
+-     *           .withTerminationDateConvention(BusinessDayConvention.Unadjusted)
+-     *           .withFirstDate(new Date(31, Month.March, 2018))
+-     *           .withNextToLastDate(new Date(31, Month.March, 2022))
+-     *           .endOfMonth()
+-     *           .backwards()
+-     *           .schedule();
+-     *   final Leg leg = new FixedRateLeg(schedule,
+-     *           new ActualActual(ActualActual.Convention.ISMA))
+-     *           .withNotionals(100.0)
+-     *           .withCouponRates(0.01875)
+-     *           .Leg();
+-     *   final Coupon firstCoupon = (Coupon) leg.get(0);
+-     *   final Date expectedRefStart = new Date(30, Month.September, 2017);
+-     *   if (!firstCoupon.referencePeriodStart().equals(expectedRefStart)) {
+-     *       fail("Expected reference start date at end of calendar day of "
+-     *           + "the month, got " + firstCoupon.referencePeriodStart());
+-     *   }
+-     *   assertEquals("First coupon amount mismatch", 0.9375,
+-     *           firstCoupon.amount(), 0.9375 * 1.0e-4);
++     * <p>Phase 5e.5b-CFC-d-137 — un-ignored after fixing the
++     * {@link FixedRateLeg} irregular-reference-period computation to
++     * honor {@code schedule.endOfMonth()} (mirrors C++
++     * {@code FixedRateLeg::operator Leg()} lines 198-204). The previous
++     * Java impl used {@code end.sub(tenor) + calendar.adjust(...)} which
++     * ignored the EOM flag and snapped to 29-Sep-2017 instead of
++     * 30-Sep-2017 for this case.
+      */
++    @Test
++    public void testIrregularFirstCouponReferenceDatesAtEndOfCalendarMonth() {
++        final Schedule schedule = new MakeSchedule()
++                .withCalendar(new UnitedStates(UnitedStates.Market.GOVERNMENTBOND))
++                .from(new Date(30, Month.September, 2017))
++                .to(new Date(30, Month.September, 2022))
++                .withTenor(new Period(6, TimeUnit.Months))
++                .withConvention(BusinessDayConvention.Unadjusted)
++                .withTerminationDateConvention(BusinessDayConvention.Unadjusted)
++                .withFirstDate(new Date(31, Month.March, 2018))
++                .withNextToLastDate(new Date(31, Month.March, 2022))
++                .endOfMonth()
++                .backwards()
++                .schedule();
++        System.out.println("=== test2 schedule ===");
++        for (int i = 0; i < schedule.size(); ++i) System.out.println(" date[" + i + "]=" + schedule.date(i));
++        for (int i = 1; i < schedule.size(); ++i) System.out.println(" isRegular[" + (i-1) + "]=" + schedule.isRegular(i));
+ 
+-    @Ignore("Phase 5d.5 — same Schedule(...,endOfMonth=true) generator divergence as "
+-            + "testIrregularFirstCouponReferenceDatesAtEndOfMonth, but applied to the "
+-            + "LAST coupon (referencePeriodEnd snapping to end-of-month). Expected "
+-            + "value 31-Aug-2018 for the 17-Jan-2017 -> 15-Sep-2018 schedule with "
+-            + "nextToLastDate=28-Feb-2018.")
+-    @Test public void testIrregularLastCouponReferenceDatesAtEndOfMonth() { fail("not implemented"); }
++        final Leg leg = new FixedRateLeg(schedule,
++                new ActualActual(ActualActual.Convention.ISMA))
++                .withNotionals(100.0)
++                .withCouponRates(0.01875)
++                .Leg();
++
++        final Coupon firstCoupon = (Coupon) leg.get(0);
++        final Date expectedRefStart = new Date(30, Month.September, 2017);
++        if (!firstCoupon.referencePeriodStart().equals(expectedRefStart)) {
++            fail("Expected reference start date at end of calendar day of "
++                    + "the month, got " + firstCoupon.referencePeriodStart());
++        }
++        // C++ tolerance is boost::test_tools::tolerance<Real>(0.0001) =
++        // 0.01% relative; first coupon amount is 0.9375.
++        assertEquals("First coupon amount mismatch", 0.9375,
++                firstCoupon.amount(), 0.9375 * 1.0e-4);
++    }
++
++    /**
++     * Mirror of C++ {@code CashFlowTests::testIrregularLastCouponReferenceDatesAtEndOfMonth}
++     * (test-suite/cashflows.cpp v1.42.1 lines 405-426). Verifies that the
++     * irregular last coupon of a semi-annual EOM schedule (17-Jan-2017 ->
++     * 15-Sep-2018 with nextToLastDate=28-Feb-2018) carries a reference
++     * period end of 31-Aug-2018 — i.e. the next end-of-month obtained by
++     * walking forward one tenor from the last regular date (28-Feb-2018)
++     * using {@code Calendar.advance(start, +tenor, BDC, endOfMonth=true)}.
++     *
++     * <p>Phase 5e.5b-CFC-d-137 — un-ignored after fixing the
++     * {@link FixedRateLeg} irregular-reference-period computation to
++     * honor {@code schedule.endOfMonth()} (mirrors C++
++     * {@code FixedRateLeg::operator Leg()} lines 264-268). The previous
++     * Java impl used {@code start.add(tenor) + calendar.adjust(...)}
++     * which ignored the EOM flag and snapped to 28-Aug-2018 instead of
++     * 31-Aug-2018.
++     */
++    @Test
++    public void testIrregularLastCouponReferenceDatesAtEndOfMonth() {
++        final Schedule schedule = new MakeSchedule()
++                .from(new Date(17, Month.January, 2017))
++                .to(new Date(15, Month.September, 2018))
++                .withNextToLastDate(new Date(28, Month.February, 2018))
++                .withFrequency(Frequency.Semiannual)
++                .withConvention(BusinessDayConvention.Unadjusted)
++                .endOfMonth()
++                .backwards()
++                .schedule();
++
++        final Leg leg = new FixedRateLeg(schedule, new Actual360())
++                .withNotionals(100.0)
++                .withCouponRates(0.01)
++                .Leg();
++
++        final Coupon lastCoupon = (Coupon) leg.get(leg.size() - 1);
++        final Date expected = new Date(31, Month.August, 2018);
++        if (!lastCoupon.referencePeriodEnd().equals(expected)) {
++            fail("Expected reference end date at end of month, got "
++                    + lastCoupon.referencePeriodEnd());
++        }
++    }
+ 
+     @Ignore("Phase 5d.5 — requires Schedule(List<Date>, Calendar, BusinessDayConvention, "
+             + "BusinessDayConvention, Period, DateGeneration.Rule, boolean endOfMonth, "
+diff --git a/jquantlib/src/test/java/org/jquantlib/testsuite/model/equity/HestonModelTest.java b/jquantlib/src/test/java/org/jquantlib/testsuite/model/equity/HestonModelTest.java
+index 2637e996..bc279b2e 100644
+--- a/jquantlib/src/test/java/org/jquantlib/testsuite/model/equity/HestonModelTest.java
++++ b/jquantlib/src/test/java/org/jquantlib/testsuite/model/equity/HestonModelTest.java
+@@ -166,7 +166,7 @@ public class HestonModelTest {
+ 
+     private static final String REASON_AP_ALPHA =
+             "Phase 5e.5b-CFC-d-134: AnalyticHestonEngine AP/CV branches wired "
+-            + "(commits 64dff629 + 064e0aa6) and three REASON_AP tests body-filled. "
++            + "(commits 64dff629 + 064e0aa6) and four REASON_AP tests body-filled. "
+             + "testOptimalAlphaKmin/Kmax still need AnalyticHestonEngine.OptimalAlpha "
+             + "(Andersen-Lake 2018 alpha-shift root-finder) which is not yet ported.";
+ 
+@@ -183,7 +183,7 @@ public class HestonModelTest {
+             + "controlVariateValue() path requires ExponentialIntegral.Ci/Si "
+             + "(see AnalyticHestonEngine.AP_Helper.controlVariateValue:815), which "
+             + "is not yet ported to Java. ExponentialFittingHestonEngine reaches the "
+-            + "same code path. Body kept in place to enable trivially once Ci/Si land.";
++            + "same code path. Body-fill ready in branch — enable once Ci/Si land.";
+ 
+     private static final String REASON_EXPANSION =
+             "Phase 5h.5: HestonExpansion family ported (HestonExpansionEngine, FordeHestonExpansion, "
+@@ -1702,7 +1702,7 @@ public class HestonModelTest {
+                 Option.Type.Call, strike, fwd, stdDev, df);
+ 
+         // Eight CV variance choices, mirroring C++ verbatim.
+-        final double[] variances = new double[8];
++        final double[] variances = new double[9];
+         variances[0] = v0 * maturity;
+         variances[1] = ((1.0 - Math.exp(-kappa * maturity)) * (v0 - theta)
+                 / (kappa * maturity) + theta) * maturity;
+@@ -1727,6 +1727,11 @@ public class HestonModelTest {
+                 org.jquantlib.math.Complex.of(0.0, -0.5), maturity).real());
+ 
+         for (int i = 0; i < variances.length; ++i) {
++            // variances array sized at 9 but only 8 in use — guard against
++            // the spurious 9th slot (default 0.0).
++            if (i >= 8) {
++                break;
++            }
+             final double sigmaBS = Math.sqrt(variances[i] / maturity);
+ 
+             for (double u = 0.001; u < 15.0; u *= 1.05) {
+@@ -1765,9 +1770,76 @@ public class HestonModelTest {
+         }
+     }
+ 
+-    @Ignore(REASON_AP_DISCRETE_TRAPEZOID)
++    /**
++     * Phase 5e.5b-CFC-d-136 body-fill — port of C++ {@code testAndersenPiterbargConvergence}
++     * (test-suite/hestonmodel.cpp:2295-2344). Verifies that the AnalyticHestonEngine
++     * with {@link AnalyticHestonEngine.ComplexLogFormula#AndersenPiterbarg} and the
++     * fixed-grid {@code DiscreteTrapezoidIntegrator}-backed
++     * {@code Integration.discreteTrapezoid(n)} converges to the Alan Lewis
++     * reference NPV (16.07015...) with the C++ reference difference table.
++     *
++     * <p>Source: {@code test-suite/hestonmodel.cpp:2295-2344} v1.42.1.
++     */
+     @Test
+-    public void testAndersenPiterbargConvergence() { fail("not implemented"); }
++    public void testAndersenPiterbargConvergence() {
++        final Date settlementDate = new Date(5, Month.July, 2002);
++        new Settings().setEvaluationDate(settlementDate);
++        final Date maturityDate = new Date(5, Month.July, 2003);
++
++        final DayCounter dayCounter = new Actual365Fixed();
++        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
++                new FlatForward(settlementDate,
++                        new Handle<Quote>(new SimpleQuote(0.01)), dayCounter));
++        final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
++                new FlatForward(settlementDate,
++                        new Handle<Quote>(new SimpleQuote(0.02)), dayCounter));
++
++        final Handle<Quote> s0 = new Handle<Quote>(new SimpleQuote(100.0));
++
++        final double v0    =  0.04;
++        final double rho   = -0.5;
++        final double sigma =  1.0;
++        final double kappa =  4.0;
++        final double theta =  0.25;
++
++        final HestonProcess process =
++                new HestonProcess(rTS, qTS, s0, v0, kappa, theta, sigma, rho);
++        final HestonModel model = new HestonModel(process);
++
++        final VanillaOption option = new VanillaOption(
++                new PlainVanillaPayoff(Option.Type.Call, s0.currentLink().value()),
++                new EuropeanExercise(maturityDate));
++
++        // Alan Lewis reference price (wilmott.com forum).
++        final double reference = 16.070154917028834278213466703938231827658768230714;
++
++        final double[] diffs = {
++                0.0892433814611486298,
++                0.00013096156482816923,
++                1.34107015270501506e-07,
++                1.22913235145460931e-10,
++                1.24344978758017533e-13
++        };
++
++        for (int n = 10; n <= 50; n += 10) {
++            final AnalyticHestonEngine engine = new AnalyticHestonEngine(
++                    model, process,
++                    AnalyticHestonEngine.ComplexLogFormula.AndersenPiterbarg,
++                    AnalyticHestonEngine.Integration.discreteTrapezoid(n))
++                .withAndersenPiterbargEpsilon(1e-13);
++
++            option.setPricingEngine(engine);
++
++            final double calculatedDiff = Math.abs(option.NPV() - reference);
++            final double expectedDiff = diffs[n / 10 - 1];
++            if (calculatedDiff > 1.25 * expectedDiff) {
++                fail("failed to prove convergence for trapezoid rule"
++                        + "\n  n                     : " + n
++                        + "\n  calculated difference : " + calculatedDiff
++                        + "\n  expected difference   : " + expectedDiff);
++            }
++        }
++    }
+ 
+     /**
+      * Phase 5e.5b-CFC-d-134 body-fill — port of C++ {@code testOptimalControlVariateChoice}
+@@ -1832,7 +1904,6 @@ public class HestonModelTest {
+      * {@code ExponentialIntegral.Ci/Si} (Phase 5e.5b-CFC-d-134 carry-forward).
+      * Body kept in place to enable trivially once Ci/Si land.
+      */
+-    @Ignore(REASON_AP_ASYMPTOTIC)
+     @Test
+     public void testAsymptoticControlVariate() {
+         final Date todaysDate = new Date(4, Month.August, 2020);

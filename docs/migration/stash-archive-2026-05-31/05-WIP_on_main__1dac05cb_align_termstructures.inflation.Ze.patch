@@ -1,0 +1,966 @@
+diff --git a/jquantlib/src/main/java/org/jquantlib/experimental/volatility/NoArbSabrModel.java b/jquantlib/src/main/java/org/jquantlib/experimental/volatility/NoArbSabrModel.java
+index 819ec25a..e6d19cf9 100644
+--- a/jquantlib/src/main/java/org/jquantlib/experimental/volatility/NoArbSabrModel.java
++++ b/jquantlib/src/main/java/org/jquantlib/experimental/volatility/NoArbSabrModel.java
+@@ -25,32 +25,30 @@
+ package org.jquantlib.experimental.volatility;
+ 
+ import org.jquantlib.QL;
++import org.jquantlib.math.ModifiedBesselFunction;
++import org.jquantlib.math.Ops;
++import org.jquantlib.math.integrals.GaussLobattoIntegral;
++import org.jquantlib.math.solvers1D.Brent;
+ 
+ /**
+  * No-arbitrage SABR model (Doust 2012).
+  *
+- * <p>Constants + parameter accessors port of QuantLib v1.42.1
+- * {@code ql/experimental/volatility/noarbsabr.{hpp,cpp}}. The full pricing
+- * logic (option price, digital price, density) is deferred to Phase 4f.5
+- * because the model relies on:
++ * <p>Line-by-line port of QuantLib v1.42.1
++ * {@code ql/experimental/volatility/noarbsabr.{hpp,cpp}}.
++ *
++ * <p>Parameter bounds (Doust 2012, Table 1):
+  * <ul>
+- *   <li>A pre-computed 1,209,600-entry absorption-probability table
+- *       ({@code noarbsabrabsprobs.cpp}, ~10K LOC of generated data).
+- *       Strategy: convert to a binary resource on the classpath.</li>
+- *   <li>Boost {@code gamma_q} / {@code gamma_q_inv} (incomplete gamma
+- *       complement and its inverse — not yet ported to JQuantMath).</li>
+- *   <li>{@code modifiedBesselFunction_i_exponentiallyWeighted} (already
+- *       provided by JQuantLib's {@code ModifiedBesselFunction}, but the
+- *       D0 interpolator is non-trivial).</li>
++ *   <li>{@code beta ∈ [0.01, 0.99]}</li>
++ *   <li>{@code expiryTime ∈ (0, 30]}</li>
++ *   <li>{@code sigmaI = alpha * forward^(beta-1) ∈ [0.05, 1.0]}</li>
++ *   <li>{@code nu ∈ [0.01, 0.8]}</li>
++ *   <li>{@code rho ∈ [-0.99, 0.99]}</li>
+  * </ul>
+  *
+- * <p>This skeleton only validates parameter bounds (Doust 2012, Table 1)
+- * and exposes accessors so that {@link NoArbSabrSmileSection} can construct
+- * a model instance. All pricing/density methods throw
+- * {@link UnsupportedOperationException}.
+- *
+- * <p>See also: {@link Constants} (parameter bounds, {@code phiByTau_cutoff},
+- * etc.).
++ * <p>Pricing uses adaptive Gauss-Lobatto integration over the SABR density
++ * {@code p(f)} (see {@link #pImpl(double)}). The absorption probability at
++ * {@code F=0} is read from the precomputed {@link NoArbSabrAbsorptions}
++ * table via {@link D0Interpolator}.
+  */
+ public class NoArbSabrModel {
+ 
+@@ -96,14 +94,16 @@ public class NoArbSabrModel {
+     private final double beta_;
+     private final double nu_;
+     private final double rho_;
++    private double absProb_;
++    private double fmin_;
++    private double fmax_;
++    private double forward_;
++    private double numericalIntegralOverP_;
++    private double numericalForward_;
++    private final GaussLobattoIntegral integrator_;
+ 
+     /**
+-     * Constructor (noarbsabr.cpp lines 50-114, parameter-validation prefix).
+-     *
+-     * <p>Note: full constructor body (model-implied forward adjustment via
+-     * Brent root-finding, integrator setup, D0Interpolator) is deferred to
+-     * Phase 4f.5 because it depends on the absorption-probability table and
+-     * the Boost gamma functions.
++     * Constructor (noarbsabr.cpp lines 50-114).
+      */
+     public NoArbSabrModel(final double expiryTime, final double forward,
+             final double alpha, final double beta, final double nu, final double rho) {
+@@ -129,42 +129,165 @@ public class NoArbSabrModel {
+         this.beta_ = beta;
+         this.nu_ = nu;
+         this.rho_ = rho;
++        this.forward_ = forward;
++        this.numericalForward_ = forward;
++
++        // determine a region sufficient for integration in the normal case
++        fmin_ = fmax_ = forward_;
++        // grow fmax until density falls below tolerance
++        {
++            double tmp = pImpl(fmax_);
++            while (tmp > Math.max(
++                    Constants.I_ACCURACY / Math.max(1.0, fmax_ - fmin_),
++                    Constants.DENSITY_THRESHOLD)) {
++                fmax_ *= 2.0;
++                tmp = pImpl(fmax_);
++            }
++        }
++        // shrink fmin until density falls below tolerance
++        {
++            double tmp = pImpl(fmin_);
++            while (tmp > Math.max(
++                    Constants.I_ACCURACY / Math.max(1.0, fmax_ - fmin_),
++                    Constants.DENSITY_THRESHOLD)) {
++                fmin_ *= 0.5;
++                tmp = pImpl(fmin_);
++            }
++        }
++        fmin_ = Math.max(Constants.STRIKE_MIN, fmin_);
++
++        QL.require(fmax_ > fmin_, "could not find a reasonable integration domain");
++
++        this.integrator_ = new GaussLobattoIntegral(
++                Constants.I_MAX_ITERATIONS, Constants.I_ACCURACY);
++
++        final D0Interpolator d0 = new D0Interpolator(
++                forward_, expiryTime_, alpha_, beta_, nu_, rho_);
++        absProb_ = d0.value();
++
++        try {
++            final Brent b = new Brent();
++            final double start = Math.sqrt(externalForward_ - Constants.STRIKE_MIN);
++            final double step = Math.min(Constants.FORWARD_SEARCH_STEP, start / 2.0);
++            final Ops.DoubleOp fe = new Ops.DoubleOp() {
++                @Override public double op(final double x) {
++                    return forwardError(x);
++                }
++            };
++            final double tmp = b.solve(fe, Constants.FORWARD_ACCURACY, start, step);
++            forward_ = tmp * tmp + Constants.STRIKE_MIN;
++        } catch (final Exception ignored) {
++            // fall back to unadjusted forward
++            forward_ = externalForward_;
++        }
++
++        final double d = forwardError(Math.sqrt(forward_ - Constants.STRIKE_MIN));
++        numericalForward_ = d + externalForward_;
+     }
+ 
+-    public double forward()    { return externalForward_; }
+-    public double expiryTime() { return expiryTime_; }
+-    public double alpha()      { return alpha_; }
+-    public double beta()       { return beta_; }
+-    public double nu()         { return nu_; }
+-    public double rho()        { return rho_; }
++    public double forward()                  { return externalForward_; }
++    public double numericalForward()         { return numericalForward_; }
++    public double expiryTime()               { return expiryTime_; }
++    public double alpha()                    { return alpha_; }
++    public double beta()                     { return beta_; }
++    public double nu()                       { return nu_; }
++    public double rho()                      { return rho_; }
++    public double absorptionProbability()    { return absProb_; }
+ 
+-    /** Phase 4f.5 — needs absorption table + integrator. */
++    /**
++     * Option (call) price (noarbsabr.cpp 116-123).
++     */
+     public double optionPrice(final double strike) {
+-        throw new UnsupportedOperationException(
+-                "NoArbSabrModel.optionPrice deferred to Phase 4f.5 "
+-                        + "(requires 1.2M-entry absorption-probability table from "
+-                        + "noarbsabrabsprobs.cpp + Boost gamma_q functions).");
++        if (pImpl(Math.max(forward_, strike)) < Constants.DENSITY_THRESHOLD) {
++            return 0.0;
++        }
++        final double upper = Math.max(fmax_, 2.0 * strike);
++        final Ops.DoubleOp integrand = new Ops.DoubleOp() {
++            @Override public double op(final double f) {
++                return Math.max(f - strike, 0.0) * pImpl(f);
++            }
++        };
++        return (1.0 - absProb_) * (integrator_.op(integrand, strike, upper)
++                / numericalIntegralOverP_);
+     }
+ 
++    /**
++     * Digital (call) price (noarbsabr.cpp 125-134).
++     */
+     public double digitalOptionPrice(final double strike) {
+-        throw new UnsupportedOperationException(
+-                "NoArbSabrModel.digitalOptionPrice deferred to Phase 4f.5.");
++        if (strike < Double.MIN_NORMAL) {
++            return 1.0;
++        }
++        if (pImpl(Math.max(forward_, strike)) < Constants.DENSITY_THRESHOLD) {
++            return 0.0;
++        }
++        final double upper = Math.max(fmax_, 2.0 * strike);
++        final Ops.DoubleOp pIntegrand = new Ops.DoubleOp() {
++            @Override public double op(final double f) { return pImpl(f); }
++        };
++        return (1.0 - absProb_) * (integrator_.op(pIntegrand, strike, upper)
++                / numericalIntegralOverP_);
+     }
+ 
++    /**
++     * Density at strike (noarbsabr.hpp 107-109):
++     * {@code p(strike) * (1 - absProb) / numericalIntegralOverP}.
++     */
+     public double density(final double strike) {
+-        throw new UnsupportedOperationException(
+-                "NoArbSabrModel.density deferred to Phase 4f.5.");
++        return pImpl(strike) * (1.0 - absProb_) / numericalIntegralOverP_;
+     }
+ 
+-    /** Numerical model-implied forward (deferred Phase 4f.5). */
+-    public double numericalForward() {
+-        throw new UnsupportedOperationException(
+-                "NoArbSabrModel.numericalForward deferred to Phase 4f.5.");
++    /**
++     * Forward-error (noarbsabr.cpp 136-141). Side-effect: updates
++     * {@code forward_} and {@code numericalIntegralOverP_}.
++     */
++    private double forwardError(final double forward) {
++        forward_ = forward * forward + Constants.STRIKE_MIN;
++        final Ops.DoubleOp pIntegrand = new Ops.DoubleOp() {
++            @Override public double op(final double f) { return pImpl(f); }
++        };
++        numericalIntegralOverP_ = integrator_.op(pIntegrand, fmin_, fmax_);
++        return optionPrice(0.0) - externalForward_;
+     }
+ 
+-    /** Absorption probability at expiry (deferred Phase 4f.5). */
+-    public double absorptionProbability() {
+-        throw new UnsupportedOperationException(
+-                "NoArbSabrModel.absorptionProbability deferred to Phase 4f.5.");
++    /**
++     * Density {@code p(f)} (noarbsabr.cpp 143-182). Uses Hagan/Doust analytic
++     * approximation plus the exponentially-weighted modified Bessel function.
++     */
++    private double pImpl(final double f) {
++        if (f < Constants.DENSITY_LOWER_BOUND
++                || forward_ < Constants.DENSITY_LOWER_BOUND) {
++            return 0.0;
++        }
++
++        final double fOmB = Math.pow(f, 1.0 - beta_);
++        final double FOmB = Math.pow(forward_, 1.0 - beta_);
++
++        final double zf = fOmB / (alpha_ * (1.0 - beta_));
++        final double zF = FOmB / (alpha_ * (1.0 - beta_));
++        final double z = zF - zf;
++
++        final double Jmzf = Math.sqrt(1.0 + 2.0 * rho_ * nu_ * zf + nu_ * nu_ * zf * zf);
++        final double Jz   = Math.sqrt(1.0 - 2.0 * rho_ * nu_ * z  + nu_ * nu_ * z  * z );
++
++        final double xz = Math.log((Jz - rho_ + nu_ * z) / (1.0 - rho_)) / nu_;
++        final double Bp_B = beta_ / FOmB;
++        final double kappa1 = 0.125 * nu_ * nu_ * (2.0 - 3.0 * rho_ * rho_)
++                - 0.25 * rho_ * nu_ * alpha_ * Bp_B;
++        final double gamma = 1.0 / (2.0 * (1.0 - beta_));
++        final double sqrtOmR = Math.sqrt(1.0 - rho_ * rho_);
++
++        final double h = 0.5 * beta_ * rho_ / ((1.0 - beta_) * Jmzf * Jmzf)
++                * (nu_ * zf * Math.log(zf * Jz / zF)
++                    + (1.0 + rho_ * nu_ * zf) / sqrtOmR
++                        * (Math.atan((nu_ * z - rho_) / sqrtOmR)
++                                + Math.atan(rho_ / sqrtOmR)));
++
++        return Math.pow(Jz, -1.5)
++                / (alpha_ * Math.pow(f, beta_) * expiryTime_)
++                * Math.pow(zf, 1.0 - gamma)
++                * Math.pow(zF, gamma)
++                * Math.exp(-(xz * xz) / (2.0 * expiryTime_) + (h + kappa1 * expiryTime_))
++                * ModifiedBesselFunction.iExpWeighted(gamma, zF * zf / expiryTime_);
+     }
+ }
+diff --git a/jquantlib/src/test/java/org/jquantlib/testsuite/experimental/barrieroption/DoubleBarrierOptionTest.java b/jquantlib/src/test/java/org/jquantlib/testsuite/experimental/barrieroption/DoubleBarrierOptionTest.java
+index e0538084..e9508b1e 100644
+--- a/jquantlib/src/test/java/org/jquantlib/testsuite/experimental/barrieroption/DoubleBarrierOptionTest.java
++++ b/jquantlib/src/test/java/org/jquantlib/testsuite/experimental/barrieroption/DoubleBarrierOptionTest.java
+@@ -25,15 +25,19 @@ import org.jquantlib.daycounters.Actual360;
+ import org.jquantlib.daycounters.DayCounter;
+ import org.jquantlib.exercise.EuropeanExercise;
+ import org.jquantlib.exercise.Exercise;
++import org.jquantlib.daycounters.Actual365Fixed;
+ import org.jquantlib.experimental.barrieroption.BinomialDoubleBarrierEngine;
+ import org.jquantlib.experimental.barrieroption.DiscretizedDermanKaniDoubleBarrierOption;
+ import org.jquantlib.experimental.barrieroption.DiscretizedDoubleBarrierOption;
+ import org.jquantlib.experimental.barrieroption.DoubleBarrierOption;
+ import org.jquantlib.experimental.barrieroption.DoubleBarrierType;
+ import org.jquantlib.experimental.barrieroption.SuoWangDoubleBarrierEngine;
++import org.jquantlib.experimental.barrieroption.VannaVolgaDoubleBarrierEngine;
++import org.jquantlib.experimental.fx.DeltaVolQuote;
+ import org.jquantlib.instruments.Option;
+ import org.jquantlib.instruments.PlainVanillaPayoff;
+ import org.jquantlib.instruments.StrikedTypePayoff;
++import org.jquantlib.pricingengines.BlackFormula;
+ import org.jquantlib.methods.lattices.CoxRossRubinstein;
+ import org.jquantlib.pricingengines.barrier.AnalyticDoubleBarrierEngine;
+ import org.jquantlib.processes.BlackScholesMertonProcess;
+diff --git a/jquantlib/src/test/java/org/jquantlib/testsuite/experimental/volatility/NoArbSabrTest.java b/jquantlib/src/test/java/org/jquantlib/testsuite/experimental/volatility/NoArbSabrTest.java
+index bd1a7c3c..bd1b98c9 100644
+--- a/jquantlib/src/test/java/org/jquantlib/testsuite/experimental/volatility/NoArbSabrTest.java
++++ b/jquantlib/src/test/java/org/jquantlib/testsuite/experimental/volatility/NoArbSabrTest.java
+@@ -12,10 +12,6 @@
+  <jquant-devel@lists.sourceforge.net>. The license is also available online at
+  <http://www.jquantlib.org/index.php/LICENSE.TXT>.
+ 
+- This program is distributed in the hope that it will be useful, but WITHOUT
+- ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+- FOR A PARTICULAR PURPOSE.  See the license for more details.
+-
+  JQuantLib is based on QuantLib. http://quantlib.org/
+  When applicable, the original copyright notice follows this notice.
+  */
+@@ -28,31 +24,29 @@
+ */
+ package org.jquantlib.testsuite.experimental.volatility;
+ 
++import static org.junit.Assert.assertTrue;
++import static org.junit.Assert.fail;
++
+ import org.jquantlib.QL;
+-import org.junit.Ignore;
++import org.jquantlib.experimental.volatility.NoArbSabrModel;
++import org.jquantlib.experimental.volatility.NoArbSabrSmileSection;
++import org.jquantlib.instruments.Option;
++import org.jquantlib.termstructures.volatilities.SabrSmileSection;
+ import org.junit.Test;
+ 
+ /**
+- * Java port of QuantLib v1.42.1 test-suite/noarbsabr.cpp (Phase 5g).
++ * Java port of QuantLib v1.42.1 test-suite/noarbsabr.cpp (Phase 5e.5b-CFC-d-200).
+  *
+- * <p>Direct-named equivalent. The C++ file has two test cases:
++ * <p>Direct-named equivalent of the C++ suite. Both cases are now active:
+  * <ol>
+- *   <li>{@code testAbsorptionMatrix} — exercises the package-private C++ class
+- *       {@code QuantLib::detail::D0Interpolator} which interpolates a 16-point
+- *       reference absorption matrix. The Java port currently lacks a
+- *       D0Interpolator equivalent (the absorption matrix is not loaded into
+- *       memory), so this test is deferred to Phase 5g.5.</li>
+- *   <li>{@code testConsistencyWithHagan} — compares NoArbSabrSmileSection to
+- *       SabrSmileSection across vanilla price, digital price, and density.
+- *       The Java {@link org.jquantlib.experimental.volatility.NoArbSabrModel}
+- *       {@code optionPrice}, {@code digitalOptionPrice}, and {@code density}
+- *       methods are Phase 4f stubs that throw {@code UnsupportedOperationException};
+- *       this test is deferred to Phase 5g.5 once the model body lands.</li>
++ *   <li>{@code testAbsorptionMatrix} — exercises the package-visible
++ *       {@code D0Interpolator} which interpolates the 1.2M-entry
++ *       absorption-count table ({@code NoArbSabrAbsorptions}). Verifies the
++ *       16 corner/interior reference cells from C++.</li>
++ *   <li>{@code testConsistencyWithHagan} — compares {@code NoArbSabrSmileSection}
++ *       to {@code SabrSmileSection} across vanilla price, digital price, and
++ *       density, mirroring the C++ tolerances (1e-5 / 1e-3 / 1.0).</li>
+  * </ol>
+- *
+- * <p>Existing {@link NoArbSabrInterpolationTest} and
+- * {@link ZabrAndNoArbSabrSmokeTest} cover the available Phase 4f scaffolding
+- * (parameter validation, Hagan-fallback volatility surface).
+  */
+ public class NoArbSabrTest {
+ 
+@@ -60,30 +54,111 @@ public class NoArbSabrTest {
+         QL.info("::::: " + this.getClass().getSimpleName() + " :::::");
+     }
+ 
++    /**
++     * Helper mirroring {@code checkD0} from C++ noarbsabr.cpp lines 32-46.
++     * Builds a {@link NoArbSabrModel} (which constructs and invokes the
++     * package-private {@code D0Interpolator}) and verifies the resulting
++     * absorption probability times {@code NSIM} matches the expected count
++     * to within 0.1 absolute (C++ test tolerance verbatim).
++     */
++    private static void checkD0(final double sigmaI, final double beta,
++            final double rho, final double nu, final double tau,
++            final long expectedAbsorptions) {
++        final double forward = 0.03; // does not matter in the end
++        final double alpha = sigmaI / Math.pow(forward, beta - 1.0);
++
++        // We exercise D0Interpolator via NoArbSabrModel.absorptionProbability().
++        // Constructing the full model is heavier (it also runs the Brent
++        // forward-error fit) but matches the C++ test exactly.
++        final NoArbSabrModel m = new NoArbSabrModel(tau, forward, alpha, beta, nu, rho);
++        final double d = m.absorptionProbability();
++        final double actual = d * NoArbSabrModel.Constants.NSIM;
++        if (Math.abs(actual - expectedAbsorptions) > 0.1) {
++            fail("failed to reproduce number of absorptions at sigmaI=" + sigmaI
++                    + ", beta=" + beta + ", rho=" + rho + ", nu=" + nu
++                    + " tau=" + tau + ": D0Interpolator says " + actual
++                    + " while the reference value is " + expectedAbsorptions);
++        }
++    }
++
+     @Test
+-    @Ignore("Phase 5g.5 — D0Interpolator absorption-matrix loader not ported. "
+-            + "Requires the 16-point reference absorption matrix to be loaded "
+-            + "into memory. C++ noarbsabr.cpp lines 32-73.")
+     public void testAbsorptionMatrix() {
+-        // Deferred. Faithful body would call:
+-        //   checkD0(sigmaI, beta, rho, nu, tau, expectedAbsorptions)
+-        // for the 16 corner+interior cases of Doust's absorption table,
+-        // verifying d() * NoArbSabrModel::nsim ≈ expectedAbsorptions to
+-        // tolerance 0.1 absolute.
++        QL.info("Testing no-arbitrage Sabr absorption matrix...");
++
++        // (sigmaI, beta, rho, nu, tau, absorptions) — C++ noarbsabr.cpp lines 56-71
++        checkD0(1.0,  0.01,  0.75, 0.1,  0.25, 60342L);  // upper-left corner
++        checkD0(0.8,  0.01,  0.75, 0.1,  0.25, 12148L);
++        checkD0(0.05, 0.01,  0.75, 0.1,  0.25, 0L);
++        checkD0(1.0,  0.01,  0.75, 0.1, 10.0,  1890509L);
++        checkD0(0.8,  0.01,  0.75, 0.1, 10.0,  1740233L);
++        checkD0(0.05, 0.01,  0.75, 0.1, 10.0,  0L);
++        checkD0(1.0,  0.01,  0.75, 0.1, 30.0,  2174176L);
++        checkD0(0.8,  0.01,  0.75, 0.1, 30.0,  2090672L);
++        checkD0(0.05, 0.01,  0.75, 0.1, 30.0,  31L);
++        checkD0(0.35, 0.10, -0.75, 0.1,  0.25, 0L);
++        checkD0(0.35, 0.10, -0.75, 0.1, 14.75, 1087841L);
++        checkD0(0.35, 0.10, -0.75, 0.1, 30.0,  1406569L);
++        checkD0(0.24, 0.90,  0.50, 0.8,  1.25, 27L);
++        checkD0(0.24, 0.90,  0.50, 0.8, 25.75, 167541L);
++        checkD0(0.05, 0.90, -0.75, 0.8,  2.0,  17L);
++        checkD0(0.05, 0.90, -0.75, 0.8, 30.0,  42100L);  // lower-right corner
+     }
+ 
+     @Test
+-    @Ignore("Phase 5g.5 — NoArbSabrModel.optionPrice/digitalOptionPrice/density "
+-            + "are Phase 4f stubs that throw. Test compares vanilla, digital, "
+-            + "and density vs Sabr Hagan baseline. C++ noarbsabr.cpp lines 75-121.")
+     public void testConsistencyWithHagan() {
+-        // Deferred. Faithful body would:
+-        //   - Build SabrSmileSection(tau=1, f=0.0488, alpha=0.026, beta=0.5, nu=0.4, rho=-0.1)
+-        //   - Build NoArbSabrSmileSection with the same parameters
+-        //   - Verify model.absorptionProbability ∈ [0, 1e-10]
+-        //   - For strike ∈ [1e-4, 0.15] step 1e-4 verify
+-        //       |sabr.optionPrice - noarb.optionPrice| < 1e-5
+-        //       |sabr.digitalOptionPrice - noarb.digitalOptionPrice| < 1e-3
+-        //       |sabr.density - noarb.density| < 1.0
++        QL.info("Testing consistency of noarb-sabr with Hagan et al (2002)...");
++
++        // parameters taken from Doust's paper, figure 3 — C++ noarbsabr.cpp 81-86
++        final double tau = 1.0;
++        final double beta = 0.5;
++        final double alpha = 0.026;
++        final double rho = -0.1;
++        final double nu = 0.4;
++        final double f = 0.0488;
++
++        final double[] params = { alpha, beta, nu, rho };
++        final SabrSmileSection sabr = new SabrSmileSection(tau, f, params);
++        final NoArbSabrSmileSection noarbsabr = new NoArbSabrSmileSection(tau, f, params);
++
++        final double absProb = noarbsabr.model().absorptionProbability();
++        assertTrue("absorption probability should be close to zero, but is "
++                + absProb, absProb >= 0.0 && absProb <= 1.0e-10);
++
++        double strike = 0.0001;
++        while (strike < 0.15) {
++            // vanilla call prices
++            final double sabrPrice = sabr.optionPrice(strike, Option.Type.Call, 1.0);
++            final double noarbsabrPrice = noarbsabr.optionPrice(strike, Option.Type.Call, 1.0);
++            if (Math.abs(sabrPrice - noarbsabrPrice) > 1.0e-5) {
++                fail("inconsistent Hagan price (" + sabrPrice
++                        + ") and noarb-sabr price (" + noarbsabrPrice
++                        + ") at strike " + strike);
++            }
++            // digitals
++            final double sabrDigital = sabr.digitalOptionPrice(strike, Option.Type.Call, 1.0, 1.0e-5);
++            final double noarbsabrDigital = noarbsabr.digitalOptionPrice(strike, Option.Type.Call, 1.0, 1.0e-5);
++            if (Math.abs(sabrDigital - noarbsabrDigital) > 1.0e-3) {
++                fail("inconsistent Hagan digital (" + sabrDigital
++                        + ") and noarb-sabr digital (" + noarbsabrDigital
++                        + ") at strike " + strike);
++            }
++            // density — SmileSection::density via centred FD on digital
++            // (matches C++ smilesection.cpp lines 99-105). NoArbSabrSmileSection
++            // overrides density() to read from the model directly.
++            final double gap = 1.0e-4;
++            final double m = -sabr.shift();
++            final double kl = Math.max(strike - 0.5 * gap, m);
++            final double kr = kl + gap;
++            final double sabrDensity =
++                    (sabr.digitalOptionPrice(kl, Option.Type.Call, 1.0, gap)
++                            - sabr.digitalOptionPrice(kr, Option.Type.Call, 1.0, gap)) / gap;
++            final double noarbsabrDensity = noarbsabr.density(strike, 1.0, gap);
++            if (Math.abs(sabrDensity - noarbsabrDensity) > 1.0) {
++                fail("inconsistent Hagan density (" + sabrDensity
++                        + ") and noarb-sabr density (" + noarbsabrDensity
++                        + ") at strike " + strike);
++            }
++            strike += 0.0001;
++        }
+     }
+ }
+diff --git a/jquantlib/src/test/java/org/jquantlib/testsuite/experimental/volatility/ZabrAndNoArbSabrSmokeTest.java b/jquantlib/src/test/java/org/jquantlib/testsuite/experimental/volatility/ZabrAndNoArbSabrSmokeTest.java
+index c2c30214..d49abe12 100644
+--- a/jquantlib/src/test/java/org/jquantlib/testsuite/experimental/volatility/ZabrAndNoArbSabrSmokeTest.java
++++ b/jquantlib/src/test/java/org/jquantlib/testsuite/experimental/volatility/ZabrAndNoArbSabrSmokeTest.java
+@@ -69,19 +69,26 @@ public class ZabrAndNoArbSabrSmokeTest {
+     }
+ 
+     @Test
+-    public void testNoArbSabrSmileSectionHaganFallback() {
+-        // alpha, beta, nu, rho selected so unsafeSabrVolatility succeeds.
++    public void testNoArbSabrSmileSectionAtmAgreesWithHagan() {
++        // alpha, beta, nu, rho selected so the noarb-sabr model + Hagan SABR
++        // are both well-defined.  Prior to Phase 5e.5b-CFC-d-200 the test
++        // exercised the {@code volatilityImpl} fallback path (Black inversion
++        // of the model price always threw because {@code optionPrice} was a
++        // Phase 4f stub).  Now that the model price is implemented the path
++        // returns the inverted noarb-sabr ATM vol, which is close to but not
++        // bit-equal to the Hagan closed form.  Doust 2012 calibrates the
++        // model to reproduce Hagan at short tenors, so the tolerance is
++        // 1e-3 (loose tier) — both engines agree to ~3 dp.
+         final double[] params = {0.05, 0.5, 0.30, -0.30};
+         final NoArbSabrSmileSection s = new NoArbSabrSmileSection(1.0, 0.05, params);
+ 
+-        // Hagan fallback should reproduce direct Sabr formula at strike == forward.
+         final double vol = s.volatility(0.05);
+ 
+         final double expected = new Sabr().unsafeSabrVolatility(
+                 0.05, 0.05, 1.0, params[0], params[1], params[2], params[3]);
+ 
+-        assertEquals("Hagan fallback should match direct SABR formula at ATM",
+-                expected, vol, TOL);
++        assertEquals("noarb-sabr ATM should approximate direct SABR formula",
++                expected, vol, 1.0e-3);
+         assertTrue("Volatility should be positive", vol > 0.0);
+     }
+ }
+diff --git a/jquantlib/src/test/java/org/jquantlib/testsuite/instruments/BondAdditionalTest.java b/jquantlib/src/test/java/org/jquantlib/testsuite/instruments/BondAdditionalTest.java
+index 71a25a2e..3b14039a 100644
+--- a/jquantlib/src/test/java/org/jquantlib/testsuite/instruments/BondAdditionalTest.java
++++ b/jquantlib/src/test/java/org/jquantlib/testsuite/instruments/BondAdditionalTest.java
+@@ -664,9 +664,98 @@ public class BondAdditionalTest {
+                 expected, calculated, tolerance);
+     }
+ 
+-    @Ignore("Phase 5d.5 — requires RiskyBondEngine + FlatHazardRate "
+-          + "(credit infrastructure not yet ported)")
+-    @Test public void testRiskyBondWithGivenDates() { fail("not implemented"); }
++    /**
++     * Faithful Java port of {@code testRiskyBondWithGivenDates} from
++     * {@code test-suite/bonds.cpp:1613-1675} (v1.42.1).
++     *
++     * <p>Builds a {@link FixedRateBond} priced through
++     * {@link org.jquantlib.pricingengines.bond.RiskyBondEngine} (cash-flow
++     * survival-discount + recovery-at-default leg) against a flat
++     * {@link org.jquantlib.termstructures.credit.FlatHazardRate} default
++     * curve (hazard = 10%, recovery = 40%) and a 2% flat risk-free yield
++     * curve, and verifies the cached NPV ({@code 888458.819055}) and clean
++     * price ({@code 87.407883}) to the C++ tolerance of {@code 1.0e-6}.
++     *
++     * <p>The {@code notionals} vector declared in the C++ source is not
++     * used by the test (it is leftover code) and is intentionally omitted
++     * here. {@code couponRates} has 4 entries against the 8-period
++     * semiannual schedule — {@link org.jquantlib.cashflow.FixedRateLeg}
++     * mirrors the C++ behaviour of repeating the trailing rate.
++     *
++     * <p>Phase 5e.5b-CFC-d-205.
++     */
++    @Test
++    public void testRiskyBondWithGivenDates() {
++        final Date today = new Date(22, Month.November, 2005);
++        new Settings().setEvaluationDate(today);
++
++        // Probability structure: flat 10% hazard rate, Actual/360, TARGET.
++        final org.jquantlib.quotes.Handle<org.jquantlib.quotes.Quote> hazardRate =
++                new org.jquantlib.quotes.Handle<org.jquantlib.quotes.Quote>(
++                        new org.jquantlib.quotes.SimpleQuote(0.1));
++        final Handle<org.jquantlib.termstructures.DefaultProbabilityTermStructure>
++                defaultProbability =
++                new Handle<org.jquantlib.termstructures.DefaultProbabilityTermStructure>(
++                        new org.jquantlib.termstructures.credit.FlatHazardRate(
++                                0,
++                                new org.jquantlib.time.calendars.Target(),
++                                hazardRate,
++                                new Actual360()));
++
++        // Yield term structure: flat 2% forward, Actual/360.
++        final Handle<YieldTermStructure> riskFree =
++                new Handle<YieldTermStructure>(
++                        Utilities.flatRate(today, 0.02, new Actual360()));
++
++        // Schedule: 30-Nov-2004 -> 30-Nov-2008, semiannual,
++        // United States(GovernmentBond), Unadjusted, Backward.
++        final Schedule sch1 = new Schedule(
++                new Date(30, Month.November, 2004),
++                new Date(30, Month.November, 2008),
++                new Period(Frequency.Semiannual),
++                new UnitedStates(UnitedStates.Market.GOVERNMENTBOND),
++                BusinessDayConvention.Unadjusted,
++                BusinessDayConvention.Unadjusted,
++                DateGeneration.Rule.Backward,
++                false);
++
++        // Bond parameters mirror C++: faceAmount = vars.faceAmount = 1,000,000.
++        final int settlementDays = 1;
++        final double faceAmount = 1000000.0;
++
++        // C++ declares couponRates with 4 entries; FixedRateLeg cycles the
++        // trailing value across the remaining 4 periods of the schedule.
++        final double[] couponRates = { 0.02875, 0.03, 0.03125, 0.0325 };
++        final double recoveryRate = 0.4;
++
++        final FixedRateBond bond = new FixedRateBond(
++                settlementDays,
++                faceAmount,
++                sch1,
++                couponRates,
++                new ActualActual(ActualActual.Convention.ISMA),
++                BusinessDayConvention.ModifiedFollowing,
++                100.0,
++                new Date(20, Month.November, 2004));
++
++        final PricingEngine bondEngine =
++                new org.jquantlib.pricingengines.bond.RiskyBondEngine(
++                        defaultProbability, recoveryRate, riskFree);
++        bond.setPricingEngine(bondEngine);
++
++        // C++ reference values (bonds.cpp:1655-1674) — tolerance 1.0e-6.
++        final double tolerance = 1.0e-6;
++
++        final double expectedNPV = 888458.819055;
++        final double calculatedNPV = bond.NPV();
++        assertEquals("Failed to reproduce risky bond NPV",
++                expectedNPV, calculatedNPV, tolerance);
++
++        final double expectedPrice = 87.407883;
++        final double calculatedPrice = bond.cleanPrice();
++        assertEquals("Failed to reproduce risky bond clean price",
++                expectedPrice, calculatedPrice, tolerance);
++    }
+ 
+     /**
+      * Faithful Java port of {@code testFixedRateBondWithArbitrarySchedule}
+diff --git a/jquantlib/src/test/java/org/jquantlib/testsuite/model/marketmodels/SwapForwardMappingsTest.java b/jquantlib/src/test/java/org/jquantlib/testsuite/model/marketmodels/SwapForwardMappingsTest.java
+index e229818d..10dac0b1 100644
+--- a/jquantlib/src/test/java/org/jquantlib/testsuite/model/marketmodels/SwapForwardMappingsTest.java
++++ b/jquantlib/src/test/java/org/jquantlib/testsuite/model/marketmodels/SwapForwardMappingsTest.java
+@@ -6,41 +6,314 @@
+  */
+ package org.jquantlib.testsuite.model.marketmodels;
+ 
+-import static org.junit.Assert.fail;
++import static org.junit.Assert.assertEquals;
++import static org.junit.Assert.assertTrue;
+ 
+-import org.junit.Ignore;
++import java.util.ArrayList;
++import java.util.List;
++
++import org.jquantlib.instruments.Option;
++import org.jquantlib.instruments.PlainVanillaPayoff;
++import org.jquantlib.instruments.StrikedTypePayoff;
++import org.jquantlib.math.matrixutilities.Matrix;
++import org.jquantlib.model.marketmodels.EvolutionDescription;
++import org.jquantlib.model.marketmodels.MarketModel;
++import org.jquantlib.model.marketmodels.SwapForwardMappings;
++import org.jquantlib.model.marketmodels.correlations.ExponentialForwardCorrelation;
++import org.jquantlib.model.marketmodels.correlations.TimeHomogeneousForwardCorrelation;
++import org.jquantlib.model.marketmodels.curvestates.LMMCurveState;
++import org.jquantlib.model.marketmodels.models.FlatVol;
++import org.jquantlib.model.marketmodels.products.multistep.MultiStepSwaption;
++import org.jquantlib.testsuite.util.ReferenceReader;
++import org.json.JSONArray;
++import org.json.JSONObject;
+ import org.junit.Test;
+ 
+ /**
+- * Phase 5f skeleton port of {@code test-suite/swapforwardmappings.cpp}
++ * Phase 5e.5b-CFC-d-202 port of {@code test-suite/swapforwardmappings.cpp}
+  * v1.42.1 (445 LOC, 2 test cases).
+  *
+- * <p>Java has {@link
+- * org.jquantlib.model.marketmodels.SwapForwardMappings} but the
+- * test-suite cases also pull in {@code MarketModel}, {@code CurveState},
+- * {@code SwaptionPseudoDerivative}, and the LIBOR-rate-pseudo-root
+- * Jacobian-of-the-mapping logic — all of which sit deeper in the
+- * marketmodels machinery (Phase 3h–3k carry-forwards).
++ * <p>Both tests are now active. The Java port follows the C++ exactly for
++ * {@code testForwardSwapJacobians} (analytic vs bump-and-revalue with the
++ * C++ tolerance 1e-5). For {@code testSwaptionImpliedVolatility} the Java
++ * port cross-validates the analytic implied-vol values (BGM
++ * freeze-coefficient formula) against C++ at TIGHT tolerance (1e-12).
+  *
+- * <p><strong>Both cases deferred to Phase 5f.5</strong>:
+- * <ul>
+- *   <li>{@code testForwardSwapJacobians} — Jacobian of swap rates
+- *       wrt forward rates matches numerical finite-difference</li>
+- *   <li>{@code testSwaptionImpliedVolatility} — swaption implied vol
+- *       inferred from forward-rate covariance matrix matches direct
+- *       Black inversion</li>
+- * </ul>
++ * <p><strong>Note on MC path:</strong> the C++ test runs a 32k-path LMM
++ * Monte-Carlo simulation per startIndex purely to empirically validate the
++ * freeze-coefficient approximation against the LMM ground truth. That
++ * validation is methodology, not an implementation invariant — the test
++ * passes iff {@code Black(impliedVol)} is within 3.5σ of the MC mean,
++ * which is a statement about model quality, not about the
++ * {@link SwapForwardMappings#swaptionImpliedVolatility} port. The Java
++ * test omits the MC piece and instead asserts an exact (TIGHT) match to
++ * the C++ analytic output, which is a strictly stronger invariant on the
++ * Java implementation. See harness probe
++ * {@code swapforwardmappings_probe} for the reference values.
+  *
+  * <p>Source: {@code test-suite/swapforwardmappings.cpp} v1.42.1 @
+  * {@code 099987f0ca}.
++ * Reference probe: {@code migration-harness/references/models/marketmodels/swapforwardmappings.json}.
+  */
+ public class SwapForwardMappingsTest {
+ 
+-    @Ignore("Phase 5f.5 — swap-vs-forward Jacobian harness (marketmodels dep)")
++    private static final String TEST_GROUP = "models/marketmodels/swapforwardmappings";
++    private static final ReferenceReader REF = ReferenceReader.load(TEST_GROUP);
++
++    // ------------------------------------------------------------------
++    // Fixture matching the C++ MarketModelData class. The fixture is
++    // hardcoded from the C++ probe output (NullCalendar + Semiannual
++    // Schedule + SimpleDayCounter over 9 years collapses to 0.5*k year
++    // fractions for k = 1..18 with nbRates = 17). Cross-checked at fixture
++    // load time against the JSON reference so any drift surfaces loudly.
++    // ------------------------------------------------------------------
++    private static final int N = 17;
++    private static final double[] RATE_TIMES = {
++            0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0,
++            5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0
++    };
++    private static final double[] FORWARDS = new double[N];
++    private static final double[] DISPLACEMENTS = new double[N];
++    private static final double[] DISCOUNT_FACTORS = new double[N + 1];
++    private static final double[] VOLATILITIES = {
++            0.15541283, 0.18719678, 0.20890740, 0.22318179, 0.23212717,
++            0.23731450, 0.23988649, 0.24066384, 0.24023111, 0.23900189,
++            0.23726699, 0.23522952, 0.23303022, 0.23076564, 0.22850101,
++            0.22627951, 0.22412881
++    };
++    static {
++        DISCOUNT_FACTORS[0] = 1.0;
++        for (int i = 0; i < N; ++i) {
++            FORWARDS[i] = 0.03 + 0.0010 * i;
++            final double tau = RATE_TIMES[i + 1] - RATE_TIMES[i];
++            DISCOUNT_FACTORS[i + 1] = DISCOUNT_FACTORS[i] / (1.0 + FORWARDS[i] * tau);
++        }
++        // Sanity-check our local fixture against the C++ probe.
++        final JSONObject fix = (JSONObject) REF.getCase("fixture").expectedRaw();
++        if (fix.getInt("nbRates") != N) {
++            throw new AssertionError("nbRates mismatch: expected=" + N
++                    + " probe=" + fix.getInt("nbRates"));
++        }
++        assertVecClose("rateTimes", RATE_TIMES, fix.getJSONArray("rateTimes"), 0.0);
++        assertVecClose("forwards", FORWARDS, fix.getJSONArray("forwards"), 1.0e-15);
++        assertVecClose("discountFactors", DISCOUNT_FACTORS,
++                fix.getJSONArray("discountFactors"), 1.0e-15);
++        assertVecClose("volatilities", VOLATILITIES,
++                fix.getJSONArray("volatilities"), 0.0);
++        assertVecClose("displacements", DISPLACEMENTS,
++                fix.getJSONArray("displacements"), 0.0);
++    }
++
++    private static void assertVecClose(String name, double[] a, JSONArray b, double tol) {
++        if (a.length != b.length()) {
++            throw new AssertionError(name + " length mismatch: " + a.length + " vs " + b.length());
++        }
++        for (int i = 0; i < a.length; ++i) {
++            final double e = b.getDouble(i);
++            final double diff = Math.abs(a[i] - e);
++            if (diff > tol) {
++                throw new AssertionError(name + "[" + i + "] mismatch: java=" + a[i]
++                        + " probe=" + e + " diff=" + diff);
++            }
++        }
++    }
++
++    /**
++     * Port of C++ {@code testForwardSwapJacobians}.
++     *
++     * <p>Two sub-cases:
++     * <ol>
++     *   <li>Coinitial-swap Jacobian {@code dsr[i]/df[j]} (where swap[i]
++     *       spans forwards [0..i+1)) computed analytically must equal the
++     *       central-difference bump-and-revalue derivative within 1e-5.</li>
++     *   <li>Constant-maturity-swap Jacobian for every spanning length in
++     *       [1, nbRates), same comparison.</li>
++     * </ol>
++     *
++     * <p>Bump size: 1e-8 (matches C++). Tolerance: 1e-5 (matches C++).
++     * The analytic-vs-numerical test is self-validating; cross-validation
++     * against C++ probe at TIGHT 1e-12 is also performed on the analytic
++     * Jacobians as a regression guard.
++     */
+     @Test
+-    public void testForwardSwapJacobians() { fail("not implemented"); }
++    public void testForwardSwapJacobians() {
++        final LMMCurveState cs = new LMMCurveState(RATE_TIMES);
++        cs.setOnForwardRates(FORWARDS);
++
++        final double bumpSize = 1e-8;
++        final double errorTolerance = 1e-5;
++
++        // ----- coinitial -----
++        {
++            final Matrix coinitialNumerical = new Matrix(N, N);
++            final double[] bumped = FORWARDS.clone();
++            for (int i = 0; i < N; ++i) {
++                for (int j = 0; j < N; ++j) {
++                    System.arraycopy(FORWARDS, 0, bumped, 0, N);
++                    bumped[j] += bumpSize;
++                    cs.setOnForwardRates(bumped);
++                    final double upRate = cs.cmSwapRate(0, i + 1);
++                    bumped[j] -= 2.0 * bumpSize;
++                    cs.setOnForwardRates(bumped);
++                    final double downRate = cs.cmSwapRate(0, i + 1);
++                    coinitialNumerical.set(i, j, (upRate - downRate) / (2.0 * bumpSize));
++                }
++            }
++            // restore to unbumped rates (needed for next sub-case)
++            cs.setOnForwardRates(FORWARDS);
++            final Matrix coinitialAnalytic = SwapForwardMappings.coinitialSwapForwardJacobian(cs);
++
++            // self-validation (analytic ≈ numerical) — matches C++ tolerance
++            assertMatrixClose("coinitial analytic vs numerical",
++                    coinitialAnalytic, coinitialNumerical, errorTolerance);
++
++            // cross-validation against C++ probe — TIGHT
++            assertMatrixCloseToProbe("coinitialSwapForwardJacobian",
++                    coinitialAnalytic, 1.0e-12);
++        }
++
++        // ----- CMS for every spanningForwards -----
++        {
++            for (int spanningForwards = 1; spanningForwards < N; ++spanningForwards) {
++                final Matrix cmsNumerical = new Matrix(N, N);
++                final double[] bumped = FORWARDS.clone();
++                for (int i = 0; i < N; ++i) {
++                    for (int j = 0; j < N; ++j) {
++                        System.arraycopy(FORWARDS, 0, bumped, 0, N);
++                        bumped[j] += bumpSize;
++                        cs.setOnForwardRates(bumped);
++                        final double upRate = cs.cmSwapRate(i, spanningForwards);
++                        bumped[j] -= 2.0 * bumpSize;
++                        cs.setOnForwardRates(bumped);
++                        final double downRate = cs.cmSwapRate(i, spanningForwards);
++                        cmsNumerical.set(i, j, (upRate - downRate) / (2.0 * bumpSize));
++                    }
++                }
++                cs.setOnForwardRates(FORWARDS);
++                final Matrix cmsAnalytic =
++                        SwapForwardMappings.cmSwapForwardJacobian(cs, spanningForwards);
++
++                assertMatrixClose("CMS span=" + spanningForwards + " analytic vs numerical",
++                        cmsAnalytic, cmsNumerical, errorTolerance);
++                assertMatrixCloseToProbe("cmSwapForwardJacobian_span" + spanningForwards,
++                        cmsAnalytic, 1.0e-12);
++            }
++        }
++    }
+ 
+-    @Ignore("Phase 5f.5 — swaption-implied-vol-from-FRA-cov harness")
++    /**
++     * Port of C++ {@code testSwaptionImpliedVolatility}, restricted to the
++     * analytic (freeze-coefficient) implied-volatility computation.
++     *
++     * <p>C++ loop: {@code for (startIndex = 1; startIndex + 2 < nbRates;
++     * startIndex += 5)}, i.e. {@code {1, 6, 11}} for nbRates=17.
++     *
++     * <p>For each startIndex, build a TimeHomogeneousForwardCorrelation
++     * with the same (longTermCorr, beta) = (0.5, 0.2), wrap it in FlatVol
++     * with the per-rate market vols, and call
++     * {@link SwapForwardMappings#swaptionImpliedVolatility}. The result
++     * must match the C++ probe at TIGHT 1e-12. We also re-compute swapRate
++     * and swapAnnuity from the curve state to cross-check.
++     *
++     * <p>The MC validation in the C++ test (Black price within 3.5σ of MC
++     * swaption) is omitted: see class-level javadoc for rationale.
++     */
+     @Test
+-    public void testSwaptionImpliedVolatility() { fail("not implemented"); }
++    public void testSwaptionImpliedVolatility() {
++        final LMMCurveState cs = new LMMCurveState(RATE_TIMES);
++        cs.setOnForwardRates(FORWARDS);
++
++        final double longTermCorr = 0.5;
++        final double beta = 0.2;
++        final int endIndex = N - 2; // = 15 for N=17
++
++        final List<Double> rateTimesList = new ArrayList<Double>(RATE_TIMES.length);
++        for (double t : RATE_TIMES) rateTimesList.add(t);
++
++        for (int startIndex = 1; startIndex + 2 < N; startIndex += 5) {
++            // Mirror C++: build a MultiStepSwaption and use its evolution
++            // description. MultiProductMultiStep::evolution() takes ALL
++            // rate times except the last as evolution times, so the
++            // FlatVol pseudo-root grid matches C++ exactly.
++            final StrikedTypePayoff payoff = new PlainVanillaPayoff(Option.Type.Call, 0.03);
++            final MultiStepSwaption product = new MultiStepSwaption(
++                    RATE_TIMES, startIndex, endIndex, payoff);
++            final EvolutionDescription evolution = product.evolution();
++
++            final int numberOfFactors = N;
++            final Matrix correlations = ExponentialForwardCorrelation
++                    .exponentialCorrelations(rateTimesList, longTermCorr, beta, 1.0, 0.0);
++            final TimeHomogeneousForwardCorrelation corr =
++                    new TimeHomogeneousForwardCorrelation(correlations, rateTimesList);
++            final MarketModel lmm = new FlatVol(
++                    VOLATILITIES, corr, evolution, numberOfFactors,
++                    cs.forwardRates(), DISPLACEMENTS);
++
++            final double impliedVol = SwapForwardMappings.swaptionImpliedVolatility(
++                    lmm, startIndex, endIndex);
++            final double swapRate = cs.cmSwapRate(startIndex, endIndex - startIndex);
++            final double swapAnnuity = cs.cmSwapAnnuity(startIndex, startIndex,
++                    endIndex - startIndex) * DISCOUNT_FACTORS[startIndex];
++
++            final JSONObject exp = (JSONObject) REF
++                    .getCase("swaptionImpliedVolatility_start" + startIndex)
++                    .expectedRaw();
++            final double expImpliedVol  = exp.getDouble("impliedVol");
++            final double expSwapRate    = exp.getDouble("swapRate");
++            final double expSwapAnnuity = exp.getDouble("swapAnnuity");
++
++            assertEquals("swapRate start=" + startIndex,
++                    expSwapRate, swapRate, 1.0e-12);
++            assertEquals("swapAnnuity start=" + startIndex,
++                    expSwapAnnuity, swapAnnuity, 1.0e-12);
++            assertEquals("impliedVol start=" + startIndex,
++                    expImpliedVol, impliedVol, 1.0e-12);
++            assertTrue("impliedVol positive start=" + startIndex,
++                    impliedVol > 0.0);
++        }
++    }
++
++    // ------------------------------------------------------------------
++    // Assertion helpers
++    // ------------------------------------------------------------------
++
++    private static void assertMatrixClose(String tag, Matrix actual, Matrix expected,
++                                          double tol) {
++        if (actual.rows() != expected.rows() || actual.columns() != expected.columns()) {
++            throw new AssertionError(tag + " shape mismatch");
++        }
++        for (int i = 0; i < actual.rows(); ++i) {
++            for (int j = 0; j < actual.columns(); ++j) {
++                final double a = actual.get(i, j);
++                final double e = expected.get(i, j);
++                if (Math.abs(a - e) > tol) {
++                    throw new AssertionError(tag + " mismatch [" + i + "][" + j + "]"
++                            + " java=" + a + " ref=" + e + " diff=" + (a - e));
++                }
++            }
++        }
++    }
++
++    private static void assertMatrixCloseToProbe(String caseName, Matrix actual,
++                                                 double tol) {
++        final JSONObject exp = (JSONObject) REF.getCase(caseName).expectedRaw();
++        final JSONArray rows = exp.getJSONArray("jacobian");
++        if (rows.length() != actual.rows()) {
++            throw new AssertionError(caseName + " row count mismatch");
++        }
++        for (int i = 0; i < actual.rows(); ++i) {
++            final JSONArray row = rows.getJSONArray(i);
++            if (row.length() != actual.columns()) {
++                throw new AssertionError(caseName + " col count mismatch at row " + i);
++            }
++            for (int j = 0; j < actual.columns(); ++j) {
++                final double a = actual.get(i, j);
++                final double e = row.getDouble(j);
++                if (Math.abs(a - e) > tol) {
++                    throw new AssertionError(caseName + " probe mismatch [" + i + "][" + j + "]"
++                            + " java=" + a + " ref=" + e + " diff=" + (a - e));
++                }
++            }
++        }
++    }
+ }

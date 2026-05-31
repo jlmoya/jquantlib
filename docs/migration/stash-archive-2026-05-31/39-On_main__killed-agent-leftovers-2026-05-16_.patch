@@ -1,0 +1,797 @@
+diff --git a/jquantlib/src/main/java/org/jquantlib/experimental/fx/DeltaVolQuote.java b/jquantlib/src/main/java/org/jquantlib/experimental/fx/DeltaVolQuote.java
+new file mode 100644
+index 00000000..ccec7c7c
+--- /dev/null
++++ b/jquantlib/src/main/java/org/jquantlib/experimental/fx/DeltaVolQuote.java
+@@ -0,0 +1,165 @@
++/*
++ Copyright (C) 2026 JQuantLib migration contributors.
++
++ This source code is release under the BSD License.
++
++ This file is part of JQuantLib, a free-software/open-source library
++ for financial quantitative analysts and developers - http://jquantlib.org/
++
++ JQuantLib is free software: you can redistribute it and/or modify it
++ under the terms of the JQuantLib license.  You should have received a
++ copy of the license along with this program; if not, please email
++ <jquant-devel@lists.sourceforge.net>. The license is also available online at
++ <http://www.jquantlib.org/index.php/LICENSE.TXT>.
++
++ This program is distributed in the hope that it will be useful, but WITHOUT
++ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
++ FOR A PARTICULAR PURPOSE.  See the license for more details.
++
++ JQuantLib is based on QuantLib. http://quantlib.org/
++ When applicable, the original copyright notice follows this notice.
++ */
++
++/*
++ Copyright (C) 2010 Dimitri Reiswich
++
++ This file is part of QuantLib, a free-software/open-source library
++ for financial quantitative analysts and developers - http://quantlib.org/
++*/
++package org.jquantlib.experimental.fx;
++
++import org.jquantlib.QL;
++import org.jquantlib.quotes.Handle;
++import org.jquantlib.quotes.Quote;
++import org.jquantlib.util.Observer;
++
++/**
++ * Class for the quotation of delta vs vol.
++ * <p>
++ * Java port of QuantLib v1.42.1 {@code ql/quotes/deltavolquote.hpp}.
++ *
++ * <p>Includes the various delta quotation types in FX markets as well as ATM
++ * types. The C++ class lives under {@code ql/quotes} in v1.42.1; JQuantLib
++ * keeps it under {@code experimental.fx} (no behavioural difference — the
++ * package path documents that the class is part of the experimental FX
++ * tooling).
++ *
++ * @see org.jquantlib.pricingengines.BlackDeltaCalculator
++ */
++public class DeltaVolQuote extends Quote implements Observer {
++
++    //
++    // public static inner enums
++    //
++
++    public enum DeltaType {
++        Spot,        // Spot Delta, e.g. usual Black Scholes delta
++        Fwd,         // Forward Delta
++        PaSpot,      // Premium Adjusted Spot Delta
++        PaFwd        // Premium Adjusted Forward Delta
++    }
++
++    public enum AtmType {
++        AtmNull,         // Default, if not an atm quote
++        AtmSpot,         // K=S_0
++        AtmFwd,          // K=F
++        AtmDeltaNeutral, // Call Delta = Put Delta
++        AtmVegaMax,      // K such that Vega is Maximum
++        AtmGammaMax,     // K such that Gamma is Maximum
++        AtmPutCall50     // K such that Call Delta=0.50 (only for Fwd Delta)
++    }
++
++    //
++    // private fields
++    //
++
++    private final double delta;
++    private final Handle<Quote> vol;
++    private final DeltaType deltaType;
++    private final double maturity;
++    private final AtmType atmType;
++
++
++    //
++    // public constructors
++    //
++
++    /**
++     * Standard constructor delta vs vol.
++     */
++    public DeltaVolQuote(final double delta,
++                         final Handle<Quote> vol,
++                         final double maturity,
++                         final DeltaType deltaType) {
++        this.delta = delta;
++        this.vol = vol;
++        this.deltaType = deltaType;
++        this.maturity = maturity;
++        this.atmType = AtmType.AtmNull;
++
++        this.vol.addObserver(this); // observe vol
++    }
++
++    /**
++     * Additional constructor, if special atm quote is used.
++     */
++    public DeltaVolQuote(final Handle<Quote> vol,
++                         final DeltaType deltaType,
++                         final double maturity,
++                         final AtmType atmType) {
++        this.delta = 0.0; // not used when atmType != AtmNull
++        this.vol = vol;
++        this.deltaType = deltaType;
++        this.maturity = maturity;
++        this.atmType = atmType;
++
++        this.vol.addObserver(this);
++    }
++
++
++    //
++    // public methods
++    //
++
++    public double delta() {
++        return delta;
++    }
++
++    public double maturity() {
++        return maturity;
++    }
++
++    public AtmType atmType() {
++        return atmType;
++    }
++
++    public DeltaType deltaType() {
++        return deltaType;
++    }
++
++
++    //
++    // implements Quote
++    //
++
++    @Override
++    public double value() /* @ReadOnly */ {
++        QL.require(isValid(), "invalid DeltaVolQuote: vol is empty or invalid");
++        return vol.currentLink().value();
++    }
++
++    @Override
++    public boolean isValid() /* @ReadOnly */ {
++        return !vol.empty() && vol.currentLink().isValid();
++    }
++
++
++    //
++    // implements Observer
++    //
++
++    @Override
++    public void update() {
++        notifyObservers(); // let observers know, that something has changed
++    }
++}
+diff --git a/jquantlib/src/main/java/org/jquantlib/model/shortrate/StochasticProcessArray.java b/jquantlib/src/main/java/org/jquantlib/model/shortrate/StochasticProcessArray.java
+index fe2bb660..734d5f7d 100755
+--- a/jquantlib/src/main/java/org/jquantlib/model/shortrate/StochasticProcessArray.java
++++ b/jquantlib/src/main/java/org/jquantlib/model/shortrate/StochasticProcessArray.java
+@@ -86,11 +86,15 @@ public class StochasticProcessArray extends StochasticProcess {
+ 
+     @Override
+     public Matrix diffusion(final /*Time*/ double t, final Array x)  {
++        // Mirror C++ QuantLib: Matrix tmp = sqrtCorrelation_; scale rows of tmp; return tmp.
++        // sqrtCorrelation_ must NOT be mutated — repeated calls otherwise compound the
++        // multiplication and corrupt the stored sqrt-correlation matrix.
++        final Matrix tmp = new Matrix(sqrtCorrelation_);
+         for (int i=0; i<size(); i++) {
+             final double sigma = processes_.get(i).diffusion(t, x.get(i));
+-            sqrtCorrelation_.rangeRow(i).mulAssign(sigma);
++            tmp.rangeRow(i).mulAssign(sigma);
+         }
+-        return sqrtCorrelation_;
++        return tmp;
+     }
+ 
+     @Override
+@@ -104,11 +108,15 @@ public class StochasticProcessArray extends StochasticProcess {
+ 
+     @Override
+     public Matrix stdDeviation(final /*@Time*/ double t0, final Array x0, final /*@Time*/ double dt)  {
++        // Mirror C++ QuantLib: Matrix tmp = sqrtCorrelation_; scale rows of tmp; return tmp.
++        // sqrtCorrelation_ must NOT be mutated — repeated calls otherwise compound the
++        // multiplication and corrupt the stored sqrt-correlation matrix.
++        final Matrix tmp = new Matrix(sqrtCorrelation_);
+         for (int i=0; i<size(); i++) {
+             final double sigma = processes_.get(i).stdDeviation(t0, x0.get(i), dt);
+-            sqrtCorrelation_.rangeRow(i).mulAssign(sigma);
++            tmp.rangeRow(i).mulAssign(sigma);
+         }
+-        return sqrtCorrelation_;
++        return tmp;
+     }
+ 
+     @Override
+diff --git a/jquantlib/src/main/java/org/jquantlib/pricingengines/BlackDeltaCalculator.java b/jquantlib/src/main/java/org/jquantlib/pricingengines/BlackDeltaCalculator.java
+new file mode 100644
+index 00000000..2ebb6e1b
+--- /dev/null
++++ b/jquantlib/src/main/java/org/jquantlib/pricingengines/BlackDeltaCalculator.java
+@@ -0,0 +1,396 @@
++/*
++ Copyright (C) 2026 JQuantLib migration contributors.
++
++ This source code is release under the BSD License.
++
++ This file is part of JQuantLib, a free-software/open-source library
++ for financial quantitative analysts and developers - http://jquantlib.org/
++
++ JQuantLib is free software: you can redistribute it and/or modify it
++ under the terms of the JQuantLib license.  You should have received a
++ copy of the license along with this program; if not, please email
++ <jquant-devel@lists.sourceforge.net>. The license is also available online at
++ <http://www.jquantlib.org/index.php/LICENSE.TXT>.
++
++ This program is distributed in the hope that it will be useful, but WITHOUT
++ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
++ FOR A PARTICULAR PURPOSE.  See the license for more details.
++
++ JQuantLib is based on QuantLib. http://quantlib.org/
++ When applicable, the original copyright notice follows this notice.
++ */
++
++/*
++ Copyright (C) 2010 Dimitri Reiswich
++
++ This file is part of QuantLib, a free-software/open-source library
++ for financial quantitative analysts and developers - http://quantlib.org/
++*/
++package org.jquantlib.pricingengines;
++
++import org.jquantlib.QL;
++import org.jquantlib.experimental.fx.DeltaVolQuote;
++import org.jquantlib.instruments.Option;
++import org.jquantlib.math.Constants;
++import org.jquantlib.math.Ops;
++import org.jquantlib.math.distributions.CumulativeNormalDistribution;
++import org.jquantlib.math.distributions.InverseCumulativeNormal;
++import org.jquantlib.math.solvers1D.Brent;
++
++/**
++ * Black delta calculator class.
++ * <p>
++ * Java port of QuantLib v1.42.1 {@code ql/pricingengines/blackdeltacalculator.{hpp,cpp}}.
++ *
++ * <p>The class includes many operations needed for different applications in
++ * FX markets, which have special quotation mechanisms, since every price can
++ * be expressed in both numeraires. It supports the four delta types from
++ * {@link DeltaVolQuote.DeltaType} (Spot, Fwd, PaSpot, PaFwd) and the ATM
++ * conventions from {@link DeltaVolQuote.AtmType}.
++ *
++ * <p>The constructor takes a {@code stdDev} parameter, NOT a volatility.
++ * {@code stdDev = volatility * sqrt(timeToMaturity)}.
++ */
++public class BlackDeltaCalculator {
++
++    //
++    // private fields
++    //
++
++    private DeltaVolQuote.DeltaType dt;
++    private Option.Type ot;
++    private final double dDiscount;
++    private final double fDiscount;
++    private final double stdDev;
++    private final double spot;
++    private final double forward;
++    private int phi;
++    private final double fExpPos;
++    private final double fExpNeg;
++
++
++    //
++    // public constructors
++    //
++
++    /**
++     * Constructs a BlackDeltaCalculator object.
++     *
++     * @param ot         Option type (call or put)
++     * @param dt         Delta type (spot, forward, premium-adjusted, etc.)
++     * @param spot       Spot FX rate
++     * @param dDiscount  Domestic discount factor
++     * @param fDiscount  Foreign discount factor
++     * @param stdDev     Standard deviation of the underlying, i.e. {@code volatility*sqrt(timeToMaturity)}
++     */
++    public BlackDeltaCalculator(final Option.Type ot,
++                                final DeltaVolQuote.DeltaType dt,
++                                final double spot,
++                                final double dDiscount,
++                                final double fDiscount,
++                                final double stdDev) {
++        this.dt = dt;
++        this.ot = ot;
++        this.dDiscount = dDiscount;
++        this.fDiscount = fDiscount;
++        this.stdDev = stdDev;
++        this.spot = spot;
++        this.forward = spot * fDiscount / dDiscount;
++        this.phi = ot.toInteger();
++
++        QL.require(spot > 0.0,
++                "positive spot value required: " + spot + " not allowed");
++        QL.require(dDiscount > 0.0,
++                "positive domestic discount factor required: " + dDiscount + " not allowed");
++        QL.require(fDiscount > 0.0,
++                "positive foreign discount factor required: " + fDiscount + " not allowed");
++        QL.require(stdDev >= 0.0,
++                "non-negative standard deviation required: " + stdDev + " not allowed");
++
++        this.fExpPos = forward * Math.exp(0.5 * stdDev * stdDev);
++        this.fExpNeg = forward * Math.exp(-0.5 * stdDev * stdDev);
++    }
++
++
++    //
++    // public methods
++    //
++
++    /**
++     * Computes the option delta for a given strike under the convention set at construction.
++     */
++    public double deltaFromStrike(final double strike) {
++
++        QL.require(strike >= 0.0,
++                "positive strike value required: " + strike + " not allowed");
++
++        double res = 0.0;
++
++        switch (dt) {
++        case Spot:
++            res = phi * fDiscount * cumD1(strike);
++            break;
++        case Fwd:
++            res = phi * cumD1(strike);
++            break;
++        case PaSpot:
++            res = phi * fDiscount * cumD2(strike) * strike / forward;
++            break;
++        case PaFwd:
++            res = phi * cumD2(strike) * strike / forward;
++            break;
++        default:
++            QL.error("invalid delta type");
++        }
++        return res;
++    }
++
++    /**
++     * Computes the strike corresponding to a given delta under the convention set at construction.
++     */
++    public double strikeFromDelta(final double delta) {
++        return strikeFromDelta(delta, dt);
++    }
++
++    /**
++     * Calculates the at-the-money (ATM) strike for the given ATM convention.
++     */
++    public double atmStrike(final DeltaVolQuote.AtmType atmT) {
++
++        double res = 0.0;
++
++        switch (atmT) {
++        case AtmSpot:
++            res = spot;
++            break;
++        case AtmDeltaNeutral:
++            if (dt == DeltaVolQuote.DeltaType.Spot || dt == DeltaVolQuote.DeltaType.Fwd) {
++                res = fExpPos;
++            } else {
++                res = fExpNeg;
++            }
++            break;
++        case AtmFwd:
++            res = forward;
++            break;
++        case AtmGammaMax:
++        case AtmVegaMax:
++            res = fExpPos;
++            break;
++        case AtmPutCall50:
++            QL.require(dt == DeltaVolQuote.DeltaType.Fwd,
++                    "|PutDelta|=CallDelta=0.50 only possible for forward delta.");
++            res = fExpPos;
++            break;
++        default:
++            QL.error("invalid atm type");
++        }
++        return res;
++    }
++
++    /**
++     * Sets the delta calculation convention.
++     */
++    public void setDeltaType(final DeltaVolQuote.DeltaType dt) {
++        this.dt = dt;
++    }
++
++    /**
++     * Sets the option type (call or put).
++     */
++    public void setOptionType(final Option.Type ot) {
++        this.ot = ot;
++        this.phi = ot.toInteger();
++    }
++
++
++    //
++    // package-private deprecated-internal accessors (C++ marks them deprecated;
++    // kept package-private for the same role they play in C++).
++    //
++
++    /** {@code N(d1)} or {@code N(-d1)} according to option phi. */
++    double cumD1(final double strike) {
++
++        double cumD1Pos = 1.0; // N(d1)
++        double cumD1Neg = 0.0; // N(-d1)
++
++        final CumulativeNormalDistribution f = new CumulativeNormalDistribution();
++
++        if (stdDev >= Constants.QL_EPSILON) {
++            if (strike > 0) {
++                final double d1 = Math.log(forward / strike) / stdDev + 0.5 * stdDev;
++                return f.op(phi * d1);
++            }
++        } else {
++            if (forward < strike) {
++                cumD1Pos = 0.0;
++                cumD1Neg = 1.0;
++            } else if (forward == strike) {
++                final double d1 = 0.5 * stdDev;
++                return f.op(phi * d1);
++            }
++        }
++
++        if (phi > 0) { // if Call
++            return cumD1Pos;
++        }
++        return cumD1Neg;
++    }
++
++    /** {@code N(d2)} or {@code N(-d2)} according to option phi. */
++    double cumD2(final double strike) {
++
++        double cumD2Pos = 1.0; // N(d2)
++        double cumD2Neg = 0.0; // N(-d2)
++
++        final CumulativeNormalDistribution f = new CumulativeNormalDistribution();
++
++        if (stdDev >= Constants.QL_EPSILON) {
++            if (strike > 0) {
++                final double d2 = Math.log(forward / strike) / stdDev - 0.5 * stdDev;
++                return f.op(phi * d2);
++            }
++        } else {
++            if (forward < strike) {
++                cumD2Pos = 0.0;
++                cumD2Neg = 1.0;
++            } else if (forward == strike) {
++                final double d2 = -0.5 * stdDev;
++                return f.op(phi * d2);
++            }
++        }
++
++        if (phi > 0) { // if Call
++            return cumD2Pos;
++        }
++        return cumD2Neg;
++    }
++
++    /** {@code n(d1)} — derivative of {@code N} at {@code d1}. */
++    double nD1(final double strike) {
++
++        double nD1 = 0.0;
++
++        if (stdDev >= Constants.QL_EPSILON) {
++            if (strike > 0) {
++                final double d1 = Math.log(forward / strike) / stdDev + 0.5 * stdDev;
++                final CumulativeNormalDistribution f = new CumulativeNormalDistribution();
++                nD1 = f.derivative(d1);
++            }
++        }
++        return nD1;
++    }
++
++    /** {@code n(d2)} — derivative of {@code N} at {@code d2}. */
++    double nD2(final double strike) {
++
++        double nD2 = 0.0;
++
++        if (stdDev >= Constants.QL_EPSILON) {
++            if (strike > 0) {
++                final double d2 = Math.log(forward / strike) / stdDev - 0.5 * stdDev;
++                final CumulativeNormalDistribution f = new CumulativeNormalDistribution();
++                nD2 = f.derivative(d2);
++            }
++        }
++        return nD2;
++    }
++
++
++    //
++    // private methods
++    //
++
++    /**
++     * Alternative delta-type variant of {@link #strikeFromDelta(double)}.
++     */
++    private double strikeFromDelta(final double delta, final DeltaVolQuote.DeltaType dtArg) {
++        double res = 0.0;
++        double arg;
++        final InverseCumulativeNormal invNorm = new InverseCumulativeNormal();
++
++        QL.require(delta * phi >= 0.0, "Option type and delta are incoherent.");
++
++        switch (dtArg) {
++        case Spot:
++            QL.require(Math.abs(delta) <= fDiscount, "Spot delta out of range.");
++            arg = -phi * invNorm.op(phi * delta / fDiscount) * stdDev + 0.5 * stdDev * stdDev;
++            res = forward * Math.exp(arg);
++            break;
++
++        case Fwd:
++            QL.require(Math.abs(delta) <= 1.0, "Forward delta out of range.");
++            arg = -phi * invNorm.op(phi * delta) * stdDev + 0.5 * stdDev * stdDev;
++            res = forward * Math.exp(arg);
++            break;
++
++        case PaSpot:
++        case PaFwd: {
++            // This has to be solved numerically. One of the problems is that
++            // the premium adjusted call delta is not monotonic in strike,
++            // such that two solutions might occur. The one right to the max
++            // of the delta is considered to be the correct strike. Some
++            // proper interval bounds for the strike need to be chosen, the
++            // numerics can otherwise be very unreliable and unstable. Brent
++            // is preferred over Newton, since the interval can be specified
++            // explicitly and the area on the left of the maximum can be
++            // avoided. The put delta doesn't have this property and can be
++            // solved without any problems, but also numerically.
++            final Ops.DoubleOp f = new Ops.DoubleOp() {
++                @Override
++                public double op(final double strike) {
++                    return deltaFromStrike(strike) - delta;
++                }
++            };
++
++            final Brent solver = new Brent();
++            solver.setMaxEvaluations(1000);
++            final double accuracy = 1.0e-10;
++
++            final double rightLimit;
++            double leftLimit = 0.0;
++
++            // Strike of non-premium-adjusted is always to the right of premium-adjusted
++            if (dtArg == DeltaVolQuote.DeltaType.PaSpot) {
++                rightLimit = strikeFromDelta(delta, DeltaVolQuote.DeltaType.Spot);
++            } else {
++                rightLimit = strikeFromDelta(delta, DeltaVolQuote.DeltaType.Fwd);
++            }
++
++            if (phi < 0) { // if put
++                res = solver.solve(f, accuracy, rightLimit, 0.0, spot * 100.0);
++                break;
++            } else {
++
++                // find out the left limit which is the strike corresponding
++                // to the value where premium adjusted deltas have their
++                // maximum
++                final Ops.DoubleOp g = new Ops.DoubleOp() {
++                    @Override
++                    public double op(final double strike) {
++                        return cumD2(strike) * stdDev - nD2(strike);
++                    }
++                };
++
++                // Use a fresh solver for the inner bracket — Brent stores
++                // per-solve state.
++                final Brent solverMax = new Brent();
++                solverMax.setMaxEvaluations(1000);
++                leftLimit = solverMax.solve(g, accuracy, rightLimit * 0.5, 0.0, rightLimit);
++
++                final double guess = leftLimit + (rightLimit - leftLimit) * 0.5;
++
++                final Brent solverRoot = new Brent();
++                solverRoot.setMaxEvaluations(1000);
++                res = solverRoot.solve(f, accuracy, guess, leftLimit, rightLimit);
++            }
++            break;
++        }
++        default:
++            QL.error("invalid delta type");
++        }
++
++        return res;
++    }
++}
+diff --git a/jquantlib/src/test/java/org/jquantlib/testsuite/model/shortrate/StochasticProcessArrayTest.java b/jquantlib/src/test/java/org/jquantlib/testsuite/model/shortrate/StochasticProcessArrayTest.java
+new file mode 100644
+index 00000000..6bd22058
+--- /dev/null
++++ b/jquantlib/src/test/java/org/jquantlib/testsuite/model/shortrate/StochasticProcessArrayTest.java
+@@ -0,0 +1,178 @@
++/*
++ Copyright (C) 2026 JQuantLib migration contributors.
++
++ This source code is release under the BSD License.
++
++ This file is part of JQuantLib, a free-software/open-source library
++ for financial quantitative analysts and developers - http://jquantlib.org/
++
++ JQuantLib is free software: you can redistribute it and/or modify it
++ under the terms of the JQuantLib license.  You should have received a
++ copy of the license along with this program; if not, please email
++ <jquant-devel@lists.sourceforge.net>. The license is also available online at
++ <http://www.jquantlib.org/index.php/LICENSE.TXT>.
++
++ This program is distributed in the hope that it will be useful, but WITHOUT
++ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
++ FOR A PARTICULAR PURPOSE.  See the license for more details.
++
++ JQuantLib is based on QuantLib. http://quantlib.org/
++*/
++package org.jquantlib.testsuite.model.shortrate;
++
++import java.util.ArrayList;
++import java.util.List;
++
++import org.jquantlib.math.matrixutilities.Array;
++import org.jquantlib.math.matrixutilities.Matrix;
++import org.jquantlib.model.shortrate.StochasticProcessArray;
++import org.jquantlib.processes.StochasticProcess1D;
++import org.junit.Assert;
++import org.junit.Test;
++
++/**
++ * Regression tests for {@link StochasticProcessArray}.
++ *
++ * <p>Pins the C++ QuantLib v1.42.1 invariant that {@code diffusion()} and
++ * {@code stdDeviation()} must not mutate the internal {@code sqrtCorrelation_}
++ * matrix. The C++ source ({@code ql/processes/stochasticprocessarray.cpp})
++ * creates a fresh {@code Matrix tmp = sqrtCorrelation_;} on each call and
++ * scales the rows of the copy. Without the per-call copy the row-scaling
++ * compounds across calls and corrupts the stored sqrt-correlation.
++ *
++ * <p>Phase 5e.5b-CFC-d-30.
++ */
++public class StochasticProcessArrayTest {
++
++    /**
++     * Minimal {@link StochasticProcess1D} test double: diffusion=sigma*x,
++     * stdDeviation=sigma*x*sqrt(dt). Bypasses the need for a Discretization1D
++     * (which the upstream {@code GeometricBrownianMotionProcess} doesn't set).
++     */
++    private static final class TestProcess1D extends StochasticProcess1D {
++        private final double x0_;
++        private final double sigma_;
++        TestProcess1D(final double x0, final double sigma) {
++            super();
++            this.x0_ = x0;
++            this.sigma_ = sigma;
++        }
++        @Override public double x0() { return x0_; }
++        @Override public double drift(final double t, final double x) { return 0.0; }
++        @Override public double diffusion(final double t, final double x) { return sigma_ * x; }
++        @Override public double expectation(final double t0, final double x0, final double dt) { return x0; }
++        @Override public double stdDeviation(final double t0, final double x0, final double dt) {
++            return sigma_ * x0 * Math.sqrt(dt);
++        }
++        @Override public double variance(final double t0, final double x0, final double dt) {
++            final double s = sigma_ * x0;
++            return s * s * dt;
++        }
++    }
++
++    private static StochasticProcessArray buildArray() {
++        final List<StochasticProcess1D> processes = new ArrayList<>();
++        processes.add(new TestProcess1D(100.0, 0.20));
++        processes.add(new TestProcess1D(120.0, 0.30));
++        processes.add(new TestProcess1D( 80.0, 0.25));
++
++        // symmetric positive-definite 3x3 correlation
++        final Matrix correlation = new Matrix(new double[][] {
++                { 1.0, 0.5, 0.3 },
++                { 0.5, 1.0, 0.4 },
++                { 0.3, 0.4, 1.0 }
++        });
++        return new StochasticProcessArray(processes, correlation);
++    }
++
++    private static void assertMatricesEqual(final String msg, final Matrix a, final Matrix b) {
++        Assert.assertEquals(msg + " rows", a.rows(), b.rows());
++        Assert.assertEquals(msg + " cols", a.cols(), b.cols());
++        for (int r = 0; r < a.rows(); r++) {
++            for (int c = 0; c < a.cols(); c++) {
++                Assert.assertEquals(
++                        msg + " [" + r + "," + c + "]",
++                        a.get(r, c), b.get(r, c), 0.0);
++            }
++        }
++    }
++
++    /**
++     * Calling {@code diffusion()} twice with the same arguments must yield
++     * identical matrices. Previously the second call returned a matrix whose
++     * rows had been multiplied by {@code sigma} twice (the in-place mutation
++     * bug).
++     */
++    @Test
++    public void testDiffusionDoesNotMutateSqrtCorrelation() {
++        final StochasticProcessArray sp = buildArray();
++        final double t = 0.5;
++        final Array x = new Array(new double[] { 100.0, 120.0, 80.0 });
++
++        // snapshot of sqrt-correlation before any diffusion call.
++        // We obtain it through correlation() which is sqrtCorrelation * sqrtCorrelation^T.
++        final Matrix corrBefore = sp.correlation();
++
++        final Matrix d1 = new Matrix(sp.diffusion(t, x));
++        final Matrix d2 = new Matrix(sp.diffusion(t, x));
++
++        assertMatricesEqual("diffusion repeatability", d1, d2);
++
++        // sqrt-correlation must be unchanged: corrBefore == corrAfter (bit-exact).
++        final Matrix corrAfter = sp.correlation();
++        assertMatricesEqual("sqrtCorrelation_ invariance after diffusion", corrBefore, corrAfter);
++    }
++
++    /**
++     * Same invariance check for {@code stdDeviation()}.
++     */
++    @Test
++    public void testStdDeviationDoesNotMutateSqrtCorrelation() {
++        final StochasticProcessArray sp = buildArray();
++        final double t0 = 0.0;
++        final double dt = 0.25;
++        final Array x0 = new Array(new double[] { 100.0, 120.0, 80.0 });
++
++        final Matrix corrBefore = sp.correlation();
++
++        final Matrix s1 = new Matrix(sp.stdDeviation(t0, x0, dt));
++        final Matrix s2 = new Matrix(sp.stdDeviation(t0, x0, dt));
++
++        assertMatricesEqual("stdDeviation repeatability", s1, s2);
++
++        final Matrix corrAfter = sp.correlation();
++        assertMatricesEqual("sqrtCorrelation_ invariance after stdDeviation", corrBefore, corrAfter);
++    }
++
++    /**
++     * Sanity check: each row of diffusion(t,x) equals
++     * sqrtCorrelation_.row(i) scaled by processes_[i].diffusion(t, x[i]).
++     * This pins the C++ semantics directly.
++     */
++    @Test
++    public void testDiffusionRowScaling() {
++        final StochasticProcessArray sp = buildArray();
++        final double t = 0.5;
++        final Array x = new Array(new double[] { 100.0, 120.0, 80.0 });
++
++        // Build expected: sqrt-correlation captured via correlation() round-trip
++        // would lose information; instead we cross-check by recomputing diffusion
++        // row-by-row from a fresh array. The semantic check is: diffusion returned
++        // twice in sequence must be identical (proved by testDiffusion... above)
++        // AND each row of the returned matrix scales linearly when sigma scales.
++        final Matrix d1 = new Matrix(sp.diffusion(t, x));
++
++        // Doubling x doubles sigma (geometric BM: diffusion = sigma * x); each
++        // row of the returned matrix must therefore double.
++        final Array x2 = new Array(new double[] { 200.0, 240.0, 160.0 });
++        final Matrix d2 = sp.diffusion(t, x2);
++
++        for (int i = 0; i < d1.rows(); i++) {
++            for (int j = 0; j < d1.cols(); j++) {
++                Assert.assertEquals(
++                        "row " + i + " col " + j + " must double",
++                        2.0 * d1.get(i, j), d2.get(i, j), 1e-14);
++            }
++        }
++    }
++}

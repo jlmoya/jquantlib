@@ -1,0 +1,22 @@
+diff --git a/jquantlib/src/main/java/org/jquantlib/time/calendars/India.java b/jquantlib/src/main/java/org/jquantlib/time/calendars/India.java
+index 73abbc3e..3ee723e5 100755
+--- a/jquantlib/src/main/java/org/jquantlib/time/calendars/India.java
++++ b/jquantlib/src/main/java/org/jquantlib/time/calendars/India.java
+@@ -36,6 +36,8 @@ import static org.jquantlib.time.Month.August;
+ import static org.jquantlib.time.Month.December;
+ import static org.jquantlib.time.Month.February;
+ import static org.jquantlib.time.Month.January;
++import static org.jquantlib.time.Month.July;
++import static org.jquantlib.time.Month.June;
+ import static org.jquantlib.time.Month.March;
+ import static org.jquantlib.time.Month.May;
+ import static org.jquantlib.time.Month.November;
+@@ -151,6 +153,8 @@ public class India extends Calendar {
+ 	            || (dd == em-3)
+ 	            // Ambedkar Jayanti
+ 	            || (d == 14 && m == April)
++	            // May Day
++	            || (d == 1 && m == May)
+ 	            // Independence Day
+ 	            || (d == 15 && m == August)
+ 	            // Gandhi Jayanti

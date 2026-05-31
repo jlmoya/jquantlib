@@ -1,0 +1,1045 @@
+diff --git a/jquantlib/src/main/java/org/jquantlib/instruments/CapFloor.java b/jquantlib/src/main/java/org/jquantlib/instruments/CapFloor.java
+index 7d4230fc..00e58d19 100755
+--- a/jquantlib/src/main/java/org/jquantlib/instruments/CapFloor.java
++++ b/jquantlib/src/main/java/org/jquantlib/instruments/CapFloor.java
+@@ -42,7 +42,9 @@
+ 
+ package org.jquantlib.instruments;
+ 
++import java.util.HashMap;
+ import java.util.List;
++import java.util.Map;
+ 
+ import org.jquantlib.QL;
+ import org.jquantlib.Settings;
+@@ -50,12 +52,20 @@ import org.jquantlib.cashflow.CashFlow;
+ import org.jquantlib.cashflow.CashFlows;
+ import org.jquantlib.cashflow.FloatingRateCoupon;
+ import org.jquantlib.cashflow.Leg;
++import org.jquantlib.daycounters.Actual365Fixed;
+ import org.jquantlib.indexes.InterestRateIndex;
+ import org.jquantlib.lang.exceptions.LibraryException;
+ import org.jquantlib.math.Constants;
++import org.jquantlib.math.distributions.Derivative;
++import org.jquantlib.math.solvers1D.NewtonSafe;
++import org.jquantlib.model.VolatilityType;
+ import org.jquantlib.pricingengines.GenericEngine;
+ import org.jquantlib.pricingengines.PricingEngine;
++import org.jquantlib.pricingengines.capfloor.BachelierCapFloorEngine;
++import org.jquantlib.pricingengines.capfloor.BlackCapFloorEngine;
+ import org.jquantlib.quotes.Handle;
++import org.jquantlib.quotes.Quote;
++import org.jquantlib.quotes.SimpleQuote;
+ import org.jquantlib.termstructures.YieldTermStructure;
+ import org.jquantlib.time.Date;
+ 
+@@ -90,6 +100,15 @@ public class CapFloor extends Instrument {
+     private List</*@Rate*/ Double> floorRates_;
+     private final Handle<YieldTermStructure> termStructure_;
+ 
++    /**
++     * Cached copy of the engine's additionalResults (keyed by name).
++     * Populated during {@link #fetchResults(PricingEngine.Results)} so that
++     * callers can retrieve named extras (e.g. {@code "vega"},
++     * {@code "optionletsPrice"}, {@code "optionletsDelta"}) via
++     * {@link #result(String)} — mirrors C++ {@code Instrument::result<T>(name)}.
++     */
++    private Map<String, Object> additionalResults_ = new HashMap<String, Object>();
++
+     public CapFloor(
+             final CapFloor.Type type,
+             final Leg floatingLeg,
+@@ -232,6 +251,212 @@ public class CapFloor extends Instrument {
+         return lastFloatingCoupon.fixingDate();
+     }
+ 
++    /**
++     * Retrieve a named additional result populated by the pricing engine.
++     * Mirrors C++ {@code Instrument::result<T>(name)}. Returns {@code null}
++     * if the key is absent.
++     *
++     * <p>Known keys populated by {@link BlackCapFloorEngine} (and
++     * {@link BachelierCapFloorEngine}, where applicable):
++     * {@code vega}, {@code optionletsPrice}, {@code optionletsVega},
++     * {@code optionletsDelta}, {@code optionletsDiscountFactor},
++     * {@code optionletsAtmForward}, {@code optionletsStdDev}.
++     */
++    public Object result(final String key) /* @ReadOnly */ {
++        calculate();
++        return additionalResults_.get(key);
++    }
++
++    /** Read-only snapshot of the engine's additionalResults map. */
++    public Map<String, Object> additionalResults() /* @ReadOnly */ {
++        calculate();
++        return additionalResults_;
++    }
++
++    //
++    // implied volatility — mirrors C++ v1.42.1 capfloor.cpp lines 323-340
++    // plus the anonymous-namespace ImpliedCapVolHelper (capfloor.cpp:37-108).
++    //
++
++    /**
++     * Implied term volatility (full-arity overload).
++     *
++     * <p>Mirrors C++ {@code CapFloor::impliedVolatility(targetValue, disc,
++     * guess, accuracy, maxEvaluations, minVol, maxVol, type, displacement)}
++     * — capfloor.cpp:323-340. Constructs an internal pricing engine that
++     * shares a {@link SimpleQuote} for the volatility, then runs
++     * {@link NewtonSafe} on the price-target residual until the engine NPV
++     * matches {@code targetValue} to within {@code accuracy}.
++     *
++     * <p>The {@link VolatilityType} parameter selects the formula: under
++     * {@link VolatilityType#ShiftedLognormal} the helper uses
++     * {@link BlackCapFloorEngine} with the supplied displacement; under
++     * {@link VolatilityType#Normal} it uses {@link BachelierCapFloorEngine}
++     * and ignores {@code displacement}.
++     *
++     * <p>The result is the constant flat term volatility consistent with
++     * the cap/floor's pricing engine, the supplied discount curve, and the
++     * target NPV.
++     */
++    public /*@Volatility*/ double impliedVolatility(
++            final /*@Real*/ double targetValue,
++            final Handle<YieldTermStructure> d,
++            final /*@Volatility*/ double guess,
++            final /*@Real*/ double accuracy,
++            final /*@NonNegative*/ int maxEvaluations,
++            final /*@Volatility*/ double minVol,
++            final /*@Volatility*/ double maxVol,
++            final VolatilityType type,
++            final /*@Real*/ double displacement) {
++        QL.require(!isExpired(), "instrument expired");
++        final ImpliedCapVolHelper f =
++                new ImpliedCapVolHelper(this, d, targetValue, displacement, type);
++        final NewtonSafe solver = new NewtonSafe();
++        solver.setMaxEvaluations(maxEvaluations);
++        return solver.solve(f, accuracy, guess, minVol, maxVol);
++    }
++
++    /** Convenience overload: defaults type = ShiftedLognormal, displacement = 0. */
++    public /*@Volatility*/ double impliedVolatility(
++            final /*@Real*/ double targetValue,
++            final Handle<YieldTermStructure> d,
++            final /*@Volatility*/ double guess,
++            final /*@Real*/ double accuracy,
++            final /*@NonNegative*/ int maxEvaluations,
++            final /*@Volatility*/ double minVol,
++            final /*@Volatility*/ double maxVol) {
++        return impliedVolatility(targetValue, d, guess, accuracy, maxEvaluations,
++                minVol, maxVol, VolatilityType.ShiftedLognormal, 0.0);
++    }
++
++    /** Convenience overload mirroring the C++ default arguments
++     *  (accuracy=1e-4, maxEvaluations=100, minVol=1e-7, maxVol=4.0,
++     *  type=ShiftedLognormal, displacement=0). */
++    public /*@Volatility*/ double impliedVolatility(
++            final /*@Real*/ double targetValue,
++            final Handle<YieldTermStructure> d,
++            final /*@Volatility*/ double guess) {
++        return impliedVolatility(targetValue, d, guess, 1.0e-4, 100,
++                1.0e-7, 4.0, VolatilityType.ShiftedLognormal, 0.0);
++    }
++
++    /**
++     * Functor passed to the 1D solver inside {@link #impliedVolatility}.
++     *
++     * <p>Mirrors the C++ anonymous-namespace {@code ImpliedCapVolHelper}
++     * (capfloor.cpp:37-108). The helper owns a {@link SimpleQuote} that is
++     * shared with an internal {@link BlackCapFloorEngine} (ShiftedLognormal)
++     * or {@link BachelierCapFloorEngine} (Normal); each call to
++     * {@link #op(double)} sets the quote to the trial volatility, triggers
++     * the engine, and returns {@code engineNPV - targetValue}.
++     *
++     * <h3>Derivative</h3>
++     * <p>C++ reads the analytical {@code vega} from
++     * {@code results.additionalResults["vega"]}. The Java
++     * {@link BlackCapFloorEngine} / {@link BachelierCapFloorEngine} do not
++     * yet populate the {@code additionalResults} map (vega is deferred —
++     * see {@link BlackCapFloorEngine#calculate()} class javadoc). To keep
++     * {@link NewtonSafe} usable we approximate the derivative by central
++     * finite difference with a relative bump of {@code 1e-5}. This is
++     * monotone-in-vol in the well-posed regime and converges in well under
++     * the 100-evaluation budget the test uses; once the engines start
++     * populating the {@code vega} additional result this fallback can be
++     * replaced by a one-liner that reads {@code additionalResults().get("vega")}
++     * to mirror C++ verbatim.
++     */
++    private static final class ImpliedCapVolHelper implements Derivative {
++        private final CapFloor capfloor_;
++        private final PricingEngine engine_;
++        private final SimpleQuote vol_;
++        private final /*@Real*/ double targetValue_;
++        private final Instrument.ResultsImpl results_;
++
++        ImpliedCapVolHelper(final CapFloor cap,
++                            final Handle<YieldTermStructure> discountCurve,
++                            final /*@Real*/ double targetValue,
++                            final /*@Real*/ double displacement,
++                            final VolatilityType type) {
++            this.capfloor_ = cap;
++            this.targetValue_ = targetValue;
++            // Implausible starting value forces a recalculate on the first
++            // operator() call (mirrors C++ SimpleQuote(-1.0) sentinel).
++            this.vol_ = new SimpleQuote(-1.0);
++            final Handle<Quote> h = new Handle<Quote>(vol_);
++
++            switch (type) {
++                case ShiftedLognormal:
++                    this.engine_ = new BlackCapFloorEngine(
++                            discountCurve, h, new Actual365Fixed(), displacement);
++                    break;
++                case Normal:
++                    this.engine_ = new BachelierCapFloorEngine(
++                            discountCurve, h, new Actual365Fixed());
++                    break;
++                default:
++                    throw new LibraryException("unknown VolatilityType (" + type + ")");
++            }
++
++            // Build a fresh arguments DTO so we don't disturb the cap's
++            // own engine.  Mirrors the C++ pattern of
++            // cap.setupArguments(engine_->getArguments()).
++            final CapFloor.ArgumentsImpl args = new CapFloor.ArgumentsImpl();
++            cap.setupArguments(args);
++            args.validate();
++
++            // Drive the engine directly: assign args, run, and capture
++            // results.  This sidesteps Instrument.NPV(), which would
++            // overwrite the cap's own results_ field.
++            final CapFloor.Engine cfEngine = (CapFloor.Engine) engine_;
++            cfEngine.reset();
++            // CapFloor.Engine holds its own ArgumentsImpl / ResultsImpl.
++            // Copy our populated arguments into the engine's args slot.
++            final CapFloor.ArgumentsImpl engineArgs =
++                    (CapFloor.ArgumentsImpl) cfEngine.getArguments();
++            copyArgs(args, engineArgs);
++            this.results_ = (Instrument.ResultsImpl) cfEngine.getResults();
++        }
++
++        private static void copyArgs(final CapFloor.ArgumentsImpl src,
++                                     final CapFloor.ArgumentsImpl dst) {
++            dst.type = src.type;
++            dst.startDates = src.startDates;
++            dst.fixingDates = src.fixingDates;
++            dst.endDates = src.endDates;
++            dst.accrualTimes = src.accrualTimes;
++            dst.capRates = src.capRates;
++            dst.floorRates = src.floorRates;
++            dst.forwards = src.forwards;
++            dst.gearings = src.gearings;
++            dst.spreads = src.spreads;
++            dst.nominals = src.nominals;
++            dst.indexes = src.indexes;
++        }
++
++        @Override
++        public double op(final double x) {
++            if (x != vol_.value()) {
++                vol_.setValue(x);
++                engine_.calculate();
++            }
++            return results_.value - targetValue_;
++        }
++
++        @Override
++        public double derivative(final double x) {
++            // C++ reads the analytical "vega" entry from
++            // additionalResults; Java engines don't populate it yet
++            // (see class javadoc).  Use a central finite difference
++            // with a relative bump.  Avoids re-implementing the
++            // optionlet-vega aggregation here.
++            final double bump = Math.max(1.0e-7, 1.0e-5 * Math.abs(x));
++            final double fPlus = op(x + bump);
++            final double fMinus = op(x - bump);
++            // Restore engine state at x so subsequent op(x) is consistent.
++            op(x);
++            return (fPlus - fMinus) / (2.0 * bump);
++        }
++    }
++
+     //
+     // overrides Instrument
+     //
+diff --git a/jquantlib/src/main/java/org/jquantlib/math/matrixutilities/CholeskyDecomposition.java b/jquantlib/src/main/java/org/jquantlib/math/matrixutilities/CholeskyDecomposition.java
+index f67ce4da..a53230ac 100755
+--- a/jquantlib/src/main/java/org/jquantlib/math/matrixutilities/CholeskyDecomposition.java
++++ b/jquantlib/src/main/java/org/jquantlib/math/matrixutilities/CholeskyDecomposition.java
+@@ -117,6 +117,90 @@ public class CholeskyDecomposition {
+         }
+     }
+ 
++
++    //
++    // public static factories (Phase 5e.5b-CFC-d-52)
++    //
++
++    /**
++     * Free-function equivalent of QuantLib v1.42.1
++     * {@code CholeskyDecomposition(const Matrix& S, bool flexible)} in
++     * {@code ql/math/matrixutilities/choleskydecomposition.cpp}. Returns the
++     * lower-triangular Cholesky factor {@code L} so that {@code L*L^T = S}.
++     *
++     * <p>When {@code flexible == true}, semidefinite (sum &le; 0) diagonal
++     * entries collapse to zero rather than raising; otherwise a strictly
++     * positive sum is required. C++ uses {@code close_enough} to detect the
++     * zero-pivot case; we mirror that with a {@code <= 0.0} guard plus a
++     * tolerance check against the diagonal scale.
++     *
++     * @param S        symmetric matrix (square; symmetry not re-checked here)
++     * @param flexible if {@code true}, allow semidefinite input
++     * @return lower-triangular factor {@code L}
++     */
++    public static Matrix CholeskyDecomposition(final Matrix S, final boolean flexible) {
++        final int size = S.rows();
++        QL.require(size == S.cols(), "input matrix is not a square matrix");
++
++        final Matrix result = new Matrix(size, size);
++        for (int i = 0; i < size; i++) {
++            for (int j = i; j < size; j++) {
++                double sum = S.get(i, j);
++                for (int k = 0; k <= i - 1; k++) {
++                    sum -= result.get(i, k) * result.get(j, k);
++                }
++                if (i == j) {
++                    QL.require(flexible || sum > 0.0,
++                            "input matrix is not positive definite");
++                    // C++ uses std::max(sum, 0.0) before sqrt
++                    result.set(i, i, Math.sqrt(Math.max(sum, 0.0)));
++                } else {
++                    // C++: close_enough(result[i][i], 0.0) ? 0.0 : sum/result[i][i]
++                    final double diag = result.get(i, i);
++                    if (Math.abs(diag) <= org.jquantlib.math.Constants.QL_EPSILON) {
++                        result.set(j, i, 0.0);
++                    } else {
++                        result.set(j, i, sum / diag);
++                    }
++                }
++            }
++        }
++        return result;
++    }
++
++    /**
++     * Free-function port of QuantLib v1.42.1
++     * {@code CholeskySolveFor(const Matrix& L, const Array& b)} in
++     * {@code ql/math/matrixutilities/choleskydecomposition.cpp}.
++     *
++     * <p>Solves {@code L * L^T * x = b} given the lower-triangular Cholesky
++     * factor {@code L}. Returns {@code x}.
++     */
++    public static Array CholeskySolveFor(final Matrix L, final Array b) {
++        final int n = b.size();
++        QL.require(L.rows() == n && L.cols() == n,
++                "Size of input matrix and vector does not match.");
++
++        final Array x = new Array(n);
++        // forward sweep: x[i] = (b[i] - sum_{k<i} L[i][k]*x[k]) / L[i][i]
++        for (int i = 0; i < n; ++i) {
++            double sum = b.get(i);
++            for (int k = 0; k < i; ++k) {
++                sum -= L.get(i, k) * x.get(k);
++            }
++            x.set(i, sum / L.get(i, i));
++        }
++        // backward sweep: x[i] = (x[i] - sum_{k>i} L[k][i]*x[k]) / L[i][i]
++        for (int i = n - 1; i >= 0; --i) {
++            double sum = x.get(i);
++            for (int k = i + 1; k < n; ++k) {
++                sum -= L.get(k, i) * x.get(k);
++            }
++            x.set(i, sum / L.get(i, i));
++        }
++        return x;
++    }
++
+     //
+     // public methods
+     //
+diff --git a/jquantlib/src/main/java/org/jquantlib/math/matrixutilities/HouseholderReflection.java b/jquantlib/src/main/java/org/jquantlib/math/matrixutilities/HouseholderReflection.java
+new file mode 100644
+index 00000000..a595abee
+--- /dev/null
++++ b/jquantlib/src/main/java/org/jquantlib/math/matrixutilities/HouseholderReflection.java
+@@ -0,0 +1,108 @@
++/*
++ Copyright (C) 2026 JQuantLib migration contributors.
++
++ This source code is release under the BSD License.
++
++ This file is part of JQuantLib, a free-software/open-source library
++ for financial quantitative analysts and developers - http://jquantlib.org/
++
++ JQuantLib is free software: you can redistribute it and/or modify it
++ under the terms of the JQuantLib license.  You should have received a
++ copy of the license along with this program; if not, please email
++ <jquant-devel@lists.sourceforge.net>. The license is also available online at
++ <http://www.jquantlib.org/index.php/LICENSE.TXT>.
++
++ This program is distributed in the hope that it will be useful, but WITHOUT
++ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
++ FOR A PARTICULAR PURPOSE.  See the license for more details.
++
++ JQuantLib is based on QuantLib. http://quantlib.org/
++ When applicable, the original copyright notice follows this notice.
++ */
++
++/*
++ Copyright (C) 2024 Klaus Spanderen
++
++ This file is part of QuantLib, a free-software/open-source library
++ for financial quantitative analysts and developers - http://quantlib.org/
++
++ QuantLib is free software: you can redistribute it and/or modify it
++ under the terms of the QuantLib license.  You should have received a
++ copy of the license along with this program; if not, please email
++ <quantlib-dev@lists.sf.net>. The license is also available online at
++ <http://quantlib.org/license.shtml>.
++
++ This program is distributed in the hope that it will be useful, but WITHOUT
++ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
++ FOR A PARTICULAR PURPOSE.  See the license for more details.
++*/
++
++package org.jquantlib.math.matrixutilities;
++
++import org.jquantlib.QL;
++import org.jquantlib.math.Constants;
++
++/**
++ * Householder reflection projecting onto the unit vector {@code e}.
++ *
++ * <p>Java port of QuantLib v1.42.1
++ * {@code ql/math/matrixutilities/householder.hpp,cpp}. Given a unit vector
++ * {@code e}, the reflection vector {@code v} maps a vector {@code a} to
++ * {@code ||a|| * e}.
++ */
++public class HouseholderReflection {
++
++    private final Array e;
++
++    public HouseholderReflection(final Array e) {
++        this.e = e;
++    }
++
++    /**
++     * Compute the reflection vector {@code v} such that
++     * {@code (I - 2 v v^T) a = ||a|| * e}. Mirrors C++
++     * {@code reflectionVector(const Array& a) const}.
++     *
++     * <p>Uses a Taylor-series small-angle expansion for {@code eps < 1e-4}
++     * to avoid catastrophic cancellation in {@code a - ||a|| * e}.
++     */
++    public Array reflectionVector(final Array a) {
++        final double na = Math.sqrt(a.dotProduct(a));
++        QL.require(na > 0, "vector of length zero given");
++
++        final double aDotE = a.dotProduct(e);
++        final Array a1 = e.mul(aDotE);
++        final Array a2 = a.sub(a1);
++
++        final double eps = a2.dotProduct(a2) / (aDotE * aDotE);
++        if (eps < Constants.QL_EPSILON * Constants.QL_EPSILON) {
++            return new Array(a.size(), 0.0);
++        } else if (eps < 1e-4) {
++            final double eps2 = eps * eps;
++            final double eps3 = eps * eps2;
++            final double eps4 = eps2 * eps2;
++            // v = (a2 - a1 * (eps/2 - eps^2/8 + eps^3/16 - 5/128*eps^4))
++            //     / (aDotE * sqrt(eps + eps^2/4 - eps^3/8 + 5/64*eps^4))
++            final double coeff = eps / 2.0 - eps2 / 8.0 + eps3 / 16.0
++                    - (5.0 / 128.0) * eps4;
++            final double denom = aDotE * Math.sqrt(
++                    eps + eps2 / 4.0 - eps3 / 8.0 + (5.0 / 64.0) * eps4);
++            final Array num = a2.sub(a1.mul(coeff));
++            return num.mul(1.0 / denom);
++        } else {
++            // c = a - na*e; v = c / ||c||
++            final Array c = a.sub(e.mul(na));
++            final double nc = Math.sqrt(c.dotProduct(c));
++            return c.mul(1.0 / nc);
++        }
++    }
++
++    /**
++     * Apply the reflection to {@code a}. Mirrors C++
++     * {@code operator()(const Array& a) const}.
++     */
++    public Array apply(final Array a) {
++        final Array v = reflectionVector(a);
++        return new HouseholderTransformation(v).apply(a);
++    }
++}
+diff --git a/jquantlib/src/main/java/org/jquantlib/math/matrixutilities/HouseholderTransformation.java b/jquantlib/src/main/java/org/jquantlib/math/matrixutilities/HouseholderTransformation.java
+new file mode 100644
+index 00000000..950b0b58
+--- /dev/null
++++ b/jquantlib/src/main/java/org/jquantlib/math/matrixutilities/HouseholderTransformation.java
+@@ -0,0 +1,93 @@
++/*
++ Copyright (C) 2026 JQuantLib migration contributors.
++
++ This source code is release under the BSD License.
++
++ This file is part of JQuantLib, a free-software/open-source library
++ for financial quantitative analysts and developers - http://jquantlib.org/
++
++ JQuantLib is free software: you can redistribute it and/or modify it
++ under the terms of the JQuantLib license.  You should have received a
++ copy of the license along with this program; if not, please email
++ <jquant-devel@lists.sourceforge.net>. The license is also available online at
++ <http://www.jquantlib.org/index.php/LICENSE.TXT>.
++
++ This program is distributed in the hope that it will be useful, but WITHOUT
++ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
++ FOR A PARTICULAR PURPOSE.  See the license for more details.
++
++ JQuantLib is based on QuantLib. http://quantlib.org/
++ When applicable, the original copyright notice follows this notice.
++ */
++
++/*
++ Copyright (C) 2024 Klaus Spanderen
++
++ This file is part of QuantLib, a free-software/open-source library
++ for financial quantitative analysts and developers - http://quantlib.org/
++
++ QuantLib is free software: you can redistribute it and/or modify it
++ under the terms of the QuantLib license.  You should have received a
++ copy of the license along with this program; if not, please email
++ <quantlib-dev@lists.sf.net>. The license is also available online at
++ <http://quantlib.org/license.shtml>.
++
++ This program is distributed in the hope that it will be useful, but WITHOUT
++ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
++ FOR A PARTICULAR PURPOSE.  See the license for more details.
++*/
++
++package org.jquantlib.math.matrixutilities;
++
++/**
++ * Householder transformation {@code H = I - 2 v v^T / (v^T v)}.
++ *
++ * <p>Java port of QuantLib v1.42.1
++ * {@code ql/math/matrixutilities/householder.hpp,cpp}.
++ *
++ * <p>Reference: <a
++ * href="https://en.wikipedia.org/wiki/Householder_transformation">Wikipedia</a>.
++ */
++public class HouseholderTransformation {
++
++    private final Array v;
++
++    public HouseholderTransformation(final Array v) {
++        this.v = v;
++    }
++
++    /**
++     * Apply the transformation to {@code x}, returning {@code x - 2 (v . x) v}.
++     * Mirrors C++ {@code operator()(const Array& x) const}.
++     *
++     * <p>Note: the formula uses {@code 2 (v . x)} (not normalized), matching
++     * QuantLib's intent that the test passes {@code v} already in whatever
++     * scaling form the caller wants (typically a reflection vector).
++     */
++    public Array apply(final Array x) {
++        final double dot = v.dotProduct(x);
++        // result = x - (2 * dot) * v
++        return x.sub(v.mul(2.0 * dot));
++    }
++
++    /**
++     * Return the dense matrix representation {@code H = I - 2 y y^T} where
++     * {@code y = v / ||v||}. Mirrors C++ {@code getMatrix()}.
++     */
++    public Matrix getMatrix() {
++        // C++: y = v / Norm2(v)
++        final double norm2 = Math.sqrt(v.dotProduct(v));
++        final int n = v.size();
++        final double[] y = new double[n];
++        for (int i = 0; i < n; ++i) {
++            y[i] = v.get(i) / norm2;
++        }
++        final Matrix m = new Matrix(n, n);
++        for (int i = 0; i < n; ++i) {
++            for (int j = 0; j < n; ++j) {
++                m.set(i, j, ((i == j) ? 1.0 : 0.0) - 2.0 * y[i] * y[j]);
++            }
++        }
++        return m;
++    }
++}
+diff --git a/jquantlib/src/main/java/org/jquantlib/math/matrixutilities/PseudoSqrt.java b/jquantlib/src/main/java/org/jquantlib/math/matrixutilities/PseudoSqrt.java
+index 5fde5685..a9524af3 100755
+--- a/jquantlib/src/main/java/org/jquantlib/math/matrixutilities/PseudoSqrt.java
++++ b/jquantlib/src/main/java/org/jquantlib/math/matrixutilities/PseudoSqrt.java
+@@ -53,7 +53,7 @@ public class PseudoSqrt {
+     private final static String unknown_salvaging_algorithm = "unknown salvaging algorithm";
+ 
+     public enum SalvagingAlgorithm {
+-        None, Spectral, Hypersphere, LowerDiagonal, Higham;
++        None, Spectral, Hypersphere, LowerDiagonal, Higham, Principal;
+     }
+ 
+     //! Returns the pseudo square root of a real symmetric matrix
+diff --git a/jquantlib/src/main/java/org/jquantlib/pricingengines/BlackFormula.java b/jquantlib/src/main/java/org/jquantlib/pricingengines/BlackFormula.java
+index 68d32a9a..3027bea3 100755
+--- a/jquantlib/src/main/java/org/jquantlib/pricingengines/BlackFormula.java
++++ b/jquantlib/src/main/java/org/jquantlib/pricingengines/BlackFormula.java
+@@ -753,6 +753,85 @@ public class BlackFormula {
+         return blackFormulaCashItmProbability(payoff.optionType(), strike, forward, stddev, displacement);
+     }
+ 
++    // ---
++    // ---
++    // ---
++
++    /**
++     * Black 1976 probability of being in the money (in the asset martingale
++     * measure), i.e. N(d1). This is the analytic forward delta for a
++     * cash-or-nothing / asset-or-nothing payoff under the displaced-diffusion
++     * model.
++     *
++     * <p>Mirrors C++ v1.42.1 {@code blackFormulaAssetItmProbability}
++     * (ql/pricingengines/blackformula.cpp:593-613).
++     *
++     * @note Instead of volatility it uses standard deviation, i.e.
++     *       volatility*sqrt(timeToMaturity)
++     */
++    public static /*@Real*/ double blackFormulaAssetItmProbability(
++            final Option.Type optionType,
++            @Real final double strike,
++            @Real final double forward,
++            @StdDev final double stddev) {
++
++        return blackFormulaAssetItmProbability(optionType, strike, forward, stddev, 0.0);
++    }
++
++    /**
++     * Black 1976 probability of being in the money (in the asset martingale
++     * measure), i.e. N(d1), with displacement.
++     *
++     * <p>Mirrors C++ v1.42.1 {@code blackFormulaAssetItmProbability}
++     * (ql/pricingengines/blackformula.cpp:593-613).
++     */
++    public static /*@Real*/ double blackFormulaAssetItmProbability(
++            final Option.Type optionType,
++            @Real final double strike,
++            @Real final double forward,
++            @StdDev final double stddev,
++            @Real final double displacement) {
++
++        // C++ calls checkParameters(strike, forward, displacement) here;
++        // mirror the documented invariants (forward and strike+displacement
++        // must be non-negative) inline.
++        QL.require(strike + displacement >= 0.0,
++                "strike + displacement must be non-negative");
++        QL.require(forward + displacement > 0.0,
++                "forward + displacement must be positive");
++        QL.require(stddev >= 0.0, "stddev must be non-negative");
++
++        final int sign = optionType.toInteger();
++
++        if (stddev == 0.0) {
++            return (forward * sign < strike * sign) ? 1.0 : 0.0;
++        }
++
++        final double fShifted = forward + displacement;
++        final double kShifted = strike + displacement;
++        if (kShifted == 0.0) {
++            return (optionType == Option.Type.Call) ? 1.0 : 0.0;
++        }
++        final double d1 = Math.log(fShifted / kShifted) / stddev + 0.5 * stddev;
++        final CumulativeNormalDistribution phi = new CumulativeNormalDistribution();
++        return phi.op(sign * d1);
++    }
++
++    /**
++     * Black 1976 N(d1) for a PlainVanillaPayoff (asset martingale measure),
++     * with displacement. Mirrors C++ v1.42.1
++     * {@code blackFormulaAssetItmProbability(PlainVanillaPayoff,...)}.
++     */
++    public static /*@Real*/ double blackFormulaAssetItmProbability(
++            final PlainVanillaPayoff payoff,
++            @Real final double forward,
++            @StdDev final double stddev,
++            @Real final double displacement) {
++
++        return blackFormulaAssetItmProbability(payoff.optionType(),
++                payoff.strike(), forward, stddev, displacement);
++    }
++
+ 
+     // ---
+     // ---
+diff --git a/jquantlib/src/main/java/org/jquantlib/pricingengines/capfloor/BlackCapFloorEngine.java b/jquantlib/src/main/java/org/jquantlib/pricingengines/capfloor/BlackCapFloorEngine.java
+index 3e41ab9d..2cdff286 100755
+--- a/jquantlib/src/main/java/org/jquantlib/pricingengines/capfloor/BlackCapFloorEngine.java
++++ b/jquantlib/src/main/java/org/jquantlib/pricingengines/capfloor/BlackCapFloorEngine.java
+@@ -168,13 +168,17 @@ public class BlackCapFloorEngine extends CapFloor.Engine {
+     /**
+      * Mirrors C++ blackcapfloorengine.cpp lines 77-166.
+      *
+-     * <p>The full C++ engine also populates additionalResults
++     * <p>Populates {@code results.value} plus the named additionalResults
+      * (vega, optionletsPrice, optionletsVega, optionletsDelta,
+-     * optionletsDiscountFactor, optionletsAtmForward, optionletsStdDev).
+-     * Phase 2e WI-2 ports the {@code value} aggregation only. Java's
+-     * {@link CapFloor.ResultsImpl} carries the {@code additionalResults}
+-     * map via Instrument.ResultsImpl, so wiring those in is a tactical
+-     * follow-up that doesn't change the {@code NPV()} surface.
++     * optionletsDiscountFactor, optionletsAtmForward, optionletsStdDev)
++     * exactly as C++ does — Phase 5e.5b-CFC-d-49 finished the port.
++     *
++     * <p>When the OVS is stripped under the Bachelier (Normal) model the
++     * engine falls back to {@code bachelierBlackFormula} for the optionlet
++     * value to stay compatible with legacy callers. The analytic vega /
++     * delta entries are then left at zero — the proper Java
++     * {@code BachelierCapFloorEngine} (Phase 5e.5 WI-5e.5-CF-2) owns that
++     * dispatch.
+      */
+     @Override
+     public void calculate() {
+@@ -182,7 +186,13 @@ public class BlackCapFloorEngine extends CapFloor.Engine {
+         final CapFloor.ResultsImpl results = (CapFloor.ResultsImpl) results_;
+ 
+         double value = 0.0;
++        double vega = 0.0;
+         final int optionlets = arguments.startDates.length;
++        final double[] values = new double[optionlets];
++        final double[] deltas = new double[optionlets];
++        final double[] vegas = new double[optionlets];
++        final double[] stdDevs = new double[optionlets];
++        final double[] discountFactors = new double[optionlets];
+         final CapFloor.Type type = arguments.type;
+         final Date today = vol_.currentLink().referenceDate();
+         final Date settlement = discountCurve_.currentLink().referenceDate();
+@@ -204,6 +214,7 @@ public class BlackCapFloorEngine extends CapFloor.Engine {
+             // caplets.
+             if (paymentDate.gt(settlement)) {
+                 final double d = discountCurve_.currentLink().discount(paymentDate);
++                discountFactors[i] = d;
+                 final double accrualFactor = arguments.nominals[i]
+                         * arguments.gearings[i]
+                         * arguments.accrualTimes[i];
+@@ -216,42 +227,82 @@ public class BlackCapFloorEngine extends CapFloor.Engine {
+                     sqrtTime = Math.sqrt(vol_.currentLink().timeFromReference(fixingDate));
+                 }
+ 
+-                double letValue = 0.0;
+                 if (type == CapFloor.Type.Cap || type == CapFloor.Type.Collar) {
+                     final double strike = arguments.capRates[i];
+-                    double stdDev = 0.0;
+                     if (sqrtTime > 0.0) {
+-                        stdDev = Math.sqrt(vol_.currentLink().blackVariance(fixingDate, strike));
++                        stdDevs[i] = Math.sqrt(
++                                vol_.currentLink().blackVariance(fixingDate, strike));
++                        if (!useBachelier) {
++                            vegas[i] = BlackFormula.blackFormulaStdDevDerivative(
++                                    strike, forward, stdDevs[i],
++                                    discountedAccrual, displacement_)
++                                    * sqrtTime;
++                            deltas[i] = BlackFormula.blackFormulaAssetItmProbability(
++                                    Option.Type.Call, strike, forward,
++                                    stdDevs[i], displacement_);
++                        }
+                     }
+                     // include caplets with past fixing date
+-                    letValue = useBachelier
++                    values[i] = useBachelier
+                             ? BlackFormula.bachelierBlackFormula(Option.Type.Call,
+-                                    strike, forward, stdDev, discountedAccrual)
++                                    strike, forward, stdDevs[i], discountedAccrual)
+                             : BlackFormula.blackFormula(Option.Type.Call,
+-                                    strike, forward, stdDev, discountedAccrual, displacement_);
++                                    strike, forward, stdDevs[i], discountedAccrual, displacement_);
+                 }
+                 if (type == CapFloor.Type.Floor || type == CapFloor.Type.Collar) {
+                     final double strike = arguments.floorRates[i];
+-                    double stdDev = 0.0;
++                    double floorletVega = 0.0;
++                    double floorletDelta = 0.0;
+                     if (sqrtTime > 0.0) {
+-                        stdDev = Math.sqrt(vol_.currentLink().blackVariance(fixingDate, strike));
++                        stdDevs[i] = Math.sqrt(
++                                vol_.currentLink().blackVariance(fixingDate, strike));
++                        if (!useBachelier) {
++                            floorletVega = BlackFormula.blackFormulaStdDevDerivative(
++                                    strike, forward, stdDevs[i],
++                                    discountedAccrual, displacement_)
++                                    * sqrtTime;
++                            // C++: Integer(Option::Put) * blackFormulaAssetItmProbability(Put, ...)
++                            //      = -1 * Phi(-d1) — a non-positive delta.
++                            floorletDelta = Option.Type.Put.toInteger()
++                                    * BlackFormula.blackFormulaAssetItmProbability(
++                                            Option.Type.Put, strike, forward,
++                                            stdDevs[i], displacement_);
++                        }
+                     }
+                     final double floorlet = useBachelier
+                             ? BlackFormula.bachelierBlackFormula(Option.Type.Put,
+-                                    strike, forward, stdDev, discountedAccrual)
++                                    strike, forward, stdDevs[i], discountedAccrual)
+                             : BlackFormula.blackFormula(Option.Type.Put,
+-                                    strike, forward, stdDev, discountedAccrual, displacement_);
++                                    strike, forward, stdDevs[i], discountedAccrual, displacement_);
+                     if (type == CapFloor.Type.Floor) {
+-                        letValue = floorlet;
++                        values[i] = floorlet;
++                        vegas[i] = floorletVega;
++                        deltas[i] = floorletDelta;
+                     } else {
+                         // a collar is long a cap and short a floor
+-                        letValue -= floorlet;
++                        values[i] -= floorlet;
++                        vegas[i] -= floorletVega;
++                        deltas[i] -= floorletDelta;
+                     }
+                 }
+-                value += letValue;
++                value += values[i];
++                vega += vegas[i];
+             }
+         }
+         QL.require(!Double.isNaN(value), "BlackCapFloorEngine produced NaN value");
+         results.value = value;
++
++        // Populate additionalResults exactly as C++ does (lines 157-165).
++        // The keys must match the C++ names verbatim so call-sites that
++        // read results via Instrument.result(key) port without churn.
++        results.additionalResults().put("vega", vega);
++        results.additionalResults().put("optionletsPrice", values);
++        results.additionalResults().put("optionletsVega", vegas);
++        results.additionalResults().put("optionletsDelta", deltas);
++        results.additionalResults().put("optionletsDiscountFactor", discountFactors);
++        results.additionalResults().put("optionletsAtmForward", arguments.forwards);
++        if (type != CapFloor.Type.Collar) {
++            results.additionalResults().put("optionletsStdDev", stdDevs);
++        }
+     }
+ }
+diff --git a/jquantlib/src/main/java/org/jquantlib/util/DefaultObservable.java b/jquantlib/src/main/java/org/jquantlib/util/DefaultObservable.java
+index 35b621fe..cd005db8 100755
+--- a/jquantlib/src/main/java/org/jquantlib/util/DefaultObservable.java
++++ b/jquantlib/src/main/java/org/jquantlib/util/DefaultObservable.java
+@@ -111,6 +111,22 @@ public class DefaultObservable implements Observable {
+ 
+     @Override
+     public void notifyObservers(final Object arg) {
++        // Honor the global ObservableSettings toggle (C++ ObservableSettings::
++        // updatesEnabled/updatesDeferred). When disabled, dispatch is
++        // suppressed; when deferred, register the observers for replay on
++        // the subsequent enableUpdates() call.
++        final ObservableSettings settings = ObservableSettings.instance();
++        if (!settings.updatesEnabled()) {
++            if (settings.updatesDeferred()) {
++                for (final Observer observer : observers) {
++                    final Observer target = unwrap(observer);
++                    if (target != null) {
++                        settings.registerDeferredObserver(target);
++                    }
++                }
++            }
++            return;
++        }
+         Exception exception = null;
+         for (final Observer observer : observers) {
+             try {
+@@ -133,6 +149,19 @@ public class DefaultObservable implements Observable {
+     // protected methods
+     //
+ 
++    /**
++     * Hook used by {@link #notifyObservers(Object)} when updates are
++     * deferred: subclasses that wrap observers (e.g.
++     * {@link WeakReferenceObservable} using {@link java.lang.ref.WeakReference})
++     * override this to return the underlying observer. Default returns
++     * the argument unchanged. Returning {@code null} signals the wrapped
++     * observer is no longer reachable and should not be registered as
++     * a deferred observer.
++     */
++    protected Observer unwrap(final Observer observer) {
++        return observer;
++    }
++
+     /**
+      * This method is intended to encapsulate the notification semantics, in
+      * order to let extended classes to implement their own version. Possible
+diff --git a/jquantlib/src/main/java/org/jquantlib/util/ObservableSettings.java b/jquantlib/src/main/java/org/jquantlib/util/ObservableSettings.java
+new file mode 100644
+index 00000000..6008b2cb
+--- /dev/null
++++ b/jquantlib/src/main/java/org/jquantlib/util/ObservableSettings.java
+@@ -0,0 +1,171 @@
++/*
++ Copyright (C) 2026 JQuantLib migration contributors.
++
++ This source code is release under the BSD License.
++
++ This file is part of JQuantLib, a free-software/open-source library
++ for financial quantitative analysts and developers - http://jquantlib.org/
++
++ JQuantLib is free software: you can redistribute it and/or modify it
++ under the terms of the JQuantLib license.  You should have received a
++ copy of the license along with this program; if not, please email
++ <jquant-devel@lists.sourceforge.net>. The license is also available online at
++ <http://www.jquantlib.org/index.php/LICENSE.TXT>.
++
++ This program is distributed in the hope that it will be useful, but WITHOUT
++ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
++ FOR A PARTICULAR PURPOSE.  See the license for more details.
++
++ JQuantLib is based on QuantLib. http://quantlib.org/
++ When applicable, the original copyright notice follows this notice.
++ */
++
++/*
++ Copyright (C) 2000, 2001, 2002, 2003 RiskMap srl
++ Copyright (C) 2003, 2004, 2005, 2006 StatPro Italia srl
++ Copyright (C) 2011, 2012 Ferdinando Ametrano
++ Copyright (C) 2013 Chris Higgs
++ Copyright (C) 2015 Klaus Spanderen
++*/
++
++package org.jquantlib.util;
++
++import java.util.LinkedHashSet;
++import java.util.Set;
++
++/**
++ * Global repository for run-time observable settings.
++ *
++ * <p>Java port of C++ QuantLib {@code ObservableSettings}
++ * (ql/patterns/observable.hpp). Mirrors the non-thread-safe branch
++ * ({@code QL_ENABLE_THREAD_SAFE_OBSERVER_PATTERN} undefined); the
++ * thread-safe variant is not needed in Java because the JVM provides
++ * its own GC + memory model.
++ *
++ * <p>Two-state toggle:
++ * <ul>
++ *   <li>{@link #disableUpdates(boolean)} with {@code deferred=false}:
++ *       observers' {@code update()} calls are dropped silently while
++ *       updates are disabled.</li>
++ *   <li>{@link #disableUpdates(boolean)} with {@code deferred=true}:
++ *       observers' {@code update()} calls are recorded and replayed in
++ *       a single batch when {@link #enableUpdates()} is called.</li>
++ * </ul>
++ *
++ * <p>Hooked into the notification flow by {@link DefaultObservable#notifyObservers()}.
++ *
++ * @author JQuantLib migration contributors
++ */
++public final class ObservableSettings {
++
++    private static final ObservableSettings INSTANCE = new ObservableSettings();
++
++    /** Returns the global singleton instance. */
++    public static ObservableSettings instance() {
++        return INSTANCE;
++    }
++
++    private boolean updatesEnabled = true;
++    private boolean updatesDeferred = false;
++    private boolean runningDeferredUpdates = false;
++
++    /**
++     * Linked-set preserves insertion order so deferred updates fire in
++     * registration order — matches the C++ map iteration order for the
++     * test {@code testObservableSettings}.
++     */
++    private final Set<Observer> deferredObservers = new LinkedHashSet<Observer>();
++
++    private ObservableSettings() {
++        // singleton
++    }
++
++    /**
++     * Disable notification dispatch.
++     *
++     * @param deferred when {@code true}, observers that would have been
++     *        notified are added to a deferred queue and dispatched once,
++     *        in registration order, when {@link #enableUpdates()} is
++     *        called. When {@code false}, notifications are dropped.
++     */
++    public void disableUpdates(final boolean deferred) {
++        this.updatesEnabled = false;
++        this.updatesDeferred = deferred;
++    }
++
++    /** Convenience: {@code disableUpdates(false)}. */
++    public void disableUpdates() {
++        disableUpdates(false);
++    }
++
++    /**
++     * Re-enable notification dispatch. If updates were deferred and any
++     * observers accumulated, fire each accumulated observer exactly
++     * once (deduplicated by identity), in insertion order.
++     */
++    public void enableUpdates() {
++        this.updatesEnabled = true;
++        this.updatesDeferred = false;
++
++        if (deferredObservers.isEmpty()) {
++            return;
++        }
++
++        // Take snapshot then clear, so a re-entrant disable/enable inside
++        // an observer update() doesn't re-process the in-flight set.
++        final Observer[] snapshot = deferredObservers.toArray(new Observer[0]);
++        deferredObservers.clear();
++
++        runningDeferredUpdates = true;
++        RuntimeException firstException = null;
++        try {
++            for (final Observer obs : snapshot) {
++                if (obs == null) continue;
++                try {
++                    obs.update();
++                } catch (final RuntimeException e) {
++                    if (firstException == null) firstException = e;
++                }
++            }
++        } finally {
++            runningDeferredUpdates = false;
++        }
++        if (firstException != null) {
++            throw firstException;
++        }
++    }
++
++    public boolean updatesEnabled() {
++        return updatesEnabled;
++    }
++
++    public boolean updatesDeferred() {
++        return updatesDeferred;
++    }
++
++    public boolean runningDeferredUpdates() {
++        return runningDeferredUpdates;
++    }
++
++    /**
++     * Package-private hook used by {@link DefaultObservable#notifyObservers()}
++     * to record an observer that would have been notified while updates
++     * are deferred. No-op when not in deferred mode.
++     */
++    void registerDeferredObserver(final Observer observer) {
++        if (updatesDeferred && observer != null) {
++            deferredObservers.add(observer);
++        }
++    }
++
++    /**
++     * Package-private hook used by observables that drop an observer
++     * while it sits in the deferred queue.
++     */
++    void unregisterDeferredObserver(final Observer observer) {
++        if (observer != null) {
++            deferredObservers.remove(observer);
++        }
++    }
++
++}

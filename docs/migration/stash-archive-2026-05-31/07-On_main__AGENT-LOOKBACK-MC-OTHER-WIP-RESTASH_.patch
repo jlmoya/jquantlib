@@ -1,0 +1,1344 @@
+diff --git a/jquantlib/src/main/java/org/jquantlib/math/ode/AdaptiveRungeKutta.java b/jquantlib/src/main/java/org/jquantlib/math/ode/AdaptiveRungeKutta.java
+index 587f0362..233c474a 100644
+--- a/jquantlib/src/main/java/org/jquantlib/math/ode/AdaptiveRungeKutta.java
++++ b/jquantlib/src/main/java/org/jquantlib/math/ode/AdaptiveRungeKutta.java
+@@ -19,9 +19,8 @@
+  */
+ package org.jquantlib.math.ode;
+ 
+-import java.util.function.BiFunction;
+-
+ import org.jquantlib.QL;
++import org.jquantlib.math.Complex;
+ import org.jquantlib.math.transcendental.JQuantMath;
+ 
+ /**
+@@ -34,16 +33,48 @@ import org.jquantlib.math.transcendental.JQuantMath;
+  * control (Numerical Recipes in C, Chapter 16.2). The integrator advances
+  * the solution of {@code y' = F(t, y)} from {@code t1} to {@code t2}.
+  *
++ * <p>C++ provides three template variants — {@code AdaptiveRungeKutta<Real>}
++ * (real-vector and real-scalar via {@code OdeFct} / {@code OdeFct1d}) and
++ * {@code AdaptiveRungeKutta<std::complex<Real>>} (complex equivalents).
++ * Java has no templates, so this class exposes both numeric kinds as
++ * separate method families:
++ * <ul>
++ *   <li>{@link #solve(OdeFct, double[], double, double)} — real vector
++ *       (mirrors C++ {@code operator()(OdeFct, y, x1, x2)} on {@code T=Real}).</li>
++ *   <li>{@link #solve(OdeFct1d, double, double, double)} — real scalar
++ *       (mirrors C++ {@code operator()(OdeFct1d, y, x1, x2)} on {@code T=Real}).</li>
++ *   <li>{@link #solveComplex(OdeFctC, Complex[], double, double)} — complex vector.</li>
++ *   <li>{@link #solveComplex(OdeFctC1d, Complex, double, double)} — complex scalar.</li>
++ * </ul>
++ *
+  * @author Phase 2l Track C.5 prerequisite port
+  */
+ public class AdaptiveRungeKutta {
+ 
+-    /** ODE right-hand-side function type: {@code f(t, y) → dy/dt}. */
++    /** ODE right-hand-side function type: {@code f(t, y) → dy/dt} (real vector). */
+     @FunctionalInterface
+     public interface OdeFct {
+         double[] apply(double t, double[] y);
+     }
+ 
++    /** Scalar real ODE right-hand-side: {@code f(t, y) → dy/dt}. */
++    @FunctionalInterface
++    public interface OdeFct1d {
++        double apply(double t, double y);
++    }
++
++    /** Complex vector ODE right-hand-side. */
++    @FunctionalInterface
++    public interface OdeFctC {
++        Complex[] apply(double t, Complex[] y);
++    }
++
++    /** Scalar complex ODE right-hand-side. */
++    @FunctionalInterface
++    public interface OdeFctC1d {
++        Complex apply(double t, Complex y);
++    }
++
+     private static final int MAX_STEPS = 10000;
+     private static final double TINY = 1.0e-30;
+     private static final double SAFETY = 0.9;
+@@ -93,6 +124,10 @@ public class AdaptiveRungeKutta {
+         this.hmin = hmin;
+     }
+ 
++    // ------------------------------------------------------------------
++    // Real-vector solve (original 2-D path)
++    // ------------------------------------------------------------------
++
+     /**
+      * Integrate the ODE from {@code x1} to {@code x2} with
+      * initial condition {@code y1}.
+@@ -129,6 +164,21 @@ public class AdaptiveRungeKutta {
+         throw new IllegalStateException("Too many steps (" + MAX_STEPS + ") in AdaptiveRungeKutta");
+     }
+ 
++    // ------------------------------------------------------------------
++    // Real-scalar solve — wraps the vector path with a 1-element array,
++    // mirroring C++ detail::OdeFctWrapper<Real>.
++    // ------------------------------------------------------------------
++
++    /**
++     * Integrate the scalar real ODE {@code y' = f(t, y)} from {@code x1}
++     * to {@code x2}. Mirrors C++ {@code operator()(OdeFct1d, y, x1, x2)}
++     * on {@code T = Real}.
++     */
++    public double solve(final OdeFct1d ode, final double y1, final double x1, final double x2) {
++        final OdeFct wrapper = (t, y) -> new double[] { ode.apply(t, y[0]) };
++        return solve(wrapper, new double[] { y1 }, x1, x2)[0];
++    }
++
+     /**
+      * Adaptive single step: returns hnext, updates y and hdid[0].
+      */
+@@ -215,4 +265,155 @@ public class AdaptiveRungeKutta {
+                     + dc5 * ak5[i] + dc6 * ak6[i]);
+         }
+     }
++
++    // ------------------------------------------------------------------
++    // Complex-vector solve — parallel implementation using Complex[].
++    // Algorithm and step-control mirror the real path exactly; yScale
++    // remains a real array (|y| + |dydx*h| + TINY), as in C++ where
++    // std::abs(std::complex<Real>) returns Real.
++    // ------------------------------------------------------------------
++
++    /**
++     * Integrate the complex-vector ODE {@code y' = F(t, y)} from
++     * {@code x1} to {@code x2}. Mirrors C++
++     * {@code AdaptiveRungeKutta<std::complex<Real>>::operator()(OdeFct, y, x1, x2)}.
++     */
++    public Complex[] solveComplex(final OdeFctC ode, final Complex[] y1,
++                                   final double x1, final double x2) {
++        final int n = y1.length;
++        final Complex[] y = y1.clone();
++        final double[] yScale = new double[n];
++
++        double x = x1;
++        double h = h1 * (x1 <= x2 ? 1.0 : -1.0);
++        double hnext;
++        final double[] hdid = new double[1];
++
++        for (int nstp = 1; nstp <= MAX_STEPS; nstp++) {
++            final Complex[] dydx = ode.apply(x, y);
++            for (int i = 0; i < n; i++) {
++                yScale[i] = y[i].abs() + Math.abs(h) * dydx[i].abs() + TINY;
++            }
++            if ((x + h - x2) * (x + h - x1) > 0.0) {
++                h = x2 - x;
++            }
++            hnext = rkqsC(y, dydx, x, h, yScale, hdid, ode);
++            x += hdid[0];
++
++            if ((x - x2) * (x2 - x1) >= 0.0) {
++                return y;
++            }
++
++            QL.require(Math.abs(hnext) > hmin,
++                    "Step size (" + hnext + ") too small (" + hmin + " min) in AdaptiveRungeKutta");
++            h = hnext;
++        }
++        throw new IllegalStateException("Too many steps (" + MAX_STEPS + ") in AdaptiveRungeKutta");
++    }
++
++    /**
++     * Integrate the scalar complex ODE {@code y' = f(t, y)} from
++     * {@code x1} to {@code x2}. Mirrors C++ scalar overload via
++     * {@code detail::OdeFctWrapper<std::complex<Real>>}.
++     */
++    public Complex solveComplex(final OdeFctC1d ode, final Complex y1,
++                                 final double x1, final double x2) {
++        final OdeFctC wrapper = (t, y) -> new Complex[] { ode.apply(t, y[0]) };
++        return solveComplex(wrapper, new Complex[] { y1 }, x1, x2)[0];
++    }
++
++    private double rkqsC(final Complex[] y, final Complex[] dydx,
++                         final double x, final double htry,
++                         final double[] yScale, final double[] hdid,
++                         final OdeFctC derivs) {
++        final int n = y.length;
++        final Complex[] yerr = new Complex[n];
++        final Complex[] ytemp = new Complex[n];
++
++        double h = htry;
++        double hnext;
++
++        for (;;) {
++            rkckC(y, dydx, x, h, ytemp, yerr, derivs);
++
++            double errmax = 0.0;
++            for (int i = 0; i < n; i++) {
++                errmax = Math.max(errmax, yerr[i].abs() / yScale[i]);
++            }
++            errmax /= eps;
++
++            if (errmax > 1.0) {
++                final double htemp1 = SAFETY * h * JQuantMath.pow(errmax, PSHRINK);
++                final double htemp2 = h / 10.0;
++                final double maxPositive = htemp1 > htemp2 ? htemp1 : htemp2;
++                final double maxNegative = htemp1 < htemp2 ? htemp1 : htemp2;
++                h = (h >= 0.0) ? maxPositive : maxNegative;
++
++                final double xnew = x + h;
++                QL.require(xnew != x, "Stepsize underflow in AdaptiveRungeKutta::rkqs");
++            } else {
++                hnext = (errmax > ERRCON)
++                        ? SAFETY * h * JQuantMath.pow(errmax, PGROW)
++                        : 5.0 * h;
++                hdid[0] = h;
++                System.arraycopy(ytemp, 0, y, 0, n);
++                return hnext;
++            }
++        }
++    }
++
++    private void rkckC(final Complex[] y, final Complex[] dydx,
++                       final double x, final double h,
++                       final Complex[] yout, final Complex[] yerr,
++                       final OdeFctC derivs) {
++        final int n = y.length;
++        final Complex[] ytemp = new Complex[n];
++
++        // Step 1 (dydx already computed)
++        for (int i = 0; i < n; i++) {
++            ytemp[i] = y[i].add(dydx[i].mul(b21 * h));
++        }
++        final Complex[] ak2 = derivs.apply(x + a2 * h, ytemp);
++
++        for (int i = 0; i < n; i++) {
++            ytemp[i] = y[i].add(dydx[i].mul(h * b31).add(ak2[i].mul(h * b32)));
++        }
++        final Complex[] ak3 = derivs.apply(x + a3 * h, ytemp);
++
++        for (int i = 0; i < n; i++) {
++            ytemp[i] = y[i].add(dydx[i].mul(h * b41)
++                    .add(ak2[i].mul(h * b42))
++                    .add(ak3[i].mul(h * b43)));
++        }
++        final Complex[] ak4 = derivs.apply(x + a4 * h, ytemp);
++
++        for (int i = 0; i < n; i++) {
++            ytemp[i] = y[i].add(dydx[i].mul(h * b51)
++                    .add(ak2[i].mul(h * b52))
++                    .add(ak3[i].mul(h * b53))
++                    .add(ak4[i].mul(h * b54)));
++        }
++        final Complex[] ak5 = derivs.apply(x + a5 * h, ytemp);
++
++        for (int i = 0; i < n; i++) {
++            ytemp[i] = y[i].add(dydx[i].mul(h * b61)
++                    .add(ak2[i].mul(h * b62))
++                    .add(ak3[i].mul(h * b63))
++                    .add(ak4[i].mul(h * b64))
++                    .add(ak5[i].mul(h * b65)));
++        }
++        final Complex[] ak6 = derivs.apply(x + a6 * h, ytemp);
++
++        for (int i = 0; i < n; i++) {
++            yout[i] = y[i].add(dydx[i].mul(h * c1)
++                    .add(ak3[i].mul(h * c3))
++                    .add(ak4[i].mul(h * c4))
++                    .add(ak6[i].mul(h * c6)));
++            yerr[i] = dydx[i].mul(h * dc1)
++                    .add(ak3[i].mul(h * dc3))
++                    .add(ak4[i].mul(h * dc4))
++                    .add(ak5[i].mul(h * dc5))
++                    .add(ak6[i].mul(h * dc6));
++        }
++    }
+ }
+diff --git a/jquantlib/src/main/java/org/jquantlib/pricingengines/BinomialConvertibleEngine.java b/jquantlib/src/main/java/org/jquantlib/pricingengines/BinomialConvertibleEngine.java
+index 91ba81a6..31a9a6ba 100755
+--- a/jquantlib/src/main/java/org/jquantlib/pricingengines/BinomialConvertibleEngine.java
++++ b/jquantlib/src/main/java/org/jquantlib/pricingengines/BinomialConvertibleEngine.java
+@@ -155,6 +155,13 @@ public class BinomialConvertibleEngine<T extends BinomialTree> extends Convertib
+         convertible.initialize(lattice, maturity);
+         convertible.rollback(0.0);
+         this.r.value = convertible.presentValue();
++        // Phase 5e.5b align: v1.42.1 BinomialConvertibleEngine::calculate()
++        // guards against floating-point overflow on the tree grid
++        // (binomialconvertibleengine.hpp:129-130). Mirrors the regression
++        // case in test-suite/convertiblebonds.cpp::testRegression which
++        // expects an Error when a pathological volatility blows up the
++        // recursive value/rate accumulation into INF.
++        QL.ensure(this.r.value < Double.MAX_VALUE, "floating-point overflow on tree grid");
+     }
+ 
+ }
+diff --git a/jquantlib/src/test/java/org/jquantlib/testsuite/instruments/ConvertibleBondAdditionalTest.java b/jquantlib/src/test/java/org/jquantlib/testsuite/instruments/ConvertibleBondAdditionalTest.java
+index 0692bbb7..d8e30a67 100644
+--- a/jquantlib/src/test/java/org/jquantlib/testsuite/instruments/ConvertibleBondAdditionalTest.java
++++ b/jquantlib/src/test/java/org/jquantlib/testsuite/instruments/ConvertibleBondAdditionalTest.java
+@@ -8,7 +8,40 @@ package org.jquantlib.testsuite.instruments;
+ 
+ import static org.junit.Assert.fail;
+ 
+-import org.junit.Ignore;
++import org.jquantlib.QL;
++import org.jquantlib.SavedSettings;
++import org.jquantlib.Settings;
++import org.jquantlib.daycounters.Actual360;
++import org.jquantlib.daycounters.DayCounter;
++import org.jquantlib.daycounters.Thirty360;
++import org.jquantlib.exercise.EuropeanExercise;
++import org.jquantlib.exercise.Exercise;
++import org.jquantlib.instruments.CallabilitySchedule;
++import org.jquantlib.instruments.DividendSchedule;
++import org.jquantlib.instruments.bonds.ConvertibleFixedCouponBond;
++import org.jquantlib.lang.exceptions.LibraryException;
++import org.jquantlib.methods.lattices.CoxRossRubinstein;
++import org.jquantlib.pricingengines.BinomialConvertibleEngine;
++import org.jquantlib.pricingengines.PricingEngine;
++import org.jquantlib.processes.BlackScholesMertonProcess;
++import org.jquantlib.quotes.Handle;
++import org.jquantlib.quotes.Quote;
++import org.jquantlib.quotes.RelinkableHandle;
++import org.jquantlib.quotes.SimpleQuote;
++import org.jquantlib.termstructures.BlackVolTermStructure;
++import org.jquantlib.termstructures.YieldTermStructure;
++import org.jquantlib.termstructures.volatilities.BlackConstantVol;
++import org.jquantlib.testsuite.util.Utilities;
++import org.jquantlib.time.BusinessDayConvention;
++import org.jquantlib.time.Calendar;
++import org.jquantlib.time.Date;
++import org.jquantlib.time.MakeSchedule;
++import org.jquantlib.time.Month;
++import org.jquantlib.time.Period;
++import org.jquantlib.time.Schedule;
++import org.jquantlib.time.TimeUnit;
++import org.jquantlib.time.calendars.NullCalendar;
++import org.jquantlib.time.calendars.UnitedStates;
+ import org.junit.Test;
+ 
+ /**
+@@ -20,36 +53,136 @@ import org.junit.Test;
+  * {@code testOption}.
+  *
+  * <p>This companion file adds {@code testRegression} — a regression
+- * scenario covering known issues in past
++ * scenario covering the known floating-point overflow bug in past
+  * {@link org.jquantlib.pricingengines.BinomialConvertibleEngine}
+- * versions (cash-dividend treatment / ex-coupon date interaction with
+- * conversion option).
++ * versions: a pathological volatility (≈2168%) blows up the recursive
++ * value/rate accumulation on the binomial tree to {@code +Inf}; the
++ * engine must detect the overflow and {@code throw} rather than return
++ * the silent {@code Inf}.
+  *
+- * <p><strong>Deferred to Phase 5d.5</strong> — the regression test
+- * needs:
++ * <p>Java structural divergence from the C++ test (intentional, all
++ * non-load-bearing for the regression assertion):
+  * <ul>
+- *   <li>Cross-validated reference NPV from the v1.42.1
+- *       {@code BinomialConvertibleEngine} via
+- *       {@code migration-harness/cpp/probes/instruments/convertiblebonds/};
+- *   <li>Audit of the Java {@code BinomialConvertibleEngine}
+- *       (re-implemented per design concern D4) for the cash-dividend
+- *       and ex-coupon edge cases the C++ regression case exercises.
++ *   <li>C++ uses {@code BlackProcess(u, r, sigma)} (q = r). Java has no
++ *       standalone {@code BlackProcess}; we mirror the same shape by
++ *       constructing a {@link BlackScholesMertonProcess} with the
++ *       dividend yield linked to the same flat-forward as the risk-free
++ *       rate.
++ *   <li>C++ uses {@code ForwardCurve(dates, forwards, Actual360())} with
++ *       24 piecewise-flat forwards. The Java
++ *       {@code InterpolatedForwardCurve} has a precondition bug
++ *       (out-of-task scope) that prevents direct use; we substitute a
++ *       {@link org.jquantlib.termstructures.yieldcurves.FlatForward} at
++ *       a representative ~2.4% rate. The risk-free curve shape only
++ *       scales the (overflowed) recursive value, not whether it
++ *       overflows.
++ *   <li>Credit spread, dividends, and creditSpread handle are passed
++ *       through the bond constructor (Java legacy QuantLib API) rather
++ *       than to the engine (post-1.30 C++ API).
+  * </ul>
+  *
+- * <p>Phase 5d.5 carry-forward: body the regression case once the
+- * BinomialConvertibleEngine probe values are captured.
++ * <p>The load-bearing inputs that drive the overflow — issue / maturity
++ * dates, 6-month coupon schedule, 5% coupons, conversion ratio
++ * {@code 100/20.3175}, underlying ≈ 2.91, vol = 21.685, credit spread
++ * ≈ 0.115, 600 timesteps — match the C++ test exactly.
+  *
+- * <p>Source: {@code test-suite/convertiblebonds.cpp} v1.42.1 @
+- * {@code 099987f0ca}.
++ * <p>Source: {@code test-suite/convertiblebonds.cpp::testRegression}
++ * v1.42.1 @ {@code 099987f0ca}. C++ overflow guard:
++ * {@code binomialconvertibleengine.hpp:129-130}.
+  */
+ public class ConvertibleBondAdditionalTest {
+ 
+-    private static final String REASON =
+-            "Phase 5d.5 — requires C++ probe regression NPV from "
+-          + "BinomialConvertibleEngine v1.42.1 + audit of cash-dividend / "
+-          + "ex-coupon edge cases";
++    public ConvertibleBondAdditionalTest() {
++        QL.info("::::: " + this.getClass().getSimpleName() + " :::::");
++    }
+ 
+-    @Ignore(REASON)
+     @Test
+-    public void testRegression() { fail("not implemented"); }
++    public void testRegression() {
++        QL.info("Testing fixed-coupon convertible bond in known regression case...");
++
++        // SavedSettings is a no-op stub in jquantlib; instantiated here to
++        // mirror C++ test-suite TopLevelFixture intent (snapshot-restore
++        // global Settings). Java tests in this suite follow the same idiom.
++        @SuppressWarnings("unused")
++        final SavedSettings backup = new SavedSettings();
++        {
++            final Date today = new Date(23, Month.December, 2008);
++            final Date tomorrow = today.add(1);
++            new Settings().setEvaluationDate(tomorrow);
++
++            final RelinkableHandle<Quote> u = new RelinkableHandle<Quote>();
++            u.linkTo(new SimpleQuote(2.9084382818797443));
++
++            // Risk-free rate: see class javadoc — we use a representative
++            // flat 2.4% rate in place of the C++ piecewise-flat
++            // ForwardCurve. Not load-bearing for the overflow assertion.
++            final DayCounter rfDc = new Actual360();
++            final RelinkableHandle<YieldTermStructure> r =
++                    new RelinkableHandle<YieldTermStructure>();
++            r.linkTo(Utilities.flatRate(tomorrow, 0.024, rfDc));
++
++            // Pathological volatility — this is what causes the binomial
++            // tree to overflow at 600 steps over ~5 years.
++            final RelinkableHandle<BlackVolTermStructure> sigma =
++                    new RelinkableHandle<BlackVolTermStructure>();
++            sigma.linkTo(new BlackConstantVol(tomorrow, new NullCalendar(),
++                    21.685235548092248, new Thirty360(Thirty360.Convention.BondBasis)));
++
++            // C++ uses BlackProcess(u, r, sigma) which is BSM with q = r.
++            // Java has no standalone BlackProcess; mirror the same shape.
++            final BlackScholesMertonProcess process =
++                    new BlackScholesMertonProcess(u, r, r, sigma);
++
++            final RelinkableHandle<Quote> spread = new RelinkableHandle<Quote>();
++            spread.linkTo(new SimpleQuote(0.11498700678012874));
++
++            final Date issueDate = new Date(23, Month.July, 2008);
++            final Date maturityDate = new Date(1, Month.August, 2013);
++            final Calendar calendar =
++                    new UnitedStates(UnitedStates.Market.GOVERNMENTBOND);
++            final Schedule schedule = new MakeSchedule()
++                    .from(issueDate)
++                    .to(maturityDate)
++                    .withTenor(new Period(6, TimeUnit.Months))
++                    .withCalendar(calendar)
++                    .withConvention(BusinessDayConvention.Unadjusted)
++                    .schedule();
++
++            final int settlementDays = 3;
++            final Exercise exercise = new EuropeanExercise(maturityDate);
++            final double conversionRatio = 100.0 / 20.3175;
++            final double[] coupons = new double[schedule.size() - 1];
++            for (int i = 0; i < coupons.length; i++) {
++                coupons[i] = 0.05;
++            }
++            final DayCounter dayCounter = new Thirty360(Thirty360.Convention.BondBasis);
++            final CallabilitySchedule noCallability = new CallabilitySchedule();
++            final DividendSchedule noDividends = new DividendSchedule();
++            final double redemption = 100.0;
++
++            final ConvertibleFixedCouponBond bond = new ConvertibleFixedCouponBond(
++                    exercise, conversionRatio,
++                    noDividends, noCallability,
++                    new Handle<Quote>(spread.currentLink()),
++                    issueDate, settlementDays,
++                    coupons, dayCounter, schedule, redemption);
++
++            final PricingEngine engine =
++                    new BinomialConvertibleEngine<CoxRossRubinstein>(
++                            CoxRossRubinstein.class, process, 600);
++            bond.setPricingEngine(engine);
++
++            try {
++                final double x = bond.NPV();
++                // should throw; if not, an INF was not detected
++                fail("INF result was not detected: " + x + " returned");
++            } catch (final LibraryException expected) {
++                // as expected. Do nothing.
++                //
++                // Note: we're expecting an Error we threw, not just any
++                // exception. If something else is thrown, then there's
++                // another problem and the test must fail.
++            }
++        }
++    }
+ }
+diff --git a/jquantlib/src/test/java/org/jquantlib/testsuite/instruments/SwapTest.java b/jquantlib/src/test/java/org/jquantlib/testsuite/instruments/SwapTest.java
+index 13a44e02..e9765ebf 100644
+--- a/jquantlib/src/test/java/org/jquantlib/testsuite/instruments/SwapTest.java
++++ b/jquantlib/src/test/java/org/jquantlib/testsuite/instruments/SwapTest.java
+@@ -62,7 +62,6 @@ import org.jquantlib.time.Period;
+ import org.jquantlib.time.Schedule;
+ import org.jquantlib.time.TimeUnit;
+ import org.jquantlib.time.calendars.NullCalendar;
+-import org.junit.Ignore;
+ import org.junit.Test;
+ 
+ /**
+@@ -382,14 +381,66 @@ public class SwapTest {
+         }
+     }
+ 
+-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-SWAP-3 — cached NPV regression: "
+-            + "Java reproduces -1.7764004820236075 vs C++ at-par expected "
+-            + "-5.872863313209 (diff ~4.1).  Indicates Euribor / Schedule / "
+-            + "coupon-day-counter discrepancy — needs probe to identify which "
+-            + "convention diverges; deferred until probe + regenerated NPV "
+-            + "validate against C++ v1.42.1.")
+     @Test
+     public void testCachedValue() {
++        QL.info("Testing vanilla-swap calculation against cached value...");
++
++        // Mirror C++ swap.cpp:284-313 fixture.  Pin evaluationDate to
++        // 17-June-2002 so the cached NPV is reproducible across runs.
++        final boolean usingAtParCoupons =
++                org.jquantlib.cashflow.IborCoupon.Settings.getInstance()
++                        .usingAtParCoupons();
++        final Settings settings = new Settings();
++        final Date prevEval = settings.evaluationDate();
++        try {
++            final CommonVars vars = new CommonVars();
++            final Date today = new Date(17, Month.June, 2002);
++            settings.setEvaluationDate(today);
++            // Refresh termStructure off the new settlement (calendar.advance
++            // depends on today, which we just moved).
++            final Date settlement = vars.calendar.advance(today,
++                    vars.settlementDays, TimeUnit.Days);
++            vars.termStructure.linkTo(Utilities.flatRate(settlement, 0.05,
++                    new Actual365Fixed()));
++
++            // Rebuild vars.today/settlement to match the moved evaluationDate.
++            // (CommonVars sampled today/settlement in its ctor before we
++            // moved the eval date.)  Easiest: re-make swap with explicit
++            // settlement-based schedules using the moved fixture state.
++            final Date maturity = vars.calendar.advance(settlement,
++                    new Period(10, TimeUnit.Years), vars.floatingConvention);
++            final Schedule fixedSchedule = new Schedule(settlement, maturity,
++                    new Period(vars.fixedFrequency),
++                    vars.calendar, vars.fixedConvention, vars.fixedConvention,
++                    DateGeneration.Rule.Forward, false);
++            final Schedule floatSchedule = new Schedule(settlement, maturity,
++                    new Period(vars.floatingFrequency),
++                    vars.calendar, vars.floatingConvention, vars.floatingConvention,
++                    DateGeneration.Rule.Forward, false);
++            final VanillaSwap swap = new VanillaSwap(vars.type, vars.nominal,
++                    fixedSchedule, 0.06, vars.fixedDayCount,
++                    floatSchedule, vars.index, 0.001,
++                    vars.index.dayCounter());
++            swap.setPricingEngine(
++                    new DiscountingSwapEngine(vars.termStructure));
++
++            // VanillaSwap always has two legs (fixed + float); no public
++            // numberOfLegs() accessor in Java, so we exercise both legNPVs
++            // as a structural proxy.
++            swap.fixedLegNPV();
++            swap.floatingLegNPV();
++
++            final double cachedNPV =
++                    usingAtParCoupons ? -5.872863313209 : -5.872342992212;
++            final double npv = swap.NPV();
++            if (Math.abs(npv - cachedNPV) > 1.0e-11) {
++                fail("failed to reproduce cached swap value:\n"
++                        + "    calculated: " + npv + "\n"
++                        + "    expected:   " + cachedNPV);
++            }
++        } finally {
++            settings.setEvaluationDate(prevEval);
++        }
+     }
+ 
+     /**
+diff --git a/jquantlib/src/test/java/org/jquantlib/testsuite/math/OdeTest.java b/jquantlib/src/test/java/org/jquantlib/testsuite/math/OdeTest.java
+index 5731023b..680eff4c 100644
+--- a/jquantlib/src/test/java/org/jquantlib/testsuite/math/OdeTest.java
++++ b/jquantlib/src/test/java/org/jquantlib/testsuite/math/OdeTest.java
+@@ -25,21 +25,22 @@ package org.jquantlib.testsuite.math;
+ import static org.junit.Assert.fail;
+ 
+ import org.jquantlib.QL;
++import org.jquantlib.math.Complex;
+ import org.jquantlib.math.matrixutilities.Expm;
+ import org.jquantlib.math.matrixutilities.Matrix;
+ import org.jquantlib.math.ode.AdaptiveRungeKutta;
+-import org.junit.Ignore;
+ import org.junit.Test;
+ 
+ /**
+  * Java port of QuantLib v1.42.1 test-suite/ode.cpp (Phase 5a).
+  *
+- * <p>3 BOOST_AUTO_TEST_CASE methods. {@link AdaptiveRungeKutta} in Java
+- * supports only the {@code double[]}/Real-vector overload (ode #3 in C++).
+- * The 1D real (#1), complex 1D (#2), and complex vector (#4) overloads are
+- * Phase 5a.5 carry-forwards. {@code testMatrixExponential} and
+- * {@code testMatrixExponentialOfZero} were un-ignored in
+- * Phase 5e.5b-CFC-d-77 once {@link Expm} was ported.
++ * <p>3 BOOST_AUTO_TEST_CASE methods. The 1D real (#1), complex 1D (#2),
++ * and complex vector (#4) overloads were added to {@link AdaptiveRungeKutta}
++ * in Phase 5e.5b-CFC-d-187 and exercised by
++ * {@link #testAdaptiveRungeKutta1dAndComplex()}; the 2D real path (#3)
++ * is exercised by {@link #testAdaptiveRungeKutta()}.
++ * {@code testMatrixExponential} and {@code testMatrixExponentialOfZero}
++ * were un-ignored in Phase 5e.5b-CFC-d-77 once {@link Expm} was ported.
+  */
+ public class OdeTest {
+ 
+@@ -72,11 +73,78 @@ public class OdeTest {
+         }
+     }
+ 
+-    @Ignore("Phase 5a.5 carry-forward — JQuantLib AdaptiveRungeKutta has no 1D-Real or "
+-            + "complex overloads (C++ template variants for ode #1, #2, #4). The 2D-Real "
+-            + "case is exercised by testAdaptiveRungeKutta above.")
++    /**
++     * Mirrors the C++ {@code testAdaptiveRungeKutta} sub-cases #1, #2, #4 of
++     * {@code test-suite/ode.cpp}.
++     *
++     * <ul>
++     *   <li><b>ode #1</b> — scalar real: {@code f' = f, f(0) = 1}; exact
++     *       solution {@code exp(x)}. Tolerance {@code 5e-10} (loose tier
++     *       per C++ — exp(5) ~= 148 inflates rel error).</li>
++     *   <li><b>ode #2</b> — scalar complex: {@code f' = i*f, f(0) = i};
++     *       exact solution {@code exp(i*x) * i}. Tolerance {@code 2e-12}.</li>
++     *   <li><b>ode #4</b> — complex vector: {@code f'' = -f, f(0) = 1,
++     *       f'(0) = i}; exact solution {@code exp(i*x)}. Tolerance
++     *       {@code 2e-12}.</li>
++     * </ul>
++     */
+     @Test
+     public void testAdaptiveRungeKutta1dAndComplex() {
++        QL.info("Testing adaptive Runge Kutta (1D real + complex)...");
++
++        final AdaptiveRungeKutta rkReal = new AdaptiveRungeKutta(1e-12, 1e-4, 0.0);
++        final AdaptiveRungeKutta rkComplex = new AdaptiveRungeKutta(1e-12, 1e-4, 0.0);
++
++        final double tol1 = 5e-10;
++        final double tol2 = 2e-12;
++        final double tol4 = 2e-12;
++
++        // ode #1: f' = f, f(0) = 1
++        final AdaptiveRungeKutta.OdeFct1d ode1 = (t, y) -> y;
++        final double y10 = 1.0;
++
++        // ode #2: f' = i*f, f(0) = i
++        final AdaptiveRungeKutta.OdeFctC1d ode2 = (t, y) -> Complex.I.mul(y);
++        final Complex y20 = Complex.I;
++
++        // ode #4: f'' = -f, expressed as 2-component system
++        //   y[0]' = y[1], y[1]' = -y[0]
++        final AdaptiveRungeKutta.OdeFctC ode4 = (t, y) -> new Complex[] { y[1], y[0].neg() };
++        final Complex[] y40 = { Complex.ONE, Complex.I };
++
++        for (double x = 0.01; x <= 5.0; x += 0.01) {
++            final double y1 = rkReal.solve(ode1, y10, 0.0, x);
++            final Complex y2 = rkComplex.solveComplex(ode2, y20, 0.0, x);
++            final Complex[] y4 = rkComplex.solveComplex(ode4, y40, 0.0, x);
++
++            final double exact1 = Math.exp(x);
++            // exact2 = exp(i*x) * i
++            final Complex exact2 = new Complex(0.0, x).exp().mul(Complex.I);
++            // exact4 = exp(i*x)
++            final Complex exact4 = new Complex(0.0, x).exp();
++
++            if (Math.abs(exact1 - y1) > tol1) {
++                fail("Error in ode #1: exact solution at x=" + x
++                        + " is " + exact1
++                        + ", numerical solution is " + y1
++                        + " difference " + Math.abs(exact1 - y1)
++                        + " outside tolerance " + tol1);
++            }
++            if (exact2.sub(y2).abs() > tol2) {
++                fail("Error in ode #2: exact solution at x=" + x
++                        + " is " + exact2
++                        + ", numerical solution is " + y2
++                        + " difference " + exact2.sub(y2).abs()
++                        + " outside tolerance " + tol2);
++            }
++            if (exact4.sub(y4[0]).abs() > tol4) {
++                fail("Error in ode #4: exact solution at x=" + x
++                        + " is " + exact4
++                        + ", numerical solution is " + y4[0]
++                        + " difference " + exact4.sub(y4[0]).abs()
++                        + " outside tolerance " + tol4);
++            }
++        }
+     }
+ 
+     /**
+diff --git a/migration-harness/cpp/probes/instruments/swap_cached_value_probe.cpp b/migration-harness/cpp/probes/instruments/swap_cached_value_probe.cpp
+new file mode 100644
+index 00000000..c45b303d
+--- /dev/null
++++ b/migration-harness/cpp/probes/instruments/swap_cached_value_probe.cpp
+@@ -0,0 +1,192 @@
++// migration-harness/cpp/probes/instruments/swap_cached_value_probe.cpp
++//
++// WI-5e.5-SWAP-3 — reproduce C++ test-suite/swap.cpp:testCachedValue
++// fixture and emit fingerprint for Java parity diagnosis.
++//
++// Fixture (mirrors swap.cpp lines 284-313):
++//   today           = 17-June-2002
++//   evaluationDate  = today
++//   settlementDays  = 2
++//   calendar        = Euribor(Period(Semiannual), termStructure).fixingCalendar()
++//   settlement      = calendar.advance(today, 2, Days)
++//   termStructure   = flatRate(settlement, 0.05, Actual365Fixed())
++//   index           = Euribor(Period(Semiannual), termStructure)
++//   length          = 10 years, fixed=0.06, spread=0.001
++//
++// Expected (usingAtParCoupons=true, the C++ build default):
++//   swap.NPV()  = -5.872863313209
++//   numLegs     = 2
++//
++// Probe emits both the headline NPV and per-cashflow fingerprints
++// (date, amount, plus floating-leg fixing/accrual/discount) so the
++// Java port can compare cashflow-by-cashflow.
++
++#include <ql/cashflows/cashflows.hpp>
++#include <ql/cashflows/floatingratecoupon.hpp>
++#include <ql/cashflows/iborcoupon.hpp>
++#include <ql/cashflows/coupon.hpp>
++#include <ql/indexes/ibor/euribor.hpp>
++#include <ql/instruments/vanillaswap.hpp>
++#include <ql/pricingengines/swap/discountingswapengine.hpp>
++#include <ql/quotes/simplequote.hpp>
++#include <ql/settings.hpp>
++#include <ql/termstructures/yield/flatforward.hpp>
++#include <ql/time/calendars/target.hpp>
++#include <ql/time/daycounters/actual365fixed.hpp>
++#include <ql/time/daycounters/thirty360.hpp>
++#include <ql/time/schedule.hpp>
++
++#include "common.hpp"
++
++#include <sstream>
++#include <vector>
++
++using namespace QuantLib;
++using namespace jqml_harness;
++
++namespace {
++
++Handle<YieldTermStructure> flatRateHandle(const Date& referenceDate, Rate r,
++                                          const DayCounter& dc) {
++    auto q = ext::make_shared<SimpleQuote>(r);
++    auto ts = ext::make_shared<FlatForward>(referenceDate, Handle<Quote>(q), dc);
++    return Handle<YieldTermStructure>(ts);
++}
++
++json dateToJson(const Date& d) {
++    std::ostringstream oss;
++    oss << d.year() << "-"
++        << std::setw(2) << std::setfill('0') << static_cast<int>(d.month()) << "-"
++        << std::setw(2) << std::setfill('0') << d.dayOfMonth();
++    return oss.str();
++}
++
++json scheduleToJson(const Schedule& s) {
++    json arr = json::array();
++    for (Size i = 0; i < s.size(); ++i) {
++        arr.push_back(dateToJson(s.date(i)));
++    }
++    return arr;
++}
++
++json legToJson(const Leg& leg, const Handle<YieldTermStructure>& ts) {
++    json arr = json::array();
++    for (const auto& cf : leg) {
++        json entry;
++        entry["paymentDate"] = dateToJson(cf->date());
++        entry["amount"]      = cf->amount();
++        entry["discount"]    = ts->discount(cf->date());
++
++        if (auto coupon = ext::dynamic_pointer_cast<Coupon>(cf)) {
++            entry["accrualStart"] = dateToJson(coupon->accrualStartDate());
++            entry["accrualEnd"]   = dateToJson(coupon->accrualEndDate());
++            entry["accrualDays"]  = static_cast<int>(coupon->accrualDays());
++            entry["nominal"]      = coupon->nominal();
++            entry["rate"]         = coupon->rate();
++        }
++        if (auto fcp = ext::dynamic_pointer_cast<FloatingRateCoupon>(cf)) {
++            entry["fixingDate"] = dateToJson(fcp->fixingDate());
++            entry["indexFixing"] = fcp->indexFixing();
++            entry["spread"]     = fcp->spread();
++            entry["gearing"]    = fcp->gearing();
++        }
++        arr.push_back(entry);
++    }
++    return arr;
++}
++
++}  // namespace
++
++int main() {
++    // === fixture (verbatim from C++ swap.cpp:284-298) ===
++    const Date today(17, June, 2002);
++    Settings::instance().evaluationDate() = today;
++
++    const Natural settlementDays = 2;
++    const Real nominal = 100.0;
++    const Frequency floatingFrequency = Semiannual;
++    const Frequency fixedFrequency = Annual;
++    const auto fixedConvention = Unadjusted;
++    const auto floatingConvention = ModifiedFollowing;
++    const DayCounter fixedDayCount = Thirty360(Thirty360::BondBasis);
++
++    RelinkableHandle<YieldTermStructure> termStructure;
++    auto index = ext::make_shared<Euribor>(Period(floatingFrequency), termStructure);
++    const Calendar calendar = index->fixingCalendar();
++    const Date settlement = calendar.advance(today, settlementDays, Days);
++    termStructure.linkTo(
++        ext::make_shared<FlatForward>(settlement, 0.05, Actual365Fixed()));
++
++    const Integer length = 10;
++    const Rate fixedRate = 0.06;
++    const Spread floatingSpread = 0.001;
++
++    const Date maturity = calendar.advance(settlement, length, Years, floatingConvention);
++    Schedule fixedSchedule(settlement, maturity, Period(fixedFrequency),
++                           calendar, fixedConvention, fixedConvention,
++                           DateGeneration::Forward, false);
++    Schedule floatSchedule(settlement, maturity, Period(floatingFrequency),
++                           calendar, floatingConvention, floatingConvention,
++                           DateGeneration::Forward, false);
++
++    auto swap = ext::make_shared<VanillaSwap>(
++        Swap::Payer, nominal,
++        fixedSchedule, fixedRate, fixedDayCount,
++        floatSchedule, index, floatingSpread,
++        index->dayCounter());
++    swap->setPricingEngine(
++        ext::make_shared<DiscountingSwapEngine>(termStructure));
++
++    const Real npv = swap->NPV();
++    const bool usingAtParCoupons =
++        IborCoupon::Settings::instance().usingAtParCoupons();
++    const Real expected =
++        usingAtParCoupons ? -5.872863313209 : -5.872342992212;
++
++    // === emit fingerprint ===
++    ReferenceWriter w("instruments/swap_cached_value",
++                      "v1.42.1",
++                      "swap_cached_value_probe.cpp");
++
++    json inputs = {
++        {"today",            dateToJson(today)},
++        {"settlement",       dateToJson(settlement)},
++        {"settlementDays",   settlementDays},
++        {"maturity",         dateToJson(maturity)},
++        {"calendar",         calendar.name()},
++        {"indexName",        index->name()},
++        {"indexDayCounter",  index->dayCounter().name()},
++        {"indexFixingDays",  static_cast<int>(index->fixingDays())},
++        {"indexFamily",      index->familyName()},
++        {"indexTenor",       index->tenor().length()},
++        {"fixedConvention",  "Unadjusted"},
++        {"floatingConvention", "ModifiedFollowing"},
++        {"fixedDayCount",    fixedDayCount.name()},
++        {"length",           length},
++        {"fixedRate",        fixedRate},
++        {"floatingSpread",   floatingSpread},
++        {"nominal",          nominal},
++        {"discountAtSettlement", termStructure->discount(settlement)},
++        {"discountAtMaturity",   termStructure->discount(maturity)},
++        {"fixedSchedule",    scheduleToJson(fixedSchedule)},
++        {"floatSchedule",    scheduleToJson(floatSchedule)}
++    };
++
++    json expectedJson = {
++        {"npv",               npv},
++        {"expectedAtPar",     expected},
++        {"usingAtParCoupons", usingAtParCoupons},
++        {"numberOfLegs",      static_cast<int>(swap->numberOfLegs())},
++        {"fixedLegNPV",       swap->fixedLegNPV()},
++        {"floatingLegNPV",    swap->floatingLegNPV()},
++        {"fairRate",          swap->fairRate()},
++        {"fairSpread",        swap->fairSpread()},
++        {"fixedLeg",          legToJson(swap->fixedLeg(),    termStructure)},
++        {"floatingLeg",       legToJson(swap->floatingLeg(), termStructure)}
++    };
++
++    w.addCase("vanilla_swap_10y_fixed6pct_spread10bp", inputs, expectedJson);
++    w.write();
++
++    return 0;
++}
+diff --git a/migration-harness/references/instruments/swap_cached_value.json b/migration-harness/references/instruments/swap_cached_value.json
+new file mode 100644
+index 00000000..a5303476
+--- /dev/null
++++ b/migration-harness/references/instruments/swap_cached_value.json
+@@ -0,0 +1,463 @@
++{
++  "cases": [
++    {
++      "expected": {
++        "expectedAtPar": -5.872863313209,
++        "fairRate": 0.052345259024162406,
++        "fairSpread": 0.008448840238810188,
++        "fixedLeg": [
++          {
++            "accrualDays": 360,
++            "accrualEnd": "2003-06-19",
++            "accrualStart": "2002-06-19",
++            "amount": 6.000000000000005,
++            "discount": 0.9512294245007139,
++            "nominal": 100.0,
++            "paymentDate": "2003-06-19",
++            "rate": 0.06
++          },
++          {
++            "accrualDays": 360,
++            "accrualEnd": "2004-06-19",
++            "accrualStart": "2003-06-19",
++            "amount": 6.000000000000005,
++            "discount": 0.9044656434395189,
++            "nominal": 100.0,
++            "paymentDate": "2004-06-21",
++            "rate": 0.06
++          },
++          {
++            "accrualDays": 360,
++            "accrualEnd": "2005-06-19",
++            "accrualStart": "2004-06-19",
++            "amount": 6.000000000000005,
++            "discount": 0.860472198320403,
++            "nominal": 100.0,
++            "paymentDate": "2005-06-20",
++            "rate": 0.06
++          },
++          {
++            "accrualDays": 360,
++            "accrualEnd": "2006-06-19",
++            "accrualStart": "2005-06-19",
++            "amount": 6.000000000000005,
++            "discount": 0.8186186058617915,
++            "nominal": 100.0,
++            "paymentDate": "2006-06-19",
++            "rate": 0.06
++          },
++          {
++            "accrualDays": 360,
++            "accrualEnd": "2007-06-19",
++            "accrualStart": "2006-06-19",
++            "amount": 6.000000000000005,
++            "discount": 0.7786941053394888,
++            "nominal": 100.0,
++            "paymentDate": "2007-06-19",
++            "rate": 0.06
++          },
++          {
++            "accrualDays": 360,
++            "accrualEnd": "2008-06-19",
++            "accrualStart": "2007-06-19",
++            "amount": 6.000000000000005,
++            "discount": 0.7406152845863752,
++            "nominal": 100.0,
++            "paymentDate": "2008-06-19",
++            "rate": 0.06
++          },
++          {
++            "accrualDays": 360,
++            "accrualEnd": "2009-06-19",
++            "accrualStart": "2008-06-19",
++            "amount": 6.000000000000005,
++            "discount": 0.7044950509335303,
++            "nominal": 100.0,
++            "paymentDate": "2009-06-19",
++            "rate": 0.06
++          },
++          {
++            "accrualDays": 360,
++            "accrualEnd": "2010-06-19",
++            "accrualStart": "2009-06-19",
++            "amount": 6.000000000000005,
++            "discount": 0.6699528479916685,
++            "nominal": 100.0,
++            "paymentDate": "2010-06-21",
++            "rate": 0.06
++          },
++          {
++            "accrualDays": 360,
++            "accrualEnd": "2011-06-19",
++            "accrualStart": "2010-06-19",
++            "amount": 6.000000000000005,
++            "discount": 0.6373661664916015,
++            "nominal": 100.0,
++            "paymentDate": "2011-06-20",
++            "rate": 0.06
++          },
++          {
++            "accrualDays": 360,
++            "accrualEnd": "2012-06-19",
++            "accrualStart": "2011-06-19",
++            "amount": 6.000000000000005,
++            "discount": 0.6062814517480324,
++            "nominal": 100.0,
++            "paymentDate": "2012-06-19",
++            "rate": 0.06
++          }
++        ],
++        "fixedLegNPV": -46.033144675278784,
++        "floatingLeg": [
++          {
++            "accrualDays": 183,
++            "accrualEnd": "2002-12-19",
++            "accrualStart": "2002-06-19",
++            "amount": 2.589368332590314,
++            "discount": 0.9752431122672527,
++            "fixingDate": "2002-06-17",
++            "gearing": 1.0,
++            "indexFixing": 0.04993839342800618,
++            "nominal": 100.0,
++            "paymentDate": "2002-12-19",
++            "rate": 0.05093839342800618,
++            "spread": 0.001
++          },
++          {
++            "accrualDays": 182,
++            "accrualEnd": "2003-06-19",
++            "accrualStart": "2002-12-19",
++            "amount": 2.5750451421916254,
++            "discount": 0.9512294245007139,
++            "fixingDate": "2002-12-17",
++            "gearing": 1.0,
++            "indexFixing": 0.04993495885653764,
++            "nominal": 100.0,
++            "paymentDate": "2003-06-19",
++            "rate": 0.05093495885653764,
++            "spread": 0.001
++          },
++          {
++            "accrualDays": 183,
++            "accrualEnd": "2003-12-19",
++            "accrualStart": "2003-06-19",
++            "amount": 2.589368332590314,
++            "discount": 0.927679944430264,
++            "fixingDate": "2003-06-17",
++            "gearing": 1.0,
++            "indexFixing": 0.04993839342800618,
++            "nominal": 100.0,
++            "paymentDate": "2003-12-19",
++            "rate": 0.05093839342800618,
++            "spread": 0.001
++          },
++          {
++            "accrualDays": 185,
++            "accrualEnd": "2004-06-21",
++            "accrualStart": "2003-12-19",
++            "amount": 2.618020486134017,
++            "discount": 0.9044656434395189,
++            "fixingDate": "2003-12-17",
++            "gearing": 1.0,
++            "indexFixing": 0.049945263513959254,
++            "nominal": 100.0,
++            "paymentDate": "2004-06-21",
++            "rate": 0.050945263513959255,
++            "spread": 0.001
++          },
++          {
++            "accrualDays": 182,
++            "accrualEnd": "2004-12-20",
++            "accrualStart": "2004-06-21",
++            "amount": 2.5750451421916254,
++            "discount": 0.8821947293629002,
++            "fixingDate": "2004-06-17",
++            "gearing": 1.0,
++            "indexFixing": 0.04993495885653764,
++            "nominal": 100.0,
++            "paymentDate": "2004-12-20",
++            "rate": 0.05093495885653764,
++            "spread": 0.001
++          },
++          {
++            "accrualDays": 182,
++            "accrualEnd": "2005-06-20",
++            "accrualStart": "2004-12-20",
++            "amount": 2.575045142191647,
++            "discount": 0.860472198320403,
++            "fixingDate": "2004-12-16",
++            "gearing": 1.0,
++            "indexFixing": 0.04993495885653808,
++            "nominal": 100.0,
++            "paymentDate": "2005-06-20",
++            "rate": 0.05093495885653808,
++            "spread": 0.001
++          },
++          {
++            "accrualDays": 182,
++            "accrualEnd": "2005-12-19",
++            "accrualStart": "2005-06-20",
++            "amount": 2.575045142191603,
++            "discount": 0.8392845473210379,
++            "fixingDate": "2005-06-16",
++            "gearing": 1.0,
++            "indexFixing": 0.049934958856537204,
++            "nominal": 100.0,
++            "paymentDate": "2005-12-19",
++            "rate": 0.050934958856537205,
++            "spread": 0.001
++          },
++          {
++            "accrualDays": 182,
++            "accrualEnd": "2006-06-19",
++            "accrualStart": "2005-12-19",
++            "amount": 2.5750451421916254,
++            "discount": 0.8186186058617915,
++            "fixingDate": "2005-12-15",
++            "gearing": 1.0,
++            "indexFixing": 0.04993495885653764,
++            "nominal": 100.0,
++            "paymentDate": "2006-06-19",
++            "rate": 0.05093495885653764,
++            "spread": 0.001
++          },
++          {
++            "accrualDays": 183,
++            "accrualEnd": "2006-12-19",
++            "accrualStart": "2006-06-19",
++            "amount": 2.589368332590314,
++            "discount": 0.7983521569405331,
++            "fixingDate": "2006-06-15",
++            "gearing": 1.0,
++            "indexFixing": 0.04993839342800618,
++            "nominal": 100.0,
++            "paymentDate": "2006-12-19",
++            "rate": 0.05093839342800618,
++            "spread": 0.001
++          },
++          {
++            "accrualDays": 182,
++            "accrualEnd": "2007-06-19",
++            "accrualStart": "2006-12-19",
++            "amount": 2.5750451421916254,
++            "discount": 0.7786941053394888,
++            "fixingDate": "2006-12-15",
++            "gearing": 1.0,
++            "indexFixing": 0.04993495885653764,
++            "nominal": 100.0,
++            "paymentDate": "2007-06-19",
++            "rate": 0.05093495885653764,
++            "spread": 0.001
++          },
++          {
++            "accrualDays": 183,
++            "accrualEnd": "2007-12-19",
++            "accrualStart": "2007-06-19",
++            "amount": 2.589368332590314,
++            "discount": 0.759416062795447,
++            "fixingDate": "2007-06-15",
++            "gearing": 1.0,
++            "indexFixing": 0.04993839342800618,
++            "nominal": 100.0,
++            "paymentDate": "2007-12-19",
++            "rate": 0.05093839342800618,
++            "spread": 0.001
++          },
++          {
++            "accrualDays": 183,
++            "accrualEnd": "2008-06-19",
++            "accrualStart": "2007-12-19",
++            "amount": 2.589368332590314,
++            "discount": 0.7406152845863752,
++            "fixingDate": "2007-12-17",
++            "gearing": 1.0,
++            "indexFixing": 0.04993839342800618,
++            "nominal": 100.0,
++            "paymentDate": "2008-06-19",
++            "rate": 0.05093839342800618,
++            "spread": 0.001
++          },
++          {
++            "accrualDays": 183,
++            "accrualEnd": "2008-12-19",
++            "accrualStart": "2008-06-19",
++            "amount": 2.5893683325902916,
++            "discount": 0.7222799551327137,
++            "fixingDate": "2008-06-17",
++            "gearing": 1.0,
++            "indexFixing": 0.04993839342800574,
++            "nominal": 100.0,
++            "paymentDate": "2008-12-19",
++            "rate": 0.05093839342800574,
++            "spread": 0.001
++          },
++          {
++            "accrualDays": 182,
++            "accrualEnd": "2009-06-19",
++            "accrualStart": "2008-12-19",
++            "amount": 2.5750451421916254,
++            "discount": 0.7044950509335303,
++            "fixingDate": "2008-12-17",
++            "gearing": 1.0,
++            "indexFixing": 0.04993495885653764,
++            "nominal": 100.0,
++            "paymentDate": "2009-06-19",
++            "rate": 0.05093495885653764,
++            "spread": 0.001
++          },
++          {
++            "accrualDays": 185,
++            "accrualEnd": "2009-12-21",
++            "accrualStart": "2009-06-19",
++            "amount": 2.618020486134039,
++            "discount": 0.6868657378745899,
++            "fixingDate": "2009-06-17",
++            "gearing": 1.0,
++            "indexFixing": 0.049945263513959684,
++            "nominal": 100.0,
++            "paymentDate": "2009-12-21",
++            "rate": 0.050945263513959685,
++            "spread": 0.001
++          },
++          {
++            "accrualDays": 182,
++            "accrualEnd": "2010-06-21",
++            "accrualStart": "2009-12-21",
++            "amount": 2.5750451421916254,
++            "discount": 0.6699528479916685,
++            "fixingDate": "2009-12-17",
++            "gearing": 1.0,
++            "indexFixing": 0.04993495885653764,
++            "nominal": 100.0,
++            "paymentDate": "2010-06-21",
++            "rate": 0.05093495885653764,
++            "spread": 0.001
++          },
++          {
++            "accrualDays": 182,
++            "accrualEnd": "2010-12-20",
++            "accrualStart": "2010-06-21",
++            "amount": 2.5750451421916254,
++            "discount": 0.6534564089934235,
++            "fixingDate": "2010-06-17",
++            "gearing": 1.0,
++            "indexFixing": 0.04993495885653764,
++            "nominal": 100.0,
++            "paymentDate": "2010-12-20",
++            "rate": 0.05093495885653764,
++            "spread": 0.001
++          },
++          {
++            "accrualDays": 182,
++            "accrualEnd": "2011-06-20",
++            "accrualStart": "2010-12-20",
++            "amount": 2.5750451421916254,
++            "discount": 0.6373661664916015,
++            "fixingDate": "2010-12-16",
++            "gearing": 1.0,
++            "indexFixing": 0.04993495885653764,
++            "nominal": 100.0,
++            "paymentDate": "2011-06-20",
++            "rate": 0.05093495885653764,
++            "spread": 0.001
++          },
++          {
++            "accrualDays": 182,
++            "accrualEnd": "2011-12-19",
++            "accrualStart": "2011-06-20",
++            "amount": 2.5750451421916254,
++            "discount": 0.6216721185946595,
++            "fixingDate": "2011-06-16",
++            "gearing": 1.0,
++            "indexFixing": 0.04993495885653764,
++            "nominal": 100.0,
++            "paymentDate": "2011-12-19",
++            "rate": 0.05093495885653764,
++            "spread": 0.001
++          },
++          {
++            "accrualDays": 183,
++            "accrualEnd": "2012-06-19",
++            "accrualStart": "2011-12-19",
++            "amount": 2.589368332590314,
++            "discount": 0.6062814517480324,
++            "fixingDate": "2011-12-15",
++            "gearing": 1.0,
++            "indexFixing": 0.04993839342800618,
++            "nominal": 100.0,
++            "paymentDate": "2012-06-19",
++            "rate": 0.05093839342800618,
++            "spread": 0.001
++          }
++        ],
++        "floatingLegNPV": 40.16028136207018,
++        "npv": -5.8728633132086046,
++        "numberOfLegs": 2,
++        "usingAtParCoupons": true
++      },
++      "inputs": {
++        "calendar": "TARGET",
++        "discountAtMaturity": 0.6062814517480324,
++        "discountAtSettlement": 1.0,
++        "fixedConvention": "Unadjusted",
++        "fixedDayCount": "30/360 (Bond Basis)",
++        "fixedRate": 0.06,
++        "fixedSchedule": [
++          "2002-06-19",
++          "2003-06-19",
++          "2004-06-19",
++          "2005-06-19",
++          "2006-06-19",
++          "2007-06-19",
++          "2008-06-19",
++          "2009-06-19",
++          "2010-06-19",
++          "2011-06-19",
++          "2012-06-19"
++        ],
++        "floatSchedule": [
++          "2002-06-19",
++          "2002-12-19",
++          "2003-06-19",
++          "2003-12-19",
++          "2004-06-21",
++          "2004-12-20",
++          "2005-06-20",
++          "2005-12-19",
++          "2006-06-19",
++          "2006-12-19",
++          "2007-06-19",
++          "2007-12-19",
++          "2008-06-19",
++          "2008-12-19",
++          "2009-06-19",
++          "2009-12-21",
++          "2010-06-21",
++          "2010-12-20",
++          "2011-06-20",
++          "2011-12-19",
++          "2012-06-19"
++        ],
++        "floatingConvention": "ModifiedFollowing",
++        "floatingSpread": 0.001,
++        "indexDayCounter": "Actual/360",
++        "indexFamily": "Euribor",
++        "indexFixingDays": 2,
++        "indexName": "Euribor6M Actual/360",
++        "indexTenor": 6,
++        "length": 10,
++        "maturity": "2012-06-19",
++        "nominal": 100.0,
++        "settlement": "2002-06-19",
++        "settlementDays": 2,
++        "today": "2002-06-17"
++      },
++      "name": "vanilla_swap_10y_fixed6pct_spread10bp"
++    }
++  ],
++  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
++  "cpp_version": "v1.42.1",
++  "generated_at": "2026-05-18T01:52:28Z",
++  "generated_by": "swap_cached_value_probe.cpp",
++  "test_group": "instruments/swap_cached_value"
++}

@@ -1,0 +1,43 @@
+stash@{2026-05-19 17:05:00 -0600} | 2026-05-19 17:05:00 -0600 | 297d1343401346556a03c27d1360a7836a744ee9 | On main: intraday-obs-baseline
+stash@{2026-05-19 16:59:10 -0600} | 2026-05-19 16:59:10 -0600 | bc5da25b4b5456c67a5ae912b5b612f0ca767349 | On main: park-perturbative-barrier-isolate
+stash@{2026-05-19 16:48:45 -0600} | 2026-05-19 16:48:45 -0600 | 6e6dbf969659adb80a6719e51b372f389454bf8e | On main: intraday-baseline
+stash@{2026-05-19 11:59:30 -0600} | 2026-05-19 11:59:30 -0600 | 40a4d6abcce80d0681d0c5f482fb116840297892 | On main: OTHER-AGENT-WIP-catbonds-2026-05-19
+stash@{2026-05-17 23:10:29 -0600} | 2026-05-17 23:10:29 -0600 | 0922ec79569a189142a4fefef131b524f4505686 | On main: park-other-agent-extOUStorage-2026-05-17
+stash@{2026-05-17 21:02:25 -0600} | 2026-05-17 21:02:25 -0600 | 0e3dbcab6bed10f22f88ae32926205c28f9e3894 | WIP on main: 1dac05cb align(termstructures.inflation.ZeroCouponInflationSwapHelper): deprecated 9-arg overload + un-ignore InflationTest case (Phase 5e.5b-CFC-d-204)
+stash@{2026-05-17 20:42:58 -0600} | 2026-05-17 20:42:58 -0600 | ebdb081d8c9f400d2031e0b5aaffa58bb7fa46fa | On main: park-unrelated
+stash@{2026-05-17 19:59:33 -0600} | 2026-05-17 19:59:33 -0600 | 14083c5121c287762eeb7157ad52370fc72a3b58 | On main: AGENT-LOOKBACK-MC-OTHER-WIP-RESTASH
+stash@{2026-05-17 13:41:13 -0600} | 2026-05-17 13:41:13 -0600 | e23b40695c51cae6b106828bc917f6fa64e78090 | On main: carry-forward: FdmLinearOpTest+TripleBandLinearOp uncompiled
+stash@{2026-05-17 13:20:22 -0600} | 2026-05-17 13:20:22 -0600 | 858dfa8f8fd6eb25cab694fe25bab6cad2e2940b | WIP on main: 7b66fc5d infra(pricingengines.vanilla.AnalyticHestonEngine.OptimalAlpha): port Andersen-Lake 2018 alpha-shift root-finder; un-ignore 2 HestonModelTest cases (Phase 5e.5b-CFC-d-153)
+stash@{2026-05-17 09:07:23 -0600} | 2026-05-17 09:07:23 -0600 | cf9379f7216d53ae7da44a7d4cbe986c04d5bb0b | On main: OTHER-AGENT-untracked-stash-2026-05-17-2
+stash@{2026-05-17 08:47:51 -0600} | 2026-05-17 08:47:51 -0600 | 3de5a1759222dad8c656a6e1ea04ea4434f66da8 | On main: OTHER-AGENT-WIP-stashed-by-lmm-agent-2026-05-17
+stash@{2026-05-17 04:35:38 -0600} | 2026-05-17 04:35:38 -0600 | 7062ce704c0b95a29dd5b83933c7b289292e48f6 | On main: OTHER-AGENT-WIP-temp-by-mc-asian-agent
+stash@{2026-05-16 23:51:37 -0600} | 2026-05-16 23:51:37 -0600 | 9644fb60d2a9ffd2e3865cb4ed386b714d1ffe2b | WIP on main: fb35a178 infra(math.interpolations.ChebyshevInterpolation + experimental.math.LaplaceInterpolation): port + un-ignore 4 tests (Phase 5e.5b-CFC-d-96)
+stash@{2026-05-16 21:29:11 -0600} | 2026-05-16 21:29:11 -0600 | fe4adc40559c087f5143df13414e7154d86cba78 | WIP on main: d90628eb test(experimental.termstructures.CrossCurrencyRateHelpersTest): un-ignore + body-fill 5 tests via probes (Phase 5e.5b-CFC-d-81)
+stash@{2026-05-16 20:36:09 -0600} | 2026-05-16 20:36:09 -0600 | 7adff33db61836a5446e3a0f8673741df9e8bb45 | On main: phase5e5b-CFC-d-77-temp
+stash@{2026-05-16 19:57:56 -0600} | 2026-05-16 19:57:56 -0600 | 980808d2d2914cd431a8133b5f3f124566b338ad | WIP on main: ab95c031 test(methods.finitedifferences.FdSabrTest): refine @Ignore reasons + body-fill 2 (Phase 5e.5b-CFC-d-71)
+stash@{2026-05-16 19:53:54 -0600} | 2026-05-16 19:53:54 -0600 | b5350e7a89e44dda37bc26476f90bc1b4381fa58 | On main: WIP-other-agents-in-flight
+stash@{2026-05-16 19:38:28 -0600} | 2026-05-16 19:38:28 -0600 | 1d9c2223cacc7ed7a3f6c6bfc8f1461fb602c7cb | On main: broken-WIP-BlackVolSurfaceDeltaTest-1778981908
+stash@{2026-05-16 18:46:56 -0600} | 2026-05-16 18:46:56 -0600 | fa96aeefaca538a0cbdc2023b22525f28be2e466 | On main: controller-quiesce-2-1778978816
+stash@{2026-05-16 18:36:40 -0600} | 2026-05-16 18:36:40 -0600 | 4492ac6b0dd77f858c6907178e72c400bf9b8478 | On main: phase5e5b-CFC-d-56-park-v5
+stash@{2026-05-16 18:01:33 -0600} | 2026-05-16 18:01:33 -0600 | d1f567f987dc5f64eac05cae5386ce8ab5d78f0e | On main: controller-quiesce-snapshot 1778976093
+stash@{2026-05-16 17:59:20 -0600} | 2026-05-16 17:59:20 -0600 | 2b64a2469fb86042f8bc0905cbd5e512f5e2b464 | On main: phase5e5b-CFC-d-56-FdmHeston-baseline-stash-v4
+stash@{2026-05-16 17:58:52 -0600} | 2026-05-16 17:58:52 -0600 | 3617ffa357d81e376eee529b345ee1b106f51b00 | On main: phase5e5b-CFC-d-56-FdmHeston-baseline-stash-v3
+stash@{2026-05-16 17:57:37 -0600} | 2026-05-16 17:57:37 -0600 | 36ffe89a98107e925d40b9d27ba5ea6e95eeb391 | On main: phase5e5b-CFC-d-56-FdmHeston-baseline-stash-v2
+stash@{2026-05-16 17:50:26 -0600} | 2026-05-16 17:50:26 -0600 | b4ee53def36c986d358393f1e7cb35ba23c0d416 | On main: CFC-d-47-isolation-stash
+stash@{2026-05-16 17:45:20 -0600} | 2026-05-16 17:45:20 -0600 | 0a0ebf7928931201fd9f65194cd4ab8e70f733da | On main: third carry-forward: PseudoSqrt+CapFloorTest+ForwardOptionTest+GaussianKernel etc
+stash@{2026-05-16 17:42:40 -0600} | 2026-05-16 17:42:40 -0600 | b0201e02ebddcb03beb1a2680a202f08bfa6f6b8 | On main: carry-over from prior session - hold during CFC-d-47
+stash@{2026-05-16 17:32:27 -0600} | 2026-05-16 17:32:27 -0600 | cb4b856d88e85b64370287562d60c29e2f1c9b30 | On main: second carry-forward: CapFloor/ForwardVanillaEngine/AnalyticDigitalAmericanKOEngine
+stash@{2026-05-16 17:29:24 -0600} | 2026-05-16 17:29:24 -0600 | d77a02ffa2e2ad898b7ae960e8672c63a192534e | On main: wip-other-agents-snapshot-by-basisswap-agent
+stash@{2026-05-16 11:36:07 -0600} | 2026-05-16 11:36:07 -0600 | ae5834c7e1ed3c54c583dd4504428571943fa88a | On main: background-agent-work-in-flight
+stash@{2026-05-16 11:06:52 -0600} | 2026-05-16 11:06:52 -0600 | 03d90cc94eb66572888a28ddc7c58119482274f2 | WIP on main: 6c4855d4 align(termstructures.yieldcurves.OISRateHelper): clone overnight index linked to bootstrap term-structure handle (Phase 5e.5b-CFC-d-36)
+stash@{2026-05-16 10:52:33 -0600} | 2026-05-16 10:52:33 -0600 | 73f323a8efe65d8b3c3b7bd4cee0673274b2da79 | WIP on main: fb48f73e test(cashflows.RangeAccrualTest): un-ignore + body-fill 3 tests (Phase 5e.5b-CFC-d-28)
+stash@{2026-05-16 10:37:39 -0600} | 2026-05-16 10:37:39 -0600 | 3c4b46ac562a0c90430292858e0f0172174cc50b | WIP on main: a75b969f align(processes.StochasticProcessArray): diffusion/stdDeviation must copy sqrtCorrelation_ per call (Phase 5e.5b-CFC-d-30)
+stash@{2026-05-16 10:17:11 -0600} | 2026-05-16 10:17:11 -0600 | 943b0a83187c908b5dd2473972f3e79ce51d6ff6 | WIP on main: b7c8854d test(math.matrixutilities.PseudoSqrtSpectralTest): pin Schur + Spectral pseudo-sqrt to C++ reference (Phase 5e.5b-CFC-d-27)
+stash@{2026-05-16 10:09:39 -0600} | 2026-05-16 10:09:39 -0600 | 49ea3c238c4635d27670fbf11cfd412f81617ed0 | On main: park-other-agents-WIP
+stash@{2026-05-16 09:59:34 -0600} | 2026-05-16 09:59:34 -0600 | f8b10522fc35c717b34fa0de6308d8600c3e41a8 | On main: phase5e5b-CFC-d-35-BondFunctions-baseline-stash
+stash@{2026-05-16 09:51:26 -0600} | 2026-05-16 09:51:26 -0600 | 9d576affba2ffc38a6f5f1fa9b9ee34627ad870e | On main: killed-agent-India
+stash@{2026-05-16 09:47:10 -0600} | 2026-05-16 09:47:10 -0600 | 6cbb4d6e177a24c81639a3a1473966421ae42cb1 | On main: phase5e5b-CFC-d-27-WIP-stash-killed-agents
+stash@{2026-05-16 09:42:37 -0600} | 2026-05-16 09:42:37 -0600 | 6befbf911cf141faf2cc9bd662e57ddb809614ba | On main: killed-agent-leftovers-2026-05-16
+stash@{2026-05-16 09:42:04 -0600} | 2026-05-16 09:42:04 -0600 | 28ef4e9d4f80f556117f60cc5b6ee63e5a0afcc3 | WIP on main: 335e6298 align(time.calendars.China): remove typo y==200 line + redundant y==2008 line (Phase 5e.5b-CFC-d-31)
+stash@{2026-05-16 09:39:03 -0600} | 2026-05-16 09:39:03 -0600 | bb95e6b46eec60459918732cfb89778ad6812f32 | WIP on main: 335e6298 align(time.calendars.China): remove typo y==200 line + redundant y==2008 line (Phase 5e.5b-CFC-d-31)
+stash@{2026-05-15 06:34:38 -0600} | 2026-05-15 06:34:38 -0600 | 77f88208893f07c45800689971f0d2edf79b2fd6 | WIP on main: bf8f46e4 test(instruments.TwoAssetCorrelationOptionTest): un-ignore + body-fill testAnalyticEngine (Phase 5e.5b-CFC-d-24)

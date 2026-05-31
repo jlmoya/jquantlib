@@ -1,0 +1,199 @@
+diff --git a/jquantlib/src/main/java/org/jquantlib/instruments/CapFloor.java b/jquantlib/src/main/java/org/jquantlib/instruments/CapFloor.java
+index 7d4230fc..5550056e 100755
+--- a/jquantlib/src/main/java/org/jquantlib/instruments/CapFloor.java
++++ b/jquantlib/src/main/java/org/jquantlib/instruments/CapFloor.java
+@@ -50,12 +50,20 @@ import org.jquantlib.cashflow.CashFlow;
+ import org.jquantlib.cashflow.CashFlows;
+ import org.jquantlib.cashflow.FloatingRateCoupon;
+ import org.jquantlib.cashflow.Leg;
++import org.jquantlib.daycounters.Actual365Fixed;
+ import org.jquantlib.indexes.InterestRateIndex;
+ import org.jquantlib.lang.exceptions.LibraryException;
+ import org.jquantlib.math.Constants;
++import org.jquantlib.math.distributions.Derivative;
++import org.jquantlib.math.solvers1D.NewtonSafe;
++import org.jquantlib.model.VolatilityType;
+ import org.jquantlib.pricingengines.GenericEngine;
+ import org.jquantlib.pricingengines.PricingEngine;
++import org.jquantlib.pricingengines.capfloor.BachelierCapFloorEngine;
++import org.jquantlib.pricingengines.capfloor.BlackCapFloorEngine;
+ import org.jquantlib.quotes.Handle;
++import org.jquantlib.quotes.Quote;
++import org.jquantlib.quotes.SimpleQuote;
+ import org.jquantlib.termstructures.YieldTermStructure;
+ import org.jquantlib.time.Date;
+ 
+diff --git a/jquantlib/src/main/java/org/jquantlib/pricingengines/BlackFormula.java b/jquantlib/src/main/java/org/jquantlib/pricingengines/BlackFormula.java
+index 68d32a9a..3027bea3 100755
+--- a/jquantlib/src/main/java/org/jquantlib/pricingengines/BlackFormula.java
++++ b/jquantlib/src/main/java/org/jquantlib/pricingengines/BlackFormula.java
+@@ -753,6 +753,85 @@ public class BlackFormula {
+         return blackFormulaCashItmProbability(payoff.optionType(), strike, forward, stddev, displacement);
+     }
+ 
++    // ---
++    // ---
++    // ---
++
++    /**
++     * Black 1976 probability of being in the money (in the asset martingale
++     * measure), i.e. N(d1). This is the analytic forward delta for a
++     * cash-or-nothing / asset-or-nothing payoff under the displaced-diffusion
++     * model.
++     *
++     * <p>Mirrors C++ v1.42.1 {@code blackFormulaAssetItmProbability}
++     * (ql/pricingengines/blackformula.cpp:593-613).
++     *
++     * @note Instead of volatility it uses standard deviation, i.e.
++     *       volatility*sqrt(timeToMaturity)
++     */
++    public static /*@Real*/ double blackFormulaAssetItmProbability(
++            final Option.Type optionType,
++            @Real final double strike,
++            @Real final double forward,
++            @StdDev final double stddev) {
++
++        return blackFormulaAssetItmProbability(optionType, strike, forward, stddev, 0.0);
++    }
++
++    /**
++     * Black 1976 probability of being in the money (in the asset martingale
++     * measure), i.e. N(d1), with displacement.
++     *
++     * <p>Mirrors C++ v1.42.1 {@code blackFormulaAssetItmProbability}
++     * (ql/pricingengines/blackformula.cpp:593-613).
++     */
++    public static /*@Real*/ double blackFormulaAssetItmProbability(
++            final Option.Type optionType,
++            @Real final double strike,
++            @Real final double forward,
++            @StdDev final double stddev,
++            @Real final double displacement) {
++
++        // C++ calls checkParameters(strike, forward, displacement) here;
++        // mirror the documented invariants (forward and strike+displacement
++        // must be non-negative) inline.
++        QL.require(strike + displacement >= 0.0,
++                "strike + displacement must be non-negative");
++        QL.require(forward + displacement > 0.0,
++                "forward + displacement must be positive");
++        QL.require(stddev >= 0.0, "stddev must be non-negative");
++
++        final int sign = optionType.toInteger();
++
++        if (stddev == 0.0) {
++            return (forward * sign < strike * sign) ? 1.0 : 0.0;
++        }
++
++        final double fShifted = forward + displacement;
++        final double kShifted = strike + displacement;
++        if (kShifted == 0.0) {
++            return (optionType == Option.Type.Call) ? 1.0 : 0.0;
++        }
++        final double d1 = Math.log(fShifted / kShifted) / stddev + 0.5 * stddev;
++        final CumulativeNormalDistribution phi = new CumulativeNormalDistribution();
++        return phi.op(sign * d1);
++    }
++
++    /**
++     * Black 1976 N(d1) for a PlainVanillaPayoff (asset martingale measure),
++     * with displacement. Mirrors C++ v1.42.1
++     * {@code blackFormulaAssetItmProbability(PlainVanillaPayoff,...)}.
++     */
++    public static /*@Real*/ double blackFormulaAssetItmProbability(
++            final PlainVanillaPayoff payoff,
++            @Real final double forward,
++            @StdDev final double stddev,
++            @Real final double displacement) {
++
++        return blackFormulaAssetItmProbability(payoff.optionType(),
++                payoff.strike(), forward, stddev, displacement);
++    }
++
+ 
+     // ---
+     // ---
+diff --git a/jquantlib/src/main/java/org/jquantlib/pricingengines/forward/ForwardVanillaEngine.java b/jquantlib/src/main/java/org/jquantlib/pricingengines/forward/ForwardVanillaEngine.java
+index 8e5b34a6..542d3d0a 100644
+--- a/jquantlib/src/main/java/org/jquantlib/pricingengines/forward/ForwardVanillaEngine.java
++++ b/jquantlib/src/main/java/org/jquantlib/pricingengines/forward/ForwardVanillaEngine.java
+@@ -26,6 +26,7 @@ import org.jquantlib.instruments.StrikedTypePayoff;
+ import org.jquantlib.instruments.VanillaOption;
+ import org.jquantlib.math.Constants;
+ import org.jquantlib.pricingengines.AnalyticEuropeanEngine;
++import org.jquantlib.pricingengines.PricingEngine;
+ import org.jquantlib.processes.GeneralizedBlackScholesProcess;
+ import org.jquantlib.quotes.Handle;
+ import org.jquantlib.quotes.Quote;
+diff --git a/jquantlib/src/main/java/org/jquantlib/pricingengines/vanilla/AnalyticDigitalAmericanKOEngine.java b/jquantlib/src/main/java/org/jquantlib/pricingengines/vanilla/AnalyticDigitalAmericanKOEngine.java
+new file mode 100644
+index 00000000..0cf9a5bc
+--- /dev/null
++++ b/jquantlib/src/main/java/org/jquantlib/pricingengines/vanilla/AnalyticDigitalAmericanKOEngine.java
+@@ -0,0 +1,66 @@
++/*
++ Copyright (C) 2026 JQuantLib migration contributors.
++
++ This source code is release under the BSD License.
++
++ This file is part of JQuantLib, a free-software/open-source library
++ for financial quantitative analysts and developers - http://jquantlib.org/
++
++ JQuantLib is free software: you can redistribute it and/or modify it
++ under the terms of the JQuantLib license.  You should have received a
++ copy of the license along with this program; if not, please email
++ <jquant-devel@lists.sourceforge.net>. The license is also available online at
++ <http://www.jquantlib.org/index.php/LICENSE.TXT>.
++
++ This program is distributed in the hope that it will be useful, but WITHOUT
++ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
++ FOR A PARTICULAR PURPOSE.  See the license for more details.
++
++ JQuantLib is based on QuantLib. http://quantlib.org/
++ When applicable, the original copyright notice follows this notice.
++ */
++
++/*
++ Copyright (C) 2003, 2004 Ferdinando Ametrano
++ Copyright (C) 2003, 2004, 2007 StatPro Italia srl
++
++ This file is part of QuantLib, a free-software/open-source library
++ for financial quantitative analysts and developers - http://quantlib.org/
++
++ QuantLib is free software: you can redistribute it and/or modify it
++ under the terms of the QuantLib license.  You should have received a
++ copy of the license along with this program; if not, please email
++ <quantlib-dev@lists.sf.net>. The license is also available online at
++ <https://www.quantlib.org/license.shtml>.
++
++ This program is distributed in the hope that it will be useful, but WITHOUT
++ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
++ FOR A PARTICULAR PURPOSE.  See the license for more details.
++ */
++
++package org.jquantlib.pricingengines.vanilla;
++
++import org.jquantlib.processes.GeneralizedBlackScholesProcess;
++
++/**
++ * Analytic pricing engine for American knock-out options with digital payoff.
++ *
++ * <p>Java port of QuantLib v1.42.1 {@code AnalyticDigitalAmericanKOEngine}.
++ * Identical to {@link AnalyticDigitalAmericanEngine} except that
++ * {@link #knock_in()} returns {@code false}, switching the at-expiry pricing
++ * branch to the knock-out formula (the at-hit branch is unaffected).
++ *
++ * @author JQuantLib migration
++ */
++public class AnalyticDigitalAmericanKOEngine extends AnalyticDigitalAmericanEngine {
++
++    public AnalyticDigitalAmericanKOEngine(final GeneralizedBlackScholesProcess process) {
++        super(process);
++    }
++
++    @Override
++    public boolean knock_in() {
++        return false;
++    }
++
++}

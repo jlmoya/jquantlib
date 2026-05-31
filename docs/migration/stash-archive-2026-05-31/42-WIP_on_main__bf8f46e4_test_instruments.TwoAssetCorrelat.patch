@@ -1,0 +1,817 @@
+diff --git a/jquantlib/src/main/java/org/jquantlib/math/matrixutilities/SymmetricSchurDecomposition.java b/jquantlib/src/main/java/org/jquantlib/math/matrixutilities/SymmetricSchurDecomposition.java
+index b98bbb9a..62232c22 100755
+--- a/jquantlib/src/main/java/org/jquantlib/math/matrixutilities/SymmetricSchurDecomposition.java
++++ b/jquantlib/src/main/java/org/jquantlib/math/matrixutilities/SymmetricSchurDecomposition.java
+@@ -165,6 +165,69 @@ public class SymmetricSchurDecomposition {
+         } while (++ite <= maxIterations && keeplooping);
+ 
+         QL.ensure(ite <= maxIterations, "Too many iterations reached");
++
++        // ---- Phase 5e.5b-CFC-d-27 align ----
++        // C++ symmetricschurdecomposition.cpp:115-138 sorts the (eigenvalue,
++        // eigenvector) pairs by eigenvalue DESCENDING, then sign-normalises
++        // each eigenvector so its first row entry is non-negative. The Java
++        // port previously omitted both steps, so PseudoSqrt(Spectral) — which
++        // depends on the canonical column ordering — produced sqrtCorrelation
++        // with permuted/sign-flipped columns vs C++. That decorrelated the
++        // normals → dz mapping in MultiPathGenerator, breaking the cached MC
++        // value of HimalayaOptionTest::testCached (and Everest/Pagoda).
++        sortAndSignNormalize();
++    }
++
++    /**
++     * Sort (eigenvalue, eigenvector) pairs by eigenvalue descending and
++     * normalise the sign of each eigenvector so its first row entry is
++     * non-negative. Mirrors C++
++     * {@code symmetricschurdecomposition.cpp} lines 115-138 (v1.42.1).
++     */
++    private void sortAndSignNormalize() {
++        final int offset = A.offset();
++
++        // Snapshot eigenvalues and eigenvector columns into permutable arrays.
++        final Integer[] perm = new Integer[size];
++        final double[] eigVals = new double[size];
++        for (int i = 0; i < size; i++) {
++            perm[i] = i;
++            eigVals[i] = diag.$[diag.addr.op(i + offset)];
++        }
++
++        // Sort indices so eigenvalues are descending (stable within ties).
++        java.util.Arrays.sort(perm, (a, b) -> Double.compare(eigVals[b], eigVals[a]));
++
++        // Build sorted/sign-normalized eigenvalues + eigenvector columns.
++        final double[] newDiag = new double[size];
++        final double[][] newCols = new double[size][size]; // newCols[col][row]
++        final double maxEv = Math.abs(eigVals[perm[0]]);
++        for (int col = 0; col < size; col++) {
++            final int srcCol = perm[col];
++            final double eigVal = eigVals[srcCol];
++            // Match C++ round-off check: zero-out eigenvalues below
++            // 1e-16 of the largest in magnitude. Note C++ uses
++            // `temp[col].first / maxEv` (signed), Java mirrors verbatim.
++            if (maxEv > 0.0 && Math.abs(eigVal / maxEv) < 1e-16) {
++                newDiag[col] = 0.0;
++            } else {
++                newDiag[col] = eigVal;
++            }
++            // Read the source column from A (eigenvectors are stored as columns).
++            final double firstRow = A.$[A.addr.op(offset, srcCol + offset)];
++            final double sign = (firstRow < 0.0) ? -1.0 : 1.0;
++            for (int row = 0; row < size; row++) {
++                newCols[col][row] = sign * A.$[A.addr.op(row + offset, srcCol + offset)];
++            }
++        }
++
++        // Write back sorted+sign-normalized eigenvalues and eigenvectors.
++        for (int col = 0; col < size; col++) {
++            diag.$[diag.addr.op(col + offset)] = newDiag[col];
++            for (int row = 0; row < size; row++) {
++                A.$[A.addr.op(row + offset, col + offset)] = newCols[col][row];
++            }
++        }
+     }
+ 
+     //
+diff --git a/jquantlib/src/test/java/org/jquantlib/testsuite/cashflows/CapFlooredCouponTest.java b/jquantlib/src/test/java/org/jquantlib/testsuite/cashflows/CapFlooredCouponTest.java
+index 7b59d475..126ac872 100644
+--- a/jquantlib/src/test/java/org/jquantlib/testsuite/cashflows/CapFlooredCouponTest.java
++++ b/jquantlib/src/test/java/org/jquantlib/testsuite/cashflows/CapFlooredCouponTest.java
+@@ -22,7 +22,39 @@
+ 
+ package org.jquantlib.testsuite.cashflows;
+ 
++import static org.junit.Assert.fail;
++
+ import org.jquantlib.QL;
++import org.jquantlib.Settings;
++import org.jquantlib.cashflow.BlackIborCouponPricer;
++import org.jquantlib.cashflow.CappedFlooredCoupon;
++import org.jquantlib.cashflow.CashFlow;
++import org.jquantlib.cashflow.FixedRateLeg;
++import org.jquantlib.cashflow.IborLeg;
++import org.jquantlib.cashflow.Leg;
++import org.jquantlib.daycounters.Actual365Fixed;
++import org.jquantlib.daycounters.ActualActual;
++import org.jquantlib.daycounters.Thirty360;
++import org.jquantlib.indexes.Euribor1Y;
++import org.jquantlib.indexes.IborIndex;
++import org.jquantlib.instruments.Swap;
++import org.jquantlib.math.matrixutilities.Array;
++import org.jquantlib.pricingengines.PricingEngine;
++import org.jquantlib.pricingengines.swap.DiscountingSwapEngine;
++import org.jquantlib.quotes.Handle;
++import org.jquantlib.quotes.RelinkableHandle;
++import org.jquantlib.termstructures.YieldTermStructure;
++import org.jquantlib.termstructures.volatilities.optionlet.ConstantOptionletVolatility;
++import org.jquantlib.termstructures.volatilities.optionlet.OptionletVolatilityStructure;
++import org.jquantlib.testsuite.util.Utilities;
++import org.jquantlib.time.BusinessDayConvention;
++import org.jquantlib.time.Calendar;
++import org.jquantlib.time.Date;
++import org.jquantlib.time.DateGeneration;
++import org.jquantlib.time.Frequency;
++import org.jquantlib.time.Period;
++import org.jquantlib.time.Schedule;
++import org.jquantlib.time.TimeUnit;
+ import org.junit.Ignore;
+ import org.junit.Test;
+ 
+@@ -34,31 +66,25 @@ import org.junit.Test;
+  * legs and a parity-style decomposition of a capped/floored leg into its
+  * underlying floating leg + caplet portfolio - floorlet portfolio.
+  *
+- * <h3>Phase 5e.5 carry-forward rationale</h3>
+- *
+- * <p>JQuant has {@link org.jquantlib.cashflow.CappedFlooredCoupon} (Phase
+- * 1) and {@link org.jquantlib.cashflow.IborCoupon} but the test exercises:
++ * <h3>Phase 5e.5b-CFC-d-25</h3>
+  *
+- * <ul>
+- *   <li>{@code testLargeRates}: Builds a leg of capped/floored ibor coupons
+- *       with extreme cap (=100%) / floor (=0) strikes, expects the capped
+- *       price to equal the underlying floating price (the cap can never
+- *       bind). Requires {@code BlackIborCouponPricer} to be wired into
+- *       capped/floored coupons via {@code setCouponPricer(leg, pricer)}.
+- *       JQuant has {@link org.jquantlib.cashflow.IborCouponPricer} but
+- *       the {@code BlackIborCouponPricer} concrete class is partially
+- *       stubbed (Phase 2j touched it) and the leg-wide
+- *       {@code setCouponPricer} helper needs a {@code Leg} overload. See
+- *       WI-5e.5-CFC-1.</li>
++ * <p>{@code testLargeRates} body-filled. The test builds a 20-year annual
++ * Euribor1Y collared leg with caps=100% and floors=0% (degenerate strikes
++ * that should never bind), wires {@link BlackIborCouponPricer} onto each
++ * {@link org.jquantlib.cashflow.CappedFlooredIborCoupon} (bypassing
++ * {@link org.jquantlib.cashflow.PricerSetter}, which has the
++ * {@code CappedFlooredIborCouponVisitor} commented out — TODO carry-forward
++ * to Phase 5e.5c), and asserts {@code |NPV(vanilla) - NPV(collar)| < 1e-10}.
+  *
+- *   <li>{@code testDecomposition}: Verifies that
+- *       {@code NPV(capped/floored leg) ==
+- *        NPV(plain leg) + NPV(caps as portfolio) - NPV(floors as portfolio)}.
+- *       Requires {@code MakeCapFloor} (see WI-5e.5-CF-1) to build the
+- *       decomposition reference. Also exercises {@code CashFlows.npv} with
+- *       leg-level cap/floor introspection via {@code IborCouponPricer}. See
+- *       WI-5e.5-CFC-2.</li>
+- * </ul>
++ * <p>{@code testDecomposition} remains deferred — it requires
++ * {@code CapFloor.Engine} pricing of the {@code Cap}/{@code Floor}/
++ * {@code Collar} reference instruments via direct {@link
++ * org.jquantlib.instruments.CapFloor} construction (no {@code Cap}/
++ * {@code Floor}/{@code Collar} subclasses exist in the Java port; the C++
++ * test passes 9 sub-cases each with cached NPV decomposition diffs at
++ * tolerance 1e-12). Body-fill carry-forward to Phase 5e.5c-CFC-d once the
++ * decomposition path is traced through the Java {@code CapFloor} +
++ * {@code BlackCapFloorEngine} pricing engines.
+  */
+ public class CapFlooredCouponTest {
+ 
+@@ -66,14 +92,219 @@ public class CapFlooredCouponTest {
+         QL.info("::::: " + this.getClass().getSimpleName() + " :::::");
+     }
+ 
+-    @Ignore("Phase 5e.5 WI-5e.5-CFC-1: BlackIborCouponPricer now ported (Phase 5e.5/6); empty test body — "
+-            + "needs full port from C++ capflooredcoupon.cpp::testLargeRates plus leg-wide setCouponPricer wiring.")
++    /**
++     * Mirror of C++ {@code CommonVars} (capflooredcoupon.cpp:47-185), minimal
++     * subset needed by {@link #testLargeRates}.
++     */
++    private static final class CommonVars {
++        // global data
++        final Date today;
++        final Date settlement;
++        final Date startDate;
++        final Calendar calendar;
++        final double nominal = 100.0;
++        final Array nominals;
++        final BusinessDayConvention convention = BusinessDayConvention.ModifiedFollowing;
++        final Frequency frequency = Frequency.Annual;
++        final IborIndex index;
++        final int settlementDays = 2;
++        final int fixingDays = 2;
++        final RelinkableHandle<YieldTermStructure> termStructure =
++                new RelinkableHandle<YieldTermStructure>();
++        final int length = 20; // years
++        final double volatility = 0.20;
++
++        CommonVars() {
++            this.index = new Euribor1Y(termStructure);
++            this.calendar = index.fixingCalendar();
++            // C++: today = calendar.adjust(Date::todaysDate())
++            this.today = calendar.adjust(Date.todaysDate());
++            new Settings().setEvaluationDate(today);
++            this.settlement = calendar.advance(today,
++                    new Period(settlementDays, TimeUnit.Days));
++            this.startDate = settlement;
++            // C++: termStructure.linkTo(flatRate(settlement, 0.05, ActualActual(ActualActual::ISDA)))
++            termStructure.linkTo(Utilities.flatRate(settlement, 0.05,
++                    new ActualActual(ActualActual.Convention.ISDA)));
++
++            // nominals = std::vector<Real>(length, nominal)
++            final double[] arr = new double[length];
++            for (int i = 0; i < length; ++i) {
++                arr[i] = nominal;
++            }
++            this.nominals = new Array(arr);
++        }
++
++        /**
++         * Mirror of C++ {@code CommonVars::makeFixedLeg}
++         * (capflooredcoupon.cpp:84-95). Zero-rate fixed leg.
++         */
++        Leg makeFixedLeg(final Date startDate, final int length) {
++            final Date endDate = calendar.advance(startDate,
++                    new Period(length, TimeUnit.Years), convention);
++            final Schedule schedule = new Schedule(startDate, endDate,
++                    new Period(frequency), calendar,
++                    convention, convention,
++                    DateGeneration.Rule.Forward, false);
++            final double[] coupons = new double[length]; // all zeros
++            return new FixedRateLeg(schedule, new Thirty360(Thirty360.Convention.BondBasis))
++                    .withNotionals(asPrimitiveArray(nominals))
++                    .withCouponRates(coupons)
++                    .Leg();
++        }
++
++        /**
++         * Mirror of C++ {@code CommonVars::makeFloatingLeg}
++         * (capflooredcoupon.cpp:97-115). Vanilla Ibor leg.
++         */
++        Leg makeFloatingLeg(final Date startDate, final int length) {
++            return makeFloatingLeg(startDate, length, 1.0, 0.0);
++        }
++
++        Leg makeFloatingLeg(final Date startDate, final int length,
++                            final double gearing, final double spread) {
++            final Date endDate = calendar.advance(startDate,
++                    new Period(length, TimeUnit.Years), convention);
++            final Schedule schedule = new Schedule(startDate, endDate,
++                    new Period(frequency), calendar,
++                    convention, convention,
++                    DateGeneration.Rule.Forward, false);
++            return new IborLeg(schedule, index)
++                    .withNotionals(nominals)
++                    .withPaymentDayCounter(index.dayCounter())
++                    .withPaymentAdjustment(convention)
++                    .withFixingDays(fixingDays)
++                    .withGearings(filled(length, gearing))
++                    .withSpreads(filled(length, spread))
++                    .Leg();
++        }
++
++        /**
++         * Mirror of C++ {@code CommonVars::makeCapFlooredLeg}
++         * (capflooredcoupon.cpp:117-150). Capped/floored Ibor leg with
++         * {@link BlackIborCouponPricer} wired onto each capped/floored
++         * coupon (bypassing {@link org.jquantlib.cashflow.PricerSetter},
++         * which lacks a {@code CappedFlooredIborCoupon} visitor branch in
++         * the Java port).
++         */
++        Leg makeCapFlooredLeg(final Date startDate, final int length,
++                              final double[] caps, final double[] floors,
++                              final double volatility) {
++            return makeCapFlooredLeg(startDate, length, caps, floors, volatility, 1.0, 0.0);
++        }
++
++        Leg makeCapFlooredLeg(final Date startDate, final int length,
++                              final double[] caps, final double[] floors,
++                              final double volatility,
++                              final double gearing, final double spread) {
++            final Date endDate = calendar.advance(startDate,
++                    new Period(length, TimeUnit.Years), convention);
++            final Schedule schedule = new Schedule(startDate, endDate,
++                    new Period(frequency), calendar,
++                    convention, convention,
++                    DateGeneration.Rule.Forward, false);
++
++            final Handle<OptionletVolatilityStructure> vol = new Handle<OptionletVolatilityStructure>(
++                    new ConstantOptionletVolatility(0, calendar,
++                            BusinessDayConvention.Following,
++                            volatility, new Actual365Fixed()));
++
++            final BlackIborCouponPricer pricer = new BlackIborCouponPricer(vol);
++
++            final IborLeg builder = new IborLeg(schedule, index)
++                    .withNotionals(nominals)
++                    .withPaymentDayCounter(index.dayCounter())
++                    .withPaymentAdjustment(convention)
++                    .withFixingDays(fixingDays)
++                    .withGearings(filled(length, gearing))
++                    .withSpreads(filled(length, spread));
++            if (caps.length > 0) {
++                builder.withCaps(new Array(caps));
++            }
++            if (floors.length > 0) {
++                builder.withFloors(new Array(floors));
++            }
++            final Leg iborLeg = builder.Leg();
++
++            // C++ setCouponPricer(iborLeg, pricer) — Java PricerSetter lacks
++            // the CappedFlooredIborCoupon visitor branch (commented out in
++            // PricerSetter.java). Iterate manually and call the FloatingRate
++            // Coupon-level setPricer, which is reachable via the
++            // CappedFlooredCoupon parent.
++            for (final CashFlow cf : iborLeg) {
++                if (cf instanceof CappedFlooredCoupon) {
++                    ((CappedFlooredCoupon) cf).setPricer(pricer);
++                }
++            }
++            return iborLeg;
++        }
++    }
++
++    private static Array filled(final int n, final double v) {
++        final double[] arr = new double[n];
++        for (int i = 0; i < n; ++i) {
++            arr[i] = v;
++        }
++        return new Array(arr);
++    }
++
++    private static double[] asPrimitiveArray(final Array a) {
++        final double[] arr = new double[a.size()];
++        for (int i = 0; i < a.size(); ++i) {
++            arr[i] = a.get(i);
++        }
++        return arr;
++    }
++
++    private static double[] filledArr(final int n, final double v) {
++        final double[] arr = new double[n];
++        for (int i = 0; i < n; ++i) {
++            arr[i] = v;
++        }
++        return arr;
++    }
++
+     @Test
+     public void testLargeRates() {
++        QL.info("Testing degenerate collared coupon...");
++
++        final CommonVars vars = new CommonVars();
++
++        /* A vanilla floating leg and a capped floating leg with strike
++           equal to 100 and floor equal to 0 must have (about) the same NPV
++           (depending on variance: option expiry and volatility)
++        */
++        final double[] caps = filledArr(vars.length, 100.0);
++        final double[] floors = filledArr(vars.length, 0.0);
++        final double tolerance = 1e-10;
++
++        // fixed leg with zero rate
++        final Leg fixedLeg = vars.makeFixedLeg(vars.startDate, vars.length);
++        final Leg floatLeg = vars.makeFloatingLeg(vars.startDate, vars.length);
++        final Leg collaredLeg = vars.makeCapFlooredLeg(vars.startDate, vars.length,
++                caps, floors, vars.volatility);
++
++        final PricingEngine engine = new DiscountingSwapEngine(vars.termStructure);
++        final Swap vanillaLeg = new Swap(fixedLeg, floatLeg);
++        final Swap collarLeg = new Swap(fixedLeg, collaredLeg);
++        vanillaLeg.setPricingEngine(engine);
++        collarLeg.setPricingEngine(engine);
++
++        final double npvVanilla = vanillaLeg.NPV();
++        final double npvCollar = collarLeg.NPV();
++        final double diff = Math.abs(npvVanilla - npvCollar);
++        if (diff > tolerance) {
++            fail("Length: " + vars.length + " y\n"
++                    + "Volatility: " + vars.volatility * 100 + "%\n"
++                    + "Notional: " + vars.nominal + "\n"
++                    + "Vanilla floating leg NPV: " + npvVanilla + "\n"
++                    + "Collared floating leg NPV (strikes 0 and 100): " + npvCollar + "\n"
++                    + "Diff: " + diff);
++        }
+     }
+ 
+-    @Ignore("Phase 5e.5 WI-5e.5-CFC-2: MakeCapFloor now ported (commit c1e9cb84); empty test body — "
+-            + "needs full port from C++ capflooredcoupon.cpp::testDecomposition.")
++    @Ignore("Phase 5e.5b-CFC-d-25 carry-forward: testDecomposition needs Cap/Floor/Collar instrument pricing "
++            + "via direct CapFloor + BlackCapFloorEngine construction; 9 sub-cases at tolerance 1e-12 — deferred.")
+     @Test
+     public void testDecomposition() {
+     }
+diff --git a/jquantlib/src/test/java/org/jquantlib/testsuite/cashflows/DigitalCouponTest.java b/jquantlib/src/test/java/org/jquantlib/testsuite/cashflows/DigitalCouponTest.java
+index 9ab6f865..dcb8a297 100644
+--- a/jquantlib/src/test/java/org/jquantlib/testsuite/cashflows/DigitalCouponTest.java
++++ b/jquantlib/src/test/java/org/jquantlib/testsuite/cashflows/DigitalCouponTest.java
+@@ -22,7 +22,33 @@
+ 
+ package org.jquantlib.testsuite.cashflows;
+ 
++import static org.junit.Assert.fail;
++
+ import org.jquantlib.QL;
++import org.jquantlib.Settings;
++import org.jquantlib.cashflow.BlackIborCouponPricer;
++import org.jquantlib.cashflow.DigitalCoupon;
++import org.jquantlib.cashflow.DigitalReplication;
++import org.jquantlib.cashflow.FloatingRateCoupon;
++import org.jquantlib.cashflow.IborCoupon;
++import org.jquantlib.cashflow.Replication;
++import org.jquantlib.daycounters.Actual360;
++import org.jquantlib.daycounters.Actual365Fixed;
++import org.jquantlib.indexes.Euribor6M;
++import org.jquantlib.indexes.IborIndex;
++import org.jquantlib.instruments.Position;
++import org.jquantlib.math.Constants;
++import org.jquantlib.quotes.Handle;
++import org.jquantlib.quotes.RelinkableHandle;
++import org.jquantlib.termstructures.YieldTermStructure;
++import org.jquantlib.termstructures.volatilities.optionlet.ConstantOptionletVolatility;
++import org.jquantlib.termstructures.volatilities.optionlet.OptionletVolatilityStructure;
++import org.jquantlib.testsuite.util.Utilities;
++import org.jquantlib.time.BusinessDayConvention;
++import org.jquantlib.time.Calendar;
++import org.jquantlib.time.Date;
++import org.jquantlib.time.Period;
++import org.jquantlib.time.TimeUnit;
+ import org.junit.Ignore;
+ import org.junit.Test;
+ 
+@@ -35,35 +61,24 @@ import org.junit.Test;
+  * {@link org.jquantlib.cashflow.DigitalReplication} pricing strategy
+  * with a Black-style underlying ibor-coupon pricer.
+  *
+- * <h3>Phase 5e.5 carry-forward rationale</h3>
+- *
+- * <p>JQuant has {@link org.jquantlib.cashflow.DigitalCoupon},
+- * {@link org.jquantlib.cashflow.DigitalReplication}, and
+- * {@link org.jquantlib.cashflow.IborCouponPricer} (Phase 1/2j) but the
+- * tests need:
++ * <h3>Phase 5e.5b-CFC-d-25</h3>
+  *
++ * <p>Two body-fills with no probe values needed (purely structural):
+  * <ul>
+- *   <li>{@code BlackIborCouponPricer} concrete pricer to be wired into
+- *       {@code DigitalCoupon} via {@code setPricer(IborCouponPricer)}.
+- *       JQuant has a partial {@code BlackIborCouponPricer} stub; the
+- *       digital-replication path through {@code couponPrice()} +
+- *       {@code optionletPrice()} needs cross-validation. See
+- *       WI-5e.5-DC-1.</li>
+- *
+- *   <li>{@code OptionletReplication.Type} enum
+- *       (Sub/Central/Super) wired into
+- *       {@code DigitalReplication.replicationType()} to drive
+- *       {@code testReplicationType}. The Java
+- *       {@link org.jquantlib.cashflow.Replication} stub partially exposes
+- *       this; need to verify the C++ semantics. See WI-5e.5-DC-2.</li>
+- *
+- *   <li>{@code RelinkableHandle<OptionletVolatilityStructure>} for the
+- *       constant-vol test fixture; JQuant has the underlying
+- *       {@link org.jquantlib.quotes.RelinkableHandle} but the
+- *       {@code OptionletVolatilityStructure} hierarchy needs the
+- *       {@code ConstantOptionletVolatility} concrete subclass exposed at
+- *       the right package level. See WI-5e.5-DC-3.</li>
++ *   <li>{@code testCallPutParity} — verifies put/call parity for
++ *       cash-or-nothing and asset-or-nothing digital coupons (target NPV
++ *       is the analytical {@code N * tau * D * cashRate} or
++ *       {@code N * tau * D * underlyingRate}).</li>
++ *   <li>{@code testReplicationType} — verifies that Sub-replication price
++ *       <= Central-replication price <= Super-replication price for all
++ *       cash-or-nothing variants.</li>
+  * </ul>
++ *
++ * <p>The other 6 cases remain deferred — they need either probe-derived
++ * Cox-Rubinstein / Reiner-Rubinstein reference prices, or the
++ * {@code AnalyticEuropeanEngine} + {@code BlackScholesMertonProcess}
++ * + {@code AssetOrNothingPayoff} / {@code CashOrNothingPayoff} round-trip
++ * for cross-validation.
+  */
+ public class DigitalCouponTest {
+ 
+@@ -71,6 +86,34 @@ public class DigitalCouponTest {
+         QL.info("::::: " + this.getClass().getSimpleName() + " :::::");
+     }
+ 
++    /**
++     * Mirror of C++ {@code CommonVars} (digitalcoupon.cpp:43-67).
++     */
++    private static final class CommonVars {
++        final Date today;
++        final Date settlement;
++        final double nominal = 1_000_000.0;
++        final Calendar calendar;
++        final IborIndex index;
++        final int fixingDays = 2;
++        final RelinkableHandle<YieldTermStructure> termStructure =
++                new RelinkableHandle<YieldTermStructure>();
++        // C++: optionTolerance = 1e-04, blackTolerance = 1e-10
++        final double optionTolerance = 1e-04;
++        final double blackTolerance = 1e-10;
++
++        CommonVars() {
++            this.index = new Euribor6M(termStructure);
++            this.calendar = index.fixingCalendar();
++            this.today = calendar.adjust(new Settings().evaluationDate());
++            new Settings().setEvaluationDate(today);
++            this.settlement = calendar.advance(today,
++                    new Period(fixingDays, TimeUnit.Days));
++            termStructure.linkTo(Utilities.flatRate(settlement, 0.05,
++                    new Actual365Fixed()));
++        }
++    }
++
+     @Ignore("Phase 5e.5 WI-5e.5-DC-1: BlackIborCouponPricer now ported (commit 2e0ef9e7); empty test body — needs full port from C++ digitalcoupon.cpp + DigitalCoupon-pricer wiring.")
+     @Test
+     public void testAssetOrNothing() {
+@@ -101,14 +144,298 @@ public class DigitalCouponTest {
+     public void testCashOrNothingDeepOutTheMoney() {
+     }
+ 
+-    @Ignore("Phase 5e.5 WI-5e.5-DC-1: BlackIborCouponPricer now ported (commit 2e0ef9e7); empty test body — needs full port from C++ digitalcoupon.cpp + DigitalCoupon-pricer wiring.")
++    /**
++     * Mirror of C++ {@code testCallPutParity} (digitalcoupon.cpp:829-920).
++     *
++     * <p>Verifies put/call parity:
++     * <ul>
++     *   <li>Cash-or-nothing: long-call - short-put = N*tau*D*cashRate.</li>
++     *   <li>Asset-or-nothing: long-call - short-put = N*tau*D*underlyingRate.</li>
++     * </ul>
++     * Tolerance is purely C++ {@code 1e-08} / {@code 1e-07}.
++     */
+     @Test
+     public void testCallPutParity() {
++        QL.info("Testing call/put parity for European digital coupon...");
++
++        final CommonVars vars = new CommonVars();
++
++        final double[] vols = { 0.05, 0.15, 0.30 };
++        final double[] strikes = { 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07 };
++
++        final double gearing = 1.0;
++        final double spread = 0.0;
++        final double nullstrike = Constants.NULL_REAL;
++
++        for (final double capletVolatility : vols) {
++            final RelinkableHandle<OptionletVolatilityStructure> volatility =
++                    new RelinkableHandle<OptionletVolatilityStructure>();
++            volatility.linkTo(new ConstantOptionletVolatility(
++                    vars.today, vars.calendar,
++                    BusinessDayConvention.Following,
++                    capletVolatility, new Actual360()));
++            final Handle<OptionletVolatilityStructure> volH =
++                    new Handle<OptionletVolatilityStructure>(volatility.currentLink());
++
++            for (final double strike : strikes) {
++                for (int k = 0; k < 10; ++k) {
++                    final Date startDate = vars.calendar.advance(vars.settlement,
++                            new Period(k + 1, TimeUnit.Years));
++                    final Date endDate = vars.calendar.advance(vars.settlement,
++                            new Period(k + 2, TimeUnit.Years));
++                    final Date paymentDate = endDate;
++
++                    final FloatingRateCoupon underlying = new IborCoupon(
++                            paymentDate, vars.nominal,
++                            startDate, endDate,
++                            vars.fixingDays, vars.index,
++                            gearing, spread);
++
++                    final BlackIborCouponPricer pricer = new BlackIborCouponPricer(volH);
++
++                    // Cash-or-Nothing
++                    final double cashRate = 0.01;
++                    // Long Call digital
++                    final DigitalCoupon cashLongCall = new DigitalCoupon(
++                            underlying,
++                            strike, Position.Long, false, cashRate,
++                            nullstrike, Position.Long, false, nullstrike,
++                            null /* default replication */, false);
++                    cashLongCall.setPricer(pricer);
++                    // Short Put digital
++                    final DigitalCoupon cashShortPut = new DigitalCoupon(
++                            underlying,
++                            nullstrike, Position.Long, false, nullstrike,
++                            strike, Position.Short, false, cashRate,
++                            null, false);
++                    cashShortPut.setPricer(pricer);
++
++                    final double accrualPeriod = underlying.accrualPeriod();
++                    final double discount = vars.termStructure.currentLink().discount(endDate);
++
++                    final double cashDigitalPrice = cashLongCall.price(vars.termStructure)
++                                                  - cashShortPut.price(vars.termStructure);
++                    final double cashTargetPrice = vars.nominal * accrualPeriod * discount * cashRate;
++                    double error = Math.abs(cashTargetPrice - cashDigitalPrice);
++                    final double cashTol = 1e-08;
++                    if (error > cashTol) {
++                        fail("Cash-or-nothing:\n"
++                                + "Volatility = " + capletVolatility + "\n"
++                                + "Strike = " + strike + "\n"
++                                + "Exercise = " + (k + 1) + " years\n"
++                                + "Price = " + cashDigitalPrice + "\n"
++                                + "Target Price = " + cashTargetPrice + "\n"
++                                + "Error = " + error);
++                    }
++
++                    // Asset-or-Nothing
++                    final DigitalCoupon assetLongCall = new DigitalCoupon(
++                            underlying,
++                            strike, Position.Long, false, nullstrike,
++                            nullstrike, Position.Long, false, nullstrike,
++                            null, false);
++                    assetLongCall.setPricer(pricer);
++                    final DigitalCoupon assetShortPut = new DigitalCoupon(
++                            underlying,
++                            nullstrike, Position.Long, false, nullstrike,
++                            strike, Position.Short, false, nullstrike,
++                            null, false);
++                    assetShortPut.setPricer(pricer);
++
++                    final double assetDigitalPrice = assetLongCall.price(vars.termStructure)
++                                                   - assetShortPut.price(vars.termStructure);
++                    final double assetTargetPrice = vars.nominal * accrualPeriod * discount * underlying.rate();
++                    error = Math.abs(assetTargetPrice - assetDigitalPrice);
++                    final double assetTol = 1e-07;
++                    if (error > assetTol) {
++                        fail("Asset-or-nothing:\n"
++                                + "Volatility = " + capletVolatility + "\n"
++                                + "Strike = " + strike + "\n"
++                                + "Exercise = " + (k + 1) + " years\n"
++                                + "Price = " + assetDigitalPrice + "\n"
++                                + "Target Price = " + assetTargetPrice + "\n"
++                                + "Error = " + error);
++                    }
++                }
++            }
++        }
+     }
+ 
+-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-DC-2 — needs Replication.Type Sub/Central/Super wiring "
+-            + "in DigitalReplication.")
++    /**
++     * Mirror of C++ {@code testReplicationType} (digitalcoupon.cpp:922-1095).
++     *
++     * <p>Pure ordering check: Sub-replication price <= Central-replication
++     * price <= Super-replication price (within tolerance 1e-09) for
++     * cash-or-nothing variants of long/short call and long/short put
++     * digital coupons.
++     */
+     @Test
+     public void testReplicationType() {
++        QL.info("Testing replication type for European digital coupon...");
++
++        final CommonVars vars = new CommonVars();
++
++        final double[] vols = { 0.05, 0.15, 0.30 };
++        final double[] strikes = { 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07 };
++
++        final double gearing = 1.0;
++        final double spread = 0.0;
++        final double nullstrike = Constants.NULL_REAL;
++
++        final double gap = 1e-04;
++        final DigitalReplication subReplication = new DigitalReplication(Replication.Type.Sub, gap);
++        final DigitalReplication centralReplication = new DigitalReplication(Replication.Type.Central, gap);
++        final DigitalReplication superReplication = new DigitalReplication(Replication.Type.Super, gap);
++
++        for (final double capletVolatility : vols) {
++            final RelinkableHandle<OptionletVolatilityStructure> volatility =
++                    new RelinkableHandle<OptionletVolatilityStructure>();
++            volatility.linkTo(new ConstantOptionletVolatility(
++                    vars.today, vars.calendar,
++                    BusinessDayConvention.Following,
++                    capletVolatility, new Actual360()));
++            final Handle<OptionletVolatilityStructure> volH =
++                    new Handle<OptionletVolatilityStructure>(volatility.currentLink());
++
++            for (final double strike : strikes) {
++                for (int k = 0; k < 10; ++k) {
++                    final Date startDate = vars.calendar.advance(vars.settlement,
++                            new Period(k + 1, TimeUnit.Years));
++                    final Date endDate = vars.calendar.advance(vars.settlement,
++                            new Period(k + 2, TimeUnit.Years));
++                    final Date paymentDate = endDate;
++
++                    final FloatingRateCoupon underlying = new IborCoupon(
++                            paymentDate, vars.nominal,
++                            startDate, endDate,
++                            vars.fixingDays, vars.index,
++                            gearing, spread);
++                    final BlackIborCouponPricer pricer = new BlackIborCouponPricer(volH);
++
++                    final double cashRate = 0.005;
++                    final double tolerance = 1e-09;
++
++                    // ---------- Cash-or-Nothing: Long Call ----------
++                    final DigitalCoupon subLongCall = new DigitalCoupon(underlying,
++                            strike, Position.Long, false, cashRate,
++                            nullstrike, Position.Long, false, nullstrike,
++                            subReplication, false);
++                    final DigitalCoupon centralLongCall = new DigitalCoupon(underlying,
++                            strike, Position.Long, false, cashRate,
++                            nullstrike, Position.Long, false, nullstrike,
++                            centralReplication, false);
++                    final DigitalCoupon overLongCall = new DigitalCoupon(underlying,
++                            strike, Position.Long, false, cashRate,
++                            nullstrike, Position.Long, false, nullstrike,
++                            superReplication, false);
++                    subLongCall.setPricer(pricer);
++                    centralLongCall.setPricer(pricer);
++                    overLongCall.setPricer(pricer);
++                    double subPrice = subLongCall.price(vars.termStructure);
++                    double centralPrice = centralLongCall.price(vars.termStructure);
++                    double overPrice = overLongCall.price(vars.termStructure);
++                    if (((subPrice > centralPrice) && Math.abs(centralPrice - subPrice) > tolerance)
++                            || ((centralPrice > overPrice) && Math.abs(centralPrice - overPrice) > tolerance)) {
++                        fail("Cash-or-nothing: Floating Rate Coupon + Call Digital option\n"
++                                + "Volatility = " + capletVolatility + "\n"
++                                + "Strike = " + strike + "\n"
++                                + "Exercise = " + (k + 1) + " years\n"
++                                + "Sub-Replication Price = " + subPrice + "\n"
++                                + "Central-Replication Price = " + centralPrice + "\n"
++                                + "Over-Replication Price = " + overPrice);
++                    }
++
++                    // ---------- Cash-or-Nothing: Short Call ----------
++                    final DigitalCoupon subShortCall = new DigitalCoupon(underlying,
++                            strike, Position.Short, false, cashRate,
++                            nullstrike, Position.Long, false, nullstrike,
++                            subReplication, false);
++                    final DigitalCoupon centralShortCall = new DigitalCoupon(underlying,
++                            strike, Position.Short, false, cashRate,
++                            nullstrike, Position.Long, false, nullstrike,
++                            centralReplication, false);
++                    final DigitalCoupon overShortCall = new DigitalCoupon(underlying,
++                            strike, Position.Short, false, cashRate,
++                            nullstrike, Position.Long, false, nullstrike,
++                            superReplication, false);
++                    subShortCall.setPricer(pricer);
++                    centralShortCall.setPricer(pricer);
++                    overShortCall.setPricer(pricer);
++                    subPrice = subShortCall.price(vars.termStructure);
++                    centralPrice = centralShortCall.price(vars.termStructure);
++                    overPrice = overShortCall.price(vars.termStructure);
++                    if (((subPrice > centralPrice) && Math.abs(centralPrice - subPrice) > tolerance)
++                            || ((centralPrice > overPrice) && Math.abs(centralPrice - overPrice) > tolerance)) {
++                        fail("Cash-or-nothing: Floating Rate Coupon - Call Digital option\n"
++                                + "Volatility = " + capletVolatility + "\n"
++                                + "Strike = " + strike + "\n"
++                                + "Exercise = " + (k + 1) + " years\n"
++                                + "Sub-Replication Price = " + subPrice + "\n"
++                                + "Central-Replication Price = " + centralPrice + "\n"
++                                + "Over-Replication Price = " + overPrice);
++                    }
++
++                    // ---------- Cash-or-Nothing: Long Put ----------
++                    final DigitalCoupon subLongPut = new DigitalCoupon(underlying,
++                            nullstrike, Position.Long, false, nullstrike,
++                            strike, Position.Long, false, cashRate,
++                            subReplication, false);
++                    final DigitalCoupon centralLongPut = new DigitalCoupon(underlying,
++                            nullstrike, Position.Long, false, nullstrike,
++                            strike, Position.Long, false, cashRate,
++                            centralReplication, false);
++                    final DigitalCoupon overLongPut = new DigitalCoupon(underlying,
++                            nullstrike, Position.Long, false, nullstrike,
++                            strike, Position.Long, false, cashRate,
++                            superReplication, false);
++                    subLongPut.setPricer(pricer);
++                    centralLongPut.setPricer(pricer);
++                    overLongPut.setPricer(pricer);
++                    subPrice = subLongPut.price(vars.termStructure);
++                    centralPrice = centralLongPut.price(vars.termStructure);
++                    overPrice = overLongPut.price(vars.termStructure);
++                    if (((subPrice > centralPrice) && Math.abs(centralPrice - subPrice) > tolerance)
++                            || ((centralPrice > overPrice) && Math.abs(centralPrice - overPrice) > tolerance)) {
++                        fail("Cash-or-nothing: Floating Rate Coupon + Put Digital option\n"
++                                + "Volatility = " + capletVolatility + "\n"
++                                + "Strike = " + strike + "\n"
++                                + "Exercise = " + (k + 1) + " years\n"
++                                + "Sub-Replication Price = " + subPrice + "\n"
++                                + "Central-Replication Price = " + centralPrice + "\n"
++                                + "Over-Replication Price = " + overPrice);
++                    }
++
++                    // ---------- Cash-or-Nothing: Short Put ----------
++                    final DigitalCoupon subShortPut = new DigitalCoupon(underlying,
++                            nullstrike, Position.Long, false, nullstrike,
++                            strike, Position.Short, false, cashRate,
++                            subReplication, false);
++                    final DigitalCoupon centralShortPut = new DigitalCoupon(underlying,
++                            nullstrike, Position.Long, false, nullstrike,
++                            strike, Position.Short, false, cashRate,
++                            centralReplication, false);
++                    final DigitalCoupon overShortPut = new DigitalCoupon(underlying,
++                            nullstrike, Position.Long, false, nullstrike,
++                            strike, Position.Short, false, cashRate,
++                            superReplication, false);
++                    subShortPut.setPricer(pricer);
++                    centralShortPut.setPricer(pricer);
++                    overShortPut.setPricer(pricer);
++                    subPrice = subShortPut.price(vars.termStructure);
++                    centralPrice = centralShortPut.price(vars.termStructure);
++                    overPrice = overShortPut.price(vars.termStructure);
++                    if (((subPrice > centralPrice) && Math.abs(centralPrice - subPrice) > tolerance)
++                            || ((centralPrice > overPrice) && Math.abs(centralPrice - overPrice) > tolerance)) {
++                        fail("Cash-or-nothing: Floating Rate Coupon - Put Digital option\n"
++                                + "Volatility = " + capletVolatility + "\n"
++                                + "Strike = " + strike + "\n"
++                                + "Exercise = " + (k + 1) + " years\n"
++                                + "Sub-Replication Price = " + subPrice + "\n"
++                                + "Central-Replication Price = " + centralPrice + "\n"
++                                + "Over-Replication Price = " + overPrice);
++                    }
++                }
++            }
++        }
+     }
+ }

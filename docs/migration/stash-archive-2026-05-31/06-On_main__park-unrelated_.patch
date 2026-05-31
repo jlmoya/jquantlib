@@ -1,0 +1,973 @@
+diff --git a/jquantlib/src/main/java/org/jquantlib/experimental/volatility/NoArbSabrModel.java b/jquantlib/src/main/java/org/jquantlib/experimental/volatility/NoArbSabrModel.java
+index 819ec25a..e6d19cf9 100644
+--- a/jquantlib/src/main/java/org/jquantlib/experimental/volatility/NoArbSabrModel.java
++++ b/jquantlib/src/main/java/org/jquantlib/experimental/volatility/NoArbSabrModel.java
+@@ -25,32 +25,30 @@
+ package org.jquantlib.experimental.volatility;
+ 
+ import org.jquantlib.QL;
++import org.jquantlib.math.ModifiedBesselFunction;
++import org.jquantlib.math.Ops;
++import org.jquantlib.math.integrals.GaussLobattoIntegral;
++import org.jquantlib.math.solvers1D.Brent;
+ 
+ /**
+  * No-arbitrage SABR model (Doust 2012).
+  *
+- * <p>Constants + parameter accessors port of QuantLib v1.42.1
+- * {@code ql/experimental/volatility/noarbsabr.{hpp,cpp}}. The full pricing
+- * logic (option price, digital price, density) is deferred to Phase 4f.5
+- * because the model relies on:
++ * <p>Line-by-line port of QuantLib v1.42.1
++ * {@code ql/experimental/volatility/noarbsabr.{hpp,cpp}}.
++ *
++ * <p>Parameter bounds (Doust 2012, Table 1):
+  * <ul>
+- *   <li>A pre-computed 1,209,600-entry absorption-probability table
+- *       ({@code noarbsabrabsprobs.cpp}, ~10K LOC of generated data).
+- *       Strategy: convert to a binary resource on the classpath.</li>
+- *   <li>Boost {@code gamma_q} / {@code gamma_q_inv} (incomplete gamma
+- *       complement and its inverse — not yet ported to JQuantMath).</li>
+- *   <li>{@code modifiedBesselFunction_i_exponentiallyWeighted} (already
+- *       provided by JQuantLib's {@code ModifiedBesselFunction}, but the
+- *       D0 interpolator is non-trivial).</li>
++ *   <li>{@code beta ∈ [0.01, 0.99]}</li>
++ *   <li>{@code expiryTime ∈ (0, 30]}</li>
++ *   <li>{@code sigmaI = alpha * forward^(beta-1) ∈ [0.05, 1.0]}</li>
++ *   <li>{@code nu ∈ [0.01, 0.8]}</li>
++ *   <li>{@code rho ∈ [-0.99, 0.99]}</li>
+  * </ul>
+  *
+- * <p>This skeleton only validates parameter bounds (Doust 2012, Table 1)
+- * and exposes accessors so that {@link NoArbSabrSmileSection} can construct
+- * a model instance. All pricing/density methods throw
+- * {@link UnsupportedOperationException}.
+- *
+- * <p>See also: {@link Constants} (parameter bounds, {@code phiByTau_cutoff},
+- * etc.).
++ * <p>Pricing uses adaptive Gauss-Lobatto integration over the SABR density
++ * {@code p(f)} (see {@link #pImpl(double)}). The absorption probability at
++ * {@code F=0} is read from the precomputed {@link NoArbSabrAbsorptions}
++ * table via {@link D0Interpolator}.
+  */
+ public class NoArbSabrModel {
+ 
+@@ -96,14 +94,16 @@ public class NoArbSabrModel {
+     private final double beta_;
+     private final double nu_;
+     private final double rho_;
++    private double absProb_;
++    private double fmin_;
++    private double fmax_;
++    private double forward_;
++    private double numericalIntegralOverP_;
++    private double numericalForward_;
++    private final GaussLobattoIntegral integrator_;
+ 
+     /**
+-     * Constructor (noarbsabr.cpp lines 50-114, parameter-validation prefix).
+-     *
+-     * <p>Note: full constructor body (model-implied forward adjustment via
+-     * Brent root-finding, integrator setup, D0Interpolator) is deferred to
+-     * Phase 4f.5 because it depends on the absorption-probability table and
+-     * the Boost gamma functions.
++     * Constructor (noarbsabr.cpp lines 50-114).
+      */
+     public NoArbSabrModel(final double expiryTime, final double forward,
+             final double alpha, final double beta, final double nu, final double rho) {
+@@ -129,42 +129,165 @@ public class NoArbSabrModel {
+         this.beta_ = beta;
+         this.nu_ = nu;
+         this.rho_ = rho;
++        this.forward_ = forward;
++        this.numericalForward_ = forward;
++
++        // determine a region sufficient for integration in the normal case
++        fmin_ = fmax_ = forward_;
++        // grow fmax until density falls below tolerance
++        {
++            double tmp = pImpl(fmax_);
++            while (tmp > Math.max(
++                    Constants.I_ACCURACY / Math.max(1.0, fmax_ - fmin_),
++                    Constants.DENSITY_THRESHOLD)) {
++                fmax_ *= 2.0;
++                tmp = pImpl(fmax_);
++            }
++        }
++        // shrink fmin until density falls below tolerance
++        {
++            double tmp = pImpl(fmin_);
++            while (tmp > Math.max(
++                    Constants.I_ACCURACY / Math.max(1.0, fmax_ - fmin_),
++                    Constants.DENSITY_THRESHOLD)) {
++                fmin_ *= 0.5;
++                tmp = pImpl(fmin_);
++            }
++        }
++        fmin_ = Math.max(Constants.STRIKE_MIN, fmin_);
++
++        QL.require(fmax_ > fmin_, "could not find a reasonable integration domain");
++
++        this.integrator_ = new GaussLobattoIntegral(
++                Constants.I_MAX_ITERATIONS, Constants.I_ACCURACY);
++
++        final D0Interpolator d0 = new D0Interpolator(
++                forward_, expiryTime_, alpha_, beta_, nu_, rho_);
++        absProb_ = d0.value();
++
++        try {
++            final Brent b = new Brent();
++            final double start = Math.sqrt(externalForward_ - Constants.STRIKE_MIN);
++            final double step = Math.min(Constants.FORWARD_SEARCH_STEP, start / 2.0);
++            final Ops.DoubleOp fe = new Ops.DoubleOp() {
++                @Override public double op(final double x) {
++                    return forwardError(x);
++                }
++            };
++            final double tmp = b.solve(fe, Constants.FORWARD_ACCURACY, start, step);
++            forward_ = tmp * tmp + Constants.STRIKE_MIN;
++        } catch (final Exception ignored) {
++            // fall back to unadjusted forward
++            forward_ = externalForward_;
++        }
++
++        final double d = forwardError(Math.sqrt(forward_ - Constants.STRIKE_MIN));
++        numericalForward_ = d + externalForward_;
+     }
+ 
+-    public double forward()    { return externalForward_; }
+-    public double expiryTime() { return expiryTime_; }
+-    public double alpha()      { return alpha_; }
+-    public double beta()       { return beta_; }
+-    public double nu()         { return nu_; }
+-    public double rho()        { return rho_; }
++    public double forward()                  { return externalForward_; }
++    public double numericalForward()         { return numericalForward_; }
++    public double expiryTime()               { return expiryTime_; }
++    public double alpha()                    { return alpha_; }
++    public double beta()                     { return beta_; }
++    public double nu()                       { return nu_; }
++    public double rho()                      { return rho_; }
++    public double absorptionProbability()    { return absProb_; }
+ 
+-    /** Phase 4f.5 — needs absorption table + integrator. */
++    /**
++     * Option (call) price (noarbsabr.cpp 116-123).
++     */
+     public double optionPrice(final double strike) {
+-        throw new UnsupportedOperationException(
+-                "NoArbSabrModel.optionPrice deferred to Phase 4f.5 "
+-                        + "(requires 1.2M-entry absorption-probability table from "
+-                        + "noarbsabrabsprobs.cpp + Boost gamma_q functions).");
++        if (pImpl(Math.max(forward_, strike)) < Constants.DENSITY_THRESHOLD) {
++            return 0.0;
++        }
++        final double upper = Math.max(fmax_, 2.0 * strike);
++        final Ops.DoubleOp integrand = new Ops.DoubleOp() {
++            @Override public double op(final double f) {
++                return Math.max(f - strike, 0.0) * pImpl(f);
++            }
++        };
++        return (1.0 - absProb_) * (integrator_.op(integrand, strike, upper)
++                / numericalIntegralOverP_);
+     }
+ 
++    /**
++     * Digital (call) price (noarbsabr.cpp 125-134).
++     */
+     public double digitalOptionPrice(final double strike) {
+-        throw new UnsupportedOperationException(
+-                "NoArbSabrModel.digitalOptionPrice deferred to Phase 4f.5.");
++        if (strike < Double.MIN_NORMAL) {
++            return 1.0;
++        }
++        if (pImpl(Math.max(forward_, strike)) < Constants.DENSITY_THRESHOLD) {
++            return 0.0;
++        }
++        final double upper = Math.max(fmax_, 2.0 * strike);
++        final Ops.DoubleOp pIntegrand = new Ops.DoubleOp() {
++            @Override public double op(final double f) { return pImpl(f); }
++        };
++        return (1.0 - absProb_) * (integrator_.op(pIntegrand, strike, upper)
++                / numericalIntegralOverP_);
+     }
+ 
++    /**
++     * Density at strike (noarbsabr.hpp 107-109):
++     * {@code p(strike) * (1 - absProb) / numericalIntegralOverP}.
++     */
+     public double density(final double strike) {
+-        throw new UnsupportedOperationException(
+-                "NoArbSabrModel.density deferred to Phase 4f.5.");
++        return pImpl(strike) * (1.0 - absProb_) / numericalIntegralOverP_;
+     }
+ 
+-    /** Numerical model-implied forward (deferred Phase 4f.5). */
+-    public double numericalForward() {
+-        throw new UnsupportedOperationException(
+-                "NoArbSabrModel.numericalForward deferred to Phase 4f.5.");
++    /**
++     * Forward-error (noarbsabr.cpp 136-141). Side-effect: updates
++     * {@code forward_} and {@code numericalIntegralOverP_}.
++     */
++    private double forwardError(final double forward) {
++        forward_ = forward * forward + Constants.STRIKE_MIN;
++        final Ops.DoubleOp pIntegrand = new Ops.DoubleOp() {
++            @Override public double op(final double f) { return pImpl(f); }
++        };
++        numericalIntegralOverP_ = integrator_.op(pIntegrand, fmin_, fmax_);
++        return optionPrice(0.0) - externalForward_;
+     }
+ 
+-    /** Absorption probability at expiry (deferred Phase 4f.5). */
+-    public double absorptionProbability() {
+-        throw new UnsupportedOperationException(
+-                "NoArbSabrModel.absorptionProbability deferred to Phase 4f.5.");
++    /**
++     * Density {@code p(f)} (noarbsabr.cpp 143-182). Uses Hagan/Doust analytic
++     * approximation plus the exponentially-weighted modified Bessel function.
++     */
++    private double pImpl(final double f) {
++        if (f < Constants.DENSITY_LOWER_BOUND
++                || forward_ < Constants.DENSITY_LOWER_BOUND) {
++            return 0.0;
++        }
++
++        final double fOmB = Math.pow(f, 1.0 - beta_);
++        final double FOmB = Math.pow(forward_, 1.0 - beta_);
++
++        final double zf = fOmB / (alpha_ * (1.0 - beta_));
++        final double zF = FOmB / (alpha_ * (1.0 - beta_));
++        final double z = zF - zf;
++
++        final double Jmzf = Math.sqrt(1.0 + 2.0 * rho_ * nu_ * zf + nu_ * nu_ * zf * zf);
++        final double Jz   = Math.sqrt(1.0 - 2.0 * rho_ * nu_ * z  + nu_ * nu_ * z  * z );
++
++        final double xz = Math.log((Jz - rho_ + nu_ * z) / (1.0 - rho_)) / nu_;
++        final double Bp_B = beta_ / FOmB;
++        final double kappa1 = 0.125 * nu_ * nu_ * (2.0 - 3.0 * rho_ * rho_)
++                - 0.25 * rho_ * nu_ * alpha_ * Bp_B;
++        final double gamma = 1.0 / (2.0 * (1.0 - beta_));
++        final double sqrtOmR = Math.sqrt(1.0 - rho_ * rho_);
++
++        final double h = 0.5 * beta_ * rho_ / ((1.0 - beta_) * Jmzf * Jmzf)
++                * (nu_ * zf * Math.log(zf * Jz / zF)
++                    + (1.0 + rho_ * nu_ * zf) / sqrtOmR
++                        * (Math.atan((nu_ * z - rho_) / sqrtOmR)
++                                + Math.atan(rho_ / sqrtOmR)));
++
++        return Math.pow(Jz, -1.5)
++                / (alpha_ * Math.pow(f, beta_) * expiryTime_)
++                * Math.pow(zf, 1.0 - gamma)
++                * Math.pow(zF, gamma)
++                * Math.exp(-(xz * xz) / (2.0 * expiryTime_) + (h + kappa1 * expiryTime_))
++                * ModifiedBesselFunction.iExpWeighted(gamma, zF * zf / expiryTime_);
+     }
+ }
+diff --git a/jquantlib/src/main/java/org/jquantlib/model/CalibratedModel.java b/jquantlib/src/main/java/org/jquantlib/model/CalibratedModel.java
+index 2aedfa34..97057a79 100755
+--- a/jquantlib/src/main/java/org/jquantlib/model/CalibratedModel.java
++++ b/jquantlib/src/main/java/org/jquantlib/model/CalibratedModel.java
+@@ -36,6 +36,8 @@ import org.jquantlib.math.optimization.Constraint;
+ import org.jquantlib.math.optimization.CostFunction;
+ import org.jquantlib.math.optimization.EndCriteria;
+ import org.jquantlib.math.optimization.OptimizationMethod;
++import org.jquantlib.math.optimization.ProjectedConstraint;
++import org.jquantlib.math.optimization.Projection;
+ import org.jquantlib.math.optimization.Problem;
+ import org.jquantlib.util.DefaultObservable;
+ import org.jquantlib.util.Observable;
+@@ -120,6 +122,83 @@ public abstract class CalibratedModel implements Observer, Observable {
+         notifyObservers();
+     }
+ 
++    /**
++     * Calibrate to a set of market instruments with a subset of parameters held fixed.
++     *
++     * <p>Faithful port of QuantLib C++ v1.42.1
++     * {@code CalibratedModel::calibrate(..., const std::vector<bool>& fixParameters)}
++     * (see {@code ql/models/model.cpp}). The {@code fixParameters} mask is the same
++     * size as {@link #params()}; {@code true} marks a slot as fixed (excluded from
++     * optimization), {@code false} as free. Internally builds a
++     * {@link Projection} from the current parameter values + mask, then wraps the
++     * cost function and constraint in {@link ProjectedCostFunction} and
++     * {@link ProjectedConstraint}, exactly as C++ does.
++     *
++     * <p>Used by the Hull-White {@code FixedReversion} test case (and any other
++     * partial-calibration workflow).
++     *
++     * @param fixParameters mask of length {@code params().size()}; may be
++     *     {@code null} or empty to fall back to the unconstrained
++     *     {@link #calibrate(List, OptimizationMethod, EndCriteria, Constraint, double[])}
++     *     overload (matches the C++ default-vector behavior).
++     */
++    public void calibrate(
++            final List<CalibrationHelper> instruments,
++            final OptimizationMethod method,
++            final EndCriteria endCriteria,
++            final Constraint additionalConstraint,
++            final double[] weights,
++            final boolean[] fixParameters) {
++
++        QL.require(!instruments.isEmpty(), "no instruments provided");
++
++        Constraint c;
++        if (additionalConstraint.empty()) {
++            c = constraint_;
++        } else {
++            c = new CompositeConstraint(constraint_, additionalConstraint);
++        }
++
++        QL.require(weights == null || weights.length == instruments.size(),
++                "mismatch between number of instruments and weights"); // TODO: message
++
++        final double[] w = new double[instruments.size()];
++        if (weights == null) {
++            Arrays.fill(w, 1.0);
++        } else {
++            System.arraycopy(weights, 0, w, 0, w.length);
++        }
++
++        final Array prms = params();
++        QL.require(fixParameters == null || fixParameters.length == 0
++                        || fixParameters.length == prms.size(),
++                "mismatch between number of parameters and fixed-parameter specs"); // TODO: message
++
++        final boolean[] mask;
++        if (fixParameters == null || fixParameters.length == 0) {
++            mask = new boolean[prms.size()]; // all-false → all free
++        } else {
++            mask = fixParameters.clone();
++        }
++
++        final Projection proj = new Projection(prms, mask);
++        final CalibrationFunction baseFunction = new CalibrationFunction(this, instruments, w);
++        // ProjectedCostFunction wraps `baseFunction` so the optimizer sees only
++        // free parameters; the projection's mapFreeParameters/include round-trip
++        // expands free → full before delegating to baseFunction (which then
++        // calls model.setParams on the FULL vector).
++        final org.jquantlib.math.optimization.ProjectedCostFunction f =
++                new org.jquantlib.math.optimization.ProjectedCostFunction(baseFunction, proj);
++        final ProjectedConstraint pc = new ProjectedConstraint(c, proj);
++
++        final Problem prob = new Problem(f, pc, proj.project(prms));
++        shortRateEndCriteria_ = method.minimize(prob, endCriteria);
++        final Array result = new Array(prob.currentValue());
++        setParams(proj.include(result));
++
++        notifyObservers();
++    }
++
+     public double value(final Array  params, final List<CalibrationHelper> instruments) {
+         final double[] w = new double[instruments.size()];
+         Arrays.fill(w, 1.0);
+diff --git a/jquantlib/src/main/java/org/jquantlib/model/shortrate/onefactormodels/HullWhite.java b/jquantlib/src/main/java/org/jquantlib/model/shortrate/onefactormodels/HullWhite.java
+index dfb5f877..1bc2f6a2 100755
+--- a/jquantlib/src/main/java/org/jquantlib/model/shortrate/onefactormodels/HullWhite.java
++++ b/jquantlib/src/main/java/org/jquantlib/model/shortrate/onefactormodels/HullWhite.java
+@@ -163,6 +163,29 @@ public class HullWhite extends Vasicek implements TermStructureConsistentModel {
+         return blackFormula(type, k, f, v);
+     }
+ 
++    /**
++     * Projection mask that freezes the mean-reversion {@code a} parameter
++     * while leaving {@code sigma} free for calibration.
++     *
++     * <p>Faithful port of QuantLib C++ v1.42.1
++     * {@code HullWhite::FixedReversion()} (see
++     * {@code ql/models/shortrate/onefactormodels/hullwhite.hpp}). Returns a
++     * 2-element {@code boolean[]} (the HullWhite calibration parameter vector
++     * is {@code [a, sigma]} — {@code b} and {@code lambda} are
++     * {@code NullParameter}s with size 0 and contribute nothing to
++     * {@link CalibratedModel#params()}): index 0 ({@code a}) is fixed,
++     * index 1 ({@code sigma}) is free.
++     *
++     * <p>Pass to the projection-aware {@code CalibratedModel.calibrate}
++     * overload as the {@code fixParameters} argument.
++     */
++    public static boolean[] FixedReversion() {
++        final boolean[] c = new boolean[2];
++        c[0] = true;
++        c[1] = false;
++        return c;
++    }
++
+     /**
+      *  Futures convexity bias (i.e., the difference between
+      *  futures implied rate and forward rate) calculated as in
+diff --git a/jquantlib/src/main/java/org/jquantlib/termstructures/inflation/ZeroCouponInflationSwapHelper.java b/jquantlib/src/main/java/org/jquantlib/termstructures/inflation/ZeroCouponInflationSwapHelper.java
+index 46352972..fbdf8e59 100644
+--- a/jquantlib/src/main/java/org/jquantlib/termstructures/inflation/ZeroCouponInflationSwapHelper.java
++++ b/jquantlib/src/main/java/org/jquantlib/termstructures/inflation/ZeroCouponInflationSwapHelper.java
+@@ -113,6 +113,18 @@ public class ZeroCouponInflationSwapHelper extends BootstrapHelper<ZeroInflation
+      */
+     private ZeroInflationIndex ziiClone;
+ 
++    /**
++     * Optional nominal-yield-curve handle supplied via the deprecated v1.39
++     * constructor overload ({@code inflationhelpers.cpp:72-85}). When non-null
++     * the discounting swap engine wired in
++     * {@link #setTermStructure(ZeroInflationTermStructure)} uses this curve
++     * instead of the internal flat-zero default. Equal discount factors on
++     * the two legs cancel when computing the fair rate so the choice of
++     * nominal curve has no effect on the bootstrap result; we preserve the
++     * handle only for API parity with C++.
++     */
++    private final Handle<YieldTermStructure> nominalTermStructure;
++
+     //
+     // public constructors
+     //
+@@ -244,7 +256,67 @@ public class ZeroCouponInflationSwapHelper extends BootstrapHelper<ZeroInflation
+             final CPI.InterpolationType observationInterpolation,
+             final Pillar.Choice pillar,
+             final Date customPillarDate) {
++        this(quote, swapObsLag, startDate, endDate, calendar, paymentConvention,
++             dayCounter, zii, observationInterpolation, pillar, customPillarDate,
++             /*nominalTermStructure*/ null);
++    }
++
++    /**
++     * Deprecated v1.39 overload — wraps the v1.42.1 constructor with an
++     * explicit nominal-yield-curve handle. Mirrors C++ v1.42.1
++     * {@code ZeroCouponInflationSwapHelper(quote, lag, maturity, cal, bdc, dc,
++     * zii, obsInterp, nominalTermStructure)}
++     * ({@code inflationhelpers.cpp:72-85}; declared {@code [[deprecated]]} at
++     * {@code inflationhelpers.hpp:67-77}).
++     *
++     * <p>The nominal curve is wired into the internal {@code DiscountingSwapEngine}
++     * by {@link #setTermStructure(ZeroInflationTermStructure)}. The equal
++     * discount factors on the two ZCIIS legs cancel when computing the fair
++     * rate so the choice of nominal curve has no effect on the bootstrap;
++     * we accept it only for API parity with C++.
++     *
++     * @deprecated Use the overload that does not take a nominal curve.
++     */
++    @Deprecated
++    public ZeroCouponInflationSwapHelper(
++            final Handle<Quote> quote,
++            final Period swapObsLag,
++            final Date maturity,
++            final Calendar calendar,
++            final BusinessDayConvention paymentConvention,
++            final DayCounter dayCounter,
++            final ZeroInflationIndex zii,
++            final CPI.InterpolationType observationInterpolation,
++            final Handle<YieldTermStructure> nominalTermStructure) {
++        this(quote, swapObsLag, /*startDate*/ null, maturity, calendar,
++             paymentConvention, dayCounter, zii, observationInterpolation,
++             Pillar.Choice.LastRelevantDate, /*customPillarDate*/ null,
++             nominalTermStructure);
++    }
++
++    /**
++     * Full constructor — mirrors the private C++ constructor at
++     * {@code inflationhelpers.hpp:101-113} (used by all public ctors).
++     *
++     * @param nominalTermStructure optional nominal yield curve handle; may be
++     *                             {@code null} for the v1.42.1 default of an
++     *                             internal flat-zero curve.
++     */
++    private ZeroCouponInflationSwapHelper(
++            final Handle<Quote> quote,
++            final Period swapObsLag,
++            final Date startDate,
++            final Date endDate,
++            final Calendar calendar,
++            final BusinessDayConvention paymentConvention,
++            final DayCounter dayCounter,
++            final ZeroInflationIndex zii,
++            final CPI.InterpolationType observationInterpolation,
++            final Pillar.Choice pillar,
++            final Date customPillarDate,
++            final Handle<YieldTermStructure> nominalTermStructure) {
+         super(quote);
++        this.nominalTermStructure = nominalTermStructure;
+         this.swapObsLag = swapObsLag;
+         // Preserve "user-supplied or default" semantics: the C++ helper uses
+         // startDate_ == Date() as the sentinel for "use evaluationDate" and the
+@@ -391,16 +463,22 @@ public class ZeroCouponInflationSwapHelper extends BootstrapHelper<ZeroInflation
+                 swapObsLag,
+                 observationInterpolation);
+ 
+-        // Nominal discount curve: flat zero, matches C++
+-        // FlatForward(0, NullCalendar(), 0.0, dayCounter)
+-        // (inflationhelpers.cpp:48 and :69). When computing the fair rate the
+-        // equal discount factors on the two legs cancel, so any nominal curve
+-        // gives the same fair rate.
+-        final FlatForward nominalCurve = new FlatForward(
+-                ts.referenceDate(), 0.0, dayCounter,
+-                Compounding.Continuous, Frequency.Annual);
+-        final Handle<YieldTermStructure> nominalHandle =
+-                new Handle<YieldTermStructure>(nominalCurve);
++        // Nominal discount curve: when the caller supplied one via the
++        // deprecated v1.39 overload (inflationhelpers.cpp:72-85), use it.
++        // Otherwise fall back to a flat-zero internal curve matching C++
++        // FlatForward(0, NullCalendar(), 0.0, dayCounter) (inflationhelpers.cpp
++        // :48 and :69). The equal discount factors on the two legs cancel
++        // when computing the fair rate, so any nominal curve gives the same
++        // fair rate; we honour the caller's choice purely for API parity.
++        final Handle<YieldTermStructure> nominalHandle;
++        if (this.nominalTermStructure != null && !this.nominalTermStructure.empty()) {
++            nominalHandle = this.nominalTermStructure;
++        } else {
++            final FlatForward nominalCurve = new FlatForward(
++                    ts.referenceDate(), 0.0, dayCounter,
++                    Compounding.Continuous, Frequency.Annual);
++            nominalHandle = new Handle<YieldTermStructure>(nominalCurve);
++        }
+         this.zciis.setPricingEngine(new DiscountingSwapEngine(nominalHandle));
+     }
+ 
+diff --git a/jquantlib/src/test/java/org/jquantlib/testsuite/experimental/volatility/NoArbSabrTest.java b/jquantlib/src/test/java/org/jquantlib/testsuite/experimental/volatility/NoArbSabrTest.java
+index bd1a7c3c..bd1b98c9 100644
+--- a/jquantlib/src/test/java/org/jquantlib/testsuite/experimental/volatility/NoArbSabrTest.java
++++ b/jquantlib/src/test/java/org/jquantlib/testsuite/experimental/volatility/NoArbSabrTest.java
+@@ -12,10 +12,6 @@
+  <jquant-devel@lists.sourceforge.net>. The license is also available online at
+  <http://www.jquantlib.org/index.php/LICENSE.TXT>.
+ 
+- This program is distributed in the hope that it will be useful, but WITHOUT
+- ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+- FOR A PARTICULAR PURPOSE.  See the license for more details.
+-
+  JQuantLib is based on QuantLib. http://quantlib.org/
+  When applicable, the original copyright notice follows this notice.
+  */
+@@ -28,31 +24,29 @@
+ */
+ package org.jquantlib.testsuite.experimental.volatility;
+ 
++import static org.junit.Assert.assertTrue;
++import static org.junit.Assert.fail;
++
+ import org.jquantlib.QL;
+-import org.junit.Ignore;
++import org.jquantlib.experimental.volatility.NoArbSabrModel;
++import org.jquantlib.experimental.volatility.NoArbSabrSmileSection;
++import org.jquantlib.instruments.Option;
++import org.jquantlib.termstructures.volatilities.SabrSmileSection;
+ import org.junit.Test;
+ 
+ /**
+- * Java port of QuantLib v1.42.1 test-suite/noarbsabr.cpp (Phase 5g).
++ * Java port of QuantLib v1.42.1 test-suite/noarbsabr.cpp (Phase 5e.5b-CFC-d-200).
+  *
+- * <p>Direct-named equivalent. The C++ file has two test cases:
++ * <p>Direct-named equivalent of the C++ suite. Both cases are now active:
+  * <ol>
+- *   <li>{@code testAbsorptionMatrix} — exercises the package-private C++ class
+- *       {@code QuantLib::detail::D0Interpolator} which interpolates a 16-point
+- *       reference absorption matrix. The Java port currently lacks a
+- *       D0Interpolator equivalent (the absorption matrix is not loaded into
+- *       memory), so this test is deferred to Phase 5g.5.</li>
+- *   <li>{@code testConsistencyWithHagan} — compares NoArbSabrSmileSection to
+- *       SabrSmileSection across vanilla price, digital price, and density.
+- *       The Java {@link org.jquantlib.experimental.volatility.NoArbSabrModel}
+- *       {@code optionPrice}, {@code digitalOptionPrice}, and {@code density}
+- *       methods are Phase 4f stubs that throw {@code UnsupportedOperationException};
+- *       this test is deferred to Phase 5g.5 once the model body lands.</li>
++ *   <li>{@code testAbsorptionMatrix} — exercises the package-visible
++ *       {@code D0Interpolator} which interpolates the 1.2M-entry
++ *       absorption-count table ({@code NoArbSabrAbsorptions}). Verifies the
++ *       16 corner/interior reference cells from C++.</li>
++ *   <li>{@code testConsistencyWithHagan} — compares {@code NoArbSabrSmileSection}
++ *       to {@code SabrSmileSection} across vanilla price, digital price, and
++ *       density, mirroring the C++ tolerances (1e-5 / 1e-3 / 1.0).</li>
+  * </ol>
+- *
+- * <p>Existing {@link NoArbSabrInterpolationTest} and
+- * {@link ZabrAndNoArbSabrSmokeTest} cover the available Phase 4f scaffolding
+- * (parameter validation, Hagan-fallback volatility surface).
+  */
+ public class NoArbSabrTest {
+ 
+@@ -60,30 +54,111 @@ public class NoArbSabrTest {
+         QL.info("::::: " + this.getClass().getSimpleName() + " :::::");
+     }
+ 
++    /**
++     * Helper mirroring {@code checkD0} from C++ noarbsabr.cpp lines 32-46.
++     * Builds a {@link NoArbSabrModel} (which constructs and invokes the
++     * package-private {@code D0Interpolator}) and verifies the resulting
++     * absorption probability times {@code NSIM} matches the expected count
++     * to within 0.1 absolute (C++ test tolerance verbatim).
++     */
++    private static void checkD0(final double sigmaI, final double beta,
++            final double rho, final double nu, final double tau,
++            final long expectedAbsorptions) {
++        final double forward = 0.03; // does not matter in the end
++        final double alpha = sigmaI / Math.pow(forward, beta - 1.0);
++
++        // We exercise D0Interpolator via NoArbSabrModel.absorptionProbability().
++        // Constructing the full model is heavier (it also runs the Brent
++        // forward-error fit) but matches the C++ test exactly.
++        final NoArbSabrModel m = new NoArbSabrModel(tau, forward, alpha, beta, nu, rho);
++        final double d = m.absorptionProbability();
++        final double actual = d * NoArbSabrModel.Constants.NSIM;
++        if (Math.abs(actual - expectedAbsorptions) > 0.1) {
++            fail("failed to reproduce number of absorptions at sigmaI=" + sigmaI
++                    + ", beta=" + beta + ", rho=" + rho + ", nu=" + nu
++                    + " tau=" + tau + ": D0Interpolator says " + actual
++                    + " while the reference value is " + expectedAbsorptions);
++        }
++    }
++
+     @Test
+-    @Ignore("Phase 5g.5 — D0Interpolator absorption-matrix loader not ported. "
+-            + "Requires the 16-point reference absorption matrix to be loaded "
+-            + "into memory. C++ noarbsabr.cpp lines 32-73.")
+     public void testAbsorptionMatrix() {
+-        // Deferred. Faithful body would call:
+-        //   checkD0(sigmaI, beta, rho, nu, tau, expectedAbsorptions)
+-        // for the 16 corner+interior cases of Doust's absorption table,
+-        // verifying d() * NoArbSabrModel::nsim ≈ expectedAbsorptions to
+-        // tolerance 0.1 absolute.
++        QL.info("Testing no-arbitrage Sabr absorption matrix...");
++
++        // (sigmaI, beta, rho, nu, tau, absorptions) — C++ noarbsabr.cpp lines 56-71
++        checkD0(1.0,  0.01,  0.75, 0.1,  0.25, 60342L);  // upper-left corner
++        checkD0(0.8,  0.01,  0.75, 0.1,  0.25, 12148L);
++        checkD0(0.05, 0.01,  0.75, 0.1,  0.25, 0L);
++        checkD0(1.0,  0.01,  0.75, 0.1, 10.0,  1890509L);
++        checkD0(0.8,  0.01,  0.75, 0.1, 10.0,  1740233L);
++        checkD0(0.05, 0.01,  0.75, 0.1, 10.0,  0L);
++        checkD0(1.0,  0.01,  0.75, 0.1, 30.0,  2174176L);
++        checkD0(0.8,  0.01,  0.75, 0.1, 30.0,  2090672L);
++        checkD0(0.05, 0.01,  0.75, 0.1, 30.0,  31L);
++        checkD0(0.35, 0.10, -0.75, 0.1,  0.25, 0L);
++        checkD0(0.35, 0.10, -0.75, 0.1, 14.75, 1087841L);
++        checkD0(0.35, 0.10, -0.75, 0.1, 30.0,  1406569L);
++        checkD0(0.24, 0.90,  0.50, 0.8,  1.25, 27L);
++        checkD0(0.24, 0.90,  0.50, 0.8, 25.75, 167541L);
++        checkD0(0.05, 0.90, -0.75, 0.8,  2.0,  17L);
++        checkD0(0.05, 0.90, -0.75, 0.8, 30.0,  42100L);  // lower-right corner
+     }
+ 
+     @Test
+-    @Ignore("Phase 5g.5 — NoArbSabrModel.optionPrice/digitalOptionPrice/density "
+-            + "are Phase 4f stubs that throw. Test compares vanilla, digital, "
+-            + "and density vs Sabr Hagan baseline. C++ noarbsabr.cpp lines 75-121.")
+     public void testConsistencyWithHagan() {
+-        // Deferred. Faithful body would:
+-        //   - Build SabrSmileSection(tau=1, f=0.0488, alpha=0.026, beta=0.5, nu=0.4, rho=-0.1)
+-        //   - Build NoArbSabrSmileSection with the same parameters
+-        //   - Verify model.absorptionProbability ∈ [0, 1e-10]
+-        //   - For strike ∈ [1e-4, 0.15] step 1e-4 verify
+-        //       |sabr.optionPrice - noarb.optionPrice| < 1e-5
+-        //       |sabr.digitalOptionPrice - noarb.digitalOptionPrice| < 1e-3
+-        //       |sabr.density - noarb.density| < 1.0
++        QL.info("Testing consistency of noarb-sabr with Hagan et al (2002)...");
++
++        // parameters taken from Doust's paper, figure 3 — C++ noarbsabr.cpp 81-86
++        final double tau = 1.0;
++        final double beta = 0.5;
++        final double alpha = 0.026;
++        final double rho = -0.1;
++        final double nu = 0.4;
++        final double f = 0.0488;
++
++        final double[] params = { alpha, beta, nu, rho };
++        final SabrSmileSection sabr = new SabrSmileSection(tau, f, params);
++        final NoArbSabrSmileSection noarbsabr = new NoArbSabrSmileSection(tau, f, params);
++
++        final double absProb = noarbsabr.model().absorptionProbability();
++        assertTrue("absorption probability should be close to zero, but is "
++                + absProb, absProb >= 0.0 && absProb <= 1.0e-10);
++
++        double strike = 0.0001;
++        while (strike < 0.15) {
++            // vanilla call prices
++            final double sabrPrice = sabr.optionPrice(strike, Option.Type.Call, 1.0);
++            final double noarbsabrPrice = noarbsabr.optionPrice(strike, Option.Type.Call, 1.0);
++            if (Math.abs(sabrPrice - noarbsabrPrice) > 1.0e-5) {
++                fail("inconsistent Hagan price (" + sabrPrice
++                        + ") and noarb-sabr price (" + noarbsabrPrice
++                        + ") at strike " + strike);
++            }
++            // digitals
++            final double sabrDigital = sabr.digitalOptionPrice(strike, Option.Type.Call, 1.0, 1.0e-5);
++            final double noarbsabrDigital = noarbsabr.digitalOptionPrice(strike, Option.Type.Call, 1.0, 1.0e-5);
++            if (Math.abs(sabrDigital - noarbsabrDigital) > 1.0e-3) {
++                fail("inconsistent Hagan digital (" + sabrDigital
++                        + ") and noarb-sabr digital (" + noarbsabrDigital
++                        + ") at strike " + strike);
++            }
++            // density — SmileSection::density via centred FD on digital
++            // (matches C++ smilesection.cpp lines 99-105). NoArbSabrSmileSection
++            // overrides density() to read from the model directly.
++            final double gap = 1.0e-4;
++            final double m = -sabr.shift();
++            final double kl = Math.max(strike - 0.5 * gap, m);
++            final double kr = kl + gap;
++            final double sabrDensity =
++                    (sabr.digitalOptionPrice(kl, Option.Type.Call, 1.0, gap)
++                            - sabr.digitalOptionPrice(kr, Option.Type.Call, 1.0, gap)) / gap;
++            final double noarbsabrDensity = noarbsabr.density(strike, 1.0, gap);
++            if (Math.abs(sabrDensity - noarbsabrDensity) > 1.0) {
++                fail("inconsistent Hagan density (" + sabrDensity
++                        + ") and noarb-sabr density (" + noarbsabrDensity
++                        + ") at strike " + strike);
++            }
++            strike += 0.0001;
++        }
+     }
+ }
+diff --git a/jquantlib/src/test/java/org/jquantlib/testsuite/inflation/InflationTest.java b/jquantlib/src/test/java/org/jquantlib/testsuite/inflation/InflationTest.java
+index d0f6effb..ce9d99e8 100644
+--- a/jquantlib/src/test/java/org/jquantlib/testsuite/inflation/InflationTest.java
++++ b/jquantlib/src/test/java/org/jquantlib/testsuite/inflation/InflationTest.java
+@@ -466,22 +466,145 @@ public class InflationTest {
+     // (deprecated overload that passes nominal curve to helpers)
+     // ===================================================================
+     @Test
+-    @Ignore("Phase 2v: ZeroCouponInflationSwapHelper(quote, lag, maturity, cal, bdc, dc,"
+-            + " zii, CPI::AsIndex, nominalTermStructure) deprecated overload not ported."
+-            + " C++ wraps the helper with an explicit nominal yield curve; Java always"
+-            + " uses a flat-zero internal curve in setTermStructure.")
++    @SuppressWarnings("deprecation")
+     public void testZeroTermStructureWithNominalCurve() {
+-        // C++ inflation.cpp:595-761 (QL_DEPRECATED_DISABLE_WARNING block).
+-        // The test is identical to testZeroTermStructure except it passes a
+-        // nominal term structure to the helper constructor:
+-        //   new ZeroCouponInflationSwapHelper(quote, lag, maturity, cal, bdc, dc,
+-        //                                     zii, CPI::AsIndex, nominalTS)
+-        // That deprecated overload is not present in the Java port; all helpers
+-        // use flat-zero internally (the nominal curve cancels in fair-rate
+-        // pricing). The repricing results should be identical to
+-        // testZeroTermStructure above (both degenerate to the same bootstrap
+-        // when the nominal TS is the same flat curve used internally).
+-        // Port when deprecated overload is added in a future Phase 2v pass.
++        // Faithful port of C++ inflation.cpp:595-761
++        // (QL_DEPRECATED_DISABLE_WARNING block).
++        //
++        // Same flow as testZeroTermStructure (above) except each helper is
++        // constructed with the deprecated 9-arg overload that takes an
++        // explicit nominal yield curve handle. The equal discount factors on
++        // the two ZCIIS legs cancel when computing the fair rate, so the
++        // bootstrap result is identical to testZeroTermStructure — but we
++        // exercise the deprecated overload to keep API parity coverage.
++
++        // IndexManager is a JVM singleton; clear UK RPI fixings leftover from
++        // earlier tests (C++ recreates fixtures per BOOST_AUTO_TEST_CASE).
++        org.jquantlib.indexes.IndexManager.getInstance().clearHistory("UK RPI");
++
++        final Calendar calendar = new UnitedKingdom();
++        final BusinessDayConvention bdc = BusinessDayConvention.ModifiedFollowing;
++        final Date evaluationDate = calendar.adjust(new Date(13, Month.August, 2007));
++        new Settings().setEvaluationDate(evaluationDate);
++
++        // Seed UKRPI fixings 2005-01..2007-07 (31 entries, matching C++).
++        final RelinkableHandle<ZeroInflationTermStructure> hz = new RelinkableHandle<>();
++        final UKRPI ii = new UKRPI(Frequency.Monthly, false, false, hz);
++        InflationCommonVars.addCanonicalUkRpiFixings(ii, 31);
++
++        // Nominal term structure passed to the deprecated helper overload.
++        final YieldTermStructure nominalTS = InflationCommonVars.nominalTermStructure();
++        final Handle<YieldTermStructure> nominalHandle = new Handle<>(nominalTS);
++
++        // Build 14-pillar ZCIIS helpers via the deprecated overload
++        // (inflation.cpp:651-654).
++        final List<InflationCommonVars.Datum> zcData = InflationCommonVars.ukZcSwapData();
++        final Period observationLag = new Period(3, TimeUnit.Months);
++        final DayCounter dc = new Thirty360(Thirty360.Convention.BondBasis);
++
++        final List<ZeroCouponInflationSwapHelper> helpers = new ArrayList<>();
++        for (final InflationCommonVars.Datum d : zcData) {
++            final Handle<Quote> quote = new Handle<>(new SimpleQuote(d.rate / 100.0));
++            // Deprecated overload: (quote, lag, maturity, cal, bdc, dc, zii,
++            //                       obsInterp, nominalTermStructure)
++            helpers.add(new ZeroCouponInflationSwapHelper(quote, observationLag,
++                    d.date, calendar, bdc, dc, ii, CPI.InterpolationType.AsIndex,
++                    nominalHandle));
++        }
++
++        final Date baseDate = ii.lastFixingDate();
++        final PiecewiseZeroInflationCurve<Linear> pZITS =
++                new PiecewiseZeroInflationCurve<>(Linear.class, evaluationDate,
++                        baseDate, Frequency.Monthly, dc, helpers);
++        hz.linkTo(pZITS);
++
++        //=======================================================
++        // first check that the quoted swaps are repriced correctly
++        // (inflation.cpp:665-686).
++        final double eps = 1.0e-7;
++        final DiscountingSwapEngine engine = new DiscountingSwapEngine(nominalHandle);
++
++        for (final InflationCommonVars.Datum datum : zcData) {
++            final ZeroCouponInflationSwap nzcis = new ZeroCouponInflationSwap(
++                    ZeroCouponInflationSwap.Type.Payer,
++                    1000000.0,
++                    evaluationDate, datum.date,
++                    calendar, bdc, dc,
++                    datum.rate / 100.0,
++                    ii, observationLag,
++                    CPI.InterpolationType.AsIndex);
++            nzcis.setPricingEngine(engine);
++            assertTrue("ZCIIS NPV should be ~0 for datum " + datum.date
++                            + " (NPV=" + nzcis.NPV() + ")",
++                    Math.abs(nzcis.NPV()) < eps);
++        }
++
++        //=======================================================
++        // now test the forecasting capability of the index
++        // (inflation.cpp:688-714).
++        Date from = pZITS.referenceDate();
++        Date to = pZITS.maxDate().sub(new Period(1, TimeUnit.Months));
++        final Schedule testIndex = new org.jquantlib.time.MakeSchedule()
++                .from(from).to(to)
++                .withTenor(new Period(1, TimeUnit.Months))
++                .withCalendar(new UnitedKingdom())
++                .withConvention(BusinessDayConvention.ModifiedFollowing)
++                .schedule();
++
++        // UKRPI is not interpolated (AsIndex).
++        final Date bd = pZITS.baseDate();
++        final double bf = ii.fixing(bd);
++        for (int i = 0; i < testIndex.size(); ++i) {
++            final Date d = testIndex.date(i);
++            final double z = pZITS.zeroRate(d, new Period(0, TimeUnit.Days)).rate();
++            final double t = pZITS.dayCounter().yearFraction(bd,
++                    InflationTermStructure.inflationPeriod(d, ii.frequency()).first());
++            double calc = bf * Math.pow(1 + z, t);
++            if (t <= 0) {
++                calc = ii.fixing(d, false); // still historical
++            }
++            final double forecast = ii.fixing(d, true);
++            if (Math.abs(calc - forecast) > eps) {
++                fail("inflation index does not forecast correctly"
++                        + "\n    date:        " + d
++                        + "\n    base date:   " + bd
++                        + "\n    base fixing: " + bf
++                        + "\n    expected:    " + calc
++                        + "\n    forecast:    " + forecast);
++            }
++        }
++
++        //=======================================================
++        // add a seasonality correction; the curve should recalculate and
++        // still reprice the swaps (inflation.cpp:716-757).
++        final Date nextBaseDate = InflationTermStructure.inflationPeriod(
++                pZITS.baseDate(), ii.frequency()).second();
++        final Date seasonalityBaseDate = new Date(31, Month.January, nextBaseDate.year());
++        final double[] seasonalityFactors = InflationCommonVars.seasonalityFactors();
++        final org.jquantlib.termstructures.inflation.MultiplicativePriceSeasonality nonUnitSeasonality =
++                new org.jquantlib.termstructures.inflation.MultiplicativePriceSeasonality(
++                        seasonalityBaseDate, Frequency.Monthly, seasonalityFactors);
++        pZITS.setSeasonality(nonUnitSeasonality);
++
++        for (final InflationCommonVars.Datum datum : zcData) {
++            final ZeroCouponInflationSwap nzcis = new ZeroCouponInflationSwap(
++                    ZeroCouponInflationSwap.Type.Payer,
++                    1000000.0,
++                    evaluationDate, datum.date,
++                    calendar, bdc, dc,
++                    datum.rate / 100.0,
++                    ii, observationLag,
++                    CPI.InterpolationType.AsIndex);
++            nzcis.setPricingEngine(engine);
++            assertTrue("ZCIIS NPV should still be ~0 with seasonality for datum "
++                            + datum.date + " (NPV=" + nzcis.NPV() + ")",
++                    Math.abs(nzcis.NPV()) < eps);
++        }
++
++        // remove circular reference (mirrors C++ hz.reset()).
++        hz.linkTo(null);
++        // Clean up UKRPI fixings so subsequent tests start from clean state.
++        org.jquantlib.indexes.IndexManager.getInstance().clearHistory("UK RPI");
+     }
+ 
+     // ===================================================================
+diff --git a/jquantlib/src/test/java/org/jquantlib/testsuite/model/shortrate/ShortRateModelsTest.java b/jquantlib/src/test/java/org/jquantlib/testsuite/model/shortrate/ShortRateModelsTest.java
+index 5b209d42..94e39eae 100644
+--- a/jquantlib/src/test/java/org/jquantlib/testsuite/model/shortrate/ShortRateModelsTest.java
++++ b/jquantlib/src/test/java/org/jquantlib/testsuite/model/shortrate/ShortRateModelsTest.java
+@@ -141,22 +141,74 @@ public class ShortRateModelsTest {
+     }
+ 
+     /**
+-     * <p><strong>Status: PARTIAL / IGNORED</strong> — requires
+-     * {@code HullWhite::FixedReversion} {@code Projection} support in
+-     * {@code CalibratedModel.calibrate}. The Java port has only one
+-     * {@code calibrate(instruments, method, endCriteria,
+-     * additionalConstraint, weights)} signature and does not yet accept a
+-     * {@code Projection} (which is what {@code FixedReversion} provides in
+-     * C++ to freeze the mean-reversion {@code a} parameter while optimizing
+-     * only {@code sigma}). Cross-validated cached values from C++
+-     * v1.42.1: at-par-coupons branch cachedA=0.05, cachedSigma=0.00585858;
+-     * not-at-par cachedA=0.05, cachedSigma=0.00585835. Re-enable once a
+-     * Projection-aware calibrate overload lands.
++     * Hull-White calibration against cached values with the mean-reversion
++     * {@code a} held fixed via {@link HullWhite#FixedReversion()}. Java's
++     * {@code IborCoupon.Settings.usingAtParCoupons()} defaults to
++     * {@code true}, so we compare against the at-par-coupons branch of
++     * {@code testCachedHullWhiteFixedReversion} (cachedA = 0.05,
++     * cachedSigma = 0.00585858). Tolerance per C++ source: 1.0e-5.
++     *
++     * <p>Exercises the projection-aware
++     * {@link org.jquantlib.model.CalibratedModel#calibrate(java.util.List,
++     * org.jquantlib.math.optimization.OptimizationMethod,
++     * org.jquantlib.math.optimization.EndCriteria,
++     * org.jquantlib.math.optimization.Constraint, double[], boolean[])}
++     * overload added in Phase 5e.5b-CFC-d-201.
+      */
+-    @Ignore("Phase 5e.5b-CFC-d-37 PARTIAL — needs Projection-aware "
+-            + "CalibratedModel.calibrate overload (HullWhite.FixedReversion)")
+     @Test
+-    public void testCachedHullWhiteFixedReversion() { fail("not implemented"); }
++    public void testCachedHullWhiteFixedReversion() {
++        final Date today = new Date(15, Month.February, 2002);
++        final Date settlement = new Date(19, Month.February, 2002);
++        new Settings().setEvaluationDate(today);
++        final Handle<YieldTermStructure> termStructure = new Handle<YieldTermStructure>(
++                new FlatForward(settlement, 0.04875825, new Actual365Fixed()));
++
++        // C++: HullWhite(termStructure, 0.05, 0.01) — seed a=0.05 (will stay
++        // fixed via FixedReversion), seed sigma=0.01 (will be optimized).
++        final HullWhite model = new HullWhite(termStructure, 0.05, 0.01);
++        final IborIndex index = new Euribor6M(termStructure);
++
++        final PricingEngine engine = new JamshidianSwaptionEngine(model, termStructure);
++
++        final List<CalibrationHelper> swaptions = new ArrayList<CalibrationHelper>();
++        for (final CalibrationData d : CAL_DATA) {
++            final Handle<Quote> vol = new Handle<Quote>(new SimpleQuote(d.volatility));
++            final BlackCalibrationHelper helper = new SwaptionHelper(
++                    new Period(d.start, TimeUnit.Years),
++                    new Period(d.length, TimeUnit.Years),
++                    vol, index,
++                    new Period(1, TimeUnit.Years),
++                    new Thirty360(Thirty360.Convention.BondBasis),
++                    new Actual360(),
++                    termStructure);
++            helper.setPricingEngine(engine);
++            swaptions.add(helper);
++        }
++
++        // Match C++: LevenbergMarquardt with defaults, EndCriteria(1000, 500, 1e-8, 1e-8, 1e-8).
++        final LevenbergMarquardt optimizer = new LevenbergMarquardt(1.0e-8, 1.0e-8, 1.0e-8);
++        final EndCriteria endCriteria = new EndCriteria(1000, 500, 1e-8, 1e-8, 1e-8);
++
++        // Projection-aware calibrate with FixedReversion (fixes a, frees sigma).
++        model.calibrate(swaptions, optimizer, endCriteria, new NoConstraint(), null,
++                HullWhite.FixedReversion());
++
++        // at-par-coupons branch (Java default)
++        final double cachedA = 0.05;
++        final double cachedSigma = 0.00585858;
++        final double tolerance = 1.0e-5;
++
++        final Array xMin = model.params();
++        if (Math.abs(xMin.get(0) - cachedA) > tolerance
++                || Math.abs(xMin.get(1) - cachedSigma) > tolerance) {
++            fail("Failed to reproduce cached FixedReversion calibration results:\n"
++                    + "calculated: a = " + xMin.get(0) + ", sigma = " + xMin.get(1) + "\n"
++                    + "expected:   a = " + cachedA + ", sigma = " + cachedSigma + "\n"
++                    + "diff a = " + (xMin.get(0) - cachedA)
++                    + ", diff sigma = " + (xMin.get(1) - cachedSigma)
++                    + ", end criteria = " + model.endCriteria());
++        }
++    }
+ 
+     /**
+      * Hull-White calibration against cached values using swaptions without

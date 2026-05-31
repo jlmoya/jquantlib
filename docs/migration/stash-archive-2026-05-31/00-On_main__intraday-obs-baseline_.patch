@@ -1,0 +1,100 @@
+diff --git a/jquantlib/src/main/java/org/jquantlib/util/ObservableSettings.java b/jquantlib/src/main/java/org/jquantlib/util/ObservableSettings.java
+index 3adee61e..008714c1 100644
+--- a/jquantlib/src/main/java/org/jquantlib/util/ObservableSettings.java
++++ b/jquantlib/src/main/java/org/jquantlib/util/ObservableSettings.java
+@@ -15,9 +15,6 @@
+  This program is distributed in the hope that it will be useful, but WITHOUT
+  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+  FOR A PARTICULAR PURPOSE.  See the license for more details.
+-
+- JQuantLib is based on QuantLib. http://quantlib.org/
+- When applicable, the original copyright notice follows this notice.
+  */
+ 
+ /*
+@@ -37,8 +34,16 @@ import java.util.Set;
+  * Global repository for run-time observable settings.
+  *
+  * <p>Java port of C++ QuantLib {@code ObservableSettings}
+- * (ql/patterns/observable.hpp). Mirrors the non-thread-safe branch ({@code QL_ENABLE_THREAD_SAFE_OBSERVER_PATTERN}
+- * undefined); the thread-safe variant is not needed in Java because the JVM provides its own GC + memory model.
++ * (ql/patterns/observable.hpp). Mirrors the same two-mode toggle as the
++ * C++ implementation. Thread-safety: the deferred-observers queue is
++ * synchronized so that concurrent
++ * {@link org.jquantlib.util.DefaultObservable#notifyObservers()} calls
++ * across threads do not race on the {@link LinkedHashSet}. This matches
++ * the spirit of the C++ {@code QL_ENABLE_THREAD_SAFE_OBSERVER_PATTERN}
++ * variant - the JVM still provides automatic GC + a strong memory
++ * model, but multi-threaded code that toggles the global deferred mode
++ * (e.g. the test {@code testMultiThreadingGlobalSettings}) requires the
++ * deferred queue itself to be safely published across threads.
+  *
+  * <p>Two-state toggle:
+  * <ul>
+@@ -60,11 +65,16 @@ public final class ObservableSettings {
+     /**
+      * Linked-set preserves insertion order so deferred updates fire in registration order — matches the C++ map
+      * iteration order for the test {@code testObservableSettings}.
++     *
++     * <p>All access is synchronized on this object: see
++     * {@link #registerDeferredObserver(Observer)},
++     * {@link #unregisterDeferredObserver(Observer)} and the snapshot
++     * block inside {@link #enableUpdates()}.
+      */
+     private final Set< Observer > deferredObservers = new LinkedHashSet< Observer >();
+-    private boolean updatesEnabled = true;
+-    private boolean updatesDeferred = false;
+-    private boolean runningDeferredUpdates = false;
++    private volatile boolean updatesEnabled = true;
++    private volatile boolean updatesDeferred = false;
++    private volatile boolean runningDeferredUpdates = false;
+ 
+     private ObservableSettings() {
+         // singleton
+@@ -100,15 +110,17 @@ public final class ObservableSettings {
+         this.updatesEnabled = true;
+         this.updatesDeferred = false;
+ 
+-        if ( deferredObservers.isEmpty() ) {
+-            return;
++        final Observer[] snapshot;
++        synchronized ( deferredObservers ) {
++            if ( deferredObservers.isEmpty() ) {
++                return;
++            }
++            // Take snapshot then clear, so a re-entrant disable/enable inside
++            // an observer update() doesn't re-process the in-flight set.
++            snapshot = deferredObservers.toArray(new Observer[0]);
++            deferredObservers.clear();
+         }
+ 
+-        // Take snapshot then clear, so a re-entrant disable/enable inside
+-        // an observer update() doesn't re-process the in-flight set.
+-        final Observer[] snapshot = deferredObservers.toArray(new Observer[0]);
+-        deferredObservers.clear();
+-
+         runningDeferredUpdates = true;
+         RuntimeException firstException = null;
+         try {
+@@ -148,7 +160,9 @@ public final class ObservableSettings {
+      */
+     void registerDeferredObserver(final Observer observer) {
+         if ( updatesDeferred && observer != null ) {
+-            deferredObservers.add(observer);
++            synchronized ( deferredObservers ) {
++                deferredObservers.add(observer);
++            }
+         }
+     }
+ 
+@@ -157,7 +171,9 @@ public final class ObservableSettings {
+      */
+     void unregisterDeferredObserver(final Observer observer) {
+         if ( observer != null ) {
+-            deferredObservers.remove(observer);
++            synchronized ( deferredObservers ) {
++                deferredObservers.remove(observer);
++            }
+         }
+     }
+ 

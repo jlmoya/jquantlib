@@ -1,0 +1,1850 @@
+diff --git a/jquantlib/src/main/java/org/jquantlib/instruments/CapFloor.java b/jquantlib/src/main/java/org/jquantlib/instruments/CapFloor.java
+index 7d4230fc..f46aad38 100755
+--- a/jquantlib/src/main/java/org/jquantlib/instruments/CapFloor.java
++++ b/jquantlib/src/main/java/org/jquantlib/instruments/CapFloor.java
+@@ -50,12 +50,20 @@ import org.jquantlib.cashflow.CashFlow;
+ import org.jquantlib.cashflow.CashFlows;
+ import org.jquantlib.cashflow.FloatingRateCoupon;
+ import org.jquantlib.cashflow.Leg;
++import org.jquantlib.daycounters.Actual365Fixed;
+ import org.jquantlib.indexes.InterestRateIndex;
+ import org.jquantlib.lang.exceptions.LibraryException;
+ import org.jquantlib.math.Constants;
++import org.jquantlib.math.distributions.Derivative;
++import org.jquantlib.math.solvers1D.NewtonSafe;
++import org.jquantlib.model.VolatilityType;
+ import org.jquantlib.pricingengines.GenericEngine;
+ import org.jquantlib.pricingengines.PricingEngine;
++import org.jquantlib.pricingengines.capfloor.BachelierCapFloorEngine;
++import org.jquantlib.pricingengines.capfloor.BlackCapFloorEngine;
+ import org.jquantlib.quotes.Handle;
++import org.jquantlib.quotes.Quote;
++import org.jquantlib.quotes.SimpleQuote;
+ import org.jquantlib.termstructures.YieldTermStructure;
+ import org.jquantlib.time.Date;
+ 
+@@ -76,6 +84,9 @@ import org.jquantlib.time.Date;
+  * plus the inner {@link Arguments}/{@link Results}/{@link Engine} types,
+  * so that {@link Instrument#NPV()} dispatches through the engine.
+  *
++ * <p>Phase 5e.5b-CFC-d-48 ports {@link #impliedVolatility} +
++ * {@link ImpliedCapVolHelper} from capfloor.cpp lines 37-108 and 323-340.
++ *
+  * @category instruments
+  *
+  * @author Ueli Hofstetter
+@@ -232,6 +243,160 @@ public class CapFloor extends Instrument {
+         return lastFloatingCoupon.fixingDate();
+     }
+ 
++    //
++    // implied volatility — mirrors C++ v1.42.1 capfloor.cpp lines 323-340
++    // plus the anonymous-namespace ImpliedCapVolHelper (capfloor.cpp:37-108).
++    //
++
++    /**
++     * Implied term volatility (full-arity overload).
++     *
++     * <p>Mirrors C++ {@code CapFloor::impliedVolatility(targetValue, disc,
++     * guess, accuracy, maxEvaluations, minVol, maxVol, type, displacement)}
++     * — capfloor.cpp:323-340. Constructs an internal pricing engine that
++     * shares a {@link SimpleQuote} for the volatility, then runs
++     * {@link NewtonSafe} on the price-target residual until the engine NPV
++     * matches {@code targetValue} to within {@code accuracy}.
++     *
++     * <p>The {@link VolatilityType} parameter selects the formula: under
++     * {@link VolatilityType#ShiftedLognormal} the helper uses
++     * {@link BlackCapFloorEngine} with the supplied displacement; under
++     * {@link VolatilityType#Normal} it uses {@link BachelierCapFloorEngine}
++     * and ignores {@code displacement}.
++     */
++    public /*@Volatility*/ double impliedVolatility(
++            final /*@Real*/ double targetValue,
++            final Handle<YieldTermStructure> d,
++            final /*@Volatility*/ double guess,
++            final /*@Real*/ double accuracy,
++            final /*@NonNegative*/ int maxEvaluations,
++            final /*@Volatility*/ double minVol,
++            final /*@Volatility*/ double maxVol,
++            final VolatilityType type,
++            final /*@Real*/ double displacement) {
++        QL.require(!isExpired(), "instrument expired");
++        final ImpliedCapVolHelper f =
++                new ImpliedCapVolHelper(this, d, targetValue, displacement, type);
++        final NewtonSafe solver = new NewtonSafe();
++        solver.setMaxEvaluations(maxEvaluations);
++        return solver.solve(f, accuracy, guess, minVol, maxVol);
++    }
++
++    /** Convenience overload: defaults type = ShiftedLognormal, displacement = 0. */
++    public /*@Volatility*/ double impliedVolatility(
++            final /*@Real*/ double targetValue,
++            final Handle<YieldTermStructure> d,
++            final /*@Volatility*/ double guess,
++            final /*@Real*/ double accuracy,
++            final /*@NonNegative*/ int maxEvaluations,
++            final /*@Volatility*/ double minVol,
++            final /*@Volatility*/ double maxVol) {
++        return impliedVolatility(targetValue, d, guess, accuracy, maxEvaluations,
++                minVol, maxVol, VolatilityType.ShiftedLognormal, 0.0);
++    }
++
++    /** Convenience overload mirroring the C++ default arguments
++     *  (accuracy=1e-4, maxEvaluations=100, minVol=1e-7, maxVol=4.0,
++     *  type=ShiftedLognormal, displacement=0). */
++    public /*@Volatility*/ double impliedVolatility(
++            final /*@Real*/ double targetValue,
++            final Handle<YieldTermStructure> d,
++            final /*@Volatility*/ double guess) {
++        return impliedVolatility(targetValue, d, guess, 1.0e-4, 100,
++                1.0e-7, 4.0, VolatilityType.ShiftedLognormal, 0.0);
++    }
++
++    /**
++     * Functor passed to the 1D solver inside {@link #impliedVolatility}.
++     *
++     * <p>Mirrors the C++ anonymous-namespace {@code ImpliedCapVolHelper}
++     * (capfloor.cpp:37-108). The helper owns a {@link SimpleQuote} shared
++     * with an internal {@link BlackCapFloorEngine} (ShiftedLognormal) or
++     * {@link BachelierCapFloorEngine} (Normal); each call to
++     * {@link #op(double)} sets the quote to the trial volatility, triggers
++     * the engine, and returns {@code engineNPV - targetValue}.
++     *
++     * <h3>Derivative</h3>
++     * <p>C++ reads the analytical {@code vega} from
++     * {@code results.additionalResults["vega"]}. The Java
++     * {@link BlackCapFloorEngine} populates the same key (Phase
++     * 5e.5b-CFC-d-49), so we read it directly to mirror C++ verbatim.
++     * The Java {@link BachelierCapFloorEngine} does not yet populate
++     * {@code additionalResults}; when the cap is priced under
++     * {@link VolatilityType#Normal} we fall back to a central finite
++     * difference with a relative bump of {@code 1e-5}. Both branches feed
++     * {@link NewtonSafe}.
++     */
++    private static final class ImpliedCapVolHelper implements Derivative {
++        private final PricingEngine engine_;
++        private final SimpleQuote vol_;
++        private final /*@Real*/ double targetValue_;
++        private final Instrument.ResultsImpl results_;
++
++        ImpliedCapVolHelper(final CapFloor cap,
++                            final Handle<YieldTermStructure> discountCurve,
++                            final /*@Real*/ double targetValue,
++                            final /*@Real*/ double displacement,
++                            final VolatilityType type) {
++            this.targetValue_ = targetValue;
++            // Implausible starting value forces a recalculate on the first
++            // op(x) call (mirrors C++ SimpleQuote(-1.0) sentinel).
++            this.vol_ = new SimpleQuote(-1.0);
++            final Handle<Quote> h = new Handle<Quote>(vol_);
++
++            switch (type) {
++                case ShiftedLognormal:
++                    this.engine_ = new BlackCapFloorEngine(
++                            discountCurve, h, new Actual365Fixed(), displacement);
++                    break;
++                case Normal:
++                    this.engine_ = new BachelierCapFloorEngine(
++                            discountCurve, h, new Actual365Fixed());
++                    break;
++                default:
++                    throw new LibraryException("unknown VolatilityType (" + type + ")");
++            }
++
++            // Mirrors C++ cap.setupArguments(engine_->getArguments()).
++            // CapFloor.setupArguments is protected on Instrument; this is
++            // a nested class of CapFloor so the call is permitted.
++            cap.setupArguments(engine_.getArguments());
++            engine_.getArguments().validate();
++            this.results_ = (Instrument.ResultsImpl) engine_.getResults();
++        }
++
++        @Override
++        public double op(final double x) {
++            if (x != vol_.value()) {
++                vol_.setValue(x);
++                engine_.calculate();
++            }
++            return results_.value - targetValue_;
++        }
++
++        @Override
++        public double derivative(final double x) {
++            if (x != vol_.value()) {
++                vol_.setValue(x);
++                engine_.calculate();
++            }
++            // Prefer the analytical vega populated by the engine (mirrors
++            // C++ capfloor.cpp:98-107). Fall back to a central finite
++            // difference when the engine has not populated the entry yet
++            // (e.g. BachelierCapFloorEngine pre-Phase-5g vega wiring).
++            final Object vega = results_.additionalResults().get("vega");
++            if (vega instanceof Number) {
++                return ((Number) vega).doubleValue();
++            }
++            final double bump = Math.max(1.0e-7, 1.0e-5 * Math.abs(x));
++            final double fPlus = op(x + bump);
++            final double fMinus = op(x - bump);
++            // Restore engine state at x so subsequent op(x) is consistent.
++            op(x);
++            return (fPlus - fMinus) / (2.0 * bump);
++        }
++    }
++
+     //
+     // overrides Instrument
+     //
+diff --git a/jquantlib/src/main/java/org/jquantlib/instruments/MakeVanillaSwap.java b/jquantlib/src/main/java/org/jquantlib/instruments/MakeVanillaSwap.java
+index 198ab316..0421a48f 100755
+--- a/jquantlib/src/main/java/org/jquantlib/instruments/MakeVanillaSwap.java
++++ b/jquantlib/src/main/java/org/jquantlib/instruments/MakeVanillaSwap.java
+@@ -1,410 +1,556 @@
+-/*
+-Copyright (C) 2008 John Martin
+-
+-This source code is release under the BSD License.
+-
+-This file is part of JQuantLib, a free-software/open-source library
+-for financial quantitative analysts and developers - http://jquantlib.org/
+-
+-JQuantLib is free software: you can redistribute it and/or modify it
+-under the terms of the JQuantLib license.  You should have received a
+-copy of the license along with this program; if not, please email
+-<jquant-devel@lists.sourceforge.net>. The license is also available online at
+-<http://www.jquantlib.org/index.php/LICENSE.TXT>.
+-
+-This program is distributed in the hope that it will be useful, but WITHOUT
+-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+-FOR A PARTICULAR PURPOSE.  See the license for more details.
+-
+-JQuantLib is based on QuantLib. http://quantlib.org/
+-When applicable, the original copyright notice follows this notice.
+- */
+-
+-/*
+- Copyright (C) 2006, 2007 Ferdinando Ametrano
+- Copyright (C) 2006 Katiuscia Manzoni
+- Copyright (C) 2006 StatPro Italia srl
+-
+- This file is part of QuantLib, a free-software/open-source library
+- for financial quantitative analysts and developers - http://quantlib.org/
+-
+- QuantLib is free software: you can redistribute it and/or modify it
+- under the terms of the QuantLib license.  You should have received a
+- copy of the license along with this program; if not, please email
+- <quantlib-dev@lists.sf.net>. The license is also available online at
+- <http://quantlib.org/license.shtml>.
+-
+- This program is distributed in the hope that it will be useful, but WITHOUT
+- ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+- FOR A PARTICULAR PURPOSE.  See the license for more details.
+- */
+-package org.jquantlib.instruments;
+-
+-import org.jquantlib.QL;
+-import org.jquantlib.Settings;
+-import org.jquantlib.cashflow.Leg;
+-import org.jquantlib.cashflow.OvernightLeg;
+-import org.jquantlib.daycounters.DayCounter;
+-import org.jquantlib.daycounters.Thirty360;
+-import org.jquantlib.indexes.IborIndex;
+-import org.jquantlib.indexes.OvernightIndex;
+-import org.jquantlib.pricingengines.PricingEngine;
+-import org.jquantlib.pricingengines.swap.DiscountingSwapEngine;
+-import org.jquantlib.quotes.Handle;
+-import org.jquantlib.termstructures.YieldTermStructure;
+-import org.jquantlib.time.BusinessDayConvention;
+-import org.jquantlib.time.Calendar;
+-import org.jquantlib.time.Date;
+-import org.jquantlib.time.DateGeneration;
+-import org.jquantlib.time.Period;
+-import org.jquantlib.time.Schedule;
+-import org.jquantlib.time.TimeUnit;
+-
+-/**
+- * This class provides a more comfortable way to instantiate standard market swap.
+- *
+- * @author John Martin
+- */
+-public class MakeVanillaSwap {
+-
+-    private final Period swapTenor;
+-    private final IborIndex iborIndex;
+-    private final /*@Rate*/ double fixedRate;
+-    private final Period forwardStart;
+-
+-    private Date effectiveDate;
+-    private Calendar fixedCalendar;
+-	private Calendar floatCalendar;
+-
+-    private VanillaSwap.Type type;
+-    private /*@Real*/ double nominal;
+-    private Period fixedTenor;
+-	private Period floatTenor;
+-    private BusinessDayConvention fixedConvention;
+-	private BusinessDayConvention fixedTerminationDateConvention;
+-    private BusinessDayConvention floatConvention;
+-	private BusinessDayConvention floatTerminationDateConvention;
+-    private DateGeneration.Rule fixedRule;
+-	private DateGeneration.Rule floatRule;
+-    private boolean fixedEndOfMonth;
+-	private boolean floatEndOfMonth;
+-    private Date fixedFirstDate;
+-	private Date fixedNextToLastDate;
+-    private Date floatFirstDate;
+-	private Date floatNextToLastDate;
+-    private /*@Spread*/ double floatSpread;
+-    private DayCounter fixedDayCount;
+-	private DayCounter floatDayCount;
+-    private Date terminationDate;
+-    private PricingEngine engine;
+-
+-    
+-    
+-    public MakeVanillaSwap (
+-            final Period swapTenor,
+-            final IborIndex index) {
+-        this(swapTenor, index, 0.0, new Period(0,TimeUnit.Days));
+-    }
+-    public MakeVanillaSwap (
+-            final Period swapTenor,
+-            final IborIndex index,
+-            final /*Rate*/ double fixedRate) {
+-        this(swapTenor, index, fixedRate, new Period(0,TimeUnit.Days));
+-    }
+-    public MakeVanillaSwap(
+-            final Period swapTenor,
+-            final IborIndex index,
+-            final /*@Rate*/ double fixedRate,
+-            final Period forwardStart) {
+-        this.swapTenor 	= swapTenor;
+-        this.iborIndex 	= index;
+-        this.fixedRate 	= fixedRate;
+-        this.forwardStart 	= forwardStart;
+-        this.effectiveDate = new Date();
+-        this.fixedCalendar = index.fixingCalendar();
+-        this.floatCalendar = index.fixingCalendar();
+-        this.type 					= VanillaSwap.Type.Payer;
+-        this.nominal 				= 1.0;
+-        this.fixedTenor 			= new Period(1, TimeUnit.Years);
+-        this.floatTenor 			= index.tenor();
+-        this.fixedConvention 					= BusinessDayConvention.ModifiedFollowing;
+-        this.fixedTerminationDateConvention 	= BusinessDayConvention.ModifiedFollowing;
+-        this.floatConvention 					= index.businessDayConvention();
+-        this.floatTerminationDateConvention 	= index.businessDayConvention();
+-        this.fixedRule 			= DateGeneration.Rule.Backward;
+-        this.floatRule 			= DateGeneration.Rule.Backward;
+-        this.fixedEndOfMonth 		= false;
+-        this.floatEndOfMonth 		= false;
+-        this.fixedFirstDate      	= new Date();
+-        this.fixedNextToLastDate 	= new Date();
+-        this.floatFirstDate      	= new Date();
+-        this.floatNextToLastDate 	= new Date();
+-        this.floatSpread 			= 0.0;
+-        this.fixedDayCount 		= new Thirty360();
+-        this.floatDayCount 		= index.dayCounter();
+-        this.engine 				= new DiscountingSwapEngine(index.termStructure());
+-    }
+-
+-
+-    public VanillaSwap value() /* @ReadOnly */ {
+-
+-        Date startDate;
+-        if (!effectiveDate.isNull()) {
+-            startDate = effectiveDate;
+-        } else {
+-            /*@Natural*/ final int fixingDays = iborIndex.fixingDays();
+-            final Date referenceDate = new Settings().evaluationDate();
+-            final Date spotDate = floatCalendar.advance(referenceDate, fixingDays, TimeUnit.Days);
+-            startDate = spotDate.add(forwardStart);
+-        }
+-
+-        Date endDate;
+-        if (terminationDate != null && !terminationDate.isNull()) {
+-            endDate = terminationDate;
+-        } else {
+-            endDate = startDate.add (swapTenor);
+-        }
+-
+-        final Schedule fixedSchedule = new Schedule(startDate, endDate,
+-                fixedTenor, fixedCalendar,
+-                fixedConvention,
+-                fixedTerminationDateConvention,
+-                fixedRule, fixedEndOfMonth,
+-                fixedFirstDate, fixedNextToLastDate);
+-
+-        final Schedule floatSchedule = new Schedule(startDate, endDate,
+-                floatTenor, floatCalendar,
+-                floatConvention,
+-                floatTerminationDateConvention,
+-                floatRule , floatEndOfMonth,
+-                floatFirstDate, floatNextToLastDate);
+-
+-        double usedFixedRate = fixedRate;
+-
+-        if (Double.isNaN (fixedRate)) {
+-            QL.require(!iborIndex.termStructure().empty(), "no forecasting term structure set to " + iborIndex.name()); // TODO: message
+-
+-            final VanillaSwap temp = new VanillaSwap(
+-                    type,
+-                    nominal,
+-                    fixedSchedule,
+-                    0.0,
+-                    fixedDayCount,
+-                    floatSchedule,
+-                    iborIndex,
+-                    floatSpread,
+-                    floatDayCount,
+-                    BusinessDayConvention.Following);
+-
+-            // ATM on the forecasting curve
+-            temp.setPricingEngine(new DiscountingSwapEngine(iborIndex.termStructure()));
+-            usedFixedRate = temp.fairRate();
+-        }
+-
+-        final VanillaSwap swap;
+-        if (iborIndex instanceof OvernightIndex) {
+-            // Phase 5g.5f: when iborIndex is an OvernightIndex, build the
+-            // floating leg via OvernightLeg (overnight-indexed coupons) rather
+-            // than the IborLeg path. C++ MakeVanillaSwap unconditionally calls
+-            // VanillaSwap with an IborIndex; in C++ the OvernightIndex IS-A
+-            // IborIndex hierarchy plus IborLeg's coupon-pricer dispatch
+-            // transparently builds OvernightIndexedCoupons. Java's IborLeg
+-            // hard-codes the IborCoupon path, so we substitute the floating
+-            // leg with an OvernightLeg via a VanillaSwap subclass that
+-            // overrides legs[1] in-place. Used by MakeCapFloor →
+-            // OptionletStripper1 to bootstrap caps on overnight indexes
+-            // (e.g., SOFR).
+-            swap = buildOvernightVanillaSwap(usedFixedRate, fixedSchedule, floatSchedule);
+-        } else {
+-            swap = new VanillaSwap (
+-                    type,
+-                    nominal,
+-                    fixedSchedule,
+-                    usedFixedRate,
+-                    fixedDayCount,
+-                    floatSchedule,
+-                    iborIndex,
+-                    floatSpread,
+-                    floatDayCount,
+-                    BusinessDayConvention.Following);
+-        }
+-        swap.setPricingEngine (engine);
+-        return swap;
+-    }
+-
+-    /**
+-     * Build a VanillaSwap whose floating leg slot is populated by an
+-     * {@link OvernightLeg} (overnight-indexed coupons). Used by the
+-     * OvernightIndex branch in {@link #value()}. The IborLeg path inside the
+-     * superclass ctor still runs (we feed it the OvernightIndex, which IS-A
+-     * IborIndex), then we replace {@code legs.get(1)} with the OvernightLeg.
+-     * The resulting swap's {@link VanillaSwap#floatingLeg()} therefore
+-     * returns the overnight-indexed leg, which is what {@link MakeCapFloor}
+-     * (and downstream {@link org.jquantlib.termstructures.volatilities.optionlet.OptionletStripper1})
+-     * consume.
+-     */
+-    private VanillaSwap buildOvernightVanillaSwap(
+-            final double usedFixedRate,
+-            final Schedule fixedSchedule,
+-            final Schedule floatSchedule) {
+-        final OvernightIndex on = (OvernightIndex) iborIndex;
+-        final Leg overnightLeg = new OvernightLeg(floatSchedule, on)
+-                .withNotionals(nominal)
+-                .withPaymentDayCounter(floatDayCount)
+-                .withPaymentAdjustment(BusinessDayConvention.Following)
+-                .withSpreads(floatSpread)
+-                .leg();
+-        final VanillaSwap swap = new VanillaSwap(
+-                type,
+-                nominal,
+-                fixedSchedule,
+-                usedFixedRate,
+-                fixedDayCount,
+-                floatSchedule,
+-                iborIndex,
+-                floatSpread,
+-                floatDayCount,
+-                BusinessDayConvention.Following);
+-        // Replace the IborLeg in slot [1] with the OvernightLeg.
+-        // legs is protected; access via reflection-free in-place set.
+-        swap.legs.set(1, overnightLeg);
+-        for (final org.jquantlib.cashflow.CashFlow item : overnightLeg) {
+-            item.addObserver(swap);
+-        }
+-        return swap;
+-    }
+-
+-
+-
+-    public MakeVanillaSwap receiveFixed(final boolean flag) {
+-        this.type = flag ? VanillaSwap.Type.Receiver : VanillaSwap.Type.Payer;
+-        return this;
+-    }
+-
+-    public MakeVanillaSwap withType(final VanillaSwap.Type type) {
+-    	this.type = type;
+-        return this;
+-    }
+-
+-    public MakeVanillaSwap withNominal(/* Real */final double n) {
+-    	this.nominal = n;
+-        return this;
+-    }
+-
+-    public MakeVanillaSwap withEffectiveDate(final Date effectiveDate) {
+-        this.effectiveDate = effectiveDate;
+-        return this;
+-    }
+-
+-    public MakeVanillaSwap withTerminationDate(final Date terminationDate) {
+-    	this.terminationDate = terminationDate;
+-        return this;
+-    }
+-
+-    public MakeVanillaSwap withRule(final DateGeneration.Rule r) {
+-    	this.fixedRule = r;
+-    	this.floatRule = r;
+-        return this;
+-    }
+-
+-    public MakeVanillaSwap withDiscountingTermStructure(final Handle<YieldTermStructure> discountingTermStructure) {
+-    	this.engine = (new DiscountingSwapEngine(discountingTermStructure));
+-        return this;
+-    }
+-
+-    public MakeVanillaSwap withFixedLegTenor(final Period t) {
+-    	this.fixedTenor = t;
+-        return this;
+-    }
+-
+-    public MakeVanillaSwap withFixedLegCalendar(final Calendar cal) {
+-    	this.fixedCalendar = cal;
+-        return this;
+-    }
+-
+-    public MakeVanillaSwap withFixedLegConvention(final BusinessDayConvention bdc) {
+-    	this.fixedConvention = bdc;
+-        return this;
+-    }
+-
+-    public MakeVanillaSwap withFixedLegTerminationDateConvention(final BusinessDayConvention bdc) {
+-    	this.fixedTerminationDateConvention = bdc;
+-        return this;
+-    }
+-
+-    public MakeVanillaSwap withFixedLegRule(final DateGeneration.Rule r) {
+-    	this.fixedRule = r;
+-        return this;
+-    }
+-
+-    public MakeVanillaSwap withFixedLegEndOfMonth(final boolean flag) {
+-    	this.fixedEndOfMonth = flag;
+-        return this;
+-    }
+-
+-    public MakeVanillaSwap withFixedLegFirstDate(final Date d) {
+-    	this.fixedFirstDate = d;
+-        return this;
+-    }
+-
+-    public MakeVanillaSwap withFixedLegNextToLastDate(final Date d) {
+-    	this.fixedNextToLastDate = d;
+-        return this;
+-    }
+-
+-    public MakeVanillaSwap withFixedLegDayCount(final DayCounter dc) {
+-    	this.fixedDayCount = dc;
+-        return this;
+-    }
+-
+-    public MakeVanillaSwap withFloatingLegTenor(final Period t) {
+-    	this.floatTenor = t;
+-        return this;
+-    }
+-
+-    public MakeVanillaSwap withFloatingLegCalendar(final Calendar cal) {
+-    	this.floatCalendar = cal;
+-        return this;
+-    }
+-
+-    public MakeVanillaSwap withFloatingLegConvention(final BusinessDayConvention bdc) {
+-    	this.floatConvention = bdc;
+-        return this;
+-    }
+-
+-    public MakeVanillaSwap withFloatingLegTerminationDateConvention(final BusinessDayConvention bdc) {
+-    	this.floatTerminationDateConvention = bdc;
+-        return this;
+-    }
+-
+-    public MakeVanillaSwap withFloatingLegRule(final DateGeneration.Rule r) {
+-    	this.floatRule = r;
+-        return this;
+-    }
+-
+-    public MakeVanillaSwap withFloatingLegEndOfMonth(final boolean flag) {
+-    	this.floatEndOfMonth = flag;
+-        return this;
+-    }
+-
+-    public MakeVanillaSwap withFloatingLegFirstDate(final Date d) {
+-    	this.floatFirstDate = d;
+-        return this;
+-    }
+-
+-    public MakeVanillaSwap withFloatingLegNextToLastDate(final Date d) {
+-    	this.floatNextToLastDate = d;
+-        return this;
+-    }
+-
+-    public MakeVanillaSwap withFloatingLegDayCount(final DayCounter dc) {
+-    	this.floatDayCount = dc;
+-        return this;
+-    }
+-
+-    public MakeVanillaSwap withFloatingLegSpread(/* Spread */final double sp) {
+-    	this.floatSpread = sp;
+-        return this;
+-    }
+-
+-}
++/*
++Copyright (C) 2008 John Martin
++
++This source code is release under the BSD License.
++
++This file is part of JQuantLib, a free-software/open-source library
++for financial quantitative analysts and developers - http://jquantlib.org/
++
++JQuantLib is free software: you can redistribute it and/or modify it
++under the terms of the JQuantLib license.  You should have received a
++copy of the license along with this program; if not, please email
++<jquant-devel@lists.sourceforge.net>. The license is also available online at
++<http://www.jquantlib.org/index.php/LICENSE.TXT>.
++
++This program is distributed in the hope that it will be useful, but WITHOUT
++ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
++FOR A PARTICULAR PURPOSE.  See the license for more details.
++
++JQuantLib is based on QuantLib. http://quantlib.org/
++When applicable, the original copyright notice follows this notice.
++ */
++
++/*
++ Copyright (C) 2006, 2007, 2010, 2014, 2015 Ferdinando Ametrano
++ Copyright (C) 2006 Katiuscia Manzoni
++ Copyright (C) 2006 StatPro Italia srl
++
++ This file is part of QuantLib, a free-software/open-source library
++ for financial quantitative analysts and developers - http://quantlib.org/
++
++ QuantLib is free software: you can redistribute it and/or modify it
++ under the terms of the QuantLib license.  You should have received a
++ copy of the license along with this program; if not, please email
++ <quantlib-dev@lists.sf.net>. The license is also available online at
++ <http://quantlib.org/license.shtml>.
++
++ This program is distributed in the hope that it will be useful, but WITHOUT
++ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
++ FOR A PARTICULAR PURPOSE.  See the license for more details.
++ */
++package org.jquantlib.instruments;
++
++import org.jquantlib.QL;
++import org.jquantlib.Settings;
++import org.jquantlib.cashflow.Leg;
++import org.jquantlib.cashflow.OvernightLeg;
++import org.jquantlib.currencies.Asia.HKDCurrency;
++import org.jquantlib.currencies.Asia.JPYCurrency;
++import org.jquantlib.currencies.Asia.THBCurrency;
++import org.jquantlib.currencies.America.USDCurrency;
++import org.jquantlib.currencies.Currency;
++import org.jquantlib.currencies.Europe.CHFCurrency;
++import org.jquantlib.currencies.Europe.EURCurrency;
++import org.jquantlib.currencies.Europe.GBPCurrency;
++import org.jquantlib.currencies.Europe.SEKCurrency;
++import org.jquantlib.currencies.Oceania.AUDCurrency;
++import org.jquantlib.daycounters.Actual360;
++import org.jquantlib.daycounters.Actual365Fixed;
++import org.jquantlib.daycounters.DayCounter;
++import org.jquantlib.daycounters.Thirty360;
++import org.jquantlib.indexes.IborIndex;
++import org.jquantlib.indexes.OvernightIndex;
++import org.jquantlib.pricingengines.PricingEngine;
++import org.jquantlib.pricingengines.swap.DiscountingSwapEngine;
++import org.jquantlib.quotes.Handle;
++import org.jquantlib.termstructures.YieldTermStructure;
++import org.jquantlib.time.BusinessDayConvention;
++import org.jquantlib.time.Calendar;
++import org.jquantlib.time.Date;
++import org.jquantlib.time.DateGeneration;
++import org.jquantlib.time.Period;
++import org.jquantlib.time.Schedule;
++import org.jquantlib.time.TimeUnit;
++
++/**
++ * This class provides a more comfortable way to instantiate standard market swap.
++ *
++ * <p>Mirrors C++ v1.42.1 {@code MakeVanillaSwap}. Phase 5e.5b-CFC-d-57
++ * brought the Java port up to parity by adding: {@code withSettlementDays}
++ * with the {@code settlementDays + effectiveDate} conflict guard,
++ * {@code withPricingEngine} / {@code withPaymentConvention} /
++ * {@code withMaturityEndOfMonth} fluent setters, currency-based default
++ * {@code fixedTenor} and {@code fixedDayCount} inference, and
++ * {@code withTerminationDate} clearing the constructor {@code swapTenor}.
++ *
++ * @author John Martin
++ */
++public class MakeVanillaSwap {
++
++    /** Sentinel for "settlementDays not set". Mirrors C++ {@code Null<Natural>()}. */
++    private static final int NULL_SETTLEMENT_DAYS = Integer.MIN_VALUE;
++
++    private Period swapTenor;
++    private final IborIndex iborIndex;
++    private final /*@Rate*/ double fixedRate;
++    private final Period forwardStart;
++
++    private int settlementDays = NULL_SETTLEMENT_DAYS;
++    private Date effectiveDate;
++    private Calendar fixedCalendar;
++	private Calendar floatCalendar;
++
++    private VanillaSwap.Type type;
++    private /*@Real*/ double nominal;
++    private Period fixedTenor;
++	private Period floatTenor;
++    private BusinessDayConvention fixedConvention;
++	private BusinessDayConvention fixedTerminationDateConvention;
++    private BusinessDayConvention floatConvention;
++	private BusinessDayConvention floatTerminationDateConvention;
++    private DateGeneration.Rule fixedRule;
++	private DateGeneration.Rule floatRule;
++    private boolean fixedEndOfMonth;
++	private boolean floatEndOfMonth;
++    /** null = unset (defer to floatEndOfMonth). Mirrors C++ {@code ext::optional<bool>}. */
++    private Boolean maturityEndOfMonth;
++    private Date fixedFirstDate;
++	private Date fixedNextToLastDate;
++    private Date floatFirstDate;
++	private Date floatNextToLastDate;
++    private /*@Spread*/ double floatSpread;
++    private DayCounter fixedDayCount;
++	private DayCounter floatDayCount;
++    private Date terminationDate;
++    /** null = unset (defer to {@code Following} per C++). */
++    private BusinessDayConvention paymentConvention;
++    private PricingEngine engine;
++
++
++
++    public MakeVanillaSwap (
++            final Period swapTenor,
++            final IborIndex index) {
++        this(swapTenor, index, Double.NaN, new Period(0,TimeUnit.Days));
++    }
++    public MakeVanillaSwap (
++            final Period swapTenor,
++            final IborIndex index,
++            final /*Rate*/ double fixedRate) {
++        this(swapTenor, index, fixedRate, new Period(0,TimeUnit.Days));
++    }
++    public MakeVanillaSwap(
++            final Period swapTenor,
++            final IborIndex index,
++            final /*@Rate*/ double fixedRate,
++            final Period forwardStart) {
++        this.swapTenor 	= swapTenor;
++        this.iborIndex 	= index;
++        this.fixedRate 	= fixedRate;
++        this.forwardStart 	= forwardStart;
++        this.effectiveDate = new Date();
++        this.fixedCalendar = index.fixingCalendar();
++        this.floatCalendar = index.fixingCalendar();
++        this.type 					= VanillaSwap.Type.Payer;
++        this.nominal 				= 1.0;
++        // null = unset → currency-based inference in value(). Mirrors C++ Period()/DayCounter() default.
++        this.fixedTenor 			= null;
++        this.floatTenor 			= index.tenor();
++        this.fixedConvention 					= BusinessDayConvention.ModifiedFollowing;
++        this.fixedTerminationDateConvention 	= BusinessDayConvention.ModifiedFollowing;
++        this.floatConvention 					= index.businessDayConvention();
++        this.floatTerminationDateConvention 	= index.businessDayConvention();
++        this.fixedRule 			= DateGeneration.Rule.Backward;
++        this.floatRule 			= DateGeneration.Rule.Backward;
++        this.fixedEndOfMonth 		= false;
++        this.floatEndOfMonth 		= false;
++        this.maturityEndOfMonth = null;
++        this.fixedFirstDate      	= new Date();
++        this.fixedNextToLastDate 	= new Date();
++        this.floatFirstDate      	= new Date();
++        this.floatNextToLastDate 	= new Date();
++        this.floatSpread 			= 0.0;
++        this.fixedDayCount 		= null;
++        this.floatDayCount 		= index.dayCounter();
++        this.paymentConvention = null;
++        this.engine 				= new DiscountingSwapEngine(index.termStructure());
++    }
++
++
++    public VanillaSwap value() /* @ReadOnly */ {
++
++        // C++ MakeVanillaSwap (makevanillaswap.cpp:59-61): cannot set both
++        // explicit effective date AND settlement days.
++        QL.require(effectiveDate.isNull() || settlementDays == NULL_SETTLEMENT_DAYS,
++                "cannot set both an explicit effective date and settlement days; "
++                + "use one or the other");
++
++        Date startDate;
++        if (!effectiveDate.isNull()) {
++            startDate = effectiveDate;
++        } else {
++            Date refDate = new Settings().evaluationDate();
++            // If the evaluation date is not a business day, move to the next one.
++            refDate = floatCalendar.adjust(refDate);
++            Date spotDate;
++            if (settlementDays == NULL_SETTLEMENT_DAYS) {
++                spotDate = iborIndex.valueDate(refDate);
++            } else {
++                spotDate = floatCalendar.advance(refDate, settlementDays, TimeUnit.Days);
++            }
++            startDate = spotDate.add(forwardStart);
++            if (forwardStart.length() < 0) {
++                startDate = floatCalendar.adjust(startDate, BusinessDayConvention.Preceding);
++            } else if (forwardStart.length() > 0) {
++                startDate = floatCalendar.adjust(startDate, BusinessDayConvention.Following);
++            }
++        }
++
++        Date endDate;
++        if (terminationDate != null && !terminationDate.isNull()) {
++            endDate = terminationDate;
++        } else {
++            endDate = startDate.add(swapTenor);
++            final boolean useMaturityEoM =
++                    (maturityEndOfMonth != null) ? maturityEndOfMonth.booleanValue() : floatEndOfMonth;
++            if (useMaturityEoM && allowsEndOfMonth(swapTenor)
++                    && floatCalendar.isEndOfMonth(startDate)) {
++                endDate = floatCalendar.endOfMonth(endDate);
++            }
++        }
++
++        final Currency curr = iborIndex.currency();
++        Period usedFixedTenor;
++        if (fixedTenor != null) {
++            usedFixedTenor = fixedTenor;
++        } else {
++            // Currency-based inference. C++ makevanillaswap.cpp:99-126.
++            Period tenor = (swapTenor != null) ? swapTenor : new Period();
++            if (isEmptyPeriod(tenor) && endDate.gt(startDate)) {
++                final int months = (int) ((12L * endDate.sub(startDate) + 182L) / 365L);
++                tenor = new Period(months, TimeUnit.Months);
++            }
++            if (curr.eq(new EURCurrency()) ||
++                curr.eq(new USDCurrency()) ||
++                curr.eq(new CHFCurrency()) ||
++                curr.eq(new SEKCurrency()) ||
++                (curr.eq(new GBPCurrency()) && periodLe(tenor, new Period(1, TimeUnit.Years)))) {
++                usedFixedTenor = new Period(1, TimeUnit.Years);
++            } else if ((curr.eq(new GBPCurrency()) && periodGt(tenor, new Period(1, TimeUnit.Years))) ||
++                       curr.eq(new JPYCurrency()) ||
++                       (curr.eq(new AUDCurrency()) && periodGe(tenor, new Period(4, TimeUnit.Years)))) {
++                usedFixedTenor = new Period(6, TimeUnit.Months);
++            } else if (curr.eq(new HKDCurrency()) ||
++                       (curr.eq(new AUDCurrency()) && periodLt(tenor, new Period(4, TimeUnit.Years)))) {
++                usedFixedTenor = new Period(3, TimeUnit.Months);
++            } else {
++                throw new IllegalStateException("unknown fixed leg default tenor for " + curr);
++            }
++        }
++
++        final Schedule fixedSchedule = new Schedule(startDate, endDate,
++                usedFixedTenor, fixedCalendar,
++                fixedConvention,
++                fixedTerminationDateConvention,
++                fixedRule, fixedEndOfMonth,
++                fixedFirstDate, fixedNextToLastDate);
++
++        final Schedule floatSchedule = new Schedule(startDate, endDate,
++                floatTenor, floatCalendar,
++                floatConvention,
++                floatTerminationDateConvention,
++                floatRule , floatEndOfMonth,
++                floatFirstDate, floatNextToLastDate);
++
++        DayCounter usedFixedDayCount;
++        if (fixedDayCount != null) {
++            usedFixedDayCount = fixedDayCount;
++        } else {
++            if (curr.eq(new USDCurrency())) {
++                usedFixedDayCount = new Actual360();
++            } else if (curr.eq(new EURCurrency()) || curr.eq(new CHFCurrency())
++                    || curr.eq(new SEKCurrency())) {
++                usedFixedDayCount = new Thirty360(Thirty360.Convention.BondBasis);
++            } else if (curr.eq(new GBPCurrency()) || curr.eq(new JPYCurrency())
++                    || curr.eq(new AUDCurrency()) || curr.eq(new HKDCurrency())
++                    || curr.eq(new THBCurrency())) {
++                usedFixedDayCount = new Actual365Fixed();
++            } else {
++                throw new IllegalStateException("unknown fixed leg day counter for " + curr);
++            }
++        }
++
++        double usedFixedRate = fixedRate;
++
++        final BusinessDayConvention usedPaymentConv =
++                (paymentConvention != null) ? paymentConvention : BusinessDayConvention.Following;
++
++        if (Double.isNaN (fixedRate)) {
++            QL.require(!iborIndex.termStructure().empty(), "no forecasting term structure set to " + iborIndex.name());
++
++            final VanillaSwap temp = new VanillaSwap(
++                    type,
++                    nominal,
++                    fixedSchedule,
++                    0.0,
++                    usedFixedDayCount,
++                    floatSchedule,
++                    iborIndex,
++                    floatSpread,
++                    floatDayCount,
++                    usedPaymentConv);
++            temp.setPricingEngine(new DiscountingSwapEngine(iborIndex.termStructure()));
++            usedFixedRate = temp.fairRate();
++        }
++
++        final VanillaSwap swap;
++        if (iborIndex instanceof OvernightIndex) {
++            swap = buildOvernightVanillaSwap(usedFixedRate, fixedSchedule, floatSchedule, usedFixedDayCount, usedPaymentConv);
++        } else {
++            swap = new VanillaSwap (
++                    type,
++                    nominal,
++                    fixedSchedule,
++                    usedFixedRate,
++                    usedFixedDayCount,
++                    floatSchedule,
++                    iborIndex,
++                    floatSpread,
++                    floatDayCount,
++                    usedPaymentConv);
++        }
++        swap.setPricingEngine (engine);
++        return swap;
++    }
++
++    private VanillaSwap buildOvernightVanillaSwap(
++            final double usedFixedRate,
++            final Schedule fixedSchedule,
++            final Schedule floatSchedule,
++            final DayCounter usedFixedDayCount,
++            final BusinessDayConvention usedPaymentConv) {
++        final OvernightIndex on = (OvernightIndex) iborIndex;
++        final Leg overnightLeg = new OvernightLeg(floatSchedule, on)
++                .withNotionals(nominal)
++                .withPaymentDayCounter(floatDayCount)
++                .withPaymentAdjustment(usedPaymentConv)
++                .withSpreads(floatSpread)
++                .leg();
++        final VanillaSwap swap = new VanillaSwap(
++                type,
++                nominal,
++                fixedSchedule,
++                usedFixedRate,
++                usedFixedDayCount,
++                floatSchedule,
++                iborIndex,
++                floatSpread,
++                floatDayCount,
++                usedPaymentConv);
++        swap.legs.set(1, overnightLeg);
++        for (final org.jquantlib.cashflow.CashFlow item : overnightLeg) {
++            item.addObserver(swap);
++        }
++        return swap;
++    }
++
++    private static boolean allowsEndOfMonth(final Period tenor) {
++        if (tenor == null) {
++            return false;
++        }
++        final TimeUnit u = tenor.units();
++        if (u != TimeUnit.Months && u != TimeUnit.Years) {
++            return false;
++        }
++        return periodGe(tenor, new Period(1, TimeUnit.Months));
++    }
++
++    private static boolean isEmptyPeriod(final Period p) {
++        return p == null || p.length() == 0;
++    }
++
++    private static boolean periodLe(final Period a, final Period b) {
++        try { return a.le(b); } catch (final RuntimeException e) { return approxDays(a) <= approxDays(b); }
++    }
++    private static boolean periodLt(final Period a, final Period b) {
++        try { return a.lt(b); } catch (final RuntimeException e) { return approxDays(a) < approxDays(b); }
++    }
++    private static boolean periodGt(final Period a, final Period b) {
++        try { return a.gt(b); } catch (final RuntimeException e) { return approxDays(a) > approxDays(b); }
++    }
++    private static boolean periodGe(final Period a, final Period b) {
++        try { return a.ge(b); } catch (final RuntimeException e) { return approxDays(a) >= approxDays(b); }
++    }
++    private static long approxDays(final Period p) {
++        switch (p.units()) {
++            case Days:   return p.length();
++            case Weeks:  return 7L * p.length();
++            case Months: return 30L * p.length();
++            case Years:  return 365L * p.length();
++            default:     return p.length();
++        }
++    }
++
++
++
++    public MakeVanillaSwap receiveFixed(final boolean flag) {
++        this.type = flag ? VanillaSwap.Type.Receiver : VanillaSwap.Type.Payer;
++        return this;
++    }
++
++    public MakeVanillaSwap withType(final VanillaSwap.Type type) {
++    	this.type = type;
++        return this;
++    }
++
++    public MakeVanillaSwap withNominal(/* Real */final double n) {
++    	this.nominal = n;
++        return this;
++    }
++
++    public MakeVanillaSwap withSettlementDays(final int settlementDays) {
++        QL.require(effectiveDate.isNull(),
++                "cannot set both an explicit effective date and settlement days; "
++                + "use one or the other");
++        this.settlementDays = settlementDays;
++        return this;
++    }
++
++    public MakeVanillaSwap withEffectiveDate(final Date effectiveDate) {
++        QL.require(settlementDays == NULL_SETTLEMENT_DAYS,
++                "cannot set both an explicit effective date and settlement days; "
++                + "use one or the other");
++        this.effectiveDate = effectiveDate;
++        return this;
++    }
++
++    public MakeVanillaSwap withTerminationDate(final Date terminationDate) {
++    	this.terminationDate = terminationDate;
++        if (terminationDate != null && !terminationDate.isNull()) {
++            this.swapTenor = new Period();
++        }
++        return this;
++    }
++
++    public MakeVanillaSwap withRule(final DateGeneration.Rule r) {
++    	this.fixedRule = r;
++    	this.floatRule = r;
++        return this;
++    }
++
++    public MakeVanillaSwap withPaymentConvention(final BusinessDayConvention bdc) {
++        this.paymentConvention = bdc;
++        return this;
++    }
++
++    public MakeVanillaSwap withDiscountingTermStructure(final Handle<YieldTermStructure> discountingTermStructure) {
++    	this.engine = (new DiscountingSwapEngine(discountingTermStructure));
++        return this;
++    }
++
++    public MakeVanillaSwap withPricingEngine(final PricingEngine engine) {
++        this.engine = engine;
++        return this;
++    }
++
++    public MakeVanillaSwap withFixedLegTenor(final Period t) {
++    	this.fixedTenor = t;
++        return this;
++    }
++
++    public MakeVanillaSwap withFixedLegCalendar(final Calendar cal) {
++    	this.fixedCalendar = cal;
++        return this;
++    }
++
++    public MakeVanillaSwap withFixedLegConvention(final BusinessDayConvention bdc) {
++    	this.fixedConvention = bdc;
++        return this;
++    }
++
++    public MakeVanillaSwap withFixedLegTerminationDateConvention(final BusinessDayConvention bdc) {
++    	this.fixedTerminationDateConvention = bdc;
++        return this;
++    }
++
++    public MakeVanillaSwap withFixedLegRule(final DateGeneration.Rule r) {
++    	this.fixedRule = r;
++        return this;
++    }
++
++    public MakeVanillaSwap withFixedLegEndOfMonth(final boolean flag) {
++    	this.fixedEndOfMonth = flag;
++        return this;
++    }
++
++    public MakeVanillaSwap withFixedLegFirstDate(final Date d) {
++    	this.fixedFirstDate = d;
++        return this;
++    }
++
++    public MakeVanillaSwap withFixedLegNextToLastDate(final Date d) {
++    	this.fixedNextToLastDate = d;
++        return this;
++    }
++
++    public MakeVanillaSwap withFixedLegDayCount(final DayCounter dc) {
++    	this.fixedDayCount = dc;
++        return this;
++    }
++
++    public MakeVanillaSwap withFloatingLegTenor(final Period t) {
++    	this.floatTenor = t;
++        return this;
++    }
++
++    public MakeVanillaSwap withFloatingLegCalendar(final Calendar cal) {
++    	this.floatCalendar = cal;
++        return this;
++    }
++
++    public MakeVanillaSwap withFloatingLegConvention(final BusinessDayConvention bdc) {
++    	this.floatConvention = bdc;
++        return this;
++    }
++
++    public MakeVanillaSwap withFloatingLegTerminationDateConvention(final BusinessDayConvention bdc) {
++    	this.floatTerminationDateConvention = bdc;
++        return this;
++    }
++
++    public MakeVanillaSwap withFloatingLegRule(final DateGeneration.Rule r) {
++    	this.floatRule = r;
++        return this;
++    }
++
++    public MakeVanillaSwap withFloatingLegEndOfMonth(final boolean flag) {
++    	this.floatEndOfMonth = flag;
++        return this;
++    }
++
++    public MakeVanillaSwap withMaturityEndOfMonth(final boolean flag) {
++        this.maturityEndOfMonth = Boolean.valueOf(flag);
++        return this;
++    }
++
++    public MakeVanillaSwap withFloatingLegFirstDate(final Date d) {
++    	this.floatFirstDate = d;
++        return this;
++    }
++
++    public MakeVanillaSwap withFloatingLegNextToLastDate(final Date d) {
++    	this.floatNextToLastDate = d;
++        return this;
++    }
++
++    public MakeVanillaSwap withFloatingLegDayCount(final DayCounter dc) {
++    	this.floatDayCount = dc;
++        return this;
++    }
++
++    public MakeVanillaSwap withFloatingLegSpread(/* Spread */final double sp) {
++    	this.floatSpread = sp;
++        return this;
++    }
++
++}
+diff --git a/jquantlib/src/main/java/org/jquantlib/math/matrixutilities/QRDecomposition.java b/jquantlib/src/main/java/org/jquantlib/math/matrixutilities/QRDecomposition.java
+index 980b21e3..b50dd3e1 100755
+--- a/jquantlib/src/main/java/org/jquantlib/math/matrixutilities/QRDecomposition.java
++++ b/jquantlib/src/main/java/org/jquantlib/math/matrixutilities/QRDecomposition.java
+@@ -307,11 +307,14 @@ public class QRDecomposition {
+ 
+         final double[] xArr = new double[n];
+ 
+-        // Build R in column-major layout for Minpack.qrsolv.
++        // Build R in column-major layout for Minpack.qrsolv. The Minpack
++        // convention is r[i + ldr*j] = r(i, j); C++ passes rT.begin()
++        // (row-major rT) which Minpack reinterprets as column-major R via
++        // the i,j swap. We construct rFlat in column-major directly from R.
+         final double[] rFlat = new double[n * n];
+-        for (int col = 0; col < n; ++col) {
+-            for (int row = 0; row < n; ++row) {
+-                rFlat[row + n * col] = rT.get(row, col);
++        for (int j = 0; j < n; ++j) {
++            for (int i = 0; i < n; ++i) {
++                rFlat[i + n * j] = R.get(i, j);
+             }
+         }
+ 
+diff --git a/jquantlib/src/main/java/org/jquantlib/time/DateGeneration.java b/jquantlib/src/main/java/org/jquantlib/time/DateGeneration.java
+index 807750d1..ca6462a4 100755
+--- a/jquantlib/src/main/java/org/jquantlib/time/DateGeneration.java
++++ b/jquantlib/src/main/java/org/jquantlib/time/DateGeneration.java
+@@ -57,6 +57,13 @@ public class DateGeneration {
+          */
+         ThirdWednesday   (4),
+ 
++        /**
++         * All dates including effective date and termination date are taken to be on the third wednesday
++         * of their month (with forward calculation).
++         * Mirrors C++ {@code DateGeneration::ThirdWednesdayInclusive}.
++         */
++        ThirdWednesdayInclusive   (10),
++
+         /**
+          * All dates but the effective date are taken to be the twentieth of their month (used for CDS schedules in emerging
+          * markets.) The termination date is also modified.
+@@ -136,6 +143,8 @@ public class DateGeneration {
+                 return "CDS";
+             case 9:
+                 return "CDS2015";
++            case 10:
++                return "ThirdWednesdayInclusive";
+             default:
+                 throw new LibraryException(UNKNOWN_DATE_GENERATION_RULE);
+             }
+diff --git a/jquantlib/src/main/java/org/jquantlib/time/Schedule.java b/jquantlib/src/main/java/org/jquantlib/time/Schedule.java
+index a22960b3..f48cd92b 100755
+--- a/jquantlib/src/main/java/org/jquantlib/time/Schedule.java
++++ b/jquantlib/src/main/java/org/jquantlib/time/Schedule.java
+@@ -277,6 +277,7 @@ public class Schedule {
+           case Twentieth:
+           case TwentiethIMM:
+           case ThirdWednesday:
++          case ThirdWednesdayInclusive:
+           case OldCDS:
+           case CDS:
+           case CDS2015:
+@@ -387,6 +388,14 @@ public class Schedule {
+                                              dates_.get(i).month(),
+                                              dates_.get(i).year()));
+             }
++        } else if (rule_ == DateGeneration.Rule.ThirdWednesdayInclusive) {
++            // Mirrors C++ schedule.cpp:362-364 — adjust ALL dates (including
++            // first and last) to the third Wednesday of their month.
++            for (int i = 0; i < dates_.size(); ++i) {
++                dates_.set(i, Date.nthWeekday(3, Weekday.Wednesday,
++                                             dates_.get(i).month(),
++                                             dates_.get(i).year()));
++            }
+         }
+ 
+         // first date not adjusted for OldCDS schedules — mirrors C++ schedule.cpp:367
+diff --git a/jquantlib/src/test/java/org/jquantlib/testsuite/instruments/CapFloorTest.java b/jquantlib/src/test/java/org/jquantlib/testsuite/instruments/CapFloorTest.java
+index 33282c45..40554983 100644
+--- a/jquantlib/src/test/java/org/jquantlib/testsuite/instruments/CapFloorTest.java
++++ b/jquantlib/src/test/java/org/jquantlib/testsuite/instruments/CapFloorTest.java
+@@ -31,6 +31,7 @@ import org.jquantlib.QL;
+ import org.jquantlib.Settings;
+ import org.jquantlib.cashflow.IborLeg;
+ import org.jquantlib.cashflow.Leg;
++import org.jquantlib.daycounters.Actual360;
+ import org.jquantlib.daycounters.ActualActual;
+ import org.jquantlib.daycounters.DayCounter;
+ import org.jquantlib.indexes.Euribor6M;
+@@ -394,10 +395,95 @@ public class CapFloorTest {
+         }
+     }
+ 
+-    @Ignore("Phase 5e.5 WI-5e.5-CF-1: MakeCapFloor now ported (commit c1e9cb84); "
+-            + "needs implied-volatility solver wiring on CapFloor.")
+     @Test
+     public void testImpliedVolatility() {
++        QL.info("Testing implied term volatility for cap and floor...");
++
++        final CommonVars vars = new CommonVars();
++
++        final int maxEvaluations = 100;
++        final double tolerance = 1.0e-8;
++
++        final CapFloor.Type[] types = { CapFloor.Type.Cap, CapFloor.Type.Floor };
++        final double[] strikes = { 0.02, 0.03, 0.04 };
++        final int[] lengths = { 1, 5, 10 };
++
++        // test data
++        final double[] rRates = { 0.02, 0.03, 0.04, 0.05, 0.06, 0.07 };
++        final double[] vols = { 0.01, 0.05, 0.10, 0.20, 0.30, 0.70, 0.90 };
++
++        // See testStrikeDependency for the reference-date shift rationale.
++        final Date startDate = vars.termStructure.currentLink()
++                .referenceDate().add(new Period(vars.frequency));
++
++        for (final int length : lengths) {
++            final Leg leg = vars.makeLeg(startDate, length);
++
++            for (final CapFloor.Type type : types) {
++                for (final double strike : strikes) {
++
++                    final CapFloor capfloor = vars.makeCapFloor(type, leg, strike, 0.0);
++
++                    for (final double r : rRates) {
++                        for (final double v : vols) {
++
++                            vars.termStructure.linkTo(Utilities.flatRate(
++                                    vars.settlement, r, new Actual360()));
++                            capfloor.setPricingEngine(vars.makeEngine(v));
++
++                            final double value = capfloor.NPV();
++                            double implVol = 0.0;
++                            boolean failedToBracket = false;
++                            try {
++                                implVol = capfloor.impliedVolatility(value,
++                                        vars.termStructure,
++                                        0.10,
++                                        tolerance,
++                                        maxEvaluations,
++                                        10.0e-7, 4.0,
++                                        org.jquantlib.model.VolatilityType.ShiftedLognormal,
++                                        0.0);
++                            } catch (final RuntimeException e) {
++                                // couldn't bracket?
++                                capfloor.setPricingEngine(vars.makeEngine(0.0));
++                                final double value2 = capfloor.NPV();
++                                if (Math.abs(value - value2) < tolerance) {
++                                    // ok, just skip:
++                                    failedToBracket = true;
++                                } else {
++                                    // otherwise, report error
++                                    fail("implied vol failure: " + type
++                                            + "\n  strike:     " + strike
++                                            + "\n  risk-free:  " + r
++                                            + "\n  length:     " + length + "Y"
++                                            + "\n  volatility: " + v
++                                            + "\n  price:      " + value + "\n"
++                                            + e.getMessage());
++                                }
++                            }
++                            if (failedToBracket) {
++                                continue;
++                            }
++                            if (Math.abs(implVol - v) > tolerance) {
++                                // the difference might not matter
++                                capfloor.setPricingEngine(vars.makeEngine(implVol));
++                                final double value2 = capfloor.NPV();
++                                if (Math.abs(value - value2) > tolerance) {
++                                    fail("implied vol failure: " + type
++                                            + "\n  strike:        " + strike
++                                            + "\n  risk-free:     " + r
++                                            + "\n  length:        " + length + "Y"
++                                            + "\n  volatility:    " + v
++                                            + "\n  price:         " + value
++                                            + "\n  implied vol:   " + implVol
++                                            + "\n  implied price: " + value2);
++                                }
++                            }
++                        }
++                    }
++                }
++            }
++        }
+     }
+ 
+     @Ignore("Phase 5e.5 WI-5e.5-CF-1: MakeCapFloor now ported (commit c1e9cb84); "
+diff --git a/jquantlib/src/test/java/org/jquantlib/testsuite/instruments/SwapTest.java b/jquantlib/src/test/java/org/jquantlib/testsuite/instruments/SwapTest.java
+index a8b5fc6c..d454a9bf 100644
+--- a/jquantlib/src/test/java/org/jquantlib/testsuite/instruments/SwapTest.java
++++ b/jquantlib/src/test/java/org/jquantlib/testsuite/instruments/SwapTest.java
+@@ -22,6 +22,8 @@
+ 
+ package org.jquantlib.testsuite.instruments;
+ 
++import static org.junit.Assert.assertEquals;
++import static org.junit.Assert.assertNotNull;
+ import static org.junit.Assert.assertTrue;
+ import static org.junit.Assert.fail;
+ 
+@@ -33,13 +35,16 @@ import org.jquantlib.cashflow.IborLeg;
+ import org.jquantlib.cashflow.Leg;
+ import org.jquantlib.cashflow.PricerSetter;
+ import org.jquantlib.currencies.Europe.EURCurrency;
+-import org.jquantlib.daycounters.Actual360;
++import org.jquantlib.currencies.Oceania.AUDCurrency;
+ import org.jquantlib.daycounters.Actual365Fixed;
+ import org.jquantlib.daycounters.DayCounter;
+ import org.jquantlib.daycounters.SimpleDayCounter;
+ import org.jquantlib.daycounters.Thirty360;
+ import org.jquantlib.indexes.Euribor;
++import org.jquantlib.indexes.Euribor6M;
+ import org.jquantlib.indexes.IborIndex;
++import org.jquantlib.indexes.ibor.GBPLibor;
++import org.jquantlib.instruments.MakeVanillaSwap;
+ import org.jquantlib.instruments.Swap;
+ import org.jquantlib.instruments.VanillaSwap;
+ import org.jquantlib.math.matrixutilities.Array;
+@@ -51,6 +56,7 @@ import org.jquantlib.termstructures.YieldTermStructure;
+ import org.jquantlib.termstructures.volatilities.optionlet.ConstantOptionletVolatility;
+ import org.jquantlib.termstructures.volatilities.optionlet.OptionletVolatilityStructure;
+ import org.jquantlib.termstructures.yieldcurves.FlatForward;
++import org.jquantlib.testsuite.util.Flag;
+ import org.jquantlib.testsuite.util.Utilities;
+ import org.jquantlib.time.BusinessDayConvention;
+ import org.jquantlib.time.Calendar;
+@@ -61,65 +67,21 @@ import org.jquantlib.time.Month;
+ import org.jquantlib.time.Period;
+ import org.jquantlib.time.Schedule;
+ import org.jquantlib.time.TimeUnit;
++import org.jquantlib.time.Weekday;
++import org.jquantlib.time.calendars.Australia;
+ import org.jquantlib.time.calendars.NullCalendar;
+ import org.junit.Ignore;
+ import org.junit.Test;
+ 
+ /**
+- * Java port of QuantLib v1.42.1 test-suite/swap.cpp (Phase 5e).
++ * Java port of QuantLib v1.42.1 test-suite/swap.cpp.
+  *
+- * <p>10 BOOST_AUTO_TEST_CASE methods exercising vanilla-swap pricing
+- * via {@link org.jquantlib.instruments.VanillaSwap} and
+- * {@link org.jquantlib.pricingengines.swap.DiscountingSwapEngine}.
+- *
+- * <h3>Phase 5e.5 carry-forward rationale</h3>
+- *
+- * <p>All methods are present as skeleton {@code @Test} stubs to mirror the
+- * C++ test-suite topology. They are marked {@code @Ignore} pending the
+- * following production-side prereqs:
+- *
+- * <ul>
+- *   <li>{@code testFairRate}, {@code testFairSpread}, {@code testRateDependency},
+- *       {@code testSpreadDependency}: existing JQuant {@link
+- *       org.jquantlib.instruments.VanillaSwap} supports these, but the
+- *       {@code makeSwap(length, fixedRate, spread, rule)} convenience that
+- *       the C++ {@code CommonVars} fixture leans on differs from
+- *       {@link org.jquantlib.instruments.MakeVanillaSwap}; need a
+- *       {@code MakeVanillaSwap.withRule(DateGeneration.Rule)} overload to
+- *       fully reproduce the C++ schedule generation. See WI-5e.5-SWAP-1.</li>
+- *
+- *   <li>{@code testInArrears}: requires
+- *       {@code IborLeg.inArrears()} builder flag and
+- *       {@code BlackIborCouponPricer} + {@code ConstantOptionletVolatility}
+- *       to be wired to {@link org.jquantlib.cashflow.IborCoupon}. JQuant
+- *       has the optionlet-vol scaffolding (Phase 2j) but the in-arrears
+- *       path through {@code IborCouponPricer} setup is incomplete. See
+- *       WI-5e.5-SWAP-2.</li>
+- *
+- *   <li>{@code testCachedValue}: depends on
+- *       {@link org.jquantlib.cashflow.IborCoupon}.{@code Settings#usingAtParCoupons()}
+- *       (already present per Phase 2x), but the cached NPV
+- *       {@code -5.872342992212} requires regenerating from C++ v1.42.1 via
+- *       a probe to confirm cross-version stability. See WI-5e.5-SWAP-3.</li>
+- *
+- *   <li>{@code testThirdWednesdayAdjustment},
+- *       {@code testFixedTenorInferenceWithTerminationDate},
+- *       {@code testSettlementDaysEffectiveDateConflict}: depend on
+- *       {@link org.jquantlib.instruments.MakeVanillaSwap} convenience
+- *       overloads that mirror the C++ {@code MakeVanillaSwap} fluent API
+- *       (third-Wednesday end-of-month rule, fixed tenor inference, and
+- *       conflicting settlement-days/effective-date error reporting). The
+- *       Java {@code MakeVanillaSwap} stub exists but lacks these specific
+- *       guard rails. See WI-5e.5-SWAP-4.</li>
+- *
+- *   <li>{@code testNotifications}: requires the {@link
+- *       org.jquantlib.util.WeakReferenceObservable} batched-notification
+- *       semantics (Phase 2x A.4) to fire after a curve relink. JQuant has
+- *       the infrastructure but the swap-side observer plumbing for
+- *       {@code DiscountingSwapEngine} needs to be confirmed against the
+- *       C++ behavior (notification count after a single
+- *       {@code RelinkableHandle} update). See WI-5e.5-SWAP-5.</li>
+- * </ul>
++ * <p>Phase 5e.5b-CFC-d-57 — un-ignored 4 of 5 remaining cases by
++ * porting the missing pieces of {@link MakeVanillaSwap} to parity
++ * with C++ v1.42.1 (third-Wednesday-inclusive schedule rule,
++ * settlementDays / pricing-engine fluent setters, currency-based
++ * fixed-tenor & day-count inference, settlementDays/effectiveDate
++ * conflict guard).
+  */
+ public class SwapTest {
+ 
+@@ -249,7 +211,6 @@ public class SwapTest {
+                 for (int i = 0; i < rates.length; ++i) {
+                     swapValues[i] = vars.makeSwap(length, rates[i], spread).NPV();
+                 }
+-                // Payer swap NPV must be non-increasing in fixed rate.
+                 for (int i = 0; i + 1 < rates.length; ++i) {
+                     if (swapValues[i] < swapValues[i + 1]) {
+                         fail("NPV is increasing with the fixed rate in a swap:\n"
+@@ -282,7 +243,6 @@ public class SwapTest {
+                 for (int i = 0; i < spreads.length; ++i) {
+                     swapValues[i] = vars.makeSwap(length, rate, spreads[i]).NPV();
+                 }
+-                // Payer swap NPV must be non-decreasing in floating spread.
+                 for (int i = 0; i + 1 < spreads.length; ++i) {
+                     if (swapValues[i] > swapValues[i + 1]) {
+                         fail("NPV is decreasing with the floating spread in a swap:\n"
+@@ -297,21 +257,7 @@ public class SwapTest {
+         }
+     }
+ 
+-    /**
+-     * Phase 5d.5-Bonds-b WI-5e.5-SWAP-2 — port of C++ swap.cpp:218-282
+-     * (testInArrears).
+-     *
+-     * <p>Builds a 5-year EURCurrency swap on a NullCalendar with annual
+-     * tenor and exercises the {@link IborLeg#inArrears()} flag plus
+-     * {@link BlackIborCouponPricer} wiring via
+-     * {@link PricerSetter#setCouponPricer}.  The expected NPV
+-     * {@code -144813.0} is the cached value from C++ Hull "Options,
+-     * Futures, and Other Derivatives" 4th-ed worked example, p.550 (with
+-     * the documented sign-corrected adjustment 0.05 + 0.000115·T1).
+-     *
+-     * <p>Tolerance is loose ({@code 1.0}) per the C++ test fixture; this
+-     * matches the Hull text's quoted precision.
+-     */
++    /** Phase 5d.5-Bonds-b WI-5e.5-SWAP-2 — port of C++ swap.cpp:218-282. */
+     @Test
+     public void testInArrears() {
+         final Date today = new Settings().evaluationDate();
+@@ -351,9 +297,6 @@ public class SwapTest {
+                                 capletVolatility, dayCounter));
+         final BlackIborCouponPricer pricer = new BlackIborCouponPricer(vol);
+ 
+-        // Per C++: gearings + spreads vectors empty (use defaults). Java
+-        // leaves them at default (empty Array) when unset on the builder.
+-        // fixingDays = 0 mirrors C++ withFixingDays(0).
+         final Leg floatingLeg = new IborLeg(schedule, index)
+                 .withNotionals(new Array(new double[] { nominal }))
+                 .withPaymentDayCounter(dayCounter)
+@@ -369,10 +312,6 @@ public class SwapTest {
+         final double tolerance = 1.0;
+         final double npv = swap.NPV();
+ 
+-        // Smoke: confirm finite, non-zero, sign-correct.  When BlackIbor
+-        // pricer plumbing diverges in subtle ways from C++ the absolute
+-        // NPV may shift slightly; first assert directionally then
+-        // compare to stored value within tolerance.
+         assertTrue("swap NPV should be finite", !Double.isNaN(npv) && !Double.isInfinite(npv));
+ 
+         if (Math.abs(npv - storedValue) > tolerance) {
+@@ -384,35 +323,309 @@ public class SwapTest {
+ 
+     @Ignore("Phase 5e.5 carry-forward WI-5e.5-SWAP-3 — cached NPV regression: "
+             + "Java reproduces -1.7764004820236075 vs C++ at-par expected "
+-            + "-5.872863313209 (diff ~4.1).  Indicates Euribor / Schedule / "
+-            + "coupon-day-counter discrepancy — needs probe to identify which "
+-            + "convention diverges; deferred until probe + regenerated NPV "
+-            + "validate against C++ v1.42.1.")
++            + "-5.872863313209 (diff ~4.1). The Phase 5e.5b-CFC-d-57 "
++            + "MakeVanillaSwap parity port does not affect this path "
++            + "(direct VanillaSwap construction). Needs a dedicated probe "
++            + "to identify which Euribor / Schedule / coupon-day-counter "
++            + "convention diverges before un-ignore.")
+     @Test
+     public void testCachedValue() {
+     }
+ 
+-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-SWAP-4 — needs MakeVanillaSwap third-Wednesday "
+-            + "end-of-month rule overload.")
++    /**
++     * Phase 5e.5b-CFC-d-57 WI-5e.5-SWAP-4 — port of C++ swap.cpp:315-330.
++     *
++     * <p>Exercises the {@code ThirdWednesdayInclusive} date-generation rule
++     * (added in this phase to {@link DateGeneration.Rule} and {@link Schedule})
++     * and verifies that the floating-leg schedule's start and end dates are
++     * snapped to the third Wednesday of their respective months.
++     *
++     * <p>Unlike the C++ test (which pins fixed expected dates {@code 16-Sep-2015 /
++     * 21-Sep-2016}), we derive the expected dates dynamically from the
++     * settlement/maturity computed by {@code CommonVars}, so the test is
++     * date-independent. The semantic check — both endpoints lie on the third
++     * Wednesday of their month — remains identical to the C++ assertion.
++     */
+     @Test
+     public void testThirdWednesdayAdjustment() {
++        QL.info("Testing third-Wednesday adjustment...");
++
++        final CommonVars vars = new CommonVars();
++        final VanillaSwap swap = vars.makeSwap(1, 0.0, -0.001,
++                DateGeneration.Rule.ThirdWednesdayInclusive);
++
++        final Date start = swap.floatingSchedule().startDate();
++        final Date end = swap.floatingSchedule().endDate();
++
++        final Date expectedStart = Date.nthWeekday(3, Weekday.Wednesday,
++                start.month(), start.year());
++        final Date expectedEnd = Date.nthWeekday(3, Weekday.Wednesday,
++                end.month(), end.year());
++
++        if (start.ne(expectedStart)) {
++            fail("Wrong Start Date " + start
++                    + " (expected third Wednesday " + expectedStart + ")");
++        }
++        if (end.ne(expectedEnd)) {
++            fail("Wrong End Date " + end
++                    + " (expected third Wednesday " + expectedEnd + ")");
++        }
++        assertEquals("start should be Wednesday",
++                Weekday.Wednesday, start.weekday());
++        assertEquals("end should be Wednesday",
++                Weekday.Wednesday, end.weekday());
+     }
+ 
+-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-SWAP-5 — needs swap-side observer plumbing for "
+-            + "DiscountingSwapEngine batched-notification semantics confirmation against C++.")
++    /**
++     * Phase 5e.5b-CFC-d-57 WI-5e.5-SWAP-5 — port of C++ swap.cpp:332-374.
++     *
++     * <p>Verifies that after registering a {@link Flag} with a vanilla swap
++     * and relinking the forecasting yield-curve handle, the swap observer
++     * fires. {@code DefaultObservable.notifyObservers} is wired through the
++     * {@link IborIndex} → {@link org.jquantlib.cashflow.IborCoupon} chain,
++     * so a single relink propagates the notification to registered observers.
++     */
+     @Test
+     public void testNotifications() {
++        QL.info("Testing cash-flow notifications for vanilla swap...");
++
++        final CommonVars vars = new CommonVars();
++
++        final Date spot = vars.calendar.advance(vars.today,
++                new Period(2, TimeUnit.Days));
++        final double nominal = 100_000.0;
++
++        final Date end = vars.calendar.advance(spot,
++                new Period(2, TimeUnit.Years));
++        final Schedule schedule = new Schedule(spot, end,
++                new Period(Frequency.Semiannual),
++                vars.calendar,
++                BusinessDayConvention.ModifiedFollowing,
++                BusinessDayConvention.ModifiedFollowing,
++                DateGeneration.Rule.Backward, false);
++
++        final RelinkableHandle<YieldTermStructure> forecastHandle =
++                new RelinkableHandle<YieldTermStructure>();
++        forecastHandle.linkTo(Utilities.flatRate(vars.today, 0.02,
++                new Actual365Fixed()));
++
++        final RelinkableHandle<YieldTermStructure> discountHandle =
++                new RelinkableHandle<YieldTermStructure>();
++        discountHandle.linkTo(Utilities.flatRate(vars.today, 0.02,
++                new Actual365Fixed()));
++
++        final IborIndex index = new Euribor6M(forecastHandle);
++
++        final VanillaSwap swap = new VanillaSwap(VanillaSwap.Type.Payer,
++                nominal, schedule, 0.03, new Actual365Fixed(),
++                schedule, index, 0.0, new Actual365Fixed());
++        swap.setPricingEngine(new DiscountingSwapEngine(discountHandle));
++        swap.NPV();
++
++        final Flag flag = new Flag();
++        swap.addObserver(flag);
++        flag.lower();
++
++        forecastHandle.linkTo(Utilities.flatRate(vars.today, 0.03,
++                new Actual365Fixed()));
++
++        if (!flag.isUp()) {
++            fail("swap was not notified of curve change");
++        }
+     }
+ 
+-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-SWAP-4 — needs MakeVanillaSwap fixed-tenor inference "
+-            + "with terminationDate convenience overload.")
++    /**
++     * Phase 5e.5b-CFC-d-57 WI-5e.5-SWAP-4 — port of C++ swap.cpp:376-489.
++     *
++     * <p>Exercises the currency-aware fixed-tenor inference branch of
++     * {@link MakeVanillaSwap} (added in this phase): {@code withTerminationDate}
++     * clears the constructor swapTenor so the date span drives the
++     * inference, and the GBP/AUD branches pick the right
++     * Annual / Semiannual / Quarterly default.
++     */
+     @Test
+     public void testFixedTenorInferenceWithTerminationDate() {
++        QL.info("Testing MakeVanillaSwap fixed-tenor inference with explicit termination date...");
++
++        final Date savedDate = new Settings().evaluationDate();
++        try {
++            final Date today = new Date(15, Month.January, 2026);
++            new Settings().setEvaluationDate(today);
++
++            final RelinkableHandle<YieldTermStructure> yts =
++                    new RelinkableHandle<YieldTermStructure>();
++            yts.linkTo(Utilities.flatRate(today, 0.03, new Actual365Fixed()));
++
++            final IborIndex gbpIndex = new GBPLibor(
++                    new Period(6, TimeUnit.Months), yts);
++            // Ad-hoc AUD index — mirrors C++ Bbsw(6M, yts). Inference only
++            // reads currency, so an inline IborIndex with AUDCurrency suffices.
++            final IborIndex audIndex = new IborIndex("AUD-BBSW-6M",
++                    new Period(6, TimeUnit.Months), 0,
++                    new AUDCurrency(), new Australia(),
++                    BusinessDayConvention.ModifiedFollowing, false,
++                    new Actual365Fixed(), yts);
++
++            final Date startDate = new Date(19, Month.January, 2026);
++
++            final Date endDate10Y = startDate.add(new Period(10, TimeUnit.Years));
++            final VanillaSwap gbp10Y = new MakeVanillaSwap(
++                    new Period(10, TimeUnit.Years), gbpIndex, 0.03)
++                .withEffectiveDate(startDate)
++                .withTerminationDate(endDate10Y)
++                .value();
++            assertEquals("GBP 10Y swap via withTerminationDate (Semiannual)",
++                    20, gbp10Y.fixedSchedule().size() - 1);
++
++            final Date endDate6M = startDate.add(new Period(6, TimeUnit.Months));
++            final VanillaSwap gbp6M = new MakeVanillaSwap(
++                    new Period(6, TimeUnit.Months), gbpIndex, 0.03)
++                .withEffectiveDate(startDate)
++                .withTerminationDate(endDate6M)
++                .value();
++            assertEquals("GBP 6M swap via withTerminationDate (Annual)",
++                    1, gbp6M.fixedSchedule().size() - 1);
++
++            final Date endDate5Y = startDate.add(new Period(5, TimeUnit.Years));
++            final VanillaSwap aud5Y = new MakeVanillaSwap(
++                    new Period(5, TimeUnit.Years), audIndex, 0.03)
++                .withEffectiveDate(startDate)
++                .withTerminationDate(endDate5Y)
++                .value();
++            assertEquals("AUD 5Y swap via withTerminationDate (Semiannual)",
++                    10, aud5Y.fixedSchedule().size() - 1);
++
++            final Date endDate2Y = startDate.add(new Period(2, TimeUnit.Years));
++            final VanillaSwap aud2Y = new MakeVanillaSwap(
++                    new Period(2, TimeUnit.Years), audIndex, 0.03)
++                .withEffectiveDate(startDate)
++                .withTerminationDate(endDate2Y)
++                .value();
++            assertEquals("AUD 2Y swap via withTerminationDate (Quarterly)",
++                    8, aud2Y.fixedSchedule().size() - 1);
++
++            final Date endDate4Y = startDate.add(new Period(4, TimeUnit.Years));
++            final VanillaSwap aud4Y = new MakeVanillaSwap(
++                    new Period(4, TimeUnit.Years), audIndex, 0.03)
++                .withEffectiveDate(startDate)
++                .withTerminationDate(endDate4Y)
++                .value();
++            assertEquals("AUD 4Y swap via withTerminationDate (Semiannual)",
++                    8, aud4Y.fixedSchedule().size() - 1);
++
++            final Date endDate3Y = startDate.add(new Period(3, TimeUnit.Years));
++            final VanillaSwap aud3Y = new MakeVanillaSwap(
++                    new Period(3, TimeUnit.Years), audIndex, 0.03)
++                .withEffectiveDate(startDate)
++                .withTerminationDate(endDate3Y)
++                .value();
++            assertEquals("AUD 3Y swap via withTerminationDate (Quarterly)",
++                    12, aud3Y.fixedSchedule().size() - 1);
++
++            final Date endDateSettlement = today.add(new Period(10, TimeUnit.Years));
++            final VanillaSwap gbpNoEffDate = new MakeVanillaSwap(
++                    new Period(10, TimeUnit.Years), gbpIndex, 0.03)
++                .withTerminationDate(endDateSettlement)
++                .value();
++            assertEquals("GBP 10Y without withEffectiveDate (Semiannual)",
++                    20, gbpNoEffDate.fixedSchedule().size() - 1);
++
++            final VanillaSwap gbpMismatch = new MakeVanillaSwap(
++                    new Period(6, TimeUnit.Months), gbpIndex, 0.03)
++                .withEffectiveDate(startDate)
++                .withTerminationDate(endDate10Y)
++                .value();
++            assertEquals("GBP 10Y dates with 6M constructor tenor (Semiannual)",
++                    20, gbpMismatch.fixedSchedule().size() - 1);
++
++            final VanillaSwap gbpOverride = new MakeVanillaSwap(
++                    new Period(10, TimeUnit.Years), gbpIndex, 0.03)
++                .withEffectiveDate(startDate)
++                .withTerminationDate(endDate10Y)
++                .withFixedLegTenor(new Period(3, TimeUnit.Months))
++                .value();
++            assertEquals("GBP 10Y with explicit 3M fixed tenor (Quarterly)",
++                    40, gbpOverride.fixedSchedule().size() - 1);
++        } finally {
++            new Settings().setEvaluationDate(savedDate);
++        }
+     }
+ 
+-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-SWAP-4 — needs MakeVanillaSwap conflicting "
+-            + "settlementDays/effectiveDate guard-rail/error reporting.")
++    /**
++     * Phase 5e.5b-CFC-d-57 WI-5e.5-SWAP-4 — port of C++ swap.cpp:491-539.
++     *
++     * <p>Verifies that {@link MakeVanillaSwap} rejects the combination of
++     * {@code withSettlementDays} + {@code withEffectiveDate} in either
++     * order, and that each setter alone (plus the constructor default)
++     * yields a valid swap.
++     */
+     @Test
+     public void testSettlementDaysEffectiveDateConflict() {
++        QL.info("Testing that MakeVanillaSwap rejects settlementDays and effectiveDate together...");
++
++        final Date savedDate = new Settings().evaluationDate();
++        try {
++            final Date today = new Date(15, Month.January, 2026);
++            new Settings().setEvaluationDate(today);
++
++            final RelinkableHandle<YieldTermStructure> yts =
++                    new RelinkableHandle<YieldTermStructure>();
++            yts.linkTo(Utilities.flatRate(today, 0.03, new Actual365Fixed()));
++
++            final IborIndex index = new Euribor6M(yts);
++            final Date effectiveDate = new Date(19, Month.January, 2026);
++
++            boolean threw1 = false;
++            try {
++                new MakeVanillaSwap(
++                        new Period(5, TimeUnit.Years), index, 0.03)
++                    .withSettlementDays(2)
++                    .withEffectiveDate(effectiveDate)
++                    .value();
++            } catch (final RuntimeException e) {
++                threw1 = true;
++                assertTrue("error message should mention 'cannot set both', got: " + e.getMessage(),
++                        e.getMessage() != null && e.getMessage().contains("cannot set both"));
++            }
++            assertTrue("expected exception when withSettlementDays precedes withEffectiveDate",
++                    threw1);
++
++            boolean threw2 = false;
++            try {
++                new MakeVanillaSwap(
++                        new Period(5, TimeUnit.Years), index, 0.03)
++                    .withEffectiveDate(effectiveDate)
++                    .withSettlementDays(2)
++                    .value();
++            } catch (final RuntimeException e) {
++                threw2 = true;
++                assertTrue("error message should mention 'cannot set both', got: " + e.getMessage(),
++                        e.getMessage() != null && e.getMessage().contains("cannot set both"));
++            }
++            assertTrue("expected exception when withEffectiveDate precedes withSettlementDays",
++                    threw2);
++
++            final VanillaSwap swap1 = new MakeVanillaSwap(
++                    new Period(5, TimeUnit.Years), index, 0.03)
++                .withSettlementDays(2)
++                .value();
++            assertNotNull(swap1);
++            assertTrue("swap1 startDate should not be null",
++                    !swap1.startDate().isNull());
++
++            final VanillaSwap swap2 = new MakeVanillaSwap(
++                    new Period(5, TimeUnit.Years), index, 0.03)
++                .withEffectiveDate(effectiveDate)
++                .value();
++            assertEquals("swap2 startDate should equal effectiveDate",
++                    effectiveDate, swap2.startDate());
++
++            final VanillaSwap swap3 = new MakeVanillaSwap(
++                    new Period(5, TimeUnit.Years), index, 0.03).value();
++            assertTrue("swap3 startDate should not be null",
++                    !swap3.startDate().isNull());
++        } finally {
++            new Settings().setEvaluationDate(savedDate);
++        }
+     }
+ }
