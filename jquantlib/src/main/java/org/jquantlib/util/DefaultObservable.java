@@ -26,9 +26,10 @@ import org.jquantlib.QL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Predicate;
 
 // --------------------------------------------------------
 // This class is based on the work done by Martin Fischer.
@@ -41,9 +42,15 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * This implementation notifies the observers in a synchronous fashion. Note that this can cause trouble if you notify
  * the observers while in a transactional context because once the notification is done it cannot be rolled back.
  *
+ * <p>Thread-safety: every mutation and read of the observer list is synchronized on this instance, and
+ * {@link #notifyObservers(Object)} dispatches over a one-shot snapshot taken under that lock. This makes the observer
+ * registry safe under concurrent access (e.g. a shared {@link org.jquantlib.quotes.Quote} updated from several threads)
+ * while avoiding the per-mutation array copy of the {@link java.util.concurrent.CopyOnWriteArrayList} it formerly used —
+ * that copy dominated allocation during instrument pricing, where every {@code LazyObject.calculate()} re-registers
+ * observers.
+ *
  * @author Richard Gomes
  * @author Srinivas Hasti
- * @note This class is not thread safe
  * @see <a href="http://www.jroller.com/martin_fischer/entry/a_generic_java_observer_pattern"> Martin Fischer: Observer
  * and Observable interfaces</a>
  * @see <a href="http://jdj.sys-con.com/read/35878.htm">Improved Observer/Observable</a>
@@ -70,7 +77,11 @@ public class DefaultObservable implements Observable {
 
     public DefaultObservable(final Observable observable) {
         QL.require(observable != null, DefaultObservable.OBSERVABLE_IS_NULL);
-        this.observers = new CopyOnWriteArrayList<>();
+        // Plain ArrayList guarded by this instance's monitor (see methods below).
+        // The former CopyOnWriteArrayList copied its whole backing array on every
+        // addObserver/deleteObserver; iteration safety during dispatch is instead
+        // provided by snapshotting once per notifyObservers under the lock.
+        this.observers = new ArrayList<>();
         this.observable = observable;
     }
 
@@ -79,28 +90,43 @@ public class DefaultObservable implements Observable {
     //
 
     @Override
-    public void addObserver(final Observer observer) {
+    public synchronized void addObserver(final Observer observer) {
         observers.add(observer);
     }
 
     @Override
-    public int countObservers() {
+    public synchronized int countObservers() {
         return observers.size();
     }
 
     @Override
-    public List< Observer > getObservers() {
-        return Collections.unmodifiableList(this.observers);
+    public synchronized List< Observer > getObservers() {
+        // Defensive snapshot copy: callers (and an observer's own update()) may
+        // iterate this while the list is mutated concurrently, so hand back a
+        // stable copy — matching the snapshot semantics CopyOnWriteArrayList gave.
+        return Collections.unmodifiableList(new ArrayList<>(this.observers));
     }
 
     @Override
-    public void deleteObserver(final Observer observer) {
+    public synchronized void deleteObserver(final Observer observer) {
         observers.remove(observer);
     }
 
     @Override
-    public void deleteObservers() {
+    public synchronized void deleteObservers() {
         observers.clear();
+    }
+
+    /**
+     * Removes every observer matching {@code filter} in a single in-place pass under this instance's lock. Subclasses
+     * (e.g. {@link WeakReferenceObservable}) use this to drop GC'd weak references without iterating-and-mutating a live
+     * view (which a plain {@code ArrayList} rejects with {@link java.util.ConcurrentModificationException}) and without
+     * the per-call snapshot copy that {@link #getObservers()} makes.
+     *
+     * @return {@code true} if at least one observer was removed.
+     */
+    protected synchronized boolean removeObserversIf(final Predicate<? super Observer> filter) {
+        return observers.removeIf(filter);
     }
 
     @Override
@@ -115,10 +141,24 @@ public class DefaultObservable implements Observable {
         // suppressed; when deferred, register the observers for replay on
         // the subsequent enableUpdates() call.
         final ObservableSettings settings = ObservableSettings.instance();
+        final Object[] snapshot;
+        synchronized ( this ) {
+            if ( observers.isEmpty() ) {
+                return;
+            }
+            // One snapshot, taken under the lock, so a concurrent mutation — or an
+            // observer that (de)registers inside its own update() — cannot perturb
+            // this dispatch pass. Same guarantee CopyOnWriteArrayList's iterator
+            // gave, but the backing array is no longer copied on every add/remove.
+            snapshot = observers.toArray();
+        }
+        // Dispatch OUTSIDE the lock: update() runs arbitrary user code and may
+        // re-enter this observable; holding the monitor across it would risk
+        // deadlock and needlessly serialise unrelated work.
         if ( !settings.updatesEnabled() ) {
             if ( settings.updatesDeferred() ) {
-                for ( final Observer observer : observers ) {
-                    final Observer target = unwrap(observer);
+                for ( final Object o : snapshot ) {
+                    final Observer target = unwrap((Observer) o);
                     if ( target != null ) {
                         settings.registerDeferredObserver(target);
                     }
@@ -127,9 +167,9 @@ public class DefaultObservable implements Observable {
             return;
         }
         Exception exception = null;
-        for ( final Observer observer : observers ) {
+        for ( final Object o : snapshot ) {
             try {
-                wrappedNotify(observer, observable, arg);
+                wrappedNotify((Observer) o, observable, arg);
             } catch ( final Exception e ) {
                 // Quite a dilemma. If we don't catch the exception,
                 // other observers will not receive the notification

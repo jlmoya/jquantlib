@@ -59,12 +59,14 @@ public class WeakReferenceObservable extends DefaultObservable {
      */
     @Override
     public void deleteObserver(final Observer observer) {
-        for ( final Observer weakObserver : getObservers() ) {
-            final WeakReferenceObserver weakReference = (WeakReferenceObserver) weakObserver;
-            final Observer referent = weakReference.get();
-            if ( referent == null || referent.equals(observer) )
-                deleteWeakReference(weakReference);
-        }
+        // Drop the matching user observer plus any GC'd weak refs in one locked,
+        // in-place pass (no live-view iterate-and-mutate, no per-call snapshot
+        // copy). Every entry is a WeakReferenceObserver — addObserver wraps them.
+        removeObserversIf(o -> {
+            final WeakReferenceObserver wro = (WeakReferenceObserver) o;
+            final Observer referent = wro.get();
+            return referent == null || referent.equals(observer);
+        });
     }
 
     /**
@@ -91,13 +93,11 @@ public class WeakReferenceObservable extends DefaultObservable {
      * cheap when the list is small or has no dead entries.
      */
     public void compact() {
-        for ( final Observer weakObserver : getObservers() ) {
-            if (weakObserver instanceof WeakReferenceObserver wro) {
-                if ( wro.get() == null ) {
-                    deleteWeakReference(wro);
-                }
-            }
-        }
+        // Drop weak refs whose referent has already been GC'd, in one locked,
+        // in-place pass. Allocation-free when nothing is dead (ArrayList.removeIf
+        // mutates in place) — important because this runs on every
+        // notifyObservers().
+        removeObserversIf(o -> o instanceof WeakReferenceObserver wro && wro.get() == null);
     }
 
     private void deleteWeakReference(final WeakReferenceObserver observer) {
