@@ -60,6 +60,13 @@ The 90× was deliberately re-measured under the same cold-start isolation as the
 2. **Parity-safe only.** Same algorithm, no FP reorder → bit-identical → probes green by construction. No tolerance touched, nothing re-baselined.
 3. **Benchmark-gate keep-vs-revert** on a clean-baseline-vs-after comparison under *identical* conditions. Keep only if bit-green **and** faster; else revert.
 
-## Remaining candidates (not pursued; pursue iff asked)
+## Why the parity-safe perf thread was closed here (2026-06-02)
 
-The same JFR profile flagged further parity-safe targets — notably `org.jquantlib.time.Date.clone()` (the #1 CPU leaf). These remain open. The methodology above is ready to repeat. Nothing is pending unless the owner asks.
+After this win, the next-flagged leaf — `org.jquantlib.time.Date.clone()` — was profiled and **deliberately declined**:
+
+- In the original JFR it was a *distant second* to the observer churn (46 CPU / 142 alloc samples vs ~40k for the CoW `Object[]`), notable only as "the top thing that isn't the observer bug." Once the O(n²) was removed, that framing is gone.
+- `Date.clone()` is a shallow `Object.clone()` of a one-`long`-field object — **called often but cheap per call**, with no algorithmic pathology to fix. The best achievable is a diffuse few-percent, not a step-change.
+- The only genuinely structural Date change — lazy-init the per-`Date` `WeakReferenceObservable` (every transient calculation-Date currently allocates an observable + list it never uses) — touches a **load-bearing, mutable, `Observable`, shallow-cloned, concurrency-sensitive** class (the eval-date `Settings.DateProxy` is genuinely observed under multi-threading). High blast radius for an uncertain, diffuse payoff — the opposite of this win's risk/reward.
+- The current dominant suite cost is heavy **Monte-Carlo / finite-difference option pricing** (e.g. the `AsianOptionTest` MC method, `QuantoOptionTest`, `VppTest`) — i.e. the *algorithm and sample counts*, which are **off-limits** under the parity-safe rule (changing them alters results and breaks C++ cross-validation).
+
+**Conclusion:** the one clear, high-value, low-risk parity-safe win was harvested; the remaining headroom lives in numerics we must not touch. **Thread closed.** The profile-first / clean-baseline-gate methodology above is recorded and ready to repeat if a new pathological hotspot ever surfaces.
