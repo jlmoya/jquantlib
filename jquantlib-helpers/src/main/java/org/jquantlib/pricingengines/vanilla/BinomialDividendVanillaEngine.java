@@ -171,7 +171,7 @@ public abstract class BinomialDividendVanillaEngine<T extends Tree> extends Divi
        final Tree tree = (Tree)getTreeInstance(bs, maturity, timeSteps, payoff.strike());
 
        final BlackScholesDividendLattice<Tree> lattice = new BlackScholesDividendLattice<Tree>(tree, rRate, qRate, maturity, timeSteps,
-                                                                           rfdc, grid, referenceDate, a.cashFlow);
+                                                                           rfdc, referenceDate, a.cashFlow);
        final DiscretizedVanillaOption option = new DiscretizedVanillaOption(a, process, grid);
 
        option.initialize(lattice, maturity);
@@ -213,6 +213,7 @@ public abstract class BinomialDividendVanillaEngine<T extends Tree> extends Divi
        r.value = p0;
        greeks.delta = delta0;
        greeks.gamma = 2.0 * (delta1 - delta0) / (s2 - sRoot); // d(delta)/ds
+       // BSM PDE theta uses the observable spot; escrowed-scale delta/gamma are the observable-spot greeks (dS'/dS=1)
        greeks.theta = greeks.blackScholesTheta(process, r.value, greeks.delta, greeks.gamma);
    }
 

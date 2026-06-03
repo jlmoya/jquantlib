@@ -28,7 +28,6 @@ import org.jquantlib.cashflow.Dividend;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.time.Date;
-import org.jquantlib.time.TimeGrid;
 
 /**
  * Binomial lattice approximating the Black-Scholes model with discrete dividends,
@@ -75,7 +74,6 @@ public class BlackScholesDividendLattice<T extends Tree> extends BlackScholesLat
             final /*@Time*/ double end,
             final int steps,
             final DayCounter dc,
-            final TimeGrid grid,
             final Date referenceDate,
             final List<? extends Dividend> cashFlow) {
         super(tree, riskFreeRate, end, steps);
