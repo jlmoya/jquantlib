@@ -170,7 +170,7 @@ public abstract class BinomialDividendVanillaEngine<T extends Tree> extends Divi
        final TimeGrid grid = new TimeGrid(maturity, timeSteps);
        final Tree tree = (Tree)getTreeInstance(bs, maturity, timeSteps, payoff.strike());
 
-       final BlackScholesDividendLattice<Tree> lattice = new BlackScholesDividendLattice<Tree>(tree, rRate, maturity, timeSteps,
+       final BlackScholesDividendLattice<Tree> lattice = new BlackScholesDividendLattice<Tree>(tree, rRate, qRate, maturity, timeSteps,
                                                                            rfdc, grid, referenceDate, a.cashFlow);
        final DiscretizedVanillaOption option = new DiscretizedVanillaOption(a, process, grid);
 
@@ -196,14 +196,23 @@ public abstract class BinomialDividendVanillaEngine<T extends Tree> extends Divi
        final double p0 = option.presentValue();
        final double s1 = lattice.underlying(1, 1);
 
+       // Escrowed-spot model: the lattice runs on the escrowed spot
+       // (lattice.underlying(0,0) == S0 - D), and a unit move in the observable
+       // spot S maps one-for-one onto the escrowed spot (D is fixed). So the
+       // Odegaard finite differences must all be taken on the lattice's
+       // escrowed scale; the denominator anchor is the escrowed root, NOT the
+       // raw process spot s0. (With the old node-indexed escrow s0 happened to
+       // coincide with the root; under the multiplicative escrow it does not.)
+       final double sRoot = lattice.underlying(0, 0);
+
        // Calculate partial derivatives
-       final double delta0 = (p1 - p0) / (s1 - s0); // dp/ds
+       final double delta0 = (p1 - p0) / (s1 - sRoot); // dp/ds
        final double delta1 = (p2h - p1) / (s2 - s1); // dp/ds
 
        // Store results
        r.value = p0;
        greeks.delta = delta0;
-       greeks.gamma = 2.0 * (delta1 - delta0) / (s2 - s0); // d(delta)/ds
+       greeks.gamma = 2.0 * (delta1 - delta0) / (s2 - sRoot); // d(delta)/ds
        greeks.theta = greeks.blackScholesTheta(process, r.value, greeks.delta, greeks.gamma);
    }
 
