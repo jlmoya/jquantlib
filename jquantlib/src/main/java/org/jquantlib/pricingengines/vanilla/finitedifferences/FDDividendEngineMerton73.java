@@ -99,7 +99,11 @@ public class FDDividendEngineMerton73 extends FDDividendEngineBase {
         initializeOperator();
         super.initializeModel();
 
-        super.initializeStepCondition();
+        // Virtual dispatch (not super.initializeStepCondition()): a subclass that
+        // installs an American early-exercise condition must have it rebuilt against
+        // the freshly rescaled grid here, rather than reset to the European
+        // NullCondition. For the European engine this is a no-op (no override).
+        initializeStepCondition();
         stepCondition.applyTo(prices.values(), getDividendTime(step));
     }
 

@@ -59,15 +59,24 @@ import java.util.List;
 
 
 /*
- * C++ v1.42.1 declares three typedef aliases:
- *   typedef FDEngineAdapter<FDAmericanCondition<FDDividendEngine>, DividendVanillaOption::engine> FDDividendAmericanEngine;
- *   typedef FDEngineAdapter<FDAmericanCondition<FDDividendEngineMerton73>, DividendVanillaOption::engine> FDDividendAmericanEngineMerton73;
- *   typedef FDEngineAdapter<FDAmericanCondition<FDDividendEngineShiftScale>, DividendVanillaOption::engine> FDDividendAmericanEngineShiftScale;
- * Java port currently materialises only the first; the Merton73 and ShiftScale
- * variants remain unported.
+ * NOTE: this finite-difference dividend-option engine family (FDDividendEngine,
+ * FDAmericanCondition, FDEngineAdapter) was deprecated and removed from C++
+ * QuantLib in version 1.17; it has no counterpart in the pinned v1.42.1 source and
+ * survives only in JQuantLib. The v1.42.1 way to price American options with
+ * discrete dividends by finite differences is FdBlackScholesVanillaEngine with
+ * CashDividendModel.Spot.
+ *
+ * Correctness fix: the C++ idiom was `FDAmericanCondition<FDDividendEngine> :
+ * public FDDividendEngine` — the American step condition layered on the dividend
+ * engine. Java cannot extend a type parameter, so this engine now uses
+ * FDDividendEngineAmerican (a FDDividendEngineMerton73 overriding
+ * initializeStepCondition() with an AmericanCondition). The earlier port used
+ * FDAmericanCondition<FDDividendEngine>, whose phantom type parameter was ignored
+ * (FDAmericanCondition extends the dividend-free FDStepConditionEngine), so the
+ * engine silently discarded the dividends and produced a value invariant to them.
  */
 public class FDDividendAmericanEngine
-        extends FDEngineAdapter< FDAmericanCondition< FDDividendEngine >, DividendVanillaOption.Engine >
+        extends FDEngineAdapter< FDDividendEngineAmerican, DividendVanillaOption.Engine >
         implements DividendVanillaOption.Engine {
 
     //
@@ -92,7 +101,7 @@ public class FDDividendAmericanEngine
 
     public FDDividendAmericanEngine(final GeneralizedBlackScholesProcess process, final int timeSteps,
             final int gridPoints, final boolean timeDependent) {
-        super(FDAmericanCondition.class, DividendVanillaOption.Engine.class, process, timeSteps, gridPoints,
+        super(FDDividendEngineAmerican.class, DividendVanillaOption.Engine.class, process, timeSteps, gridPoints,
                 timeDependent);
         super.impl = new Impl(this);
     }
