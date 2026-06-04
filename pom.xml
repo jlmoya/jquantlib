@@ -201,6 +201,19 @@
                     <target>${java.version}</target>
                 </configuration>
             </plugin>
+            <!--
+              Deploy the parent pom itself to Nexus. Its full staging config
+              (serverId, nexusUrl, deploy-phase execution, skipStaging) is defined
+              in <pluginManagement> above; activating it here by reference makes
+              jquantlib-parent:1.0.0 publishable. Every module declares
+              <parent>jquantlib-parent</parent>, so without this the published
+              artifacts are unresolvable from Nexus on a clean machine. The standard
+              maven-deploy-plugin stays skipped (also via pluginManagement).
+            -->
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+            </plugin>
         </plugins>
     </build>
 
