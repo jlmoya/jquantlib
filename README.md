@@ -3,7 +3,7 @@
 > A pure-Java port of [QuantLib](https://www.quantlib.org/) — the de-facto open-source library for quantitative finance — being systematically rebuilt from C++ v1.42.1 with tier-stratified, cross-validated precision (EXACT / TIGHT / LOOSE) against the pinned C++ source.
 
 [![Tag](https://img.shields.io/badge/tag-cpp--surface--functional--coverage-brightgreen)](#migration-status)
-[![Tests](https://img.shields.io/badge/tests-3719%20%2F%200%20fail-success)](#migration-status)
+[![Tests](https://img.shields.io/badge/tests-3721%20%2F%200%20fail-success)](#migration-status)
 [![C%2B%2B%20surface](https://img.shields.io/badge/C%2B%2B%20v1.42.1%20surface-100%25%20accounted-success)](#migration-status)
 [![Warnings](https://img.shields.io/badge/warnings-0-success)](#migration-status)
 [![JDK](https://img.shields.io/badge/JDK-25%20LTS-orange)](#migration-status)
@@ -94,7 +94,14 @@ This is not a maintenance branch. It is a **systematic, full-fidelity port** wit
 | Console-noise cleanup | (5 commits: `de95bb17`, `3282157f`, `1a97b04f`, `642fdeca`, `14086930`) | Eliminated all stderr-flood + compile-warning noise during test runs. `LibraryException` constructors no longer call `QL.error(this)` (was unconditionally dumping ERROR + stack trace for every constructed instance — including ones caught for fast-path/slow-path control flow like `LfmCovarianceProxy.integratedCovariance` → numerical fallback, `IterativeBootstrap` retries, observer-failure chains). `DefaultObservable.notifyObservers` observer-failure log now routes via SLF4J WARN (configurable) instead of `QL.error` → stderr. 78 `@SuppressWarnings({"deprecation","unchecked"})` annotations on legitimate-internal-use sites (Array/Matrix subclasses accessing `Cells.$` raw backing, generic-erasure casts after `Class.newInstance()`, raw-type bridge code). | 3610/0/0/21 | 2026-05-23 |
 | **JQuantLib FINAL** | **`jquantlib-final`** (`4c93962a`) | **Final state pointer — re-pointed 2026-06-03 to the current tip.** Now subsumes the full C++ v1.42.1 `ql/` surface functional-coverage milestone (`0646ee75`), the parity-safe observer-registry perf optimization (`5baabea2`, suite wall ~21→~12 min), and the `BlackScholesDividendLattice` escrowed-spot fix (`f4bad451`/`4c93962a`, converges to QuantLib `AnalyticDividendEuropeanEngine`). Re-verified green: `mvn -pl jquantlib test` = Tests run 3719, Failures 0, Errors 0, Skipped 21, BUILD SUCCESS on JDK 25 LTS. **Only `main` remains** (all worktrees + transient branches removed local+remote). | **3719/0/0/21** | **2026-06-03** |
 
-**Current tip on `main`:** `4c93962a` (tag `jquantlib-final`). Since the functional-coverage milestone `0646ee75`: the parity-safe observer-registry optimization `5baabea2` (next perf candidate `Date.clone` profiled and deliberately declined — no algorithmic pathology; remaining headroom is in off-limits MC/FD numerics, see [`docs/migration/perf-observer-optimization.md`](docs/migration/perf-observer-optimization.md)), then the `BlackScholesDividendLattice` escrowed-spot fix (`f4bad451`/`4c93962a`). **Suite (re-verified at this tip):** `mvn -pl jquantlib test` = 3719 tests / 0 failures / 0 errors / 21 skipped, BUILD SUCCESS on JDK 25 LTS. **Scanner WIP-stub count:** `0` genuinely-pending (3 documented carve-outs). **JDK:** 25 LTS. **Repo hygiene:** only `main` remains (all worktrees + transient branches removed local+remote).
+**Current state.** Anchored on the full-surface functional-coverage milestone `0646ee75` (tag `jquantlib-cpp-surface-functional-coverage`; tag `jquantlib-final` @ `4c93962a`). Since then:
+
+- **Parity-safe perf** — observer-registry optimization `5baabea2` (`Date.clone` candidate profiled and declined; see [`docs/migration/perf-observer-optimization.md`](docs/migration/perf-observer-optimization.md)).
+- **`BlackScholesDividendLattice`** escrowed-spot fix (`f4bad451`/`4c93962a`).
+- **FD American discrete-dividend engine fix** — `FDDividendAmericanEngine` had silently ignored discrete dividends (a phantom-generic porting bug); now correct and cross-validated. See [`docs/migration/fd-dividend-american-fix.md`](docs/migration/fd-dividend-american-fix.md).
+- **`jquantlib-showcase`** — a new interactive Spring Boot demo app (see [Showcase](#showcase--jquantlib-in-action)).
+
+**Suite:** `mvn -pl jquantlib test` = **3721 tests / 0 failures / 0 errors / 21 skipped**, BUILD SUCCESS on JDK 25 LTS. **Scanner WIP-stub count:** `0` genuinely-pending. **JDK:** 25 LTS. **Repo hygiene:** only `main` remains (no worktrees or transient branches).
 
 **3 documented carve-outs** (explicit; NOT silent deferrals):
 1. **PseudoSqrt Hypersphere/LowerDiagonal** — `hypersphereOptimize` is ported (from C++ `pseudosqrt.cpp:141-263`); Java `ConjugateGradient` doesn't converge on the ill-conditioned target. UOE replaced with descriptive deferred-port message routing users to `Higham` / `Principal` alternatives. Closure requires Java optimizer hardening pass.
@@ -217,7 +224,7 @@ jquantlib/                              ← this repo root
 ```bash
 # Test the Java module (run from the inner module — not the root)
 cd jquantlib && mvn test
-# Expected: Tests run: 818, Failures: 0, Errors: 0, Skipped: 22
+# Expected: Tests run: 3721, Failures: 0, Errors: 0, Skipped: 21
 
 # Snapshot the stub scanner
 python3 tools/stub-scanner/scan_stubs.py
@@ -241,6 +248,36 @@ bash migration-harness/generate-references.sh
 mvn clean verify install
 # Sample apps live under jquantlib-samples/
 ```
+
+## Showcase — JQuantLib in action
+
+The repo includes **`jquantlib-showcase/`**, an interactive **Spring Boot** web application
+that demonstrates the library in the browser: option pricing with live Greeks, a
+cross-engine comparison (closed-form, lattice, finite differences, Monte Carlo), Monte
+Carlo convergence (pseudo-random vs Sobol), implied volatility, barrier / Asian /
+discrete-dividend exotics, fixed-rate bonds, interpolated yield curves, market calendars,
+and a live runner for the bundled `jquantlib-samples` programs.
+
+```bash
+# 1. One-time: install the library artifacts into your local Maven repo (from the repo root)
+mvn -pl jquantlib,jquantlib-helpers,jquantlib-samples -am install -DskipTests
+
+# 2. Run the showcase
+cd jquantlib-showcase
+mvn spring-boot:run
+```
+
+Then open **<http://localhost:8080>**. Alternatively, build a self-contained jar and run it:
+
+```bash
+cd jquantlib-showcase
+mvn -DskipTests package
+java -jar target/jquantlib-showcase-1.0.0.jar
+```
+
+Requires **JDK 25**; uses the latest **Spring Boot 4.0.x**. Front-end libraries are vendored,
+so it runs fully offline. Full demo list and architecture:
+[`jquantlib-showcase/README.md`](jquantlib-showcase/README.md).
 
 ## What the next phase looks like
 
@@ -274,6 +311,7 @@ mvn clean verify install
 | `jquantlib-helpers` | Helper classes |
 | `jquantlib-contrib` | Third-party contributions |
 | `jquantlib-samples` | Sample code |
+| `jquantlib-showcase` | Interactive Spring Boot demo web app (see [Showcase](#showcase--jquantlib-in-action)) |
 
 ## Contributing
 

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/common :: head('Options & Greeks')}"></head>
+<body>
+<nav th:replace="~{fragments/common :: navbar('options')}"></nav>
+
+<main class="container my-4">
+    <h3 class="mb-1">European Options &amp; Greeks</h3>
+    <p class="text-muted">Analytic Black–Scholes–Merton pricing with live Greeks, a cross-engine comparison
+        (closed-form, lattice, finite differences, Monte&nbsp;Carlo), and payoff/Greek charts — all from JQuantLib.</p>
+
+    <div class="row g-4">
+        <div class="col-lg-3">
+            <form id="optform" class="card card-body controls">
+                <div class="mb-2">
+                    <label class="form-label">Option type</label>
+                    <select class="form-select form-select-sm" name="type">
+                        <option value="Call" selected>Call</option>
+                        <option value="Put">Put</option>
+                    </select>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Spot price S</label>
+                    <input class="form-control form-control-sm" type="number" step="any" name="spot" value="100"/>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Strike K</label>
+                    <input class="form-control form-control-sm" type="number" step="any" name="strike" value="100"/>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Volatility σ (e.g. 0.20)</label>
+                    <input class="form-control form-control-sm" type="number" step="any" name="vol" value="0.20"/>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Risk-free rate r</label>
+                    <input class="form-control form-control-sm" type="number" step="any" name="rate" value="0.05"/>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Dividend yield q</label>
+                    <input class="form-control form-control-sm" type="number" step="any" name="div" value="0.00"/>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Days to expiry</label>
+                    <input class="form-control form-control-sm" type="number" name="days" value="180"/>
+                </div>
+                <button id="go" class="btn btn-primary btn-sm w-100" type="submit">Price option</button>
+            </form>
+        </div>
+
+        <div class="col-lg-9">
+            <div id="errbox"></div>
+            <p id="summary" class="formula mb-3"></p>
+
+            <div id="metrics" class="row g-2 mb-4"></div>
+
+            <div class="row g-4">
+                <div class="col-xl-6">
+                    <div class="card card-body">
+                        <h6 class="text-muted">Value &amp; payoff vs spot</h6>
+                        <div class="chart-box"><canvas id="priceChart"></canvas></div>
+                    </div>
+                </div>
+                <div class="col-xl-6">
+                    <div class="card card-body">
+                        <h6 class="text-muted">Delta vs spot</h6>
+                        <div class="chart-box"><canvas id="deltaChart"></canvas></div>
+                    </div>
+                </div>
+                <div class="col-xl-6">
+                    <div class="card card-body">
+                        <h6 class="text-muted">Gamma vs spot</h6>
+                        <div class="chart-box"><canvas id="gammaChart"></canvas></div>
+                    </div>
+                </div>
+                <div class="col-xl-6">
+                    <div class="card card-body">
+                        <h6 class="text-muted">Same option, every engine</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead><tr><th>Engine</th><th>Method</th><th class="num">NPV</th><th>Note</th></tr></thead>
+                                <tbody id="engtbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/common :: footer}"></footer>
+
+<script>
+    const form = document.getElementById('optform');
+
+    function renderMetrics(d) {
+        const g = d.greeks;
+        const cards = [
+            ['Option value', fmt(d.npv)],
+            ['Delta', fmt(g.delta)],
+            ['Gamma', fmt(g.gamma, 5)],
+            ['Vega', fmt(g.vega)],
+            ['Theta / day', fmt(g.thetaPerDay, 5)],
+            ['Rho', fmt(g.rho)]
+        ];
+        document.getElementById('metrics').innerHTML = cards.map(c =>
+            '<div class="col-6 col-md-4 col-xxl-2"><div class="card card-body py-2">' + metric(c[0], c[1]) + '</div></div>'
+        ).join('');
+    }
+
+    function renderEngines(engines) {
+        const body = document.getElementById('engtbody');
+        body.replaceChildren();
+        for (const e of engines) {
+            const tr = document.createElement('tr');
+            const cells = [e.engine, null, fmt(e.npv), e.note || ''];
+            tr.innerHTML =
+                '<td></td><td><span class="badge badge-soft"></span></td>' +
+                '<td class="num">' + fmt(e.npv) + '</td><td class="text-muted small"></td>';
+            tr.children[0].textContent = e.engine;
+            tr.children[1].firstElementChild.textContent = e.category;
+            tr.children[3].textContent = e.note || '';
+            body.appendChild(tr);
+        }
+    }
+
+    function renderCharts(s) {
+        const xTitle = {scales: {x: {title: {display: true, text: 'Spot'}}}};
+        drawChart('priceChart', {
+            type: 'line',
+            data: {labels: s.spot, datasets: [
+                lineSet('Option value', s.price, COLORS.blue),
+                lineSet('Intrinsic payoff', s.intrinsic, COLORS.gray, {borderDash: [6, 4], backgroundColor: 'transparent'})
+            ]}, options: xTitle
+        });
+        drawChart('deltaChart', {
+            type: 'line', data: {labels: s.spot, datasets: [lineSet('Delta', s.delta, COLORS.green)]}, options: xTitle
+        });
+        drawChart('gammaChart', {
+            type: 'line', data: {labels: s.spot, datasets: [lineSet('Gamma', s.gamma, COLORS.purple)]}, options: xTitle
+        });
+    }
+
+    async function priceOption() {
+        const btn = document.getElementById('go');
+        setBusy(btn, true);
+        document.getElementById('errbox').replaceChildren();
+        try {
+            const d = await qFetch('/api/option/european?' + formParams(form));
+            setText('summary', d.summary);
+            renderMetrics(d);
+            renderEngines(d.engines);
+            renderCharts(d.sweep);
+        } catch (e) {
+            showError('errbox', e.message);
+        } finally {
+            setBusy(btn, false);
+        }
+    }
+
+    form.addEventListener('submit', e => { e.preventDefault(); priceOption(); });
+    priceOption();
+</script>
+</body>
+</html>

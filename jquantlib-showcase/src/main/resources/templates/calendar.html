@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/common :: head('Calendars')}"></head>
+<body>
+<nav th:replace="~{fragments/common :: navbar('calendar')}"></nav>
+
+<main class="container my-4">
+    <h3 class="mb-1">Calendars &amp; Schedules</h3>
+    <p class="text-muted">JQuantLib's market calendars know each venue's holidays. Classify every day over a horizon,
+        count business days per month, generate a coupon schedule, and see how each business-day convention rolls a
+        non-business date.</p>
+
+    <div class="row g-4">
+        <div class="col-lg-3">
+            <form id="calform" class="card card-body controls">
+                <div class="mb-2"><label class="form-label">Calendar</label>
+                    <select class="form-select form-select-sm" name="calendar">
+                        <option>US-Settlement</option><option>US-NYSE</option><option>US-Government</option>
+                        <option>TARGET</option><option>UK-Exchange</option><option>Japan</option>
+                    </select></div>
+                <div class="mb-2"><label class="form-label">Horizon (months)</label>
+                    <input class="form-control form-control-sm" type="number" name="horizonMonths" value="12"/></div>
+                <div class="mb-2"><label class="form-label">Schedule tenor (months)</label>
+                    <input class="form-control form-control-sm" type="number" name="scheduleTenorMonths" value="6"/></div>
+                <div class="mb-3"><label class="form-label">Schedule length (years)</label>
+                    <input class="form-control form-control-sm" type="number" name="scheduleYears" value="3"/></div>
+                <button id="go" class="btn btn-primary btn-sm w-100" type="submit">Explore</button>
+            </form>
+        </div>
+
+        <div class="col-lg-9">
+            <div id="errbox"></div>
+            <p id="summary" class="formula mb-3"></p>
+            <div id="metrics" class="row g-2 mb-4"></div>
+            <div class="card card-body mb-4">
+                <h6 class="text-muted">Business days per month</h6>
+                <div class="chart-box"><canvas id="monthChart"></canvas></div>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="card card-body">
+                        <h6 class="text-muted">Holidays</h6>
+                        <div class="table-responsive" style="max-height:300px;overflow:auto">
+                            <table class="table table-sm mb-0"><tbody id="holtbody"></tbody></table>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card card-body">
+                        <h6 class="text-muted">Coupon schedule</h6>
+                        <div class="table-responsive" style="max-height:300px;overflow:auto">
+                            <table class="table table-sm mb-0"><tbody id="schtbody"></tbody></table>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card card-body">
+                        <h6 class="text-muted">Business-day conventions</h6>
+                        <table class="table table-sm mb-0"><tbody id="adjtbody"></tbody></table>
+                        <p class="small text-muted mb-0 mt-2">…applied to the first holiday in range.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/common :: footer}"></footer>
+
+<script>
+    const form = document.getElementById('calform');
+
+    function fillRows(tbodyId, items, cols) {
+        const body = document.getElementById(tbodyId);
+        body.replaceChildren();
+        for (const it of items) {
+            const tr = document.createElement('tr');
+            for (const c of cols) {
+                const td = document.createElement('td');
+                td.className = c.cls || '';
+                td.textContent = c.get(it);
+                tr.appendChild(td);
+            }
+            body.appendChild(tr);
+        }
+    }
+
+    async function explore() {
+        const btn = document.getElementById('go');
+        setBusy(btn, true);
+        document.getElementById('errbox').replaceChildren();
+        try {
+            const d = await qFetch('/api/calendar?' + formParams(form));
+            setText('summary', d.summary);
+            const cards = [
+                ['Business days', d.businessDays],
+                ['Weekend days', d.weekendDays],
+                ['Holidays', d.holidays]
+            ];
+            document.getElementById('metrics').innerHTML = cards.map(c =>
+                '<div class="col-4"><div class="card card-body py-2">' + metric(c[0], c[1]) + '</div></div>').join('');
+
+            fillRows('holtbody', d.holidayList, [
+                {cls: 'mono small', get: h => h.date}, {cls: 'small text-muted', get: h => h.weekday}]);
+            fillRows('schtbody', d.schedule.map(s => ({d: s})), [{cls: 'mono small', get: r => r.d}]);
+            fillRows('adjtbody', d.adjustments, [
+                {get: a => a.convention}, {cls: 'mono small', get: a => a.result}]);
+
+            drawChart('monthChart', {
+                type: 'bar',
+                data: {labels: d.monthlyBusinessDays.map(m => m.month),
+                    datasets: [{label: 'Business days', data: d.monthlyBusinessDays.map(m => m.businessDays),
+                        backgroundColor: COLORS.blue}]},
+                options: {plugins: {legend: {display: false}}}
+            });
+        } catch (e) {
+            showError('errbox', e.message);
+        } finally {
+            setBusy(btn, false);
+        }
+    }
+
+    form.addEventListener('submit', e => { e.preventDefault(); explore(); });
+    explore();
+</script>
+</body>
+</html>

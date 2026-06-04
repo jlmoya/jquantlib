@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/common :: head('Home')}"></head>
+<body>
+<nav th:replace="~{fragments/common :: navbar('home')}"></nav>
+
+<main class="container my-4">
+    <section class="hero p-4 p-md-5 mb-4">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1 class="display-6 fw-bold">JQuantLib, in action</h1>
+                <p class="lead mb-2">Interactive demonstrations of <strong>JQuantLib</strong> — a pure-Java port of
+                    QuantLib v1.42.1 — spanning option pricing, Greeks, Monte&nbsp;Carlo, fixed income, yield curves
+                    and market calendars.</p>
+                <p class="mb-0 text-info">Every number on this site is computed live by the library. Built with Spring&nbsp;Boot.</p>
+            </div>
+            <div class="col-lg-4 text-center d-none d-lg-block mono" style="font-size:2.4rem;opacity:.85">
+                dS = μS·dt + σS·dW
+            </div>
+        </div>
+    </section>
+
+    <div class="row g-4">
+        <div class="col-md-6 col-xl-4">
+            <a class="text-decoration-none text-reset" href="/options">
+                <div class="card demo-card card-body">
+                    <div class="icon">📈</div>
+                    <h5 class="mt-2">Options &amp; Greeks</h5>
+                    <p class="text-muted mb-0 small">Price European calls/puts with the analytic Black–Scholes engine; live
+                        delta, gamma, vega, theta and rho; a 7-engine cross-check; and payoff/Greek charts.</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-6 col-xl-4">
+            <a class="text-decoration-none text-reset" href="/american">
+                <div class="card demo-card card-body">
+                    <div class="icon">🇺🇸</div>
+                    <h5 class="mt-2">American Options</h5>
+                    <p class="text-muted mb-0 small">Early-exercise premium across Barone-Adesi/Whaley, Bjerksund/Stensland,
+                        Ju, binomial trees and finite differences.</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-6 col-xl-4">
+            <a class="text-decoration-none text-reset" href="/monte-carlo">
+                <div class="card demo-card card-body">
+                    <div class="icon">🎲</div>
+                    <h5 class="mt-2">Monte Carlo</h5>
+                    <p class="text-muted mb-0 small">Watch the MC price converge to Black–Scholes as paths grow, with 95%
+                        confidence bands — and see Sobol low-discrepancy beat pseudo-random.</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-6 col-xl-4">
+            <a class="text-decoration-none text-reset" href="/implied-vol">
+                <div class="card demo-card card-body">
+                    <div class="icon">🔎</div>
+                    <h5 class="mt-2">Implied Volatility</h5>
+                    <p class="text-muted mb-0 small">Back the volatility out of a market price with the library's solver,
+                        and see the price-vs-vol curve it inverts.</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-6 col-xl-4">
+            <a class="text-decoration-none text-reset" href="/bonds">
+                <div class="card demo-card card-body">
+                    <div class="icon">💵</div>
+                    <h5 class="mt-2">Fixed-Rate Bonds</h5>
+                    <p class="text-muted mb-0 small">Clean/dirty price, accrued interest, yield and cash flows on a
+                        discounting curve — plus the classic price-vs-yield curve.</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-6 col-xl-4">
+            <a class="text-decoration-none text-reset" href="/curve">
+                <div class="card demo-card card-body">
+                    <div class="icon">📉</div>
+                    <h5 class="mt-2">Yield Curve</h5>
+                    <p class="text-muted mb-0 small">Build an interpolated zero curve from pillar rates and read off discount
+                        factors, zero rates and forward rates across 30 years.</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-6 col-xl-4">
+            <a class="text-decoration-none text-reset" href="/calendar">
+                <div class="card demo-card card-body">
+                    <div class="icon">📅</div>
+                    <h5 class="mt-2">Calendars &amp; Schedules</h5>
+                    <p class="text-muted mb-0 small">Holidays, business-day counts and conventions across TARGET, US, UK and
+                        Japan, plus coupon-schedule generation.</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-6 col-xl-4">
+            <a class="text-decoration-none text-reset" href="/samples">
+                <div class="card demo-card card-body">
+                    <div class="icon">🧪</div>
+                    <h5 class="mt-2">Sample Programs</h5>
+                    <p class="text-muted mb-0 small">Run the bundled <span class="mono">jquantlib-samples</span> programs —
+                        swaps, FRAs, repos, convertibles, discrete hedging, Bermudan swaptions — live in your browser.</p>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <p class="text-muted small mt-4">
+        Tip: each demo posts your inputs to a JSON endpoint backed by JQuantLib (e.g.
+        <span class="mono">/api/option/european</span>) and renders the response. Open your browser's network tab to see
+        the library's raw output.
+    </p>
+</main>
+
+<footer th:replace="~{fragments/common :: footer}"></footer>
+</body>
+</html>

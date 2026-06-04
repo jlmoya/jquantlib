@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/common :: head('Barrier Options')}"></head>
+<body>
+<nav th:replace="~{fragments/common :: navbar('barrier')}"></nav>
+
+<main class="container my-4">
+    <h3 class="mb-1">Barrier Options</h3>
+    <p class="text-muted">A barrier option is knocked in or out if the underlying touches a barrier level. JQuantLib
+        prices it analytically (`AnalyticBarrierEngine`); compare it against the vanilla European value.</p>
+
+    <div class="row g-4">
+        <div class="col-lg-3">
+            <form id="barform" class="card card-body controls">
+                <div class="mb-2"><label class="form-label">Option type</label>
+                    <select class="form-select form-select-sm" name="type">
+                        <option value="Call" selected>Call</option><option value="Put">Put</option></select></div>
+                <div class="mb-2"><label class="form-label">Barrier type</label>
+                    <select class="form-select form-select-sm" name="barrierType">
+                        <option value="DownOut" selected>Down-and-out</option>
+                        <option value="DownIn">Down-and-in</option>
+                        <option value="UpOut">Up-and-out</option>
+                        <option value="UpIn">Up-and-in</option></select></div>
+                <div class="mb-2"><label class="form-label">Spot S</label>
+                    <input class="form-control form-control-sm" type="number" step="any" name="spot" value="100"/></div>
+                <div class="mb-2"><label class="form-label">Strike K</label>
+                    <input class="form-control form-control-sm" type="number" step="any" name="strike" value="100"/></div>
+                <div class="mb-2"><label class="form-label">Barrier level</label>
+                    <input class="form-control form-control-sm" type="number" step="any" name="barrier" value="90"/></div>
+                <div class="mb-2"><label class="form-label">Rebate</label>
+                    <input class="form-control form-control-sm" type="number" step="any" name="rebate" value="0"/></div>
+                <div class="mb-2"><label class="form-label">Volatility σ</label>
+                    <input class="form-control form-control-sm" type="number" step="any" name="vol" value="0.25"/></div>
+                <div class="mb-2"><label class="form-label">Risk-free rate r</label>
+                    <input class="form-control form-control-sm" type="number" step="any" name="rate" value="0.05"/></div>
+                <div class="mb-2"><label class="form-label">Dividend yield q</label>
+                    <input class="form-control form-control-sm" type="number" step="any" name="div" value="0.00"/></div>
+                <div class="mb-3"><label class="form-label">Days to expiry</label>
+                    <input class="form-control form-control-sm" type="number" name="days" value="365"/></div>
+                <button id="go" class="btn btn-primary btn-sm w-100" type="submit">Price option</button>
+            </form>
+        </div>
+
+        <div class="col-lg-9">
+            <div id="errbox"></div>
+            <p id="summary" class="formula mb-3"></p>
+            <div id="metrics" class="row g-2 mb-3"></div>
+            <div class="card card-body">
+                <h6 class="text-muted">Value vs spot (barrier vs vanilla)</h6>
+                <div class="chart-box tall"><canvas id="barChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/common :: footer}"></footer>
+
+<script>
+    const form = document.getElementById('barform');
+
+    async function price() {
+        const btn = document.getElementById('go');
+        setBusy(btn, true);
+        document.getElementById('errbox').replaceChildren();
+        try {
+            const d = await qFetch('/api/barrier?' + formParams(form));
+            setText('summary', d.summary);
+            document.getElementById('metrics').innerHTML =
+                '<div class="col-6 col-md-4"><div class="card card-body py-2">' + metric('Barrier option value', fmt(d.npv)) + '</div></div>' +
+                '<div class="col-6 col-md-4"><div class="card card-body py-2">' + metric('Vanilla European value', fmt(d.vanilla)) + '</div></div>' +
+                '<div class="col-6 col-md-4"><div class="card card-body py-2">' + metric('Barrier level', fmt(d.barrierLevel, 2)) + '</div></div>';
+            drawChart('barChart', {
+                type: 'line',
+                data: {labels: d.sweep.spot, datasets: [
+                    lineSet('Barrier option', d.sweep.exotic, COLORS.red),
+                    lineSet('Vanilla European', d.sweep.vanilla, COLORS.blue, {borderDash: [6, 4], backgroundColor: 'transparent'}),
+                    lineSet('Intrinsic payoff', d.sweep.intrinsic, COLORS.gray, {borderDash: [2, 3], backgroundColor: 'transparent'})
+                ]},
+                options: {scales: {x: {title: {display: true, text: 'Spot'}}}}
+            });
+        } catch (e) {
+            showError('errbox', e.message);
+        } finally {
+            setBusy(btn, false);
+        }
+    }
+
+    form.addEventListener('submit', e => { e.preventDefault(); price(); });
+    price();
+</script>
+</body>
+</html>

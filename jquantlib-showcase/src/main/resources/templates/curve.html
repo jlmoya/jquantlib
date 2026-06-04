@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/common :: head('Yield Curve')}"></head>
+<body>
+<nav th:replace="~{fragments/common :: navbar('curve')}"></nav>
+
+<main class="container my-4">
+    <h3 class="mb-1">Yield Term Structure</h3>
+    <p class="text-muted">JQuantLib builds a linearly-interpolated zero-rate curve through your pillar rates, then derives
+        discount factors, continuously-compounded zero rates and forward rates across the 30-year horizon.</p>
+
+    <div class="row g-4">
+        <div class="col-lg-3">
+            <form id="curveform" class="card card-body controls">
+                <p class="small text-muted mb-2">Pillar zero rates (% continuously compounded):</p>
+                <div class="mb-2"><label class="form-label">Front (0y)</label>
+                    <input class="form-control form-control-sm" type="number" step="any" name="front" value="3.0"/></div>
+                <div class="mb-2"><label class="form-label">1 year</label>
+                    <input class="form-control form-control-sm" type="number" step="any" name="y1" value="3.3"/></div>
+                <div class="mb-2"><label class="form-label">2 years</label>
+                    <input class="form-control form-control-sm" type="number" step="any" name="y2" value="3.6"/></div>
+                <div class="mb-2"><label class="form-label">5 years</label>
+                    <input class="form-control form-control-sm" type="number" step="any" name="y5" value="4.0"/></div>
+                <div class="mb-2"><label class="form-label">10 years</label>
+                    <input class="form-control form-control-sm" type="number" step="any" name="y10" value="4.4"/></div>
+                <div class="mb-3"><label class="form-label">30 years</label>
+                    <input class="form-control form-control-sm" type="number" step="any" name="y30" value="4.7"/></div>
+                <button id="go" class="btn btn-primary btn-sm w-100" type="submit">Build curve</button>
+            </form>
+        </div>
+
+        <div class="col-lg-9">
+            <div id="errbox"></div>
+            <p id="summary" class="formula mb-3"></p>
+            <div class="row g-4">
+                <div class="col-xl-6">
+                    <div class="card card-body">
+                        <h6 class="text-muted">Zero &amp; forward rates</h6>
+                        <div class="chart-box"><canvas id="rateChart"></canvas></div>
+                    </div>
+                </div>
+                <div class="col-xl-6">
+                    <div class="card card-body">
+                        <h6 class="text-muted">Discount factor</h6>
+                        <div class="chart-box"><canvas id="dfChart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/common :: footer}"></footer>
+
+<script>
+    const form = document.getElementById('curveform');
+
+    async function build() {
+        const btn = document.getElementById('go');
+        setBusy(btn, true);
+        document.getElementById('errbox').replaceChildren();
+        try {
+            const d = await qFetch('/api/curve?' + formParams(form));
+            setText('summary', d.summary);
+            const xTitle = {scales: {x: {title: {display: true, text: 'time (years)'}}}};
+            drawChart('rateChart', {
+                type: 'line',
+                data: {labels: d.timeYears, datasets: [
+                    lineSet('Zero rate (%)', d.zeroRatePercent, COLORS.blue),
+                    lineSet('Forward rate (%)', d.forwardRatePercent, COLORS.amber)
+                ]}, options: xTitle
+            });
+            drawChart('dfChart', {
+                type: 'line',
+                data: {labels: d.timeYears, datasets: [lineSet('Discount factor', d.discountFactor, COLORS.green)]},
+                options: xTitle
+            });
+        } catch (e) {
+            showError('errbox', e.message);
+        } finally {
+            setBusy(btn, false);
+        }
+    }
+
+    form.addEventListener('submit', e => { e.preventDefault(); build(); });
+    build();
+</script>
+</body>
+</html>

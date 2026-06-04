@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/common :: head('Bonds')}"></head>
+<body>
+<nav th:replace="~{fragments/common :: navbar('bonds')}"></nav>
+
+<main class="container my-4">
+    <h3 class="mb-1">Fixed-Rate Bond Pricing</h3>
+    <p class="text-muted">JQuantLib builds the coupon schedule, assembles the bond, and discounts its cash flows on a flat
+        curve — giving clean/dirty price, accrued interest and yield, plus the classic price-vs-yield relationship.</p>
+
+    <div class="row g-4">
+        <div class="col-lg-3">
+            <form id="bondform" class="card card-body controls">
+                <div class="mb-2"><label class="form-label">Face value</label>
+                    <input class="form-control form-control-sm" type="number" step="any" name="face" value="1000"/></div>
+                <div class="mb-2"><label class="form-label">Coupon (% p.a.)</label>
+                    <input class="form-control form-control-sm" type="number" step="any" name="coupon" value="5.0"/></div>
+                <div class="mb-2"><label class="form-label">Coupons / year</label>
+                    <select class="form-select form-select-sm" name="couponsPerYear">
+                        <option value="1">Annual</option>
+                        <option value="2" selected>Semiannual</option>
+                        <option value="4">Quarterly</option>
+                        <option value="12">Monthly</option>
+                    </select></div>
+                <div class="mb-2"><label class="form-label">Maturity (years)</label>
+                    <input class="form-control form-control-sm" type="number" name="years" value="10"/></div>
+                <div class="mb-2"><label class="form-label">Discount rate (% flat)</label>
+                    <input class="form-control form-control-sm" type="number" step="any" name="rate" value="4.0"/></div>
+                <div class="mb-2"><label class="form-label">Settlement days</label>
+                    <input class="form-control form-control-sm" type="number" name="settlementDays" value="3"/></div>
+                <div class="mb-3"><label class="form-label">Calendar</label>
+                    <select class="form-select form-select-sm" name="calendar">
+                        <option>TARGET</option><option>US-Settlement</option><option>US-Government</option>
+                        <option>UK-Exchange</option><option>Japan</option>
+                    </select></div>
+                <button id="go" class="btn btn-primary btn-sm w-100" type="submit">Price bond</button>
+            </form>
+        </div>
+
+        <div class="col-lg-9">
+            <div id="errbox"></div>
+            <p id="summary" class="formula mb-3"></p>
+            <div id="metrics" class="row g-2 mb-4"></div>
+            <div class="row g-4">
+                <div class="col-xl-7">
+                    <div class="card card-body">
+                        <h6 class="text-muted">Clean price vs yield</h6>
+                        <div class="chart-box"><canvas id="pyChart"></canvas></div>
+                    </div>
+                </div>
+                <div class="col-xl-5">
+                    <div class="card card-body">
+                        <h6 class="text-muted">Projected cash flows</h6>
+                        <div class="table-responsive" style="max-height:320px;overflow:auto">
+                            <table class="table table-sm mb-0">
+                                <thead><tr><th>Date</th><th class="num">Amount</th></tr></thead>
+                                <tbody id="cftbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/common :: footer}"></footer>
+
+<script>
+    const form = document.getElementById('bondform');
+
+    async function price() {
+        const btn = document.getElementById('go');
+        setBusy(btn, true);
+        document.getElementById('errbox').replaceChildren();
+        try {
+            const d = await qFetch('/api/bond?' + formParams(form));
+            setText('summary', d.summary);
+            const cards = [
+                ['Clean price', fmt(d.cleanPrice)], ['Dirty price', fmt(d.dirtyPrice)],
+                ['NPV', fmt(d.npv)], ['Accrued', fmt(d.accrued)], ['Yield', fmt(d.yieldPercent, 4) + ' %']
+            ];
+            document.getElementById('metrics').innerHTML = cards.map(c =>
+                '<div class="col-6 col-md-4 col-xxl"><div class="card card-body py-2">' + metric(c[0], c[1]) + '</div></div>').join('');
+
+            const body = document.getElementById('cftbody');
+            body.replaceChildren();
+            for (const cf of d.cashflows) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = '<td class="mono small"></td><td class="num">' + fmt(cf.amount, 2) + '</td>';
+                tr.children[0].textContent = cf.date;
+                body.appendChild(tr);
+            }
+
+            drawChart('pyChart', {
+                type: 'line',
+                data: {labels: d.priceYield.yieldPercent, datasets: [lineSet('Clean price', d.priceYield.cleanPrice, COLORS.blue)]},
+                options: {scales: {x: {title: {display: true, text: 'yield (%)'}}, y: {title: {display: true, text: 'clean price'}}}}
+            });
+        } catch (e) {
+            showError('errbox', e.message);
+        } finally {
+            setBusy(btn, false);
+        }
+    }
+
+    form.addEventListener('submit', e => { e.preventDefault(); price(); });
+    price();
+</script>
+</body>
+</html>

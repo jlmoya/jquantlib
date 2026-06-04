@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/common :: head('Monte Carlo')}"></head>
+<body>
+<nav th:replace="~{fragments/common :: navbar('monteCarlo')}"></nav>
+
+<main class="container my-4">
+    <h3 class="mb-1">Monte Carlo Convergence</h3>
+    <p class="text-muted">JQuantLib prices the option by simulating thousands of price paths. As the path count grows, the
+        estimate converges to the analytic Black–Scholes value and the statistical error shrinks like 1/√N. A
+        <strong>Sobol low-discrepancy</strong> sequence converges markedly faster than a pseudo-random one.</p>
+
+    <div class="row g-4">
+        <div class="col-lg-3">
+            <form id="mcform" class="card card-body controls">
+                <div class="mb-2"><label class="form-label">Option type</label>
+                    <select class="form-select form-select-sm" name="type">
+                        <option value="Call" selected>Call</option><option value="Put">Put</option>
+                    </select></div>
+                <div class="mb-2"><label class="form-label">Spot S</label>
+                    <input class="form-control form-control-sm" type="number" step="any" name="spot" value="100"/></div>
+                <div class="mb-2"><label class="form-label">Strike K</label>
+                    <input class="form-control form-control-sm" type="number" step="any" name="strike" value="100"/></div>
+                <div class="mb-2"><label class="form-label">Volatility σ</label>
+                    <input class="form-control form-control-sm" type="number" step="any" name="vol" value="0.20"/></div>
+                <div class="mb-2"><label class="form-label">Risk-free rate r</label>
+                    <input class="form-control form-control-sm" type="number" step="any" name="rate" value="0.05"/></div>
+                <div class="mb-2"><label class="form-label">Dividend yield q</label>
+                    <input class="form-control form-control-sm" type="number" step="any" name="div" value="0.00"/></div>
+                <div class="mb-3"><label class="form-label">Days to expiry</label>
+                    <input class="form-control form-control-sm" type="number" name="days" value="365"/></div>
+                <button id="go" class="btn btn-primary btn-sm w-100" type="submit">Run simulation</button>
+            </form>
+        </div>
+
+        <div class="col-lg-9">
+            <div id="errbox"></div>
+            <p id="summary" class="formula mb-3"></p>
+            <div class="row g-4">
+                <div class="col-xl-7">
+                    <div class="card card-body">
+                        <h6 class="text-muted">Price vs path count (95% CI band on pseudo-random)</h6>
+                        <div class="chart-box tall"><canvas id="convChart"></canvas></div>
+                    </div>
+                </div>
+                <div class="col-xl-5">
+                    <div class="card card-body">
+                        <h6 class="text-muted">Absolute error (log–log)</h6>
+                        <div class="chart-box tall"><canvas id="errChart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/common :: footer}"></footer>
+
+<script>
+    const form = document.getElementById('mcform');
+
+    function pts(rows, key) { return rows.map(r => ({x: r.samples, y: r[key]})); }
+
+    async function run() {
+        const btn = document.getElementById('go');
+        setBusy(btn, true);
+        document.getElementById('errbox').replaceChildren();
+        try {
+            const d = await qFetch('/api/option/montecarlo?' + formParams(form));
+            setText('summary', d.summary);
+            const rows = d.rows;
+            const analyticLine = rows.map(r => ({x: r.samples, y: d.analytic}));
+            const logX = {type: 'logarithmic', title: {display: true, text: 'paths (N)'}};
+
+            drawChart('convChart', {
+                type: 'line',
+                data: {datasets: [
+                    {label: 'Analytic (Black–Scholes)', data: analyticLine, borderColor: COLORS.ink,
+                        borderWidth: 2, borderDash: [6, 4], pointRadius: 0},
+                    {label: '95% CI low', data: pts(rows, 'pseudoCiLow'), borderColor: 'transparent',
+                        backgroundColor: 'rgba(13,110,253,.10)', pointRadius: 0},
+                    {label: '95% CI high', data: pts(rows, 'pseudoCiHigh'), borderColor: 'transparent',
+                        backgroundColor: 'rgba(13,110,253,.10)', pointRadius: 0, fill: '-1'},
+                    lineSet('Pseudo-random', pts(rows, 'pseudoPrice'), COLORS.blue, {pointRadius: 3, backgroundColor: COLORS.blue}),
+                    lineSet('Sobol (low-discrepancy)', pts(rows, 'sobolPrice'), COLORS.green, {pointRadius: 3, backgroundColor: COLORS.green})
+                ]},
+                options: {scales: {x: logX, y: {title: {display: true, text: 'price'}}},
+                    plugins: {legend: {labels: {filter: i => !i.text.startsWith('95% CI')}}}}
+            });
+
+            drawChart('errChart', {
+                type: 'line',
+                data: {datasets: [
+                    lineSet('Pseudo-random |error|', pts(rows, 'pseudoAbsError'), COLORS.blue, {pointRadius: 3, backgroundColor: COLORS.blue}),
+                    lineSet('Sobol |error|', pts(rows, 'sobolAbsError'), COLORS.green, {pointRadius: 3, backgroundColor: COLORS.green})
+                ]},
+                options: {scales: {x: logX, y: {type: 'logarithmic', title: {display: true, text: '|price − analytic|'}}}}
+            });
+        } catch (e) {
+            showError('errbox', e.message);
+        } finally {
+            setBusy(btn, false);
+        }
+    }
+
+    form.addEventListener('submit', e => { e.preventDefault(); run(); });
+    run();
+</script>
+</body>
+</html>

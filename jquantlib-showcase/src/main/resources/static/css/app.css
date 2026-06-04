@@ -1,0 +1,106 @@
+:root {
+    --accent: #0d6efd;
+    --ink: #0b132b;
+}
+
+body {
+    background: #f6f8fb;
+    color: #21262d;
+}
+
+.navbar-brand {
+    letter-spacing: .3px;
+}
+
+.hero {
+    background: linear-gradient(135deg, #0b132b 0%, #1c2541 60%, #3a506b 100%);
+    color: #fff;
+    border-radius: 1rem;
+}
+
+.hero .lead {
+    color: #cdd9e5;
+}
+
+.demo-card {
+    height: 100%;
+    transition: transform .12s ease, box-shadow .12s ease;
+    border: 1px solid #e4e9f0;
+}
+
+.demo-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 .5rem 1.25rem rgba(11, 19, 43, .12);
+}
+
+.demo-card .icon {
+    font-size: 1.6rem;
+}
+
+.metric {
+    font-variant-numeric: tabular-nums;
+}
+
+.metric .label {
+    font-size: .72rem;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: #6b7785;
+}
+
+.metric .value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 1.1;
+}
+
+.chart-box {
+    position: relative;
+    height: 320px;
+}
+
+.chart-box.tall {
+    height: 380px;
+}
+
+table.table td.num,
+table.table th.num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+pre.sample-output {
+    background: #0d1117;
+    color: #c9d1d9;
+    padding: 1rem 1.1rem;
+    border-radius: .6rem;
+    max-height: 560px;
+    overflow: auto;
+    font-size: .82rem;
+    line-height: 1.4;
+    white-space: pre;
+}
+
+.formula {
+    background: #eef2f7;
+    border-left: 3px solid var(--accent);
+    padding: .5rem .75rem;
+    border-radius: .25rem;
+    font-size: .9rem;
+}
+
+.controls label {
+    font-size: .8rem;
+    font-weight: 600;
+    color: #44505f;
+}
+
+.badge-soft {
+    background: #e7f1ff;
+    color: #0a58ca;
+    font-weight: 600;
+}

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/common :: head('Sample Programs')}"></head>
+<body>
+<nav th:replace="~{fragments/common :: navbar('samples')}"></nav>
+
+<main class="container my-4">
+    <h3 class="mb-1">Sample Programs</h3>
+    <p class="text-muted">These are the canonical example programs from the <span class="mono">jquantlib-samples</span>
+        project, run live on the server. Pick one to execute it and stream its console output here. (A couple — e.g.
+        Bermudan swaption calibration — take a few seconds.)</p>
+
+    <div id="errbox"></div>
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div id="samplelist" class="list-group"></div>
+        </div>
+        <div class="col-lg-8">
+            <div id="runhead" class="mb-2 small text-muted"></div>
+            <pre id="output" class="sample-output">Select a sample on the left to run it.</pre>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/common :: footer}"></footer>
+
+<script>
+    async function loadCatalog() {
+        const list = document.getElementById('samplelist');
+        try {
+            const samples = await qFetch('/api/samples');
+            list.replaceChildren();
+            for (const s of samples) {
+                const item = document.createElement('button');
+                item.type = 'button';
+                item.className = 'list-group-item list-group-item-action';
+                const t = document.createElement('div');
+                t.className = 'fw-semibold';
+                t.textContent = s.title;
+                const desc = document.createElement('div');
+                desc.className = 'small text-muted';
+                desc.textContent = s.description;
+                item.append(t, desc);
+                item.addEventListener('click', () => runSample(s.id, item));
+                list.appendChild(item);
+            }
+        } catch (e) {
+            showError('errbox', e.message);
+        }
+    }
+
+    async function runSample(id, item) {
+        document.querySelectorAll('#samplelist .active').forEach(e => e.classList.remove('active'));
+        item.classList.add('active');
+        const out = document.getElementById('output');
+        const head = document.getElementById('runhead');
+        head.textContent = '';
+        out.textContent = 'Running ' + id + ' …';
+        try {
+            const r = await qFetch('/api/samples/' + encodeURIComponent(id) + '/run');
+            out.textContent = r.output;
+            head.replaceChildren();
+            const badge = document.createElement('span');
+            badge.className = 'badge ' + (r.ok ? 'text-bg-success' : 'text-bg-warning');
+            badge.textContent = r.ok ? 'completed' : 'completed with error';
+            const cls = document.createElement('span');
+            cls.className = 'mono';
+            cls.textContent = r.className;
+            head.append(badge, ' ' + r.title + ' · ' + r.elapsedMs + ' ms · ', cls);
+        } catch (e) {
+            out.textContent = '';
+            showError('errbox', e.message);
+        }
+    }
+
+    loadCatalog();
+</script>
+</body>
+</html>
