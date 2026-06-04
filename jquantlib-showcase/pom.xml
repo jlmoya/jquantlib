@@ -27,7 +27,31 @@
     <properties>
         <java.version>25</java.version>
         <jquantlib.version>1.0.0</jquantlib.version>
+        <!--
+          The reactor parent defines nexus.base.url, but this module's parent is the
+          Spring Boot starter, so it inherits nothing from the reactor. Redeclare it
+          here so the distributionManagement URLs below resolve.
+        -->
+        <nexus.base.url>http://localhost:7910/repository</nexus.base.url>
     </properties>
+
+    <!--
+      This module's parent is the Spring Boot starter (not the jquantlib reactor),
+      so it does not inherit the reactor's distributionManagement. Mirror the reactor's
+      Nexus targets here, reusing the same server ids (nexus-releases / nexus-snapshots,
+      defined in ~/.m2/settings.xml) so a reactor-wide `mvn deploy` publishes the
+      showcase alongside the library modules.
+    -->
+    <distributionManagement>
+        <repository>
+            <id>nexus-releases</id>
+            <url>${nexus.base.url}/maven-releases/</url>
+        </repository>
+        <snapshotRepository>
+            <id>nexus-snapshots</id>
+            <url>${nexus.base.url}/maven-snapshots/</url>
+        </snapshotRepository>
+    </distributionManagement>
 
     <dependencies>
         <dependency>
