@@ -11,6 +11,13 @@
     </parent>
 
 	<artifactId>jquantlib</artifactId>
+	<!--
+	  Pinned to the C++ QuantLib release this port targets (v1.42.1), and therefore
+	  decoupled from the reactor/project version (1.0.0). The parent's jquantlib.version
+	  property is set to this same value so jquantlib-contrib/-helpers/-samples depend
+	  on exactly this version; keep the two in sync.
+	-->
+	<version>1.42.1</version>
 
 	<properties>
 	</properties>

@@ -26,7 +26,10 @@
 
     <properties>
         <java.version>25</java.version>
-        <jquantlib.version>1.0.0</jquantlib.version>
+        <!-- The core library is pinned to the C++ QuantLib release it targets (v1.42.1). -->
+        <jquantlib.version>1.42.1</jquantlib.version>
+        <!-- The companion modules (samples, helpers) track the reactor version (1.0.0). -->
+        <jquantlib.companion.version>1.0.0</jquantlib.companion.version>
         <!--
           The reactor parent defines nexus.base.url, but this module's parent is the
           Spring Boot starter, so it inherits nothing from the reactor. Redeclare it
@@ -74,14 +77,14 @@
         <dependency>
             <groupId>org.jquantlib</groupId>
             <artifactId>jquantlib-samples</artifactId>
-            <version>${jquantlib.version}</version>
+            <version>${jquantlib.companion.version}</version>
         </dependency>
 
         <!-- Discrete-dividend option helpers (CRR/FD American & European), used by the Dividend Options demo. -->
         <dependency>
             <groupId>org.jquantlib</groupId>
             <artifactId>jquantlib-helpers</artifactId>
-            <version>${jquantlib.version}</version>
+            <version>${jquantlib.companion.version}</version>
         </dependency>
 
         <dependency>
