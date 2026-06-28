@@ -19,6 +19,43 @@
 	-->
 	<version>1.42.1</version>
 
+	<!-- Maven Central requires name, description, url, licenses, developers, scm. -->
+	<name>JQuantLib</name>
+	<description>A pure-Java port of QuantLib, the open-source library for quantitative finance, systematically rebuilt from C++ QuantLib v1.42.1 with tier-stratified, cross-validated precision.</description>
+	<url>https://github.com/jlmoya/jquantlib</url>
+	<inceptionYear>2007</inceptionYear>
+
+	<licenses>
+		<license>
+			<name>BSD-3-Clause</name>
+			<url>https://github.com/jlmoya/jquantlib/blob/main/LICENSE</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+
+	<developers>
+		<developer>
+			<id>jlmoya</id>
+			<name>Jose Moya</name>
+			<url>https://github.com/jlmoya</url>
+			<roles>
+				<role>maintainer</role>
+			</roles>
+		</developer>
+		<developer>
+			<name>Richard Gomes</name>
+			<roles>
+				<role>original author (2007)</role>
+			</roles>
+		</developer>
+	</developers>
+
+	<scm>
+		<connection>scm:git:https://github.com/jlmoya/jquantlib.git</connection>
+		<developerConnection>scm:git:git@github.com:jlmoya/jquantlib.git</developerConnection>
+		<url>https://github.com/jlmoya/jquantlib</url>
+	</scm>
+
 	<properties>
 	</properties>
 
@@ -77,4 +114,73 @@
             </plugin>
 		</plugins>
 	</build>
+
+	<!--
+	  Maven Central release bundle. Activate with -Prelease to additionally produce
+	  -sources.jar, -javadoc.jar, and .asc PGP signatures for every artifact (Central
+	  requires all of these). Normal/internal builds (no -Prelease) are unaffected.
+	-->
+	<profiles>
+		<profile>
+			<id>release</id>
+			<build>
+				<plugins>
+					<!-- 1. -sources.jar -->
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-source-plugin</artifactId>
+						<version>3.3.1</version>
+						<executions>
+							<execution>
+								<id>attach-sources</id>
+								<phase>package</phase>
+								<goals>
+									<goal>jar-no-fork</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+					<!-- 2. -javadoc.jar. doclint=none + failOnError=false because the ported
+					     codebase carries many legacy doclint violations; Central accepts a
+					     javadoc jar with warnings, it just has to be present and build. -->
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-javadoc-plugin</artifactId>
+						<version>3.12.0</version>
+						<executions>
+							<execution>
+								<id>attach-javadocs</id>
+								<phase>package</phase>
+								<goals>
+									<goal>jar</goal>
+								</goals>
+							</execution>
+						</executions>
+						<configuration>
+							<doclint>none</doclint>
+							<failOnError>false</failOnError>
+							<quiet>true</quiet>
+						</configuration>
+					</plugin>
+					<!-- 3. .asc PGP signatures for every artifact. Requires a signing key:
+					     set gpg.keyname + passphrase (gpg-agent or -Dgpg.passphrase) and
+					     publish the public key to a keyserver. -->
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-gpg-plugin</artifactId>
+						<version>3.2.7</version>
+						<executions>
+							<execution>
+								<id>sign-artifacts</id>
+								<phase>verify</phase>
+								<goals>
+									<goal>sign</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 </project>
