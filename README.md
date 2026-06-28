@@ -10,7 +10,7 @@
 [![Scanner](https://img.shields.io/badge/scanner_WIP-0-success)](#migration-status)
 [![C%2B%2B%20pin](https://img.shields.io/badge/C%2B%2B%20pin-v1.42.1-informational)](#ground-truth)
 [![License](https://img.shields.io/badge/license-BSD-green)](#license)
-[![Sister project: pquantlib](https://img.shields.io/badge/sister%20project-pquantlib-3776AB?logo=python&logoColor=white)](https://github.com/jlmoya/pquantlib)
+[![Sister project: pquantlib](https://img.shields.io/badge/sister%20project-pquantlib-3776AB?logo=python&logoColor=white)](#sister-project)
 
 ---
 
