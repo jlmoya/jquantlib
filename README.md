@@ -20,6 +20,17 @@ JQuantLib provides Java developers and quants with the mathematical, statistical
 
 The original Java port began ~2007, stalled in 2021, and is now being **revived as a multi-phase, precision-first migration from C++ QuantLib v1.42.1**.
 
+## Sister project
+
+**PQuantLib** is the **Python sibling of JQuantLib** — a 100%-Python port of the same C++ QuantLib v1.42.1, [released on PyPI](https://pypi.org/project/pquantlib/) (repo: [`jlmoya/pquantlib`](https://github.com/jlmoya/pquantlib)). Both projects:
+
+- Pin the same C++ ground truth (`v1.42.1` @ `099987f0`)
+- Use the same migration patterns (subagent-driven, worktree-parallel, tier-stratified tolerances, probe-based cross-validation, direct-to-main per cluster)
+- Share the same `migration-harness/` design (C++ submodule + probe directory + JSON reference values)
+- Pass the same test-suite scope (faithful ports of C++ `test-suite/*.cpp` files)
+
+The two projects are independent but borrow heavily from each other's plans; a bug surfaced in one port is checked in the other.
+
 ## Project posture (2026-04 → present)
 
 This is not a maintenance branch. It is a **systematic, full-fidelity port** with five operating principles:
