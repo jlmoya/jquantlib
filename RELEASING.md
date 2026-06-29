@@ -75,11 +75,10 @@ Provide the passphrase to the build via `gpg-agent`, or `-Dgpg.passphrase=…`, 
 non-interactive shell you may also need `-Dgpg.gpgArguments=--pinentry-mode,loopback` (or the
 equivalent `<gpgArguments>` in the plugin config).
 
-### 4. Add the Central publishing plugin
+### 4. Central publishing plugin — DONE ✅
 
-Your current `deploy` goes to the **internal Nexus** via `nexus-staging`. To upload to
-**Central** instead, add this to the `release` profile's `<build><plugins>` in
-`jquantlib/pom.xml` (check for the latest plugin version):
+The `central-publishing-maven-plugin` (0.7.0) is wired into the `release` profile in
+`jquantlib/pom.xml`:
 
 ```xml
 <plugin>
@@ -94,11 +93,11 @@ Your current `deploy` goes to the **internal Nexus** via `nexus-staging`. To upl
 </plugin>
 ```
 
-Because the parent disables the default `maven-deploy-plugin` (`skip=true`) and the
-`jquantlib` module wires `nexus-staging` for the internal Nexus, the cleanest path is to run
-the Central deploy **scoped to the `jquantlib` module with `-Prelease`**, and keep the
-internal `mvn deploy` separate. (If both deploy mechanisms fire in one run, set
-`-Dmaven.deploy.skip=true` / disable the staging execution so only the Central plugin uploads.)
+Under `-Prelease` the internal-Nexus deploy is also disabled — the same profile sets
+`<skipNexusStagingDeployMojo>true</skipNexusStagingDeployMojo>` on `nexus-staging` — so a
+release publishes to Central **only**. A plain `mvn deploy` (no `-Prelease`) still targets the
+internal Nexus as before. Verified: `mvn -pl jquantlib -Prelease validate` resolves and loads
+the plugin (BUILD SUCCESS); the actual upload just needs the `central` token + GPG key (below).
 
 ---
 
@@ -120,10 +119,10 @@ artifacts appear on Central and sync to `search.maven.org` (can take a little wh
 
 ## Pre-flight checklist
 
-- [ ] Namespace chosen and **verified** on the Central Portal
+- [x] Namespace verified — `cc.sosonline` (via the `sosonline.cc` domain)
 - [ ] `central` server token in `~/.m2/settings.xml`
 - [ ] GPG key generated and **public key published** to a keyserver
-- [ ] `central-publishing-maven-plugin` added to the `release` profile
+- [x] `central-publishing-maven-plugin` added to the `release` profile
 - [ ] `mvn -pl jquantlib -Prelease clean verify` produces jars + `.asc` + checksums
 - [ ] `mvn -pl jquantlib -Prelease clean deploy` → bundle accepted by the Portal
 - [ ] (if `autoPublish=false`) clicked **Publish** on the Portal

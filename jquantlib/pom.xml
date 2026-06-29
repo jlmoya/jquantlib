@@ -179,6 +179,29 @@
 							</execution>
 						</executions>
 					</plugin>
+					<!-- 4. Upload the signed bundle to the Central Portal. Needs a `central`
+					     server (Portal user token) in ~/.m2/settings.xml. autoPublish=false
+					     stages the bundle for a manual Publish click on the Portal. -->
+					<plugin>
+						<groupId>org.sonatype.central</groupId>
+						<artifactId>central-publishing-maven-plugin</artifactId>
+						<version>0.7.0</version>
+						<extensions>true</extensions>
+						<configuration>
+							<publishingServerId>central</publishingServerId>
+							<autoPublish>false</autoPublish>
+						</configuration>
+					</plugin>
+					<!-- 5. Under -Prelease the deploy goes to Central (above), not the internal
+					     Nexus, so skip the nexus-staging deploy. A plain `mvn deploy` (no -Prelease)
+					     still publishes to the internal Nexus as before. -->
+					<plugin>
+						<groupId>org.sonatype.plugins</groupId>
+						<artifactId>nexus-staging-maven-plugin</artifactId>
+						<configuration>
+							<skipNexusStagingDeployMojo>true</skipNexusStagingDeployMojo>
+						</configuration>
+					</plugin>
 				</plugins>
 			</build>
 		</profile>
