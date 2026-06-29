@@ -1,7 +1,7 @@
 # Releasing JQuantLib to Maven Central
 
-Runbook for publishing `org.jquantlib:jquantlib:<version>` to **Maven Central** via the
-[Central Portal](https://central.sonatype.com) (the system that replaced OSSRH).
+Runbook for publishing `cc.sosonline.jquantlib:jquantlib:<version>` to **Maven Central** via
+the [Central Portal](https://central.sonatype.com) (the system that replaced OSSRH).
 
 Only the `jquantlib` library module is published to Central. The reactor parent and the
 `-contrib` / `-helpers` / `-samples` / `-showcase` modules continue to deploy to the
@@ -36,18 +36,16 @@ mvn -pl jquantlib -Prelease -DskipTests clean package
 
 ## What's left — requires your decisions / secrets
 
-### 1. Choose the groupId namespace — DECISION REQUIRED
+### 1. groupId namespace — DONE ✅
 
-Central will only accept a deployment under a namespace you have **verified ownership of**.
+The reactor groupId is **`cc.sosonline.jquantlib`** — a sub-namespace of **`cc.sosonline`**,
+verified on the Central Portal via the **`sosonline.cc`** domain. All six POMs were updated
+(the parent groupId, every module's `<parent>` reference, and all inter-module dependency
+coordinates), so the published library coordinate is
+**`cc.sosonline.jquantlib:jquantlib:1.42.1`**.
 
-| Option | How it's verified | Change to the repo |
-|--------|-------------------|--------------------|
-| **`org.jquantlib`** (current) | Prove control of the **`jquantlib.org`** domain — add a TXT DNS record the Portal gives you | none — keep current coordinates |
-| **`io.github.jlmoya`** | Instant, via your GitHub account — the Portal has you create a short-lived public repo named with the verification code it shows you | change the groupId in the POMs |
-
-**If you do not control `jquantlib.org`, use `io.github.jlmoya`.** Switching means changing
-`<groupId>` in the parent `pom.xml` and reconciling the `jquantlib.version` property +
-inter-module dependency coordinates — a one-pass edit I can do on request.
+Only the Maven **groupId** changed — the Java packages remain `org.jquantlib.*` (renaming
+those is an unrelated, much larger change that Central does not require).
 
 ### 2. Central Portal account + publishing token
 

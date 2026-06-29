@@ -17,7 +17,7 @@
         <relativePath/>
     </parent>
 
-    <groupId>org.jquantlib</groupId>
+    <groupId>cc.sosonline.jquantlib</groupId>
     <artifactId>jquantlib-showcase</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
@@ -68,21 +68,21 @@
 
         <!-- The library under showcase. -->
         <dependency>
-            <groupId>org.jquantlib</groupId>
+            <groupId>cc.sosonline.jquantlib</groupId>
             <artifactId>jquantlib</artifactId>
             <version>${jquantlib.version}</version>
         </dependency>
 
         <!-- The bundled example programs, surfaced live in the "Sample Programs" demo. -->
         <dependency>
-            <groupId>org.jquantlib</groupId>
+            <groupId>cc.sosonline.jquantlib</groupId>
             <artifactId>jquantlib-samples</artifactId>
             <version>${jquantlib.companion.version}</version>
         </dependency>
 
         <!-- Discrete-dividend option helpers (CRR/FD American & European), used by the Dividend Options demo. -->
         <dependency>
-            <groupId>org.jquantlib</groupId>
+            <groupId>cc.sosonline.jquantlib</groupId>
             <artifactId>jquantlib-helpers</artifactId>
             <version>${jquantlib.companion.version}</version>
         </dependency>

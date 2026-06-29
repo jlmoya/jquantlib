@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     
     <parent>
-        <groupId>org.jquantlib</groupId>
+        <groupId>cc.sosonline.jquantlib</groupId>
         <artifactId>jquantlib-parent</artifactId>
         <version>1.0.0</version>
         <relativePath>..</relativePath>
@@ -16,7 +16,7 @@
     
     <dependencies>
         <dependency>
-            <groupId>org.jquantlib</groupId>
+            <groupId>cc.sosonline.jquantlib</groupId>
             <artifactId>jquantlib</artifactId>
             <version>${jquantlib.version}</version>
         </dependency>

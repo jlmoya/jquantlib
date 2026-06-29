@@ -4,7 +4,7 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.jquantlib</groupId>
+    <groupId>cc.sosonline.jquantlib</groupId>
     <artifactId>jquantlib-parent</artifactId>
     <version>1.0.0</version>
     <packaging>pom</packaging>
@@ -31,7 +31,7 @@
         <jfreechart.version>1.5.6</jfreechart.version>
         <jcommon.version>1.0.24</jcommon.version>
         <!--
-          Version of the org.jquantlib:jquantlib library artifact. It is pinned to the
+          Version of the cc.sosonline.jquantlib:jquantlib library artifact. It is pinned to the
           C++ QuantLib release the port targets (v1.42.1), and is therefore decoupled
           from the reactor/project version (1.0.0). The jquantlib module declares this
           same version directly; keep the two in sync. jquantlib-contrib/-helpers/-samples
