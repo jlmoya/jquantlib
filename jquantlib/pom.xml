@@ -68,6 +68,7 @@
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
+			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.json</groupId>
@@ -125,6 +126,34 @@
 			<id>release</id>
 			<build>
 				<plugins>
+					<!-- 0. Flatten the POM for Central: resolve inherited dependency versions,
+					     inline groupId/version, and remove the <parent> so the published pom is
+					     self-contained (the reactor parent is NOT published to Central). ossrh
+					     mode keeps the required name/description/url/licenses/developers/scm. -->
+					<plugin>
+						<groupId>org.codehaus.mojo</groupId>
+						<artifactId>flatten-maven-plugin</artifactId>
+						<version>1.6.0</version>
+						<configuration>
+							<flattenMode>ossrh</flattenMode>
+						</configuration>
+						<executions>
+							<execution>
+								<id>flatten</id>
+								<phase>process-resources</phase>
+								<goals>
+									<goal>flatten</goal>
+								</goals>
+							</execution>
+							<execution>
+								<id>flatten-clean</id>
+								<phase>clean</phase>
+								<goals>
+									<goal>clean</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
 					<!-- 1. -sources.jar -->
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
