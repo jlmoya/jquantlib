@@ -2,6 +2,7 @@
 
 > A pure-Java port of [QuantLib](https://www.quantlib.org/) — the de-facto open-source library for quantitative finance — being systematically rebuilt from C++ v1.42.1 with tier-stratified, cross-validated precision (EXACT / TIGHT / LOOSE) against the pinned C++ source.
 
+[![Maven Central](https://img.shields.io/maven-central/v/cc.sosonline.jquantlib/jquantlib)](https://central.sonatype.com/artifact/cc.sosonline.jquantlib/jquantlib)
 [![Tag](https://img.shields.io/badge/tag-cpp--surface--functional--coverage-brightgreen)](#migration-status)
 [![Tests](https://img.shields.io/badge/tests-3721%20%2F%200%20fail-success)](#migration-status)
 [![C%2B%2B%20surface](https://img.shields.io/badge/C%2B%2B%20v1.42.1%20surface-100%25%20accounted-success)](#migration-status)
@@ -11,6 +12,21 @@
 [![C%2B%2B%20pin](https://img.shields.io/badge/C%2B%2B%20pin-v1.42.1-informational)](#ground-truth)
 [![License](https://img.shields.io/badge/license-BSD-green)](#license)
 [![Sister project: pquantlib](https://img.shields.io/badge/sister%20project-pquantlib-3776AB?logo=python&logoColor=white)](#sister-project)
+
+> [!TIP]
+> **📦 Released — JQuantLib `1.42.1` is on [Maven Central](https://central.sonatype.com/artifact/cc.sosonline.jquantlib/jquantlib).**
+> Add it to any Java&nbsp;≥&nbsp;25 project:
+>
+> ```xml
+> <dependency>
+>     <groupId>cc.sosonline.jquantlib</groupId>
+>     <artifactId>jquantlib</artifactId>
+>     <version>1.42.1</version>
+> </dependency>
+> ```
+>
+> Gradle: `implementation("cc.sosonline.jquantlib:jquantlib:1.42.1")`. The version tracks the
+> C++ QuantLib release the port targets. The publish process is documented in [RELEASING.md](RELEASING.md).
 
 ---
 
@@ -319,7 +335,7 @@ so it runs fully offline. Full demo list and architecture:
 | Module | Role |
 |--------|------|
 | `jquantlib-parent` | Root parent POM + aggregator (lives at the repo root) |
-| `jquantlib` | Main module — actively being ported (mirrors QuantLib/C++) |
+| `jquantlib` | Main module — the library itself (mirrors QuantLib/C++). Published to Maven Central as [`cc.sosonline.jquantlib:jquantlib:1.42.1`](https://central.sonatype.com/artifact/cc.sosonline.jquantlib/jquantlib) |
 | `jquantlib-helpers` | Helper classes |
 | `jquantlib-contrib` | Third-party contributions |
 | `jquantlib-samples` | Sample code |
