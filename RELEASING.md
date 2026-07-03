@@ -103,26 +103,50 @@ the plugin (BUILD SUCCESS); the actual upload just needs the `central` token + G
 
 ## Publishing
 
+Run from a real terminal (GPG needs a TTY for the passphrase prompt):
+
 ```bash
-# Dry run — build, sign, and inspect the bundle locally (needs the GPG key):
-mvn -pl jquantlib -Prelease clean verify
+cd /Users/josemoya/Projects/IdeaProjects/jquantlib
+export GPG_TTY=$(tty)          # REQUIRED — without it gpg dies with "Inappropriate ioctl for device"
+rm -rf jquantlib/target        # instead of `clean` (the parent's ancient clean-plugin 2.1 is flaky)
+
+# Dry run — build, sign, inspect the bundle locally (no upload):
+mvn -pl jquantlib -Prelease verify
 
 # Publish to the Central Portal:
-mvn -pl jquantlib -Prelease clean deploy
+mvn -pl jquantlib -Prelease deploy
 ```
 
 With `autoPublish=false` the bundle is **staged** on the Portal for you to review and click
 **Publish**; with `true` it releases automatically once validation passes. After release,
-artifacts appear on Central and sync to `search.maven.org` (can take a little while).
+artifacts appear on Central within minutes and sync to `search.maven.org` after indexing.
+
+### Gotchas hit on the first release (1.42.1, 2026-07-03) — all fixed in the POM
+
+1. **`gpg: signing failed: Inappropriate ioctl for device`** — gpg couldn't find the terminal
+   for the passphrase prompt. Fix: `export GPG_TTY=$(tty)` in the same shell as `mvn`
+   (or install `pinentry-mac`).
+2. **Portal rejected the POM** ("Dependency version information is missing", "Failed to get
+   coordinates") — the published pom inherited groupId/versions from the *unpublished* reactor
+   parent. Fix: `flatten-maven-plugin` (`flattenMode=ossrh`) in the release profile publishes a
+   self-contained pom. (Also: junit was missing `<scope>test</scope>` and would have leaked
+   into consumers' compile classpaths.)
+3. **`Unrecognized field "warnings"` crash after a successful upload** — the Portal API added a
+   `warnings` response field that `central-publishing-maven-plugin` 0.7.0 can't parse. The
+   deployment itself was fine (VALIDATED on the Portal). Fix: plugin bumped to 0.11.0.
 
 ---
 
 ## Pre-flight checklist
 
 - [x] Namespace verified — `cc.sosonline` (via the `sosonline.cc` domain)
-- [ ] `central` server token in `~/.m2/settings.xml`
-- [ ] GPG key generated and **public key published** to a keyserver
+- [x] `central` server token in `~/.m2/settings.xml`
+- [x] GPG key generated and **public key published** to a keyserver
+      (RSA 4096, `AE9F9B287616D20911CC9DFB6910857807F21D2C`, keyserver.ubuntu.com)
 - [x] `central-publishing-maven-plugin` added to the `release` profile
-- [ ] `mvn -pl jquantlib -Prelease clean verify` produces jars + `.asc` + checksums
-- [ ] `mvn -pl jquantlib -Prelease clean deploy` → bundle accepted by the Portal
-- [ ] (if `autoPublish=false`) clicked **Publish** on the Portal
+- [x] `mvn -pl jquantlib -Prelease verify` produces jars + `.asc` + checksums
+- [x] `mvn -pl jquantlib -Prelease deploy` → bundle accepted by the Portal
+- [x] clicked **Publish** on the Portal
+
+**First release published: `cc.sosonline.jquantlib:jquantlib:1.42.1` — deployment
+`7f39706e-491e-4112-be75-87d706e41bac`, VALIDATED → Published 2026-07-03.**
