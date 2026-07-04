@@ -150,3 +150,33 @@ artifacts appear on Central within minutes and sync to `search.maven.org` after 
 
 **First release published: `cc.sosonline.jquantlib:jquantlib:1.42.1` — deployment
 `7f39706e-491e-4112-be75-87d706e41bac`, VALIDATED → Published 2026-07-03.**
+
+---
+
+## After publishing — Portal indicators (expected behavior for every new release)
+
+The component page on central.sonatype.com shows two indicators that look alarming right
+after a publish but are **pending-by-design for new artifacts**. Neither affects Maven
+Central availability — the artifact is live and resolvable the moment publishing completes
+(clean-room verified for 1.42.1).
+
+- **"Policy Non-Compliant"** — Sonatype's reference *Integrity-Rating policy* treats a
+  Release Integrity rating of **Pending** as a violation, and every newly published
+  component starts at Pending until their ML-based release-integrity evaluation completes.
+  It flips to compliant on its own (hours to a few days; first-time publishers take
+  longest). Only practical effect meanwhile: organizations running Sonatype
+  Firewall/Lifecycle in policy-compliant-selection mode defer auto-adopting the version.
+  If it is still non-compliant after ~a week, or the chip's detail view names a policy
+  other than Integrity-Rating, investigate / contact Central support.
+
+- **"Developer Trust Score" unavailable** — the DTS (0–100) is computed from five signals:
+  Security, Popularity, Age, Release Stability, Dependency Risk. It appears only after
+  Sonatype's data pipeline evaluates the component and some download history accrues
+  (days; the Portal API shows `qualityScore: null` until then). Nothing to submit or
+  configure. Long-term levers: keep the runtime dependency tree lean (currently just
+  `slf4j-api` — excellent), patch promptly if a CVE ever lands, publish stable releases
+  (no publish-then-hotfix churn), and keep versions tracking upstream QuantLib releases
+  so the component stays fresh.
+
+References: help.sonatype.com → *Release Integrity*, *Policy Constraints*;
+central.sonatype.org → *Sonatype Safety Rating FAQ*.
