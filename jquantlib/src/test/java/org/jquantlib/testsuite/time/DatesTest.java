@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashSet;
 import java.util.List;
+import java.util.TimeZone;
 
 import org.jquantlib.QL;
 import org.jquantlib.daycounters.DayCounter;
@@ -283,7 +284,10 @@ public class DatesTest {
             int day   = jqlDate.dayOfMonth();
             int month = jqlDate.month().value();
             int year  = jqlDate.year();
-            Calendar c = Calendar.getInstance();
+            // The documented conversion convention pins a civil date to 00:00 UTC, so the
+            // instant must be read back in UTC (a default-zone read is off by one day on
+            // one side of UTC or the other).
+            Calendar c = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
             c.setTime(isoDate);
             int jday = c.get(Calendar.DAY_OF_MONTH);
             int jmonth = c.get(Calendar.MONTH);
@@ -316,8 +320,9 @@ public class DatesTest {
         
         boolean success = true;
         for (;;) {
-            
-            Calendar c = Calendar.getInstance();
+
+            // Read in UTC — the fixed conversion convention (see Date(java.util.Date)).
+            Calendar c = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
             c.setTime(javaDate);
             int jday = c.get(Calendar.DAY_OF_MONTH);
             int jmonth = c.get(Calendar.MONTH);

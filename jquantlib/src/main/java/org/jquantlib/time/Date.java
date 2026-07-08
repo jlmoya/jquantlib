@@ -33,6 +33,7 @@ import java.util.Calendar;
 import java.util.Formatter;
 import java.util.List;
 import java.util.Locale;
+import java.util.TimeZone;
 
 /**
  * Date class to represent time in days.
@@ -351,14 +352,17 @@ public class Date implements Observable, Comparable< Date >, Serializable, Clone
     /**
      * Allows interoperability with JDK Date
      * <p>
-     * <b>NOTE</b>: Both java.util.Date and JQuantLib Date do not support time zones or high precision clocks.
-     * In other words, a day <i>always</i> has exactly 84,600 seconds, or 84,600,000 milliseconds.
+     * <b>NOTE</b>: a JQuantLib Date is a plain civil date with no time-zone notion. The
+     * conversion convention is pinned to UTC: the JDK Date instant's civil day is taken
+     * in UTC — the exact inverse of {@link #isoDate()}/{@link #longDate()}, which map a
+     * civil date to 00:00 UTC. This keeps conversions independent of the host time zone
+     * and round-trip exact. (Reading in the default zone made round-trips off-by-one-day
+     * on one side of UTC or the other.)
      *
      * @author Richard Gomes
      */
     public Date(final java.util.Date date) {
-        //    	this(25569+(date.getTime()/86400000L));
-        final Calendar c = Calendar.getInstance();
+        final Calendar c = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
         c.setTime(date);
         final int d = c.get(Calendar.DAY_OF_MONTH);
         final int m = c.get(Calendar.MONTH);
@@ -1365,7 +1369,11 @@ public class Date implements Observable, Comparable< Date >, Serializable, Clone
         private static final long serialVersionUID = 4824909887446169897L;
 
         private ISODate() {
-            super((serialNumber - 25568) * 86400000L);
+            // 25569 = Excel serial of 1970-01-01, i.e. this civil date at 00:00 UTC —
+            // the same instant LongDate/ShortDate use. The previous 25568 offset pinned
+            // the NEXT day's midnight UTC, which only read back as the intended day in
+            // zones west of UTC (and was one day off in UTC and east of it).
+            super((serialNumber - 25569) * 86400000L);
         }
 
         @Override
@@ -1375,10 +1383,7 @@ public class Date implements Observable, Comparable< Date >, Serializable, Clone
             else {
                 final StringBuilder sb = new StringBuilder();
                 final Formatter formatter = new Formatter(sb, Locale.US);
-                final Calendar c = Calendar.getInstance();
-                c.setTime(this);
-                formatter.format("%04d-%02d-%02d", c.get(Calendar.YEAR), c.get(Calendar.MONTH) + 1,
-                        c.get(Calendar.DAY_OF_MONTH));
+                formatter.format("%04d-%02d-%02d", year(), month().value(), dayOfMonth());
                 return sb.toString();
             }
         }
