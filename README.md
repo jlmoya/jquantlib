@@ -14,19 +14,21 @@
 [![Sister project: pquantlib](https://img.shields.io/badge/sister%20project-pquantlib-3776AB?logo=python&logoColor=white)](#sister-project)
 
 > [!TIP]
-> **📦 Released — JQuantLib `1.42.1` is on [Maven Central](https://central.sonatype.com/artifact/cc.sosonline.jquantlib/jquantlib).**
+> **📦 Released — JQuantLib `1.42.1.1` is on [Maven Central](https://central.sonatype.com/artifact/cc.sosonline.jquantlib/jquantlib).**
 > Add it to any Java&nbsp;≥&nbsp;25 project:
 >
 > ```xml
 > <dependency>
 >     <groupId>cc.sosonline.jquantlib</groupId>
 >     <artifactId>jquantlib</artifactId>
->     <version>1.42.1</version>
+>     <version>1.42.1.1</version>
 > </dependency>
 > ```
 >
-> Gradle: `implementation("cc.sosonline.jquantlib:jquantlib:1.42.1")`. The version tracks the
-> C++ QuantLib release the port targets. The publish process is documented in [RELEASING.md](RELEASING.md).
+> Gradle: `implementation("cc.sosonline.jquantlib:jquantlib:1.42.1.1")`. Versioning: the first
+> three segments track the C++ QuantLib release the port targets; the fourth is the Java-port
+> revision (fixes between upstream releases). The publish process is documented in
+> [RELEASING.md](RELEASING.md).
 
 ---
 
@@ -335,7 +337,7 @@ so it runs fully offline. Full demo list and architecture:
 | Module | Role |
 |--------|------|
 | `jquantlib-parent` | Root parent POM + aggregator (lives at the repo root) |
-| `jquantlib` | Main module — the library itself (mirrors QuantLib/C++). Published to Maven Central as [`cc.sosonline.jquantlib:jquantlib:1.42.1`](https://central.sonatype.com/artifact/cc.sosonline.jquantlib/jquantlib) |
+| `jquantlib` | Main module — the library itself (mirrors QuantLib/C++). Published to Maven Central as [`cc.sosonline.jquantlib:jquantlib`](https://central.sonatype.com/artifact/cc.sosonline.jquantlib/jquantlib) |
 | `jquantlib-helpers` | Helper classes |
 | `jquantlib-contrib` | Third-party contributions |
 | `jquantlib-samples` | Sample code |

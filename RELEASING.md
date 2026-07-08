@@ -10,6 +10,27 @@ Central release.
 
 ---
 
+## Versioning scheme
+
+`<C++ major>.<C++ minor>.<C++ patch>.<port revision>` — sqlite-jdbc style (upstream
+SQLite 3.49.1 → driver `3.49.1.0`):
+
+- The **first three segments** are the C++ QuantLib release the port targets and
+  cross-validates against (currently `1.42.1`).
+- The **fourth segment** is the **Java-port revision**: bumped for port-level fixes
+  between upstream releases, since Central versions are immutable and the first three
+  segments must not move ahead of upstream. The original `1.42.1` release is implicitly
+  revision 0; the first port fix ships as `1.42.1.1`.
+- When the port moves to a new C++ release, the fourth segment resets (e.g. `1.43.0.0`
+  or plain `1.43.0`). Maven orders all of these correctly:
+  `1.42.1 < 1.42.1.1 < 1.43.0`.
+
+The version lives in **three synced places** — `jquantlib/pom.xml` (`<version>`), the
+reactor parent's `jquantlib.version` property, and the showcase's `jquantlib.version`
+property. Bump all three together.
+
+---
+
 ## Status — what's already wired (commit `f6521e0f`)
 
 Items 1–4 of the release-readiness audit are done:

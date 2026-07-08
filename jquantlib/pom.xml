@@ -12,12 +12,14 @@
 
 	<artifactId>jquantlib</artifactId>
 	<!--
-	  Pinned to the C++ QuantLib release this port targets (v1.42.1), and therefore
-	  decoupled from the reactor/project version (1.0.0). The parent's jquantlib.version
-	  property is set to this same value so jquantlib-contrib/-helpers/-samples depend
-	  on exactly this version; keep the two in sync.
+	  Versioning scheme (sqlite-jdbc style): the FIRST THREE segments are the C++
+	  QuantLib release this port targets (1.42.1); the FOURTH segment is the Java-port
+	  revision, bumped for port-level fixes between upstream releases (Central versions
+	  are immutable). The published 1.42.1 is implicitly revision 0. Decoupled from the
+	  reactor/project version (1.0.0). The parent's jquantlib.version property and the
+	  showcase's jquantlib.version property carry this same value; keep the three in sync.
 	-->
-	<version>1.42.1</version>
+	<version>1.42.1.1</version>
 
 	<!-- Maven Central requires name, description, url, licenses, developers, scm. -->
 	<name>JQuantLib</name>

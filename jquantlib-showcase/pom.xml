@@ -26,8 +26,10 @@
 
     <properties>
         <java.version>25</java.version>
-        <!-- The core library is pinned to the C++ QuantLib release it targets (v1.42.1). -->
-        <jquantlib.version>1.42.1</jquantlib.version>
+        <!-- The core library version: first three segments = the C++ QuantLib release it
+             targets (1.42.1); fourth = the Java-port revision. Keep in sync with
+             jquantlib/pom.xml and the reactor parent's jquantlib.version. -->
+        <jquantlib.version>1.42.1.1</jquantlib.version>
         <!-- The companion modules (samples, helpers) track the reactor version (1.0.0). -->
         <jquantlib.companion.version>1.0.0</jquantlib.companion.version>
         <!--

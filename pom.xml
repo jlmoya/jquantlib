@@ -31,13 +31,15 @@
         <jfreechart.version>1.5.6</jfreechart.version>
         <jcommon.version>1.0.24</jcommon.version>
         <!--
-          Version of the cc.sosonline.jquantlib:jquantlib library artifact. It is pinned to the
-          C++ QuantLib release the port targets (v1.42.1), and is therefore decoupled
-          from the reactor/project version (1.0.0). The jquantlib module declares this
-          same version directly; keep the two in sync. jquantlib-contrib/-helpers/-samples
-          consume it via this property.
+          Version of the cc.sosonline.jquantlib:jquantlib library artifact. Scheme: the
+          first THREE segments are the C++ QuantLib release the port targets (1.42.1);
+          the FOURTH is the Java-port revision for port-level fixes between upstream
+          releases (Central versions are immutable). Decoupled from the reactor/project
+          version (1.0.0). The jquantlib module declares this same version directly and
+          the showcase re-declares it; keep the three in sync.
+          jquantlib-contrib/-helpers/-samples consume it via this property.
         -->
-        <jquantlib.version>1.42.1</jquantlib.version>
+        <jquantlib.version>1.42.1.1</jquantlib.version>
         <maven.versions.plugin>2.8.1</maven.versions.plugin>
         <maven.enforcer.plugin>3.0.0-M3</maven.enforcer.plugin>
         <maven.clean.plugin>2.1</maven.clean.plugin>
