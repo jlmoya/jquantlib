@@ -169,8 +169,14 @@ artifacts appear on Central within minutes and sync to `search.maven.org` after 
 - [x] `mvn -pl jquantlib -Prelease deploy` → bundle accepted by the Portal
 - [x] clicked **Publish** on the Portal
 
-**First release published: `cc.sosonline.jquantlib:jquantlib:1.42.1` — deployment
-`7f39706e-491e-4112-be75-87d706e41bac`, VALIDATED → Published 2026-07-03.**
+## Release history
+
+- **`1.42.1`** — first release. Deployment `7f39706e-491e-4112-be75-87d706e41bac`,
+  VALIDATED → Published 2026-07-03. Known issue: `Date.isoDate()` returns the wrong
+  civil day on UTC-and-east hosts (fixed in 1.42.1.1).
+- **`1.42.1.1`** — first Java-port revision. Ships the UTC-pinned `java.util.Date`
+  conversion fix (`01b0d8c0`). Deployment `4e09798e-a3dc-4b62-8657-62cac138e890`,
+  VALIDATED → Published 2026-07-07; clean-room-verified live on repo1.
 
 ---
 
