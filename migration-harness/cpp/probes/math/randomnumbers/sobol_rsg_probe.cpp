@@ -70,9 +70,18 @@ int main() {
     ReferenceWriter out("math/randomnumbers/sobol_rsg", QL_VERSION,
                         "sobol_rsg_probe");
 
-    // ----- (1) Jaeckel dim=33, first 15 samples -----
+    // ----- (1) Jaeckel dim=32, first 15 samples -----
+    // dim MUST NOT exceed 32: Jaeckel tabulates initialization numbers up to
+    // dimension 32 only (Monte Carlo Methods in Finance, section 8.3), so
+    // SobolRsg's maxTabulated is 32 for this direction-integer set. Beyond it,
+    // QuantLib falls back to randomly-generated direction integers seeded by
+    // MersenneTwisterUniformRng(seed) — and seed 0 means "entropy-seeded" (see
+    // mt19937uniformrng.cpp: `seed != 0 ? seed : SeedGenerator::instance().get()`).
+    // This case previously used dim=33, so the 33rd dimension was random on every
+    // run and this reference file changed on every regeneration. dim=32 exercises
+    // the full tabulated Jaeckel table and is reproducible.
     {
-        const Size dim = 33;
+        const Size dim = 32;
         const int N = 15;
         SobolRsg rsg(dim, 0UL, SobolRsg::Jaeckel, /*useGrayCode*/ true);
         json sequence = json::array();
@@ -82,7 +91,7 @@ int main() {
             for (Size d = 0; d < dim; ++d) row.push_back(s.value[d]);
             sequence.push_back(row);
         }
-        out.addCase("jaeckel_dim33_first15",
+        out.addCase("jaeckel_dim32_first15",
                     json{{"dimensionality", dim}, {"count", N},
                          {"directionIntegers", "Jaeckel"},
                          {"useGrayCode", true}},
