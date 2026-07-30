@@ -74,7 +74,7 @@ int main() {
     // Java YYUKRPI default; mirrors the Phase 2r probe pattern for
     // inflation_cap_floor_engines_probe so Java reproduces the result).
     ext::shared_ptr<YoYInflationIndex> yyIndex(
-        new YoYInflationIndex("YY_RPI", UKRegion(), false, false,
+        new YoYInflationIndex("YY_RPI", UKRegion(), false,
                               Monthly, Period(2, Months),
                               GBPCurrency(), ts));
 

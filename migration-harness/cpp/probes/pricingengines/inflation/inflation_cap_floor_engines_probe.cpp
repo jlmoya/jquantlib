@@ -71,7 +71,7 @@ int main() {
 
     QL_DEPRECATED_DISABLE_WARNING
     auto yyIndex = ext::make_shared<YoYInflationIndex>(
-        "YY_RPI", UKRegion(), false, false, Monthly,
+        "YY_RPI", UKRegion(), false, Monthly,
         Period(2, Months), GBPCurrency(),
         Handle<YoYInflationTermStructure>(yoyCurve));
     QL_DEPRECATED_ENABLE_WARNING

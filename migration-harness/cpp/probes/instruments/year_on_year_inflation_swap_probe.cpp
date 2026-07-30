@@ -99,7 +99,6 @@ int main() {
         "YY_RPI",
         UKRegion(),
         false,                      // revised
-        false,                      // interpolated
         Monthly,
         Period(2, Months),
         GBPCurrency(),
