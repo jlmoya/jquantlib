@@ -10,7 +10,7 @@ public class ReferenceReaderTest {
     public void loadsSmokeTestReference() {
         final ReferenceReader ref = ReferenceReader.load("_smoke_test");
         assertEquals("_smoke_test", ref.testGroup());
-        assertEquals("1.42.1", ref.cppVersion());
+        assertEquals("1.43", ref.cppVersion());
         assertEquals("_smoke_test_probe", ref.generatedBy());
         assertTrue(ref.caseNames().contains("qlVersion"));
         assertTrue(ref.caseNames().contains("epochSerial"));
@@ -19,7 +19,7 @@ public class ReferenceReaderTest {
     @Test
     public void smokeTestCaseExpectedValues() {
         final ReferenceReader ref = ReferenceReader.load("_smoke_test");
-        assertEquals("1.42.1", ref.getCase("qlVersion").expectedString());
+        assertEquals("1.43", ref.getCase("qlVersion").expectedString());
         // The exact epoch serial is QuantLib's internal convention; we just
         // assert it's a positive integer reasonable for 1-Jan-1901.
         final long serial = ref.getCase("epochSerial").expectedLong();
