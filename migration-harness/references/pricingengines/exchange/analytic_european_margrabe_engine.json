@@ -277,9 +277,9 @@
       "name": "div_q5_q1_v20_rho50_T1"
     }
   ],
-  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
-  "cpp_version": "1.42.1",
-  "generated_at": "2026-05-09T23:04:25Z",
+  "cpp_commit": "6b57206e04598f092efee66e3b367efc84771995",
+  "cpp_version": "1.43",
+  "generated_at": "2026-07-29T16:03:49Z",
   "generated_by": "analytic_european_margrabe_engine_probe",
   "test_group": "pricingengines/exchange/analytic_european_margrabe_engine"
 }

@@ -50,8 +50,8 @@
               "date": "2025-10-01",
               "serial": 45931
             },
-            "amount": 9340.428695890025,
-            "contribution": 9332.064975325795,
+            "amount": 9340.428695890247,
+            "contribution": 9332.064975326017,
             "discount": 0.9991045678055537,
             "fixingDates_first": {
               "date": "2025-10-01",
@@ -67,7 +67,7 @@
               "date": "2026-01-02",
               "serial": 46024
             },
-            "rate": 0.0361564981776388,
+            "rate": 0.036156498177639655,
             "valueDate_first": {
               "date": "2025-10-01",
               "serial": 45931
@@ -152,9 +152,9 @@
             }
           }
         ],
-        "diff_vs_cpp": 0.0,
+        "diff_vs_cpp": 2.255546860396862e-10,
         "legSize": 4,
-        "npv": 34883.94966975626,
+        "npv": 34883.94966975648,
         "npv_cpp_hardcoded": 34883.94966975626
       },
       "inputs": {
@@ -173,9 +173,9 @@
       "name": "compound_lockout3_telescopic"
     }
   ],
-  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
-  "cpp_version": "1.42.1",
-  "generated_at": "2026-05-18T11:42:26Z",
+  "cpp_commit": "6b57206e04598f092efee66e3b367efc84771995",
+  "cpp_version": "1.43",
+  "generated_at": "2026-07-29T16:04:17Z",
   "generated_by": "oiscoupon_lockout_legnpv_probe",
   "test_group": "cashflows/oiscoupon_lockout_legnpv"
 }

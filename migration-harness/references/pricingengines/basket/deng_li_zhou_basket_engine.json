@@ -77,9 +77,9 @@
       "name": "negativeStrike"
     }
   ],
-  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
-  "cpp_version": "1.42.1",
-  "generated_at": "2026-05-17T06:41:32Z",
+  "cpp_commit": "6b57206e04598f092efee66e3b367efc84771995",
+  "cpp_version": "1.43",
+  "generated_at": "2026-07-29T16:03:51Z",
   "generated_by": "deng_li_zhou_basket_engine_probe.cpp (Phase 5e.5b-CFC-d-104)",
   "test_group": "pricingengines/basket/deng_li_zhou_basket_engine"
 }

@@ -151,9 +151,9 @@
       "name": "call_negcarry_min100_1y"
     }
   ],
-  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
-  "cpp_version": "1.42.1",
-  "generated_at": "2026-05-09T21:45:39Z",
+  "cpp_commit": "6b57206e04598f092efee66e3b367efc84771995",
+  "cpp_version": "1.43",
+  "generated_at": "2026-07-29T16:03:49Z",
   "generated_by": "analytic_continuous_floating_lookback_probe",
   "test_group": "lookback/analytic_continuous_floating_lookback"
 }

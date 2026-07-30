@@ -1,0 +1,597 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "code": "AOA",
+        "fractionSymbol": "",
+        "fractionsPerUnit": 100,
+        "name": "Angolan kwanza",
+        "numericCode": 973,
+        "symbol": "AOA"
+      },
+      "inputs": {
+        "code": "AOA"
+      },
+      "name": "AOA"
+    },
+    {
+      "expected": {
+        "code": "BWP",
+        "fractionSymbol": "",
+        "fractionsPerUnit": 100,
+        "name": "Botswanan pula",
+        "numericCode": 72,
+        "symbol": "P"
+      },
+      "inputs": {
+        "code": "BWP"
+      },
+      "name": "BWP"
+    },
+    {
+      "expected": {
+        "code": "EGP",
+        "fractionSymbol": "",
+        "fractionsPerUnit": 100,
+        "name": "Egyptian pound",
+        "numericCode": 818,
+        "symbol": "EGP"
+      },
+      "inputs": {
+        "code": "EGP"
+      },
+      "name": "EGP"
+    },
+    {
+      "expected": {
+        "code": "ETB",
+        "fractionSymbol": "",
+        "fractionsPerUnit": 100,
+        "name": "Ethiopian birr",
+        "numericCode": 230,
+        "symbol": "ETB"
+      },
+      "inputs": {
+        "code": "ETB"
+      },
+      "name": "ETB"
+    },
+    {
+      "expected": {
+        "code": "GHS",
+        "fractionSymbol": "",
+        "fractionsPerUnit": 100,
+        "name": "Ghanaian cedi",
+        "numericCode": 936,
+        "symbol": "GHS"
+      },
+      "inputs": {
+        "code": "GHS"
+      },
+      "name": "GHS"
+    },
+    {
+      "expected": {
+        "code": "KES",
+        "fractionSymbol": "",
+        "fractionsPerUnit": 100,
+        "name": "Kenyan shilling",
+        "numericCode": 404,
+        "symbol": "KES"
+      },
+      "inputs": {
+        "code": "KES"
+      },
+      "name": "KES"
+    },
+    {
+      "expected": {
+        "code": "MAD",
+        "fractionSymbol": "",
+        "fractionsPerUnit": 100,
+        "name": "Moroccan dirham",
+        "numericCode": 504,
+        "symbol": "MAD"
+      },
+      "inputs": {
+        "code": "MAD"
+      },
+      "name": "MAD"
+    },
+    {
+      "expected": {
+        "code": "MUR",
+        "fractionSymbol": "",
+        "fractionsPerUnit": 100,
+        "name": "Mauritian rupee",
+        "numericCode": 480,
+        "symbol": "MUR"
+      },
+      "inputs": {
+        "code": "MUR"
+      },
+      "name": "MUR"
+    },
+    {
+      "expected": {
+        "code": "NGN",
+        "fractionSymbol": "K",
+        "fractionsPerUnit": 100,
+        "name": "Nigerian Naira",
+        "numericCode": 566,
+        "symbol": "N"
+      },
+      "inputs": {
+        "code": "NGN"
+      },
+      "name": "NGN"
+    },
+    {
+      "expected": {
+        "code": "TND",
+        "fractionSymbol": "",
+        "fractionsPerUnit": 1000,
+        "name": "Tunisian dinar",
+        "numericCode": 788,
+        "symbol": "TND"
+      },
+      "inputs": {
+        "code": "TND"
+      },
+      "name": "TND"
+    },
+    {
+      "expected": {
+        "code": "UGX",
+        "fractionSymbol": "",
+        "fractionsPerUnit": 1,
+        "name": "Ugandan shilling",
+        "numericCode": 800,
+        "symbol": "UGX"
+      },
+      "inputs": {
+        "code": "UGX"
+      },
+      "name": "UGX"
+    },
+    {
+      "expected": {
+        "code": "XOF",
+        "fractionSymbol": "",
+        "fractionsPerUnit": 100,
+        "name": "West African CFA franc",
+        "numericCode": 952,
+        "symbol": "XOF"
+      },
+      "inputs": {
+        "code": "XOF"
+      },
+      "name": "XOF"
+    },
+    {
+      "expected": {
+        "code": "ZMW",
+        "fractionSymbol": "",
+        "fractionsPerUnit": 100,
+        "name": "Zambian kwacha",
+        "numericCode": 967,
+        "symbol": "ZMW"
+      },
+      "inputs": {
+        "code": "ZMW"
+      },
+      "name": "ZMW"
+    },
+    {
+      "expected": {
+        "code": "MXV",
+        "fractionSymbol": "",
+        "fractionsPerUnit": 1,
+        "name": "Mexican Unidad de Inversion",
+        "numericCode": 979,
+        "symbol": "MXV"
+      },
+      "inputs": {
+        "code": "MXV"
+      },
+      "name": "MXV"
+    },
+    {
+      "expected": {
+        "code": "COU",
+        "fractionSymbol": "",
+        "fractionsPerUnit": 100,
+        "name": "Unidad de Valor Real (UVR) (funds code)",
+        "numericCode": 970,
+        "symbol": "COU"
+      },
+      "inputs": {
+        "code": "COU"
+      },
+      "name": "COU"
+    },
+    {
+      "expected": {
+        "code": "CLF",
+        "fractionSymbol": "",
+        "fractionsPerUnit": 1,
+        "name": "Unidad de Fomento (funds code)",
+        "numericCode": 990,
+        "symbol": "CLF"
+      },
+      "inputs": {
+        "code": "CLF"
+      },
+      "name": "CLF"
+    },
+    {
+      "expected": {
+        "code": "UYU",
+        "fractionSymbol": "",
+        "fractionsPerUnit": 1,
+        "name": "Uruguayan peso",
+        "numericCode": 858,
+        "symbol": "UYU"
+      },
+      "inputs": {
+        "code": "UYU"
+      },
+      "name": "UYU"
+    },
+    {
+      "expected": {
+        "code": "IDR",
+        "fractionSymbol": "",
+        "fractionsPerUnit": 100,
+        "name": "Indonesian Rupiah",
+        "numericCode": 360,
+        "symbol": "Rp"
+      },
+      "inputs": {
+        "code": "IDR"
+      },
+      "name": "IDR"
+    },
+    {
+      "expected": {
+        "code": "KZT",
+        "fractionSymbol": "",
+        "fractionsPerUnit": 100,
+        "name": "Kazakstanti Tenge",
+        "numericCode": 398,
+        "symbol": "Kzt"
+      },
+      "inputs": {
+        "code": "KZT"
+      },
+      "name": "KZT"
+    },
+    {
+      "expected": {
+        "code": "MYR",
+        "fractionSymbol": "",
+        "fractionsPerUnit": 100,
+        "name": "Malaysian Ringgit",
+        "numericCode": 458,
+        "symbol": "RM"
+      },
+      "inputs": {
+        "code": "MYR"
+      },
+      "name": "MYR"
+    },
+    {
+      "expected": {
+        "code": "VND",
+        "fractionSymbol": "",
+        "fractionsPerUnit": 100,
+        "name": "Vietnamese Dong",
+        "numericCode": 704,
+        "symbol": ""
+      },
+      "inputs": {
+        "code": "VND"
+      },
+      "name": "VND"
+    },
+    {
+      "expected": {
+        "code": "QAR",
+        "fractionSymbol": "",
+        "fractionsPerUnit": 100,
+        "name": "Qatari riyal",
+        "numericCode": 634,
+        "symbol": "QAR"
+      },
+      "inputs": {
+        "code": "QAR"
+      },
+      "name": "QAR"
+    },
+    {
+      "expected": {
+        "code": "BHD",
+        "fractionSymbol": "",
+        "fractionsPerUnit": 1000,
+        "name": "Bahraini dinar",
+        "numericCode": 48,
+        "symbol": "BHD"
+      },
+      "inputs": {
+        "code": "BHD"
+      },
+      "name": "BHD"
+    },
+    {
+      "expected": {
+        "code": "OMR",
+        "fractionSymbol": "",
+        "fractionsPerUnit": 1000,
+        "name": "Omani rial",
+        "numericCode": 512,
+        "symbol": "OMR"
+      },
+      "inputs": {
+        "code": "OMR"
+      },
+      "name": "OMR"
+    },
+    {
+      "expected": {
+        "code": "JOD",
+        "fractionSymbol": "",
+        "fractionsPerUnit": 1000,
+        "name": "Jordanian dinar",
+        "numericCode": 400,
+        "symbol": "JOD"
+      },
+      "inputs": {
+        "code": "JOD"
+      },
+      "name": "JOD"
+    },
+    {
+      "expected": {
+        "code": "AED",
+        "fractionSymbol": "",
+        "fractionsPerUnit": 100,
+        "name": "United Arab Emirates dirham",
+        "numericCode": 784,
+        "symbol": "AED"
+      },
+      "inputs": {
+        "code": "AED"
+      },
+      "name": "AED"
+    },
+    {
+      "expected": {
+        "code": "PHP",
+        "fractionSymbol": "",
+        "fractionsPerUnit": 100,
+        "name": "Philippine peso",
+        "numericCode": 608,
+        "symbol": "PHP"
+      },
+      "inputs": {
+        "code": "PHP"
+      },
+      "name": "PHP"
+    },
+    {
+      "expected": {
+        "code": "CNH",
+        "fractionSymbol": "",
+        "fractionsPerUnit": 100,
+        "name": "Chinese yuan (Hong Kong)",
+        "numericCode": 156,
+        "symbol": "CNH"
+      },
+      "inputs": {
+        "code": "CNH"
+      },
+      "name": "CNH"
+    },
+    {
+      "expected": {
+        "code": "LKR",
+        "fractionSymbol": "",
+        "fractionsPerUnit": 100,
+        "name": "Sri Lankan rupee",
+        "numericCode": 144,
+        "symbol": "LKR"
+      },
+      "inputs": {
+        "code": "LKR"
+      },
+      "name": "LKR"
+    },
+    {
+      "expected": {
+        "code": "UAH",
+        "fractionSymbol": "",
+        "fractionsPerUnit": 100,
+        "name": "Ukrainian hryvnia",
+        "numericCode": 980,
+        "symbol": "hrn"
+      },
+      "inputs": {
+        "code": "UAH"
+      },
+      "name": "UAH"
+    },
+    {
+      "expected": {
+        "code": "RSD",
+        "fractionSymbol": "",
+        "fractionsPerUnit": 100,
+        "name": "Serbian dinar",
+        "numericCode": 941,
+        "symbol": "RSD"
+      },
+      "inputs": {
+        "code": "RSD"
+      },
+      "name": "RSD"
+    },
+    {
+      "expected": {
+        "code": "HRK",
+        "fractionSymbol": "",
+        "fractionsPerUnit": 100,
+        "name": "Croatian kuna",
+        "numericCode": 191,
+        "symbol": "HRK"
+      },
+      "inputs": {
+        "code": "HRK"
+      },
+      "name": "HRK"
+    },
+    {
+      "expected": {
+        "code": "BGN",
+        "fractionSymbol": "",
+        "fractionsPerUnit": 100,
+        "name": "Bulgarian lev",
+        "numericCode": 975,
+        "symbol": "BGN"
+      },
+      "inputs": {
+        "code": "BGN"
+      },
+      "name": "BGN"
+    },
+    {
+      "expected": {
+        "code": "GEL",
+        "fractionSymbol": "",
+        "fractionsPerUnit": 100,
+        "name": "Georgian lari",
+        "numericCode": 981,
+        "symbol": "GEL"
+      },
+      "inputs": {
+        "code": "GEL"
+      },
+      "name": "GEL"
+    },
+    {
+      "expected": {
+        "code": "BTC",
+        "fractionSymbol": "",
+        "fractionsPerUnit": 100000,
+        "name": "Bitcoin",
+        "numericCode": 10000,
+        "symbol": "BTC"
+      },
+      "inputs": {
+        "code": "BTC"
+      },
+      "name": "BTC"
+    },
+    {
+      "expected": {
+        "code": "ETH",
+        "fractionSymbol": "",
+        "fractionsPerUnit": 100000,
+        "name": "Ethereum",
+        "numericCode": 10001,
+        "symbol": "ETH"
+      },
+      "inputs": {
+        "code": "ETH"
+      },
+      "name": "ETH"
+    },
+    {
+      "expected": {
+        "code": "ETC",
+        "fractionSymbol": "",
+        "fractionsPerUnit": 100000,
+        "name": "Ethereum Classic",
+        "numericCode": 10002,
+        "symbol": "ETC"
+      },
+      "inputs": {
+        "code": "ETC"
+      },
+      "name": "ETC"
+    },
+    {
+      "expected": {
+        "code": "BCH",
+        "fractionSymbol": "",
+        "fractionsPerUnit": 100000,
+        "name": "Bitcoin Cash",
+        "numericCode": 10003,
+        "symbol": "BCH"
+      },
+      "inputs": {
+        "code": "BCH"
+      },
+      "name": "BCH"
+    },
+    {
+      "expected": {
+        "code": "XRP",
+        "fractionSymbol": "",
+        "fractionsPerUnit": 100000,
+        "name": "Ripple",
+        "numericCode": 10004,
+        "symbol": "XRP"
+      },
+      "inputs": {
+        "code": "XRP"
+      },
+      "name": "XRP"
+    },
+    {
+      "expected": {
+        "code": "LTC",
+        "fractionSymbol": "",
+        "fractionsPerUnit": 100000,
+        "name": "Litecoin",
+        "numericCode": 10005,
+        "symbol": "LTC"
+      },
+      "inputs": {
+        "code": "LTC"
+      },
+      "name": "LTC"
+    },
+    {
+      "expected": {
+        "code": "DASH",
+        "fractionSymbol": "",
+        "fractionsPerUnit": 100000,
+        "name": "Dash coin",
+        "numericCode": 10006,
+        "symbol": "DASH"
+      },
+      "inputs": {
+        "code": "DASH"
+      },
+      "name": "DASH"
+    },
+    {
+      "expected": {
+        "code": "ZEC",
+        "fractionSymbol": "",
+        "fractionsPerUnit": 100000,
+        "name": "Zcash",
+        "numericCode": 10007,
+        "symbol": "ZEC"
+      },
+      "inputs": {
+        "code": "ZEC"
+      },
+      "name": "ZEC"
+    }
+  ],
+  "cpp_commit": "6b57206e04598f092efee66e3b367efc84771995",
+  "cpp_version": "1.43",
+  "generated_at": "2026-07-29T16:03:51Z",
+  "generated_by": "currencies_probe",
+  "test_group": "currencies/missing_currencies"
+}

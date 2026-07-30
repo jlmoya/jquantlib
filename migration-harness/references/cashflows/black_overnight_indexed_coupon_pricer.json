@@ -2,12 +2,12 @@
   "cases": [
     {
       "expected": {
-        "T_final": 10.228703703703705,
-        "T_initial": 10.147222222222222,
-        "blackPremium": 0.0031612008402293443,
-        "capletRate_manual": 0.0031612008402293443,
-        "cappedCoupon_rate": 0.03660471656871523,
-        "diff_vs_test_expected": -4.3128477178466795e-10,
+        "T_final": 10.223148148148148,
+        "T_initial": 10.13888888888889,
+        "blackPremium": 0.0033430235076554768,
+        "capletRate_manual": 0.0033430235076554768,
+        "cappedCoupon_rate": 0.03686216815356033,
+        "diff_vs_test_expected": 0.00025745115356032994,
         "effectiveTime": 10.391666666666667,
         "expected_capped_rate": 0.036604717,
         "fixingDates_back": {
@@ -15,19 +15,19 @@
           "serial": 49580
         },
         "fixingDates_front": {
-          "date": "2035-07-02",
-          "serial": 49492
+          "date": "2035-06-29",
+          "serial": 49489
         },
-        "fixingDates_size": 63,
+        "fixingDates_size": 64,
         "fixingEndTime": 10.391666666666667,
-        "fixingStartTime": 10.147222222222222,
+        "fixingStartTime": 10.13888888888889,
         "sigma": 0.1,
         "sigmaDate": {
-          "date": "2035-07-02",
-          "serial": 49492
+          "date": "2035-06-29",
+          "serial": 49489
         },
-        "stdDev": 0.31982344666555806,
-        "vanillaRate": 0.03976591740894458,
+        "stdDev": 0.3197365813939367,
+        "vanillaRate": 0.040205191661215806,
         "vol_referenceDate": {
           "date": "2025-07-01",
           "serial": 45839
@@ -59,26 +59,26 @@
     },
     {
       "expected": {
-        "T_final": 10.228703703703705,
-        "T_initial": 10.147222222222222,
-        "blackPremium": 0.0030811935604819294,
-        "cappedCoupon_rate": 0.03648829959127709,
-        "diff_vs_test_expected": -4.0872290968385627e-10,
+        "T_final": 10.223148148148148,
+        "T_initial": 10.13888888888889,
+        "blackPremium": 0.0032585462639025814,
+        "cappedCoupon_rate": 0.03674580196837218,
+        "diff_vs_test_expected": 0.0002575019683721813,
         "expected_capped_rate": 0.0364883,
         "fixingDates_back": {
           "date": "2035-09-28",
           "serial": 49580
         },
         "fixingDates_front": {
-          "date": "2035-07-02",
-          "serial": 49492
+          "date": "2035-06-29",
+          "serial": 49489
         },
-        "fixingDates_size": 63,
+        "fixingDates_size": 64,
         "fixingEndTime": 10.391666666666667,
-        "fixingStartTime": 10.147222222222222,
+        "fixingStartTime": 10.13888888888889,
         "sigma": 0.1,
-        "stdDev": 0.31982344666555806,
-        "vanillaRate": 0.03956949315175902
+        "stdDev": 0.3197365813939367,
+        "vanillaRate": 0.040004348232274764
       },
       "inputs": {
         "averaging": "Simple",
@@ -101,9 +101,9 @@
       "name": "simple_caplet_diagnostic"
     }
   ],
-  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
-  "cpp_version": "1.42.1",
-  "generated_at": "2026-05-15T01:17:22Z",
+  "cpp_commit": "6b57206e04598f092efee66e3b367efc84771995",
+  "cpp_version": "1.43",
+  "generated_at": "2026-07-29T16:03:50Z",
   "generated_by": "black_overnight_indexed_coupon_pricer_probe",
   "test_group": "cashflows/black_overnight_indexed_coupon_pricer"
 }

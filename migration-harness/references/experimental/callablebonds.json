@@ -70,7 +70,7 @@
     },
     {
       "expected": {
-        "cleanPrice": 74.54494134581076
+        "cleanPrice": 74.54494134472924
       },
       "inputs": {
         "flatRate": 0.03,
@@ -81,10 +81,10 @@
     },
     {
       "expected": {
-        "clean_after": 78.50000000001654,
-        "dirty_after": 78.50000000000618,
-        "vol_for_clean_target": 0.7648653269451157,
-        "vol_for_dirty_target": 0.7934012085473411
+        "clean_after": 78.50000000001653,
+        "dirty_after": 78.5000000000062,
+        "vol_for_clean_target": 0.7648653276914783,
+        "vol_for_dirty_target": 0.7934012093215482
       },
       "inputs": {
         "flatRate": 0.03,
@@ -227,9 +227,9 @@
       "name": "testSnappingExerciseDate2ClosestCouponDate"
     }
   ],
-  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
-  "cpp_version": "1.42.1",
-  "generated_at": "2026-05-17T00:08:48Z",
+  "cpp_commit": "6b57206e04598f092efee66e3b367efc84771995",
+  "cpp_version": "1.43",
+  "generated_at": "2026-07-29T16:03:50Z",
   "generated_by": "callablebonds_probe",
   "test_group": "experimental/callablebonds"
 }

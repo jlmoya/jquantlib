@@ -1,0 +1,110 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "errorEstimate": 0.11800503725531503,
+        "npv": 7.929953563233473
+      },
+      "inputs": {
+        "K": 100.0,
+        "S0": 90.0,
+        "T_years": 3.0,
+        "antithetic": true,
+        "calibrationSamples": 1024,
+        "correlation": "identity",
+        "numAssets": 2,
+        "polynomialOrder": 2,
+        "polynomialType": "Monomial",
+        "q": 0.1,
+        "r": 0.05,
+        "samples": 4096,
+        "seed": 42,
+        "timeSteps": 25,
+        "vol": 0.2
+      },
+      "name": "glasserman_2d_S0_90"
+    },
+    {
+      "expected": {
+        "errorEstimate": 0.13841270660503235,
+        "npv": 13.708949888451764
+      },
+      "inputs": {
+        "K": 100.0,
+        "S0": 100.0,
+        "T_years": 3.0,
+        "antithetic": true,
+        "calibrationSamples": 1024,
+        "correlation": "identity",
+        "numAssets": 2,
+        "polynomialOrder": 2,
+        "polynomialType": "Monomial",
+        "q": 0.1,
+        "r": 0.05,
+        "samples": 4096,
+        "seed": 42,
+        "timeSteps": 25,
+        "vol": 0.2
+      },
+      "name": "glasserman_2d_S0_100"
+    },
+    {
+      "expected": {
+        "errorEstimate": 0.1529599901196725,
+        "npv": 21.22199475000803
+      },
+      "inputs": {
+        "K": 100.0,
+        "S0": 110.0,
+        "T_years": 3.0,
+        "antithetic": true,
+        "calibrationSamples": 1024,
+        "correlation": "identity",
+        "numAssets": 2,
+        "polynomialOrder": 2,
+        "polynomialType": "Monomial",
+        "q": 0.1,
+        "r": 0.05,
+        "samples": 4096,
+        "seed": 42,
+        "timeSteps": 25,
+        "vol": 0.2
+      },
+      "name": "glasserman_2d_S0_110"
+    },
+    {
+      "expected": {
+        "errorEstimate": 0.10556043724312686,
+        "npv": 17.762951073368047,
+        "tavellaReference": 18.082
+      },
+      "inputs": {
+        "K": 100.0,
+        "S1": 100.0,
+        "S2": 100.0,
+        "S3": 100.0,
+        "T_years": 3.0,
+        "antithetic": true,
+        "calibrationSamples": 2500,
+        "numAssets": 3,
+        "polynomialOrder": 2,
+        "polynomialType": "Monomial",
+        "q": 0.1,
+        "r": 0.05,
+        "rho_12": -0.25,
+        "rho_13": 0.25,
+        "rho_23": 0.3,
+        "samples": 10000,
+        "seed": 42,
+        "timeSteps": 20,
+        "vol": 0.2
+      },
+      "name": "tavella_3d_max_call"
+    }
+  ],
+  "cpp_commit": "6b57206e04598f092efee66e3b367efc84771995",
+  "cpp_version": "1.43",
+  "generated_at": "2026-07-29T16:04:12Z",
+  "generated_by": "mc_american_basket_engine_probe",
+  "test_group": "pricingengines/basket/mc_american_basket_engine"
+}

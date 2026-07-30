@@ -1,0 +1,157 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "discounts": [
+          0.9883859580211468,
+          0.974271461177287,
+          0.9417645335842487,
+          0.9068586373522667,
+          0.8373296407189543,
+          0.7722166521498565,
+          0.6842301343358408,
+          0.5599386252473082,
+          0.47711998674410094
+        ]
+      },
+      "inputs": {
+        "description": "NelsonSiegel parametric: c0=0.04, c1=-0.02, c2=0.01, kappa=0.5",
+        "grid": [
+          0.5,
+          1.0,
+          2.0,
+          3.0,
+          5.0,
+          7.0,
+          10.0,
+          15.0,
+          19.0
+        ],
+        "params": [
+          0.04,
+          -0.02,
+          0.01,
+          0.5
+        ]
+      },
+      "name": "nelson_siegel_basic"
+    },
+    {
+      "expected": {
+        "discounts": [
+          0.988270352284678,
+          0.973844748334669,
+          0.9403164622680297,
+          0.9040991612524092,
+          0.8318164479184709,
+          0.7643768800195534,
+          0.6741444874337597,
+          0.5488394109490421,
+          0.46659073193628475
+        ]
+      },
+      "inputs": {
+        "description": "Svensson parametric: c0=0.04, c1=-0.02, c2=0.01, c3=0.005, k=0.5, k1=0.2",
+        "grid": [
+          0.5,
+          1.0,
+          2.0,
+          3.0,
+          5.0,
+          7.0,
+          10.0,
+          15.0,
+          19.0
+        ],
+        "params": [
+          0.04,
+          -0.02,
+          0.01,
+          0.005,
+          0.5,
+          0.2
+        ]
+      },
+      "name": "svensson_basic"
+    },
+    {
+      "expected": {
+        "discounts": [
+          0.9773749999999999,
+          0.959,
+          0.932,
+          0.9129999999999999,
+          0.875,
+          0.7970000000000002,
+          0.5,
+          -0.8750000000000001,
+          -3.199
+        ]
+      },
+      "inputs": {
+        "constrainAtZero": true,
+        "degree": 3,
+        "description": "SimplePolynomial degree=3 constrainAtZero=true",
+        "grid": [
+          0.5,
+          1.0,
+          2.0,
+          3.0,
+          5.0,
+          7.0,
+          10.0,
+          15.0,
+          19.0
+        ],
+        "params": [
+          -0.05,
+          0.01,
+          -0.001
+        ]
+      },
+      "name": "simple_polynomial_d3_constrained"
+    },
+    {
+      "expected": {
+        "discounts": [
+          1.6875,
+          2.8,
+          6.3,
+          11.5,
+          27.0,
+          49.3,
+          95.5,
+          206.5,
+          325.9
+        ]
+      },
+      "inputs": {
+        "constrainAtZero": false,
+        "degree": 2,
+        "description": "SimplePolynomial degree=2 constrainAtZero=false",
+        "grid": [
+          0.5,
+          1.0,
+          2.0,
+          3.0,
+          5.0,
+          7.0,
+          10.0,
+          15.0,
+          19.0
+        ],
+        "params": [
+          1.0,
+          0.95,
+          0.85
+        ]
+      },
+      "name": "simple_polynomial_d2_unconstrained"
+    }
+  ],
+  "cpp_commit": "6b57206e04598f092efee66e3b367efc84771995",
+  "cpp_version": "1.43",
+  "generated_at": "2026-07-29T16:03:56Z",
+  "generated_by": "fitted_bond_curve_probe",
+  "test_group": "termstructures/yield/fitted_bond_curve"
+}

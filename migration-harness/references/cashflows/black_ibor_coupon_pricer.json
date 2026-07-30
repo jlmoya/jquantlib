@@ -333,9 +333,9 @@
       "name": "biv_shifted_3pct_corr_pos"
     }
   ],
-  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
-  "cpp_version": "1.42.1",
-  "generated_at": "2026-05-09T21:32:48Z",
+  "cpp_commit": "6b57206e04598f092efee66e3b367efc84771995",
+  "cpp_version": "1.43",
+  "generated_at": "2026-07-29T16:03:50Z",
   "generated_by": "black_ibor_coupon_pricer_probe",
   "test_group": "cashflows/black_ibor_coupon_pricer"
 }

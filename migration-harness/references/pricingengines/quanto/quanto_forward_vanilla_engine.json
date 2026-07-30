@@ -225,9 +225,9 @@
       "name": "qfwd_atm_call_T2_reset90_rho00"
     }
   ],
-  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
-  "cpp_version": "1.42.1",
-  "generated_at": "2026-05-09T23:30:56Z",
+  "cpp_commit": "6b57206e04598f092efee66e3b367efc84771995",
+  "cpp_version": "1.43",
+  "generated_at": "2026-07-29T16:04:20Z",
   "generated_by": "quanto_forward_vanilla_engine_probe",
   "test_group": "pricingengines/quanto/quanto_forward_vanilla_engine"
 }

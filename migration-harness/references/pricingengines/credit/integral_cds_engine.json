@@ -241,9 +241,9 @@
       "name": "buyer_5y_low_hazard_step7d"
     }
   ],
-  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
-  "cpp_version": "1.42.1",
-  "generated_at": "2026-05-09T05:59:34Z",
+  "cpp_commit": "6b57206e04598f092efee66e3b367efc84771995",
+  "cpp_version": "1.43",
+  "generated_at": "2026-07-29T16:04:06Z",
   "generated_by": "integral_cds_engine_probe",
   "test_group": "pricingengines/credit/integral_cds_engine"
 }

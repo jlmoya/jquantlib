@@ -1,0 +1,286 @@
+{
+  "cases": [
+    {
+      "expected": 0.01290271238629215,
+      "inputs": {
+        "d": "baseDate+1Y",
+        "evaluation_date": "2007-11-23",
+        "interpolator_k": "Linear",
+        "k": -0.01,
+        "observation_lag_months": 3,
+        "slope": -0.5
+      },
+      "name": "slice_year1_k0"
+    },
+    {
+      "expected": 0.00942407705487857,
+      "inputs": {
+        "d": "baseDate+1Y",
+        "evaluation_date": "2007-11-23",
+        "interpolator_k": "Linear",
+        "k": 0.0,
+        "observation_lag_months": 3,
+        "slope": -0.5
+      },
+      "name": "slice_year1_k1"
+    },
+    {
+      "expected": 0.008386222178403197,
+      "inputs": {
+        "d": "baseDate+1Y",
+        "evaluation_date": "2007-11-23",
+        "interpolator_k": "Linear",
+        "k": 0.005,
+        "observation_lag_months": 3,
+        "slope": -0.5
+      },
+      "name": "slice_year1_k2"
+    },
+    {
+      "expected": 0.007398219168706476,
+      "inputs": {
+        "d": "baseDate+1Y",
+        "evaluation_date": "2007-11-23",
+        "interpolator_k": "Linear",
+        "k": 0.01,
+        "observation_lag_months": 3,
+        "slope": -0.5
+      },
+      "name": "slice_year1_k3"
+    },
+    {
+      "expected": 0.0064515395737460264,
+      "inputs": {
+        "d": "baseDate+1Y",
+        "evaluation_date": "2007-11-23",
+        "interpolator_k": "Linear",
+        "k": 0.015,
+        "observation_lag_months": 3,
+        "slope": -0.5
+      },
+      "name": "slice_year1_k4"
+    },
+    {
+      "expected": 0.005769818469685314,
+      "inputs": {
+        "d": "baseDate+1Y",
+        "evaluation_date": "2007-11-23",
+        "interpolator_k": "Linear",
+        "k": 0.02,
+        "observation_lag_months": 3,
+        "slope": -0.5
+      },
+      "name": "slice_year1_k5"
+    },
+    {
+      "expected": 0.0041879009519794124,
+      "inputs": {
+        "d": "baseDate+1Y",
+        "evaluation_date": "2007-11-23",
+        "interpolator_k": "Linear",
+        "k": 0.025,
+        "observation_lag_months": 3,
+        "slope": -0.5
+      },
+      "name": "slice_year1_k6"
+    },
+    {
+      "expected": 0.004645414670820306,
+      "inputs": {
+        "d": "baseDate+1Y",
+        "evaluation_date": "2007-11-23",
+        "interpolator_k": "Linear",
+        "k": 0.03,
+        "observation_lag_months": 3,
+        "slope": -0.5
+      },
+      "name": "slice_year1_k7"
+    },
+    {
+      "expected": 0.005388458657496156,
+      "inputs": {
+        "d": "baseDate+1Y",
+        "evaluation_date": "2007-11-23",
+        "interpolator_k": "Linear",
+        "k": 0.035,
+        "observation_lag_months": 3,
+        "slope": -0.5
+      },
+      "name": "slice_year1_k8"
+    },
+    {
+      "expected": 0.006468551609470552,
+      "inputs": {
+        "d": "baseDate+1Y",
+        "evaluation_date": "2007-11-23",
+        "interpolator_k": "Linear",
+        "k": 0.04,
+        "observation_lag_months": 3,
+        "slope": -0.5
+      },
+      "name": "slice_year1_k9"
+    },
+    {
+      "expected": 0.009874344754173247,
+      "inputs": {
+        "d": "baseDate+1Y",
+        "evaluation_date": "2007-11-23",
+        "interpolator_k": "Linear",
+        "k": 0.05,
+        "observation_lag_months": 3,
+        "slope": -0.5
+      },
+      "name": "slice_year1_k10"
+    },
+    {
+      "expected": 0.008005775199363073,
+      "inputs": {
+        "d": "baseDate+3Y",
+        "evaluation_date": "2007-11-23",
+        "interpolator_k": "Linear",
+        "k": -0.01,
+        "observation_lag_months": 3,
+        "slope": -0.5
+      },
+      "name": "slice_year3_k0"
+    },
+    {
+      "expected": 0.005847645242166534,
+      "inputs": {
+        "d": "baseDate+3Y",
+        "evaluation_date": "2007-11-23",
+        "interpolator_k": "Linear",
+        "k": 0.0,
+        "observation_lag_months": 3,
+        "slope": -0.5
+      },
+      "name": "slice_year3_k1"
+    },
+    {
+      "expected": 0.005199917593863255,
+      "inputs": {
+        "d": "baseDate+3Y",
+        "evaluation_date": "2007-11-23",
+        "interpolator_k": "Linear",
+        "k": 0.005,
+        "observation_lag_months": 3,
+        "slope": -0.5
+      },
+      "name": "slice_year3_k2"
+    },
+    {
+      "expected": 0.004582704767551133,
+      "inputs": {
+        "d": "baseDate+3Y",
+        "evaluation_date": "2007-11-23",
+        "interpolator_k": "Linear",
+        "k": 0.01,
+        "observation_lag_months": 3,
+        "slope": -0.5
+      },
+      "name": "slice_year3_k3"
+    },
+    {
+      "expected": 0.0039908846536881116,
+      "inputs": {
+        "d": "baseDate+3Y",
+        "evaluation_date": "2007-11-23",
+        "interpolator_k": "Linear",
+        "k": 0.015,
+        "observation_lag_months": 3,
+        "slope": -0.5
+      },
+      "name": "slice_year3_k4"
+    },
+    {
+      "expected": 0.00356250291880979,
+      "inputs": {
+        "d": "baseDate+3Y",
+        "evaluation_date": "2007-11-23",
+        "interpolator_k": "Linear",
+        "k": 0.02,
+        "observation_lag_months": 3,
+        "slope": -0.5
+      },
+      "name": "slice_year3_k5"
+    },
+    {
+      "expected": 0.0025814462346902744,
+      "inputs": {
+        "d": "baseDate+3Y",
+        "evaluation_date": "2007-11-23",
+        "interpolator_k": "Linear",
+        "k": 0.025,
+        "observation_lag_months": 3,
+        "slope": -0.5
+      },
+      "name": "slice_year3_k6"
+    },
+    {
+      "expected": 0.002864897255580586,
+      "inputs": {
+        "d": "baseDate+3Y",
+        "evaluation_date": "2007-11-23",
+        "interpolator_k": "Linear",
+        "k": 0.03,
+        "observation_lag_months": 3,
+        "slope": -0.5
+      },
+      "name": "slice_year3_k7"
+    },
+    {
+      "expected": 0.0033279198295646556,
+      "inputs": {
+        "d": "baseDate+3Y",
+        "evaluation_date": "2007-11-23",
+        "interpolator_k": "Linear",
+        "k": 0.035,
+        "observation_lag_months": 3,
+        "slope": -0.5
+      },
+      "name": "slice_year3_k8"
+    },
+    {
+      "expected": 0.0040002511901961624,
+      "inputs": {
+        "d": "baseDate+3Y",
+        "evaluation_date": "2007-11-23",
+        "interpolator_k": "Linear",
+        "k": 0.04,
+        "observation_lag_months": 3,
+        "slope": -0.5
+      },
+      "name": "slice_year3_k9"
+    },
+    {
+      "expected": 0.006112490857241398,
+      "inputs": {
+        "d": "baseDate+3Y",
+        "evaluation_date": "2007-11-23",
+        "interpolator_k": "Linear",
+        "k": 0.05,
+        "observation_lag_months": 3,
+        "slope": -0.5
+      },
+      "name": "slice_year3_k10"
+    },
+    {
+      "expected": {
+        "baseDate_iso": "2007-8-1"
+      },
+      "inputs": {
+        "evaluation_date": "2007-11-23",
+        "interpolator_k": "Linear",
+        "observation_lag_months": 3,
+        "query": "baseDate",
+        "slope": -0.5
+      },
+      "name": "baseDate_metadata"
+    }
+  ],
+  "cpp_commit": "6b57206e04598f092efee66e3b367efc84771995",
+  "cpp_version": "1.43",
+  "generated_at": "2026-07-29T16:04:07Z",
+  "generated_by": "k_interpolated_yoy_optionlet_vol_surface_probe",
+  "test_group": "experimental/inflation/k_interpolated_yoy_optionlet_vol_surface"
+}

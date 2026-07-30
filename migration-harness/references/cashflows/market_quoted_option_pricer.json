@@ -127,9 +127,9 @@
       "name": "call_atm_variance_zero"
     }
   ],
-  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
-  "cpp_version": "1.42.1",
-  "generated_at": "2026-05-09T21:40:35Z",
+  "cpp_commit": "6b57206e04598f092efee66e3b367efc84771995",
+  "cpp_version": "1.43",
+  "generated_at": "2026-07-29T16:04:10Z",
   "generated_by": "market_quoted_option_pricer_probe",
   "test_group": "cashflows/market_quoted_option_pricer"
 }

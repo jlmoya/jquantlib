@@ -1074,8 +1074,8 @@
     {
       "expected": {
         "distinct": true,
-        "newQuote": 0.02705429628899434,
-        "oldQuote": 0.016895095878926375
+        "newQuote": 0.02705429628899436,
+        "oldQuote": 0.0168950958789264
       },
       "inputs": {
         "newCollatRate": 0.03,
@@ -1085,9 +1085,9 @@
       "name": "relinking_oldVsNew"
     }
   ],
-  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
-  "cpp_version": "1.42.1",
-  "generated_at": "2026-05-17T03:18:31Z",
+  "cpp_commit": "6b57206e04598f092efee66e3b367efc84771995",
+  "cpp_version": "1.43",
+  "generated_at": "2026-07-29T16:03:51Z",
   "generated_by": "crosscurrency_probe",
   "test_group": "experimental/crosscurrency"
 }

@@ -455,9 +455,9 @@
       "name": "vanilla_swap_10y_fixed6pct_spread10bp"
     }
   ],
-  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_commit": "6b57206e04598f092efee66e3b367efc84771995",
   "cpp_version": "v1.42.1",
-  "generated_at": "2026-05-18T02:14:52Z",
+  "generated_at": "2026-07-29T16:04:29Z",
   "generated_by": "swap_cached_value_probe.cpp",
   "test_group": "instruments/swap_cached_value"
 }
