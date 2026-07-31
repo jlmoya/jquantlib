@@ -566,6 +566,22 @@ public class India extends Calendar {
                         // Gurunank Jayanti
                         && (d != 5 || m != November);
             }
+            if ( y == 2026 ) {
+                return (d != 15 || m != January)
+                        && (d != 19 || m != February)
+                        && (d != 3 || m != March)
+                        && (d != 19 || m != March)
+                        && (d != 26 || m != March)
+                        && (d != 31 || m != March)
+                        && (d != 1 || m != April)
+                        && (d != 28 || m != May)
+                        && (d != 26 || m != June)
+                        && (d != 26 || m != August)
+                        && (d != 14 || m != September)
+                        && (d != 20 || m != October)
+                        && (d != 10 || m != November)
+                        && (d != 24 || m != November);
+            }
             return true;
         }
     }

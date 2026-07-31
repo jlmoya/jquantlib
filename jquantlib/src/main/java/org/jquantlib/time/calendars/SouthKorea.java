@@ -279,7 +279,8 @@ public class SouthKorea extends Calendar {
             // Special temporary holidays
             if ((d == 17 && m == August && y == 2020)
                     || (d == 2 && m == October && y == 2023)
-                    || (d == 1 && m == October && y == 2024)) {
+                    || (d == 1 && m == October && y == 2024)
+                    || (d == 27 && m == January && y == 2025)) {
                 return false;
             }
 
