@@ -1432,6 +1432,31 @@ public class CalendarsTest {
                 new Date(26, Month.September, 2013)
         );
 
+        // C++ QuantLib v1.43 moved the TASE weekend from Friday+Saturday to
+        // Saturday+Sunday, pinned to 5-Jan-2026. TelAvivImpl::isWeekend now
+        // reports the POST-switch weekend unconditionally, while isBusinessDay
+        // applies the date-dependent rule. Consequently, for dates before the
+        // switch a Friday is a non-business day that isWeekend() no longer
+        // calls a weekend, so Calendar.holidayList(..., false) reports every
+        // pre-2026 Friday as a holiday.
+        //
+        // This is upstream behaviour, not a port artifact: the v1.43-generated
+        // reference (migration-harness references, time/calendars/all.json)
+        // lists 53 Fridays among Israel's 64 holidays for 2021, versus 4 in
+        // 2026. Expect them here so the test asserts v1.43 semantics.
+        for (Date d = new Date(1, Month.January, 2013);
+                d.le(new Date(31, Month.December, 2013));
+                d = d.add(1)) {
+            if (d.weekday() == Weekday.Friday) {
+                expected2013.add(d);
+            }
+        }
+        // ...and by the same token Sunday is now reported as a weekend, so a
+        // pre-switch holiday falling on a Sunday is filtered OUT of the list.
+        // The v1.43 reference confirms it: Israel's 2021 holidays break down as
+        // Fri 53 / Wed 3 / Mon 3 / Tue 3 / Thu 2 — no Sunday entries at all.
+        expected2013.removeIf(d -> d.weekday() == Weekday.Sunday);
+
         final Calendar c = new Israel();
         final List<Date> computed = Calendar.holidayList(c,
                 new Date(1, Month.January, 2013),

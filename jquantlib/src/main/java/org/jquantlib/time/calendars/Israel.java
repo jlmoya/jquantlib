@@ -62,8 +62,14 @@ import static org.jquantlib.time.Month.September;
  */
 public class Israel extends Calendar {
 
+    /**
+     * v1.43 changeover from the Friday+Saturday weekend to Saturday+Sunday for
+     * TASE. C++ pins this exact date, not a year boundary.
+     */
+    private static final Date TASE_WEEKEND_SWITCH = new Date(5, Month.January, 2026);
+
     public Israel() {
-        this(Market.Settlement);
+        this(Market.TASE);
     }
 
     public Israel(final Market market) {
@@ -81,7 +87,15 @@ public class Israel extends Calendar {
     }
 
     public enum Market {
-        /** Generic settlement calendar */
+        /**
+         * Generic settlement calendar.
+         *
+         * @deprecated C++ QuantLib v1.43 removed {@code Settlement} from
+         *             {@code Israel::Market} (the default is now {@link #TASE}).
+         *             Retained for source compatibility and still behaving as
+         *             {@code TASE}; use {@link #TASE} instead.
+         */
+        @Deprecated(forRemoval = true)
         Settlement,
         /** Tel-Aviv stock exchange calendar */
         TASE,
@@ -443,17 +457,35 @@ public class Israel extends Calendar {
             return "Tel Aviv stock exchange";
         }
 
+        /**
+         * v1.43: TASE reports the post-switch Saturday+Sunday weekend from the
+         * weekday-only query; the date-dependent rule lives in
+         * {@link #isBusinessDay(Date)} below, mirroring C++
+         * {@code TelAvivImpl::isWeekend}.
+         */
         @Override
         public boolean isWeekend(final Weekday w) {
+            return w == Weekday.Saturday || w == Weekday.Sunday;
+        }
+
+        /**
+         * v1.43 moved the Tel-Aviv weekend from Friday+Saturday to
+         * Saturday+Sunday, pinned to an exact changeover date rather than a
+         * year boundary (C++ {@code TelAvivImpl::isBusinessDay}).
+         */
+        private boolean isWeekendOn(final Date date) {
+            final Weekday w = date.weekday();
+            if (date.compareTo(TASE_WEEKEND_SWITCH) >= 0) {
+                return w == Weekday.Saturday || w == Weekday.Sunday;
+            }
             return w == Weekday.Friday || w == Weekday.Saturday;
         }
 
         @Override
         public boolean isBusinessDay(final Date date) {
-            final Weekday w = date.weekday();
             final int y = date.year();
 
-            return !(isWeekend(w)
+            return !(isWeekendOn(date)
                     || isPurim(date)
                     || (y <= 2020 && isPassover1st(date.add(1))) // Eve of Passover, until 2020
                     || isPassover1st(date)
@@ -483,9 +515,16 @@ public class Israel extends Calendar {
             return "SHIR fixing calendar";
         }
 
+        /**
+         * SHIR uses a Saturday+Sunday weekend: C++ declares
+         * {@code class Israel::ShirImpl final : public Calendar::WesternImpl}
+         * in both v1.42.1 and v1.43, and {@code WesternImpl::isWeekend} is
+         * Saturday+Sunday. This previously returned Friday+Saturday, which was
+         * wrong in both versions.
+         */
         @Override
         public boolean isWeekend(final Weekday w) {
-            return w == Weekday.Friday || w == Weekday.Saturday;
+            return w == Weekday.Saturday || w == Weekday.Sunday;
         }
 
         @Override
