@@ -216,7 +216,10 @@ public class FxForwardTest {
                 vars.usdCurveHandle, vars.sgdCurveHandle, vars.spotFxHandle);
         fwd.setPricingEngine(engine);
 
-        // Expected: F = S * (DF_SGD / DF_USD), with DFs from settlement → maturity.
+        // Expected: F = S * (DF_source / DF_target), with DFs from settlement →
+        // maturity. Here source = USD, target = SGD. C++ QuantLib v1.43
+        // INVERTED this ratio in DiscountingFxForwardEngine::calculate
+        // (v1.42.1 computed S * DF_target / DF_source).
         final Date settlementDate = fwd.settlementDate();
         final double spotFx = vars.spotFxHandle.currentLink().value();
         final double dfUsd =
@@ -225,7 +228,7 @@ public class FxForwardTest {
         final double dfSgd =
                 vars.sgdCurveHandle.currentLink().discount(vars.maturityDate) /
                 vars.sgdCurveHandle.currentLink().discount(settlementDate);
-        final double expectedFairRate = spotFx * dfSgd / dfUsd;
+        final double expectedFairRate = spotFx * dfUsd / dfSgd;
 
         final double calculatedFairRate = fwd.fairForwardRate();
         assertEquals(expectedFairRate, calculatedFairRate,

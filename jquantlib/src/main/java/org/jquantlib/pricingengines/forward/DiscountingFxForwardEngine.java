@@ -135,8 +135,14 @@ public class DiscountingFxForwardEngine extends FxForward.EngineImpl {
         final double dfTarget = targetCurrencyDiscountCurve_.currentLink().discount(maturityDate)
                 / targetCurrencyDiscountCurve_.currentLink().discount(settlementDate);
 
-        // Fair forward rate: F = S * dfTarget / dfSource (target/source).
-        r.fairForwardRate = spotFxRate * dfTarget / dfSource;
+        // Discount factors to settlement — v1.43 reports the NPV as of the
+        // curve reference date, so the settlement-date PV is discounted back.
+        final double dfSourceSettlement = sourceCurrencyDiscountCurve_.currentLink().discount(settlementDate);
+        final double dfTargetSettlement = targetCurrencyDiscountCurve_.currentLink().discount(settlementDate);
+
+        // Fair forward rate: F = S * dfSource / dfTarget.
+        // v1.43 INVERTED this ratio (v1.42.1 used S * dfTarget / dfSource).
+        r.fairForwardRate = spotFxRate * dfSource / dfTarget;
 
         // Present values of each leg (in their own currency).
         final double pvSource = a.sourceNominal * dfSource;
@@ -145,23 +151,30 @@ public class DiscountingFxForwardEngine extends FxForward.EngineImpl {
         // Convert target-leg PV into source currency.
         final double pvTargetInSourceCurrency = pvTarget / spotFxRate;
 
-        final double npvInSourceCurrency;
+        final double npvAtSettlementInSourceCurrency;
         if ( a.paySourceCurrency ) {
             // pay source, receive target
-            npvInSourceCurrency = -pvSource + pvTargetInSourceCurrency;
+            npvAtSettlementInSourceCurrency = -pvSource + pvTargetInSourceCurrency;
         } else {
             // receive source, pay target
-            npvInSourceCurrency = pvSource - pvTargetInSourceCurrency;
+            npvAtSettlementInSourceCurrency = pvSource - pvTargetInSourceCurrency;
         }
+
+        // v1.43: discount the settlement-date PV back to the curve reference
+        // date, each in its own currency's numeraire.
+        final double npvInSourceCurrency = npvAtSettlementInSourceCurrency * dfSourceSettlement;
+        final double npvInTargetCurrency = npvAtSettlementInSourceCurrency * spotFxRate * dfTargetSettlement;
 
         r.value = npvInSourceCurrency;
         r.npvSourceCurrency = npvInSourceCurrency;
-        r.npvTargetCurrency = npvInSourceCurrency * spotFxRate;
+        r.npvTargetCurrency = npvInTargetCurrency;
 
         // Engine-only additional results — copied by FxForward.fetchResults.
         r.additionalResults().put("spotFx", Double.valueOf(spotFxRate));
         r.additionalResults().put("sourceCurrencyDiscountFactor", Double.valueOf(dfSource));
         r.additionalResults().put("targetCurrencyDiscountFactor", Double.valueOf(dfTarget));
+        r.additionalResults().put("sourceCurrencySettlementDiscountFactor", Double.valueOf(dfSourceSettlement));
+        r.additionalResults().put("targetCurrencySettlementDiscountFactor", Double.valueOf(dfTargetSettlement));
         r.additionalResults().put("sourceCurrencyPV", Double.valueOf(pvSource));
         r.additionalResults().put("targetCurrencyPV", Double.valueOf(pvTarget));
     }
