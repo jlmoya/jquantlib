@@ -1,0 +1,106 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "businessDayConvention": 1,
+        "currencyCode": "NOK",
+        "dayCounter": "Actual/360",
+        "endOfMonth": false,
+        "fixingCalendar": "Norway",
+        "fixingDays": 2,
+        "name": "NOK-NIBOR3M Actual/360",
+        "tenor": 3,
+        "tenorUnits": 2
+      },
+      "inputs": {
+        "tenor": "3M"
+      },
+      "name": "nibor_3m"
+    },
+    {
+      "expected": {
+        "fixingSerial": 46188,
+        "maturityDateSerial": 46282,
+        "valueDateSerial": 46190
+      },
+      "inputs": {
+        "fixingDate": "2026-06-15"
+      },
+      "name": "nibor_3m_dates"
+    },
+    {
+      "expected": {
+        "businessDayConvention": 1,
+        "currencyCode": "NOK",
+        "dayCounter": "Actual/360",
+        "endOfMonth": false,
+        "fixingCalendar": "Norway",
+        "fixingDays": 2,
+        "name": "NOK-NIBOR6M Actual/360",
+        "tenor": 6,
+        "tenorUnits": 2
+      },
+      "inputs": {
+        "tenor": "6M"
+      },
+      "name": "nibor_6m"
+    },
+    {
+      "expected": {
+        "businessDayConvention": 0,
+        "currencyCode": "ILS",
+        "dayCounter": "Actual/365 (Fixed)",
+        "endOfMonth": false,
+        "fixingCalendar": "SHIR fixing calendar",
+        "fixingDays": 0,
+        "name": "ShirON Actual/365 (Fixed)",
+        "tenor": 1,
+        "tenorUnits": 0
+      },
+      "inputs": null,
+      "name": "shir"
+    },
+    {
+      "expected": {
+        "fixingSerial": 46188,
+        "maturityDateSerial": 46189,
+        "valueDateSerial": 46188
+      },
+      "inputs": {
+        "fixingDate": "2026-06-15"
+      },
+      "name": "shir_dates"
+    },
+    {
+      "expected": {
+        "businessDayConvention": 0,
+        "currencyCode": "ZAR",
+        "dayCounter": "Actual/365 (Fixed)",
+        "endOfMonth": false,
+        "fixingCalendar": "South Africa",
+        "fixingDays": 0,
+        "name": "ZARONIAON Actual/365 (Fixed)",
+        "tenor": 1,
+        "tenorUnits": 0
+      },
+      "inputs": null,
+      "name": "zaronia"
+    },
+    {
+      "expected": {
+        "fixingSerial": 46188,
+        "maturityDateSerial": 46190,
+        "valueDateSerial": 46188
+      },
+      "inputs": {
+        "fixingDate": "2026-06-15"
+      },
+      "name": "zaronia_dates"
+    }
+  ],
+  "cpp_commit": "6b57206e04598f092efee66e3b367efc84771995",
+  "cpp_version": "1.43",
+  "generated_at": "2026-08-03T18:51:42Z",
+  "generated_by": "v143_indexes_probe",
+  "test_group": "indexes/v143_indexes"
+}

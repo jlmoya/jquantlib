@@ -81,7 +81,11 @@ public class SouthAfrica extends Calendar {
 
         @Override
         public String name() {
-            return "SouthAfrica";
+            // C++ southafrica.hpp: name() returns "South Africa" (with a
+            // space). The port previously returned "SouthAfrica", which is a
+            // pre-existing mismatch — calendar names are user-visible and are
+            // used when identifying a calendar, so follow C++ exactly.
+            return "South Africa";
         }
 
         @Override
