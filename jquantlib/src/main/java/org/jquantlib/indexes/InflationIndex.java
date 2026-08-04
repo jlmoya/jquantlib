@@ -97,6 +97,11 @@ public abstract class InflationIndex extends Index implements Observer {
         return revised;
     }
 
+    /**
+     * @deprecated Indexes no longer interpolate; the coupons using them do. Deprecated in C++ QuantLib v1.43
+     *             ({@code ql/indexes/inflationindex.hpp:238}).
+     */
+    @Deprecated
     public boolean interpolated() {
         return interpolated;
     }

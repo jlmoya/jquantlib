@@ -172,7 +172,14 @@ public final class CPI {
      * When you observe a (zero) inflation index, how do you interpolate between fixings?
      */
     public enum InterpolationType {
-        /** Same interpolation as the underlying index. */
+        /**
+         * Same interpolation as the underlying index.
+         *
+         * @deprecated Use {@link #Linear} or {@link #Flat} instead. {@code AsIndex} existed only to ease migration
+         *             from index-level to coupon-level interpolation. Deprecated in C++ QuantLib v1.43
+         *             ({@code ql/indexes/inflationindex.hpp:46}).
+         */
+        @Deprecated
         AsIndex,
         /** Flat (i.e. piecewise-constant) from previous fixing. */
         Flat,
