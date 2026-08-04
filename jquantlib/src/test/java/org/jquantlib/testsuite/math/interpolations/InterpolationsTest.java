@@ -36,6 +36,7 @@ import static org.junit.Assert.assertFalse;
 import org.jquantlib.QL;
 import org.jquantlib.experimental.math.LaplaceInterpolation;
 import org.jquantlib.experimental.volatility.NoArbSabrInterpolation;
+import org.jquantlib.experimental.volatility.NoArbSabrSmileSection;
 import org.jquantlib.math.BSpline;
 import org.jquantlib.math.Constants;
 import org.jquantlib.math.GaussianKernel;
@@ -57,6 +58,8 @@ import org.jquantlib.math.interpolations.XABRInterpolation;
 import org.jquantlib.math.interpolations.factories.Bilinear;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.matrixutilities.Matrix;
+import org.jquantlib.math.optimization.EndCriteria;
+import org.jquantlib.math.optimization.LevenbergMarquardt;
 import org.jquantlib.math.randomnumbers.HaltonRsg;
 import org.jquantlib.termstructures.volatilities.Sabr;
 import org.junit.Test;
@@ -731,19 +734,120 @@ public class InterpolationsTest {
         }
     }
 
+    /** Strike grid of C++ {@code testNoArbSabrInterpolation} (interpolations.cpp). */
+    private static final double[] NOARB_SABR_STRIKES = {
+        0.030, 0.032, 0.034, 0.036, 0.038, 0.040, 0.042, 0.044, 0.046, 0.048,
+        0.050, 0.052, 0.054, 0.056, 0.058, 0.060, 0.062, 0.064, 0.066, 0.068,
+        0.070, 0.072, 0.074, 0.076, 0.078, 0.080, 0.082, 0.084, 0.086, 0.088,
+        0.090,
+    };
+
     /**
-     * C++ {@code testNoArbSabrInterpolation} (interpolations.cpp) is
-     * covered by
-     * {@code org.jquantlib.testsuite.experimental.volatility.NoArbSabrInterpolationTest}
-     * which ports the no-arbitrage SABR interpolation against the same
-     * reference cap/floor smile data. This stub is kept as a per-file
-     * pointer so the InterpolationsTest catalogue stays in lock-step with
-     * the C++ test list (Phase 5e.5b-CFC-d-154).
+     * Volatilities the no-arbitrage SABR model produces for
+     * {@code (alpha, beta, nu, rho) = (0.2, 0.6, 0.02, 0.01)} at {@code expiry = 1}, {@code forward = 0.039}.
+     * Verbatim from C++ {@code testNoArbSabrInterpolation}; alpha is 0.2 rather than the Hagan test's value
+     * because noarb-SABR restricts {@code sigmaI = alpha * forward^(beta-1) <= 1}.
+     */
+    private static final double[] NOARB_SABR_VOLS = {
+        0.773729077752926, 0.763916242454194, 0.754773878663612, 0.746222305031368,
+        0.738193023523582, 0.730629785825930, 0.723484825471685, 0.716716812668892,
+        0.710290301049393, 0.704174528906769, 0.698342635400901, 0.692771033345972,
+        0.687438902593476, 0.682327777297265, 0.677421206991904, 0.672704476238547,
+        0.668164371832768, 0.663788984329375, 0.659567547226380, 0.655490294349232,
+        0.651548341349061, 0.647733583657137, 0.644038608699086, 0.640456620061898,
+        0.636981371712714, 0.633607110719560, 0.630328527192861, 0.627140710386248,
+        0.624039110072250, 0.621019502453590, 0.618077959983455,
+    };
+
+    /**
+     * Faithful port of C++ {@code testNoArbSabrInterpolation} (interpolations.cpp). Two halves:
+     * <ol>
+     *   <li>{@link NoArbSabrSmileSection} must reproduce the 31 published volatilities above to
+     *       {@code 1e-12} — the C++ tolerance verbatim. These are upstream's own numbers, so this is a
+     *       direct cross-implementation check of the Doust density, its Gauss-Lobatto integration and the
+     *       Black inversion that turns the model price into a volatility.</li>
+     *   <li>{@link NoArbSabrInterpolation} must recover {@code (alpha, beta, nu, rho)} from those same
+     *       volatilities to {@code 5e-6} across all 16 combinations of vega-weighting and
+     *       alpha/nu/rho fixed-or-free. Beta stays fixed throughout, exactly as C++ does — with all four
+     *       free the problem is under-determined and the recovered set is not unique.</li>
+     * </ol>
+     *
+     * <p>C++ also loops over {@code Simplex(0.01)} but skips it ({@code for (Size j=1; ...)}) because it
+     * "gets caught in some cases"; only Levenberg-Marquardt runs. Mirrored here.
+     *
+     * <p>Until this port the Java side had a pointer stub here, and the calibration ran against the Hagan
+     * expansion rather than the no-arbitrage smile — see {@code NoArbSabrInterpolation.NoArbSabrSpecs}.
      */
     @Test
     public void testNoArbSabrInterpolation() {
-        QL.info("Delegated to NoArbSabrInterpolationTest "
-                + "(experimental.volatility package).");
+        QL.info("Testing no-arbitrage Sabr interpolation...");
+
+        final double tolerance = 1.0e-12;
+
+        final double expiry = 1.0;
+        final double forward = 0.039;
+        // input SABR coefficients (corresponding to the vols above)
+        final double initialAlpha = 0.2;
+        final double initialBeta = 0.6;
+        final double initialNu = 0.02;
+        final double initialRho = 0.01;
+
+        // --- 1. the model must reproduce the published volatilities ---------
+        final NoArbSabrSmileSection noarbSabr = new NoArbSabrSmileSection(
+                expiry, forward, new double[] { initialAlpha, initialBeta, initialNu, initialRho });
+        for (int i = 0; i < NOARB_SABR_STRIKES.length; ++i) {
+            final double calculatedVol = noarbSabr.volatility(NOARB_SABR_STRIKES[i]);
+            assertEquals("failed to calculate noarb-Sabr function at strike " + NOARB_SABR_STRIKES[i],
+                    NOARB_SABR_VOLS[i], calculatedVol, tolerance);
+        }
+
+        // --- 2. calibration must recover the generating parameters ----------
+        final double betaGuess = 0.5;
+        final double alphaGuess = 0.2 / Math.pow(forward, betaGuess - 1.0); // default value for alpha
+        final double nuGuess = Math.sqrt(0.4);
+        final double rhoGuess = 0.0;
+
+        final double calibrationTolerance = 5.0e-6;
+        final EndCriteria endCriteria = new EndCriteria(100000, 100, 1e-8, 1e-8, 1e-8);
+
+        final Array strikes = new Array(NOARB_SABR_STRIKES);
+        final Array volatilities = new Array(NOARB_SABR_VOLS);
+
+        for (final boolean vegaWeighted : new boolean[] { true, false }) {
+            for (final boolean isAlphaFixed : new boolean[] { true, false }) {
+                // beta stays fixed: all four parameters free is a problem for this kind of test
+                final boolean isBetaFixed = true;
+                for (final boolean isNuFixed : new boolean[] { true, false }) {
+                    for (final boolean isRhoFixed : new boolean[] { true, false }) {
+                        final NoArbSabrInterpolation interpolation = new NoArbSabrInterpolation(
+                                strikes, volatilities, expiry, forward,
+                                isAlphaFixed ? initialAlpha : alphaGuess,
+                                isBetaFixed ? initialBeta : betaGuess,
+                                isNuFixed ? initialNu : nuGuess,
+                                isRhoFixed ? initialRho : rhoGuess,
+                                isAlphaFixed, isBetaFixed, isNuFixed, isRhoFixed,
+                                vegaWeighted, endCriteria,
+                                new LevenbergMarquardt(1e-8, 1e-8, 1e-8),
+                                1e-10, false, 50, 0.0);
+                        interpolation.update();
+
+                        final String where = " [vegaWeighted=" + vegaWeighted
+                                + ", isAlphaFixed=" + isAlphaFixed
+                                + ", isBetaFixed=" + isBetaFixed
+                                + ", isNuFixed=" + isNuFixed
+                                + ", isRhoFixed=" + isRhoFixed + "]";
+                        assertEquals("failed to calibrate alpha Sabr parameter" + where,
+                                initialAlpha, interpolation.alpha(), calibrationTolerance);
+                        assertEquals("failed to calibrate beta Sabr parameter" + where,
+                                initialBeta, interpolation.beta(), calibrationTolerance);
+                        assertEquals("failed to calibrate nu Sabr parameter" + where,
+                                initialNu, interpolation.nu(), calibrationTolerance);
+                        assertEquals("failed to calibrate rho Sabr parameter" + where,
+                                initialRho, interpolation.rho(), calibrationTolerance);
+                    }
+                }
+            }
+        }
     }
 
     /**

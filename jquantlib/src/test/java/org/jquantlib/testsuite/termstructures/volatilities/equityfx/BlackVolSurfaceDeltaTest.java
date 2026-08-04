@@ -33,6 +33,8 @@ package org.jquantlib.testsuite.termstructures.volatilities.equityfx;
 import static org.junit.Assert.assertEquals;
 
 import org.jquantlib.QL;
+import org.jquantlib.instruments.Option;
+import org.jquantlib.pricingengines.BlackFormula;
 import org.jquantlib.Settings;
 import org.jquantlib.daycounters.ActualActual;
 import org.jquantlib.daycounters.DayCounter;
@@ -384,5 +386,68 @@ public class BlackVolSurfaceDeltaTest {
         checkClose(0.12948693808, smile.volatility(smile.maxStrike() + 0.1), REL_TOL_LOOSE);
         checkClose(0.0, smile.volatility(smile.minStrike() - 0.5), REL_TOL_LOOSE);
         checkClose(0.0, smile.volatility(smile.maxStrike() + 0.5), REL_TOL_LOOSE);
+    }
+
+    /**
+     * Faithful port of C++ v1.43 {@code testSmileSectionWithAtmLevel}
+     * ({@code test-suite/blackvolsurfacedelta.cpp}).
+     *
+     * <p>{@link BlackVolatilitySurfaceDelta} carries spot plus both yield curves, so v1.43 promoted its
+     * private {@code forward(Time)} helper to a public {@code atmLevel(Time)} override. That is what gives
+     * the {@link SmileSection} returned by {@code smileSection()} a usable {@code atmLevel()} — and hence a
+     * working {@code optionPrice()}, which without the override fails the base class's requirement that an
+     * ATM level be known.
+     *
+     * <p>Both checks use the C++ tolerance of {@code 1e-12} verbatim. Neither is a numerical-accuracy check:
+     * the first compares against the same {@code spot * df_f / df_d} product the surface computes, and the
+     * second against {@code blackFormula} evaluated at exactly the vol the smile reports — so the only room
+     * for disagreement is the order of a handful of floating-point operations.
+     */
+    @Test
+    public void testSmileSectionWithAtmLevel() {
+
+        QL.info("Testing SmileSection from a vol surface that overrides atmLevel(Time)...");
+
+        final Date refDate = new Date(1, Month.January, 2010);
+        new Settings().setEvaluationDate(refDate);
+        final DayCounter dc = new ActualActual(ActualActual.Convention.ISDA);
+
+        final Date[] dates = {
+                new Date(1, Month.January, 2011),
+                new Date(1, Month.January, 2012),
+        };
+        final double[] putDeltas = { -0.25 };
+        final double[] callDeltas = { 0.25 };
+        final Matrix volMatrix = new Matrix(2, 2);
+        volMatrix.fill(0.10);
+
+        final Handle<Quote> spot = new Handle<Quote>(new SimpleQuote(1.0));
+        final Handle<YieldTermStructure> dts = new Handle<YieldTermStructure>(
+                new FlatForward(refDate, 0.011, dc));
+        final Handle<YieldTermStructure> fts = new Handle<YieldTermStructure>(
+                new FlatForward(refDate, 0.012, dc));
+
+        final BlackVolatilitySurfaceDelta surface = new BlackVolatilitySurfaceDelta(
+                refDate, dates, putDeltas, callDeltas, false, volMatrix,
+                dc, new Target(), spot, dts, fts);
+
+        final Date maturity = new Date(1, Month.July, 2011);
+        final SmileSection smile = surface.smileSection(maturity);
+
+        // atmLevel matches spot * df_q / df_r (FX-style forward)
+        final double expectedFwd = spot.currentLink().value()
+                * fts.currentLink().discount(maturity) / dts.currentLink().discount(maturity);
+        final double tolerance = 1.0e-12;
+        assertEquals("smile atmLevel mismatch", expectedFwd, smile.atmLevel(), tolerance);
+
+        // optionPrice() works (without the atmLevel(Time) override it would throw) and matches the
+        // Black formula at the forward.
+        final double df = dts.currentLink().discount(maturity);
+        final double callPrice = smile.optionPrice(expectedFwd, Option.Type.Call, df);
+        final double t = surface.timeFromReference(maturity);
+        final double vol = smile.volatility(expectedFwd);
+        final double expectedCall = BlackFormula.blackFormula(Option.Type.Call, expectedFwd, expectedFwd,
+                vol * Math.sqrt(t), df);
+        assertEquals("smile optionPrice mismatch", expectedCall, callPrice, tolerance);
     }
 }

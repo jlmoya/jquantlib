@@ -48,6 +48,7 @@ import org.jquantlib.pricingengines.basket.Fd2dBlackScholesVanillaEngine;
 import org.jquantlib.pricingengines.basket.FdndimBlackScholesVanillaEngine;
 import org.jquantlib.pricingengines.basket.KirkEngine;
 import org.jquantlib.pricingengines.basket.MCAmericanBasketEngine;
+import org.jquantlib.pricingengines.basket.MCEuropeanBasketEngineLowDiscrepancy;
 import org.jquantlib.pricingengines.basket.OperatorSplittingSpreadEngine;
 import org.jquantlib.pricingengines.basket.SingleFactorBsmBasketEngine;
 import org.jquantlib.pricingengines.basket.SpreadBlackScholesVanillaEngine;
@@ -2053,14 +2054,13 @@ public class BasketOptionTest {
      * (MaxBasket Put rows); only the rows whose euro/american values are
      * uncommented in v1.42.1 are reproduced here (7 active rows out of 36).</p>
      *
-     * <p>Two engines per row:
+     * <p>Two engines per row, both configured exactly as C++ v1.43:
      * <ul>
-     *   <li>European leg: {@link MCEuropeanBasketEngine} (PseudoRandom MT-19937
-     *       in this Java port; the C++ test uses Sobol/LowDiscrepancy with 8091
-     *       samples — quasi-random MC for basket options is deferred to
-     *       Phase 5k.5b. We use 10000 pseudo-random samples + 1 step/year +
-     *       antithetic instead, which produces sub-0.01 relative error on s1=40
-     *       across all 7 rows).</li>
+     *   <li>European leg: {@link MCEuropeanBasketEngineLowDiscrepancy}, the
+     *       Java stand-in for {@code MakeMCEuropeanBasketEngine<LowDiscrepancy>
+     *       (process).withStepsPerYear(1).withSamples(8091).withSeed(42)} — a
+     *       3-asset Sobol sequence, one step, no antithetic (the {@code Make…}
+     *       builder defaults {@code antithetic_ = false}).</li>
      *   <li>American leg: {@link MCAmericanBasketEngine} with the C++ exact
      *       parameters (1000 samples, 500 time steps, antithetic,
      *       calibrationSamples=250, seed=1).</li>
@@ -2129,10 +2129,9 @@ public class BasketOptionTest {
         final long amSeed = 1L;
         final double mcAmericanRelativeErrorTolerance = 1.0e-2;
 
-        // PseudoRandom equivalent for the European leg (C++ uses Sobol/8091).
-        // 10000 pseudo-MT samples + antithetic + 1 step/year gives variance
-        // comparable to Sobol/8091 for these payoffs at the chosen tolerance.
-        final int requiredEuSamples = 10000;
+        // European leg — C++ verbatim: a 3D Sobol sequence, "think long and
+        // hard before moving to more than 1 timestep", 8091 samples, seed 42.
+        final int requiredEuSamples = 8091;
         final int euTimeStepsPerYear = 1;
         final long euSeed = 42L;
         final double mcRelativeErrorTolerance = 1.0e-2;
@@ -2184,13 +2183,13 @@ public class BasketOptionTest {
             final StochasticProcessArray process = new StochasticProcessArray(procs, correlation);
 
             // ---- European leg --------------------------------------------------
-            final org.jquantlib.pricingengines.basket.MCEuropeanBasketEngine mcQuasiEngine =
-                    new org.jquantlib.pricingengines.basket.MCEuropeanBasketEngine(
+            final MCEuropeanBasketEngineLowDiscrepancy mcQuasiEngine =
+                    new MCEuropeanBasketEngineLowDiscrepancy(
                             process,
                             /* timeSteps */ McSimulation.NULL_SAMPLES,
                             /* timeStepsPerYear */ euTimeStepsPerYear,
                             /* brownianBridge */ false,
-                            /* antitheticVariate */ true,
+                            /* antitheticVariate */ false,
                             /* requiredSamples */ requiredEuSamples,
                             /* requiredTolerance */ McSimulation.NULL_TOLERANCE,
                             /* maxSamples */ McSimulation.NULL_SAMPLES,
@@ -2204,7 +2203,7 @@ public class BasketOptionTest {
             final double euroExp = value.euroValue();
             final double euroRelError = relativeError(euroCalc, euroExp, value.s1());
             if (euroRelError > mcRelativeErrorTolerance) {
-                fail("MC Quasi value (PseudoRandom proxy): " + value.basketType() + " "
+                fail("MC Quasi value: " + value.basketType() + " "
                         + value.type() + " K=" + value.strike() + " t=" + value.t()
                         + " rho=" + value.rho() + ":\n"
                         + "  expected   = " + euroExp + "\n"

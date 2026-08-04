@@ -1266,6 +1266,50 @@ public class AndreasenHugeVolatilityInterplTest {
         }
     }
 
+    /**
+     * Faithful port of C++ v1.43 {@code testAndreasenHugeVolatilityAdapterAtmLevel}
+     * ({@code test-suite/andreasenhugevolatilityinterpl.cpp}).
+     *
+     * <p>v1.43 added {@code AndreasenHugeVolatilityAdapter::atmLevel(Time t) { return volInterpl_->fwd(t); }}.
+     * With flat curves that forward is {@code s0 * df_q / df_r}, which is what the test compares against, at
+     * C++'s {@code 1e-12} verbatim. Note the adapter must not need a calibrated interpolation to answer this
+     * — the forward comes from the curves alone — so no calibration is triggered.
+     */
+    @Test
+    public void testAndreasenHugeVolatilityAdapterAtmLevel() {
+        final Date today = new Date(4, Month.March, 2026);
+        new Settings().setEvaluationDate(today);
+        final DayCounter dc = new Actual365Fixed();
+
+        final double s0 = 100.0;
+        final double r = 0.05, q = 0.02;
+
+        final Handle< Quote > spot = new Handle< Quote >(new SimpleQuote(s0));
+        final Handle< YieldTermStructure > rTS = new Handle< YieldTermStructure >(
+                new FlatForward(today, r, dc));
+        final Handle< YieldTermStructure > qTS = new Handle< YieldTermStructure >(
+                new FlatForward(today, q, dc));
+        final Quote vol = new SimpleQuote(0.20);
+
+        final List< AndreasenHugeVolatilityInterpl.CalibrationEntry > calibrationSet = new ArrayList<>();
+        final EuropeanExercise exercise = new EuropeanExercise(today.add(new Period(1, TimeUnit.Years)));
+        for (final double strike : new double[] { 80.0, 100.0, 120.0 }) {
+            calibrationSet.add(new AndreasenHugeVolatilityInterpl.CalibrationEntry(
+                    new VanillaOption(new PlainVanillaPayoff(Option.Type.Call, strike), exercise), vol));
+        }
+
+        final AndreasenHugeVolatilityInterpl interpl =
+                new AndreasenHugeVolatilityInterpl(calibrationSet, spot, rTS, qTS);
+        final AndreasenHugeVolatilityAdapter surface = new AndreasenHugeVolatilityAdapter(interpl);
+
+        final double tol = 1e-12;
+        for (final double t : new double[] { 0.25, 0.5, 1.0 }) {
+            final double expected = s0 * qTS.currentLink().discount(t) / rTS.currentLink().discount(t);
+            assertEquals("AndreasenHugeVolatilityAdapter.atmLevel mismatch at t=" + t,
+                    expected, surface.atmLevel(t), tol);
+        }
+    }
+
     // Suppress unused-helper warning if the FdEngine sweep is gated out.
     @SuppressWarnings("unused")
     private static final Class< LocalVolTermStructure > LV_TS_KEEP_IMPORT = LocalVolTermStructure.class;

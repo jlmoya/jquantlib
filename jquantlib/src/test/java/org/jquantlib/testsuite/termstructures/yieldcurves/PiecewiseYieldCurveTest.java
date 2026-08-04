@@ -22,8 +22,17 @@
 
 package org.jquantlib.testsuite.termstructures.yieldcurves;
 
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.fail;
 
 import org.jquantlib.QL;
+import org.jquantlib.cashflow.BlackIborCouponPricer;
+import org.jquantlib.cashflow.CashFlow;
+import org.jquantlib.cashflow.FloatingRateCoupon;
+import org.jquantlib.cashflow.FloatingRateCouponPricer;
+import org.jquantlib.cashflow.PricerSetter;
+import org.jquantlib.termstructures.volatilities.optionlet.OptionletVolatilityStructure;
+import org.jquantlib.termstructures.volatilities.optionlet.ConstantOptionletVolatility;
 import org.jquantlib.Settings;
 import org.jquantlib.daycounters.Actual360;
 import org.jquantlib.daycounters.Actual365Fixed;
@@ -3105,6 +3114,109 @@ public class PiecewiseYieldCurveTest {
                         "round-trip discount mismatch at %dY (%s): bootstrap=%.10f raw=%.10f err=%.2e",
                         i, d, d1, d2, Math.abs(d1 - d2)));
             }
+        }
+    }
+
+    /**
+     * Faithful port of C++ v1.43 {@code testSwapRateHelperWithCouponPricer}
+     * ({@code test-suite/piecewiseyieldcurve.cpp}).
+     *
+     * <p>QuantLib issue #1817: a coupon pricer — typically a
+     * {@link org.jquantlib.cashflow.BlackIborCouponPricer} carrying a volatility surface for timing /
+     * convexity adjustments — can now be attached to the floating leg of the swap {@link SwapRateHelper}
+     * builds internally, so the curve is bootstrapped under the same pricing methodology later used to
+     * value swaps.
+     *
+     * <p>Two things are checked, exactly as C++ does: that the supplied pricer reaches every floating
+     * coupon of each helper's internal swap, and that the bootstrap is self-consistent — a swap struck at
+     * its market rate and priced with the same pricer is at par on the resulting curve, to {@code 1e-6}
+     * (the C++ tolerance verbatim; it is an NPV on unit notional, so this is a par-ness check, not a
+     * numerical-accuracy one).
+     */
+    @Test
+    public void testSwapRateHelperWithCouponPricer() {
+        QL.info("Testing SwapRateHelper with a custom coupon pricer...");
+
+        final Date savedEvaluationDate = new Settings().evaluationDate();
+        try {
+            final Date today = new Date(15, Month.June, 2020);
+            new Settings().setEvaluationDate(today);
+
+            final Datum[] localSwapData = {
+                new Datum( 2, TimeUnit.Years, 0.015),
+                new Datum( 5, TimeUnit.Years, 0.020),
+                new Datum(10, TimeUnit.Years, 0.025),
+                new Datum(20, TimeUnit.Years, 0.030),
+            };
+
+            final Calendar target = new Target();
+            final DayCounter fixedDayCount = new Thirty360(Thirty360.Convention.BondBasis);
+
+            final Handle<OptionletVolatilityStructure> vol = new Handle<OptionletVolatilityStructure>(
+                    new ConstantOptionletVolatility(today, target, BusinessDayConvention.Following,
+                            0.20, new Actual365Fixed()));
+            final FloatingRateCouponPricer pricer = new BlackIborCouponPricer(vol);
+
+            final RelinkableHandle<YieldTermStructure> curveHandle =
+                    new RelinkableHandle<YieldTermStructure>(null);
+            final IborIndex index = new Euribor6M(curveHandle);
+
+            final SwapRateHelper[] helpers = new SwapRateHelper[localSwapData.length];
+            for (int i = 0; i < localSwapData.length; ++i) {
+                helpers[i] = new SwapRateHelper(localSwapData[i].rate(),
+                        new Period(localSwapData[i].n(), localSwapData[i].units()),
+                        target, Frequency.Annual, BusinessDayConvention.ModifiedFollowing,
+                        fixedDayCount, index, new Handle<Quote>(), new Period(0, TimeUnit.Days),
+                        new Handle<YieldTermStructure>(), pricer);
+            }
+
+            // the supplied pricer must be attached to every coupon of the floating leg of the swap
+            // the helper builds internally
+            for (final SwapRateHelper helper : helpers) {
+                for (final CashFlow cf : helper.swap().floatingLeg()) {
+                    if (!(cf instanceof FloatingRateCoupon coupon)) {
+                        fail("floating leg carries a non-FloatingRateCoupon: " + cf.getClass().getName());
+                        return;
+                    }
+                    assertSame("the coupon pricer was not attached to the floating leg of the "
+                            + "rate helper's internal swap", pricer, coupon.pricer());
+                }
+            }
+
+            // bootstrap and check self-consistency
+            final RateHelper[] rateHelpers = new RateHelper[helpers.length];
+            System.arraycopy(helpers, 0, rateHelpers, 0, helpers.length);
+            curveHandle.linkTo(new PiecewiseYieldCurve(
+                    Discount.class, LogLinear.class, IterativeBootstrap.class,
+                    today, rateHelpers, new Actual365Fixed()));
+
+            final double tolerance = 1.0e-6;
+            for (final Datum d : localSwapData) {
+                // built to match the helper's internal swap, priced with the same pricer
+                final VanillaSwap swap = new MakeVanillaSwap(
+                        new Period(d.n(), d.units()), index, d.rate(), new Period(0, TimeUnit.Days))
+                        .withDiscountingTermStructure(curveHandle)
+                        .withFixedLegDayCount(fixedDayCount)
+                        .withFixedLegTenor(new Period(Frequency.Annual))
+                        .withFixedLegConvention(BusinessDayConvention.ModifiedFollowing)
+                        .withFixedLegTerminationDateConvention(BusinessDayConvention.ModifiedFollowing)
+                        .withFixedLegCalendar(target)
+                        .withFixedLegEndOfMonth(false)
+                        .withFloatingLegCalendar(target)
+                        .withFloatingLegEndOfMonth(false)
+                        .value();
+                PricerSetter.setCouponPricer(swap.floatingLeg(), pricer);
+
+                final double npv = swap.NPV();
+                if (Math.abs(npv) > tolerance) {
+                    fail("swap priced with the bootstrapping coupon pricer is not at par:"
+                            + "\n    tenor:     " + new Period(d.n(), d.units())
+                            + "\n    NPV:       " + npv
+                            + "\n    tolerance: " + tolerance);
+                }
+            }
+        } finally {
+            new Settings().setEvaluationDate(savedEvaluationDate);
         }
     }
 }

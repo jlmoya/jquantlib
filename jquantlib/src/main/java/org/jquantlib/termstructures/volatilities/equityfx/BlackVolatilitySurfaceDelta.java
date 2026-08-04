@@ -420,21 +420,30 @@ public class BlackVolatilitySurfaceDelta extends BlackVolatilityTermStructure {
             if ( hasAtm_ ) {
                 return blackVolAt(tme, putDeltas_.length);
             } else {
-                strike = forward(tme);
+                strike = atmLevel(tme);
             }
         }
         return blackVolSmile(tme).volatility(strike);
     }
 
-    //
-    // private helpers
-    //
-
-    /** Forward for time {@code t}. Mirrors C++ {@code forward(t)}. */
-    private double forward(final double t) {
+    /**
+     * At-the-money level (the FX-style forward) at time {@code t}: {@code spot * df_foreign / df_domestic}.
+     * <p>
+     * C++ v1.43 renamed the private {@code forward(Time)} helper to a public
+     * {@code atmLevel(Time) const override} ({@code blackvolsurfacedelta.{hpp,cpp}}), which is what makes the
+     * {@link org.jquantlib.termstructures.volatilities.SmileSection} returned by
+     * {@code smileSection()} report a usable {@code atmLevel()} — and therefore lets its
+     * {@code optionPrice()} work instead of failing the base class's requirement.
+     */
+    @Override
+    public double atmLevel(final double t) {
         return spot_.currentLink().value() * foreignTS_.currentLink().discount(t) / domesticTS_.currentLink()
                 .discount(t);
     }
+
+    //
+    // private helpers
+    //
 
     /**
      * Black volatility for the i-th delta column at time {@code t}, applying the configured

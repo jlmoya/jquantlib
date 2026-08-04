@@ -95,4 +95,15 @@ public class AndreasenHugeVolatilityAdapter extends BlackVarianceTermStructure {
     public int settlementDays() {
         return volInterpl_.riskFreeRate().currentLink().settlementDays();
     }
+
+    /**
+     * At-the-money level at time {@code t}. Mirrors C++ v1.43
+     * {@code AndreasenHugeVolatilityAdapter::atmLevel(Time t) const { return volInterpl_->fwd(t); }}
+     * ({@code andreasenhugevolatilityadapter.cpp}) — the same forward the adapter already uses to pick the
+     * option type in {@link #blackVarianceImpl(double, double)}.
+     */
+    @Override
+    public double atmLevel(final double t) {
+        return volInterpl_.fwd(t);
+    }
 }

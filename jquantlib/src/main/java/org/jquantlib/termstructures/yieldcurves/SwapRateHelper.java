@@ -25,6 +25,8 @@ package org.jquantlib.termstructures.yieldcurves;
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.cashflow.FloatingRateCoupon;
+import org.jquantlib.cashflow.FloatingRateCouponPricer;
+import org.jquantlib.cashflow.PricerSetter;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.indexes.IborIndex;
 import org.jquantlib.indexes.SwapIndex;
@@ -76,6 +78,16 @@ public class SwapRateHelper extends RelativeDateRateHelper {
     /** Relinkable proxy fed to MakeVanillaSwap; tracks {@link #discountHandle} or the bootstrap curve. */
     protected final RelinkableHandle< YieldTermStructure > discountRelinkableHandle =
             new RelinkableHandle< YieldTermStructure >(null);
+    /**
+     * Optional pricer attached to every coupon of the internal swap's floating leg; {@code null} when the
+     * caller supplied none.
+     * <p>
+     * Mirrors C++ v1.43 {@code SwapRateHelper::couponPricer_} (ratehelpers.hpp:289). Its point is that a
+     * curve can be bootstrapped under the same pricing methodology later used to value swaps — e.g. a
+     * {@link org.jquantlib.cashflow.BlackIborCouponPricer} carrying a volatility surface for timing /
+     * convexity adjustments (QuantLib issue #1817).
+     */
+    protected FloatingRateCouponPricer couponPricer;
     protected VanillaSwap swap;
     protected RelinkableHandle< YieldTermStructure > termStructureHandle = new RelinkableHandle< YieldTermStructure >(
             null);
@@ -209,8 +221,28 @@ public class SwapRateHelper extends RelativeDateRateHelper {
             final Frequency fixedFrequency, final BusinessDayConvention fixedConvention, final DayCounter fixedDayCount,
             final IborIndex iborIndex, final Handle< Quote > spread, final Period fwdStart,
             final Handle< YieldTermStructure > discountingCurve) {
+        this(rate, tenor, calendar, fixedFrequency, fixedConvention, fixedDayCount, iborIndex, spread, fwdStart,
+                discountingCurve, null);
+    }
+
+    /**
+     * Tenor-based SwapRateHelper ctor taking a floating-leg coupon pricer — mirrors the C++ v1.43 addition of the
+     * trailing {@code couponPricer} argument (ratehelpers.hpp:207-231, ratehelpers.cpp:576-580):
+     *
+     * <pre>
+     *   if (couponPricer_)
+     *       setCouponPricer(swap_-&gt;floatingLeg(), couponPricer_);
+     * </pre>
+     *
+     * @param couponPricer pricer attached to every floating coupon of the internal swap; may be {@code null}
+     */
+    public SwapRateHelper(final Handle< Quote > rate, final Period tenor, final Calendar calendar,
+            final Frequency fixedFrequency, final BusinessDayConvention fixedConvention, final DayCounter fixedDayCount,
+            final IborIndex iborIndex, final Handle< Quote > spread, final Period fwdStart,
+            final Handle< YieldTermStructure > discountingCurve, final FloatingRateCouponPricer couponPricer) {
         super(rate);
 
+        this.couponPricer = couponPricer;
         this.tenor = tenor;
         this.calendar = calendar;
         this.fixedConvention = fixedConvention;
@@ -229,6 +261,48 @@ public class SwapRateHelper extends RelativeDateRateHelper {
         this.spread.addObserver(this);
         if ( !this.discountHandle.empty() ) {
             this.discountHandle.addObserver(this);
+        }
+        // C++ ratehelpers.cpp:545 `registerWith(couponPricer_);`
+        if ( this.couponPricer != null ) {
+            this.couponPricer.addObserver(this);
+        }
+
+        initializeDates();
+    }
+
+    /**
+     * Rate-valued convenience overload of
+     * {@link #SwapRateHelper(Handle, Period, Calendar, Frequency, BusinessDayConvention, DayCounter, IborIndex,
+     * Handle, Period, Handle, FloatingRateCouponPricer)}.
+     */
+    public SwapRateHelper(final /*@Rate*/ double rate, final Period tenor, final Calendar calendar,
+            final Frequency fixedFrequency, final BusinessDayConvention fixedConvention, final DayCounter fixedDayCount,
+            final IborIndex iborIndex, final Handle< Quote > spread, final Period fwdStart,
+            final Handle< YieldTermStructure > discountingCurve, final FloatingRateCouponPricer couponPricer) {
+        super(rate);
+
+        this.couponPricer = couponPricer;
+        this.tenor = tenor;
+        this.calendar = calendar;
+        this.fixedConvention = fixedConvention;
+        this.fixedFrequency = fixedFrequency;
+        this.fixedDayCount = fixedDayCount;
+        this.iborIndex = iborIndex;
+        this.spread = spread;
+        this.fwdStart = fwdStart;
+        this.explicitStartDate = null;
+        this.explicitEndDate = null;
+        this.discountHandle = discountingCurve == null
+                ? new Handle< YieldTermStructure >()
+                : discountingCurve;
+
+        this.iborIndex.addObserver(this);
+        this.spread.addObserver(this);
+        if ( !this.discountHandle.empty() ) {
+            this.discountHandle.addObserver(this);
+        }
+        if ( this.couponPricer != null ) {
+            this.couponPricer.addObserver(this);
         }
 
         initializeDates();
@@ -361,6 +435,13 @@ public class SwapRateHelper extends RelativeDateRateHelper {
             mvs = mvs.withTerminationDate(this.explicitEndDate);
         }
         this.swap = mvs.value();
+
+        // C++ v1.43 ratehelpers.cpp:576-580 — attach the caller's pricer to the internal swap's
+        // floating leg, so the curve is bootstrapped with the same methodology used to value swaps
+        // later. Must happen before the dates are read off the swap.
+        if ( this.couponPricer != null ) {
+            PricerSetter.setCouponPricer(this.swap.floatingLeg(), this.couponPricer);
+        }
 
         // Port of C++ v1.43 ratehelpers.cpp:584-613:
         //   earliestDate_ = swap_->startDate();

@@ -142,6 +142,27 @@ public class HestonBlackVolSurface extends BlackVolTermStructure {
         return Double.MAX_VALUE;
     }
 
+    /**
+     * At-the-money level at time {@code t}. Mirrors C++ v1.43
+     * ({@code hestonblackvolsurface.cpp}):
+     *
+     * <pre>
+     *   return process-&gt;s0()-&gt;value()
+     *        * process-&gt;dividendYield()-&gt;discount(t, true)
+     *        / process-&gt;riskFreeRate()-&gt;discount(t, true);
+     * </pre>
+     *
+     * — the same forward {@link #blackVolImpl(double, double)} already computes to choose the option type,
+     * including the {@code extrapolate = true} on both discounts.
+     */
+    @Override
+    public double atmLevel(final double t) {
+        final HestonProcess process = hestonModel_.process();
+        return process.s0().currentLink().value()
+                * process.dividendYield().currentLink().discount(t, true)
+                / process.riskFreeRate().currentLink().discount(t, true);
+    }
+
     @Override
     protected double blackVarianceImpl(final double t, final double strike) {
         final double vol = blackVolImpl(t, strike);

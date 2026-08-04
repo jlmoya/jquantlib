@@ -13,6 +13,7 @@ import static org.junit.Assert.fail;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.daycounters.Actual360;
 import org.jquantlib.daycounters.Actual365Fixed;
@@ -58,6 +59,7 @@ import org.jquantlib.pricingengines.vanilla.MCEuropeanHestonEngine;
 import org.jquantlib.pricingengines.vanilla.MakeMCEuropeanHestonEngine;
 import org.jquantlib.processes.BlackScholesMertonProcess;
 import org.jquantlib.processes.HestonProcess;
+import org.jquantlib.termstructures.volatilities.equityfx.HestonBlackVolSurface;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.SimpleQuote;
@@ -4054,6 +4056,50 @@ public class HestonModelTest {
                         + Math.abs(calculatedCDF - expectedCDF)
                         + "\n    tol           : " + tol);
             }
+        }
+    }
+
+    /**
+     * Faithful port of C++ v1.43 {@code testHestonBlackVolSurfaceAtmLevel}
+     * ({@code test-suite/hestonmodel.cpp}).
+     *
+     * <p>v1.43 added {@code HestonBlackVolSurface::atmLevel(Time)}, which returns the same
+     * {@code s0 * df_q / df_r} forward the surface already computes internally to choose the option type
+     * before inverting the Heston price. The tolerance is C++'s {@code 1e-12} verbatim: with flat curves
+     * both sides evaluate the identical product, so this pins the wiring — spot from the process, dividend
+     * on top, risk-free underneath, both discounts with {@code extrapolate = true} — not any numerics.
+     */
+    @Test
+    public void testHestonBlackVolSurfaceAtmLevel() {
+        QL.info("Testing atmLevel on HestonBlackVolSurface...");
+
+        final Date savedEvaluationDate = new Settings().evaluationDate();
+        try {
+            final Date today = new Date(4, Month.March, 2026);
+            new Settings().setEvaluationDate(today);
+            final DayCounter dc = new Actual365Fixed();
+
+            final double s0 = 100.0;
+            final double r = 0.05, q = 0.02;
+
+            final Handle<Quote> spot = new Handle<Quote>(new SimpleQuote(s0));
+            final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                    new FlatForward(today, r, dc));
+            final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
+                    new FlatForward(today, q, dc));
+
+            final HestonProcess process = new HestonProcess(rTS, qTS, spot, 0.04, 1.0, 0.04, 0.3, -0.5);
+            final HestonModel model = new HestonModel(process);
+            final HestonBlackVolSurface surface = new HestonBlackVolSurface(model);
+
+            final double tol = 1.0e-12;
+            for (final double t : new double[] { 0.25, 1.0, 5.0 }) {
+                final double expected = s0 * qTS.currentLink().discount(t) / rTS.currentLink().discount(t);
+                assertEquals("HestonBlackVolSurface.atmLevel mismatch at t=" + t,
+                        expected, surface.atmLevel(t), tol);
+            }
+        } finally {
+            new Settings().setEvaluationDate(savedEvaluationDate);
         }
     }
 }

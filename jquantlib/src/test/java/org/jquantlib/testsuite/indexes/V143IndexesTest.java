@@ -99,6 +99,11 @@ public class V143IndexesTest {
         final Shir idx = new Shir();
         checkWiring("shir", idx);
         checkDates("shir_dates", idx);
+        // C++ v1.43 test-suite/indexes.cpp `testShirIndex` asserts the family name directly rather than
+        // the composite index name the probe records ("ShirON Actual/365 (Fixed)"). Everything else that
+        // case checks — fixingDays 0, ILSCurrency, Israel(Israel::SHIR), Actual365Fixed — is already
+        // covered above by checkWiring against the probe reference.
+        assertEquals("shir: familyName", "Shir", idx.familyName());
     }
 
     @Test
