@@ -187,6 +187,59 @@ public class CashFlows {
     }
 
     /**
+     * NPV and BPS of the cash flows, computed together.
+     * <p>
+     * C++ parity: {@code CashFlows::npvbps} (cashflows.cpp). Upstream computes
+     * both in a single pass "for performance reason" and returns a
+     * {@code std::pair<Real,Real>}; Java returns a two-element array
+     * {@code {npv, bps}} to avoid introducing a tuple type here.
+     * <p>
+     * New in v1.43 usage: required by
+     * {@code DiscountingConstNotionalCrossCurrencySwapEngine}.
+     *
+     * @param leg the cash-flow sequence
+     * @param discountCurve the discounting term structure
+     * @param includeSettlementDateFlows whether flows on the settlement date count
+     * @param settlementDate settlement date; null//null-date defaults to the evaluation date
+     * @param npvDate date to which the result is discounted; null/null-date defaults to settlementDate
+     * @return {@code {npv, bps}}
+     */
+    public static double[] npvbps(final Leg leg, final YieldTermStructure discountCurve,
+            final boolean includeSettlementDateFlows, final Date settlementDate, final Date npvDate) {
+        double npv = 0.0;
+        double bps = 0.0;
+        if ( leg == null || leg.isEmpty() ) {
+            return new double[] { npv, bps };
+        }
+
+        Date settlement = settlementDate;
+        if ( settlement == null || settlement.isNull() ) {
+            settlement = new Settings().evaluationDate();
+        }
+        Date npvDt = npvDate;
+        if ( npvDt == null || npvDt.isNull() ) {
+            npvDt = settlement;
+        }
+
+        for ( int i = 0; i < leg.size(); ++i ) {
+            final CashFlow cf = leg.get(i);
+            if ( !cf.hasOccurred(settlement, includeSettlementDateFlows) && !cf.tradingExCoupon(settlement) ) {
+                final double df = discountCurve.discount(cf.date());
+                npv += cf.amount() * df;
+                if ( cf instanceof Coupon ) {
+                    final Coupon cp = (Coupon) cf;
+                    bps += cp.nominal() * cp.accrualPeriod() * df;
+                }
+            }
+        }
+
+        final double d = discountCurve.discount(npvDt);
+        npv /= d;
+        bps = basisPoint_ * bps / d;
+        return new double[] { npv, bps };
+    }
+
+    /**
      * Stepwise time-to-discount for one cashflow. Mirrors C++ {@code getStepwiseDiscountTime} (cashflows.cpp:568-600).
      * For a {@link Coupon} we accumulate using the coupon's reference period; for any other cashflow, fall back to
      * {@code dc.yearFraction(lastDate, cashFlowDate)}.
