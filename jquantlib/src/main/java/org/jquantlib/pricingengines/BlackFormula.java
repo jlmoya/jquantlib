@@ -366,19 +366,52 @@ public class BlackFormula {
         QL.require(blackPrice >= 0.0, "blackPrice must be non-negative");
         QL.require(discount > 0.0, "discount must be positive");
 
+        // C++ blackformula.cpp:
+        //   Real otherOptionPrice = blackPrice - Integer(optionType) * (forward-strike)*discount;
+        //   QL_REQUIRE(otherOptionPrice>=0.0, "negative ... price implied by put-call parity ...");
+        //   // solve for the out-of-the-money option which has greater vega/price ratio, i.e.
+        //   // it is numerically more robust for implied vol calculations
+        //   if (optionType==Option::Put  && strike>forward) { optionType = Option::Call; blackPrice = other; }
+        //   if (optionType==Option::Call && strike<forward) { optionType = Option::Put;  blackPrice = other; }
+        // Both were missing from the Java port: an in-the-money quote was inverted directly, where the
+        // vega/price ratio is worst, and a price below intrinsic (which has no solution at all) went
+        // undetected instead of being rejected.
+        final double otherOptionPrice = blackPrice - optionType.toInteger() * (forward - strike) * discount;
+        QL.require(otherOptionPrice >= 0.0,
+                "negative " + ((optionType == Option.Type.Call) ? Option.Type.Put : Option.Type.Call)
+                        + " price (" + otherOptionPrice + ") implied by put-call parity. No solution exists for "
+                        + optionType + " strike " + strike + ", forward " + forward + ", price " + blackPrice
+                        + ", deflator " + discount);
+
+        Option.Type solvedType = optionType;
+        double solvedPrice = blackPrice;
+        if ( optionType == Option.Type.Put && strike > forward ) {
+            solvedType = Option.Type.Call;
+            solvedPrice = otherOptionPrice;
+        }
+        if ( optionType == Option.Type.Call && strike < forward ) {
+            solvedType = Option.Type.Put;
+            solvedPrice = otherOptionPrice;
+        }
+
         strike = strike + displacement;
         forward = forward + displacement;
         if ( Double.isNaN(guess) )
-            guess = blackFormulaImpliedStdDevApproximation(optionType, strike, forward, blackPrice, discount,
+            guess = blackFormulaImpliedStdDevApproximation(solvedType, strike, forward, solvedPrice, discount,
                     displacement);
         else if ( guess < 0.0 )
             throw new IllegalArgumentException("stddev guess (" + guess + ") must be non-negative");
 
-        final BlackImpliedStdDevHelper f = new BlackImpliedStdDevHelper(optionType, strike, forward,
-                blackPrice / discount);
+        final BlackImpliedStdDevHelper f = new BlackImpliedStdDevHelper(solvedType, strike, forward,
+                solvedPrice / discount);
         final NewtonSafe solver = new NewtonSafe();
         solver.setMaxEvaluations(maxIterations);
-        final double minSdtDev = 0.0, maxstddev = 3.0;
+        // C++ blackformula.cpp: `Real minSdtDev = 0.0, maxStdDev = 24.0; // 24 = 300% * sqrt(60)`.
+        // This is not merely a sanity cap: NewtonSafe seeds `dxold = xMax - xMin` and decides
+        // Newton-vs-bisect from `|2*froot| > |dxold*dfroot|`, so the bracket width steers the very
+        // first step and therefore the whole iteration path. A narrower bracket also refuses roots
+        // above it outright ("root not bracketed"), which a 300%-vol / 60y option legitimately has.
+        final double minSdtDev = 0.0, maxstddev = 24.0;
         final double stddev = solver.solve(f, accuracy, guess, minSdtDev, maxstddev);
 
         if ( stddev >= 0.0 )

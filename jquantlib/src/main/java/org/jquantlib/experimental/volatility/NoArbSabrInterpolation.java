@@ -36,7 +36,6 @@ import org.jquantlib.math.optimization.EndCriteria;
 import org.jquantlib.math.optimization.NoConstraint;
 import org.jquantlib.math.optimization.OptimizationMethod;
 import org.jquantlib.pricingengines.BlackFormula;
-import org.jquantlib.termstructures.volatilities.Sabr;
 
 /**
  * No-arbitrage SABR (Doust 2012) smile interpolation between discrete volatility points.
@@ -49,11 +48,10 @@ import org.jquantlib.termstructures.volatilities.Sabr;
  * tan-mapped to/from their constrained domains using {@link NoArbSabrModel.Constants} bounds. {@code alpha} is
  * recovered from the {@code sigmaI = alpha * forward^(beta-1)} reparameterization (mirrors C++).
  *
- * <p>During calibration the cost function evaluates volatilities via the
- * NoArbSabrSmileSection: the model's {@code optionPrice} is deferred to Phase 4f.5, so
- * {@link NoArbSabrSmileSection#volatilityImpl(double)} falls back to the Hagan SABR closed form. This gives a working
- * calibration loop that produces SABR-equivalent fits today and will upgrade to true No-Arb-SABR fits once the
- * absorption table is loaded.
+ * <p>During calibration the cost function evaluates volatilities through a
+ * {@link NoArbSabrSmileSection}, exactly as C++ does via {@code detail::NoArbSabrWrapper} (a typedef for that same
+ * class). The smile section inverts the model's option price and only falls back to the Hagan closed form when that
+ * inversion fails.
  */
 public class NoArbSabrInterpolation extends AbstractInterpolation {
 
@@ -258,14 +256,32 @@ public class NoArbSabrInterpolation extends AbstractInterpolation {
             return y;
         }
 
+        /**
+         * Cached smile section, mirroring the C++ {@code modelInstance_} member of
+         * {@code XABRCoeffHolder}. C++ rebuilds it via {@code updateModelInstance()} once per cost-function
+         * evaluation and then reads every strike off the same instance; the Java {@link XABRSpecs} contract is
+         * stateless, so the equivalent is a one-entry memo keyed on the parameter vector. Rebuilding the model
+         * per strike would be identical numerically but ~31x slower for this test's grid.
+         */
+        private NoArbSabrSmileSection instance_;
+        private double instanceT_ = Double.NaN;
+        private double instanceForward_ = Double.NaN;
+        private double[] instanceParams_;
+
         @Override
         public double volatility(final double strike, final double forward, final double t, final double[] params) {
-            // The C++ template routes this through NoArbSabrWrapper (=
-            // NoArbSabrSmileSection), which tries the model first then falls
-            // back to Hagan SABR. While Phase 4f.5 dependencies (absorption
-            // table) are deferred, the model throws and Hagan is used —
-            // calibration thus produces SABR-equivalent fits.
-            return new Sabr().unsafeSabrVolatility(strike, forward, t, params[0], params[1], params[2], params[3]);
+            // C++ detail::NoArbSabrWrapper is a typedef for NoArbSabrSmileSection, and
+            // XABRInterpolationImpl::value(x) is `modelInstance_->volatility(x)` — i.e. the
+            // no-arbitrage smile, not the Hagan expansion. NoArbSabrSmileSection::volatilityImpl
+            // itself falls back to Hagan only when the Black inversion of the model price fails.
+            if ( instance_ == null || instanceT_ != t || instanceForward_ != forward
+                    || !java.util.Arrays.equals(instanceParams_, params) ) {
+                instance_ = new NoArbSabrSmileSection(t, forward, params);
+                instanceT_ = t;
+                instanceForward_ = forward;
+                instanceParams_ = params.clone();
+            }
+            return instance_.volatility(strike);
         }
 
         @Override
