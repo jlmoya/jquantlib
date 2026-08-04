@@ -53,7 +53,6 @@ import static org.jquantlib.pricingengines.BlackFormula.blackFormula;
  * where {@latex$ \alpha } and {@latex$ \sigma } are constants.
  *
  * @author Praneet Tiwari
- * @note When the term structure is relinked, the r0 parameter of the underlying Vasicek model is not updated.
  * @category shortrate
  */
 public class HullWhite extends Vasicek implements TermStructureConsistentModel {
@@ -156,6 +155,12 @@ public class HullWhite extends Vasicek implements TermStructureConsistentModel {
 
     @Override
     protected void generateArguments() {
+        // r0_ is refreshed here, not just at construction: the model observes its term structure, so relinking the
+        // handle must move the initial short rate with it. Mirrors C++ {@code HullWhite::generateArguments}
+        // ({@code ql/models/shortrate/onefactormodels/hullwhite.cpp:85-88}), which has always done this — the Java
+        // port omitted it and documented the omission as a caveat instead.
+        r0_ = termStructureConsistentModelClass.termStructure().currentLink()
+                .zeroRate(0.0, Compounding.Continuous, Frequency.NoFrequency, false).rate();
         phi_ = new FittingParameter(termStructureConsistentModelClass.termStructure(), a(), sigma());
     }
 

@@ -154,9 +154,15 @@ public class Vasicek extends OneFactorAffineModel {
     @Override
     protected double A(/* @Time */ final double t, /* @Time */ final double T) /* @ReadOnly */ {
         final double /* @Real */_a = a();
-        if ( _a < Math.sqrt(Constants.QL_EPSILON) )
-            return 0.0;
-        else {
+        if ( _a < Math.sqrt(Constants.QL_EPSILON) ) {
+            // Limit of the general expression as a -> 0. The Java port returned 0.0 here, which prices every zero
+            // bond at zero once the mean reversion is small enough — a silent, badly wrong answer rather than a
+            // loud one. Mirrors C++ {@code Vasicek::A}
+            // ({@code ql/models/shortrate/onefactormodels/vasicek.cpp}).
+            final double /* @Real */sigma2 = sigma() * sigma();
+            final double /* @Time */tau = T - t;
+            return Math.exp(-0.5 * lambda() * sigma() * tau * tau + sigma2 * tau * tau * tau / 6.0);
+        } else {
             final double /* @Real */sigma2 = sigma() * sigma();
             final double /* @Real */bt = B(t, T);
             return Math.exp((b() + lambda() * sigma() / _a - 0.5 * sigma2 / (_a * _a)) * (bt - (T - t))
