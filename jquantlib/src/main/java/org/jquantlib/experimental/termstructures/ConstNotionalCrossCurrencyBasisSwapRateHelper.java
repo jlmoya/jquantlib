@@ -58,8 +58,10 @@ public class ConstNotionalCrossCurrencyBasisSwapRateHelper extends CrossCurrency
      * @param collateralCurve                    collateral discount curve
      * @param isFxBaseCurrencyCollateralCurrency true if FX base currency is collateral currency
      * @param isBasisOnFxBaseCurrencyLeg         true if basis is quoted on base-currency leg
-     * @param paymentFrequency                   payment frequency (NoFrequency → use index tenor)
-     * @param paymentLag                         payment lag in days (typically 0)
+     * @param paymentFrequency                   payment frequency of the base-currency leg; {@code null} or
+     *                                           {@link Frequency#NoFrequency} → derive from the base-currency index
+     *                                           tenor
+     * @param paymentLag                         payment lag in days, applied to both legs (typically 0)
      */
     public ConstNotionalCrossCurrencyBasisSwapRateHelper(final Handle< org.jquantlib.quotes.Quote > basis,
             final Period tenor, final int fixingDays, final Calendar calendar, final BusinessDayConvention convention,
@@ -67,9 +69,29 @@ public class ConstNotionalCrossCurrencyBasisSwapRateHelper extends CrossCurrency
             final Handle< YieldTermStructure > collateralCurve, final boolean isFxBaseCurrencyCollateralCurrency,
             final boolean isBasisOnFxBaseCurrencyLeg, final Frequency paymentFrequency, final int paymentLag) {
 
+        this(basis, tenor, fixingDays, calendar, convention, endOfMonth, baseCurrencyIndex, quoteCurrencyIndex,
+                collateralCurve, isFxBaseCurrencyCollateralCurrency, isBasisOnFxBaseCurrencyLeg, paymentFrequency,
+                paymentLag, null);
+    }
+
+    /**
+     * Full constructor including the quote-currency payment frequency (new in C++ v1.43).
+     *
+     * @param quoteCurrencyPaymentFrequency payment frequency of the quote-currency leg; when unset ({@code null} or
+     *                                      {@link Frequency#NoFrequency}) it defaults to {@code paymentFrequency}, and
+     *                                      if that is unset as well the schedule is derived from the quote-currency
+     *                                      index tenor
+     */
+    public ConstNotionalCrossCurrencyBasisSwapRateHelper(final Handle< org.jquantlib.quotes.Quote > basis,
+            final Period tenor, final int fixingDays, final Calendar calendar, final BusinessDayConvention convention,
+            final boolean endOfMonth, final IborIndex baseCurrencyIndex, final IborIndex quoteCurrencyIndex,
+            final Handle< YieldTermStructure > collateralCurve, final boolean isFxBaseCurrencyCollateralCurrency,
+            final boolean isBasisOnFxBaseCurrencyLeg, final Frequency paymentFrequency, final int paymentLag,
+            final Frequency quoteCurrencyPaymentFrequency) {
+
         super(basis, tenor, fixingDays, calendar, convention, endOfMonth, baseCurrencyIndex, quoteCurrencyIndex,
                 collateralCurve, isFxBaseCurrencyCollateralCurrency, isBasisOnFxBaseCurrencyLeg, paymentFrequency,
-                paymentLag);
+                paymentLag, quoteCurrencyPaymentFrequency);
     }
 
     /**

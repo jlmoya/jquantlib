@@ -20,6 +20,7 @@ import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.indexes.OvernightIndex;
 import org.jquantlib.math.Constants;
 import org.jquantlib.time.*;
+import org.jquantlib.time.calendars.WeekendsOnly;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,7 +28,7 @@ import java.util.List;
 /**
  * Helper class building a sequence of overnight-indexed coupons, fluent Java translation of C++ {@code OvernightLeg}.
  * <p>
- * Port of C++ QuantLib v1.42.1 {@code ql/cashflows/overnightindexedcoupon.hpp/cpp} {@code OvernightLeg}.
+ * Port of C++ QuantLib v1.43 {@code ql/cashflows/overnightindexedcoupon.hpp/cpp} {@code OvernightLeg}.
  *
  * @author JQuantLib migration team
  * @category cashflows
@@ -48,6 +49,9 @@ public class OvernightLeg {
     private int lookbackDays_ = Constants.NULL_NATURAL;
     private int lockoutDays_ = 0;
     private boolean applyObservationShift_ = false;
+    private boolean compoundSpreadDaily_ = false;
+    /** {@code null} = no rate rounding; mirrors C++ {@code ext::optional<Integer> roundingPrecision_}. */
+    private Integer roundingPrecision_ = null;
     private List< Double > caps_ = new ArrayList<>();
     private List< Double > floors_ = new ArrayList<>();
     private boolean nakedOption_ = false;
@@ -58,7 +62,11 @@ public class OvernightLeg {
         QL.require(overnightIndex != null, "no index provided");
         this.schedule_ = schedule;
         this.overnightIndex_ = overnightIndex;
-        this.paymentCalendar_ = schedule.calendar();
+        // C++ leaves paymentCalendar_ default-constructed (empty) and resolves it in
+        // operator Leg() — see leg(). Seeding it from the schedule here would be
+        // equivalent for a schedule that carries a calendar but would lose the
+        // WeekendsOnly fallback for one that does not.
+        this.paymentCalendar_ = new Calendar();
     }
 
     private static double pickValue(final List< Double > vec, final int index) {
@@ -148,8 +156,29 @@ public class OvernightLeg {
         return this;
     }
 
+    /**
+     * Compound the spread daily along with the overnight rate, rather than adding it to the compounded rate at the end
+     * of the accrual period. Mirrors C++ {@code OvernightLeg::compoundingSpreadDaily(bool)}
+     * ({@code ql/cashflows/overnightindexedcoupon.hpp:229}).
+     */
+    public OvernightLeg compoundingSpreadDaily(final boolean compoundSpreadDaily) {
+        compoundSpreadDaily_ = compoundSpreadDaily;
+        return this;
+    }
+
     public OvernightLeg withObservationShift(final boolean shift) {
         applyObservationShift_ = shift;
+        return this;
+    }
+
+    /**
+     * Rounds the coupon rate to {@code roundingPrecision} decimal places before computing the coupon amount.
+     * <p>
+     * Mirror of C++ {@code OvernightLeg::withRoundingPrecision(Integer)} (overnightindexedcoupon.cpp:494-497), new in
+     * v1.43.
+     */
+    public OvernightLeg withRoundingPrecision(final int roundingPrecision) {
+        roundingPrecision_ = Integer.valueOf(roundingPrecision);
         return this;
     }
 
@@ -199,14 +228,27 @@ public class OvernightLeg {
         final Leg cashflows = new Leg();
         final DayCounter dc = paymentDayCounter_.empty() ? overnightIndex_.dayCounter() : paymentDayCounter_;
 
+        // Resolve the payment calendar the way C++ does (overnightindexedcoupon.cpp:578-588):
+        // schedule calendar first, then the explicitly-set payment calendar, then
+        // WeekendsOnly. A Schedule built from a bare date vector carries no calendar, so
+        // without the fallback a weekend payment date would be left unadjusted.
+        Calendar calendar = schedule_.calendar();
+        Calendar paymentCalendar = paymentCalendar_;
+        if ( calendar.empty() ) {
+            calendar = paymentCalendar;
+        }
+        if ( calendar.empty() ) {
+            calendar = new WeekendsOnly();
+        }
+        if ( paymentCalendar.empty() ) {
+            paymentCalendar = calendar;
+        }
+
         for ( int i = 1; i < dates.size(); ++i ) {
             final Date startDate = dates.get(i - 1);
             final Date endDate = dates.get(i);
-            Date paymentDate = paymentCalendar_.adjust(endDate, paymentAdjustment_);
-            if ( paymentLag_ != 0 ) {
-                paymentDate = paymentCalendar_.advance(paymentDate,
-                        new org.jquantlib.time.Period(paymentLag_, TimeUnit.Days), paymentAdjustment_);
-            }
+            final Date paymentDate = paymentCalendar.advance(endDate, paymentLag_, TimeUnit.Days,
+                    paymentAdjustment_, false);
             final double nominal = pickValue(notionals_, i - 1);
             final double gearing = pickValueOrDefault(gearings_, i - 1, 1.0);
             final double spread = pickValueOrDefault(spreads_, i - 1, 0.0);
@@ -214,7 +256,8 @@ public class OvernightLeg {
             final OvernightIndexedCoupon coupon = new OvernightIndexedCoupon(paymentDate, nominal, startDate, endDate,
                     overnightIndex_, gearing, spread, new Date(), new Date(), dc, telescopicValueDates_,
                     averagingMethod_, lookbackDays_, lockoutDays_, applyObservationShift_,
-                    false /* compoundSpreadDaily */);
+                    compoundSpreadDaily_, new Date() /* rateComputationStartDate */,
+                    new Date() /* rateComputationEndDate */, new Date() /* exCouponDate */, roundingPrecision_);
             if ( couponPricer_ != null ) {
                 coupon.setPricer(couponPricer_);
             }

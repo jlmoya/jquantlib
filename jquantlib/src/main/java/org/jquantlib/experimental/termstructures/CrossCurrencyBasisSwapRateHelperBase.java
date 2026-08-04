@@ -56,7 +56,16 @@ public abstract class CrossCurrencyBasisSwapRateHelperBase extends CrossCurrency
 
     protected final boolean isFxBaseCurrencyCollateralCurrency_;
     protected final boolean isBasisOnFxBaseCurrencyLeg_;
+    /**
+     * Base-currency leg payment frequency, or {@code null} when unset (schedule then derived from the base-currency
+     * index tenor). Java stand-in for C++ v1.43 {@code ext::optional<Frequency>}.
+     */
     protected final Frequency paymentFrequency_;
+    /**
+     * Quote-currency leg payment frequency, or {@code null} when unset (falls back to {@link #paymentFrequency_}). New
+     * in C++ v1.43.
+     */
+    protected final Frequency quoteCcyPaymentFrequency_;
     protected IborIndex baseCcyIdx_;
     protected IborIndex quoteCcyIdx_;
     /** Base-currency ibor leg (floating). */
@@ -74,18 +83,43 @@ public abstract class CrossCurrencyBasisSwapRateHelperBase extends CrossCurrency
             final Handle< YieldTermStructure > collateralCurve, final boolean isFxBaseCurrencyCollateralCurrency,
             final boolean isBasisOnFxBaseCurrencyLeg, final Frequency paymentFrequency, final int paymentLag) {
 
+        this(basis, tenor, fixingDays, calendar, convention, endOfMonth, baseCurrencyIndex, quoteCurrencyIndex,
+                collateralCurve, isFxBaseCurrencyCollateralCurrency, isBasisOnFxBaseCurrencyLeg, paymentFrequency,
+                paymentLag, null);
+    }
+
+    protected CrossCurrencyBasisSwapRateHelperBase(final Handle< Quote > basis, final Period tenor,
+            final int fixingDays, final Calendar calendar, final BusinessDayConvention convention,
+            final boolean endOfMonth, final IborIndex baseCurrencyIndex, final IborIndex quoteCurrencyIndex,
+            final Handle< YieldTermStructure > collateralCurve, final boolean isFxBaseCurrencyCollateralCurrency,
+            final boolean isBasisOnFxBaseCurrencyLeg, final Frequency paymentFrequency, final int paymentLag,
+            final Frequency quoteCurrencyPaymentFrequency) {
+
         super(basis, tenor, fixingDays, calendar, convention, endOfMonth, collateralCurve, paymentLag);
 
         baseCcyIdx_ = baseCurrencyIndex;
         quoteCcyIdx_ = quoteCurrencyIndex;
         isFxBaseCurrencyCollateralCurrency_ = isFxBaseCurrencyCollateralCurrency;
         isBasisOnFxBaseCurrencyLeg_ = isBasisOnFxBaseCurrencyLeg;
-        paymentFrequency_ = paymentFrequency;
+        paymentFrequency_ = normalizedPaymentFrequency(paymentFrequency);
+        quoteCcyPaymentFrequency_ = normalizedPaymentFrequency(quoteCurrencyPaymentFrequency);
 
         baseCcyIdx_.addObserver(this);
         quoteCcyIdx_.addObserver(this);
 
         initializeDates();
+    }
+
+    /**
+     * Treats an explicitly-passed {@link Frequency#NoFrequency} the same as an unset ({@code null}) payment frequency.
+     * <p>
+     * Mirror of the C++ v1.43 anonymous-namespace helper {@code normalizedPaymentFrequency}
+     * (crosscurrencyratehelpers.cpp:37-48): before these parameters were migrated to {@code ext::optional<Frequency>},
+     * {@code NoFrequency} was the sentinel meaning "derive the schedule from the index tenor"; normalizing here
+     * preserves that behaviour so the rest of the code treats the two cases identically.
+     */
+    private static Frequency normalizedPaymentFrequency(final Frequency frequency) {
+        return frequency == Frequency.NoFrequency ? null : frequency;
     }
 
     // -------------------------------------------------------------------------
@@ -128,7 +162,7 @@ public abstract class CrossCurrencyBasisSwapRateHelperBase extends CrossCurrency
 
         final boolean isOvernight = idx instanceof OvernightIndex;
         final Period freqPeriod;
-        if ( paymentFrequency == Frequency.NoFrequency ) {
+        if ( paymentFrequency == null || paymentFrequency == Frequency.NoFrequency ) {
             QL.require(!isOvernight, "Require payment frequency for overnight indices.");
             freqPeriod = idx.tenor();
         } else {
@@ -242,8 +276,16 @@ public abstract class CrossCurrencyBasisSwapRateHelperBase extends CrossCurrency
         baseCcyIborLeg_ = buildFloatingLeg(evaluationDate, tenor_, fixingDays_, calendar_, convention_, endOfMonth_,
                 baseCcyIdx_, paymentFrequency_, paymentLag_);
 
+        // If no quote-currency payment frequency was given, fall back to the
+        // base-currency payment frequency (which may itself be unset, in which case the
+        // quote-currency leg uses its own index tenor) — C++ v1.43
+        // crosscurrencyratehelpers.cpp:292-297.
+        final Frequency effectiveQuoteCcyFreq = quoteCcyPaymentFrequency_ != null
+                ? quoteCcyPaymentFrequency_
+                : paymentFrequency_;
+
         quoteCcyIborLeg_ = buildFloatingLeg(evaluationDate, tenor_, fixingDays_, calendar_, convention_, endOfMonth_,
-                quoteCcyIdx_, paymentFrequency_, paymentLag_);
+                quoteCcyIdx_, effectiveQuoteCcyFreq, paymentLag_);
 
         initializeDatesFromLegs(baseCcyIborLeg_, quoteCcyIborLeg_);
     }

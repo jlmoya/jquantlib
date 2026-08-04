@@ -78,7 +78,20 @@ public class FloatingRateCoupon extends Coupon implements Observer {
             final int fixingDays, final InterestRateIndex index, final double gearing, final double spread,
             final Date refPeriodStart, final Date refPeriodEnd, final DayCounter dayCounter,
             final boolean isInArrears) {
-        super(nominal, paymentDate, startDate, endDate, refPeriodStart, refPeriodEnd);
+        this(paymentDate, nominal, startDate, endDate, fixingDays, index, gearing, spread, refPeriodStart, refPeriodEnd,
+                dayCounter, isInArrears, new Date());
+    }
+
+    /**
+     * Full constructor including the ex-coupon date, mirroring C++
+     * {@code FloatingRateCoupon::FloatingRateCoupon(..., bool isInArrears, const Date& exCouponDate)}
+     * (ql/cashflows/floatingratecoupon.hpp:47-60).
+     */
+    public FloatingRateCoupon(final Date paymentDate, final double nominal, final Date startDate, final Date endDate,
+            final int fixingDays, final InterestRateIndex index, final double gearing, final double spread,
+            final Date refPeriodStart, final Date refPeriodEnd, final DayCounter dayCounter,
+            final boolean isInArrears, final Date exCouponDate) {
+        super(nominal, paymentDate, startDate, endDate, refPeriodStart, refPeriodEnd, exCouponDate);
 
         this.index_ = index;
         this.dayCounter_ = dayCounter;

@@ -32,7 +32,7 @@ import java.util.List;
 /**
  * Arithmetic-averaging overnight-indexed coupon pricer.
  * <p>
- * Port of C++ QuantLib v1.42.1 {@code ql/cashflows/overnightindexedcouponpricer.hpp/cpp}
+ * Port of C++ QuantLib v1.43 {@code ql/cashflows/overnightindexedcouponpricer.hpp/cpp}
  * {@code ArithmeticAveragedOvernightIndexedCouponPricer}.
  * <p>
  * <b>Phase 5d.5 MVP:</b> exact (non-Takada-approximation) implementation.
@@ -100,10 +100,9 @@ public class ArithmeticAveragedOvernightIndexedCouponPricer extends OvernightInd
         final List< Date > interestDates = coupon_.interestDates();
         final List< Date > valueDates = coupon_.valueDates();
         final double[] dt = coupon_.dt();
-        final boolean applyObservationShift = coupon_.applyObservationShift();
 
         int i = 0;
-        final int n = determineNumberOfFixings(interestDates, date, applyObservationShift);
+        final int n = determineNumberOfFixings(interestDates, date);
 
         double accumulatedRate = 0.0;
         final Date today = new Settings().evaluationDate();
@@ -160,10 +159,7 @@ public class ArithmeticAveragedOvernightIndexedCouponPricer extends OvernightInd
             }
         }
 
-        final double accruedPeriod = coupon_.dayCounter()
-                .yearFraction(coupon_.accrualStartDate(), Date.min(date, coupon_.accrualEndDate()),
-                        coupon_.referencePeriodStart(), coupon_.referencePeriodEnd());
-        final double rate = accumulatedRate / accruedPeriod;
+        final double rate = accumulatedRate / coupon_.accruedPeriod(date);
         return coupon_.gearing() * rate + coupon_.spread();
     }
 

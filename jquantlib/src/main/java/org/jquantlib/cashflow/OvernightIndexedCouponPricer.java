@@ -29,7 +29,7 @@ import java.util.List;
 /**
  * Base pricer for {@link OvernightIndexedCoupon}.
  * <p>
- * Port of C++ QuantLib v1.42.1 {@code ql/cashflows/overnightindexedcouponpricer.hpp/cpp}.
+ * Port of C++ QuantLib v1.43 {@code ql/cashflows/overnightindexedcouponpricer.hpp/cpp}.
  *
  * @author JQuantLib migration team
  * @category cashflows
@@ -126,19 +126,22 @@ public abstract class OvernightIndexedCouponPricer extends FloatingRateCouponPri
     // and CappedFlooredBlackOvernightIndexedCouponPricer).
 
     /**
-     * Helper: determine number of fixings used up to {@code date}.
+     * Helper: determine the number of fixings used up to {@code date}.
+     * <p>
+     * Mirror of the C++ v1.43 anonymous-namespace helper
+     * (ql/cashflows/overnightindexedcouponpricer.cpp:32-37):
+     * <pre>
+     *   std::lower_bound(interestDates.begin(), interestDates.end()-1, date) - interestDates.begin()
+     * </pre>
+     * The search range stops one short of the end, so the result never exceeds the number of fixing dates (which is
+     * always one less than the number of interest dates). v1.42.1 searched the full range and clamped afterwards, but
+     * only when observation shift was on; v1.43 clamps unconditionally.
      */
-    protected int determineNumberOfFixings(final List< Date > interestDates, final Date date,
-            final boolean applyObservationShift) {
+    protected int determineNumberOfFixings(final List< Date > interestDates, final Date date) {
+        final int upperBound = interestDates.size() - 1;
         int n = 0;
-        for ( final Date d : interestDates ) {
-            if ( !d.lt(date) ) {
-                break;
-            }
+        while ( n < upperBound && interestDates.get(n).lt(date) ) {
             ++n;
-        }
-        if ( n == interestDates.size() && applyObservationShift ) {
-            return n - 1;
         }
         return n;
     }

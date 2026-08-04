@@ -128,6 +128,34 @@ public abstract class Coupon extends CashFlow {
     }
 
     /**
+     * Accrual period from the accrual start date to {@code d}, or (negative) from {@code d} to the accrual end date when
+     * the coupon is trading ex-coupon on {@code d}.
+     * <p>
+     * Mirror of C++ {@code Coupon::accruedPeriod(const Date&)} (ql/cashflows/coupon.cpp:57-70).
+     */
+    public double accruedPeriod(final Date d) {
+        if ( d.le(accrualStartDate_) || d.gt(paymentDate_) ) {
+            return 0.0;
+        } else if ( tradingExCoupon(d) ) {
+            return -dayCounter().yearFraction(d, Date.max(d, accrualEndDate_), refPeriodStart_, refPeriodEnd_);
+        } else {
+            return dayCounter().yearFraction(accrualStartDate_, Date.min(d, accrualEndDate_), refPeriodStart_,
+                    refPeriodEnd_);
+        }
+    }
+
+    /**
+     * Accrued days up to {@code d}. Mirror of C++ {@code Coupon::accruedDays(const Date&)}
+     * (ql/cashflows/coupon.cpp:72-79).
+     */
+    public long accruedDays(final Date d) {
+        if ( d.le(accrualStartDate_) || d.gt(paymentDate_) ) {
+            return 0;
+        }
+        return dayCounter().dayCount(accrualStartDate_, Date.min(d, accrualEndDate_));
+    }
+
+    /**
      * Mirror of C++ {@code Coupon::exCouponDate()} (ql/cashflows/coupon.hpp:57). Overrides
      * {@link CashFlow#exCouponDate()} to return the configured ex-coupon date. Returns a default-construed (null)
      * {@link Date} when no ex-coupon date is set. Phase 5e.5b-CFC-d-93.

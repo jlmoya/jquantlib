@@ -178,6 +178,23 @@ public class Calendar {
         return result;
     }
 
+    /**
+     * Returns the business days between two dates, both ends included.
+     * <p>
+     * Mirror of C++ {@code Calendar::businessDayList(from, to)} (ql/time/calendar.cpp:288-297). Unlike
+     * {@link #holidayList(Calendar, Date, Date, boolean)} there is no {@code to > from} precondition: an empty list is
+     * returned when {@code to < from}, exactly as the C++ loop does.
+     */
+    public List< Date > businessDayList(final Date from, final Date to) /* @ReadOnly */ {
+        final List< Date > result = new ArrayList<>();
+        for ( Date d = from.clone(); d.le(to); d = d.add(1) ) {
+            if ( isBusinessDay(d) ) {
+                result.add(d);
+            }
+        }
+        return result;
+    }
+
     public static boolean eq(final Calendar c1, final Calendar c2) {
         return (c1.empty() && c2.empty()) || (!c1.empty() && !c2.empty() && c1.name().equals(c2.name()));
     }

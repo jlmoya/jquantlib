@@ -62,7 +62,11 @@ import org.junit.Test;
  * the body present so a future production-port commit auto-unblocks them.
  *
  * <p>Source: {@code test-suite/overnightindexedcoupon.cpp} v1.42.1 @
- * {@code 099987f0ca}.
+ * {@code 099987f0ca}, with the seven expectations that C++ v1.43 re-baselined
+ * updated in place (see the inline notes in
+ * {@code testFutureCouponRateWithLookbackAndObservationShift} and the two Black
+ * caplet/floorlet tests). The v1.43-only cases live in
+ * {@link OvernightCouponV143Test}.
  */
 public class OvernightIndexedCouponTest {
 
@@ -838,7 +842,10 @@ public class OvernightIndexedCouponTest {
                 new Date(1, Month.July, 2019),
                 new Date(8, Month.July, 2019), 5, 0, true);
 
-        final double expectedRate = 0.0142876985964208;
+        // C++ v1.43 test-suite/overnightindexedcoupon.cpp:648 changed this expectation
+        // (was 0.0142876985964208 in v1.42.1) when observation shift stopped rewriting
+        // the interest dates and started driving dt_ off the value dates instead.
+        final double expectedRate = 0.025003472543756455;
         checkOis("coupon rate", futureCoupon.rate(), expectedRate, 1e-12);
     }
 
@@ -1045,7 +1052,11 @@ public class OvernightIndexedCouponTest {
         cappedCoupon.setPricer(pricer);
 
         rate = cappedCoupon.rate();
-        double expectedRate = 0.036604717;
+        // All three expectations in this test were re-baselined by C++ v1.43
+        // (test-suite/overnightindexedcoupon.cpp:793-814, previously 0.036604717 /
+        // 0.042502070 / 0.039340869): the underlying swaplet rate moved when the
+        // compounding pricer changed its annualisation denominator.
+        double expectedRate = 0.036862168;
         if (rate > cap + 1e-8) {
             fail("Capped Rate: rate=" + rate + " > cap=" + cap);
         }
@@ -1062,7 +1073,7 @@ public class OvernightIndexedCouponTest {
         flooredCoupon.setPricer(pricer);
 
         rate = flooredCoupon.rate();
-        expectedRate = 0.042502070;
+        expectedRate = 0.04281620;
         if (rate < floor - 1e-8) {
             fail("Floored Rate: rate=" + rate + " < floor=" + floor);
         }
@@ -1078,7 +1089,7 @@ public class OvernightIndexedCouponTest {
         cappedFlooredCoupon.setPricer(pricer);
 
         rate = cappedFlooredCoupon.rate();
-        expectedRate = 0.039340869;
+        expectedRate = 0.039473179;
         if (rate > cap + 1e-8 || rate < floor - 1e-8) {
             fail("Capped+Floored Rate: rate=" + rate
                     + " out of [floor=" + floor + ", cap=" + cap + "]");
@@ -1123,7 +1134,9 @@ public class OvernightIndexedCouponTest {
         cappedCoupon.setPricer(pricer);
 
         rate = cappedCoupon.rate();
-        double expectedRate = 0.036488300;
+        // Re-baselined by C++ v1.43 (test-suite/overnightindexedcoupon.cpp:841-862,
+        // previously 0.036488300 / 0.042362746 / 0.039281553).
+        double expectedRate = 0.036745802;
         if (rate > cap + 1e-8) {
             fail("Capped Rate: rate=" + rate + " > cap=" + cap);
         }
@@ -1140,7 +1153,7 @@ public class OvernightIndexedCouponTest {
         flooredCoupon.setPricer(pricer);
 
         rate = flooredCoupon.rate();
-        expectedRate = 0.042362746;
+        expectedRate = 0.042671405;
         if (rate < floor - 1e-8) {
             fail("Floored Rate: rate=" + rate + " < floor=" + floor);
         }
@@ -1156,7 +1169,7 @@ public class OvernightIndexedCouponTest {
         cappedFlooredCoupon.setPricer(pricer);
 
         rate = cappedFlooredCoupon.rate();
-        expectedRate = 0.039281553;
+        expectedRate = 0.039412858;
         if (rate > cap + 1e-8 || rate < floor - 1e-8) {
             fail("Capped+Floored Rate: rate=" + rate
                     + " out of [floor=" + floor + ", cap=" + cap + "]");

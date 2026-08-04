@@ -33,6 +33,7 @@ import org.jquantlib.Settings;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.indexes.OvernightIndex;
 import org.jquantlib.math.Constants;
+import org.jquantlib.math.Rounding;
 import org.jquantlib.time.*;
 import org.jquantlib.util.PolymorphicVisitor;
 import org.jquantlib.util.Visitor;
@@ -44,10 +45,14 @@ import java.util.List;
  * Overnight-indexed coupon paying interest based on daily overnight fixings, either compounded or arithmetically
  * averaged.
  * <p>
- * Port of C++ QuantLib v1.42.1 {@code ql/cashflows/overnightindexedcoupon.hpp/cpp} {@code OvernightIndexedCoupon}.
+ * Port of C++ QuantLib v1.43 {@code ql/cashflows/overnightindexedcoupon.hpp/cpp} {@code OvernightIndexedCoupon}.
  * <p>
- * <b>Phase 5e.5b-CFC-d-107:</b> production port of the lookback /
- * lockout / observation-shift / telescopic-value-dates machinery.
+ * The v1.43 rework: the value dates come from {@code Calendar.businessDayList} rather than a daily
+ * {@code MakeSchedule}; both the schedule and the telescopic front stub are anchored on the rate-computation dates;
+ * {@code interestDates} keeps the rate-computation dates at its two ends so a period boundary landing on a fixing
+ * holiday still accrues to that boundary; observation shift drives {@code dt} off the value dates instead of
+ * rewriting {@code interestDates}; and the constructor gained an ex-coupon date, an optional rate-rounding
+ * precision, and a {@code startDate < endDate} precondition.
  *
  * @author JQuantLib migration team
  * @category cashflows
@@ -65,6 +70,11 @@ public class OvernightIndexedCoupon extends FloatingRateCoupon {
     private final boolean compoundSpreadDaily_;
     private final Date rateComputationStartDate_;
     private final Date rateComputationEndDate_;
+    /**
+     * Optional rounding precision applied to the coupon rate in {@link #amount()}. {@code null} means "no rounding",
+     * mirroring C++ {@code ext::optional<Integer> roundingPrecision_} (overnightindexedcoupon.hpp:143).
+     */
+    private final Integer roundingPrecision_;
 
     /**
      * Full constructor mirroring C++ {@code OvernightIndexedCoupon::OvernightIndexedCoupon}.
@@ -80,8 +90,7 @@ public class OvernightIndexedCoupon extends FloatingRateCoupon {
     }
 
     /**
-     * Full constructor including rate-computation start/end dates, mirroring the C++ v1.42.1 ctor signature
-     * (overnightindexedcoupon.hpp:57-75).
+     * Constructor including rate-computation start/end dates, without an ex-coupon date or rate rounding.
      */
     public OvernightIndexedCoupon(final Date paymentDate, final double nominal, final Date startDate,
             final Date endDate, final OvernightIndex overnightIndex, final double gearing, final double spread,
@@ -89,9 +98,25 @@ public class OvernightIndexedCoupon extends FloatingRateCoupon {
             final boolean telescopicValueDates, final RateAveraging.Type averagingMethod, final int lookbackDays,
             final int lockoutDays, final boolean applyObservationShift, final boolean compoundSpreadDaily,
             final Date rateComputationStartDate, final Date rateComputationEndDate) {
+        this(paymentDate, nominal, startDate, endDate, overnightIndex, gearing, spread, refPeriodStart, refPeriodEnd,
+                dayCounter, telescopicValueDates, averagingMethod, lookbackDays, lockoutDays, applyObservationShift,
+                compoundSpreadDaily, rateComputationStartDate, rateComputationEndDate, new Date(), null);
+    }
+
+    /**
+     * Full constructor mirroring the C++ v1.43 ctor signature (overnightindexedcoupon.hpp:57-78), including the
+     * ex-coupon date and the optional rate-rounding precision.
+     */
+    public OvernightIndexedCoupon(final Date paymentDate, final double nominal, final Date startDate,
+            final Date endDate, final OvernightIndex overnightIndex, final double gearing, final double spread,
+            final Date refPeriodStart, final Date refPeriodEnd, final DayCounter dayCounter,
+            final boolean telescopicValueDates, final RateAveraging.Type averagingMethod, final int lookbackDays,
+            final int lockoutDays, final boolean applyObservationShift, final boolean compoundSpreadDaily,
+            final Date rateComputationStartDate, final Date rateComputationEndDate, final Date exCouponDate,
+            final Integer roundingPrecision) {
         super(paymentDate, nominal, startDate, endDate,
                 lookbackDays == Constants.NULL_NATURAL ? overnightIndex.fixingDays() : lookbackDays, overnightIndex,
-                gearing, spread, refPeriodStart, refPeriodEnd, dayCounter, false /* isInArrears */);
+                gearing, spread, refPeriodStart, refPeriodEnd, dayCounter, false /* isInArrears */, exCouponDate);
 
         this.averagingMethod_ = averagingMethod;
         this.lockoutDays_ = lockoutDays;
@@ -99,15 +124,17 @@ public class OvernightIndexedCoupon extends FloatingRateCoupon {
         this.compoundSpreadDaily_ = compoundSpreadDaily;
         this.rateComputationStartDate_ = rateComputationStartDate;
         this.rateComputationEndDate_ = rateComputationEndDate;
+        this.roundingPrecision_ = roundingPrecision;
 
+        // ctor guards prevent construction of an object with illogically ordered dates
+        // (C++ overnightindexedcoupon.cpp:86-89).
+        QL.require(startDate.lt(endDate), "startDate must be less than endDate");
         QL.require(paymentDate.ge(endDate), "Payment date cannot be earlier than accrual end date");
 
-        // C++ overnightindexedcoupon.cpp:85-91: valueStart/valueEnd are
-        // computed (rateComputation overrides plus lookback shift) but in
-        // upstream C++ they are then unused in the schedule build, which
-        // uses the original startDate/endDate. We omit them here too — they
-        // would be dead variables — and apply the lookback shift later via
-        // applyLookbackPeriod() per-iteration.
+        // C++ overnightindexedcoupon.cpp:91-93: rate-computation dates override the
+        // accrual dates for everything schedule-related.
+        final Date rateCalcStartDate = rateComputationStartDate_.isNull() ? startDate : rateComputationStartDate_;
+        final Date rateCalcEndDate = rateComputationEndDate_.isNull() ? endDate : rateComputationEndDate_;
 
         // Telescopic-value-dates guard. With lookback applied (fixingDays_
         // differs from index.fixingDays()) telescopic value dates cannot be
@@ -116,48 +143,50 @@ public class OvernightIndexedCoupon extends FloatingRateCoupon {
         QL.require(canApplyTelescopicFormula() || !telescopicValueDates,
                 "Telescopic formula cannot be applied for a coupon with lookback.");
 
-        // Build the value-dates schedule on the index calendar (1-day tenor,
-        // following BDC, backward generation). If telescopic-value-dates is
-        // on, only build the front stub up to max(eval, start) + 7 business
-        // days (C++ overnightindexedcoupon.cpp:107-114).
-        Date tmpEndDate = endDate;
+        // Value dates. If telescopic-value-dates is on, only build the front stub,
+        // running from rateCalcStartDate to
+        // min(max(rateCalcStartDate, evalDate) + 7bd, rateCalcEndDate)
+        // (C++ overnightindexedcoupon.cpp:106-118).
+        final Calendar fixingCal = overnightIndex.fixingCalendar();
+        Date tmpEndDate = rateCalcEndDate;
         if ( telescopicValueDates ) {
             final Date evalDate = new Settings().evaluationDate();
-            tmpEndDate = overnightIndex.fixingCalendar()
-                    .advance(Date.max(startDate, evalDate), 7, TimeUnit.Days, BusinessDayConvention.Following, false);
-            tmpEndDate = Date.min(tmpEndDate, endDate);
+            tmpEndDate = fixingCal.advance(Date.max(rateCalcStartDate, evalDate), 7, TimeUnit.Days,
+                    BusinessDayConvention.Following, false);
+            tmpEndDate = Date.min(tmpEndDate, rateCalcEndDate);
         }
+        this.valueDates_ = new ArrayList<>(fixingCal.businessDayList(
+                fixingCal.adjust(rateCalcStartDate, BusinessDayConvention.Preceding),
+                fixingCal.adjust(tmpEndDate, BusinessDayConvention.Following)));
 
-        final Schedule sch = new MakeSchedule(startDate, tmpEndDate, new Period(1, TimeUnit.Days),
-                overnightIndex.fixingCalendar(), overnightIndex.businessDayConvention()).backwards().schedule();
-        this.valueDates_ = new ArrayList<>(sch.dates());
-
-        // C++ overnightindexedcoupon.cpp:126-140 — if telescopic AND lockout
-        // is set, ensure the lockout dates are covered in the back stub.
+        // C++ overnightindexedcoupon.cpp:120-133 — if telescopic, extend the back stub
+        // so that the (possible) lockout period is covered by the value dates.
         if ( telescopicValueDates ) {
-            final Date backStop = overnightIndex.fixingCalendar()
-                    .adjust(endDate, overnightIndex.businessDayConvention());
-            Date tmpLockoutDate = overnightIndex.fixingCalendar()
-                    .advance(endDate, -Math.max(lockoutDays_, 1), TimeUnit.Days, BusinessDayConvention.Preceding,
-                            false);
-            while ( tmpLockoutDate.le(backStop) ) {
-                if ( tmpLockoutDate.gt(valueDates_.get(valueDates_.size() - 1)) ) {
-                    valueDates_.add(tmpLockoutDate);
-                }
-                tmpLockoutDate = overnightIndex.fixingCalendar()
-                        .advance(tmpLockoutDate, 1, TimeUnit.Days, BusinessDayConvention.Following, false);
+            final Date backStop = fixingCal.adjust(rateCalcEndDate, BusinessDayConvention.Following);
+            final Date tmpLockoutDate = fixingCal.advance(rateCalcEndDate, -Math.max(lockoutDays_, 1), TimeUnit.Days);
+            Date nextValueDate = tmpLockoutDate.gt(valueDates_.get(valueDates_.size() - 1))
+                    ? tmpLockoutDate
+                    : fixingCal.advance(valueDates_.get(valueDates_.size() - 1), 1, TimeUnit.Days);
+            while ( nextValueDate.le(backStop) ) {
+                valueDates_.add(nextValueDate);
+                nextValueDate = fixingCal.advance(nextValueDate, 1, TimeUnit.Days);
             }
         }
 
         QL.ensure(valueDates_.size() >= 2, "degenerate schedule");
         this.n_ = valueDates_.size() - 1;
 
+        // Interest dates equal the value dates except at the two ends, where the
+        // rate-computation (or accrual) dates are used verbatim — this is what makes
+        // interest accrue over the true period even when an end lands on a fixing
+        // holiday (C++ overnightindexedcoupon.cpp:137-140).
         this.interestDates_ = new ArrayList<>(valueDates_);
+        interestDates_.set(0, rateCalcStartDate);
+        interestDates_.set(n_, rateCalcEndDate);
 
         // Fixing dates: when fixingDays_ matches the index default and equals
         // zero, fixing date is the value date itself. Otherwise apply the
-        // lookback shift (with optional observation-shift correction on
-        // interest dates) — C++ overnightindexedcoupon.cpp:148-178.
+        // lookback shift — C++ overnightindexedcoupon.cpp:142-163.
         this.fixingDates_ = new ArrayList<>(n_);
         // Pre-fill so we can index-assign below.
         for ( int i = 0; i < n_; ++i ) {
@@ -173,16 +202,10 @@ public class OvernightIndexedCoupon extends FloatingRateCoupon {
                 if ( i < n_ ) {
                     fixingDates_.set(i, tmp);
                 }
-                if ( applyObservationShift_ ) {
-                    // observation-shift: interest dates align with the
-                    // lookback-shifted fixing dates.
-                    interestDates_.set(i, tmp);
-                }
                 if ( fixingDays_ != overnightIndex.fixingDays() ) {
-                    // Lookback without observation shift: correct value
-                    // dates so they match a deposit-instrument value date
-                    // (avoids convexity adjustments in the forward
-                    // projection).
+                    // Lookback: correct value dates so they match a
+                    // deposit-instrument value date (avoids convexity
+                    // adjustments in the forward projection).
                     valueDates_.set(i, overnightIndex.valueDate(tmp));
                 }
             }
@@ -190,21 +213,27 @@ public class OvernightIndexedCoupon extends FloatingRateCoupon {
 
         // Lockout: freeze the last `lockoutDays_` fixing dates to the
         // fixing date observed `lockoutDays_` days before the period end.
-        // C++ overnightindexedcoupon.cpp:181-187.
+        // C++ overnightindexedcoupon.cpp:165-171.
         if ( lockoutDays_ != 0 ) {
             QL.require(lockoutDays_ > 0 && lockoutDays_ < n_,
                     "Lockout period cannot be negative or exceed the number of fixing days.");
             final Date lockoutDate = fixingDates_.get(n_ - 1 - lockoutDays_);
-            for ( int i = n_ - 1; i > n_ - 1 - lockoutDays_; --i ) {
+            for ( int i = n_ - lockoutDays_; i < n_; ++i ) {
                 fixingDates_.set(i, lockoutDate);
             }
         }
 
-        // Accrual fractions per sub-period using the index day counter.
+        // Accrual (compounding) periods, using the index day counter. With observation
+        // shift AND a lookback the interest accrues over the *observation* (value) dates
+        // rather than the interest dates — C++ overnightindexedcoupon.cpp:173-178.
+        // NOTE: `lookbackDays` is the raw ctor argument, so the Null sentinel
+        // (Constants.NULL_NATURAL == Integer.MAX_VALUE, matching C++ Null<Natural>() ==
+        // INT_MAX) compares greater than zero exactly as it does in C++.
         this.dt_ = new double[n_];
         final DayCounter dc = overnightIndex.dayCounter();
+        final List< Date > accrualDates = (applyObservationShift_ && lookbackDays > 0) ? valueDates_ : interestDates_;
         for ( int i = 0; i < n_; ++i ) {
-            dt_[i] = dc.yearFraction(interestDates_.get(i), interestDates_.get(i + 1));
+            dt_[i] = dc.yearFraction(accrualDates.get(i), accrualDates.get(i + 1));
         }
 
         switch ( averagingMethod ) {
@@ -284,6 +313,14 @@ public class OvernightIndexedCoupon extends FloatingRateCoupon {
         return rateComputationEndDate_;
     }
 
+    /**
+     * Rounding precision applied to the rate in {@link #amount()}, or {@code null} when no rounding is configured.
+     * Mirror of the C++ {@code ext::optional<Integer> roundingPrecision_} member.
+     */
+    public Integer roundingPrecision() {
+        return roundingPrecision_;
+    }
+
     public int n() {
         return n_;
     }
@@ -330,27 +367,33 @@ public class OvernightIndexedCoupon extends FloatingRateCoupon {
      * Overrides the generic {@link FloatingRateCoupon#accruedAmount(Date)} (which uses
      * {@code rate() * yearFraction[start, min(d,end)]}) to compute the compounded rate over the truncated
      * {@code [start, d]} sub-period via {@link CompoundingOvernightIndexedCouponPricer#averageRate(Date)}.
-     * <p>
-     * {@code accruedPeriod(d)} is computed inline (Java {@link Coupon} does not yet expose a
-     * {@code accruedPeriod(Date)} method); the semantics mirror C++ {@code Coupon::accruedPeriod(d)}
-     * (ql/cashflows/coupon.cpp:57-69).
      */
     @Override
     public double accruedAmount(final Date d) {
         if ( d.le(accrualStartDate_) || d.gt(paymentDate_) ) {
             // out of coupon range
             return 0.0;
-        }
-        final double accruedPeriod;
-        if ( tradingExCoupon(d) ) {
-            accruedPeriod = -dayCounter().yearFraction(d, Date.max(d, accrualEndDate_), refPeriodStart_, refPeriodEnd_);
-            return nominal() * averageRate(d) * accruedPeriod;
+        } else if ( tradingExCoupon(d) ) {
+            return nominal() * averageRate(d) * accruedPeriod(d);
         } else {
-            accruedPeriod = dayCounter().yearFraction(accrualStartDate_, Date.min(d, accrualEndDate_), refPeriodStart_,
-                    refPeriodEnd_);
             // usual case: compounded rate computed over [start, min(d, end)]
-            return nominal() * averageRate(Date.min(d, accrualEndDate_)) * accruedPeriod;
+            return nominal() * averageRate(Date.min(d, accrualEndDate_)) * accruedPeriod(d);
         }
+    }
+
+    /**
+     * Coupon amount, with the rate optionally rounded to {@link #roundingPrecision()} decimal places first.
+     * <p>
+     * Mirror of C++ {@code OvernightIndexedCoupon::amount()} (ql/cashflows/overnightindexedcoupon.cpp:208-216), new in
+     * v1.43.
+     */
+    @Override
+    public double amount() {
+        double r = rate();
+        if ( roundingPrecision_ != null ) {
+            r = new Rounding.ClosestRounding(roundingPrecision_.intValue()).operator(r);
+        }
+        return r * accrualPeriod() * nominal();
     }
 
     /**
