@@ -257,6 +257,30 @@ public abstract class SmileSection implements Observer, Observable {
         return digitalOptionPrice(strike, type, 1.0, 1.0e-5);
     }
 
+    /**
+     * Risk-neutral probability density at {@code strike}, by the Breeden-Litzenberger identity applied as a centred
+     * finite difference of the digital price.
+     * <p>
+     * Mirrors C++ {@code SmileSection::density(Rate strike, Real discount = 1.0, Real gap = 1.0e-4)}
+     * ({@code ql/termstructures/volatility/smilesection.cpp}). Note the default gap here (1e-4) differs from the one
+     * {@link #digitalOptionPrice(double, Option.Type, double, double)} defaults to (1e-5), and that the same
+     * {@code gap} is passed down to the two digital prices — a port that uses a different gap diverges in the wings.
+     */
+    public double density(final double strike, final double discount, final double gap) {
+        final double m = (volatilityType_ == VolatilityType.ShiftedLognormal) ? -shift_ : -Double.MAX_VALUE;
+        final double kl = Math.max(strike - gap / 2.0, m);
+        final double kr = kl + gap;
+        return (digitalOptionPrice(kl, Option.Type.Call, discount, gap)
+                - digitalOptionPrice(kr, Option.Type.Call, discount, gap)) / gap;
+    }
+
+    /**
+     * Convenience overload using the C++ defaults: undiscounted, {@code gap = 1e-4}.
+     */
+    public double density(final double strike) {
+        return density(strike, 1.0, 1.0e-4);
+    }
+
     //
     // implements Observer
     //

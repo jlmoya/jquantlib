@@ -25,6 +25,8 @@ package org.jquantlib.termstructures;
 import org.jquantlib.QL;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.lang.exceptions.LibraryException;
+import org.jquantlib.math.Constants;
+import org.jquantlib.termstructures.volatilities.SmileSection;
 import org.jquantlib.termstructures.volatilities.VolatilityTermStructure;
 import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Calendar;
@@ -168,6 +170,94 @@ public abstract class BlackVolTermStructure extends VolatilityTermStructure impl
 
     protected abstract /*@Variance*/ double blackVarianceImpl(final /*@Time*/ double maturity,
             final /*@Real*/ double strike);
+
+    //
+    // smile — new in C++ QuantLib v1.43
+    //
+
+    /**
+     * At-the-money level at time {@code t}, or {@link Constants#NULL_REAL} when the surface does not know one.
+     * <p>
+     * Mirrors C++ v1.43 {@code BlackVolTermStructure::atmLevel(Time)}
+     * ({@code ql/termstructures/volatility/equityfx/blackvoltermstructure.hpp}).
+     */
+    public /*@Real*/ double atmLevel(final /*@Time*/ double t) {
+        return Constants.NULL_REAL;
+    }
+
+    /**
+     * The smile for a given option date. Mirrors C++ v1.43
+     * {@code BlackVolTermStructure::smileSection(const Date&, bool)}.
+     */
+    public SmileSection smileSection(final Date maturity, final boolean extrapolate) {
+        checkRange(maturity, extrapolate);
+        return smileSectionImpl(timeFromReference(maturity));
+    }
+
+    public SmileSection smileSection(final Date maturity) {
+        return smileSection(maturity, false);
+    }
+
+    /**
+     * The smile for a given option time. Mirrors C++ v1.43 {@code BlackVolTermStructure::smileSection(Time, bool)}.
+     */
+    public SmileSection smileSection(final /*@Time*/ double maturity, final boolean extrapolate) {
+        checkRange(maturity, extrapolate);
+        return smileSectionImpl(maturity);
+    }
+
+    public SmileSection smileSection(final /*@Time*/ double maturity) {
+        return smileSection(maturity, false);
+    }
+
+    /**
+     * Smile-section calculation. The default wraps this surface in an adapter that reads volatilities straight off it,
+     * so any surface gains a smile view for free; surfaces with a native smile representation override this to return
+     * a self-contained object.
+     * <p>
+     * The C++ default holds a {@code shared_ptr} to {@code *this} obtained through {@code shared_from_this()} so the
+     * surface outlives the returned section; in Java the adapter's ordinary reference gives the same guarantee.
+     */
+    protected SmileSection smileSectionImpl(final /*@Time*/ double t) {
+        return new BlackVolSmileSectionAdapter(this, t);
+    }
+
+    /**
+     * Adapter turning a {@link BlackVolTermStructure} slice into a {@link SmileSection}. Mirrors the anonymous-namespace
+     * {@code BlackVolSmileSectionAdapter} of C++ v1.43
+     * ({@code ql/termstructures/volatility/equityfx/blackvoltermstructure.cpp}).
+     */
+    private static final class BlackVolSmileSectionAdapter extends SmileSection {
+
+        private final BlackVolTermStructure vol;
+
+        BlackVolSmileSectionAdapter(final BlackVolTermStructure vol, final /*@Time*/ double t) {
+            super(t, vol.dayCounter());
+            this.vol = vol;
+        }
+
+        @Override
+        public /*@Real*/ double minStrike() {
+            return vol.minStrike();
+        }
+
+        @Override
+        public /*@Real*/ double maxStrike() {
+            return vol.maxStrike();
+        }
+
+        @Override
+        public /*@Real*/ double atmLevel() {
+            return vol.atmLevel(exerciseTime());
+        }
+
+        @Override
+        protected /*@Volatility*/ double volatilityImpl(final /*@Rate*/ double strike) {
+            // extrapolate = true: the section's own strike range already comes from the surface, so re-checking here
+            // would reject the very strikes the surface says it can price.
+            return vol.blackVol(exerciseTime(), strike, true);
+        }
+    }
 
     //
     // public methods

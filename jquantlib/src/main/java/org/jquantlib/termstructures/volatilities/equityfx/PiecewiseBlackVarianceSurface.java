@@ -30,6 +30,7 @@ package org.jquantlib.termstructures.volatilities.equityfx;
 
 import org.jquantlib.QL;
 import org.jquantlib.daycounters.DayCounter;
+import org.jquantlib.math.Closeness;
 import org.jquantlib.math.Constants;
 import org.jquantlib.math.interpolations.factories.Linear;
 import org.jquantlib.math.matrixutilities.Matrix;
@@ -266,5 +267,26 @@ public class PiecewiseBlackVarianceSurface extends BlackVarianceTermStructure {
         } else {
             super.accept(pv);
         }
+    }
+    /**
+     * Returns the stored smile section when {@code t} lands on one of the surface's own tenors, and otherwise falls
+     * back to the base class's on-the-fly adapter.
+     * <p>
+     * New in C++ QuantLib v1.43
+     * ({@code ql/termstructures/volatility/equityfx/piecewiseblackvariancesurface.cpp:163}). The point of the
+     * override is that a surface built from smile sections can hand the original object back rather than a
+     * reconstruction of it, so nothing is lost to interpolation at a tenor the surface actually knows.
+     */
+    @Override
+    protected SmileSection smileSectionImpl(final /*@Time*/ double t) {
+        for ( int i = 0; i < times_.length; ++i ) {
+            if ( Closeness.isCloseEnough(t, times_[i]) ) {
+                return smileSections_[i];
+            }
+            if ( times_[i] > t ) {
+                break; // times_ is increasing, so no later entry can match
+            }
+        }
+        return super.smileSectionImpl(t);
     }
 }
