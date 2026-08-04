@@ -65,9 +65,15 @@ public final class FastFourierTransform {
      * @param order log<sub>2</sub> of the transform length (must be &ge; 1).
      */
     public FastFourierTransform(final int order) {
-        QL.require(order >= 1, "FFT order must be at least 1");
+        QL.require(order >= 0, "FFT order cannot be negative");
         this.cs_ = new double[order];
         this.sn_ = new double[order];
+        if ( order == 0 ) {
+            // A size-1 transform is a copy: there are no twiddle factors to compute, and computing them anyway
+            // writes to cs_[-1] / sn_[-1]. Mirrors C++ v1.43 ({@code ql/math/fastfouriertransform.hpp}), which added
+            // the same early return. Note minOrder(1) is 0, so this order is reachable from ordinary code.
+            return;
+        }
         final long m = 1L << order;
         cs_[order - 1] = Math.cos(2.0 * Math.PI / m);
         sn_[order - 1] = Math.sin(2.0 * Math.PI / m);

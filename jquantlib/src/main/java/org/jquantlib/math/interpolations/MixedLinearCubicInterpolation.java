@@ -200,13 +200,12 @@ public class MixedLinearCubicInterpolation extends AbstractInterpolation {
             QL.require(!matchDerivatives_ || behavior == Behavior.SplitRanges,
                     "matching derivatives is only supported with SplitRanges");
 
-            // Validate n vs. data size, mirroring C++ MixedInterpolationImpl ctor
-            // (mixedinterpolation.hpp lines 232-241).
+            // Validate n vs. data size, mirroring C++ v1.43 MixedInterpolationImpl
+            // (mixedinterpolation.hpp:238-243). The bound is dataSize - 1 for BOTH behaviours: the switch point
+            // xBegin + n is dereferenced by update() and value() regardless, so n == dataSize walks off the end.
+            // Java previously allowed it for ShareRanges and then failed with an index error on the very next line.
             final int dataSize = vx.size();
-            int maxN = dataSize;
-            if ( behavior == Behavior.SplitRanges ) {
-                --maxN; // SplitRanges needs xBegin+n+1 to be valid
-            }
+            final int maxN = dataSize - 1;
             QL.require(n <= maxN, "n is too large (" + n + " > " + maxN + ")");
 
             this.n_ = n;

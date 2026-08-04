@@ -257,6 +257,13 @@ public class CubicInterpolation extends AbstractInterpolation {
 
             this.n = vx_.length;
 
+            // The Akima scheme indexes S[2] and S[n-4] while estimating the end derivatives; with three points S has
+            // size two and both are out of range. Fail with the reason rather than an index error five frames deep.
+            // Mirrors C++ {@code CubicInterpolation::Impl} ({@code ql/math/interpolations/cubicinterpolation.hpp:404}).
+            if ( da == DerivativeApprox.Akima ) {
+                QL.require(n >= 4, "Akima approximation requires at least 4 points (" + n + " are given)");
+            }
+
             this.vp_ = new double[n - 1];
             this.va_ = new double[n - 1];
             this.vb_ = new double[n - 1];

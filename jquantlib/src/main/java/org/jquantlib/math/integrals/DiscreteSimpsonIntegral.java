@@ -66,6 +66,13 @@ public class DiscreteSimpsonIntegral {
         final int n = f.size();
         QL.require(n == x.size(), "inconsistent size");
 
+        // Fewer than two nodes means there is no interval to integrate. Without this, n == 0 falls through to the
+        // even-n trailing term below and indexes x[-1]. Mirrors C++ v1.43
+        // ({@code ql/math/integrals/discreteintegrals.cpp}), which added the same guard for the unsigned wrap-around.
+        if ( n < 2 ) {
+            return 0.0;
+        }
+
         double sum = 0.0;
 
         // Pair-step: each Simpson pair covers indices j, j+1, j+2 on a

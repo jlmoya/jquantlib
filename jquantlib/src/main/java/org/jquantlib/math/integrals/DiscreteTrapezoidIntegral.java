@@ -44,6 +44,10 @@ public class DiscreteTrapezoidIntegral {
         final int n = f.size();
         QL.require(n == x.size(), "inconsistent size");
 
+        if ( n < 2 ) {
+            return 0.0;
+        }
+
         double sum = 0.0;
         for ( int i = 0; i < n - 1; i++ ) {
             sum += (x.get(i + 1) - x.get(i)) * (f.get(i) + f.get(i + 1));
