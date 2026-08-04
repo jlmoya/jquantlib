@@ -40,6 +40,7 @@
 package org.jquantlib.instruments;
 
 import org.jquantlib.QL;
+import org.jquantlib.math.Constants;
 import org.jquantlib.exercise.Exercise;
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.lang.reflect.ReflectConstants;
@@ -244,7 +245,11 @@ public abstract class Option extends Instrument {
 
         @Override
         public void reset() {
-            delta = gamma = theta = vega = rho = dividendRho = Double.NaN;
+            // Constants.NULL_REAL, not NaN: every guard that asks "did the engine provide this?" compares
+            // against NULL_REAL (C++ Null<Real>() == MAX_REAL). Resetting to NaN made those guards
+            // unreachable, so delta() on an engine that populates no greeks returned NaN instead of
+            // refusing. Mirrors C++ {@code Greeks::reset} ({@code ql/option.hpp:71}).
+            delta = gamma = theta = vega = rho = dividendRho = Constants.NULL_REAL;
         }
 
     }
@@ -280,7 +285,7 @@ public abstract class Option extends Instrument {
 
         @Override
         public void reset() {
-            itmCashProbability = deltaForward = elasticity = thetaPerDay = strikeSensitivity = Double.NaN;
+            itmCashProbability = deltaForward = elasticity = thetaPerDay = strikeSensitivity = Constants.NULL_REAL;
         }
 
     }

@@ -151,7 +151,7 @@ public class Swap extends Instrument {
     public /*@Real*/ double legBPS(final int j) /* @ReadOnly */ {
         QL.require(j < legs.size(), "leg index out of range");
         calculate();
-        QL.require(!Double.isNaN(legBPS[j]), "result not available");
+        QL.require(legBPS[j] != Constants.NULL_REAL, "result not available");
         return legBPS[j];
     }
 
@@ -161,7 +161,7 @@ public class Swap extends Instrument {
     public /*@Real*/ double legNPV(final int j) /* @ReadOnly */ {
         QL.require(j < legs.size(), "leg index out of range");
         calculate();
-        QL.require(!Double.isNaN(legNPV[j]), "result not available");
+        QL.require(legNPV[j] != Constants.NULL_REAL, "result not available");
         return legNPV[j];
     }
 
@@ -174,7 +174,7 @@ public class Swap extends Instrument {
     public /*@DiscountFactor*/ double startDiscounts(final int j) /* @ReadOnly */ {
         QL.require(j < legs.size(), "leg index out of range");
         calculate();
-        QL.require(!Double.isNaN(startDiscounts[j]), "result not available");
+        QL.require(startDiscounts[j] != Constants.NULL_REAL, "result not available");
         return startDiscounts[j];
     }
 
@@ -187,7 +187,7 @@ public class Swap extends Instrument {
     public /*@DiscountFactor*/ double endDiscounts(final int j) /* @ReadOnly */ {
         QL.require(j < legs.size(), "leg index out of range");
         calculate();
-        QL.require(!Double.isNaN(endDiscounts[j]), "result not available");
+        QL.require(endDiscounts[j] != Constants.NULL_REAL, "result not available");
         return endDiscounts[j];
     }
 

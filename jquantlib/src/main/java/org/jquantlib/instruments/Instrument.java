@@ -47,6 +47,7 @@ import org.jquantlib.lang.annotation.QualityAssurance.Version;
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.lang.reflect.ReflectConstants;
 import org.jquantlib.pricingengines.PricingEngine;
+import org.jquantlib.time.Date;
 import org.jquantlib.util.LazyObject;
 
 import java.util.HashMap;
@@ -91,6 +92,13 @@ public abstract class Instrument extends LazyObject {
      */
     protected /*@Real*/ double errorEstimate;
 
+    /**
+     * The date the {@link PricingEngine} discounted to. Mirrors C++ {@code Instrument::valuationDate_}
+     * ({@code ql/instrument.hpp}). Engines that discount to a date other than the curve reference date — such as
+     * {@code DiscountingConstNotionalCrossCurrencySwapEngine} — report it here.
+     */
+    protected Date valuationDate;
+
     //
     // public abstract methods
     //
@@ -98,6 +106,7 @@ public abstract class Instrument extends LazyObject {
     protected Instrument() {
         this.NPV = Double.NaN;
         this.errorEstimate = 0.0;
+        this.valuationDate = new Date();
     }
 
     /**
@@ -158,6 +167,15 @@ public abstract class Instrument extends LazyObject {
         return errorEstimate;
     }
 
+    /**
+     * returns the date the pricing engine discounted to. Mirrors C++ {@code Instrument::valuationDate() const}.
+     */
+    public final Date valuationDate() /*@ReadOnly*/ {
+        calculate();
+        QL.require(valuationDate != null && !valuationDate.isNull(), "valuation date not provided");
+        return valuationDate;
+    }
+
     //
     // protected methods
     //
@@ -176,6 +194,7 @@ public abstract class Instrument extends LazyObject {
         final Instrument.ResultsImpl results = (Instrument.ResultsImpl) r;
         NPV = results.value;
         errorEstimate = results.errorEstimate;
+        valuationDate = results.valuationDate;
     }
 
     /**
@@ -184,6 +203,7 @@ public abstract class Instrument extends LazyObject {
     protected void setupExpired() /*@ReadOnly*/ {
         NPV = 0.0;
         errorEstimate = 0.0;
+        valuationDate = new Date();
     }
 
     //
@@ -266,6 +286,12 @@ public abstract class Instrument extends LazyObject {
          */
         public /*@Real*/ double errorEstimate;
 
+        /**
+         * The date the engine discounted to. Mirrors C++ {@code Instrument::results::valuationDate}
+         * ({@code ql/instrument.hpp}).
+         */
+        public Date valuationDate = new Date();
+
         //
         // public methods
         //
@@ -296,6 +322,7 @@ public abstract class Instrument extends LazyObject {
         @Override
         public void reset() {
             value = errorEstimate = Double.NaN;
+            valuationDate = new Date();
             additionalResults.clear();
         }
 

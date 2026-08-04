@@ -743,24 +743,39 @@ public class CashFlows {
                 1.0e-10, 100, 0.0);
     }
 
+    /**
+     * Earliest date of the leg: a {@link Coupon}'s accrual start date, or a plain cashflow's payment date.
+     * <p>
+     * Mirrors C++ v1.43 {@code CashFlows::startDate} ({@code ql/cashflows/cashflows.cpp:38}). The previous Java code
+     * cast every element to {@code Coupon} unconditionally, which threw on legs holding plain cashflows — exactly the
+     * shape a cross-currency leg takes once its notional exchanges are attached.
+     */
     public Date startDate(final Leg cashflows) {
+        QL.require(!cashflows.isEmpty(), no_cashflows);
         Date d = Date.maxDate();
         for ( int i = 0; i < cashflows.size(); ++i ) {
-            final Coupon c = (Coupon) cashflows.get(i);
-            if ( c != null ) {
-                d = Date.min(c.accrualStartDate(), d);
-            }
+            final CashFlow cf = cashflows.get(i);
+            final Date candidate = (cf instanceof Coupon) ? ((Coupon) cf).accrualStartDate() : cf.date();
+            d = Date.min(candidate, d);
         }
-        QL.ensure(d.lt(Date.maxDate()), not_enough_information_available); // QA:[RG]::verified
         return d;
     }
 
+    /**
+     * Latest date of the leg: a {@link Coupon}'s accrual end date, or a plain cashflow's payment date.
+     * <p>
+     * Mirrors C++ v1.43 {@code CashFlows::maturityDate} ({@code ql/cashflows/cashflows.cpp:52}). The previous Java code
+     * used the payment date for coupons too, which differs whenever a payment lag or a payment-calendar adjustment
+     * pushes the payment past the accrual end.
+     */
     public Date maturityDate(final Leg cashflows) {
+        QL.require(!cashflows.isEmpty(), no_cashflows);
         Date d = Date.minDate();
         for ( int i = 0; i < cashflows.size(); i++ ) {
-            d = Date.max(d, cashflows.get(i).date());
+            final CashFlow cf = cashflows.get(i);
+            final Date candidate = (cf instanceof Coupon) ? ((Coupon) cf).accrualEndDate() : cf.date();
+            d = Date.max(d, candidate);
         }
-        QL.ensure(d.gt(Date.minDate()), no_cashflows);
         return d;
     }
 
