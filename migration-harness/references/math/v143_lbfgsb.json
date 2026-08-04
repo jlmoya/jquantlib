@@ -1,0 +1,1643 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "endCriteriaName": "StationaryFunctionValue",
+        "endCriteriaType": 3,
+        "functionEvaluations": 40,
+        "functionValue": 2.8344758400726036e-28,
+        "gradientAtSolution": [
+          4.1877612488866746e-13,
+          -2.2204460492506334e-13
+        ],
+        "gradientEvaluations": 40,
+        "gradientNormValue": 1.9955239612954776e-16,
+        "projectedGradientInfNorm": 4.1877612488860905e-13,
+        "x": [
+          0.9999999999999873,
+          0.9999999999999736
+        ]
+      },
+      "inputs": {
+        "constraint": "NoConstraint",
+        "endCriteria": {
+          "functionEpsilon": 1e-12,
+          "gradientNormEpsilon": 1e-10,
+          "maxIterations": 1000,
+          "maxStationaryStateIterations": 100,
+          "rootEpsilon": 1e-12
+        },
+        "lbfgsb": {
+          "fTol": 2.220446049250313e-15,
+          "factr": 10.0,
+          "memory": 10,
+          "pgTol": 1e-10
+        },
+        "n": 2,
+        "objective": "rosenbrock",
+        "x0": [
+          -1.0,
+          -1.0
+        ]
+      },
+      "name": "rosenbrock_2d_unconstrained"
+    },
+    {
+      "expected": {
+        "endCriteriaName": "StationaryFunctionValue",
+        "endCriteriaType": 3,
+        "functionEvaluations": 59,
+        "functionValue": 8.550949950975429e-18,
+        "gradientAtSolution": [
+          2.029615697718576e-08,
+          -5.662534329869274e-08,
+          -1.143390981934748e-08,
+          4.098981243644804e-08,
+          3.7822673442549085e-08,
+          -1.5081703442312664e-08,
+          -1.914520320079352e-08,
+          -3.1101897502521255e-08,
+          -5.1040438979843835e-08,
+          3.538729308293954e-08
+        ],
+        "gradientEvaluations": 59,
+        "gradientNormValue": 1.973758336979512e-14,
+        "projectedGradientInfNorm": 5.6625343192173716e-08,
+        "x": [
+          0.9999999999938677,
+          0.9999999999369643,
+          0.9999999999897913,
+          1.0000000000660476,
+          1.0000000000731835,
+          1.0000000000227203,
+          1.000000000021435,
+          1.0000000000788376,
+          1.0000000002538079,
+          1.0000000006845522
+        ]
+      },
+      "inputs": {
+        "constraint": "NoConstraint",
+        "endCriteria": {
+          "functionEpsilon": 1e-12,
+          "gradientNormEpsilon": 1e-10,
+          "maxIterations": 1000,
+          "maxStationaryStateIterations": 100,
+          "rootEpsilon": 1e-12
+        },
+        "lbfgsb": {
+          "fTol": 2.220446049250313e-15,
+          "factr": 10.0,
+          "memory": 10,
+          "pgTol": 1e-10
+        },
+        "n": 10,
+        "objective": "rosenbrock",
+        "x0": [
+          -1.0,
+          -1.0,
+          -1.0,
+          -1.0,
+          -1.0,
+          -1.0,
+          -1.0,
+          -1.0,
+          -1.0,
+          -1.0
+        ]
+      },
+      "name": "rosenbrock_10d_unconstrained"
+    },
+    {
+      "expected": {
+        "endCriteriaName": "StationaryFunctionValue",
+        "endCriteriaType": 3,
+        "functionEvaluations": 107,
+        "functionValue": 2.647150752928685e-15,
+        "gradientAtSolution": [
+          -1.179987733522563e-07,
+          -2.0052250045558382e-08,
+          -2.448664496416391e-07,
+          1.832563815974282e-07,
+          -1.7665957759979355e-07,
+          1.704282244272264e-07,
+          -2.6217571669952463e-08,
+          -3.402842339431697e-08,
+          -1.4298280995225985e-07,
+          -2.4301687740814914e-08,
+          -1.1240200542240881e-07,
+          1.078637419271711e-07,
+          1.1141778210987917e-07,
+          1.5260665390117976e-07,
+          4.0869057138572144e-08,
+          -7.197215944948755e-08,
+          1.9082055321856138e-08,
+          -3.090493004984869e-07,
+          1.2167678362439827e-07,
+          -4.2976295984576935e-08
+        ],
+        "gradientEvaluations": 107,
+        "gradientNormValue": 2.199712157849061e-13,
+        "projectedGradientInfNorm": 3.090493004842543e-07,
+        "x": [
+          0.9999999997127151,
+          0.9999999997189908,
+          0.9999999996334874,
+          0.9999999999750613,
+          0.9999999998459002,
+          1.0000000000805676,
+          0.999999999929851,
+          0.9999999998092531,
+          0.9999999996773992,
+          0.9999999997400888,
+          0.9999999997322775,
+          0.9999999998702713,
+          0.9999999996730928,
+          0.9999999990322818,
+          0.9999999975212563,
+          0.9999999946562927,
+          0.9999999892726874,
+          0.9999999784240842,
+          0.9999999574522671,
+          0.9999999146896545
+        ]
+      },
+      "inputs": {
+        "constraint": "NoConstraint",
+        "endCriteria": {
+          "functionEpsilon": 1e-12,
+          "gradientNormEpsilon": 1e-10,
+          "maxIterations": 1000,
+          "maxStationaryStateIterations": 100,
+          "rootEpsilon": 1e-12
+        },
+        "lbfgsb": {
+          "fTol": 2.220446049250313e-15,
+          "factr": 10.0,
+          "memory": 3,
+          "pgTol": 1e-08
+        },
+        "n": 20,
+        "objective": "rosenbrock",
+        "x0": [
+          -1.0,
+          -1.0,
+          -1.0,
+          -1.0,
+          -1.0,
+          -1.0,
+          -1.0,
+          -1.0,
+          -1.0,
+          -1.0,
+          -1.0,
+          -1.0,
+          -1.0,
+          -1.0,
+          -1.0,
+          -1.0,
+          -1.0,
+          -1.0,
+          -1.0,
+          -1.0
+        ]
+      },
+      "name": "rosenbrock_20d_small_memory"
+    },
+    {
+      "expected": {
+        "endCriteriaName": "StationaryFunctionValue",
+        "endCriteriaType": 3,
+        "functionEvaluations": 88,
+        "functionValue": 2.1995756002403903e-16,
+        "gradientAtSolution": [
+          5.25315733223934e-07,
+          -2.6891627486571266e-07
+        ],
+        "gradientEvaluations": 88,
+        "gradientNormValue": 5.223277824168394e-13,
+        "projectedGradientInfNorm": 5.253157332463232e-07,
+        "x": [
+          0.9999999937415934,
+          0.9999999861386055
+        ]
+      },
+      "inputs": {
+        "constraint": "NoConstraint",
+        "endCriteria": {
+          "functionEpsilon": 1e-12,
+          "gradientNormEpsilon": 1e-10,
+          "maxIterations": 1000,
+          "maxStationaryStateIterations": 100,
+          "rootEpsilon": 1e-12
+        },
+        "lbfgsb": {
+          "fTol": 2.220446049250313e-15,
+          "factr": 10.0,
+          "memory": 1,
+          "pgTol": 1e-10
+        },
+        "n": 2,
+        "objective": "rosenbrock",
+        "x0": [
+          -1.0,
+          -1.0
+        ]
+      },
+      "name": "rosenbrock_2d_memory_one"
+    },
+    {
+      "expected": {
+        "endCriteriaName": "StationaryFunctionValue",
+        "endCriteriaType": 3,
+        "functionEvaluations": 15,
+        "functionValue": 3.4678374515496673e-19,
+        "gradientAtSolution": [
+          -3.184830177360709e-10,
+          -1.970938967588154e-09,
+          -2.8042532185246216e-10
+        ],
+        "gradientEvaluations": 15,
+        "gradientNormValue": 1.9608911708737389e-16,
+        "projectedGradientInfNorm": 1.970938967588154e-09,
+        "x": [
+          2.9999999998407585,
+          -2.0000000002463674,
+          0.49999999943914936
+        ]
+      },
+      "inputs": {
+        "center": [
+          3.0,
+          -2.0,
+          0.5
+        ],
+        "constraint": "NonhomogeneousBoundaryConstraint",
+        "endCriteria": {
+          "functionEpsilon": 1e-12,
+          "gradientNormEpsilon": 1e-10,
+          "maxIterations": 1000,
+          "maxStationaryStateIterations": 100,
+          "rootEpsilon": 1e-12
+        },
+        "lbfgsb": {
+          "fTol": 2.220446049250313e-15,
+          "factr": 10.0,
+          "memory": 10,
+          "pgTol": 1e-10
+        },
+        "lowerBound": [
+          -10.0,
+          -10.0,
+          -10.0
+        ],
+        "objective": "weighted_quadratic",
+        "upperBound": [
+          10.0,
+          10.0,
+          10.0
+        ],
+        "weight": [
+          1.0,
+          4.0,
+          0.25
+        ],
+        "x0": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "name": "quadratic_interior_optimum"
+    },
+    {
+      "expected": {
+        "endCriteriaName": "ZeroGradientNorm",
+        "endCriteriaType": 5,
+        "functionEvaluations": 2,
+        "functionValue": 20.0,
+        "gradientAtSolution": [
+          -4.0,
+          16.0,
+          0.0
+        ],
+        "gradientEvaluations": 2,
+        "gradientNormValue": 0.0,
+        "projectedGradientInfNorm": 0.0,
+        "x": [
+          1.0,
+          0.0,
+          0.5
+        ]
+      },
+      "inputs": {
+        "center": [
+          3.0,
+          -2.0,
+          0.5
+        ],
+        "constraint": "NonhomogeneousBoundaryConstraint",
+        "endCriteria": {
+          "functionEpsilon": 1e-12,
+          "gradientNormEpsilon": 1e-10,
+          "maxIterations": 1000,
+          "maxStationaryStateIterations": 100,
+          "rootEpsilon": 1e-12
+        },
+        "lbfgsb": {
+          "fTol": 2.220446049250313e-09,
+          "factr": 10000000.0,
+          "memory": 10,
+          "pgTol": 1e-08
+        },
+        "lbfgsbConstructor": "LBFGSB() default arguments",
+        "lowerBound": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "objective": "weighted_quadratic",
+        "upperBound": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "weight": [
+          1.0,
+          4.0,
+          0.25
+        ],
+        "x0": [
+          0.5,
+          0.5,
+          0.5
+        ]
+      },
+      "name": "quadratic_active_bounds_default_ctor"
+    },
+    {
+      "expected": {
+        "endCriteriaName": "ZeroGradientNorm",
+        "endCriteriaType": 5,
+        "functionEvaluations": 4,
+        "functionValue": 0.25,
+        "gradientAtSolution": [
+          -0.9999999999999944,
+          -5.551115123125783e-15
+        ],
+        "gradientEvaluations": 4,
+        "gradientNormValue": 3.1123798273275486e-29,
+        "projectedGradientInfNorm": 5.578870698741412e-15,
+        "x": [
+          0.5,
+          0.24999999999999997
+        ]
+      },
+      "inputs": {
+        "constraint": "NonhomogeneousBoundaryConstraint",
+        "endCriteria": {
+          "functionEpsilon": 1e-12,
+          "gradientNormEpsilon": 1e-10,
+          "maxIterations": 1000,
+          "maxStationaryStateIterations": 100,
+          "rootEpsilon": 1e-12
+        },
+        "lbfgsb": {
+          "fTol": 2.220446049250313e-15,
+          "factr": 10.0,
+          "memory": 10,
+          "pgTol": 1e-10
+        },
+        "lowerBound": [
+          -2.0,
+          -2.0
+        ],
+        "objective": "rosenbrock",
+        "upperBound": [
+          0.5,
+          0.5
+        ],
+        "x0": [
+          -1.0,
+          -1.0
+        ]
+      },
+      "name": "rosenbrock_2d_bounded"
+    },
+    {
+      "expected": {
+        "endCriteriaName": "ZeroGradientNorm",
+        "endCriteriaType": 5,
+        "functionEvaluations": 2,
+        "functionValue": 48.0,
+        "gradientAtSolution": [
+          -8.0,
+          -8.0,
+          -8.0
+        ],
+        "gradientEvaluations": 2,
+        "gradientNormValue": 0.0,
+        "projectedGradientInfNorm": 0.0,
+        "x": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "inputs": {
+        "center": [
+          5.0,
+          5.0,
+          5.0
+        ],
+        "constraint": "NonhomogeneousBoundaryConstraint",
+        "endCriteria": {
+          "functionEpsilon": 1e-12,
+          "gradientNormEpsilon": 1e-10,
+          "maxIterations": 1000,
+          "maxStationaryStateIterations": 100,
+          "rootEpsilon": 1e-12
+        },
+        "lbfgsb": {
+          "fTol": 2.220446049250313e-15,
+          "factr": 10.0,
+          "memory": 10,
+          "pgTol": 1e-10
+        },
+        "lowerBound": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "objective": "weighted_quadratic",
+        "upperBound": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "weight": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "x0": [
+          0.5,
+          0.5,
+          0.5
+        ]
+      },
+      "name": "quadratic_all_active_corner"
+    },
+    {
+      "expected": {
+        "endCriteriaName": "ZeroGradientNorm",
+        "endCriteriaType": 5,
+        "functionEvaluations": 2,
+        "functionValue": 8181.0,
+        "gradientAtSolution": [
+          -18.0,
+          -1800.0
+        ],
+        "gradientEvaluations": 2,
+        "gradientNormValue": 0.0,
+        "projectedGradientInfNorm": 0.0,
+        "x": [
+          1.0,
+          1.0
+        ]
+      },
+      "inputs": {
+        "center": [
+          10.0,
+          10.0
+        ],
+        "constraint": "NonhomogeneousBoundaryConstraint",
+        "endCriteria": {
+          "functionEpsilon": 1e-12,
+          "gradientNormEpsilon": 1e-10,
+          "maxIterations": 1000,
+          "maxStationaryStateIterations": 100,
+          "rootEpsilon": 1e-12
+        },
+        "lbfgsb": {
+          "fTol": 2.220446049250313e-15,
+          "factr": 10.0,
+          "memory": 10,
+          "pgTol": 1e-10
+        },
+        "lowerBound": [
+          0.0,
+          0.0
+        ],
+        "objective": "weighted_quadratic",
+        "upperBound": [
+          1.0,
+          1.0
+        ],
+        "weight": [
+          1.0,
+          100.0
+        ],
+        "x0": [
+          0.9,
+          0.1
+        ]
+      },
+      "name": "quadratic_two_active_distinct_breakpoints"
+    },
+    {
+      "expected": {
+        "endCriteriaName": "ZeroGradientNorm",
+        "endCriteriaType": 5,
+        "functionEvaluations": 2,
+        "functionValue": 16.0,
+        "gradientAtSolution": [
+          -8.0
+        ],
+        "gradientEvaluations": 2,
+        "gradientNormValue": 0.0,
+        "projectedGradientInfNorm": 0.0,
+        "x": [
+          1.0
+        ]
+      },
+      "inputs": {
+        "center": [
+          5.0
+        ],
+        "constraint": "NonhomogeneousBoundaryConstraint",
+        "endCriteria": {
+          "functionEpsilon": 1e-12,
+          "gradientNormEpsilon": 1e-10,
+          "maxIterations": 1000,
+          "maxStationaryStateIterations": 100,
+          "rootEpsilon": 1e-12
+        },
+        "lbfgsb": {
+          "fTol": 2.220446049250313e-15,
+          "factr": 10.0,
+          "memory": 10,
+          "pgTol": 1e-10
+        },
+        "lowerBound": [
+          0.0
+        ],
+        "objective": "weighted_quadratic",
+        "upperBound": [
+          1.0
+        ],
+        "weight": [
+          1.0
+        ],
+        "x0": [
+          0.5
+        ]
+      },
+      "name": "quadratic_1d_active_bound"
+    },
+    {
+      "expected": {
+        "endCriteriaName": "StationaryFunctionValue",
+        "endCriteriaType": 3,
+        "functionEvaluations": 12,
+        "functionValue": 0.015625,
+        "gradientAtSolution": [
+          -1.438849039914203e-13,
+          -5.506706202140776e-13,
+          -0.125
+        ],
+        "gradientEvaluations": 12,
+        "gradientNormValue": 5.190807248318508e-19,
+        "projectedGradientInfNorm": 5.506706202140776e-13,
+        "x": [
+          2.999999999999928,
+          -2.000000000000069,
+          0.25
+        ]
+      },
+      "inputs": {
+        "center": [
+          3.0,
+          -2.0,
+          0.5
+        ],
+        "constraint": "NonhomogeneousBoundaryConstraint",
+        "endCriteria": {
+          "functionEpsilon": 1e-12,
+          "gradientNormEpsilon": 1e-10,
+          "maxIterations": 1000,
+          "maxStationaryStateIterations": 100,
+          "rootEpsilon": 1e-12
+        },
+        "lbfgsb": {
+          "fTol": 2.220446049250313e-15,
+          "factr": 10.0,
+          "memory": 10,
+          "pgTol": 1e-10
+        },
+        "lowerBound": [
+          -10.0,
+          -10.0,
+          0.25
+        ],
+        "objective": "weighted_quadratic",
+        "upperBound": [
+          10.0,
+          10.0,
+          0.25
+        ],
+        "weight": [
+          1.0,
+          4.0,
+          0.25
+        ],
+        "x0": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "name": "quadratic_pinned_coordinate"
+    },
+    {
+      "expected": {
+        "endCriteriaName": "ZeroGradientNorm",
+        "endCriteriaType": 5,
+        "functionEvaluations": 5,
+        "functionValue": 20.0,
+        "gradientAtSolution": [
+          -4.0,
+          16.0,
+          0.0
+        ],
+        "gradientEvaluations": 5,
+        "gradientNormValue": 0.0,
+        "projectedGradientInfNorm": 0.0,
+        "x": [
+          1.0,
+          0.0,
+          0.5
+        ]
+      },
+      "inputs": {
+        "center": [
+          3.0,
+          -2.0,
+          0.5
+        ],
+        "constraint": "NonhomogeneousBoundaryConstraint",
+        "endCriteria": {
+          "functionEpsilon": 1e-12,
+          "gradientNormEpsilon": 1e-10,
+          "maxIterations": 1000,
+          "maxStationaryStateIterations": 100,
+          "rootEpsilon": 1e-12
+        },
+        "lbfgsb": {
+          "fTol": 2.220446049250313e-15,
+          "factr": 10.0,
+          "memory": 10,
+          "pgTol": 1e-10
+        },
+        "lowerBound": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "note": "x0 outside the box; LBFGSB clips it first",
+        "objective": "weighted_quadratic",
+        "upperBound": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "weight": [
+          1.0,
+          4.0,
+          0.25
+        ],
+        "x0": [
+          5.0,
+          5.0,
+          5.0
+        ]
+      },
+      "name": "quadratic_infeasible_start"
+    },
+    {
+      "expected": {
+        "endCriteriaName": "ZeroGradientNorm",
+        "endCriteriaType": 5,
+        "functionEvaluations": 5,
+        "functionValue": 20.000000000000025,
+        "gradientAtSolution": [
+          -3.999999975690116,
+          15.999999902760464,
+          1.7763568394002505e-07
+        ],
+        "gradientEvaluations": 5,
+        "gradientNormValue": 3.155443620884047e-14,
+        "projectedGradientInfNorm": 1.7763568394002505e-07,
+        "x": [
+          1.0,
+          0.0,
+          0.7000003231410257
+        ]
+      },
+      "inputs": {
+        "center": [
+          3.0,
+          -2.0,
+          0.7
+        ],
+        "constraint": "NonhomogeneousBoundaryConstraint",
+        "endCriteria": {
+          "functionEpsilon": 1e-12,
+          "gradientNormEpsilon": 1e-10,
+          "maxIterations": 1000,
+          "maxStationaryStateIterations": 100,
+          "rootEpsilon": 1e-12
+        },
+        "finiteDifferenceEpsilon": 1e-08,
+        "lbfgsb": {
+          "fTol": 2.220446049250313e-09,
+          "factr": 10000000.0,
+          "memory": 10,
+          "pgTol": 1e-06
+        },
+        "lowerBound": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "objective": "weighted_quadratic_value_only",
+        "upperBound": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "weight": [
+          1.0,
+          4.0,
+          0.25
+        ],
+        "x0": [
+          0.5,
+          0.5,
+          0.5
+        ]
+      },
+      "name": "quadratic_finite_difference_gradient"
+    },
+    {
+      "expected": {
+        "endCriteriaName": "ZeroGradientNorm",
+        "endCriteriaType": 5,
+        "functionEvaluations": 2,
+        "functionValue": 32.0,
+        "gradientAtSolution": [
+          -8.0,
+          -8.0
+        ],
+        "gradientEvaluations": 2,
+        "gradientNormValue": 0.0,
+        "projectedGradientInfNorm": 0.0,
+        "x": [
+          1.0,
+          1.0
+        ]
+      },
+      "inputs": {
+        "center": [
+          5.0,
+          5.0
+        ],
+        "constraint": "NonhomogeneousBoundaryConstraint",
+        "endCriteria": {
+          "functionEpsilon": 1e-12,
+          "gradientNormEpsilon": 1e-10,
+          "maxIterations": 1000,
+          "maxStationaryStateIterations": 100,
+          "rootEpsilon": 1e-12
+        },
+        "lbfgsb": {
+          "fTol": 2.220446049250313e-15,
+          "factr": 10.0,
+          "memory": 10,
+          "pgTol": 1e-10
+        },
+        "lowerBound": [
+          0.0,
+          0.0
+        ],
+        "note": "x0[0] sits exactly on its upper bound",
+        "objective": "weighted_quadratic",
+        "upperBound": [
+          1.0,
+          1.0
+        ],
+        "weight": [
+          1.0,
+          1.0
+        ],
+        "x0": [
+          1.0,
+          0.5
+        ]
+      },
+      "name": "quadratic_start_on_upper_bound_gradient_pushes_out"
+    },
+    {
+      "expected": {
+        "endCriteriaName": "ZeroGradientNorm",
+        "endCriteriaType": 5,
+        "functionEvaluations": 2,
+        "functionValue": 50.0,
+        "gradientAtSolution": [
+          10.0,
+          10.0
+        ],
+        "gradientEvaluations": 2,
+        "gradientNormValue": 0.0,
+        "projectedGradientInfNorm": 0.0,
+        "x": [
+          0.0,
+          0.0
+        ]
+      },
+      "inputs": {
+        "center": [
+          -5.0,
+          -5.0
+        ],
+        "constraint": "NonhomogeneousBoundaryConstraint",
+        "endCriteria": {
+          "functionEpsilon": 1e-12,
+          "gradientNormEpsilon": 1e-10,
+          "maxIterations": 1000,
+          "maxStationaryStateIterations": 100,
+          "rootEpsilon": 1e-12
+        },
+        "lbfgsb": {
+          "fTol": 2.220446049250313e-15,
+          "factr": 10.0,
+          "memory": 10,
+          "pgTol": 1e-10
+        },
+        "lowerBound": [
+          0.0,
+          0.0
+        ],
+        "note": "x0[0] sits exactly on its lower bound",
+        "objective": "weighted_quadratic",
+        "upperBound": [
+          1.0,
+          1.0
+        ],
+        "weight": [
+          1.0,
+          1.0
+        ],
+        "x0": [
+          0.0,
+          0.5
+        ]
+      },
+      "name": "quadratic_start_on_lower_bound_gradient_pushes_out"
+    },
+    {
+      "expected": {
+        "endCriteriaName": "ZeroGradientNorm",
+        "endCriteriaType": 5,
+        "functionEvaluations": 1,
+        "functionValue": 32.0,
+        "gradientAtSolution": [
+          -8.0,
+          -8.0
+        ],
+        "gradientEvaluations": 1,
+        "gradientNormValue": 0.0,
+        "projectedGradientInfNorm": 0.0,
+        "x": [
+          1.0,
+          1.0
+        ]
+      },
+      "inputs": {
+        "center": [
+          5.0,
+          5.0
+        ],
+        "constraint": "NonhomogeneousBoundaryConstraint",
+        "endCriteria": {
+          "functionEpsilon": 1e-12,
+          "gradientNormEpsilon": 1e-10,
+          "maxIterations": 1000,
+          "maxStationaryStateIterations": 100,
+          "rootEpsilon": 1e-12
+        },
+        "lbfgsb": {
+          "fTol": 2.220446049250313e-15,
+          "factr": 10.0,
+          "memory": 10,
+          "pgTol": 1e-10
+        },
+        "lowerBound": [
+          0.0,
+          0.0
+        ],
+        "note": "zero-iteration path: pgInf == 0 at x0",
+        "objective": "weighted_quadratic",
+        "upperBound": [
+          1.0,
+          1.0
+        ],
+        "weight": [
+          1.0,
+          1.0
+        ],
+        "x0": [
+          1.0,
+          1.0
+        ]
+      },
+      "name": "quadratic_start_at_optimum_corner"
+    },
+    {
+      "expected": {
+        "endCriteriaName": "ZeroGradientNorm",
+        "endCriteriaType": 5,
+        "functionEvaluations": 4,
+        "functionValue": 16.015625,
+        "gradientAtSolution": [
+          0.0,
+          16.0,
+          -0.125
+        ],
+        "gradientEvaluations": 4,
+        "gradientNormValue": 0.0,
+        "projectedGradientInfNorm": 0.0,
+        "x": [
+          3.0,
+          0.0,
+          0.25
+        ]
+      },
+      "inputs": {
+        "center": [
+          3.0,
+          -2.0,
+          0.5
+        ],
+        "constraint": "NonhomogeneousBoundaryConstraint",
+        "endCriteria": {
+          "functionEpsilon": 1e-12,
+          "gradientNormEpsilon": 1e-10,
+          "maxIterations": 1000,
+          "maxStationaryStateIterations": 100,
+          "rootEpsilon": 1e-12
+        },
+        "lbfgsb": {
+          "fTol": 2.220446049250313e-15,
+          "factr": 10.0,
+          "memory": 10,
+          "pgTol": 1e-10
+        },
+        "lowerBound": [
+          -1.7976931348623157e+308,
+          0.0,
+          -1.7976931348623157e+308
+        ],
+        "note": "+/-QL_MAX_REAL marks an absent bound",
+        "objective": "weighted_quadratic",
+        "upperBound": [
+          1.7976931348623157e+308,
+          1.0,
+          0.25
+        ],
+        "weight": [
+          1.0,
+          4.0,
+          0.25
+        ],
+        "x0": [
+          0.0,
+          0.5,
+          0.0
+        ]
+      },
+      "name": "quadratic_mixed_bounded_unbounded"
+    },
+    {
+      "expected": {
+        "endCriteriaName": "ZeroGradientNorm",
+        "endCriteriaType": 5,
+        "functionEvaluations": 2,
+        "functionValue": 20.0,
+        "gradientAtSolution": [
+          -4.0,
+          16.0,
+          0.0
+        ],
+        "gradientEvaluations": 2,
+        "gradientNormValue": 0.0,
+        "projectedGradientInfNorm": 0.0,
+        "x": [
+          1.0,
+          0.0,
+          0.5
+        ]
+      },
+      "inputs": {
+        "center": [
+          3.0,
+          -2.0,
+          0.5
+        ],
+        "constraint": "NoConstraint",
+        "endCriteria": {
+          "functionEpsilon": 1e-12,
+          "gradientNormEpsilon": 1e-10,
+          "maxIterations": 1000,
+          "maxStationaryStateIterations": 100,
+          "rootEpsilon": 1e-12
+        },
+        "lbfgsb": {
+          "fTol": 2.220446049250313e-15,
+          "factr": 10.0,
+          "memory": 10,
+          "pgTol": 1e-10
+        },
+        "lbfgsbConstructor": "LBFGSB(lowerBound, upperBound, memory, pgTol, fTol)",
+        "lowerBound": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "objective": "weighted_quadratic",
+        "upperBound": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "weight": [
+          1.0,
+          4.0,
+          0.25
+        ],
+        "x0": [
+          0.5,
+          0.5,
+          0.5
+        ]
+      },
+      "name": "explicit_bounds_ctor_overrides_constraint"
+    },
+    {
+      "expected": {
+        "endCriteriaName": "StationaryFunctionValue",
+        "endCriteriaType": 3,
+        "functionEvaluations": 8,
+        "functionValue": 9.624103043696344e-29,
+        "gradientAtSolution": [
+          -1.9539925233402755e-14,
+          -3.552713678800501e-15,
+          0.0
+        ],
+        "gradientEvaluations": 8,
+        "gradientNormValue": 4.974411174086736e-18,
+        "projectedGradientInfNorm": 1.9539925233402755e-14,
+        "x": [
+          2.9999999999999902,
+          -2.0000000000000004,
+          0.5
+        ]
+      },
+      "inputs": {
+        "center": [
+          3.0,
+          -2.0,
+          0.5
+        ],
+        "constraint": "NonhomogeneousBoundaryConstraint([0,1]^3) - overridden",
+        "constraintLowerBound": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "constraintUpperBound": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "endCriteria": {
+          "functionEpsilon": 1e-12,
+          "gradientNormEpsilon": 1e-10,
+          "maxIterations": 1000,
+          "maxStationaryStateIterations": 100,
+          "rootEpsilon": 1e-12
+        },
+        "lbfgsb": {
+          "fTol": 2.220446049250313e-15,
+          "factr": 10.0,
+          "memory": 10,
+          "pgTol": 1e-10
+        },
+        "lbfgsbConstructor": "LBFGSB(lowerBound, upperBound, memory, pgTol, fTol)",
+        "lowerBound": [
+          -10.0,
+          -10.0,
+          -10.0
+        ],
+        "objective": "weighted_quadratic",
+        "upperBound": [
+          10.0,
+          10.0,
+          10.0
+        ],
+        "weight": [
+          1.0,
+          4.0,
+          0.25
+        ],
+        "x0": [
+          0.5,
+          0.5,
+          0.5
+        ]
+      },
+      "name": "explicit_bounds_ctor_widens_constraint"
+    },
+    {
+      "expected": {
+        "endCriteriaName": "MaxIterations",
+        "endCriteriaType": 1,
+        "functionEvaluations": 13,
+        "functionValue": 41.39011253925504,
+        "gradientAtSolution": [
+          -35.51210067368845,
+          -62.59202618982664,
+          -22.20467182823296,
+          50.56078927592087,
+          5.03956719423707,
+          5.03956719423707,
+          168.07160162505335,
+          -26.824422860843235,
+          -62.521801083302506,
+          45.00861898349747
+        ],
+        "gradientEvaluations": 13,
+        "gradientNormValue": 28248.063272810636,
+        "projectedGradientInfNorm": 168.07160162505335,
+        "x": [
+          0.8359443279085829,
+          0.804025205568873,
+          0.9052933601403949,
+          1.023309424525498,
+          1.023309424525498,
+          1.023309424525498,
+          1.023309424525498,
+          0.6250133898084982,
+          0.15722550582821132,
+          0.24976295460042428
+        ]
+      },
+      "inputs": {
+        "constraint": "NoConstraint",
+        "endCriteria": {
+          "functionEpsilon": 1e-12,
+          "gradientNormEpsilon": 1e-10,
+          "maxIterations": 3,
+          "maxStationaryStateIterations": 2,
+          "rootEpsilon": 1e-12
+        },
+        "lbfgsb": {
+          "fTol": 2.220446049250313e-15,
+          "factr": 10.0,
+          "memory": 10,
+          "pgTol": 1e-10
+        },
+        "n": 10,
+        "note": "expects EndCriteria::MaxIterations",
+        "objective": "rosenbrock",
+        "x0": [
+          -1.0,
+          -1.0,
+          -1.0,
+          -1.0,
+          -1.0,
+          -1.0,
+          -1.0,
+          -1.0,
+          -1.0,
+          -1.0
+        ]
+      },
+      "name": "rosenbrock_10d_max_iterations_stop"
+    },
+    {
+      "expected": {
+        "steps": [
+          {
+            "endCriteriaName": "ZeroGradientNorm",
+            "endCriteriaType": 5,
+            "functionEvaluations": 4,
+            "functionValue": 0.25,
+            "gradientNormValue": 3.1123798273275486e-29,
+            "maxIterations": 3,
+            "x": [
+              0.5,
+              0.24999999999999997
+            ]
+          },
+          {
+            "endCriteriaName": "ZeroGradientNorm",
+            "endCriteriaType": 5,
+            "functionEvaluations": 4,
+            "functionValue": 0.25,
+            "gradientNormValue": 3.1123798273275486e-29,
+            "maxIterations": 4,
+            "x": [
+              0.5,
+              0.24999999999999997
+            ]
+          },
+          {
+            "endCriteriaName": "ZeroGradientNorm",
+            "endCriteriaType": 5,
+            "functionEvaluations": 4,
+            "functionValue": 0.25,
+            "gradientNormValue": 3.1123798273275486e-29,
+            "maxIterations": 5,
+            "x": [
+              0.5,
+              0.24999999999999997
+            ]
+          },
+          {
+            "endCriteriaName": "ZeroGradientNorm",
+            "endCriteriaType": 5,
+            "functionEvaluations": 4,
+            "functionValue": 0.25,
+            "gradientNormValue": 3.1123798273275486e-29,
+            "maxIterations": 6,
+            "x": [
+              0.5,
+              0.24999999999999997
+            ]
+          },
+          {
+            "endCriteriaName": "ZeroGradientNorm",
+            "endCriteriaType": 5,
+            "functionEvaluations": 4,
+            "functionValue": 0.25,
+            "gradientNormValue": 3.1123798273275486e-29,
+            "maxIterations": 7,
+            "x": [
+              0.5,
+              0.24999999999999997
+            ]
+          },
+          {
+            "endCriteriaName": "ZeroGradientNorm",
+            "endCriteriaType": 5,
+            "functionEvaluations": 4,
+            "functionValue": 0.25,
+            "gradientNormValue": 3.1123798273275486e-29,
+            "maxIterations": 8,
+            "x": [
+              0.5,
+              0.24999999999999997
+            ]
+          },
+          {
+            "endCriteriaName": "ZeroGradientNorm",
+            "endCriteriaType": 5,
+            "functionEvaluations": 4,
+            "functionValue": 0.25,
+            "gradientNormValue": 3.1123798273275486e-29,
+            "maxIterations": 9,
+            "x": [
+              0.5,
+              0.24999999999999997
+            ]
+          },
+          {
+            "endCriteriaName": "ZeroGradientNorm",
+            "endCriteriaType": 5,
+            "functionEvaluations": 4,
+            "functionValue": 0.25,
+            "gradientNormValue": 3.1123798273275486e-29,
+            "maxIterations": 10,
+            "x": [
+              0.5,
+              0.24999999999999997
+            ]
+          },
+          {
+            "endCriteriaName": "ZeroGradientNorm",
+            "endCriteriaType": 5,
+            "functionEvaluations": 4,
+            "functionValue": 0.25,
+            "gradientNormValue": 3.1123798273275486e-29,
+            "maxIterations": 11,
+            "x": [
+              0.5,
+              0.24999999999999997
+            ]
+          },
+          {
+            "endCriteriaName": "ZeroGradientNorm",
+            "endCriteriaType": 5,
+            "functionEvaluations": 4,
+            "functionValue": 0.25,
+            "gradientNormValue": 3.1123798273275486e-29,
+            "maxIterations": 12,
+            "x": [
+              0.5,
+              0.24999999999999997
+            ]
+          }
+        ]
+      },
+      "inputs": {
+        "constraint": "NonhomogeneousBoundaryConstraint",
+        "endCriteriaTemplate": "EndCriteria(k, 2, 1e-12, 1e-12, 1e-10)",
+        "lbfgsb": {
+          "fTol": 2.220446049250313e-15,
+          "factr": 10.0,
+          "memory": 10,
+          "pgTol": 1e-10
+        },
+        "lowerBound": [
+          -2.0,
+          -2.0
+        ],
+        "maxIterationsSweep": [
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "objective": "rosenbrock",
+        "upperBound": [
+          0.5,
+          0.5
+        ],
+        "x0": [
+          -1.0,
+          -1.0
+        ]
+      },
+      "name": "rosenbrock_2d_bounded_iterate_trajectory"
+    },
+    {
+      "expected": {
+        "endCriteriaName": "ZeroGradientNorm",
+        "endCriteriaType": 5,
+        "functionEvaluations": 11,
+        "functionValue": 1.250351610584369e-07,
+        "gradientAtSolution": [
+          0.00041886107780886306,
+          -0.0006258344121725656,
+          0.0002381065223097112
+        ],
+        "gradientEvaluations": 11,
+        "gradientNormValue": 3.9166871145938074e-07,
+        "projectedGradientInfNorm": 0.0006258344121725656,
+        "x": [
+          3.0002094305389044,
+          -2.0000782293015216,
+          0.5004762130446194
+        ]
+      },
+      "inputs": {
+        "center": [
+          3.0,
+          -2.0,
+          0.5
+        ],
+        "constraint": "NonhomogeneousBoundaryConstraint",
+        "endCriteria": {
+          "functionEpsilon": 1e-12,
+          "gradientNormEpsilon": 0.01,
+          "maxIterations": 1000,
+          "maxStationaryStateIterations": 100,
+          "rootEpsilon": 1e-12
+        },
+        "lbfgsb": {
+          "fTol": 2.220446049250313e-15,
+          "factr": 10.0,
+          "memory": 10,
+          "pgTol": 1e-12
+        },
+        "lowerBound": [
+          -10.0,
+          -10.0,
+          -10.0
+        ],
+        "note": "stops on EndCriteria.gradientNormEpsilon, not on pgTol",
+        "objective": "weighted_quadratic",
+        "upperBound": [
+          10.0,
+          10.0,
+          10.0
+        ],
+        "weight": [
+          1.0,
+          4.0,
+          0.25
+        ],
+        "x0": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "name": "quadratic_endcriteria_gradient_norm_stop"
+    },
+    {
+      "expected": {
+        "endCriteriaName": "ZeroGradientNorm",
+        "endCriteriaType": 5,
+        "evaluationCount": 2,
+        "evaluations": [
+          {
+            "f": 9883.810000000001,
+            "x": [
+              0.9,
+              0.1
+            ]
+          },
+          {
+            "f": 8181.0,
+            "x": [
+              1.0,
+              1.0
+            ]
+          }
+        ],
+        "functionEvaluations": 2,
+        "functionValue": 8181.0,
+        "gradientAtSolution": [
+          -18.0,
+          -1800.0
+        ],
+        "gradientEvaluations": 2,
+        "gradientNormValue": 0.0,
+        "projectedGradientInfNorm": 0.0,
+        "x": [
+          1.0,
+          1.0
+        ]
+      },
+      "inputs": {
+        "center": [
+          10.0,
+          10.0
+        ],
+        "constraint": "NonhomogeneousBoundaryConstraint",
+        "endCriteria": {
+          "functionEpsilon": 1e-12,
+          "gradientNormEpsilon": 1e-10,
+          "maxIterations": 1000,
+          "maxStationaryStateIterations": 100,
+          "rootEpsilon": 1e-12
+        },
+        "lbfgsb": {
+          "fTol": 2.220446049250313e-15,
+          "factr": 10.0,
+          "memory": 10,
+          "pgTol": 1e-10
+        },
+        "lowerBound": [
+          0.0,
+          0.0
+        ],
+        "note": "every Problem::valueAndGradient call, in order",
+        "objective": "weighted_quadratic",
+        "upperBound": [
+          1.0,
+          1.0
+        ],
+        "weight": [
+          1.0,
+          100.0
+        ],
+        "x0": [
+          0.9,
+          0.1
+        ]
+      },
+      "name": "quadratic_two_active_eval_trace"
+    },
+    {
+      "expected": {
+        "endCriteriaName": "ZeroGradientNorm",
+        "endCriteriaType": 5,
+        "evaluationCount": 4,
+        "evaluations": [
+          {
+            "f": 404.0,
+            "x": [
+              -1.0,
+              -1.0
+            ]
+          },
+          {
+            "f": 6.5,
+            "x": [
+              0.5,
+              0.5
+            ]
+          },
+          {
+            "f": 1.1785506028164068,
+            "x": [
+              0.5,
+              0.34636133056451673
+            ]
+          },
+          {
+            "f": 0.25,
+            "x": [
+              0.5,
+              0.24999999999999997
+            ]
+          }
+        ],
+        "functionEvaluations": 4,
+        "functionValue": 0.25,
+        "gradientAtSolution": [
+          -0.9999999999999944,
+          -5.551115123125783e-15
+        ],
+        "gradientEvaluations": 4,
+        "gradientNormValue": 3.1123798273275486e-29,
+        "projectedGradientInfNorm": 5.578870698741412e-15,
+        "x": [
+          0.5,
+          0.24999999999999997
+        ]
+      },
+      "inputs": {
+        "constraint": "NonhomogeneousBoundaryConstraint",
+        "endCriteria": {
+          "functionEpsilon": 1e-12,
+          "gradientNormEpsilon": 1e-10,
+          "maxIterations": 1000,
+          "maxStationaryStateIterations": 100,
+          "rootEpsilon": 1e-12
+        },
+        "lbfgsb": {
+          "fTol": 2.220446049250313e-15,
+          "factr": 10.0,
+          "memory": 10,
+          "pgTol": 1e-10
+        },
+        "lowerBound": [
+          -2.0,
+          -2.0
+        ],
+        "note": "every Problem::valueAndGradient call, in order",
+        "objective": "rosenbrock",
+        "upperBound": [
+          0.5,
+          0.5
+        ],
+        "x0": [
+          -1.0,
+          -1.0
+        ]
+      },
+      "name": "rosenbrock_2d_bounded_eval_trace"
+    },
+    {
+      "expected": {
+        "mismatchedBoundsMessageMatches": true,
+        "mismatchedBoundsThrows": true,
+        "wrongDimensionMessageMatches": true,
+        "wrongDimensionThrows": true,
+        "zeroMemoryMessageMatches": true,
+        "zeroMemoryThrows": true
+      },
+      "inputs": {
+        "mismatchedBounds": "LBFGSB(Array(2), Array(3), 10)",
+        "wrongDimension": "LBFGSB(Array(3), Array(3)).minimize(2-variable problem)",
+        "zeroMemory": "LBFGSB(0)"
+      },
+      "name": "constructor_argument_validation"
+    }
+  ],
+  "cpp_commit": "6b57206e04598f092efee66e3b367efc84771995",
+  "cpp_version": "1.43",
+  "generated_at": "2026-08-04T17:22:15Z",
+  "generated_by": "v143_lbfgsb_probe",
+  "test_group": "math/v143_lbfgsb"
+}

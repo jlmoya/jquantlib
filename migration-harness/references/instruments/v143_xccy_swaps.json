@@ -1,0 +1,2947 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "legs": [
+          {
+            "cashflows": [
+              {
+                "amount": -125000000.0,
+                "dateSerial": 43356,
+                "isCoupon": false
+              },
+              {
+                "accrualEndSerial": 43447,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 43356,
+                "amount": 1791952.0547945155,
+                "dateSerial": 43447,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 43537,
+                "accrualPeriod": 0.2465753424657534,
+                "accrualStartSerial": 43447,
+                "amount": 1772260.2739725923,
+                "dateSerial": 43537,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 43629,
+                "accrualPeriod": 0.25205479452054796,
+                "accrualStartSerial": 43537,
+                "amount": 1811643.8356164389,
+                "dateSerial": 43629,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 43721,
+                "accrualPeriod": 0.25205479452054796,
+                "accrualStartSerial": 43629,
+                "amount": 1811643.8356164389,
+                "dateSerial": 43721,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 43812,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 43721,
+                "amount": 1791952.0547945155,
+                "dateSerial": 43812,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 43903,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 43812,
+                "amount": 1791952.0547945155,
+                "dateSerial": 43903,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 43997,
+                "accrualPeriod": 0.25753424657534246,
+                "accrualStartSerial": 43903,
+                "amount": 1851027.3972602852,
+                "dateSerial": 43997,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 44088,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 43997,
+                "amount": 1791952.0547945155,
+                "dateSerial": 44088,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 44179,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44088,
+                "amount": 1791952.0547945155,
+                "dateSerial": 44179,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 44270,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44179,
+                "amount": 1791952.0547945155,
+                "dateSerial": 44270,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 44361,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44270,
+                "amount": 1791952.0547945155,
+                "dateSerial": 44361,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 44452,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44361,
+                "amount": 1791952.0547945155,
+                "dateSerial": 44452,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 44543,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44452,
+                "amount": 1791952.0547945155,
+                "dateSerial": 44543,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 44634,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44543,
+                "amount": 1791952.0547945155,
+                "dateSerial": 44634,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 44725,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44634,
+                "amount": 1791952.0547945155,
+                "dateSerial": 44725,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 44817,
+                "accrualPeriod": 0.25205479452054796,
+                "accrualStartSerial": 44725,
+                "amount": 1811643.8356164389,
+                "dateSerial": 44817,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 44908,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44817,
+                "amount": 1791952.0547945155,
+                "dateSerial": 44908,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 44998,
+                "accrualPeriod": 0.2465753424657534,
+                "accrualStartSerial": 44908,
+                "amount": 1772260.2739725923,
+                "dateSerial": 44998,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 45090,
+                "accrualPeriod": 0.25205479452054796,
+                "accrualStartSerial": 44998,
+                "amount": 1811643.8356164389,
+                "dateSerial": 45090,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 45180,
+                "accrualPeriod": 0.2465753424657534,
+                "accrualStartSerial": 45090,
+                "amount": 1772260.2739725923,
+                "dateSerial": 45180,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "amount": 125000000.0,
+                "dateSerial": 45180,
+                "isCoupon": false
+              }
+            ],
+            "currency": "USD",
+            "endDiscounts": 0.8747,
+            "inCcyLegBPS": -58307.52713423323,
+            "inCcyLegNPV": -17880583.84115118,
+            "legBPS": -58307.52713423323,
+            "legNPV": -17880583.84115118,
+            "npvDateDiscounts": 1.0,
+            "startDiscounts": 0.9998699540882624
+          },
+          {
+            "cashflows": [
+              {
+                "amount": -102459016.39344263,
+                "dateSerial": 43356,
+                "isCoupon": false
+              },
+              {
+                "accrualEndSerial": 43447,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 43356,
+                "amount": 513445.99146641756,
+                "dateSerial": 43447,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 43537,
+                "accrualPeriod": 0.2465753424657534,
+                "accrualStartSerial": 43447,
+                "amount": 507803.7278239357,
+                "dateSerial": 43537,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 43629,
+                "accrualPeriod": 0.25205479452054796,
+                "accrualStartSerial": 43537,
+                "amount": 519088.25510892214,
+                "dateSerial": 43629,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 43721,
+                "accrualPeriod": 0.25205479452054796,
+                "accrualStartSerial": 43629,
+                "amount": 519088.25510892214,
+                "dateSerial": 43721,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 43812,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 43721,
+                "amount": 513445.99146641756,
+                "dateSerial": 43812,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 43903,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 43812,
+                "amount": 513445.99146641756,
+                "dateSerial": 43903,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 43997,
+                "accrualPeriod": 0.25753424657534246,
+                "accrualStartSerial": 43903,
+                "amount": 530372.7823938859,
+                "dateSerial": 43997,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 44088,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 43997,
+                "amount": 513445.99146641756,
+                "dateSerial": 44088,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 44179,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44088,
+                "amount": 513445.99146641756,
+                "dateSerial": 44179,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 44270,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44179,
+                "amount": 513445.99146641756,
+                "dateSerial": 44270,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 44361,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44270,
+                "amount": 513445.99146641756,
+                "dateSerial": 44361,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 44452,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44361,
+                "amount": 513445.99146641756,
+                "dateSerial": 44452,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 44543,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44452,
+                "amount": 513445.99146641756,
+                "dateSerial": 44543,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 44634,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44543,
+                "amount": 513445.99146641756,
+                "dateSerial": 44634,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 44725,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44634,
+                "amount": 513445.99146641756,
+                "dateSerial": 44725,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 44817,
+                "accrualPeriod": 0.25205479452054796,
+                "accrualStartSerial": 44725,
+                "amount": 519088.25510892214,
+                "dateSerial": 44817,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 44908,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44817,
+                "amount": 513445.99146641756,
+                "dateSerial": 44908,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 44998,
+                "accrualPeriod": 0.2465753424657534,
+                "accrualStartSerial": 44908,
+                "amount": 507803.7278239357,
+                "dateSerial": 44998,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 45090,
+                "accrualPeriod": 0.25205479452054796,
+                "accrualStartSerial": 44998,
+                "amount": 519088.25510892214,
+                "dateSerial": 45090,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 45180,
+                "accrualPeriod": 0.2465753424657534,
+                "accrualStartSerial": 45090,
+                "amount": 507803.7278239357,
+                "dateSerial": 45180,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "amount": 102459016.39344263,
+                "dateSerial": 45180,
+                "isCoupon": false
+              }
+            ],
+            "currency": "EUR",
+            "endDiscounts": 0.9775,
+            "inCcyLegBPS": 50752.440983799635,
+            "inCcyLegNPV": 7896363.18224692,
+            "legBPS": 61917.978000235555,
+            "legNPV": 9633563.082341243,
+            "npvDateDiscounts": 1.0,
+            "startDiscounts": 0.9999956039656479
+          }
+        ],
+        "maturityDateSerial": 45180,
+        "npv": -8247020.758809939,
+        "startDateSerial": 43356,
+        "valuationDateSerial": 43354
+      },
+      "inputs": {
+        "eurRate": 0.0201,
+        "spotFx": 1.22,
+        "usdNominal": 125000000.0,
+        "usdRate": 0.0575
+      },
+      "name": "fix_fix"
+    },
+    {
+      "expected": {
+        "legs": [
+          {
+            "cashflows": [
+              {
+                "amount": -125000000.0,
+                "dateSerial": 43356,
+                "isCoupon": false
+              },
+              {
+                "accrualEndSerial": 43447,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 43356,
+                "amount": 1791952.0547945155,
+                "dateSerial": 43447,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 43537,
+                "accrualPeriod": 0.2465753424657534,
+                "accrualStartSerial": 43447,
+                "amount": 1772260.2739725923,
+                "dateSerial": 43537,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 43629,
+                "accrualPeriod": 0.25205479452054796,
+                "accrualStartSerial": 43537,
+                "amount": 1811643.8356164389,
+                "dateSerial": 43629,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 43721,
+                "accrualPeriod": 0.25205479452054796,
+                "accrualStartSerial": 43629,
+                "amount": 1811643.8356164389,
+                "dateSerial": 43721,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 43812,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 43721,
+                "amount": 1791952.0547945155,
+                "dateSerial": 43812,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 43903,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 43812,
+                "amount": 1791952.0547945155,
+                "dateSerial": 43903,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 43997,
+                "accrualPeriod": 0.25753424657534246,
+                "accrualStartSerial": 43903,
+                "amount": 1851027.3972602852,
+                "dateSerial": 43997,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 44088,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 43997,
+                "amount": 1791952.0547945155,
+                "dateSerial": 44088,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 44179,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44088,
+                "amount": 1791952.0547945155,
+                "dateSerial": 44179,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 44270,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44179,
+                "amount": 1791952.0547945155,
+                "dateSerial": 44270,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 44361,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44270,
+                "amount": 1791952.0547945155,
+                "dateSerial": 44361,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 44452,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44361,
+                "amount": 1791952.0547945155,
+                "dateSerial": 44452,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 44543,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44452,
+                "amount": 1791952.0547945155,
+                "dateSerial": 44543,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 44634,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44543,
+                "amount": 1791952.0547945155,
+                "dateSerial": 44634,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 44725,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44634,
+                "amount": 1791952.0547945155,
+                "dateSerial": 44725,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 44817,
+                "accrualPeriod": 0.25205479452054796,
+                "accrualStartSerial": 44725,
+                "amount": 1811643.8356164389,
+                "dateSerial": 44817,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 44908,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44817,
+                "amount": 1791952.0547945155,
+                "dateSerial": 44908,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 44998,
+                "accrualPeriod": 0.2465753424657534,
+                "accrualStartSerial": 44908,
+                "amount": 1772260.2739725923,
+                "dateSerial": 44998,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 45090,
+                "accrualPeriod": 0.25205479452054796,
+                "accrualStartSerial": 44998,
+                "amount": 1811643.8356164389,
+                "dateSerial": 45090,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 45180,
+                "accrualPeriod": 0.2465753424657534,
+                "accrualStartSerial": 45090,
+                "amount": 1772260.2739725923,
+                "dateSerial": 45180,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "amount": 125000000.0,
+                "dateSerial": 45180,
+                "isCoupon": false
+              }
+            ],
+            "currency": "USD",
+            "endDiscounts": 0.8747,
+            "inCcyLegBPS": -58307.52713423323,
+            "inCcyLegNPV": -17880583.84115118,
+            "legBPS": -58307.52713423323,
+            "legNPV": -17880583.84115118,
+            "npvDateDiscounts": 1.0,
+            "startDiscounts": 0.9998699540882624
+          },
+          {
+            "cashflows": [
+              {
+                "amount": -102459016.39344263,
+                "dateSerial": 43356,
+                "isCoupon": false
+              },
+              {
+                "accrualEndSerial": 43447,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 43356,
+                "amount": 513445.99146641756,
+                "dateSerial": 43447,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 43537,
+                "accrualPeriod": 0.2465753424657534,
+                "accrualStartSerial": 43447,
+                "amount": 507803.7278239357,
+                "dateSerial": 43537,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 43629,
+                "accrualPeriod": 0.25205479452054796,
+                "accrualStartSerial": 43537,
+                "amount": 519088.25510892214,
+                "dateSerial": 43629,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 43721,
+                "accrualPeriod": 0.25205479452054796,
+                "accrualStartSerial": 43629,
+                "amount": 519088.25510892214,
+                "dateSerial": 43721,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 43812,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 43721,
+                "amount": 513445.99146641756,
+                "dateSerial": 43812,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 43903,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 43812,
+                "amount": 513445.99146641756,
+                "dateSerial": 43903,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 43997,
+                "accrualPeriod": 0.25753424657534246,
+                "accrualStartSerial": 43903,
+                "amount": 530372.7823938859,
+                "dateSerial": 43997,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 44088,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 43997,
+                "amount": 513445.99146641756,
+                "dateSerial": 44088,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 44179,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44088,
+                "amount": 513445.99146641756,
+                "dateSerial": 44179,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 44270,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44179,
+                "amount": 513445.99146641756,
+                "dateSerial": 44270,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 44361,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44270,
+                "amount": 513445.99146641756,
+                "dateSerial": 44361,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 44452,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44361,
+                "amount": 513445.99146641756,
+                "dateSerial": 44452,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 44543,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44452,
+                "amount": 513445.99146641756,
+                "dateSerial": 44543,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 44634,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44543,
+                "amount": 513445.99146641756,
+                "dateSerial": 44634,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 44725,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44634,
+                "amount": 513445.99146641756,
+                "dateSerial": 44725,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 44817,
+                "accrualPeriod": 0.25205479452054796,
+                "accrualStartSerial": 44725,
+                "amount": 519088.25510892214,
+                "dateSerial": 44817,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 44908,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44817,
+                "amount": 513445.99146641756,
+                "dateSerial": 44908,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 44998,
+                "accrualPeriod": 0.2465753424657534,
+                "accrualStartSerial": 44908,
+                "amount": 507803.7278239357,
+                "dateSerial": 44998,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 45090,
+                "accrualPeriod": 0.25205479452054796,
+                "accrualStartSerial": 44998,
+                "amount": 519088.25510892214,
+                "dateSerial": 45090,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 45180,
+                "accrualPeriod": 0.2465753424657534,
+                "accrualStartSerial": 45090,
+                "amount": 507803.7278239357,
+                "dateSerial": 45180,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "amount": 102459016.39344263,
+                "dateSerial": 45180,
+                "isCoupon": false
+              }
+            ],
+            "currency": "EUR",
+            "endDiscounts": 0.9775,
+            "inCcyLegBPS": 50752.440983799635,
+            "inCcyLegNPV": 7896363.18224692,
+            "legBPS": 60498.06843063271,
+            "legNPV": 9412645.202724162,
+            "npvDateDiscounts": 1.0,
+            "startDiscounts": 0.9999956039656479
+          }
+        ],
+        "maturityDateSerial": 45180,
+        "npv": -8467938.63842702,
+        "startDateSerial": 43356,
+        "valuationDateSerial": 43354
+      },
+      "inputs": {
+        "spotFXSettleDate": "2019-09-11",
+        "spotFx": 1.22,
+        "usdNominal": 125000000.0
+      },
+      "name": "fix_fix_fwd_fx_settle"
+    },
+    {
+      "expected": {
+        "legs": [
+          {
+            "cashflows": [
+              {
+                "amount": -125000000.0,
+                "dateSerial": 43356,
+                "isCoupon": false
+              },
+              {
+                "accrualEndSerial": 43447,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 43356,
+                "amount": 1791952.0547945155,
+                "dateSerial": 43447,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 43537,
+                "accrualPeriod": 0.2465753424657534,
+                "accrualStartSerial": 43447,
+                "amount": 1772260.2739725923,
+                "dateSerial": 43537,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 43629,
+                "accrualPeriod": 0.25205479452054796,
+                "accrualStartSerial": 43537,
+                "amount": 1811643.8356164389,
+                "dateSerial": 43629,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 43721,
+                "accrualPeriod": 0.25205479452054796,
+                "accrualStartSerial": 43629,
+                "amount": 1811643.8356164389,
+                "dateSerial": 43721,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 43812,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 43721,
+                "amount": 1791952.0547945155,
+                "dateSerial": 43812,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 43903,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 43812,
+                "amount": 1791952.0547945155,
+                "dateSerial": 43903,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 43997,
+                "accrualPeriod": 0.25753424657534246,
+                "accrualStartSerial": 43903,
+                "amount": 1851027.3972602852,
+                "dateSerial": 43997,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 44088,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 43997,
+                "amount": 1791952.0547945155,
+                "dateSerial": 44088,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 44179,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44088,
+                "amount": 1791952.0547945155,
+                "dateSerial": 44179,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 44270,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44179,
+                "amount": 1791952.0547945155,
+                "dateSerial": 44270,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 44361,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44270,
+                "amount": 1791952.0547945155,
+                "dateSerial": 44361,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 44452,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44361,
+                "amount": 1791952.0547945155,
+                "dateSerial": 44452,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 44543,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44452,
+                "amount": 1791952.0547945155,
+                "dateSerial": 44543,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 44634,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44543,
+                "amount": 1791952.0547945155,
+                "dateSerial": 44634,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 44725,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44634,
+                "amount": 1791952.0547945155,
+                "dateSerial": 44725,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 44817,
+                "accrualPeriod": 0.25205479452054796,
+                "accrualStartSerial": 44725,
+                "amount": 1811643.8356164389,
+                "dateSerial": 44817,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 44908,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44817,
+                "amount": 1791952.0547945155,
+                "dateSerial": 44908,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 44998,
+                "accrualPeriod": 0.2465753424657534,
+                "accrualStartSerial": 44908,
+                "amount": 1772260.2739725923,
+                "dateSerial": 44998,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 45090,
+                "accrualPeriod": 0.25205479452054796,
+                "accrualStartSerial": 44998,
+                "amount": 1811643.8356164389,
+                "dateSerial": 45090,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "accrualEndSerial": 45180,
+                "accrualPeriod": 0.2465753424657534,
+                "accrualStartSerial": 45090,
+                "amount": 1772260.2739725923,
+                "dateSerial": 45180,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0575
+              },
+              {
+                "amount": 125000000.0,
+                "dateSerial": 45180,
+                "isCoupon": false
+              }
+            ],
+            "currency": "USD",
+            "endDiscounts": 0.8747,
+            "inCcyLegBPS": -58967.968380090235,
+            "inCcyLegNPV": -18083114.726083316,
+            "legBPS": -58967.968380090235,
+            "legNPV": -18083114.726083316,
+            "npvDateDiscounts": 0.9888,
+            "startDiscounts": 0.9998699540882624
+          },
+          {
+            "cashflows": [
+              {
+                "amount": -102459016.39344263,
+                "dateSerial": 43356,
+                "isCoupon": false
+              },
+              {
+                "accrualEndSerial": 43447,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 43356,
+                "amount": 513445.99146641756,
+                "dateSerial": 43447,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 43537,
+                "accrualPeriod": 0.2465753424657534,
+                "accrualStartSerial": 43447,
+                "amount": 507803.7278239357,
+                "dateSerial": 43537,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 43629,
+                "accrualPeriod": 0.25205479452054796,
+                "accrualStartSerial": 43537,
+                "amount": 519088.25510892214,
+                "dateSerial": 43629,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 43721,
+                "accrualPeriod": 0.25205479452054796,
+                "accrualStartSerial": 43629,
+                "amount": 519088.25510892214,
+                "dateSerial": 43721,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 43812,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 43721,
+                "amount": 513445.99146641756,
+                "dateSerial": 43812,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 43903,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 43812,
+                "amount": 513445.99146641756,
+                "dateSerial": 43903,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 43997,
+                "accrualPeriod": 0.25753424657534246,
+                "accrualStartSerial": 43903,
+                "amount": 530372.7823938859,
+                "dateSerial": 43997,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 44088,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 43997,
+                "amount": 513445.99146641756,
+                "dateSerial": 44088,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 44179,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44088,
+                "amount": 513445.99146641756,
+                "dateSerial": 44179,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 44270,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44179,
+                "amount": 513445.99146641756,
+                "dateSerial": 44270,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 44361,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44270,
+                "amount": 513445.99146641756,
+                "dateSerial": 44361,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 44452,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44361,
+                "amount": 513445.99146641756,
+                "dateSerial": 44452,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 44543,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44452,
+                "amount": 513445.99146641756,
+                "dateSerial": 44543,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 44634,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44543,
+                "amount": 513445.99146641756,
+                "dateSerial": 44634,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 44725,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44634,
+                "amount": 513445.99146641756,
+                "dateSerial": 44725,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 44817,
+                "accrualPeriod": 0.25205479452054796,
+                "accrualStartSerial": 44725,
+                "amount": 519088.25510892214,
+                "dateSerial": 44817,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 44908,
+                "accrualPeriod": 0.2493150684931507,
+                "accrualStartSerial": 44817,
+                "amount": 513445.99146641756,
+                "dateSerial": 44908,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 44998,
+                "accrualPeriod": 0.2465753424657534,
+                "accrualStartSerial": 44908,
+                "amount": 507803.7278239357,
+                "dateSerial": 44998,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 45090,
+                "accrualPeriod": 0.25205479452054796,
+                "accrualStartSerial": 44998,
+                "amount": 519088.25510892214,
+                "dateSerial": 45090,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "accrualEndSerial": 45180,
+                "accrualPeriod": 0.2465753424657534,
+                "accrualStartSerial": 45090,
+                "amount": 507803.7278239357,
+                "dateSerial": 45180,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0201
+              },
+              {
+                "amount": 102459016.39344263,
+                "dateSerial": 45180,
+                "isCoupon": false
+              }
+            ],
+            "currency": "EUR",
+            "endDiscounts": 0.9775,
+            "inCcyLegBPS": 50777.829898749005,
+            "inCcyLegNPV": 7900313.338916377,
+            "legBPS": 61948.95247647379,
+            "legNPV": 9638382.273477979,
+            "npvDateDiscounts": 0.9995,
+            "startDiscounts": 0.9999956039656479
+          }
+        ],
+        "maturityDateSerial": 45180,
+        "npv": -8444732.452605337,
+        "startDateSerial": 43356,
+        "valuationDateSerial": 43535
+      },
+      "inputs": {
+        "npvDate": "2019-03-11",
+        "spotFx": 1.22,
+        "usdNominal": 125000000.0
+      },
+      "name": "fix_fix_forward_npv_date"
+    },
+    {
+      "expected": {
+        "fairPaySpread": 0.0008223999848509153,
+        "fairRecSpread": 0.0026672441193461792,
+        "legs": [
+          {
+            "cashflows": [
+              {
+                "amount": -125000000.0,
+                "dateSerial": 43356,
+                "isCoupon": false
+              },
+              {
+                "accrualEndSerial": 43447,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 43356,
+                "amount": 849449.8065337181,
+                "dateSerial": 43447,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.026883686184803388
+              },
+              {
+                "accrualEndSerial": 43537,
+                "accrualPeriod": 0.25,
+                "accrualStartSerial": 43447,
+                "amount": 843732.8786991445,
+                "dateSerial": 43537,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.026999452118372624
+              },
+              {
+                "accrualEndSerial": 43629,
+                "accrualPeriod": 0.25555555555555554,
+                "accrualStartSerial": 43537,
+                "amount": 953804.7256495835,
+                "dateSerial": 43629,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.02985823488990001
+              },
+              {
+                "accrualEndSerial": 43721,
+                "accrualPeriod": 0.25555555555555554,
+                "accrualStartSerial": 43629,
+                "amount": 954809.2120215251,
+                "dateSerial": 43721,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.029889679680673832
+              },
+              {
+                "accrualEndSerial": 43812,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 43721,
+                "amount": 989109.4181992285,
+                "dateSerial": 43812,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.03130368268586569
+              },
+              {
+                "accrualEndSerial": 43903,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 43812,
+                "amount": 989109.4181992285,
+                "dateSerial": 43903,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.03130368268586569
+              },
+              {
+                "accrualEndSerial": 43997,
+                "accrualPeriod": 0.2611111111111111,
+                "accrualStartSerial": 43903,
+                "amount": 1021842.000126985,
+                "dateSerial": 43997,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.03130749957835869
+              },
+              {
+                "accrualEndSerial": 44088,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 43997,
+                "amount": 989010.2685576759,
+                "dateSerial": 44088,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.03130054476314403
+              },
+              {
+                "accrualEndSerial": 44179,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44088,
+                "amount": 986101.9137947942,
+                "dateSerial": 44179,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.03120850012889019
+              },
+              {
+                "accrualEndSerial": 44270,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44179,
+                "amount": 986101.9137947665,
+                "dateSerial": 44270,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.031208500128889313
+              },
+              {
+                "accrualEndSerial": 44361,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44270,
+                "amount": 986101.9137947665,
+                "dateSerial": 44361,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.031208500128889313
+              },
+              {
+                "accrualEndSerial": 44452,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44361,
+                "amount": 986101.9137947665,
+                "dateSerial": 44452,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.031208500128889313
+              },
+              {
+                "accrualEndSerial": 44543,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44452,
+                "amount": 978423.6088973149,
+                "dateSerial": 44543,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.030965494435431503
+              },
+              {
+                "accrualEndSerial": 44634,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44543,
+                "amount": 978423.6088973149,
+                "dateSerial": 44634,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.030965494435431503
+              },
+              {
+                "accrualEndSerial": 44725,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44634,
+                "amount": 978423.6088973149,
+                "dateSerial": 44725,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.030965494435431503
+              },
+              {
+                "accrualEndSerial": 44817,
+                "accrualPeriod": 0.25555555555555554,
+                "accrualStartSerial": 44725,
+                "amount": 989098.2490019368,
+                "dateSerial": 44817,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0309630756209302
+              },
+              {
+                "accrualEndSerial": 44908,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44817,
+                "amount": 967777.2698791093,
+                "dateSerial": 44908,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.03062855535441577
+              },
+              {
+                "accrualEndSerial": 44998,
+                "accrualPeriod": 0.25,
+                "accrualStartSerial": 44908,
+                "amount": 957104.3494445604,
+                "dateSerial": 44998,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.030627339182225932
+              },
+              {
+                "accrualEndSerial": 45090,
+                "accrualPeriod": 0.25555555555555554,
+                "accrualStartSerial": 44998,
+                "amount": 978451.0370027105,
+                "dateSerial": 45090,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.03062977159312833
+              },
+              {
+                "accrualEndSerial": 45180,
+                "accrualPeriod": 0.25,
+                "accrualStartSerial": 45090,
+                "amount": 957104.3494445604,
+                "dateSerial": 45180,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.030627339182225932
+              },
+              {
+                "amount": 125000000.0,
+                "dateSerial": 45180,
+                "isCoupon": false
+              }
+            ],
+            "currency": "USD",
+            "endDiscounts": 0.8747,
+            "inCcyLegBPS": -59117.353899986476,
+            "inCcyLegNPV": -2373088.5893967194,
+            "legBPS": -59117.353899986476,
+            "legNPV": -2373088.5893967194,
+            "npvDateDiscounts": 1.0,
+            "startDiscounts": 0.9998699540882624
+          },
+          {
+            "cashflows": [
+              {
+                "amount": -102459016.39344263,
+                "dateSerial": 43356,
+                "isCoupon": false
+              },
+              {
+                "accrualEndSerial": 43447,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 43356,
+                "amount": 105986.7635713218,
+                "dateSerial": 43447,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0040922537635625965
+              },
+              {
+                "accrualEndSerial": 43537,
+                "accrualPeriod": 0.25,
+                "accrualStartSerial": 43447,
+                "amount": 115623.56178769929,
+                "dateSerial": 43537,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.00451394385219178
+              },
+              {
+                "accrualEndSerial": 43629,
+                "accrualPeriod": 0.25555555555555554,
+                "accrualStartSerial": 43537,
+                "amount": 132183.40136877744,
+                "dateSerial": 43629,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.005048256511405831
+              },
+              {
+                "accrualEndSerial": 43721,
+                "accrualPeriod": 0.25555555555555554,
+                "accrualStartSerial": 43629,
+                "amount": 132982.8766790935,
+                "dateSerial": 43721,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.005078789516300683
+              },
+              {
+                "accrualEndSerial": 43812,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 43721,
+                "amount": 167128.5729158872,
+                "dateSerial": 43812,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.006452999492277596
+              },
+              {
+                "accrualEndSerial": 43903,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 43812,
+                "amount": 167128.5729158872,
+                "dateSerial": 43903,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.006452999492277596
+              },
+              {
+                "accrualEndSerial": 43997,
+                "accrualPeriod": 0.2611111111111111,
+                "accrualStartSerial": 43903,
+                "amount": 172640.0474064762,
+                "dateSerial": 43997,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.006453064580504198
+              },
+              {
+                "accrualEndSerial": 44088,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 43997,
+                "amount": 168574.12923238438,
+                "dateSerial": 44088,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.006508813851328635
+              },
+              {
+                "accrualEndSerial": 44179,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44088,
+                "amount": 210986.18009392326,
+                "dateSerial": 44179,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.00814638508107702
+              },
+              {
+                "accrualEndSerial": 44270,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44179,
+                "amount": 210986.18009392326,
+                "dateSerial": 44270,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.00814638508107702
+              },
+              {
+                "accrualEndSerial": 44361,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44270,
+                "amount": 210986.18009392326,
+                "dateSerial": 44361,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.00814638508107702
+              },
+              {
+                "accrualEndSerial": 44452,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44361,
+                "amount": 210986.18009392326,
+                "dateSerial": 44452,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.00814638508107702
+              },
+              {
+                "accrualEndSerial": 44543,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44452,
+                "amount": 254866.73817281582,
+                "dateSerial": 44543,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.009840656826857204
+              },
+              {
+                "accrualEndSerial": 44634,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44543,
+                "amount": 254866.73817279306,
+                "dateSerial": 44634,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.009840656826856326
+              },
+              {
+                "accrualEndSerial": 44725,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44634,
+                "amount": 254866.73817281582,
+                "dateSerial": 44725,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.009840656826857204
+              },
+              {
+                "accrualEndSerial": 44817,
+                "accrualPeriod": 0.25555555555555554,
+                "accrualStartSerial": 44725,
+                "amount": 258119.917205652,
+                "dateSerial": 44817,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.009857936316236727
+              },
+              {
+                "accrualEndSerial": 44908,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44817,
+                "amount": 295868.33662033826,
+                "dateSerial": 44908,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.011423769093947477
+              },
+              {
+                "accrualEndSerial": 44998,
+                "accrualPeriod": 0.25,
+                "accrualStartSerial": 44908,
+                "amount": 292614.20531840966,
+                "dateSerial": 44998,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.011423658575630711
+              },
+              {
+                "accrualEndSerial": 45090,
+                "accrualPeriod": 0.25555555555555554,
+                "accrualStartSerial": 44998,
+                "amount": 299122.5308789194,
+                "dateSerial": 45090,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.01142387961408882
+              },
+              {
+                "accrualEndSerial": 45180,
+                "accrualPeriod": 0.25,
+                "accrualStartSerial": 45090,
+                "amount": 292614.2053183869,
+                "dateSerial": 45180,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.011423658575629823
+              },
+              {
+                "amount": 102459016.39344263,
+                "dateSerial": 45180,
+                "isCoupon": false
+              }
+            ],
+            "currency": "EUR",
+            "endDiscounts": 0.9775,
+            "inCcyLegBPS": 51457.335997463524,
+            "inCcyLegNPV": 1859095.2130447584,
+            "legBPS": 62777.9499169055,
+            "legNPV": 2268096.1599146053,
+            "npvDateDiscounts": 1.0,
+            "startDiscounts": 0.9999956039656479
+          }
+        ],
+        "maturityDateSerial": 45180,
+        "npv": -104992.42948211404,
+        "startDateSerial": 43356,
+        "valuationDateSerial": 43354
+      },
+      "inputs": {
+        "paySpread": 0.001,
+        "recSpread": 0.0025,
+        "spotFx": 1.22,
+        "usdNominal": 125000000.0
+      },
+      "name": "basis_ibor"
+    },
+    {
+      "expected": {
+        "fairPaySpread": 0.0017887744730509603,
+        "fairRecSpread": 0.0017573337285516533,
+        "legs": [
+          {
+            "cashflows": [
+              {
+                "amount": -125000000.0,
+                "dateSerial": 43360,
+                "isCoupon": false
+              },
+              {
+                "accrualEndSerial": 43447,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 43356,
+                "amount": 817852.5843114959,
+                "dateSerial": 43451,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.025883686184803387
+              },
+              {
+                "accrualEndSerial": 43537,
+                "accrualPeriod": 0.25,
+                "accrualStartSerial": 43447,
+                "amount": 812482.8786991445,
+                "dateSerial": 43539,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.025999452118372623
+              },
+              {
+                "accrualEndSerial": 43629,
+                "accrualPeriod": 0.25555555555555554,
+                "accrualStartSerial": 43537,
+                "amount": 921860.2812051391,
+                "dateSerial": 43633,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.028858234889900008
+              },
+              {
+                "accrualEndSerial": 43721,
+                "accrualPeriod": 0.25555555555555554,
+                "accrualStartSerial": 43629,
+                "amount": 922864.7675770806,
+                "dateSerial": 43725,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.02888967968067383
+              },
+              {
+                "accrualEndSerial": 43812,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 43721,
+                "amount": 957512.1959770061,
+                "dateSerial": 43816,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.03030368268586569
+              },
+              {
+                "accrualEndSerial": 43903,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 43812,
+                "amount": 957512.1959770061,
+                "dateSerial": 43907,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.03030368268586569
+              },
+              {
+                "accrualEndSerial": 43997,
+                "accrualPeriod": 0.2611111111111111,
+                "accrualStartSerial": 43903,
+                "amount": 989203.1112380961,
+                "dateSerial": 43999,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.03030749957835869
+              },
+              {
+                "accrualEndSerial": 44088,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 43997,
+                "amount": 957413.0463354535,
+                "dateSerial": 44090,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.030300544763144026
+              },
+              {
+                "accrualEndSerial": 44179,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44088,
+                "amount": 954504.6915725719,
+                "dateSerial": 44181,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.03020850012889019
+              },
+              {
+                "accrualEndSerial": 44270,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44179,
+                "amount": 954504.6915725442,
+                "dateSerial": 44272,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.03020850012888931
+              },
+              {
+                "accrualEndSerial": 44361,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44270,
+                "amount": 954504.6915725442,
+                "dateSerial": 44363,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.03020850012888931
+              },
+              {
+                "accrualEndSerial": 44452,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44361,
+                "amount": 954504.6915725442,
+                "dateSerial": 44454,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.03020850012888931
+              },
+              {
+                "accrualEndSerial": 44543,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44452,
+                "amount": 946826.3866750925,
+                "dateSerial": 44545,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.029965494435431502
+              },
+              {
+                "accrualEndSerial": 44634,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44543,
+                "amount": 946826.3866750925,
+                "dateSerial": 44636,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.029965494435431502
+              },
+              {
+                "accrualEndSerial": 44725,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44634,
+                "amount": 946826.3866750925,
+                "dateSerial": 44727,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.029965494435431502
+              },
+              {
+                "accrualEndSerial": 44817,
+                "accrualPeriod": 0.25555555555555554,
+                "accrualStartSerial": 44725,
+                "amount": 957153.8045574924,
+                "dateSerial": 44819,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0299630756209302
+              },
+              {
+                "accrualEndSerial": 44908,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44817,
+                "amount": 936180.0476568871,
+                "dateSerial": 44910,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.02962855535441577
+              },
+              {
+                "accrualEndSerial": 44998,
+                "accrualPeriod": 0.25,
+                "accrualStartSerial": 44908,
+                "amount": 925854.3494445604,
+                "dateSerial": 45000,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.02962733918222593
+              },
+              {
+                "accrualEndSerial": 45090,
+                "accrualPeriod": 0.25555555555555554,
+                "accrualStartSerial": 44998,
+                "amount": 946506.5925582661,
+                "dateSerial": 45092,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.02962977159312833
+              },
+              {
+                "accrualEndSerial": 45180,
+                "accrualPeriod": 0.25,
+                "accrualStartSerial": 45090,
+                "amount": 925854.3494445604,
+                "dateSerial": 45182,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.02962733918222593
+              },
+              {
+                "amount": 125000000.0,
+                "dateSerial": 45182,
+                "isCoupon": false
+              }
+            ],
+            "currency": "USD",
+            "endDiscounts": 0.8745691897659498,
+            "inCcyLegBPS": -59106.386568292415,
+            "inCcyLegNPV": -1794842.8458579688,
+            "legBPS": -59106.386568292415,
+            "legNPV": -1794842.8458579688,
+            "npvDateDiscounts": 1.0,
+            "startDiscounts": 0.9998699540882624
+          },
+          {
+            "cashflows": [
+              {
+                "amount": -102459016.39344263,
+                "dateSerial": 43360,
+                "isCoupon": false
+              },
+              {
+                "accrualEndSerial": 43447,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 43356,
+                "amount": 105986.7635713218,
+                "dateSerial": 43451,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0040922537635625965
+              },
+              {
+                "accrualEndSerial": 43537,
+                "accrualPeriod": 0.25,
+                "accrualStartSerial": 43447,
+                "amount": 115623.56178769929,
+                "dateSerial": 43539,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.00451394385219178
+              },
+              {
+                "accrualEndSerial": 43629,
+                "accrualPeriod": 0.25555555555555554,
+                "accrualStartSerial": 43537,
+                "amount": 132183.40136877744,
+                "dateSerial": 43633,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.005048256511405831
+              },
+              {
+                "accrualEndSerial": 43721,
+                "accrualPeriod": 0.25555555555555554,
+                "accrualStartSerial": 43629,
+                "amount": 132982.8766790935,
+                "dateSerial": 43725,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.005078789516300683
+              },
+              {
+                "accrualEndSerial": 43812,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 43721,
+                "amount": 167128.5729158872,
+                "dateSerial": 43816,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.006452999492277596
+              },
+              {
+                "accrualEndSerial": 43903,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 43812,
+                "amount": 167128.5729158872,
+                "dateSerial": 43907,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.006452999492277596
+              },
+              {
+                "accrualEndSerial": 43997,
+                "accrualPeriod": 0.2611111111111111,
+                "accrualStartSerial": 43903,
+                "amount": 172640.0474064762,
+                "dateSerial": 43999,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.006453064580504198
+              },
+              {
+                "accrualEndSerial": 44088,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 43997,
+                "amount": 168574.12923238438,
+                "dateSerial": 44090,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.006508813851328635
+              },
+              {
+                "accrualEndSerial": 44179,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44088,
+                "amount": 210986.18009392326,
+                "dateSerial": 44181,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.00814638508107702
+              },
+              {
+                "accrualEndSerial": 44270,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44179,
+                "amount": 210986.18009392326,
+                "dateSerial": 44272,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.00814638508107702
+              },
+              {
+                "accrualEndSerial": 44361,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44270,
+                "amount": 210986.18009392326,
+                "dateSerial": 44363,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.00814638508107702
+              },
+              {
+                "accrualEndSerial": 44452,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44361,
+                "amount": 210986.18009392326,
+                "dateSerial": 44454,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.00814638508107702
+              },
+              {
+                "accrualEndSerial": 44543,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44452,
+                "amount": 254866.73817281582,
+                "dateSerial": 44545,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.009840656826857204
+              },
+              {
+                "accrualEndSerial": 44634,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44543,
+                "amount": 254866.73817279306,
+                "dateSerial": 44636,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.009840656826856326
+              },
+              {
+                "accrualEndSerial": 44725,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44634,
+                "amount": 254866.73817281582,
+                "dateSerial": 44727,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.009840656826857204
+              },
+              {
+                "accrualEndSerial": 44817,
+                "accrualPeriod": 0.25555555555555554,
+                "accrualStartSerial": 44725,
+                "amount": 258119.917205652,
+                "dateSerial": 44819,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.009857936316236727
+              },
+              {
+                "accrualEndSerial": 44908,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44817,
+                "amount": 295868.33662033826,
+                "dateSerial": 44910,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.011423769093947477
+              },
+              {
+                "accrualEndSerial": 44998,
+                "accrualPeriod": 0.25,
+                "accrualStartSerial": 44908,
+                "amount": 292614.20531840966,
+                "dateSerial": 45000,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.011423658575630711
+              },
+              {
+                "accrualEndSerial": 45090,
+                "accrualPeriod": 0.25555555555555554,
+                "accrualStartSerial": 44998,
+                "amount": 299122.5308789194,
+                "dateSerial": 45092,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.01142387961408882
+              },
+              {
+                "accrualEndSerial": 45180,
+                "accrualPeriod": 0.25,
+                "accrualStartSerial": 45090,
+                "amount": 292614.2053183869,
+                "dateSerial": 45182,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.011423658575629823
+              },
+              {
+                "amount": 102459016.39344263,
+                "dateSerial": 45182,
+                "isCoupon": false
+              }
+            ],
+            "currency": "EUR",
+            "endDiscounts": 0.9774362925579447,
+            "inCcyLegBPS": 51455.727841155436,
+            "inCcyLegNPV": 1853326.9959438369,
+            "legBPS": 62775.98796620963,
+            "legNPV": 2261058.935051481,
+            "npvDateDiscounts": 1.0,
+            "startDiscounts": 0.9999956039656479
+          }
+        ],
+        "maturityDateSerial": 45182,
+        "npv": 466216.089193512,
+        "startDateSerial": 43356,
+        "valuationDateSerial": 43354
+      },
+      "inputs": {
+        "payCompoundSpread": true,
+        "payPaymentLag": 2,
+        "paySpread": 0.001,
+        "recPaymentLag": 2,
+        "recSpread": 0.0025,
+        "spotFx": 1.22,
+        "usdNominal": 125000000.0
+      },
+      "name": "basis_overnight_compound_spread"
+    },
+    {
+      "expected": {
+        "fairRate": 0.029949347804530548,
+        "fairSpread": 0.0038451214829356797,
+        "legs": [
+          {
+            "cashflows": [
+              {
+                "amount": -125000000.0,
+                "dateSerial": 43356,
+                "isCoupon": false
+              },
+              {
+                "accrualEndSerial": 43721,
+                "accrualPeriod": 1.0,
+                "accrualStartSerial": 43356,
+                "amount": 4062499.9999999967,
+                "dateSerial": 43721,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0325
+              },
+              {
+                "accrualEndSerial": 44088,
+                "accrualPeriod": 1.0054794520547945,
+                "accrualStartSerial": 43721,
+                "amount": 4084760.273972615,
+                "dateSerial": 44088,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0325
+              },
+              {
+                "accrualEndSerial": 44452,
+                "accrualPeriod": 0.9972602739726028,
+                "accrualStartSerial": 44088,
+                "amount": 4051369.8630136875,
+                "dateSerial": 44452,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0325
+              },
+              {
+                "accrualEndSerial": 44817,
+                "accrualPeriod": 1.0,
+                "accrualStartSerial": 44452,
+                "amount": 4062499.9999999967,
+                "dateSerial": 44817,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0325
+              },
+              {
+                "accrualEndSerial": 45180,
+                "accrualPeriod": 0.9945205479452055,
+                "accrualStartSerial": 44817,
+                "amount": 4040239.726027406,
+                "dateSerial": 45180,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0325
+              },
+              {
+                "amount": 125000000.0,
+                "dateSerial": 45180,
+                "isCoupon": false
+              }
+            ],
+            "currency": "USD",
+            "endDiscounts": 0.8747,
+            "inCcyLegBPS": -57719.323421004025,
+            "inCcyLegNPV": -3112535.8507935,
+            "legBPS": -57719.323421004025,
+            "legNPV": -3112535.8507935,
+            "npvDateDiscounts": 1.0,
+            "startDiscounts": 0.9998699540882624
+          },
+          {
+            "cashflows": [
+              {
+                "amount": -102459016.39344263,
+                "dateSerial": 43356,
+                "isCoupon": false
+              },
+              {
+                "accrualEndSerial": 43447,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 43356,
+                "amount": 80087.40109409047,
+                "dateSerial": 43447,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0030922537635625965
+              },
+              {
+                "accrualEndSerial": 43537,
+                "accrualPeriod": 0.25,
+                "accrualStartSerial": 43447,
+                "amount": 90008.80768933863,
+                "dateSerial": 43537,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0035139438521917797
+              },
+              {
+                "accrualEndSerial": 43629,
+                "accrualPeriod": 0.25555555555555554,
+                "accrualStartSerial": 43537,
+                "amount": 105999.43051267545,
+                "dateSerial": 43629,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.004048256511405831
+              },
+              {
+                "accrualEndSerial": 43721,
+                "accrualPeriod": 0.25555555555555554,
+                "accrualStartSerial": 43629,
+                "amount": 106798.90582299148,
+                "dateSerial": 43721,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.004078789516300683
+              },
+              {
+                "accrualEndSerial": 43812,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 43721,
+                "amount": 141229.2104386559,
+                "dateSerial": 43812,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.005452999492277597
+              },
+              {
+                "accrualEndSerial": 43903,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 43812,
+                "amount": 141229.2104386559,
+                "dateSerial": 43903,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.005452999492277597
+              },
+              {
+                "accrualEndSerial": 43997,
+                "accrualPeriod": 0.2611111111111111,
+                "accrualStartSerial": 43903,
+                "amount": 145886.8597926328,
+                "dateSerial": 43997,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.005453064580504197
+              },
+              {
+                "accrualEndSerial": 44088,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 43997,
+                "amount": 142674.76675515302,
+                "dateSerial": 44088,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.005508813851328634
+              },
+              {
+                "accrualEndSerial": 44179,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44088,
+                "amount": 185086.81761669196,
+                "dateSerial": 44179,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.00714638508107702
+              },
+              {
+                "accrualEndSerial": 44270,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44179,
+                "amount": 185086.81761669196,
+                "dateSerial": 44270,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.00714638508107702
+              },
+              {
+                "accrualEndSerial": 44361,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44270,
+                "amount": 185086.81761669196,
+                "dateSerial": 44361,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.00714638508107702
+              },
+              {
+                "accrualEndSerial": 44452,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44361,
+                "amount": 185086.81761669196,
+                "dateSerial": 44452,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.00714638508107702
+              },
+              {
+                "accrualEndSerial": 44543,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44452,
+                "amount": 228967.37569558452,
+                "dateSerial": 44543,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.008840656826857205
+              },
+              {
+                "accrualEndSerial": 44634,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44543,
+                "amount": 228967.37569556173,
+                "dateSerial": 44634,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.008840656826856325
+              },
+              {
+                "accrualEndSerial": 44725,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44634,
+                "amount": 228967.37569558452,
+                "dateSerial": 44725,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.008840656826857205
+              },
+              {
+                "accrualEndSerial": 44817,
+                "accrualPeriod": 0.25555555555555554,
+                "accrualStartSerial": 44725,
+                "amount": 231935.94634955,
+                "dateSerial": 44817,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.008857936316236728
+              },
+              {
+                "accrualEndSerial": 44908,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44817,
+                "amount": 269968.9741431069,
+                "dateSerial": 44908,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.010423769093947476
+              },
+              {
+                "accrualEndSerial": 44998,
+                "accrualPeriod": 0.25,
+                "accrualStartSerial": 44908,
+                "amount": 266999.45122004894,
+                "dateSerial": 44998,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.01042365857563071
+              },
+              {
+                "accrualEndSerial": 45090,
+                "accrualPeriod": 0.25555555555555554,
+                "accrualStartSerial": 44998,
+                "amount": 272938.5600228174,
+                "dateSerial": 45090,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.010423879614088818
+              },
+              {
+                "accrualEndSerial": 45180,
+                "accrualPeriod": 0.25,
+                "accrualStartSerial": 45090,
+                "amount": 266999.4512200262,
+                "dateSerial": 45180,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.010423658575629822
+              },
+              {
+                "amount": 102459016.39344263,
+                "dateSerial": 45180,
+                "isCoupon": false
+              }
+            ],
+            "currency": "EUR",
+            "endDiscounts": 0.9775,
+            "inCcyLegBPS": 51457.335997463524,
+            "inCcyLegNPV": 1344521.8530701208,
+            "legBPS": 62777.9499169055,
+            "legNPV": 1640316.6607455474,
+            "npvDateDiscounts": 1.0,
+            "startDiscounts": 0.9999956039656479
+          }
+        ],
+        "maturityDateSerial": 45180,
+        "npv": -1472219.1900479526,
+        "startDateSerial": 43356,
+        "valuationDateSerial": 43354
+      },
+      "inputs": {
+        "fixedNominal": 125000000.0,
+        "fixedRate": 0.0325,
+        "floatSpread": 0.0015,
+        "spotFx": 1.22,
+        "type": "payer"
+      },
+      "name": "fixed_vs_floating_payer"
+    },
+    {
+      "expected": {
+        "fairRate": 0.029949347804530548,
+        "fairSpread": 0.0038451214829356797,
+        "legs": [
+          {
+            "cashflows": [
+              {
+                "amount": -102459016.39344263,
+                "dateSerial": 43356,
+                "isCoupon": false
+              },
+              {
+                "accrualEndSerial": 43447,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 43356,
+                "amount": 80087.40109409047,
+                "dateSerial": 43447,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0030922537635625965
+              },
+              {
+                "accrualEndSerial": 43537,
+                "accrualPeriod": 0.25,
+                "accrualStartSerial": 43447,
+                "amount": 90008.80768933863,
+                "dateSerial": 43537,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.0035139438521917797
+              },
+              {
+                "accrualEndSerial": 43629,
+                "accrualPeriod": 0.25555555555555554,
+                "accrualStartSerial": 43537,
+                "amount": 105999.43051267545,
+                "dateSerial": 43629,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.004048256511405831
+              },
+              {
+                "accrualEndSerial": 43721,
+                "accrualPeriod": 0.25555555555555554,
+                "accrualStartSerial": 43629,
+                "amount": 106798.90582299148,
+                "dateSerial": 43721,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.004078789516300683
+              },
+              {
+                "accrualEndSerial": 43812,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 43721,
+                "amount": 141229.2104386559,
+                "dateSerial": 43812,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.005452999492277597
+              },
+              {
+                "accrualEndSerial": 43903,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 43812,
+                "amount": 141229.2104386559,
+                "dateSerial": 43903,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.005452999492277597
+              },
+              {
+                "accrualEndSerial": 43997,
+                "accrualPeriod": 0.2611111111111111,
+                "accrualStartSerial": 43903,
+                "amount": 145886.8597926328,
+                "dateSerial": 43997,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.005453064580504197
+              },
+              {
+                "accrualEndSerial": 44088,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 43997,
+                "amount": 142674.76675515302,
+                "dateSerial": 44088,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.005508813851328634
+              },
+              {
+                "accrualEndSerial": 44179,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44088,
+                "amount": 185086.81761669196,
+                "dateSerial": 44179,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.00714638508107702
+              },
+              {
+                "accrualEndSerial": 44270,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44179,
+                "amount": 185086.81761669196,
+                "dateSerial": 44270,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.00714638508107702
+              },
+              {
+                "accrualEndSerial": 44361,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44270,
+                "amount": 185086.81761669196,
+                "dateSerial": 44361,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.00714638508107702
+              },
+              {
+                "accrualEndSerial": 44452,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44361,
+                "amount": 185086.81761669196,
+                "dateSerial": 44452,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.00714638508107702
+              },
+              {
+                "accrualEndSerial": 44543,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44452,
+                "amount": 228967.37569558452,
+                "dateSerial": 44543,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.008840656826857205
+              },
+              {
+                "accrualEndSerial": 44634,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44543,
+                "amount": 228967.37569556173,
+                "dateSerial": 44634,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.008840656826856325
+              },
+              {
+                "accrualEndSerial": 44725,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44634,
+                "amount": 228967.37569558452,
+                "dateSerial": 44725,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.008840656826857205
+              },
+              {
+                "accrualEndSerial": 44817,
+                "accrualPeriod": 0.25555555555555554,
+                "accrualStartSerial": 44725,
+                "amount": 231935.94634955,
+                "dateSerial": 44817,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.008857936316236728
+              },
+              {
+                "accrualEndSerial": 44908,
+                "accrualPeriod": 0.25277777777777777,
+                "accrualStartSerial": 44817,
+                "amount": 269968.9741431069,
+                "dateSerial": 44908,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.010423769093947476
+              },
+              {
+                "accrualEndSerial": 44998,
+                "accrualPeriod": 0.25,
+                "accrualStartSerial": 44908,
+                "amount": 266999.45122004894,
+                "dateSerial": 44998,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.01042365857563071
+              },
+              {
+                "accrualEndSerial": 45090,
+                "accrualPeriod": 0.25555555555555554,
+                "accrualStartSerial": 44998,
+                "amount": 272938.5600228174,
+                "dateSerial": 45090,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.010423879614088818
+              },
+              {
+                "accrualEndSerial": 45180,
+                "accrualPeriod": 0.25,
+                "accrualStartSerial": 45090,
+                "amount": 266999.4512200262,
+                "dateSerial": 45180,
+                "isCoupon": true,
+                "nominal": 102459016.39344263,
+                "rate": 0.010423658575629822
+              },
+              {
+                "amount": 102459016.39344263,
+                "dateSerial": 45180,
+                "isCoupon": false
+              }
+            ],
+            "currency": "EUR",
+            "endDiscounts": 0.9775,
+            "inCcyLegBPS": -51457.335997463524,
+            "inCcyLegNPV": -1344521.8530701208,
+            "legBPS": -62777.9499169055,
+            "legNPV": -1640316.6607455474,
+            "npvDateDiscounts": 1.0,
+            "startDiscounts": 0.9999956039656479
+          },
+          {
+            "cashflows": [
+              {
+                "amount": -125000000.0,
+                "dateSerial": 43356,
+                "isCoupon": false
+              },
+              {
+                "accrualEndSerial": 43721,
+                "accrualPeriod": 1.0,
+                "accrualStartSerial": 43356,
+                "amount": 4062499.9999999967,
+                "dateSerial": 43721,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0325
+              },
+              {
+                "accrualEndSerial": 44088,
+                "accrualPeriod": 1.0054794520547945,
+                "accrualStartSerial": 43721,
+                "amount": 4084760.273972615,
+                "dateSerial": 44088,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0325
+              },
+              {
+                "accrualEndSerial": 44452,
+                "accrualPeriod": 0.9972602739726028,
+                "accrualStartSerial": 44088,
+                "amount": 4051369.8630136875,
+                "dateSerial": 44452,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0325
+              },
+              {
+                "accrualEndSerial": 44817,
+                "accrualPeriod": 1.0,
+                "accrualStartSerial": 44452,
+                "amount": 4062499.9999999967,
+                "dateSerial": 44817,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0325
+              },
+              {
+                "accrualEndSerial": 45180,
+                "accrualPeriod": 0.9945205479452055,
+                "accrualStartSerial": 44817,
+                "amount": 4040239.726027406,
+                "dateSerial": 45180,
+                "isCoupon": true,
+                "nominal": 125000000.0,
+                "rate": 0.0325
+              },
+              {
+                "amount": 125000000.0,
+                "dateSerial": 45180,
+                "isCoupon": false
+              }
+            ],
+            "currency": "USD",
+            "endDiscounts": 0.8747,
+            "inCcyLegBPS": 57719.323421004025,
+            "inCcyLegNPV": 3112535.8507935,
+            "legBPS": 57719.323421004025,
+            "legNPV": 3112535.8507935,
+            "npvDateDiscounts": 1.0,
+            "startDiscounts": 0.9998699540882624
+          }
+        ],
+        "maturityDateSerial": 45180,
+        "npv": 1472219.1900479526,
+        "startDateSerial": 43356,
+        "valuationDateSerial": 43354
+      },
+      "inputs": {
+        "fixedNominal": 125000000.0,
+        "fixedRate": 0.0325,
+        "floatSpread": 0.0015,
+        "spotFx": 1.22,
+        "type": "receiver"
+      },
+      "name": "fixed_vs_floating_receiver"
+    }
+  ],
+  "cpp_commit": "6b57206e04598f092efee66e3b367efc84771995",
+  "cpp_version": "1.43",
+  "generated_at": "2026-08-04T17:17:19Z",
+  "generated_by": "v143_xccy_swaps_probe",
+  "test_group": "instruments/v143_xccy_swaps"
+}

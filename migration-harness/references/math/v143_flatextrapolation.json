@@ -1,0 +1,930 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "decoratedAllowsExtrapolation": true,
+        "decoratorAllowsExtrapolation": false,
+        "derivativeBelowThrows": true,
+        "primitiveBelowThrows": true,
+        "secondDerivativeAboveThrows": true,
+        "valueAboveThrows": true,
+        "valueBelowThrows": true,
+        "valueInRangeThrows": false
+      },
+      "inputs": {
+        "note": "decorated interpolation already has extrapolation enabled",
+        "underlying": "natural_cubic_spline"
+      },
+      "name": "cubic_extrapolation_not_allowed_by_default"
+    },
+    {
+      "expected": {
+        "values": [
+          5.0,
+          3.0,
+          4.0,
+          2.0,
+          1.0
+        ]
+      },
+      "inputs": {
+        "quantity": "value",
+        "underlying": "natural_cubic_spline",
+        "x": [
+          0.0,
+          1.0,
+          2.0,
+          3.0,
+          4.0
+        ]
+      },
+      "name": "cubic_value_at_nodes"
+    },
+    {
+      "expected": {
+        "values": [
+          3.6116071428571432,
+          3.540178571428571,
+          3.227678571428571,
+          1.2991071428571428
+        ]
+      },
+      "inputs": {
+        "quantity": "value",
+        "underlying": "natural_cubic_spline",
+        "x": [
+          0.5,
+          1.5,
+          2.5,
+          3.5
+        ]
+      },
+      "name": "cubic_value_in_range_midpoints"
+    },
+    {
+      "expected": {
+        "values": [
+          5.0,
+          5.0,
+          5.0,
+          5.0,
+          5.0
+        ]
+      },
+      "inputs": {
+        "quantity": "value",
+        "underlying": "natural_cubic_spline",
+        "x": [
+          -100.0,
+          -10.0,
+          -2.0,
+          -1.0,
+          -0.01
+        ]
+      },
+      "name": "cubic_value_below_range"
+    },
+    {
+      "expected": {
+        "values": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "inputs": {
+        "quantity": "value",
+        "underlying": "natural_cubic_spline",
+        "x": [
+          4.01,
+          5.0,
+          10.0,
+          100.0
+        ]
+      },
+      "name": "cubic_value_above_range"
+    },
+    {
+      "expected": {
+        "values": [
+          5.0,
+          1.0
+        ]
+      },
+      "inputs": {
+        "quantity": "value",
+        "underlying": "natural_cubic_spline",
+        "x": [
+          0.0,
+          4.0
+        ]
+      },
+      "name": "cubic_value_at_endpoints"
+    },
+    {
+      "expected": {
+        "values": [
+          -2.258928571428571,
+          1.544642857142857,
+          -2.419642857142857,
+          -0.8660714285714286
+        ]
+      },
+      "inputs": {
+        "quantity": "derivative",
+        "underlying": "natural_cubic_spline",
+        "x": [
+          0.5,
+          1.5,
+          2.5,
+          3.5
+        ]
+      },
+      "name": "cubic_derivative_in_range"
+    },
+    {
+      "expected": {
+        "values": [
+          -3.0357142857142856,
+          -0.4642857142857144
+        ]
+      },
+      "inputs": {
+        "quantity": "derivative",
+        "underlying": "natural_cubic_spline",
+        "x": [
+          0.0,
+          4.0
+        ]
+      },
+      "name": "cubic_derivative_at_endpoints"
+    },
+    {
+      "expected": {
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "inputs": {
+        "quantity": "derivative",
+        "underlying": "natural_cubic_spline",
+        "x": [
+          -100.0,
+          -10.0,
+          -2.0,
+          -1.0,
+          -0.01,
+          4.01,
+          5.0,
+          10.0,
+          100.0
+        ]
+      },
+      "name": "cubic_derivative_outside_range"
+    },
+    {
+      "expected": {
+        "values": [
+          3.107142857142858,
+          -0.32142857142857206,
+          -1.8214285714285712,
+          1.6071428571428568
+        ]
+      },
+      "inputs": {
+        "quantity": "secondDerivative",
+        "underlying": "natural_cubic_spline",
+        "x": [
+          0.5,
+          1.5,
+          2.5,
+          3.5
+        ]
+      },
+      "name": "cubic_second_derivative_in_range"
+    },
+    {
+      "expected": {
+        "values": [
+          0.0,
+          0.0
+        ]
+      },
+      "inputs": {
+        "quantity": "secondDerivative",
+        "underlying": "natural_cubic_spline",
+        "x": [
+          0.0,
+          4.0
+        ]
+      },
+      "name": "cubic_second_derivative_at_endpoints"
+    },
+    {
+      "expected": {
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "inputs": {
+        "quantity": "secondDerivative",
+        "underlying": "natural_cubic_spline",
+        "x": [
+          -100.0,
+          -10.0,
+          -2.0,
+          -1.0,
+          -0.01,
+          4.01,
+          5.0,
+          10.0,
+          100.0
+        ]
+      },
+      "name": "cubic_second_derivative_outside_range"
+    },
+    {
+      "expected": {
+        "values": [
+          2.13671875,
+          5.345424107142858,
+          9.119977678571429,
+          11.219308035714286
+        ]
+      },
+      "inputs": {
+        "quantity": "primitive",
+        "underlying": "natural_cubic_spline",
+        "x": [
+          0.5,
+          1.5,
+          2.5,
+          3.5
+        ]
+      },
+      "name": "cubic_primitive_in_range"
+    },
+    {
+      "expected": {
+        "values": [
+          0.0,
+          11.785714285714286
+        ]
+      },
+      "inputs": {
+        "quantity": "primitive",
+        "underlying": "natural_cubic_spline",
+        "x": [
+          0.0,
+          4.0
+        ]
+      },
+      "name": "cubic_primitive_at_endpoints"
+    },
+    {
+      "expected": {
+        "values": [
+          -500.0,
+          -50.0,
+          -10.0,
+          -5.0,
+          -0.05
+        ]
+      },
+      "inputs": {
+        "quantity": "primitive",
+        "underlying": "natural_cubic_spline",
+        "x": [
+          -100.0,
+          -10.0,
+          -2.0,
+          -1.0,
+          -0.01
+        ]
+      },
+      "name": "cubic_primitive_below_range"
+    },
+    {
+      "expected": {
+        "values": [
+          11.795714285714286,
+          12.785714285714286,
+          17.785714285714285,
+          107.78571428571429
+        ]
+      },
+      "inputs": {
+        "quantity": "primitive",
+        "underlying": "natural_cubic_spline",
+        "x": [
+          4.01,
+          5.0,
+          10.0,
+          100.0
+        ]
+      },
+      "name": "cubic_primitive_above_range"
+    },
+    {
+      "expected": {
+        "allowsExtrapolation": true,
+        "empty": false,
+        "isInRange_2": true,
+        "isInRange_5": false,
+        "isInRange_minus1": false,
+        "isInRange_xMax": true,
+        "isInRange_xMin": true,
+        "size": 5,
+        "valueAt2AfterUpdate": 4.0,
+        "valueAt2BeforeUpdate": 4.0,
+        "xMax": 4.0,
+        "xMin": 0.0,
+        "xValues": [
+          0.0,
+          1.0,
+          2.0,
+          3.0,
+          4.0
+        ],
+        "yValues": [
+          5.0,
+          3.0,
+          4.0,
+          2.0,
+          1.0
+        ]
+      },
+      "inputs": {
+        "underlying": "natural_cubic_spline",
+        "x": [
+          0.0,
+          1.0,
+          2.0,
+          3.0,
+          4.0
+        ],
+        "y": [
+          5.0,
+          3.0,
+          4.0,
+          2.0,
+          1.0
+        ]
+      },
+      "name": "cubic_accessors"
+    },
+    {
+      "expected": {
+        "derivative": [
+          -3.0357142857142856,
+          0.07142857142857145,
+          -0.2500000000000001,
+          -2.071428571428571,
+          -0.4642857142857144,
+          -2.258928571428571,
+          1.544642857142857,
+          -2.419642857142857,
+          -0.8660714285714286
+        ],
+        "primitive": [
+          0.0,
+          3.741071428571429,
+          7.267857142857143,
+          10.419642857142858,
+          11.785714285714286,
+          2.13671875,
+          5.345424107142858,
+          9.119977678571429,
+          11.219308035714286
+        ],
+        "secondDerivative": [
+          0.0,
+          6.214285714285714,
+          -6.857142857142858,
+          3.2142857142857135,
+          0.0,
+          3.107142857142858,
+          -0.32142857142857206,
+          -1.8214285714285712,
+          1.6071428571428568
+        ],
+        "value": [
+          5.0,
+          3.0,
+          4.0,
+          2.0,
+          1.0,
+          3.6116071428571432,
+          3.540178571428571,
+          3.227678571428571,
+          1.2991071428571428
+        ]
+      },
+      "inputs": {
+        "note": "raw CubicInterpolation, no decorator",
+        "underlying": "natural_cubic_spline",
+        "x": [
+          0.0,
+          1.0,
+          2.0,
+          3.0,
+          4.0,
+          0.5,
+          1.5,
+          2.5,
+          3.5
+        ]
+      },
+      "name": "cubic_underlying_spline_reference"
+    },
+    {
+      "expected": {
+        "values": [
+          5.0,
+          5.0,
+          1.0000000000000004,
+          1.0000000000000004
+        ]
+      },
+      "inputs": {
+        "quantity": "value",
+        "underlying": "notaknot_cubic_spline",
+        "x": [
+          -5.0,
+          -1.0,
+          4.5,
+          9.0
+        ]
+      },
+      "name": "notaknot_value_outside_range"
+    },
+    {
+      "expected": {
+        "values": [
+          -6.333333333333334,
+          1.666666666666667
+        ]
+      },
+      "inputs": {
+        "quantity": "derivative",
+        "underlying": "notaknot_cubic_spline",
+        "x": [
+          0.0,
+          4.0
+        ]
+      },
+      "name": "notaknot_derivative_at_endpoints"
+    },
+    {
+      "expected": {
+        "values": [
+          11.500000000000002,
+          7.500000000000001
+        ]
+      },
+      "inputs": {
+        "quantity": "secondDerivative",
+        "underlying": "notaknot_cubic_spline",
+        "x": [
+          0.0,
+          4.0
+        ]
+      },
+      "name": "notaknot_second_derivative_at_endpoints"
+    },
+    {
+      "expected": {
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "inputs": {
+        "quantity": "secondDerivative",
+        "underlying": "notaknot_cubic_spline",
+        "x": [
+          -1.0,
+          -0.01,
+          4.01,
+          5.0
+        ]
+      },
+      "name": "notaknot_second_derivative_outside_range"
+    },
+    {
+      "expected": {
+        "values": [
+          -25.0,
+          -5.0,
+          11.833333333333334,
+          16.333333333333336
+        ]
+      },
+      "inputs": {
+        "quantity": "primitive",
+        "underlying": "notaknot_cubic_spline",
+        "x": [
+          -5.0,
+          -1.0,
+          4.5,
+          9.0
+        ]
+      },
+      "name": "notaknot_primitive_outside_range"
+    },
+    {
+      "expected": {
+        "derivative": [
+          -6.333333333333334,
+          0.9166666666666667,
+          -0.3333333333333334,
+          -2.583333333333333,
+          1.666666666666667,
+          -1.645833333333333,
+          1.3541666666666667,
+          -2.2708333333333335,
+          -1.270833333333333
+        ],
+        "primitive": [
+          0.0,
+          3.395833333333333,
+          7.0,
+          10.1875,
+          11.333333333333334,
+          1.92578125,
+          5.05078125,
+          8.860677083333334,
+          10.90234375
+        ],
+        "secondDerivative": [
+          11.500000000000002,
+          3.0,
+          -5.5,
+          1.0,
+          7.500000000000001,
+          7.250000000000001,
+          -1.25,
+          -2.2499999999999996,
+          4.25
+        ],
+        "value": [
+          5.0,
+          3.0,
+          4.0,
+          2.0,
+          1.0000000000000004,
+          3.09375,
+          3.65625,
+          3.28125,
+          0.9687500000000002
+        ]
+      },
+      "inputs": {
+        "note": "raw CubicInterpolation, no decorator",
+        "underlying": "notaknot_cubic_spline",
+        "x": [
+          0.0,
+          1.0,
+          2.0,
+          3.0,
+          4.0,
+          0.5,
+          1.5,
+          2.5,
+          3.5
+        ]
+      },
+      "name": "notaknot_underlying_spline_reference"
+    },
+    {
+      "expected": {
+        "values": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          2.5,
+          2.0,
+          4.0,
+          3.5,
+          1.75,
+          2.25,
+          3.0,
+          3.75,
+          3.5,
+          3.5,
+          3.5,
+          3.5
+        ]
+      },
+      "inputs": {
+        "quantity": "value",
+        "underlying": "linear",
+        "x": [
+          -100.0,
+          -10.0,
+          -2.0,
+          -1.0,
+          -0.01,
+          0.0,
+          1.0,
+          2.0,
+          3.0,
+          4.0,
+          0.5,
+          1.5,
+          2.5,
+          3.5,
+          4.01,
+          5.0,
+          10.0,
+          100.0
+        ]
+      },
+      "name": "linear_value_below_in_above_range"
+    },
+    {
+      "expected": {
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.5,
+          -0.5,
+          2.0,
+          -0.5,
+          -0.5,
+          1.5,
+          -0.5,
+          2.0,
+          -0.5,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "inputs": {
+        "quantity": "derivative",
+        "underlying": "linear",
+        "x": [
+          -100.0,
+          -10.0,
+          -2.0,
+          -1.0,
+          -0.01,
+          0.0,
+          1.0,
+          2.0,
+          3.0,
+          4.0,
+          0.5,
+          1.5,
+          2.5,
+          3.5,
+          4.01,
+          5.0,
+          10.0,
+          100.0
+        ]
+      },
+      "name": "linear_derivative"
+    },
+    {
+      "expected": {
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "inputs": {
+        "quantity": "secondDerivative",
+        "underlying": "linear",
+        "x": [
+          -100.0,
+          -10.0,
+          -2.0,
+          -1.0,
+          -0.01,
+          0.0,
+          1.0,
+          2.0,
+          3.0,
+          4.0,
+          0.5,
+          1.5,
+          2.5,
+          3.5,
+          4.01,
+          5.0,
+          10.0,
+          100.0
+        ]
+      },
+      "name": "linear_second_derivative"
+    },
+    {
+      "expected": {
+        "values": [
+          -100.0,
+          -10.0,
+          -2.0,
+          -1.0,
+          -0.01,
+          0.0,
+          1.75,
+          4.0,
+          7.0,
+          10.75,
+          0.6875,
+          2.9375,
+          5.25,
+          8.9375,
+          10.785,
+          14.25,
+          31.75,
+          346.75
+        ]
+      },
+      "inputs": {
+        "quantity": "primitive",
+        "underlying": "linear",
+        "x": [
+          -100.0,
+          -10.0,
+          -2.0,
+          -1.0,
+          -0.01,
+          0.0,
+          1.0,
+          2.0,
+          3.0,
+          4.0,
+          0.5,
+          1.5,
+          2.5,
+          3.5,
+          4.01,
+          5.0,
+          10.0,
+          100.0
+        ]
+      },
+      "name": "linear_primitive"
+    },
+    {
+      "expected": {
+        "allowsExtrapolation": true,
+        "empty": false,
+        "isInRange_2": true,
+        "isInRange_5": false,
+        "isInRange_minus1": false,
+        "isInRange_xMax": true,
+        "isInRange_xMin": true,
+        "size": 5,
+        "xMax": 4.0,
+        "xMin": 0.0,
+        "xValues": [
+          0.0,
+          1.0,
+          2.0,
+          3.0,
+          4.0
+        ],
+        "yValues": [
+          1.0,
+          2.5,
+          2.0,
+          4.0,
+          3.5
+        ]
+      },
+      "inputs": {
+        "underlying": "linear",
+        "x": [
+          0.0,
+          1.0,
+          2.0,
+          3.0,
+          4.0
+        ],
+        "y": [
+          1.0,
+          2.5,
+          2.0,
+          4.0,
+          3.5
+        ]
+      },
+      "name": "linear_accessors"
+    },
+    {
+      "expected": {
+        "derivative": [
+          1.5,
+          -0.5,
+          2.0,
+          -0.5,
+          -0.5,
+          1.5,
+          -0.5,
+          2.0,
+          -0.5
+        ],
+        "primitive": [
+          0.0,
+          1.75,
+          4.0,
+          7.0,
+          10.75,
+          0.6875,
+          2.9375,
+          5.25,
+          8.9375
+        ],
+        "secondDerivative": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "value": [
+          1.0,
+          2.5,
+          2.0,
+          4.0,
+          3.5,
+          1.75,
+          2.25,
+          3.0,
+          3.75
+        ]
+      },
+      "inputs": {
+        "note": "raw LinearInterpolation, no decorator",
+        "underlying": "linear",
+        "x": [
+          0.0,
+          1.0,
+          2.0,
+          3.0,
+          4.0,
+          0.5,
+          1.5,
+          2.5,
+          3.5
+        ]
+      },
+      "name": "linear_underlying_reference"
+    }
+  ],
+  "cpp_commit": "6b57206e04598f092efee66e3b367efc84771995",
+  "cpp_version": "1.43",
+  "generated_at": "2026-08-04T17:22:16Z",
+  "generated_by": "v143_flatextrapolation_probe",
+  "test_group": "math/v143_flatextrapolation"
+}

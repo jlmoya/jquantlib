@@ -110,7 +110,12 @@ int main() {
     addCalendar(out, "iceland", Iceland());
     addCalendar(out, "india", India());
     addCalendar(out, "indonesia", Indonesia());
+    // Israel has three markets with genuinely different holiday sets and, since v1.43, different weekend rules;
+    // covering only the default would leave two of them unpinned.
     addCalendar(out, "israel", Israel());
+    addCalendar(out, "israel_tase", Israel(Israel::TASE));
+    addCalendar(out, "israel_shir", Israel(Israel::SHIR));
+    addCalendar(out, "israel_telbor", Israel(Israel::Telbor));
     addCalendar(out, "italy", Italy());
     addCalendar(out, "japan", Japan());
     addCalendar(out, "mexico", Mexico());

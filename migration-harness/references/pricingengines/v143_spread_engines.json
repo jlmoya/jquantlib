@@ -1,0 +1,1757 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "discount": 0.9512294245007139,
+        "forward1": 100.0,
+        "forward2": 110.0,
+        "time1": 1.0,
+        "time2": 1.0,
+        "variance1": 0.0625,
+        "variance2": 0.12249999999999998
+      },
+      "inputs": {
+        "day_counter": "Actual365Fixed",
+        "maturity": "2026-03-01",
+        "risk_free_rate": 0.05,
+        "setup": "a",
+        "today": "2025-03-01"
+      },
+      "name": "a_derived_inputs"
+    },
+    {
+      "expected": {
+        "discount": 0.9512294245007139,
+        "forward1": 100.0,
+        "forward2": 96.0,
+        "time1": 1.0,
+        "time2": 1.0,
+        "variance1": 0.04000000000000001,
+        "variance2": 0.0625
+      },
+      "inputs": {
+        "day_counter": "Actual365Fixed",
+        "maturity": "2026-03-01",
+        "risk_free_rate": 0.05,
+        "setup": "b",
+        "today": "2025-03-01"
+      },
+      "name": "b_derived_inputs"
+    },
+    {
+      "expected": {
+        "discount": 0.9512294245007139,
+        "forward1": 103.0454533953517,
+        "forward2": 94.05473420617098,
+        "time1": 1.0,
+        "time2": 1.0,
+        "variance1": 0.09,
+        "variance2": 0.0225
+      },
+      "inputs": {
+        "day_counter": "Actual365Fixed",
+        "maturity": "2026-03-01",
+        "risk_free_rate": 0.05,
+        "setup": "c",
+        "today": "2025-03-01"
+      },
+      "name": "c_derived_inputs"
+    },
+    {
+      "expected": {
+        "discount": 0.9512294245007139,
+        "forward1": 100.0,
+        "forward2": 96.0,
+        "time1": 1.0,
+        "time2": 1.0,
+        "variance1": 0.0724138126514911,
+        "variance2": 0.04159607805437114
+      },
+      "inputs": {
+        "day_counter": "Actual365Fixed",
+        "maturity": "2026-03-01",
+        "risk_free_rate": 0.05,
+        "setup": "d",
+        "today": "2025-03-01"
+      },
+      "name": "d_derived_inputs"
+    },
+    {
+      "expected": {
+        "discount": 0.9512294245007139,
+        "forward1": 100.0,
+        "forward2": 96.0,
+        "time1": 1.0,
+        "time2": 1.0,
+        "variance1": 0.07,
+        "variance2": 0.04000000000000001
+      },
+      "inputs": {
+        "day_counter": "Actual365Fixed",
+        "maturity": "2026-03-01",
+        "risk_free_rate": 0.05,
+        "setup": "e",
+        "today": "2025-03-01"
+      },
+      "name": "e_derived_inputs"
+    },
+    {
+      "expected": {
+        "npv": 22.993525294560712
+      },
+      "inputs": {
+        "correlation": 0.75,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "a",
+        "strike": -30.0,
+        "today": "2025-03-01"
+      },
+      "name": "pearson_a_call_km30_rho075"
+    },
+    {
+      "expected": {
+        "npv": 3.9787006490943893
+      },
+      "inputs": {
+        "correlation": 0.75,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "option_type": "Put",
+        "risk_free_rate": 0.05,
+        "setup": "a",
+        "strike": -30.0,
+        "today": "2025-03-01"
+      },
+      "name": "pearson_a_put_km30_rho075"
+    },
+    {
+      "expected": {
+        "npv": 9.753508945474985
+      },
+      "inputs": {
+        "correlation": 0.75,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "a",
+        "strike": -10.0,
+        "today": "2025-03-01"
+      },
+      "name": "pearson_a_call_km10_rho075"
+    },
+    {
+      "expected": {
+        "npv": 9.753508945602722
+      },
+      "inputs": {
+        "correlation": 0.75,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "option_type": "Put",
+        "risk_free_rate": 0.05,
+        "setup": "a",
+        "strike": -10.0,
+        "today": "2025-03-01"
+      },
+      "name": "pearson_a_put_km10_rho075"
+    },
+    {
+      "expected": {
+        "npv": 5.225058651496297
+      },
+      "inputs": {
+        "correlation": 0.75,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "a",
+        "strike": 0.0,
+        "today": "2025-03-01"
+      },
+      "name": "pearson_a_call_k0_rho075"
+    },
+    {
+      "expected": {
+        "npv": 14.737352896502625
+      },
+      "inputs": {
+        "correlation": 0.75,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "option_type": "Put",
+        "risk_free_rate": 0.05,
+        "setup": "a",
+        "strike": 0.0,
+        "today": "2025-03-01"
+      },
+      "name": "pearson_a_put_k0_rho075"
+    },
+    {
+      "expected": {
+        "npv": 3.5830632015381774
+      },
+      "inputs": {
+        "correlation": 0.75,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "a",
+        "strike": 5.0,
+        "today": "2025-03-01"
+      },
+      "name": "pearson_a_call_k5_rho075"
+    },
+    {
+      "expected": {
+        "npv": 17.851504569048082
+      },
+      "inputs": {
+        "correlation": 0.75,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "option_type": "Put",
+        "risk_free_rate": 0.05,
+        "setup": "a",
+        "strike": 5.0,
+        "today": "2025-03-01"
+      },
+      "name": "pearson_a_put_k5_rho075"
+    },
+    {
+      "expected": {
+        "npv": 0.2721594903740539
+      },
+      "inputs": {
+        "correlation": 0.75,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "a",
+        "strike": 30.0,
+        "today": "2025-03-01"
+      },
+      "name": "pearson_a_call_k30_rho075"
+    },
+    {
+      "expected": {
+        "npv": 38.32133647040182
+      },
+      "inputs": {
+        "correlation": 0.75,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "option_type": "Put",
+        "risk_free_rate": 0.05,
+        "setup": "a",
+        "strike": 30.0,
+        "today": "2025-03-01"
+      },
+      "name": "pearson_a_put_k30_rho075"
+    },
+    {
+      "expected": {
+        "npv": 10.68120263648129
+      },
+      "inputs": {
+        "correlation": 0.0,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "a",
+        "strike": 5.0,
+        "today": "2025-03-01"
+      },
+      "name": "pearson_a_call_k5_rho000"
+    },
+    {
+      "expected": {
+        "npv": 24.949644003986357
+      },
+      "inputs": {
+        "correlation": 0.0,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "option_type": "Put",
+        "risk_free_rate": 0.05,
+        "setup": "a",
+        "strike": 5.0,
+        "today": "2025-03-01"
+      },
+      "name": "pearson_a_put_k5_rho000"
+    },
+    {
+      "expected": {
+        "npv": 16.44414897168071
+      },
+      "inputs": {
+        "correlation": -0.9,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "a",
+        "strike": 5.0,
+        "today": "2025-03-01"
+      },
+      "name": "pearson_a_call_k5_rho_m090"
+    },
+    {
+      "expected": {
+        "npv": 30.71259033919039
+      },
+      "inputs": {
+        "correlation": -0.9,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "option_type": "Put",
+        "risk_free_rate": 0.05,
+        "setup": "a",
+        "strike": 5.0,
+        "today": "2025-03-01"
+      },
+      "name": "pearson_a_put_k5_rho_m090"
+    },
+    {
+      "expected": {
+        "npv": 0.1302911099476496
+      },
+      "inputs": {
+        "correlation": 0.999999,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "a",
+        "strike": 5.0,
+        "today": "2025-03-01"
+      },
+      "name": "pearson_a_call_k5_rho_p0999999"
+    },
+    {
+      "expected": {
+        "npv": 14.398732477457738
+      },
+      "inputs": {
+        "correlation": 0.999999,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "option_type": "Put",
+        "risk_free_rate": 0.05,
+        "setup": "a",
+        "strike": 5.0,
+        "today": "2025-03-01"
+      },
+      "name": "pearson_a_put_k5_rho_p0999999"
+    },
+    {
+      "expected": {
+        "npv": 16.99199975996029
+      },
+      "inputs": {
+        "correlation": -0.999999,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "a",
+        "strike": 5.0,
+        "today": "2025-03-01"
+      },
+      "name": "pearson_a_call_k5_rho_m0999999"
+    },
+    {
+      "expected": {
+        "npv": 0.13028078071082763
+      },
+      "inputs": {
+        "correlation": 1.0,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "a",
+        "strike": 5.0,
+        "today": "2025-03-01"
+      },
+      "name": "pearson_a_call_k5_rho_p1"
+    },
+    {
+      "expected": {
+        "npv": 14.398722148255828
+      },
+      "inputs": {
+        "correlation": 1.0,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "option_type": "Put",
+        "risk_free_rate": 0.05,
+        "setup": "a",
+        "strike": 5.0,
+        "today": "2025-03-01"
+      },
+      "name": "pearson_a_put_k5_rho_p1"
+    },
+    {
+      "expected": {
+        "npv": 16.992005168591195
+      },
+      "inputs": {
+        "correlation": -1.0,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "a",
+        "strike": 5.0,
+        "today": "2025-03-01"
+      },
+      "name": "pearson_a_call_k5_rho_m1"
+    },
+    {
+      "expected": {
+        "npv": 31.26044653610128
+      },
+      "inputs": {
+        "correlation": -1.0,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "option_type": "Put",
+        "risk_free_rate": 0.05,
+        "setup": "a",
+        "strike": 5.0,
+        "today": "2025-03-01"
+      },
+      "name": "pearson_a_put_k5_rho_m1"
+    },
+    {
+      "expected": {
+        "npv": 5.107142691400514
+      },
+      "inputs": {
+        "correlation": 1.0,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "a",
+        "strike": -10.0,
+        "today": "2025-03-01"
+      },
+      "name": "pearson_a_call_km10_rho_p1"
+    },
+    {
+      "expected": {
+        "npv": 5.107142691630355
+      },
+      "inputs": {
+        "correlation": 1.0,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "option_type": "Put",
+        "risk_free_rate": 0.05,
+        "setup": "a",
+        "strike": -10.0,
+        "today": "2025-03-01"
+      },
+      "name": "pearson_a_put_km10_rho_p1"
+    },
+    {
+      "expected": {
+        "npv": 3.5825844080946316
+      },
+      "inputs": {
+        "correlation": 0.75,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "integration_tolerance": 1e-10,
+        "maturity": "2026-03-01",
+        "max_integration_iterations": 10000,
+        "n_std": 4.0,
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "a",
+        "strike": 5.0,
+        "today": "2025-03-01"
+      },
+      "name": "pearson_a_call_k5_rho075_nstd4"
+    },
+    {
+      "expected": {
+        "npv": 3.2985233854347698
+      },
+      "inputs": {
+        "correlation": 0.75,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "integration_tolerance": 1e-10,
+        "maturity": "2026-03-01",
+        "max_integration_iterations": 10000,
+        "n_std": 2.0,
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "a",
+        "strike": 5.0,
+        "today": "2025-03-01"
+      },
+      "name": "pearson_a_call_k5_rho075_nstd2"
+    },
+    {
+      "expected": {
+        "npv": 3.583063202052793
+      },
+      "inputs": {
+        "correlation": 0.75,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "integration_tolerance": 1e-06,
+        "maturity": "2026-03-01",
+        "max_integration_iterations": 10000,
+        "n_std": 8.0,
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "a",
+        "strike": 5.0,
+        "today": "2025-03-01"
+      },
+      "name": "pearson_a_call_k5_rho075_tol1em6"
+    },
+    {
+      "expected": {
+        "npv": 24.630836245111457
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "c",
+        "strike": -15.0,
+        "today": "2025-03-01"
+      },
+      "name": "pearson_c_call_km15_rho050"
+    },
+    {
+      "expected": {
+        "npv": 1.8101582374288658
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "option_type": "Put",
+        "risk_free_rate": 0.05,
+        "setup": "c",
+        "strike": -15.0,
+        "today": "2025-03-01"
+      },
+      "name": "pearson_c_put_km15_rho050"
+    },
+    {
+      "expected": {
+        "npv": 14.553497114746465
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "c",
+        "strike": 0.0,
+        "today": "2025-03-01"
+      },
+      "name": "pearson_c_call_k0_rho050"
+    },
+    {
+      "expected": {
+        "npv": 11.9510668345022
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "c",
+        "strike": 5.0,
+        "today": "2025-03-01"
+      },
+      "name": "pearson_c_call_k5_rho050"
+    },
+    {
+      "expected": {
+        "npv": 8.154977316833852
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "option_type": "Put",
+        "risk_free_rate": 0.05,
+        "setup": "c",
+        "strike": 5.0,
+        "today": "2025-03-01"
+      },
+      "name": "pearson_c_put_k5_rho050"
+    },
+    {
+      "expected": {
+        "npv": 5.003403861250507
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "c",
+        "strike": 25.0,
+        "today": "2025-03-01"
+      },
+      "name": "pearson_c_call_k25_rho050"
+    },
+    {
+      "expected": {
+        "npv": 18.426870156740524
+      },
+      "inputs": {
+        "correlation": -0.9,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "c",
+        "strike": 5.0,
+        "today": "2025-03-01"
+      },
+      "name": "pearson_c_call_k5_rho_m090"
+    },
+    {
+      "expected": {
+        "npv": 12.113298889994356
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "d",
+        "strike": -2.0,
+        "today": "2025-03-01"
+      },
+      "name": "pearson_d_call_km2_rho050"
+    },
+    {
+      "expected": {
+        "npv": 11.049445847304314
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "d",
+        "strike": 0.0,
+        "today": "2025-03-01"
+      },
+      "name": "pearson_d_call_k0_rho050"
+    },
+    {
+      "expected": {
+        "npv": 9.121856620375507
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "d",
+        "strike": 4.0,
+        "today": "2025-03-01"
+      },
+      "name": "pearson_d_call_k4_rho050"
+    },
+    {
+      "expected": {
+        "npv": 9.12185662037537
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "option_type": "Put",
+        "risk_free_rate": 0.05,
+        "setup": "d",
+        "strike": 4.0,
+        "today": "2025-03-01"
+      },
+      "name": "pearson_d_put_k4_rho050"
+    },
+    {
+      "expected": {
+        "npv": 7.455517393756681
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "d",
+        "strike": 8.0,
+        "today": "2025-03-01"
+      },
+      "name": "pearson_d_call_k8_rho050"
+    },
+    {
+      "expected": {
+        "npv": 16.946567289743154
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "b",
+        "strike": -10.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_b_call_km10_rho050"
+    },
+    {
+      "expected": {
+        "npv": 3.6293615261797547
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Put",
+        "risk_free_rate": 0.05,
+        "setup": "b",
+        "strike": -10.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_b_put_km10_rho050"
+    },
+    {
+      "expected": {
+        "npv": 10.536194860800348
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "b",
+        "strike": 0.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_b_call_k0_rho050"
+    },
+    {
+      "expected": {
+        "npv": 6.731283342244899
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Put",
+        "risk_free_rate": 0.05,
+        "setup": "b",
+        "strike": 0.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_b_put_k0_rho050"
+    },
+    {
+      "expected": {
+        "npv": 8.933341109002818
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "b",
+        "strike": 3.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_b_call_k3_rho050"
+    },
+    {
+      "expected": {
+        "npv": 7.982117863949759
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Put",
+        "risk_free_rate": 0.05,
+        "setup": "b",
+        "strike": 3.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_b_put_k3_rho050"
+    },
+    {
+      "expected": {
+        "npv": 8.433279485973118
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "b",
+        "strike": 4.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_b_call_k4_rho050"
+    },
+    {
+      "expected": {
+        "npv": 8.433285665420854
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Put",
+        "risk_free_rate": 0.05,
+        "setup": "b",
+        "strike": 4.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_b_put_k4_rho050"
+    },
+    {
+      "expected": {
+        "npv": 2.8024119001801298
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "b",
+        "strike": 20.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_b_call_k20_rho050"
+    },
+    {
+      "expected": {
+        "npv": 18.022088871640587
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Put",
+        "risk_free_rate": 0.05,
+        "setup": "b",
+        "strike": 20.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_b_put_k20_rho050"
+    },
+    {
+      "expected": {
+        "npv": 12.297566267566532
+      },
+      "inputs": {
+        "correlation": 0.0,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "b",
+        "strike": 3.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_b_call_k3_rho000"
+    },
+    {
+      "expected": {
+        "npv": 11.34634047734261
+      },
+      "inputs": {
+        "correlation": 0.0,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Put",
+        "risk_free_rate": 0.05,
+        "setup": "b",
+        "strike": 3.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_b_put_k3_rho000"
+    },
+    {
+      "expected": {
+        "npv": 16.62702229348986
+      },
+      "inputs": {
+        "correlation": -0.9,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "b",
+        "strike": 3.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_b_call_k3_rho_m090"
+    },
+    {
+      "expected": {
+        "npv": 15.675800330706812
+      },
+      "inputs": {
+        "correlation": -0.9,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Put",
+        "risk_free_rate": 0.05,
+        "setup": "b",
+        "strike": 3.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_b_put_k3_rho_m090"
+    },
+    {
+      "expected": {
+        "npv": 2.1366408715930842
+      },
+      "inputs": {
+        "correlation": 0.999999,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "b",
+        "strike": 3.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_b_call_k3_rho_p0999999"
+    },
+    {
+      "expected": {
+        "npv": 17.13377073100199
+      },
+      "inputs": {
+        "correlation": -0.999999,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "b",
+        "strike": 3.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_b_call_k3_rho_m0999999"
+    },
+    {
+      "expected": {
+        "npv": 2.136649972091626
+      },
+      "inputs": {
+        "correlation": 1.0,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "b",
+        "strike": 3.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_b_call_k3_rho_p1"
+    },
+    {
+      "expected": {
+        "npv": 1.1854241818677103
+      },
+      "inputs": {
+        "correlation": 1.0,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Put",
+        "risk_free_rate": 0.05,
+        "setup": "b",
+        "strike": 3.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_b_put_k3_rho_p1"
+    },
+    {
+      "expected": {
+        "npv": 17.13377963643624
+      },
+      "inputs": {
+        "correlation": -1.0,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "b",
+        "strike": 3.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_b_call_k3_rho_m1"
+    },
+    {
+      "expected": {
+        "npv": 16.182553846212056
+      },
+      "inputs": {
+        "correlation": -1.0,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Put",
+        "risk_free_rate": 0.05,
+        "setup": "b",
+        "strike": 3.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_b_put_k3_rho_m1"
+    },
+    {
+      "expected": {
+        "npv": 8.946095395755737
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 16,
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "b",
+        "strike": 3.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_b_call_k3_rho050_n16"
+    },
+    {
+      "expected": {
+        "npv": 8.938150385997803
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 32,
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "b",
+        "strike": 3.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_b_call_k3_rho050_n32"
+    },
+    {
+      "expected": {
+        "npv": 8.933424814416028
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 128,
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "b",
+        "strike": 3.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_b_call_k3_rho050_n128"
+    },
+    {
+      "expected": {
+        "npv": 7.994873759120128
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 16,
+        "option_type": "Put",
+        "risk_free_rate": 0.05,
+        "setup": "b",
+        "strike": 3.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_b_put_k3_rho050_n16"
+    },
+    {
+      "expected": {
+        "npv": 9.757299815641245
+      },
+      "inputs": {
+        "correlation": 0.75,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "a",
+        "strike": -10.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_a_call_km10_rho075"
+    },
+    {
+      "expected": {
+        "npv": 9.7573844575166
+      },
+      "inputs": {
+        "correlation": 0.75,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Put",
+        "risk_free_rate": 0.05,
+        "setup": "a",
+        "strike": -10.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_a_put_km10_rho075"
+    },
+    {
+      "expected": {
+        "npv": 5.227342514176827
+      },
+      "inputs": {
+        "correlation": 0.75,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "a",
+        "strike": 0.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_a_call_k0_rho075"
+    },
+    {
+      "expected": {
+        "npv": 3.5752929064500134
+      },
+      "inputs": {
+        "correlation": 0.75,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "a",
+        "strike": 5.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_a_call_k5_rho075"
+    },
+    {
+      "expected": {
+        "npv": 17.843818915837296
+      },
+      "inputs": {
+        "correlation": 0.75,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Put",
+        "risk_free_rate": 0.05,
+        "setup": "a",
+        "strike": 5.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_a_put_k5_rho075"
+    },
+    {
+      "expected": {
+        "npv": 0.27209601296128444
+      },
+      "inputs": {
+        "correlation": 0.75,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "a",
+        "strike": 30.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_a_call_k30_rho075"
+    },
+    {
+      "expected": {
+        "npv": 14.553530218332185
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "c",
+        "strike": 0.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_c_call_k0_rho050"
+    },
+    {
+      "expected": {
+        "npv": 11.957947179096799
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "c",
+        "strike": 5.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_c_call_k5_rho050"
+    },
+    {
+      "expected": {
+        "npv": 8.161914950030097
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Put",
+        "risk_free_rate": 0.05,
+        "setup": "c",
+        "strike": 5.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_c_put_k5_rho050"
+    },
+    {
+      "expected": {
+        "npv": 24.630670615655745
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "c",
+        "strike": -15.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_c_call_km15_rho050"
+    },
+    {
+      "expected": {
+        "npv": 5.004122988417464
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "c",
+        "strike": 25.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_c_call_k25_rho050"
+    },
+    {
+      "expected": {
+        "npv": 12.485051446896922
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "d",
+        "strike": -2.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_d_call_km2_rho050"
+    },
+    {
+      "expected": {
+        "npv": 11.428026563838834
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "d",
+        "strike": 0.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_d_call_k0_rho050"
+    },
+    {
+      "expected": {
+        "npv": 9.388531860064463
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "d",
+        "strike": 4.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_d_call_k4_rho050"
+    },
+    {
+      "expected": {
+        "npv": 9.382710134489415
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Put",
+        "risk_free_rate": 0.05,
+        "setup": "d",
+        "strike": 4.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_d_put_k4_rho050"
+    },
+    {
+      "expected": {
+        "npv": 7.678614366146889
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "d",
+        "strike": 8.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_d_call_k8_rho050"
+    },
+    {
+      "expected": {
+        "npv": 3.9057053932485633
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "d",
+        "strike": 20.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_d_call_k20_rho050"
+    },
+    {
+      "expected": {
+        "npv": 17.482397360627402
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "d",
+        "strike": -10.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_d_call_km10_rho050"
+    },
+    {
+      "expected": {
+        "npv": 12.89965610216592
+      },
+      "inputs": {
+        "correlation": 0.0,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "d",
+        "strike": 4.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_d_call_k4_rho000"
+    },
+    {
+      "expected": {
+        "npv": 17.194347644959212
+      },
+      "inputs": {
+        "correlation": -0.9,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "d",
+        "strike": 4.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_d_call_k4_rho_m090"
+    },
+    {
+      "expected": {
+        "npv": 2.776122289867824
+      },
+      "inputs": {
+        "correlation": 1.0,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "d",
+        "strike": 4.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_d_call_k4_rho_p1"
+    },
+    {
+      "expected": {
+        "npv": 12.34400996026999
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "e",
+        "strike": -2.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_e_call_km2_rho050"
+    },
+    {
+      "expected": {
+        "npv": 9.26290706250824
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "e",
+        "strike": 4.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_e_call_k4_rho050"
+    },
+    {
+      "expected": {
+        "npv": 9.256345939539885
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Put",
+        "risk_free_rate": 0.05,
+        "setup": "e",
+        "strike": 4.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_e_put_k4_rho050"
+    },
+    {
+      "expected": {
+        "npv": 7.557656787609628
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "n_points": 64,
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "e",
+        "strike": 8.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_e_call_k8_rho050"
+    },
+    {
+      "expected": {
+        "additional_results_count": 0,
+        "delta_throws_not_provided": true,
+        "npv": 3.5830632015381774
+      },
+      "inputs": {
+        "correlation": 0.75,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "a",
+        "strike": 5.0,
+        "today": "2025-03-01"
+      },
+      "name": "pearson_no_extra_results"
+    },
+    {
+      "expected": {
+        "additional_results_count": 0,
+        "delta_throws_not_provided": true,
+        "npv": 8.933341109002818
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "day_counter": "Actual365Fixed",
+        "exercise_time": 1.0,
+        "maturity": "2026-03-01",
+        "option_type": "Call",
+        "risk_free_rate": 0.05,
+        "setup": "b",
+        "strike": 3.0,
+        "today": "2025-03-01"
+      },
+      "name": "copula_no_extra_results"
+    },
+    {
+      "expected": {
+        "throws": true
+      },
+      "inputs": {
+        "correlation": 1.0000001,
+        "shared_risk_free_curve": true
+      },
+      "name": "copula_ctor_rejects_rho_above_one"
+    },
+    {
+      "expected": {
+        "throws": true
+      },
+      "inputs": {
+        "correlation": -1.0000001,
+        "shared_risk_free_curve": true
+      },
+      "name": "copula_ctor_rejects_rho_below_minus_one"
+    },
+    {
+      "expected": {
+        "throws": false
+      },
+      "inputs": {
+        "correlation": 1.0,
+        "shared_risk_free_curve": true
+      },
+      "name": "copula_ctor_accepts_rho_exactly_one"
+    },
+    {
+      "expected": {
+        "throws": false
+      },
+      "inputs": {
+        "correlation": -1.0,
+        "shared_risk_free_curve": true
+      },
+      "name": "copula_ctor_accepts_rho_exactly_minus_one"
+    },
+    {
+      "expected": {
+        "throws": true
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "note": "both curves are FlatForward(2025-03-01, 0.05, Actual365Fixed)",
+        "shared_risk_free_curve": false
+      },
+      "name": "copula_ctor_rejects_distinct_risk_free_curves"
+    },
+    {
+      "expected": {
+        "throws": false
+      },
+      "inputs": {
+        "correlation": 1.5
+      },
+      "name": "pearson_ctor_does_not_validate_correlation"
+    },
+    {
+      "expected": {
+        "throws": true
+      },
+      "inputs": {
+        "payoff": "AverageBasketPayoff"
+      },
+      "name": "pearson_rejects_non_spread_payoff"
+    },
+    {
+      "expected": {
+        "throws": true
+      },
+      "inputs": {
+        "payoff": "AverageBasketPayoff"
+      },
+      "name": "copula_rejects_non_spread_payoff"
+    }
+  ],
+  "cpp_commit": "6b57206e04598f092efee66e3b367efc84771995",
+  "cpp_version": "1.43",
+  "generated_at": "2026-08-04T17:28:44Z",
+  "generated_by": "v143_spread_engines_probe",
+  "test_group": "pricingengines/v143_spread_engines"
+}
