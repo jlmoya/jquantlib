@@ -81,4 +81,11 @@ public interface PiecewiseCurve< I extends Interpolator > extends YieldTermStruc
 
     void setData(final double[] data);
 
+    /**
+     * Overrides the curve's max date, which is normally the last node. See
+     * {@link Traits.Curve#setMaxDate(Date)}. Mirrors C++ v1.43 {@code ts_->maxDate_} written by
+     * {@code IterativeBootstrap::initialize()} ({@code ql/termstructures/iterativebootstrap.hpp:215}).
+     */
+    void setMaxDate(final Date maxDate);
+
 }

@@ -85,8 +85,8 @@ import org.jquantlib.time.Date;
  *       see {@link SimpleQuoteVariables} for the concrete implementation. When non-null, the variables-supplied
  *       guesses are appended to the curve-pillar guesses and {@link AdditionalBootstrapVariables#update(Array)}
  *       is invoked on every cost-function call.</li>
- *   <li>This class uses {@code latestDate()} as the pillar date (matches Java's {@link RateHelper}; the C++ original
- *       reads {@code pillarDate()} which is not yet exposed in Java BootstrapHelper).</li>
+ *   <li>Curve nodes are placed at {@code pillarDate()} and the curve's max date is extended to cover every alive
+ *       helper's {@code latestRelevantDate()}, mirroring C++ v1.43 {@code globalbootstrap.hpp:250-306}.</li>
  * </ul>
  *
  * @see PiecewiseYieldCurve
@@ -260,7 +260,8 @@ public class GlobalBootstrap< Curve extends PiecewiseYieldCurve > implements Boo
         final double[] weights = instrumentWeights != null ? instrumentWeights
                 : filledWith(instruments.length, 1.0);
         for ( int i = 0; i < instruments.length; ++i ) {
-            if ( instruments[i].latestDate().gt(firstDate) ) {
+            // C++ v1.43 globalbootstrap.hpp:250 — alive iff pillarDate() > firstDate
+            if ( instruments[i].pillarDate().gt(firstDate) ) {
                 alive.add(instruments[i]);
                 aliveWeights.add(weights[i]);
             }
@@ -276,7 +277,8 @@ public class GlobalBootstrap< Curve extends PiecewiseYieldCurve > implements Boo
         // Step 1b: alive additional helpers
         final List< RateHelper > aliveAdditional = new ArrayList<>();
         for ( final RateHelper rh : additionalHelpers ) {
-            if ( rh.latestDate().gt(firstDate) ) {
+            // C++ v1.43 globalbootstrap.hpp:261
+            if ( rh.pillarDate().gt(firstDate) ) {
                 aliveAdditional.add(rh);
             }
         }
@@ -297,7 +299,8 @@ public class GlobalBootstrap< Curve extends PiecewiseYieldCurve > implements Boo
         final List< Date > dateList = new ArrayList<>();
         dateList.add(firstDate);
         for ( final RateHelper rh : alive ) {
-            dateList.add(rh.latestDate());
+            // C++ v1.43 globalbootstrap.hpp:283-285 — pillars go at pillarDate()
+            dateList.add(rh.pillarDate());
         }
         dateList.addAll(filteredDates);
         dateList.sort(Date::compareTo);
@@ -326,6 +329,20 @@ public class GlobalBootstrap< Curve extends PiecewiseYieldCurve > implements Boo
         ts.setDates(dates);
         ts.setTimes(times);
 
+        // Determine maxDate ensuring all instruments and additional helpers are covered.
+        // C++ v1.43 globalbootstrap.hpp:301-306:
+        //   ts_->maxDate_ = dates.back();
+        //   for (h : aliveInstruments_)       maxDate_ = max(maxDate_, h->latestRelevantDate());
+        //   for (h : aliveAdditionalHelpers_) maxDate_ = max(maxDate_, h->latestRelevantDate());
+        Date curveMaxDate = dates[nDates - 1];
+        for ( final RateHelper rh : alive ) {
+            curveMaxDate = Date.max(curveMaxDate, rh.latestRelevantDate());
+        }
+        for ( final RateHelper rh : aliveAdditional ) {
+            curveMaxDate = Date.max(curveMaxDate, rh.latestRelevantDate());
+        }
+        ts.setMaxDate(curveMaxDate);
+
         // Step 5: install initial data — only if curve cannot be used as guess.
         double[] data;
         if ( !validCurve || ts.data().length != nDates ) {
@@ -340,12 +357,12 @@ public class GlobalBootstrap< Curve extends PiecewiseYieldCurve > implements Boo
         // Step 6: wire helpers
         for ( final RateHelper rh : alive ) {
             QL.require(rh.quoteIsValid(),
-                    "instrument has an invalid quote (pillar: " + rh.latestDate() + ")");
+                    "instrument has an invalid quote (pillar: " + rh.pillarDate() + ")");
             rh.setTermStructure(ts);
         }
         for ( final RateHelper rh : aliveAdditional ) {
             QL.require(rh.quoteIsValid(),
-                    "additional instrument has an invalid quote (pillar: " + rh.latestDate() + ")");
+                    "additional instrument has an invalid quote (pillar: " + rh.pillarDate() + ")");
             rh.setTermStructure(ts);
         }
 
@@ -470,7 +487,8 @@ public class GlobalBootstrap< Curve extends PiecewiseYieldCurve > implements Boo
         final double[] weights = instrumentWeights != null ? instrumentWeights
                 : filledWith(instruments.length, 1.0);
         for ( int i = 0; i < instruments.length; ++i ) {
-            if ( instruments[i].latestDate().gt(firstDate) ) {
+            // C++ v1.43 globalbootstrap.hpp:250 — alive iff pillarDate() > firstDate
+            if ( instruments[i].pillarDate().gt(firstDate) ) {
                 alive.add(instruments[i]);
                 aliveWeights.add(weights[i]);
             }
@@ -479,7 +497,8 @@ public class GlobalBootstrap< Curve extends PiecewiseYieldCurve > implements Boo
         // Step 1b: alive additional helpers
         final List< RateHelper > aliveAdditional = new ArrayList<>();
         for ( final RateHelper rh : additionalHelpers ) {
-            if ( rh.latestDate().gt(firstDate) ) {
+            // C++ v1.43 globalbootstrap.hpp:261
+            if ( rh.pillarDate().gt(firstDate) ) {
                 aliveAdditional.add(rh);
             }
         }
@@ -500,7 +519,8 @@ public class GlobalBootstrap< Curve extends PiecewiseYieldCurve > implements Boo
         final List< Date > dateList = new ArrayList<>();
         dateList.add(firstDate);
         for ( final RateHelper rh : alive ) {
-            dateList.add(rh.latestDate());
+            // C++ v1.43 globalbootstrap.hpp:283-285 — pillars go at pillarDate()
+            dateList.add(rh.pillarDate());
         }
         dateList.addAll(filteredDates);
         dateList.sort(Date::compareTo);
@@ -527,6 +547,20 @@ public class GlobalBootstrap< Curve extends PiecewiseYieldCurve > implements Boo
         ts.setDates(dates);
         ts.setTimes(times);
 
+        // Determine maxDate ensuring all instruments and additional helpers are covered.
+        // C++ v1.43 globalbootstrap.hpp:301-306:
+        //   ts_->maxDate_ = dates.back();
+        //   for (h : aliveInstruments_)       maxDate_ = max(maxDate_, h->latestRelevantDate());
+        //   for (h : aliveAdditionalHelpers_) maxDate_ = max(maxDate_, h->latestRelevantDate());
+        Date curveMaxDate = dates[nDates - 1];
+        for ( final RateHelper rh : alive ) {
+            curveMaxDate = Date.max(curveMaxDate, rh.latestRelevantDate());
+        }
+        for ( final RateHelper rh : aliveAdditional ) {
+            curveMaxDate = Date.max(curveMaxDate, rh.latestRelevantDate());
+        }
+        ts.setMaxDate(curveMaxDate);
+
         // Step 5: initial data
         double[] data;
         if ( !validCurve || ts.data().length != nDates ) {
@@ -541,12 +575,12 @@ public class GlobalBootstrap< Curve extends PiecewiseYieldCurve > implements Boo
         // Step 6: wire helpers
         for ( final RateHelper rh : alive ) {
             QL.require(rh.quoteIsValid(),
-                    "instrument has an invalid quote (pillar: " + rh.latestDate() + ")");
+                    "instrument has an invalid quote (pillar: " + rh.pillarDate() + ")");
             rh.setTermStructure(ts);
         }
         for ( final RateHelper rh : aliveAdditional ) {
             QL.require(rh.quoteIsValid(),
-                    "additional instrument has an invalid quote (pillar: " + rh.latestDate() + ")");
+                    "additional instrument has an invalid quote (pillar: " + rh.pillarDate() + ")");
             rh.setTermStructure(ts);
         }
 

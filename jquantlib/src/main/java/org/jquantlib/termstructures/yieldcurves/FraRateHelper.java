@@ -27,6 +27,7 @@ import org.jquantlib.QL;
 import org.jquantlib.currencies.Currency;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.indexes.IborIndex;
+import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.RelinkableHandle;
@@ -218,14 +219,10 @@ public class FraRateHelper extends RelativeDateRateHelper {
         this.iborIndex = new IborIndex("no-fix",
                 i.tenor(), i.fixingDays(), new Currency(), i.fixingCalendar(), i.businessDayConvention(),
                 i.endOfMonth(), i.dayCounter(), this.termStructureHandle);
+        // C++ ratehelpers.cpp:357 — pillarDate_ = customPillarDate, assigned
+        // before initializeDates() so the CustomDate branch can validate it.
+        this.pillarDate = customPillarDate;
         initializeDates();
-        if ( pillarChoice == Pillar.Choice.CustomDate && customPillarDate != null ) {
-            QL.require(!customPillarDate.lt(this.earliestDate),
-                    "pillar date must be later than or equal to the instrument's earliest date");
-            QL.require(!customPillarDate.gt(this.latestDate),
-                    "pillar date must be before or equal to the instrument's latest relevant date");
-            this.latestDate = customPillarDate;
-        }
     }
 
     //
@@ -238,8 +235,10 @@ public class FraRateHelper extends RelativeDateRateHelper {
         if ( this.useIndexedCoupon ) {
             return iborIndex.fixing(this.fixingDate, true);
         } else {
-            // Mirrors C++ v1.42.1 ratehelpers.cpp:360-369: forecast rate from discount factors.
-            return (termStructure.discount(this.earliestDate) / termStructure.discount(this.latestDate) - 1.0)
+            // Mirrors C++ v1.43 ratehelpers.cpp:361-370: forecast rate from discount factors,
+            // taken between earliestDate_ and maturityDate_ (NOT the pillar, which may differ
+            // under Pillar::CustomDate).
+            return (termStructure.discount(this.earliestDate) / termStructure.discount(this.maturityDate) - 1.0)
                     / this.spanningTime;
         }
     }
@@ -257,30 +256,58 @@ public class FraRateHelper extends RelativeDateRateHelper {
 
     @Override
     protected void initializeDates() {
-        // Mirrors C++ v1.42.1 ratehelpers.cpp:392-450.
+        // Mirrors C++ v1.43 ratehelpers.cpp:393-451.
         if ( this.updateDates ) {
             // Period-relative path (existing behavior).
             final Date settlement = iborIndex.fixingCalendar()
                     .advance(this.evaluationDate, new Period(iborIndex.fixingDays(), TimeUnit.Days));
             this.earliestDate = iborIndex.fixingCalendar()
                     .advance(settlement, this.periodToStart, iborIndex.businessDayConvention(), iborIndex.endOfMonth());
-            this.latestDate = iborIndex.maturityDate(this.earliestDate);
+            // C++ ratehelpers.cpp:405-408 — maturity is measured from the spot
+            // date, not from the (adjusted) earliest date.
+            this.maturityDate = iborIndex.fixingCalendar()
+                    .advance(settlement, this.periodToStart.add(iborIndex.tenor()),
+                            iborIndex.businessDayConvention(), iborIndex.endOfMonth());
         } else {
             // Dated path: caller-supplied earliest + latest absolute dates.
             this.earliestDate = this.explicitStartDate;
-            // For useIndexedCoupon==true, latestRelevantDate is iborIndex.maturityDate(earliest);
-            // for useIndexedCoupon==false, latestRelevantDate is the caller-supplied endDate.
-            if ( this.useIndexedCoupon ) {
-                this.latestDate = iborIndex.maturityDate(this.earliestDate);
-            } else {
-                this.latestDate = this.explicitEndDate;
-                this.spanningTime = iborIndex.dayCounter()
-                        .yearFraction(this.earliestDate, this.explicitEndDate);
-                QL.require(this.spanningTime > 0.0,
-                        "FraRateHelper: spanning time must be positive (start=" + this.earliestDate
-                                + ", end=" + this.explicitEndDate + ")");
-            }
+            this.maturityDate = this.explicitEndDate;
         }
+
+        // C++ ratehelpers.cpp:418-424.
+        if ( this.useIndexedCoupon ) {
+            // latest relevant date is calculated from earliestDate
+            this.latestRelevantDate = iborIndex.maturityDate(this.earliestDate);
+        } else {
+            this.latestRelevantDate = this.maturityDate;
+            this.spanningTime = iborIndex.dayCounter().yearFraction(this.earliestDate, this.maturityDate);
+            QL.require(this.spanningTime > 0.0, "FraRateHelper: spanning time must be positive (start="
+                    + this.earliestDate + ", end=" + this.maturityDate + ")");
+        }
+
+        // C++ ratehelpers.cpp:426-448.
+        switch ( this.pillarChoice ) {
+        case MaturityDate:
+            this.pillarDate = this.maturityDate;
+            break;
+        case LastRelevantDate:
+            this.pillarDate = this.latestRelevantDate;
+            break;
+        case CustomDate:
+            // pillarDate already assigned at construction time
+            QL.require(this.pillarDate != null && !this.pillarDate.isNull(), "custom pillar date must be provided");
+            QL.require(this.pillarDate.ge(this.earliestDate), "pillar date (" + this.pillarDate
+                    + ") must be later than or equal to the instrument's earliest date (" + this.earliestDate + ")");
+            QL.require(this.pillarDate.le(this.latestRelevantDate), "pillar date (" + this.pillarDate
+                    + ") must be before or equal to the instrument's latest relevant date ("
+                    + this.latestRelevantDate + ")");
+            break;
+        default:
+            throw new LibraryException("unknown Pillar::Choice");
+        }
+
+        this.latestDate = this.pillarDate; // backward compatibility
+
         this.fixingDate = iborIndex.fixingDate(this.earliestDate);
     }
 

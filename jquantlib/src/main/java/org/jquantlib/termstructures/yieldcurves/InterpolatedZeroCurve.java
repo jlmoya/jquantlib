@@ -73,6 +73,13 @@ public class InterpolatedZeroCurve< I extends Interpolator > extends ZeroYieldSt
     private final Class< I > classI;
     private final Interpolator interpolator;
     private Date[] dates;
+    /**
+     * Optional override of the curve's max date, normally the last node. Set by the bootstrap when an instrument's
+     * latest relevant date falls after its pillar, so the curve is allowed to extrapolate that far.
+     * <p>
+     * Mirrors C++ v1.43 {@code InterpolatedCurve<T>::maxDate_} ({@code ql/termstructures/interpolatedcurve.hpp:137}).
+     */
+    private Date maxDate;
     private /*@Time*/ double[] times;
 
     //
@@ -193,8 +200,18 @@ public class InterpolatedZeroCurve< I extends Interpolator > extends ZeroYieldSt
 
     @Override
     public Date maxDate() {
+        // C++ v1.43 discountcurve.hpp:111-115:
+        //   if (this->maxDate_ != Date()) return this->maxDate_;
+        //   return dates_.back();
+        if ( maxDate != null && !maxDate.isNull() )
+            return maxDate;
         final int last = dates.length - 1;
         return dates[last];
+    }
+
+    @Override
+    public void setMaxDate(final Date maxDate) {
+        this.maxDate = maxDate;
     }
 
     @Override

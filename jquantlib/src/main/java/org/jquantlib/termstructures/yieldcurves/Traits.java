@@ -113,6 +113,17 @@ public interface Traits {
 
         void setData(final double[] data);
 
+        /**
+         * Overrides the curve's max date, which is normally the last node.
+         * <p>
+         * Mirrors the C++ v1.43 {@code InterpolatedCurve<T>::maxDate_} slot
+         * ({@code ql/termstructures/interpolatedcurve.hpp:137}), written by
+         * {@code IterativeBootstrap::initialize()} ({@code ql/termstructures/iterativebootstrap.hpp:215}). It exists
+         * because a bit of extrapolation is used by construction when an instrument's last relevant date falls after
+         * its pillar. Passing {@code null} (or a null date) restores "max date = last node".
+         */
+        void setMaxDate(final Date maxDate);
+
         /*@DiscountFactor*/ double discount(final /*@Time*/ double t) /* @ReadOnly */;
 
         /*@DiscountFactor*/ double forward(final /*@Time*/ double t) /* @ReadOnly */;

@@ -72,6 +72,13 @@ public class InterpolatedSpreadDiscountCurve< I extends Interpolator > extends A
     //
 
     private Date[] dates;
+    /**
+     * Optional override of the local max date, normally the last node. Set by the bootstrap when an instrument's
+     * latest relevant date falls after its pillar.
+     * <p>
+     * Mirrors C++ v1.43 {@code InterpolatedCurve<T>::maxDate_} ({@code ql/termstructures/interpolatedcurve.hpp:137}).
+     */
+    private Date maxDate;
     private /*@Time*/ double[] times;
     private double[] data;
     private Interpolation interpolation;
@@ -165,14 +172,24 @@ public class InterpolatedSpreadDiscountCurve< I extends Interpolator > extends A
 
     @Override
     public Date maxDate() {
-        // C++ v1.42.1: std::min(baseCurve_->maxDate(), dates_.back())
-        // — dates is the spread-curve's pillar dates.
+        // C++ v1.43 spreaddiscountcurve.hpp:142-145:
+        //   Date maxDate = this->maxDate_ != Date() ? this->maxDate_ : dates_.back();
+        //   return std::min(baseCurve_->maxDate(), maxDate);
         final Date baseMax = baseCurve.currentLink().maxDate();
-        if ( dates == null || dates.length == 0 ) {
+        final Date localMax;
+        if ( maxDate != null && !maxDate.isNull() ) {
+            localMax = maxDate;
+        } else if ( dates == null || dates.length == 0 ) {
             return baseMax;
+        } else {
+            localMax = dates[dates.length - 1];
         }
-        final Date localMax = dates[dates.length - 1];
         return baseMax.le(localMax) ? baseMax : localMax;
+    }
+
+    @Override
+    public void setMaxDate(final Date maxDate) {
+        this.maxDate = maxDate;
     }
 
     //

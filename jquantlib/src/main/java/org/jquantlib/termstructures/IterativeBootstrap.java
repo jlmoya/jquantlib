@@ -51,6 +51,14 @@ public class IterativeBootstrap< Curve extends PiecewiseYieldCurve > implements 
 
     final private Class< ? > typeCurve;
     private boolean validCurve;
+    /**
+     * Whether the convergence loop is required. Seeded from {@code Interpolator::global} and forced to {@code true}
+     * when any helper's pillar date falls before its latest relevant date.
+     * <p>
+     * Mirrors C++ v1.43 {@code IterativeBootstrap::loopRequired_}
+     * ({@code ql/termstructures/iterativebootstrap.hpp:113, 210-212}).
+     */
+    private boolean loopRequired;
     private PiecewiseCurve ts;
     private RateHelper[] instruments;
     private Traits traits;
@@ -114,15 +122,9 @@ public class IterativeBootstrap< Curve extends PiecewiseYieldCurve > implements 
         double[] times = ts.times();
         double[] data = ts.data();
 
-        // ensure rate helpers are sorted
+        // ensure rate helpers are sorted (by pillar date — C++ v1.43
+        // iterativebootstrap.hpp:158-159 via detail::BootstrapHelperSorter)
         Arrays.sort(instruments, new BootstrapHelperSorter());
-
-        // check that there is no instruments with the same maturity
-        for ( int i = 1; i < n; ++i ) {
-            final Date m1 = instruments[i - 1].latestDate();
-            final Date m2 = instruments[i].latestDate();
-            QL.require(m1 != m2, "two instruments have the same maturity");
-        }
 
         // check that there is no instruments with invalid quote
         for ( int i = 0; i < n; ++i ) {
@@ -138,16 +140,52 @@ public class IterativeBootstrap< Curve extends PiecewiseYieldCurve > implements 
         }
 
         // calculate dates and times
+        // Port of C++ v1.43 iterativebootstrap.hpp:181-215. Three distinct
+        // dates per helper matter here:
+        //   - pillarDate()        : where the curve node is placed
+        //   - latestRelevantDate(): how far the curve must actually reach
+        //   - latestDate()        : the legacy single date (== pillar for most
+        //                           helpers)
+        // The curve's max date is the accumulated latestRelevantDate, NOT the
+        // last pillar: an instrument whose last cashflow pays after its pillar
+        // (payment lag, payment-calendar adjustment) still needs discounting
+        // past the last node.
         dates = new Date[n + 1];
         times = new /*@Time*/ double[n + 1];
         dates[0] = traits.initialDate(ts);
         times[0] = ts.timeFromReference(dates[0]);
+        // loopRequired_ is seeded from the interpolator's globality and forced
+        // true below when a pillar precedes its latest relevant date.
+        loopRequired = interpolator.global();
+        Date maxDate = dates[0];
         for ( int i = 0; i < n; ++i ) {
-            dates[i + 1] = instruments[i].latestDate();
+            dates[i + 1] = instruments[i].pillarDate();
             times[i + 1] = ts.timeFromReference(dates[i + 1]);
+
+            // check for duplicated pillars (C++ iterativebootstrap.hpp:187-188)
+            QL.require(!dates[i].eq(dates[i + 1]), "more than one instrument with pillar " + dates[i + 1]);
+
+            final Date latestRelevantDate = instruments[i].latestRelevantDate();
+            // check that the helper is really extending the curve, i.e. that
+            // pillar-sorted helpers are also sorted by latestRelevantDate
+            // (C++ iterativebootstrap.hpp:190-198)
+            QL.require(latestRelevantDate.gt(maxDate),
+                    (i + 1) + " instrument (pillar: " + dates[i + 1] + ") has latestRelevantDate ("
+                            + latestRelevantDate + ") before or equal to previous instrument's latestRelevantDate ("
+                            + maxDate + ")");
+            maxDate = Date.max(dates[i + 1], latestRelevantDate);
+
+            // when a pillar date is before the last relevant date the
+            // convergence loop is required even if the Interpolator is local
+            // (C++ iterativebootstrap.hpp:201-203)
+            if ( dates[i + 1].lt(latestRelevantDate) ) {
+                loopRequired = true;
+            }
         }
         ts.setDates(dates);
         ts.setTimes(times);
+        // C++ iterativebootstrap.hpp:205 — ts_->maxDate_ = maxDate;
+        ts.setMaxDate(maxDate);
 
         // set initial guess only if the current curve cannot be used as guess
         if ( validCurve ) {
@@ -271,12 +309,17 @@ public class IterativeBootstrap< Curve extends PiecewiseYieldCurve > implements 
                     }
                     throw new LibraryException(
                             "iteration " + (iteration + 1) + ": failed at " + i + "th alive instrument" + ", pillar "
-                                    + instrument.latestDate() + ", reference date " + ts.dates()[0] + ": "
-                                    + e.getMessage());
+                                    + instrument.pillarDate() + ", maturity " + instrument.maturityDate()
+                                    + ", reference date " + ts.dates()[0] + ": " + e.getMessage());
                 }
             }
 
-            if ( !interpolator.global() ) {
+            // C++ v1.43 iterativebootstrap.hpp:344-345 — the convergence loop
+            // is skipped only when loopRequired_ is false; a local interpolator
+            // is no longer sufficient on its own, because a pillar placed
+            // before its instrument's latest relevant date makes later pillars
+            // feed back into earlier ones.
+            if ( !loopRequired ) {
                 break; // no need for convergence loop
             } else if ( !validCurve && iteration == 0 ) {
                 // ensure the target interpolation is used

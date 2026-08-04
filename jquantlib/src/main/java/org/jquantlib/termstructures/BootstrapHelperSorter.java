@@ -45,11 +45,19 @@ import java.util.Comparator;
 
 public class BootstrapHelperSorter< Helper extends BootstrapHelper > implements Comparator< Helper >, Serializable {
 
+    /**
+     * Orders helpers by pillar date.
+     * <p>
+     * Mirrors C++ v1.43 {@code detail::BootstrapHelperSorter}
+     * ({@code ql/termstructures/bootstraphelper.hpp:243-254}), which compares {@code pillarDate()}. For helpers that
+     * do not set a distinct pillar, {@code pillarDate()} falls back to {@code latestDate()}, so this is unchanged
+     * behaviour for them.
+     */
     @Override
     public int compare(final Helper h1, final Helper h2) {
-        if ( h1.latestDate().lt(h2.latestDate()) )
+        if ( h1.pillarDate().lt(h2.pillarDate()) )
             return -1;
-        if ( h1.latestDate().equals(h2.latestDate()) )
+        if ( h1.pillarDate().equals(h2.pillarDate()) )
             return 0;
         return 1;
     }

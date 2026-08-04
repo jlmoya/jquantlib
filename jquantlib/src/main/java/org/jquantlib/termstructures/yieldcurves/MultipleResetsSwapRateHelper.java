@@ -173,6 +173,10 @@ public class MultipleResetsSwapRateHelper extends RelativeDateRateHelper {
         final Date lastFixedDate = fixedLeg.get(fixedLeg.size() - 1).date();
         final Date lastFloatDate = floatingLeg.get(floatingLeg.size() - 1).date();
         latestDate = lastFixedDate.gt(lastFloatDate) ? lastFixedDate : lastFloatDate;
+        latestRelevantDate = latestDate;
+        // pillarDate_ is left unset, so BootstrapHelper.pillarDate() falls back
+        // to latestDate() — exactly as in C++, where this helper exposes no
+        // Pillar::Choice.
     }
 
     @Override

@@ -45,10 +45,12 @@ import org.jquantlib.util.Visitor;
  * <p><b>Phase 5e.5b-CFC-d-169 align:</b>
  * <ul>
  *   <li>Added {@link Pillar.Choice} parameter (mirrors C++
- *       {@code pillarChoice_}). Java's bootstrap places curve nodes at
- *       {@link #latestDate()} so {@code Pillar::MaturityDate} sets
- *       {@code latestDate = maturityDate} while {@code Pillar::LastRelevantDate}
- *       (default) keeps the max-of-(maturity,lastPayment,fixingEnd) behavior.</li>
+ *       {@code pillarChoice_}). {@code Pillar::MaturityDate} sets
+ *       {@code pillarDate = maturityDate} while {@code Pillar::LastRelevantDate}
+ *       (default) sets {@code pillarDate = latestRelevantDate}. Either way
+ *       {@code latestRelevantDate = latestDate = max(maturity, lastPayment, fixingEnd)},
+ *       so the bootstrapped curve reaches past the pillar when a payment lag
+ *       demands it (C++ {@code oisratehelper.cpp:181-183}).</li>
  *   <li>Added optional {@link FloatingRateCouponPricer} ctor parameter
  *       (C++ {@code pricer_}) and a {@code withCouponPricer} setter, applied
  *       to the overnight leg before bootstrap (mirrors C++
@@ -93,7 +95,6 @@ public class OISRateHelper extends RelativeDateRateHelper {
             null);
     protected final RelinkableHandle< YieldTermStructure > discountRelinkableHandle_ = new RelinkableHandle< YieldTermStructure >(
             null);
-    protected Date pillarDate_;
     protected FloatingRateCouponPricer pricer_;
     protected OvernightIndexedSwap swap_;
 
@@ -130,9 +131,9 @@ public class OISRateHelper extends RelativeDateRateHelper {
      *
      * @param paymentCalendar  may be {@code null} to default to the overnight index fixing calendar (C++
      *                         {@code Calendar()} default).
-     * @param pillarChoice     {@link Pillar.Choice#LastRelevantDate} (default) keeps
-     *                         {@code latestDate = max(maturity, lastPayment, fixingEnd)};
-     *                         {@link Pillar.Choice#MaturityDate} fixes {@code latestDate = maturityDate} so bootstrap
+     * @param pillarChoice     {@link Pillar.Choice#LastRelevantDate} (default) puts the curve node at
+     *                         {@code max(maturity, lastPayment, fixingEnd)};
+     *                         {@link Pillar.Choice#MaturityDate} puts it at {@code maturityDate} so bootstrap
      *                         nodes land exactly on each swap's maturity (regression #1.16 / FedFunds).
      * @param customPillarDate required when {@code pillarChoice == Pillar.Choice.CustomDate}; ignored otherwise.
      * @param pricer           optional {@link FloatingRateCouponPricer} (e.g.
@@ -167,7 +168,8 @@ public class OISRateHelper extends RelativeDateRateHelper {
         this.paymentCalendar_ = paymentCalendar;
         this.averagingMethod_ = averagingMethod;
         this.pillarChoice_ = pillarChoice;
-        this.pillarDate_ = customPillarDate;
+        // C++ oisratehelper.cpp:127 — pillarDate_ = customPillarDate (before initializeDates)
+        this.pillarDate = customPillarDate;
         this.pricer_ = pricer;
 
         overnightIndex_.addObserver(this);
@@ -215,7 +217,8 @@ public class OISRateHelper extends RelativeDateRateHelper {
         this.paymentCalendar_ = paymentCalendar;
         this.averagingMethod_ = averagingMethod;
         this.pillarChoice_ = pillarChoice;
-        this.pillarDate_ = customPillarDate;
+        // C++ oisratehelper.cpp:127 — pillarDate_ = customPillarDate (before initializeDates)
+        this.pillarDate = customPillarDate;
         this.pricer_ = pricer;
 
         overnightIndex_.addObserver(this);
@@ -292,15 +295,22 @@ public class OISRateHelper extends RelativeDateRateHelper {
             swap_.setPricingEngine(new DiscountingSwapEngine(discountHandle_));
         }
 
-        earliestDate = swap_.startDate();
-        final Date maturityDate = swap_.maturityDate();
-
-        // C++ pillar: max(maturityDate, lastPaymentDate, fixingEndDate).
+        // Port of C++ v1.43 oisratehelper.cpp:170-203.
+        //   earliestDate_ = swap_->startDate();
+        //   maturityDate_ = swap_->maturityDate();
+        //   latestRelevantDate_ = latestDate_ =
+        //       std::max({maturityDate_, lastPaymentDate, fixingEndDate});
         // - lastPaymentDate: max of last cashflow date on both legs (the
         //   overnight leg can extend past maturity when paymentLag > 0).
         // - fixingEndDate: overnightIndex.maturityDate(valueDate(lastFixingDate))
         //   — the end of the last underlying overnight period, which
         //   determines what curve dates the bootstrap actually needs.
+        // Note that latestDate_ tracks latestRelevantDate_ here (unlike
+        // SwapRateHelper/FraRateHelper, where latestDate_ tracks pillarDate_),
+        // exactly as C++ does.
+        earliestDate = swap_.startDate();
+        maturityDate = swap_.maturityDate();
+
         final Leg overnightLeg = swap_.overnightLeg();
         final Leg fixedLeg = swap_.fixedLeg();
         Date lastPaymentDate = overnightLeg.get(overnightLeg.size() - 1).date();
@@ -313,34 +323,24 @@ public class OISRateHelper extends RelativeDateRateHelper {
         final Date lastFixingDate = lastOnCoupon.fixingDate();
         final Date fixingEndDate = overnightIndex_.maturityDate(overnightIndex_.valueDate(lastFixingDate));
 
-        Date latestRelevant = maturityDate;
-        if ( lastPaymentDate.gt(latestRelevant) ) {
-            latestRelevant = lastPaymentDate;
-        }
-        if ( fixingEndDate.gt(latestRelevant) ) {
-            latestRelevant = fixingEndDate;
-        }
+        latestRelevantDate = Date.max(Date.max(maturityDate, lastPaymentDate), fixingEndDate);
+        latestDate = latestRelevantDate;
 
-        // Java places curve nodes at latestDate() (no separate pillarDate_
-        // hook on BootstrapHelper), so the pillar choice is realized by
-        // choosing which date latestDate_ takes.
-        // Port of C++ oisratehelper.cpp:181-201.
+        // Port of C++ oisratehelper.cpp:185-203.
         switch ( pillarChoice_ ) {
         case MaturityDate:
-            latestDate = maturityDate;
-            pillarDate_ = maturityDate;
+            pillarDate = maturityDate;
             break;
         case LastRelevantDate:
-            latestDate = latestRelevant;
-            pillarDate_ = latestRelevant;
+            pillarDate = latestRelevantDate;
             break;
         case CustomDate:
-            QL.require(pillarDate_ != null && !pillarDate_.isNull(), "custom pillar date must be provided");
-            QL.require(pillarDate_.ge(earliestDate), "pillar date (" + pillarDate_ + ") must be later than or "
+            // pillarDate already assigned at construction time
+            QL.require(pillarDate != null && !pillarDate.isNull(), "custom pillar date must be provided");
+            QL.require(pillarDate.ge(earliestDate), "pillar date (" + pillarDate + ") must be later than or "
                     + "equal to the instrument's earliest date (" + earliestDate + ")");
-            QL.require(pillarDate_.le(latestRelevant), "pillar date (" + pillarDate_ + ") must be before or "
-                    + "equal to the instrument's latest relevant date (" + latestRelevant + ")");
-            latestDate = latestRelevant;
+            QL.require(pillarDate.le(latestRelevantDate), "pillar date (" + pillarDate + ") must be before or "
+                    + "equal to the instrument's latest relevant date (" + latestRelevantDate + ")");
             break;
         default:
             throw new LibraryException("unknown Pillar::Choice");
@@ -373,14 +373,6 @@ public class OISRateHelper extends RelativeDateRateHelper {
      */
     public OvernightIndexedSwap swap() {
         return swap_;
-    }
-
-    /**
-     * @return the pillar date used as the curve-node anchor for this helper. Mirrors C++
-     * {@code BootstrapHelper::pillarDate()}.
-     */
-    public Date pillarDate() {
-        return pillarDate_;
     }
 
     @Override

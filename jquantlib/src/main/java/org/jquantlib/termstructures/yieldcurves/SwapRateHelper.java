@@ -362,18 +362,34 @@ public class SwapRateHelper extends RelativeDateRateHelper {
         }
         this.swap = mvs.value();
 
+        // Port of C++ v1.43 ratehelpers.cpp:584-613:
+        //   earliestDate_ = swap_->startDate();
+        //   maturityDate_ = swap_->maturityDate();
+        //   latestRelevantDate_ = std::max(maturityDate_, lastCoupon->fixingEndDate());
+        //   <pillar switch>
+        //   latestDate_ = pillarDate_;      // backward compatibility
+        // Java has no Pillar::Choice on this helper yet, so the pillar is the
+        // C++ default (Pillar::LastRelevantDate) and pillarDate == latestRelevantDate.
         this.earliestDate = swap.startDate();
+        this.maturityDate = swap.maturityDate();
 
         // Usually...
-        this.latestDate = swap.maturityDate();
+        this.latestRelevantDate = this.maturityDate;
 
-        // ...but due to adjustments, the last floating coupon might need a later date for fixing
+        // ...but due to adjustments, the last floating coupon might need a later date for fixing.
+        // C++ reads IborCoupon::fixingEndDate(), which equals index.maturityDate(fixingValueDate)
+        // under indexed coupons and the (earlier) par-coupon approximation otherwise; Java's
+        // IborCoupon exposes no fixingEndDate(), so the indexed-coupon branch is reconstructed
+        // here and the par-coupon branch leaves latestRelevantDate at the maturity date.
         if ( new Settings().isUseIndexedCoupon() ) {
             final FloatingRateCoupon lastFloating = (FloatingRateCoupon) this.swap.floatingLeg().last();
             final Date fixingValueDate = this.iborIndex.valueDate(lastFloating.fixingDate());
             final Date endValueDate = this.iborIndex.maturityDate(fixingValueDate);
-            this.latestDate = Date.max(latestDate, endValueDate);
+            this.latestRelevantDate = Date.max(this.latestRelevantDate, endValueDate);
         }
+
+        this.pillarDate = this.latestRelevantDate;
+        this.latestDate = this.pillarDate; // backward compatibility
     }
 
     /**

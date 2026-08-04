@@ -205,7 +205,14 @@ public class DepositRateHelper extends RelativeDateRateHelper {
             // Date-based path: caller-supplied fixingDate; derive earliestDate from it.
             this.earliestDate = this.iborIndex.valueDate(this.fixingDate);
         }
-        this.latestDate = this.iborIndex.maturityDate(earliestDate);
+        // C++ v1.43 ratehelpers.cpp:239-240:
+        //   maturityDate_ = iborIndex_->maturityDate(earliestDate_);
+        //   pillarDate_ = latestDate_ = latestRelevantDate_ = maturityDate_;
+        // A deposit has no notion of a relevant date past its pillar.
+        this.maturityDate = this.iborIndex.maturityDate(earliestDate);
+        this.pillarDate = this.maturityDate;
+        this.latestDate = this.maturityDate;
+        this.latestRelevantDate = this.maturityDate;
     }
 
     //

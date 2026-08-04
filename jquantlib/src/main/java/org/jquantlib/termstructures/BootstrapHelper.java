@@ -74,6 +74,28 @@ public abstract class BootstrapHelper< TS extends TermStructure >
     protected TS termStructure;
     protected Date earliestDate;
     protected Date latestDate;
+    /**
+     * Instrument's maturity date. Unset ({@code null} / null date) means "same as {@link #latestRelevantDate()}".
+     * <p>
+     * Mirrors C++ v1.43 {@code BootstrapHelper::maturityDate_} ({@code ql/termstructures/bootstraphelper.hpp:112}).
+     */
+    protected Date maturityDate;
+    /**
+     * Latest date at which data are needed by the helper in order to provide a quote. It does <i>not</i> necessarily
+     * equal the instrument's maturity, nor the pillar the curve node is placed at: an instrument whose last cashflow
+     * pays after its pillar (payment lag, payment-calendar adjustment) still requires the curve to reach that far.
+     * Unset means "same as {@link #latestDate()}".
+     * <p>
+     * Mirrors C++ v1.43 {@code BootstrapHelper::latestRelevantDate_}
+     * ({@code ql/termstructures/bootstraphelper.hpp:112}).
+     */
+    protected Date latestRelevantDate;
+    /**
+     * Date the curve node for this helper is placed at. Unset means "same as {@link #latestDate()}".
+     * <p>
+     * Mirrors C++ v1.43 {@code BootstrapHelper::pillarDate_} ({@code ql/termstructures/bootstraphelper.hpp:112}).
+     */
+    protected Date pillarDate;
 
     public BootstrapHelper(final Handle< Quote > quote) {
         this.quote = quote;
@@ -103,11 +125,59 @@ public abstract class BootstrapHelper< TS extends TermStructure >
         return this.earliestDate;
     }
 
+    /**
+     * Instrument's maturity date.
+     * <p>
+     * Mirrors C++ v1.43 {@code BootstrapHelper::maturityDate()}
+     * ({@code ql/termstructures/bootstraphelper.hpp:168-173}): falls back to {@link #latestRelevantDate()} when the
+     * helper did not set a distinct maturity.
+     */
+    public Date maturityDate() {
+        if ( this.maturityDate == null || this.maturityDate.isNull() )
+            return latestRelevantDate();
+        return this.maturityDate;
+    }
+
+    /**
+     * Latest date at which data are needed by the helper in order to provide a quote — i.e. how far the bootstrapped
+     * curve must actually reach for this instrument, which may be past its {@link #pillarDate()}.
+     * <p>
+     * Mirrors C++ v1.43 {@code BootstrapHelper::latestRelevantDate()}
+     * ({@code ql/termstructures/bootstraphelper.hpp:175-180}): defaults to {@link #latestDate()}, so helpers that do
+     * not distinguish the two are unaffected.
+     */
+    public Date latestRelevantDate() {
+        if ( this.latestRelevantDate == null || this.latestRelevantDate.isNull() )
+            return latestDate();
+        return this.latestRelevantDate;
+    }
+
+    /**
+     * Date the curve node for this helper is placed at by the bootstrap.
+     * <p>
+     * Mirrors C++ v1.43 {@code BootstrapHelper::pillarDate()}
+     * ({@code ql/termstructures/bootstraphelper.hpp:182-187}): defaults to {@link #latestDate()}, so helpers that do
+     * not distinguish the two are unaffected.
+     */
+    public Date pillarDate() {
+        if ( this.pillarDate == null || this.pillarDate.isNull() )
+            return latestDate();
+        return this.pillarDate;
+    }
+
     //
     // implements Observer
     //
 
+    /**
+     * Equal to {@link #pillarDate()} when the helper only set a pillar.
+     * <p>
+     * Mirrors C++ v1.43 {@code BootstrapHelper::latestDate()}
+     * ({@code ql/termstructures/bootstraphelper.hpp:189-194}).
+     */
     public Date latestDate() {
+        if ( this.latestDate == null || this.latestDate.isNull() )
+            return this.pillarDate;
         return this.latestDate;
     }
 

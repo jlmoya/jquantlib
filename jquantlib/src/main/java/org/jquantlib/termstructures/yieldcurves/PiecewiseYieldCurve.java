@@ -520,6 +520,11 @@ public class PiecewiseYieldCurve< T extends Traits, I extends Interpolator, B ex
     }
 
     @Override
+    public void setMaxDate(final Date maxDate) {
+        baseCurve.setMaxDate(maxDate);
+    }
+
+    @Override
     public Interpolation interpolation() {
         return baseCurve.interpolation();
     }

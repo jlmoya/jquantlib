@@ -145,9 +145,10 @@ public class LocalBootstrap< Curve extends PiecewiseYieldCurve > implements Boot
         Arrays.sort(ts_.instruments(), new BootstrapHelperSorter());
 
         // check that there is no instruments with the same maturity
+        // C++ v1.43 localbootstrap.hpp:145-146 compares pillarDate().
         for (int i = 1; i < nInsts; ++i ) {
-            final Date m1 = ts_.instruments()[i - 1].latestDate();
-            final Date m2 = ts_.instruments()[i].latestDate();
+            final Date m1 = ts_.instruments()[i - 1].pillarDate();
+            final Date m2 = ts_.instruments()[i].pillarDate();
             QL.require(!m1.eq(m2), "two instruments have the same maturity");
         }
 
@@ -155,7 +156,7 @@ public class LocalBootstrap< Curve extends PiecewiseYieldCurve > implements Boot
         for (int i = 0; i < nInsts; ++i ) {
             QL.require(ts_.instruments()[i].quoteIsValid(),
                     " instrument #%d (maturity: %s) has invalid quote", i + 1,
-                    ts_.instruments()[i].latestDate());
+                    ts_.instruments()[i].pillarDate());
         }
 
         // setup instruments
@@ -187,7 +188,8 @@ public class LocalBootstrap< Curve extends PiecewiseYieldCurve > implements Boot
         ts_.setTimes(times);
 
         for (int i = 0; i < nInsts; ++i ) {
-            ts_.dates()[i + 1] = ts_.instruments()[i].latestDate();
+            // C++ v1.43 localbootstrap.hpp:182 — nodes go at pillarDate().
+            ts_.dates()[i + 1] = ts_.instruments()[i].pillarDate();
             ts_.times()[i + 1] = ts_.timeFromReference(ts_.dates()[i + 1]);
             if ( !validCurve_ ) {
                 ts_.data()[i + 1] = ts_.data()[i];
