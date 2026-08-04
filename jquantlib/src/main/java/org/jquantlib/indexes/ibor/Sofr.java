@@ -49,7 +49,12 @@ import org.jquantlib.time.calendars.UnitedStates;
 public class Sofr extends OvernightIndex {
 
     public Sofr(final Handle< YieldTermStructure > h) {
-        super("SOFR", 0, new USDCurrency(), new UnitedStates(UnitedStates.Market.GOVERNMENTBOND), new Actual360(), h);
+        // C++ v1.43 ql/indexes/ibor/sofr.cpp:27-30 uses UnitedStates(UnitedStates::SOFR),
+        // i.e. the government-bond calendar plus the Good Friday closure — not the plain
+        // government-bond calendar. The distinction is load-bearing: Good Friday is the one
+        // day that is a SOFR fixing holiday but a Federal Reserve business day, so it drives
+        // the value-date schedule of any coupon spanning it.
+        super("SOFR", 0, new USDCurrency(), new UnitedStates(UnitedStates.Market.SOFR), new Actual360(), h);
     }
 
     public Sofr() {
