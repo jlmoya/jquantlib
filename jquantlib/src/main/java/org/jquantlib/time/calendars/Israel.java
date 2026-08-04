@@ -78,6 +78,9 @@ public class Israel extends Calendar {
         case TASE:
             impl = new TelAvivImpl();
             break;
+        case Telbor:
+            impl = new TelborImpl();
+            break;
         case SHIR:
             impl = new ShirImpl();
             break;
@@ -97,10 +100,12 @@ public class Israel extends Calendar {
          */
         @Deprecated(forRemoval = true)
         Settlement,
-        /** Tel-Aviv stock exchange calendar */
+        /** Tel-Aviv stock exchange calendar (Fri/Sat weekends pre-2026, Sat/Sun afterwards) */
         TASE,
-        /** SHIR fixing calendar */
-        SHIR
+        /** SHIR fixing calendar (Sat/Sun weekends) */
+        SHIR,
+        /** Telbor fixing calendar (Sat/Sun weekends). New in C++ QuantLib v1.43. */
+        Telbor
     }
 
     //
@@ -564,6 +569,76 @@ public class Israel extends Calendar {
                     || (d == 1 && m == November && y == 2022)
                     || (d == 2 && m == January && y == 2023)
                     || (d == 10 && m == April && y == 2023)) {
+                return false;
+            }
+            return true;
+        }
+    }
+    /**
+     * Telbor fixing calendar, new in C++ QuantLib v1.43
+     * ({@code ql/time/calendars/israel.cpp}, {@code Israel::TelborImpl}).
+     * <p>
+     * Distinct from both siblings: it keeps a Saturday+Sunday weekend like SHIR, but observes a different holiday set
+     * — notably Shushan Purim, Passover VII, Simchat Torah and a set of one-off election and abroad-holiday closings
+     * that SHIR does not share.
+     */
+    private final class TelborImpl extends Impl {
+
+        @Override
+        public String name() {
+            return "Telbor fixing calendar";
+        }
+
+        @Override
+        public boolean isWeekend(final Weekday w) {
+            return w == Weekday.Saturday || w == Weekday.Sunday;
+        }
+
+        @Override
+        public boolean isBusinessDay(final Date date) {
+            final Weekday w = date.weekday();
+            final int d = date.dayOfMonth();
+            final Month m = date.month();
+            final int y = date.year();
+
+            if (isWeekend(w)
+                    // New Year's Day
+                    || (d == 1 && m == Month.January)
+                    // General Elections
+                    || (((d == 9 && m == Month.April) || (d == 17 && m == Month.September)) && y == 2019)
+                    || (d == 2 && m == Month.March && y == 2020)
+                    // Holiday abroad
+                    || (((d == 22 && m == Month.April) || (d == 27 && m == Month.May)) && y == 2019)
+                    || ((((d == 10 || d == 13) && m == Month.April)
+                            || ((d == 8 || d == 25) && m == Month.May)) && y == 2020)
+                    // Purim
+                    || isPurim(date)
+                    || isPurim(date.sub(1)) // Shushan Purim
+                    // Passover I and Passover VII
+                    || isPassover1st(date.add(1)) // Eve of Passover
+                    || isPassover1st(date)
+                    || isPassover1st(date.sub(6)) // Passover VII
+                    // Israel Independence Day
+                    || isIndependenceDay(date)
+                    // Feast of Shavuot (Pentecost)
+                    || isShavuot(date)
+                    // Fast of Ninth of Av
+                    || isFastDay(date)
+                    // Jewish New Year (Rosh Hashanah)
+                    || isNewYearsDay(date)
+                    || isNewYearsDay(date.sub(1)) // 2nd day of new year
+                    // Day of Atonement (Yom Kippur)
+                    || isYomKippur(date)
+                    // First Day of Sukkot (Tabernacles)
+                    || isSukkot(date)
+                    // Rejoicing of the Law Festival (Simchat Torah)
+                    || isSimchatTorah(date)
+                    // last Monday of May (Spring Bank Holiday)
+                    || (d >= 25 && w == Weekday.Monday && m == Month.May && y != 2002 && y != 2012)
+                    // Christmas
+                    || (d == 25 && m == Month.December)
+                    // Day of Goodwill (Boxing Day)
+                    || (d == 26 && m == Month.December && y >= 2000 && y != 2020)) {
                 return false;
             }
             return true;

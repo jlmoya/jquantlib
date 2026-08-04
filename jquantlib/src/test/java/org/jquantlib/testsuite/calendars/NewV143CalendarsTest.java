@@ -33,6 +33,7 @@ import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Month;
 import org.jquantlib.time.calendars.Croatia;
+import org.jquantlib.time.calendars.Israel;
 import org.jquantlib.time.calendars.Malta;
 import org.jquantlib.time.calendars.Montenegro;
 import org.jquantlib.time.calendars.NorthMacedonia;
@@ -134,5 +135,19 @@ public class NewV143CalendarsTest {
     public void testUzbekistan() {
         QL.info("Testing Uzbekistan (UZSE) calendar against C++ v1.43...");
         checkAgainstCpp("uzbekistan", new Uzbekistan());
+    }
+    /**
+     * The Telbor fixing calendar, new in C++ QuantLib v1.43. It shares Israel's Jewish-holiday tables with TASE and
+     * SHIR but observes a different subset — Shushan Purim, Passover VII, Simchat Torah and a handful of one-off
+     * election and abroad-holiday closings — so pinning all three markets together is what proves the right table is
+     * wired to the right market.
+     */
+    @Test
+    public void testIsraelMarkets() {
+        QL.info("Testing the Israel calendar markets, including v1.43's Telbor, against C++...");
+        checkAgainstCpp("israel", new Israel());
+        checkAgainstCpp("israel_tase", new Israel(Israel.Market.TASE));
+        checkAgainstCpp("israel_shir", new Israel(Israel.Market.SHIR));
+        checkAgainstCpp("israel_telbor", new Israel(Israel.Market.Telbor));
     }
 }
