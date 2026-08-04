@@ -228,10 +228,14 @@ public class OvernightLeg {
         final Leg cashflows = new Leg();
         final DayCounter dc = paymentDayCounter_.empty() ? overnightIndex_.dayCounter() : paymentDayCounter_;
 
-        // Resolve the payment calendar the way C++ does (overnightindexedcoupon.cpp:578-588):
-        // schedule calendar first, then the explicitly-set payment calendar, then
-        // WeekendsOnly. A Schedule built from a bare date vector carries no calendar, so
-        // without the fallback a weekend payment date would be left unadjusted.
+        // Resolve the payment calendar the way C++ does (overnightindexedcoupon.cpp:578-588): schedule calendar
+        // first, then the explicitly-set payment calendar, then WeekendsOnly.
+        //
+        // The WeekendsOnly rung is near-unreachable in practice, in C++ as much as here: Schedule's date-list
+        // constructor defaults to NullCalendar (which is not empty), so only a Schedule built with an explicitly
+        // empty Calendar reaches it. It is ported anyway because C++ has it, and because the rung that DOES matter
+        // is the last one — the port previously seeded paymentCalendar_ from the schedule in the constructor, which
+        // is not what C++ does and loses the distinction between "no payment calendar given" and "the schedule's".
         Calendar calendar = schedule_.calendar();
         Calendar paymentCalendar = paymentCalendar_;
         if ( calendar.empty() ) {
