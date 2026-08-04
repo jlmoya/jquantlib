@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Ground-truth coverage audit: every C++ QuantLib class vs every ported Java class.
 
-Denominator = the pinned C++ submodule (ql/**/*.hpp at v1.42.1 @ 099987f0).
+Denominator = the pinned C++ submodule (ql/**/*.hpp), whatever it is pinned to.
+             Currently v1.43 @ 6b57206e. The scan reads the submodule live, so this
+             line is documentation only -- but keep it honest, it drifted once.
 Match key  = class/struct NAME. QuantLib -> JQuantLib preserves PascalCase class
              names (only package paths differ). A C++ `class ClaytonCopula` is
              "ported" iff some Java file declares `class|interface|enum|record
@@ -16,7 +18,7 @@ a reproducible proxy, not gospel -- but it is the denominator we drive to zero.
 (a) ported (a Java class of the same name exists), or (b) on the reviewed ALLOWLIST
 below with a one-line rationale. The ALLOWLIST captures verified false-positives of
 the exact-name match (case-renames, inner classes, C++-only template idioms,
-traits/policy structs folded into Java generics, classes commented-out in v1.42.1).
+traits/policy structs folded into Java generics, classes commented out upstream).
 Full evidence record: docs/migration/gap-classification-ledger.md.
 
 Run from the jquantlib repo root.
@@ -50,7 +52,7 @@ JAVA_DECL = re.compile(
 # realizes it as an inner class/enum/static-factory/Arguments/Results); cpp-idiom
 # (C++ template/CRTP/proxy/tag/policy/detail-helper with no Java runtime analog);
 # traits-folded (C++ traits/policy struct folded into Java generics); and
-# commented-out-upstream (the class is inside /* */ or // in v1.42.1).
+# commented-out-upstream (the class is inside /* */ or // upstream).
 #
 # NOTHING is allowlisted silently: adding an entry here is a reviewed decision with
 # a stated reason. The 42 genuinely-missing classes are NOT here -- they get ported.
@@ -151,7 +153,7 @@ ALLOWLIST = {
     "SwapCashFlows": "traits-folded -> experimental.basismodels.SwaptionCashFlows (base fields collapsed)",
     "MixedInterpolation": "traits-folded -> MixedLinearCubicInterpolation.Behavior enum-holder",
 
-    # --- commented-out-upstream: inside /* */ or // in v1.42.1 (never compiled) ---
+    # --- commented-out-upstream: inside /* */ or // upstream (never compiled) ---
     "RatchetPayoff_2": "commented-out-upstream -> instruments/stickyratchet.hpp:168-227 block comment",
     "StickyPayoff_2": "commented-out-upstream -> instruments/stickyratchet.hpp:168-227 block comment",
     "StickyRatchetPayoff": "commented-out-upstream -> instruments/stickyratchet.hpp:168-227 block comment",

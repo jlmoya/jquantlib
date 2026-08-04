@@ -159,8 +159,15 @@ public class Currency implements Cloneable {
     //
 
     protected boolean fEquals(Currency other) {
-        if ( this.empty() && other.empty() )
-            return true;
+        // Both branches are needed. C++ is
+        //   (c1.empty() && c2.empty()) || (!c1.empty() && !c2.empty() && c1.name() == c2.name())
+        // (ql/currency.hpp:179-182). Java tested only the both-empty case and then fell through to name(),
+        // which dereferences a null `data` — so comparing an empty currency with a real one threw a
+        // NullPointerException instead of returning false. That combination is not exotic: v1.43's
+        // cross-currency rate helpers deliberately give one leg an empty Currency.
+        if ( this.empty() || other.empty() ) {
+            return this.empty() && other.empty();
+        }
         return this.name().equals(other.name());
     }
 

@@ -91,6 +91,12 @@ int main() {
     emit(out, DASHCurrency());
     emit(out, ZECCurrency());
 
+    // New in v1.43, alongside the North Macedonia and Uzbekistan calendars.
+    // The calendars were ported and tested before their currencies existed,
+    // which is exactly the gap the coverage audit caught.
+    emit(out, MKDCurrency());
+    emit(out, UZSCurrency());
+
     out.write();
     return 0;
 }

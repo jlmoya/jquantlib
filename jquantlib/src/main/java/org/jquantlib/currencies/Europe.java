@@ -216,6 +216,21 @@ public class Europe {
      *
      * @category currencies
      */
+    /**
+     * Macedonian denar. The ISO three-letter code is MKD; the numeric code is 807. It is divided in 100 deni.
+     * <p>
+     * New in C++ QuantLib v1.43, alongside the North Macedonia calendar.
+     *
+     * @category currencies
+     */
+    public static class MKDCurrency extends Currency {
+        public MKDCurrency() {
+            final Data mkdData = new Data("Macedonian denar", "MKD", 807, "den", "", 100, new Rounding(),
+                    "%3% %1$.2f");
+            data = mkdData;
+        }
+    }
+
     public static class NOKCurrency extends Currency {
         public NOKCurrency() {
             Data nokData = new Data("Norwegian krone", "NOK", 578, "NKr", "", 100, new Rounding(), "%3% %1$.2f");

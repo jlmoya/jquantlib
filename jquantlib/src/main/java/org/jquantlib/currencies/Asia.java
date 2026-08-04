@@ -453,4 +453,18 @@ public class Asia {
         }
     }
 
+    /**
+     * Uzbekistani som. The ISO three-letter code is UZS; the numeric code is 860. It is divided in 100 tiyin.
+     * <p>
+     * New in C++ QuantLib v1.43, alongside the Uzbekistan calendar.
+     *
+     * @category currencies
+     */
+    public static class UZSCurrency extends Currency {
+        public UZSCurrency() {
+            final Data uzsData = new Data("Uzbekistani Som", "UZS", 860, "UZS", "", 100, new Rounding(),
+                    "%3% %1$.2f");
+            data = uzsData;
+        }
+    }
 }
