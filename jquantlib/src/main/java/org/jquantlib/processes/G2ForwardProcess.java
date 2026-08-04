@@ -39,8 +39,13 @@
 
 package org.jquantlib.processes;
 
+import org.jquantlib.QL;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.matrixutilities.Matrix;
+import org.jquantlib.quotes.Handle;
+import org.jquantlib.termstructures.Compounding;
+import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.time.Frequency;
 
 /**
  * Forward G2 stochastic process.
@@ -48,7 +53,14 @@ import org.jquantlib.math.matrixutilities.Matrix;
  * The {@link G2Process} expressed under the {@code T_}-forward measure: each
  * factor's drift is shifted by a deterministic forward-measure adjustment, and
  * the expectation is corrected by the {@code Mx_T} / {@code My_T} convexity
- * terms. Mirrors C++ v1.42.1 {@code ql/processes/g2process.cpp:127-222}.
+ * terms.
+ * <p>
+ * As in {@link G2Process}, the simulated state is shifted so that
+ * {@latex$ state[0] + state[1] = r(t) }, on top of the usual T-forward convexity adjustments to the drift and
+ * the conditional expectation. With an empty term-structure handle the process degenerates to the pre-v1.43
+ * behaviour exactly.
+ * <p>
+ * Mirrors C++ v1.43 {@code ql/processes/g2process.{hpp,cpp}}.
  *
  * @author Banca Profilo S.p.A. (C++); JQuantLib migration contributors (Java)
  * @category processes
@@ -64,9 +76,21 @@ public class G2ForwardProcess extends ForwardMeasureProcess {
     protected final /* @Real */ double rho_;
     protected final OrnsteinUhlenbeckProcess xProcess_;
     protected final OrnsteinUhlenbeckProcess yProcess_;
+    protected final Handle< YieldTermStructure > termStructure_;
 
+    /**
+     * Parameter-only constructor: no term structure, {@latex$ \varphi \equiv 0 }.
+     * <p>
+     * Mirrors the C++ v1.43 default argument {@code const Handle<YieldTermStructure>& termStructure = {}}.
+     */
     public G2ForwardProcess(final /* @Real */ double a, final /* @Real */ double sigma,
             final /* @Real */ double b, final /* @Real */ double eta, final /* @Real */ double rho) {
+        this(a, sigma, b, eta, rho, new Handle< YieldTermStructure >());
+    }
+
+    public G2ForwardProcess(final /* @Real */ double a, final /* @Real */ double sigma,
+            final /* @Real */ double b, final /* @Real */ double eta, final /* @Real */ double rho,
+            final Handle< YieldTermStructure > termStructure) {
         // C++ default-constructs the base; G2ForwardProcess overrides every
         // discretization consumer, so the supplied EulerDiscretization is
         // never exercised (matches C++ including <eulerdiscretization.hpp>).
@@ -78,6 +102,10 @@ public class G2ForwardProcess extends ForwardMeasureProcess {
         this.rho_ = rho;
         this.xProcess_ = new OrnsteinUhlenbeckProcess(a, sigma, 0.0);
         this.yProcess_ = new OrnsteinUhlenbeckProcess(b, eta, 0.0);
+        this.termStructure_ = termStructure;
+        // C++ registerWith(termStructure_): the handle is observed even when empty, so a later linkTo()
+        // still propagates.
+        this.termStructure_.addObserver(this);
     }
 
     //
@@ -91,14 +119,23 @@ public class G2ForwardProcess extends ForwardMeasureProcess {
 
     @Override
     public Array initialValues() {
-        return new Array(new double[] { x0_, y0_ });
+        final /* @Real */ double z1_0 = termStructure_.empty() ? x0_ : phi(0.0);
+        return new Array(new double[] { z1_0, y0_ });
     }
 
     @Override
-    public Array drift(final /* @Time */ double t, final Array x) {
+    public Array drift(final /* @Time */ double t, final Array z) {
+        double /* @Real */ shiftDrift = 0.0;
+        if ( !termStructure_.empty() ) {
+            final /* @Real */ double h = 1.0e-4;
+            final /* @Real */ double phi_t = phi(t);
+            final /* @Real */ double phi_th = phi(t + h);
+            final /* @Real */ double phiPrime = (phi_th - phi_t) / h;
+            shiftDrift = a_ * phi_t + phiPrime;
+        }
         return new Array(new double[] {
-                xProcess_.drift(t, x.get(0)) + xForwardDrift(t, T_),
-                yProcess_.drift(t, x.get(1)) + yForwardDrift(t, T_)
+                xProcess_.drift(t, z.get(0)) + xForwardDrift(t, T_) + shiftDrift,
+                yProcess_.drift(t, z.get(1)) + yForwardDrift(t, T_)
         });
     }
 
@@ -115,10 +152,14 @@ public class G2ForwardProcess extends ForwardMeasureProcess {
     }
 
     @Override
-    public Array expectation(final /* @Time */ double t0, final Array x0, final /* @Time */ double dt) {
+    public Array expectation(final /* @Time */ double t0, final Array z0, final /* @Time */ double dt) {
+        double /* @Real */ shiftExp = 0.0;
+        if ( !termStructure_.empty() ) {
+            shiftExp = phi(t0 + dt) - phi(t0) * Math.exp(-a_ * dt);
+        }
         return new Array(new double[] {
-                xProcess_.expectation(t0, x0.get(0), dt) - Mx_T(t0, t0 + dt, T_),
-                yProcess_.expectation(t0, x0.get(1), dt) - My_T(t0, t0 + dt, T_)
+                xProcess_.expectation(t0, z0.get(0), dt) - Mx_T(t0, t0 + dt, T_) + shiftExp,
+                yProcess_.expectation(t0, z0.get(1), dt) - My_T(t0, t0 + dt, T_)
         });
     }
 
@@ -183,6 +224,42 @@ public class G2ForwardProcess extends ForwardMeasureProcess {
         M += -(rho_ * sigma_ * eta_) / (a_ * (a_ + b_))
                 * (Math.exp(-a_ * (T - t)) - Math.exp(-a_ * T - b_ * t + (a_ + b_) * s));
         return M;
+    }
+
+    //
+    // inspectors (C++ v1.43 additions)
+    //
+
+    public Handle< YieldTermStructure > termStructure() {
+        return termStructure_;
+    }
+
+    /**
+     * Deterministic offset {@latex$ \varphi(t) } that fits the initial term structure.
+     * <p>
+     * Identical to {@link G2Process#phi(double)}; duplicated here exactly as C++ v1.43 does, because
+     * {@code G2ForwardProcess} does not derive from {@code G2Process}.
+     *
+     * @throws org.jquantlib.lang.exceptions.LibraryException if no term structure was supplied
+     */
+    public /* @Real */ double phi(final /* @Time */ double t) {
+        QL.require(!termStructure_.empty(), "no term structure given to G2ForwardProcess");
+        final /* @Rate */ double forward = termStructure_.currentLink()
+                .forwardRate(t, t, Compounding.Continuous, Frequency.NoFrequency).rate();
+        final /* @Real */ double temp1 = sigma_ * (1.0 - Math.exp(-a_ * t)) / a_;
+        final /* @Real */ double temp2 = eta_ * (1.0 - Math.exp(-b_ * t)) / b_;
+        return 0.5 * temp1 * temp1 + 0.5 * temp2 * temp2 + rho_ * temp1 * temp2 + forward;
+    }
+
+    /**
+     * Short rate implied by the simulated state: {@latex$ r = z_1 + z_2 }.
+     * <p>
+     * The {@code t} argument is unused; it is kept to mirror the C++ signature.
+     */
+    @SuppressWarnings("unused")
+    public /* @Rate */ double shortRate(final /* @Time */ double t,
+            final /* @Real */ double z1, final /* @Real */ double z2) {
+        return z1 + z2;
     }
 
 }
