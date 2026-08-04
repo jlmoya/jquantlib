@@ -67,12 +67,12 @@ public class IntegralHestonVarianceOptionEngineTest {
 
     @Test
     public void qlts_call_v0_2_0_T_1_5_K_0_05() {
-        runCase("qlts_call_v0_2.0_T_1.5_K_0.05", 1.0e-7);
+        runCase("upstream_call_v0_2.0_T_1.5_K_0.05", 1.0e-7);
     }
 
     @Test
     public void qlts_put_v0_1_5_T_1_0_K_0_7() {
-        runCase("qlts_put_v0_1.5_T_1.0_K_0.7", 1.0e-7);
+        runCase("upstream_put_v0_1.5_T_1.0_K_0.7", 1.0e-7);
     }
 
     @Test
@@ -92,8 +92,52 @@ public class IntegralHestonVarianceOptionEngineTest {
     }
 
     @Test
-    public void call_v0_2_0_T_1_0_K_0_20_n100() {
-        runCase("call_v0_2.0_T_1.0_K_0.20_n100", 1.0e-5);
+    public void put_v0_2_0_T_1_5_K_1_0() {
+        runCase("put_v0_2.0_T_1.5_K_1.0", 1.0e-7);
+    }
+
+    @Test
+    public void call_rho_zero() {
+        runCase("call_rho_zero", 1.0e-7);
+    }
+
+    @Test
+    public void call_high_kappa() {
+        runCase("call_high_kappa", 1.0e-7);
+    }
+
+    /**
+     * v1.43 requires the process's dividend handle to be <em>empty</em>, not merely flat-zero: the engine's analytic
+     * formula has no dividend term, so a supplied curve would be silently ignored. Refusing it is the point, and a
+     * zero yield is not the same thing as no curve.
+     */
+    @Test
+    public void rejectsNonEmptyDividendHandle() {
+        final Case c = REF.getCase("rejects_non_empty_dividend_handle");
+        final boolean expectedToThrow = ((JSONObject) c.expectedRaw()).getBoolean("throws");
+
+        final Date eval = Date.todaysDate();
+        new Settings().setEvaluationDate(eval);
+        final DayCounter dc = new Actual360();
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                new FlatForward(eval, 0.0, dc, Compounding.Continuous));
+        final Handle<YieldTermStructure> flatZeroDividend = new Handle<YieldTermStructure>(
+                new FlatForward(eval, 0.0, dc, Compounding.Continuous));
+        final Handle<Quote> s0 = new Handle<Quote>(new SimpleQuote(1.0));
+
+        final HestonProcess proc = new HestonProcess(rTS, flatZeroDividend, s0, 2.0, 2.0, 0.01, 0.1, -0.5);
+        final VarianceOption opt = new VarianceOption(new PlainVanillaPayoff(Option.Type.Call, 0.05), 1.0, eval,
+                eval.add(540));
+        opt.setPricingEngine(new IntegralHestonVarianceOptionEngine(proc));
+
+        boolean threw = false;
+        try {
+            opt.NPV();
+        } catch ( final RuntimeException e ) {
+            threw = true;
+        }
+        assertTrue("a flat-zero dividend curve must be rejected just like any other non-empty handle",
+                threw == expectedToThrow);
     }
 
     private void runCase(final String name, final double absRelTol) {
@@ -107,20 +151,17 @@ public class IntegralHestonVarianceOptionEngineTest {
         final double rho = in.getDouble("rho");
         final double strike = in.getDouble("strike");
         final double nominal = in.getDouble("nominal");
-        final int days = in.getInt("days_to_maturity");
+        final int days = in.getInt("daysToMaturity");
         final String typeStr = in.getString("type");
 
         final Date eval = Date.todaysDate();
         new Settings().setEvaluationDate(eval);
 
         final DayCounter dc = new Actual360();
-        // Java HestonProcess does not accept an empty handle; pass a flat-zero
-        // dividend curve to mirror the C++ probe's behaviour (q = 0). The
-        // engine itself ignores dividends in the analytic formula.
         final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
                 new FlatForward(eval, 0.0, dc, Compounding.Continuous));
-        final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
-                new FlatForward(eval, 0.0, dc, Compounding.Continuous));
+        // Empty, not flat-zero: v1.43's guard is on the handle, and the probe builds it the same way.
+        final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>();
         final Handle<Quote> s0 = new Handle<Quote>(new SimpleQuote(1.0));
 
         final HestonProcess proc = new HestonProcess(rTS, qTS, s0,

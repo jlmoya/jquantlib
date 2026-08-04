@@ -214,11 +214,18 @@ public class MakeVanillaSwap {
             startDate = effectiveDate;
         } else {
             Date refDate = new Settings().evaluationDate();
-            refDate = floatCalendar.adjust(refDate);
+            // v1.43: which calendar pre-adjusts the reference date depends on which one then defines the spot date.
+            // Mirrors C++ {@code MakeVanillaSwap::operator VanillaSwap() const}
+            // ({@code ql/instruments/makevanillaswap.cpp:65-83}).
             final Date spotDate;
             if ( settlementDays == NULL_SETTLEMENT_DAYS ) {
+                // The spot date comes from the index, so pre-adjust on the index's fixing calendar — otherwise the
+                // adjustment and valueDate's own fixing-calendar advance can disagree.
+                refDate = iborIndex.fixingCalendar().adjust(refDate);
                 spotDate = iborIndex.valueDate(refDate);
             } else {
+                // An explicit settlement-day count is advanced on the float/payment calendar, so pre-adjust there.
+                refDate = floatCalendar.adjust(refDate);
                 spotDate = floatCalendar.advance(refDate, settlementDays, TimeUnit.Days);
             }
             startDate = spotDate.add(forwardStart);

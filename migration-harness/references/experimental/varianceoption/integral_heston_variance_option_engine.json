@@ -2,59 +2,68 @@
   "cases": [
     {
       "expected": {
-        "npv": 0.9104618669739757
+        "npv": 0.9104618669739757,
+        "throws": false
       },
       "inputs": {
-        "T_years": 1.5,
         "dayCounter": "Actual360",
-        "days_to_maturity": 540,
+        "daysToMaturity": 540,
+        "dividendHandle": "empty",
         "kappa": 2.0,
         "nominal": 1.0,
-        "r": 0.0,
         "rho": -0.5,
+        "riskFreeRate": 0.0,
         "sigma": 0.1,
+        "spot": 1.0,
         "strike": 0.05,
         "theta": 0.01,
+        "timeToMaturity": 1.5,
         "type": "Call",
         "v0": 2.0
       },
-      "name": "qlts_call_v0_2.0_T_1.5_K_0.05"
+      "name": "upstream_call_v0_2.0_T_1.5_K_0.05"
     },
     {
       "expected": {
-        "npv": 0.04667956357829118
+        "npv": 0.04667956357829118,
+        "throws": false
       },
       "inputs": {
-        "T_years": 1.0,
         "dayCounter": "Actual360",
-        "days_to_maturity": 360,
+        "daysToMaturity": 360,
+        "dividendHandle": "empty",
         "kappa": 2.0,
         "nominal": 1.0,
-        "r": 0.0,
         "rho": -0.5,
+        "riskFreeRate": 0.0,
         "sigma": 0.1,
+        "spot": 1.0,
         "strike": 0.7,
         "theta": 0.01,
+        "timeToMaturity": 1.0,
         "type": "Put",
         "v0": 1.5
       },
-      "name": "qlts_put_v0_1.5_T_1.0_K_0.7"
+      "name": "upstream_put_v0_1.5_T_1.0_K_0.7"
     },
     {
       "expected": {
-        "npv": 4.8087731942071665e-05
+        "npv": 4.8087731942071665e-05,
+        "throws": false
       },
       "inputs": {
-        "T_years": 1.0,
         "dayCounter": "Actual360",
-        "days_to_maturity": 360,
+        "daysToMaturity": 360,
+        "dividendHandle": "empty",
         "kappa": 2.0,
         "nominal": 1.0,
-        "r": 0.0,
         "rho": -0.5,
+        "riskFreeRate": 0.0,
         "sigma": 0.1,
+        "spot": 1.0,
         "strike": 0.5,
         "theta": 0.01,
+        "timeToMaturity": 1.0,
         "type": "Call",
         "v0": 1.0
       },
@@ -62,19 +71,22 @@
     },
     {
       "expected": {
-        "npv": 0.8967759393057075
+        "npv": 0.8967759393057075,
+        "throws": false
       },
       "inputs": {
-        "T_years": 2.0,
         "dayCounter": "Actual360",
-        "days_to_maturity": 720,
+        "daysToMaturity": 720,
+        "dividendHandle": "empty",
         "kappa": 2.0,
         "nominal": 1.0,
-        "r": 0.0,
         "rho": -0.5,
+        "riskFreeRate": 0.0,
         "sigma": 0.1,
+        "spot": 1.0,
         "strike": 0.1,
         "theta": 0.01,
+        "timeToMaturity": 2.0,
         "type": "Call",
         "v0": 2.0
       },
@@ -82,19 +94,22 @@
     },
     {
       "expected": {
-        "npv": 0.17592981382169964
+        "npv": 0.17592981382169964,
+        "throws": false
       },
       "inputs": {
-        "T_years": 0.5,
         "dayCounter": "Actual360",
-        "days_to_maturity": 180,
+        "daysToMaturity": 180,
+        "dividendHandle": "empty",
         "kappa": 2.0,
         "nominal": 1.0,
-        "r": 0.0,
         "rho": -0.5,
+        "riskFreeRate": 0.0,
         "sigma": 0.1,
+        "spot": 1.0,
         "strike": 0.3,
         "theta": 0.01,
+        "timeToMaturity": 0.5,
         "type": "Call",
         "v0": 1.5
       },
@@ -102,28 +117,87 @@
     },
     {
       "expected": {
-        "npv": 67.03413931795681
+        "npv": 0.0439954588027553,
+        "throws": false
       },
       "inputs": {
-        "T_years": 1.0,
         "dayCounter": "Actual360",
-        "days_to_maturity": 360,
+        "daysToMaturity": 540,
+        "dividendHandle": "empty",
         "kappa": 2.0,
-        "nominal": 100.0,
-        "r": 0.0,
+        "nominal": 1.0,
         "rho": -0.5,
+        "riskFreeRate": 0.0,
         "sigma": 0.1,
-        "strike": 0.2,
+        "spot": 1.0,
+        "strike": 1.0,
         "theta": 0.01,
+        "timeToMaturity": 1.5,
+        "type": "Put",
+        "v0": 2.0
+      },
+      "name": "put_v0_2.0_T_1.5_K_1.0"
+    },
+    {
+      "expected": {
+        "npv": 0.9104618669739757,
+        "throws": false
+      },
+      "inputs": {
+        "dayCounter": "Actual360",
+        "daysToMaturity": 540,
+        "dividendHandle": "empty",
+        "kappa": 2.0,
+        "nominal": 1.0,
+        "rho": 0.0,
+        "riskFreeRate": 0.0,
+        "sigma": 0.1,
+        "spot": 1.0,
+        "strike": 0.05,
+        "theta": 0.01,
+        "timeToMaturity": 1.5,
         "type": "Call",
         "v0": 2.0
       },
-      "name": "call_v0_2.0_T_1.0_K_0.20_n100"
+      "name": "call_rho_zero"
+    },
+    {
+      "expected": {
+        "npv": 0.36277984313926276,
+        "throws": false
+      },
+      "inputs": {
+        "dayCounter": "Actual360",
+        "daysToMaturity": 540,
+        "dividendHandle": "empty",
+        "kappa": 5.0,
+        "nominal": 1.0,
+        "rho": -0.5,
+        "riskFreeRate": 0.0,
+        "sigma": 0.1,
+        "spot": 1.0,
+        "strike": 0.05,
+        "theta": 0.01,
+        "timeToMaturity": 1.5,
+        "type": "Call",
+        "v0": 2.0
+      },
+      "name": "call_high_kappa"
+    },
+    {
+      "expected": {
+        "throws": true
+      },
+      "inputs": {
+        "dividendHandle": "flat zero curve",
+        "note": "empty is required; a zero yield is not the same thing"
+      },
+      "name": "rejects_non_empty_dividend_handle"
     }
   ],
-  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
-  "cpp_version": "1.42.1",
-  "generated_at": "2026-05-09T11:52:10Z",
+  "cpp_commit": "6b57206e04598f092efee66e3b367efc84771995",
+  "cpp_version": "1.43",
+  "generated_at": "2026-08-04T18:09:53Z",
   "generated_by": "integral_heston_variance_option_engine_probe",
   "test_group": "experimental/varianceoption/integral_heston_variance_option_engine"
 }

@@ -21,6 +21,7 @@
 // (date, amount, plus floating-leg fixing/accrual/discount) so the
 // Java port can compare cashflow-by-cashflow.
 
+#include <ql/version.hpp>
 #include <ql/cashflows/cashflows.hpp>
 #include <ql/cashflows/floatingratecoupon.hpp>
 #include <ql/cashflows/iborcoupon.hpp>
@@ -138,7 +139,7 @@ int main() {
 
     // === emit fingerprint ===
     ReferenceWriter w("instruments/swap_cached_value",
-                      "v1.42.1",
+                      QL_VERSION,
                       "swap_cached_value_probe.cpp");
 
     json inputs = {

@@ -38,6 +38,8 @@ import org.jquantlib.math.Constants;
 import org.jquantlib.math.Ops;
 import org.jquantlib.math.integrals.GaussHermiteIntegration;
 import org.jquantlib.math.interpolations.CubicInterpolation;
+import org.jquantlib.math.interpolations.FlatExtrapolator;
+import org.jquantlib.math.interpolations.Interpolation;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.matrixutilities.Matrix;
 import org.jquantlib.math.optimization.NoConstraint;
@@ -122,7 +124,7 @@ public class MarkovFunctional extends Gaussian1dModel {
     // ──────────────────────────────────────────────────────────────────────
     //   CalibrationPoint (mirrors C++ struct)
     // ──────────────────────────────────────────────────────────────────────
-    private final List< CubicInterpolation > numeraire_ = new ArrayList<>();
+    private final List< Interpolation > numeraire_ = new ArrayList<>();
 
     // ──────────────────────────────────────────────────────────────────────
     //   ModelOutputs — diagnostics
@@ -441,12 +443,17 @@ public class MarkovFunctional extends Gaussian1dModel {
             for ( int j = 0; j < row.size(); j++ ) {
                 row.set(j, discreteNumeraire_.get(i, j));
             }
-            final CubicInterpolation interp = new CubicInterpolation(y_, row,
+            final CubicInterpolation cubic = new CubicInterpolation(y_, row,
                     CubicInterpolation.DerivativeApprox.Spline, true, CubicInterpolation.BoundaryCondition.Lagrange,
                     0.0, CubicInterpolation.BoundaryCondition.Lagrange, 0.0);
-            // Java CubicInterpolation does not have enableExtrapolation on the
-            // class itself; the impl handles out-of-range probes via Lagrange BCs.
-            numeraire_.add(interp);
+            cubic.enableExtrapolation();
+            // v1.43 folds the flat extrapolation into the interpolation object instead of clamping the abscissa at
+            // every call site. Mirrors C++ markovfunctional.cpp; numerically identical, but the clamping now lives in
+            // one place. The decorator needs its own extrapolation flag enabled — it does not inherit the
+            // decorated object's.
+            final FlatExtrapolator numInt = new FlatExtrapolator(cubic);
+            numInt.enableExtrapolation();
+            numeraire_.add(numInt);
         }
 
         // termStructure() observer registration is already done by Gaussian1dModel ctor.
@@ -801,9 +808,13 @@ public class MarkovFunctional extends Gaussian1dModel {
         for ( int j = 0; j < row.size(); j++ ) {
             row.set(j, discreteNumeraire_.get(idx, j));
         }
-        numeraire_.set(idx, new CubicInterpolation(y_, row, CubicInterpolation.DerivativeApprox.Spline, true,
-                CubicInterpolation.BoundaryCondition.Lagrange, 0.0, CubicInterpolation.BoundaryCondition.Lagrange,
-                0.0));
+        final CubicInterpolation refitted = new CubicInterpolation(y_, row,
+                CubicInterpolation.DerivativeApprox.Spline, true, CubicInterpolation.BoundaryCondition.Lagrange, 0.0,
+                CubicInterpolation.BoundaryCondition.Lagrange, 0.0);
+        refitted.enableExtrapolation();
+        final FlatExtrapolator wrapped = new FlatExtrapolator(refitted);
+        wrapped.enableExtrapolation();
+        numeraire_.set(idx, wrapped);
     }
 
     // ──────────────────────────────────────────────────────────────────────
@@ -880,13 +891,9 @@ public class MarkovFunctional extends Gaussian1dModel {
         final double dt = tb - ta;
 
         for ( int j = 0; j < y.size(); j++ ) {
-            double yv = y.get(j);
-            if ( yv < y_.get(0) )
-                yv = y_.get(0);
-            if ( yv > y_.get(y_.size() - 1) )
-                yv = y_.get(y_.size() - 1);
-            final double na = numeraire_.get(i - 1).op(yv);
-            final double nb = numeraire_.get(i).op(yv);
+            // No clamping here any more: since v1.43 the numeraire interpolations extrapolate flat themselves.
+            final double na = numeraire_.get(i - 1).op(y.get(j));
+            final double nb = numeraire_.get(i).op(y.get(j));
             res.set(j, inverseNormalization / ((tz - ta) / nb + (tb - tz) / na) * dt);
         }
         return res;

@@ -90,11 +90,13 @@ public class IntegralHestonVarianceOptionEngine extends VarianceOption.EngineImp
     @Override
     public void calculate() /*@ReadOnly*/ {
 
-        // C++: QL_REQUIRE(process_->dividendYield().empty(), ...). The
-        // Java HestonProcess always carries a (possibly flat-zero) dividend
-        // curve, so the empty-handle guard would always fire; we relax it
-        // and rely on the caller to pass a flat-zero dividend curve when
-        // matching the C++ engine's intended use.
+        // v1.43 made this explicit rather than leaving it to the caller. The engine's analytic formula has no
+        // dividend term at all, so a non-empty dividend curve would be silently ignored — which is exactly the kind
+        // of quiet wrong answer worth refusing. Mirrors C++
+        // {@code IntegralHestonVarianceOptionEngine::calculate}
+        // ({@code ql/experimental/varianceoption/integralhestonvarianceoptionengine.cpp:366}).
+        QL.require(process_.dividendYield().empty(), "this engine does not manage dividend yields");
+
 
         final Handle< YieldTermStructure > riskFreeRate = process_.riskFreeRate();
         final DayCounter dc = riskFreeRate.currentLink().dayCounter();

@@ -25,6 +25,7 @@
 // The C++ v1.42.1 build default is usingAtParCoupons=false (the index-fixing
 // branch); the probe captures the actual computed NPV regardless of branch.
 
+#include <ql/version.hpp>
 #include <ql/cashflows/cashflows.hpp>
 #include <ql/cashflows/coupon.hpp>
 #include <ql/cashflows/floatingratecoupon.hpp>
@@ -161,7 +162,7 @@ int main() {
 
     // --- emit fingerprint ---
     ReferenceWriter w("instruments/capfloor_cached_value",
-                      "v1.42.1",
+                      QL_VERSION,
                       "capfloor_cached_value_probe.cpp");
 
     json inputs = {

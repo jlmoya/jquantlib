@@ -23,6 +23,8 @@ import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.indexes.IborIndex;
 import org.jquantlib.math.Constants;
 import org.jquantlib.pricingengines.PricingEngine;
+import org.jquantlib.lang.exceptions.LibraryException;
+import org.jquantlib.pricingengines.capfloor.BachelierCapFloorEngine;
 import org.jquantlib.pricingengines.capfloor.BlackCapFloorEngine;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.termstructures.YieldTermStructure;
@@ -124,9 +126,19 @@ public class MakeCapFloor {
         double s = strike_;
         if ( s == Constants.NULL_REAL ) {
             // temporary patch... should be fixed for every CapFloor::Engine
-            QL.require(engine_ instanceof BlackCapFloorEngine, "cannot calculate ATM without a BlackCapFloorEngine");
-            final BlackCapFloorEngine bce = (BlackCapFloorEngine) engine_;
-            final Handle< YieldTermStructure > discountCurve = bce.termStructure();
+            // v1.43 accepts a normal-vol engine here too. Mirrors C++
+            // {@code MakeCapFloor::operator ext::shared_ptr<CapFloor>() const}
+            // ({@code ql/instruments/makecapfloor.cpp}); before that, a Bachelier engine failed with a message
+            // naming only the Black engine.
+            final Handle< YieldTermStructure > discountCurve;
+            if ( engine_ instanceof BlackCapFloorEngine ) {
+                discountCurve = ((BlackCapFloorEngine) engine_).termStructure();
+            } else if ( engine_ instanceof BachelierCapFloorEngine ) {
+                discountCurve = ((BachelierCapFloorEngine) engine_).termStructure();
+            } else {
+                throw new LibraryException(
+                        "cannot calculate ATM without a BlackCapFloorEngine or BachelierCapFloorEngine");
+            }
             s = CashFlows.getInstance().atmRate(leg, discountCurve, discountCurve.currentLink().referenceDate(),
                     discountCurve.currentLink().referenceDate(), 0, 0.0);
         }

@@ -40,6 +40,7 @@
 package org.jquantlib.termstructures.yieldcurves;
 
 import org.jquantlib.daycounters.DayCounter;
+import org.jquantlib.math.Constants;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.termstructures.AbstractYieldTermStructure;
 import org.jquantlib.termstructures.YieldTermStructure;
@@ -59,10 +60,43 @@ public class ImpliedTermStructure< T extends YieldTermStructure > extends Abstra
 
     private final Handle< T > originalCurve;
 
+    /**
+     * Cached discount factor of the original curve at this structure's reference date, and the corresponding time
+     * offset. Invalidated in {@link #update()} — which fires whenever the original curve or the evaluation date
+     * changes, the only two things that can move them. Added in C++ v1.43
+     * ({@code ql/termstructures/yield/impliedtermstructure.hpp}); before that the pair was recomputed on every
+     * discount call.
+     */
+    private /*@DiscountFactor*/ double refDf = Constants.NULL_REAL;
+    private /*@Time*/ double refTime = Constants.NULL_REAL;
+
     public ImpliedTermStructure(final Handle< T > h, final Date referenceDate) {
         super(referenceDate);
         this.originalCurve = h;
+        // v1.43: inherit the original curve's extrapolation setting, so an implied view of an extrapolating curve
+        // does not silently reject the very dates the original accepts.
+        if ( !this.originalCurve.empty() ) {
+            if ( this.originalCurve.currentLink().allowsExtrapolation() ) {
+                enableExtrapolation();
+            } else {
+                disableExtrapolation();
+            }
+        }
         this.originalCurve.addObserver(this);
+    }
+
+    @Override
+    public void update() {
+        refDf = Constants.NULL_REAL;
+        refTime = Constants.NULL_REAL;
+        if ( !originalCurve.empty() ) {
+            if ( originalCurve.currentLink().allowsExtrapolation() ) {
+                enableExtrapolation();
+            } else {
+                disableExtrapolation();
+            }
+        }
+        super.update();
     }
 
     @Override
@@ -89,14 +123,12 @@ public class ImpliedTermStructure< T extends YieldTermStructure > extends Abstra
         /* t is relative to the current reference date
            and needs to be converted to the time relative
            to the reference date of the original curve */
-        final Date ref = referenceDate();
-        final /*@Time*/ double originalTime =
-                t + dayCounter().yearFraction(originalCurve.currentLink().referenceDate(), ref);
-        /* discount at evaluation date cannot be cached
-           since the original curve could change between
-           invocations of this method */
-        return originalCurve.currentLink().discount(originalTime, true) / originalCurve.currentLink()
-                .discount(ref, true);
+        if ( refDf == Constants.NULL_REAL ) {
+            final Date ref = referenceDate();
+            refTime = dayCounter().yearFraction(originalCurve.currentLink().referenceDate(), ref);
+            refDf = originalCurve.currentLink().discount(ref, true);
+        }
+        return originalCurve.currentLink().discount(t + refTime, true) / refDf;
     }
 
 }
