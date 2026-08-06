@@ -9,7 +9,6 @@ cashflows,PriceHelper,allowlisted
 cashflows,VegaRatioHelper,allowlisted
 experimental,AffineHazardRate,allowlisted
 experimental,DistributionRandomWalk,allowlisted
-experimental,ESFIntegrator,allowlisted
 experimental,FdmSimple3dExtOUJumpSolver,allowlisted
 experimental,FdmVPPStepConditionMesher,allowlisted
 experimental,FdmVPPStepConditionParams,allowlisted
@@ -37,9 +36,6 @@ instruments,Barrier,allowlisted
 instruments,DoubleBarrier,allowlisted
 instruments,ForwardOptionArguments,allowlisted
 instruments,QuantoOptionResults,allowlisted
-instruments,RatchetPayoff_2,allowlisted
-instruments,StickyPayoff_2,allowlisted
-instruments,StickyRatchetPayoff,allowlisted
 math,AbcdCoeffHolder,allowlisted
 math,BFGS,allowlisted
 math,BackwardflatLinear,allowlisted
@@ -69,7 +65,6 @@ models,GJRGARCHModel,allowlisted
 models,VolatilityInterpolationSpecifierabcd,allowlisted
 patterns,AcyclicVisitor,allowlisted
 patterns,CuriouslyRecurringTemplate,allowlisted
-patterns,Foo,allowlisted
 patterns,Proxy,allowlisted
 patterns,Singleton,allowlisted
 patterns,UpdateChecker,allowlisted

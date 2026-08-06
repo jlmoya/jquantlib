@@ -61,6 +61,18 @@ JAVA_DECL = re.compile(
     r"\b(?:class|interface|enum|record)\s+([A-Z][A-Za-z0-9_]*)", re.MULTILINE
 )
 
+# Block comments are stripped before scanning. Five C++ "classes" live only
+# inside /* ... */ blocks -- ESFIntegrator (saddlepointlossmodel.hpp:355, opened
+# by "Just for testing ... not for release"), StickyRatchetPayoff,
+# RatchetPayoff_2, StickyPayoff_2 (stickyratchet.hpp, under a header C++ itself
+# labels "Old code ... superated by DoubleStickyRatchetPayoff") and Foo.
+# They compile to nothing and cannot be instantiated, so counting them inflates
+# the denominator with classes QuantLib does not have. Allowlisting each would
+# also silence the gate, but would record them as real-but-excused, which they
+# are not. Line comments need no handling: CPP_DECL is line-anchored, so
+# "// class X" cannot match.
+CPP_BLOCK_COMMENT = re.compile(r"/\*.*?\*/", re.DOTALL)
+
 # ---------------------------------------------------------------------------
 # Reviewed allowlist: C++ class names that are VERIFIED false-positives of the
 # exact-name audit. Each was checked against the Java tree by reading the actual
@@ -127,7 +139,6 @@ ALLOWLIST = {
     "ConversionTypeProxy": "cpp-idiom -> Money operator-assignment proxy struct (Java uses static field)",
     "AcyclicVisitor": "cpp-idiom -> patterns/visitor (Java util.Visitor/PolymorphicVisitor)",
     "CuriouslyRecurringTemplate": "cpp-idiom -> CRTP base (Java uses generics/virtual dispatch)",
-    "Foo": "cpp-idiom -> doc-comment example class in patterns/singleton.hpp (not real)",
     "Proxy": "cpp-idiom -> patterns/observable inner shared_ptr-lifetime helper (Java GC)",
     "Singleton": "cpp-idiom -> CRTP singleton template (Java uses plain singletons/Settings)",
     "UpdateChecker": "cpp-idiom -> patterns/lazyobject RAII guard (no Java analog needed)",
@@ -172,10 +183,6 @@ ALLOWLIST = {
     "MixedInterpolation": "traits-folded -> MixedLinearCubicInterpolation.Behavior enum-holder",
 
     # --- commented-out-upstream: inside /* */ or // upstream (never compiled) ---
-    "RatchetPayoff_2": "commented-out-upstream -> instruments/stickyratchet.hpp:168-227 block comment",
-    "StickyPayoff_2": "commented-out-upstream -> instruments/stickyratchet.hpp:168-227 block comment",
-    "StickyRatchetPayoff": "commented-out-upstream -> instruments/stickyratchet.hpp:168-227 block comment",
-    "ESFIntegrator": "commented-out-upstream -> credit/saddlepointlossmodel.hpp:355-379 block comment",
 }
 
 
@@ -192,7 +199,7 @@ def main() -> None:
             continue
         cpp_files += 1
         sub = cpp_subsystem(hpp)
-        for name in CPP_DECL.findall(hpp.read_text(errors="ignore")):
+        for name in CPP_DECL.findall(CPP_BLOCK_COMMENT.sub("", hpp.read_text(errors="ignore"))):
             cpp.setdefault(name, sub)
 
     java: set[str] = set()
