@@ -44,8 +44,23 @@ final public class Closeness {
     }
 
     static public boolean isClose(final double x, final double y, @NonNegative final int n) {
+        // Deals with +infinity and -infinity representations etc.
+        // (C++ v1.43 ql/math/comparison.hpp:47-49)
+        if (x == y) {
+            return true;
+        }
+
         final double diff = Math.abs(x - y);
         final double tolerance = n * Constants.QL_EPSILON;
+
+        // A relative tolerance is meaningless against zero: C++ falls back to
+        // an absolute one (ql/math/comparison.hpp:53-54). Without this branch
+        // the two clauses below reduce to `diff <= 0` on the zero side, so
+        // nothing but exact zero can ever be close to zero.
+        if (x == 0.0 || y == 0.0) {
+            return diff < (tolerance * tolerance);
+        }
+
         return diff <= tolerance * Math.abs(x) && diff <= tolerance * Math.abs(y);
     }
 
@@ -54,8 +69,21 @@ final public class Closeness {
     }
 
     static public boolean isCloseEnough(final double x, final double y, @NonNegative final int n) {
+        // Deals with +infinity and -infinity representations etc.
+        // (C++ v1.43 ql/math/comparison.hpp:63-65)
+        if (x == y) {
+            return true;
+        }
+
         final double diff = Math.abs(x - y);
         final double tolerance = n * Constants.QL_EPSILON;
+
+        // See isClose: relative tolerance against zero degenerates.
+        // (C++ v1.43 ql/math/comparison.hpp:69-70)
+        if (x == 0.0 || y == 0.0) {
+            return diff < (tolerance * tolerance);
+        }
+
         return diff <= tolerance * Math.abs(x) || diff <= tolerance * Math.abs(y);
     }
 
