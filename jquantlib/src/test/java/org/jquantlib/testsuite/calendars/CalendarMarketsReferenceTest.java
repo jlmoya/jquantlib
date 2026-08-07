@@ -91,11 +91,26 @@ public class CalendarMarketsReferenceTest {
         assertEquals(key + ": missing=" + missing + " extra=" + extra, expected, actual);
     }
 
-    /** C++ {@code Australia::SettlementImpl} (australia.hpp:54) — the default market. */
+    /**
+     * C++ {@code Australia::SettlementImpl} (australia.hpp:54) — also the
+     * default market, so this pins {@code new Australia()} as well.
+     */
     @Test
     public void testAustraliaSettlement() {
         QL.info("Testing the Australia settlement calendar against C++ v1.43...");
         checkAgainstCpp("australia", new Australia());
+        checkAgainstCpp("australia", new Australia(Australia.Market.Settlement));
+    }
+
+    /**
+     * C++ {@code Australia::AsxImpl} (australia.hpp:59). Differs from
+     * settlement only by not observing the August bank holiday and Labour Day,
+     * so a mis-wired market would be invisible outside those two months.
+     */
+    @Test
+    public void testAustraliaAsx() {
+        QL.info("Testing the Australia ASX calendar against C++ v1.43...");
+        checkAgainstCpp("australia_asx", new Australia(Australia.Market.ASX));
     }
 
     /** C++ {@code Germany::FrankfurtStockExchangeImpl} — the default market. */
@@ -127,10 +142,28 @@ public class CalendarMarketsReferenceTest {
         checkAgainstCpp("germany_eurex", new Germany(Germany.Market.Eurex));
     }
 
-    /** C++ {@code Poland::SettlementImpl} (poland.hpp:53) — the default market. */
+    /** C++ {@code Germany::EuwaxImpl} (germany.hpp:134) — the only German exchange market closing on Whit Monday. */
+    @Test
+    public void testGermanyEuwax() {
+        QL.info("Testing the Germany Euwax calendar against C++ v1.43...");
+        checkAgainstCpp("germany_euwax", new Germany(Germany.Market.Euwax));
+    }
+
+    /**
+     * C++ {@code Poland::SettlementImpl} (poland.hpp:53) — also the default
+     * market, so this pins {@code new Poland()} as well.
+     */
     @Test
     public void testPolandSettlement() {
         QL.info("Testing the Poland settlement calendar against C++ v1.43...");
         checkAgainstCpp("poland", new Poland());
+        checkAgainstCpp("poland", new Poland(Poland.Market.Settlement));
+    }
+
+    /** C++ {@code Poland::WseImpl} (poland.hpp:58) — settlement plus 24 and 31 December. */
+    @Test
+    public void testPolandWse() {
+        QL.info("Testing the Poland WSE calendar against C++ v1.43...");
+        checkAgainstCpp("poland_wse", new Poland(Poland.Market.WSE));
     }
 }

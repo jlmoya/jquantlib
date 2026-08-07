@@ -25,6 +25,7 @@ package org.jquantlib.time.calendars;
 import org.jquantlib.lang.annotation.QualityAssurance;
 import org.jquantlib.lang.annotation.QualityAssurance.Quality;
 import org.jquantlib.lang.annotation.QualityAssurance.Version;
+import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Month;
@@ -50,8 +51,8 @@ import static org.jquantlib.time.Weekday.Tuesday;
  * <li>Easter Monday</li>
  * <li>ANZAC Day, April 25th</li>
  * <li>Queen's Birthday, second Monday in June</li>
- * <li>Bank Holiday, first Monday in August</li>
- * <li>Labour Day, first Monday in October</li>
+ * <li>Bank Holiday, first Monday in August (settlement only)</li>
+ * <li>Labour Day, first Monday in October (settlement only)</li>
  * <li>Christmas, December 25th (possibly moved to Monday or Tuesday)</li>
  * <li>Boxing Day, December 26th (possibly moved to Monday or Tuesday)</li>
  * <li>National Day of Mourning for Her Majesty, September 22, 2022</li>
@@ -70,8 +71,38 @@ public class Australia extends Calendar {
     // public constructors
     //
 
+    /** C++ v1.43 defaults {@code Australia::Market} to {@link Market#Settlement}. */
     public Australia() {
-        impl = new SettlementImpl();
+        this(Market.Settlement);
+    }
+
+    public Australia(final Market market) {
+        switch ( market ) {
+        case Settlement:
+            impl = new SettlementImpl();
+            break;
+        case ASX:
+            impl = new AsxImpl();
+            break;
+        default:
+            throw new LibraryException(UNKNOWN_MARKET);
+        }
+    }
+
+    //
+    // public enums
+    //
+
+    /**
+     * Australian calendars, mirroring {@code Australia::Market}
+     * (ql/time/calendars/australia.hpp:65-68).
+     */
+    public enum Market {
+        /** Generic settlement calendar. */
+        Settlement,
+
+        /** Australian Securities Exchange calendar. */
+        ASX
     }
 
     //
@@ -122,4 +153,45 @@ public class Australia extends Calendar {
         }
     }
 
+    /**
+     * Port of C++ {@code Australia::AsxImpl}
+     * (ql/time/calendars/australia.cpp:77-105). Identical to the settlement
+     * calendar except that the exchange does not close for the August bank
+     * holiday nor for Labour Day.
+     */
+    private final class AsxImpl extends WesternImpl {
+
+        @Override
+        public String name() {
+            return "Australia exchange";
+        }
+
+        @Override
+        public boolean isBusinessDay(final Date date) {
+            final Weekday w = date.weekday();
+            final int d = date.dayOfMonth(), dd = date.dayOfYear();
+            final Month m = date.month();
+            final int y = date.year();
+            final int em = easterMonday(y);
+            return !isWeekend(w)
+                    // New Year's Day (possibly moved to Monday)
+                    && ((d != 1 && ((d != 2 && d != 3) || w != Monday)) || m != January)
+                    // Australia Day, January 26th (possibly moved to Monday)
+                    && ((d != 26 && ((d != 27 && d != 28) || w != Monday)) || m != January)
+                    // Good Friday
+                    && (dd != em - 3)
+                    // Easter Monday
+                    && (dd != em)
+                    // ANZAC Day, April 25th
+                    && (d != 25 || m != April)
+                    // Queen's Birthday, second Monday in June
+                    && ((d <= 7 || d > 14) || w != Monday || m != June)
+                    // Christmas, December 25th (possibly Monday or Tuesday)
+                    && ((d != 25 && (d != 27 || (w != Monday && w != Tuesday))) || m != December)
+                    // Boxing Day, December 26th (possibly Monday or Tuesday)
+                    && ((d != 26 && (d != 28 || (w != Monday && w != Tuesday))) || m != December)
+                    // National Day of Mourning for Her Majesty, September 22 (only 2022)
+                    && (d != 22 || m != September || y != 2022);
+        }
+    }
 }

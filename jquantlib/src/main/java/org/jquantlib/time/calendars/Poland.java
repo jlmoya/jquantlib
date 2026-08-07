@@ -25,6 +25,7 @@ package org.jquantlib.time.calendars;
 import org.jquantlib.lang.annotation.QualityAssurance;
 import org.jquantlib.lang.annotation.QualityAssurance.Quality;
 import org.jquantlib.lang.annotation.QualityAssurance.Version;
+import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Month;
@@ -71,8 +72,38 @@ public class Poland extends Calendar {
     // public constructors
     //
 
+    /** C++ v1.43 defaults {@code Poland::Market} to {@link Market#Settlement}. */
     public Poland() {
-        impl = new SettlementImpl();
+        this(Market.Settlement);
+    }
+
+    public Poland(final Market market) {
+        switch ( market ) {
+        case Settlement:
+            impl = new SettlementImpl();
+            break;
+        case WSE:
+            impl = new WseImpl();
+            break;
+        default:
+            throw new LibraryException(UNKNOWN_MARKET);
+        }
+    }
+
+    //
+    // public enums
+    //
+
+    /**
+     * Polish calendars, mirroring {@code Poland::Market}
+     * (ql/time/calendars/poland.hpp:65-68).
+     */
+    public enum Market {
+        /** Generic settlement calendar. */
+        Settlement,
+
+        /** Warsaw stock exchange calendar. */
+        WSE
     }
 
     //
@@ -122,4 +153,26 @@ public class Poland extends Calendar {
         }
     }
 
+    /**
+     * Port of C++ {@code Poland::WseImpl}
+     * (ql/time/calendars/poland.cpp:73-85). The Warsaw stock exchange adds
+     * Christmas Eve and New Year's Eve to the settlement holidays; see
+     * <a href="https://www.gpw.pl/session-details">gpw.pl session details</a>.
+     */
+    private final class WseImpl extends SettlementImpl {
+        @Override
+        public String name() {
+            return "Warsaw stock exchange";
+        }
+
+        @Override
+        public boolean isBusinessDay(final Date date) {
+            final int d = date.dayOfMonth();
+            final Month m = date.month();
+            if ((d == 24 && m == December) || (d == 31 && m == December)) {
+                return false;
+            }
+            return super.isBusinessDay(date);
+        }
+    }
 }

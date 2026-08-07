@@ -132,6 +132,9 @@ public class Germany extends Calendar {
         case Eurex:
             impl = new EurexImpl();
             break;
+        case Euwax:
+            impl = new EuwaxImpl();
+            break;
         default:
             throw new LibraryException(UNKNOWN_MARKET);
         }
@@ -160,7 +163,12 @@ public class Germany extends Calendar {
         /**
          * Eurex
          */
-        Eurex
+        Eurex,
+
+        /**
+         * Euwax
+         */
+        Euwax
     }
 
     //
@@ -317,4 +325,43 @@ public class Germany extends Calendar {
         }
     }
 
+    /**
+     * Port of C++ {@code Germany::EuwaxImpl}
+     * (ql/time/calendars/germany.cpp:170-196). Euwax is the only German
+     * exchange calendar that closes on Whit Monday; unlike Eurex it trades on
+     * New Year's Eve.
+     */
+    private final class EuwaxImpl extends WesternImpl {
+
+        @Override
+        public String name() {
+            return "Euwax";
+        }
+
+        @Override
+        public boolean isBusinessDay(final Date date) {
+            final Weekday w = date.weekday();
+            final int d = date.dayOfMonth(), dd = date.dayOfYear();
+            final Month m = date.month();
+            final int y = date.year();
+            final int em = easterMonday(y);
+            return !isWeekend(w)
+                    // New Year's Day
+                    && (d != 1 || m != January)
+                    // Good Friday
+                    && (dd != em - 3)
+                    // Easter Monday
+                    && (dd != em)
+                    // Labour Day
+                    && (d != 1 || m != May)
+                    // Whit Monday
+                    && (dd != em + 49)
+                    // Christmas' Eve
+                    && (d != 24 || m != December)
+                    // Christmas
+                    && (d != 25 || m != December)
+                    // Christmas Day
+                    && (d != 26 || m != December);
+        }
+    }
 }
