@@ -202,9 +202,11 @@ public class Germany extends Calendar {
                     // Christmas
                     && (d != 25 || m != December)
                     // Boxing Day
-                    && (d != 26 || m != December)
-                    // New Year's Eve
-                    && (d != 31 || m != December);
+                    && (d != 26 || m != December);
+            // NOTE: the German settlement calendar does NOT close on New Year's
+            // Eve (31 Dec). See C++ v1.43 ql/time/calendars/germany.cpp
+            // SettlementImpl (no 31 December rule) — Eurex is the only Germany
+            // variant with a 31 December closure.
         }
     }
 
@@ -314,4 +316,5 @@ public class Germany extends Calendar {
                     && (d != 31 || m != December);
         }
     }
+
 }

@@ -35,13 +35,17 @@ import static org.jquantlib.time.Month.*;
 /**
  * Polish calendar
  * <p>
+ * Faithful port of {@code ql/time/calendars/poland.{hpp,cpp}} from C++
+ * QuantLib v1.43.
+ * <p>
  * Holidays:
  * <ul>
  * <li>Saturdays</li>
  * <li>Sundays</li>
  * <li>Easter Monday</li>
  * <li>Corpus Christi</li>
- * <li>New Year's Day, JANUARY 1st</li>
+ * <li>New Year's Day, January 1st</li>
+ * <li>Epiphany, January 6th (since 2011)</li>
  * <li>May Day, May 1st</li>
  * <li>Constitution Day, May 3rd</li>
  * <li>Assumption of the Blessed Virgin Mary, August 15th</li>
@@ -54,6 +58,7 @@ import static org.jquantlib.time.Month.*;
  * @author Anand Mani
  * @author Renjith Nair
  * @author Richard Gomes
+ * @author Jose Moya
  * @category calendars
  * @see <a href="http://www.gpw.pl/">Warsaw Stock Exchange</a>
  */
@@ -67,17 +72,21 @@ public class Poland extends Calendar {
     //
 
     public Poland() {
-        impl = new Impl();
+        impl = new SettlementImpl();
     }
 
     //
-    // private final inner classes
+    // private inner classes
     //
 
-    private final class Impl extends WesternImpl {
+    /**
+     * Port of C++ {@code Poland::SettlementImpl}
+     * (ql/time/calendars/poland.cpp:41-70).
+     */
+    private class SettlementImpl extends WesternImpl {
         @Override
         public String name() {
-            return "Poland";
+            return "Poland Settlement";
         }
 
         @Override
@@ -94,6 +103,8 @@ public class Poland extends Calendar {
                     && (dd != em + 59)
                     // New Year's Day
                     && (d != 1 || m != January)
+                    // Epiphany
+                    && (d != 6 || m != January || y < 2011)
                     // May Day
                     && (d != 1 || m != May)
                     // Constitution Day
@@ -110,4 +121,5 @@ public class Poland extends Calendar {
                     && (d != 26 || m != December);
         }
     }
+
 }

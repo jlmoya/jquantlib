@@ -37,24 +37,29 @@ import static org.jquantlib.time.Weekday.Tuesday;
 /**
  * Australian calendar
  * <p>
+ * Faithful port of {@code ql/time/calendars/australia.{hpp,cpp}} from C++
+ * QuantLib v1.43.
+ * <p>
  * Holidays:
  * <ul>
  * <li>Saturdays</li>
  * <li>Sundays</li>
- * <li>New Year's Day, JANUARY 1st</li>
- * <li>Australia Day, JANUARY 26th (possibly moved to MONDAY)</li>
+ * <li>New Year's Day, January 1st (possibly moved to Monday)</li>
+ * <li>Australia Day, January 26th (possibly moved to Monday)</li>
  * <li>Good Friday</li>
- * <li>Easter MONDAY</li>
- * <li>ANZAC Day. April 25th (possibly moved to MONDAY)</li>
- * <li>Queen's Birthday, second MONDAY in June</li>
- * <li>Bank Holiday, first MONDAY in August</li>
- * <li>Labour Day, first MONDAY in October</li>
- * <li>Christmas, December 25th (possibly moved to MONDAY or TUESDAY)</li>
- * <li>Boxing Day, December 26th (possibly moved to MONDAY or TUESDAY)</li>
+ * <li>Easter Monday</li>
+ * <li>ANZAC Day, April 25th</li>
+ * <li>Queen's Birthday, second Monday in June</li>
+ * <li>Bank Holiday, first Monday in August</li>
+ * <li>Labour Day, first Monday in October</li>
+ * <li>Christmas, December 25th (possibly moved to Monday or Tuesday)</li>
+ * <li>Boxing Day, December 26th (possibly moved to Monday or Tuesday)</li>
+ * <li>National Day of Mourning for Her Majesty, September 22, 2022</li>
  * </ul>
  *
  * @author Tim Swetonic
  * @author Richard Gomes
+ * @author Jose Moya
  *
  */
 @QualityAssurance( quality = Quality.Q3_DOCUMENTATION, version = Version.V097, reviewers = { "Zahid Hussain" } )
@@ -66,18 +71,22 @@ public class Australia extends Calendar {
     //
 
     public Australia() {
-        impl = new AustraliaImpl();
+        impl = new SettlementImpl();
     }
 
     //
     // private final inner classes
     //
 
-    private final class AustraliaImpl extends WesternImpl {
+    /**
+     * Port of C++ {@code Australia::SettlementImpl}
+     * (ql/time/calendars/australia.cpp:41-75).
+     */
+    private final class SettlementImpl extends WesternImpl {
 
         @Override
         public String name() {
-            return "Australia";
+            return "Australia settlement";
         }
 
         @Override
@@ -89,15 +98,15 @@ public class Australia extends Calendar {
             final int em = easterMonday(y);
             return !isWeekend(w)
                     // New Year's Day (possibly moved to Monday)
-                    && (d != 1 || m != January)
-                    // Australia Day, JANUARY 26th (possibly moved to Monday)
+                    && ((d != 1 && ((d != 2 && d != 3) || w != Monday)) || m != January)
+                    // Australia Day, January 26th (possibly moved to Monday)
                     && ((d != 26 && ((d != 27 && d != 28) || w != Monday)) || m != January)
                     // Good Friday
                     && (dd != em - 3)
                     // Easter Monday
                     && (dd != em)
-                    // ANZAC Day, April 25th (possibly moved to Monday)
-                    && ((d != 25 && (d != 26 || w != Monday)) || m != April)
+                    // ANZAC Day, April 25th
+                    && (d != 25 || m != April)
                     // Queen's Birthday, second Monday in June
                     && ((d <= 7 || d > 14) || w != Monday || m != June)
                     // Bank Holiday, first Monday in August
@@ -106,8 +115,11 @@ public class Australia extends Calendar {
                     && (d > 7 || w != Monday || m != October)
                     // Christmas, December 25th (possibly Monday or Tuesday)
                     && ((d != 25 && (d != 27 || (w != Monday && w != Tuesday))) || m != December)
-                    // Boxing Day, DECEMBER 26th (possibly MONDAY or TUESDAY)
-                    && ((d != 26 && (d != 28 || (w != Monday && w != Tuesday))) || m != December);
+                    // Boxing Day, December 26th (possibly Monday or Tuesday)
+                    && ((d != 26 && (d != 28 || (w != Monday && w != Tuesday))) || m != December)
+                    // National Day of Mourning for Her Majesty, September 22 (only 2022)
+                    && (d != 22 || m != September || y != 2022);
         }
     }
+
 }

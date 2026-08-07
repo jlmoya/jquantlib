@@ -71,6 +71,11 @@ public class GermanyCalendarTest {
 		expectedHol.add(new Date(31,December,year));
 		cbt.checkHolidayList(expectedHol, cEurex, year);
 
+		// ...and Eurex is the ONLY German market that closes on New Year's Eve:
+		// C++ v1.43 ql/time/calendars/germany.cpp SettlementImpl (:61-92) has no
+		// 31 December rule, so drop it again before checking Settlement.
+		expectedHol.remove(new Date(31,December,year));
+
 		QL.info("Testing Germany holiday list for the year " + year + " as recognized by Settlement ...");
 		//National Day
 		//expectedHol.add(new Date(3,OCTOBER,year));
@@ -209,6 +214,11 @@ public class GermanyCalendarTest {
 		expectedHol.add(new Date(31,December,year));
 		cbt.checkHolidayList(expectedHol, cEurex, year);
 
+		// ...and Eurex is the ONLY German market that closes on New Year's Eve:
+		// C++ v1.43 ql/time/calendars/germany.cpp SettlementImpl (:61-92) has no
+		// 31 December rule, so drop it again before checking Settlement.
+		expectedHol.remove(new Date(31,December,year));
+
 		QL.info("Testing Germany holiday list for the year " + year + " as recognized by Settlement ...");
 		//National Day
 		expectedHol.add(new Date(3,October,year));
@@ -259,6 +269,11 @@ public class GermanyCalendarTest {
 		expectedHol.add(new Date(31,December,year));
 		cbt.checkHolidayList(expectedHol, cEurex, year);
 
+		// ...and Eurex is the ONLY German market that closes on New Year's Eve:
+		// C++ v1.43 ql/time/calendars/germany.cpp SettlementImpl (:61-92) has no
+		// 31 December rule, so drop it again before checking Settlement.
+		expectedHol.remove(new Date(31,December,year));
+
 		QL.info("Testing Germany holiday list for the year " + year + " as recognized by Settlement ...");
 		//National Day
 		expectedHol.add(new Date(3,October,year));
@@ -307,6 +322,11 @@ public class GermanyCalendarTest {
 		expectedHol.add(new Date(31,December,year));
 		cbt.checkHolidayList(expectedHol, cEurex, year);
 
+		// ...and Eurex is the ONLY German market that closes on New Year's Eve:
+		// C++ v1.43 ql/time/calendars/germany.cpp SettlementImpl (:61-92) has no
+		// 31 December rule, so drop it again before checking Settlement.
+		expectedHol.remove(new Date(31,December,year));
+
 		QL.info("Testing Germany holiday list for the year " + year + " as recognized by Settlement ...");
 		//National Day
 		//expectedHol.add(new Date(3,OCTOBER,year));
@@ -354,6 +374,11 @@ public class GermanyCalendarTest {
 		// Eurex adds New Year's Eve
 		expectedHol.add(new Date(31,December,year));
 		cbt.checkHolidayList(expectedHol, cEurex, year);
+
+		// ...and Eurex is the ONLY German market that closes on New Year's Eve:
+		// C++ v1.43 ql/time/calendars/germany.cpp SettlementImpl (:61-92) has no
+		// 31 December rule, so drop it again before checking Settlement.
+		expectedHol.remove(new Date(31,December,year));
 
 		QL.info("Testing Germany holiday list for the year " + year + " as recognized by Settlement ...");
 		//National Day
@@ -447,6 +472,11 @@ public class GermanyCalendarTest {
 		// Eurex adds New Year's Eve
 		expectedHol.add(new Date(31,December,year));
 		cbt.checkHolidayList(expectedHol, cEurex, year);
+
+		// ...and Eurex is the ONLY German market that closes on New Year's Eve:
+		// C++ v1.43 ql/time/calendars/germany.cpp SettlementImpl (:61-92) has no
+		// 31 December rule, so drop it again before checking Settlement.
+		expectedHol.remove(new Date(31,December,year));
 
 		QL.info("Testing Germany holiday list for the year " + year + " as recognized by Settlement ...");
 		//National Day

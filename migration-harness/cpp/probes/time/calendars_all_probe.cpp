@@ -95,7 +95,10 @@ int main() {
     ReferenceWriter out("time/calendars/all", QL_VERSION, "calendars_all_probe");
 
     addCalendar(out, "argentina", Argentina());
+    // Australia has two markets; the default is Settlement, so covering only
+    // the default leaves the ASX exchange calendar unpinned.
     addCalendar(out, "australia", Australia());
+    addCalendar(out, "australia_asx", Australia(Australia::ASX));
     addCalendar(out, "austria", Austria());
     addCalendar(out, "brazil", Brazil());
     addCalendar(out, "canada", Canada());
@@ -104,7 +107,15 @@ int main() {
     addCalendar(out, "denmark", Denmark());
     addCalendar(out, "finland", Finland());
     addCalendar(out, "france", France());
+    // Germany's default market is FrankfurtStockExchange (not Settlement), and
+    // all five markets have distinct holiday sets — Settlement is the only one
+    // with Ascension/Corpus Christi/National Day, Eurex the only one closing on
+    // 31 December, Euwax the only exchange market observing Whit Monday.
     addCalendar(out, "germany", Germany());
+    addCalendar(out, "germany_settlement", Germany(Germany::Settlement));
+    addCalendar(out, "germany_xetra", Germany(Germany::Xetra));
+    addCalendar(out, "germany_eurex", Germany(Germany::Eurex));
+    addCalendar(out, "germany_euwax", Germany(Germany::Euwax));
     addCalendar(out, "hong_kong", HongKong());
     addCalendar(out, "hungary", Hungary());
     addCalendar(out, "iceland", Iceland());
@@ -121,7 +132,10 @@ int main() {
     addCalendar(out, "mexico", Mexico());
     addCalendar(out, "new_zealand", NewZealand());
     addCalendar(out, "norway", Norway());
+    // Poland's WSE market adds the 24 and 31 December exchange closings on top
+    // of the settlement calendar.
     addCalendar(out, "poland", Poland());
+    addCalendar(out, "poland_wse", Poland(Poland::WSE));
     addCalendar(out, "russia", Russia());
     addCalendar(out, "singapore", Singapore());
     addCalendar(out, "slovakia", Slovakia());

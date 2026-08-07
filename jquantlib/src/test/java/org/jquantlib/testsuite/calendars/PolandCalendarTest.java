@@ -378,6 +378,9 @@ public class PolandCalendarTest {
 
     	// expectedHol.add(new Date( 1,JANUARY,year));
     	// expectedHol.add(new Date(24,APRIL,year));
+    	// Epiphany, 6 January, observed from 2011 onwards:
+    	// C++ v1.43 ql/time/calendars/poland.cpp:53.
+    	expectedHol.add(new Date( 6,January,year));
     	expectedHol.add(new Date(25,April,year));
     	// expectedHol.add(new Date( 1,MAY,year));
     	expectedHol.add(new Date( 3,May,year));
@@ -421,6 +424,9 @@ public class PolandCalendarTest {
 
     	// expectedHol.add(new Date( 1,JANUARY,year));
     	// expectedHol.add(new Date( 8,APRIL,year));
+    	// Epiphany, 6 January, observed from 2011 onwards:
+    	// C++ v1.43 ql/time/calendars/poland.cpp:53.
+    	expectedHol.add(new Date( 6,January,year));
     	expectedHol.add(new Date( 9,April,year));
     	expectedHol.add(new Date( 1,May,year));
     	expectedHol.add(new Date( 3,May,year));

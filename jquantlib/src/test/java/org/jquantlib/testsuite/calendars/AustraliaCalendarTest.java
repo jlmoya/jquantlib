@@ -94,7 +94,9 @@ public class AustraliaCalendarTest {
         expectedHol.add(new Date(26,January,year));
         expectedHol.add(new Date(9,April,year));
         expectedHol.add(new Date(12,April,year));
-        expectedHol.add(new Date(26,April,year));
+        // NOTE: C++ v1.43 does NOT move ANZAC Day off a weekend
+        // (ql/time/calendars/australia.cpp:59 is a bare `d == 25 && m == April`),
+        // so there is no 26 April holiday when 25 April falls on a Sunday.
         expectedHol.add(new Date(14,June,year));
         expectedHol.add(new Date(2,August,year));
         expectedHol.add(new Date(4,October,year));
@@ -113,6 +115,9 @@ public class AustraliaCalendarTest {
         
     	final List<Date> expectedHol = new ArrayList<>();
 
+        // New Year's Day moved to Monday: C++ v1.43
+        // ql/time/calendars/australia.cpp:49 accepts 2 or 3 January when Monday.
+        expectedHol.add(new Date(3,January,year));
         expectedHol.add(new Date(26,January,year));
         expectedHol.add(new Date(25,March,year));
 
@@ -138,6 +143,9 @@ public class AustraliaCalendarTest {
         
     	final List<Date> expectedHol = new ArrayList<>();
 
+        // New Year's Day moved to Monday: C++ v1.43
+        // ql/time/calendars/australia.cpp:49 accepts 2 or 3 January when Monday.
+        expectedHol.add(new Date(2,January,year));
         expectedHol.add(new Date(26,January,year));
         expectedHol.add(new Date(14,April,year));
         expectedHol.add(new Date(17,April,year));
@@ -214,7 +222,9 @@ public class AustraliaCalendarTest {
         expectedHol.add(new Date(26,January,year));
         expectedHol.add(new Date(2,April,year));
         expectedHol.add(new Date(5,April,year));
-        expectedHol.add(new Date(26,April,year));
+        // NOTE: C++ v1.43 does NOT move ANZAC Day off a weekend
+        // (ql/time/calendars/australia.cpp:59 is a bare `d == 25 && m == April`),
+        // so there is no 26 April holiday when 25 April falls on a Sunday.
         expectedHol.add(new Date(14,June,year));
         expectedHol.add(new Date(2,August,year));
         expectedHol.add(new Date(4,October,year));
@@ -234,6 +244,9 @@ public class AustraliaCalendarTest {
         
     	final List<Date> expectedHol = new ArrayList<>();
 
+        // New Year's Day moved to Monday: C++ v1.43
+        // ql/time/calendars/australia.cpp:49 accepts 2 or 3 January when Monday.
+        expectedHol.add(new Date(3,January,year));
         expectedHol.add(new Date(26,January,year));
         expectedHol.add(new Date(22,April,year));
         expectedHol.add(new Date(25,April,year));
@@ -256,6 +269,9 @@ public class AustraliaCalendarTest {
         
     	final List<Date> expectedHol = new ArrayList<>();
 
+        // New Year's Day moved to Monday: C++ v1.43
+        // ql/time/calendars/australia.cpp:49 accepts 2 or 3 January when Monday.
+        expectedHol.add(new Date(2,January,year));
         expectedHol.add(new Date(26,January,year));
         expectedHol.add(new Date(6,April,year));
         expectedHol.add(new Date(9,April,year));
