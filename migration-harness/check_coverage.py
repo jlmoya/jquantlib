@@ -91,7 +91,17 @@ ALLOWLIST = {
     # --- case-rename: Java has the class under a different case/spelling ---
     "Error": "case-rename -> lang.exceptions.LibraryException",
     "BFGS": "case-rename -> math.optimization.Bfgs",
-    "SABR": "case-rename -> math.interpolations.Sabr",
+    # NOT a case-rename: termstructures.volatilities.Sabr ports the free
+    # functions of ql/termstructures/volatility/sabr.hpp, a different C++
+    # entity. `SABR` (sabrinterpolation.hpp:198) is the XABR traits-factory tag
+    # -- a parameter bag whose interpolate() forwards to SABRInterpolation --
+    # and nothing in QuantLib itself instantiates it. Same shape as NoArbSabr,
+    # VannaVolga and LinearFlat below. Note the deliberate asymmetry with
+    # `Zabr`, which IS ported (experimental.volatility.Zabr): porting it was
+    # what carried ZabrInterpolation's calibration path into a probe-backed
+    # test for the first time. Porting these four to match is open work, not a
+    # settled design -- see docs/migration/v1.43-progress.md.
+    "SABR": "cpp-idiom -> XABR interpolation traits-factory tag (SABRInterpolation ported)",
     "BiCGstab": "case-rename -> math.matrixutilities.BiCGStab",
     "TARGET": "case-rename -> time.calendars.Target",
     "Solver1D": "case-rename -> math.AbstractSolver1D",
@@ -126,6 +136,23 @@ ALLOWLIST = {
     "ForwardOptionArguments": "inner-of -> instruments.ForwardVanillaOption (Arguments)",
     "QuantoOptionResults": "inner-of -> instruments.QuantoVanillaOption (Results)",
     "Thirty360_Impl": "inner-of -> daycounters.Thirty360 (DayCounter.Impl subclasses)",
+    # The six private nested Thirty360::*_Impl and four ActualActual::*_Impl
+    # classes. Each is `private` inside its day counter (thirty360.hpp:89 opens
+    # the private section; actualactual.hpp:56 likewise), selected by the same
+    # `Convention` enum, and Java realizes each as a private inner class of the
+    # same public day counter. Every convention -- including the alias
+    # enumerators, which C++ routes to a shared Impl -- is cross-validated over
+    # a 351-pair date grid by testsuite.daycounters.Thirty360AndActualActualImplTest
+    # against references/time/daycounters/thirty360_actualactual.json.
+    "US_Impl": "inner-of -> daycounters.Thirty360.Impl_US (thirty360.hpp:97, private nested; Thirty360AndActualActualImplTest)",
+    "ISMA_Impl": "inner-of -> Thirty360.Impl_ISMA (thirty360.hpp:102) AND ActualActual.SchedISMA_Impl (actualactual.hpp:57), both private nested; Thirty360AndActualActualImplTest",
+    "EU_Impl": "inner-of -> daycounters.Thirty360.Impl_EU (thirty360.hpp:107, private nested; Thirty360AndActualActualImplTest)",
+    "IT_Impl": "inner-of -> daycounters.Thirty360.Impl_IT (thirty360.hpp:112, private nested; Thirty360AndActualActualImplTest)",
+    "ISDA_Impl": "inner-of -> Thirty360.Impl_ISDA (thirty360.hpp:117) AND ActualActual.ImplISDA (actualactual.hpp:78), both private nested; Thirty360AndActualActualImplTest",
+    "NASD_Impl": "inner-of -> daycounters.Thirty360.Impl_NASD (thirty360.hpp:126, private nested; Thirty360AndActualActualImplTest)",
+    "Old_ISMA_Impl": "inner-of -> daycounters.ActualActual.ImplISMA (actualactual.hpp:70, private nested, the no-Schedule branch; Thirty360AndActualActualImplTest)",
+    "AFB_Impl": "inner-of -> daycounters.ActualActual.ImplAFB (actualactual.hpp:84, private nested; Thirty360AndActualActualImplTest)",
+    "FlatExtrapolatorImpl": "inner-of -> math.interpolations.FlatExtrapolator (flatextrapolation.hpp:48, protected nested; FlatExtrapolatorTest vs math/v143_flatextrapolation)",
     "SingleStepCalibrationResult": "inner-of -> AndreasenHugeVolatilityInterpl.StepResult",
     "FdmVPPStepConditionMesher": "inner-of -> experimental.finitedifferences.FdmVPPStepCondition.Mesher",
     "FdmVPPStepConditionParams": "inner-of -> experimental.finitedifferences.FdmVPPStepCondition.Params",
@@ -154,6 +181,18 @@ ALLOWLIST = {
     "EmptyArg": "cpp-idiom -> multicubicspline template termination tag (Java flat arrays)",
     "EmptyDim": "cpp-idiom -> multicubicspline template termination tag (Java flat arrays)",
     "EmptyRes": "cpp-idiom -> multicubicspline template termination tag (Java flat arrays)",
+    # The rest of the multicubicspline template scaffolding, all in
+    # `namespace detail` (multicubicspline.hpp:36-447) and none of it
+    # user-constructible on its own. Java replaces the whole apparatus with a
+    # flat row-major double[] plus a stride table and runtime recursion, and
+    # MultiCubicSplineCrossValidationTest pins the result in 2, 3 and 5
+    # dimensions against references/math/interpolations/multicubicspline.json.
+    "DataTable": "cpp-idiom -> multicubicspline.hpp:48 detail recursively-nested value table (Java flat double[] + strides; MultiCubicSplineCrossValidationTest)",
+    "Point": "cpp-idiom -> multicubicspline.hpp:122 detail compile-time cons-list for the arg/result/dimension tuples (Java double[]/int[]; MultiCubicSplineCrossValidationTest)",
+    "Int2Type": "cpp-idiom -> multicubicspline.hpp:372 detail integer->type recursion-depth dispatch, the reason C++ caps at 15 dims (Java runtime recursion; MultiCubicSplineCrossValidationTest)",
+    "LagrangeInterpolationImpl": "cpp-idiom -> lagrangeinterpolation.hpp:43 detail Impl folded into math.interpolations.LagrangeInterpolation (LagrangeInterpolationCrossValidationTest)",
+    "LinearFlatInterpolationImpl": "cpp-idiom -> generalizedhullwhite.hpp:341 detail pimpl folded into GeneralizedHullWhite.LinearFlatInterpolationAdapter (GeneralizedHullWhiteTest.piecewiseTwoSegments)",
+    "VannaVolgaInterpolationImpl": "cpp-idiom -> vannavolgainterpolation.hpp:82 detail pimpl folded into experimental.barrieroption.VannaVolgaInterpolation (VannaVolgaInterpolationCrossValidationTest)",
     "LinearFct": "cpp-idiom -> details template functor folded into LinearRegression",
     "LinearFcts": "cpp-idiom -> details template builder folded into LinearRegression",
     "EarlyExerciseTraits": "cpp-idiom -> montecarlo template traits struct (Java generics)",
