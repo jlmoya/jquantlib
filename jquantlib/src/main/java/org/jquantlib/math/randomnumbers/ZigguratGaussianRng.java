@@ -55,8 +55,20 @@ import org.jquantlib.methods.montecarlo.Sample;
  * </pre>
  * Due to C++ operator precedence, the multiplication binds tighter than the subtraction, so the expression is
  * {@code normF(i+1) + normF(i) - normF(i+1)*u < pdf(x)}, not the textbook Doornik form
- * {@code normF(i+1) + u*(normF(i) - normF(i+1)) < pdf(x)}. We reproduce the C++ semantics verbatim since v1.42.1 is
- * source-of-truth and the divergence is statistically benign for the test tolerances.
+ * {@code normF(i+1) + u*(normF(i) - normF(i+1)) < pdf(x)}.
+ *
+ * <p>This is a genuine upstream defect, now confirmed and quantified: measured over 2,000,000 draws that actually
+ * reach the wedge test, the shipped form accepts <b>1.79%</b> where the correct form accepts <b>54.52%</b> — roughly
+ * a 30x deficit, so the wedge regions between {@code normX(i+1)} and {@code normX(i)} are under-sampled at every
+ * layer. It is <em>not</em> unreachable, as an earlier analysis of ours wrongly claimed.
+ *
+ * <p>Fixed upstream in <a href="https://github.com/lballabio/QuantLib/pull/2722">lballabio/QuantLib#2722</a>, merged
+ * 2026-08-12 as {@code a6e82a92b}. That commit is <b>not in any released tag</b>; this port's oracle is pinned at
+ * {@code v1.43}, which predates it. We therefore keep reproducing the shipped v1.43 semantics verbatim, and will
+ * re-baseline when the migration moves to the first release containing {@code a6e82a92b}.
+ *
+ * <p>To check whether this note has expired: {@code git tag --contains a6e82a92b} in the C++ tree, and compare
+ * against the pin in {@code migration-harness/cpp/quantlib}.
  */
 public final class ZigguratGaussianRng {
 
